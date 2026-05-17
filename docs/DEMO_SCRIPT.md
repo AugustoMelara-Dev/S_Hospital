@@ -48,6 +48,7 @@ Configuracion demo:
    - Ir a Caja.
    - Abrir caja con L.500.00.
    - Confirmar estado "Caja abierta".
+   - Confirmar que Nueva factura avisa y ofrece CTA a Caja si no hay caja abierta.
 
 3. Crear factura con Eritropoyetina normal
    - Ir a Nueva factura.
@@ -55,14 +56,15 @@ Configuracion demo:
    - Seleccionar categoria `Medicamentos` o buscar `Eritropoyetina`.
    - No marcar receta de dialisis.
    - Confirmar preview con precio normal L.25 antes de emitir.
-   - Emitir factura.
+   - Emitir factura con caja abierta.
+   - Registrar pago e imprimir/visualizar recibo termico.
 
 4. Crear factura con Eritropoyetina con receta de dialisis
    - Paciente: Jose Perez.
    - Seleccionar Eritropoyetina desde categoria o scanner/codigo.
    - Marcar "Receta de dialisis".
    - Confirmar preview en L.0 para ese item.
-   - Emitir factura.
+   - Emitir factura con caja abierta y confirmar saldo L.0.00.
 
 5. Escanear codigo o QR
    - En Nueva factura, usar "Scanner USB o codigo manual".
@@ -105,12 +107,13 @@ Configuracion demo:
     - Entrar como `supervisor.demo` o `admin.demo`.
     - Ir a Reportes.
     - Ver reporte diario.
-    - Ver rango de fechas.
+    - Ver rango de fechas con filtros de caja, cajero, categoria, metodo y estado.
     - Confirmar ingresos por metodo de pago.
     - Confirmar ingresos por categoria.
     - Confirmar grafico de servicios mas vendidos.
+    - Confirmar auditoria operativa: anulaciones, reimpresiones, backups y cajeros con ingreso.
     - Ver resumen de caja por numero de caja.
-    - Exportar CSV del rango cuando haya datos.
+    - Exportar CSV del rango cuando haya datos y el usuario tenga `reports.export`.
 
 12. Crear backup local
     - Entrar como `admin.demo`.
@@ -129,6 +132,8 @@ Configuracion demo:
 - Backups son locales y no cloud.
 - La UI ya no es una pagina interminable: cada modulo vive en su ruta.
 - El POS no carga los 122 servicios de golpe: categoria, busqueda y scanner son el flujo normal.
+- El camino principal del POS exige caja abierta antes de emitir y cobrar.
+- Los reportes avanzados salen del backend, aplican filtros y exigen permisos para exportar.
 
 ## Pendientes no vendibles como completados
 
@@ -136,4 +141,5 @@ Configuracion demo:
 - Impresion fisica termica: pendiente hasta tener impresora 80mm/58mm.
 - Concurrencia real MySQL/MariaDB: validar antes de produccion final.
 - LAN fisica desde cliente: validar por IP fija/nombre servidor antes de produccion final.
-- E2E Playwright local de Fase 10: disponible con `npm.cmd run e2e`; no reemplaza restore/concurrencia/hardware real.
+- E2E Playwright local: disponible con `npm.cmd run e2e`; no reemplaza restore/concurrencia/hardware real.
+- Smoke real con consola limpia: usar `npm.cmd run smoke:real` con `E2E_REAL_BASE_URL`, `E2E_REAL_LOGIN` y `E2E_REAL_PASSWORD`.

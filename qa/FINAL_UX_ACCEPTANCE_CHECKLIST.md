@@ -59,4 +59,4 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 - [x] Smoke real contra Laravel/API separado del mock.
 - [ ] Browser smoke con cero `console.error`, `pageerror` y requests fallidas inesperadas.
 - [x] Build.
-- [ ] Demo script actualizado con evidencia honesta.
+- [x] Demo script actualizado con evidencia honesta.

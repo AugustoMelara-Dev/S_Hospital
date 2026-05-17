@@ -59,6 +59,7 @@ Fecha: 2026-05-17
 - Exportacion CSV de reportes pasa por backend y exige `reports.export`.
 - Reportes incluyen auditoria operativa: anulaciones, reimpresiones, backups, cajeros con ingreso y filtros por caja/cajero/categoria/metodo/estado.
 - POS principal exige caja abierta antes de emitir para evitar ambiguedad entre factura pendiente y cobrada.
+- Demo script actualizado con flujo de caja abierta, reportes avanzados y smoke real separado.
 
 ## Validacion posterior a revision de subagentes
 
