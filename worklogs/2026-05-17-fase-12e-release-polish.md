@@ -46,3 +46,33 @@ Fecha: 2026-05-17
 - `php artisan test --colors=never`: 107 tests / 597 assertions OK.
 - `php artisan config:cache`: OK.
 - Smoke HTTP con `php artisan serve`: `/up`, `/login`, `/verify-email`, `/dashboard`, `/billing/new`, `/cashbox`, `/catalog`, `/invoices`, `/reports`, `/backups`, `/settings/fiscal` respondieron 200.
+
+## Continuacion posterior
+
+- AppShell muestra topbar con caja, rol, usuario, hora local y estado LAN derivado del status.
+- Sidebar/topbar/footer se ocultan al imprimir para que el recibo termico no arrastre navegacion.
+- POS agrega confirmacion antes de emitir y antes de cobrar.
+- POS muestra CTA a Caja cuando no hay caja abierta.
+- Caja agrega confirmacion antes de cierre.
+- Backend exige nota cuando el cierre tiene diferencia distinta de cero.
+- `reports.view` ya no concede acceso historico a facturas ajenas.
+
+## Validacion posterior a revision de subagentes
+
+- `php artisan test --filter=CashPaymentsReceiptTest --colors=never`: 14 tests / 114 assertions OK.
+- `php artisan test --filter=ReportsTest --colors=never`: 9 tests / 94 assertions OK.
+- `php artisan test --filter=InvoiceHistoryReprintVoidTest --colors=never`: 13 tests / 91 assertions OK.
+- `php artisan test --colors=never`: 114 tests / 638 assertions OK.
+- `vendor/bin/pint --test`: OK.
+- `npm.cmd run lint`: OK.
+- `npm.cmd test`: 20 tests frontend OK.
+- `npm.cmd run typecheck`: OK.
+- `npm.cmd run build`: OK.
+- `php artisan config:cache`: OK.
+- `npm.cmd run e2e`: 1 Playwright workflow OK.
+
+## Pendiente real
+
+- Reportes gerenciales siguen incompletos frente al plan corregido: anulaciones, reimpresiones, backups, filtros por categoria/metodo/estado y exportacion backend/autorizada.
+- El flujo principal del POS todavia debe decidir formalmente si `Emitir pendiente` es permitido o si caja abierta es obligatoria antes de emitir.
+- Falta smoke real con consola limpia contra Laravel/API, separado del E2E mockeado.

@@ -73,7 +73,12 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('navigation', { name: /navegacion principal/i })).toBeInTheDocument();
+    const navigation = await screen.findByRole('navigation', { name: /navegacion principal/i });
+
+    expect(navigation).toBeInTheDocument();
+    expect(navigation.closest('aside')).toHaveClass('print-hidden');
+    expect(screen.getByRole('banner')).toHaveClass('print-hidden');
+    expect(screen.getByRole('contentinfo')).toHaveClass('print-hidden');
     expect(screen.getByRole('link', { name: /configuracion fiscal/i })).toHaveAttribute(
       'href',
       '/settings/fiscal',
@@ -262,7 +267,7 @@ describe('App', () => {
             username: 'supervisor.demo',
             active: true,
             roles: ['supervisor'],
-            permissions: ['reports.view'],
+            permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
             must_change_password: false,
           },
         }),
@@ -442,7 +447,9 @@ describe('App', () => {
 
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /crear backup/i }));
+    const createBackupButton = await screen.findByRole('button', { name: /crear backup/i });
+    await waitFor(() => expect(createBackupButton).toBeEnabled());
+    fireEvent.click(createBackupButton);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenLastCalledWith(
@@ -521,7 +528,7 @@ describe('App', () => {
             username: 'admin.demo',
             active: true,
             roles: ['admin'],
-            permissions: ['reports.view'],
+            permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
             must_change_password: false,
           },
         }),
@@ -705,6 +712,8 @@ describe('App', () => {
       target: { value: 'Maria Lopez' },
     });
     fireEvent.click(screen.getByRole('button', { name: /emitir factura/i }));
+    expect(await screen.findByRole('dialog', { name: /confirmar factura/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /confirmar emision/i }));
 
     expect(await screen.findByRole('heading', { name: /registrar pago/i })).toBeInTheDocument();
     expect(screen.getByText(/abra caja antes de cobrar/i)).toBeInTheDocument();
@@ -930,8 +939,12 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /agregar codigo/i }));
     expect(await screen.findByText(/servicio agregado por codigo/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /emitir factura/i }));
+    expect(await screen.findByRole('dialog', { name: /confirmar factura/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /confirmar emision/i }));
     expect(await screen.findByRole('heading', { name: /registrar pago/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /cobrar/i }));
+    expect(await screen.findByRole('dialog', { name: /confirmar pago/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
     expect(await screen.findByRole('heading', { name: /preview termico/i })).toBeInTheDocument();
     expect(await screen.findByText(/hospital demo/i)).toBeInTheDocument();
@@ -1337,6 +1350,9 @@ describe('App', () => {
               'invoices.create',
               'invoices.view',
               'reports.view',
+              'reports.managerial.view',
+              'reports.export',
+              'reports.cash_session.view',
               'backups.view',
               'settings.fiscal.view',
             ],

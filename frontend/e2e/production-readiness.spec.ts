@@ -47,6 +47,9 @@ const adminUser = {
     'receipts.reprint',
     'receipts.reprint_any',
     'reports.view',
+    'reports.managerial.view',
+    'reports.cash_session.view',
+    'reports.export',
     'backups.view',
     'backups.create',
     'backups.download',
@@ -331,8 +334,10 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
   await expect(page.getByLabel(/resumen de factura/i).getByText('L. 25.00').first()).toBeVisible();
   await page.getByRole('button', { name: /emitir factura/i }).click();
+  await page.getByRole('button', { name: /confirmar emision/i }).click();
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
   await page.getByRole('button', { name: /cobrar/i }).click();
+  await page.getByRole('button', { name: /confirmar cobro/i }).click();
   await expect(page.getByRole('heading', { name: /preview termico/i })).toBeVisible();
   await expect(page.getByLabel(/ancho del recibo/i)).toHaveValue('80mm');
   await page.getByLabel(/ancho del recibo/i).selectOption('58mm');
@@ -344,6 +349,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
   await page.getByLabel(/receta de dialisis/i).check();
   await page.getByRole('button', { name: /emitir factura/i }).click();
+  await page.getByRole('button', { name: /confirmar emision/i }).click();
   await expect(page.getByText('Total L. 0.00')).toBeVisible();
 
   await page.getByRole('link', { name: /historial/i }).click();

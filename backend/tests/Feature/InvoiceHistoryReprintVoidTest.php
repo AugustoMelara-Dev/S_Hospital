@@ -70,6 +70,31 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         $this->assertFalse($ids->contains($otherTodayId));
     }
 
+    public function test_reports_view_does_not_grant_historical_invoice_access(): void
+    {
+        $this->seedBillingBase();
+        $user = User::factory()->create();
+        $user->givePermissionTo('invoices.view', 'invoices.create', 'reports.view');
+        $otherCashier = $this->cashier();
+        $oldId = $this->createInvoice($user, 'Own Old Patient', 'Glucosa');
+        $otherTodayId = $this->createInvoice($otherCashier, 'Other Today', 'Hemograma Completo');
+
+        Invoice::query()->whereKey($oldId)->update(['issued_at' => now()->subDay()]);
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/invoices?date_from='.now()->subDays(5)->toDateString().'&user_id='.$otherCashier->id)
+            ->assertOk()
+            ->assertJsonPath('meta.total', 0);
+
+        $ids = collect($response->json('data'))->pluck('id');
+        $this->assertFalse($ids->contains($oldId));
+        $this->assertFalse($ids->contains($otherTodayId));
+
+        $this->actingAs($user)
+            ->getJson("/api/invoices/{$otherTodayId}")
+            ->assertForbidden();
+    }
+
     public function test_supervisor_and_admin_can_view_historical_invoices(): void
     {
         $this->seedBillingBase();

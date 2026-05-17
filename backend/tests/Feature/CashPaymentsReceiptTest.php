@@ -117,6 +117,31 @@ class CashPaymentsReceiptTest extends TestCase
         ]);
     }
 
+    public function test_closing_cash_session_requires_note_when_difference_is_not_zero(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated();
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '520.00'])
+            ->assertJsonValidationErrors('notes');
+
+        $this->assertDatabaseHas('cash_register_sessions', [
+            'id' => $sessionId,
+            'status' => CashRegisterSession::STATUS_OPEN,
+        ]);
+    }
+
     public function test_transfer_card_and_other_payments_do_not_increase_expected_cash_amount(): void
     {
         $this->seedBillingBase();

@@ -118,7 +118,7 @@ class InvoiceController extends Controller
 
     private function authorizeInvoiceAccess(User $user, Invoice $invoice): void
     {
-        if ($this->invoiceAccess->canAccessAnyInvoice($user) || $user->can('reports.view')) {
+        if ($this->invoiceAccess->canAccessAnyInvoice($user)) {
             return;
         }
 
@@ -130,7 +130,6 @@ class InvoiceController extends Controller
 
     private function canAccessHistoricalInvoices(User $user): bool
     {
-        return $this->invoiceAccess->canAccessAnyInvoice($user)
-            || $user->can('reports.view');
+        return $this->invoiceAccess->canAccessAnyInvoice($user);
     }
 }

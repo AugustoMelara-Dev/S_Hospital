@@ -23,7 +23,7 @@ export function ReceiptPreview({ receipt, onWidthChange, onPrint }: ReceiptPrevi
     <section className="receipt-preview-panel" aria-labelledby="receipt-title">
       <div className="section-heading print-hidden">
         <div>
-          <p className="app-kicker">Recibo MVP</p>
+          <p className="app-kicker">Documento fiscal</p>
           <h2 id="receipt-title">Preview termico</h2>
         </div>
         <div className="receipt-actions">

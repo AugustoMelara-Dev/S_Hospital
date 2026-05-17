@@ -18,12 +18,20 @@ import {
 } from '../../lib/api';
 
 type ReportsViewProps = {
+  canExport: boolean;
+  canViewCashSessionReport: boolean;
+  canViewManagerial: boolean;
   onStatus: (message: string) => void;
 };
 
 const today = localDateString(new Date());
 
-export function ReportsView({ onStatus }: ReportsViewProps) {
+export function ReportsView({
+  canExport,
+  canViewCashSessionReport,
+  canViewManagerial,
+  onStatus,
+}: ReportsViewProps) {
   const [dailyDate, setDailyDate] = useState(today);
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
@@ -38,8 +46,10 @@ export function ReportsView({ onStatus }: ReportsViewProps) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    void loadDaily(dailyDate);
-  }, []);
+    if (canViewManagerial) {
+      void loadDaily(dailyDate);
+    }
+  }, [canViewManagerial]);
 
   async function loadDaily(date: string) {
     setLoading(true);
@@ -113,93 +123,101 @@ export function ReportsView({ onStatus }: ReportsViewProps) {
     <section id="reportes" className="reports-layout" aria-labelledby="reports-title">
       <div className="section-heading">
         <div>
-          <p className="app-kicker">Fase 7</p>
+          <p className="app-kicker">Gerencia hospitalaria</p>
           <h2 id="reports-title">Reportes</h2>
         </div>
         <span className="muted">{loading ? 'Consultando...' : 'Agregaciones del backend'}</span>
       </div>
 
-      <form className="report-filters" onSubmit={handleDailySubmit}>
-        <label>
-          Fecha diaria
-          <input type="date" value={dailyDate} onChange={(event) => setDailyDate(event.target.value)} />
-        </label>
-        <button type="submit">Ver diario</button>
-      </form>
+      {canViewManagerial ? (
+        <>
+          <form className="report-filters" onSubmit={handleDailySubmit}>
+            <label>
+              Fecha diaria
+              <input type="date" value={dailyDate} onChange={(event) => setDailyDate(event.target.value)} />
+            </label>
+            <button type="submit">Ver diario</button>
+          </form>
 
-      {daily ? (
-        <div className="report-card" aria-label="Resumen diario">
-          <h3>Reporte diario</h3>
-          <div className="metric-grid">
-            <Metric label="Total facturado" value={`L. ${daily.total_billed}`} />
-            <Metric label="Total cobrado" value={`L. ${daily.total_collected}`} />
-            <Metric label="Facturas" value={String(daily.invoice_count)} />
-            <Metric label="Pagos" value={String(daily.payment_count)} />
-          </div>
-          <MethodTable totals={daily.payments_by_method} />
-          <table className="compact-table">
-            <thead>
-              <tr>
-                <th>Estado</th>
-                <th>Cantidad</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(daily.invoices_by_status).map(([status, value]) => (
-                <tr key={status}>
-                  <td>{status}</td>
-                  <td>{value.count}</td>
-                  <td>L. {value.total}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+          {daily ? (
+            <div className="report-card" aria-label="Resumen diario">
+              <h3>Reporte diario</h3>
+              <div className="metric-grid">
+                <Metric label="Total facturado" value={`L. ${daily.total_billed}`} />
+                <Metric label="Total cobrado" value={`L. ${daily.total_collected}`} />
+                <Metric label="Facturas" value={String(daily.invoice_count)} />
+                <Metric label="Pagos" value={String(daily.payment_count)} />
+              </div>
+              <MethodTable totals={daily.payments_by_method} />
+              <table className="compact-table">
+                <thead>
+                  <tr>
+                    <th>Estado</th>
+                    <th>Cantidad</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(daily.invoices_by_status).map(([status, value]) => (
+                    <tr key={status}>
+                      <td>{status}</td>
+                      <td>{value.count}</td>
+                      <td>L. {value.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="notice">Sin datos diarios cargados.</p>
+          )}
+
+          <form className="report-filters range-filters" onSubmit={handleRangeSubmit}>
+            <label>
+              Desde
+              <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
+            </label>
+            <label>
+              Hasta
+              <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+            </label>
+            <label>
+              Caja
+              <input
+                type="number"
+                inputMode="numeric"
+                min="1"
+                value={cashSessionId}
+                onChange={(event) => setCashSessionId(event.target.value)}
+              />
+            </label>
+            <label>
+              Cajero
+              <input
+                type="number"
+                inputMode="numeric"
+                min="1"
+                value={userId}
+                onChange={(event) => setUserId(event.target.value)}
+              />
+            </label>
+            <button type="submit">Ver rango</button>
+            <p className="muted">Rango maximo permitido: 31 dias.</p>
+          </form>
+        </>
       ) : (
-        <p className="notice">Sin datos diarios cargados.</p>
+        <p className="notice">Este usuario solo tiene acceso a reportes de caja permitidos.</p>
       )}
-
-      <form className="report-filters range-filters" onSubmit={handleRangeSubmit}>
-        <label>
-          Desde
-          <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
-        </label>
-        <label>
-          Hasta
-          <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
-        </label>
-        <label>
-          Caja
-          <input
-            type="number"
-            inputMode="numeric"
-            min="1"
-            value={cashSessionId}
-            onChange={(event) => setCashSessionId(event.target.value)}
-          />
-        </label>
-        <label>
-          Cajero
-          <input
-            type="number"
-            inputMode="numeric"
-            min="1"
-            value={userId}
-            onChange={(event) => setUserId(event.target.value)}
-          />
-        </label>
-        <button type="submit">Ver rango</button>
-        <p className="muted">Rango maximo permitido: 31 dias.</p>
-      </form>
 
       {income ? (
         <div className="report-card" aria-label="Reporte por rango">
           <div className="report-card-heading">
             <h3>Ingresos por rango</h3>
-            <button type="button" className="secondary-button" onClick={() => exportReportsCsv(income, categories, serviceSales)}>
-              Exportar CSV
-            </button>
+            {canExport ? (
+              <button type="button" className="secondary-button" onClick={() => exportReportsCsv(income, categories, serviceSales)}>
+                Exportar CSV
+              </button>
+            ) : null}
           </div>
           <div className="metric-grid">
             <Metric label="Total cobrado" value={`L. ${income.total_collected}`} />
@@ -277,19 +295,21 @@ export function ReportsView({ onStatus }: ReportsViewProps) {
         </div>
       ) : null}
 
-      <form className="report-filters" onSubmit={handleCashReportSubmit}>
-        <label>
-          Numero de caja
-          <input
-            type="number"
-            inputMode="numeric"
-            min="1"
-            value={cashReportId}
-            onChange={(event) => setCashReportId(event.target.value)}
-          />
-        </label>
-        <button type="submit">Ver caja</button>
-      </form>
+      {canViewCashSessionReport ? (
+        <form className="report-filters" onSubmit={handleCashReportSubmit}>
+          <label>
+            Numero de caja
+            <input
+              type="number"
+              inputMode="numeric"
+              min="1"
+              value={cashReportId}
+              onChange={(event) => setCashReportId(event.target.value)}
+            />
+          </label>
+          <button type="submit">Ver caja</button>
+        </form>
+      ) : null}
 
       {cashSession ? (
         <div className="report-card" aria-label="Resumen de caja">

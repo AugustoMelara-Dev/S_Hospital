@@ -57,7 +57,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     <section id="backups" className="backups-layout" aria-labelledby="backups-title">
       <div className="section-heading">
         <div>
-          <p className="app-kicker">Fase 8</p>
+          <p className="app-kicker">Respaldo local</p>
           <h2 id="backups-title">Backups locales</h2>
         </div>
         {canCreate ? (

@@ -125,7 +125,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     <section id="historial" className="history-panel" aria-labelledby="invoice-history-title">
       <div className="section-heading">
         <div>
-          <p className="app-kicker">Fase 6</p>
+          <p className="app-kicker">Auditoria de facturas</p>
           <h2 id="invoice-history-title">Historial de facturas</h2>
         </div>
       </div>

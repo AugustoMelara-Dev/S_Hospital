@@ -240,7 +240,10 @@ class ReportsTest extends TestCase
         ]);
 
         $this->actingAs($cashier)
-            ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '518.00'])
+            ->postJson("/api/cash-sessions/{$sessionId}/close", [
+                'closing_amount' => '518.00',
+                'notes' => 'Diferencia validada para reporte',
+            ])
             ->assertOk();
 
         $cashier->givePermissionTo(Permission::findByName('reports.cash_session.view', 'web'));

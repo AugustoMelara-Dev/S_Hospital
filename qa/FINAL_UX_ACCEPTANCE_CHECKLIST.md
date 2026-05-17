@@ -6,9 +6,9 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 
 ## App shell
 - [x] Sidebar visible.
-- [ ] Topbar con usuario, caja, fecha/hora local y estado servidor/LAN visible.
+- [x] Topbar con usuario, caja, fecha/hora local y estado servidor/LAN visible.
 - [x] Rutas separadas.
-- [ ] Layout tablet/movil sin enterrar el contenido despues de una pantalla completa de navegacion.
+- [x] Layout tablet/movil sin enterrar el contenido despues de una pantalla completa de navegacion.
 - [ ] Errores operativos visibles inline o toast, no solo en footer/status.
 - [ ] App.tsx reducido a composicion de providers/router.
 
@@ -19,15 +19,15 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 - [x] Carrito visible.
 - [x] No lista interminable por defecto.
 - [x] Eritropoyetina clara.
-- [ ] Confirmacion antes de emitir.
-- [ ] Confirmacion antes de cobrar.
+- [x] Confirmacion antes de emitir.
+- [x] Confirmacion antes de cobrar.
 - [ ] Flujo principal claro: cobrar y emitir con caja abierta, o emitir pendiente como accion secundaria explicita.
-- [ ] CTA claro para abrir caja si no hay caja abierta.
+- [x] CTA claro para abrir caja si no hay caja abierta.
 
 ## Caja
-- [ ] Cierre de caja con esperado, contado, diferencia, pagos/movimientos y confirmacion.
-- [ ] Diferencia distinta de cero exige nota o confirmacion reforzada.
-- [ ] Pagos no pueden operar sobre facturas ajenas por ID.
+- [x] Cierre de caja con esperado, contado, diferencia, pagos/movimientos y confirmacion.
+- [x] Diferencia distinta de cero exige nota o confirmacion reforzada.
+- [x] Pagos no pueden operar sobre facturas ajenas por ID.
 
 ## Catalogo
 - [ ] Tabla profesional basada en componente compartido.
@@ -53,10 +53,10 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 - [ ] Responsive validado en navegador para desktop/tablet/mobile.
 
 ## QA
-- [ ] Unit/feature tests backend.
-- [ ] Frontend tests.
+- [x] Unit/feature tests backend.
+- [x] Frontend tests.
 - [ ] E2E mockeado de demo.
 - [ ] Smoke real contra Laravel/API separado del mock.
 - [ ] Browser smoke con cero `console.error`, `pageerror` y requests fallidas inesperadas.
-- [ ] Build.
+- [x] Build.
 - [ ] Demo script actualizado con evidencia honesta.

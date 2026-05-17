@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
+import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import { type CashSession, apiClient } from '../../lib/api';
 
 type CashBoxViewProps = {
@@ -10,6 +11,9 @@ export function CashBoxView({ onStatus, onSessionChange }: CashBoxViewProps) {
   const [session, setSession] = useState<CashSession | null>(null);
   const [openingAmount, setOpeningAmount] = useState('500.00');
   const [closingAmount, setClosingAmount] = useState('');
+  const [closingNotes, setClosingNotes] = useState('');
+  const [formAlert, setFormAlert] = useState<string | null>(null);
+  const [confirmingClose, setConfirmingClose] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,9 +26,12 @@ export function CashBoxView({ onStatus, onSessionChange }: CashBoxViewProps) {
     try {
       const current = await apiClient.getCurrentCashSession();
       setSession(current);
+      setFormAlert(null);
       onSessionChange?.(current);
     } catch (error) {
-      onStatus(error instanceof Error ? error.message : 'No se pudo leer la caja actual.');
+      const message = error instanceof Error ? error.message : 'No se pudo leer la caja actual.';
+      setFormAlert(message);
+      onStatus(message);
     } finally {
       setLoading(false);
     }
@@ -39,28 +46,48 @@ export function CashBoxView({ onStatus, onSessionChange }: CashBoxViewProps) {
       setSession(opened);
       onSessionChange?.(opened);
       setClosingAmount('');
+      setClosingNotes('');
+      setFormAlert(null);
       onStatus('Caja abierta.');
     } catch (error) {
-      onStatus(error instanceof Error ? error.message : 'No se pudo abrir caja.');
+      const message = error instanceof Error ? error.message : 'No se pudo abrir caja.';
+      setFormAlert(message);
+      onStatus(message);
     }
   }
 
-  async function closeSession(event: FormEvent<HTMLFormElement>) {
+  function requestCloseConfirmation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!session) {
       return;
     }
 
+    setConfirmingClose(true);
+  }
+
+  async function closeSession() {
+    if (!session) {
+      return;
+    }
+
     onStatus('Cerrando caja...');
+    setConfirmingClose(false);
 
     try {
-      const closed = await apiClient.closeCashSession(session.id, { closing_amount: closingAmount });
+      const closed = await apiClient.closeCashSession(session.id, {
+        closing_amount: closingAmount,
+        notes: closingNotes.trim() === '' ? null : closingNotes,
+      });
       setSession(closed);
       onSessionChange?.(null);
+      setClosingNotes('');
+      setFormAlert(null);
       onStatus('Caja cerrada.');
     } catch (error) {
-      onStatus(error instanceof Error ? error.message : 'No se pudo cerrar caja.');
+      const message = error instanceof Error ? error.message : 'No se pudo cerrar caja.';
+      setFormAlert(message);
+      onStatus(message);
     }
   }
 
@@ -69,13 +96,19 @@ export function CashBoxView({ onStatus, onSessionChange }: CashBoxViewProps) {
       <div className="cash-panel">
         <div className="section-heading">
           <div>
-            <p className="app-kicker">Fase 5</p>
+            <p className="app-kicker">Operacion de caja</p>
             <h2 id="cash-title">Caja</h2>
           </div>
           <button type="button" className="secondary-button compact-button" onClick={refreshCurrentSession}>
             Actualizar
           </button>
         </div>
+
+        {formAlert ? (
+          <div className="error-summary" role="alert" aria-live="assertive">
+            {formAlert}
+          </div>
+        ) : null}
 
         {loading ? (
           <p>Cargando estado de caja...</p>
@@ -94,7 +127,7 @@ export function CashBoxView({ onStatus, onSessionChange }: CashBoxViewProps) {
       </div>
 
       {session?.status === 'open' ? (
-        <form className="cash-panel" onSubmit={closeSession}>
+        <form className="cash-panel" onSubmit={requestCloseConfirmation}>
           <h2>Cerrar caja</h2>
           <label>
             Monto contado
@@ -102,6 +135,14 @@ export function CashBoxView({ onStatus, onSessionChange }: CashBoxViewProps) {
               value={closingAmount}
               onChange={(event) => setClosingAmount(event.target.value)}
               placeholder="517.25"
+            />
+          </label>
+          <label>
+            Nota de cierre
+            <textarea
+              value={closingNotes}
+              onChange={(event) => setClosingNotes(event.target.value)}
+              placeholder="Obligatoria si hay sobrante o faltante."
             />
           </label>
           <button type="submit">Cerrar caja</button>
@@ -130,6 +171,24 @@ export function CashBoxView({ onStatus, onSessionChange }: CashBoxViewProps) {
           <button type="submit">Abrir caja</button>
         </form>
       )}
+
+      <ConfirmDialog
+        confirmLabel="Confirmar cierre"
+        danger
+        onCancel={() => setConfirmingClose(false)}
+        onConfirm={() => void closeSession()}
+        open={confirmingClose}
+        title="Confirmar cierre de caja"
+      >
+        <div className="flex flex-col gap-2">
+          <p>Caja: <strong>{session ? `#${session.id}` : 'Sin caja'}</strong></p>
+          <p>Esperado: <strong>{session?.expected_amount ? `L. ${session.expected_amount}` : 'Se calcula al cierre'}</strong></p>
+          <p>Contado: <strong>L. {closingAmount || '0.00'}</strong></p>
+          <p>Diferencia: <strong>{session?.difference_amount ? `L. ${session.difference_amount}` : 'Se calculara al cerrar'}</strong></p>
+          <p>Nota: <strong>{closingNotes.trim() || 'Sin nota'}</strong></p>
+          <p>Revise el monto contado antes de confirmar. Esta accion queda auditada.</p>
+        </div>
+      </ConfirmDialog>
     </section>
   );
 }

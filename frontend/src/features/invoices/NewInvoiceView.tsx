@@ -1,4 +1,6 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import {
   type Category,
   type CashSession,
@@ -37,6 +39,8 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
   const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('80mm');
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [formAlert, setFormAlert] = useState<string | null>(null);
+  const [confirmingInvoice, setConfirmingInvoice] = useState(false);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [loadingServices, setLoadingServices] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [paying, setPaying] = useState(false);
@@ -174,7 +178,7 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
     setSelectedItems((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
 
-  async function submitInvoice(event: FormEvent<HTMLFormElement>) {
+  function requestInvoiceConfirmation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (patientName.trim() === '') {
@@ -194,9 +198,15 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
       return;
     }
 
+    setFormAlert(null);
+    setConfirmingInvoice(true);
+  }
+
+  async function submitInvoice() {
     setSubmitting(true);
     setIssuedInvoice(null);
     setFormAlert(null);
+    setConfirmingInvoice(false);
 
     try {
       const invoice = await apiClient.createInvoice({
@@ -222,7 +232,7 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
     }
   }
 
-  async function submitPayment(event: FormEvent<HTMLFormElement>) {
+  function requestPaymentConfirmation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!issuedInvoice || !cashSession) {
@@ -233,11 +243,25 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
       return;
     }
 
+    setFormAlert(null);
+    setConfirmingPayment(true);
+  }
+
+  async function submitPayment() {
+    if (!issuedInvoice || !cashSession) {
+      setConfirmingPayment(false);
+      return;
+    }
+
+    const invoiceToPay = issuedInvoice;
+    const sessionToUse = cashSession;
+
     setPaying(true);
+    setConfirmingPayment(false);
 
     try {
-      const result = await apiClient.registerPayment(issuedInvoice.id, {
-        cash_session_id: cashSession.id,
+      const result = await apiClient.registerPayment(invoiceToPay.id, {
+        cash_session_id: sessionToUse.id,
         method: paymentMethod,
         amount: paymentAmount,
       });
@@ -245,6 +269,7 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
       setPaymentAmount(result.invoice.balance_due);
       const nextReceipt = await apiClient.getReceipt(result.invoice.id, receiptWidth);
       setReceipt(nextReceipt);
+      setReceiptWidth(nextReceipt.width);
       setFormAlert(null);
       onStatus(`Pago registrado. Factura ${result.invoice.status}.`);
     } catch (error) {
@@ -272,7 +297,7 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
 
   return (
     <section id="nueva-factura" className="invoice-layout" aria-labelledby="invoice-title">
-      <form onSubmit={submitInvoice} className="invoice-panel pos-panel">
+      <form onSubmit={requestInvoiceConfirmation} className="invoice-panel pos-panel">
         <div className="section-heading">
           <div>
             <p className="app-kicker">POS hospitalario</p>
@@ -454,6 +479,16 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
           </div>
         </dl>
         <p className="muted">El backend recalcula y guarda los valores finales al emitir.</p>
+        {!cashSession ? (
+          <div className="error-summary" role="alert">
+            No hay caja abierta para cobrar. Puede emitir pendiente solo si el proceso lo permite, o abrir caja antes de cobrar.
+            <div className="mt-3">
+              <Link className="secondary-button inline-flex min-h-10 items-center rounded-md px-4 py-2 font-semibold" to="/cashbox">
+                Abrir caja
+              </Link>
+            </div>
+          </div>
+        ) : null}
 
         {issuedInvoice ? (
           <div className="issued-box" role="status">
@@ -466,11 +501,11 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
         ) : null}
 
         {issuedInvoice ? (
-          <form className="payment-form" onSubmit={submitPayment}>
+          <form className="payment-form" onSubmit={requestPaymentConfirmation}>
             <h2>Registrar pago</h2>
             {!cashSession ? (
               <p className="notice-inline" role="alert">
-                Abra caja antes de cobrar.
+                Abra caja antes de cobrar. <Link to="/cashbox">Ir a caja</Link>
               </p>
             ) : null}
             <label>
@@ -499,6 +534,37 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
           <ReceiptPreview receipt={receipt} onWidthChange={loadReceipt} />
         ) : null}
       </aside>
+
+      <ConfirmDialog
+        confirmLabel="Confirmar emision"
+        onCancel={() => setConfirmingInvoice(false)}
+        onConfirm={() => void submitInvoice()}
+        open={confirmingInvoice}
+        title="Confirmar factura"
+      >
+        <div className="flex flex-col gap-2">
+          <p>Paciente: <strong>{patientName || 'Sin paciente'}</strong></p>
+          <p>Servicios: <strong>{selectedItems.length}</strong></p>
+          <p>Total estimado: <strong>L. {preview.total}</strong></p>
+          <p>La factura se emitira con precios, impuestos y reglas recalculadas por el backend.</p>
+        </div>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        confirmLabel="Confirmar cobro"
+        onCancel={() => setConfirmingPayment(false)}
+        onConfirm={() => void submitPayment()}
+        open={confirmingPayment}
+        title="Confirmar pago"
+      >
+        <div className="flex flex-col gap-2">
+          <p>Factura: <strong>{issuedInvoice?.invoice_number}</strong></p>
+          <p>Paciente: <strong>{issuedInvoice?.patient_name}</strong></p>
+          <p>Metodo: <strong>{paymentMethod}</strong></p>
+          <p>Monto: <strong>L. {paymentAmount}</strong></p>
+          <p>Caja: <strong>{cashSession ? `#${cashSession.id}` : 'Sin caja abierta'}</strong></p>
+        </div>
+      </ConfirmDialog>
     </section>
   );
 }

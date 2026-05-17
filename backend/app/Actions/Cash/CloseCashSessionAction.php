@@ -47,6 +47,13 @@ class CloseCashSessionAction
             $expectedCents = $openingCents + $cashPaymentCents;
             $closingCents = Money::parseCents($payload['closing_amount'], 'closing_amount');
             $differenceCents = $closingCents - $expectedCents;
+            $notes = trim((string) ($payload['notes'] ?? ''));
+
+            if ($differenceCents !== 0 && $notes === '') {
+                throw ValidationException::withMessages([
+                    'notes' => 'Explique la diferencia de caja antes de cerrar.',
+                ]);
+            }
 
             $lockedSession->forceFill([
                 'closing_amount' => Money::formatCents($closingCents),
@@ -54,7 +61,7 @@ class CloseCashSessionAction
                 'difference_amount' => Money::formatCents($differenceCents),
                 'status' => CashRegisterSession::STATUS_CLOSED,
                 'open_user_id' => null,
-                'closing_notes' => $payload['notes'] ?? null,
+                'closing_notes' => $notes === '' ? null : $notes,
                 'closed_at' => now(),
             ])->save();
 
@@ -64,7 +71,7 @@ class CloseCashSessionAction
                 'type' => CashMovement::TYPE_CLOSING,
                 'method' => CashMovement::TYPE_CLOSING,
                 'amount' => Money::formatCents($closingCents),
-                'notes' => $payload['notes'] ?? null,
+                'notes' => $notes === '' ? null : $notes,
                 'occurred_at' => now(),
             ]);
 

@@ -20,6 +20,9 @@ type AppRoutesProps = {
   canViewFiscalSettings: boolean;
   canViewInvoices: boolean;
   canViewReports: boolean;
+  canViewManagerialReports: boolean;
+  canViewCashSessionReports: boolean;
+  canExportReports: boolean;
   cashSession: CashSession | null;
   defaultAuthenticatedRoute: string;
   onCashSessionChange: (session: CashSession | null) => void;
@@ -36,6 +39,9 @@ export function AppRoutes({
   canViewFiscalSettings,
   canViewInvoices,
   canViewReports,
+  canViewManagerialReports,
+  canViewCashSessionReports,
+  canExportReports,
   cashSession,
   defaultAuthenticatedRoute,
   onCashSessionChange,
@@ -96,7 +102,12 @@ export function AppRoutes({
         path="/reports"
         element={
           <PermissionGate allowed={canViewReports}>
-            <ReportsView onStatus={onStatus} />
+            <ReportsView
+              canExport={canExportReports}
+              canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}
+              canViewManagerial={canViewManagerialReports}
+              onStatus={onStatus}
+            />
           </PermissionGate>
         }
       />

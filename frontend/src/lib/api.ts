@@ -586,9 +586,10 @@ export const apiClient = {
     return response.data;
   },
 
-  async getReceipt(invoiceId: number, width: ReceiptData['width']): Promise<ReceiptData> {
+  async getReceipt(invoiceId: number, width?: ReceiptData['width']): Promise<ReceiptData> {
+    const query = width ? `?width=${width}` : '';
     const response = await this.request<{ data: ReceiptData }>(
-      `/api/invoices/${invoiceId}/receipt?width=${width}`,
+      `/api/invoices/${invoiceId}/receipt${query}`,
     );
 
     return response.data;

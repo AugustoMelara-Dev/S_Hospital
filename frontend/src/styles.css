@@ -136,7 +136,7 @@
   }
 
   button {
-    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-60;
+    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-60;
   }
 
   .secondary-button {
@@ -389,6 +389,10 @@
     padding: 0;
     border: 0;
     box-shadow: none;
+  }
+
+  .invoice-summary > :not(.receipt-preview-panel) {
+    display: none !important;
   }
 
   @page receipt-80 {

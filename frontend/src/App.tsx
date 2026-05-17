@@ -38,7 +38,13 @@ function HospitalApp() {
   const canCreateInvoices = permissions.has('invoices.create');
   const canViewInvoices = permissions.has('invoices.view');
   const canViewCash = permissions.has('cash.view');
-  const canViewReports = permissions.has('reports.view');
+  const canViewManagerialReports = permissions.has('reports.managerial.view');
+  const canViewCashSessionReports = permissions.has('reports.cash_session.view');
+  const canExportReports = permissions.has('reports.export');
+  const canViewReports =
+    permissions.has('reports.view') ||
+    canViewManagerialReports ||
+    canViewCashSessionReports;
   const canViewBackups = permissions.has('backups.view');
   const needsBillingCashBootstrap =
     Boolean(user) &&
@@ -196,6 +202,9 @@ function HospitalApp() {
           canViewFiscalSettings={canViewFiscalSettings}
           canViewInvoices={canViewInvoices}
           canViewReports={canViewReports}
+          canViewManagerialReports={canViewManagerialReports}
+          canViewCashSessionReports={canViewCashSessionReports}
+          canExportReports={canExportReports}
           cashSession={cashSession}
           defaultAuthenticatedRoute={defaultAuthenticatedRoute}
           onCashSessionChange={setCashSession}
