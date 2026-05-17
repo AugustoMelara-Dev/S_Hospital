@@ -763,17 +763,15 @@ describe('App', () => {
     expect(await screen.findByRole('button', { name: /eritropoyetina/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /eritropoyetina/i }));
     fireEvent.click(screen.getByRole('button', { name: /emitir factura/i }));
-    expect(await screen.findByText(/ingrese el nombre del paciente/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/abra caja antes de emitir y cobrar/i)).length).toBeGreaterThan(0);
     fireEvent.change(screen.getByLabelText(/nombre del paciente/i), {
       target: { value: 'Maria Lopez' },
     });
     fireEvent.click(screen.getByRole('button', { name: /emitir factura/i }));
-    expect(await screen.findByRole('dialog', { name: /confirmar factura/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /confirmar emision/i }));
-
-    expect(await screen.findByRole('heading', { name: /registrar pago/i })).toBeInTheDocument();
-    expect(screen.getByText(/abra caja antes de cobrar/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/metodo de pago/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/abra caja antes de emitir y cobrar/i)).length).toBeGreaterThan(0);
+    expect(screen.getByRole('link', { name: /abrir caja/i })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /confirmar factura/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /registrar pago/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /reportes/i })).not.toBeInTheDocument();
   });
 

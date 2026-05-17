@@ -58,6 +58,7 @@ Fecha: 2026-05-17
 - `reports.view` ya no concede acceso historico a facturas ajenas.
 - Exportacion CSV de reportes pasa por backend y exige `reports.export`.
 - Reportes incluyen auditoria operativa: anulaciones, reimpresiones, backups, cajeros con ingreso y filtros por caja/cajero/categoria/metodo/estado.
+- POS principal exige caja abierta antes de emitir para evitar ambiguedad entre factura pendiente y cobrada.
 
 ## Validacion posterior a revision de subagentes
 
@@ -77,4 +78,4 @@ Fecha: 2026-05-17
 ## Pendiente real
 
 - Ejecutar smoke real LAN con consola limpia requiere servidor Laravel/API levantado y `E2E_REAL_BASE_URL`, `E2E_REAL_LOGIN` y `E2E_REAL_PASSWORD`.
-- El flujo principal del POS todavia debe decidir formalmente si `Emitir pendiente` es permitido o si caja abierta es obligatoria antes de emitir.
+- Factura pendiente queda fuera del flujo principal; si se habilita luego debe ser accion secundaria con permiso y auditoria.

@@ -21,7 +21,7 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 - [x] Eritropoyetina clara.
 - [x] Confirmacion antes de emitir.
 - [x] Confirmacion antes de cobrar.
-- [ ] Flujo principal claro: cobrar y emitir con caja abierta, o emitir pendiente como accion secundaria explicita.
+- [x] Flujo principal claro: cobrar y emitir con caja abierta, o emitir pendiente como accion secundaria explicita.
 - [x] CTA claro para abrir caja si no hay caja abierta.
 
 ## Caja

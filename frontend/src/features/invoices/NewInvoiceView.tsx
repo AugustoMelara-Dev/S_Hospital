@@ -181,6 +181,14 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
   function requestInvoiceConfirmation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (!cashSession) {
+      const message = 'Abra caja antes de emitir y cobrar una factura.';
+      setFormAlert(message);
+      onStatus(message);
+
+      return;
+    }
+
     if (patientName.trim() === '') {
       const message = 'Falta el nombre del paciente.';
       setFormAlert(message);
@@ -481,7 +489,7 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
         <p className="muted">El backend recalcula y guarda los valores finales al emitir.</p>
         {!cashSession ? (
           <div className="error-summary" role="alert">
-            No hay caja abierta para cobrar. Puede emitir pendiente solo si el proceso lo permite, o abrir caja antes de cobrar.
+            No hay caja abierta. Abra caja antes de emitir y cobrar; las facturas pendientes no son parte del flujo principal.
             <div className="mt-3">
               <Link className="secondary-button inline-flex min-h-10 items-center rounded-md px-4 py-2 font-semibold" to="/cashbox">
                 Abrir caja
@@ -546,6 +554,7 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
           <p>Paciente: <strong>{patientName || 'Sin paciente'}</strong></p>
           <p>Servicios: <strong>{selectedItems.length}</strong></p>
           <p>Total estimado: <strong>L. {preview.total}</strong></p>
+          <p>Caja: <strong>#{cashSession?.id}</strong></p>
           <p>La factura se emitira con precios, impuestos y reglas recalculadas por el backend.</p>
         </div>
       </ConfirmDialog>

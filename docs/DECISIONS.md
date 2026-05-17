@@ -379,3 +379,21 @@ Consecuencia:
 
 - `npm.cmd run e2e` conserva el flujo automatizado vendible y no bloquea por hardware/red real ausente.
 - `npm.cmd run smoke:real` queda para validar consola limpia y navegacion contra una instalacion real en LAN.
+
+### 2026-05-17 - POS principal exige caja abierta
+
+Decision:
+
+- La pantalla de nueva factura bloquea la emision si no hay caja abierta.
+- El camino principal es abrir caja, emitir factura, registrar pago e imprimir recibo.
+- Facturas pendientes quedan fuera del flujo principal y requeririan una accion secundaria con permiso y auditoria si el hospital las solicita.
+
+Motivo:
+
+- Para entrenar una cajera y vender el sistema hoy, el flujo no puede confundir factura pendiente con factura cobrada.
+- Caja, pago, recibo y auditoria deben quedar conectados desde el inicio de la operacion.
+
+Consecuencia:
+
+- El CTA visible desde POS lleva a Caja cuando falta sesion abierta.
+- El backend mantiene sus permisos y reglas; la UI evita el camino operativo ambiguo.
