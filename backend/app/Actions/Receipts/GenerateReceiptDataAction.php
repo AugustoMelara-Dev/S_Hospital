@@ -13,6 +13,9 @@ class GenerateReceiptDataAction
             'payments.user:id,name,username',
             'issuer:id,name,username',
         ]);
+        $cashierName = $invoice->payments
+            ->sortByDesc(fn ($payment): int => $payment->paid_at?->getTimestamp() ?? 0)
+            ->first()?->user?->name ?? $invoice->issuer?->name;
 
         return [
             'width' => $width,
@@ -31,7 +34,7 @@ class GenerateReceiptDataAction
                 'id' => $invoice->id,
                 'invoice_number' => $invoice->invoice_number,
                 'issued_at' => $invoice->issued_at?->toISOString(),
-                'cashier' => $invoice->issuer?->name,
+                'cashier' => $cashierName,
                 'patient_name' => $invoice->patient_name,
                 'subtotal' => $invoice->subtotal,
                 'tax_amount' => $invoice->tax_amount,

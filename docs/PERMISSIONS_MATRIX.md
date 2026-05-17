@@ -30,7 +30,9 @@ El backend debe validar todos los permisos con Policies/Gates o middleware equiv
 | Ver recibos | `receipts.view` | Si | Si | Si |
 | Reimprimir recibos | `receipts.reprint` | Si | Si | Si, propias/dia por defecto |
 | Reimprimir facturas antiguas/de otros | `receipts.reprint_any` | Si | Si | No |
-| Ver reportes | `reports.view` | Si | Si | No |
+| Ver navegacion de reportes | `reports.view` | Si | Si | No |
+| Ver reportes gerenciales | `reports.managerial.view` | Si | Si | No |
+| Ver reporte de caja propia | `reports.cash_session.view` | Si | Si | Configurable |
 | Exportar reportes | `reports.export` | Si | Si | No |
 | Ver usuarios/roles | `users.view` | Si | No | No |
 | Crear usuarios | `users.create` | Si | No | No |

@@ -243,7 +243,11 @@ class ReportsTest extends TestCase
             ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '518.00'])
             ->assertOk();
 
-        $cashier->givePermissionTo(Permission::findByName('reports.view', 'web'));
+        $cashier->givePermissionTo(Permission::findByName('reports.cash_session.view', 'web'));
+
+        $this->actingAs($cashier)
+            ->getJson('/api/reports/daily?date='.now()->toDateString())
+            ->assertForbidden();
 
         $this->actingAs($cashier)
             ->getJson("/api/reports/cash-sessions/{$otherSessionId}")

@@ -28,6 +28,8 @@ class RolesAndPermissionsSeeder extends Seeder
         'receipts.reprint',
         'receipts.reprint_any',
         'reports.view',
+        'reports.managerial.view',
+        'reports.cash_session.view',
         'reports.export',
         'users.view',
         'users.create',
@@ -71,6 +73,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'receipts.reprint',
             'receipts.reprint_any',
             'reports.view',
+            'reports.managerial.view',
+            'reports.cash_session.view',
             'reports.export',
             'audit.view',
         ]));

@@ -339,3 +339,23 @@ Consecuencia:
 
 - `Recharts` queda como dependencia de produccion para reportes.
 - TanStack Query/Table y React Hook Form/Zod quedan documentados como adopcion gradual, no como instalacion decorativa sin uso.
+
+### 2026-05-17 - Fase 12A0 alcance operativo de factura y reportes
+
+Decision:
+
+- Los pagos y el listado de pagos usan un guard central de acceso operativo a factura.
+- Cajero solo puede operar facturas propias emitidas hoy.
+- Supervisor/admin pueden operar facturas historicas o de otros solo por permisos elevados como `invoices.void` o `receipts.reprint_any`.
+- `reports.view` queda como permiso de navegacion/compatibilidad, pero los endpoints gerenciales requieren `reports.managerial.view`.
+- El reporte de una caja especifica permite `reports.cash_session.view` para caja propia o `reports.managerial.view` para perfiles superiores.
+
+Motivo:
+
+- Un cajero con `payments.create` no debe poder pagar facturas ajenas por ID aunque tenga una caja propia abierta.
+- Los reportes gerenciales exponen informacion agregada de negocio y no deben depender de un permiso amplio que tambien podria usarse para caja propia.
+
+Consecuencia:
+
+- Los flujos de pago quedan alineados con historial/reimpresion: cajero limitado a su operacion diaria, perfiles superiores por permiso explicito.
+- Si el hospital quiere que un cajero consulte su caja en reportes, debe recibir `reports.cash_session.view`, no `reports.managerial.view`.

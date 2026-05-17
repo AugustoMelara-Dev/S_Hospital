@@ -8,6 +8,7 @@ use App\Models\CashRegisterSession;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\InvoiceAccess;
 use App\Support\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -20,13 +21,16 @@ class RegisterPaymentAction
      *
      * @throws AuthorizationException
      */
-    public function execute(Invoice $invoice, array $payload, User $user): Payment
+    public function execute(Invoice $invoice, array $payload, User $user, InvoiceAccess $invoiceAccess): Payment
     {
-        return DB::transaction(function () use ($invoice, $payload, $user): Payment {
+        return DB::transaction(function () use ($invoice, $payload, $user, $invoiceAccess): Payment {
             $lockedInvoice = Invoice::query()
                 ->whereKey($invoice->id)
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            $invoiceAccess->authorizeOperationalAccess($user, $lockedInvoice);
+
             $cashSession = CashRegisterSession::query()
                 ->whereKey($payload['cash_session_id'])
                 ->lockForUpdate()

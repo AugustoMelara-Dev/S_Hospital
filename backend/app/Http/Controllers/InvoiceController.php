@@ -9,12 +9,15 @@ use App\Http\Requests\Billing\StoreInvoiceRequest;
 use App\Http\Requests\Billing\VoidInvoiceRequest;
 use App\Models\Invoice;
 use App\Models\User;
+use App\Support\InvoiceAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class InvoiceController extends Controller
 {
+    public function __construct(private readonly InvoiceAccess $invoiceAccess) {}
+
     public function index(IndexInvoiceRequest $request): JsonResponse
     {
         $user = $request->user();
@@ -115,7 +118,7 @@ class InvoiceController extends Controller
 
     private function authorizeInvoiceAccess(User $user, Invoice $invoice): void
     {
-        if ($this->canAccessHistoricalInvoices($user)) {
+        if ($this->invoiceAccess->canAccessAnyInvoice($user) || $user->can('reports.view')) {
             return;
         }
 
@@ -127,8 +130,7 @@ class InvoiceController extends Controller
 
     private function canAccessHistoricalInvoices(User $user): bool
     {
-        return $user->can('receipts.reprint_any')
-            || $user->can('invoices.void')
+        return $this->invoiceAccess->canAccessAnyInvoice($user)
             || $user->can('reports.view');
     }
 }

@@ -12,7 +12,7 @@ class DateRangeReportRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()?->can('reports.view') === true;
+        return $this->user()?->can('reports.managerial.view') === true;
     }
 
     public function rules(): array

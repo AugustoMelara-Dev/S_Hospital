@@ -64,7 +64,8 @@ class ReportController extends Controller
         CashRegisterSession $cashSession,
         CashSessionReportService $reports,
     ): JsonResponse {
-        $request->user()->can('reports.view') || abort(403);
+        ($request->user()->can('reports.cash_session.view')
+            || $request->user()->can('reports.managerial.view')) || abort(403);
 
         abort_unless(
             $request->user()->can('cash.close_any') || $cashSession->user_id === $request->user()->id,

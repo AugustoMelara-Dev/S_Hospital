@@ -186,6 +186,59 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonValidationErrors('cash_session_id');
     }
 
+    public function test_cashier_cannot_list_or_pay_other_cashier_invoice_by_id(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $otherCashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+        $otherInvoiceId = $this->createInvoice($otherCashier, 'Glucosa');
+
+        $this->actingAs($cashier)
+            ->getJson("/api/invoices/{$otherInvoiceId}/payments")
+            ->assertForbidden();
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$otherInvoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('payments', [
+            'invoice_id' => $otherInvoiceId,
+            'cash_session_id' => $sessionId,
+            'user_id' => $cashier->id,
+        ]);
+    }
+
+    public function test_cashier_cannot_pay_own_old_invoice_without_elevated_invoice_access(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        Invoice::query()
+            ->whereKey($invoiceId)
+            ->update(['issued_at' => now()->subDay()]);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('payments', [
+            'invoice_id' => $invoiceId,
+            'cash_session_id' => $sessionId,
+            'user_id' => $cashier->id,
+        ]);
+    }
+
     public function test_register_payment_creates_cash_movement_and_updates_partial_then_paid_invoice(): void
     {
         $this->seedBillingBase();
@@ -351,6 +404,32 @@ class CashPaymentsReceiptTest extends TestCase
             ->getJson("/api/invoices/{$invoiceId}/receipt?width=58mm")
             ->assertOk()
             ->assertJsonPath('data.width', '58mm');
+    }
+
+    public function test_receipt_defaults_to_configured_width_and_uses_payment_cashier(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['receipt_width' => '58mm']);
+        $issuer = $this->cashier();
+        $collector = User::factory()->create(['name' => 'Supervisor Caja']);
+        $collector->assignRole('supervisor');
+        $sessionId = $this->openSession($collector, '500.00');
+        $invoiceId = $this->createInvoice($issuer, 'Glucosa');
+
+        $this->actingAs($collector)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated();
+
+        $this->actingAs($collector)
+            ->getJson("/api/invoices/{$invoiceId}/receipt")
+            ->assertOk()
+            ->assertJsonPath('data.width', '58mm')
+            ->assertJsonPath('data.invoice.cashier', 'Supervisor Caja')
+            ->assertJsonPath('data.payments.0.cashier', 'Supervisor Caja');
     }
 
     private function seedBillingBase(): void
