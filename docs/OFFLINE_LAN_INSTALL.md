@@ -56,6 +56,8 @@ Antes de instalar en el hospital:
 12. Levantar worker local de backups con `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
 13. Validar `/up`, `/login` y `/verify-email`.
 
+En publicacion same-origin con Laravel, `/`, `/login` y `/verify-email` sirven el build React desde `frontend/dist/index.html`, y `/assets/*` sirve los assets compilados. Si `frontend/dist` no existe, el servidor responde error operativo y no debe entregarse como listo.
+
 No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`, `supervisor.demo` y `cajero.demo` pertenecen solo a desarrollo/testing.
 
 ## Red local
@@ -81,6 +83,8 @@ No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`,
 - Validar una impresion de prueba desde el navegador usado en caja.
 - Configurar el tamano de papel del driver para evitar salida tipo carta.
 - Si la impresora se comparte en red, probar desde cada cliente autorizado antes de operar.
+- Marcar escala 100%, margenes minimos o ninguno, encabezados/pies del navegador desactivados si el navegador lo permite.
+- Ejecutar una prueba 80mm y una prueba 58mm con una factura pagada y una reimpresion desde historial.
 
 ## Backups
 
@@ -115,11 +119,26 @@ No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`,
 
 - Desde servidor: `/up` responde OK.
 - Desde cliente LAN: `/login` carga usando IP fija del servidor.
+- Desde cliente LAN: `/verify-email` responde con la SPA o la ruta esperada documentada.
 - Admin inicia sesion y ve configuracion/backups.
 - Cajero inicia sesion, abre caja, crea factura de prueba y puede imprimir recibo.
 - Supervisor/admin ve reporte diario.
 - Backup manual queda `pending` y luego `success` cuando el worker corre; si falta herramienta de dump en servidor, queda `failed` con causa operativa sin credenciales.
 - Restore de prueba documentado antes de operar datos reales.
+
+## Scripts de validacion real
+
+Restore:
+
+```bash
+HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_test bash scripts/validate_restore_mysql.sh
+```
+
+Concurrencia:
+
+```bash
+HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONCURRENCY_BASE_URL=http://IP_DEL_SERVIDOR bash scripts/validate_mysql_concurrency.sh
+```
 
 No ejecutar `php artisan migrate:fresh --seed` en el servidor real. Ese comando borra la base activa y solo pertenece a entornos descartables de desarrollo/testing.
 

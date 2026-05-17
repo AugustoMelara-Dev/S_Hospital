@@ -474,6 +474,40 @@ Commit sugerido:
 
 - `test(e2e): cover vendible billing demo flow`
 
+### Fase 10 - Production readiness y validaciones reales
+
+Alcance:
+
+- Gate E2E Playwright separado.
+- Rutas LAN finales para `/login`, `/verify-email`, `/up` y assets del frontend compilado.
+- Script verificable de restore real MySQL/MariaDB.
+- Script verificable de concurrencia real MySQL/MariaDB.
+- Checklist fisico de impresora termica 80mm/58mm.
+- Documentacion de estados `DEMO_READY`, `PRODUCTION_CANDIDATE` y `PRODUCTION_READY`.
+
+Archivos probables:
+
+- `frontend/playwright.config.ts`
+- `frontend/e2e/production-readiness.spec.ts`
+- `scripts/e2e_gate.sh`
+- `scripts/e2e_gate.ps1`
+- `scripts/validate_restore_mysql.sh`
+- `scripts/validate_mysql_concurrency.sh`
+- `scripts/validate_mysql_concurrency.mjs`
+- `docs/THERMAL_PRINTER_VALIDATION.md`
+- `qa/RELEASE_READINESS.md`
+
+Quality gate:
+
+- Backend tests y Pint.
+- Frontend typecheck/lint/test/build.
+- Playwright E2E local.
+- Scripts de restore/concurrencia ejecutados solo en entorno MySQL/MariaDB correcto.
+
+Commit sugerido:
+
+- `test(release): add production readiness validation gates`
+
 ## 7. Orden de commits
 
 1. `docs(plan): define phase zero implementation contracts`

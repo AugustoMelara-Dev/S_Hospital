@@ -14,6 +14,23 @@
 
 El quality gate normal es no destructivo. No ejecuta `php artisan migrate:fresh --seed` contra el `.env` activo.
 
+## Gate E2E Fase 10
+
+Playwright queda separado del gate seguro para que los fallos de navegador no se oculten dentro del build normal:
+
+```bash
+bash scripts/e2e_gate.sh
+```
+
+Equivalente Windows:
+
+```powershell
+cd C:\Projects\S_Hospital
+& "C:\Program Files\Git\usr\bin\bash.exe" scripts/e2e_gate.sh
+```
+
+El E2E local usa ambiente seguro y API mockeada para cubrir login, caja, factura, eritropoyetina normal/gratis, pago, recibo 80mm/58mm, historial, reimpresion, reportes y backup pending. No valida MySQL/MariaDB real ni hardware.
+
 ## Reset dev/testing con base descartable
 
 `php artisan migrate:fresh --seed` solo puede usarse para validar migraciones y seeders en una base descartable de desarrollo, testing o demo. No ejecutar `migrate:fresh` en el servidor real del hospital.
@@ -42,6 +59,27 @@ En produccion offline LAN no se borra la base. La validacion segura usa:
 - Validaciones manuales de `/up`, `/login`, `/verify-email`, caja, factura, cobro, impresion y backup sin ejecutar reset.
 
 No ejecutar `php artisan migrate:fresh --seed` en el servidor real del hospital.
+
+## Validaciones reales antes de PRODUCTION_READY
+
+Restore MySQL/MariaDB:
+
+```bash
+HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_test bash scripts/validate_restore_mysql.sh
+```
+
+Concurrencia MySQL/MariaDB por HTTP contra servidor de validacion:
+
+```bash
+HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:8000 bash scripts/validate_mysql_concurrency.sh
+```
+
+LAN fisica:
+
+- Desde otra computadora cliente, abrir `http://IP_DEL_SERVIDOR/login`.
+- Validar `/up`, `/login` y `/verify-email`.
+- Confirmar que los clientes no usan `localhost`.
+- Crear factura, cobrar, ver recibo y reporte desde navegador cliente.
 
 ## Analisis estatico opcional
 

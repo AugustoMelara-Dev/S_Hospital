@@ -21,6 +21,8 @@ No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`,
 - No usar `localhost` desde clientes.
 - No requerir internet para login, facturacion, caja, reportes, impresion o backups.
 - Produccion debe correr con `APP_ENV=production` y `APP_DEBUG=false`.
+- Si se publica same-origin desde Laravel, las rutas `/`, `/login` y `/verify-email` deben servir el build React generado en `frontend/dist`.
+- La ruta `/assets/*` debe servir los assets del build React; ejecutar `npm.cmd run build` antes de copiar artefactos.
 
 ## Worker de backups
 
@@ -47,3 +49,10 @@ php artisan queue:work --queue=backups --tries=1 --timeout=600
 - Cajero puede abrir caja, facturar, cobrar e imprimir.
 - Supervisor/admin puede ver reportes.
 - Admin puede crear backup local.
+
+## Validacion Fase 10 antes de produccion
+
+- Ejecutar `scripts/e2e_gate.sh` en la maquina de build.
+- Ejecutar `scripts/validate_restore_mysql.sh` en entorno MySQL/MariaDB con herramienta dump.
+- Ejecutar `scripts/validate_mysql_concurrency.sh` contra servidor Laravel conectado a MySQL/MariaDB.
+- Completar checklist de impresora termica 80mm/58mm en la PC de caja.

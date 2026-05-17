@@ -8,6 +8,10 @@ Base configurada: MySQL/MariaDB local `hospital_billing`
 
 Estado de cierre restore: PENDING_ENVIRONMENT_VALIDATION para restore real MySQL/MariaDB.
 
+Fase 10 agrego `scripts/validate_restore_mysql.sh` para ejecutar la validacion real cuando el servidor tenga MySQL/MariaDB, cliente `mysql` y `mariadb-dump` o `mysqldump`. Este script crea un backup con `php artisan hospital:backup --type=manual`, restaura en una base descartable `RESTORE_TEST_DATABASE` y deja pasos exactos para validar `/up`, `/login`, `/verify-email`, `migrate:status` y conteos minimos.
+
+Ejecucion Fase 10 en esta maquina con `HOSPITAL_VALIDATE_RESTORE_MYSQL=1`: aborta con `mysql client is required for restore validation`, por lo que no se marca como validado.
+
 El flujo de backup registra `failed` de forma controlada porque este entorno no tiene disponible `mariadb-dump` ni `mysqldump`.
 
 Comando ejecutado:
@@ -65,3 +69,17 @@ Después de instalarla:
 6. Validar `/up`, `/login` y `/verify-email`.
 
 No ejecutar restore en producción hasta completar este restore de prueba.
+
+## Comando Fase 10
+
+```bash
+HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_test bash scripts/validate_restore_mysql.sh
+```
+
+Guardas del script:
+
+- Requiere `DB_CONNECTION=mysql` o `mariadb`.
+- Requiere cliente `mysql`.
+- Requiere `mariadb-dump` o `mysqldump`.
+- Rechaza `APP_ENV=production` salvo `HOSPITAL_ALLOW_PRODUCTION_VALIDATION=1`.
+- Restaura en `RESTORE_TEST_DATABASE`, no en la base activa.

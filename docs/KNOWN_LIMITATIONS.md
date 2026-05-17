@@ -3,8 +3,16 @@
 ## Pendientes de entorno
 
 - Restore real queda `PENDING_ENVIRONMENT_VALIDATION` hasta probar con MySQL/MariaDB real o Docker. No se afirma que restore fue validado en esta maquina.
-- La prueba fisica de impresora termica 80mm/58mm queda pendiente hasta tener impresora real o impresora compartida del hospital.
-- La concurrencia real MySQL/MariaDB debe validarse antes de produccion final, aunque los tests cubren reglas principales y restricciones esperadas.
+- Restore real cuenta con script Fase 10: `scripts/validate_restore_mysql.sh`.
+- La prueba fisica de impresora termica 80mm/58mm queda `PENDING_HARDWARE_VALIDATION` hasta tener impresora real o impresora compartida del hospital.
+- La concurrencia real MySQL/MariaDB queda `PENDING_ENVIRONMENT_VALIDATION` hasta ejecutar `scripts/validate_mysql_concurrency.sh` contra servidor Laravel con MySQL/MariaDB.
+- La validacion LAN desde computadora cliente queda pendiente hasta probar por IP fija/nombre local del servidor.
+
+## Estado Fase 10
+
+- DEMO_READY: si.
+- PRODUCTION_CANDIDATE: si, con E2E local, rutas LAN y scripts de validacion real agregados.
+- PRODUCTION_READY: no, hasta cerrar restore real, concurrencia real, LAN fisica e impresora fisica.
 
 ## Alcance de producto
 

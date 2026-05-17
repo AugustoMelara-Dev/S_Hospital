@@ -262,3 +262,22 @@ Consecuencia:
 - Produccion debe instalar `mariadb-dump` o `mysqldump` local para dumps reales de MySQL/MariaDB.
 - Produccion debe mantener un worker local de cola `backups`.
 - Si falta la herramienta de dump, el backup queda registrado como `failed` sin exponer credenciales en logs.
+
+### 2026-05-17 - Production candidate con validaciones reales separadas
+
+Decision:
+
+- Fase 10 separa el estado `DEMO_READY`, `PRODUCTION_CANDIDATE` y `PRODUCTION_READY`.
+- Playwright E2E queda como gate separado en `scripts/e2e_gate.sh`, no mezclado dentro del quality gate seguro.
+- Restore MySQL/MariaDB real y concurrencia MySQL/MariaDB real quedan como scripts verificables (`scripts/validate_restore_mysql.sh` y `scripts/validate_mysql_concurrency.sh`) que requieren banderas explicitas antes de tocar entornos reales.
+- Produccion same-origin desde Laravel sirve `/`, `/login`, `/verify-email` y `/assets/*` desde `frontend/dist` para que los clientes LAN puedan entrar por IP o nombre del servidor.
+- Impresora termica fisica no se marca validada sin hardware; queda checklist operativo en `docs/THERMAL_PRINTER_VALIDATION.md`.
+
+Motivo:
+
+- Production-ready requiere evidencia de entorno real, no solo tests locales.
+- Los gates destructivos, de navegador, de restore y de concurrencia tienen riesgos distintos y deben poder ejecutarse de forma independiente.
+
+Consecuencia:
+
+- El estado actual puede ser `PRODUCTION_CANDIDATE`, pero no `PRODUCTION_READY` hasta ejecutar y documentar restore real, concurrencia real, LAN desde cliente fisico e impresion fisica.

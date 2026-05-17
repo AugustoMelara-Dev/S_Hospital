@@ -121,3 +121,5 @@ Configuracion demo:
 - Restore real: `PENDING_ENVIRONMENT_VALIDATION` hasta probar con MySQL/MariaDB real o Docker.
 - Impresion fisica termica: pendiente hasta tener impresora 80mm/58mm.
 - Concurrencia real MySQL/MariaDB: validar antes de produccion final.
+- LAN fisica desde cliente: validar por IP fija/nombre servidor antes de produccion final.
+- E2E Playwright local de Fase 10: disponible con `npm.cmd run e2e`; no reemplaza restore/concurrencia/hardware real.

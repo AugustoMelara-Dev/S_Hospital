@@ -117,3 +117,13 @@ Restore en producción requiere:
 - Resultado de `/up`, `/login`, `/verify-email`.
 - Conteos mínimos revisados: users, roles, permissions, services, invoices, payments, cash_register_sessions, backup_logs.
 - Firma o nombre del responsable local.
+
+## Script Fase 10
+
+Para validar restore real en una base descartable MySQL/MariaDB:
+
+```bash
+HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_test bash scripts/validate_restore_mysql.sh
+```
+
+El script no restaura sobre la base activa. Requiere cliente `mysql` y una herramienta de dump local (`mariadb-dump` o `mysqldump`). Si falta cualquiera de esas herramientas, el estado sigue `PENDING_ENVIRONMENT_VALIDATION`.

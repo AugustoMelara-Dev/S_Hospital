@@ -34,3 +34,11 @@
 - Recibo 80mm por defecto.
 - Opción 58mm.
 - PDF/impresión no sale como hoja carta principal.
+
+## Production readiness
+- `/up`, `/login` y `/verify-email` responden desde servidor LAN.
+- Playwright E2E local pasa con `npm.cmd run e2e`.
+- Restore real MySQL/MariaDB validado en base descartable antes de `PRODUCTION_READY`.
+- Concurrencia real MySQL/MariaDB validada contra servidor de prueba antes de `PRODUCTION_READY`.
+- Validacion fisica 80mm/58mm documentada en `docs/THERMAL_PRINTER_VALIDATION.md`.
+- Ninguna validacion pendiente se marca como completada sin evidencia.
