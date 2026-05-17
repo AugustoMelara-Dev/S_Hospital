@@ -104,8 +104,8 @@ class ServiceCatalogTest extends TestCase
 
         Service::query()->create([
             'category_id' => $category->id,
-            'name' => 'Ácido úrico',
-            'slug' => 'acido-urico',
+            'name' => 'Ácido úrico especial',
+            'slug' => 'acido-urico-especial',
             'price' => '80.00',
             'taxable' => true,
             'active' => true,
@@ -119,7 +119,7 @@ class ServiceCatalogTest extends TestCase
         $this->actingAs($cashier)
             ->getJson('/api/services?search=acido urico')
             ->assertOk()
-            ->assertJsonFragment(['name' => 'Ácido úrico']);
+            ->assertJsonFragment(['name' => 'Ácido úrico especial']);
     }
 
     public function test_services_can_be_requested_with_capped_per_page_to_return_full_initial_catalog(): void

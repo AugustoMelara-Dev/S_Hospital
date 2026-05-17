@@ -61,11 +61,19 @@ class ServiceSearch
     private static function tokenMatches(string $needleToken, array $haystackTokens): bool
     {
         foreach ($haystackTokens as $token) {
-            if (str_contains($token, $needleToken) || str_contains($needleToken, $token)) {
+            if (str_contains($token, $needleToken)) {
                 return true;
             }
 
-            $maxDistance = strlen($needleToken) <= 5 ? 1 : 2;
+            if (strlen($needleToken) < 4 || strlen($token) < 4) {
+                continue;
+            }
+
+            if (str_contains($needleToken, $token)) {
+                return true;
+            }
+
+            $maxDistance = strlen($needleToken) <= 7 ? 1 : 2;
 
             if (levenshtein($needleToken, $token) <= $maxDistance) {
                 return true;

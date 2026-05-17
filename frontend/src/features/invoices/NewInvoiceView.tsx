@@ -582,12 +582,16 @@ function fuzzyMatches(values: string[], normalizedNeedle: string): boolean {
 
   return needleTokens.every((needle) =>
     haystackTokens.some((token) => {
-      if (token.includes(needle) || needle.includes(token)) {
+      if (token.includes(needle)) {
         return true;
       }
 
       if (needle.length < 4 || token.length < 4) {
         return false;
+      }
+
+      if (needle.includes(token)) {
+        return true;
       }
 
       const maxDistance = needle.length > 7 ? 2 : 1;
