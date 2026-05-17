@@ -6,7 +6,7 @@ Base configurada: MySQL/MariaDB local `hospital_billing`
 
 ## Resultado actual
 
-Estado de cierre restore: NO CERRADO para restore real MySQL/MariaDB.
+Estado de cierre restore: PENDING_ENVIRONMENT_VALIDATION para restore real MySQL/MariaDB.
 
 El flujo de backup registra `failed` de forma controlada porque este entorno no tiene disponible `mariadb-dump` ni `mysqldump`.
 
