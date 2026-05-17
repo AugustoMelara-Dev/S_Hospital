@@ -262,7 +262,7 @@ async function installApiMocks(page: Page) {
       categories: [{ category: 'Medicamentos', item_count: 1, quantity: '1.00', subtotal: '25.00', tax_amount: '3.75', total: '28.75' }],
     },
   }));
-  await page.route('**/api/backups', async (route) => {
+  await page.route('**/api/backups**', async (route) => {
     if (route.request().method() === 'POST') {
       return json(route, {
         data: {
@@ -321,6 +321,25 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
 }
 
 test('production readiness cashier and admin workflow', async ({ page }) => {
+  const consoleIssues: string[] = [];
+
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleIssues.push(`console.error: ${message.text()}`);
+    }
+  });
+  page.on('pageerror', (error) => {
+    consoleIssues.push(`pageerror: ${error.message}`);
+  });
+  page.on('requestfailed', (request) => {
+    const failure = request.failure();
+    if (request.url().includes('/sanctum/csrf-cookie') && failure?.errorText === 'net::ERR_ABORTED') {
+      return;
+    }
+
+    consoleIssues.push(`requestfailed: ${request.method()} ${request.url()} ${failure?.errorText ?? ''}`.trim());
+  });
+
   await installApiMocks(page);
   await page.goto('/login');
 
@@ -374,4 +393,5 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /backups locales/i })).toBeVisible();
   await page.getByRole('button', { name: /crear backup/i }).click();
   await expect(page.getByText('pending')).toBeVisible();
+  expect(consoleIssues).toEqual([]);
 });

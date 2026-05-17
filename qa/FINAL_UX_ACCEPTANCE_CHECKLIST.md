@@ -57,6 +57,6 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 - [x] Frontend tests.
 - [x] E2E mockeado de demo.
 - [x] Smoke real contra Laravel/API definido como gate separado del mock.
-- [ ] Browser smoke con cero `console.error`, `pageerror` y requests fallidas inesperadas.
+- [x] Browser smoke con cero `console.error`, `pageerror` y requests fallidas inesperadas.
 - [x] Build.
 - [x] Demo script actualizado con evidencia honesta.

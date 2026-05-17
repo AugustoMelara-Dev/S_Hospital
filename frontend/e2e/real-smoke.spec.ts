@@ -4,9 +4,20 @@ const baseUrl = process.env.E2E_REAL_BASE_URL;
 const login = process.env.E2E_REAL_LOGIN;
 const password = process.env.E2E_REAL_PASSWORD;
 const realBaseUrl = baseUrl?.replace(/\/$/, '');
-const hasRealSmokeConfig = Boolean(baseUrl && login && password);
 
-test.skip(!hasRealSmokeConfig, 'Real LAN smoke requires E2E_REAL_BASE_URL, E2E_REAL_LOGIN and E2E_REAL_PASSWORD.');
+test.beforeAll(() => {
+  const missing = [
+    ['E2E_REAL_BASE_URL', baseUrl],
+    ['E2E_REAL_LOGIN', login],
+    ['E2E_REAL_PASSWORD', password],
+  ]
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
+
+  if (missing.length > 0) {
+    throw new Error(`Real smoke requires ${missing.join(', ')}.`);
+  }
+});
 
 test('real hospital workflow surfaces load without console errors', async ({ page }) => {
   const consoleIssues: string[] = [];

@@ -62,6 +62,7 @@ Fecha: 2026-05-17
 - Demo script actualizado con flujo de caja abierta, reportes avanzados y smoke real separado.
 - `App.tsx` reducido de 217 a 83 lineas; sesion, permisos y caja bootstrap viven en `useHospitalSession`.
 - Reportes muestran errores inline por diario/rango/caja, no solo en el status global.
+- E2E Playwright mockeado falla si hay `console.error`, `pageerror` o request fallida inesperada.
 
 ## Validacion posterior a revision de subagentes
 
