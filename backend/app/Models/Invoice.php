@@ -10,6 +10,12 @@ class Invoice extends Model
 {
     public const STATUS_ISSUED = 'issued';
 
+    public const STATUS_PARTIAL = 'partial';
+
+    public const STATUS_PAID = 'paid';
+
+    public const STATUS_VOID = 'void';
+
     protected $fillable = [
         'invoice_number',
         'fiscal_sequence_id',
@@ -21,6 +27,7 @@ class Invoice extends Model
         'paid_amount',
         'balance_due',
         'status',
+        'cash_session_id',
         'issued_by',
         'issued_at',
     ];
@@ -43,9 +50,19 @@ class Invoice extends Model
         return $this->hasMany(InvoiceItem::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     public function issuer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'issued_by');
+    }
+
+    public function cashSession(): BelongsTo
+    {
+        return $this->belongsTo(CashRegisterSession::class, 'cash_session_id');
     }
 
     public function fiscalSequence(): BelongsTo

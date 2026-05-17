@@ -42,7 +42,7 @@ class InvoiceController extends Controller
         $request->user()->can('invoices.view') || abort(403);
 
         return response()->json([
-            'data' => $invoice->load('items', 'issuer:id,name,username'),
+            'data' => $invoice->load('items', 'payments', 'issuer:id,name,username'),
         ]);
     }
 }

@@ -105,9 +105,82 @@ export type Invoice = {
   total: string;
   paid_amount: string;
   balance_due: string;
-  status: 'issued';
+  status: 'issued' | 'partial' | 'paid' | 'void';
   issued_at: string;
   items: InvoiceItem[];
+  payments?: Payment[];
+};
+
+export type CashSession = {
+  id: number;
+  user_id: number;
+  opening_amount: string;
+  closing_amount: string | null;
+  expected_amount: string | null;
+  difference_amount: string | null;
+  status: 'open' | 'closed';
+  opening_notes: string | null;
+  closing_notes: string | null;
+  opened_at: string;
+  closed_at: string | null;
+};
+
+export type Payment = {
+  id: number;
+  invoice_id: number;
+  cash_session_id: number;
+  user_id: number;
+  method: 'cash' | 'transfer' | 'card' | 'other';
+  amount: string;
+  reference: string | null;
+  status: 'posted';
+  paid_at: string;
+};
+
+export type ReceiptData = {
+  width: '80mm' | '58mm';
+  hospital: {
+    name: string;
+    rtn: string | null;
+  };
+  fiscal: {
+    cai: string | null;
+    authorized_range: string | null;
+    valid_until: string | null;
+  };
+  invoice: Pick<
+    Invoice,
+    | 'id'
+    | 'invoice_number'
+    | 'patient_name'
+    | 'subtotal'
+    | 'tax_amount'
+    | 'discount_amount'
+    | 'total'
+    | 'paid_amount'
+    | 'balance_due'
+    | 'status'
+  > & {
+    issued_at: string;
+    cashier: string | null;
+  };
+  items: Array<
+    Pick<
+      InvoiceItem,
+      | 'service_name'
+      | 'category_name'
+      | 'quantity'
+      | 'unit_price'
+      | 'tax_amount'
+      | 'line_total'
+      | 'special_rule_code'
+      | 'special_rule_applied'
+      | 'notes'
+    >
+  >;
+  payments: Array<Pick<Payment, 'id' | 'method' | 'amount' | 'reference' | 'paid_at'> & {
+    cashier: string | null;
+  }>;
 };
 
 export const apiClient = {
@@ -275,6 +348,53 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+
+    return response.data;
+  },
+
+  async getCurrentCashSession(): Promise<CashSession | null> {
+    const response = await this.request<{ data: CashSession | null }>('/api/cash-sessions/current');
+
+    return response.data;
+  },
+
+  async openCashSession(payload: { opening_amount: string; notes?: string | null }): Promise<CashSession> {
+    const response = await this.request<{ data: CashSession }>('/api/cash-sessions/open', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    return response.data;
+  },
+
+  async closeCashSession(id: number, payload: { closing_amount: string; notes?: string | null }): Promise<CashSession> {
+    const response = await this.request<{ data: CashSession }>(`/api/cash-sessions/${id}/close`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    return response.data;
+  },
+
+  async registerPayment(
+    invoiceId: number,
+    payload: { cash_session_id: number; method: Payment['method']; amount: string; reference?: string | null },
+  ): Promise<{ payment: Payment; invoice: Invoice }> {
+    const response = await this.request<{ data: { payment: Payment; invoice: Invoice } }>(
+      `/api/invoices/${invoiceId}/payments`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+    );
+
+    return response.data;
+  },
+
+  async getReceipt(invoiceId: number, width: ReceiptData['width']): Promise<ReceiptData> {
+    const response = await this.request<{ data: ReceiptData }>(
+      `/api/invoices/${invoiceId}/receipt?width=${width}`,
+    );
 
     return response.data;
   },

@@ -1,10 +1,12 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   type AuthUser,
+  type CashSession,
   type FiscalSequence,
   type FiscalSettings,
   apiClient,
 } from './lib/api';
+import { CashBoxView } from './features/cash/CashBoxView';
 import { CatalogView } from './features/catalog/CatalogView';
 import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 
@@ -28,6 +30,7 @@ export function App() {
     receipt_width: '80mm',
   });
   const [sequences, setSequences] = useState<FiscalSequence[]>([]);
+  const [cashSession, setCashSession] = useState<CashSession | null>(null);
   const [sequenceForm, setSequenceForm] = useState<FiscalSequence>(emptySequence);
   const [login, setLogin] = useState(import.meta.env.DEV ? 'admin.demo' : '');
   const [password, setPassword] = useState('');
@@ -52,6 +55,7 @@ export function App() {
     () => user?.permissions.includes('invoices.create') ?? false,
     [user],
   );
+  const canViewCash = useMemo(() => user?.permissions.includes('cash.view') ?? false, [user]);
 
   useEffect(() => {
     apiClient
@@ -244,11 +248,15 @@ export function App() {
           </label>
           <button type="submit">Actualizar contrasena</button>
         </form>
-      ) : !canViewFiscalSettings && !canViewCatalog && !canCreateInvoices ? (
+      ) : !canViewFiscalSettings && !canViewCatalog && !canCreateInvoices && !canViewCash ? (
         <section className="notice" role="alert">No tiene permisos operativos asignados.</section>
       ) : (
         <>
-          {canCreateInvoices ? <NewInvoiceView onStatus={setStatus} /> : null}
+          {canViewCash ? <CashBoxView onStatus={setStatus} onSessionChange={setCashSession} /> : null}
+
+          {canCreateInvoices ? (
+            <NewInvoiceView cashSession={cashSession} onStatus={setStatus} />
+          ) : null}
 
           {canViewFiscalSettings ? (
             <section className="settings-layout">

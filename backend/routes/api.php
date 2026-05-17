@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CashSessionController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FiscalSequenceController;
 use App\Http\Controllers\FiscalSettingsController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
 
@@ -43,5 +46,14 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         Route::get('/invoices', [InvoiceController::class, 'index']);
         Route::post('/invoices', [InvoiceController::class, 'store']);
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
+
+        Route::get('/cash-sessions/current', [CashSessionController::class, 'current']);
+        Route::post('/cash-sessions/open', [CashSessionController::class, 'open']);
+        Route::post('/cash-sessions/{cashSession}/close', [CashSessionController::class, 'close']);
+        Route::get('/cash-sessions', [CashSessionController::class, 'index']);
+
+        Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store']);
+        Route::get('/invoices/{invoice}/payments', [PaymentController::class, 'index']);
+        Route::get('/invoices/{invoice}/receipt', [ReceiptController::class, 'show']);
     });
 });

@@ -176,3 +176,23 @@ Consecuencia:
 
 - Fase 4 no implementa caja, pagos, recibos, reportes, reimpresion ni anulacion.
 - Fase 5 debera asociar pagos/caja a facturas ya emitidas sin recalcular `invoice_items`.
+
+### 2026-05-17 - Caja, pagos y recibo termico MVP
+
+Decision:
+
+- Caja usa `cash_register_sessions` con una caja abierta maxima por cajero validada transaccionalmente en backend.
+- Registro de pago guarda `payments`, `cash_movements` y actualiza `invoices.paid_amount`, `invoices.balance_due` y `invoices.status` dentro de una sola transaccion.
+- `expected_amount` de cierre representa efectivo esperado: monto inicial mas pagos en efectivo registrados en la caja.
+- El recibo MVP devuelve datos renderizables para 80mm/58mm y usa exclusivamente snapshots de `invoice_items` junto con datos fiscales persistidos.
+
+Motivo:
+
+- El flujo vendible necesita login, abrir caja, facturar, cobrar e imprimir sin reportes avanzados ni PDF.
+- Caja y pagos son reglas contables sensibles y no deben depender de calculos del frontend.
+- Los recibos no pueden cambiar cuando luego se edita el catalogo.
+
+Consecuencia:
+
+- Fase 5 no implementa anulacion de pagos/facturas, reimpresion auditada, historial avanzado, reportes, backups ni PDF avanzado.
+- Fase 6 debera agregar reimpresion auditada y anulacion sobre estas bases sin romper los snapshots.

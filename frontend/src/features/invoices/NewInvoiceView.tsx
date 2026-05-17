@@ -1,9 +1,13 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import {
+  type CashSession,
   type Invoice,
+  type Payment,
+  type ReceiptData,
   type Service,
   apiClient,
 } from '../../lib/api';
+import { ReceiptPreview } from '../receipts/ReceiptPreview';
 
 const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 
@@ -14,17 +18,23 @@ type SelectedInvoiceItem = {
 };
 
 type NewInvoiceViewProps = {
+  cashSession: CashSession | null;
   onStatus: (message: string) => void;
 };
 
-export function NewInvoiceView({ onStatus }: NewInvoiceViewProps) {
+export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
   const [patientName, setPatientName] = useState('');
   const [search, setSearch] = useState('');
   const [services, setServices] = useState<Service[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedInvoiceItem[]>([]);
   const [issuedInvoice, setIssuedInvoice] = useState<Invoice | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<Payment['method']>('cash');
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('80mm');
+  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [loadingServices, setLoadingServices] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     void loadServices();
@@ -92,6 +102,8 @@ export function NewInvoiceView({ onStatus }: NewInvoiceViewProps) {
         })),
       });
       setIssuedInvoice(invoice);
+      setPaymentAmount(invoice.balance_due);
+      setReceipt(null);
       setSelectedItems([]);
       setPatientName('');
       onStatus(`Factura emitida ${invoice.invoice_number}.`);
@@ -99,6 +111,49 @@ export function NewInvoiceView({ onStatus }: NewInvoiceViewProps) {
       onStatus(error instanceof Error ? error.message : 'No se pudo emitir la factura.');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function submitPayment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!issuedInvoice || !cashSession) {
+      onStatus('Debe abrir caja antes de cobrar.');
+
+      return;
+    }
+
+    setPaying(true);
+
+    try {
+      const result = await apiClient.registerPayment(issuedInvoice.id, {
+        cash_session_id: cashSession.id,
+        method: paymentMethod,
+        amount: paymentAmount,
+      });
+      setIssuedInvoice(result.invoice);
+      setPaymentAmount(result.invoice.balance_due);
+      const nextReceipt = await apiClient.getReceipt(result.invoice.id, receiptWidth);
+      setReceipt(nextReceipt);
+      onStatus(`Pago registrado. Factura ${result.invoice.status}.`);
+    } catch (error) {
+      onStatus(error instanceof Error ? error.message : 'No se pudo registrar el pago.');
+    } finally {
+      setPaying(false);
+    }
+  }
+
+  async function loadReceipt(width: ReceiptData['width']) {
+    setReceiptWidth(width);
+
+    if (!issuedInvoice) {
+      return;
+    }
+
+    try {
+      setReceipt(await apiClient.getReceipt(issuedInvoice.id, width));
+    } catch (error) {
+      onStatus(error instanceof Error ? error.message : 'No se pudo generar el recibo.');
     }
   }
 
@@ -219,7 +274,43 @@ export function NewInvoiceView({ onStatus }: NewInvoiceViewProps) {
             <h2>Factura emitida</h2>
             <p>{issuedInvoice.invoice_number}</p>
             <strong>Total L. {issuedInvoice.total}</strong>
+            <span>Estado: {issuedInvoice.status}</span>
+            <span>Saldo L. {issuedInvoice.balance_due}</span>
           </div>
+        ) : null}
+
+        {issuedInvoice ? (
+          <form className="payment-form" onSubmit={submitPayment}>
+            <h2>Registrar pago</h2>
+            {!cashSession ? (
+              <p className="notice-inline" role="alert">
+                Abra caja antes de cobrar.
+              </p>
+            ) : null}
+            <label>
+              Metodo de pago
+              <select
+                value={paymentMethod}
+                onChange={(event) => setPaymentMethod(event.target.value as Payment['method'])}
+              >
+                <option value="cash">Efectivo</option>
+                <option value="transfer">Transferencia</option>
+                <option value="card">Tarjeta</option>
+                <option value="other">Otro</option>
+              </select>
+            </label>
+            <label>
+              Monto
+              <input value={paymentAmount} onChange={(event) => setPaymentAmount(event.target.value)} />
+            </label>
+            <button type="submit" disabled={!cashSession || paying || issuedInvoice.status === 'paid'}>
+              {paying ? 'Cobrando...' : 'Cobrar'}
+            </button>
+          </form>
+        ) : null}
+
+        {receipt ? (
+          <ReceiptPreview receipt={receipt} onWidthChange={loadReceipt} />
         ) : null}
       </aside>
     </section>
