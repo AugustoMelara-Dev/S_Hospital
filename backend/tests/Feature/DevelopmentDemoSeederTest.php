@@ -43,6 +43,15 @@ class DevelopmentDemoSeederTest extends TestCase
         (new DevelopmentDemoSeeder)->run();
 
         $this->assertDatabaseMissing('users', ['username' => 'admin.demo']);
+        $this->assertDatabaseMissing('users', ['username' => 'supervisor.demo']);
+        $this->assertDatabaseMissing('users', ['username' => 'cajero.demo']);
         $this->assertSame(0, FiscalSetting::query()->count());
+        $this->assertFalse(
+            FiscalSequence::query()
+                ->where('document_type', 'invoice')
+                ->where('prefix', '000-001-01')
+                ->where('cai', 'DEMO-CAI')
+                ->exists(),
+        );
     }
 }

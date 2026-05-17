@@ -6,9 +6,13 @@
 2. Copiar backend, `vendor/`, frontend compilado y configuracion aprobada.
 3. Instalar PHP, extensiones necesarias y MySQL/MariaDB local.
 4. Crear `.env` real en el servidor, fuera de Git, con secretos locales.
-5. Generar `APP_KEY` si no existe.
-6. Ejecutar migraciones y seeders aprobados.
-7. Ejecutar `php artisan config:cache`.
+5. Configurar obligatoriamente `APP_ENV=production` y `APP_DEBUG=false`.
+6. Generar `APP_KEY` si no existe.
+7. Ejecutar migraciones aprobadas sin `migrate:fresh`.
+8. Crear admin real con `php artisan auth:create-initial-admin`; no ejecutar seeders demo en servidor real.
+9. Ejecutar `php artisan config:cache`.
+
+No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`, `supervisor.demo` y `cajero.demo` son exclusivamente para desarrollo/testing.
 
 ## Servidor LAN
 
@@ -16,6 +20,7 @@
 - Clientes: navegadores apuntando a la IP local del servidor, por ejemplo `http://192.168.1.10`.
 - No usar `localhost` desde clientes.
 - No requerir internet para login, facturacion, caja, reportes, impresion o backups.
+- Produccion debe correr con `APP_ENV=production` y `APP_DEBUG=false`.
 
 ## Worker de backups
 

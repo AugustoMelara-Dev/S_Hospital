@@ -3,13 +3,14 @@ set -euo pipefail
 
 if [ -d backend ]; then
   (cd backend && composer validate)
-  (cd backend && php artisan migrate:fresh --seed)
   (cd backend && php artisan test --colors=never)
   (cd backend && ./vendor/bin/pint --test)
+  (cd backend && php artisan config:cache --no-ansi)
+  (cd backend && php artisan config:clear --no-ansi)
   if [ -x backend/vendor/bin/phpstan ]; then
     (cd backend && ./vendor/bin/phpstan analyse)
   else
-    echo "Skipping phpstan: backend/vendor/bin/phpstan is not installed."
+    echo "Optional static analysis skipped: backend/vendor/bin/phpstan is not installed and is not part of the current required gate."
   fi
 fi
 

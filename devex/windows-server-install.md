@@ -23,12 +23,17 @@ Guia inicial para instalar Hospital Billing OS en una PC servidor Windows dentro
 2. Copiar backend con `vendor/` ya instalado.
 3. Copiar frontend ya compilado desde `frontend/dist`.
 4. Copiar `.env` real manualmente en el servidor; no guardar secretos en Git.
+   - `APP_ENV=production`
+   - `APP_DEBUG=false`
 5. Configurar base de datos `hospital_billing` en MySQL/MariaDB.
 6. Ejecutar `php artisan key:generate` si no existe `APP_KEY`.
-7. Ejecutar migraciones y seeders aprobados.
-8. Ejecutar `php artisan config:cache`.
-9. Configurar el servidor web para publicar el frontend y enrutar API Laravel.
-10. Configurar un worker local: `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
+7. Ejecutar migraciones aprobadas sin `migrate:fresh`.
+8. Crear admin real con `php artisan auth:create-initial-admin`; no ejecutar seeders demo.
+9. Ejecutar `php artisan config:cache`.
+10. Configurar el servidor web para publicar el frontend y enrutar API Laravel.
+11. Configurar un worker local: `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
+
+No entregar servidor LAN real con `APP_ENV=local`. `admin.demo`, `supervisor.demo` y `cajero.demo` son solo para desarrollo/testing.
 
 ## Acceso de clientes
 
@@ -86,7 +91,7 @@ Despues de generar backup, copiar el archivo reciente desde `storage\app\private
 2. Detener o poner en mantenimiento el servidor web.
 3. Copiar artefactos nuevos ya construidos; no ejecutar `composer install` ni `npm install` en el arranque productivo.
 4. Mantener `.env` real fuera de Git y no reemplazar secretos.
-5. Ejecutar migraciones aprobadas.
+5. Ejecutar migraciones aprobadas sin `php artisan migrate:fresh`.
 6. Ejecutar `php artisan config:cache`.
 7. Reiniciar servidor web.
 8. Reiniciar o validar el worker local de backups.
@@ -100,6 +105,8 @@ Ejecutar desde el servidor:
 php artisan test --colors=never
 php artisan config:cache
 ```
+
+No ejecutar `php artisan migrate:fresh --seed` en el servidor real del hospital; borra la base activa.
 
 Validar desde un cliente en LAN:
 

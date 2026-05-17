@@ -66,13 +66,13 @@ export function App() {
   const canViewReports = useMemo(() => user?.permissions.includes('reports.view') ?? false, [user]);
   const canViewBackups = useMemo(() => user?.permissions.includes('backups.view') ?? false, [user]);
   const navigationItems = useMemo(() => [
-    canCreateInvoices ? { href: '#nueva-factura', label: 'Nueva factura' } : null,
-    canViewCatalog ? { href: '#catalogo', label: 'Catalogo' } : null,
     canViewCash ? { href: '#caja', label: 'Caja' } : null,
+    canCreateInvoices ? { href: '#nueva-factura', label: 'Nueva factura' } : null,
     canViewInvoices ? { href: '#historial', label: 'Historial' } : null,
     canViewReports ? { href: '#reportes', label: 'Reportes' } : null,
     canViewBackups ? { href: '#backups', label: 'Backups' } : null,
     canViewFiscalSettings ? { href: '#configuracion-fiscal', label: 'Configuracion fiscal' } : null,
+    canViewCatalog ? { href: '#catalogo', label: 'Catalogo' } : null,
   ].filter((item): item is { href: string; label: string } => item !== null), [
     canCreateInvoices,
     canViewBackups,
@@ -307,9 +307,13 @@ export function App() {
           {canViewBackups ? <BackupsView user={user} onStatus={setStatus} /> : null}
 
           {canViewFiscalSettings ? (
-            <section id="configuracion-fiscal" className="settings-layout">
+            <section
+              id="configuracion-fiscal"
+              className="settings-layout"
+              aria-labelledby="fiscal-settings-title"
+            >
               <form onSubmit={handleFiscalSubmit} className="settings-form">
-                <h2>Datos fiscales del hospital</h2>
+                <h2 id="fiscal-settings-title">Datos fiscales del hospital</h2>
                 <label>
                   Hospital
                   <input
