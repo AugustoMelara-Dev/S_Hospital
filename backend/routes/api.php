@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CashSessionController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FiscalSequenceController;
@@ -63,5 +64,9 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         Route::get('/reports/income', [ReportController::class, 'income']);
         Route::get('/reports/categories', [ReportController::class, 'categories']);
         Route::get('/reports/cash-sessions/{cashSession}', [ReportController::class, 'cashSession']);
+
+        Route::get('/backups', [BackupController::class, 'index']);
+        Route::post('/backups', [BackupController::class, 'store']);
+        Route::get('/backups/{backupLog}/download', [BackupController::class, 'download']);
     });
 });

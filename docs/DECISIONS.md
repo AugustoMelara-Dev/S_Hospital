@@ -239,3 +239,23 @@ Consecuencia:
 
 - Fase 7 no implementa dashboard real, exportaciones avanzadas, PDF avanzado, backups, anulacion de pagos, reversos de caja, inventario ni expediente clinico.
 - Si se requiere reporte anual o exportacion grande, debe agregarse un flujo posterior paginado/exportado desde backend.
+
+### 2026-05-17 - Backups locales sin restore destructivo por UI
+
+Decision:
+
+- Fase 8 registra `backup_logs`, crea backups locales con `php artisan hospital:backup` y permite al admin listar, crear y descargar archivos registrados.
+- Los archivos se guardan en el disco local bajo `storage/app/private/backups`; no se suben a cloud ni se exponen rutas arbitrarias.
+- La descarga valida permiso `backups.download`, estado `success`, ruta relativa segura, existencia del archivo y pertenencia a la carpeta de backups.
+- Restore queda como procedimiento manual documentado en `docs/BACKUP_RESTORE.md`, primero en entorno de prueba y nunca como boton destructivo en UI.
+
+Motivo:
+
+- En operacion offline LAN el hospital necesita respaldos verificables sin depender de internet.
+- Restore desde UI puede destruir datos de caja/facturacion por error y requiere parada controlada.
+
+Consecuencia:
+
+- Admin puede operar backup manual y descargarlo para copia local/USB.
+- Produccion debe instalar `mariadb-dump` o `mysqldump` local para dumps reales de MySQL/MariaDB.
+- Si falta la herramienta de dump, el backup queda registrado como `failed` sin exponer credenciales en logs.

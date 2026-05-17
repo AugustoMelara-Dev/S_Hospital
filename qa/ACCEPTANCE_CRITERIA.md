@@ -27,6 +27,8 @@
 - Funciona con internet desconectado.
 - Cliente accede por IP local al servidor.
 - Backup manual y diario disponible.
+- Backups son locales, descargables solo por admin y no exponen rutas internas.
+- Restore manual esta documentado y validado primero en entorno de prueba, sin endpoint destructivo.
 
 ## Impresión
 - Recibo 80mm por defecto.

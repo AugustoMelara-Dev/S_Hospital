@@ -261,6 +261,20 @@ export type CashSessionReport = {
   }>;
 };
 
+export type BackupLog = {
+  id: number;
+  filename: string;
+  size_bytes: number | null;
+  checksum_sha256: string | null;
+  status: 'pending' | 'success' | 'failed';
+  type: 'manual' | 'scheduled';
+  created_by: number | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  creator?: Pick<AuthUser, 'id' | 'name' | 'username'> | null;
+};
+
 export type PaginatedMeta = {
   current_page: number;
   per_page: number;
@@ -582,5 +596,22 @@ export const apiClient = {
     );
 
     return response.data;
+  },
+
+  async getBackups(): Promise<{ data: BackupLog[]; meta: PaginatedMeta }> {
+    return this.request<{ data: BackupLog[]; meta: PaginatedMeta }>('/api/backups');
+  },
+
+  async createBackup(): Promise<BackupLog> {
+    const response = await this.request<{ data: BackupLog }>('/api/backups', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+
+    return response.data;
+  },
+
+  backupDownloadUrl(id: number): string {
+    return this.url(`/api/backups/${encodeURIComponent(id)}/download`);
   },
 };

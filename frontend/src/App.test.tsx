@@ -278,6 +278,126 @@ describe('App', () => {
     expect(screen.queryByLabelText(/fecha diaria/i)).not.toBeInTheDocument();
   });
 
+  it('renders backups view and empty state for an admin', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 1,
+            name: 'Admin Demo',
+            email: 'admin.demo@hospital-billing.local',
+            username: 'admin.demo',
+            active: true,
+            roles: ['admin'],
+            permissions: ['backups.view', 'backups.create', 'backups.download'],
+            must_change_password: false,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [],
+          meta: { current_page: 1, per_page: 15, total: 0 },
+        }),
+      } as Response);
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /backups locales/i })).toBeInTheDocument();
+    expect(await screen.findByText(/no hay backups registrados/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /crear backup/i })).toBeEnabled();
+  });
+
+  it('does not render backups for a user without backup permission', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 2,
+            name: 'Cajero Demo',
+            email: 'cajero.demo@hospital-billing.local',
+            username: 'cajero.demo',
+            active: true,
+            roles: ['cajero'],
+            permissions: ['cash.view'],
+            must_change_password: false,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: null }),
+      } as Response);
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /^caja$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /backups locales/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /crear backup/i })).not.toBeInTheDocument();
+  });
+
+  it('creates a manual backup from the admin backups view', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 1,
+            name: 'Admin Demo',
+            email: 'admin.demo@hospital-billing.local',
+            username: 'admin.demo',
+            active: true,
+            roles: ['admin'],
+            permissions: ['backups.view', 'backups.create', 'backups.download'],
+            must_change_password: false,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [],
+          meta: { current_page: 1, per_page: 15, total: 0 },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 9,
+            filename: 'hospital-backup-20260517-101500-test.sql',
+            size_bytes: 2048,
+            checksum_sha256: 'a'.repeat(64),
+            status: 'success',
+            type: 'manual',
+            created_by: 1,
+            completed_at: '2026-05-17T10:15:00-06:00',
+            created_at: '2026-05-17T10:15:00-06:00',
+            updated_at: '2026-05-17T10:15:00-06:00',
+            creator: { id: 1, name: 'Admin Demo', username: 'admin.demo' },
+          },
+        }),
+      } as Response);
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /crear backup/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        expect.stringContaining('/api/backups'),
+        expect.objectContaining({ method: 'POST' }),
+      );
+    });
+    expect(await screen.findByText('hospital-backup-20260517-101500-test.sql')).toBeInTheDocument();
+    expect(screen.getByText('success')).toBeInTheDocument();
+    expect(screen.getByText('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /descargar/i })).toBeInTheDocument();
+  });
+
   it('renders report date filters and empty category state after loading range', async () => {
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({

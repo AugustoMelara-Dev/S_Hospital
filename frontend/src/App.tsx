@@ -7,6 +7,7 @@ import {
   apiClient,
 } from './lib/api';
 import { CashBoxView } from './features/cash/CashBoxView';
+import { BackupsView } from './features/backups/BackupsView';
 import { CatalogView } from './features/catalog/CatalogView';
 import { InvoiceHistoryView } from './features/invoices/InvoiceHistoryView';
 import { NewInvoiceView } from './features/invoices/NewInvoiceView';
@@ -63,6 +64,7 @@ export function App() {
   );
   const canViewCash = useMemo(() => user?.permissions.includes('cash.view') ?? false, [user]);
   const canViewReports = useMemo(() => user?.permissions.includes('reports.view') ?? false, [user]);
+  const canViewBackups = useMemo(() => user?.permissions.includes('backups.view') ?? false, [user]);
 
   useEffect(() => {
     apiClient
@@ -260,7 +262,8 @@ export function App() {
         !canCreateInvoices &&
         !canViewCash &&
         !canViewInvoices &&
-        !canViewReports ? (
+        !canViewReports &&
+        !canViewBackups ? (
         <section className="notice" role="alert">No tiene permisos operativos asignados.</section>
       ) : (
         <>
@@ -273,6 +276,8 @@ export function App() {
           {canViewInvoices ? <InvoiceHistoryView user={user} onStatus={setStatus} /> : null}
 
           {canViewReports ? <ReportsView onStatus={setStatus} /> : null}
+
+          {canViewBackups ? <BackupsView user={user} onStatus={setStatus} /> : null}
 
           {canViewFiscalSettings ? (
             <section className="settings-layout">
