@@ -4,6 +4,7 @@ namespace App\Actions\Reports;
 
 use App\Actions\Reports\Concerns\FormatsReportMoney;
 use App\Models\Invoice;
+use App\Models\Payment;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -11,15 +12,47 @@ class CategoryReportService
 {
     use FormatsReportMoney;
 
-    public function report(string $dateFrom, string $dateTo): array
+    /**
+     * @param  array{date_from: string, date_to: string, cash_session_id?: int, user_id?: int, category_id?: int, method?: string, status?: string}  $filters
+     */
+    public function report(array $filters): array
     {
-        $start = Carbon::createFromFormat('Y-m-d', $dateFrom)->startOfDay();
-        $end = Carbon::createFromFormat('Y-m-d', $dateTo)->endOfDay();
+        $start = Carbon::createFromFormat('Y-m-d', $filters['date_from'])->startOfDay();
+        $end = Carbon::createFromFormat('Y-m-d', $filters['date_to'])->endOfDay();
 
         $rows = DB::table('invoice_items')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
-            ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            ->when(
+                ! empty($filters['status']),
+                fn ($query) => $query->where('invoices.status', $filters['status']),
+                fn ($query) => $query->where('invoices.status', '!=', Invoice::STATUS_VOID),
+            )
             ->whereBetween('invoices.issued_at', [$start, $end])
+            ->when(! empty($filters['category_id']), function ($query) use ($filters): void {
+                $query->where('invoice_items.category_id', $filters['category_id']);
+            })
+            ->when(
+                ! empty($filters['cash_session_id']) || ! empty($filters['user_id']) || ! empty($filters['method']),
+                function ($query) use ($filters, $start, $end): void {
+                    $query->whereExists(function ($subquery) use ($filters, $start, $end): void {
+                        $subquery
+                            ->selectRaw('1')
+                            ->from('payments')
+                            ->whereColumn('payments.invoice_id', 'invoices.id')
+                            ->where('payments.status', Payment::STATUS_POSTED)
+                            ->whereBetween('payments.paid_at', [$start, $end])
+                            ->when(! empty($filters['cash_session_id']), function ($paymentQuery) use ($filters): void {
+                                $paymentQuery->where('payments.cash_session_id', $filters['cash_session_id']);
+                            })
+                            ->when(! empty($filters['user_id']), function ($paymentQuery) use ($filters): void {
+                                $paymentQuery->where('payments.user_id', $filters['user_id']);
+                            })
+                            ->when(! empty($filters['method']), function ($paymentQuery) use ($filters): void {
+                                $paymentQuery->where('payments.method', $filters['method']);
+                            });
+                    });
+                },
+            )
             ->groupBy('invoice_items.category_name')
             ->orderBy('invoice_items.category_name')
             ->select('invoice_items.category_name')
@@ -41,8 +74,15 @@ class CategoryReportService
             ->all();
 
         return [
-            'date_from' => $dateFrom,
-            'date_to' => $dateTo,
+            'date_from' => $filters['date_from'],
+            'date_to' => $filters['date_to'],
+            'filters' => [
+                'cash_session_id' => $filters['cash_session_id'] ?? null,
+                'user_id' => $filters['user_id'] ?? null,
+                'category_id' => $filters['category_id'] ?? null,
+                'method' => $filters['method'] ?? null,
+                'status' => $filters['status'] ?? null,
+            ],
             'categories' => $rows,
         ];
     }

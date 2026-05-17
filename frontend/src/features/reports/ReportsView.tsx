@@ -10,9 +10,11 @@ import {
 } from 'recharts';
 import {
   type CashSessionReport,
+  type Category,
   type CategoryReport,
   type DailyReport,
   type IncomeReport,
+  type OperationsReport,
   type ServiceSalesReport,
   apiClient,
 } from '../../lib/api';
@@ -37,17 +39,23 @@ export function ReportsView({
   const [dateTo, setDateTo] = useState(today);
   const [cashSessionId, setCashSessionId] = useState('');
   const [userId, setUserId] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [method, setMethod] = useState('');
+  const [status, setStatus] = useState('');
   const [cashReportId, setCashReportId] = useState('');
   const [daily, setDaily] = useState<DailyReport | null>(null);
   const [income, setIncome] = useState<IncomeReport | null>(null);
   const [categories, setCategories] = useState<CategoryReport | null>(null);
   const [serviceSales, setServiceSales] = useState<ServiceSalesReport | null>(null);
+  const [operations, setOperations] = useState<OperationsReport | null>(null);
   const [cashSession, setCashSession] = useState<CashSessionReport | null>(null);
+  const [categoryOptions, setCategoryOptions] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (canViewManagerial) {
       void loadDaily(dailyDate);
+      void loadCategories();
     }
   }, [canViewManagerial]);
 
@@ -70,6 +78,15 @@ export function ReportsView({
     await loadDaily(dailyDate);
   }
 
+  async function loadCategories() {
+    try {
+      const nextCategories = await apiClient.getCategories();
+      setCategoryOptions(Array.isArray(nextCategories) ? nextCategories : []);
+    } catch {
+      setCategoryOptions([]);
+    }
+  }
+
   async function handleRangeSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
@@ -81,15 +98,20 @@ export function ReportsView({
         date_to: dateTo,
         cash_session_id: cashSessionId,
         user_id: userId,
+        category_id: categoryId,
+        method: method as '' | 'cash' | 'transfer' | 'card' | 'other',
+        status: status as '' | 'issued' | 'partial' | 'paid' | 'void',
       };
-      const [incomeReport, categoryReport, serviceReport] = await Promise.all([
+      const [incomeReport, categoryReport, serviceReport, operationsReport] = await Promise.all([
         apiClient.getIncomeReport(filters),
-        apiClient.getCategoryReport({ date_from: dateFrom, date_to: dateTo }),
-        apiClient.getServiceSalesReport({ date_from: dateFrom, date_to: dateTo }),
+        apiClient.getCategoryReport(filters),
+        apiClient.getServiceSalesReport(filters),
+        apiClient.getOperationsReport(filters),
       ]);
       setIncome(incomeReport);
       setCategories(categoryReport);
       setServiceSales(serviceReport);
+      setOperations(operationsReport);
       onStatus('Reportes por rango cargados.');
     } catch (error) {
       onStatus(error instanceof Error ? error.message : 'No se pudieron cargar los reportes.');
@@ -201,6 +223,37 @@ export function ReportsView({
                 onChange={(event) => setUserId(event.target.value)}
               />
             </label>
+            <label>
+              Categoria
+              <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
+                <option value="">Todas</option>
+                {categoryOptions.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Metodo de pago
+              <select value={method} onChange={(event) => setMethod(event.target.value)}>
+                <option value="">Todos</option>
+                <option value="cash">Efectivo</option>
+                <option value="transfer">Transferencia</option>
+                <option value="card">Tarjeta</option>
+                <option value="other">Otro</option>
+              </select>
+            </label>
+            <label>
+              Estado
+              <select value={status} onChange={(event) => setStatus(event.target.value)}>
+                <option value="">Todos no anulados</option>
+                <option value="issued">Emitida</option>
+                <option value="partial">Parcial</option>
+                <option value="paid">Pagada</option>
+                <option value="void">Anulada</option>
+              </select>
+            </label>
             <button type="submit">Ver rango</button>
             <p className="muted">Rango maximo permitido: 31 dias.</p>
           </form>
@@ -223,6 +276,9 @@ export function ReportsView({
                     date_to: income.date_to,
                     cash_session_id: cashSessionId,
                     user_id: userId,
+                    category_id: categoryId,
+                    method: method as '' | 'cash' | 'transfer' | 'card' | 'other',
+                    status: status as '' | 'issued' | 'partial' | 'paid' | 'void',
                   }))
                 }
               >
@@ -306,6 +362,90 @@ export function ReportsView({
         </div>
       ) : null}
 
+      {operations ? (
+        <div className="report-card" aria-label="Auditoria operativa">
+          <h3>Auditoria operativa</h3>
+          <div className="metric-grid">
+            <Metric label="Anulaciones" value={String(operations.summary.void_count)} />
+            <Metric label="Reimpresiones" value={String(operations.summary.reprint_count)} />
+            <Metric label="Backups" value={String(operations.summary.backup_count)} />
+            <Metric label="Backups fallidos" value={String(operations.summary.failed_backup_count)} />
+            <Metric label="Cajeros con ingreso" value={String(operations.summary.cashier_count)} />
+          </div>
+          {operations.cashiers.length > 0 ? (
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Cajero</th>
+                    <th>Cajas</th>
+                    <th>Facturas</th>
+                    <th>Pagos</th>
+                    <th>Total cobrado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {operations.cashiers.map((cashier) => (
+                    <tr key={cashier.user_id}>
+                      <td>{cashier.name}</td>
+                      <td>{cashier.cash_session_count}</td>
+                      <td>{cashier.invoice_count}</td>
+                      <td>{cashier.payment_count}</td>
+                      <td>L. {cashier.total_collected}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Referencia</th>
+                  <th>Detalle</th>
+                  <th>Usuario</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {operations.voids.map((item) => (
+                  <tr key={`void-${item.invoice_id}`}>
+                    <td>Anulacion</td>
+                    <td>{item.invoice_number}</td>
+                    <td>{item.reason ?? 'Sin motivo'} - L. {item.total}</td>
+                    <td>{item.user ?? 'Sin usuario'}</td>
+                    <td>{formatDateTime(item.voided_at)}</td>
+                  </tr>
+                ))}
+                {operations.reprints.map((item, index) => (
+                  <tr key={`reprint-${item.invoice_id ?? index}-${item.created_at ?? index}`}>
+                    <td>Reimpresion</td>
+                    <td>{item.invoice_number ?? 'Sin factura'}</td>
+                    <td>{item.width ?? 'Sin ancho'} - {item.reason ?? 'Sin motivo'}</td>
+                    <td>{item.user ?? 'Sin usuario'}</td>
+                    <td>{formatDateTime(item.created_at)}</td>
+                  </tr>
+                ))}
+                {operations.backups.map((item) => (
+                  <tr key={`backup-${item.id}`}>
+                    <td>Backup</td>
+                    <td>{item.filename}</td>
+                    <td>{item.status} - {formatBytes(item.size_bytes)}</td>
+                    <td>{item.creator ?? 'Sistema'}</td>
+                    <td>{formatDateTime(item.completed_at ?? item.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {operations.voids.length + operations.reprints.length + operations.backups.length === 0 ? (
+            <p className="muted">Sin eventos operativos en el rango seleccionado.</p>
+          ) : null}
+        </div>
+      ) : null}
+
       {canViewCashSessionReport ? (
         <form className="report-filters" onSubmit={handleCashReportSubmit}>
           <label>
@@ -379,6 +519,29 @@ function serviceSalesChartData(serviceSales: ServiceSalesReport) {
     service: service.service.length > 18 ? `${service.service.slice(0, 18)}...` : service.service,
     total: Number.parseFloat(service.total),
   }));
+}
+
+function formatDateTime(value: string | null): string {
+  if (!value) {
+    return 'Sin fecha';
+  }
+
+  return new Intl.DateTimeFormat('es-HN', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(value));
+}
+
+function formatBytes(size: number | null): string {
+  if (size === null) {
+    return 'No disponible';
+  }
+
+  if (size < 1024) {
+    return `${size} B`;
+  }
+
+  return `${(size / 1024).toFixed(1)} KB`;
 }
 
 function localDateString(date: Date): string {

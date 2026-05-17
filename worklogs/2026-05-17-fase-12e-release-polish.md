@@ -57,23 +57,24 @@ Fecha: 2026-05-17
 - Backend exige nota cuando el cierre tiene diferencia distinta de cero.
 - `reports.view` ya no concede acceso historico a facturas ajenas.
 - Exportacion CSV de reportes pasa por backend y exige `reports.export`.
+- Reportes incluyen auditoria operativa: anulaciones, reimpresiones, backups, cajeros con ingreso y filtros por caja/cajero/categoria/metodo/estado.
 
 ## Validacion posterior a revision de subagentes
 
 - `php artisan test --filter=CashPaymentsReceiptTest --colors=never`: 14 tests / 114 assertions OK.
-- `php artisan test --filter=ReportsTest --colors=never`: 10 tests / 105 assertions OK.
+- `php artisan test --filter=ReportsTest --colors=never`: 12 tests / 147 assertions OK.
 - `php artisan test --filter=InvoiceHistoryReprintVoidTest --colors=never`: 13 tests / 91 assertions OK.
-- `php artisan test --colors=never`: 115 tests / 649 assertions OK.
+- `php artisan test --colors=never`: 117 tests / 691 assertions OK.
 - `vendor/bin/pint --test`: OK.
 - `npm.cmd run lint`: OK.
 - `npm.cmd test`: 20 tests frontend OK.
 - `npm.cmd run typecheck`: OK.
 - `npm.cmd run build`: OK.
 - `php artisan config:cache`: OK.
-- `npm.cmd run e2e`: 1 Playwright workflow OK.
+- `npm.cmd run e2e`: 1 Playwright workflow mockeado OK; `real-smoke.spec.ts` queda excluido por defecto.
+- `npm.cmd run smoke:real`: disponible como gate separado con `E2E_REAL_BASE_URL`, `E2E_REAL_LOGIN` y `E2E_REAL_PASSWORD`.
 
 ## Pendiente real
 
-- Reportes gerenciales siguen incompletos frente al plan corregido: anulaciones, reimpresiones, backups y filtros por categoria/metodo/estado.
+- Ejecutar smoke real LAN con consola limpia requiere servidor Laravel/API levantado y `E2E_REAL_BASE_URL`, `E2E_REAL_LOGIN` y `E2E_REAL_PASSWORD`.
 - El flujo principal del POS todavia debe decidir formalmente si `Emitir pendiente` es permitido o si caja abierta es obligatoria antes de emitir.
-- Falta smoke real con consola limpia contra Laravel/API, separado del E2E mockeado.

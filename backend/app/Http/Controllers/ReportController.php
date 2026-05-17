@@ -6,6 +6,7 @@ use App\Actions\Reports\CashSessionReportService;
 use App\Actions\Reports\CategoryReportService;
 use App\Actions\Reports\DailyReportService;
 use App\Actions\Reports\IncomeReportService;
+use App\Actions\Reports\OperationsReportService;
 use App\Actions\Reports\ServiceSalesReportService;
 use App\Http\Requests\Reports\DailyReportRequest;
 use App\Http\Requests\Reports\DateRangeReportRequest;
@@ -49,14 +50,21 @@ class ReportController extends Controller
     public function categories(DateRangeReportRequest $request, CategoryReportService $reports): JsonResponse
     {
         return response()->json([
-            'data' => $reports->report($request->dateFrom(), $request->dateTo()),
+            'data' => $reports->report($request->validated()),
         ]);
     }
 
     public function services(DateRangeReportRequest $request, ServiceSalesReportService $reports): JsonResponse
     {
         return response()->json([
-            'data' => $reports->report($request->dateFrom(), $request->dateTo()),
+            'data' => $reports->report($request->validated()),
+        ]);
+    }
+
+    public function operations(DateRangeReportRequest $request, OperationsReportService $reports): JsonResponse
+    {
+        return response()->json([
+            'data' => $reports->report($request->validated()),
         ]);
     }
 
@@ -65,15 +73,17 @@ class ReportController extends Controller
         IncomeReportService $incomeReports,
         CategoryReportService $categoryReports,
         ServiceSalesReportService $serviceReports,
+        OperationsReportService $operationReports,
     ): StreamedResponse {
         $request->user()->can('reports.export') || abort(403);
 
         $income = $incomeReports->report($request->validated());
-        $categories = $categoryReports->report($request->dateFrom(), $request->dateTo());
-        $services = $serviceReports->report($request->dateFrom(), $request->dateTo());
+        $categories = $categoryReports->report($request->validated());
+        $services = $serviceReports->report($request->validated());
+        $operations = $operationReports->report($request->validated());
         $filename = sprintf('reporte-hospital-%s-a-%s.csv', $request->dateFrom(), $request->dateTo());
 
-        return response()->streamDownload(function () use ($income, $categories, $services): void {
+        return response()->streamDownload(function () use ($income, $categories, $services, $operations): void {
             $output = fopen('php://output', 'w');
 
             if ($output === false) {
@@ -105,6 +115,22 @@ class ReportController extends Controller
                     $service['quantity'],
                     $service['total'],
                 ]);
+            }
+
+            foreach ($operations['voids'] as $void) {
+                fputcsv($output, ['anulacion', $void['invoice_number'], '', '', $void['total']]);
+            }
+
+            foreach ($operations['reprints'] as $reprint) {
+                fputcsv($output, ['reimpresion', $reprint['invoice_number'], '', '', $reprint['width']]);
+            }
+
+            foreach ($operations['backups'] as $backup) {
+                fputcsv($output, ['backup', $backup['filename'], $backup['status'], '', (string) ($backup['size_bytes'] ?? '')]);
+            }
+
+            foreach ($operations['cashiers'] as $cashier) {
+                fputcsv($output, ['cajero', $cashier['name'], $cashier['username'], (string) $cashier['payment_count'], $cashier['total_collected']]);
             }
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }

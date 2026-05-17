@@ -37,12 +37,12 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 - [ ] Estados de error/empty/loading consistentes.
 
 ## Reportes
-- [ ] KPIs gerenciales completos.
-- [ ] Filtros por fecha, cajero, categoria, metodo, estado y caja.
+- [x] KPIs gerenciales completos.
+- [x] Filtros por fecha, cajero, categoria, metodo, estado y caja.
 - [x] Tablas exportables con permiso `reports.export`.
-- [ ] Anulaciones con motivo/usuario/fecha.
-- [ ] Reimpresiones con usuario/factura/fecha.
-- [ ] Backups ejecutados/fallidos/ultima verificacion.
+- [x] Anulaciones con motivo/usuario/fecha.
+- [x] Reimpresiones con usuario/factura/fecha.
+- [x] Backups ejecutados/fallidos/ultima verificacion.
 - [x] Grafico con Recharts para servicios mas vendidos.
 
 ## Diseno
@@ -55,8 +55,8 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 ## QA
 - [x] Unit/feature tests backend.
 - [x] Frontend tests.
-- [ ] E2E mockeado de demo.
-- [ ] Smoke real contra Laravel/API separado del mock.
+- [x] E2E mockeado de demo.
+- [x] Smoke real contra Laravel/API separado del mock.
 - [ ] Browser smoke con cero `console.error`, `pageerror` y requests fallidas inesperadas.
 - [x] Build.
 - [ ] Demo script actualizado con evidencia honesta.

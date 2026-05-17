@@ -21,13 +21,29 @@ class IncomeReportService
         $base = Payment::query()
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
             ->where('payments.status', Payment::STATUS_POSTED)
-            ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            ->when(
+                ! empty($filters['status']),
+                fn (Builder $query) => $query->where('invoices.status', $filters['status']),
+                fn (Builder $query) => $query->where('invoices.status', '!=', Invoice::STATUS_VOID),
+            )
             ->whereBetween('payments.paid_at', [$start, $end])
             ->when(! empty($filters['cash_session_id']), function (Builder $query) use ($filters): void {
                 $query->where('payments.cash_session_id', $filters['cash_session_id']);
             })
             ->when(! empty($filters['user_id']), function (Builder $query) use ($filters): void {
                 $query->where('payments.user_id', $filters['user_id']);
+            })
+            ->when(! empty($filters['method']), function (Builder $query) use ($filters): void {
+                $query->where('payments.method', $filters['method']);
+            })
+            ->when(! empty($filters['category_id']), function (Builder $query) use ($filters): void {
+                $query->whereExists(function ($subquery) use ($filters): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('invoice_items')
+                        ->whereColumn('invoice_items.invoice_id', 'invoices.id')
+                        ->where('invoice_items.category_id', $filters['category_id']);
+                });
             });
 
         $summary = (clone $base)
@@ -52,6 +68,13 @@ class IncomeReportService
             'date_to' => $filters['date_to'],
             'cash_session_id' => $filters['cash_session_id'] ?? null,
             'user_id' => $filters['user_id'] ?? null,
+            'filters' => [
+                'cash_session_id' => $filters['cash_session_id'] ?? null,
+                'user_id' => $filters['user_id'] ?? null,
+                'category_id' => $filters['category_id'] ?? null,
+                'method' => $filters['method'] ?? null,
+                'status' => $filters['status'] ?? null,
+            ],
             'total_collected' => $this->centsToMoney($summary?->collected_cents),
             'payments_by_method' => $methods,
             'payment_count' => (int) ($summary?->payment_count ?? 0),

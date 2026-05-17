@@ -359,3 +359,23 @@ Consecuencia:
 
 - Los flujos de pago quedan alineados con historial/reimpresion: cajero limitado a su operacion diaria, perfiles superiores por permiso explicito.
 - Si el hospital quiere que un cajero consulte su caja en reportes, debe recibir `reports.cash_session.view`, no `reports.managerial.view`.
+
+### 2026-05-17 - Fase 12D/12E reportes avanzados y smoke real
+
+Decision:
+
+- Los reportes gerenciales por rango aceptan filtros de fecha, caja, cajero, categoria, metodo de pago y estado desde backend.
+- Ingresos, categorias, servicios, auditoria operativa y CSV de exportacion usan los mismos filtros validados.
+- La auditoria operativa muestra anulaciones, reimpresiones, backups y resumen por cajero con datos del backend.
+- El smoke real de LAN/navegador queda separado del E2E automatico y se ejecuta solo con `E2E_REAL_BASE_URL`, `E2E_REAL_LOGIN` y `E2E_REAL_PASSWORD`.
+
+Motivo:
+
+- Reportes avanzados no pueden ser tablas basicas sin filtros ni totales confiables.
+- El CSV debe salir del backend para no convertir React en fuente de verdad financiera.
+- La prueba real depende de servidor/credenciales/cliente LAN y no debe romper el gate local cuando ese entorno fisico no esta configurado.
+
+Consecuencia:
+
+- `npm.cmd run e2e` conserva el flujo automatizado vendible y no bloquea por hardware/red real ausente.
+- `npm.cmd run smoke:real` queda para validar consola limpia y navegacion contra una instalacion real en LAN.

@@ -1,9 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const useExternalServer = process.env.PLAYWRIGHT_EXTERNAL_SERVER === '1';
+const includeRealSmoke = process.env.E2E_INCLUDE_REAL_SMOKE === '1';
 
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: includeRealSmoke ? [] : ['**/real-smoke.spec.ts'],
   timeout: 30_000,
   expect: {
     timeout: 7_500,

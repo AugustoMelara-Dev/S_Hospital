@@ -232,6 +232,7 @@ export type IncomeReport = {
   date_to: string;
   cash_session_id: number | null;
   user_id: number | null;
+  filters: ReportFilters;
   total_collected: string;
   payments_by_method: MoneyByMethod;
   payment_count: number;
@@ -241,6 +242,7 @@ export type IncomeReport = {
 export type CategoryReport = {
   date_from: string;
   date_to: string;
+  filters: ReportFilters;
   categories: Array<{
     category: string;
     item_count: number;
@@ -254,12 +256,63 @@ export type CategoryReport = {
 export type ServiceSalesReport = {
   date_from: string;
   date_to: string;
+  filters: ReportFilters;
   services: Array<{
     service: string;
     category: string;
     item_count: number;
     quantity: string;
     total: string;
+  }>;
+};
+
+export type OperationsReport = {
+  date_from: string;
+  date_to: string;
+  filters: ReportFilters;
+  summary: {
+    void_count: number;
+    reprint_count: number;
+    backup_count: number;
+    failed_backup_count: number;
+    cashier_count: number;
+  };
+  voids: Array<{
+    invoice_id: number;
+    invoice_number: string;
+    patient_name: string;
+    total: string;
+    reason: string | null;
+    voided_at: string | null;
+    user: string | null;
+  }>;
+  reprints: Array<{
+    invoice_id: number | null;
+    invoice_number: string | null;
+    width: string | null;
+    reason: string | null;
+    created_at: string | null;
+    user: string | null;
+  }>;
+  backups: Array<{
+    id: number;
+    filename: string;
+    status: string;
+    type: string;
+    size_bytes: number | null;
+    checksum_sha256: string | null;
+    created_at: string | null;
+    completed_at: string | null;
+    creator: string | null;
+  }>;
+  cashiers: Array<{
+    user_id: number;
+    name: string;
+    username: string;
+    payment_count: number;
+    cash_session_count: number;
+    invoice_count: number;
+    total_collected: string;
   }>;
 };
 
@@ -332,6 +385,16 @@ export type InvoiceFilters = {
   cash_session_id?: string;
   page?: number;
   per_page?: number;
+};
+
+export type ReportFilters = {
+  date_from: string;
+  date_to: string;
+  cash_session_id?: string | number | null;
+  user_id?: string | number | null;
+  category_id?: string | number | null;
+  method?: Payment['method'] | '' | null;
+  status?: Invoice['status'] | '' | null;
 };
 
 export const apiClient = {
@@ -626,19 +689,8 @@ export const apiClient = {
     return response.data;
   },
 
-  async getIncomeReport(filters: {
-    date_from: string;
-    date_to: string;
-    cash_session_id?: string;
-    user_id?: string;
-  }): Promise<IncomeReport> {
-    const params = new URLSearchParams();
-
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      }
-    });
+  async getIncomeReport(filters: ReportFilters): Promise<IncomeReport> {
+    const params = reportParams(filters);
 
     const response = await this.request<{ data: IncomeReport }>(
       `/api/reports/income?${params.toString()}`,
@@ -647,8 +699,8 @@ export const apiClient = {
     return response.data;
   },
 
-  async getCategoryReport(filters: { date_from: string; date_to: string }): Promise<CategoryReport> {
-    const params = new URLSearchParams(filters);
+  async getCategoryReport(filters: ReportFilters): Promise<CategoryReport> {
+    const params = reportParams(filters);
     const response = await this.request<{ data: CategoryReport }>(
       `/api/reports/categories?${params.toString()}`,
     );
@@ -656,8 +708,8 @@ export const apiClient = {
     return response.data;
   },
 
-  async getServiceSalesReport(filters: { date_from: string; date_to: string }): Promise<ServiceSalesReport> {
-    const params = new URLSearchParams(filters);
+  async getServiceSalesReport(filters: ReportFilters): Promise<ServiceSalesReport> {
+    const params = reportParams(filters);
     const response = await this.request<{ data: ServiceSalesReport }>(
       `/api/reports/services?${params.toString()}`,
     );
@@ -665,19 +717,17 @@ export const apiClient = {
     return response.data;
   },
 
-  reportExportUrl(filters: {
-    date_from: string;
-    date_to: string;
-    cash_session_id?: string;
-    user_id?: string;
-  }): string {
-    const params = new URLSearchParams();
+  async getOperationsReport(filters: ReportFilters): Promise<OperationsReport> {
+    const params = reportParams(filters);
+    const response = await this.request<{ data: OperationsReport }>(
+      `/api/reports/operations?${params.toString()}`,
+    );
 
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      }
-    });
+    return response.data;
+  },
+
+  reportExportUrl(filters: ReportFilters): string {
+    const params = reportParams(filters);
 
     return this.url(`/api/reports/export?${params.toString()}`);
   },
@@ -719,3 +769,15 @@ export const apiClient = {
     return this.url(`/api/backups/${encodeURIComponent(id)}/download`);
   },
 };
+
+function reportParams(filters: ReportFilters): URLSearchParams {
+  const params = new URLSearchParams();
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      params.set(key, String(value));
+    }
+  });
+
+  return params;
+}

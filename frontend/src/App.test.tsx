@@ -295,6 +295,12 @@ describe('App', () => {
             },
           },
         }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [],
+        }),
       } as Response);
 
     render(<App />);
@@ -560,6 +566,20 @@ describe('App', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
+          data: [
+            {
+              id: 4,
+              name: 'Radiologia',
+              slug: 'radiologia',
+              active: true,
+              sort_order: 20,
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
           data: {
             date_from: '2026-05-17',
             date_to: '2026-05-17',
@@ -596,6 +616,26 @@ describe('App', () => {
             services: [],
           },
         }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            date_from: '2026-05-17',
+            date_to: '2026-05-17',
+            summary: {
+              void_count: 0,
+              reprint_count: 0,
+              backup_count: 0,
+              failed_backup_count: 0,
+              cashier_count: 0,
+            },
+            voids: [],
+            reprints: [],
+            backups: [],
+            cashiers: [],
+          },
+        }),
       } as Response);
 
     render(<App />);
@@ -604,12 +644,28 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: /^reporte diario$/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/desde/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/categoria/i), { target: { value: '4' } });
+    fireEvent.change(screen.getByRole('combobox', { name: /^metodo de pago$/i }), { target: { value: 'card' } });
+    fireEvent.change(screen.getByLabelText(/^estado$/i), { target: { value: 'paid' } });
     expect(screen.getByText(/rango maximo permitido: 31 dias/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver rango/i }));
 
     expect(await screen.findByText(/ingresos por rango/i)).toBeInTheDocument();
     expect(await screen.findByText(/sin categorias en el rango seleccionado/i)).toBeInTheDocument();
     expect(await screen.findByText(/sin servicios facturados/i)).toBeInTheDocument();
+    expect(await screen.findByText(/sin eventos operativos/i)).toBeInTheDocument();
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('category_id=4'),
+      expect.any(Object),
+    );
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('method=card'),
+      expect.any(Object),
+    );
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('status=paid'),
+      expect.any(Object),
+    );
   });
 
   it('renders payment form after issuing an invoice without adding reports', async () => {

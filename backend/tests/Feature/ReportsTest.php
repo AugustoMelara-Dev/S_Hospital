@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
+use App\Models\BackupLog;
 use App\Models\Category;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -217,6 +219,70 @@ class ReportsTest extends TestCase
         $this->assertNotSame($glucoseInvoice, $hemogramInvoice);
     }
 
+    public function test_range_filters_apply_to_category_services_and_cashier_reports(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $otherCashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $otherSessionId = $this->openSession($otherCashier);
+        $glucoseInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $erythropoietinInvoice = $this->createInvoice($otherCashier, 'Eritropoyetina');
+        $laboratoryId = Service::query()->where('name', 'Glucosa')->firstOrFail()->category_id;
+
+        $this->payInvoice($cashier, $glucoseInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($otherCashier, $erythropoietinInvoice, $otherSessionId, Payment::METHOD_CARD, '28.75');
+
+        $filters = http_build_query([
+            'date_from' => now()->toDateString(),
+            'date_to' => now()->toDateString(),
+            'user_id' => $cashier->id,
+            'cash_session_id' => $sessionId,
+            'category_id' => $laboratoryId,
+            'method' => Payment::METHOD_CASH,
+            'status' => Invoice::STATUS_PAID,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/income?{$filters}")
+            ->assertOk()
+            ->assertJsonPath('data.total_collected', '17.25')
+            ->assertJsonPath('data.payment_count', 1)
+            ->assertJsonPath('data.payments_by_method.cash', '17.25')
+            ->assertJsonPath('data.payments_by_method.card', '0.00')
+            ->assertJsonPath('data.filters.category_id', (string) $laboratoryId)
+            ->assertJsonPath('data.filters.method', Payment::METHOD_CASH)
+            ->assertJsonPath('data.filters.status', Invoice::STATUS_PAID);
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/categories?{$filters}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.categories')
+            ->assertJsonPath('data.filters.user_id', (string) $cashier->id)
+            ->assertJsonPath('data.filters.method', Payment::METHOD_CASH)
+            ->assertJsonPath('data.categories.0.category', 'Laboratorio')
+            ->assertJsonPath('data.categories.0.total', '17.25');
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/services?{$filters}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.services')
+            ->assertJsonPath('data.services.0.service', 'Glucosa')
+            ->assertJsonPath('data.services.0.total', '17.25');
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/operations?{$filters}")
+            ->assertOk()
+            ->assertJsonPath('data.summary.cashier_count', 1)
+            ->assertJsonPath('data.cashiers.0.user_id', $cashier->id)
+            ->assertJsonPath('data.cashiers.0.total_collected', '17.25');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/categories?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&method=cheque')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('method');
+    }
+
     public function test_report_export_requires_permission_and_uses_backend_aggregates(): void
     {
         $this->seedBillingBase();
@@ -245,6 +311,59 @@ class ReportsTest extends TestCase
         $this->assertStringContainsString('ingresos,"Total cobrado",,,17.25', $csv);
         $this->assertStringContainsString('categoria,Laboratorio,Laboratorio,1.00,17.25', $csv);
         $this->assertStringContainsString('servicio,Glucosa,Laboratorio,1.00,17.25', $csv);
+        $this->assertStringContainsString('cajero', $csv);
+        $this->assertStringContainsString($cashier->username, $csv);
+    }
+
+    public function test_operations_report_lists_voids_reprints_and_backups(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $admin = $this->admin();
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        Invoice::query()->whereKey($invoiceId)->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $admin->id,
+            'voided_at' => now(),
+            'void_reason' => 'Error de captura',
+        ]);
+
+        AuditLog::query()->create([
+            'user_id' => $admin->id,
+            'action' => 'invoice.reprinted',
+            'entity_type' => Invoice::class,
+            'entity_id' => $invoiceId,
+            'new_values' => [
+                'invoice_number' => '000-001-01-00000001',
+                'width' => '80mm',
+                'reason' => 'Paciente solicita copia',
+            ],
+            'created_at' => now(),
+        ]);
+
+        BackupLog::query()->create([
+            'filename' => 'hospital-backup-test.sql',
+            'path' => 'backups/hospital-backup-test.sql',
+            'disk' => 'local',
+            'size_bytes' => 2048,
+            'checksum_sha256' => str_repeat('a', 64),
+            'status' => BackupLog::STATUS_SUCCESS,
+            'type' => BackupLog::TYPE_MANUAL,
+            'created_by' => $admin->id,
+            'completed_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/operations?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertJsonPath('data.summary.void_count', 1)
+            ->assertJsonPath('data.summary.reprint_count', 1)
+            ->assertJsonPath('data.summary.backup_count', 1)
+            ->assertJsonPath('data.summary.cashier_count', 0)
+            ->assertJsonPath('data.voids.0.reason', 'Error de captura')
+            ->assertJsonPath('data.reprints.0.reason', 'Paciente solicita copia')
+            ->assertJsonPath('data.backups.0.filename', 'hospital-backup-test.sql');
     }
 
     public function test_cash_session_report_returns_expected_amounts_payments_movements_and_permissions(): void
