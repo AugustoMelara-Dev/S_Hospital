@@ -50,6 +50,9 @@ export function ReportsView({
   const [operations, setOperations] = useState<OperationsReport | null>(null);
   const [cashSession, setCashSession] = useState<CashSessionReport | null>(null);
   const [categoryOptions, setCategoryOptions] = useState<Category[]>([]);
+  const [dailyError, setDailyError] = useState('');
+  const [rangeError, setRangeError] = useState('');
+  const [cashError, setCashError] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -61,13 +64,16 @@ export function ReportsView({
 
   async function loadDaily(date: string) {
     setLoading(true);
+    setDailyError('');
     onStatus('Cargando reporte diario...');
 
     try {
       setDaily(await apiClient.getDailyReport(date));
       onStatus('Reporte diario cargado.');
     } catch (error) {
-      onStatus(error instanceof Error ? error.message : 'No se pudo cargar el reporte diario.');
+      const message = error instanceof Error ? error.message : 'No se pudo cargar el reporte diario.';
+      setDailyError(message);
+      onStatus(message);
     } finally {
       setLoading(false);
     }
@@ -90,6 +96,7 @@ export function ReportsView({
   async function handleRangeSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
+    setRangeError('');
     onStatus('Cargando reportes por rango...');
 
     try {
@@ -114,7 +121,9 @@ export function ReportsView({
       setOperations(operationsReport);
       onStatus('Reportes por rango cargados.');
     } catch (error) {
-      onStatus(error instanceof Error ? error.message : 'No se pudieron cargar los reportes.');
+      const message = error instanceof Error ? error.message : 'No se pudieron cargar los reportes.';
+      setRangeError(message);
+      onStatus(message);
     } finally {
       setLoading(false);
     }
@@ -124,18 +133,22 @@ export function ReportsView({
     event.preventDefault();
 
     if (!cashReportId.trim()) {
+      setCashError('Ingrese el numero de caja.');
       onStatus('Ingrese el numero de caja.');
       return;
     }
 
     setLoading(true);
+    setCashError('');
     onStatus('Cargando resumen de caja...');
 
     try {
       setCashSession(await apiClient.getCashSessionReport(cashReportId));
       onStatus('Resumen de caja cargado.');
     } catch (error) {
-      onStatus(error instanceof Error ? error.message : 'No se pudo cargar la caja.');
+      const message = error instanceof Error ? error.message : 'No se pudo cargar la caja.';
+      setCashError(message);
+      onStatus(message);
     } finally {
       setLoading(false);
     }
@@ -160,6 +173,7 @@ export function ReportsView({
             </label>
             <button type="submit">Ver diario</button>
           </form>
+          {dailyError ? <p className="notice error-notice">{dailyError}</p> : null}
 
           {daily ? (
             <div className="report-card" aria-label="Resumen diario">
@@ -247,7 +261,7 @@ export function ReportsView({
             <label>
               Estado
               <select value={status} onChange={(event) => setStatus(event.target.value)}>
-                <option value="">Todos no anulados</option>
+                <option value="">Financieros no anulados</option>
                 <option value="issued">Emitida</option>
                 <option value="partial">Parcial</option>
                 <option value="paid">Pagada</option>
@@ -255,8 +269,11 @@ export function ReportsView({
               </select>
             </label>
             <button type="submit">Ver rango</button>
-            <p className="muted">Rango maximo permitido: 31 dias.</p>
+            <p className="muted">
+              Rango maximo permitido: 31 dias. Categoria prorratea cobros por items; backups solo respetan fecha y usuario.
+            </p>
           </form>
+          {rangeError ? <p className="notice error-notice">{rangeError}</p> : null}
         </>
       ) : (
         <p className="notice">Este usuario solo tiene acceso a reportes de caja permitidos.</p>
@@ -461,6 +478,7 @@ export function ReportsView({
           <button type="submit">Ver caja</button>
         </form>
       ) : null}
+      {cashError ? <p className="notice error-notice">{cashError}</p> : null}
 
       {cashSession ? (
         <div className="report-card" aria-label="Resumen de caja">

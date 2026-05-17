@@ -184,6 +184,19 @@ class ReportsTest extends TestCase
             ->getJson('/api/reports/categories?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
             ->assertOk()
             ->assertJsonCount(0, 'data.categories');
+
+        $query = 'date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&status='.Invoice::STATUS_VOID;
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/income?'.$query)
+            ->assertOk()
+            ->assertJsonPath('data.total_collected', '0.00')
+            ->assertJsonPath('data.payment_count', 0);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/services?'.$query)
+            ->assertOk()
+            ->assertJsonCount(0, 'data.services');
     }
 
     public function test_service_sales_report_uses_snapshots_and_excludes_void_invoices(): void
@@ -283,6 +296,45 @@ class ReportsTest extends TestCase
             ->assertJsonValidationErrors('method');
     }
 
+    public function test_category_filtered_collections_are_allocated_to_matching_items(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $erythropoietin = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [
+                    ['service_id' => $glucose->id, 'quantity' => '1.00'],
+                    ['service_id' => $erythropoietin->id, 'quantity' => '1.00'],
+                ],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '46.00');
+
+        $filters = http_build_query([
+            'date_from' => now()->toDateString(),
+            'date_to' => now()->toDateString(),
+            'category_id' => $glucose->category_id,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/income?{$filters}")
+            ->assertOk()
+            ->assertJsonPath('data.total_collected', '17.25')
+            ->assertJsonPath('data.payments_by_method.cash', '17.25');
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/operations?{$filters}")
+            ->assertOk()
+            ->assertJsonPath('data.cashiers.0.total_collected', '17.25');
+    }
+
     public function test_report_export_requires_permission_and_uses_backend_aggregates(): void
     {
         $this->seedBillingBase();
@@ -313,6 +365,68 @@ class ReportsTest extends TestCase
         $this->assertStringContainsString('servicio,Glucosa,Laboratorio,1.00,17.25', $csv);
         $this->assertStringContainsString('cajero', $csv);
         $this->assertStringContainsString($cashier->username, $csv);
+    }
+
+    public function test_operations_and_export_hide_backup_metadata_without_backup_permission(): void
+    {
+        $this->seedBillingBase();
+        $viewer = User::factory()->create();
+        $viewer->givePermissionTo('reports.view', 'reports.managerial.view', 'reports.export');
+
+        BackupLog::query()->create([
+            'filename' => 'hospital-backup-sensitive.sql',
+            'path' => 'backups/hospital-backup-sensitive.sql',
+            'disk' => 'local',
+            'size_bytes' => 2048,
+            'checksum_sha256' => str_repeat('b', 64),
+            'status' => BackupLog::STATUS_SUCCESS,
+            'type' => BackupLog::TYPE_MANUAL,
+            'created_by' => $this->admin()->id,
+            'completed_at' => now(),
+        ]);
+
+        $url = '/api/reports/operations?date_from='.now()->toDateString().'&date_to='.now()->toDateString();
+
+        $this->actingAs($viewer)
+            ->getJson($url)
+            ->assertOk()
+            ->assertJsonPath('data.summary.backup_count', 0)
+            ->assertJsonCount(0, 'data.backups');
+
+        $csv = $this->actingAs($viewer)
+            ->get(str_replace('/operations?', '/export?', $url))
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertStringNotContainsString('hospital-backup-sensitive.sql', $csv);
+        $this->assertStringNotContainsString(str_repeat('b', 64), $csv);
+    }
+
+    public function test_operations_summary_counts_are_not_limited_to_preview_rows(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+
+        for ($i = 1; $i <= 30; $i++) {
+            BackupLog::query()->create([
+                'filename' => "hospital-backup-{$i}.sql",
+                'path' => "backups/hospital-backup-{$i}.sql",
+                'disk' => 'local',
+                'size_bytes' => 1024,
+                'checksum_sha256' => hash('sha256', "backup-{$i}"),
+                'status' => BackupLog::STATUS_FAILED,
+                'type' => BackupLog::TYPE_MANUAL,
+                'created_by' => $admin->id,
+                'completed_at' => now(),
+            ]);
+        }
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/operations?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertJsonPath('data.summary.backup_count', 30)
+            ->assertJsonPath('data.summary.failed_backup_count', 30)
+            ->assertJsonCount(25, 'data.backups');
     }
 
     public function test_operations_report_lists_voids_reprints_and_backups(): void

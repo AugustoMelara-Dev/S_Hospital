@@ -64,7 +64,7 @@ class ReportController extends Controller
     public function operations(DateRangeReportRequest $request, OperationsReportService $reports): JsonResponse
     {
         return response()->json([
-            'data' => $reports->report($request->validated()),
+            'data' => $reports->report($request->validated(), $request->user()->can('backups.view')),
         ]);
     }
 
@@ -80,7 +80,7 @@ class ReportController extends Controller
         $income = $incomeReports->report($request->validated());
         $categories = $categoryReports->report($request->validated());
         $services = $serviceReports->report($request->validated());
-        $operations = $operationReports->report($request->validated());
+        $operations = $operationReports->report($request->validated(), $request->user()->can('backups.view'));
         $filename = sprintf('reporte-hospital-%s-a-%s.csv', $request->dateFrom(), $request->dateTo());
 
         return response()->streamDownload(function () use ($income, $categories, $services, $operations): void {

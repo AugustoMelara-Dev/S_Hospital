@@ -22,11 +22,13 @@ class ServiceSalesReportService
 
         $services = DB::table('invoice_items')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
-            ->when(
-                ! empty($filters['status']),
-                fn ($query) => $query->where('invoices.status', $filters['status']),
-                fn ($query) => $query->where('invoices.status', '!=', Invoice::STATUS_VOID),
-            )
+            ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            ->when(! empty($filters['status']) && $filters['status'] !== Invoice::STATUS_VOID, function ($query) use ($filters): void {
+                $query->where('invoices.status', $filters['status']);
+            })
+            ->when(($filters['status'] ?? null) === Invoice::STATUS_VOID, function ($query): void {
+                $query->whereRaw('1 = 0');
+            })
             ->whereBetween('invoices.issued_at', [$start, $end])
             ->when(! empty($filters['category_id']), function ($query) use ($filters): void {
                 $query->where('invoice_items.category_id', $filters['category_id']);

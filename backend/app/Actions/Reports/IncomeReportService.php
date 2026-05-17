@@ -7,7 +7,6 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class IncomeReportService
 {
@@ -21,11 +20,13 @@ class IncomeReportService
         $base = Payment::query()
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
             ->where('payments.status', Payment::STATUS_POSTED)
-            ->when(
-                ! empty($filters['status']),
-                fn (Builder $query) => $query->where('invoices.status', $filters['status']),
-                fn (Builder $query) => $query->where('invoices.status', '!=', Invoice::STATUS_VOID),
-            )
+            ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            ->when(! empty($filters['status']) && $filters['status'] !== Invoice::STATUS_VOID, function (Builder $query) use ($filters): void {
+                $query->where('invoices.status', $filters['status']);
+            })
+            ->when(($filters['status'] ?? null) === Invoice::STATUS_VOID, function (Builder $query): void {
+                $query->whereRaw('1 = 0');
+            })
             ->whereBetween('payments.paid_at', [$start, $end])
             ->when(! empty($filters['cash_session_id']), function (Builder $query) use ($filters): void {
                 $query->where('payments.cash_session_id', $filters['cash_session_id']);
@@ -46,16 +47,27 @@ class IncomeReportService
                 });
             });
 
+        $collectedExpression = ! empty($filters['category_id'])
+            ? 'COALESCE(SUM(ROUND(payments.amount * 100 * (
+                SELECT COALESCE(SUM(invoice_items.line_total), 0)
+                FROM invoice_items
+                WHERE invoice_items.invoice_id = invoices.id
+                AND invoice_items.category_id = ?
+            ) / NULLIF(invoices.total, 0))), 0) as collected_cents'
+            : 'COALESCE(SUM(ROUND(payments.amount * 100)), 0) as collected_cents';
+        $collectedBindings = ! empty($filters['category_id']) ? [$filters['category_id']] : [];
+
         $summary = (clone $base)
             ->selectRaw('COUNT(*) as payment_count')
             ->selectRaw('COUNT(DISTINCT payments.invoice_id) as invoice_count')
-            ->selectRaw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as collected_cents')
+            ->selectRaw($collectedExpression, $collectedBindings)
             ->first();
 
         $methods = $this->zeroMethodTotals();
         (clone $base)
             ->groupBy('payments.method')
-            ->select('payments.method', DB::raw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as total_cents'))
+            ->select('payments.method')
+            ->selectRaw(str_replace(' as collected_cents', ' as total_cents', $collectedExpression), $collectedBindings)
             ->get()
             ->each(function (object $row) use (&$methods): void {
                 if (array_key_exists($row->method, $methods)) {

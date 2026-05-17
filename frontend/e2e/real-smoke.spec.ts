@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 const baseUrl = process.env.E2E_REAL_BASE_URL;
 const login = process.env.E2E_REAL_LOGIN;
 const password = process.env.E2E_REAL_PASSWORD;
+const realBaseUrl = baseUrl?.replace(/\/$/, '');
 const hasRealSmokeConfig = Boolean(baseUrl && login && password);
 
 test.skip(!hasRealSmokeConfig, 'Real LAN smoke requires E2E_REAL_BASE_URL, E2E_REAL_LOGIN and E2E_REAL_PASSWORD.');
@@ -23,7 +24,10 @@ test('real hospital workflow surfaces load without console errors', async ({ pag
     consoleIssues.push(`requestfailed: ${request.method()} ${request.url()} ${failure?.errorText ?? ''}`.trim());
   });
 
-  await page.goto(`${baseUrl}/login`);
+  await expect((await page.request.get(`${realBaseUrl}/up`)).ok()).toBe(true);
+  await expect((await page.request.get(`${realBaseUrl}/verify-email`)).ok()).toBe(true);
+
+  await page.goto(`${realBaseUrl}/login`);
   await page.getByLabel(/usuario|email/i).fill(login ?? '');
   await page.getByLabel(/contrasena|contraseña/i).fill(password ?? '');
   await page.getByRole('button', { name: /entrar|iniciar/i }).click();

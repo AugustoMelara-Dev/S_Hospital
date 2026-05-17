@@ -61,6 +61,7 @@ Fecha: 2026-05-17
 - POS principal exige caja abierta antes de emitir para evitar ambiguedad entre factura pendiente y cobrada.
 - Demo script actualizado con flujo de caja abierta, reportes avanzados y smoke real separado.
 - `App.tsx` reducido de 217 a 83 lineas; sesion, permisos y caja bootstrap viven en `useHospitalSession`.
+- Reportes muestran errores inline por diario/rango/caja, no solo en el status global.
 
 ## Validacion posterior a revision de subagentes
 
@@ -75,7 +76,7 @@ Fecha: 2026-05-17
 - `npm.cmd run build`: OK.
 - `php artisan config:cache`: OK.
 - `npm.cmd run e2e`: 1 Playwright workflow mockeado OK; `real-smoke.spec.ts` queda excluido por defecto.
-- `npm.cmd run smoke:real`: disponible como gate separado con `E2E_REAL_BASE_URL`, `E2E_REAL_LOGIN` y `E2E_REAL_PASSWORD`.
+- `npm.cmd run smoke:real`: disponible con config Playwright separada (`playwright.real.config.ts`) y requiere `E2E_REAL_BASE_URL`, `E2E_REAL_LOGIN` y `E2E_REAL_PASSWORD`.
 
 ## Pendiente real
 

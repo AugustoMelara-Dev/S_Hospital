@@ -9,7 +9,7 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 - [x] Topbar con usuario, caja, fecha/hora local y estado servidor/LAN visible.
 - [x] Rutas separadas.
 - [x] Layout tablet/movil sin enterrar el contenido despues de una pantalla completa de navegacion.
-- [ ] Errores operativos visibles inline o toast, no solo en footer/status.
+- [x] Errores operativos visibles inline o toast, no solo en footer/status.
 - [x] App.tsx reducido a composicion de providers/router.
 
 ## Facturacion
@@ -56,7 +56,7 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 - [x] Unit/feature tests backend.
 - [x] Frontend tests.
 - [x] E2E mockeado de demo.
-- [x] Smoke real contra Laravel/API separado del mock.
+- [x] Smoke real contra Laravel/API definido como gate separado del mock.
 - [ ] Browser smoke con cero `console.error`, `pageerror` y requests fallidas inesperadas.
 - [x] Build.
 - [x] Demo script actualizado con evidencia honesta.
