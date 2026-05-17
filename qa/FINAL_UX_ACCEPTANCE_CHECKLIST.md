@@ -50,7 +50,7 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 - [x] Tipografia base consistente.
 - [x] Colores base consistentes.
 - [x] Estados vacios/loading/error por modulo.
-- [ ] Responsive validado en navegador para desktop/tablet/mobile.
+- [x] Responsive validado en navegador para desktop/tablet/mobile.
 
 ## QA
 - [x] Unit/feature tests backend.

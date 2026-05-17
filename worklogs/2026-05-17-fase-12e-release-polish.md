@@ -64,6 +64,7 @@ Fecha: 2026-05-17
 - Reportes muestran errores inline por diario/rango/caja, no solo en el status global.
 - E2E Playwright mockeado falla si hay `console.error`, `pageerror` o request fallida inesperada.
 - Catalogo usa `DataTable` compartido y estados base para loading/empty/error.
+- E2E valida shell/POS en desktop, tablet y mobile.
 
 ## Validacion posterior a revision de subagentes
 

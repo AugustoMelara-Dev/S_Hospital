@@ -395,3 +395,35 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByText('pending')).toBeVisible();
   expect(consoleIssues).toEqual([]);
 });
+
+test('responsive shell keeps operational modules reachable', async ({ page }) => {
+  const consoleIssues: string[] = [];
+  const viewports = [
+    { width: 1280, height: 800 },
+    { width: 768, height: 1024 },
+    { width: 390, height: 844 },
+  ];
+
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleIssues.push(`console.error: ${message.text()}`);
+    }
+  });
+  page.on('pageerror', (error) => {
+    consoleIssues.push(`pageerror: ${error.message}`);
+  });
+
+  await installApiMocks(page);
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+    await page.goto('/billing/new');
+    await expect(page.getByRole('heading', { name: /nueva factura/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Caja', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Catalogo', exact: true })).toBeVisible();
+    await expect(page.getByLabel(/nombre del paciente/i)).toBeVisible();
+    await expect(page.getByLabel(/scanner usb o codigo manual/i)).toBeVisible();
+  }
+
+  expect(consoleIssues).toEqual([]);
+});
