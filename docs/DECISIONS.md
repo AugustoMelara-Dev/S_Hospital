@@ -157,3 +157,22 @@ Motivo:
 Consecuencia:
 
 - Fase 3 no crea facturacion ni `invoice_items`; solo deja el contrato de datos listo para que Fase 4 emita facturas desde snapshots.
+
+### 2026-05-17 - Facturacion transaccional con snapshots
+
+Decision:
+
+- La emision de facturas usa `CreateInvoiceAction` dentro de una transaccion, reserva correlativo fiscal con bloqueo de la fila activa y guarda snapshots completos en `invoice_items`.
+- Para evitar mas de una secuencia activa de factura, `fiscal_sequences` mantiene `active_document_type` nullable y unico; solo se llena cuando la secuencia esta activa.
+- Los calculos de dinero de Fase 4 se hacen en backend con enteros en centavos y cantidades con dos decimales; React solo muestra una previsualizacion informativa.
+
+Motivo:
+
+- La factura historica debe permanecer estable aunque cambien servicios o precios.
+- El correlativo fiscal no puede duplicarse ni consumirse fuera de la transaccion de emision.
+- MySQL/MariaDB permite multiples `NULL` en indices unicos, lo que hace compatible una defensa simple para una unica secuencia activa.
+
+Consecuencia:
+
+- Fase 4 no implementa caja, pagos, recibos, reportes, reimpresion ni anulacion.
+- Fase 5 debera asociar pagos/caja a facturas ya emitidas sin recalcular `invoice_items`.

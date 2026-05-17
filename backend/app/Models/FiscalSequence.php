@@ -15,9 +15,17 @@ class FiscalSequence extends Model
         'cai',
         'valid_until',
         'active',
+        'active_document_type',
         'created_by',
         'updated_by',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (FiscalSequence $sequence): void {
+            $sequence->active_document_type = $sequence->active ? $sequence->document_type : null;
+        });
+    }
 
     protected function casts(): array
     {

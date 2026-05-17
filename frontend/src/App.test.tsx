@@ -138,6 +138,58 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: /guardar servicio/i })).not.toBeInTheDocument();
   });
 
+  it('renders a minimal new invoice view without payment actions', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 2,
+            name: 'Cajero Demo',
+            email: 'cajero.demo@hospital-billing.local',
+            username: 'cajero.demo',
+            active: true,
+            roles: ['cajero'],
+            permissions: ['invoices.create', 'invoices.view'],
+            must_change_password: false,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 10,
+              category_id: 1,
+              name: 'Eritropoyetina',
+              slug: 'eritropoyetina',
+              price: '25.00',
+              taxable: true,
+              active: true,
+              special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+              category: {
+                id: 1,
+                name: 'Medicamentos',
+                slug: 'medicamentos',
+                active: true,
+                sort_order: 4,
+              },
+            },
+          ],
+        }),
+      } as Response);
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /nueva factura/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/nombre del paciente/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/buscar servicios activos/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /eritropoyetina/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /cobrar/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/metodo de pago/i)).not.toBeInTheDocument();
+  });
+
   it('lets a user with required password change submit a new password', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({

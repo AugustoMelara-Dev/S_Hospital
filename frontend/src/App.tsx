@@ -6,6 +6,7 @@ import {
   apiClient,
 } from './lib/api';
 import { CatalogView } from './features/catalog/CatalogView';
+import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 
 const emptySequence: FiscalSequence = {
   document_type: 'invoice',
@@ -47,6 +48,10 @@ export function App() {
     [user],
   );
   const canViewCatalog = useMemo(() => user?.permissions.includes('catalog.view') ?? false, [user]);
+  const canCreateInvoices = useMemo(
+    () => user?.permissions.includes('invoices.create') ?? false,
+    [user],
+  );
 
   useEffect(() => {
     apiClient
@@ -239,10 +244,12 @@ export function App() {
           </label>
           <button type="submit">Actualizar contrasena</button>
         </form>
-      ) : !canViewFiscalSettings && !canViewCatalog ? (
+      ) : !canViewFiscalSettings && !canViewCatalog && !canCreateInvoices ? (
         <section className="notice" role="alert">No tiene permisos operativos asignados.</section>
       ) : (
         <>
+          {canCreateInvoices ? <NewInvoiceView onStatus={setStatus} /> : null}
+
           {canViewFiscalSettings ? (
             <section className="settings-layout">
               <form onSubmit={handleFiscalSubmit} className="settings-form">

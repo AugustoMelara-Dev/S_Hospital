@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FiscalSequenceController;
 use App\Http\Controllers\FiscalSettingsController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
 
@@ -38,5 +39,9 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         Route::get('/services', [ServiceController::class, 'index']);
         Route::post('/services', [ServiceController::class, 'store']);
         Route::patch('/services/{service}', [ServiceController::class, 'update']);
+
+        Route::get('/invoices', [InvoiceController::class, 'index']);
+        Route::post('/invoices', [InvoiceController::class, 'store']);
+        Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
     });
 });

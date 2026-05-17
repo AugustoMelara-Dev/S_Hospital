@@ -66,6 +66,50 @@ export type ServicePayload = {
   special_rule_code: string | null;
 };
 
+export type InvoiceItemPayload = {
+  service_id: number;
+  quantity: string;
+  dialysis_prescription?: boolean;
+  notes?: string | null;
+};
+
+export type InvoicePayload = {
+  patient_name: string;
+  items: InvoiceItemPayload[];
+};
+
+export type InvoiceItem = {
+  id: number;
+  service_id: number;
+  service_name: string;
+  category_id: number;
+  category_name: string;
+  quantity: string;
+  unit_price: string;
+  tax_rate: string;
+  tax_amount: string;
+  line_subtotal: string;
+  line_total: string;
+  special_rule_code: string | null;
+  special_rule_applied: boolean;
+  notes: string | null;
+};
+
+export type Invoice = {
+  id: number;
+  invoice_number: string;
+  patient_name: string;
+  subtotal: string;
+  tax_amount: string;
+  discount_amount: string;
+  total: string;
+  paid_amount: string;
+  balance_due: string;
+  status: 'issued';
+  issued_at: string;
+  items: InvoiceItem[];
+};
+
 export const apiClient = {
   baseUrl: configuredBaseUrl.replace(/\/$/, ''),
 
@@ -222,6 +266,15 @@ export const apiClient = {
         body: JSON.stringify(payload),
       },
     );
+
+    return response.data;
+  },
+
+  async createInvoice(payload: InvoicePayload): Promise<Invoice> {
+    const response = await this.request<{ data: Invoice }>('/api/invoices', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
 
     return response.data;
   },

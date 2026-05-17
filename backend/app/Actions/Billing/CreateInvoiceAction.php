@@ -1,0 +1,110 @@
+<?php
+
+namespace App\Actions\Billing;
+
+use App\Models\AuditLog;
+use App\Models\FiscalSetting;
+use App\Models\Invoice;
+use App\Models\Service;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+class CreateInvoiceAction
+{
+    public function __construct(
+        private readonly GenerateFiscalNumberAction $generateFiscalNumber,
+        private readonly CalculateInvoiceTotalsAction $calculateInvoiceTotals,
+    ) {}
+
+    /**
+     * @param  array{patient_name: string, items: list<array{service_id: int, quantity: string, dialysis_prescription?: bool, notes?: ?string}>}  $payload
+     */
+    public function execute(array $payload, User $issuer): Invoice
+    {
+        return DB::transaction(function () use ($payload, $issuer): Invoice {
+            $preparedItems = $this->prepareItems($payload['items']);
+            $taxRate = FiscalSetting::query()->value('default_tax_rate') ?? '15.00';
+            $totals = $this->calculateInvoiceTotals->execute($preparedItems, (string) $taxRate);
+            $fiscal = $this->generateFiscalNumber->execute();
+
+            $invoice = Invoice::query()->create([
+                'invoice_number' => $fiscal['invoice_number'],
+                'fiscal_sequence_id' => $fiscal['sequence']->id,
+                'patient_name' => trim($payload['patient_name']),
+                'subtotal' => $totals['subtotal'],
+                'tax_amount' => $totals['tax_amount'],
+                'discount_amount' => $totals['discount_amount'],
+                'total' => $totals['total'],
+                'paid_amount' => '0.00',
+                'balance_due' => $totals['total'],
+                'status' => Invoice::STATUS_ISSUED,
+                'issued_by' => $issuer->id,
+                'issued_at' => now(),
+            ]);
+
+            foreach ($totals['items'] as $item) {
+                $invoice->items()->create($item);
+            }
+
+            AuditLog::query()->create([
+                'user_id' => $issuer->id,
+                'action' => 'invoice.issued',
+                'entity_type' => Invoice::class,
+                'entity_id' => $invoice->id,
+                'old_values' => null,
+                'new_values' => [
+                    'invoice_number' => $invoice->invoice_number,
+                    'patient_name' => $invoice->patient_name,
+                    'total' => $invoice->total,
+                    'status' => $invoice->status,
+                ],
+            ]);
+
+            return $invoice->load('items', 'issuer:id,name,username');
+        });
+    }
+
+    /**
+     * @param  list<array{service_id: int, quantity: string, dialysis_prescription?: bool, notes?: ?string}>  $items
+     * @return list<array{service: Service, quantity: string, dialysis_prescription: bool, notes: ?string}>
+     */
+    private function prepareItems(array $items): array
+    {
+        $serviceIds = collect($items)->pluck('service_id')->unique()->values();
+        $services = Service::query()
+            ->with('category:id,name')
+            ->whereIn('id', $serviceIds)
+            ->get()
+            ->keyBy('id');
+
+        $prepared = [];
+
+        foreach ($items as $index => $item) {
+            /** @var Service|null $service */
+            $service = $services->get($item['service_id']);
+            $field = "items.{$index}.service_id";
+
+            if ($service === null) {
+                throw ValidationException::withMessages([
+                    $field => 'El servicio seleccionado no existe.',
+                ]);
+            }
+
+            if (! $service->active) {
+                throw ValidationException::withMessages([
+                    $field => 'El servicio seleccionado esta inactivo.',
+                ]);
+            }
+
+            $prepared[] = [
+                'service' => $service,
+                'quantity' => $item['quantity'],
+                'dialysis_prescription' => (bool) ($item['dialysis_prescription'] ?? false),
+                'notes' => $item['notes'] ?? null,
+            ];
+        }
+
+        return $prepared;
+    }
+}

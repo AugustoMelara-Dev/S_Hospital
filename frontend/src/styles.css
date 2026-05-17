@@ -228,9 +228,97 @@ th {
   background: #e6fffb;
 }
 
+.invoice-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.invoice-panel,
+.invoice-summary {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.service-picker,
+.selected-items {
+  display: grid;
+  gap: 10px;
+}
+
+.service-option {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  align-items: center;
+  text-align: left;
+  background: #f8fafc;
+  color: var(--text);
+}
+
+.service-option small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+}
+
+.selected-item {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.selected-item > div,
+.totals-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.totals-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.totals-list dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.issued-box {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: #ecfeff;
+}
+
+.issued-box h2,
+.issued-box p {
+  margin: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
 .sequence-list {
   display: grid;
   gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .invoice-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .settings-form,
