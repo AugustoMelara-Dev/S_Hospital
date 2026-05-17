@@ -24,13 +24,22 @@ class CreateInvoiceAction
     {
         return DB::transaction(function () use ($payload, $issuer): Invoice {
             $preparedItems = $this->prepareItems($payload['items']);
-            $taxRate = FiscalSetting::query()->value('default_tax_rate') ?? '15.00';
+            $settings = FiscalSetting::query()->first();
+            $taxRate = $settings?->default_tax_rate ?? '15.00';
             $totals = $this->calculateInvoiceTotals->execute($preparedItems, (string) $taxRate);
             $fiscal = $this->generateFiscalNumber->execute();
+            $sequence = $fiscal['sequence'];
 
             $invoice = Invoice::query()->create([
                 'invoice_number' => $fiscal['invoice_number'],
-                'fiscal_sequence_id' => $fiscal['sequence']->id,
+                'fiscal_sequence_id' => $sequence->id,
+                'fiscal_cai' => $sequence->cai,
+                'fiscal_range_from' => $sequence->prefix.'-'.str_pad((string) $sequence->min_number, 8, '0', STR_PAD_LEFT),
+                'fiscal_range_to' => $sequence->prefix.'-'.str_pad((string) $sequence->max_number, 8, '0', STR_PAD_LEFT),
+                'fiscal_valid_until' => $sequence->valid_until,
+                'fiscal_prefix' => $sequence->prefix,
+                'hospital_name' => $settings?->hospital_name,
+                'hospital_rtn' => $settings?->rtn,
                 'patient_name' => trim($payload['patient_name']),
                 'subtotal' => $totals['subtotal'],
                 'tax_amount' => $totals['tax_amount'],

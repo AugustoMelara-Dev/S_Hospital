@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { localDateString } from './features/invoices/InvoiceHistoryView';
 import { ReceiptPreview } from './features/receipts/ReceiptPreview';
 import { type ReceiptData } from './lib/api';
 
@@ -455,7 +456,7 @@ describe('App', () => {
   });
 
   it('renders invoice history filters and reprint button based on permissions', async () => {
-    vi.spyOn(globalThis, 'fetch')
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -531,6 +532,38 @@ describe('App', () => {
             payments: [],
           },
         }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            receipt: {
+              width: '80mm',
+              hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+              fiscal: {
+                cai: 'TEST-CAI',
+                authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
+                valid_until: '2027-05-17',
+              },
+              invoice: {
+                id: 100,
+                invoice_number: '000-001-01-00000001',
+                issued_at: '2026-05-17T08:00:00-06:00',
+                cashier: 'Cajero Demo',
+                patient_name: 'Maria Lopez',
+                subtotal: '15.00',
+                tax_amount: '2.25',
+                discount_amount: '0.00',
+                total: '17.25',
+                paid_amount: '17.25',
+                balance_due: '0.00',
+                status: 'paid',
+              },
+              items: [],
+              payments: [],
+            },
+          },
+        }),
       } as Response);
 
     render(<App />);
@@ -544,6 +577,15 @@ describe('App', () => {
 
     expect(await screen.findByRole('button', { name: /reimprimir/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /anular factura/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /reimprimir/i }));
+    expect(await screen.findByRole('heading', { name: /preview termico/i })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/ancho del recibo/i), { target: { value: '58mm' } });
+    expect(screen.getByLabelText(/recibo termico/i)).toHaveClass('receipt-58mm');
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(1);
+  });
+
+  it('formats local dates without converting them through UTC', () => {
+    expect(localDateString(new Date(2026, 4, 17, 23, 30))).toBe('2026-05-17');
   });
 
   it('shows void reason confirmation for users with invoice void permission', async () => {

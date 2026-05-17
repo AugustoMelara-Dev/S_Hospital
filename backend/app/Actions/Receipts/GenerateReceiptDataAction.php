@@ -2,7 +2,6 @@
 
 namespace App\Actions\Receipts;
 
-use App\Models\FiscalSetting;
 use App\Models\Invoice;
 
 class GenerateReceiptDataAction
@@ -13,25 +12,20 @@ class GenerateReceiptDataAction
             'items',
             'payments.user:id,name,username',
             'issuer:id,name,username',
-            'fiscalSequence',
         ]);
-
-        $settings = FiscalSetting::query()->first();
-        $sequence = $invoice->fiscalSequence;
 
         return [
             'width' => $width,
             'hospital' => [
-                'name' => $settings?->hospital_name ?? 'Hospital',
-                'rtn' => $settings?->rtn,
+                'name' => $invoice->hospital_name ?? 'Hospital',
+                'rtn' => $invoice->hospital_rtn,
             ],
             'fiscal' => [
-                'cai' => $sequence?->cai,
-                'authorized_range' => $sequence
-                    ? $sequence->prefix.'-'.str_pad((string) $sequence->min_number, 8, '0', STR_PAD_LEFT)
-                        .' a '.$sequence->prefix.'-'.str_pad((string) $sequence->max_number, 8, '0', STR_PAD_LEFT)
+                'cai' => $invoice->fiscal_cai,
+                'authorized_range' => $invoice->fiscal_range_from && $invoice->fiscal_range_to
+                    ? $invoice->fiscal_range_from.' a '.$invoice->fiscal_range_to
                     : null,
-                'valid_until' => $sequence?->valid_until?->toDateString(),
+                'valid_until' => $invoice->fiscal_valid_until?->toDateString(),
             ],
             'invoice' => [
                 'id' => $invoice->id,

@@ -13,7 +13,7 @@ return new class extends Migration
                 ->nullable()
                 ->after('issued_at')
                 ->constrained('users')
-                ->nullOnDelete();
+                ->restrictOnDelete();
             $table->timestamp('voided_at')->nullable()->after('voided_by');
             $table->string('void_reason', 500)->nullable()->after('voided_at');
 

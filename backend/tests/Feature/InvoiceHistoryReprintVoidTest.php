@@ -140,6 +140,34 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         ]);
     }
 
+    public function test_reprint_uses_invoice_fiscal_snapshot_after_settings_change(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
+
+        FiscalSetting::query()->firstOrFail()->update([
+            'hospital_name' => 'Hospital Cambiado',
+            'rtn' => '99999999999999',
+        ]);
+        FiscalSequence::query()->where('document_type', 'invoice')->update([
+            'prefix' => '999-999-99',
+            'min_number' => 50,
+            'max_number' => 60,
+            'cai' => 'CAI-CAMBIADO',
+            'valid_until' => now()->addYears(2)->toDateString(),
+        ]);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/reprint", ['width' => '80mm'])
+            ->assertOk()
+            ->assertJsonPath('data.receipt.hospital.name', 'Hospital Demo')
+            ->assertJsonPath('data.receipt.hospital.rtn', '08011999123456')
+            ->assertJsonPath('data.receipt.fiscal.cai', 'TEST-CAI')
+            ->assertJsonPath('data.receipt.fiscal.authorized_range', '000-001-01-00000001 a 000-001-01-99999999')
+            ->assertJsonPath('data.receipt.fiscal.valid_until', now()->addYear()->toDateString());
+    }
+
     public function test_cashier_cannot_reprint_other_or_old_invoice_without_reprint_any(): void
     {
         $this->seedBillingBase();
@@ -255,6 +283,40 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             'action' => 'invoice.void_blocked_paid',
             'entity_type' => Invoice::class,
             'entity_id' => $invoiceId,
+        ]);
+    }
+
+    public function test_void_revalidates_payment_state_inside_transaction_before_marking_void(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
+
+        Payment::query()->create([
+            'invoice_id' => $invoiceId,
+            'cash_session_id' => $sessionId,
+            'user_id' => $cashier->id,
+            'method' => Payment::METHOD_CASH,
+            'amount' => '17.25',
+            'status' => Payment::STATUS_POSTED,
+            'paid_at' => now(),
+        ]);
+
+        $this->actingAs($this->supervisor())
+            ->postJson("/api/invoices/{$invoiceId}/void", ['reason' => 'Intento concurrente'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('invoice')
+            ->assertJsonPath(
+                'errors.invoice.0',
+                'No se puede anular una factura con pagos registrados sin flujo de reversión.',
+            );
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'status' => Invoice::STATUS_ISSUED,
+            'voided_by' => null,
+            'voided_at' => null,
         ]);
     }
 

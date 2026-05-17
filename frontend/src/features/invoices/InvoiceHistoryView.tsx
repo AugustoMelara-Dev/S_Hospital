@@ -14,7 +14,7 @@ type InvoiceHistoryViewProps = {
   onStatus: (message: string) => void;
 };
 
-const today = new Date().toISOString().slice(0, 10);
+const today = localDateString();
 
 export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) {
   const [filters, setFilters] = useState<InvoiceFilters>({
@@ -356,7 +356,15 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             ) : null}
           </div>
 
-          {receipt ? <ReceiptPreview receipt={receipt} onWidthChange={(width) => reprint(width)} /> : null}
+          {receipt ? (
+            <ReceiptPreview
+              receipt={receipt}
+              onWidthChange={(width) => {
+                setReceipt({ ...receipt, width });
+                setReceiptWidth(width);
+              }}
+            />
+          ) : null}
         </section>
       ) : null}
     </section>
@@ -377,4 +385,12 @@ function formatDate(value: string): string {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(new Date(value));
+}
+
+export function localDateString(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
 }

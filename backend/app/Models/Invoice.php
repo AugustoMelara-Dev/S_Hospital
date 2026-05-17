@@ -19,6 +19,13 @@ class Invoice extends Model
     protected $fillable = [
         'invoice_number',
         'fiscal_sequence_id',
+        'fiscal_cai',
+        'fiscal_range_from',
+        'fiscal_range_to',
+        'fiscal_valid_until',
+        'fiscal_prefix',
+        'hospital_name',
+        'hospital_rtn',
         'patient_name',
         'subtotal',
         'tax_amount',
@@ -44,6 +51,7 @@ class Invoice extends Model
             'total' => 'decimal:2',
             'paid_amount' => 'decimal:2',
             'balance_due' => 'decimal:2',
+            'fiscal_valid_until' => 'date',
             'issued_at' => 'datetime',
             'voided_at' => 'datetime',
         ];

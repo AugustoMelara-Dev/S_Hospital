@@ -5,6 +5,7 @@ namespace App\Actions\Billing;
 use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\User;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -12,30 +13,7 @@ class VoidInvoiceAction
 {
     public function execute(Invoice $invoice, User $user, string $reason): Invoice
     {
-        if ($invoice->payments()->exists()) {
-            AuditLog::query()->create([
-                'user_id' => $user->id,
-                'action' => 'invoice.void_blocked_paid',
-                'entity_type' => Invoice::class,
-                'entity_id' => $invoice->id,
-                'old_values' => [
-                    'status' => $invoice->status,
-                    'paid_amount' => $invoice->paid_amount,
-                    'balance_due' => $invoice->balance_due,
-                ],
-                'new_values' => [
-                    'reason' => $reason,
-                    'message' => 'No se puede anular una factura con pagos registrados sin flujo de reversión.',
-                ],
-                'created_at' => now(),
-            ]);
-
-            throw ValidationException::withMessages([
-                'invoice' => 'No se puede anular una factura con pagos registrados sin flujo de reversión.',
-            ]);
-        }
-
-        return DB::transaction(function () use ($invoice, $user, $reason): Invoice {
+        $result = DB::transaction(function () use ($invoice, $user, $reason): ?Invoice {
             $lockedInvoice = Invoice::query()
                 ->withCount('payments')
                 ->lockForUpdate()
@@ -45,6 +23,28 @@ class VoidInvoiceAction
                 throw ValidationException::withMessages([
                     'invoice' => 'La factura ya esta anulada.',
                 ]);
+            }
+
+            if ($this->hasPaymentState($lockedInvoice)) {
+                AuditLog::query()->create([
+                    'user_id' => $user->id,
+                    'action' => 'invoice.void_blocked_paid',
+                    'entity_type' => Invoice::class,
+                    'entity_id' => $lockedInvoice->id,
+                    'old_values' => [
+                        'status' => $lockedInvoice->status,
+                        'paid_amount' => $lockedInvoice->paid_amount,
+                        'balance_due' => $lockedInvoice->balance_due,
+                        'payments_count' => $lockedInvoice->payments_count,
+                    ],
+                    'new_values' => [
+                        'reason' => $reason,
+                        'message' => 'No se puede anular una factura con pagos registrados sin flujo de reversión.',
+                    ],
+                    'created_at' => now(),
+                ]);
+
+                return null;
             }
 
             $oldValues = [
@@ -85,5 +85,25 @@ class VoidInvoiceAction
                 'fiscalSequence',
             ]);
         });
+
+        if (! $result instanceof Invoice) {
+            throw ValidationException::withMessages([
+                'invoice' => 'No se puede anular una factura con pagos registrados sin flujo de reversión.',
+            ]);
+        }
+
+        return $result;
+    }
+
+    private function hasPaymentState(Invoice $invoice): bool
+    {
+        $paidCents = Money::parseCents((string) $invoice->paid_amount, 'paid_amount');
+        $balanceCents = Money::parseCents((string) $invoice->balance_due, 'balance_due');
+        $totalCents = Money::parseCents((string) $invoice->total, 'total');
+
+        return $invoice->payments_count > 0
+            || $paidCents > 0
+            || in_array($invoice->status, [Invoice::STATUS_PARTIAL, Invoice::STATUS_PAID], true)
+            || $balanceCents !== $totalCents;
     }
 }
