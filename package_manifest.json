@@ -1,0 +1,30 @@
+{
+  "name": "hospital_billing_codex_agentic_v3",
+  "created_at": "2026-05-16T06:48:17.525352Z",
+  "stack": [
+    "React",
+    "TypeScript",
+    "Laravel",
+    "MySQL/MariaDB"
+  ],
+  "offline_lan": true,
+  "subagents": [
+    "01_architecture_reviewer.md",
+    "02_database_integrity_reviewer.md",
+    "03_security_privacy_reviewer.md",
+    "04_ui_ux_cashier_reviewer.md",
+    "05_performance_reviewer.md",
+    "06_offline_lan_backup_reviewer.md",
+    "07_qa_tdd_reviewer.md",
+    "08_domain_fiscal_reviewer.md"
+  ],
+  "services_count": 122,
+  "critical_rules": [
+    "patient_name_only",
+    "thermal_receipt_80mm_58mm",
+    "erythropoietin_special_rule",
+    "no_cloud_required",
+    "commit_per_phase",
+    "plan_review_8_subagents"
+  ]
+}

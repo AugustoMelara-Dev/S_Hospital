@@ -1,0 +1,34 @@
+# Acceptance Criteria - Hospital Billing OS Offline
+
+## Facturación
+- Crear factura con nombre del paciente obligatorio.
+- Buscar y seleccionar servicios por categoría.
+- Totales calculados por backend.
+- Factura guarda snapshots de nombre/precio/categoría.
+- Reimpresión conserva valores históricos.
+
+## Eritropoyetina
+- Normal: L.25.
+- Con receta de diálisis marcada: L.0 y nota/regla aplicada.
+- Se registra en factura como medicamento.
+
+## Caja y pagos
+- No se puede cobrar sin caja abierta.
+- Pago crea movimiento de caja.
+- Cierre calcula esperado vs contado.
+- Reporte diario por caja.
+
+## Seguridad
+- Cajero no edita precios.
+- Cajero no anula sin permiso.
+- Admin gestiona usuarios/configuración.
+
+## Offline LAN
+- Funciona con internet desconectado.
+- Cliente accede por IP local al servidor.
+- Backup manual y diario disponible.
+
+## Impresión
+- Recibo 80mm por defecto.
+- Opción 58mm.
+- PDF/impresión no sale como hoja carta principal.
