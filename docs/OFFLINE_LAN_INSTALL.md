@@ -29,6 +29,15 @@ Servicios:
 
 El servicio frontend puede ejecutar `npm install` y el backend puede ejecutar `composer install` al iniciar en desarrollo. Esa estrategia no es aceptable como requisito de produccion offline.
 
+### Variables de entorno Docker
+
+- `backend/.env.example` es para instalacion local normal.
+- `backend/.env.docker.example` es solo para Docker de desarrollo y usa `DB_HOST=mysql`.
+- Docker Compose carga `backend/.env.docker.example` y, si falta `backend/.env`, crea una copia inicial para desarrollo.
+- No copiar `backend/.env.example` dentro del contenedor Docker, porque sus valores locales como `DB_HOST=127.0.0.1` no sirven dentro de Compose.
+- `php artisan key:generate --force` se ejecuta solo al crear el `.env` Docker inicial de desarrollo.
+- Produccion offline LAN debe usar un `.env` real creado manualmente en el servidor, con secretos locales fuera de Git.
+
 ## Produccion offline LAN
 
 Antes de instalar en el hospital:
@@ -64,4 +73,3 @@ Antes de instalar en el hospital:
 - IP dinamica rompe acceso de clientes.
 - Cortes de energia pueden afectar datos; se recomienda UPS.
 - Sin restore probado, los backups no deben considerarse completos.
-
