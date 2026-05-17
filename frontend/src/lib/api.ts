@@ -31,6 +31,41 @@ export type FiscalSequence = {
   active: boolean;
 };
 
+export type Category = {
+  id: number;
+  name: string;
+  slug: string;
+  active: boolean;
+  sort_order: number;
+};
+
+export type Service = {
+  id: number;
+  category_id: number;
+  name: string;
+  slug: string;
+  price: string;
+  taxable: boolean;
+  active: boolean;
+  special_rule_code: string | null;
+  category?: Category;
+};
+
+export type CategoryPayload = {
+  name: string;
+  active: boolean;
+  sort_order: number;
+};
+
+export type ServicePayload = {
+  category_id: number;
+  name: string;
+  price: string;
+  taxable: boolean;
+  active: boolean;
+  special_rule_code: string | null;
+};
+
 export const apiClient = {
   baseUrl: configuredBaseUrl.replace(/\/$/, ''),
 
@@ -126,6 +161,54 @@ export const apiClient = {
       payload.id ? `/api/fiscal-sequences/${payload.id}` : '/api/fiscal-sequences',
       {
         method: payload.id ? 'PATCH' : 'POST',
+        body: JSON.stringify(payload),
+      },
+    );
+
+    return response.data;
+  },
+
+  async getCategories(active?: boolean): Promise<Category[]> {
+    const query = active === undefined ? '' : `?active=${active ? '1' : '0'}`;
+    const response = await this.request<{ data: Category[] }>(`/api/categories${query}`);
+
+    return response.data;
+  },
+
+  async saveCategory(payload: CategoryPayload, id?: number): Promise<Category> {
+    const response = await this.request<{ data: Category }>(
+      id ? `/api/categories/${id}` : '/api/categories',
+      {
+        method: id ? 'PATCH' : 'POST',
+        body: JSON.stringify(payload),
+      },
+    );
+
+    return response.data;
+  },
+
+  async getServices(filters: { search?: string; active?: boolean } = {}): Promise<Service[]> {
+    const params = new URLSearchParams();
+
+    if (filters.search) {
+      params.set('search', filters.search);
+    }
+
+    if (filters.active !== undefined) {
+      params.set('active', filters.active ? '1' : '0');
+    }
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const response = await this.request<{ data: Service[] }>(`/api/services${query}`);
+
+    return response.data;
+  },
+
+  async saveService(payload: ServicePayload, id?: number): Promise<Service> {
+    const response = await this.request<{ data: Service }>(
+      id ? `/api/services/${id}` : '/api/services',
+      {
+        method: id ? 'PATCH' : 'POST',
         body: JSON.stringify(payload),
       },
     );

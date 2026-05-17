@@ -68,10 +68,74 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /configuracion fiscal/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /datos fiscales del hospital/i })).toBeInTheDocument();
     expect(await screen.findByDisplayValue('Hospital Demo')).toBeInTheDocument();
     expect(await screen.findByDisplayValue('DEMO-CAI')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar configuracion/i })).toBeEnabled();
+  });
+
+  it('renders catalog as read only for a cashier', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 2,
+            name: 'Cajero Demo',
+            email: 'cajero.demo@hospital-billing.local',
+            username: 'cajero.demo',
+            active: true,
+            roles: ['cajero'],
+            permissions: ['catalog.view'],
+            must_change_password: false,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 1,
+              name: 'Laboratorio',
+              slug: 'laboratorio',
+              active: true,
+              sort_order: 0,
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 10,
+              category_id: 1,
+              name: 'Eritropoyetina',
+              slug: 'eritropoyetina',
+              price: '25.00',
+              taxable: true,
+              active: true,
+              special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+              category: {
+                id: 1,
+                name: 'Laboratorio',
+                slug: 'laboratorio',
+                active: true,
+                sort_order: 0,
+              },
+            },
+          ],
+        }),
+      } as Response);
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /categorias y servicios/i })).toBeInTheDocument();
+    expect(await screen.findByText('Eritropoyetina')).toBeInTheDocument();
+    expect(screen.getByText(/cajero puede consultar catalogo/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /guardar servicio/i })).not.toBeInTheDocument();
   });
 
   it('lets a user with required password change submit a new password', async () => {

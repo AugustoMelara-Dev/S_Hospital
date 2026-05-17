@@ -5,6 +5,7 @@ import {
   type FiscalSettings,
   apiClient,
 } from './lib/api';
+import { CatalogView } from './features/catalog/CatalogView';
 
 const emptySequence: FiscalSequence = {
   document_type: 'invoice',
@@ -45,6 +46,7 @@ export function App() {
     () => user?.permissions.includes('settings.fiscal.view') ?? false,
     [user],
   );
+  const canViewCatalog = useMemo(() => user?.permissions.includes('catalog.view') ?? false, [user]);
 
   useEffect(() => {
     apiClient
@@ -193,7 +195,7 @@ export function App() {
       <header className="topbar">
         <div>
           <p className="app-kicker">Hospital Billing OS Offline</p>
-          <h1>Configuracion fiscal</h1>
+          <h1>Panel local</h1>
         </div>
         <div className="user-box">
           <strong>{user.name}</strong>
@@ -237,174 +239,180 @@ export function App() {
           </label>
           <button type="submit">Actualizar contrasena</button>
         </form>
-      ) : !canViewFiscalSettings ? (
-        <section className="notice" role="alert">
-          No tiene permiso para ver configuracion fiscal.
-        </section>
+      ) : !canViewFiscalSettings && !canViewCatalog ? (
+        <section className="notice" role="alert">No tiene permisos operativos asignados.</section>
       ) : (
-        <section className="settings-layout">
-          <form onSubmit={handleFiscalSubmit} className="settings-form">
-            <h2>Datos fiscales del hospital</h2>
-            <label>
-              Hospital
-              <input
-                value={settings.hospital_name}
-                disabled={!canEditFiscalSettings}
-                onChange={(event) =>
-                  setSettings({ ...settings, hospital_name: event.target.value })
-                }
-              />
-            </label>
-            <label>
-              RTN
-              <input
-                value={settings.rtn}
-                disabled={!canEditFiscalSettings}
-                onChange={(event) => setSettings({ ...settings, rtn: event.target.value })}
-              />
-            </label>
-            <label>
-              ISV por defecto
-              <input
-                value={settings.default_tax_rate}
-                disabled={!canEditFiscalSettings}
-                onChange={(event) =>
-                  setSettings({ ...settings, default_tax_rate: event.target.value })
-                }
-              />
-            </label>
-            <label>
-              Ancho de recibo
-              <select
-                value={settings.receipt_width}
-                disabled={!canEditFiscalSettings}
-                onChange={(event) =>
-                  setSettings({
-                    ...settings,
-                    receipt_width: event.target.value as FiscalSettings['receipt_width'],
-                  })
-                }
-              >
-                <option value="80mm">80mm</option>
-                <option value="58mm">58mm</option>
-              </select>
-            </label>
-            <button type="submit" disabled={!canEditFiscalSettings}>
-              Guardar configuracion
-            </button>
-          </form>
-
-          <form onSubmit={handleSequenceSubmit} className="settings-form">
-            <h2>Secuencia fiscal</h2>
-            <label>
-              CAI
-              <input
-                value={sequenceForm.cai}
-                disabled={!canEditFiscalSettings}
-                onChange={(event) => setSequenceForm({ ...sequenceForm, cai: event.target.value })}
-              />
-            </label>
-            <label>
-              Prefijo
-              <input
-                value={sequenceForm.prefix}
-                disabled={!canEditFiscalSettings}
-                onChange={(event) =>
-                  setSequenceForm({ ...sequenceForm, prefix: event.target.value })
-                }
-              />
-            </label>
-            <div className="field-grid">
-              <label>
-                Rango minimo
-                <input
-                  type="number"
-                  value={sequenceForm.min_number}
-                  disabled={!canEditFiscalSettings}
-                  onChange={(event) =>
-                    setSequenceForm({
-                      ...sequenceForm,
-                      min_number: Number(event.target.value),
-                    })
-                  }
-                />
-              </label>
-              <label>
-                Rango maximo
-                <input
-                  type="number"
-                  value={sequenceForm.max_number}
-                  disabled={!canEditFiscalSettings}
-                  onChange={(event) =>
-                    setSequenceForm({
-                      ...sequenceForm,
-                      max_number: Number(event.target.value),
-                    })
-                  }
-                />
-              </label>
-            </div>
-            <label>
-              Correlativo actual
-              <input
-                type="number"
-                value={sequenceForm.current_number}
-                disabled={!canEditFiscalSettings}
-                onChange={(event) =>
-                  setSequenceForm({
-                    ...sequenceForm,
-                    current_number: Number(event.target.value),
-                  })
-                }
-              />
-            </label>
-            <label>
-              Fecha limite
-              <input
-                type="date"
-                value={sequenceForm.valid_until}
-                disabled={!canEditFiscalSettings}
-                onChange={(event) =>
-                  setSequenceForm({ ...sequenceForm, valid_until: event.target.value })
-                }
-              />
-            </label>
-            <label className="checkbox-row">
-              <input
-                type="checkbox"
-                checked={sequenceForm.active}
-                disabled={!canEditFiscalSettings}
-                onChange={(event) =>
-                  setSequenceForm({ ...sequenceForm, active: event.target.checked })
-                }
-              />
-              Secuencia activa
-            </label>
-            <button type="submit" disabled={!canEditFiscalSettings}>
-              Guardar secuencia
-            </button>
-            {sequences.length > 0 ? (
-              <div className="sequence-list" aria-label="Secuencias fiscales">
-                {sequences.map((sequence) => (
-                  <button
-                    key={sequence.id}
-                    type="button"
-                    className="secondary-button"
-                    onClick={() => setSequenceForm(sequence)}
+        <>
+          {canViewFiscalSettings ? (
+            <section className="settings-layout">
+              <form onSubmit={handleFiscalSubmit} className="settings-form">
+                <h2>Datos fiscales del hospital</h2>
+                <label>
+                  Hospital
+                  <input
+                    value={settings.hospital_name}
+                    disabled={!canEditFiscalSettings}
+                    onChange={(event) =>
+                      setSettings({ ...settings, hospital_name: event.target.value })
+                    }
+                  />
+                </label>
+                <label>
+                  RTN
+                  <input
+                    value={settings.rtn}
+                    disabled={!canEditFiscalSettings}
+                    onChange={(event) => setSettings({ ...settings, rtn: event.target.value })}
+                  />
+                </label>
+                <label>
+                  ISV por defecto
+                  <input
+                    value={settings.default_tax_rate}
+                    disabled={!canEditFiscalSettings}
+                    onChange={(event) =>
+                      setSettings({ ...settings, default_tax_rate: event.target.value })
+                    }
+                  />
+                </label>
+                <label>
+                  Ancho de recibo
+                  <select
+                    value={settings.receipt_width}
+                    disabled={!canEditFiscalSettings}
+                    onChange={(event) =>
+                      setSettings({
+                        ...settings,
+                        receipt_width: event.target.value as FiscalSettings['receipt_width'],
+                      })
+                    }
                   >
-                    {sequence.prefix} - {sequence.active ? 'Activa' : 'Inactiva'}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </form>
+                    <option value="80mm">80mm</option>
+                    <option value="58mm">58mm</option>
+                  </select>
+                </label>
+                <button type="submit" disabled={!canEditFiscalSettings}>
+                  Guardar configuracion
+                </button>
+              </form>
 
-          <aside className="notice">
-            {canEditFiscalSettings
-              ? 'Admin puede editar. El backend valida el permiso.'
-              : 'Lectura protegida. Solo admin puede editar configuracion fiscal.'}
-          </aside>
-        </section>
+              <form onSubmit={handleSequenceSubmit} className="settings-form">
+                <h2>Secuencia fiscal</h2>
+                <label>
+                  CAI
+                  <input
+                    value={sequenceForm.cai}
+                    disabled={!canEditFiscalSettings}
+                    onChange={(event) =>
+                      setSequenceForm({ ...sequenceForm, cai: event.target.value })
+                    }
+                  />
+                </label>
+                <label>
+                  Prefijo
+                  <input
+                    value={sequenceForm.prefix}
+                    disabled={!canEditFiscalSettings}
+                    onChange={(event) =>
+                      setSequenceForm({ ...sequenceForm, prefix: event.target.value })
+                    }
+                  />
+                </label>
+                <div className="field-grid">
+                  <label>
+                    Rango minimo
+                    <input
+                      type="number"
+                      value={sequenceForm.min_number}
+                      disabled={!canEditFiscalSettings}
+                      onChange={(event) =>
+                        setSequenceForm({
+                          ...sequenceForm,
+                          min_number: Number(event.target.value),
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Rango maximo
+                    <input
+                      type="number"
+                      value={sequenceForm.max_number}
+                      disabled={!canEditFiscalSettings}
+                      onChange={(event) =>
+                        setSequenceForm({
+                          ...sequenceForm,
+                          max_number: Number(event.target.value),
+                        })
+                      }
+                    />
+                  </label>
+                </div>
+                <label>
+                  Correlativo actual
+                  <input
+                    type="number"
+                    value={sequenceForm.current_number}
+                    disabled={!canEditFiscalSettings}
+                    onChange={(event) =>
+                      setSequenceForm({
+                        ...sequenceForm,
+                        current_number: Number(event.target.value),
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  Fecha limite
+                  <input
+                    type="date"
+                    value={sequenceForm.valid_until}
+                    disabled={!canEditFiscalSettings}
+                    onChange={(event) =>
+                      setSequenceForm({ ...sequenceForm, valid_until: event.target.value })
+                    }
+                  />
+                </label>
+                <label className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={sequenceForm.active}
+                    disabled={!canEditFiscalSettings}
+                    onChange={(event) =>
+                      setSequenceForm({ ...sequenceForm, active: event.target.checked })
+                    }
+                  />
+                  Secuencia activa
+                </label>
+                <button type="submit" disabled={!canEditFiscalSettings}>
+                  Guardar secuencia
+                </button>
+                {sequences.length > 0 ? (
+                  <div className="sequence-list" aria-label="Secuencias fiscales">
+                    {sequences.map((sequence) => (
+                      <button
+                        key={sequence.id}
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => setSequenceForm(sequence)}
+                      >
+                        {sequence.prefix} - {sequence.active ? 'Activa' : 'Inactiva'}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </form>
+
+              <aside className="notice">
+                {canEditFiscalSettings
+                  ? 'Admin puede editar. El backend valida el permiso.'
+                  : 'Lectura protegida. Solo admin puede editar configuracion fiscal.'}
+              </aside>
+            </section>
+          ) : null}
+
+          {canViewCatalog ? <CatalogView user={user} onStatus={setStatus} /> : null}
+        </>
       )}
 
       <p className="form-status" role="status">

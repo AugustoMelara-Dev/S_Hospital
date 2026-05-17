@@ -141,3 +141,19 @@ Motivo:
 Consecuencia:
 
 - En demo puede estar permitido para mostrar flujo operativo, pero en produccion debe ser configurable. El backend siempre valida `catalog.manage`; pertenecer al rol `supervisor` no basta si el permiso no esta asignado.
+
+### 2026-05-17 - Catalogo inicial desde CSV y snapshots futuros
+
+Decision:
+
+- `catalogo_servicios_inicial.csv` es la fuente autorizada para poblar categorias y servicios iniciales con seeder Laravel idempotente.
+- Los servicios guardan precio actual en `DECIMAL(12,2)`, `active` y `special_rule_code`; la regla de Eritropoyetina se identifica por nombre normalizado y usa `ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION`.
+- Cambios de servicio, precio y activacion quedan auditados; facturacion futura debera copiar nombre, categoria, precio y regla a snapshots en `invoice_items`.
+
+Motivo:
+
+- El catalogo debe poder corregirse sin alterar facturas historicas y sin depender del CSV en operacion diaria.
+
+Consecuencia:
+
+- Fase 3 no crea facturacion ni `invoice_items`; solo deja el contrato de datos listo para que Fase 4 emita facturas desde snapshots.
