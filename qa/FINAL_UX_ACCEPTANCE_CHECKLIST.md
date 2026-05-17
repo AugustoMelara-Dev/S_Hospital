@@ -10,7 +10,7 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 - [x] Rutas separadas.
 - [x] Layout tablet/movil sin enterrar el contenido despues de una pantalla completa de navegacion.
 - [ ] Errores operativos visibles inline o toast, no solo en footer/status.
-- [ ] App.tsx reducido a composicion de providers/router.
+- [x] App.tsx reducido a composicion de providers/router.
 
 ## Facturacion
 - [x] Categorias visibles.
