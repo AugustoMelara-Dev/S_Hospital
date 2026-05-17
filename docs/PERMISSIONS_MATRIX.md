@@ -15,8 +15,8 @@ El backend debe validar todos los permisos con Policies/Gates o middleware equiv
 | Ver configuracion fiscal | `settings.fiscal.view` | Si | Si | No |
 | Editar configuracion fiscal | `settings.fiscal.update` | Si | No | No |
 | Ver catalogo | `catalog.view` | Si | Si | Si |
-| Crear/editar categorias | `catalog.manage` | Si | Si | No |
-| Crear/editar servicios/precios | `catalog.manage` | Si | Si | No |
+| Crear/editar categorias | `catalog.manage` | Si | Configurable | No |
+| Crear/editar servicios/precios | `catalog.manage` | Si | Configurable | No |
 | Ver facturas | `invoices.view` | Si | Si | Si, propias/dia por defecto |
 | Crear facturas | `invoices.create` | Si | Si | Si |
 | Anular facturas | `invoices.void` | Si | Si | No |
@@ -52,7 +52,7 @@ El backend debe validar todos los permisos con Policies/Gates o middleware equiv
 
 ### Supervisor
 
-- Puede gestionar catalogo si el hospital delega esa operacion.
+- Puede gestionar catalogo/precios solo si el hospital lo autoriza. En demo puede estar permitido, pero debe ser un permiso configurable, no una regla fija del rol.
 - Puede ver reportes y cajas.
 - Puede anular facturas/pagos con motivo.
 - Puede reimprimir facturas historicas.
@@ -80,3 +80,6 @@ El backend debe validar todos los permisos con Policies/Gates o middleware equiv
 - Creacion/descarga de backup.
 - Cambios de roles/permisos.
 
+## Decision de producto sobre catalogo
+
+Por defecto, `admin` siempre puede gestionar catalogo y precios. `supervisor` puede recibir `catalog.manage` si el hospital delega esa responsabilidad; para demo vendible puede estar habilitado, pero el backend siempre debe validar el permiso real `catalog.manage`. El rol `cajero` no gestiona catalogo ni precios.

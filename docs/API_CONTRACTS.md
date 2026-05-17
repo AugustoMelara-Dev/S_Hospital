@@ -3,7 +3,7 @@
 ## Convenciones generales
 
 - Base path: `/api`.
-- Auth: Sanctum session/cookie para el panel local.
+- Auth: Sanctum SPA/cookie para el panel local.
 - Formato de respuesta exitosa:
 
 ```json
@@ -26,15 +26,37 @@
 - Fechas: ISO 8601.
 - El backend valida permisos con Policies/Gates.
 - El frontend no es fuente de seguridad.
+- El frontend no debe guardar tokens secretos en `localStorage` ni `sessionStorage`.
+- Produccion LAN debe usar cookies/sesion protegidas, `HttpOnly` cuando aplique, `SameSite=Lax` o mas estricto, y HTTPS local si se configura certificado.
 - Las acciones de factura, pagos, caja, anulacion y correlativo fiscal son transaccionales.
 
 ## Auth
 
+### Flujo Sanctum SPA/cookie
+
+El flujo preferido es same-origin: el frontend compilado se sirve desde el mismo host LAN que Laravel, evitando tokens bearer persistidos en el navegador. Si durante desarrollo frontend y API corren en puertos distintos, se debe configurar Sanctum stateful domains y CORS de forma explicita.
+
+Flujo obligatorio:
+
+1. `GET /sanctum/csrf-cookie` antes del primer login o despues de un error 419.
+2. `POST /api/auth/login` con credenciales.
+3. `GET /api/auth/me` para hidratar usuario, roles, permisos y banderas de seguridad.
+4. `POST /api/auth/logout` para cerrar sesion.
+
 | Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
 |---|---|---|---|---|---|
+| GET | `/sanctum/csrf-cookie` | Publico | N/A | Cookie CSRF/session preparada | Endpoint Sanctum web, no `/api`. Requerido antes de login en SPA/cookie. |
 | POST | `/api/auth/login` | Publico | `{ "login": "cajero", "password": "secret" }` | Usuario autenticado, roles, permisos | `login` acepta username o email. |
 | POST | `/api/auth/logout` | Autenticado | `{}` | `{ "ok": true }` | Invalida sesion/token. |
-| GET | `/api/auth/me` | Autenticado | N/A | Usuario, roles, permisos | Usado para boot del frontend. |
+| GET | `/api/auth/me` | Autenticado | N/A | Usuario, roles, permisos, `must_change_password` | Usado para boot del frontend. |
+
+Errores esperados:
+
+| Status | Caso | Respuesta esperada | Accion frontend |
+|---|---|---|---|
+| 401 | No autenticado o sesion invalida | `{ "message": "Unauthenticated." }` | Limpiar estado local no secreto y redirigir a login. |
+| 419 | CSRF/session expired | `{ "message": "CSRF token mismatch." }` o respuesta Laravel equivalente | Solicitar de nuevo `/sanctum/csrf-cookie` y pedir reintento/login. |
+| 422 | Credenciales invalidas o validacion | `{ "message": "...", "errors": {} }` | Mostrar errores de formulario. |
 
 Respuesta `me` minima:
 
@@ -45,17 +67,33 @@ Respuesta `me` minima:
     "name": "Cajero Demo",
     "username": "cajero",
     "roles": ["cajero"],
-    "permissions": ["invoices.create", "payments.create"]
+    "permissions": ["invoices.create", "payments.create"],
+    "must_change_password": false
   }
 }
 ```
+
+### Credenciales iniciales
+
+Credenciales demo solo estan permitidas en desarrollo. Produccion no debe entregarse con usuarios demo activos.
+
+Reglas minimas:
+
+- Seeder de desarrollo puede crear `admin.demo`, `supervisor.demo` y `cajero.demo`.
+- Seeder/instalacion de produccion debe crear un admin inicial con password temporal o documentar un procedimiento local equivalente antes del primer uso real.
+- El admin inicial de produccion debe tener `must_change_password=true` hasta que cambie su password.
+- Mientras `must_change_password=true`, el backend solo debe permitir `GET /api/auth/me`, cambio de password y logout.
+
+| Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
+|---|---|---|---|---|---|
+| POST | `/api/auth/change-password` | Autenticado | `{ "current_password": "...", "password": "...", "password_confirmation": "..." }` | Usuario actualizado con `must_change_password=false` | Requerido para admin inicial/usuarios temporales. |
 
 ## Users, Roles, Permissions
 
 | Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
 |---|---|---|---|---|---|
 | GET | `/api/users` | `users.view` | Query: `page`, `search`, `active` | Lista paginada | Solo admin. |
-| POST | `/api/users` | `users.create` | Nombre, username/email, password, roles, active | Usuario creado | Password nunca se devuelve. |
+| POST | `/api/users` | `users.create` | Nombre, username/email, password temporal, roles, active, `must_change_password` | Usuario creado | Password nunca se devuelve; usuarios creados por admin deben iniciar con cambio obligatorio salvo decision local documentada. |
 | GET | `/api/users/{id}` | `users.view` | N/A | Usuario | Incluye roles. |
 | PATCH | `/api/users/{id}` | `users.update` | Campos editables | Usuario actualizado | Auditar cambios sensibles. |
 | POST | `/api/users/{id}/disable` | `users.disable` | `{ "reason": "..." }` | Usuario inactivo | No borrar usuarios. |
@@ -226,4 +264,3 @@ El recibo debe incluir paciente, factura, fecha, cajero, items, subtotal, impues
 | GET | `/api/backups/{id}/download` | `backups.download` | N/A | Archivo backup | Proteger acceso. |
 
 Restore no se expone como accion web en la primera version vendible. Debe documentarse en `docs/BACKUP_RESTORE.md` para evitar restauraciones accidentales desde UI.
-

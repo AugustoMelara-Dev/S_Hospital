@@ -8,7 +8,7 @@ Demostrar un flujo vendible temprano sin internet: cajero inicia sesion, abre ca
 
 - Usuario cajero:
   - username: `cajero.demo`
-  - password: definida por seeder/dev docs, cambiar antes de produccion.
+  - password: definida por seeder/dev docs.
 - Usuario supervisor:
   - username: `supervisor.demo`
 - Paciente:
@@ -24,7 +24,9 @@ Demostrar un flujo vendible temprano sin internet: cajero inicia sesion, abre ca
   - RTN: `08011999123456`
   - CAI: `DEMO-CAI`
   - Rango: `000-001-01-00000001` a `000-001-01-99999999`
-  - Recibo: `80mm`
+- Recibo: `80mm`
+
+Estas credenciales demo solo pueden existir en desarrollo. Produccion no debe entregarse con usuarios demo activos. Antes de uso real debe existir un admin inicial con password temporal y cambio obligatorio en primer login, o un procedimiento local documentado equivalente.
 
 ## Guion operativo
 
@@ -39,6 +41,10 @@ Resultado esperado:
 
 - El panel muestra estado de caja.
 - No aparecen opciones de usuarios, backups ni configuracion fiscal.
+
+Nota:
+
+- Si el usuario tiene `must_change_password=true`, el sistema debe bloquear la operacion normal y exigir cambio de password antes de abrir caja o facturar.
 
 ### 2. Abrir caja
 
@@ -186,4 +192,3 @@ Resultado esperado:
 ## Criterio de exito demo
 
 La demo es aceptable cuando el flujo completo se puede ejecutar en navegador local sin internet y sin intervencion tecnica: login, caja, factura, regla de eritropoyetina, pago, recibo, reimpresion y reporte diario.
-

@@ -128,3 +128,16 @@ Consecuencia:
 
 - Auth, datos, permisos y backups se implementan en Laravel + MySQL/MariaDB.
 
+### 2026-05-16 - Supervisor y gestion de catalogo
+
+Decision:
+
+- `supervisor` puede gestionar catalogo/precios solo si el hospital lo autoriza mediante el permiso `catalog.manage`.
+
+Motivo:
+
+- Algunos hospitales delegan ajustes operativos de catalogo a supervision, pero editar precios afecta directamente facturacion y caja.
+
+Consecuencia:
+
+- En demo puede estar permitido para mostrar flujo operativo, pero en produccion debe ser configurable. El backend siempre valida `catalog.manage`; pertenecer al rol `supervisor` no basta si el permiso no esta asignado.

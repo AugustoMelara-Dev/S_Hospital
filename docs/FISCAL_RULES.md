@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Modelar desde fases tempranas la configuracion fiscal hondurena necesaria para emitir facturas con correlativo, CAI, RTN, rango autorizado y fecha limite. La demo puede usar datos de prueba, pero la arquitectura debe permitir datos reales.
+Modelar desde fases tempranas la configuracion fiscal hondurena necesaria para emitir facturas con correlativo, CAI, RTN, rango autorizado y fecha limite. La demo puede usar datos de prueba, pero esos datos deben estar configurados en la secuencia fiscal igual que los datos reales.
 
 ## Datos fiscales configurables
 
@@ -29,24 +29,25 @@ Secuencia fiscal:
 
 ## Reglas de emision
 
-- No emitir factura si no existe secuencia fiscal activa para `invoice`.
-- No emitir factura si el CAI esta vacio cuando la configuracion exige datos fiscales reales.
+- No emitir factura real ni demo si no existe secuencia fiscal activa y valida para `invoice`.
+- No emitir factura si el CAI esta vacio.
 - No emitir factura si la secuencia esta inactiva.
 - No emitir factura si `valid_until` esta vencida.
 - No emitir factura si el siguiente correlativo es menor que `min_number`.
 - No emitir factura si el siguiente correlativo es mayor que `max_number`.
 - No permitir duplicar `invoice_number`.
 - No permitir bajar `current_number` por debajo de un numero ya emitido.
+- Si la demo usa CAI de prueba, ese CAI de prueba debe estar guardado en la configuracion fiscal antes de emitir.
 
 ## Correlativo atomico
 
-La reserva del correlativo debe ocurrir dentro de la misma transaccion que crea la factura.
+La reserva del correlativo debe ocurrir dentro de la misma transaccion que crea la factura. No existe flujo valido donde se reserve o incremente el correlativo fuera de esa transaccion.
 
 Flujo obligatorio:
 
 1. Iniciar transaccion.
 2. Bloquear fila de `fiscal_sequences` con `SELECT ... FOR UPDATE` o equivalente Eloquent.
-3. Validar secuencia activa, CAI, rango y fecha limite.
+3. Validar secuencia activa, CAI no vacio, rango y fecha limite.
 4. Calcular siguiente numero.
 5. Crear factura e items snapshot.
 6. Actualizar `current_number`.
@@ -84,7 +85,7 @@ Factura/recibo debe mostrar si estan configurados:
 - Cajero.
 - Nombre del paciente.
 
-Si la demo usa datos fiscales de prueba, deben ser claramente editables desde configuracion fiscal y no quedar hardcoded en el recibo.
+Si la demo usa datos fiscales de prueba, deben existir en configuracion fiscal y no quedar hardcoded en el recibo.
 
 ## Auditoria
 
@@ -100,9 +101,9 @@ Auditar:
 ## Casos de prueba obligatorios
 
 - Emite factura con CAI activo y rango valido.
+- Bloquea emision con CAI vacio.
 - Bloquea emision con CAI vencido.
 - Bloquea emision con secuencia inactiva.
 - Bloquea emision fuera de rango.
 - Dos emisiones concurrentes reciben numeros distintos.
 - Recibo muestra RTN/CAI/rango cuando estan configurados.
-

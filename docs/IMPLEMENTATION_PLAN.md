@@ -25,6 +25,7 @@ La prioridad de producto es una demo vendible temprana: login, abrir caja, crear
 - No borrar facturas ni pagos; anular con permiso, motivo y auditoria.
 - Numeracion fiscal debe ser atomica y protegida contra concurrencia.
 - No emitir factura si la configuracion fiscal obligatoria esta incompleta, vencida, inactiva o fuera de rango.
+- Credenciales demo solo se permiten en desarrollo; produccion requiere admin inicial con password temporal, `must_change_password=true` o procedimiento local documentado antes de uso real.
 - Docker es herramienta de desarrollo, no requisito para operar en produccion offline si la instalacion local esta documentada.
 
 ## 3. Arquitectura propuesta
@@ -248,6 +249,8 @@ Alcance:
 - Roles `admin`, `supervisor`, `cajero`.
 - Permisos base segun `docs/PERMISSIONS_MATRIX.md`.
 - CRUD/API de settings fiscales: hospital, RTN, CAI, rango, fecha limite, correlativo, impuesto y formato de recibo.
+- Flujo de password temporal/cambio obligatorio para admin inicial y usuarios creados por admin.
+- Usuarios demo solo para desarrollo; no se entrega produccion con usuario demo activo.
 
 Archivos probables:
 
@@ -262,6 +265,7 @@ Quality gate:
 - Tests auth.
 - Tests permisos.
 - Tests fiscal settings.
+- Test `must_change_password` para usuario con password temporal.
 - Frontend typecheck/build.
 
 Commit sugerido:
@@ -421,6 +425,7 @@ Alcance:
 - Backup diario documentado.
 - Registro en `backup_logs`.
 - Guia de restore.
+- Validacion manual reproducible de restore en entorno de prueba, con pasos y evidencia minima.
 - Guia de instalacion offline LAN y Windows servidor.
 
 Archivos probables:
@@ -435,7 +440,8 @@ Quality gate:
 
 - Command tests.
 - Test backup log.
-- Validacion manual documentada de restore.
+- Validacion manual documentada de restore en entorno de prueba: crear backup, restaurar en base limpia de prueba, correr migraciones/seed si aplica, validar login admin y conteos minimos de tablas criticas.
+- Evidencia minima en `qa/RELEASE_READINESS.md` o documento de fase: fecha, entorno, backup usado, resultado y comando/pasos ejecutados.
 
 Commit sugerido:
 
@@ -522,4 +528,3 @@ curl http://localhost/up
 curl http://localhost/login
 curl http://localhost/verify-email
 ```
-
