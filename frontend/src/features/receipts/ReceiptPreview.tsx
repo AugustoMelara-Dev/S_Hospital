@@ -7,6 +7,18 @@ type ReceiptPreviewProps = {
 };
 
 export function ReceiptPreview({ receipt, onWidthChange, onPrint }: ReceiptPreviewProps) {
+  function printReceipt() {
+    const previousWidth = document.body.dataset.receiptWidth;
+    document.body.dataset.receiptWidth = receipt.width;
+    (onPrint ?? (() => window.print()))();
+
+    if (previousWidth) {
+      document.body.dataset.receiptWidth = previousWidth;
+    } else {
+      delete document.body.dataset.receiptWidth;
+    }
+  }
+
   return (
     <section className="receipt-preview-panel" aria-labelledby="receipt-title">
       <div className="section-heading print-hidden">
@@ -23,7 +35,7 @@ export function ReceiptPreview({ receipt, onWidthChange, onPrint }: ReceiptPrevi
             <option value="80mm">80mm</option>
             <option value="58mm">58mm</option>
           </select>
-          <button type="button" onClick={onPrint ?? (() => window.print())}>
+          <button type="button" onClick={printReceipt}>
             Imprimir
           </button>
         </div>
@@ -35,6 +47,9 @@ export function ReceiptPreview({ receipt, onWidthChange, onPrint }: ReceiptPrevi
           {receipt.hospital.rtn ? <span>RTN {receipt.hospital.rtn}</span> : null}
           {receipt.fiscal.cai ? <span>CAI {receipt.fiscal.cai}</span> : null}
           {receipt.fiscal.authorized_range ? <span>Rango {receipt.fiscal.authorized_range}</span> : null}
+          {receipt.fiscal.valid_until ? (
+            <span>Fecha limite {formatDate(receipt.fiscal.valid_until)}</span>
+          ) : null}
         </header>
 
         <div className="receipt-lines">
@@ -91,8 +106,10 @@ export function ReceiptPreview({ receipt, onWidthChange, onPrint }: ReceiptPrevi
 }
 
 function formatDate(value: string): string {
+  const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value;
+
   return new Intl.DateTimeFormat('es-HN', {
     dateStyle: 'short',
     timeStyle: 'short',
-  }).format(new Date(value));
+  }).format(new Date(normalizedValue));
 }

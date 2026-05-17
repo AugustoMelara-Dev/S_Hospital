@@ -53,6 +53,7 @@ class CloseCashSessionAction
                 'expected_amount' => Money::formatCents($expectedCents),
                 'difference_amount' => Money::formatCents($differenceCents),
                 'status' => CashRegisterSession::STATUS_CLOSED,
+                'open_user_id' => null,
                 'closing_notes' => $payload['notes'] ?? null,
                 'closed_at' => now(),
             ])->save();

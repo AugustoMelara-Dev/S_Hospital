@@ -182,6 +182,7 @@ Consecuencia:
 Decision:
 
 - Caja usa `cash_register_sessions` con una caja abierta maxima por cajero validada transaccionalmente en backend.
+- La unicidad real de caja abierta se defiende tambien en base de datos con `open_user_id` nullable y unico: solo las cajas abiertas llenan ese campo, y las cajas cerradas lo dejan `NULL` para permitir historico.
 - Registro de pago guarda `payments`, `cash_movements` y actualiza `invoices.paid_amount`, `invoices.balance_due` y `invoices.status` dentro de una sola transaccion.
 - `expected_amount` de cierre representa efectivo esperado: monto inicial mas pagos en efectivo registrados en la caja.
 - El recibo MVP devuelve datos renderizables para 80mm/58mm y usa exclusivamente snapshots de `invoice_items` junto con datos fiscales persistidos.
@@ -195,4 +196,5 @@ Motivo:
 Consecuencia:
 
 - Fase 5 no implementa anulacion de pagos/facturas, reimpresion auditada, historial avanzado, reportes, backups ni PDF avanzado.
+- La prueba automatizada valida el constraint en SQLite; la carrera real de dos requests simultaneos debe validarse en MySQL/MariaDB antes de produccion, donde el indice unico `open_user_id` es la defensa final.
 - Fase 6 debera agregar reimpresion auditada y anulacion sobre estas bases sin romper los snapshots.

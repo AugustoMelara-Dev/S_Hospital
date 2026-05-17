@@ -12,6 +12,7 @@ use App\Models\Service;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -50,6 +51,40 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonValidationErrors('cash_session');
     }
 
+    public function test_database_constraint_allows_only_one_open_cash_session_per_cashier(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $this->openSession($cashier, '500.00');
+
+        $this->expectException(QueryException::class);
+
+        CashRegisterSession::query()->create([
+            'user_id' => $cashier->id,
+            'open_user_id' => $cashier->id,
+            'opening_amount' => '100.00',
+            'status' => CashRegisterSession::STATUS_OPEN,
+            'opened_at' => now(),
+        ]);
+    }
+
+    public function test_cashier_can_open_new_session_after_closing_previous_one(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '500.00'])
+            ->assertOk()
+            ->assertJsonPath('data.open_user_id', null);
+
+        $this->actingAs($cashier)
+            ->postJson('/api/cash-sessions/open', ['opening_amount' => '200.00'])
+            ->assertCreated()
+            ->assertJsonPath('data.open_user_id', $cashier->id);
+    }
+
     public function test_closing_cash_session_calculates_expected_and_difference(): void
     {
         $this->seedBillingBase();
@@ -80,6 +115,35 @@ class CashPaymentsReceiptTest extends TestCase
             'action' => 'cash_session.closed',
             'entity_type' => CashRegisterSession::class,
         ]);
+    }
+
+    public function test_transfer_card_and_other_payments_do_not_increase_expected_cash_amount(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+
+        foreach ([
+            ['service' => 'Glucosa', 'method' => Payment::METHOD_TRANSFER, 'amount' => '17.25'],
+            ['service' => 'Hemograma Completo', 'method' => Payment::METHOD_CARD, 'amount' => '11.50'],
+            ['service' => 'Eritropoyetina', 'method' => Payment::METHOD_OTHER, 'amount' => '28.75'],
+        ] as $paymentCase) {
+            $invoiceId = $this->createInvoice($cashier, $paymentCase['service']);
+
+            $this->actingAs($cashier)
+                ->postJson("/api/invoices/{$invoiceId}/payments", [
+                    'cash_session_id' => $sessionId,
+                    'method' => $paymentCase['method'],
+                    'amount' => $paymentCase['amount'],
+                ])
+                ->assertCreated();
+        }
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '500.00'])
+            ->assertOk()
+            ->assertJsonPath('data.expected_amount', '500.00')
+            ->assertJsonPath('data.difference_amount', '0.00');
     }
 
     public function test_payment_requires_an_open_own_cash_session(): void
@@ -277,6 +341,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.hospital.rtn', '08011999123456')
             ->assertJsonPath('data.fiscal.cai', 'TEST-CAI')
             ->assertJsonPath('data.fiscal.authorized_range', '000-001-01-00000001 a 000-001-01-99999999')
+            ->assertJsonPath('data.fiscal.valid_until', now()->addYear()->toDateString())
             ->assertJsonPath('data.items.0.service_name', 'Glucosa')
             ->assertJsonPath('data.items.0.unit_price', '15.00')
             ->assertJsonPath('data.invoice.balance_due', '0.00')

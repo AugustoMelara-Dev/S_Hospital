@@ -14,6 +14,7 @@ class CashRegisterSession extends Model
 
     protected $fillable = [
         'user_id',
+        'open_user_id',
         'opening_amount',
         'closing_amount',
         'expected_amount',

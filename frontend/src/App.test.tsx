@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { ReceiptPreview } from './features/receipts/ReceiptPreview';
+import { type ReceiptData } from './lib/api';
 
 describe('App', () => {
   beforeEach(() => {
@@ -450,6 +452,66 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: /preview termico/i })).toBeInTheDocument();
     expect(await screen.findByText(/hospital demo/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/ancho del recibo/i)).toHaveValue('80mm');
+  });
+
+  it('renders 58mm receipt print structure with fiscal valid until date', () => {
+    const receipt: ReceiptData = {
+      width: '58mm',
+      hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+      fiscal: {
+        cai: 'DEMO-CAI',
+        authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
+        valid_until: '2027-05-17',
+      },
+      invoice: {
+        id: 100,
+        invoice_number: '000-001-01-00000001',
+        issued_at: '2026-05-17T08:00:00-06:00',
+        cashier: 'Cajero Demo',
+        patient_name: 'Maria Lopez',
+        subtotal: '15.00',
+        tax_amount: '2.25',
+        discount_amount: '0.00',
+        total: '17.25',
+        paid_amount: '17.25',
+        balance_due: '0.00',
+        status: 'paid',
+      },
+      items: [
+        {
+          service_name: 'Glucosa',
+          category_name: 'Laboratorio',
+          quantity: '1.00',
+          unit_price: '15.00',
+          tax_amount: '2.25',
+          line_total: '17.25',
+          special_rule_code: null,
+          special_rule_applied: false,
+          notes: null,
+        },
+      ],
+      payments: [
+        {
+          id: 50,
+          method: 'cash',
+          amount: '17.25',
+          reference: null,
+          paid_at: '2026-05-17T08:03:00-06:00',
+          cashier: 'Cajero Demo',
+        },
+      ],
+    };
+    const printSpy = vi.fn(() => {
+      expect(document.body.dataset.receiptWidth).toBe('58mm');
+    });
+
+    render(<ReceiptPreview receipt={receipt} onWidthChange={vi.fn()} onPrint={printSpy} />);
+
+    expect(screen.getByLabelText(/recibo termico/i)).toHaveClass('receipt-58mm');
+    expect(screen.getByText(/fecha limite/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /imprimir/i }));
+    expect(printSpy).toHaveBeenCalledOnce();
+    expect(document.body.dataset.receiptWidth).toBeUndefined();
   });
 
   it('lets a user with required password change submit a new password', async () => {

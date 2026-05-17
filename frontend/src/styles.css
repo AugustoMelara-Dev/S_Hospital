@@ -366,6 +366,7 @@ th {
 .thermal-receipt {
   width: 80mm;
   max-width: 100%;
+  page: receipt-80;
   padding: 10px;
   border: 1px dashed #64748b;
   background: #fff;
@@ -377,6 +378,17 @@ th {
 
 .receipt-58mm {
   width: 58mm;
+  page: receipt-58;
+}
+
+body[data-receipt-width="80mm"] .thermal-receipt {
+  width: 80mm;
+  page: receipt-80;
+}
+
+body[data-receipt-width="58mm"] .thermal-receipt {
+  width: 58mm;
+  page: receipt-58;
 }
 
 .thermal-receipt header,
@@ -527,8 +539,17 @@ h2 {
     box-shadow: none;
   }
 
-  @page {
+  @page receipt-80 {
     size: 80mm auto;
+    margin: 0;
+  }
+
+  @page receipt-58 {
+    size: 58mm auto;
+    margin: 0;
+  }
+
+  @page {
     margin: 0;
   }
 }

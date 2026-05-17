@@ -11,6 +11,10 @@ return new class extends Migration
         Schema::create('cash_register_sessions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('open_user_id')
+                ->nullable()
+                ->constrained('users')
+                ->restrictOnDelete();
             $table->decimal('opening_amount', 12, 2);
             $table->decimal('closing_amount', 12, 2)->nullable();
             $table->decimal('expected_amount', 12, 2)->nullable();
@@ -23,6 +27,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['user_id', 'status']);
+            $table->unique('open_user_id');
             $table->index('opened_at');
             $table->index('closed_at');
         });
