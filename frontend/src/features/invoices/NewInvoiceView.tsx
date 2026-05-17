@@ -158,7 +158,7 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
   }
 
   return (
-    <section className="invoice-layout" aria-labelledby="invoice-title">
+    <section id="nueva-factura" className="invoice-layout" aria-labelledby="invoice-title">
       <form onSubmit={submitInvoice} className="invoice-panel">
         <div className="section-heading">
           <div>

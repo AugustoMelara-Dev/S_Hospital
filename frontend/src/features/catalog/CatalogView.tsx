@@ -149,7 +149,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   }
 
   return (
-    <section className="catalog-layout" aria-labelledby="catalog-title">
+    <section id="catalogo" className="catalog-layout" aria-labelledby="catalog-title">
       <div className="catalog-main">
         <div className="section-heading">
           <div>

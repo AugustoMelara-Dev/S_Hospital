@@ -65,6 +65,23 @@ export function App() {
   const canViewCash = useMemo(() => user?.permissions.includes('cash.view') ?? false, [user]);
   const canViewReports = useMemo(() => user?.permissions.includes('reports.view') ?? false, [user]);
   const canViewBackups = useMemo(() => user?.permissions.includes('backups.view') ?? false, [user]);
+  const navigationItems = useMemo(() => [
+    canCreateInvoices ? { href: '#nueva-factura', label: 'Nueva factura' } : null,
+    canViewCatalog ? { href: '#catalogo', label: 'Catalogo' } : null,
+    canViewCash ? { href: '#caja', label: 'Caja' } : null,
+    canViewInvoices ? { href: '#historial', label: 'Historial' } : null,
+    canViewReports ? { href: '#reportes', label: 'Reportes' } : null,
+    canViewBackups ? { href: '#backups', label: 'Backups' } : null,
+    canViewFiscalSettings ? { href: '#configuracion-fiscal', label: 'Configuracion fiscal' } : null,
+  ].filter((item): item is { href: string; label: string } => item !== null), [
+    canCreateInvoices,
+    canViewBackups,
+    canViewCash,
+    canViewCatalog,
+    canViewFiscalSettings,
+    canViewInvoices,
+    canViewReports,
+  ]);
 
   useEffect(() => {
     apiClient
@@ -267,6 +284,16 @@ export function App() {
         <section className="notice" role="alert">No tiene permisos operativos asignados.</section>
       ) : (
         <>
+          {navigationItems.length > 0 ? (
+            <nav className="module-nav" aria-label="Navegacion principal">
+              {navigationItems.map((item) => (
+                <a key={item.href} href={item.href}>
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+          ) : null}
+
           {canViewCash ? <CashBoxView onStatus={setStatus} onSessionChange={setCashSession} /> : null}
 
           {canCreateInvoices ? (
@@ -280,7 +307,7 @@ export function App() {
           {canViewBackups ? <BackupsView user={user} onStatus={setStatus} /> : null}
 
           {canViewFiscalSettings ? (
-            <section className="settings-layout">
+            <section id="configuracion-fiscal" className="settings-layout">
               <form onSubmit={handleFiscalSubmit} className="settings-form">
                 <h2>Datos fiscales del hospital</h2>
                 <label>

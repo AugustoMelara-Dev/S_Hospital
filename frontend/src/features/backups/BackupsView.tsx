@@ -54,7 +54,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   }
 
   return (
-    <section className="backups-layout" aria-labelledby="backups-title">
+    <section id="backups" className="backups-layout" aria-labelledby="backups-title">
       <div className="section-heading">
         <div>
           <p className="app-kicker">Fase 8</p>

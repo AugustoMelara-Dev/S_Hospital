@@ -2,8 +2,9 @@
 set -euo pipefail
 
 if [ -d backend ]; then
-  (cd backend && composer validate --no-check-publish)
-  (cd backend && php artisan test)
+  (cd backend && composer validate)
+  (cd backend && php artisan migrate:fresh --seed)
+  (cd backend && php artisan test --colors=never)
   (cd backend && ./vendor/bin/pint --test)
   if [ -x backend/vendor/bin/phpstan ]; then
     (cd backend && ./vendor/bin/phpstan analyse)
@@ -13,8 +14,13 @@ if [ -d backend ]; then
 fi
 
 if [ -d frontend ]; then
-  (cd frontend && npm run typecheck)
-  (cd frontend && npm run lint)
-  (cd frontend && npm run test)
-  (cd frontend && npm run build)
+  NPM_BIN="npm"
+  if command -v npm.cmd >/dev/null 2>&1; then
+    NPM_BIN="npm.cmd"
+  fi
+
+  (cd frontend && "$NPM_BIN" run typecheck)
+  (cd frontend && "$NPM_BIN" run lint)
+  (cd frontend && "$NPM_BIN" run test)
+  (cd frontend && "$NPM_BIN" run build)
 fi

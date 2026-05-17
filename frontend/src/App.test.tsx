@@ -72,6 +72,11 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: /datos fiscales del hospital/i })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: /navegacion principal/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /configuracion fiscal/i })).toHaveAttribute(
+      'href',
+      '#configuracion-fiscal',
+    );
     expect(await screen.findByDisplayValue('Hospital Demo')).toBeInTheDocument();
     expect(await screen.findByDisplayValue('DEMO-CAI')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar configuracion/i })).toBeEnabled();
@@ -183,6 +188,8 @@ describe('App', () => {
 
     render(<App />);
 
+    expect(await screen.findByRole('link', { name: /caja/i })).toHaveAttribute('href', '#caja');
+    expect(screen.queryByRole('link', { name: /backups/i })).not.toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /^caja$/i })).toBeInTheDocument();
     expect(await screen.findByText(/sin caja abierta/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));

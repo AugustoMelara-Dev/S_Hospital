@@ -77,6 +77,31 @@ textarea {
   align-content: center;
 }
 
+.module-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 1120px;
+  margin: 0 auto 24px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.module-nav a {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  color: #17202a;
+  font-weight: 800;
+  text-decoration: none;
+}
+
 .form-stack label,
 .settings-form label {
   display: grid;
@@ -731,6 +756,7 @@ h2 {
   }
 
   .topbar,
+  .module-nav,
   .settings-layout,
   .catalog-layout,
   .cash-layout,

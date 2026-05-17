@@ -65,7 +65,7 @@ export function CashBoxView({ onStatus, onSessionChange }: CashBoxViewProps) {
   }
 
   return (
-    <section className="cash-layout" aria-labelledby="cash-title">
+    <section id="caja" className="cash-layout" aria-labelledby="cash-title">
       <div className="cash-panel">
         <div className="section-heading">
           <div>

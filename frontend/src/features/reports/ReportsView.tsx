@@ -97,7 +97,7 @@ export function ReportsView({ onStatus }: ReportsViewProps) {
   }
 
   return (
-    <section className="reports-layout" aria-labelledby="reports-title">
+    <section id="reportes" className="reports-layout" aria-labelledby="reports-title">
       <div className="section-heading">
         <div>
           <p className="app-kicker">Fase 7</p>
