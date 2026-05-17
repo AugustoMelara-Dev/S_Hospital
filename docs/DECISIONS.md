@@ -299,3 +299,43 @@ Motivo:
 Consecuencia:
 
 - El sistema sigue `PRODUCTION_CANDIDATE` aunque restore y concurrencia local queden validados; falta cliente LAN fisico completo, impresora fisica y configuracion final `APP_ENV=production` con admin real.
+
+### 2026-05-17 - Fase 12 POS, scanner y reportes vendibles
+
+Decision:
+
+- Servicios ahora soportan `scan_code`, `barcode` y `qr_code` como campos opcionales, unicos y buscables.
+- La busqueda de servicios incluye nombre, categoria y codigos de escaneo; el POS puede agregar por scanner USB/codigo manual sin confiar en precio o nombre enviados desde React.
+- La pantalla de Nueva factura no muestra el catalogo completo por defecto; el cajero debe elegir categoria, buscar o escanear.
+- Reportes avanzan con un endpoint de top servicios vendidos basado en snapshots de `invoice_items`, y React exporta CSV desde datos ya calculados por backend.
+
+Motivo:
+
+- La entrega no puede sentirse como una demo con lista interminable de servicios.
+- Scanner/codigo es parte del flujo operativo esperado en caja.
+- Gerencia necesita ver servicios mas vendidos y exportar datos sin recalcular hechos financieros en frontend.
+
+Consecuencia:
+
+- `scan_code`, `barcode` y `qr_code` quedan bajo permiso `catalog.manage`.
+- POS sigue usando `service_id` para emitir; backend conserva precio, impuestos y reglas como fuente de verdad.
+- Exportacion CSV actual cubre ingresos, metodos, categorias y servicios cargados; exportaciones masivas o Excel deben ser una fase posterior si el hospital lo exige.
+
+### 2026-05-17 - Fase 12E shell modular y graficos reales
+
+Decision:
+
+- `frontend/src/App.tsx` queda como orquestador de sesion, caja y shell; login, cambio de contrasena, dashboard y rutas privadas viven en archivos propios.
+- Reportes usa `Recharts` para graficar servicios mas vendidos con datos ya calculados por backend.
+- Vite separa chunks `vendor` y `charts` para evitar un bundle unico grande despues de agregar la libreria de graficos.
+- Se actualiza Vitest a la version actual para eliminar vulnerabilidades moderadas de tooling (`npm audit` queda en cero).
+
+Motivo:
+
+- La Fase 12 no debe mantener el olor de una sola pagina gigante ni reportes visuales simulados.
+- Los graficos gerenciales y el shell modular hacen mas mantenible la entrega sin cambiar reglas financieras.
+
+Consecuencia:
+
+- `Recharts` queda como dependencia de produccion para reportes.
+- TanStack Query/Table y React Hook Form/Zod quedan documentados como adopcion gradual, no como instalacion decorativa sin uso.

@@ -3,6 +3,7 @@ import {
   type AuthUser,
   type Category,
   type CategoryPayload,
+  type PaginatedMeta,
   type Service,
   type ServicePayload,
   apiClient,
@@ -18,6 +19,9 @@ const emptyService: ServicePayload = {
   category_id: 0,
   name: '',
   price: '0.00',
+  scan_code: null,
+  barcode: null,
+  qr_code: null,
   taxable: true,
   active: true,
   special_rule_code: null,
@@ -33,6 +37,10 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const [services, setServices] = useState<Service[]>([]);
   const [search, setSearch] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>();
+  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [meta, setMeta] = useState<PaginatedMeta>({ current_page: 1, per_page: 15, total: 0 });
   const [categoryForm, setCategoryForm] = useState<CategoryPayload>(emptyCategory);
   const [categoryId, setCategoryId] = useState<number | undefined>();
   const [serviceForm, setServiceForm] = useState<ServicePayload>(emptyService);
@@ -48,20 +56,33 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     void loadCatalog();
   }, []);
 
-  async function loadCatalog(nextSearch = search, nextCategoryId = selectedCategoryId) {
+  async function loadCatalog(
+    nextSearch = search,
+    nextCategoryId = selectedCategoryId,
+    nextPage = page,
+    nextPerPage = perPage,
+    nextActiveFilter = activeFilter,
+  ) {
     setLoadingCatalog(true);
 
     try {
+      const active =
+        nextActiveFilter === 'all' ? undefined : nextActiveFilter === 'active';
       const [nextCategories, nextServices] = await Promise.all([
         apiClient.getCategories(),
-        apiClient.getServices({
+        apiClient.getServicesPage({
           search: nextSearch,
           categoryId: nextCategoryId,
-          perPage: 150,
+          active,
+          page: nextPage,
+          perPage: nextPerPage,
         }),
       ]);
       setCategories(nextCategories);
-      setServices(nextServices);
+      setServices(nextServices.data);
+      setMeta(nextServices.meta);
+      setPage(nextServices.meta.current_page);
+      setPerPage(nextServices.meta.per_page);
       setServiceForm((current) => ({
         ...current,
         category_id: current.category_id || nextCategories[0]?.id || 0,
@@ -75,12 +96,31 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 
   async function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await loadCatalog(search);
+    setPage(1);
+    await loadCatalog(search, selectedCategoryId, 1);
   }
 
   async function filterByCategory(categoryId?: number) {
     setSelectedCategoryId(categoryId);
-    await loadCatalog(search, categoryId);
+    setPage(1);
+    await loadCatalog(search, categoryId, 1);
+  }
+
+  async function filterByActive(nextActiveFilter: 'all' | 'active' | 'inactive') {
+    setActiveFilter(nextActiveFilter);
+    setPage(1);
+    await loadCatalog(search, selectedCategoryId, 1, perPage, nextActiveFilter);
+  }
+
+  async function changePerPage(nextPerPage: number) {
+    setPerPage(nextPerPage);
+    setPage(1);
+    await loadCatalog(search, selectedCategoryId, 1, nextPerPage);
+  }
+
+  async function changePage(nextPage: number) {
+    setPage(nextPage);
+    await loadCatalog(search, selectedCategoryId, nextPage);
   }
 
   async function handleCategorySubmit(event: FormEvent<HTMLFormElement>) {
@@ -113,14 +153,10 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     }
 
     try {
-      const saved = await apiClient.saveService(serviceForm, serviceId);
-      setServices((current) =>
-        serviceId
-          ? current.map((service) => (service.id === saved.id ? saved : service))
-          : [saved, ...current],
-      );
+      await apiClient.saveService(serviceForm, serviceId);
       setServiceForm({ ...emptyService, category_id: categories[0]?.id || 0 });
       setServiceId(undefined);
+      await loadCatalog(search, selectedCategoryId, serviceId ? page : 1);
       onStatus('Servicio guardado.');
     } catch (error) {
       onStatus(error instanceof Error ? error.message : 'No se pudo guardar el servicio.');
@@ -142,6 +178,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       category_id: service.category_id,
       name: service.name,
       price: service.price,
+      scan_code: service.scan_code ?? null,
+      barcode: service.barcode ?? null,
+      qr_code: service.qr_code ?? null,
       taxable: service.taxable,
       active: service.active,
       special_rule_code: service.special_rule_code,
@@ -198,6 +237,36 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
           ))}
         </div>
 
+        <div className="catalog-controls" aria-label="Filtros de catalogo">
+          <label>
+            Estado
+            <select
+              value={activeFilter}
+              onChange={(event) =>
+                void filterByActive(event.target.value as 'all' | 'active' | 'inactive')
+              }
+            >
+              <option value="all">Todos</option>
+              <option value="active">Activos</option>
+              <option value="inactive">Inactivos</option>
+            </select>
+          </label>
+          <label>
+            Registros
+            <select
+              value={perPage}
+              onChange={(event) => void changePerPage(Number(event.target.value))}
+            >
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={25}>25</option>
+            </select>
+          </label>
+          <span className="muted">
+            Mostrando {services.length} de {meta.total} servicios.
+          </span>
+        </div>
+
         <div className="table-wrap">
           <table>
             <thead>
@@ -205,6 +274,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                 <th>Nombre</th>
                 <th>Categoria</th>
                 <th>Precio</th>
+                <th>Codigo</th>
                 <th>Estado</th>
                 <th>Regla</th>
                 {canManageCatalog ? <th>Accion</th> : null}
@@ -213,11 +283,11 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             <tbody>
               {loadingCatalog ? (
                 <tr>
-                  <td colSpan={canManageCatalog ? 6 : 5}>Cargando catalogo...</td>
+                  <td colSpan={canManageCatalog ? 7 : 6}>Cargando catalogo...</td>
                 </tr>
               ) : services.length === 0 ? (
                 <tr>
-                  <td colSpan={canManageCatalog ? 6 : 5}>No hay servicios para mostrar.</td>
+                  <td colSpan={canManageCatalog ? 7 : 6}>No hay servicios para mostrar.</td>
                 </tr>
               ) : (
                 services.map((service) => (
@@ -225,6 +295,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                     <td>{service.name}</td>
                     <td>{service.category?.name ?? 'Sin categoria'}</td>
                     <td>L. {service.price}</td>
+                    <td>{service.scan_code ?? service.barcode ?? service.qr_code ?? 'Sin codigo'}</td>
                     <td>{service.active ? 'Activo' : 'Inactivo'}</td>
                     <td>{service.special_rule_code ?? 'N/A'}</td>
                     {canManageCatalog ? (
@@ -239,6 +310,28 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="pagination-row" aria-label="Paginacion de catalogo">
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={page <= 1 || loadingCatalog}
+            onClick={() => void changePage(page - 1)}
+          >
+            Anterior
+          </button>
+          <span className="muted">
+            Pagina {meta.current_page} de {Math.max(Math.ceil(meta.total / meta.per_page), 1)}
+          </span>
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={page >= Math.ceil(meta.total / meta.per_page) || loadingCatalog}
+            onClick={() => void changePage(page + 1)}
+          >
+            Siguiente
+          </button>
         </div>
       </div>
 
@@ -305,6 +398,36 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
               <input
                 value={serviceForm.price}
                 onChange={(event) => setServiceForm({ ...serviceForm, price: event.target.value })}
+              />
+            </label>
+            <label>
+              Codigo scanner
+              <input
+                value={serviceForm.scan_code ?? ''}
+                onChange={(event) =>
+                  setServiceForm({ ...serviceForm, scan_code: event.target.value.trim() || null })
+                }
+                placeholder="LAB-GLU-001"
+              />
+            </label>
+            <label>
+              Barcode
+              <input
+                value={serviceForm.barcode ?? ''}
+                onChange={(event) =>
+                  setServiceForm({ ...serviceForm, barcode: event.target.value.trim() || null })
+                }
+                placeholder="Codigo de barra opcional"
+              />
+            </label>
+            <label>
+              QR
+              <input
+                value={serviceForm.qr_code ?? ''}
+                onChange={(event) =>
+                  setServiceForm({ ...serviceForm, qr_code: event.target.value.trim() || null })
+                }
+                placeholder="Codigo QR opcional"
               />
             </label>
             <label>

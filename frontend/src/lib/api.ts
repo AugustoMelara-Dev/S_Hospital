@@ -58,6 +58,9 @@ export type Service = {
   category_id: number;
   name: string;
   slug: string;
+  scan_code?: string | null;
+  barcode?: string | null;
+  qr_code?: string | null;
   price: string;
   taxable: boolean;
   active: boolean;
@@ -75,6 +78,9 @@ export type ServicePayload = {
   category_id: number;
   name: string;
   price: string;
+  scan_code: string | null;
+  barcode: string | null;
+  qr_code: string | null;
   taxable: boolean;
   active: boolean;
   special_rule_code: string | null;
@@ -245,6 +251,18 @@ export type CategoryReport = {
   }>;
 };
 
+export type ServiceSalesReport = {
+  date_from: string;
+  date_to: string;
+  services: Array<{
+    service: string;
+    category: string;
+    item_count: number;
+    quantity: string;
+    total: string;
+  }>;
+};
+
 export type CashSessionReport = {
   cash_session: CashSession & {
     user?: Pick<AuthUser, 'id' | 'name' | 'username'>;
@@ -293,6 +311,15 @@ export type PaginatedMeta = {
   current_page: number;
   per_page: number;
   total: number;
+};
+
+export type ServiceFilters = {
+  search?: string;
+  code?: string;
+  active?: boolean;
+  categoryId?: number;
+  page?: number;
+  perPage?: number;
 };
 
 export type InvoiceFilters = {
@@ -432,13 +459,15 @@ export const apiClient = {
     return response.data;
   },
 
-  async getServices(
-    filters: { search?: string; active?: boolean; categoryId?: number; perPage?: number } = {},
-  ): Promise<Service[]> {
+  async getServicesPage(filters: ServiceFilters = {}): Promise<{ data: Service[]; meta: PaginatedMeta }> {
     const params = new URLSearchParams();
 
     if (filters.search) {
       params.set('search', filters.search);
+    }
+
+    if (filters.code) {
+      params.set('code', filters.code);
     }
 
     if (filters.active !== undefined) {
@@ -449,12 +478,30 @@ export const apiClient = {
       params.set('category_id', String(filters.categoryId));
     }
 
+    if (filters.page) {
+      params.set('page', String(filters.page));
+    }
+
     if (filters.perPage) {
       params.set('per_page', String(filters.perPage));
     }
 
     const query = params.toString() ? `?${params.toString()}` : '';
-    const response = await this.request<{ data: Service[] }>(`/api/services${query}`);
+
+    const response = await this.request<{ data: Service[]; meta?: PaginatedMeta }>(`/api/services${query}`);
+
+    return {
+      data: response.data,
+      meta: response.meta ?? {
+        current_page: filters.page ?? 1,
+        per_page: filters.perPage ?? response.data.length,
+        total: response.data.length,
+      },
+    };
+  },
+
+  async getServices(filters: ServiceFilters = {}): Promise<Service[]> {
+    const response = await this.getServicesPage(filters);
 
     return response.data;
   },
@@ -603,6 +650,15 @@ export const apiClient = {
     const params = new URLSearchParams(filters);
     const response = await this.request<{ data: CategoryReport }>(
       `/api/reports/categories?${params.toString()}`,
+    );
+
+    return response.data;
+  },
+
+  async getServiceSalesReport(filters: { date_from: string; date_to: string }): Promise<ServiceSalesReport> {
+    const params = new URLSearchParams(filters);
+    const response = await this.request<{ data: ServiceSalesReport }>(
+      `/api/reports/services?${params.toString()}`,
     );
 
     return response.data;

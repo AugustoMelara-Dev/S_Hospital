@@ -1,5 +1,6 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  type Category,
   type CashSession,
   type Invoice,
   type Payment,
@@ -25,40 +26,65 @@ type NewInvoiceViewProps = {
 export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
   const [patientName, setPatientName] = useState('');
   const [search, setSearch] = useState('');
+  const [scanCode, setScanCode] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | 'all' | undefined>();
   const [selectedItems, setSelectedItems] = useState<SelectedInvoiceItem[]>([]);
   const [issuedInvoice, setIssuedInvoice] = useState<Invoice | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<Payment['method']>('cash');
   const [paymentAmount, setPaymentAmount] = useState('');
   const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('80mm');
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [formAlert, setFormAlert] = useState<string | null>(null);
   const [loadingServices, setLoadingServices] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [paying, setPaying] = useState(false);
+  const patientInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    void loadServices();
+    void loadPointOfSaleData();
   }, []);
 
   const filteredServices = useMemo(() => {
-    const needle = search.trim().toLowerCase();
+    const needle = normalizeSearch(search);
 
-    if (needle === '') {
-      return services;
+    if (needle === '' && selectedCategoryId === undefined) {
+      return [];
     }
 
-    return services.filter((service) =>
-      `${service.name} ${service.category?.name ?? ''}`.toLowerCase().includes(needle),
-    );
-  }, [search, services]);
+    return services.filter((service) => {
+      const matchesCategory =
+        selectedCategoryId === undefined ||
+        selectedCategoryId === 'all' ||
+        service.category_id === selectedCategoryId;
+      const haystack = [
+        service.name,
+        service.category?.name ?? '',
+        service.scan_code ?? '',
+        service.barcode ?? '',
+        service.qr_code ?? '',
+      ];
+      const matchesSearch = needle === '' || fuzzyMatches(haystack, needle);
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [search, selectedCategoryId, services]);
+
+  const visibleServices = filteredServices.slice(0, 36);
+  const hiddenServiceCount = Math.max(filteredServices.length - visibleServices.length, 0);
 
   const preview = useMemo(() => calculatePreview(selectedItems), [selectedItems]);
 
-  async function loadServices() {
+  async function loadPointOfSaleData() {
     setLoadingServices(true);
 
     try {
-      const nextServices = await apiClient.getServices({ active: true, perPage: 150 });
+      const [nextCategories, nextServices] = await Promise.all([
+        apiClient.getCategories(true),
+        apiClient.getServices({ active: true, perPage: 150 }),
+      ]);
+      setCategories(nextCategories);
       setServices(nextServices);
     } catch (error) {
       onStatus(error instanceof Error ? error.message : 'No se pudo cargar servicios activos.');
@@ -68,15 +94,76 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
   }
 
   function addService(service: Service) {
-    setSelectedItems((current) => [
-      ...current,
-      {
-        service,
-        quantity: '1.00',
-        dialysisPrescription: false,
-      },
-    ]);
+    setFormAlert(null);
+    setSelectedItems((current) => {
+      const existingIndex = current.findIndex(
+        (item) => item.service.id === service.id && !item.dialysisPrescription,
+      );
+
+      if (existingIndex === -1) {
+        return [
+          ...current,
+          {
+            service,
+            quantity: '1.00',
+            dialysisPrescription: false,
+          },
+        ];
+      }
+
+      return current.map((item, itemIndex) =>
+        itemIndex === existingIndex
+          ? { ...item, quantity: incrementQuantity(item.quantity) }
+          : item,
+      );
+    });
     setIssuedInvoice(null);
+  }
+
+  async function addByScanCode() {
+    const code = scanCode.trim();
+
+    if (code === '') {
+      const message = 'Ingrese o escanee un codigo.';
+      setFormAlert(message);
+      onStatus(message);
+
+      return;
+    }
+
+    try {
+      const [service] = await apiClient.getServices({ active: true, code, perPage: 1 });
+
+      if (!service) {
+        const message = 'No se encontro servicio activo para este codigo.';
+        setFormAlert(message);
+        onStatus(message);
+
+        return;
+      }
+
+      addService(service);
+      setScanCode('');
+      setFormAlert(null);
+      onStatus(`Servicio agregado por codigo: ${service.name}.`);
+    } catch (error) {
+      const localMatch = services.find((service) =>
+        [service.scan_code, service.barcode, service.qr_code].some((value) => value === code),
+      );
+
+      if (localMatch) {
+        addService(localMatch);
+        setScanCode('');
+        setFormAlert(null);
+        onStatus(`Servicio agregado por codigo: ${localMatch.name}.`);
+
+        return;
+      }
+
+      const message = error instanceof Error ? error.message : 'No se pudo buscar el codigo escaneado.';
+      setFormAlert(message);
+      onStatus(message);
+    }
   }
 
   function updateItem(index: number, nextItem: SelectedInvoiceItem) {
@@ -89,8 +176,27 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
 
   async function submitInvoice(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (patientName.trim() === '') {
+      const message = 'Falta el nombre del paciente.';
+      setFormAlert(message);
+      onStatus(message);
+      patientInputRef.current?.focus();
+
+      return;
+    }
+
+    if (selectedItems.length === 0) {
+      const message = 'Seleccione al menos un servicio para emitir la factura.';
+      setFormAlert(message);
+      onStatus(message);
+
+      return;
+    }
+
     setSubmitting(true);
     setIssuedInvoice(null);
+    setFormAlert(null);
 
     try {
       const invoice = await apiClient.createInvoice({
@@ -108,7 +214,9 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
       setPatientName('');
       onStatus(`Factura emitida ${invoice.invoice_number}.`);
     } catch (error) {
-      onStatus(error instanceof Error ? error.message : 'No se pudo emitir la factura.');
+      const message = error instanceof Error ? error.message : 'No se pudo emitir la factura.';
+      setFormAlert(message);
+      onStatus(message);
     } finally {
       setSubmitting(false);
     }
@@ -118,7 +226,9 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
     event.preventDefault();
 
     if (!issuedInvoice || !cashSession) {
-      onStatus('Debe abrir caja antes de cobrar.');
+      const message = 'Debe abrir caja antes de cobrar.';
+      setFormAlert(message);
+      onStatus(message);
 
       return;
     }
@@ -135,9 +245,12 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
       setPaymentAmount(result.invoice.balance_due);
       const nextReceipt = await apiClient.getReceipt(result.invoice.id, receiptWidth);
       setReceipt(nextReceipt);
+      setFormAlert(null);
       onStatus(`Pago registrado. Factura ${result.invoice.status}.`);
     } catch (error) {
-      onStatus(error instanceof Error ? error.message : 'No se pudo registrar el pago.');
+      const message = error instanceof Error ? error.message : 'No se pudo registrar el pago.';
+      setFormAlert(message);
+      onStatus(message);
     } finally {
       setPaying(false);
     }
@@ -159,10 +272,10 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
 
   return (
     <section id="nueva-factura" className="invoice-layout" aria-labelledby="invoice-title">
-      <form onSubmit={submitInvoice} className="invoice-panel">
+      <form onSubmit={submitInvoice} className="invoice-panel pos-panel">
         <div className="section-heading">
           <div>
-            <p className="app-kicker">Fase 4</p>
+            <p className="app-kicker">POS hospitalario</p>
             <h2 id="invoice-title">Nueva factura</h2>
           </div>
           <button type="submit" disabled={submitting || selectedItems.length === 0}>
@@ -170,31 +283,96 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
           </button>
         </div>
 
+        {formAlert ? (
+          <div className="error-summary" role="alert" aria-live="assertive">
+            {formAlert}
+          </div>
+        ) : null}
+
         <label>
           Nombre del paciente
           <input
+            ref={patientInputRef}
             value={patientName}
-            onChange={(event) => setPatientName(event.target.value)}
+            onChange={(event) => {
+              setPatientName(event.target.value);
+              if (formAlert === 'Falta el nombre del paciente.') {
+                setFormAlert(null);
+              }
+            }}
             placeholder="Maria Lopez"
+            aria-invalid={formAlert === 'Falta el nombre del paciente.' ? 'true' : 'false'}
+            aria-describedby={formAlert === 'Falta el nombre del paciente.' ? 'patient-name-error' : undefined}
           />
+          {formAlert === 'Falta el nombre del paciente.' ? (
+            <span id="patient-name-error" className="field-error" role="alert">
+              Ingrese el nombre del paciente para emitir la factura.
+            </span>
+          ) : null}
         </label>
 
         <label>
-          Buscar servicios activos
+          Buscar por nombre, categoria o codigo
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Glucosa, hemograma, eritropoyetina"
+            placeholder="Glucosa, Laboratorio, LAB-GLU-001"
           />
         </label>
 
-        <div className="service-picker" aria-label="Servicios activos">
+        <div className="scanner-row">
+          <label>
+            Scanner USB o codigo manual
+            <input
+              value={scanCode}
+              onChange={(event) => setScanCode(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  void addByScanCode();
+                }
+              }}
+              placeholder="Escanee y presione Enter"
+            />
+          </label>
+          <button type="button" onClick={() => void addByScanCode()}>
+            Agregar codigo
+          </button>
+        </div>
+
+        <div className="category-strip pos-category-strip" aria-label="Categorias de facturacion">
+          <button
+            type="button"
+            className={selectedCategoryId === 'all' ? 'secondary-button selected-filter' : 'secondary-button'}
+            onClick={() => setSelectedCategoryId('all')}
+          >
+            Todos
+          </button>
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              type="button"
+              className={
+                selectedCategoryId === category.id ? 'secondary-button selected-filter' : 'secondary-button'
+              }
+              onClick={() => setSelectedCategoryId(category.id)}
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+
+        <div className="service-picker pos-service-grid" aria-label="Servicios facturables">
           {loadingServices ? (
             <p>Cargando servicios...</p>
+          ) : selectedCategoryId === undefined && search.trim() === '' ? (
+            <p className="muted">
+              Seleccione una categoria, escriba una busqueda o escanee un codigo para empezar.
+            </p>
           ) : filteredServices.length === 0 ? (
             <p>No hay servicios activos para mostrar.</p>
           ) : (
-            filteredServices.map((service) => (
+            visibleServices.map((service) => (
               <button
                 key={service.id}
                 type="button"
@@ -203,10 +381,18 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
               >
                 <span>{service.name}</span>
                 <strong>L. {service.price}</strong>
-                <small>{service.category?.name ?? 'Sin categoria'}</small>
+                <small>
+                  {service.category?.name ?? 'Sin categoria'}
+                  {service.scan_code ? ` - ${service.scan_code}` : ''}
+                </small>
               </button>
             ))
           )}
+          {hiddenServiceCount > 0 ? (
+            <p className="muted">
+              Hay {hiddenServiceCount} servicios mas. Use busqueda o una categoria mas especifica.
+            </p>
+          ) : null}
         </div>
       </form>
 
@@ -363,6 +549,70 @@ function parseQuantityUnits(value: string): number {
   return Number(integer) * 100 + Number(decimal.padEnd(2, '0').slice(0, 2));
 }
 
+function incrementQuantity(value: string): string {
+  const units = parseQuantityUnits(value);
+
+  return formatCents(units + 100);
+}
+
 function formatCents(cents: number): string {
   return `${Math.trunc(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
+}
+
+function normalizeSearch(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^\p{Letter}\p{Number}\s-]/gu, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+function fuzzyMatches(values: string[], normalizedNeedle: string): boolean {
+  const normalizedValues = values.map(normalizeSearch).filter(Boolean);
+  const haystack = normalizedValues.join(' ');
+
+  if (haystack.includes(normalizedNeedle)) {
+    return true;
+  }
+
+  const haystackTokens = haystack.split(/\s+/).filter(Boolean);
+  const needleTokens = normalizedNeedle.split(/\s+/).filter(Boolean);
+
+  return needleTokens.every((needle) =>
+    haystackTokens.some((token) => {
+      if (token.includes(needle) || needle.includes(token)) {
+        return true;
+      }
+
+      if (needle.length < 4 || token.length < 4) {
+        return false;
+      }
+
+      const maxDistance = needle.length > 7 ? 2 : 1;
+
+      return levenshteinDistance(needle, token) <= maxDistance;
+    }),
+  );
+}
+
+function levenshteinDistance(left: string, right: string): number {
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
+
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    let diagonal = leftIndex - 1;
+    previous[0] = leftIndex;
+
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      const insertion = previous[rightIndex] + 1;
+      const deletion = previous[rightIndex - 1] + 1;
+      const substitution = diagonal + (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1);
+
+      diagonal = previous[rightIndex];
+      previous[rightIndex] = Math.min(insertion, deletion, substitution);
+    }
+  }
+
+  return previous[right.length];
 }

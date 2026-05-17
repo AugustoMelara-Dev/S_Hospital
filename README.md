@@ -7,7 +7,7 @@ Objetivo: convertir el sistema de una aplicación funcional pero plana en un pro
 ## Orden de uso con Codex
 
 1. Copiar este paquete completo en la raíz del repo.
-2. Crear branch: `feature/final-product-ux-rebuild`.
+2. Crear branch `codex/*` para la fase correspondiente, por ejemplo `codex/phase-12a-app-shell-design-system`.
 3. Ejecutar `prompts/00_FINAL_PRODUCT_PLAN_MODE.md`.
 4. Ejecutar `prompts/01_FINAL_PRODUCT_PLAN_REVIEW.md`.
 5. Aprobar plan manualmente.

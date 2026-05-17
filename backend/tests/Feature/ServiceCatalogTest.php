@@ -96,6 +96,32 @@ class ServiceCatalogTest extends TestCase
             ->assertJsonPath('data.0.special_rule_code', Service::ERYTHROPOIETIN_RULE);
     }
 
+    public function test_service_search_tolerates_typos_and_accents(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $cashier = $this->cashier();
+        $category = Category::query()->firstOrFail();
+
+        Service::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Ácido úrico',
+            'slug' => 'acido-urico',
+            'price' => '80.00',
+            'taxable' => true,
+            'active' => true,
+        ]);
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?search=Eritropoytina')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Eritropoyetina']);
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?search=acido urico')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Ácido úrico']);
+    }
+
     public function test_services_can_be_requested_with_capped_per_page_to_return_full_initial_catalog(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
@@ -133,12 +159,14 @@ class ServiceCatalogTest extends TestCase
                 'category_id' => $categoryId,
                 'name' => 'Consulta general',
                 'price' => '100.00',
+                'scan_code' => 'CONS-GEN-001',
                 'taxable' => true,
                 'active' => true,
             ])
             ->assertCreated()
             ->assertJsonPath('data.name', 'Consulta general')
             ->assertJsonPath('data.price', '100.00')
+            ->assertJsonPath('data.scan_code', 'CONS-GEN-001')
             ->json('data.id');
 
         $this->actingAs($admin)
@@ -151,9 +179,11 @@ class ServiceCatalogTest extends TestCase
         $this->actingAs($admin)
             ->patchJson("/api/services/{$serviceId}", [
                 'price' => '125.00',
+                'barcode' => '7700000000011',
             ])
             ->assertOk()
-            ->assertJsonPath('data.price', '125.00');
+            ->assertJsonPath('data.price', '125.00')
+            ->assertJsonPath('data.barcode', '7700000000011');
     }
 
     public function test_cashier_cannot_create_or_edit_services(): void
@@ -217,6 +247,56 @@ class ServiceCatalogTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('name');
+    }
+
+    public function test_services_can_be_found_by_category_and_scan_codes(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'scan_code' => 'MED-ERI-001',
+                'barcode' => '7700000000004',
+                'qr_code' => 'QR-MED-ERI-001',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.scan_code', 'MED-ERI-001');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?active=1&code=MED-ERI-001')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'Eritropoyetina');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?active=1&search=Medicamentos')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Eritropoyetina']);
+    }
+
+    public function test_duplicate_scan_codes_return_validation_errors(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $category = Category::query()->firstOrFail();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", ['scan_code' => 'DUP-001'])
+            ->assertOk();
+
+        $this->actingAs($admin)
+            ->postJson('/api/services', [
+                'category_id' => $category->id,
+                'name' => 'Servicio duplicado scanner',
+                'price' => '10.00',
+                'scan_code' => 'DUP-001',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('scan_code');
     }
 
     public function test_price_change_and_active_change_are_audited(): void

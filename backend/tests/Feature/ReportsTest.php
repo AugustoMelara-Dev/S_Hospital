@@ -45,6 +45,10 @@ class ReportsTest extends TestCase
             ->assertForbidden();
 
         $this->actingAs($cashier)
+            ->getJson("/api/reports/services?date_from={$date}&date_to={$date}")
+            ->assertForbidden();
+
+        $this->actingAs($cashier)
             ->getJson("/api/reports/cash-sessions/{$sessionId}")
             ->assertForbidden();
     }
@@ -178,6 +182,39 @@ class ReportsTest extends TestCase
             ->getJson('/api/reports/categories?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
             ->assertOk()
             ->assertJsonCount(0, 'data.categories');
+    }
+
+    public function test_service_sales_report_uses_snapshots_and_excludes_void_invoices(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $glucoseInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $hemogramInvoice = $this->createInvoice($cashier, 'Hemograma Completo');
+        $voidInvoice = $this->createInvoice($cashier, 'Eritropoyetina');
+
+        Service::query()->where('name', 'Glucosa')->update(['name' => 'Glucosa Cambiada']);
+        Invoice::query()->whereKey($voidInvoice)->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => now(),
+            'void_reason' => 'No cuenta para top servicios',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/services?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertJsonCount(2, 'data.services')
+            ->assertJsonFragment([
+                'service' => 'Glucosa',
+                'total' => '17.25',
+            ])
+            ->assertJsonFragment([
+                'service' => 'Hemograma Completo',
+                'total' => '11.50',
+            ])
+            ->assertJsonMissing(['service' => 'Eritropoyetina']);
+
+        $this->assertNotSame($glucoseInvoice, $hemogramInvoice);
     }
 
     public function test_cash_session_report_returns_expected_amounts_payments_movements_and_permissions(): void

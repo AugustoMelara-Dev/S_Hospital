@@ -327,8 +327,9 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
 
   await page.getByRole('link', { name: /nueva factura/i }).click();
   await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
+  await page.getByRole('button', { name: 'Medicamentos', exact: true }).click();
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
-  await expect(page.getByRole('cell', { name: 'L. 25.00' })).toBeVisible();
+  await expect(page.getByLabel(/resumen de factura/i).getByText('L. 25.00').first()).toBeVisible();
   await page.getByRole('button', { name: /emitir factura/i }).click();
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
   await page.getByRole('button', { name: /cobrar/i }).click();
@@ -339,6 +340,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
 
   await page.getByRole('link', { name: /nueva factura/i }).click();
   await page.getByLabel(/nombre del paciente/i).fill('Jose Perez');
+  await page.getByRole('button', { name: 'Medicamentos', exact: true }).click();
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
   await page.getByLabel(/receta de dialisis/i).check();
   await page.getByRole('button', { name: /emitir factura/i }).click();

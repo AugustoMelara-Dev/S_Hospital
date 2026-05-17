@@ -7,8 +7,11 @@ use App\Http\Requests\Catalog\StoreServiceRequest;
 use App\Http\Requests\Catalog\UpdateServiceRequest;
 use App\Models\AuditLog;
 use App\Models\Service;
+use App\Support\ServiceSearch;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -16,15 +19,25 @@ class ServiceController extends Controller
 {
     public function index(IndexServiceRequest $request): JsonResponse
     {
-        $services = Service::query()
+        $query = Service::query()
             ->with('category:id,name,slug,active,sort_order')
-            ->when($request->filled('search'), function ($query) use ($request): void {
-                $query->where('name', 'like', '%'.$request->string('search')->toString().'%');
+            ->when($request->filled('code'), function ($query) use ($request): void {
+                $code = $request->string('code')->toString();
+
+                $query->where(function ($query) use ($code): void {
+                    $query
+                        ->where('scan_code', $code)
+                        ->orWhere('barcode', $code)
+                        ->orWhere('qr_code', $code);
+                });
             })
             ->when($request->filled('category_id'), fn ($query) => $query->where('category_id', $request->integer('category_id')))
             ->when($request->has('active'), fn ($query) => $query->where('active', $request->boolean('active')))
-            ->orderBy('name')
-            ->paginate($request->perPage());
+            ->orderBy('name');
+
+        $services = $request->filled('search')
+            ? $this->fuzzySearch($query->get(), $request->string('search')->toString(), $request)
+            : $query->paginate($request->perPage());
 
         return response()->json([
             'data' => $services->items(),
@@ -34,6 +47,25 @@ class ServiceController extends Controller
                 'total' => $services->total(),
             ],
         ]);
+    }
+
+    /**
+     * @param  Collection<int, Service>  $services
+     */
+    private function fuzzySearch(Collection $services, string $search, IndexServiceRequest $request): LengthAwarePaginator
+    {
+        $filtered = $services
+            ->filter(fn (Service $service): bool => ServiceSearch::matches($service, $search))
+            ->values();
+        $page = (int) $request->integer('page', 1);
+        $perPage = $request->perPage();
+
+        return new LengthAwarePaginator(
+            $filtered->forPage($page, $perPage)->values(),
+            $filtered->count(),
+            $perPage,
+            $page,
+        );
     }
 
     public function store(StoreServiceRequest $request): JsonResponse
@@ -96,6 +128,9 @@ class ServiceController extends Controller
             'category_id',
             'name',
             'slug',
+            'scan_code',
+            'barcode',
+            'qr_code',
             'price',
             'taxable',
             'active',

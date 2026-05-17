@@ -24,6 +24,14 @@ Route::get('/', $frontendResponse);
 
 Route::get('/login', $frontendResponse);
 Route::get('/verify-email', $frontendResponse);
+Route::get('/dashboard', $frontendResponse);
+Route::get('/billing/new', $frontendResponse);
+Route::get('/cashbox', $frontendResponse);
+Route::get('/catalog', $frontendResponse);
+Route::get('/invoices', $frontendResponse);
+Route::get('/reports', $frontendResponse);
+Route::get('/backups', $frontendResponse);
+Route::get('/settings/fiscal', $frontendResponse);
 
 Route::get('/assets/{path}', function (string $path) {
     abort_if(str_contains($path, '..') || str_contains($path, '\\'), 404);

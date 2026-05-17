@@ -1,9 +1,19 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import {
   type CashSessionReport,
   type CategoryReport,
   type DailyReport,
   type IncomeReport,
+  type ServiceSalesReport,
   apiClient,
 } from '../../lib/api';
 
@@ -23,6 +33,7 @@ export function ReportsView({ onStatus }: ReportsViewProps) {
   const [daily, setDaily] = useState<DailyReport | null>(null);
   const [income, setIncome] = useState<IncomeReport | null>(null);
   const [categories, setCategories] = useState<CategoryReport | null>(null);
+  const [serviceSales, setServiceSales] = useState<ServiceSalesReport | null>(null);
   const [cashSession, setCashSession] = useState<CashSessionReport | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -61,12 +72,14 @@ export function ReportsView({ onStatus }: ReportsViewProps) {
         cash_session_id: cashSessionId,
         user_id: userId,
       };
-      const [incomeReport, categoryReport] = await Promise.all([
+      const [incomeReport, categoryReport, serviceReport] = await Promise.all([
         apiClient.getIncomeReport(filters),
         apiClient.getCategoryReport({ date_from: dateFrom, date_to: dateTo }),
+        apiClient.getServiceSalesReport({ date_from: dateFrom, date_to: dateTo }),
       ]);
       setIncome(incomeReport);
       setCategories(categoryReport);
+      setServiceSales(serviceReport);
       onStatus('Reportes por rango cargados.');
     } catch (error) {
       onStatus(error instanceof Error ? error.message : 'No se pudieron cargar los reportes.');
@@ -182,7 +195,12 @@ export function ReportsView({ onStatus }: ReportsViewProps) {
 
       {income ? (
         <div className="report-card" aria-label="Reporte por rango">
-          <h3>Ingresos por rango</h3>
+          <div className="report-card-heading">
+            <h3>Ingresos por rango</h3>
+            <button type="button" className="secondary-button" onClick={() => exportReportsCsv(income, categories, serviceSales)}>
+              Exportar CSV
+            </button>
+          </div>
           <div className="metric-grid">
             <Metric label="Total cobrado" value={`L. ${income.total_collected}`} />
             <Metric label="Pagos" value={String(income.payment_count)} />
@@ -222,6 +240,39 @@ export function ReportsView({ onStatus }: ReportsViewProps) {
             </div>
           ) : (
             <p className="muted">Sin categorias en el rango seleccionado.</p>
+          )}
+        </div>
+      ) : null}
+
+      {serviceSales ? (
+        <div className="report-card" aria-label="Top servicios">
+          <h3>Servicios mas vendidos</h3>
+          {serviceSales.services.length > 0 ? (
+            <>
+              <div className="report-chart" aria-label="Grafico de servicios mas vendidos">
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={serviceSalesChartData(serviceSales)}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="service" tickLine={false} interval={0} height={70} angle={-20} textAnchor="end" />
+                    <YAxis tickLine={false} width={64} />
+                    <Tooltip formatter={(value) => [`L. ${value}`, 'Total']} />
+                    <Bar dataKey="total" fill="#0f766e" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="service-sales-list">
+                {serviceSales.services.map((service) => (
+                  <div className="service-sales-row" key={`${service.service}-${service.category}`}>
+                    <div>
+                      <strong>{service.service}</strong>
+                      <span>{service.category} - {service.quantity} unidades - L. {service.total}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="muted">Sin servicios facturados en el rango seleccionado.</p>
           )}
         </div>
       ) : null}
@@ -290,6 +341,58 @@ function MethodTable({ totals }: { totals: DailyReport['payments_by_method'] }) 
       </tbody>
     </table>
   );
+}
+
+function exportReportsCsv(
+  income: IncomeReport,
+  categories: CategoryReport | null,
+  serviceSales: ServiceSalesReport | null,
+) {
+  const rows = [
+    ['seccion', 'nombre', 'categoria', 'cantidad', 'total'],
+    ['ingresos', 'Total cobrado', '', '', income.total_collected],
+    ...Object.entries(income.payments_by_method).map(([method, total]) => [
+      'metodo_pago',
+      method,
+      '',
+      '',
+      total,
+    ]),
+    ...(categories?.categories ?? []).map((category) => [
+      'categoria',
+      category.category,
+      category.category,
+      category.quantity,
+      category.total,
+    ]),
+    ...(serviceSales?.services ?? []).map((service) => [
+      'servicio',
+      service.service,
+      service.category,
+      service.quantity,
+      service.total,
+    ]),
+  ];
+  const csv = rows.map((row) => row.map(csvCell).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = `reporte-hospital-${income.date_from}-a-${income.date_to}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function csvCell(value: string): string {
+  return `"${value.replaceAll('"', '""')}"`;
+}
+
+function serviceSalesChartData(serviceSales: ServiceSalesReport) {
+  return serviceSales.services.slice(0, 8).map((service) => ({
+    service: service.service.length > 18 ? `${service.service.slice(0, 18)}...` : service.service,
+    total: Number.parseFloat(service.total),
+  }));
 }
 
 function localDateString(date: Date): string {

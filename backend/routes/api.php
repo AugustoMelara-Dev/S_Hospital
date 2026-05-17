@@ -63,6 +63,7 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         Route::get('/reports/daily', [ReportController::class, 'daily']);
         Route::get('/reports/income', [ReportController::class, 'income']);
         Route::get('/reports/categories', [ReportController::class, 'categories']);
+        Route::get('/reports/services', [ReportController::class, 'services']);
         Route::get('/reports/cash-sessions/{cashSession}', [ReportController::class, 'cashSession']);
 
         Route::get('/backups', [BackupController::class, 'index']);

@@ -6,6 +6,7 @@ use App\Actions\Reports\CashSessionReportService;
 use App\Actions\Reports\CategoryReportService;
 use App\Actions\Reports\DailyReportService;
 use App\Actions\Reports\IncomeReportService;
+use App\Actions\Reports\ServiceSalesReportService;
 use App\Http\Requests\Reports\DailyReportRequest;
 use App\Http\Requests\Reports\DateRangeReportRequest;
 use App\Models\CashRegisterSession;
@@ -45,6 +46,13 @@ class ReportController extends Controller
     }
 
     public function categories(DateRangeReportRequest $request, CategoryReportService $reports): JsonResponse
+    {
+        return response()->json([
+            'data' => $reports->report($request->dateFrom(), $request->dateTo()),
+        ]);
+    }
+
+    public function services(DateRangeReportRequest $request, ServiceSalesReportService $reports): JsonResponse
     {
         return response()->json([
             'data' => $reports->report($request->dateFrom(), $request->dateTo()),

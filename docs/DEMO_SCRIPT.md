@@ -36,12 +36,13 @@ Configuracion demo:
 - Secuencia activa: `000-001-01`.
 - Recibo por defecto: 80mm, con opcion 58mm.
 
-## Guion principal
+## Guion principal premium
 
 1. Login local
    - Entrar como `cajero.demo`.
    - Confirmar que la pantalla no requiere servicios cloud ni internet.
    - Confirmar que solo aparecen opciones operativas del cajero.
+   - Confirmar sidebar izquierdo, topbar con usuario/caja y cero errores visibles.
 
 2. Abrir caja
    - Ir a Caja.
@@ -51,36 +52,43 @@ Configuracion demo:
 3. Crear factura con Eritropoyetina normal
    - Ir a Nueva factura.
    - Paciente: Maria Lopez.
-   - Buscar y seleccionar Eritropoyetina.
+   - Seleccionar categoria `Medicamentos` o buscar `Eritropoyetina`.
    - No marcar receta de dialisis.
    - Confirmar preview con precio normal L.25 antes de emitir.
    - Emitir factura.
 
 4. Crear factura con Eritropoyetina con receta de dialisis
    - Paciente: Jose Perez.
-   - Seleccionar Eritropoyetina.
+   - Seleccionar Eritropoyetina desde categoria o scanner/codigo.
    - Marcar "Receta de dialisis".
    - Confirmar preview en L.0 para ese item.
    - Emitir factura.
 
-5. Cobrar factura
+5. Escanear codigo o QR
+   - En Nueva factura, usar "Scanner USB o codigo manual".
+   - Escribir o escanear un `scan_code`, `barcode` o `qr_code` de un servicio activo.
+   - Confirmar que se agrega al carrito.
+   - Intentar un codigo inexistente y confirmar error claro.
+   - Recalcar que el backend busca el codigo y calcula el precio final.
+
+6. Cobrar factura
    - En la factura emitida, usar metodo Efectivo.
    - Cobrar el saldo.
    - Confirmar estado `paid` y saldo L.0.00.
 
-6. Ver recibo termico
+7. Ver recibo termico
    - Confirmar preview termico 80mm.
    - Cambiar a 58mm y confirmar que el ancho cambia.
    - Usar Imprimir solo en entorno con impresora o impresora virtual.
 
-7. Reimprimir
+8. Reimprimir
    - Ir a Historial.
    - Abrir la factura pagada.
    - Agregar motivo de reimpresion.
    - Reimprimir en 80mm o 58mm.
    - Confirmar que usa snapshots historicos.
 
-8. Anular factura sin pagos
+9. Anular factura sin pagos
    - Crear una factura nueva sin cobrarla.
    - Ir a Historial como admin o supervisor con permiso.
    - Abrir la factura emitida sin pagos.
@@ -88,19 +96,23 @@ Configuracion demo:
    - Confirmar anulacion.
    - Confirmar estado Anulada y que no se borra la factura.
 
-9. Ver historial
+10. Ver historial
    - Filtrar por fecha de hoy.
    - Buscar por paciente o numero de factura.
    - Confirmar pagadas, emitidas y anuladas.
 
-10. Ver reportes
+11. Ver reportes gerenciales
     - Entrar como `supervisor.demo` o `admin.demo`.
     - Ir a Reportes.
     - Ver reporte diario.
     - Ver rango de fechas.
+    - Confirmar ingresos por metodo de pago.
+    - Confirmar ingresos por categoria.
+    - Confirmar grafico de servicios mas vendidos.
     - Ver resumen de caja por numero de caja.
+    - Exportar CSV del rango cuando haya datos.
 
-11. Crear backup local
+12. Crear backup local
     - Entrar como `admin.demo`.
     - Ir a Backups.
     - Crear backup.
@@ -115,6 +127,8 @@ Configuracion demo:
 - No existe restore por UI para evitar restauraciones destructivas accidentales.
 - Paciente es solo nombre, no expediente clinico.
 - Backups son locales y no cloud.
+- La UI ya no es una pagina interminable: cada modulo vive en su ruta.
+- El POS no carga los 122 servicios de golpe: categoria, busqueda y scanner son el flujo normal.
 
 ## Pendientes no vendibles como completados
 

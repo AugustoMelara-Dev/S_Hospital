@@ -36,6 +36,21 @@ class ProductionSpaRouteTest extends TestCase
                 ->assertOk()
                 ->assertHeader('X-Content-Type-Options', 'nosniff');
 
+            foreach ([
+                '/dashboard',
+                '/billing/new',
+                '/cashbox',
+                '/catalog',
+                '/invoices',
+                '/reports',
+                '/backups',
+                '/settings/fiscal',
+            ] as $route) {
+                $this->get($route)
+                    ->assertOk()
+                    ->assertHeader('X-Content-Type-Options', 'nosniff');
+            }
+
             $this->get('/assets/phase10-test.js')
                 ->assertOk()
                 ->assertHeader('Content-Type', 'text/javascript; charset=UTF-8')

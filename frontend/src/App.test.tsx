@@ -8,6 +8,7 @@ import { type ReceiptData } from './lib/api';
 describe('App', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    window.history.pushState({}, '', '/');
   });
 
   it('renders the login screen when there is no session', async () => {
@@ -22,7 +23,8 @@ describe('App', () => {
     expect(screen.getByLabelText(/usuario o email/i)).toBeInTheDocument();
   });
 
-  it('renders fiscal settings for an authenticated admin', async () => {
+  it('renders app shell and fiscal settings route for an authenticated admin', async () => {
+    window.history.pushState({}, '', '/settings/fiscal');
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
@@ -71,18 +73,19 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /datos fiscales del hospital/i })).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: /navegacion principal/i })).toBeInTheDocument();
+    expect(await screen.findByRole('navigation', { name: /navegacion principal/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /configuracion fiscal/i })).toHaveAttribute(
       'href',
-      '#configuracion-fiscal',
+      '/settings/fiscal',
     );
+    expect(await screen.findByRole('heading', { name: /datos fiscales del hospital/i })).toBeInTheDocument();
     expect(await screen.findByDisplayValue('Hospital Demo')).toBeInTheDocument();
     expect(await screen.findByDisplayValue('DEMO-CAI')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar configuracion/i })).toBeEnabled();
   });
 
   it('renders catalog as read only for a cashier', async () => {
+    window.history.pushState({}, '', '/catalog');
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
@@ -147,6 +150,7 @@ describe('App', () => {
   });
 
   it('shows cash status and allows opening a cash session', async () => {
+    window.history.pushState({}, '', '/cashbox');
     const fetchMock = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
@@ -170,6 +174,48 @@ describe('App', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
+          data: [
+            {
+              id: 1,
+              name: 'Medicamentos',
+              slug: 'medicamentos',
+              active: true,
+              sort_order: 4,
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 1,
+              name: 'Medicamentos',
+              slug: 'medicamentos',
+              active: true,
+              sort_order: 4,
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 1,
+              name: 'Medicamentos',
+              slug: 'medicamentos',
+              active: true,
+              sort_order: 4,
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
           data: {
             id: 7,
             user_id: 2,
@@ -188,9 +234,9 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('link', { name: /caja/i })).toHaveAttribute('href', '#caja');
+    expect(await screen.findByRole('link', { name: /caja/i })).toHaveAttribute('href', '/cashbox');
     expect(screen.queryByRole('link', { name: /backups/i })).not.toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: /^caja$/i })).toBeInTheDocument();
+    expect((await screen.findAllByRole('heading', { name: /^caja$/i })).length).toBeGreaterThan(0);
     expect(await screen.findByText(/sin caja abierta/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
 
@@ -204,6 +250,7 @@ describe('App', () => {
   });
 
   it('renders reports view for a user with reports view permission', async () => {
+    window.history.pushState({}, '', '/reports');
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
@@ -247,7 +294,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /^reportes$/i })).toBeInTheDocument();
+    expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
     expect(screen.getByLabelText(/fecha diaria/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/desde/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
@@ -257,6 +304,7 @@ describe('App', () => {
   });
 
   it('does not render reports for a cashier without reports view permission', async () => {
+    window.history.pushState({}, '', '/cashbox');
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
@@ -280,12 +328,13 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /^caja$/i })).toBeInTheDocument();
+    expect((await screen.findAllByRole('heading', { name: /^caja$/i })).length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: /^reportes$/i })).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/fecha diaria/i)).not.toBeInTheDocument();
   });
 
   it('renders backups view and empty state for an admin', async () => {
+    window.history.pushState({}, '', '/backups');
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
@@ -318,6 +367,7 @@ describe('App', () => {
   });
 
   it('does not render backups for a user without backup permission', async () => {
+    window.history.pushState({}, '', '/cashbox');
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
@@ -341,12 +391,13 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /^caja$/i })).toBeInTheDocument();
+    expect((await screen.findAllByRole('heading', { name: /^caja$/i })).length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: /backups locales/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /crear backup/i })).not.toBeInTheDocument();
   });
 
   it('creates a manual backup from the admin backups view', async () => {
+    window.history.pushState({}, '', '/backups');
     const fetchMock = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
@@ -405,6 +456,7 @@ describe('App', () => {
   });
 
   it('renders successful backups with accessible download and pagination controls', async () => {
+    window.history.pushState({}, '', '/backups');
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
@@ -457,6 +509,7 @@ describe('App', () => {
   });
 
   it('renders report date filters and empty category state after loading range', async () => {
+    window.history.pushState({}, '', '/reports');
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
@@ -526,11 +579,21 @@ describe('App', () => {
             categories: [],
           },
         }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            date_from: '2026-05-17',
+            date_to: '2026-05-17',
+            services: [],
+          },
+        }),
       } as Response);
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /^reportes$/i })).toBeInTheDocument();
+    expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
     expect(await screen.findByRole('heading', { name: /^reporte diario$/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/desde/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
@@ -539,9 +602,11 @@ describe('App', () => {
 
     expect(await screen.findByText(/ingresos por rango/i)).toBeInTheDocument();
     expect(await screen.findByText(/sin categorias en el rango seleccionado/i)).toBeInTheDocument();
+    expect(await screen.findByText(/sin servicios facturados/i)).toBeInTheDocument();
   });
 
   it('renders payment form after issuing an invoice without adding reports', async () => {
+    window.history.pushState({}, '', '/billing/new');
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
@@ -567,11 +632,28 @@ describe('App', () => {
         json: async () => ({
           data: [
             {
+              id: 1,
+              name: 'Medicamentos',
+              slug: 'medicamentos',
+              active: true,
+              sort_order: 4,
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
               id: 10,
               category_id: 1,
               name: 'Eritropoyetina',
               slug: 'eritropoyetina',
               price: '25.00',
+              scan_code: 'MED-ERI-001',
+              barcode: null,
+              qr_code: null,
               taxable: true,
               active: true,
               special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
@@ -609,12 +691,19 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: /nueva factura/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/nombre del paciente/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/buscar servicios activos/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/nombre del paciente/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/buscar por nombre, categoria o codigo/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/scanner usb o codigo manual/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/buscar por nombre, categoria o codigo/i), {
+      target: { value: 'eritropoytina' },
+    });
+    expect(await screen.findByRole('button', { name: /eritropoyetina/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /eritropoyetina/i }));
+    fireEvent.click(screen.getByRole('button', { name: /emitir factura/i }));
+    expect(await screen.findByText(/ingrese el nombre del paciente/i)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/nombre del paciente/i), {
       target: { value: 'Maria Lopez' },
     });
-    fireEvent.click(await screen.findByRole('button', { name: /eritropoyetina/i }));
     fireEvent.click(screen.getByRole('button', { name: /emitir factura/i }));
 
     expect(await screen.findByRole('heading', { name: /registrar pago/i })).toBeInTheDocument();
@@ -624,6 +713,7 @@ describe('App', () => {
   });
 
   it('shows receipt preview after registering payment', async () => {
+    window.history.pushState({}, '', '/billing/new');
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
@@ -663,11 +753,55 @@ describe('App', () => {
         json: async () => ({
           data: [
             {
+              id: 1,
+              name: 'Laboratorio',
+              slug: 'laboratorio',
+              active: true,
+              sort_order: 1,
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
               id: 11,
               category_id: 1,
               name: 'Glucosa',
               slug: 'glucosa',
               price: '15.00',
+              scan_code: 'LAB-GLU-001',
+              barcode: null,
+              qr_code: null,
+              taxable: true,
+              active: true,
+              special_rule_code: null,
+              category: {
+                id: 1,
+                name: 'Laboratorio',
+                slug: 'laboratorio',
+                active: true,
+                sort_order: 1,
+              },
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 11,
+              category_id: 1,
+              name: 'Glucosa',
+              slug: 'glucosa',
+              price: '15.00',
+              scan_code: 'LAB-GLU-001',
+              barcode: null,
+              qr_code: null,
               taxable: true,
               active: true,
               special_rule_code: null,
@@ -790,7 +924,11 @@ describe('App', () => {
     fireEvent.change(await screen.findByLabelText(/nombre del paciente/i), {
       target: { value: 'Maria Lopez' },
     });
-    fireEvent.click(await screen.findByRole('button', { name: /glucosa/i }));
+    fireEvent.change(await screen.findByLabelText(/scanner usb o codigo manual/i), {
+      target: { value: 'LAB-GLU-001' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /agregar codigo/i }));
+    expect(await screen.findByText(/servicio agregado por codigo/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /emitir factura/i }));
     expect(await screen.findByRole('heading', { name: /registrar pago/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /cobrar/i }));
@@ -801,6 +939,7 @@ describe('App', () => {
   });
 
   it('renders invoice history filters and reprint button based on permissions', async () => {
+    window.history.pushState({}, '', '/invoices');
     const fetchMock = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
@@ -934,6 +1073,7 @@ describe('App', () => {
   });
 
   it('shows void reason confirmation for users with invoice void permission', async () => {
+    window.history.pushState({}, '', '/invoices');
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const fetchMock = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
@@ -1151,5 +1291,91 @@ describe('App', () => {
         expect.objectContaining({ method: 'POST' }),
       );
     });
+  });
+
+  it('renders not found for an unknown authenticated route', async () => {
+    window.history.pushState({}, '', '/ruta-inexistente');
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 1,
+            name: 'Admin Demo',
+            email: 'admin.demo@hospital-billing.local',
+            username: 'admin.demo',
+            active: true,
+            roles: ['admin'],
+            permissions: ['reports.view'],
+            must_change_password: false,
+          },
+        }),
+      } as Response);
+
+    render(<App />);
+
+    expect(await screen.findByText(/ruta no encontrada/i)).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /^reportes$/i })).not.toBeInTheDocument();
+  });
+
+  it('renders only the active module instead of all modules at once', async () => {
+    window.history.pushState({}, '', '/reports');
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 1,
+            name: 'Admin Demo',
+            email: 'admin.demo@hospital-billing.local',
+            username: 'admin.demo',
+            active: true,
+            roles: ['admin'],
+            permissions: [
+              'cash.view',
+              'catalog.view',
+              'invoices.create',
+              'invoices.view',
+              'reports.view',
+              'backups.view',
+              'settings.fiscal.view',
+            ],
+            must_change_password: false,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            date: '2026-05-17',
+            total_billed: '0.00',
+            total_collected: '0.00',
+            invoice_count: 0,
+            payment_count: 0,
+            payments_by_method: {
+              cash: '0.00',
+              transfer: '0.00',
+              card: '0.00',
+              other: '0.00',
+            },
+            invoices_by_status: {
+              issued: { count: 0, total: '0.00' },
+              partial: { count: 0, total: '0.00' },
+              paid: { count: 0, total: '0.00' },
+              void: { count: 0, total: '0.00' },
+            },
+          },
+        }),
+      } as Response);
+
+    render(<App />);
+
+    expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
+    expect(screen.getByRole('link', { name: /nueva factura/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /configuracion fiscal/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /nueva factura/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /datos fiscales del hospital/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /backups locales/i })).not.toBeInTheDocument();
   });
 });

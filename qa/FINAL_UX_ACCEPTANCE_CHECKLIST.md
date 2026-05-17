@@ -1,39 +1,40 @@
 # Final UX Acceptance Checklist
 
 ## App shell
-- [ ] Sidebar visible.
-- [ ] Topbar con usuario/caja.
-- [ ] Rutas separadas.
-- [ ] App.tsx reducido.
+- [x] Sidebar visible.
+- [x] Topbar con usuario/caja.
+- [x] Rutas separadas.
+- [x] App.tsx reducido.
 
-## Facturación
-- [ ] Categorías visibles.
-- [ ] Buscador visible.
-- [ ] Scanner input visible.
-- [ ] Carrito visible.
-- [ ] No lista interminable.
-- [ ] Eritropoyetina clara.
+## Facturacion
+- [x] Categorias visibles.
+- [x] Buscador visible.
+- [x] Scanner input visible.
+- [x] Carrito visible.
+- [x] No lista interminable.
+- [x] Eritropoyetina clara.
 
-## Catálogo
-- [ ] Tabla profesional.
-- [ ] Filtros.
-- [ ] Crear/editar por permisos.
-- [ ] Barcode/QR fields.
+## Catalogo
+- [x] Tabla profesional.
+- [x] Filtros.
+- [x] Crear/editar por permisos.
+- [x] Barcode/QR fields.
 
 ## Reportes
-- [ ] Cards KPI.
-- [ ] Filtros avanzados.
-- [ ] Tablas exportables.
-- [ ] Reporte categoría/servicio/cajero/fiscal.
+- [x] Cards KPI.
+- [x] Filtros avanzados.
+- [x] Tablas exportables.
+- [x] Reporte categoria/servicio/cajero/fiscal.
+- [x] Grafico gerencial con Recharts para servicios mas vendidos.
 
-## Diseño
-- [ ] Tipografía consistente.
-- [ ] Colores consistentes.
-- [ ] Estados vacíos/loading/error.
-- [ ] Responsive básico.
+## Diseno
+- [x] Tipografia consistente.
+- [x] Colores consistentes.
+- [x] Estados vacios/loading/error.
+- [x] Responsive basico validado en navegador.
 
 ## QA
-- [ ] Unit tests.
-- [ ] E2E.
-- [ ] Build.
-- [ ] Demo script actualizado.
+- [x] Unit tests.
+- [x] E2E.
+- [x] Build.
+- [x] Demo script actualizado.

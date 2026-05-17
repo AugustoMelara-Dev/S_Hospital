@@ -17,6 +17,21 @@ Fase 12 debe usar una base visual profesional y consistente. No se debe improvis
 - `clsx` y `tailwind-merge` para clases.
 - `Tailwind CSS` si ya aplica o si puede integrarse limpiamente.
 
+## Estado aplicado en Fase 12
+
+- `React Router`: aplicado para rutas separadas por modulo.
+- `Radix UI`: aplicado via primitives ligeros (`Slot`) para componentes base.
+- `Tailwind CSS`: aplicado como sistema de tokens y utilidades.
+- `lucide-react`: aplicado en sidebar/topbar y estados visuales.
+- `clsx` y `tailwind-merge`: aplicado con helper `cn`.
+- `Recharts`: aplicado en reportes para el grafico de servicios mas vendidos.
+
+Pendiente de adopcion gradual, solo cuando el modulo lo justifique:
+
+- `TanStack Query`: recomendable si se amplian estados de cache, invalidacion y polling.
+- `TanStack Table`: recomendable si catalogo/historial/reportes crecen a ordenamiento y columnas configurables.
+- `React Hook Form` + `Zod`: recomendable para formularios grandes con validacion compleja compartible.
+
 ## Reglas de adopcion
 
 - Validar dependencias existentes antes de instalar.

@@ -2,12 +2,21 @@ export type AppRoute = {
   label: string;
   path: string;
   phase: string;
+  permission?: string;
 };
 
 export const routes: AppRoute[] = [
-  { label: 'Inicio', path: '/', phase: 'Bootstrap' },
-  { label: 'Facturacion', path: '/invoices', phase: 'Fase 4' },
-  { label: 'Caja', path: '/cashbox', phase: 'Fase 5' },
-  { label: 'Reportes', path: '/reports', phase: 'Fase 7' },
-  { label: 'Backups', path: '/backups', phase: 'Fase 8' },
+  { label: 'Dashboard', path: '/dashboard', phase: 'Fase 12A' },
+  { label: 'Nueva factura', path: '/billing/new', phase: 'Fase 12A', permission: 'invoices.create' },
+  { label: 'Caja', path: '/cashbox', phase: 'Fase 12A', permission: 'cash.view' },
+  { label: 'Catalogo', path: '/catalog', phase: 'Fase 12A', permission: 'catalog.view' },
+  { label: 'Historial', path: '/invoices', phase: 'Fase 12A', permission: 'invoices.view' },
+  { label: 'Reportes', path: '/reports', phase: 'Fase 12A', permission: 'reports.view' },
+  { label: 'Backups', path: '/backups', phase: 'Fase 12A', permission: 'backups.view' },
+  {
+    label: 'Configuracion fiscal',
+    path: '/settings/fiscal',
+    phase: 'Fase 12A',
+    permission: 'settings.fiscal.view',
+  },
 ];
