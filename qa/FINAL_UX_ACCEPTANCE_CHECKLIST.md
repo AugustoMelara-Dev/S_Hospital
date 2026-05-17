@@ -30,11 +30,11 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 - [x] Pagos no pueden operar sobre facturas ajenas por ID.
 
 ## Catalogo
-- [ ] Tabla profesional basada en componente compartido.
+- [x] Tabla profesional basada en componente compartido.
 - [x] Filtros.
 - [x] Crear/editar por permisos.
 - [x] Barcode/QR fields.
-- [ ] Estados de error/empty/loading consistentes.
+- [x] Estados de error/empty/loading consistentes.
 
 ## Reportes
 - [x] KPIs gerenciales completos.
@@ -46,10 +46,10 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 - [x] Grafico con Recharts para servicios mas vendidos.
 
 ## Diseno
-- [ ] Componentes base consistentes en pantallas principales.
+- [x] Componentes base consistentes en pantallas principales.
 - [x] Tipografia base consistente.
 - [x] Colores base consistentes.
-- [ ] Estados vacios/loading/error por modulo.
+- [x] Estados vacios/loading/error por modulo.
 - [ ] Responsive validado en navegador para desktop/tablet/mobile.
 
 ## QA

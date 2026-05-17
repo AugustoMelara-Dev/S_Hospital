@@ -63,13 +63,14 @@ Fecha: 2026-05-17
 - `App.tsx` reducido de 217 a 83 lineas; sesion, permisos y caja bootstrap viven en `useHospitalSession`.
 - Reportes muestran errores inline por diario/rango/caja, no solo en el status global.
 - E2E Playwright mockeado falla si hay `console.error`, `pageerror` o request fallida inesperada.
+- Catalogo usa `DataTable` compartido y estados base para loading/empty/error.
 
 ## Validacion posterior a revision de subagentes
 
 - `php artisan test --filter=CashPaymentsReceiptTest --colors=never`: 14 tests / 114 assertions OK.
-- `php artisan test --filter=ReportsTest --colors=never`: 12 tests / 147 assertions OK.
+- `php artisan test --filter=ReportsTest --colors=never`: 15 tests / 170 assertions OK.
 - `php artisan test --filter=InvoiceHistoryReprintVoidTest --colors=never`: 13 tests / 91 assertions OK.
-- `php artisan test --colors=never`: 117 tests / 691 assertions OK.
+- `php artisan test --colors=never`: 120 tests / 714 assertions OK.
 - `vendor/bin/pint --test`: OK.
 - `npm.cmd run lint`: OK.
 - `npm.cmd test`: 20 tests frontend OK.
@@ -77,7 +78,7 @@ Fecha: 2026-05-17
 - `npm.cmd run build`: OK.
 - `php artisan config:cache`: OK.
 - `npm.cmd run e2e`: 1 Playwright workflow mockeado OK; `real-smoke.spec.ts` queda excluido por defecto.
-- `npm.cmd run smoke:real`: disponible con config Playwright separada (`playwright.real.config.ts`) y requiere `E2E_REAL_BASE_URL`, `E2E_REAL_LOGIN` y `E2E_REAL_PASSWORD`.
+- `npm.cmd run smoke:real` sin variables reales: falla explicitamente por faltar `E2E_REAL_BASE_URL`, `E2E_REAL_LOGIN` y `E2E_REAL_PASSWORD`; no pasa en falso.
 
 ## Pendiente real
 

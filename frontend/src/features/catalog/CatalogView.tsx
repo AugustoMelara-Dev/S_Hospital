@@ -8,6 +8,7 @@ import {
   type ServicePayload,
   apiClient,
 } from '../../lib/api';
+import { DataTable, type DataTableColumn } from '../../components/ui/data-table';
 
 const emptyCategory: CategoryPayload = {
   name: '',
@@ -46,6 +47,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const [serviceForm, setServiceForm] = useState<ServicePayload>(emptyService);
   const [serviceId, setServiceId] = useState<number | undefined>();
   const [loadingCatalog, setLoadingCatalog] = useState(true);
+  const [catalogError, setCatalogError] = useState('');
 
   const canManageCatalog = useMemo(
     () => user.permissions.includes('catalog.manage'),
@@ -64,6 +66,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     nextActiveFilter = activeFilter,
   ) {
     setLoadingCatalog(true);
+    setCatalogError('');
 
     try {
       const active =
@@ -88,7 +91,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         category_id: current.category_id || nextCategories[0]?.id || 0,
       }));
     } catch (error) {
-      onStatus(error instanceof Error ? error.message : 'No se pudo cargar el catalogo.');
+      const message = error instanceof Error ? error.message : 'No se pudo cargar el catalogo.';
+      setCatalogError(message);
+      onStatus(message);
     } finally {
       setLoadingCatalog(false);
     }
@@ -141,7 +146,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       setCategoryId(undefined);
       onStatus('Categoria guardada.');
     } catch (error) {
-      onStatus(error instanceof Error ? error.message : 'No se pudo guardar la categoria.');
+      const message = error instanceof Error ? error.message : 'No se pudo guardar la categoria.';
+      setCatalogError(message);
+      onStatus(message);
     }
   }
 
@@ -159,7 +166,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       await loadCatalog(search, selectedCategoryId, serviceId ? page : 1);
       onStatus('Servicio guardado.');
     } catch (error) {
-      onStatus(error instanceof Error ? error.message : 'No se pudo guardar el servicio.');
+      const message = error instanceof Error ? error.message : 'No se pudo guardar el servicio.';
+      setCatalogError(message);
+      onStatus(message);
     }
   }
 
@@ -186,6 +195,34 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       special_rule_code: service.special_rule_code,
     });
   }
+
+  const serviceColumns: Array<DataTableColumn<Service>> = [
+    { key: 'name', header: 'Nombre', render: (service) => service.name },
+    {
+      key: 'category',
+      header: 'Categoria',
+      render: (service) => service.category?.name ?? 'Sin categoria',
+    },
+    { key: 'price', header: 'Precio', render: (service) => `L. ${service.price}` },
+    {
+      key: 'code',
+      header: 'Codigo',
+      render: (service) => service.scan_code ?? service.barcode ?? service.qr_code ?? 'Sin codigo',
+    },
+    { key: 'status', header: 'Estado', render: (service) => (service.active ? 'Activo' : 'Inactivo') },
+    { key: 'rule', header: 'Regla', render: (service) => service.special_rule_code ?? 'N/A' },
+    ...(canManageCatalog
+      ? [{
+          key: 'action',
+          header: 'Accion',
+          render: (service: Service) => (
+            <button type="button" className="secondary-button" onClick={() => editService(service)}>
+              Editar
+            </button>
+          ),
+        }]
+      : []),
+  ];
 
   return (
     <section id="catalogo" className="catalog-layout" aria-labelledby="catalog-title">
@@ -266,51 +303,17 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             Mostrando {services.length} de {meta.total} servicios.
           </span>
         </div>
+        {catalogError ? <p className="notice error-notice" role="alert">{catalogError}</p> : null}
 
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Categoria</th>
-                <th>Precio</th>
-                <th>Codigo</th>
-                <th>Estado</th>
-                <th>Regla</th>
-                {canManageCatalog ? <th>Accion</th> : null}
-              </tr>
-            </thead>
-            <tbody>
-              {loadingCatalog ? (
-                <tr>
-                  <td colSpan={canManageCatalog ? 7 : 6}>Cargando catalogo...</td>
-                </tr>
-              ) : services.length === 0 ? (
-                <tr>
-                  <td colSpan={canManageCatalog ? 7 : 6}>No hay servicios para mostrar.</td>
-                </tr>
-              ) : (
-                services.map((service) => (
-                  <tr key={service.id}>
-                    <td>{service.name}</td>
-                    <td>{service.category?.name ?? 'Sin categoria'}</td>
-                    <td>L. {service.price}</td>
-                    <td>{service.scan_code ?? service.barcode ?? service.qr_code ?? 'Sin codigo'}</td>
-                    <td>{service.active ? 'Activo' : 'Inactivo'}</td>
-                    <td>{service.special_rule_code ?? 'N/A'}</td>
-                    {canManageCatalog ? (
-                      <td>
-                        <button type="button" className="secondary-button" onClick={() => editService(service)}>
-                          Editar
-                        </button>
-                      </td>
-                    ) : null}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={serviceColumns}
+          emptyTitle="Sin servicios"
+          emptyDescription="No hay servicios para mostrar con los filtros actuales."
+          getRowKey={(service) => service.id}
+          loading={loadingCatalog}
+          loadingLabel="Cargando catalogo..."
+          rows={services}
+        />
 
         <div className="pagination-row" aria-label="Paginacion de catalogo">
           <button
