@@ -12,6 +12,7 @@ use App\Http\Requests\Reports\DateRangeReportRequest;
 use App\Models\CashRegisterSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
@@ -57,6 +58,55 @@ class ReportController extends Controller
         return response()->json([
             'data' => $reports->report($request->dateFrom(), $request->dateTo()),
         ]);
+    }
+
+    public function export(
+        DateRangeReportRequest $request,
+        IncomeReportService $incomeReports,
+        CategoryReportService $categoryReports,
+        ServiceSalesReportService $serviceReports,
+    ): StreamedResponse {
+        $request->user()->can('reports.export') || abort(403);
+
+        $income = $incomeReports->report($request->validated());
+        $categories = $categoryReports->report($request->dateFrom(), $request->dateTo());
+        $services = $serviceReports->report($request->dateFrom(), $request->dateTo());
+        $filename = sprintf('reporte-hospital-%s-a-%s.csv', $request->dateFrom(), $request->dateTo());
+
+        return response()->streamDownload(function () use ($income, $categories, $services): void {
+            $output = fopen('php://output', 'w');
+
+            if ($output === false) {
+                return;
+            }
+
+            fputcsv($output, ['seccion', 'nombre', 'categoria', 'cantidad', 'total']);
+            fputcsv($output, ['ingresos', 'Total cobrado', '', '', $income['total_collected']]);
+
+            foreach ($income['payments_by_method'] as $method => $total) {
+                fputcsv($output, ['metodo_pago', $method, '', '', $total]);
+            }
+
+            foreach ($categories['categories'] as $category) {
+                fputcsv($output, [
+                    'categoria',
+                    $category['category'],
+                    $category['category'],
+                    $category['quantity'],
+                    $category['total'],
+                ]);
+            }
+
+            foreach ($services['services'] as $service) {
+                fputcsv($output, [
+                    'servicio',
+                    $service['service'],
+                    $service['category'],
+                    $service['quantity'],
+                    $service['total'],
+                ]);
+            }
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function cashSession(

@@ -665,6 +665,23 @@ export const apiClient = {
     return response.data;
   },
 
+  reportExportUrl(filters: {
+    date_from: string;
+    date_to: string;
+    cash_session_id?: string;
+    user_id?: string;
+  }): string {
+    const params = new URLSearchParams();
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value);
+      }
+    });
+
+    return this.url(`/api/reports/export?${params.toString()}`);
+  },
+
   async getCashSessionReport(id: string): Promise<CashSessionReport> {
     const response = await this.request<{ data: CashSessionReport }>(
       `/api/reports/cash-sessions/${encodeURIComponent(id)}`,

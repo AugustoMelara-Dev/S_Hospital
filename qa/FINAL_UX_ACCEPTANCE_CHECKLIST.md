@@ -39,7 +39,7 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 ## Reportes
 - [ ] KPIs gerenciales completos.
 - [ ] Filtros por fecha, cajero, categoria, metodo, estado y caja.
-- [ ] Tablas exportables con permiso `reports.export`.
+- [x] Tablas exportables con permiso `reports.export`.
 - [ ] Anulaciones con motivo/usuario/fecha.
 - [ ] Reimpresiones con usuario/factura/fecha.
 - [ ] Backups ejecutados/fallidos/ultima verificacion.

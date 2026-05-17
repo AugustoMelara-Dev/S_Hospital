@@ -56,13 +56,14 @@ Fecha: 2026-05-17
 - Caja agrega confirmacion antes de cierre.
 - Backend exige nota cuando el cierre tiene diferencia distinta de cero.
 - `reports.view` ya no concede acceso historico a facturas ajenas.
+- Exportacion CSV de reportes pasa por backend y exige `reports.export`.
 
 ## Validacion posterior a revision de subagentes
 
 - `php artisan test --filter=CashPaymentsReceiptTest --colors=never`: 14 tests / 114 assertions OK.
-- `php artisan test --filter=ReportsTest --colors=never`: 9 tests / 94 assertions OK.
+- `php artisan test --filter=ReportsTest --colors=never`: 10 tests / 105 assertions OK.
 - `php artisan test --filter=InvoiceHistoryReprintVoidTest --colors=never`: 13 tests / 91 assertions OK.
-- `php artisan test --colors=never`: 114 tests / 638 assertions OK.
+- `php artisan test --colors=never`: 115 tests / 649 assertions OK.
 - `vendor/bin/pint --test`: OK.
 - `npm.cmd run lint`: OK.
 - `npm.cmd test`: 20 tests frontend OK.
@@ -73,6 +74,6 @@ Fecha: 2026-05-17
 
 ## Pendiente real
 
-- Reportes gerenciales siguen incompletos frente al plan corregido: anulaciones, reimpresiones, backups, filtros por categoria/metodo/estado y exportacion backend/autorizada.
+- Reportes gerenciales siguen incompletos frente al plan corregido: anulaciones, reimpresiones, backups y filtros por categoria/metodo/estado.
 - El flujo principal del POS todavia debe decidir formalmente si `Emitir pendiente` es permitido o si caja abierta es obligatoria antes de emitir.
 - Falta smoke real con consola limpia contra Laravel/API, separado del E2E mockeado.

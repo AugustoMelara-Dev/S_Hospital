@@ -214,7 +214,18 @@ export function ReportsView({
           <div className="report-card-heading">
             <h3>Ingresos por rango</h3>
             {canExport ? (
-              <button type="button" className="secondary-button" onClick={() => exportReportsCsv(income, categories, serviceSales)}>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() =>
+                  window.location.assign(apiClient.reportExportUrl({
+                    date_from: income.date_from,
+                    date_to: income.date_to,
+                    cash_session_id: cashSessionId,
+                    user_id: userId,
+                  }))
+                }
+              >
                 Exportar CSV
               </button>
             ) : null}
@@ -361,51 +372,6 @@ function MethodTable({ totals }: { totals: DailyReport['payments_by_method'] }) 
       </tbody>
     </table>
   );
-}
-
-function exportReportsCsv(
-  income: IncomeReport,
-  categories: CategoryReport | null,
-  serviceSales: ServiceSalesReport | null,
-) {
-  const rows = [
-    ['seccion', 'nombre', 'categoria', 'cantidad', 'total'],
-    ['ingresos', 'Total cobrado', '', '', income.total_collected],
-    ...Object.entries(income.payments_by_method).map(([method, total]) => [
-      'metodo_pago',
-      method,
-      '',
-      '',
-      total,
-    ]),
-    ...(categories?.categories ?? []).map((category) => [
-      'categoria',
-      category.category,
-      category.category,
-      category.quantity,
-      category.total,
-    ]),
-    ...(serviceSales?.services ?? []).map((service) => [
-      'servicio',
-      service.service,
-      service.category,
-      service.quantity,
-      service.total,
-    ]),
-  ];
-  const csv = rows.map((row) => row.map(csvCell).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-
-  link.href = url;
-  link.download = `reporte-hospital-${income.date_from}-a-${income.date_to}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-function csvCell(value: string): string {
-  return `"${value.replaceAll('"', '""')}"`;
 }
 
 function serviceSalesChartData(serviceSales: ServiceSalesReport) {

@@ -217,6 +217,36 @@ class ReportsTest extends TestCase
         $this->assertNotSame($glucoseInvoice, $hemogramInvoice);
     }
 
+    public function test_report_export_requires_permission_and_uses_backend_aggregates(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $viewer = User::factory()->create();
+        $viewer->givePermissionTo('reports.view', 'reports.managerial.view');
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        $url = '/api/reports/export?date_from='.now()->toDateString().'&date_to='.now()->toDateString();
+
+        $this->actingAs($viewer)
+            ->get($url)
+            ->assertForbidden();
+
+        $response = $this->actingAs($this->admin())
+            ->get($url)
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+
+        $csv = $response->streamedContent();
+
+        $this->assertStringContainsString('seccion,nombre,categoria,cantidad,total', $csv);
+        $this->assertStringContainsString('ingresos,"Total cobrado",,,17.25', $csv);
+        $this->assertStringContainsString('categoria,Laboratorio,Laboratorio,1.00,17.25', $csv);
+        $this->assertStringContainsString('servicio,Glucosa,Laboratorio,1.00,17.25', $csv);
+    }
+
     public function test_cash_session_report_returns_expected_amounts_payments_movements_and_permissions(): void
     {
         $this->seedBillingBase();
