@@ -28,6 +28,7 @@ Guia inicial para instalar Hospital Billing OS en una PC servidor Windows dentro
 7. Ejecutar migraciones y seeders aprobados.
 8. Ejecutar `php artisan config:cache`.
 9. Configurar el servidor web para publicar el frontend y enrutar API Laravel.
+10. Configurar un worker local: `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
 
 ## Acceso de clientes
 
@@ -63,6 +64,13 @@ Programar tarea diaria:
 - Argumentos: `artisan hospital:backup --type=scheduled`
 - Iniciar en: `C:\HospitalBilling\backend`
 
+Programar worker local para backups manuales desde UI:
+
+- Programa: `php`
+- Argumentos: `artisan queue:work --queue=backups --tries=1 --timeout=600`
+- Iniciar en: `C:\HospitalBilling\backend`
+- Frecuencia: al iniciar Windows o como servicio local supervisado.
+
 Despues de generar backup, copiar el archivo reciente desde `storage\app\private\backups` hacia `C:\HospitalBillingBackups` y una unidad USB del hospital. No guardar backups en servicios cloud como requisito de produccion.
 
 ## Impresora termica
@@ -81,7 +89,8 @@ Despues de generar backup, copiar el archivo reciente desde `storage\app\private
 5. Ejecutar migraciones aprobadas.
 6. Ejecutar `php artisan config:cache`.
 7. Reiniciar servidor web.
-8. Validar `/up`, `/login`, `/verify-email`, login admin, caja, impresion y backup manual.
+8. Reiniciar o validar el worker local de backups.
+9. Validar `/up`, `/login`, `/verify-email`, login admin, caja, impresion y backup manual.
 
 ## Validacion minima
 

@@ -15,8 +15,8 @@ return new class extends Migration
             $table->string('disk')->default('local');
             $table->unsignedBigInteger('size_bytes')->nullable();
             $table->string('checksum_sha256', 64)->nullable();
-            $table->string('status', 20)->default('pending');
-            $table->string('type', 20)->default('manual');
+            $table->enum('status', ['pending', 'success', 'failed'])->default('pending');
+            $table->enum('type', ['manual', 'scheduled'])->default('manual');
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('completed_at')->nullable();
             $table->text('error_message')->nullable();
@@ -25,6 +25,7 @@ return new class extends Migration
             $table->index(['status', 'created_at']);
             $table->index(['type', 'created_at']);
             $table->index('created_by');
+            $table->index('created_at');
         });
     }
 

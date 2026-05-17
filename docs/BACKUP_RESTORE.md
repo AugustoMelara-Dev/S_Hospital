@@ -11,8 +11,16 @@ Desde el panel:
 1. Entrar como usuario admin.
 2. Abrir Backups locales.
 3. Presionar Crear backup.
-4. Confirmar que el registro quede en `success`.
-5. Descargar el archivo y copiarlo a una carpeta local protegida o USB.
+4. Confirmar que el registro quede en `pending`.
+5. Confirmar que el worker local lo cambie a `success`.
+6. Descargar el archivo y copiarlo a una carpeta local protegida o USB.
+
+El servidor debe tener un worker de cola local activo:
+
+```powershell
+cd C:\HospitalBilling\backend
+php artisan queue:work --queue=backups --tries=1 --timeout=600
+```
 
 Desde consola del servidor:
 
@@ -20,6 +28,8 @@ Desde consola del servidor:
 cd C:\HospitalBilling\backend
 php artisan hospital:backup --type=scheduled
 ```
+
+El comando crea y ejecuta el backup en el mismo proceso; se recomienda para tareas programadas fuera del horario de caja. La UI registra el backup y lo deja a la cola `backups` para evitar que el navegador espere el dump completo.
 
 Los archivos quedan bajo `storage/app/private/backups`. El API solo descarga archivos registrados en `backup_logs`, existentes y dentro de esa carpeta.
 
@@ -32,6 +42,13 @@ Crear una tarea del Programador de tareas:
 - Iniciar en: `C:\HospitalBilling\backend`
 - Frecuencia: diario, fuera del horario de caja.
 - Usuario: cuenta local con permisos sobre la carpeta del sistema y destino USB si aplica.
+
+Crear otra tarea o servicio local para el worker:
+
+- Programa: `php`
+- Argumentos: `artisan queue:work --queue=backups --tries=1 --timeout=600`
+- Iniciar en: `C:\HospitalBilling\backend`
+- Frecuencia: al iniciar Windows o como servicio supervisado.
 
 Después de cada backup diario, copiar el archivo más reciente a una unidad USB o disco externo del hospital. No usar servicios cloud como requisito operativo.
 

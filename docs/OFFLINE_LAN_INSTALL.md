@@ -51,7 +51,8 @@ Antes de instalar en el hospital:
 7. Generar `APP_KEY` en el servidor.
 8. Ejecutar migraciones y seeders aprobados.
 9. Publicar por IP fija LAN o nombre local.
-10. Validar `/up`, `/login` y `/verify-email`.
+10. Levantar worker local de backups con `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
+11. Validar `/up`, `/login` y `/verify-email`.
 
 ## Red local
 
@@ -81,6 +82,7 @@ Antes de instalar en el hospital:
 
 - Programar backup diario con `php artisan hospital:backup --type=scheduled`.
 - Permitir backup manual desde admin.
+- Mantener un worker local de cola `backups` para ejecutar backups pedidos desde la UI sin bloquear el request HTTP.
 - Guardar archivos en carpeta local protegida y copiar una version a USB o disco externo.
 - No usar cloud backups como dependencia de produccion.
 - Ver `docs/BACKUP_RESTORE.md` para restore manual y checklist de validacion.
@@ -100,8 +102,9 @@ Antes de instalar en el hospital:
 4. Revisar `.env` real sin reemplazar secretos.
 5. Ejecutar migraciones aprobadas.
 6. Ejecutar `php artisan config:cache`.
-7. Validar `/up`, `/login`, `/verify-email`.
-8. Entrar como admin y revisar facturas, caja, reportes y backups.
+7. Reiniciar o validar el worker local de backups.
+8. Validar `/up`, `/login`, `/verify-email`.
+9. Entrar como admin y revisar facturas, caja, reportes y backups.
 
 ## Validacion manual post-instalacion
 
@@ -110,7 +113,7 @@ Antes de instalar en el hospital:
 - Admin inicia sesion y ve configuracion/backups.
 - Cajero inicia sesion, abre caja, crea factura de prueba y puede imprimir recibo.
 - Supervisor/admin ve reporte diario.
-- Backup manual queda `success` o, si falta herramienta de dump en servidor, queda `failed` con causa operativa sin credenciales.
+- Backup manual queda `pending` y luego `success` cuando el worker corre; si falta herramienta de dump en servidor, queda `failed` con causa operativa sin credenciales.
 - Restore de prueba documentado antes de operar datos reales.
 
 ## Riesgos

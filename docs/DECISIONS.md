@@ -244,8 +244,10 @@ Consecuencia:
 
 Decision:
 
-- Fase 8 registra `backup_logs`, crea backups locales con `php artisan hospital:backup` y permite al admin listar, crear y descargar archivos registrados.
+- Fase 8 registra `backup_logs`, crea backups locales con `php artisan hospital:backup` y permite al admin listar, solicitar y descargar archivos registrados.
+- El backup manual desde UI responde `pending` y se ejecuta en la cola local `backups` para no bloquear el request HTTP.
 - Los archivos se guardan en el disco local bajo `storage/app/private/backups`; no se suben a cloud ni se exponen rutas arbitrarias.
+- El dump MySQL/MariaDB usa archivo temporal con `--result-file` para evitar cargar el SQL completo en memoria PHP.
 - La descarga valida permiso `backups.download`, estado `success`, ruta relativa segura, existencia del archivo y pertenencia a la carpeta de backups.
 - Restore queda como procedimiento manual documentado en `docs/BACKUP_RESTORE.md`, primero en entorno de prueba y nunca como boton destructivo en UI.
 
@@ -256,6 +258,7 @@ Motivo:
 
 Consecuencia:
 
-- Admin puede operar backup manual y descargarlo para copia local/USB.
+- Admin puede solicitar backup manual y descargarlo para copia local/USB cuando el worker lo complete.
 - Produccion debe instalar `mariadb-dump` o `mysqldump` local para dumps reales de MySQL/MariaDB.
+- Produccion debe mantener un worker local de cola `backups`.
 - Si falta la herramienta de dump, el backup queda registrado como `failed` sin exponer credenciales en logs.

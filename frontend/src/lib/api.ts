@@ -598,8 +598,20 @@ export const apiClient = {
     return response.data;
   },
 
-  async getBackups(): Promise<{ data: BackupLog[]; meta: PaginatedMeta }> {
-    return this.request<{ data: BackupLog[]; meta: PaginatedMeta }>('/api/backups');
+  async getBackups(filters: { page?: number; perPage?: number } = {}): Promise<{ data: BackupLog[]; meta: PaginatedMeta }> {
+    const params = new URLSearchParams();
+
+    if (filters.page) {
+      params.set('page', String(filters.page));
+    }
+
+    if (filters.perPage) {
+      params.set('per_page', String(filters.perPage));
+    }
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+
+    return this.request<{ data: BackupLog[]; meta: PaginatedMeta }>(`/api/backups${query}`);
   },
 
   async createBackup(): Promise<BackupLog> {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Backups\CreateBackupAction;
+use App\Jobs\RunBackupJob;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use Illuminate\Http\JsonResponse;
@@ -19,7 +20,7 @@ class BackupController extends Controller
         $backups = BackupLog::query()
             ->with('creator:id,name,username')
             ->latest()
-            ->paginate(min((int) $request->integer('per_page', 15), 50));
+            ->paginate(max(1, min((int) $request->integer('per_page', 15), 50)));
 
         return response()->json([
             'data' => $backups->items(),
@@ -35,9 +36,13 @@ class BackupController extends Controller
     {
         $request->user()->can('backups.create') || abort(403);
 
+        $backupLog = $createBackup->createPending($request->user(), BackupLog::TYPE_MANUAL);
+
+        RunBackupJob::dispatch($backupLog->id);
+
         return response()->json([
-            'data' => $createBackup->execute($request->user(), BackupLog::TYPE_MANUAL),
-        ], 201);
+            'data' => $backupLog,
+        ], 202);
     }
 
     public function download(Request $request, BackupLog $backupLog): BinaryFileResponse

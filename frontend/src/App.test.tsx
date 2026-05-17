@@ -371,10 +371,10 @@ describe('App', () => {
             filename: 'hospital-backup-20260517-101500-test.sql',
             size_bytes: 2048,
             checksum_sha256: 'a'.repeat(64),
-            status: 'success',
+            status: 'pending',
             type: 'manual',
             created_by: 1,
-            completed_at: '2026-05-17T10:15:00-06:00',
+            completed_at: null,
             created_at: '2026-05-17T10:15:00-06:00',
             updated_at: '2026-05-17T10:15:00-06:00',
             creator: { id: 1, name: 'Admin Demo', username: 'admin.demo' },
@@ -393,9 +393,60 @@ describe('App', () => {
       );
     });
     expect(await screen.findByText('hospital-backup-20260517-101500-test.sql')).toBeInTheDocument();
-    expect(screen.getByText('success')).toBeInTheDocument();
-    expect(screen.getByText('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /descargar/i })).toBeInTheDocument();
+    expect(screen.getByText('pending')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /descargar backup hospital-backup/i })).not.toBeInTheDocument();
+  });
+
+  it('renders successful backups with accessible download and pagination controls', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 1,
+            name: 'Admin Demo',
+            email: 'admin.demo@hospital-billing.local',
+            username: 'admin.demo',
+            active: true,
+            roles: ['admin'],
+            permissions: ['backups.view', 'backups.download'],
+            must_change_password: false,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 10,
+              filename: 'hospital-backup-20260517-101500-test.sql',
+              size_bytes: 2048,
+              checksum_sha256: 'b'.repeat(64),
+              status: 'success',
+              type: 'manual',
+              created_by: 1,
+              completed_at: '2026-05-17T10:15:00-06:00',
+              created_at: '2026-05-17T10:15:00-06:00',
+              updated_at: '2026-05-17T10:15:00-06:00',
+              creator: { id: 1, name: 'Admin Demo', username: 'admin.demo' },
+            },
+          ],
+          meta: { current_page: 1, per_page: 15, total: 16 },
+        }),
+      } as Response);
+
+    render(<App />);
+
+    expect(await screen.findByText('hospital-backup-20260517-101500-test.sql')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /descargar backup hospital-backup-20260517-101500-test\.sql/i,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /crear backup/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/pagina 1 de 2/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /siguiente/i })).toBeEnabled();
   });
 
   it('renders report date filters and empty category state after loading range', async () => {

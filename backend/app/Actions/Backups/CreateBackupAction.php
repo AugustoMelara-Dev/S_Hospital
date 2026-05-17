@@ -5,34 +5,72 @@ namespace App\Actions\Backups;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use App\Models\User;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
-use Symfony\Component\Process\Process;
 
 class CreateBackupAction
 {
+    public function __construct(
+        private readonly DatabaseDumpWriter $databaseDumpWriter,
+    ) {}
+
     public function execute(?User $user = null, string $type = BackupLog::TYPE_MANUAL): BackupLog
     {
+        return $this->run($this->createPending($user, $type));
+    }
+
+    public function createPending(?User $user = null, string $type = BackupLog::TYPE_MANUAL): BackupLog
+    {
+        if (! in_array($type, [BackupLog::TYPE_MANUAL, BackupLog::TYPE_SCHEDULED], true)) {
+            throw new RuntimeException('El tipo debe ser manual o scheduled.');
+        }
+
         $filename = 'hospital-backup-'.now()->format('Ymd-His').'-'.Str::lower(Str::random(8)).'.sql';
         $path = 'backups/'.$filename;
 
-        $backupLog = BackupLog::query()->create([
-            'filename' => $filename,
-            'path' => $path,
-            'disk' => 'local',
-            'status' => BackupLog::STATUS_PENDING,
-            'type' => $type,
-            'created_by' => $user?->id,
-        ]);
+        $backupLog = BackupLog::query()
+            ->create([
+                'filename' => $filename,
+                'path' => $path,
+                'disk' => 'local',
+                'status' => BackupLog::STATUS_PENDING,
+                'type' => $type,
+                'created_by' => $user?->id,
+            ]);
+
+        $this->audit($backupLog, $user?->id, 'backup.requested');
+
+        return $backupLog->fresh(['creator:id,name,username']) ?? $backupLog;
+    }
+
+    public function run(BackupLog $backupLog): BackupLog
+    {
+        $lock = Cache::lock('hospital:backup:local', 600);
+
+        if (! $lock->get()) {
+            return $this->markFailed($backupLog, 'Ya hay un backup local en proceso.');
+        }
 
         try {
-            Storage::disk('local')->makeDirectory('backups');
-            $absolutePath = Storage::disk('local')->path($path);
+            $backupLog->refresh();
+            $backupLog->forceFill([
+                'status' => BackupLog::STATUS_PENDING,
+                'error_message' => null,
+            ])->save();
 
-            $this->dumpDatabase($absolutePath);
+            Storage::disk('local')->makeDirectory('backups');
+            $absolutePath = Storage::disk('local')->path((string) $backupLog->path);
+            $temporaryPath = $absolutePath.'.tmp';
+
+            $this->removeAbsoluteFile($temporaryPath);
+
+            $this->databaseDumpWriter->dumpTo($temporaryPath);
+
+            if (! @rename($temporaryPath, $absolutePath)) {
+                throw new RuntimeException('No se pudo publicar el archivo de respaldo local.');
+            }
 
             clearstatcache(true, $absolutePath);
 
@@ -48,134 +86,17 @@ class CreateBackupAction
                 'error_message' => null,
             ])->save();
         } catch (\Throwable $exception) {
-            $this->removePartialFile($path);
+            $this->removePartialFile((string) $backupLog->path);
+            $this->removePartialFile((string) $backupLog->path.'.tmp');
 
-            $backupLog->forceFill([
-                'status' => BackupLog::STATUS_FAILED,
-                'completed_at' => now(),
-                'error_message' => $this->safeErrorMessage($exception),
-            ])->save();
+            $backupLog = $this->markFailed($backupLog, $this->safeErrorMessage($exception));
+        } finally {
+            $lock->release();
         }
 
-        $this->audit($backupLog, $user, 'backup.created');
+        $this->audit($backupLog, $backupLog->created_by, 'backup.created');
 
         return $backupLog->fresh(['creator:id,name,username']) ?? $backupLog;
-    }
-
-    private function dumpDatabase(string $absolutePath): void
-    {
-        $connection = Config::get('database.default');
-        $config = Config::get("database.connections.{$connection}", []);
-        $driver = (string) ($config['driver'] ?? '');
-
-        if ($driver === 'sqlite') {
-            $database = (string) ($config['database'] ?? '');
-
-            if ($database === ':memory:') {
-                $this->dumpSqliteDatabase($absolutePath);
-
-                return;
-            }
-
-            if ($database === '' || ! is_file($database)) {
-                throw new RuntimeException('SQLite no tiene archivo fisico para respaldar.');
-            }
-
-            if (! copy($database, $absolutePath)) {
-                throw new RuntimeException('No se pudo copiar el archivo SQLite local.');
-            }
-
-            return;
-        }
-
-        if (! in_array($driver, ['mysql', 'mariadb'], true)) {
-            throw new RuntimeException('Driver de base de datos no soportado para backup local.');
-        }
-
-        $binary = $this->findDumpBinary();
-
-        if ($binary === null) {
-            throw new RuntimeException('No se encontro mariadb-dump ni mysqldump. Instale una herramienta de dump local en el servidor.');
-        }
-
-        $command = [
-            $binary,
-            '--single-transaction',
-            '--quick',
-            '--skip-comments',
-            '--host='.(string) ($config['host'] ?? '127.0.0.1'),
-            '--port='.(string) ($config['port'] ?? '3306'),
-            '--user='.(string) ($config['username'] ?? ''),
-            (string) ($config['database'] ?? ''),
-        ];
-
-        $process = new Process($command);
-        $process->setTimeout(300);
-        $process->setEnv(['MYSQL_PWD' => (string) ($config['password'] ?? '')]);
-        $process->run();
-
-        if (! $process->isSuccessful()) {
-            throw new RuntimeException($this->sanitizeDumpError($process->getErrorOutput() ?: $process->getOutput()));
-        }
-
-        if (file_put_contents($absolutePath, $process->getOutput()) === false) {
-            throw new RuntimeException('No se pudo escribir el archivo de respaldo local.');
-        }
-    }
-
-    private function dumpSqliteDatabase(string $absolutePath): void
-    {
-        $pdo = DB::connection()->getPdo();
-        $tables = collect(DB::select(
-            "select name, sql from sqlite_master where type = 'table' and name not like 'sqlite_%' order by name"
-        ));
-        $lines = [
-            '-- Hospital Billing OS local SQLite test backup',
-            'PRAGMA foreign_keys=OFF;',
-            'BEGIN TRANSACTION;',
-        ];
-
-        foreach ($tables as $table) {
-            $name = (string) $table->name;
-
-            if (! empty($table->sql)) {
-                $lines[] = $table->sql.';';
-            }
-
-            $columns = collect(DB::select("pragma table_info('".$name."')"))
-                ->pluck('name')
-                ->map(fn (string $column) => '"'.str_replace('"', '""', $column).'"')
-                ->implode(', ');
-
-            foreach (DB::table($name)->get() as $row) {
-                $values = collect((array) $row)
-                    ->map(fn ($value) => $value === null ? 'NULL' : $pdo->quote((string) $value))
-                    ->implode(', ');
-
-                $lines[] = 'INSERT INTO "'.str_replace('"', '""', $name).'" ('.$columns.') VALUES ('.$values.');';
-            }
-        }
-
-        $lines[] = 'COMMIT;';
-
-        if (file_put_contents($absolutePath, implode(PHP_EOL, $lines).PHP_EOL) === false) {
-            throw new RuntimeException('No se pudo escribir el dump SQLite local de pruebas.');
-        }
-    }
-
-    private function findDumpBinary(): ?string
-    {
-        foreach (['mariadb-dump', 'mysqldump'] as $binary) {
-            $process = new Process([$binary, '--version']);
-            $process->setTimeout(10);
-            $process->run();
-
-            if ($process->isSuccessful()) {
-                return $binary;
-            }
-        }
-
-        return null;
     }
 
     private function removePartialFile(string $path): void
@@ -183,6 +104,24 @@ class CreateBackupAction
         if (Storage::disk('local')->exists($path)) {
             Storage::disk('local')->delete($path);
         }
+    }
+
+    private function removeAbsoluteFile(string $path): void
+    {
+        if (is_file($path)) {
+            @unlink($path);
+        }
+    }
+
+    private function markFailed(BackupLog $backupLog, string $message): BackupLog
+    {
+        $backupLog->forceFill([
+            'status' => BackupLog::STATUS_FAILED,
+            'completed_at' => now(),
+            'error_message' => str($message)->limit(500)->toString(),
+        ])->save();
+
+        return $backupLog;
     }
 
     private function safeErrorMessage(\Throwable $exception): string
@@ -197,19 +136,10 @@ class CreateBackupAction
         return $message->limit(500)->toString();
     }
 
-    private function sanitizeDumpError(string $error): string
-    {
-        return str($error)
-            ->replaceMatches('/password[^\\s]*/i', 'password=[redacted]')
-            ->squish()
-            ->limit(500)
-            ->toString() ?: 'La herramienta local de backup fallo.';
-    }
-
-    private function audit(BackupLog $backupLog, ?User $user, string $action): void
+    private function audit(BackupLog $backupLog, ?int $userId, string $action): void
     {
         AuditLog::query()->create([
-            'user_id' => $user?->id,
+            'user_id' => $userId,
             'action' => $action,
             'entity_type' => BackupLog::class,
             'entity_id' => $backupLog->id,

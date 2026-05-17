@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Actions\Backups\CreateBackupAction;
+use App\Jobs\RunBackupJob;
 use App\Models\BackupLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -42,6 +44,27 @@ class BackupWorkflowTest extends TestCase
             ->assertJsonMissingPath('data.0.error_message');
     }
 
+    public function test_backup_list_per_page_is_clamped_to_safe_range(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->getJson('/api/backups?per_page=-1')
+            ->assertOk()
+            ->assertJsonPath('meta.per_page', 1);
+
+        $this->actingAs($admin)
+            ->getJson('/api/backups?per_page=0')
+            ->assertOk()
+            ->assertJsonPath('meta.per_page', 1);
+
+        $this->actingAs($admin)
+            ->getJson('/api/backups?per_page=999')
+            ->assertOk()
+            ->assertJsonPath('meta.per_page', 50);
+    }
+
     public function test_cashier_and_supervisor_cannot_list_create_or_download_backups(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -54,18 +77,41 @@ class BackupWorkflowTest extends TestCase
         }
     }
 
-    public function test_manual_backup_endpoint_creates_success_log_checksum_and_audit_entry(): void
+    public function test_manual_backup_endpoint_registers_pending_log_and_queues_local_backup(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+        Queue::fake();
+
+        $response = $this->actingAs($admin)
+            ->postJson('/api/backups')
+            ->assertAccepted()
+            ->assertJsonPath('data.status', BackupLog::STATUS_PENDING)
+            ->assertJsonPath('data.type', BackupLog::TYPE_MANUAL);
+
+        $backup = BackupLog::query()->findOrFail($response->json('data.id'));
+
+        $this->assertSame(BackupLog::STATUS_PENDING, $backup->status);
+        $this->assertNull($backup->completed_at);
+        $this->assertNull($backup->checksum_sha256);
+        $this->assertFalse(Storage::disk('local')->exists((string) $backup->path));
+
+        Queue::assertPushed(RunBackupJob::class);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'backup.requested',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $backup->id,
+        ]);
+    }
+
+    public function test_backup_runner_creates_success_log_checksum_and_audit_entry(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
 
-        $response = $this->actingAs($admin)
-            ->postJson('/api/backups')
-            ->assertCreated()
-            ->assertJsonPath('data.status', BackupLog::STATUS_SUCCESS)
-            ->assertJsonPath('data.type', BackupLog::TYPE_MANUAL);
-
-        $backup = BackupLog::query()->findOrFail($response->json('data.id'));
+        $backup = app(CreateBackupAction::class)->execute($admin, BackupLog::TYPE_MANUAL);
 
         $this->assertSame(BackupLog::STATUS_SUCCESS, $backup->status);
         $this->assertNotNull($backup->completed_at);

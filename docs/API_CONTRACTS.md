@@ -260,7 +260,7 @@ El recibo debe incluir paciente, factura, fecha, cajero, items, subtotal, impues
 | Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
 |---|---|---|---|---|---|
 | GET | `/api/backups` | `backups.view` | Query: `page` | Lista de backups | Admin. |
-| POST | `/api/backups` | `backups.create` | `{ "notes": "manual" }` | Backup iniciado/creado | Registra `backup_logs`. |
+| POST | `/api/backups` | `backups.create` | `{}` | Backup manual registrado en cola local | Responde `202` con `status=pending`; el worker local ejecuta el dump y actualiza `success/failed`. |
 | GET | `/api/backups/{id}/download` | `backups.download` | N/A | Archivo backup | Proteger acceso. |
 
 Restore no se expone como accion web en la primera version vendible. Debe documentarse en `docs/BACKUP_RESTORE.md` para evitar restauraciones accidentales desde UI.

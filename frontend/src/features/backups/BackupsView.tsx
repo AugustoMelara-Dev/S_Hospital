@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { type AuthUser, type BackupLog, apiClient } from '../../lib/api';
+import { type AuthUser, type BackupLog, type PaginatedMeta, apiClient } from '../../lib/api';
 
 type BackupsViewProps = {
   user: AuthUser;
@@ -8,21 +8,24 @@ type BackupsViewProps = {
 
 export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const [backups, setBackups] = useState<BackupLog[]>([]);
+  const [meta, setMeta] = useState<PaginatedMeta | null>(null);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const canCreate = user.permissions.includes('backups.create');
   const canDownload = user.permissions.includes('backups.download');
 
   useEffect(() => {
-    void loadBackups();
-  }, []);
+    void loadBackups(page);
+  }, [page]);
 
-  async function loadBackups() {
+  async function loadBackups(nextPage: number) {
     setLoading(true);
     onStatus('Cargando backups locales...');
 
     try {
-      const response = await apiClient.getBackups();
+      const response = await apiClient.getBackups({ page: nextPage });
       setBackups(response.data);
+      setMeta(response.meta);
       onStatus('Backups locales cargados.');
     } catch (error) {
       onStatus(error instanceof Error ? error.message : 'No se pudieron cargar los backups.');
@@ -41,7 +44,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       onStatus(
         backup.status === 'success'
           ? 'Backup local creado.'
-          : 'Backup registrado como fallido; revise el servidor.',
+          : 'Backup registrado y en cola local.',
       );
     } catch (error) {
       onStatus(error instanceof Error ? error.message : 'No se pudo crear el backup.');
@@ -57,9 +60,11 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           <p className="app-kicker">Fase 8</p>
           <h2 id="backups-title">Backups locales</h2>
         </div>
-        <button type="button" onClick={handleCreateBackup} disabled={!canCreate || loading}>
-          Crear backup
-        </button>
+        {canCreate ? (
+          <button type="button" onClick={handleCreateBackup} disabled={loading}>
+            Crear backup
+          </button>
+        ) : null}
       </div>
 
       {backups.length > 0 ? (
@@ -92,6 +97,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                       <button
                         type="button"
                         className="secondary-button compact-button"
+                        aria-label={`Descargar backup ${backup.filename}`}
                         onClick={() => window.location.assign(apiClient.backupDownloadUrl(backup.id))}
                       >
                         Descargar
@@ -104,6 +110,29 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               ))}
             </tbody>
           </table>
+          {meta ? (
+            <div className="pagination-row">
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={loading || meta.current_page <= 1}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+              >
+                Anterior
+              </button>
+              <span className="muted">
+                Pagina {meta.current_page} de {Math.max(1, Math.ceil(meta.total / meta.per_page))}
+              </span>
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={loading || meta.current_page >= Math.ceil(meta.total / meta.per_page)}
+                onClick={() => setPage((current) => current + 1)}
+              >
+                Siguiente
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : (
         <p className="notice">No hay backups registrados.</p>
