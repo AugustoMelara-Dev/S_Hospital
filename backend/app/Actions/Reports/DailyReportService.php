@@ -21,7 +21,7 @@ class DailyReportService
         $invoiceSummary = Invoice::query()
             ->whereBetween('issued_at', [$start, $end])
             ->selectRaw('COUNT(*) as invoice_count')
-            ->selectRaw('COALESCE(SUM(CASE WHEN status != ? THEN CAST(ROUND(total * 100) AS INTEGER) ELSE 0 END), 0) as billed_cents', [Invoice::STATUS_VOID])
+            ->selectRaw('COALESCE(SUM(CASE WHEN status != ? THEN ROUND(total * 100) ELSE 0 END), 0) as billed_cents', [Invoice::STATUS_VOID])
             ->first();
 
         $paymentSummary = Payment::query()
@@ -30,7 +30,7 @@ class DailyReportService
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
             ->whereBetween('payments.paid_at', [$start, $end])
             ->selectRaw('COUNT(*) as payment_count')
-            ->selectRaw('COALESCE(SUM(CAST(ROUND(payments.amount * 100) AS INTEGER)), 0) as collected_cents')
+            ->selectRaw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as collected_cents')
             ->first();
 
         $methods = $this->zeroMethodTotals();
@@ -40,7 +40,7 @@ class DailyReportService
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
             ->whereBetween('payments.paid_at', [$start, $end])
             ->groupBy('payments.method')
-            ->select('payments.method', DB::raw('COALESCE(SUM(CAST(ROUND(payments.amount * 100) AS INTEGER)), 0) as total_cents'))
+            ->select('payments.method', DB::raw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as total_cents'))
             ->get()
             ->each(function (object $row) use (&$methods): void {
                 if (array_key_exists($row->method, $methods)) {
@@ -60,7 +60,7 @@ class DailyReportService
         Invoice::query()
             ->whereBetween('issued_at', [$start, $end])
             ->groupBy('status')
-            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('COALESCE(SUM(CAST(ROUND(total * 100) AS INTEGER)), 0) as total_cents'))
+            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('COALESCE(SUM(ROUND(total * 100)), 0) as total_cents'))
             ->get()
             ->each(function (object $row) use (&$statuses): void {
                 $statuses[$row->status] = [

@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Reports;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Carbon;
+use Throwable;
 
 class DateRangeReportRequest extends FormRequest
 {
@@ -47,9 +49,19 @@ class DateRangeReportRequest extends FormRequest
 
     private function maxDateTo(): string
     {
-        $dateFrom = $this->date('date_from');
+        $rawDateFrom = $this->input('date_from');
 
-        if (! $dateFrom) {
+        if (! is_string($rawDateFrom) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawDateFrom)) {
+            return '9999-12-31';
+        }
+
+        try {
+            $dateFrom = Carbon::createFromFormat('Y-m-d', $rawDateFrom);
+        } catch (Throwable) {
+            return '9999-12-31';
+        }
+
+        if ($dateFrom->format('Y-m-d') !== $rawDateFrom) {
             return '9999-12-31';
         }
 

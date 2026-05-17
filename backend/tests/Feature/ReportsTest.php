@@ -12,6 +12,7 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -24,6 +25,8 @@ class ReportsTest extends TestCase
         $this->seedBillingBase();
         $user = User::factory()->create();
         $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $date = now()->toDateString();
 
         $this->actingAs($user)
             ->getJson('/api/reports/daily')
@@ -31,6 +34,18 @@ class ReportsTest extends TestCase
 
         $this->actingAs($cashier)
             ->getJson('/api/reports/daily')
+            ->assertForbidden();
+
+        $this->actingAs($cashier)
+            ->getJson("/api/reports/income?date_from={$date}&date_to={$date}")
+            ->assertForbidden();
+
+        $this->actingAs($cashier)
+            ->getJson("/api/reports/categories?date_from={$date}&date_to={$date}")
+            ->assertForbidden();
+
+        $this->actingAs($cashier)
+            ->getJson("/api/reports/cash-sessions/{$sessionId}")
             ->assertForbidden();
     }
 
@@ -112,6 +127,11 @@ class ReportsTest extends TestCase
             ->getJson('/api/reports/income?date_from='.now()->subDays(40)->toDateString().'&date_to='.now()->toDateString())
             ->assertUnprocessable()
             ->assertJsonValidationErrors('date_to');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/income?date_from=fecha-mala&date_to='.now()->toDateString())
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('date_from');
     }
 
     public function test_category_report_uses_invoice_item_snapshots_and_ignores_current_catalog_changes(): void
@@ -169,9 +189,18 @@ class ReportsTest extends TestCase
         $otherSessionId = $this->openSession($otherCashier);
         $cashInvoice = $this->createInvoice($cashier, 'Glucosa');
         $cardInvoice = $this->createInvoice($cashier, 'Hemograma Completo');
+        $voidInvoice = $this->createInvoice($cashier, 'Eritropoyetina');
 
         $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
         $this->payInvoice($cashier, $cardInvoice, $sessionId, Payment::METHOD_CARD, '11.50');
+        $this->payInvoice($cashier, $voidInvoice, $sessionId, Payment::METHOD_OTHER, '28.75');
+
+        Invoice::query()->whereKey($voidInvoice)->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => now(),
+            'void_reason' => 'No debe aparecer en reporte de caja',
+        ]);
 
         $this->actingAs($cashier)
             ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '518.00'])
@@ -193,13 +222,50 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.cash_session.difference_amount', '0.75')
             ->assertJsonPath('data.total_cash', '17.25')
             ->assertJsonPath('data.total_card', '11.50')
+            ->assertJsonPath('data.total_other', '0.00')
             ->assertJsonCount(2, 'data.payments')
-            ->assertJsonCount(4, 'data.movements');
+            ->assertJsonCount(5, 'data.movements');
 
         $this->actingAs($this->supervisor())
             ->getJson("/api/reports/cash-sessions/{$sessionId}")
             ->assertOk()
             ->assertJsonPath('data.cash_session.id', $sessionId);
+    }
+
+    public function test_report_indexes_exist_for_payment_and_category_queries(): void
+    {
+        $this->assertContains('payments_status_paid_at_index', $this->indexNames('payments'));
+        $this->assertContains('invoice_items_category_name_index', $this->indexNames('invoice_items'));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function indexNames(string $table): array
+    {
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'sqlite') {
+            return collect(DB::select(
+                "select name from sqlite_master where type = 'index' and tbl_name = ?",
+                [$table],
+            ))
+                ->pluck('name')
+                ->filter()
+                ->values()
+                ->all();
+        }
+
+        if ($driver === 'mysql' || $driver === 'mariadb') {
+            return collect(DB::select('show index from '.$table))
+                ->pluck('Key_name')
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+        }
+
+        return [];
     }
 
     private function seedBillingBase(): void

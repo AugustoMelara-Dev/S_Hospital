@@ -23,7 +23,7 @@ class CashSessionReportService
             ->where('payments.status', Payment::STATUS_POSTED)
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
             ->groupBy('payments.method')
-            ->select('payments.method', DB::raw('COALESCE(SUM(CAST(ROUND(payments.amount * 100) AS INTEGER)), 0) as total_cents'))
+            ->select('payments.method', DB::raw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as total_cents'))
             ->get()
             ->each(function (object $row) use (&$methods): void {
                 if (array_key_exists($row->method, $methods)) {
@@ -32,13 +32,16 @@ class CashSessionReportService
             });
 
         $payments = Payment::query()
+            ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
             ->with([
                 'invoice:id,invoice_number,patient_name,status,total,paid_amount,balance_due',
                 'user:id,name,username',
             ])
-            ->where('cash_session_id', $session->id)
-            ->where('status', Payment::STATUS_POSTED)
-            ->orderBy('paid_at')
+            ->where('payments.cash_session_id', $session->id)
+            ->where('payments.status', Payment::STATUS_POSTED)
+            ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            ->orderBy('payments.paid_at')
+            ->select('payments.*')
             ->get();
 
         $movements = $session->movements()

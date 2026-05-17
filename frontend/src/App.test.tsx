@@ -356,6 +356,7 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: /^reporte diario$/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/desde/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
+    expect(screen.getByText(/rango maximo permitido: 31 dias/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver rango/i }));
 
     expect(await screen.findByText(/ingresos por rango/i)).toBeInTheDocument();

@@ -158,13 +158,26 @@ export function ReportsView({ onStatus }: ReportsViewProps) {
         </label>
         <label>
           Caja
-          <input value={cashSessionId} onChange={(event) => setCashSessionId(event.target.value)} />
+          <input
+            type="number"
+            inputMode="numeric"
+            min="1"
+            value={cashSessionId}
+            onChange={(event) => setCashSessionId(event.target.value)}
+          />
         </label>
         <label>
           Cajero
-          <input value={userId} onChange={(event) => setUserId(event.target.value)} />
+          <input
+            type="number"
+            inputMode="numeric"
+            min="1"
+            value={userId}
+            onChange={(event) => setUserId(event.target.value)}
+          />
         </label>
         <button type="submit">Ver rango</button>
+        <p className="muted">Rango maximo permitido: 31 dias.</p>
       </form>
 
       {income ? (
@@ -216,7 +229,13 @@ export function ReportsView({ onStatus }: ReportsViewProps) {
       <form className="report-filters" onSubmit={handleCashReportSubmit}>
         <label>
           Numero de caja
-          <input value={cashReportId} onChange={(event) => setCashReportId(event.target.value)} />
+          <input
+            type="number"
+            inputMode="numeric"
+            min="1"
+            value={cashReportId}
+            onChange={(event) => setCashReportId(event.target.value)}
+          />
         </label>
         <button type="submit">Ver caja</button>
       </form>

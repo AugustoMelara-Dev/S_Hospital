@@ -33,13 +33,13 @@ class IncomeReportService
         $summary = (clone $base)
             ->selectRaw('COUNT(*) as payment_count')
             ->selectRaw('COUNT(DISTINCT payments.invoice_id) as invoice_count')
-            ->selectRaw('COALESCE(SUM(CAST(ROUND(payments.amount * 100) AS INTEGER)), 0) as collected_cents')
+            ->selectRaw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as collected_cents')
             ->first();
 
         $methods = $this->zeroMethodTotals();
         (clone $base)
             ->groupBy('payments.method')
-            ->select('payments.method', DB::raw('COALESCE(SUM(CAST(ROUND(payments.amount * 100) AS INTEGER)), 0) as total_cents'))
+            ->select('payments.method', DB::raw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as total_cents'))
             ->get()
             ->each(function (object $row) use (&$methods): void {
                 if (array_key_exists($row->method, $methods)) {

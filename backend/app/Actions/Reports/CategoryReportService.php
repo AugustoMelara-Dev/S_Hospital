@@ -24,10 +24,10 @@ class CategoryReportService
             ->orderBy('invoice_items.category_name')
             ->select('invoice_items.category_name')
             ->selectRaw('COUNT(*) as item_count')
-            ->selectRaw('COALESCE(SUM(CAST(ROUND(invoice_items.quantity * 100) AS INTEGER)), 0) as quantity_cents')
-            ->selectRaw('COALESCE(SUM(CAST(ROUND(invoice_items.line_subtotal * 100) AS INTEGER)), 0) as subtotal_cents')
-            ->selectRaw('COALESCE(SUM(CAST(ROUND(invoice_items.tax_amount * 100) AS INTEGER)), 0) as tax_cents')
-            ->selectRaw('COALESCE(SUM(CAST(ROUND(invoice_items.line_total * 100) AS INTEGER)), 0) as total_cents')
+            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.quantity * 100)), 0) as quantity_cents')
+            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.line_subtotal * 100)), 0) as subtotal_cents')
+            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.tax_amount * 100)), 0) as tax_cents')
+            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.line_total * 100)), 0) as total_cents')
             ->get()
             ->map(fn (object $row): array => [
                 'category' => $row->category_name,
