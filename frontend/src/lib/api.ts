@@ -190,6 +190,77 @@ export type ReceiptData = {
   }>;
 };
 
+export type MoneyByMethod = {
+  cash: string;
+  transfer: string;
+  card: string;
+  other: string;
+};
+
+export type DailyReport = {
+  date: string;
+  total_billed: string;
+  total_collected: string;
+  invoice_count: number;
+  payment_count: number;
+  payments_by_method: MoneyByMethod;
+  invoices_by_status: Record<'issued' | 'partial' | 'paid' | 'void', { count: number; total: string }>;
+};
+
+export type IncomeReport = {
+  date_from: string;
+  date_to: string;
+  cash_session_id: number | null;
+  user_id: number | null;
+  total_collected: string;
+  payments_by_method: MoneyByMethod;
+  payment_count: number;
+  invoice_count: number;
+};
+
+export type CategoryReport = {
+  date_from: string;
+  date_to: string;
+  categories: Array<{
+    category: string;
+    item_count: number;
+    quantity: string;
+    subtotal: string;
+    tax_amount: string;
+    total: string;
+  }>;
+};
+
+export type CashSessionReport = {
+  cash_session: CashSession & {
+    user?: Pick<AuthUser, 'id' | 'name' | 'username'>;
+  };
+  totals_by_method: MoneyByMethod;
+  total_cash: string;
+  total_transfer: string;
+  total_card: string;
+  total_other: string;
+  payments: Array<Payment & {
+    invoice?: Pick<
+      Invoice,
+      'id' | 'invoice_number' | 'patient_name' | 'status' | 'total' | 'paid_amount' | 'balance_due'
+    >;
+    user?: Pick<AuthUser, 'id' | 'name' | 'username'>;
+  }>;
+  movements: Array<{
+    id: number;
+    cash_session_id: number;
+    payment_id: number | null;
+    user_id: number;
+    type: string;
+    method: string | null;
+    amount: string;
+    notes: string | null;
+    occurred_at: string;
+    user?: Pick<AuthUser, 'id' | 'name' | 'username'>;
+  }>;
+};
+
 export type PaginatedMeta = {
   current_page: number;
   per_page: number;
@@ -464,6 +535,51 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify({ reason }),
     });
+
+    return response.data;
+  },
+
+  async getDailyReport(date?: string): Promise<DailyReport> {
+    const query = date ? `?date=${encodeURIComponent(date)}` : '';
+    const response = await this.request<{ data: DailyReport }>(`/api/reports/daily${query}`);
+
+    return response.data;
+  },
+
+  async getIncomeReport(filters: {
+    date_from: string;
+    date_to: string;
+    cash_session_id?: string;
+    user_id?: string;
+  }): Promise<IncomeReport> {
+    const params = new URLSearchParams();
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value);
+      }
+    });
+
+    const response = await this.request<{ data: IncomeReport }>(
+      `/api/reports/income?${params.toString()}`,
+    );
+
+    return response.data;
+  },
+
+  async getCategoryReport(filters: { date_from: string; date_to: string }): Promise<CategoryReport> {
+    const params = new URLSearchParams(filters);
+    const response = await this.request<{ data: CategoryReport }>(
+      `/api/reports/categories?${params.toString()}`,
+    );
+
+    return response.data;
+  },
+
+  async getCashSessionReport(id: string): Promise<CashSessionReport> {
+    const response = await this.request<{ data: CashSessionReport }>(
+      `/api/reports/cash-sessions/${encodeURIComponent(id)}`,
+    );
 
     return response.data;
   },

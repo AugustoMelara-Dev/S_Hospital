@@ -218,3 +218,24 @@ Consecuencia:
 
 - Fase 6 no implementa anulacion independiente de pagos ni movimientos reversos de caja.
 - Una fase futura debe definir reversos auditados antes de permitir anulacion de facturas pagadas o parciales.
+
+### 2026-05-17 - Reportes basicos por agregacion SQL
+
+Decision:
+
+- Los reportes de Fase 7 se calculan en backend con agregaciones SQL sobre `invoices`, `invoice_items`, `payments` y `cash_movements`.
+- El reporte diario usa la fecha solicitada o el dia actual por defecto; los reportes por rango requieren `date_from` y `date_to`.
+- Los reportes por rango quedan limitados a 31 dias por solicitud para evitar consultas grandes en la operacion LAN.
+- Ingresos excluye facturas `void`; el reporte por categoria usa snapshots de `invoice_items.category_name`, no el catalogo actual.
+- Reportes de caja se basan en pagos y movimientos asociados a `cash_register_sessions`.
+
+Motivo:
+
+- La demo vendible necesita reporte diario y resumen de caja sin convertir React en fuente contable.
+- Los snapshots protegen reportes historicos cuando cambian categorias o servicios.
+- El limite de rango conserva tiempos de respuesta razonables en MySQL/MariaDB local.
+
+Consecuencia:
+
+- Fase 7 no implementa dashboard real, exportaciones avanzadas, PDF avanzado, backups, anulacion de pagos, reversos de caja, inventario ni expediente clinico.
+- Si se requiere reporte anual o exportacion grande, debe agregarse un flujo posterior paginado/exportado desde backend.

@@ -196,6 +196,172 @@ describe('App', () => {
     expect((await screen.findAllByText(/caja abierta/i)).length).toBeGreaterThan(0);
   });
 
+  it('renders reports view for a user with reports view permission', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 3,
+            name: 'Supervisor Demo',
+            email: 'supervisor.demo@hospital-billing.local',
+            username: 'supervisor.demo',
+            active: true,
+            roles: ['supervisor'],
+            permissions: ['reports.view'],
+            must_change_password: false,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            date: '2026-05-17',
+            total_billed: '28.75',
+            total_collected: '17.25',
+            invoice_count: 2,
+            payment_count: 1,
+            payments_by_method: {
+              cash: '17.25',
+              transfer: '0.00',
+              card: '0.00',
+              other: '0.00',
+            },
+            invoices_by_status: {
+              issued: { count: 1, total: '11.50' },
+              partial: { count: 0, total: '0.00' },
+              paid: { count: 1, total: '17.25' },
+              void: { count: 0, total: '0.00' },
+            },
+          },
+        }),
+      } as Response);
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /^reportes$/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/fecha diaria/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/desde/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^reporte diario$/i })).toBeInTheDocument();
+    expect(screen.getByText(/total cobrado/i)).toBeInTheDocument();
+    expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
+  });
+
+  it('does not render reports for a cashier without reports view permission', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 2,
+            name: 'Cajero Demo',
+            email: 'cajero.demo@hospital-billing.local',
+            username: 'cajero.demo',
+            active: true,
+            roles: ['cajero'],
+            permissions: ['cash.view'],
+            must_change_password: false,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: null }),
+      } as Response);
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /^caja$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /^reportes$/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/fecha diaria/i)).not.toBeInTheDocument();
+  });
+
+  it('renders report date filters and empty category state after loading range', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 1,
+            name: 'Admin Demo',
+            email: 'admin.demo@hospital-billing.local',
+            username: 'admin.demo',
+            active: true,
+            roles: ['admin'],
+            permissions: ['reports.view'],
+            must_change_password: false,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            date: '2026-05-17',
+            total_billed: '0.00',
+            total_collected: '0.00',
+            invoice_count: 0,
+            payment_count: 0,
+            payments_by_method: {
+              cash: '0.00',
+              transfer: '0.00',
+              card: '0.00',
+              other: '0.00',
+            },
+            invoices_by_status: {
+              issued: { count: 0, total: '0.00' },
+              partial: { count: 0, total: '0.00' },
+              paid: { count: 0, total: '0.00' },
+              void: { count: 0, total: '0.00' },
+            },
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            date_from: '2026-05-17',
+            date_to: '2026-05-17',
+            cash_session_id: null,
+            user_id: null,
+            total_collected: '0.00',
+            payments_by_method: {
+              cash: '0.00',
+              transfer: '0.00',
+              card: '0.00',
+              other: '0.00',
+            },
+            payment_count: 0,
+            invoice_count: 0,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            date_from: '2026-05-17',
+            date_to: '2026-05-17',
+            categories: [],
+          },
+        }),
+      } as Response);
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /^reportes$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^reporte diario$/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/desde/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /ver rango/i }));
+
+    expect(await screen.findByText(/ingresos por rango/i)).toBeInTheDocument();
+    expect(await screen.findByText(/sin categorias en el rango seleccionado/i)).toBeInTheDocument();
+  });
+
   it('renders payment form after issuing an invoice without adding reports', async () => {
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({

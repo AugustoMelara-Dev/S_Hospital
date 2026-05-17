@@ -8,6 +8,7 @@ use App\Http\Controllers\FiscalSettingsController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReceiptController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
 
@@ -57,5 +58,10 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         Route::get('/invoices/{invoice}/payments', [PaymentController::class, 'index']);
         Route::get('/invoices/{invoice}/receipt', [ReceiptController::class, 'show']);
         Route::post('/invoices/{invoice}/reprint', [ReceiptController::class, 'reprint']);
+
+        Route::get('/reports/daily', [ReportController::class, 'daily']);
+        Route::get('/reports/income', [ReportController::class, 'income']);
+        Route::get('/reports/categories', [ReportController::class, 'categories']);
+        Route::get('/reports/cash-sessions/{cashSession}', [ReportController::class, 'cashSession']);
     });
 });
