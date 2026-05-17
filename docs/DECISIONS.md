@@ -281,3 +281,21 @@ Motivo:
 Consecuencia:
 
 - El estado actual puede ser `PRODUCTION_CANDIDATE`, pero no `PRODUCTION_READY` hasta ejecutar y documentar restore real, concurrencia real, LAN desde cliente fisico e impresion fisica.
+
+### 2026-05-17 - Field deployment validation sin maquillar hardware
+
+Decision:
+
+- Fase 11 registra evidencia de campo en `qa/FIELD_DEPLOYMENT_VALIDATION.md` y gaps en `qa/PRODUCTION_READINESS_GAP_REPORT.md`.
+- Restore MySQL/MariaDB real se valida solo contra una base descartable confirmada.
+- Concurrencia HTTP/Laravel/MySQL se valida solo contra entorno local/descartable confirmado y deja `RUN_ID` visible en datos auditables.
+- LAN desde servidor por IP puede quedar validada, pero LAN fisica completa requiere otra computadora cliente.
+- Impresora termica 80mm/58mm solo se marca validada con hardware real.
+
+Motivo:
+
+- `PRODUCTION_READY` exige evidencia fisica/operativa, no solo scripts o tests automatizados.
+
+Consecuencia:
+
+- El sistema sigue `PRODUCTION_CANDIDATE` aunque restore y concurrencia local queden validados; falta cliente LAN fisico completo, impresora fisica y configuracion final `APP_ENV=production` con admin real.

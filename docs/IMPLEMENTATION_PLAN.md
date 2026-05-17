@@ -508,6 +508,39 @@ Commit sugerido:
 
 - `test(release): add production readiness validation gates`
 
+### Fase 11 - Field deployment validation
+
+Alcance:
+
+- Detectar entorno real/casi real: MySQL/MariaDB, herramientas `mysql`/`mysqldump`, Docker, IP LAN y build frontend.
+- Ejecutar restore MySQL/MariaDB solo con guardas explicitas contra base descartable.
+- Ejecutar concurrencia real solo contra target local/descartable confirmado.
+- Validar rutas LAN por IP y documentar si falta computadora cliente fisica.
+- Validar worker de backups y documentar como dejarlo corriendo en Windows.
+- Documentar pendientes reales de impresora termica y configuracion final de produccion.
+
+Archivos probables:
+
+- `qa/FIELD_DEPLOYMENT_VALIDATION.md`
+- `qa/PRODUCTION_READINESS_GAP_REPORT.md`
+- `qa/RELEASE_READINESS.md`
+- `docs/RELEASE_CHECKLIST.md`
+- `docs/KNOWN_LIMITATIONS.md`
+- `docs/OFFLINE_LAN_INSTALL.md`
+- `docs/BACKUP_RESTORE.md`
+
+Quality gate:
+
+- Backend tests y Pint.
+- Frontend typecheck/lint/test/build/E2E.
+- `scripts/quality_gate.sh`.
+- `scripts/e2e_gate.sh`.
+- Scripts destructivos/mutantes solo con variables seguras.
+
+Commit sugerido:
+
+- `test(release): document field deployment validation`
+
 ## 7. Orden de commits
 
 1. `docs(plan): define phase zero implementation contracts`

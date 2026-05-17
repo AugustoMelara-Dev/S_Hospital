@@ -12,13 +12,16 @@ class ProductionSpaRouteTest extends TestCase
         $distPath = base_path('../frontend/dist');
         $assetsPath = $distPath.'/assets';
         $indexPath = $distPath.'/index.html';
-        $assetPath = $assetsPath.'/phase10-test.js';
+        $jsAssetPath = $assetsPath.'/phase10-test.js';
+        $cssAssetPath = $assetsPath.'/phase10-test.css';
         $originalIndex = File::exists($indexPath) ? File::get($indexPath) : null;
-        $originalAsset = File::exists($assetPath) ? File::get($assetPath) : null;
+        $originalJsAsset = File::exists($jsAssetPath) ? File::get($jsAssetPath) : null;
+        $originalCssAsset = File::exists($cssAssetPath) ? File::get($cssAssetPath) : null;
 
         File::ensureDirectoryExists($assetsPath);
         File::put($indexPath, '<!doctype html><html><body><div id="root">Hospital Billing OS</div></body></html>');
-        File::put($assetPath, 'console.log("phase10");');
+        File::put($jsAssetPath, 'console.log("phase10");');
+        File::put($cssAssetPath, 'body { color: #111; }');
 
         try {
             $this->get('/')
@@ -35,6 +38,12 @@ class ProductionSpaRouteTest extends TestCase
 
             $this->get('/assets/phase10-test.js')
                 ->assertOk()
+                ->assertHeader('Content-Type', 'text/javascript; charset=UTF-8')
+                ->assertHeader('X-Content-Type-Options', 'nosniff');
+
+            $this->get('/assets/phase10-test.css')
+                ->assertOk()
+                ->assertHeader('Content-Type', 'text/css; charset=UTF-8')
                 ->assertHeader('X-Content-Type-Options', 'nosniff');
         } finally {
             if ($originalIndex === null) {
@@ -43,10 +52,16 @@ class ProductionSpaRouteTest extends TestCase
                 File::put($indexPath, $originalIndex);
             }
 
-            if ($originalAsset === null) {
-                File::delete($assetPath);
+            if ($originalJsAsset === null) {
+                File::delete($jsAssetPath);
             } else {
-                File::put($assetPath, $originalAsset);
+                File::put($jsAssetPath, $originalJsAsset);
+            }
+
+            if ($originalCssAsset === null) {
+                File::delete($cssAssetPath);
+            } else {
+                File::put($cssAssetPath, $originalCssAsset);
             }
         }
     }

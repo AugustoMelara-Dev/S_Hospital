@@ -127,3 +127,16 @@ HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_test ba
 ```
 
 El script no restaura sobre la base activa. Requiere cliente `mysql` y una herramienta de dump local (`mariadb-dump` o `mysqldump`). Si falta cualquiera de esas herramientas, el estado sigue `PENDING_ENVIRONMENT_VALIDATION`.
+
+## Evidencia Fase 11
+
+Restore real validado el 2026-05-17 en MariaDB XAMPP local:
+
+- Base fuente: `hospital_billing`.
+- Base descartable restaurada: `hospital_restore_validation_test`.
+- Backup: `hospital-backup-20260517-204322-lcsexyiz.sql`.
+- SHA256: `5975701b3c288ae4b9cd4e75d1881a38173e2bc3c3e799bc4b77ab7ac3630362`.
+- Resultado: `scripts/validate_restore_mysql.sh` completo sin restaurar sobre la base activa.
+- Conteos en base restaurada: users 3, roles 3, permissions 27, services 122, invoices 1, payments 1, cash_register_sessions 1, backup_logs 5.
+
+Esta evidencia no sustituye repetir la prueba en el servidor final si cambian equipo, ruta de dump, credenciales locales o base de datos de produccion.

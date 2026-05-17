@@ -70,6 +70,8 @@ HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_test HO
 
 Este script es destructivo sobre `RESTORE_TEST_DATABASE`: hace `DROP DATABASE` y restaura el backup en esa base descartable. Nunca usarlo contra la base activa ni contra nombres sensibles. El nombre debe contener `test`, `restore`, `validation` o `disposable`.
 
+Evidencia Fase 11: ejecutado en MariaDB XAMPP local contra `hospital_restore_validation_test` con backup `hospital-backup-20260517-204322-lcsexyiz.sql`, SHA256 `5975701b3c288ae4b9cd4e75d1881a38173e2bc3c3e799bc4b77ab7ac3630362`. Repetir en servidor final si cambia el entorno.
+
 Concurrencia MySQL/MariaDB por HTTP contra servidor de validacion:
 
 ```bash
@@ -77,6 +79,8 @@ HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:80
 ```
 
 Este script es mutante: abre caja, crea facturas y registra pagos con un `RUN_ID`. No borra facturas porque son registros auditables; requiere snapshot/base descartable antes de ejecutarlo.
+
+Evidencia Fase 11: ejecutado contra `http://192.168.1.7:8000` con `HOSPITAL_CONCURRENCY_TARGET_ENV=local` y `RUN_ID=concurrency-validation-20260517T20435`; valido doble apertura de caja, doble emision de factura y doble pago. Repetir en servidor/base final descartable antes de declarar produccion.
 
 LAN fisica:
 
@@ -125,6 +129,8 @@ LAN fisica:
 ```powershell
 php artisan queue:work --queue=backups --tries=1 --timeout=600
 ```
+
+En Windows, asegurar que la tarea/servicio del worker herede la ruta de `mysqldump.exe` o `mariadb-dump.exe` en PATH. En Fase 11 el worker `--once` proceso jobs; sin dump en PATH fallo de forma controlada, y con PATH de XAMPP el backup usado para restore fue `success`.
 
 ## Antes de produccion final
 

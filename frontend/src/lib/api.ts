@@ -1,5 +1,19 @@
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? '';
 
+function cookieValue(name: string): string | null {
+  const prefix = `${name}=`;
+  const cookie = document.cookie
+    .split(';')
+    .map((value) => value.trim())
+    .find((value) => value.startsWith(prefix));
+
+  if (!cookie) {
+    return null;
+  }
+
+  return decodeURIComponent(cookie.slice(prefix.length));
+}
+
 export type AuthUser = {
   id: number;
   name: string;
@@ -308,12 +322,16 @@ export const apiClient = {
   },
 
   async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+    const method = options.method?.toUpperCase() ?? 'GET';
+    const xsrfToken = method === 'GET' || method === 'HEAD' ? null : cookieValue('XSRF-TOKEN');
+
     const response = await fetch(this.url(path), {
       ...options,
       credentials: 'include',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
+        ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
         ...options.headers,
       },
     });

@@ -2,17 +2,18 @@
 
 ## Pendientes de entorno
 
-- Restore real queda `PENDING_ENVIRONMENT_VALIDATION` hasta probar con MySQL/MariaDB real o Docker. No se afirma que restore fue validado en esta maquina.
+- Restore real quedo `VALIDATED` en Fase 11 sobre MariaDB XAMPP local y base descartable `hospital_restore_validation_test`. Debe repetirse en el servidor final si cambia el equipo, ruta de dump o base real.
 - Restore real cuenta con script Fase 10: `scripts/validate_restore_mysql.sh`. Es destructivo sobre la base descartable confirmada en `RESTORE_TEST_DATABASE`; no valida ni toca la base activa.
 - La prueba fisica de impresora termica 80mm/58mm queda `PENDING_HARDWARE_VALIDATION` hasta tener impresora real o impresora compartida del hospital.
-- La concurrencia real MySQL/MariaDB queda `PENDING_ENVIRONMENT_VALIDATION` hasta ejecutar `scripts/validate_mysql_concurrency.sh` contra servidor Laravel con MySQL/MariaDB descartable. El script crea datos con `RUN_ID` y requiere snapshot previo.
-- La validacion LAN desde computadora cliente queda pendiente hasta probar por IP fija/nombre local del servidor.
+- La concurrencia real MySQL/MariaDB quedo `VALIDATED` en Fase 11 contra Laravel/MySQL local con `RUN_ID=concurrency-validation-20260517T20435`. El script crea datos auditables y requiere snapshot previo; repetir en servidor/base final descartable antes de operar.
+- La validacion LAN desde computadora cliente queda `PENDING_LAN_CLIENT_VALIDATION` hasta probar por IP fija/nombre local del servidor desde otra PC.
+- La configuracion final `APP_ENV=production`, `APP_DEBUG=false`, admin real y worker continuo de backups queda `PENDING_ENVIRONMENT_VALIDATION` hasta preparar el servidor final.
 
-## Estado Fase 10
+## Estado Fase 11
 
 - DEMO_READY: si.
-- PRODUCTION_CANDIDATE: si, con E2E local, rutas LAN y scripts de validacion real agregados.
-- PRODUCTION_READY: no, hasta cerrar restore real, concurrencia real, LAN fisica e impresora fisica.
+- PRODUCTION_CANDIDATE: si, con E2E local, rutas LAN, restore real local y concurrencia real local validados.
+- PRODUCTION_READY: no, hasta cerrar LAN fisica desde cliente, impresora fisica y configuracion final de produccion.
 
 ## Alcance de producto
 

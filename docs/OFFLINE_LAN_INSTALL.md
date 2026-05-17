@@ -120,11 +120,21 @@ No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`,
 - Desde servidor: `/up` responde OK.
 - Desde cliente LAN: `/login` carga usando IP fija del servidor.
 - Desde cliente LAN: `/verify-email` responde con la SPA o la ruta esperada documentada.
+- Desde cliente LAN: un asset `/assets/*.js` responde como `text/javascript` y un asset `/assets/*.css` responde como `text/css`.
+- Desde cliente LAN: login local completa sin 419 CSRF usando el host/IP final configurado en `SANCTUM_STATEFUL_DOMAINS`.
 - Admin inicia sesion y ve configuracion/backups.
 - Cajero inicia sesion, abre caja, crea factura de prueba y puede imprimir recibo.
 - Supervisor/admin ve reporte diario.
 - Backup manual queda `pending` y luego `success` cuando el worker corre; si falta herramienta de dump en servidor, queda `failed` con causa operativa sin credenciales.
 - Restore de prueba documentado antes de operar datos reales.
+
+## Evidencia Fase 11 local
+
+- Restore real MySQL/MariaDB fue validado en MariaDB XAMPP local contra `hospital_restore_validation_test`.
+- Concurrencia real fue validada contra `http://192.168.1.7:8000` con `RUN_ID=concurrency-validation-20260517T20435`.
+- Rutas por IP desde servidor respondieron para `/up`, `/login`, `/verify-email` y assets.
+- No se declara LAN fisica completa hasta repetir el checklist desde otra computadora cliente.
+- No se declara impresora fisica validada hasta imprimir 80mm/58mm en hardware real.
 
 ## Scripts de validacion real
 

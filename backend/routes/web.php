@@ -31,8 +31,26 @@ Route::get('/assets/{path}', function (string $path) {
     $assetPath = base_path('../frontend/dist/assets/'.$path);
     abort_unless(File::isFile($assetPath), 404);
 
+    $extension = strtolower(pathinfo($assetPath, PATHINFO_EXTENSION));
+    $contentType = match ($extension) {
+        'css' => 'text/css; charset=UTF-8',
+        'js', 'mjs' => 'text/javascript; charset=UTF-8',
+        'json', 'map' => 'application/json; charset=UTF-8',
+        'svg' => 'image/svg+xml',
+        'png' => 'image/png',
+        'jpg', 'jpeg' => 'image/jpeg',
+        'gif' => 'image/gif',
+        'webp' => 'image/webp',
+        'ico' => 'image/x-icon',
+        'woff' => 'font/woff',
+        'woff2' => 'font/woff2',
+        'ttf' => 'font/ttf',
+        default => File::mimeType($assetPath) ?: 'application/octet-stream',
+    };
+
     return response()->file($assetPath, [
         'Cache-Control' => 'public, max-age=31536000, immutable',
+        'Content-Type' => $contentType,
         'X-Content-Type-Options' => 'nosniff',
     ]);
 })->where('path', '.*');

@@ -110,7 +110,13 @@ fi
 echo "Creating source backup with php artisan hospital:backup --type=manual."
 (cd "$BACKEND_DIR" && php artisan hospital:backup --type=manual)
 
-BACKUP_PATH="$(cd "$BACKEND_DIR" && php artisan tinker --execute='echo optional(\App\Models\BackupLog::query()->where("status", "success")->latest()->first())->path;' 2>/dev/null)"
+BACKUP_PATH="$(cd "$BACKEND_DIR" && php -r '
+require __DIR__."/vendor/autoload.php";
+$app = require __DIR__."/bootstrap/app.php";
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel->bootstrap();
+echo App\Models\BackupLog::query()->where("status", "success")->latest()->first()?->path ?? "";
+' 2>/dev/null)"
 
 if [ -z "$BACKUP_PATH" ]; then
   echo "Abort: no successful backup log was found after backup command."

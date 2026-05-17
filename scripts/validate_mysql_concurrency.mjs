@@ -45,8 +45,16 @@ class Session {
   async request(path, options = {}) {
     const headers = new Headers(options.headers ?? {});
     headers.set('Accept', 'application/json');
+    headers.set('Origin', baseUrl);
+    headers.set('Referer', `${baseUrl}/login`);
     if (options.body && !headers.has('Content-Type')) {
       headers.set('Content-Type', 'application/json');
+    }
+    if (options.method && !['GET', 'HEAD'].includes(options.method.toUpperCase())) {
+      const xsrfToken = this.cookies.get('XSRF-TOKEN');
+      if (xsrfToken && !headers.has('X-XSRF-TOKEN')) {
+        headers.set('X-XSRF-TOKEN', decodeURIComponent(xsrfToken));
+      }
     }
     if (this.cookies.size > 0) {
       headers.set('Cookie', [...this.cookies.entries()].map(([key, value]) => `${key}=${value}`).join('; '));

@@ -1,13 +1,13 @@
-# Release readiness - Fase 10
+# Release readiness - Fase 11
 
 Fecha: 2026-05-17
-Alcance: production readiness, validaciones reales y cierre de bloqueantes.
+Alcance: field deployment validation sobre entorno real o casi real.
 
 ## Estado
 
-Estado general: PRODUCTION_CANDIDATE; NO PRODUCTION_READY hasta cerrar validaciones reales de restore MySQL/MariaDB, concurrencia MySQL/MariaDB, LAN desde cliente fisico y hardware de impresora termica.
+Estado general: PRODUCTION_CANDIDATE; NO PRODUCTION_READY hasta cerrar validacion completa desde cliente LAN fisico, impresora termica fisica y configuracion final de produccion con admin real.
 
-La demo vendible puede cubrir login, caja, factura, regla de eritropoyetina, cobro, recibo termico, historial, reimpresion, anulacion sin pagos, reportes y backup local. Fase 10 agrego gate E2E Playwright, rutas LAN `/login` y `/verify-email` servidas por el build React desde Laravel, y scripts verificables para restore/concurrencia real. Los pendientes de entorno quedan documentados como limitaciones y no se presentan como validados.
+La demo vendible puede cubrir login, caja, factura, regla de eritropoyetina, cobro, recibo termico, historial, reimpresion, anulacion sin pagos, reportes y backup local. Fase 11 valida restore real MySQL/MariaDB en base descartable local, concurrencia real HTTP/Laravel/MySQL local y rutas LAN por IP desde servidor. Los pendientes de hardware/entorno quedan documentados como limitaciones y no se presentan como validados.
 
 ## Definiciones de estado
 
@@ -111,12 +111,22 @@ En servidor real del hospital:
 - No hay dependencia cloud obligatoria para operacion.
 - Backups son locales.
 
+## Evidencia Fase 11
+
+- Restore real MySQL/MariaDB: VALIDATED en `hospital_restore_validation_test` usando `scripts/validate_restore_mysql.sh`, backup `hospital-backup-20260517-204322-lcsexyiz.sql`, SHA256 `5975701b3c288ae4b9cd4e75d1881a38173e2bc3c3e799bc4b77ab7ac3630362`.
+- Conteos restore: users 3, roles 3, permissions 27, services 122, invoices 1, payments 1, cash_register_sessions 1, backup_logs 5.
+- Concurrencia real MySQL/MariaDB local: VALIDATED con `scripts/validate_mysql_concurrency.sh`, `RUN_ID=concurrency-validation-20260517T20435`, doble apertura 201/422, facturas concurrentes `000-001-01-00000002` y `000-001-01-00000003`, doble pago 201/422.
+- LAN por IP desde servidor: `/up`, `/login`, `/verify-email` y asset JS respondieron 200 en `http://192.168.1.7:8000`.
+- Worker backups: `POST /api/backups` creo `pending`; `php artisan queue:work --queue=backups --tries=1 --timeout=600 --once` proceso el job. Sin dump en PATH fallo controlado; con PATH de XAMPP el backup de restore fue `success`.
+- Reportes nuevos: `qa/FIELD_DEPLOYMENT_VALIDATION.md` y `qa/PRODUCTION_READINESS_GAP_REPORT.md`.
+
 ## Pendientes honestos
 
-- Restore real: `PENDING_ENVIRONMENT_VALIDATION` hasta ejecutar `scripts/validate_restore_mysql.sh` con MySQL/MariaDB y `mariadb-dump` o `mysqldump` sobre una base descartable confirmada.
-- Concurrencia real MySQL/MariaDB: `PENDING_ENVIRONMENT_VALIDATION` hasta ejecutar `scripts/validate_mysql_concurrency.sh` contra servidor Laravel conectado a una base MySQL/MariaDB descartable con snapshot previo.
+- Restore real: VALIDATED en entorno local con MariaDB XAMPP y base descartable. Repetir en servidor final antes de entregar produccion si el hardware/rutas cambian.
+- Concurrencia real MySQL/MariaDB: VALIDATED en entorno local mutante con snapshot/backup previo. Repetir en servidor final o base descartable final antes de entregar produccion.
 - Impresora fisica termica: `PENDING_HARDWARE_VALIDATION` hasta probar 80mm/58mm en la PC de caja.
-- LAN fisica: `PENDING_ENVIRONMENT_VALIDATION` hasta validar desde otra computadora cliente por IP fija/nombre servidor.
+- LAN fisica: `PENDING_LAN_CLIENT_VALIDATION` hasta validar checklist completo desde otra computadora cliente por IP fija/nombre servidor.
+- Produccion final: `PENDING_ENVIRONMENT_VALIDATION` hasta configurar `APP_ENV=production`, `APP_DEBUG=false`, admin real, sin seeders demo y `config:cache` en servidor final.
 
 ## Evidencia Fase 10
 
