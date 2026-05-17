@@ -13,6 +13,8 @@ return new class extends Migration
             $table->foreignId('category_id')->constrained('categories')->restrictOnDelete();
             $table->string('name');
             $table->string('slug');
+            $table->string('source_key')->nullable()->unique();
+            $table->string('source_hash', 64)->nullable();
             $table->decimal('price', 12, 2);
             $table->boolean('taxable')->default(true);
             $table->boolean('active')->default(true);

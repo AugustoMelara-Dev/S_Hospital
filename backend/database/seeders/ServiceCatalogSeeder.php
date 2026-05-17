@@ -13,6 +13,8 @@ class ServiceCatalogSeeder extends Seeder
 {
     private const EXPECTED_SERVICE_COUNT = 122;
 
+    private const CATALOG_PATH = 'database/seeders/data/catalogo_servicios_inicial.csv';
+
     public function run(): void
     {
         $rows = $this->readCatalogRows();
@@ -21,43 +23,54 @@ class ServiceCatalogSeeder extends Seeder
             $categoryOrders = [];
 
             foreach ($rows as $row) {
-                $categorySlug = Str::slug($row['categoria']);
+                $categorySlug = $this->slug($row['categoria']);
+                $categorySourceKey = $this->categorySourceKey($row['categoria']);
                 $categoryOrders[$categorySlug] ??= count($categoryOrders);
 
-                $category = Category::query()->updateOrCreate(
-                    ['slug' => $categorySlug],
-                    [
-                        'name' => $row['categoria'],
-                        'active' => true,
-                        'sort_order' => $categoryOrders[$categorySlug],
-                    ],
-                );
+                $category = Category::query()
+                    ->where('source_key', $categorySourceKey)
+                    ->orWhere(fn ($query) => $query->whereNull('source_key')->where('slug', $categorySlug))
+                    ->firstOrNew();
 
-                Service::query()->updateOrCreate(
-                    [
-                        'category_id' => $category->id,
-                        'slug' => Str::slug($row['servicio']),
-                    ],
-                    [
-                        'name' => $row['servicio'],
-                        'price' => $this->price($row['precio_lps']),
-                        'taxable' => $this->truthy($row['taxable']),
-                        'active' => true,
-                        'special_rule_code' => $this->specialRuleCode($row),
-                    ],
-                );
+                $category->fill([
+                    'source_key' => $categorySourceKey,
+                    'name' => $row['categoria'],
+                    'slug' => $categorySlug,
+                    'source_hash' => $this->categorySourceHash($row),
+                    'active' => true,
+                    'sort_order' => $categoryOrders[$categorySlug],
+                ])->save();
+
+                $serviceSlug = $this->slug($row['servicio']);
+                $serviceSourceKey = $this->serviceSourceKey($row);
+                $service = Service::query()
+                    ->where('source_key', $serviceSourceKey)
+                    ->orWhere(function ($query) use ($category, $serviceSlug): void {
+                        $query->whereNull('source_key')
+                            ->where('category_id', $category->id)
+                            ->where('slug', $serviceSlug);
+                    })
+                    ->firstOrNew();
+
+                $service->fill([
+                    'source_key' => $serviceSourceKey,
+                    'name' => $row['servicio'],
+                    'category_id' => $category->id,
+                    'slug' => $serviceSlug,
+                    'source_hash' => $this->serviceSourceHash($row),
+                    'price' => $row['precio_lps'],
+                    'taxable' => $this->truthy($row['taxable']),
+                    'active' => true,
+                    'special_rule_code' => $this->specialRuleCode($row),
+                ])->save();
             }
         });
 
         $loadedCount = collect($rows)
             ->filter(function (array $row): bool {
-                $category = Category::query()->where('slug', Str::slug($row['categoria']))->first();
-
-                return $category !== null
-                    && Service::query()
-                        ->where('category_id', $category->id)
-                        ->where('slug', Str::slug($row['servicio']))
-                        ->exists();
+                return Service::query()
+                    ->where('source_key', $this->serviceSourceKey($row))
+                    ->exists();
             })
             ->count();
 
@@ -73,7 +86,7 @@ class ServiceCatalogSeeder extends Seeder
      */
     private function readCatalogRows(): array
     {
-        $path = base_path('../catalogo_servicios_inicial.csv');
+        $path = base_path(self::CATALOG_PATH);
 
         if (! is_file($path)) {
             throw new RuntimeException("Missing service catalog CSV at {$path}.");
@@ -87,6 +100,7 @@ class ServiceCatalogSeeder extends Seeder
 
         $headers = fgetcsv($handle);
         $rows = [];
+        $seenServiceKeys = [];
 
         while (($values = fgetcsv($handle)) !== false) {
             if ($values === [null] || $values === false) {
@@ -100,13 +114,24 @@ class ServiceCatalogSeeder extends Seeder
                 continue;
             }
 
-            $rows[] = [
+            $normalizedRow = [
                 'categoria' => trim($row['categoria']),
                 'servicio' => trim($row['servicio']),
-                'precio_lps' => trim($row['precio_lps'] ?? '0.00'),
+                'precio_lps' => $this->price(trim($row['precio_lps'] ?? '0.00')),
                 'taxable' => trim($row['taxable'] ?? 'si'),
                 'regla_especial' => trim($row['regla_especial'] ?? ''),
             ];
+
+            $serviceKey = $this->serviceSourceKey($normalizedRow);
+
+            if (isset($seenServiceKeys[$serviceKey])) {
+                throw new RuntimeException(
+                    "Duplicate service catalog row for {$normalizedRow['categoria']} / {$normalizedRow['servicio']}.",
+                );
+            }
+
+            $seenServiceKeys[$serviceKey] = true;
+            $rows[] = $normalizedRow;
         }
 
         fclose($handle);
@@ -122,7 +147,15 @@ class ServiceCatalogSeeder extends Seeder
 
     private function price(string $value): string
     {
-        return number_format((float) str_replace(',', '.', $value), 2, '.', '');
+        $normalized = str_replace(',', '.', trim($value));
+
+        if (! preg_match('/^\d+(\.\d{1,2})?$/', $normalized)) {
+            throw new RuntimeException("Invalid service catalog price [{$value}].");
+        }
+
+        [$integer, $decimal] = array_pad(explode('.', $normalized, 2), 2, '00');
+
+        return $integer.'.'.str_pad(substr($decimal, 0, 2), 2, '0');
     }
 
     private function truthy(string $value): bool
@@ -149,5 +182,45 @@ class ServiceCatalogSeeder extends Seeder
     private function normalized(string $value): string
     {
         return trim(preg_replace('/\s+/', ' ', Str::of($value)->ascii()->lower()->replace('_', ' ')->value()) ?? '');
+    }
+
+    /**
+     * @param  array{categoria: string}  $row
+     */
+    private function categorySourceHash(array $row): string
+    {
+        return hash('sha256', $this->categorySourceKey($row['categoria']).'|'.$row['categoria']);
+    }
+
+    /**
+     * @param  array{categoria: string, servicio: string, precio_lps: string, taxable: string, regla_especial: string}  $row
+     */
+    private function serviceSourceHash(array $row): string
+    {
+        return hash('sha256', implode('|', [
+            $this->serviceSourceKey($row),
+            $row['servicio'],
+            $row['precio_lps'],
+            $row['taxable'],
+            $row['regla_especial'],
+        ]));
+    }
+
+    private function categorySourceKey(string $category): string
+    {
+        return 'csv:category:'.$this->slug($category);
+    }
+
+    /**
+     * @param  array{categoria: string, servicio: string}  $row
+     */
+    private function serviceSourceKey(array $row): string
+    {
+        return 'csv:service:'.$this->slug($row['categoria']).':'.$this->slug($row['servicio']);
+    }
+
+    private function slug(string $value): string
+    {
+        return Str::slug($value);
     }
 }

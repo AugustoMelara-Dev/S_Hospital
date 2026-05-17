@@ -12,6 +12,8 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
+            $table->string('source_key')->nullable()->unique();
+            $table->string('source_hash', 64)->nullable();
             $table->boolean('active')->default(true)->index();
             $table->unsignedInteger('sort_order')->default(0);
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();

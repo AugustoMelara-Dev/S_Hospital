@@ -223,6 +223,11 @@ th {
   text-align: left;
 }
 
+.selected-filter {
+  border-color: var(--accent);
+  background: #e6fffb;
+}
+
 .sequence-list {
   display: grid;
   gap: 8px;

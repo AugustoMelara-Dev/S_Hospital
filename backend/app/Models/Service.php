@@ -16,6 +16,8 @@ class Service extends Model
         'category_id',
         'name',
         'slug',
+        'source_key',
+        'source_hash',
         'price',
         'taxable',
         'active',

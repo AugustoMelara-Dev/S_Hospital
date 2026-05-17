@@ -187,7 +187,9 @@ export const apiClient = {
     return response.data;
   },
 
-  async getServices(filters: { search?: string; active?: boolean } = {}): Promise<Service[]> {
+  async getServices(
+    filters: { search?: string; active?: boolean; categoryId?: number; perPage?: number } = {},
+  ): Promise<Service[]> {
     const params = new URLSearchParams();
 
     if (filters.search) {
@@ -196,6 +198,14 @@ export const apiClient = {
 
     if (filters.active !== undefined) {
       params.set('active', filters.active ? '1' : '0');
+    }
+
+    if (filters.categoryId) {
+      params.set('category_id', String(filters.categoryId));
+    }
+
+    if (filters.perPage) {
+      params.set('per_page', String(filters.perPage));
     }
 
     const query = params.toString() ? `?${params.toString()}` : '';

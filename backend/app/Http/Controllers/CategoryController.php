@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Category;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CategoryController extends Controller
@@ -29,16 +30,20 @@ class CategoryController extends Controller
 
     public function store(StoreCategoryRequest $request): JsonResponse
     {
-        $category = Category::query()->create([
-            ...$request->validated(),
-            'slug' => Str::slug($request->string('name')),
-            'active' => $request->boolean('active', true),
-            'sort_order' => (int) $request->input('sort_order', 0),
-            'created_by' => $request->user()->id,
-            'updated_by' => $request->user()->id,
-        ]);
+        $category = DB::transaction(function () use ($request): Category {
+            $category = Category::query()->create([
+                ...$request->validated(),
+                'slug' => Str::slug($request->string('name')),
+                'active' => $request->boolean('active', true),
+                'sort_order' => (int) $request->input('sort_order', 0),
+                'created_by' => $request->user()->id,
+                'updated_by' => $request->user()->id,
+            ]);
 
-        $this->audit($request, 'category.created', $category, null);
+            $this->audit($request, 'category.created', $category, null);
+
+            return $category;
+        });
 
         return response()->json([
             'data' => $category,
@@ -47,19 +52,23 @@ class CategoryController extends Controller
 
     public function update(UpdateCategoryRequest $request, Category $category): JsonResponse
     {
-        $oldValues = $this->auditPayload($category);
-        $data = $request->validated();
+        $category = DB::transaction(function () use ($request, $category): Category {
+            $oldValues = $this->auditPayload($category);
+            $data = $request->validated();
 
-        if (array_key_exists('name', $data)) {
-            $data['slug'] = Str::slug($data['name']);
-        }
+            if (array_key_exists('name', $data)) {
+                $data['slug'] = Str::slug($data['name']);
+            }
 
-        $category->fill([
-            ...$data,
-            'updated_by' => $request->user()->id,
-        ])->save();
+            $category->fill([
+                ...$data,
+                'updated_by' => $request->user()->id,
+            ])->save();
 
-        $this->audit($request, 'category.updated', $category->refresh(), $oldValues);
+            $this->audit($request, 'category.updated', $category->refresh(), $oldValues);
+
+            return $category->refresh();
+        });
 
         return response()->json([
             'data' => $category->refresh(),

@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Catalog\IndexServiceRequest;
 use App\Http\Requests\Catalog\StoreServiceRequest;
 use App\Http\Requests\Catalog\UpdateServiceRequest;
 use App\Models\AuditLog;
 use App\Models\Service;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ServiceController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(IndexServiceRequest $request): JsonResponse
     {
-        $request->user()->can('catalog.view') || abort(403);
-
         $services = Service::query()
             ->with('category:id,name,slug,active,sort_order')
             ->when($request->filled('search'), function ($query) use ($request): void {
@@ -24,7 +24,7 @@ class ServiceController extends Controller
             ->when($request->filled('category_id'), fn ($query) => $query->where('category_id', $request->integer('category_id')))
             ->when($request->has('active'), fn ($query) => $query->where('active', $request->boolean('active')))
             ->orderBy('name')
-            ->paginate((int) $request->integer('per_page', 100));
+            ->paginate($request->perPage());
 
         return response()->json([
             'data' => $services->items(),
@@ -38,16 +38,20 @@ class ServiceController extends Controller
 
     public function store(StoreServiceRequest $request): JsonResponse
     {
-        $service = Service::query()->create([
-            ...$request->validated(),
-            'slug' => Str::slug($request->string('name')),
-            'taxable' => $request->boolean('taxable', true),
-            'active' => $request->boolean('active', true),
-            'created_by' => $request->user()->id,
-            'updated_by' => $request->user()->id,
-        ]);
+        $service = DB::transaction(function () use ($request): Service {
+            $service = Service::query()->create([
+                ...$request->validated(),
+                'slug' => Str::slug($request->string('name')),
+                'taxable' => $request->boolean('taxable', true),
+                'active' => $request->boolean('active', true),
+                'created_by' => $request->user()->id,
+                'updated_by' => $request->user()->id,
+            ]);
 
-        $this->audit($request, 'service.created', $service->refresh(), null);
+            $this->audit($request, 'service.created', $service->refresh(), null);
+
+            return $service;
+        });
 
         return response()->json([
             'data' => $service->load('category:id,name,slug,active,sort_order'),
@@ -56,20 +60,27 @@ class ServiceController extends Controller
 
     public function update(UpdateServiceRequest $request, Service $service): JsonResponse
     {
-        $oldValues = $this->auditPayload($service);
-        $data = $request->validated();
+        $service = DB::transaction(function () use ($request, $service): Service {
+            $oldValues = $this->auditPayload($service);
+            $data = $request->validated();
 
-        if (array_key_exists('name', $data)) {
-            $data['slug'] = Str::slug($data['name']);
-        }
+            if (array_key_exists('name', $data)) {
+                $data['slug'] = Str::slug($data['name']);
+            }
 
-        $service->fill([
-            ...$data,
-            'updated_by' => $request->user()->id,
-        ])->save();
+            $service->fill([
+                ...$data,
+                'updated_by' => $request->user()->id,
+            ])->save();
 
-        $service->refresh();
-        $this->audit($request, $this->serviceAction($oldValues, $service), $service, $oldValues);
+            $service->refresh();
+
+            foreach ($this->serviceActions($oldValues, $service) as $action) {
+                $this->audit($request, $action, $service, $oldValues);
+            }
+
+            return $service;
+        });
 
         return response()->json([
             'data' => $service->load('category:id,name,slug,active,sort_order'),
@@ -95,17 +106,19 @@ class ServiceController extends Controller
     /**
      * @param  array<string, mixed>  $oldValues
      */
-    private function serviceAction(array $oldValues, Service $service): string
+    private function serviceActions(array $oldValues, Service $service): array
     {
+        $actions = [];
+
         if ((string) $oldValues['price'] !== (string) $service->price) {
-            return 'service.price_updated';
+            $actions[] = 'service.price_updated';
         }
 
         if ((bool) $oldValues['active'] !== (bool) $service->active) {
-            return 'service.active_updated';
+            $actions[] = 'service.active_updated';
         }
 
-        return 'service.updated';
+        return $actions ?: ['service.updated'];
     }
 
     /**

@@ -4,7 +4,9 @@ namespace App\Http\Requests\Catalog;
 
 use App\Models\Service;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreServiceRequest extends FormRequest
 {
@@ -25,6 +27,26 @@ class StoreServiceRequest extends FormRequest
             'taxable' => ['sometimes', 'boolean'],
             'active' => ['sometimes', 'boolean'],
             'special_rule_code' => ['nullable', 'string', Rule::in([Service::ERYTHROPOIETIN_RULE])],
+        ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                if (! $this->filled('category_id') || ! $this->filled('name')) {
+                    return;
+                }
+
+                $exists = Service::query()
+                    ->where('category_id', $this->integer('category_id'))
+                    ->where('slug', Str::slug($this->string('name')))
+                    ->exists();
+
+                if ($exists) {
+                    $validator->errors()->add('name', 'Ya existe un servicio con un nombre equivalente en esta categoria.');
+                }
+            },
         ];
     }
 }

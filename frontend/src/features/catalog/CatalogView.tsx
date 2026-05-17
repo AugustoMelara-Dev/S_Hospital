@@ -32,10 +32,12 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [search, setSearch] = useState('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>();
   const [categoryForm, setCategoryForm] = useState<CategoryPayload>(emptyCategory);
   const [categoryId, setCategoryId] = useState<number | undefined>();
   const [serviceForm, setServiceForm] = useState<ServicePayload>(emptyService);
   const [serviceId, setServiceId] = useState<number | undefined>();
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
 
   const canManageCatalog = useMemo(
     () => user.permissions.includes('catalog.manage'),
@@ -46,11 +48,17 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     void loadCatalog();
   }, []);
 
-  async function loadCatalog(nextSearch = search) {
+  async function loadCatalog(nextSearch = search, nextCategoryId = selectedCategoryId) {
+    setLoadingCatalog(true);
+
     try {
       const [nextCategories, nextServices] = await Promise.all([
         apiClient.getCategories(),
-        apiClient.getServices({ search: nextSearch }),
+        apiClient.getServices({
+          search: nextSearch,
+          categoryId: nextCategoryId,
+          perPage: 150,
+        }),
       ]);
       setCategories(nextCategories);
       setServices(nextServices);
@@ -60,12 +68,19 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       }));
     } catch (error) {
       onStatus(error instanceof Error ? error.message : 'No se pudo cargar el catalogo.');
+    } finally {
+      setLoadingCatalog(false);
     }
   }
 
   async function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     await loadCatalog(search);
+  }
+
+  async function filterByCategory(categoryId?: number) {
+    setSelectedCategoryId(categoryId);
+    await loadCatalog(search, categoryId);
   }
 
   async function handleCategorySubmit(event: FormEvent<HTMLFormElement>) {
@@ -155,18 +170,30 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         </div>
 
         <div className="category-strip" aria-label="Categorias">
+          <button
+            type="button"
+            className={
+              selectedCategoryId === undefined ? 'secondary-button selected-filter' : 'secondary-button'
+            }
+            onClick={() => void filterByCategory(undefined)}
+          >
+            Todas
+          </button>
           {categories.map((category) => (
             <button
               key={category.id}
               type="button"
-              className="secondary-button"
+              className={
+                selectedCategoryId === category.id ? 'secondary-button selected-filter' : 'secondary-button'
+              }
               onClick={() => {
                 if (canManageCatalog) {
                   editCategory(category);
                 }
+                void filterByCategory(category.id);
               }}
             >
-              {category.name} · {category.active ? 'Activa' : 'Inactiva'}
+              {category.name} - {category.active ? 'Activa' : 'Inactiva'}
             </button>
           ))}
         </div>
@@ -184,22 +211,32 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
               </tr>
             </thead>
             <tbody>
-              {services.map((service) => (
-                <tr key={service.id}>
-                  <td>{service.name}</td>
-                  <td>{service.category?.name ?? 'Sin categoria'}</td>
-                  <td>L. {service.price}</td>
-                  <td>{service.active ? 'Activo' : 'Inactivo'}</td>
-                  <td>{service.special_rule_code ?? 'N/A'}</td>
-                  {canManageCatalog ? (
-                    <td>
-                      <button type="button" className="secondary-button" onClick={() => editService(service)}>
-                        Editar
-                      </button>
-                    </td>
-                  ) : null}
+              {loadingCatalog ? (
+                <tr>
+                  <td colSpan={canManageCatalog ? 6 : 5}>Cargando catalogo...</td>
                 </tr>
-              ))}
+              ) : services.length === 0 ? (
+                <tr>
+                  <td colSpan={canManageCatalog ? 6 : 5}>No hay servicios para mostrar.</td>
+                </tr>
+              ) : (
+                services.map((service) => (
+                  <tr key={service.id}>
+                    <td>{service.name}</td>
+                    <td>{service.category?.name ?? 'Sin categoria'}</td>
+                    <td>L. {service.price}</td>
+                    <td>{service.active ? 'Activo' : 'Inactivo'}</td>
+                    <td>{service.special_rule_code ?? 'N/A'}</td>
+                    {canManageCatalog ? (
+                      <td>
+                        <button type="button" className="secondary-button" onClick={() => editService(service)}>
+                          Editar
+                        </button>
+                      </td>
+                    ) : null}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
