@@ -42,11 +42,29 @@ class FiscalSettingsTest extends TestCase
             'rtn' => '08011999123456',
             'updated_by' => $admin->id,
         ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'fiscal_settings.created',
+            'entity_type' => 'App\\Models\\FiscalSetting',
+        ]);
 
         $this->actingAs($admin)
             ->getJson('/api/settings/fiscal')
             ->assertOk()
             ->assertJsonPath('data.hospital_name', 'Hospital San Miguel');
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                ...$this->validPayload(),
+                'hospital_name' => 'Hospital San Miguel Actualizado',
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'fiscal_settings.updated',
+            'entity_type' => 'App\\Models\\FiscalSetting',
+        ]);
     }
 
     public function test_supervisor_can_view_but_not_update_fiscal_settings(): void

@@ -117,4 +117,56 @@ class AuthTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath('must_change_password', true);
     }
+
+    public function test_user_can_change_required_password(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $user = User::factory()->create([
+            'password' => Hash::make('Password123!'),
+            'must_change_password' => true,
+        ]);
+        $user->assignRole('admin');
+
+        $this->actingAs($user)
+            ->postJson('/api/auth/change-password', [
+                'current_password' => 'Password123!',
+                'password' => 'NewPassword123',
+                'password_confirmation' => 'NewPassword123',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.must_change_password', false);
+
+        $this->assertTrue(Hash::check('NewPassword123', $user->refresh()->password));
+        $this->assertFalse($user->must_change_password);
+    }
+
+    public function test_change_password_rejects_wrong_current_password(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('Password123!'),
+            'must_change_password' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->postJson('/api/auth/change-password', [
+                'current_password' => 'wrong-password',
+                'password' => 'NewPassword123',
+                'password_confirmation' => 'NewPassword123',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('current_password');
+    }
+
+    public function test_inactive_user_is_blocked_on_authenticated_request(): void
+    {
+        $user = User::factory()->create([
+            'active' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/auth/me')
+            ->assertForbidden()
+            ->assertJsonPath('message', 'User inactive.');
+    }
 }

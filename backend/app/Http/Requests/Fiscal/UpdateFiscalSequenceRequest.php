@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Fiscal;
 
+use App\Models\FiscalSequence;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -37,17 +38,28 @@ class UpdateFiscalSequenceRequest extends FormRequest
                 $min = (int) ($this->input('min_number', $sequence->min_number));
                 $max = (int) ($this->input('max_number', $sequence->max_number));
                 $current = (int) ($this->input('current_number', $sequence->current_number));
+                $next = $current + 1;
+                $documentType = $this->input('document_type', $sequence->document_type);
+                $active = $this->boolean('active', $sequence->active);
 
                 if ($max < $min) {
                     $validator->errors()->add('max_number', 'El numero maximo debe ser mayor o igual al minimo.');
                 }
 
-                if ($current >= $max) {
-                    $validator->errors()->add('current_number', 'El correlativo actual debe ser menor que el numero maximo.');
+                if ($next < $min || $next > $max) {
+                    $validator->errors()->add('current_number', 'El siguiente correlativo debe quedar dentro del rango autorizado.');
                 }
 
                 if ($current < $sequence->current_number) {
                     $validator->errors()->add('current_number', 'No se puede reducir el correlativo actual.');
+                }
+
+                if ($active && FiscalSequence::query()
+                    ->where('document_type', $documentType)
+                    ->where('active', true)
+                    ->whereKeyNot($sequence->id)
+                    ->exists()) {
+                    $validator->errors()->add('active', 'Ya existe una secuencia fiscal activa para este tipo de documento.');
                 }
             },
         ];

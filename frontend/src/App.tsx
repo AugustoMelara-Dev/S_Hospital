@@ -1,9 +1,21 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   type AuthUser,
+  type FiscalSequence,
   type FiscalSettings,
   apiClient,
 } from './lib/api';
+
+const emptySequence: FiscalSequence = {
+  document_type: 'invoice',
+  prefix: '',
+  min_number: 1,
+  max_number: 99999999,
+  current_number: 0,
+  cai: '',
+  valid_until: '',
+  active: false,
+};
 
 export function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -13,13 +25,24 @@ export function App() {
     default_tax_rate: '15.00',
     receipt_width: '80mm',
   });
-  const [login, setLogin] = useState('admin.demo');
+  const [sequences, setSequences] = useState<FiscalSequence[]>([]);
+  const [sequenceForm, setSequenceForm] = useState<FiscalSequence>(emptySequence);
+  const [login, setLogin] = useState(import.meta.env.DEV ? 'admin.demo' : '');
   const [password, setPassword] = useState('');
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: '',
+    password: '',
+    password_confirmation: '',
+  });
   const [status, setStatus] = useState('Listo para iniciar sesion local.');
   const [loading, setLoading] = useState(true);
 
   const canEditFiscalSettings = useMemo(
     () => user?.permissions.includes('settings.fiscal.update') ?? false,
+    [user],
+  );
+  const canViewFiscalSettings = useMemo(
+    () => user?.permissions.includes('settings.fiscal.view') ?? false,
     [user],
   );
 
@@ -49,6 +72,14 @@ export function App() {
         }
       })
       .catch((error: Error) => setStatus(error.message));
+
+    apiClient
+      .getFiscalSequences()
+      .then((data) => {
+        setSequences(data);
+        setSequenceForm(data[0] ?? emptySequence);
+      })
+      .catch((error: Error) => setStatus(error.message));
   }, [user]);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
@@ -57,10 +88,11 @@ export function App() {
 
     try {
       const loggedUser = await apiClient.login(login, password);
-      setUser(loggedUser);
+      const currentUser = await apiClient.me().catch(() => loggedUser);
+      setUser(currentUser);
       setPassword('');
       setStatus(
-        loggedUser.must_change_password
+        currentUser.must_change_password
           ? 'El usuario debe cambiar su contrasena antes de operar.'
           : 'Sesion iniciada.',
       );
@@ -85,6 +117,41 @@ export function App() {
       setStatus('Configuracion fiscal guardada.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'No se pudo guardar.');
+    }
+  }
+
+  async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus('Actualizando contrasena...');
+
+    try {
+      const updatedUser = await apiClient.changePassword(passwordForm);
+      setUser(updatedUser);
+      setPasswordForm({
+        current_password: '',
+        password: '',
+        password_confirmation: '',
+      });
+      setStatus('Contrasena actualizada.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'No se pudo actualizar la contrasena.');
+    }
+  }
+
+  async function handleSequenceSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus('Guardando secuencia fiscal...');
+
+    try {
+      const saved = await apiClient.saveFiscalSequence(sequenceForm);
+      const nextSequences = sequenceForm.id
+        ? sequences.map((sequence) => (sequence.id === saved.id ? saved : sequence))
+        : [saved, ...sequences];
+      setSequences(nextSequences);
+      setSequenceForm(saved);
+      setStatus('Secuencia fiscal guardada.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'No se pudo guardar la secuencia.');
     }
   }
 
@@ -138,8 +205,41 @@ export function App() {
       </header>
 
       {user.must_change_password ? (
+        <form onSubmit={handlePasswordSubmit} className="settings-form password-panel">
+          <h2>Cambio obligatorio de contrasena</h2>
+          <label>
+            Contrasena actual
+            <input
+              type="password"
+              value={passwordForm.current_password}
+              onChange={(event) =>
+                setPasswordForm({ ...passwordForm, current_password: event.target.value })
+              }
+            />
+          </label>
+          <label>
+            Nueva contrasena
+            <input
+              type="password"
+              value={passwordForm.password}
+              onChange={(event) => setPasswordForm({ ...passwordForm, password: event.target.value })}
+            />
+          </label>
+          <label>
+            Confirmar nueva contrasena
+            <input
+              type="password"
+              value={passwordForm.password_confirmation}
+              onChange={(event) =>
+                setPasswordForm({ ...passwordForm, password_confirmation: event.target.value })
+              }
+            />
+          </label>
+          <button type="submit">Actualizar contrasena</button>
+        </form>
+      ) : !canViewFiscalSettings ? (
         <section className="notice" role="alert">
-          Debe cambiar su contrasena antes de usar el sistema operativo.
+          No tiene permiso para ver configuracion fiscal.
         </section>
       ) : (
         <section className="settings-layout">
@@ -192,6 +292,111 @@ export function App() {
             <button type="submit" disabled={!canEditFiscalSettings}>
               Guardar configuracion
             </button>
+          </form>
+
+          <form onSubmit={handleSequenceSubmit} className="settings-form">
+            <h2>Secuencia fiscal</h2>
+            <label>
+              CAI
+              <input
+                value={sequenceForm.cai}
+                disabled={!canEditFiscalSettings}
+                onChange={(event) => setSequenceForm({ ...sequenceForm, cai: event.target.value })}
+              />
+            </label>
+            <label>
+              Prefijo
+              <input
+                value={sequenceForm.prefix}
+                disabled={!canEditFiscalSettings}
+                onChange={(event) =>
+                  setSequenceForm({ ...sequenceForm, prefix: event.target.value })
+                }
+              />
+            </label>
+            <div className="field-grid">
+              <label>
+                Rango minimo
+                <input
+                  type="number"
+                  value={sequenceForm.min_number}
+                  disabled={!canEditFiscalSettings}
+                  onChange={(event) =>
+                    setSequenceForm({
+                      ...sequenceForm,
+                      min_number: Number(event.target.value),
+                    })
+                  }
+                />
+              </label>
+              <label>
+                Rango maximo
+                <input
+                  type="number"
+                  value={sequenceForm.max_number}
+                  disabled={!canEditFiscalSettings}
+                  onChange={(event) =>
+                    setSequenceForm({
+                      ...sequenceForm,
+                      max_number: Number(event.target.value),
+                    })
+                  }
+                />
+              </label>
+            </div>
+            <label>
+              Correlativo actual
+              <input
+                type="number"
+                value={sequenceForm.current_number}
+                disabled={!canEditFiscalSettings}
+                onChange={(event) =>
+                  setSequenceForm({
+                    ...sequenceForm,
+                    current_number: Number(event.target.value),
+                  })
+                }
+              />
+            </label>
+            <label>
+              Fecha limite
+              <input
+                type="date"
+                value={sequenceForm.valid_until}
+                disabled={!canEditFiscalSettings}
+                onChange={(event) =>
+                  setSequenceForm({ ...sequenceForm, valid_until: event.target.value })
+                }
+              />
+            </label>
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={sequenceForm.active}
+                disabled={!canEditFiscalSettings}
+                onChange={(event) =>
+                  setSequenceForm({ ...sequenceForm, active: event.target.checked })
+                }
+              />
+              Secuencia activa
+            </label>
+            <button type="submit" disabled={!canEditFiscalSettings}>
+              Guardar secuencia
+            </button>
+            {sequences.length > 0 ? (
+              <div className="sequence-list" aria-label="Secuencias fiscales">
+                {sequences.map((sequence) => (
+                  <button
+                    key={sequence.id}
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => setSequenceForm(sequence)}
+                  >
+                    {sequence.prefix} - {sequence.active ? 'Activa' : 'Inactiva'}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </form>
 
           <aside className="notice">

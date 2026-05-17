@@ -19,6 +19,18 @@ export type FiscalSettings = {
   receipt_width: '80mm' | '58mm';
 };
 
+export type FiscalSequence = {
+  id?: number;
+  document_type: 'invoice';
+  prefix: string;
+  min_number: number;
+  max_number: number;
+  current_number: number;
+  cai: string;
+  valid_until: string;
+  active: boolean;
+};
+
 export const apiClient = {
   baseUrl: configuredBaseUrl.replace(/\/$/, ''),
 
@@ -75,6 +87,19 @@ export const apiClient = {
     });
   },
 
+  async changePassword(payload: {
+    current_password: string;
+    password: string;
+    password_confirmation: string;
+  }): Promise<AuthUser> {
+    const response = await this.request<{ data: AuthUser }>('/api/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    return response.data;
+  },
+
   async getFiscalSettings(): Promise<FiscalSettings | null> {
     const response = await this.request<{ data: FiscalSettings | null }>('/api/settings/fiscal');
 
@@ -86,6 +111,24 @@ export const apiClient = {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
+
+    return response.data;
+  },
+
+  async getFiscalSequences(): Promise<FiscalSequence[]> {
+    const response = await this.request<{ data: FiscalSequence[] }>('/api/fiscal-sequences');
+
+    return response.data;
+  },
+
+  async saveFiscalSequence(payload: FiscalSequence): Promise<FiscalSequence> {
+    const response = await this.request<{ data: FiscalSequence }>(
+      payload.id ? `/api/fiscal-sequences/${payload.id}` : '/api/fiscal-sequences',
+      {
+        method: payload.id ? 'PATCH' : 'POST',
+        body: JSON.stringify(payload),
+      },
+    );
 
     return response.data;
   },

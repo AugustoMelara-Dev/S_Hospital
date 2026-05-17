@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Fiscal\StoreFiscalSequenceRequest;
 use App\Http\Requests\Fiscal\UpdateFiscalSequenceRequest;
+use App\Models\AuditLog;
 use App\Models\FiscalSequence;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,15 @@ class FiscalSequenceController extends Controller
             'updated_by' => $request->user()->id,
         ]);
 
+        AuditLog::query()->create([
+            'user_id' => $request->user()->id,
+            'action' => 'fiscal_sequence.created',
+            'entity_type' => FiscalSequence::class,
+            'entity_id' => $sequence->id,
+            'old_values' => null,
+            'new_values' => $this->auditPayload($sequence),
+        ]);
+
         return response()->json([
             'data' => $sequence,
         ], 201);
@@ -38,12 +48,40 @@ class FiscalSequenceController extends Controller
 
     public function update(UpdateFiscalSequenceRequest $request, FiscalSequence $fiscalSequence): JsonResponse
     {
+        $oldValues = $this->auditPayload($fiscalSequence);
+
         $fiscalSequence->fill($request->validated());
         $fiscalSequence->updated_by = $request->user()->id;
         $fiscalSequence->save();
 
+        AuditLog::query()->create([
+            'user_id' => $request->user()->id,
+            'action' => 'fiscal_sequence.updated',
+            'entity_type' => FiscalSequence::class,
+            'entity_id' => $fiscalSequence->id,
+            'old_values' => $oldValues,
+            'new_values' => $this->auditPayload($fiscalSequence->refresh()),
+        ]);
+
         return response()->json([
             'data' => $fiscalSequence->refresh(),
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function auditPayload(FiscalSequence $sequence): array
+    {
+        return $sequence->only([
+            'document_type',
+            'prefix',
+            'min_number',
+            'max_number',
+            'current_number',
+            'cai',
+            'valid_until',
+            'active',
         ]);
     }
 }

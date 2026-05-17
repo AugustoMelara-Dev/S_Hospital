@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Fiscal;
 
+use App\Models\FiscalSequence;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreFiscalSequenceRequest extends FormRequest
 {
@@ -25,6 +27,33 @@ class StoreFiscalSequenceRequest extends FormRequest
             'cai' => ['required', 'string', 'max:128'],
             'valid_until' => ['required', 'date', 'after_or_equal:today'],
             'active' => ['required', 'boolean'],
+        ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $min = (int) $this->input('min_number');
+                $max = (int) $this->input('max_number');
+                $current = (int) $this->input('current_number');
+                $next = $current + 1;
+
+                if ($max < $min) {
+                    $validator->errors()->add('max_number', 'El numero maximo debe ser mayor o igual al minimo.');
+                }
+
+                if ($next < $min || $next > $max) {
+                    $validator->errors()->add('current_number', 'El siguiente correlativo debe quedar dentro del rango autorizado.');
+                }
+
+                if ($this->boolean('active') && FiscalSequence::query()
+                    ->where('document_type', $this->input('document_type'))
+                    ->where('active', true)
+                    ->exists()) {
+                    $validator->errors()->add('active', 'Ya existe una secuencia fiscal activa para este tipo de documento.');
+                }
+            },
         ];
     }
 }

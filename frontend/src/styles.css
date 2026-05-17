@@ -120,10 +120,45 @@ button:disabled {
 
 .settings-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) 320px;
   gap: 24px;
   max-width: 1120px;
   margin: 0 auto;
+}
+
+.password-panel {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.checkbox-row {
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+}
+
+.checkbox-row input {
+  width: auto;
+  min-height: auto;
+}
+
+.secondary-button {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: #f8fafc;
+  color: #17202a;
+  text-align: left;
+}
+
+.sequence-list {
+  display: grid;
+  gap: 8px;
 }
 
 .settings-form,

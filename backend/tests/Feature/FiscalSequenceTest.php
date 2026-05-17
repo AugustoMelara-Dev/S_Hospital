@@ -32,6 +32,11 @@ class FiscalSequenceTest extends TestCase
             'cai' => 'TEST-CAI',
             'created_by' => $admin->id,
         ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'fiscal_sequence.created',
+            'entity_type' => 'App\\Models\\FiscalSequence',
+        ]);
     }
 
     public function test_rejects_invalid_sequence_range(): void
@@ -108,6 +113,68 @@ class FiscalSequenceTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('current_number');
+    }
+
+    public function test_rejects_current_number_that_leaves_next_number_outside_range(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->postJson('/api/fiscal-sequences', [
+                ...$this->validPayload(),
+                'min_number' => 100,
+                'max_number' => 99999999,
+                'current_number' => 0,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('current_number');
+    }
+
+    public function test_rejects_multiple_active_invoice_sequences(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        FiscalSequence::query()->create([
+            ...$this->validPayload(),
+            'active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson('/api/fiscal-sequences', [
+                ...$this->validPayload(),
+                'prefix' => '000-002-01',
+                'cai' => 'SECOND-CAI',
+                'active' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('active');
+    }
+
+    public function test_admin_update_of_fiscal_sequence_is_audited(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        $sequence = FiscalSequence::query()->create([
+            ...$this->validPayload(),
+            'active' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->patchJson("/api/fiscal-sequences/{$sequence->id}", [
+                'max_number' => 88888888,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.max_number', 88888888);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'fiscal_sequence.updated',
+            'entity_type' => 'App\\Models\\FiscalSequence',
+            'entity_id' => $sequence->id,
+        ]);
     }
 
     public function test_cashier_cannot_create_fiscal_sequence(): void
