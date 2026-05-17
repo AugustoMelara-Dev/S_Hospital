@@ -37,10 +37,50 @@ DB_PORT_VALUE="$(env_value DB_PORT 3306)"
 DB_DATABASE_VALUE="$(env_value DB_DATABASE hospital_billing)"
 DB_USERNAME_VALUE="$(env_value DB_USERNAME hospital)"
 DB_PASSWORD_VALUE="$(env_value DB_PASSWORD "")"
-RESTORE_TEST_DATABASE_VALUE="${RESTORE_TEST_DATABASE:-${DB_DATABASE_VALUE}_restore_test}"
+RESTORE_TEST_DATABASE_VALUE="${RESTORE_TEST_DATABASE:-}"
+RESTORE_TEST_DATABASE_LOWER="${RESTORE_TEST_DATABASE_VALUE,,}"
+DB_DATABASE_LOWER="${DB_DATABASE_VALUE,,}"
 
 if [ "${HOSPITAL_VALIDATE_RESTORE_MYSQL:-}" != "1" ]; then
   echo "Abort: set HOSPITAL_VALIDATE_RESTORE_MYSQL=1 to run restore validation."
+  exit 1
+fi
+
+# This script intentionally drops and recreates RESTORE_TEST_DATABASE.
+# Run it only against a disposable restore-validation database, never against
+# the active hospital database.
+if [ -z "$RESTORE_TEST_DATABASE_VALUE" ]; then
+  echo "Abort: RESTORE_TEST_DATABASE must be set to an explicit disposable database name."
+  exit 1
+fi
+
+if [[ ! "$RESTORE_TEST_DATABASE_VALUE" =~ ^[A-Za-z0-9_]+$ ]]; then
+  echo "Abort: RESTORE_TEST_DATABASE must contain only letters, numbers, and underscores."
+  exit 1
+fi
+
+if [ "$RESTORE_TEST_DATABASE_LOWER" = "$DB_DATABASE_LOWER" ]; then
+  echo "Abort: RESTORE_TEST_DATABASE must be different from the active DB_DATABASE."
+  exit 1
+fi
+
+case "$RESTORE_TEST_DATABASE_LOWER" in
+  production|prod|hospital|hospital_billing|mysql|information_schema|performance_schema|sys)
+    echo "Abort: RESTORE_TEST_DATABASE uses a sensitive or reserved database name."
+    exit 1
+    ;;
+esac
+
+case "$RESTORE_TEST_DATABASE_LOWER" in
+  *test*|*restore*|*validation*|*disposable*) ;;
+  *)
+    echo "Abort: RESTORE_TEST_DATABASE must clearly contain test, restore, validation, or disposable."
+    exit 1
+    ;;
+esac
+
+if [ "${HOSPITAL_CONFIRM_RESTORE_DATABASE:-}" != "$RESTORE_TEST_DATABASE_VALUE" ]; then
+  echo "Abort: set HOSPITAL_CONFIRM_RESTORE_DATABASE=${RESTORE_TEST_DATABASE_VALUE} to confirm the disposable restore target."
   exit 1
 fi
 
@@ -87,6 +127,7 @@ if [ ! -f "$BACKUP_ABSOLUTE" ]; then
   exit 1
 fi
 
+echo "WARNING: disposable database ${RESTORE_TEST_DATABASE_VALUE} will be dropped and recreated."
 echo "Restoring backup into disposable database ${RESTORE_TEST_DATABASE_VALUE}."
 export MYSQL_PWD="$DB_PASSWORD_VALUE"
 mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" \

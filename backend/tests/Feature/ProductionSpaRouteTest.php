@@ -7,7 +7,7 @@ use Tests\TestCase;
 
 class ProductionSpaRouteTest extends TestCase
 {
-    public function test_login_and_verify_email_routes_serve_frontend_build_when_available(): void
+    public function test_public_spa_routes_serve_frontend_build_when_available(): void
     {
         $distPath = base_path('../frontend/dist');
         $assetsPath = $distPath.'/assets';
@@ -21,6 +21,10 @@ class ProductionSpaRouteTest extends TestCase
         File::put($assetPath, 'console.log("phase10");');
 
         try {
+            $this->get('/')
+                ->assertOk()
+                ->assertHeader('X-Content-Type-Options', 'nosniff');
+
             $this->get('/login')
                 ->assertOk()
                 ->assertHeader('X-Content-Type-Options', 'nosniff');
@@ -51,5 +55,10 @@ class ProductionSpaRouteTest extends TestCase
     {
         $this->get('/assets/../index.html')->assertNotFound();
         $this->get('/assets/%2e%2e/index.html')->assertNotFound();
+    }
+
+    public function test_health_route_remains_available(): void
+    {
+        $this->get('/up')->assertOk();
     }
 }

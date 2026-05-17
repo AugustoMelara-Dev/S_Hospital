@@ -220,7 +220,8 @@ async function installApiMocks(page: Page) {
 
   await page.route('**/api/invoices/*/reprint', (route) => {
     const invoiceId = Number(route.request().url().match(/invoices\/(\d+)\/reprint/)?.[1]);
-    return json(route, { data: { receipt: receiptFor(invoices[invoiceId], '80mm') } });
+    const width = new URL(route.request().url()).searchParams.get('width') ?? '80mm';
+    return json(route, { data: { receipt: receiptFor(invoices[invoiceId], width) } });
   });
 
   await page.route('**/api/reports/daily**', (route) => json(route, {
@@ -349,6 +350,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /ver/i }).first().click();
   await page.getByRole('button', { name: /reimprimir/i }).click();
   await expect(page.getByRole('heading', { name: /preview termico/i })).toBeVisible();
+  await page.getByLabel(/ancho del recibo/i).selectOption('58mm');
+  await expect(page.getByLabel(/recibo termico/i)).toHaveClass(/receipt-58mm/);
 
   await page.getByRole('button', { name: /salir/i }).click();
   await page.getByLabel(/usuario o email/i).fill('admin.demo');

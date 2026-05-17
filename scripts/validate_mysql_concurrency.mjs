@@ -1,14 +1,44 @@
 #!/usr/bin/env node
 
-const baseUrl = (process.env.HOSPITAL_CONCURRENCY_BASE_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '');
+const baseUrl = (process.env.HOSPITAL_CONCURRENCY_BASE_URL ?? '').replace(/\/$/, '');
+const targetEnv = process.env.HOSPITAL_CONCURRENCY_TARGET_ENV ?? process.env.TARGET_ENV ?? process.env.APP_ENV ?? '';
 const login = process.env.HOSPITAL_CONCURRENCY_LOGIN ?? 'cajero.demo';
 const password = process.env.HOSPITAL_CONCURRENCY_PASSWORD ?? 'Password123!';
+const runId = `concurrency-validation-${new Date().toISOString().replace(/[^0-9A-Za-z]/g, '').slice(0, 14)}`;
 
 if (process.env.HOSPITAL_VALIDATE_REAL_MYSQL !== '1') {
   console.error('Abort: set HOSPITAL_VALIDATE_REAL_MYSQL=1 to run real HTTP concurrency validation.');
   process.exit(1);
 }
 
+if (!baseUrl) {
+  console.error('Abort: set HOSPITAL_CONCURRENCY_BASE_URL to an explicit disposable validation server URL.');
+  process.exit(1);
+}
+
+if (process.env.HOSPITAL_CONFIRM_CONCURRENCY_TARGET !== baseUrl) {
+  console.error(`Abort: set HOSPITAL_CONFIRM_CONCURRENCY_TARGET=${baseUrl} to confirm the disposable concurrency target.`);
+  process.exit(1);
+}
+
+if (/(production|prod|staging|preprod)/i.test(targetEnv)) {
+  console.error(`Abort: refusing concurrency validation against non-disposable target environment: ${targetEnv}.`);
+  process.exit(1);
+}
+
+if (!/(test|local|validation|disposable)/i.test(`${baseUrl} ${targetEnv}`)) {
+  console.error('Abort: target URL or HOSPITAL_CONCURRENCY_TARGET_ENV must contain test, local, validation, or disposable.');
+  process.exit(1);
+}
+
+if ((login === 'cajero.demo' || password === 'Password123!') && process.env.HOSPITAL_ALLOW_DEMO_VALIDATION !== '1') {
+  console.error('Abort: demo credentials require HOSPITAL_ALLOW_DEMO_VALIDATION=1 and a disposable target.');
+  process.exit(1);
+}
+
+// This script creates cash-session, invoice, and payment records through the
+// public HTTP API. It must run only after taking a disposable DB snapshot; it
+// does not delete created invoices because invoices are audit records.
 class Session {
   cookies = new Map();
 
@@ -58,6 +88,7 @@ function assertStatus(result, expected, label) {
 }
 
 async function main() {
+  console.error(`Running mutating concurrency validation against ${baseUrl} with RUN_ID=${runId}. Use only on disposable data.`);
   const session = new Session();
   await session.login();
 
@@ -68,7 +99,7 @@ async function main() {
     throw new Error('Eritropoyetina service was not found. Seed the validation database first.');
   }
 
-  const openPayload = { opening_amount: '500.00', notes: 'real concurrency validation' };
+  const openPayload = { opening_amount: '500.00', notes: `real concurrency validation ${runId}` };
   const openResults = await Promise.all([
     session.request('/api/cash-sessions/open', { method: 'POST', body: JSON.stringify(openPayload) }),
     session.request('/api/cash-sessions/open', { method: 'POST', body: JSON.stringify(openPayload) }),
@@ -84,8 +115,8 @@ async function main() {
     items: [{ service_id: service.id, quantity: '1.00', dialysis_prescription: false }],
   });
   const invoiceResults = await Promise.all([
-    session.request('/api/invoices', { method: 'POST', body: JSON.stringify(invoicePayload('Concurrente Uno')) }),
-    session.request('/api/invoices', { method: 'POST', body: JSON.stringify(invoicePayload('Concurrente Dos')) }),
+    session.request('/api/invoices', { method: 'POST', body: JSON.stringify(invoicePayload(`Concurrente Uno ${runId}`)) }),
+    session.request('/api/invoices', { method: 'POST', body: JSON.stringify(invoicePayload(`Concurrente Dos ${runId}`)) }),
   ]);
   invoiceResults.forEach((result, index) => assertStatus(result, [201], `concurrent invoice ${index + 1}`));
   const invoiceNumbers = invoiceResults.map((result) => result.body.data.invoice_number);
@@ -111,6 +142,9 @@ async function main() {
   console.log(JSON.stringify({
     status: 'VALIDATED',
     baseUrl,
+    target_env: targetEnv,
+    run_id: runId,
+    cleanup: 'NOT_PERFORMED_AUDIT_RECORDS_REQUIRE_DISPOSABLE_DB_SNAPSHOT',
     checks: {
       double_cash_open: openStatuses,
       concurrent_invoice_numbers: invoiceNumbers,

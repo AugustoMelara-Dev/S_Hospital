@@ -3,9 +3,9 @@
 ## Pendientes de entorno
 
 - Restore real queda `PENDING_ENVIRONMENT_VALIDATION` hasta probar con MySQL/MariaDB real o Docker. No se afirma que restore fue validado en esta maquina.
-- Restore real cuenta con script Fase 10: `scripts/validate_restore_mysql.sh`.
+- Restore real cuenta con script Fase 10: `scripts/validate_restore_mysql.sh`. Es destructivo sobre la base descartable confirmada en `RESTORE_TEST_DATABASE`; no valida ni toca la base activa.
 - La prueba fisica de impresora termica 80mm/58mm queda `PENDING_HARDWARE_VALIDATION` hasta tener impresora real o impresora compartida del hospital.
-- La concurrencia real MySQL/MariaDB queda `PENDING_ENVIRONMENT_VALIDATION` hasta ejecutar `scripts/validate_mysql_concurrency.sh` contra servidor Laravel con MySQL/MariaDB.
+- La concurrencia real MySQL/MariaDB queda `PENDING_ENVIRONMENT_VALIDATION` hasta ejecutar `scripts/validate_mysql_concurrency.sh` contra servidor Laravel con MySQL/MariaDB descartable. El script crea datos con `RUN_ID` y requiere snapshot previo.
 - La validacion LAN desde computadora cliente queda pendiente hasta probar por IP fija/nombre local del servidor.
 
 ## Estado Fase 10

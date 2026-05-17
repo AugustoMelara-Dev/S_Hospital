@@ -34,6 +34,8 @@ Resultado local:
 - `C:\Program Files\Git\usr\bin\bash.exe scripts/e2e_gate.sh`: OK; usa wrapper PowerShell controlado para arrancar Vite, ejecutar Playwright y detener el servidor.
 - `C:\Program Files\Git\usr\bin\bash.exe scripts/quality_gate_destructive.sh` sin variable explicita: aborta antes de reset.
 - `HOSPITAL_ALLOW_DESTRUCTIVE_RESET=1` con `DB_DATABASE=hospital_billing`: aborta porque la base no parece descartable.
+- `scripts/validate_restore_mysql.sh`: destructivo solo contra `RESTORE_TEST_DATABASE` descartable, con confirmacion exacta `HOSPITAL_CONFIRM_RESTORE_DATABASE`.
+- `scripts/validate_mysql_concurrency.sh`: mutante solo contra target descartable confirmado; crea datos con `RUN_ID` y requiere snapshot previo porque no borra facturas auditables.
 - Playwright/E2E local: cerrado para el flujo minimo de Fase 10. No reemplaza pruebas contra MySQL/MariaDB real ni hardware.
 
 Busqueda local de secretos/dependencias cloud:
@@ -111,15 +113,15 @@ En servidor real del hospital:
 
 ## Pendientes honestos
 
-- Restore real: `PENDING_ENVIRONMENT_VALIDATION` hasta ejecutar `scripts/validate_restore_mysql.sh` con MySQL/MariaDB y `mariadb-dump` o `mysqldump`.
-- Concurrencia real MySQL/MariaDB: `PENDING_ENVIRONMENT_VALIDATION` hasta ejecutar `scripts/validate_mysql_concurrency.sh` contra servidor Laravel conectado a una base MySQL/MariaDB descartable/preproduccion.
+- Restore real: `PENDING_ENVIRONMENT_VALIDATION` hasta ejecutar `scripts/validate_restore_mysql.sh` con MySQL/MariaDB y `mariadb-dump` o `mysqldump` sobre una base descartable confirmada.
+- Concurrencia real MySQL/MariaDB: `PENDING_ENVIRONMENT_VALIDATION` hasta ejecutar `scripts/validate_mysql_concurrency.sh` contra servidor Laravel conectado a una base MySQL/MariaDB descartable con snapshot previo.
 - Impresora fisica termica: `PENDING_HARDWARE_VALIDATION` hasta probar 80mm/58mm en la PC de caja.
 - LAN fisica: `PENDING_ENVIRONMENT_VALIDATION` hasta validar desde otra computadora cliente por IP fija/nombre servidor.
 
 ## Evidencia Fase 10
 
 - Rutas web reales: `/`, `/login` y `/verify-email` sirven `frontend/dist/index.html` desde Laravel cuando existe build; `/assets/*` sirve assets del build con `nosniff`.
-- Test backend: `ProductionSpaRouteTest` valida `/login`, `/verify-email`, assets del build y bloqueo de path traversal.
+- Test backend: `ProductionSpaRouteTest` valida `/`, `/login`, `/verify-email`, assets del build y bloqueo de path traversal.
 - Gate E2E: `frontend/e2e/production-readiness.spec.ts` cubre flujo cajero-admin sin tocar base real.
 - Restore MySQL real: script creado; al ejecutarlo con `HOSPITAL_VALIDATE_RESTORE_MYSQL=1` en esta maquina aborta porque falta cliente `mysql`, por lo que sigue pendiente de entorno.
 - Concurrencia MySQL real: script HTTP creado; al ejecutarlo con `HOSPITAL_VALIDATE_REAL_MYSQL=1` en esta maquina falla por no tener servidor Laravel/MySQL de validacion corriendo, por lo que sigue pendiente de entorno.
