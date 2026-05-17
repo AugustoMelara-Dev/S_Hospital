@@ -30,6 +30,9 @@ class Invoice extends Model
         'cash_session_id',
         'issued_by',
         'issued_at',
+        'voided_by',
+        'voided_at',
+        'void_reason',
     ];
 
     protected function casts(): array
@@ -42,6 +45,7 @@ class Invoice extends Model
             'paid_amount' => 'decimal:2',
             'balance_due' => 'decimal:2',
             'issued_at' => 'datetime',
+            'voided_at' => 'datetime',
         ];
     }
 
@@ -58,6 +62,11 @@ class Invoice extends Model
     public function issuer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'issued_by');
+    }
+
+    public function voidedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'voided_by');
     }
 
     public function cashSession(): BelongsTo

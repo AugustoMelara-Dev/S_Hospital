@@ -198,3 +198,23 @@ Consecuencia:
 - Fase 5 no implementa anulacion de pagos/facturas, reimpresion auditada, historial avanzado, reportes, backups ni PDF avanzado.
 - La prueba automatizada valida el constraint en SQLite; la carrera real de dos requests simultaneos debe validarse en MySQL/MariaDB antes de produccion, donde el indice unico `open_user_id` es la defensa final.
 - Fase 6 debera agregar reimpresion auditada y anulacion sobre estas bases sin romper los snapshots.
+
+### 2026-05-17 - Historial, reimpresion auditada y anulacion segura
+
+Decision:
+
+- El historial de facturas usa paginacion, filtros por fecha/estado/paciente/numero/cajero/caja y rango de fecha por defecto para evitar traer toda la tabla.
+- Cajero queda limitado por backend a facturas propias del dia para historial, detalle, recibo y reimpresion; supervisor/admin usan permisos superiores para facturas historicas o de otros cajeros.
+- Reimpresion usa exclusivamente `invoice_items` snapshot y datos fiscales persistidos, y registra `audit_logs` con usuario, factura, ancho y motivo.
+- Anulacion marca `status=void`, `void_reason`, `voided_by` y `voided_at` dentro de transaccion y no borra factura ni items.
+- Las facturas con pagos registrados se bloquean con 422 hasta que exista un flujo explicito de reversion de pagos/caja.
+
+Motivo:
+
+- Reimprimir o anular son acciones sensibles para caja y auditoria; esconder botones en React no protege datos.
+- Sin una reversion contable completa, anular facturas pagadas podria desbalancear caja y pagos historicos.
+
+Consecuencia:
+
+- Fase 6 no implementa anulacion independiente de pagos ni movimientos reversos de caja.
+- Una fase futura debe definir reversos auditados antes de permitir anulacion de facturas pagadas o parciales.

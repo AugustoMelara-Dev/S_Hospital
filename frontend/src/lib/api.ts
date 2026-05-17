@@ -107,8 +107,15 @@ export type Invoice = {
   balance_due: string;
   status: 'issued' | 'partial' | 'paid' | 'void';
   issued_at: string;
+  void_reason?: string | null;
+  voided_at?: string | null;
   items: InvoiceItem[];
   payments?: Payment[];
+  issuer?: Pick<AuthUser, 'id' | 'name' | 'username'>;
+  voided_by?: Pick<AuthUser, 'id' | 'name' | 'username'> | null;
+  cash_session?: CashSession & {
+    user?: Pick<AuthUser, 'id' | 'name' | 'username'>;
+  };
 };
 
 export type CashSession = {
@@ -181,6 +188,24 @@ export type ReceiptData = {
   payments: Array<Pick<Payment, 'id' | 'method' | 'amount' | 'reference' | 'paid_at'> & {
     cashier: string | null;
   }>;
+};
+
+export type PaginatedMeta = {
+  current_page: number;
+  per_page: number;
+  total: number;
+};
+
+export type InvoiceFilters = {
+  date_from?: string;
+  date_to?: string;
+  status?: Invoice['status'] | '';
+  patient?: string;
+  invoice_number?: string;
+  user_id?: string;
+  cash_session_id?: string;
+  page?: number;
+  per_page?: number;
 };
 
 export const apiClient = {
@@ -352,6 +377,26 @@ export const apiClient = {
     return response.data;
   },
 
+  async getInvoices(filters: InvoiceFilters = {}): Promise<{ data: Invoice[]; meta: PaginatedMeta }> {
+    const params = new URLSearchParams();
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') {
+        params.set(key, String(value));
+      }
+    });
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+
+    return this.request<{ data: Invoice[]; meta: PaginatedMeta }>(`/api/invoices${query}`);
+  },
+
+  async getInvoice(id: number): Promise<Invoice> {
+    const response = await this.request<{ data: Invoice }>(`/api/invoices/${id}`);
+
+    return response.data;
+  },
+
   async getCurrentCashSession(): Promise<CashSession | null> {
     const response = await this.request<{ data: CashSession | null }>('/api/cash-sessions/current');
 
@@ -395,6 +440,30 @@ export const apiClient = {
     const response = await this.request<{ data: ReceiptData }>(
       `/api/invoices/${invoiceId}/receipt?width=${width}`,
     );
+
+    return response.data;
+  },
+
+  async reprintInvoice(
+    invoiceId: number,
+    payload: { width: ReceiptData['width']; reason?: string | null },
+  ): Promise<ReceiptData> {
+    const response = await this.request<{ data: { receipt: ReceiptData } }>(
+      `/api/invoices/${invoiceId}/reprint`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+    );
+
+    return response.data.receipt;
+  },
+
+  async voidInvoice(invoiceId: number, reason: string): Promise<Invoice> {
+    const response = await this.request<{ data: Invoice }>(`/api/invoices/${invoiceId}/void`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
 
     return response.data;
   },

@@ -207,7 +207,7 @@ describe('App', () => {
             username: 'cajero.demo',
             active: true,
             roles: ['cajero'],
-            permissions: ['cash.view', 'invoices.create', 'invoices.view', 'payments.create'],
+            permissions: ['cash.view', 'invoices.create', 'payments.create'],
             must_change_password: false,
           },
         }),
@@ -452,6 +452,200 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: /preview termico/i })).toBeInTheDocument();
     expect(await screen.findByText(/hospital demo/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/ancho del recibo/i)).toHaveValue('80mm');
+  });
+
+  it('renders invoice history filters and reprint button based on permissions', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 3,
+            name: 'Supervisor Demo',
+            email: 'supervisor.demo@hospital-billing.local',
+            username: 'supervisor.demo',
+            active: true,
+            roles: ['supervisor'],
+            permissions: ['invoices.view', 'receipts.reprint', 'receipts.reprint_any'],
+            must_change_password: false,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 100,
+              invoice_number: '000-001-01-00000001',
+              patient_name: 'Maria Lopez',
+              subtotal: '15.00',
+              tax_amount: '2.25',
+              discount_amount: '0.00',
+              total: '17.25',
+              paid_amount: '17.25',
+              balance_due: '0.00',
+              status: 'paid',
+              issued_at: '2026-05-17T08:00:00-06:00',
+              items: [],
+              issuer: { id: 2, name: 'Cajero Demo', username: 'cajero.demo' },
+            },
+          ],
+          meta: { current_page: 1, per_page: 10, total: 1 },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 100,
+            invoice_number: '000-001-01-00000001',
+            patient_name: 'Maria Lopez',
+            subtotal: '15.00',
+            tax_amount: '2.25',
+            discount_amount: '0.00',
+            total: '17.25',
+            paid_amount: '17.25',
+            balance_due: '0.00',
+            status: 'paid',
+            issued_at: '2026-05-17T08:00:00-06:00',
+            void_reason: null,
+            items: [
+              {
+                id: 1,
+                service_id: 11,
+                service_name: 'Glucosa',
+                category_id: 1,
+                category_name: 'Laboratorio',
+                quantity: '1.00',
+                unit_price: '15.00',
+                tax_rate: '15.00',
+                tax_amount: '2.25',
+                line_subtotal: '15.00',
+                line_total: '17.25',
+                special_rule_code: null,
+                special_rule_applied: false,
+                notes: null,
+              },
+            ],
+            payments: [],
+          },
+        }),
+      } as Response);
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /historial de facturas/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/desde/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/paciente/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/numero de factura/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/estado/i)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: /ver/i }));
+
+    expect(await screen.findByRole('button', { name: /reimprimir/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /anular factura/i })).not.toBeInTheDocument();
+  });
+
+  it('shows void reason confirmation for users with invoice void permission', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 1,
+            name: 'Admin Demo',
+            email: 'admin.demo@hospital-billing.local',
+            username: 'admin.demo',
+            active: true,
+            roles: ['admin'],
+            permissions: ['invoices.view', 'invoices.void', 'receipts.reprint', 'receipts.reprint_any'],
+            must_change_password: false,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 101,
+              invoice_number: '000-001-01-00000002',
+              patient_name: 'Jose Perez',
+              subtotal: '15.00',
+              tax_amount: '2.25',
+              discount_amount: '0.00',
+              total: '17.25',
+              paid_amount: '0.00',
+              balance_due: '17.25',
+              status: 'issued',
+              issued_at: '2026-05-17T09:00:00-06:00',
+              items: [],
+              issuer: { id: 2, name: 'Cajero Demo', username: 'cajero.demo' },
+            },
+          ],
+          meta: { current_page: 1, per_page: 10, total: 1 },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 101,
+            invoice_number: '000-001-01-00000002',
+            patient_name: 'Jose Perez',
+            subtotal: '15.00',
+            tax_amount: '2.25',
+            discount_amount: '0.00',
+            total: '17.25',
+            paid_amount: '0.00',
+            balance_due: '17.25',
+            status: 'issued',
+            issued_at: '2026-05-17T09:00:00-06:00',
+            void_reason: null,
+            items: [],
+            payments: [],
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 101,
+            invoice_number: '000-001-01-00000002',
+            patient_name: 'Jose Perez',
+            subtotal: '15.00',
+            tax_amount: '2.25',
+            discount_amount: '0.00',
+            total: '17.25',
+            paid_amount: '0.00',
+            balance_due: '17.25',
+            status: 'void',
+            issued_at: '2026-05-17T09:00:00-06:00',
+            void_reason: 'Error de captura',
+            items: [],
+            payments: [],
+          },
+        }),
+      } as Response);
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /ver/i }));
+    expect(await screen.findByLabelText(/motivo de anulacion/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/motivo de anulacion/i), {
+      target: { value: 'Error de captura' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));
+
+    await waitFor(() => {
+      expect(confirmSpy).toHaveBeenCalled();
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        expect.stringContaining('/api/invoices/101/void'),
+        expect.objectContaining({ method: 'POST' }),
+      );
+    });
   });
 
   it('renders 58mm receipt print structure with fiscal valid until date', () => {

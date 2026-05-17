@@ -46,6 +46,7 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         Route::get('/invoices', [InvoiceController::class, 'index']);
         Route::post('/invoices', [InvoiceController::class, 'store']);
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
+        Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'void']);
 
         Route::get('/cash-sessions/current', [CashSessionController::class, 'current']);
         Route::post('/cash-sessions/open', [CashSessionController::class, 'open']);
@@ -55,5 +56,6 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store']);
         Route::get('/invoices/{invoice}/payments', [PaymentController::class, 'index']);
         Route::get('/invoices/{invoice}/receipt', [ReceiptController::class, 'show']);
+        Route::post('/invoices/{invoice}/reprint', [ReceiptController::class, 'reprint']);
     });
 });

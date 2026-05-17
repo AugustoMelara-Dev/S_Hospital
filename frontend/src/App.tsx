@@ -8,6 +8,7 @@ import {
 } from './lib/api';
 import { CashBoxView } from './features/cash/CashBoxView';
 import { CatalogView } from './features/catalog/CatalogView';
+import { InvoiceHistoryView } from './features/invoices/InvoiceHistoryView';
 import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 
 const emptySequence: FiscalSequence = {
@@ -53,6 +54,10 @@ export function App() {
   const canViewCatalog = useMemo(() => user?.permissions.includes('catalog.view') ?? false, [user]);
   const canCreateInvoices = useMemo(
     () => user?.permissions.includes('invoices.create') ?? false,
+    [user],
+  );
+  const canViewInvoices = useMemo(
+    () => user?.permissions.includes('invoices.view') ?? false,
     [user],
   );
   const canViewCash = useMemo(() => user?.permissions.includes('cash.view') ?? false, [user]);
@@ -248,7 +253,7 @@ export function App() {
           </label>
           <button type="submit">Actualizar contrasena</button>
         </form>
-      ) : !canViewFiscalSettings && !canViewCatalog && !canCreateInvoices && !canViewCash ? (
+      ) : !canViewFiscalSettings && !canViewCatalog && !canCreateInvoices && !canViewCash && !canViewInvoices ? (
         <section className="notice" role="alert">No tiene permisos operativos asignados.</section>
       ) : (
         <>
@@ -257,6 +262,8 @@ export function App() {
           {canCreateInvoices ? (
             <NewInvoiceView cashSession={cashSession} onStatus={setStatus} />
           ) : null}
+
+          {canViewInvoices ? <InvoiceHistoryView user={user} onStatus={setStatus} /> : null}
 
           {canViewFiscalSettings ? (
             <section className="settings-layout">

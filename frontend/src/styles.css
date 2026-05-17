@@ -24,7 +24,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -86,7 +87,8 @@ select {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   min-height: 42px;
   border: 1px solid var(--border);
@@ -100,6 +102,11 @@ input:disabled,
 select:disabled {
   background: #eef2f6;
   color: #5b6472;
+}
+
+textarea {
+  min-height: 88px;
+  resize: vertical;
 }
 
 button {
@@ -240,13 +247,119 @@ th {
 .invoice-panel,
 .invoice-summary,
 .cash-panel,
-.receipt-preview-panel {
+.receipt-preview-panel,
+.history-panel,
+.invoice-detail-panel {
   display: grid;
   gap: 14px;
   padding: 18px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
+}
+
+.history-panel {
+  max-width: 1120px;
+  margin: 24px auto 0;
+}
+
+.history-filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(130px, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.history-filters label,
+.action-box label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.data-table button {
+  width: auto;
+}
+
+.pagination-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.pagination-row .secondary-button {
+  width: auto;
+}
+
+.invoice-detail-panel {
+  border-color: #b8c2cc;
+  background: #fbfcfe;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.detail-grid div,
+.snapshot-item {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.detail-grid dd {
+  margin: 4px 0 0;
+  font-weight: 800;
+}
+
+.detail-grid dt,
+.snapshot-item small {
+  color: var(--muted);
+}
+
+.snapshot-list,
+.history-actions,
+.action-box {
+  display: grid;
+  gap: 10px;
+}
+
+.snapshot-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+}
+
+.snapshot-item small {
+  grid-column: 1 / -1;
+}
+
+.history-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.action-box {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.danger-zone {
+  border-color: #fecdd3;
+  background: #fff7f8;
+}
+
+.danger-button {
+  background: #be123c;
 }
 
 .cash-layout {
@@ -438,7 +551,10 @@ body[data-receipt-width="58mm"] .thermal-receipt {
 }
 
 @media (max-width: 900px) {
-  .invoice-layout {
+  .invoice-layout,
+  .history-filters,
+  .detail-grid,
+  .history-actions {
     grid-template-columns: 1fr;
   }
 }
@@ -524,6 +640,15 @@ h2 {
   .cash-layout,
   .settings-layout,
   .catalog-layout,
+  .history-panel > .section-heading,
+  .history-filters,
+  .history-panel > .table-wrap,
+  .pagination-row,
+  .invoice-detail-panel > .section-heading,
+  .detail-grid,
+  .invoice-detail-panel > h4,
+  .invoice-detail-panel > .snapshot-list,
+  .history-actions,
   .form-status {
     display: none !important;
   }
