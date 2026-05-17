@@ -45,7 +45,7 @@ Metricas principales:
 - Tablas con `TanStack Table`.
 - Filtros persistentes por pantalla.
 - Estados vacios que expliquen falta de datos.
-- Exportacion CSV/Excel si ya existe soporte o queda planificada por subfase.
+- Exportacion CSV minima obligatoria; Excel puede quedar planificado si requiere libreria adicional.
 
 ## Fuente de verdad
 
@@ -57,3 +57,4 @@ Los totales deben venir calculados o validados por backend. El frontend no debe 
 - Reporte sin filtros por fecha: bloqueado.
 - Reporte con totales calculados solo en frontend: bloqueado.
 - Reporte sin relacion con caja/cajero/metodo cuando aplica: bloqueado.
+- Reporte sin exportacion CSV minima: bloqueado.

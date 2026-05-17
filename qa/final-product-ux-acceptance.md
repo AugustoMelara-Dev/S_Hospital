@@ -22,6 +22,14 @@
 - Navegar a Configuracion fiscal.
 - Navegar a Usuarios/roles si existe.
 
+## Evidencia visual requerida
+
+- Captura desktop de app shell con sidebar/topbar visibles.
+- Captura de POS donde se vea categoria, busqueda, scanner/codigo, servicios compactos y carrito.
+- Captura de reportes con filtros, metricas y tabla/grafica.
+- Evidencia de que no existe una sola pagina interminable como experiencia principal.
+- Revision minima de tablet o viewport mediano para confirmar que la UI no se rompe.
+
 ## Smoke POS
 
 - Crear factura con nombre de paciente.
@@ -41,6 +49,7 @@
 - Ver ingresos por categoria.
 - Ver caja por cajero.
 - Ver anuladas/reimpresiones/backups.
+- Exportar CSV minimo si hay datos en el rango.
 
 ## Gates sugeridos
 

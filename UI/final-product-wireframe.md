@@ -1,5 +1,7 @@
 # Final Product Wireframe
 
+Este es el wireframe canonico de Fase 12. `UI/wireframes_ascii.md` queda como referencia auxiliar y no debe contradecir este documento.
+
 ## App shell
 
 ```text

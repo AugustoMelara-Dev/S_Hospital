@@ -1,16 +1,16 @@
 # Branch Strategy
 
-## Branch principal de trabajo
+## Branches principales de trabajo
 
-`feature/final-product-ux-rebuild`
+Usar ramas `codex/*` y PR por fase. No empujar directo a `main` salvo hotfix explicito.
 
-## Sub-branches opcionales
+## Ramas sugeridas
 
-- `feature/ui-app-shell`
-- `feature/billing-pos-redesign`
-- `feature/catalog-barcode-qr`
-- `feature/advanced-reports`
-- `test/final-ux-qa`
+- `codex/phase-12a-app-shell-design-system`
+- `codex/phase-12b-pos-billing-ux`
+- `codex/phase-12c-catalog-barcode`
+- `codex/phase-12d-advanced-reports`
+- `codex/phase-12e-final-ux-qa`
 
 ## Commits esperados
 

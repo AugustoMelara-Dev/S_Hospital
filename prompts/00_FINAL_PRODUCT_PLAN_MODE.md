@@ -12,7 +12,7 @@ Debe responder `C:/Projects/S_Hospital`.
 
 ## Lectura obligatoria
 
-Lee `AGENTS.md`, `docs/`, `UI/`, `qa/`, `branch/phase-12-branch-plan.md` y los skills de `codex-skills/` relacionados con Fase 12.
+Lee `AGENTS.md`, `docs/`, `UI/`, `qa/`, `references/`, `branch/phase-12-branch-plan.md` y los skills de `codex-skills/` relacionados con Fase 12.
 
 ## Diagnostico requerido
 

@@ -1,5 +1,7 @@
--- Schema extensions proposed for Fase 12C and Fase 12D
--- Review with Laravel migrations before applying.
+-- REFERENCIA DOCUMENTAL - NO EJECUTAR DIRECTAMENTE.
+-- Schema extensions proposed for Fase 12C and Fase 12D.
+-- Convertir a migraciones Laravel revisadas antes de aplicar.
+-- Este archivo no implementa backend; solo enumera campos e indices candidatos.
 
 ALTER TABLE services
   ADD COLUMN sku VARCHAR(80) NULL AFTER source_hash,

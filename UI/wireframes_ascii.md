@@ -1,5 +1,7 @@
 # Wireframes ASCII
 
+Referencia auxiliar. El wireframe canonico de Fase 12 es `UI/final-product-wireframe.md`.
+
 ## App Shell
 
 ```
