@@ -365,7 +365,20 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                         <span className="font-semibold">L. {service.price}</span>
                       </TableCell>
                       <TableCell className="px-4 py-3 text-sm text-muted-foreground">
-                        {service.scan_code || service.barcode || service.qr_code || '—'}
+                        <div className="flex flex-col gap-1">
+                          {([
+                            ['Scanner', service.scan_code],
+                            ['Barra', service.barcode],
+                            ['QR', service.qr_code],
+                          ] as const)
+                            .filter(([, code]) => Boolean(code))
+                            .map(([label, code]) => (
+                              <span key={`${service.id}-${label}`} className="font-mono text-xs">
+                                {label}: {code}
+                              </span>
+                            ))}
+                          {!service.scan_code && !service.barcode && !service.qr_code && <span>-</span>}
+                        </div>
                       </TableCell>
                       <TableCell className="px-4 py-3">
                         <Badge variant={service.active ? 'default' : 'outline'}>

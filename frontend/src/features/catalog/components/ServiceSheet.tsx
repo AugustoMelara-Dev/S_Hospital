@@ -97,12 +97,16 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
 
   async function onSubmit(data: ServiceFormData) {
     setSubmitError(null);
+    const optionalCode = (value: string | null | undefined): string | null => {
+      const trimmed = value?.trim() ?? '';
+      return trimmed === '' ? null : trimmed;
+    };
     const payload = {
       ...data,
-      scan_code: data.scan_code ?? null,
-      barcode: data.barcode ?? null,
-      qr_code: data.qr_code ?? null,
-      special_rule_code: data.special_rule_code ?? null,
+      scan_code: optionalCode(data.scan_code),
+      barcode: optionalCode(data.barcode),
+      qr_code: optionalCode(data.qr_code),
+      special_rule_code: optionalCode(data.special_rule_code),
     };
     try {
       await apiClient.saveService(payload, service?.id);

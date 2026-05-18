@@ -44,21 +44,60 @@ class UpdateServiceRequest extends FormRequest
                     return;
                 }
 
-                $categoryId = $this->filled('category_id')
-                    ? $this->integer('category_id')
-                    : $service->category_id;
-                $name = $this->filled('name') ? $this->string('name')->toString() : $service->name;
+                if ($this->filled('category_id') || $this->filled('name')) {
+                    $categoryId = $this->filled('category_id')
+                        ? $this->integer('category_id')
+                        : $service->category_id;
+                    $name = $this->filled('name') ? $this->string('name')->toString() : $service->name;
 
-                $exists = Service::query()
-                    ->where('category_id', $categoryId)
-                    ->where('slug', Str::slug($name))
-                    ->whereKeyNot($service->id)
-                    ->exists();
+                    $exists = Service::query()
+                        ->where('category_id', $categoryId)
+                        ->where('slug', Str::slug($name))
+                        ->whereKeyNot($service->id)
+                        ->exists();
 
-                if ($exists) {
-                    $validator->errors()->add('name', 'Ya existe un servicio con un nombre equivalente en esta categoria.');
+                    if ($exists) {
+                        $validator->errors()->add('name', 'Ya existe un servicio con un nombre equivalente en esta categoria.');
+                    }
                 }
+
+                $this->validateGlobalCodes($validator, $service);
             },
         ];
+    }
+
+    private function validateGlobalCodes(Validator $validator, Service $service): void
+    {
+        $codes = collect(['scan_code', 'barcode', 'qr_code'])
+            ->mapWithKeys(fn (string $field): array => [$field => trim((string) $this->input($field, ''))])
+            ->filter();
+
+        if ($codes->isEmpty()) {
+            return;
+        }
+
+        if ($codes->unique()->count() !== $codes->count()) {
+            foreach ($codes as $field => $code) {
+                $validator->errors()->add($field, 'El codigo ya esta asignado a este servicio en otro campo.');
+            }
+
+            return;
+        }
+
+        foreach ($codes as $field => $code) {
+            $exists = Service::query()
+                ->whereKeyNot($service->id)
+                ->where(function ($query) use ($code): void {
+                    $query
+                        ->where('scan_code', $code)
+                        ->orWhere('barcode', $code)
+                        ->orWhere('qr_code', $code);
+                })
+                ->exists();
+
+            if ($exists) {
+                $validator->errors()->add($field, 'El codigo ya esta asignado a otro servicio.');
+            }
+        }
     }
 }

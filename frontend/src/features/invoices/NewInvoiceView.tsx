@@ -67,6 +67,18 @@ export function NewInvoiceView({
   }, []);
 
   useEffect(() => {
+    if (!canViewCatalog) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void searchPointOfSaleServices();
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [canViewCatalog, search, selectedCategoryId]);
+
+  useEffect(() => {
     if (cashSession) {
       setLoadedCashSession(cashSession);
     }
@@ -153,6 +165,24 @@ export function NewInvoiceView({
     }
   }
 
+  async function searchPointOfSaleServices() {
+    setLoadingServices(true);
+
+    try {
+      const nextServices = await apiClient.getServices({
+        active: true,
+        search: search.trim() || undefined,
+        categoryId: selectedCategoryId && selectedCategoryId !== 'all' ? selectedCategoryId : undefined,
+        perPage: 150,
+      });
+      setServices(Array.isArray(nextServices) ? nextServices : []);
+    } catch (error) {
+      onStatus(userSafeErrorMessage(error, 'No se pudo buscar servicios activos.'));
+    } finally {
+      setLoadingServices(false);
+    }
+  }
+
   function addToCart(service: Service) {
     setAlertMessage(null);
     setPatientError(undefined);
@@ -188,7 +218,7 @@ export function NewInvoiceView({
     }
 
     try {
-      const [service] = await apiClient.getServices({ active: true, code, perPage: 1 });
+      const [service] = await apiClient.getServices({ code, perPage: 1 });
 
       if (!service) {
         const localMatch = services.find((s) =>
@@ -351,7 +381,7 @@ export function NewInvoiceView({
     setShowPayment(true);
   }
 
-  async function submitPayment() {
+  async function submitPayment(appliedAmount = paymentAmount) {
     if (!issuedInvoice || !loadedCashSession) {
       setShowPayment(false);
       return;
@@ -367,7 +397,7 @@ export function NewInvoiceView({
       const result = await apiClient.registerPayment(invoiceToPay.id, {
         cash_session_id: sessionToUse.id,
         method: paymentMethod,
-        amount: paymentAmount,
+        amount: appliedAmount,
       });
 
       setIssuedInvoice(result.invoice);
@@ -528,7 +558,7 @@ export function NewInvoiceView({
           paymentAmount={paymentAmount}
           onPaymentMethodChange={setPaymentMethod}
           onPaymentAmountChange={setPaymentAmount}
-          onConfirm={() => void submitPayment()}
+          onConfirm={(appliedAmount) => void submitPayment(appliedAmount)}
           submitting={paying}
         />
       )}

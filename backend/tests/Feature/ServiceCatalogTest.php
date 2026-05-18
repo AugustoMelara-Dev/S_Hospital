@@ -299,6 +299,36 @@ class ServiceCatalogTest extends TestCase
             ->assertJsonValidationErrors('scan_code');
     }
 
+    public function test_cross_field_duplicate_codes_return_validation_errors(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $category = Category::query()->firstOrFail();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", ['scan_code' => 'GLOBAL-CODE-001'])
+            ->assertOk();
+
+        $this->actingAs($admin)
+            ->postJson('/api/services', [
+                'category_id' => $category->id,
+                'name' => 'Servicio duplicado barcode',
+                'price' => '10.00',
+                'barcode' => 'GLOBAL-CODE-001',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('barcode');
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'scan_code' => 'SAME-SERVICE-CODE',
+                'qr_code' => 'SAME-SERVICE-CODE',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['scan_code', 'qr_code']);
+    }
+
     public function test_price_change_and_active_change_are_audited(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
