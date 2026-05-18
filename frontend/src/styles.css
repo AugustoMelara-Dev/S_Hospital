@@ -890,19 +890,3 @@
   text-align: right;
   font-weight: bold;
 }
-
-@media print {
-  .thermal-receipt {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 80mm;
-    padding: 16px;
-    background: white;
-  }
-
-  .thermal-receipt.receipt-58mm {
-    width: 58mm;
-    padding: 12px;
-  }
-}
