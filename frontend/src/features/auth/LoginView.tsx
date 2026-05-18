@@ -31,13 +31,18 @@ export function LoginView({
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
               Usuario o email
-              <Input value={login} onChange={(event) => onLoginChange(event.target.value)} />
+              <Input
+                value={login}
+                autoComplete="username"
+                onChange={(event) => onLoginChange(event.target.value)}
+              />
             </label>
             <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
               Contrasena
               <Input
                 type="password"
                 value={password}
+                autoComplete="current-password"
                 onChange={(event) => onPasswordChange(event.target.value)}
               />
             </label>

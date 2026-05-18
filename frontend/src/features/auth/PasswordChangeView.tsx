@@ -30,6 +30,7 @@ export function PasswordChangeView({ form, onChange, onSubmit }: PasswordChangeV
               <Input
                 type="password"
                 value={form.current_password}
+                autoComplete="current-password"
                 onChange={(event) => onChange({ ...form, current_password: event.target.value })}
               />
             </label>
@@ -38,6 +39,7 @@ export function PasswordChangeView({ form, onChange, onSubmit }: PasswordChangeV
               <Input
                 type="password"
                 value={form.password}
+                autoComplete="new-password"
                 onChange={(event) => onChange({ ...form, password: event.target.value })}
               />
             </label>
@@ -46,6 +48,7 @@ export function PasswordChangeView({ form, onChange, onSubmit }: PasswordChangeV
               <Input
                 type="password"
                 value={form.password_confirmation}
+                autoComplete="new-password"
                 onChange={(event) => onChange({ ...form, password_confirmation: event.target.value })}
               />
             </label>
