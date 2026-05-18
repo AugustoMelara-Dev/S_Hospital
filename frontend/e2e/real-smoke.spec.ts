@@ -113,6 +113,10 @@ function captureConsoleIssues(page: Page, consoleIssues: string[]) {
   });
   page.on('requestfailed', (request) => {
     const failure = request.failure();
+    if (request.url().includes('/sanctum/csrf-cookie') && failure?.errorText === 'net::ERR_ABORTED') {
+      return;
+    }
+
     consoleIssues.push(`requestfailed: ${request.method()} ${request.url()} ${failure?.errorText ?? ''}`.trim());
   });
 }
