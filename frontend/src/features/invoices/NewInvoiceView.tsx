@@ -1,6 +1,12 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
+import { EmptyState, LoadingState } from '../../components/ui/states';
+import { Input } from '../../components/ui/input';
+import { Select } from '../../components/ui/select';
 import {
   type Category,
   type CashSession,
@@ -305,242 +311,284 @@ export function NewInvoiceView({ cashSession, onStatus }: NewInvoiceViewProps) {
 
   return (
     <section id="nueva-factura" className="invoice-layout" aria-labelledby="invoice-title">
-      <form onSubmit={requestInvoiceConfirmation} className="invoice-panel pos-panel">
-        <div className="section-heading">
-          <div>
-            <p className="app-kicker">POS hospitalario</p>
-            <h2 id="invoice-title">Nueva factura</h2>
-          </div>
-          <button type="submit" disabled={submitting || selectedItems.length === 0}>
-            {submitting ? 'Emitiendo...' : 'Emitir factura'}
-          </button>
-        </div>
+      <form onSubmit={requestInvoiceConfirmation} className="flex flex-col gap-5">
+        <Card>
+          <CardHeader className="md:flex-row md:items-end md:justify-between">
+            <div>
+              <CardDescription>POS hospitalario</CardDescription>
+              <CardTitle id="invoice-title">Nueva factura</CardTitle>
+            </div>
+            <Button type="submit" disabled={submitting || selectedItems.length === 0}>
+              {submitting ? 'Emitiendo...' : 'Emitir factura'}
+            </Button>
+          </CardHeader>
 
-        {formAlert ? (
-          <div className="error-summary" role="alert" aria-live="assertive">
-            {formAlert}
-          </div>
-        ) : null}
+          <CardContent className="flex flex-col gap-4">
+            {formAlert ? (
+              <div className="error-summary" role="alert" aria-live="assertive">
+                {formAlert}
+              </div>
+            ) : null}
 
-        <label>
-          Nombre del paciente
-          <input
-            ref={patientInputRef}
-            value={patientName}
-            onChange={(event) => {
-              setPatientName(event.target.value);
-              if (formAlert === 'Falta el nombre del paciente.') {
-                setFormAlert(null);
-              }
-            }}
-            placeholder="Maria Lopez"
-            aria-invalid={formAlert === 'Falta el nombre del paciente.' ? 'true' : 'false'}
-            aria-describedby={formAlert === 'Falta el nombre del paciente.' ? 'patient-name-error' : undefined}
-          />
-          {formAlert === 'Falta el nombre del paciente.' ? (
-            <span id="patient-name-error" className="field-error" role="alert">
-              Ingrese el nombre del paciente para emitir la factura.
-            </span>
-          ) : null}
-        </label>
+            {!cashSession ? (
+              <div className="rounded-lg border border-destructive bg-rose-50 p-4 text-sm text-destructive" role="alert">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <strong>No hay caja abierta. El flujo principal de facturacion esta bloqueado hasta abrir caja.</strong>
+                  <Button asChild variant="secondary" size="sm">
+                    <Link to="/cashbox">Abrir caja</Link>
+                  </Button>
+                </div>
+              </div>
+            ) : null}
 
-        <label>
-          Buscar por nombre, categoria o codigo
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Glucosa, Laboratorio, LAB-GLU-001"
-          />
-        </label>
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.45fr)]">
+              <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
+                Nombre del paciente
+                <Input
+                  ref={patientInputRef}
+                  value={patientName}
+                  onChange={(event) => {
+                    setPatientName(event.target.value);
+                    if (formAlert === 'Falta el nombre del paciente.') {
+                      setFormAlert(null);
+                    }
+                  }}
+                  placeholder="Maria Lopez"
+                  aria-invalid={formAlert === 'Falta el nombre del paciente.' ? 'true' : 'false'}
+                  aria-describedby={formAlert === 'Falta el nombre del paciente.' ? 'patient-name-error' : undefined}
+                />
+                {formAlert === 'Falta el nombre del paciente.' ? (
+                  <span id="patient-name-error" className="field-error" role="alert">
+                    Ingrese el nombre del paciente para emitir la factura.
+                  </span>
+                ) : null}
+              </label>
 
-        <div className="scanner-row">
-          <label>
-            Scanner USB o codigo manual
-            <input
-              value={scanCode}
-              onChange={(event) => setScanCode(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  void addByScanCode();
-                }
-              }}
-              placeholder="Escanee y presione Enter"
-            />
-          </label>
-          <button type="button" onClick={() => void addByScanCode()}>
-            Agregar codigo
-          </button>
-        </div>
+              <div className="rounded-lg border border-border bg-muted/40 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-muted-foreground">Caja</span>
+                  <Badge variant={cashSession ? 'default' : 'destructive'}>
+                    {cashSession ? `Abierta #${cashSession.id}` : 'Cerrada'}
+                  </Badge>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Facturas pagadas quedan asociadas a caja, cajero, metodo y fecha.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="category-strip pos-category-strip" aria-label="Categorias de facturacion">
-          <button
-            type="button"
-            className={selectedCategoryId === 'all' ? 'secondary-button selected-filter' : 'secondary-button'}
-            onClick={() => setSelectedCategoryId('all')}
-          >
-            Todos
-          </button>
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              className={
-                selectedCategoryId === category.id ? 'secondary-button selected-filter' : 'secondary-button'
-              }
-              onClick={() => setSelectedCategoryId(category.id)}
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
+        <Card>
+          <CardHeader>
+            <CardDescription>Busqueda rapida</CardDescription>
+            <CardTitle>Servicios facturables</CardTitle>
+          </CardHeader>
 
-        <div className="service-picker pos-service-grid" aria-label="Servicios facturables">
-          {loadingServices ? (
-            <p>Cargando servicios...</p>
-          ) : selectedCategoryId === undefined && search.trim() === '' ? (
-            <p className="muted">
-              Seleccione una categoria, escriba una busqueda o escanee un codigo para empezar.
-            </p>
-          ) : filteredServices.length === 0 ? (
-            <p>No hay servicios activos para mostrar.</p>
-          ) : (
-            visibleServices.map((service) => (
-              <button
-                key={service.id}
+          <CardContent className="flex flex-col gap-4">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.45fr)_auto] lg:items-end">
+              <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
+                Buscar por nombre, categoria o codigo
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Glucosa, Laboratorio, LAB-GLU-001"
+                />
+              </label>
+
+              <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
+                Scanner USB o codigo manual
+                <Input
+                  value={scanCode}
+                  onChange={(event) => setScanCode(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      void addByScanCode();
+                    }
+                  }}
+                  placeholder="Escanee y presione Enter"
+                />
+              </label>
+
+              <Button type="button" variant="secondary" onClick={() => void addByScanCode()}>
+                Agregar codigo
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap gap-2 rounded-lg border border-border bg-muted/40 p-2" aria-label="Categorias de facturacion">
+              <Button
                 type="button"
-                className="service-option"
-                onClick={() => addService(service)}
+                size="sm"
+                variant={selectedCategoryId === 'all' ? 'default' : 'secondary'}
+                onClick={() => setSelectedCategoryId('all')}
               >
-                <span>{service.name}</span>
-                <strong>L. {service.price}</strong>
-                <small>
-                  {service.category?.name ?? 'Sin categoria'}
-                  {service.scan_code ? ` - ${service.scan_code}` : ''}
-                </small>
-              </button>
-            ))
-          )}
-          {hiddenServiceCount > 0 ? (
-            <p className="muted">
-              Hay {hiddenServiceCount} servicios mas. Use busqueda o una categoria mas especifica.
-            </p>
-          ) : null}
-        </div>
+                Todos
+              </Button>
+              {categories.map((category) => (
+                <Button
+                  key={category.id}
+                  type="button"
+                  size="sm"
+                  variant={selectedCategoryId === category.id ? 'default' : 'secondary'}
+                  onClick={() => setSelectedCategoryId(category.id)}
+                >
+                  {category.name}
+                </Button>
+              ))}
+            </div>
+
+            <div className="pos-service-grid" aria-label="Servicios facturables">
+              {loadingServices ? (
+                <LoadingState label="Cargando servicios activos..." />
+              ) : selectedCategoryId === undefined && search.trim() === '' ? (
+                <EmptyState
+                  title="Listo para buscar"
+                  description="Seleccione una categoria, escriba una busqueda o escanee un codigo."
+                />
+              ) : filteredServices.length === 0 ? (
+                <EmptyState title="Sin servicios activos" description="Ajuste la busqueda o cambie la categoria." />
+              ) : (
+                visibleServices.map((service) => (
+                  <Button
+                    key={service.id}
+                    type="button"
+                    variant="secondary"
+                    className="service-option"
+                    onClick={() => addService(service)}
+                  >
+                    <span>{service.name}</span>
+                    <strong>L. {service.price}</strong>
+                    <small>
+                      {service.category?.name ?? 'Sin categoria'}
+                      {service.scan_code ? ` - ${service.scan_code}` : ''}
+                    </small>
+                  </Button>
+                ))
+              )}
+              {hiddenServiceCount > 0 ? (
+                <p className="muted md:col-span-2 xl:col-span-3">
+                  Hay {hiddenServiceCount} servicios mas. Use busqueda o una categoria mas especifica.
+                </p>
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
       </form>
 
-      <aside className="invoice-summary" aria-label="Resumen de factura">
-        <h2>Servicios seleccionados</h2>
-        {selectedItems.length === 0 ? (
-          <p className="muted">Seleccione al menos un servicio.</p>
-        ) : (
-          <div className="selected-items">
-            {selectedItems.map((item, index) => {
-              const canApplyDialysisRule = item.service.special_rule_code === ERYTHROPOIETIN_RULE;
+      <aside className="flex flex-col gap-5" aria-label="Resumen de factura">
+        <Card>
+          <CardHeader>
+            <CardDescription>Factura en curso</CardDescription>
+            <CardTitle>Carrito y totales</CardTitle>
+          </CardHeader>
 
-              return (
-                <div className="selected-item" key={`${item.service.id}-${index}`}>
-                  <div>
-                    <strong>{item.service.name}</strong>
-                    <span>L. {item.service.price}</span>
-                  </div>
-                  <label>
-                    Cantidad
-                    <input
-                      value={item.quantity}
-                      onChange={(event) => updateItem(index, { ...item, quantity: event.target.value })}
-                    />
-                  </label>
-                  {canApplyDialysisRule ? (
-                    <label className="checkbox-row">
-                      <input
-                        type="checkbox"
-                        checked={item.dialysisPrescription}
-                        onChange={(event) =>
-                          updateItem(index, { ...item, dialysisPrescription: event.target.checked })
-                        }
-                      />
-                      Receta de dialisis
-                    </label>
-                  ) : null}
-                  <button type="button" className="secondary-button" onClick={() => removeItem(index)}>
-                    Quitar
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+          <CardContent className="flex flex-col gap-4">
+            {selectedItems.length === 0 ? (
+              <EmptyState title="Sin servicios" description="Seleccione al menos un servicio para facturar." />
+            ) : (
+              <div className="selected-items">
+                {selectedItems.map((item, index) => {
+                  const canApplyDialysisRule = item.service.special_rule_code === ERYTHROPOIETIN_RULE;
 
-        <dl className="totals-list">
-          <div>
-            <dt>Subtotal estimado</dt>
-            <dd>L. {preview.subtotal}</dd>
-          </div>
-          <div>
-            <dt>ISV estimado</dt>
-            <dd>L. {preview.tax}</dd>
-          </div>
-          <div>
-            <dt>Total estimado</dt>
-            <dd>L. {preview.total}</dd>
-          </div>
-        </dl>
-        <p className="muted">El backend recalcula y guarda los valores finales al emitir.</p>
-        {!cashSession ? (
-          <div className="error-summary" role="alert">
-            No hay caja abierta. Abra caja antes de emitir y cobrar; las facturas pendientes no son parte del flujo principal.
-            <div className="mt-3">
-              <Link className="secondary-button inline-flex min-h-10 items-center rounded-md px-4 py-2 font-semibold" to="/cashbox">
-                Abrir caja
-              </Link>
-            </div>
-          </div>
-        ) : null}
+                  return (
+                    <div className="selected-item" key={`${item.service.id}-${index}`}>
+                      <div>
+                        <strong>{item.service.name}</strong>
+                        <Badge variant="outline">L. {item.service.price}</Badge>
+                      </div>
+                      <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
+                        Cantidad
+                        <Input
+                          value={item.quantity}
+                          onChange={(event) => updateItem(index, { ...item, quantity: event.target.value })}
+                        />
+                      </label>
+                      {canApplyDialysisRule ? (
+                        <label className="checkbox-row">
+                          <input
+                            type="checkbox"
+                            checked={item.dialysisPrescription}
+                            onChange={(event) =>
+                              updateItem(index, { ...item, dialysisPrescription: event.target.checked })
+                            }
+                          />
+                          Receta de dialisis
+                        </label>
+                      ) : null}
+                      <Button type="button" variant="secondary" size="sm" onClick={() => removeItem(index)}>
+                        Quitar
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <dl className="totals-list">
+              <div>
+                <dt>Subtotal estimado</dt>
+                <dd>L. {preview.subtotal}</dd>
+              </div>
+              <div>
+                <dt>ISV estimado</dt>
+                <dd>L. {preview.tax}</dd>
+              </div>
+              <div className="border-t border-border pt-2 text-lg">
+                <dt>Total estimado</dt>
+                <dd>L. {preview.total}</dd>
+              </div>
+            </dl>
+            <p className="muted">El backend recalcula y guarda los valores finales al emitir.</p>
+          </CardContent>
+        </Card>
 
         {issuedInvoice ? (
-          <div className="issued-box" role="status">
-            <h2>Factura emitida</h2>
-            <p>{issuedInvoice.invoice_number}</p>
-            <strong>Total L. {issuedInvoice.total}</strong>
-            <span>Estado: {issuedInvoice.status}</span>
-            <span>Saldo L. {issuedInvoice.balance_due}</span>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardDescription>Documento emitido</CardDescription>
+              <CardTitle>{issuedInvoice.invoice_number}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <div className="issued-box" role="status">
+                <strong>Total L. {issuedInvoice.total}</strong>
+                <span>Paciente: {issuedInvoice.patient_name}</span>
+                <span>Estado: {issuedInvoice.status}</span>
+                <span>Saldo L. {issuedInvoice.balance_due}</span>
+              </div>
+
+              <form className="payment-form" onSubmit={requestPaymentConfirmation}>
+                <h2>Registrar pago</h2>
+                {!cashSession ? (
+                  <p className="notice-inline" role="alert">
+                    Abra caja antes de cobrar. <Link to="/cashbox">Ir a caja</Link>
+                  </p>
+                ) : null}
+                <label>
+                  Metodo de pago
+                  <Select
+                    value={paymentMethod}
+                    onChange={(event) => setPaymentMethod(event.target.value as Payment['method'])}
+                  >
+                    <option value="cash">Efectivo</option>
+                    <option value="transfer">Transferencia</option>
+                    <option value="card">Tarjeta</option>
+                    <option value="other">Otro</option>
+                  </Select>
+                </label>
+                <label>
+                  Monto
+                  <Input value={paymentAmount} onChange={(event) => setPaymentAmount(event.target.value)} />
+                </label>
+                <Button type="submit" disabled={!cashSession || paying || issuedInvoice.status === 'paid'}>
+                  {paying ? 'Cobrando...' : 'Cobrar'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
         ) : null}
 
-        {issuedInvoice ? (
-          <form className="payment-form" onSubmit={requestPaymentConfirmation}>
-            <h2>Registrar pago</h2>
-            {!cashSession ? (
-              <p className="notice-inline" role="alert">
-                Abra caja antes de cobrar. <Link to="/cashbox">Ir a caja</Link>
-              </p>
-            ) : null}
-            <label>
-              Metodo de pago
-              <select
-                value={paymentMethod}
-                onChange={(event) => setPaymentMethod(event.target.value as Payment['method'])}
-              >
-                <option value="cash">Efectivo</option>
-                <option value="transfer">Transferencia</option>
-                <option value="card">Tarjeta</option>
-                <option value="other">Otro</option>
-              </select>
-            </label>
-            <label>
-              Monto
-              <input value={paymentAmount} onChange={(event) => setPaymentAmount(event.target.value)} />
-            </label>
-            <button type="submit" disabled={!cashSession || paying || issuedInvoice.status === 'paid'}>
-              {paying ? 'Cobrando...' : 'Cobrar'}
-            </button>
-          </form>
-        ) : null}
-
-        {receipt ? (
-          <ReceiptPreview receipt={receipt} onWidthChange={loadReceipt} />
-        ) : null}
+        {receipt ? <ReceiptPreview receipt={receipt} onWidthChange={loadReceipt} /> : null}
       </aside>
 
       <ConfirmDialog

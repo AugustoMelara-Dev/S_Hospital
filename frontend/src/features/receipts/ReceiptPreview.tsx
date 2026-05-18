@@ -1,3 +1,7 @@
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Select } from '../../components/ui/select';
 import { type ReceiptData } from '../../lib/api';
 
 type ReceiptPreviewProps = {
@@ -20,55 +24,74 @@ export function ReceiptPreview({ receipt, onWidthChange, onPrint }: ReceiptPrevi
   }
 
   return (
-    <section className="receipt-preview-panel" aria-labelledby="receipt-title">
-      <div className="section-heading print-hidden">
+    <Card className="receipt-preview-panel" aria-labelledby="receipt-title">
+      <CardHeader className="print-hidden md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="app-kicker">Documento fiscal</p>
-          <h2 id="receipt-title">Preview termico</h2>
+          <CardDescription>Documento fiscal</CardDescription>
+          <CardTitle id="receipt-title">Preview termico</CardTitle>
         </div>
         <div className="receipt-actions">
-          <select
+          <Select
             aria-label="Ancho del recibo"
             value={receipt.width}
             onChange={(event) => onWidthChange(event.target.value as ReceiptData['width'])}
           >
             <option value="80mm">80mm</option>
             <option value="58mm">58mm</option>
-          </select>
-          <button type="button" onClick={printReceipt}>
+          </Select>
+          <Button type="button" onClick={printReceipt}>
             Imprimir
-          </button>
+          </Button>
         </div>
-      </div>
+      </CardHeader>
 
-      <article className={`thermal-receipt receipt-${receipt.width}`} aria-label="Recibo termico">
+      <CardContent className="flex justify-center">
+        <article className={`thermal-receipt receipt-${receipt.width}`} aria-label="Recibo termico">
         <header>
           <strong>{receipt.hospital.name}</strong>
-          {receipt.hospital.rtn ? <span>RTN {receipt.hospital.rtn}</span> : null}
-          {receipt.fiscal.cai ? <span>CAI {receipt.fiscal.cai}</span> : null}
-          {receipt.fiscal.authorized_range ? <span>Rango {receipt.fiscal.authorized_range}</span> : null}
-          {receipt.fiscal.valid_until ? (
-            <span>Fecha limite {formatDate(receipt.fiscal.valid_until)}</span>
-          ) : null}
+          <span>Tocoa, Colon, Honduras</span>
+          {receipt.hospital.rtn ? <span>RTN: {receipt.hospital.rtn}</span> : null}
+          {receipt.fiscal.valid_until ? <span>Fecha limite {formatDate(receipt.fiscal.valid_until)}</span> : null}
         </header>
 
-        <div className="receipt-lines">
-          <span>Factura {receipt.invoice.invoice_number}</span>
-          <span>Fecha {formatDate(receipt.invoice.issued_at)}</span>
-          <span>Cajero {receipt.invoice.cashier ?? 'No registrado'}</span>
-          <span>Paciente {receipt.invoice.patient_name}</span>
+        <div className="receipt-rule" aria-hidden="true" />
+        <h3>FACTURA / RECIBO</h3>
+
+        <div className="receipt-meta-grid">
+          <span>No.</span>
+          <strong>{receipt.invoice.invoice_number}</strong>
+          <span>Fecha</span>
+          <strong>{formatDate(receipt.invoice.issued_at)}</strong>
+          <span>Paciente</span>
+          <strong>{receipt.invoice.patient_name}</strong>
+          <span>Pago</span>
+          <strong>{paymentLabel(receipt.payments[receipt.payments.length - 1]?.method)}</strong>
+          <span>CAI</span>
+          <strong>{receipt.fiscal.cai ?? 'PENDIENTE-CONFIGURAR'}</strong>
         </div>
+
+        <div className="receipt-rule" aria-hidden="true" />
+        <div className="receipt-table-head">
+          <strong>Servicio</strong>
+          <strong>Valor</strong>
+        </div>
+        <div className="receipt-rule solid" aria-hidden="true" />
 
         <div className="receipt-items">
           {receipt.items.map((item, index) => (
             <div key={`${item.service_name}-${index}`}>
-              <span>{item.quantity} x {item.service_name}</span>
+              <span>
+                {item.category_name ? <small>{item.category_name}</small> : null}
+                {item.service_name}
+                {Number(item.quantity) !== 1 ? ` x ${item.quantity}` : ''}
+                {item.special_rule_applied ? <Badge variant="secondary">Regla aplicada</Badge> : null}
+              </span>
               <strong>L. {item.line_total}</strong>
-              {item.special_rule_applied ? <small>Regla aplicada</small> : null}
             </div>
           ))}
         </div>
 
+        <div className="receipt-rule solid" aria-hidden="true" />
         <dl className="receipt-totals">
           <div>
             <dt>Subtotal</dt>
@@ -82,26 +105,17 @@ export function ReceiptPreview({ receipt, onWidthChange, onPrint }: ReceiptPrevi
             <dt>Total</dt>
             <dd>L. {receipt.invoice.total}</dd>
           </div>
-          <div>
-            <dt>Pagado</dt>
-            <dd>L. {receipt.invoice.paid_amount}</dd>
-          </div>
-          <div>
-            <dt>Saldo</dt>
-            <dd>L. {receipt.invoice.balance_due}</dd>
-          </div>
         </dl>
 
+        <div className="receipt-rule" aria-hidden="true" />
         <footer>
-          {receipt.payments.map((payment) => (
-            <span key={payment.id}>
-              {payment.method} L. {payment.amount}
-            </span>
-          ))}
-          <strong>Gracias por su visita</strong>
+          <span>Gracias por su visita</span>
+          <span>Conserve su factura</span>
+          <span>La factura es beneficio de todos, exigala.</span>
         </footer>
-      </article>
-    </section>
+        </article>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -112,4 +126,15 @@ function formatDate(value: string): string {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(new Date(normalizedValue));
+}
+
+function paymentLabel(method?: ReceiptData['payments'][number]['method']): string {
+  const labels: Record<ReceiptData['payments'][number]['method'], string> = {
+    cash: 'Efectivo',
+    transfer: 'Transferencia',
+    card: 'Tarjeta',
+    other: 'Otro',
+  };
+
+  return method ? labels[method] : 'Pendiente';
 }

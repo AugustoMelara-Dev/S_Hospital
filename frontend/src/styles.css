@@ -337,12 +337,47 @@
   .thermal-receipt {
     width: 80mm;
     page: receipt-80;
-    @apply max-w-full border border-dashed border-muted-foreground bg-white p-3 font-mono text-xs leading-snug text-slate-950;
+    @apply max-w-full border border-dashed border-muted-foreground bg-white p-3 font-mono text-xs leading-snug text-slate-950 shadow-sm;
   }
 
   .receipt-58mm {
     width: 58mm;
     page: receipt-58;
+  }
+
+  .thermal-receipt header,
+  .thermal-receipt footer {
+    @apply flex flex-col items-center text-center;
+  }
+
+  .thermal-receipt header strong {
+    @apply text-sm;
+  }
+
+  .thermal-receipt h3 {
+    @apply my-2 text-center text-sm font-bold tracking-normal;
+  }
+
+  .receipt-rule {
+    @apply my-2 border-t border-dashed border-slate-950;
+  }
+
+  .receipt-rule.solid {
+    @apply border-solid;
+  }
+
+  .receipt-meta-grid,
+  .receipt-table-head {
+    @apply grid grid-cols-[auto_1fr] gap-x-3 gap-y-1;
+  }
+
+  .receipt-meta-grid strong,
+  .receipt-table-head strong:last-child {
+    @apply text-right font-normal;
+  }
+
+  .receipt-table-head {
+    @apply grid-cols-[1fr_auto] font-bold;
   }
 
   body[data-receipt-width="80mm"] .thermal-receipt {
