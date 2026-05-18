@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 import type { Category, Service } from '../../../lib/api';
 
 const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
+const SERVICE_RESULT_LIMIT = 24;
 
 type ServiceSearchProps = {
   categories: Category[];
@@ -54,6 +55,9 @@ export function ServiceSearch({
 
     return matchesCategory && matchesSearch ? service : null;
   });
+  const hasIntent = Boolean(search.trim()) || (selectedCategoryId !== undefined && selectedCategoryId !== 'all');
+  const visibleServices = hasIntent ? filteredServices.slice(0, SERVICE_RESULT_LIMIT) : [];
+  const hiddenCount = Math.max(0, filteredServices.length - visibleServices.length);
 
   return (
     <div className="flex flex-col gap-4 lg:h-full lg:overflow-hidden">
@@ -107,7 +111,7 @@ export function ServiceSearch({
 
       <div className="flex-1 min-h-0 overflow-y-auto pr-1">
         <div className="flex items-center justify-between mb-2">
-          <Label>Servicios ({filteredServices.length})</Label>
+          <Label>Servicios ({hasIntent ? filteredServices.length : 0})</Label>
           <Button
             type="button"
             variant="ghost"
@@ -125,13 +129,21 @@ export function ServiceSearch({
           <div className="flex items-center justify-center py-8 text-muted-foreground">
             <span>Cargando servicios...</span>
           </div>
+        ) : !hasIntent ? (
+          <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-muted-foreground">
+            <span className="font-medium text-foreground">Busque, escanee o elija una categoria</span>
+            <span className="max-w-md text-sm">
+              El catalogo completo tiene {services.length} servicios. Use nombre, categoria o codigo para mantener el POS rapido durante caja.
+            </span>
+          </div>
         ) : filteredServices.length === 0 ? (
           <div className="flex items-center justify-center py-8 text-muted-foreground">
-            {search || selectedCategoryId !== undefined ? 'Sin servicios encontrados' : 'Seleccione una categoria o escriba para buscar'}
+            Sin servicios encontrados
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {filteredServices.map((service) => {
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {visibleServices.map((service) => {
               const isErythropoietin = service.special_rule_code === ERYTHROPOIETIN_RULE;
               return (
                 <button
@@ -168,7 +180,13 @@ export function ServiceSearch({
                 </button>
               );
             })}
-          </div>
+            </div>
+            {hiddenCount > 0 && (
+              <p className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
+                Mostrando {visibleServices.length} resultados. Afine la busqueda para ver los {hiddenCount} restantes.
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>

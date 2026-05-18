@@ -5,9 +5,10 @@ type PermissionGateProps = {
   allowed: boolean;
   children: ReactNode;
   fallback?: ReactNode;
+  reason?: string;
 };
 
-export function PermissionGate({ allowed, children, fallback }: PermissionGateProps) {
+export function PermissionGate({ allowed, children, fallback, reason }: PermissionGateProps) {
   if (allowed) {
     return <>{children}</>;
   }
@@ -17,7 +18,7 @@ export function PermissionGate({ allowed, children, fallback }: PermissionGatePr
       {fallback ?? (
         <EmptyState
           title="Sin permisos"
-          description="Su usuario no tiene permisos para abrir este modulo."
+          description={reason ?? 'Su usuario no tiene permisos para abrir este modulo.'}
         />
       )}
     </>

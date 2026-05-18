@@ -15,6 +15,7 @@ import { InvoiceSuccess } from './components/InvoiceSuccess';
 import { type Category, type CashSession, type Invoice, type Payment, type ReceiptData, type Service, apiClient, userSafeErrorMessage } from '../../lib/api';
 
 const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
+const POS_SERVICE_PAGE_SIZE = 24;
 
 type NewInvoiceViewProps = {
   cashSession: CashSession | null;
@@ -157,7 +158,7 @@ export function NewInvoiceView({
       const [currentCashSession, nextCategories, nextServices] = await Promise.all([
         apiClient.getCurrentCashSession(),
         apiClient.getCategories(true),
-        apiClient.getServices({ active: true, perPage: 150 }),
+        apiClient.getServices({ active: true, perPage: POS_SERVICE_PAGE_SIZE }),
       ]);
       setLoadedCashSession(currentCashSession);
       onCashSessionChange?.(currentCashSession);
@@ -178,7 +179,7 @@ export function NewInvoiceView({
         active: true,
         search: search.trim() || undefined,
         categoryId: selectedCategoryId && selectedCategoryId !== 'all' ? selectedCategoryId : undefined,
-        perPage: 150,
+        perPage: POS_SERVICE_PAGE_SIZE,
       });
       setServices(Array.isArray(nextServices) ? nextServices : []);
     } catch (error) {

@@ -10,7 +10,8 @@
     "test": "vitest run",
     "build": "tsc --noEmit && vite build",
     "e2e": "playwright test",
-    "smoke:real": "playwright test --config=playwright.real.config.ts"
+    "smoke:real": "playwright test --config=playwright.real.config.ts",
+    "visual:smoke": "node ../qa/visual-smoke/phase-12-visual-smoke.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

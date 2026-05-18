@@ -59,7 +59,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('80mm');
-  const [reprintReason, setReprintReason] = useState('');
   const [voidReason, setVoidReason] = useState('');
   const [confirmingVoid, setConfirmingVoid] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -494,16 +493,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                 </NativeSelect>
               </div>
 
-              <div className="flex items-center gap-2 flex-1">
-                <label htmlFor="reprint-reason" className="text-sm font-semibold">Motivo</label>
-                <Input
-                  id="reprint-reason"
-                  placeholder="Motivo de reimpresión (opcional)"
-                  value={reprintReason}
-                  onChange={(e) => setReprintReason(e.target.value)}
-                  className="flex-1"
-                />
-              </div>
             </div>
 
             <ReceiptPreview

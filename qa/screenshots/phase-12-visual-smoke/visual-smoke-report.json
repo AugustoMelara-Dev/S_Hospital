@@ -3,6 +3,7 @@
   "user": "admin.demo",
   "role": "admin",
   "environment": "local-real",
+  "mutationMode": "local-admin-demo-default",
   "screenshots": [
     {
       "name": "dashboard",
@@ -60,7 +61,7 @@
       "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\fiscal-settings.png"
     }
   ],
-  "lastInvoiceNumber": "000-001-01-00000034",
+  "lastInvoiceNumber": "000-001-01-00000038",
   "consoleByScreen": {
     "login": [],
     "dashboard": [],

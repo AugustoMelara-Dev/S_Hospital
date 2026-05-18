@@ -367,6 +367,17 @@ class ReportsTest extends TestCase
         $this->assertStringContainsString($cashier->username, $csv);
     }
 
+    public function test_report_export_guest_receives_json_unauthenticated_for_download_accept_header(): void
+    {
+        $date = now()->toDateString();
+
+        $this
+            ->withHeaders(['Accept' => 'application/json, application/octet-stream, text/csv'])
+            ->get("/api/reports/export?date_from={$date}&date_to={$date}")
+            ->assertUnauthorized()
+            ->assertJsonPath('message', 'Unauthenticated.');
+    }
+
     public function test_operations_and_export_hide_backup_metadata_without_backup_permission(): void
     {
         $this->seedBillingBase();

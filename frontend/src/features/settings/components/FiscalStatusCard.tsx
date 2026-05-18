@@ -9,14 +9,34 @@ interface FiscalStatusCardProps {
 
 export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) {
   const isHospitalConfigured = Boolean(settings?.hospital_name?.trim());
-  const isSequenceConfigured = Boolean(
-    sequence?.cai?.trim() &&
-    sequence?.prefix?.trim() &&
+  const hasRtn = Boolean(settings?.rtn?.trim());
+  const hasReceiptWidth = settings?.receipt_width === '80mm' || settings?.receipt_width === '58mm';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const validUntil = sequence?.valid_until ? new Date(sequence.valid_until) : null;
+  validUntil?.setHours(0, 0, 0, 0);
+  const nextNumber = sequence?.current_number != null ? Number(sequence.current_number) + 1 : null;
+  const isSequenceConfigured = Boolean(sequence?.cai?.trim() && sequence?.prefix?.trim());
+  const isSequenceActive = sequence?.active === true;
+  const isDateValid = Boolean(validUntil && validUntil >= today);
+  const isRangeValid = Boolean(
     sequence?.min_number != null &&
-    sequence?.max_number != null
+      sequence?.max_number != null &&
+      nextNumber != null &&
+      nextNumber >= Number(sequence.min_number) &&
+      nextNumber <= Number(sequence.max_number),
   );
 
-  const isConfigured = isHospitalConfigured && isSequenceConfigured;
+  const blockers = [
+    !isHospitalConfigured ? 'nombre del hospital' : null,
+    !hasRtn ? 'RTN del hospital' : null,
+    !hasReceiptWidth ? 'ancho de recibo' : null,
+    !isSequenceConfigured ? 'CAI y prefijo fiscal' : null,
+    !isSequenceActive ? 'secuencia fiscal activa' : null,
+    !isDateValid ? 'fecha limite vigente' : null,
+    !isRangeValid ? 'siguiente correlativo dentro del rango autorizado' : null,
+  ].filter(Boolean);
+  const isConfigured = blockers.length === 0;
 
   return (
     <Card className={isConfigured ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}>
@@ -31,23 +51,18 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
           </div>
           <div>
             <h3 className="font-semibold">
-              {isConfigured ? 'Configuración Completa' : 'Configuración Incompleta'}
+              {isConfigured ? 'Configuracion completa' : 'Configuracion incompleta'}
             </h3>
             <p className="text-sm text-muted-foreground">
               {isConfigured
-                ? 'El sistema está listo para emitir facturas.'
-                : 'Complete la configuración fiscal para poder emitir facturas.'}
+                ? 'El sistema esta listo para emitir facturas en la demo.'
+                : 'Complete los datos fiscales antes de demostrar emision de facturas.'}
             </p>
           </div>
         </div>
-        {!isHospitalConfigured && (
+        {blockers.length > 0 && (
           <p className="mt-3 text-sm text-amber-700">
-            Faltan: nombre del hospital
-          </p>
-        )}
-        {!isSequenceConfigured && (
-          <p className="mt-1 text-sm text-amber-700">
-            Faltan: CAI, prefijo o rango de la secuencia fiscal
+            Faltan o requieren revision: {blockers.join(', ')}.
           </p>
         )}
       </CardContent>

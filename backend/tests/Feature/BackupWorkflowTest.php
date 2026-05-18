@@ -169,6 +169,18 @@ class BackupWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_backup_download_guest_receives_json_unauthenticated_for_download_accept_header(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $backup = $this->successfulBackupLog();
+
+        $this
+            ->withHeaders(['Accept' => 'application/json, application/octet-stream, text/csv'])
+            ->get("/api/backups/{$backup->id}/download")
+            ->assertUnauthorized()
+            ->assertJsonPath('message', 'Unauthenticated.');
+    }
+
     public function test_download_blocks_path_traversal_and_failed_logs(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

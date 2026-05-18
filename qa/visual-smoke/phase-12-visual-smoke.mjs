@@ -9,6 +9,12 @@ const screenshotDir = path.join(root, 'screenshots', 'phase-12-visual-smoke');
 const baseUrl = process.env.VISUAL_SMOKE_BASE_URL ?? 'http://127.0.0.1:5173';
 const user = process.env.VISUAL_SMOKE_USER ?? 'admin.demo';
 const password = process.env.VISUAL_SMOKE_PASSWORD ?? 'Password123!';
+const isLocalDemoTarget = baseUrl === 'http://127.0.0.1:8000' && user === 'admin.demo';
+const allowMutations = process.env.VISUAL_SMOKE_ALLOW_MUTATIONS === '1' || isLocalDemoTarget;
+
+if (!allowMutations) {
+  throw new Error('Visual smoke creates invoices/payments. Set VISUAL_SMOKE_ALLOW_MUTATIONS=1 or use the local admin.demo target.');
+}
 
 const routeScreens = {
   dashboard: '/dashboard',
@@ -62,6 +68,15 @@ async function waitSettled(page) {
 
 async function waitServicesReady(page) {
   await page.getByText(/cargando servicios/i).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+}
+
+async function cartItemCount(page) {
+  const emptyCartVisible = await page.getByText(/no hay servicios agregados/i).isVisible().catch(() => false);
+  if (emptyCartVisible) return 0;
+
+  const countText = await page.locator('#nueva-factura').getByText(/^\d+$/).last().textContent().catch(() => '');
+  const parsed = Number.parseInt(countText || '1', 10);
+  return Number.isFinite(parsed) ? parsed : 1;
 }
 
 async function clickFirstVisible(page, candidates, options = {}) {
@@ -279,7 +294,7 @@ async function main() {
       await page.getByRole('button', { name: /escanear/i }).click();
       await waitSettled(page);
       await waitServicesReady(page);
-      await page.getByRole('button', { name: /emitir factura|agregar servicios/i }).waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+      await page.getByRole('button', { name: /emitir factura/i }).waitFor({ state: 'visible', timeout: 15000 });
     } else {
       const searchInput = page.getByLabel(/buscar por nombre/i);
       await searchInput.fill(serviceQuery);
@@ -301,6 +316,9 @@ async function main() {
         }
       }
     }
+    if ((await cartItemCount(page)) < 1) {
+      findings.push(`billing-new-with-services: scanner/busqueda no agrego ${serviceName} al carrito.`);
+    }
     await screenshot(page, 'billing-new-with-services');
 
     const emitEnabledWithoutPatientAfterService = await isEmitEnabled(page);
@@ -311,7 +329,7 @@ async function main() {
     await patientInput.fill(`Paciente Smoke ${Date.now()}`);
     await waitSettled(page);
     await waitServicesReady(page);
-    await page.getByRole('button', { name: /emitir factura/i }).waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+    await page.getByRole('button', { name: /emitir factura/i }).waitFor({ state: 'visible', timeout: 15000 });
 
     const emitButton = page.getByRole('button', { name: /emitir factura/i });
     const emitEnabledWithPatient = await isEmitEnabled(page);
@@ -414,6 +432,7 @@ async function main() {
       user,
       role: 'admin',
       environment: 'local-real',
+      mutationMode: process.env.VISUAL_SMOKE_ALLOW_MUTATIONS === '1' ? 'explicit' : 'local-admin-demo-default',
       screenshots: Object.keys(routeScreens).map((name) => ({
         name,
         route: routeScreens[name],

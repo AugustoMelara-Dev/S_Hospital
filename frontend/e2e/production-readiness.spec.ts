@@ -403,6 +403,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
 
   await page.getByRole('link', { name: /nueva factura/i }).click();
   await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
+  await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
   await expect(page.getByText(/Total:\s*L\.\s*28\.75/)).toBeVisible();
   await page.getByRole('button', { name: /emitir factura/i }).click();
@@ -420,6 +421,7 @@ await expect(page.getByRole('heading', { name: /preview t.rmico/i })).toBeVisibl
 
   await page.getByRole('link', { name: /nueva factura/i }).click();
   await page.getByLabel(/nombre del paciente/i).fill('Jose Perez');
+  await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
   await page.getByLabel(/receta de dialisis/i).click();
   await expect(page.getByLabel(/receta de dialisis/i)).toHaveAttribute('aria-checked', 'true');

@@ -12,7 +12,7 @@ export class ApiError extends Error {
 }
 
 export function isSessionExpiredError(error: unknown): boolean {
-  return error instanceof ApiError && error.status === 401;
+  return error instanceof ApiError && (error.status === 401 || error.status === 419);
 }
 
 export function userSafeErrorMessage(error: unknown, fallback: string): string {
@@ -85,9 +85,18 @@ export const apiClient = {
   },
 
   async csrf(): Promise<void> {
-    await fetch(this.url('/sanctum/csrf-cookie'), {
+    const response = await fetch(this.url('/sanctum/csrf-cookie'), {
       credentials: 'include',
     });
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 419) {
+        sessionExpiredHandler?.();
+        throw new ApiError('Sesion vencida. Vuelva a iniciar sesion para continuar.', response.status);
+      }
+
+      throw new ApiError('No se pudo preparar la sesion segura. Revise el servidor local e intente de nuevo.', response.status);
+    }
   },
 
   async request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -158,7 +167,7 @@ export const apiClient = {
     const response = await fetch(this.url(path), {
       credentials: 'include',
       headers: {
-        Accept: 'application/octet-stream, text/csv, application/json',
+        Accept: 'application/json, application/octet-stream, text/csv',
       },
     });
 
@@ -172,7 +181,13 @@ export const apiClient = {
         throw new ApiError('No tiene permiso para esta accion.', response.status);
       }
 
-      throw new ApiError(`HTTP ${response.status}`, response.status);
+      if (response.status === 419) {
+        sessionExpiredHandler?.();
+        throw new ApiError('La sesion expiro. Actualice la pantalla e intente de nuevo.', response.status);
+      }
+
+      const error = (await response.json().catch(() => null)) as { message?: string } | null;
+      throw new ApiError(error?.message ?? `HTTP ${response.status}`, response.status);
     }
 
     return response.blob();

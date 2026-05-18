@@ -367,6 +367,15 @@ class ServiceCatalogTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['scan_code', 'qr_code']);
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", ['scan_code' => 'PARTIAL-SAME-CODE'])
+            ->assertOk();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", ['qr_code' => 'PARTIAL-SAME-CODE'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('qr_code');
     }
 
     public function test_price_change_and_active_change_are_audited(): void

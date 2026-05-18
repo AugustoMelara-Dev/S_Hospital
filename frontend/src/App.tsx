@@ -70,7 +70,6 @@ function HospitalApp() {
       onLogout={session.handleLogout}
       status={session.status}
       user={session.user}
-      topbarVariant="minimal"
     >
       {!session.hasAnyOperationalPermission ? (
         <EmptyState
