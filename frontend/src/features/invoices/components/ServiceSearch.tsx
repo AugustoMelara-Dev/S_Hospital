@@ -1,0 +1,176 @@
+import { Search } from 'lucide-react';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { Label } from '../../../components/ui/label';
+import { Tabs, TabsList, TabsTrigger } from '../../../components/ui/tabs';
+import type { Category, Service } from '../../../lib/api';
+
+const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
+
+type ServiceSearchProps = {
+  categories: Category[];
+  services: Service[];
+  selectedCategoryId: number | 'all' | undefined;
+  onCategoryChange: (id: number | 'all' | undefined) => void;
+  search: string;
+  onSearchChange: (value: string) => void;
+  scanCode: string;
+  onScanCodeChange: (value: string) => void;
+  onAddService: (service: Service) => void;
+  onAddByScanCode: () => void;
+  loading?: boolean;
+};
+
+export function ServiceSearch({
+  categories,
+  services,
+  selectedCategoryId,
+  onCategoryChange,
+  search,
+  onSearchChange,
+  scanCode,
+  onScanCodeChange,
+  onAddService,
+  onAddByScanCode,
+  loading,
+}: ServiceSearchProps) {
+  const filteredServices = services.filter((service) => {
+    const matchesCategory =
+      selectedCategoryId === undefined ||
+      selectedCategoryId === 'all' ||
+      service.category_id === selectedCategoryId;
+
+    if (!search.trim()) return matchesCategory ? service : null;
+
+    const needle = search.toLowerCase().trim();
+    const haystack = [
+      service.name,
+      service.category?.name ?? '',
+      service.scan_code ?? '',
+      service.barcode ?? '',
+      service.qr_code ?? '',
+    ];
+    const matchesSearch = haystack.some((h) => h.toLowerCase().includes(needle));
+
+    return matchesCategory && matchesSearch ? service : null;
+  });
+
+  return (
+    <div className="flex flex-col gap-4 lg:h-full lg:overflow-hidden">
+      <div className="flex flex-col gap-3 lg:shrink-0">
+        <div>
+          <Label className="mb-1.5 block">Categoria</Label>
+          <Tabs value={selectedCategoryId === undefined ? 'all' : String(selectedCategoryId)} onValueChange={(v) => onCategoryChange(v === 'all' ? 'all' : Number(v))}>
+            <TabsList className="flex flex-wrap h-auto p-1 gap-1">
+              <TabsTrigger value="all">Todos</TabsTrigger>
+              {categories.map((cat) => (
+                <TabsTrigger key={cat.id} value={String(cat.id)}>
+                  {cat.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              aria-label="Buscar por nombre, categoria o codigo"
+              placeholder="Buscar por nombre o codigo..."
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex gap-2">
+            <div className="relative w-36">
+              <Input
+                aria-label="Scanner USB o codigo manual"
+                placeholder="Codigo"
+                value={scanCode}
+                onChange={(e) => onScanCodeChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    onAddByScanCode();
+                  }
+                }}
+              />
+            </div>
+            <Button type="button" variant="secondary" size="sm" onClick={() => onAddByScanCode()}>
+              Escanear
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+        <div className="flex items-center justify-between mb-2">
+          <Label>Servicios ({filteredServices.length})</Label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onSearchChange('');
+              onCategoryChange(undefined);
+            }}
+          >
+            Limpiar
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-8 text-muted-foreground">
+            <span>Cargando servicios...</span>
+          </div>
+        ) : filteredServices.length === 0 ? (
+          <div className="flex items-center justify-center py-8 text-muted-foreground">
+            {search || selectedCategoryId !== undefined ? 'Sin servicios encontrados' : 'Seleccione una categoria o escriba para buscar'}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {filteredServices.map((service) => {
+              const isErythropoietin = service.special_rule_code === ERYTHROPOIETIN_RULE;
+              return (
+                <button
+                  key={service.id}
+                  type="button"
+                  className="group relative flex items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-all duration-150 hover:border-primary/40 hover:bg-accent/40 hover:scale-[1.02] hover:shadow-sm active:scale-[0.99] disabled:opacity-50 disabled:hover:scale-100 disabled:hover:bg-card disabled:hover:border-border disabled:hover:shadow-none cursor-pointer"
+                  onClick={() => onAddService(service)}
+                >
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <p className="font-medium text-sm leading-tight truncate pr-16">{service.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                        {service.category?.name ?? 'Sin categoria'}
+                      </span>
+                      {service.scan_code && (
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          {service.scan_code}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="absolute right-3 top-3">
+                    <span className="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-1 text-sm font-semibold text-emerald-700">
+                      L. {service.price}
+                    </span>
+                  </div>
+                  {isErythropoietin && (
+                    <div className="absolute bottom-1 right-3">
+                      <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        Con receta dialisis = Gratis
+                      </span>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('backup_logs', function (Blueprint $table) {
+            $table->id();
+            $table->string('filename');
+            $table->string('path')->nullable();
+            $table->string('disk')->default('local');
+            $table->unsignedBigInteger('size_bytes')->nullable();
+            $table->string('checksum_sha256', 64)->nullable();
+            $table->enum('status', ['pending', 'success', 'failed'])->default('pending');
+            $table->enum('type', ['manual', 'scheduled'])->default('manual');
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('completed_at')->nullable();
+            $table->text('error_message')->nullable();
+            $table->timestamps();
+
+            $table->index(['status', 'created_at']);
+            $table->index(['type', 'created_at']);
+            $table->index('created_by');
+            $table->index('created_at');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('backup_logs');
+    }
+};

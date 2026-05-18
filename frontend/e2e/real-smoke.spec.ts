@@ -1,0 +1,130 @@
+import { expect, test, type Page } from '@playwright/test';
+
+const baseUrl = process.env.E2E_REAL_BASE_URL;
+const login = process.env.E2E_REAL_LOGIN;
+const password = process.env.E2E_REAL_PASSWORD;
+const realBaseUrl = baseUrl?.replace(/\/$/, '');
+const allowMutations = process.env.E2E_REAL_ALLOW_MUTATIONS === '1';
+const serviceQuery = process.env.E2E_REAL_SERVICE_QUERY ?? 'Glucosa';
+
+test.beforeAll(() => {
+  const missing = [
+    ['E2E_REAL_BASE_URL', baseUrl],
+    ['E2E_REAL_LOGIN', login],
+    ['E2E_REAL_PASSWORD', password],
+  ]
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
+
+  if (missing.length > 0) {
+    throw new Error(`Real smoke requires ${missing.join(', ')}.`);
+  }
+});
+
+test('real hospital workflow surfaces load without console errors', async ({ page }) => {
+  const consoleIssues: string[] = [];
+
+  captureConsoleIssues(page, consoleIssues);
+
+  await expect((await page.request.get(`${realBaseUrl}/up`)).ok()).toBe(true);
+  await expect((await page.request.get(`${realBaseUrl}/verify-email`)).ok()).toBe(true);
+
+  await loginToRealApp(page);
+
+  const links = [
+    /dashboard/i,
+    /nueva factura/i,
+    /caja/i,
+    /catalogo|catalogo/i,
+    /historial/i,
+    /reportes/i,
+    /backups/i,
+  ];
+
+  for (const linkName of links) {
+    const link = page.getByRole('link', { name: linkName }).first();
+    if (await link.isVisible().catch(() => false)) {
+      await link.click();
+      await page.waitForLoadState('networkidle');
+    }
+  }
+
+  await expect.poll(() => consoleIssues, {
+    message: consoleIssues.join('\n') || 'No console issues captured.',
+  }).toHaveLength(0);
+});
+
+test('real cashier can issue and collect an invoice against Laravel DB', async ({ page }) => {
+  test.skip(!allowMutations, 'Set E2E_REAL_ALLOW_MUTATIONS=1 to create invoices and payments in a real DB.');
+
+  const consoleIssues: string[] = [];
+  const patientName = `Smoke Real ${Date.now()}`;
+
+  captureConsoleIssues(page, consoleIssues);
+  await loginToRealApp(page);
+
+  await page.getByRole('link', { name: /caja/i }).click();
+  await expect(page.getByRole('heading', { name: /^caja$/i })).toBeVisible();
+  const openCashButton = page.getByRole('button', { name: /abrir caja/i });
+  if (await openCashButton.isVisible().catch(() => false)) {
+    await openCashButton.click();
+    await expect(page.getByText('Caja abierta', { exact: true })).toBeVisible();
+  }
+
+  await page.getByRole('link', { name: /nueva factura/i }).click();
+  await expect(page.getByRole('heading', { name: /nueva factura/i })).toBeVisible();
+  await page.getByLabel(/buscar por nombre/i).fill(serviceQuery);
+  await page.getByRole('button', { name: new RegExp(serviceQuery, 'i') }).first().click();
+  await page.getByRole('button', { name: /emitir factura/i }).click();
+  await expect(page.getByRole('alert').filter({ hasText: /falta el nombre del paciente/i })).toBeVisible();
+
+  await page.getByLabel(/nombre del paciente/i).fill(patientName);
+  await page.getByRole('button', { name: /emitir factura/i }).click();
+  await page.getByRole('button', { name: /confirmar emision/i }).click();
+  await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
+
+  await page.getByRole('button', { name: /^cobrar$/i }).click();
+  await page.getByRole('button', { name: /confirmar cobro/i }).click();
+  await expect(page.getByRole('heading', { name: /preview termico/i })).toBeVisible();
+
+  await page.getByRole('link', { name: /historial/i }).click();
+  await page.getByLabel(/paciente/i).fill(patientName);
+  await page.getByRole('button', { name: /filtrar/i }).click();
+  await expect(page.getByText(patientName)).toBeVisible();
+
+  await page.getByRole('link', { name: /reportes/i }).click();
+  await page.getByRole('button', { name: /ver rango/i }).click();
+  await expect(page.getByRole('heading', { name: /ingresos por rango/i })).toBeVisible();
+  await expect(page.getByText(/total cobrado/i)).toBeVisible();
+
+  await expect.poll(() => consoleIssues, {
+    message: consoleIssues.join('\n') || 'No console issues captured.',
+  }).toHaveLength(0);
+});
+
+function captureConsoleIssues(page: Page, consoleIssues: string[]) {
+  page.on('console', (message) => {
+    if (['error', 'warning'].includes(message.type())) {
+      consoleIssues.push(`${message.type()}: ${message.text()}`);
+    }
+  });
+  page.on('pageerror', (error) => {
+    consoleIssues.push(`pageerror: ${error.message}`);
+  });
+  page.on('requestfailed', (request) => {
+    const failure = request.failure();
+    if (request.url().includes('/sanctum/csrf-cookie') && failure?.errorText === 'net::ERR_ABORTED') {
+      return;
+    }
+
+    consoleIssues.push(`requestfailed: ${request.method()} ${request.url()} ${failure?.errorText ?? ''}`.trim());
+  });
+}
+
+async function loginToRealApp(page: Page) {
+  await page.goto(`${realBaseUrl}/login`);
+  await page.getByLabel(/usuario|email/i).fill(login ?? '');
+  await page.getByLabel(/contrasena|contraseña/i).fill(password ?? '');
+  await page.getByRole('button', { name: /entrar|iniciar/i }).click();
+  await expect(page.getByRole('heading', { name: /dashboard|caja|reportes/i })).toBeVisible();
+}

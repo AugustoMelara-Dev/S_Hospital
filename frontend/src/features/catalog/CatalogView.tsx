@@ -1,0 +1,465 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type AuthUser, type Category, type Service, apiClient, userSafeErrorMessage } from '../../lib/api';
+import { Plus, Search, MoreHorizontal, Boxes } from 'lucide-react';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent } from '../../components/ui/card';
+import { Input } from '../../components/ui/input';
+import { Badge } from '../../components/ui/badge';
+import { PaginationControls } from '../../components/ui/pagination';
+import { Skeleton } from '../../components/ui/states';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../../components/ui/dropdown-menu';
+import { ServiceSheet } from './components/ServiceSheet';
+import { CategorySheet } from './components/CategorySheet';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
+type CatalogViewProps = {
+  user: AuthUser;
+  onStatus: (message: string) => void;
+};
+
+export function CatalogView({ user, onStatus }: CatalogViewProps) {
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [servicesData, setServicesData] = useState<Awaited<ReturnType<typeof apiClient.getServicesPage>> | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [serviceSheetOpen, setServiceSheetOpen] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [categorySheetOpen, setCategorySheetOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+
+  const canManageCatalog = useMemo(
+    () => user.permissions.includes('catalog.manage'),
+    [user.permissions],
+  );
+
+  const services = servicesData?.data ?? [];
+  const meta = servicesData?.meta ?? { current_page: 1, per_page: 15, total: 0 };
+
+  const hasFilters = search !== '' || categoryFilter !== 'all' || activeFilter !== 'all';
+  const isEmpty = services.length === 0 && !isLoading;
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [search]);
+
+  const loadCatalogData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [nextCategories, nextServices] = await Promise.all([
+        apiClient.getCategories(),
+        apiClient.getServicesPage({
+          search: debouncedSearch,
+          categoryId: categoryFilter !== 'all' ? Number(categoryFilter) : undefined,
+          active: activeFilter !== 'all' ? activeFilter === 'active' : undefined,
+          page,
+          perPage,
+        }),
+      ]);
+      setCategories(nextCategories);
+      setServicesData(nextServices);
+    } catch (error) {
+      onStatus(userSafeErrorMessage(error, 'No se pudo cargar el catalogo.'));
+      setCategories([]);
+      setServicesData(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeFilter, categoryFilter, debouncedSearch, onStatus, page, perPage]);
+
+  useEffect(() => {
+    void loadCatalogData();
+  }, [loadCatalogData]);
+
+  function handleCategoryFilterChange(value: string) {
+    setCategoryFilter(value);
+    setPage(1);
+  }
+
+  function handleActiveFilterChange(value: string) {
+    setActiveFilter(value);
+    setPage(1);
+  }
+
+  function handlePerPageChange(value: number) {
+    setPerPage(value);
+    setPage(1);
+  }
+
+  function clearFilters() {
+    setSearch('');
+    setDebouncedSearch('');
+    setCategoryFilter('all');
+    setActiveFilter('all');
+    setPage(1);
+  }
+
+  function openNewService() {
+    setEditingService(null);
+    setServiceSheetOpen(true);
+  }
+
+  function openEditService(service: Service) {
+    setEditingService(service);
+    setServiceSheetOpen(true);
+  }
+
+  function openNewCategory() {
+    setEditingCategory(null);
+    setCategorySheetOpen(true);
+  }
+
+  function handleServiceSuccess() {
+    void loadCatalogData();
+    onStatus('Servicio guardado exitosamente.');
+  }
+
+  function handleCategorySuccess() {
+    void loadCatalogData();
+    onStatus('Categoría guardada exitosamente.');
+  }
+
+  const toggleServiceActive = useCallback(async (service: Service) => {
+    try {
+      await apiClient.saveService(
+        {
+          category_id: service.category_id,
+          name: service.name,
+          price: service.price,
+          scan_code: service.scan_code ?? null,
+          barcode: service.barcode ?? null,
+          qr_code: service.qr_code ?? null,
+          taxable: service.taxable,
+          active: !service.active,
+          special_rule_code: service.special_rule_code,
+        },
+        service.id,
+      );
+      void loadCatalogData();
+      onStatus(service.active ? 'Servicio desactivado.' : 'Servicio activado.');
+    } catch {
+      onStatus('No se pudo cambiar el estado del servicio.');
+    }
+  }, [loadCatalogData, onStatus]);
+
+  function normalizeServiceForSheet(service: Service) {
+    return {
+      ...service,
+      scan_code: service.scan_code ?? null,
+      barcode: service.barcode ?? null,
+      qr_code: service.qr_code ?? null,
+      special_rule_code: service.special_rule_code ?? null,
+    };
+  }
+
+  return (
+    <section id="catalogo" className="flex flex-col gap-5" aria-labelledby="catalog-title">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 id="catalog-title" className="text-2xl font-bold tracking-tight">Catálogo de Servicios</h1>
+          {!canManageCatalog && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Cajero puede consultar catalogo y precios, sin permisos para modificar servicios.
+            </p>
+          )}
+          <p className="text-sm text-muted-foreground">
+            {meta.total} servicio{meta.total !== 1 ? 's' : ''} en el catálogo
+          </p>
+        </div>
+        {canManageCatalog && (
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={openNewCategory}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Categoría
+            </Button>
+            <Button size="sm" onClick={openNewService}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Servicio
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-[200px]">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nombre o código..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
+            <Select value={categoryFilter} onValueChange={handleCategoryFilterChange}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las categorías</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={String(cat.id)}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={activeFilter} onValueChange={handleActiveFilterChange}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="active">Activos</SelectItem>
+                <SelectItem value="inactive">Inactivos</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-0">
+            <div className="table-wrap">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Categoría</TableHead>
+                    <TableHead>Precio</TableHead>
+                    <TableHead>Código</TableHead>
+                    <TableHead>Estado</TableHead>
+                    {canManageCatalog && <TableHead className="text-right">Acciones</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    {canManageCatalog && <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>}
+                  </TableRow>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    {canManageCatalog && <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>}
+                  </TableRow>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    {canManageCatalog && <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>}
+                  </TableRow>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    {canManageCatalog && <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>}
+                  </TableRow>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    {canManageCatalog && <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>}
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      ) : isEmpty ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Boxes className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No hay servicios</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              {hasFilters
+                ? 'No se encontraron servicios con los filtros seleccionados.'
+                : 'Comience agregando su primer servicio al catálogo.'}
+            </p>
+            {hasFilters ? (
+              <Button variant="outline" onClick={clearFilters}>
+                Limpiar filtros
+              </Button>
+            ) : canManageCatalog ? (
+              <Button onClick={openNewService}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Servicio
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <div className="overflow-auto">
+            <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Categoría</TableHead>
+                    <TableHead>Precio</TableHead>
+                    <TableHead>Código</TableHead>
+                    <TableHead>Estado</TableHead>
+                    {canManageCatalog && (
+                      <TableHead className="text-right">Acciones</TableHead>
+                    )}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {services.map((service) => (
+                    <TableRow key={service.id} className="border-b hover:bg-muted/30 transition-colors">
+                      <TableCell className="px-4 py-3">
+                        <div className="flex flex-col">
+                          <span className="font-medium">{service.name}</span>
+                          <span className="text-xs text-muted-foreground">{service.slug}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm">{service.category?.name ?? 'Sin categoría'}</TableCell>
+                      <TableCell className="px-4 py-3">
+                        <span className="font-semibold">L. {service.price}</span>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm text-muted-foreground">
+                        <div className="flex flex-col gap-1">
+                          {([
+                            ['Scanner', service.scan_code],
+                            ['Barra', service.barcode],
+                            ['QR', service.qr_code],
+                          ] as const)
+                            .filter(([, code]) => Boolean(code))
+                            .map(([label, code]) => (
+                              <span key={`${service.id}-${label}`} className="font-mono text-xs">
+                                {label}: {code}
+                              </span>
+                            ))}
+                          {!service.scan_code && !service.barcode && !service.qr_code && <span>-</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        <Badge variant={service.active ? 'default' : 'outline'}>
+                          {service.active ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </TableCell>
+                      {canManageCatalog && (
+                        <TableCell className="px-4 py-3 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditService(service)}>
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => toggleServiceActive(service)}
+                                className={service.active ? 'text-destructive' : 'text-emerald-600'}
+                              >
+                                {service.active ? 'Desactivar' : 'Activar'}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+          </div>
+        </Card>
+      )}
+
+      {!isEmpty && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              Mostrando {services.length} de {meta.total} servicios
+            </span>
+            <Select value={String(perPage)} onValueChange={(v: string) => handlePerPageChange(Number(v))}>
+              <SelectTrigger className="w-[100px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10 por pág</SelectItem>
+                <SelectItem value="15">15 por pág</SelectItem>
+                <SelectItem value="25">25 por pág</SelectItem>
+                <SelectItem value="50">50 por pág</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <PaginationControls
+            loading={isLoading}
+            meta={meta}
+            onPageChange={setPage}
+          />
+        </div>
+      )}
+
+      {canManageCatalog && (
+        <>
+          <ServiceSheet
+            open={serviceSheetOpen}
+            onOpenChange={setServiceSheetOpen}
+            service={editingService ? normalizeServiceForSheet(editingService) : null}
+            categories={categories}
+            onSuccess={handleServiceSuccess}
+          />
+
+          <CategorySheet
+            open={categorySheetOpen}
+            onOpenChange={setCategorySheetOpen}
+            category={editingCategory}
+            onSuccess={handleCategorySuccess}
+          />
+        </>
+      )}
+    </section>
+  );
+}
