@@ -140,24 +140,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     await loadInvoices(nextFilters);
   }
 
-  async function reprint(width = receiptWidth) {
-    if (!selectedInvoice) {
-      return;
-    }
-
-    try {
-      const nextReceipt = await apiClient.reprintInvoice(selectedInvoice.id, {
-        width,
-        reason: reprintReason.trim() || null,
-      });
-      setReceipt(nextReceipt);
-      setReceiptWidth(width);
-      onStatus(`Reimpresion auditada para ${selectedInvoice.invoice_number}.`);
-    } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo reimprimir.'));
-    }
-  }
-
   async function voidSelectedInvoice() {
     if (!selectedInvoice || voidReason.trim().length < 5) {
       onStatus('Ingrese un motivo de anulacion de al menos 5 caracteres.');
