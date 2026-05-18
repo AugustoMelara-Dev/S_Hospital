@@ -10,6 +10,7 @@ import {
 } from '../../lib/api';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import { Alert } from '../../components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import {
@@ -60,13 +61,17 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('80mm');
   const [voidReason, setVoidReason] = useState('');
+  const [reprintReason, setReprintReason] = useState('');
   const [confirmingVoid, setConfirmingVoid] = useState(false);
+  const [reprintTarget, setReprintTarget] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [openActionsId, setOpenActionsId] = useState<number | null>(null);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
 
   const canReprint = user.permissions.includes('receipts.reprint');
   const canReprintAny = user.permissions.includes('receipts.reprint_any');
+  const canViewReceipt = user.permissions.includes('receipts.view');
   const canVoid = user.permissions.includes('invoices.void');
 
   useEffect(() => {
@@ -75,13 +80,16 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
   async function loadInvoices(nextFilters: InvoiceFilters) {
     setLoading(true);
+    setLoadError('');
 
     try {
       const response = await apiClient.getInvoices(nextFilters);
       setInvoices(response.data);
       setMeta(response.meta);
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo cargar historial.'));
+      const message = userSafeErrorMessage(error, 'No se pudo cargar historial.');
+      setLoadError(message);
+      onStatus(message);
     } finally {
       setLoading(false);
     }
@@ -155,6 +163,27 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       onStatus(`Factura ${voided.invoice_number} anulada.`);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo anular la factura.'));
+    }
+  }
+
+  async function confirmReprintInvoice() {
+    if (!reprintTarget) return;
+
+    try {
+      const invoice = await apiClient.getInvoice(reprintTarget.id);
+      setSelectedInvoice(invoice);
+      const nextReceipt = await apiClient.reprintInvoice(reprintTarget.id, {
+        width: receiptWidth,
+        reason: reprintReason.trim() || 'Reimpresión solicitada desde historial.',
+      });
+      setReceipt(nextReceipt);
+      setReceiptModalOpen(true);
+      onStatus(`Recibo ${invoice.invoice_number} listo para imprimir.`);
+    } catch (error) {
+      onStatus(userSafeErrorMessage(error, 'No se pudo reimprimir el recibo.'));
+    } finally {
+      setReprintTarget(null);
+      setReprintReason('');
     }
   }
 
@@ -260,7 +289,13 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         </CardContent>
       </Card>
 
-      {isEmpty && !loading ? (
+      {loadError ? (
+        <Alert variant="destructive" title="No se pudo cargar el historial">
+          {loadError}
+        </Alert>
+      ) : null}
+
+      {isEmpty && !loading && !loadError ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FileClock className="h-12 w-12 text-muted-foreground mb-4" />
@@ -344,7 +379,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             </div>
 </CardContent>
         </Card>
-      ) : (
+      ) : !loadError ? (
         <Card>
           <CardContent className="p-0">
             <div className="table-wrap">
@@ -372,6 +407,32 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                         <StatusBadge status={invoice.status} />
                       </TableCell>
                       <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {canViewReceipt && (canReprintAny || canVoid || isOwnInvoiceFromToday(invoice)) && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => void openReceiptModal(invoice.id)}
+                            >
+                              <Receipt className="h-4 w-4" aria-hidden="true" />
+                              Ver recibo
+                            </Button>
+                          )}
+
+                          {canReprint && (canReprintAny || isOwnInvoiceFromToday(invoice)) && (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => setReprintTarget(invoice)}
+                            >
+                              <Printer className="h-4 w-4" aria-hidden="true" />
+                              Reimprimir
+                            </Button>
+                          )}
+
+                          {canVoid && invoice.status !== 'void' && (
                         <div className="relative inline-block">
                           <Button
                             type="button"
@@ -393,38 +454,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                               />
                               <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-md border border-border bg-card shadow-lg">
                                 <div className="py-1">
-                                  <button
-                                    type="button"
-                                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted"
-                                    onClick={() => void openReceiptModal(invoice.id)}
-                                  >
-                                    <Receipt className="h-4 w-4" />
-                                    Ver Recibo
-                                  </button>
-
-                                  {canReprint && (canReprintAny || isOwnInvoiceFromToday(invoice)) && (
-                                    <button
-                                      type="button"
-                                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted"
-                                      onClick={async () => {
-                                        setOpenActionsId(null);
-                                        await openDetail(invoice.id);
-                                        const nextReceipt = await apiClient.reprintInvoice(invoice.id, {
-                                          width: receiptWidth,
-                                          reason: null,
-                                        });
-                                        setReceipt(nextReceipt);
-                                        setReceiptModalOpen(true);
-                                      }}
-                                    >
-                                      <Printer className="h-4 w-4" />
-                                      Reimprimir
-                                    </button>
-                                  )}
-
-                                  {canVoid && invoice.status !== 'void' && (
-                                    <>
-                                      <div className="my-1 border-t border-border" />
                                       <button
                                         type="button"
                                         className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-muted"
@@ -434,14 +463,14 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                                           setConfirmingVoid(true);
                                         }}
                                       >
-                                        <XCircle className="h-4 w-4" />
+                                        <XCircle className="h-4 w-4" aria-hidden="true" />
                                         Anular
                                       </button>
-                                    </>
-                                  )}
                                 </div>
                               </div>
                             </>
+                          )}
+                        </div>
                           )}
                         </div>
                       </TableCell>
@@ -452,7 +481,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             </div>
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
       {!isEmpty && (
         <div className="flex items-center justify-between">
@@ -540,6 +569,33 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             <p className="text-xs text-muted-foreground">
               Esta acción no se puede deshacer. La factura será marcada como anulada.
             </p>
+          </div>
+        </div>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        confirmLabel="Registrar reimpresión"
+        onCancel={() => {
+          setReprintTarget(null);
+          setReprintReason('');
+        }}
+        onConfirm={() => void confirmReprintInvoice()}
+        open={Boolean(reprintTarget)}
+        title={`¿Reimprimir ${reprintTarget?.invoice_number ?? 'recibo'}?`}
+      >
+        <div className="flex flex-col gap-3">
+          <p>
+            Esta acción queda auditada. Cambiar entre 80mm y 58mm en la vista previa no registra reimpresión; este botón sí.
+          </p>
+          <div className="space-y-2">
+            <Label htmlFor="reprintReason">Motivo opcional</Label>
+            <Textarea
+              id="reprintReason"
+              value={reprintReason}
+              onChange={(event) => setReprintReason(event.target.value)}
+              placeholder="Ejemplo: copia solicitada por paciente"
+              rows={2}
+            />
           </div>
         </div>
       </ConfirmDialog>

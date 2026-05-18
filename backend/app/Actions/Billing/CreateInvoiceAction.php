@@ -3,6 +3,7 @@
 namespace App\Actions\Billing;
 
 use App\Models\AuditLog;
+use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
 use App\Models\Service;
@@ -23,12 +24,25 @@ class CreateInvoiceAction
     public function execute(array $payload, User $issuer): Invoice
     {
         return DB::transaction(function () use ($payload, $issuer): Invoice {
+            $cashSession = CashRegisterSession::query()
+                ->where('user_id', $issuer->id)
+                ->where('status', CashRegisterSession::STATUS_OPEN)
+                ->lockForUpdate()
+                ->first();
+
+            if ($cashSession === null) {
+                throw ValidationException::withMessages([
+                    'cash_session_id' => 'Abra caja antes de emitir y cobrar una factura.',
+                ]);
+            }
+
             $preparedItems = $this->prepareItems($payload['items']);
             $settings = FiscalSetting::query()->first();
             $taxRate = $settings?->default_tax_rate ?? '15.00';
             $totals = $this->calculateInvoiceTotals->execute($preparedItems, (string) $taxRate);
             $fiscal = $this->generateFiscalNumber->execute();
             $sequence = $fiscal['sequence'];
+            $isZeroTotal = $this->isZeroAmount($totals['total']);
 
             $invoice = Invoice::query()->create([
                 'invoice_number' => $fiscal['invoice_number'],
@@ -45,9 +59,10 @@ class CreateInvoiceAction
                 'tax_amount' => $totals['tax_amount'],
                 'discount_amount' => $totals['discount_amount'],
                 'total' => $totals['total'],
-                'paid_amount' => '0.00',
-                'balance_due' => $totals['total'],
-                'status' => Invoice::STATUS_ISSUED,
+                'paid_amount' => $isZeroTotal ? $totals['total'] : '0.00',
+                'balance_due' => $isZeroTotal ? '0.00' : $totals['total'],
+                'status' => $isZeroTotal ? Invoice::STATUS_PAID : Invoice::STATUS_ISSUED,
+                'cash_session_id' => $cashSession->id,
                 'issued_by' => $issuer->id,
                 'issued_at' => now(),
             ]);
@@ -67,6 +82,7 @@ class CreateInvoiceAction
                     'patient_name' => $invoice->patient_name,
                     'total' => $invoice->total,
                     'status' => $invoice->status,
+                    'cash_session_id' => $cashSession->id,
                 ],
             ]);
 
@@ -115,5 +131,10 @@ class CreateInvoiceAction
         }
 
         return $prepared;
+    }
+
+    private function isZeroAmount(string $amount): bool
+    {
+        return (float) $amount === 0.0;
     }
 }

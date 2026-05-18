@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,7 +11,7 @@ import { Label } from '@/components/ui/label';
 
 const openSessionSchema = z.object({
   opening_amount: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Debe ser un número válido')
-    .refine(val => parseFloat(val) > 0, 'El monto debe ser mayor a 0'),
+    .refine(val => parseFloat(val) >= 0, 'El monto no puede ser negativo'),
 });
 
 type OpenSessionFormData = z.infer<typeof openSessionSchema>;
@@ -21,12 +22,18 @@ interface OpenSessionFormProps {
 }
 
 export function OpenSessionForm({ isSubmitting, onSubmit }: OpenSessionFormProps) {
+  const openingAmountRef = useRef<HTMLInputElement | null>(null);
   const { register, handleSubmit, formState: { errors } } = useForm<OpenSessionFormData>({
     resolver: zodResolver(openSessionSchema),
     defaultValues: {
       opening_amount: '500.00',
     },
   });
+  const openingAmountRegistration = register('opening_amount');
+
+  useEffect(() => {
+    openingAmountRef.current?.focus();
+  }, []);
 
   return (
     <Card>
@@ -49,10 +56,16 @@ export function OpenSessionForm({ isSubmitting, onSubmit }: OpenSessionFormProps
               inputMode="decimal"
               placeholder="0.00"
               className="text-lg"
-              {...register('opening_amount')}
+              aria-invalid={errors.opening_amount ? 'true' : 'false'}
+              aria-describedby={errors.opening_amount ? 'opening-amount-error' : undefined}
+              {...openingAmountRegistration}
+              ref={(element) => {
+                openingAmountRegistration.ref(element);
+                openingAmountRef.current = element;
+              }}
             />
             {errors.opening_amount && (
-              <p className="text-sm text-destructive">{errors.opening_amount.message}</p>
+              <p id="opening-amount-error" className="text-sm text-destructive" role="alert">{errors.opening_amount.message}</p>
             )}
           </div>
 

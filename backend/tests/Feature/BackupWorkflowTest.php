@@ -65,6 +65,46 @@ class BackupWorkflowTest extends TestCase
             ->assertJsonPath('meta.per_page', 50);
     }
 
+    public function test_admin_can_filter_backups_by_status_before_pagination(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        BackupLog::query()->create([
+            'filename' => 'pending.sql',
+            'path' => 'backups/pending.sql',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_PENDING,
+            'type' => BackupLog::TYPE_MANUAL,
+            'created_by' => $admin->id,
+        ]);
+        BackupLog::query()->create([
+            'filename' => 'failed.sql',
+            'path' => 'backups/failed.sql',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_FAILED,
+            'type' => BackupLog::TYPE_MANUAL,
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson('/api/backups?status=failed&per_page=1')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.filename', 'failed.sql')
+            ->assertJsonPath('data.0.status', BackupLog::STATUS_FAILED);
+    }
+
+    public function test_backup_status_filter_rejects_unknown_values(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/backups?status=unknown')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('status');
+    }
+
     public function test_cashier_and_supervisor_cannot_list_create_or_download_backups(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

@@ -15,6 +15,8 @@ type AppRoutesProps = {
   canCreateInvoices: boolean;
   canCreatePayments: boolean;
   canEditFiscalSettings: boolean;
+  canOpenCash: boolean;
+  canCloseCash: boolean;
   canViewBackups: boolean;
   canViewCash: boolean;
   canViewCatalog: boolean;
@@ -38,6 +40,8 @@ export function AppRoutes({
   canCreateInvoices,
   canCreatePayments,
   canEditFiscalSettings,
+  canOpenCash,
+  canCloseCash,
   canViewBackups,
   canViewCash,
   canViewCatalog,
@@ -102,7 +106,13 @@ export function AppRoutes({
         path="/cashbox"
         element={
           <PermissionGate allowed={canViewCash} reason="Requiere permiso para consultar y operar caja.">
-            <CashBoxView onStatus={onStatus} onSessionChange={onCashSessionChange} />
+            <CashBoxView
+              canCloseCash={canCloseCash}
+              canOpenCash={canOpenCash}
+              canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}
+              onStatus={onStatus}
+              onSessionChange={onCashSessionChange}
+            />
           </PermissionGate>
         }
       />

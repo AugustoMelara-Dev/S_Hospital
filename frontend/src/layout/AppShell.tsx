@@ -207,8 +207,18 @@ export function AppShell({
   const serverOk = !status.toLowerCase().includes('error') && !status.toLowerCase().includes('no se pudo');
   const canCreateInvoices = user.permissions.includes('invoices.create');
   const canViewCash = user.permissions.includes('cash.view');
-  const showInvoiceAction = canCreateInvoices && location.pathname !== '/billing/new';
-  const showCashAction = canViewCash && location.pathname !== '/cashbox' && location.pathname !== '/cashbox/';
+  const canUseQuickInvoice =
+    canCreateInvoices &&
+    user.permissions.includes('catalog.view') &&
+    canViewCash &&
+    user.permissions.includes('payments.create') &&
+    user.permissions.includes('receipts.view');
+  const showInvoiceAction = canUseQuickInvoice && location.pathname !== '/billing/new';
+  const showCashAction =
+    canViewCash &&
+    (cashSession || user.permissions.includes('cash.open')) &&
+    location.pathname !== '/cashbox' &&
+    location.pathname !== '/cashbox/';
 
   const isMinimalTopbar = topbarVariant === 'minimal';
 
@@ -304,6 +314,7 @@ export function AppShell({
                   type="button"
                   variant="ghost"
                   className="gap-2 px-2 py-1.5 h-auto font-medium text-slate-600"
+                  aria-label="Abrir menu de usuario"
                 >
                   <span className="hidden md:inline">{user.name}</span>
                   <ChevronDown className="size-4" aria-hidden="true" />
@@ -316,7 +327,7 @@ export function AppShell({
                   sideOffset={8}
                 >
                   <DropdownMenuPrimitive.Item
-                    className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-600 outline-none hover:bg-slate-100 hover:text-slate-900 focus:bg-slate-100 focus:text-slate-900 data-[highlighted]:bg-slate-100 data-[highlighted]:text-slate-900"
                     onClick={onLogout}
                   >
                     <LogOut className="size-4" aria-hidden="true" />

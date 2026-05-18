@@ -179,7 +179,7 @@ export const apiClient = {
     return reports.downloadExport(filters);
   },
 
-  async getBackups(filters: { page?: number; perPage?: number } = {}): Promise<{ data: BackupLog[]; meta: PaginatedMeta }> {
+  async getBackups(filters: { page?: number; perPage?: number; status?: BackupLog['status'] | 'all' } = {}): Promise<{ data: BackupLog[]; meta: PaginatedMeta }> {
     return backups.getBackups(filters);
   },
 

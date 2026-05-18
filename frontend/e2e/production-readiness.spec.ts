@@ -364,7 +364,7 @@ async function expectOperationalNavigation(page: Page) {
     return;
   }
 
-  await page.getByLabel(/abrir men/i).click();
+  await page.getByRole('button', { name: 'Abrir menú', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Caja', exact: true }).first()).toBeVisible();
   await expect(page.getByRole('link', { name: /cat.logo/i }).first()).toBeVisible();
   await page.keyboard.press('Escape');

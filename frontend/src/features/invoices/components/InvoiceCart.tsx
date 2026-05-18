@@ -77,9 +77,9 @@ export function InvoiceCart({
                       size="icon"
                       onClick={() => onRemoveItem(index)}
                       className="text-muted-foreground hover:text-destructive shrink-0"
-                      aria-label="Quitar item"
+                      aria-label={`Quitar ${item.service.name}`}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
 
@@ -90,17 +90,19 @@ export function InvoiceCart({
                       size="sm"
                       className="h-8 w-8 p-0"
                       onClick={() => {
-                        const newQty = Math.max(100, parseInt(item.quantity) - 100);
-                        onUpdateQuantity(index, String(newQty / 100));
+                        onUpdateQuantity(index, formatQuantity(Math.max(100, parseQuantityUnits(item.quantity) - 100)));
                       }}
+                      aria-label={`Disminuir cantidad de ${item.service.name}`}
                     >
-                      <Minus className="h-3 w-3" />
+                      <Minus className="h-3 w-3" aria-hidden="true" />
                     </Button>
                     <Input
                       value={item.quantity}
                       onChange={(e) => onUpdateQuantity(index, e.target.value)}
                       className="h-8 w-20 text-center"
-                      aria-label="Cantidad"
+                      inputMode="decimal"
+                      name={`quantity-${item.service.id}`}
+                      aria-label={`Cantidad de ${item.service.name}`}
                     />
                     <Button
                       type="button"
@@ -108,11 +110,11 @@ export function InvoiceCart({
                       size="sm"
                       className="h-8 w-8 p-0"
                       onClick={() => {
-                        const newQty = parseInt(item.quantity) + 1;
-                        onUpdateQuantity(index, String(newQty));
+                        onUpdateQuantity(index, formatQuantity(parseQuantityUnits(item.quantity) + 100));
                       }}
+                      aria-label={`Aumentar cantidad de ${item.service.name}`}
                     >
-                      <Plus className="h-3 w-3" />
+                      <Plus className="h-3 w-3" aria-hidden="true" />
                     </Button>
                   </div>
 
@@ -177,4 +179,17 @@ export function InvoiceCart({
       </div>
     </div>
   );
+}
+
+function parseQuantityUnits(value: string): number {
+  if (!/^\d+(\.\d{1,2})?$/.test(value)) return 100;
+  const [integer, decimal = '00'] = value.split('.');
+  return Number(integer) * 100 + Number(decimal.padEnd(2, '0').slice(0, 2));
+}
+
+function formatQuantity(units: number): string {
+  const safeUnits = Math.max(100, units);
+  const whole = Math.trunc(safeUnits / 100);
+  const decimals = safeUnits % 100;
+  return decimals === 0 ? String(whole) : `${whole}.${String(decimals).padStart(2, '0')}`;
 }

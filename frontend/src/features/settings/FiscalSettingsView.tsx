@@ -181,7 +181,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
           <TabsTrigger value="resumen">Resumen</TabsTrigger>
           <TabsTrigger value="hospital">Datos del Hospital</TabsTrigger>
           <TabsTrigger value="secuencia">Secuencia Fiscal</TabsTrigger>
-          <TabsTrigger value="receipt">Configuración de Receipt</TabsTrigger>
+          <TabsTrigger value="receipt">Recibo térmico</TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumen" className="mt-0 space-y-6">
@@ -198,6 +198,11 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {!canEdit && (
+                <Alert variant="warning" title="Modo solo lectura">
+                  Solo supervisor o administrador puede modificar la configuracion fiscal.
+                </Alert>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="hospital_name">Nombre del Hospital *</Label>
@@ -206,6 +211,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     value={hospitalForm.hospital_name}
                     onChange={(e) => setHospitalForm(prev => ({ ...prev, hospital_name: e.target.value }))}
                     placeholder="Hospital Nacional de..."
+                    disabled={!canEdit}
                   />
                 </div>
 
@@ -216,6 +222,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     value={hospitalForm.rtn}
                     onChange={(e) => setHospitalForm(prev => ({ ...prev, rtn: e.target.value }))}
                     placeholder="0801-XXXX-XXXXX"
+                    disabled={!canEdit}
                   />
                 </div>
               </div>
@@ -238,6 +245,11 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {!canEdit && (
+                <Alert variant="warning" title="Modo solo lectura">
+                  Solo supervisor o administrador puede modificar la secuencia fiscal.
+                </Alert>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="prefix">Prefijo *</Label>
@@ -247,6 +259,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     onChange={(e) => setSequenceForm(prev => ({ ...prev, prefix: e.target.value.toUpperCase() }))}
                     placeholder="A"
                     className="uppercase"
+                    disabled={!canEdit}
                   />
                 </div>
 
@@ -257,6 +270,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     value={sequenceForm.cai}
                     onChange={(e) => setSequenceForm(prev => ({ ...prev, cai: e.target.value }))}
                     placeholder="CAI-XXXXX-XXXXX-XXXXX"
+                    disabled={!canEdit}
                   />
                 </div>
 
@@ -268,6 +282,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     value={sequenceForm.min_number}
                     onChange={(e) => setSequenceForm(prev => ({ ...prev, min_number: parseInt(e.target.value) || 1 }))}
                     placeholder="1"
+                    disabled={!canEdit}
                   />
                 </div>
 
@@ -279,6 +294,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     value={sequenceForm.max_number}
                     onChange={(e) => setSequenceForm(prev => ({ ...prev, max_number: parseInt(e.target.value) || 99999999 }))}
                     placeholder="10000"
+                    disabled={!canEdit}
                   />
                 </div>
 
@@ -289,6 +305,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     type="date"
                     value={sequenceForm.valid_until}
                     onChange={(e) => setSequenceForm(prev => ({ ...prev, valid_until: e.target.value }))}
+                    disabled={!canEdit}
                   />
                 </div>
               </div>
@@ -305,19 +322,25 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         <TabsContent value="receipt" className="mt-0">
           <Card>
             <CardHeader>
-              <CardTitle>Configuración de Receipt</CardTitle>
+              <CardTitle>Recibo térmico</CardTitle>
               <CardDescription>
                 Configure el ancho del papel para impresión térmica.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {!canEdit && (
+                <Alert variant="warning" title="Modo solo lectura">
+                  Solo supervisor o administrador puede cambiar el ancho por defecto.
+                </Alert>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="receipt_width">Ancho de Recibo</Label>
                 <Select
                   value={hospitalForm.receipt_width}
                   onValueChange={(v: string) => setHospitalForm(prev => ({ ...prev, receipt_width: v as '80mm' | '58mm' }))}
+                  disabled={!canEdit}
                 >
-                  <SelectTrigger className="w-[200px]">
+                  <SelectTrigger id="receipt_width" className="w-[200px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

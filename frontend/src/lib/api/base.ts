@@ -63,6 +63,10 @@ function cookieValue(name: string): string | null {
 
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? '';
 
+function networkError(): ApiError {
+  return new ApiError('No se pudo conectar con el servidor LAN. Revise que el servidor local este encendido y vuelva a intentar.', 0);
+}
+
 function enqueueRequest<T>(operation: () => Promise<T>): Promise<T> {
   const next = requestChain
     .catch(() => undefined)
@@ -85,9 +89,15 @@ export const apiClient = {
   },
 
   async csrf(): Promise<void> {
-    const response = await fetch(this.url('/sanctum/csrf-cookie'), {
-      credentials: 'include',
-    });
+    let response: Response;
+
+    try {
+      response = await fetch(this.url('/sanctum/csrf-cookie'), {
+        credentials: 'include',
+      });
+    } catch {
+      throw networkError();
+    }
 
     if (!response.ok) {
       if (response.status === 401 || response.status === 419) {
@@ -113,16 +123,20 @@ export const apiClient = {
     const send = async (): Promise<Response> => {
       const xsrfToken = method === 'GET' || method === 'HEAD' ? null : cookieValue('XSRF-TOKEN');
 
-      return fetch(this.url(path), {
-        ...options,
-        credentials: 'include',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
-          ...options.headers,
-        },
-      });
+      try {
+        return await fetch(this.url(path), {
+          ...options,
+          credentials: 'include',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+            ...options.headers,
+          },
+        });
+      } catch {
+        throw networkError();
+      }
     };
 
     let response = await send();
@@ -164,12 +178,18 @@ export const apiClient = {
   },
 
   async download(path: string): Promise<Blob> {
-    const response = await fetch(this.url(path), {
-      credentials: 'include',
-      headers: {
-        Accept: 'application/json, application/octet-stream, text/csv',
-      },
-    });
+    let response: Response;
+
+    try {
+      response = await fetch(this.url(path), {
+        credentials: 'include',
+        headers: {
+          Accept: 'application/json, application/octet-stream, text/csv',
+        },
+      });
+    } catch {
+      throw networkError();
+    }
 
     if (!response.ok) {
       if (response.status === 401) {

@@ -2,6 +2,7 @@ import { Download, RefreshCw, Archive, CheckCircle, Clock, XCircle } from 'lucid
 import { useEffect, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { Alert } from '../../components/ui/alert';
+import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import { PaginationControls } from '../../components/ui/pagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/data-table';
 import { PageHeader } from '../../components/ui/page-header';
@@ -63,12 +64,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [confirmCreateOpen, setConfirmCreateOpen] = useState(false);
+  const [downloadTarget, setDownloadTarget] = useState<BackupLog | null>(null);
   const canCreate = user.permissions.includes('backups.create');
   const canDownload = user.permissions.includes('backups.download');
-
-  const filteredBackups = statusFilter === 'all'
-    ? backups
-    : backups.filter(b => b.status === statusFilter);
 
   const pendingCount = backups.filter(b => b.status === 'pending').length;
   const successCount = backups.filter(b => b.status === 'success').length;
@@ -79,7 +78,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
   useEffect(() => {
     void loadBackups(page);
-  }, [page]);
+  }, [page, statusFilter]);
 
   useEffect(() => {
     if (!backups.some((backup) => backup.status === 'pending')) {
@@ -101,7 +100,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     }
 
     try {
-      const response = await apiClient.getBackups({ page: nextPage });
+      const response = await apiClient.getBackups({ page: nextPage, status: statusFilter });
       setBackups(response.data);
       setMeta(response.meta);
       if (announce) {
@@ -170,7 +169,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Actualizar
               </Button>
-              <Button type="button" size="sm" onClick={handleCreateBackup} disabled={loading}>
+              <Button type="button" size="sm" onClick={() => setConfirmCreateOpen(true)} disabled={loading}>
                 <Archive className="h-4 w-4 mr-2" />
                 Crear Backup
               </Button>
@@ -201,7 +200,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                       {pendingCount > 0 ? `${pendingCount} en proceso` : 'Sin pendientes'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {pendingCount > 0 ? 'Backups creando' : 'No hay backups en cola'}
+                      {pendingCount > 0 ? 'Backups creando en esta pagina' : 'No hay pendientes en esta pagina'}
                     </p>
                   </div>
                 </div>
@@ -221,7 +220,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                         : 'Sin backups'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {successCount > 0 ? `${successCount} completados` : 'Sin exitosos'}
+                      {successCount > 0 ? `${successCount} completados en esta pagina` : 'Sin exitosos en esta pagina'}
                     </p>
                   </div>
                 </div>
@@ -243,7 +242,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                     <p className="text-xs text-muted-foreground">
                       {failedCount > 0
                         ? `${failedCount} fallidos - revise el detalle y cree un nuevo backup`
-                        : 'Sin errores'}
+                        : 'Sin fallos en esta pagina'}
                     </p>
                   </div>
                 </div>
@@ -262,7 +261,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                   type="button"
                   variant={statusFilter === filter ? 'secondary' : 'outline'}
                   size="sm"
-                  onClick={() => setStatusFilter(filter)}
+                  onClick={() => {
+                    setStatusFilter(filter);
+                    setPage(1);
+                  }}
                   className="h-8"
                 >
                   {filter === 'all' ? 'Todos' : filter === 'pending' ? 'Pendientes' : filter === 'success' ? 'Exitosos' : 'Fallidos'}
@@ -282,7 +284,14 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredBackups.map((backup) => (
+                {backups.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                      No hay backups con este estado. Quite el filtro para ver todos.
+                    </TableCell>
+                  </TableRow>
+                )}
+                {backups.map((backup) => (
                   <TableRow key={backup.id}>
                     <TableCell>{formatDate(backup.completed_at ?? backup.created_at)}</TableCell>
                     <TableCell className="font-mono text-sm">{backup.filename}</TableCell>
@@ -308,7 +317,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                           variant="ghost"
                           size="icon"
                           aria-label={`Descargar backup ${backup.filename}`}
-                          onClick={() => void handleDownloadBackup(backup)}
+                          onClick={() => setDownloadTarget(backup)}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -328,9 +337,34 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         )}
 
         {isEmpty && (
-          <BackupEmptyState onCreate={handleCreateBackup} canCreate={canCreate} />
+          <BackupEmptyState onCreate={() => setConfirmCreateOpen(true)} canCreate={canCreate} />
         )}
       </div>
+      <ConfirmDialog
+        confirmLabel="Crear backup"
+        onCancel={() => setConfirmCreateOpen(false)}
+        onConfirm={() => {
+          setConfirmCreateOpen(false);
+          void handleCreateBackup();
+        }}
+        open={confirmCreateOpen}
+        title="¿Crear backup local?"
+      >
+        Se registrará una copia de seguridad local y puede quedar en cola si el worker de backups no está activo.
+      </ConfirmDialog>
+      <ConfirmDialog
+        confirmLabel="Descargar"
+        onCancel={() => setDownloadTarget(null)}
+        onConfirm={() => {
+          const target = downloadTarget;
+          setDownloadTarget(null);
+          if (target) void handleDownloadBackup(target);
+        }}
+        open={Boolean(downloadTarget)}
+        title="¿Descargar backup?"
+      >
+        Descargará el archivo {downloadTarget?.filename}. Esta acción queda auditada.
+      </ConfirmDialog>
     </section>
   );
 }

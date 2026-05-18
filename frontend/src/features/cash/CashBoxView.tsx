@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useRef, useState } from 'react';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,9 @@ import { CloseSessionDialog } from './components/CloseSessionDialog';
 import { CashMovementsTable } from './components/CashMovementsTable';
 
 type CashBoxViewProps = {
+  canCloseCash?: boolean;
+  canOpenCash?: boolean;
+  canViewCashSessionReport?: boolean;
   compact?: boolean;
   onStatus: (message: string) => void;
   onSessionChange?: (session: CashSession | null) => void;
@@ -34,12 +37,20 @@ function formatCents(cents: number): number {
   return cents / 100;
 }
 
-export function CashBoxView({ compact = false, onStatus, onSessionChange }: CashBoxViewProps) {
+export function CashBoxView({
+  canCloseCash = true,
+  canOpenCash = true,
+  canViewCashSessionReport = false,
+  compact = false,
+  onStatus,
+  onSessionChange,
+}: CashBoxViewProps) {
   const queryClient = useQueryClient();
   const [closingAmount, setClosingAmount] = useState('');
   const [closingNotes, setClosingNotes] = useState('');
   const [formAlert, setFormAlert] = useState<string | null>(null);
   const [confirmingClose, setConfirmingClose] = useState(false);
+  const closingAmountRef = useRef<HTMLInputElement | null>(null);
 
   const { data: session, isLoading, refetch } = useQuery({
     queryKey: ['cash-sessions', 'current'],
@@ -49,10 +60,10 @@ export function CashBoxView({ compact = false, onStatus, onSessionChange }: Cash
   const { data: movements } = useQuery({
     queryKey: ['cash-sessions', session?.id, 'movements'],
     queryFn: () =>
-      session?.id
+      session?.id && canViewCashSessionReport
         ? apiClient.getCashSessionReport(String(session.id)).then((report) => report.movements)
         : Promise.resolve([]),
-    enabled: !!session?.id,
+    enabled: !!session?.id && canViewCashSessionReport,
   });
 
   const openSessionMutation = useMutation({
@@ -104,6 +115,15 @@ export function CashBoxView({ compact = false, onStatus, onSessionChange }: Cash
   function handleCloseConfirmation(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!session) return;
+    if (!canCloseCash) {
+      setFormAlert('Este usuario no tiene permiso para cerrar caja.');
+      return;
+    }
+    if (closingAmount.trim() === '') {
+      setFormAlert('Ingrese el monto contado antes de cerrar caja.');
+      closingAmountRef.current?.focus();
+      return;
+    }
     setConfirmingClose(true);
   }
 
@@ -206,6 +226,7 @@ export function CashBoxView({ compact = false, onStatus, onSessionChange }: Cash
                       Monto Contado (L.) *
                     </label>
                     <Input
+                      ref={closingAmountRef}
                       id="closing_amount"
                       type="text"
                       inputMode="decimal"
@@ -213,6 +234,7 @@ export function CashBoxView({ compact = false, onStatus, onSessionChange }: Cash
                       onChange={(e) => setClosingAmount(e.target.value)}
                       placeholder="0.00"
                       className="text-lg"
+                      aria-invalid={formAlert?.includes('monto contado') ? 'true' : 'false'}
                     />
                   </div>
 
@@ -241,23 +263,32 @@ export function CashBoxView({ compact = false, onStatus, onSessionChange }: Cash
                   <Button
                     type="submit"
                     variant="default"
-                    disabled={closeSessionMutation.isPending}
+                    disabled={closeSessionMutation.isPending || !canCloseCash}
                   >
                     {closeSessionMutation.isPending ? 'Cerrando...' : 'Cerrar Caja'}
                   </Button>
+                  {!canCloseCash && (
+                    <p className="text-sm text-muted-foreground">
+                      Solo usuarios con permiso de cierre pueden cerrar caja.
+                    </p>
+                  )}
                 </form>
               </CardContent>
             </Card>
 
-            {movements && movements.length > 0 && (
+            {canViewCashSessionReport && movements && movements.length > 0 && (
               <CashMovementsTable movements={movements} />
             )}
           </>
-        ) : (
+        ) : canOpenCash ? (
           <OpenSessionForm
             isSubmitting={openSessionMutation.isPending}
             onSubmit={handleOpenSession}
           />
+        ) : (
+          <Alert variant="warning" title="Caja en modo consulta">
+            Este usuario puede ver caja, pero no tiene permiso para abrir una nueva sesion.
+          </Alert>
         )}
       </div>
 

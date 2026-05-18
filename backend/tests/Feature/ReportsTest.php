@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AuditLog;
 use App\Models\BackupLog;
+use App\Models\CashRegisterSession;
 use App\Models\Category;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -609,6 +610,18 @@ class ReportsTest extends TestCase
 
     private function createInvoice(User $cashier, string $serviceName): int
     {
+        CashRegisterSession::query()->firstOrCreate(
+            [
+                'user_id' => $cashier->id,
+                'status' => CashRegisterSession::STATUS_OPEN,
+            ],
+            [
+                'open_user_id' => $cashier->id,
+                'opening_amount' => '500.00',
+                'opened_at' => now(),
+            ],
+        );
+
         return $this->actingAs($cashier)
             ->postJson('/api/invoices', [
                 'patient_name' => 'Maria Lopez',

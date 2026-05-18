@@ -60,6 +60,7 @@ export function NewInvoiceView({
   const [paying, setPaying] = useState(false);
   const [autoPrintReceiptKey, setAutoPrintReceiptKey] = useState<string | null>(null);
   const patientInputRef = useRef<HTMLInputElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const scannerInputRef = useRef<HTMLInputElement | null>(null);
   const autoPrintedReceiptKeyRef = useRef<string | null>(null);
 
@@ -126,6 +127,8 @@ export function NewInvoiceView({
       if (e.key === 'Escape') {
         const target = e.target as HTMLElement;
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+        if (showConfirmation || showPayment || showSuccess || showReceipt) return;
+        if (target.closest('[data-dialog-content]')) return;
         if (confirm('¿Limpiar carrito?')) {
           handleClearCart();
         }
@@ -141,7 +144,7 @@ export function NewInvoiceView({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canEmit, handleClearCart]);
+  }, [canEmit, handleClearCart, showConfirmation, showPayment, showSuccess, showReceipt]);
 
   const preview = useMemo(() => calculatePreview(cartItems), [cartItems]);
 
@@ -365,6 +368,13 @@ export function NewInvoiceView({
         setShowSuccess(false);
         setShowPayment(true);
         onStatus(`Factura emitida ${invoice.invoice_number}. Continue con el cobro.`);
+      } else if (isZeroMoney(invoice.total) && invoice.status === 'paid') {
+        const nextReceipt = await apiClient.getReceipt(invoice.id, receiptWidth);
+        setReceipt(nextReceipt);
+        setReceiptWidth(nextReceipt.width);
+        setShowReceipt(true);
+        setAutoPrintReceiptKey(`${invoice.id}-zero-total-${nextReceipt.width}`);
+        onStatus(`Factura emitida ${invoice.invoice_number}. Recibo listo para imprimir.`);
       } else {
         setShowSuccess(true);
         onStatus(`Factura emitida ${invoice.invoice_number}.`);
@@ -495,7 +505,7 @@ export function NewInvoiceView({
       )}
 
       {alertMessage && (
-        <Alert variant="destructive" title="Error" onClick={() => setAlertMessage(null)}>
+        <Alert variant="destructive" title="Revise antes de continuar">
           {alertMessage}
         </Alert>
       )}
@@ -505,6 +515,7 @@ export function NewInvoiceView({
           <Card className="lg:shrink-0">
             <CardContent className="pt-5">
               <PatientStep
+                ref={patientInputRef}
                 patientName={patientName}
                 onPatientNameChange={handlePatientNameChange}
                 error={patientError}
@@ -525,6 +536,8 @@ export function NewInvoiceView({
                 onScanCodeChange={setScanCode}
                 onAddService={addToCart}
                 onAddByScanCode={addByScanCode}
+                searchInputRef={searchInputRef}
+                scannerInputRef={scannerInputRef}
                 loading={loadingServices}
               />
             </CardContent>
@@ -646,6 +659,10 @@ function calculatePreview(items: CartItem[]) {
     tax: formatCents(tax),
     total: formatCents(subtotal + tax),
   };
+}
+
+function isZeroMoney(value: string): boolean {
+  return Number(value) === 0;
 }
 
 function parseCents(value: string): number {
