@@ -368,29 +368,35 @@ describe('App', () => {
 
   it('renders backups view and empty state for an admin', async () => {
     window.history.pushState({}, '', '/backups');
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 1,
-            name: 'Admin Demo',
-            email: 'admin.demo@hospital-billing.local',
-            username: 'admin.demo',
-            active: true,
-            roles: ['admin'],
-            permissions: ['backups.view', 'backups.create', 'backups.download'],
-            must_change_password: false,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Admin Demo',
+              email: 'admin.demo@hospital-billing.local',
+              username: 'admin.demo',
+              active: true,
+              roles: ['admin'],
+              permissions: ['backups.view', 'backups.create', 'backups.download'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      return {
         ok: true,
         json: async () => ({
           data: [],
           meta: { current_page: 1, per_page: 15, total: 0 },
         }),
-      } as Response);
+      } as Response;
+    });
 
     render(<App />);
 
