@@ -5,6 +5,7 @@ import {
   FileClock,
   LayoutDashboard,
   LogOut,
+  Plus,
   ReceiptText,
   Settings,
   ShieldCheck,
@@ -67,6 +68,9 @@ export function AppShell({ cashSession, children, onLogout, status, user }: AppS
   const serverLabel = status.toLowerCase().includes('error') || status.toLowerCase().includes('no se pudo')
     ? 'Servidor LAN con alerta'
     : 'Servidor LAN operativo';
+  const canCreateInvoices = user.permissions.includes('invoices.create');
+  const canViewCash = user.permissions.includes('cash.view');
+  const canViewInvoices = user.permissions.includes('invoices.view');
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 30_000);
@@ -127,6 +131,30 @@ export function AppShell({ cashSession, children, onLogout, status, user }: AppS
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
+                {canCreateInvoices ? (
+                  <Button asChild size="sm">
+                    <NavLink to="/billing/new">
+                      <Plus className="size-4" aria-hidden="true" />
+                      Facturar
+                    </NavLink>
+                  </Button>
+                ) : null}
+                {canViewCash ? (
+                  <Button asChild variant="secondary" size="sm">
+                    <NavLink to="/cashbox">
+                      <WalletCards className="size-4" aria-hidden="true" />
+                      Arqueo
+                    </NavLink>
+                  </Button>
+                ) : null}
+                {canViewInvoices ? (
+                  <Button asChild variant="secondary" size="sm">
+                    <NavLink to="/invoices">
+                      <FileClock className="size-4" aria-hidden="true" />
+                      Buscar recibos
+                    </NavLink>
+                  </Button>
+                ) : null}
                 <Badge variant="outline">{cashLabel}</Badge>
                 <Badge variant="outline" title={status}>{serverLabel}</Badge>
                 <Badge variant="secondary">Hora local {localTime}</Badge>

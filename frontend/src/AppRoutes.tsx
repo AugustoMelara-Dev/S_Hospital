@@ -62,7 +62,10 @@ export function AppRoutes({
             canViewCatalog={canViewCatalog}
             canViewFiscalSettings={canViewFiscalSettings}
             canViewInvoices={canViewInvoices}
+            canViewManagerialReports={canViewManagerialReports}
             canViewReports={canViewReports}
+            cashSession={cashSession}
+            onStatus={onStatus}
           />
         }
       />
