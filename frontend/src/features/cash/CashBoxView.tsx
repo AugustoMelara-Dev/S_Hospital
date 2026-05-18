@@ -1,5 +1,10 @@
 import { type FormEvent, useEffect, useState } from 'react';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
+import { Input } from '../../components/ui/input';
+import { LoadingState } from '../../components/ui/states';
 import { type CashSession, apiClient } from '../../lib/api';
 
 type CashBoxViewProps = {
@@ -93,45 +98,49 @@ export function CashBoxView({ onStatus, onSessionChange }: CashBoxViewProps) {
 
   return (
     <section id="caja" className="cash-layout" aria-labelledby="cash-title">
-      <div className="cash-panel">
-        <div className="section-heading">
+      <Card>
+        <CardHeader className="md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="app-kicker">Operacion de caja</p>
-            <h2 id="cash-title">Caja</h2>
+            <CardDescription>Operacion de caja</CardDescription>
+            <CardTitle id="cash-title">Caja</CardTitle>
           </div>
-          <button type="button" className="secondary-button compact-button" onClick={refreshCurrentSession}>
+          <Button type="button" variant="secondary" size="sm" onClick={refreshCurrentSession}>
             Actualizar
-          </button>
-        </div>
+          </Button>
+        </CardHeader>
 
-        {formAlert ? (
-          <div className="error-summary" role="alert" aria-live="assertive">
-            {formAlert}
-          </div>
-        ) : null}
+        <CardContent className="flex flex-col gap-4">
+          {formAlert ? (
+            <div className="error-summary" role="alert" aria-live="assertive">
+              {formAlert}
+            </div>
+          ) : null}
 
-        {loading ? (
-          <p>Cargando estado de caja...</p>
-        ) : session?.status === 'open' ? (
-          <div className="cash-state open-state" role="status">
-            <strong>Caja abierta</strong>
-            <span>Monto inicial L. {session.opening_amount}</span>
-            <span>Abierta desde {formatDate(session.opened_at)}</span>
-          </div>
-        ) : (
-          <div className="cash-state" role="status">
-            <strong>Sin caja abierta</strong>
-            <span>Los pagos quedan bloqueados hasta abrir caja.</span>
-          </div>
-        )}
-      </div>
+          {loading ? (
+            <LoadingState label="Cargando estado de caja..." />
+          ) : session?.status === 'open' ? (
+            <div className="cash-state open-state" role="status">
+              <Badge>Caja abierta</Badge>
+              <strong>Monto inicial L. {session.opening_amount}</strong>
+              <span>Abierta desde {formatDate(session.opened_at)}</span>
+            </div>
+          ) : (
+            <div className="cash-state" role="status">
+              <Badge variant="outline">Sin caja abierta</Badge>
+              <strong>Pagos bloqueados</strong>
+              <span>Abra caja antes de emitir y cobrar facturas.</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {session?.status === 'open' ? (
         <form className="cash-panel" onSubmit={requestCloseConfirmation}>
+          <CardDescription>Cierre auditado</CardDescription>
           <h2>Cerrar caja</h2>
           <label>
             Monto contado
-            <input
+            <Input
               value={closingAmount}
               onChange={(event) => setClosingAmount(event.target.value)}
               placeholder="517.25"
@@ -145,7 +154,7 @@ export function CashBoxView({ onStatus, onSessionChange }: CashBoxViewProps) {
               placeholder="Obligatoria si hay sobrante o faltante."
             />
           </label>
-          <button type="submit">Cerrar caja</button>
+          <Button type="submit">Cerrar caja</Button>
           <dl className="totals-list">
             <div>
               <dt>Esperado</dt>
@@ -163,12 +172,13 @@ export function CashBoxView({ onStatus, onSessionChange }: CashBoxViewProps) {
         </form>
       ) : (
         <form className="cash-panel" onSubmit={openSession}>
+          <CardDescription>Apertura de turno</CardDescription>
           <h2>Abrir caja</h2>
           <label>
             Monto inicial
-            <input value={openingAmount} onChange={(event) => setOpeningAmount(event.target.value)} />
+            <Input value={openingAmount} onChange={(event) => setOpeningAmount(event.target.value)} />
           </label>
-          <button type="submit">Abrir caja</button>
+          <Button type="submit">Abrir caja</Button>
         </form>
       )}
 

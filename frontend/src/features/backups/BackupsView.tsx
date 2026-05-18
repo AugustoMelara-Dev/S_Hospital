@@ -1,4 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Card, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { EmptyState } from '../../components/ui/states';
 import { type AuthUser, type BackupLog, type PaginatedMeta, apiClient } from '../../lib/api';
 
 type BackupsViewProps = {
@@ -55,17 +59,19 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
   return (
     <section id="backups" className="backups-layout" aria-labelledby="backups-title">
-      <div className="section-heading">
+      <Card>
+        <CardHeader className="md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="app-kicker">Respaldo local</p>
-          <h2 id="backups-title">Backups locales</h2>
+          <CardDescription>Respaldo local</CardDescription>
+          <CardTitle id="backups-title">Backups locales</CardTitle>
         </div>
         {canCreate ? (
-          <button type="button" onClick={handleCreateBackup} disabled={loading}>
+          <Button type="button" onClick={handleCreateBackup} disabled={loading}>
             Crear backup
-          </button>
+          </Button>
         ) : null}
-      </div>
+        </CardHeader>
+      </Card>
 
       {backups.length > 0 ? (
         <div className="table-wrap">
@@ -86,7 +92,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 <tr key={backup.id}>
                   <td>{backup.filename}</td>
                   <td>
-                    <span className={`status-pill status-${backup.status}`}>{backup.status}</span>
+                    <BackupStatus status={backup.status} />
                   </td>
                   <td>{formatBytes(backup.size_bytes)}</td>
                   <td>{formatDate(backup.completed_at ?? backup.created_at)}</td>
@@ -94,14 +100,15 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                   <td className="checksum-cell">{backup.checksum_sha256 ?? 'No disponible'}</td>
                   <td>
                     {canDownload && backup.status === 'success' ? (
-                      <button
+                      <Button
                         type="button"
-                        className="secondary-button compact-button"
+                        variant="secondary"
+                        size="sm"
                         aria-label={`Descargar backup ${backup.filename}`}
                         onClick={() => window.location.assign(apiClient.backupDownloadUrl(backup.id))}
                       >
                         Descargar
-                      </button>
+                      </Button>
                     ) : (
                       <span className="muted">No disponible</span>
                     )}
@@ -112,33 +119,39 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           </table>
           {meta ? (
             <div className="pagination-row">
-              <button
+              <Button
                 type="button"
-                className="secondary-button"
+                variant="secondary"
                 disabled={loading || meta.current_page <= 1}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
                 Anterior
-              </button>
+              </Button>
               <span className="muted">
                 Pagina {meta.current_page} de {Math.max(1, Math.ceil(meta.total / meta.per_page))}
               </span>
-              <button
+              <Button
                 type="button"
-                className="secondary-button"
+                variant="secondary"
                 disabled={loading || meta.current_page >= Math.ceil(meta.total / meta.per_page)}
                 onClick={() => setPage((current) => current + 1)}
               >
                 Siguiente
-              </button>
+              </Button>
             </div>
           ) : null}
         </div>
       ) : (
-        <p className="notice">No hay backups registrados.</p>
+        <EmptyState title="No hay backups registrados" description="Cree un respaldo manual para validar la ruta local." />
       )}
     </section>
   );
+}
+
+function BackupStatus({ status }: { status: BackupLog['status'] }) {
+  const variant = status === 'success' ? 'default' : status === 'failed' ? 'destructive' : 'outline';
+
+  return <Badge variant={variant}>{status}</Badge>;
 }
 
 function formatBytes(size: number | null): string {
