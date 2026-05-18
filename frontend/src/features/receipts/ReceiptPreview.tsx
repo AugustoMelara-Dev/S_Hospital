@@ -2,7 +2,13 @@ import { useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { NativeSelect } from '../../components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 import { type ReceiptData } from '../../lib/api';
 
 type ReceiptPreviewProps = {
@@ -16,24 +22,6 @@ export function ReceiptPreview({ onPrint, receipt, onWidthChange }: ReceiptPrevi
 
   const handlePrint = useReactToPrint({
     contentRef: receiptRef,
-    pageStyle: `
-      @page {
-        size: ${receipt.width} auto;
-        margin: 0;
-      }
-      @media print {
-        body * { visibility: hidden; }
-        .thermal-receipt,
-        .thermal-receipt * { visibility: visible; }
-        .thermal-receipt {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: ${receipt.width};
-        }
-        .no-print { display: none !important; }
-      }
-    `,
   });
 
   function handlePrintClick() {
@@ -46,14 +34,15 @@ export function ReceiptPreview({ onPrint, receipt, onWidthChange }: ReceiptPrevi
   return (
     <div className="receipt-preview-panel" aria-label="Vista previa del recibo">
       <div className="receipt-preview-controls no-print">
-        <NativeSelect
-          aria-label="Ancho del recibo"
-          value={receipt.width}
-          onChange={(e) => onWidthChange(e.target.value as ReceiptData['width'])}
-        >
-          <option value="80mm">80mm</option>
-          <option value="58mm">58mm</option>
-        </NativeSelect>
+        <Select value={receipt.width} onValueChange={(v) => onWidthChange(v as ReceiptData['width'])}>
+          <SelectTrigger aria-label="Ancho del recibo" className="w-[120px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="80mm">80mm</SelectItem>
+            <SelectItem value="58mm">58mm</SelectItem>
+          </SelectContent>
+        </Select>
         <Button type="button" onClick={handlePrintClick}>
           Imprimir
         </Button>
@@ -179,7 +168,7 @@ function ItemName({ item }: { item: ReceiptData['items'][number] }) {
 }
 
 function ItemPrice({ item }: { item: ReceiptData['items'][number] }) {
-  return <strong>L. {item.line_total}</strong>;
+  return <strong className="item-price">L. {item.line_total}</strong>;
 }
 
 function formatDate(value: string): string {

@@ -4,7 +4,13 @@ import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
-import { NativeSelect } from '../../../components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/data-table';
 import { KPICard } from './KPICard';
 import type { Category, CategoryReport, IncomeReport, ReportFilters } from '../../../lib/api/types';
@@ -95,45 +101,53 @@ export function IncomeReportTab({
             </div>
             <div className="w-[180px]">
               <Label>Categoría</Label>
-              <NativeSelect
-                id="income-category"
-                aria-label="Categoria"
-                value={categoryId}
-                onChange={(event) => onCategoryChange(event.target.value)}
-              >
-                  <option value="">Todas</option>
+              <Select value={categoryId || 'all'} onValueChange={(v) => onCategoryChange(v === 'all' ? '' : v)}>
+                <SelectTrigger id="income-category" aria-label="Categoría">
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
                   {categoryOptions.map((c) => (
-                    <option key={c.id} value={String(c.id)}>{c.name}</option>
+                    <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
                   ))}
-              </NativeSelect>
+                </SelectContent>
+              </Select>
             </div>
             <div className="w-[180px]">
               <Label htmlFor="income-method">Metodo de pago</Label>
-              <NativeSelect
-                id="income-method"
-                value={method}
-                onChange={(event) => onMethodChange(event.target.value as NonNullable<ReportFilters['method']>)}
-              >
-                <option value="">Todos</option>
-                <option value="cash">Efectivo</option>
-                <option value="transfer">Transferencia</option>
-                <option value="card">Tarjeta</option>
-                <option value="other">Otro</option>
-              </NativeSelect>
+              <Select value={method || 'all'} onValueChange={(v) => {
+                const mapped = v === 'all' ? '' : v;
+                onMethodChange(mapped as NonNullable<ReportFilters['method']>);
+              }}>
+                <SelectTrigger id="income-method" aria-label="Método de pago">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="cash">Efectivo</SelectItem>
+                  <SelectItem value="transfer">Transferencia</SelectItem>
+                  <SelectItem value="card">Tarjeta</SelectItem>
+                  <SelectItem value="other">Otro</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="w-[180px]">
               <Label htmlFor="income-status">Estado</Label>
-              <NativeSelect
-                id="income-status"
-                value={status}
-                onChange={(event) => onStatusChange(event.target.value as NonNullable<ReportFilters['status']>)}
-              >
-                <option value="">Todos</option>
-                <option value="issued">Emitida</option>
-                <option value="partial">Parcial</option>
-                <option value="paid">Pagada</option>
-                <option value="void">Anulada</option>
-              </NativeSelect>
+              <Select value={status || 'all'} onValueChange={(v) => {
+                const mapped = v === 'all' ? '' : v;
+                onStatusChange(mapped as NonNullable<ReportFilters['status']>);
+              }}>
+                <SelectTrigger id="income-status" aria-label="Estado">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="issued">Emitida</SelectItem>
+                  <SelectItem value="partial">Parcial</SelectItem>
+                  <SelectItem value="paid">Pagada</SelectItem>
+                  <SelectItem value="void">Anulada</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <Button onClick={onSubmit} disabled={loading}>
               {loading ? 'Consultando...' : 'Ver rango'}

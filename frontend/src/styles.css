@@ -92,7 +92,6 @@
 
 @layer components {
   .app-kicker {
-    @apply m-0 text-xs font-semibold uppercase tracking-normal text-primary;
   }
 
   .section-heading {
@@ -717,5 +716,193 @@
   @page receipt-58 {
     size: 58mm auto;
     margin: 0;
+  }
+}
+
+/* ============================================
+   THERMAL RECEIPT STYLES
+   ============================================ */
+
+.receipt-preview-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.receipt-preview-controls select {
+  width: auto;
+}
+
+.receipt-preview-container {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  padding: 1rem;
+  background: #e2e8f0;
+  border-radius: 0.5rem;
+}
+
+.thermal-receipt {
+  width: 80mm;
+  padding: 16px;
+  background: white;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #000;
+}
+
+.thermal-receipt.receipt-58mm {
+  width: 58mm;
+  font-size: 10px;
+  padding: 12px;
+}
+
+.thermal-receipt * {
+  box-sizing: border-box;
+}
+
+.receipt-header {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.receipt-header .hospital-name {
+  display: block;
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.receipt-header span {
+  display: block;
+  font-size: 10px;
+}
+
+.receipt-rule {
+  border: none;
+  border-top: 1px dashed #000;
+  margin: 10px 0;
+}
+
+.receipt-title {
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  margin: 10px 0;
+  letter-spacing: 1px;
+}
+
+.receipt-section-title {
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
+  margin: 10px 0;
+}
+
+.receipt-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.receipt-table-head {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  border-bottom: 1px solid #000;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+.receipt-items {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.receipt-row .strong {
+  font-weight: bold;
+}
+
+.receipt-totals {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.receipt-totals .receipt-row:last-child {
+  font-weight: bold;
+  font-size: 16px;
+  border-top: 2px solid #000;
+  padding-top: 6px;
+  margin-top: 6px;
+}
+
+.item-name {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  word-break: break-word;
+  flex: 1;
+  min-width: 0;
+}
+
+.item-name .category {
+  font-size: 8px;
+  color: #666;
+}
+
+.item-name .name {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.item-name .qty {
+  font-size: 8px;
+  color: #666;
+}
+
+.special-rule-badge {
+  font-size: 7px;
+  padding: 1px 4px;
+  margin-left: 4px;
+}
+
+.receipt-footer {
+  text-align: center;
+  font-size: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.item-price {
+  text-align: right;
+  font-weight: bold;
+}
+
+@media print {
+  .thermal-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    padding: 16px;
+    background: white;
+  }
+
+  .thermal-receipt.receipt-58mm {
+    width: 58mm;
+    padding: 12px;
   }
 }

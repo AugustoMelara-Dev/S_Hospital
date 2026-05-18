@@ -134,7 +134,7 @@ async function installApiMocks(page: Page) {
       status: 'open',
       opening_notes: null,
       closing_notes: null,
-      opened_at: '2026-05-17T08:00:00-06:00',
+      opened_at: '2026-05-18T08:00:00-06:00',
       closed_at: null,
     };
     return json(route, { data: currentCashSession }, 201);
@@ -162,7 +162,7 @@ async function installApiMocks(page: Page) {
         paid_amount: '0.00',
         balance_due: hasDialysisPrescription ? '0.00' : '28.75',
         status: 'issued',
-        issued_at: '2026-05-17T08:00:00-06:00',
+        issued_at: '2026-05-18T08:00:00-06:00',
         items: [{
           id: 1,
           service_id: 10,
@@ -209,7 +209,7 @@ async function installApiMocks(page: Page) {
           amount: invoice.total,
           reference: null,
           status: 'posted',
-          paid_at: '2026-05-17T08:03:00-06:00',
+          paid_at: '2026-05-18T08:03:00-06:00',
         },
         invoice,
       },
@@ -227,6 +227,17 @@ async function installApiMocks(page: Page) {
     const width = new URL(route.request().url()).searchParams.get('width') ?? '80mm';
     return json(route, { data: { receipt: receiptFor(invoices[invoiceId], width) } });
   });
+
+  await page.route('**/api/reports/cash-sessions/*', (route) => json(route, {
+    data: {
+      session: currentCashSession,
+      payments: [],
+      movements: [],
+      expected_cash_amount: currentCashSession?.opening_amount ?? '0.00',
+      cash_difference: '0.00',
+      permissions: { can_close: true, can_view_any: false },
+    },
+  }));
 
   await page.route('**/api/reports/daily**', (route) => json(route, {
     data: {
@@ -263,7 +274,24 @@ async function installApiMocks(page: Page) {
       categories: [{ category: 'Medicamentos', item_count: 1, quantity: '1.00', subtotal: '25.00', tax_amount: '3.75', total: '28.75' }],
     },
   }));
-  await page.route('**/api/backups**', async (route) => {
+  await page.route('**/api/reports/services**', (route) => json(route, {
+    data: {
+      date_from: '2026-05-17',
+      date_to: '2026-05-17',
+      services: [{ service: 'Eritropoyetina', item_count: 1, quantity: '1.00', subtotal: '25.00', tax_amount: '3.75', total: '28.75' }],
+    },
+  }));
+  await page.route('**/api/reports/operations**', (route) => json(route, {
+    data: {
+      date_from: '2026-05-17',
+      date_to: '2026-05-17',
+      voided_invoices: [],
+      reprints: [],
+      backups: [],
+      summary: { voided_count: 0, reprint_count: 0, backup_count: 0 },
+    },
+  }));
+  await page.route(/\/api\/backups(?:\?|$)/, async (route) => {
     if (route.request().method() === 'POST') {
       return json(route, {
         data: {
@@ -315,7 +343,7 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
       method: 'cash',
       amount: invoice.total,
       reference: null,
-      paid_at: '2026-05-17T08:03:00-06:00',
+      paid_at: '2026-05-18T08:03:00-06:00',
       cashier: 'Cajero Demo',
     }],
   };
@@ -326,6 +354,20 @@ async function loginAs(page: Page, username: string) {
   await page.getByLabel(/usuario o email/i).fill(username);
   await page.getByLabel(/contrasena/i).fill('Password123!');
   await page.getByRole('button', { name: /entrar/i }).click();
+}
+
+async function expectOperationalNavigation(page: Page) {
+  const desktopCashLink = page.getByRole('link', { name: 'Caja', exact: true }).first();
+  if (await desktopCashLink.isVisible().catch(() => false)) {
+    await expect(desktopCashLink).toBeVisible();
+    await expect(page.getByRole('link', { name: /cat.logo/i }).first()).toBeVisible();
+    return;
+  }
+
+  await page.getByLabel(/abrir men/i).click();
+  await expect(page.getByRole('link', { name: 'Caja', exact: true }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: /cat.logo/i }).first()).toBeVisible();
+  await page.keyboard.press('Escape');
 }
 
 test('production readiness cashier and admin workflow', async ({ page }) => {
@@ -350,56 +392,59 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
 
   await installApiMocks(page);
   await loginAs(page, 'cajero.demo');
+  await page.goto('/cashbox');
 
   await expect(page.locator('#cash-title')).toBeVisible();
   await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
-  await expect(page.getByText('Caja abierta', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /cerrar caja/i })).toBeVisible();
   if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
     await page.getByRole('button', { name: /cerrar modal/i }).click();
   }
 
   await page.getByRole('link', { name: /nueva factura/i }).click();
   await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
-  await page.getByRole('button', { name: 'Medicamentos', exact: true }).click();
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
-  await expect(page.getByLabel(/resumen de factura/i).getByText('L. 25.00').first()).toBeVisible();
+  await expect(page.getByText(/Total:\s*L\.\s*28\.75/)).toBeVisible();
   await page.getByRole('button', { name: /emitir factura/i }).click();
   await page.getByRole('button', { name: /confirmar emision/i }).click();
   await expect(page.getByRole('dialog', { name: /factura emitida/i })).toBeVisible();
   await page.getByRole('button', { name: /cobrar ahora/i }).click();
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
-  await page.getByRole('button', { name: /cobrar/i }).click();
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
-  await expect(page.getByRole('heading', { name: /preview termico/i })).toBeVisible();
-  await expect(page.getByLabel(/ancho del recibo/i)).toHaveValue('80mm');
-  await page.getByLabel(/ancho del recibo/i).selectOption('58mm');
+await expect(page.getByRole('heading', { name: /preview t.rmico/i })).toBeVisible();
+  await expect(page.getByText('80mm')).toBeVisible();
+  await page.locator('[aria-label="Ancho del recibo"]').click();
+  await page.getByRole('option', { name: '58mm' }).click();
   await expect(page.getByLabel(/recibo termico/i)).toHaveClass(/receipt-58mm/);
   await page.getByRole('button', { name: /cerrar modal/i }).click();
 
   await page.getByRole('link', { name: /nueva factura/i }).click();
   await page.getByLabel(/nombre del paciente/i).fill('Jose Perez');
-  await page.getByRole('button', { name: 'Medicamentos', exact: true }).click();
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
-  await page.getByLabel(/receta de dialisis/i).check();
+  await page.getByLabel(/receta de dialisis/i).click();
+  await expect(page.getByLabel(/receta de dialisis/i)).toHaveAttribute('aria-checked', 'true');
   await page.getByRole('button', { name: /emitir factura/i }).click();
   await page.getByRole('button', { name: /confirmar emision/i }).click();
   await expect(page.getByRole('dialog', { name: /factura emitida/i })).toBeVisible();
   await page.getByRole('button', { name: /cobrar ahora/i }).click();
-  await expect(page.getByText('Total L. 0.00')).toBeVisible();
+  await expect(page.getByRole('dialog', { name: /registrar pago/i }).getByText(/Total:\s*L\.\s*0\.00/)).toBeVisible();
+  await page.getByRole('button', { name: /cancelar/i }).click();
 
   await page.getByRole('link', { name: /historial/i }).click();
   await expect(page.getByRole('heading', { name: /historial de facturas/i })).toBeVisible();
   if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
     await page.getByRole('button', { name: /cerrar modal/i }).click();
   }
-  await page.getByRole('button', { name: /filtrar/i }).click();
-  await page.getByRole('main').getByRole('button', { name: /^ver$/i }).first().click();
+  await page.getByRole('button', { name: /buscar/i }).click();
+  await page.getByRole('button', { name: /ver acciones de factura/i }).first().click();
   await page.getByRole('button', { name: /reimprimir/i }).click();
-  await expect(page.getByRole('heading', { name: /preview termico/i })).toBeVisible();
-  await page.getByLabel(/ancho del recibo/i).selectOption('58mm');
+await expect(page.getByRole('heading', { name: /recibo - 000-001-01-00000001/i })).toBeVisible();
+  await page.locator('[aria-label="Ancho del recibo"]').click();
+  await page.getByRole('option', { name: '58mm' }).click();
   await expect(page.getByLabel(/recibo termico/i)).toHaveClass(/receipt-58mm/);
 
-  await page.getByRole('button', { name: /salir/i }).click();
+  await page.getByRole('button', { name: /cerrar modal/i }).click();
+  await page.getByRole('button', { name: /cerrar sesi.n/i }).click();
   await page.getByLabel(/usuario o email/i).fill('admin.demo');
   await page.getByLabel(/contrasena/i).fill('Password123!');
   await page.getByRole('button', { name: /entrar/i }).click();
@@ -409,8 +454,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByText(/total cobrado/i)).toBeVisible();
 
   await page.getByRole('link', { name: /backups/i }).click();
-  await expect(page.getByRole('heading', { name: /backups locales/i })).toBeVisible();
-  await page.getByRole('button', { name: /crear backup/i }).click();
+  await expect(page.getByRole('heading', { name: /^backups$/i })).toBeVisible();
+  await page.getByRole('button', { name: /crear backup/i }).first().click();
   await expect(page.getByText('Pendiente', { exact: true })).toBeVisible();
   expect(consoleIssues).toEqual([]);
 });
@@ -438,9 +483,8 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
   for (const viewport of viewports) {
     await page.setViewportSize(viewport);
     await page.goto('/billing/new');
-    await expect(page.getByText(/nueva factura/i)).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Caja', exact: true })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Catalogo', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /nueva factura/i })).toBeVisible();
+    await expectOperationalNavigation(page);
     await expect(page.getByLabel(/nombre del paciente/i)).toBeVisible();
     await expect(page.getByLabel(/scanner usb o codigo manual/i)).toBeVisible();
   }

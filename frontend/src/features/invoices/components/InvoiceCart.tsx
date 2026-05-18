@@ -14,6 +14,7 @@ type InvoiceCartProps = {
   items: CartItem[];
   preview: { subtotal: string; tax: string; total: string };
   onUpdateQuantity: (index: number, quantity: string) => void;
+  onUpdateDialysisPrescription: (index: number, checked: boolean) => void;
   onRemoveItem: (index: number) => void;
   onConfirm: () => void;
   disabled?: boolean;
@@ -22,19 +23,35 @@ type InvoiceCartProps = {
 
 const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 
-export function InvoiceCart({ items, preview, onUpdateQuantity, onRemoveItem, onConfirm, disabled, submitting }: InvoiceCartProps) {
+export function InvoiceCart({
+  items,
+  preview,
+  onUpdateQuantity,
+  onUpdateDialysisPrescription,
+  onRemoveItem,
+  onConfirm,
+  disabled,
+  submitting,
+}: InvoiceCartProps) {
+  const isEmpty = items.length === 0;
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 mb-4">
         <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-        <Label className="text-base">Carrito ({items.length})</Label>
+        <Label className="text-base font-semibold">Carrito</Label>
+        {items.length > 0 && (
+          <span className="ml-auto inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+            {items.length}
+          </span>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0">
-        {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-            <ShoppingCart className="h-8 w-8 mb-2 opacity-50" />
-            <p className="text-sm">No hay servicios agregados</p>
+        {isEmpty ? (
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <ShoppingCart className="h-10 w-10 mb-3 opacity-40" />
+            <p className="text-sm font-medium">No hay servicios agregados</p>
+            <p className="text-xs mt-1">Haga clic en un servicio para agregarlo</p>
           </div>
         ) : (
           <div className="space-y-2 pr-1">
@@ -43,7 +60,7 @@ export function InvoiceCart({ items, preview, onUpdateQuantity, onRemoveItem, on
               return (
                 <div
                   key={`${item.service.id}-${index}`}
-                  className="flex flex-col gap-2 rounded-md border border-border bg-card p-3"
+                  className="flex flex-col gap-2 rounded-md border border-border bg-card p-3 transition-colors hover:border-primary/30"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
@@ -57,7 +74,7 @@ export function InvoiceCart({ items, preview, onUpdateQuantity, onRemoveItem, on
                       variant="ghost"
                       size="icon"
                       onClick={() => onRemoveItem(index)}
-                      className="text-muted-foreground hover:text-destructive"
+                      className="text-muted-foreground hover:text-destructive shrink-0"
                       aria-label="Quitar item"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -102,11 +119,7 @@ export function InvoiceCart({ items, preview, onUpdateQuantity, onRemoveItem, on
                       <Checkbox
                         id={`dialysis-${index}`}
                         checked={item.dialysisPrescription}
-                        onCheckedChange={(checked) => {
-                          const newItems = [...items];
-                          newItems[index] = { ...item, dialysisPrescription: checked === true };
-                          onUpdateQuantity(index, item.quantity);
-                        }}
+                        onCheckedChange={(checked) => onUpdateDialysisPrescription(index, checked === true)}
                       />
                       <span className="text-muted-foreground">Receta de dialisis (gratis)</span>
                     </label>
@@ -118,28 +131,39 @@ export function InvoiceCart({ items, preview, onUpdateQuantity, onRemoveItem, on
         )}
       </div>
 
-      <div className="border-t border-border pt-4 mt-4 space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Subtotal:</span>
-          <span>L. {preview.subtotal}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">ISV (15%):</span>
-          <span>L. {preview.tax}</span>
-        </div>
-        <div className="flex justify-between font-bold text-lg border-t border-border pt-2">
-          <span>Total:</span>
-          <span>L. {preview.total}</span>
+      <div className="border-t border-border pt-4 mt-4 bg-card sticky bottom-0">
+        <div className="space-y-2 mb-4">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Subtotal:</span>
+            <span>L. {preview.subtotal}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">ISV (15%):</span>
+            <span>L. {preview.tax}</span>
+          </div>
+          <div className="flex justify-between font-bold text-xl border-t border-border pt-2">
+            <span>Total:</span>
+            <span className="text-primary">L. {preview.total}</span>
+          </div>
         </div>
 
         <Button
           type="button"
           size="lg"
-          className="w-full mt-2"
-          disabled={disabled || items.length === 0}
+          className="w-full font-semibold"
+          disabled={disabled || isEmpty}
           onClick={onConfirm}
         >
-          {submitting ? 'Emitiendo...' : 'Emitir Factura'}
+          {submitting ? (
+            <>
+              <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              Emitiendo...
+            </>
+          ) : isEmpty ? (
+            'Agregar servicios'
+          ) : (
+            <>Emitir Factura</>
+          )}
         </Button>
       </div>
     </div>

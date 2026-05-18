@@ -48,7 +48,10 @@ type AppShellProps = {
   onLogout: () => void;
   status: string;
   user: AuthUser;
+  topbarVariant?: 'default' | 'minimal';
 };
+
+export type { AppShellProps };
 
 function SidebarContent({
   user,
@@ -156,6 +159,7 @@ function MobileSidebar({
         <DialogPrimitive.Content
           className="fixed left-0 top-0 z-50 h-full w-72 bg-slate-900 shadow-xl transition-transform duration-200 ease-out data-[state=closed]:-translate-x-full data-[state=open]:translate-x-0"
         >
+          <DialogPrimitive.Title className="sr-only">Navegación principal</DialogPrimitive.Title>
           <SidebarContent
             user={user}
             cashSession={cashSession}
@@ -177,6 +181,7 @@ export function AppShell({
   onLogout,
   status,
   user,
+  topbarVariant = 'default',
 }: AppShellProps) {
   const location = useLocation();
   const [now, setNow] = useState(() => new Date());
@@ -203,7 +208,9 @@ export function AppShell({
   const canCreateInvoices = user.permissions.includes('invoices.create');
   const canViewCash = user.permissions.includes('cash.view');
   const showInvoiceAction = canCreateInvoices && location.pathname !== '/billing/new';
-  const showCashAction = canViewCash && location.pathname !== '/cashbox';
+  const showCashAction = canViewCash && location.pathname !== '/cashbox' && location.pathname !== '/cashbox/';
+
+  const isMinimalTopbar = topbarVariant === 'minimal';
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 30_000);
@@ -247,45 +254,49 @@ export function AppShell({
 
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              {activeItem?.label ?? 'Módulo'}
+              {isMinimalTopbar ? '' : (activeItem?.label ?? 'Módulo')}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            {showInvoiceAction && (
+            {!isMinimalTopbar && showInvoiceAction && (
               <Button type="button" size="sm" onClick={onQuickInvoice}>
                 <Plus className="size-4" aria-hidden="true" />
                 <span className="hidden sm:inline">Nueva Factura</span>
               </Button>
             )}
-            {showCashAction && (
+            {!isMinimalTopbar && showCashAction && (
               <Button type="button" variant="secondary" size="sm" onClick={onQuickCash}>
                 <WalletCards className="size-4" aria-hidden="true" />
                 <span className="hidden sm:inline">{cashSession ? 'Ver Caja' : 'Abrir Caja'}</span>
               </Button>
             )}
 
-            <div
-              className={cn(
-                'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold',
-                serverOk
-                  ? 'bg-emerald-50 text-emerald-700'
-                  : 'bg-rose-50 text-rose-700',
-              )}
-              title={status}
-            >
-              <span
+            {!isMinimalTopbar && (
+              <div
                 className={cn(
-                  'size-2 rounded-full',
-                  serverOk ? 'bg-emerald-500' : 'bg-rose-500',
+                  'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold',
+                  serverOk
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'bg-rose-50 text-rose-700',
                 )}
-              />
-              <span className="hidden sm:inline">{serverOk ? 'LAN Operativo' : 'Alerta'}</span>
-            </div>
+                title={status}
+              >
+                <span
+                  className={cn(
+                    'size-2 rounded-full',
+                    serverOk ? 'bg-emerald-500' : 'bg-rose-500',
+                  )}
+                />
+                <span className="hidden sm:inline">{serverOk ? 'LAN Operativo' : 'Alerta'}</span>
+              </div>
+            )}
 
-            <div className="hidden items-center gap-2 text-sm text-slate-600 md:flex">
-              <span>{localTime}</span>
-            </div>
+            {!isMinimalTopbar && (
+              <div className="hidden items-center gap-2 text-sm text-slate-600 md:flex">
+                <span>{localTime}</span>
+              </div>
+            )}
 
             <DropdownMenuPrimitive.Root>
               <DropdownMenuPrimitive.Trigger asChild>

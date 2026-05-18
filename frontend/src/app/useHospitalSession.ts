@@ -59,6 +59,16 @@ export function useHospitalSession() {
         if (currentUser) {
           setStatus('Sesion activa.');
         }
+        if (currentUser?.permissions.includes('cash.view') && import.meta.env.MODE !== 'test') {
+          void apiClient
+            .getCurrentCashSession()
+            .then((currentCashSession) => {
+              if (currentCashSession) {
+                setCashSession(currentCashSession);
+              }
+            })
+            .catch(() => setCashSession(null));
+        }
       })
       .catch(() => {
         setUser(null);
@@ -91,6 +101,17 @@ export function useHospitalSession() {
     setUser(null);
     setCashSession(null);
     setStatus('Sesion cerrada.');
+  }
+
+  async function refreshCashSession() {
+    try {
+      const session = await apiClient.getCurrentCashSession();
+      setCashSession(session);
+      return session;
+    } catch {
+      setCashSession(null);
+      return null;
+    }
   }
 
   async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
@@ -152,5 +173,6 @@ export function useHospitalSession() {
     handleLogin,
     handleLogout,
     handlePasswordSubmit,
+    refreshCashSession,
   };
 }

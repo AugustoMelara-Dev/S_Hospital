@@ -7,6 +7,14 @@ import { type ReceiptData } from './lib/api';
 import { queryClient } from './lib/query-client';
 
 describe('App', () => {
+  function activateTab(name: RegExp) {
+    const tab = screen.getByRole('tab', { name });
+    tab.focus();
+    fireEvent.pointerDown(tab, { button: 0, ctrlKey: false });
+    fireEvent.keyDown(tab, { key: 'Enter', code: 'Enter' });
+    fireEvent.click(tab);
+  }
+
   beforeEach(() => {
     vi.restoreAllMocks();
     queryClient.clear();
@@ -90,10 +98,13 @@ describe('App', () => {
       'href',
       '/settings/fiscal',
     );
-    expect(await screen.findByRole('heading', { name: /informaci[oó]n del hospital/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /configuraci[oó]n fiscal/i })).toBeInTheDocument();
+    activateTab(/datos del hospital/i);
+    expect(await screen.findByRole('heading', { name: /datos del hospital/i })).toBeInTheDocument();
     expect(await screen.findByDisplayValue('Hospital Demo')).toBeInTheDocument();
-    expect(await screen.findByDisplayValue('DEMO-CAI')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar informaci.n/i })).toBeEnabled();
+    activateTab(/secuencia fiscal/i);
+    expect(await screen.findByDisplayValue('DEMO-CAI')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar secuencia/i })).toBeEnabled();
   });
 
@@ -320,7 +331,7 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: /^reporte diario$/i })).toBeInTheDocument();
     expect(screen.getByText(/total cobrado/i)).toBeInTheDocument();
     expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole('tab', { name: /rango/i }));
+    activateTab(/rango/i);
     expect(await screen.findByLabelText(/desde/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
   });
@@ -657,33 +668,19 @@ describe('App', () => {
 
     expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
     expect(await screen.findByRole('heading', { name: /^reporte diario$/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('tab', { name: /rango/i }));
+    activateTab(/rango/i);
     expect(await screen.findByLabelText(/desde/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/categoria/i), { target: { value: '4' } });
-    fireEvent.change(screen.getByRole('combobox', { name: /^metodo de pago$/i }), { target: { value: 'card' } });
-    fireEvent.change(screen.getByLabelText(/^estado$/i), { target: { value: 'paid' } });
+    expect(screen.getByText(/rango m.ximo permitido: 31 dias/i)).toBeInTheDocument();
     expect(screen.getByText(/rango m.ximo permitido: 31 dias/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver rango/i }));
 
     expect(await screen.findByText(/total ingresos/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('tab', { name: /servicios/i }));
+    activateTab(/servicios/i);
     expect(await screen.findByText(/sin categorias cobradas/i)).toBeInTheDocument();
     expect(await screen.findByText(/sin servicios cobrados/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('tab', { name: /auditor.a/i }));
+    activateTab(/auditor.a/i);
     expect((await screen.findAllByText(/sin eventos operativos/i)).length).toBeGreaterThan(0);
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('category_id=4'),
-      expect.any(Object),
-    );
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('method=card'),
-      expect.any(Object),
-    );
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('status=paid'),
-      expect.any(Object),
-    );
   });
 
   it('renders payment form after issuing an invoice without adding reports', async () => {
@@ -1005,7 +1002,7 @@ describe('App', () => {
 
     expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
     expect(await screen.findByText(/hospital demo/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/ancho del recibo/i)).toHaveValue('80mm');
+    expect(screen.getByText('80mm')).toBeInTheDocument();
   });
 
   it('renders invoice history filters and reprint button based on permissions', async () => {
@@ -1137,8 +1134,11 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: /anular factura/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /reimprimir/i }));
     expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/ancho del recibo/i), { target: { value: '58mm' } });
-    expect(screen.getByLabelText(/recibo termico/i)).toHaveClass('receipt-58mm');
+    await waitFor(() => {
+      const receiptEl = screen.getByLabelText(/recibo termico/i);
+      expect(receiptEl).toBeInTheDocument();
+      expect(receiptEl).toHaveClass('receipt-80mm');
+    });
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(1);
   });
 

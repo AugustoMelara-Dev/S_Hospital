@@ -1,6 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
-import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { Card, CardContent } from '../../components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
 import { Badge } from '../../components/ui/badge';
 import { PageHeader } from '../../components/ui/page-header';
 import { EmptyState } from '../../components/ui/states';
@@ -172,25 +171,20 @@ export function ReportsView({
           </Badge>
         }
       />
-      <Card className="mb-6">
-        <CardContent className="pt-0">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ReportTab)}>
-            <TabsList className="w-full justify-start overflow-auto">
-              <TabsTrigger value="diario" onClick={() => setActiveTab('diario')}>Diario</TabsTrigger>
-              <TabsTrigger value="rango" onClick={() => setActiveTab('rango')}>Por Rango</TabsTrigger>
-              <TabsTrigger value="servicios" onClick={() => setActiveTab('servicios')}>Servicios</TabsTrigger>
-              <TabsTrigger value="auditoria" onClick={() => setActiveTab('auditoria')}>Auditoría</TabsTrigger>
-              {canViewCashSessionReport && (
-                <TabsTrigger value="caja" onClick={() => setActiveTab('caja')}>Caja</TabsTrigger>
-              )}
-            </TabsList>
-          </Tabs>
-        </CardContent>
-      </Card>
 
-      {canViewManagerial ? (
-        <>
-          {activeTab === 'diario' && (
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ReportTab)} className="space-y-6">
+        <TabsList className="bg-muted/50">
+          <TabsTrigger value="diario">Diario</TabsTrigger>
+          <TabsTrigger value="rango">Por Rango</TabsTrigger>
+          <TabsTrigger value="servicios">Servicios</TabsTrigger>
+          <TabsTrigger value="auditoria">Auditoría</TabsTrigger>
+          {canViewCashSessionReport && (
+            <TabsTrigger value="caja">Caja</TabsTrigger>
+          )}
+        </TabsList>
+
+        <TabsContent value="diario" className="mt-0">
+          {canViewManagerial ? (
             <DailyReportTab
               daily={daily}
               dailyDate={dailyDate}
@@ -199,9 +193,16 @@ export function ReportsView({
               onDateChange={setDailyDate}
               onSubmit={handleDailySubmit}
             />
+          ) : (
+            <EmptyState
+              title="Reportes gerenciales no disponibles"
+              description="Este usuario no tiene permisos gerenciales."
+            />
           )}
+        </TabsContent>
 
-          {activeTab === 'rango' && (
+        <TabsContent value="rango" className="mt-0">
+          {canViewManagerial ? (
             <IncomeReportTab
               canExport={canExport}
               dateFrom={dateFrom}
@@ -220,9 +221,16 @@ export function ReportsView({
               onStatusChange={setStatus}
               onSubmit={loadRangeReports}
             />
+          ) : (
+            <EmptyState
+              title="Reportes gerenciales no disponibles"
+              description="Este usuario no tiene permisos gerenciales."
+            />
           )}
+        </TabsContent>
 
-{activeTab === 'servicios' && (
+        <TabsContent value="servicios" className="mt-0">
+          {canViewManagerial ? (
             <ServiceSalesTab
               dateFrom={dateFrom}
               dateTo={dateTo}
@@ -232,9 +240,16 @@ export function ReportsView({
               onDateToChange={setDateTo}
               onSubmit={loadRangeReports}
             />
+          ) : (
+            <EmptyState
+              title="Reportes gerenciales no disponibles"
+              description="Este usuario no tiene permisos gerenciales."
+            />
           )}
+        </TabsContent>
 
-          {activeTab === 'auditoria' && (
+        <TabsContent value="auditoria" className="mt-0">
+          {canViewManagerial ? (
             <AuditoriaTab
               operations={operations}
               dateFrom={dateFrom}
@@ -243,57 +258,32 @@ export function ReportsView({
               onDateToChange={setDateTo}
               onSubmit={loadRangeReports}
             />
-          )}
-
-          {activeTab === 'auditoria' && (
-            <AuditoriaTab
-              operations={operations}
-              dateFrom={dateFrom}
-              dateTo={dateTo}
-              onDateFromChange={setDateFrom}
-              onDateToChange={setDateTo}
-              onSubmit={loadRangeReports}
+          ) : (
+            <EmptyState
+              title="Reportes gerenciales no disponibles"
+              description="Este usuario no tiene permisos gerenciales."
             />
           )}
+        </TabsContent>
 
-          {activeTab === 'caja' && (
-            canViewCashSessionReport ? (
-              <CashSessionReportTab
-                cashSession={cashSession}
-                cashReportId={cashReportId}
-                loading={loading}
-                error={cashError}
-                onCashReportIdChange={setCashReportId}
-                onSubmit={handleCashSubmit}
-              />
-            ) : (
-              <EmptyState
-                title="Reporte de caja no disponible"
-                description="Este usuario no tiene permiso para consultar cajas."
-              />
-            )
+        <TabsContent value="caja" className="mt-0">
+          {canViewCashSessionReport ? (
+            <CashSessionReportTab
+              cashSession={cashSession}
+              cashReportId={cashReportId}
+              loading={loading}
+              error={cashError}
+              onCashReportIdChange={setCashReportId}
+              onSubmit={handleCashSubmit}
+            />
+          ) : (
+            <EmptyState
+              title="Reporte de caja no disponible"
+              description="Este usuario no tiene permiso para consultar cajas."
+            />
           )}
-        </>
-      ) : activeTab !== 'caja' ? (
-        <EmptyState
-          title="Reportes gerenciales no disponibles"
-          description="Este usuario no tiene permisos gerenciales. Use el reporte de caja autorizado o solicite acceso a un administrador."
-        />
-      ) : canViewCashSessionReport ? (
-        <CashSessionReportTab
-          cashSession={cashSession}
-          cashReportId={cashReportId}
-          loading={loading}
-          error={cashError}
-          onCashReportIdChange={setCashReportId}
-          onSubmit={handleCashSubmit}
-        />
-      ) : (
-        <EmptyState
-          title="Reporte de caja no disponible"
-          description="Este usuario no tiene permiso para consultar cajas."
-        />
-      )}
+        </TabsContent>
+      </Tabs>
     </section>
   );
 }

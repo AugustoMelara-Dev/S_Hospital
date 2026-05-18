@@ -1,11 +1,11 @@
-import { Download, RefreshCw, Archive } from 'lucide-react';
+import { Download, RefreshCw, Archive, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { Alert } from '../../components/ui/alert';
-
 import { PaginationControls } from '../../components/ui/pagination';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/data-table';
 import { PageHeader } from '../../components/ui/page-header';
+import { Card, CardContent } from '../../components/ui/card';
 import { BackupStatusBadge, getStatusDescription } from './components/BackupStatusBadge';
 import { BackupExplanationCard, BackupEmptyState } from './components/BackupExplanationCard';
 import { type AuthUser, type BackupLog, type PaginatedMeta, apiClient, userSafeErrorMessage } from '../../lib/api';
@@ -15,14 +15,67 @@ type BackupsViewProps = {
   onStatus: (message: string) => void;
 };
 
+type StatusFilter = 'all' | 'pending' | 'success' | 'failed';
+
+function formatBytes(size: number | null): string {
+  if (size === null) return '—';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDate(value: string): string {
+  return new Intl.DateTimeFormat('es-HN', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(value));
+}
+
+function formatRelativeTime(value: string): string {
+  const now = new Date();
+  const date = new Date(value);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return 'ahora';
+  if (diffMins < 60) return `hace ${diffMins}m`;
+  if (diffHours < 24) return `hace ${diffHours}h`;
+  return `hace ${diffDays}d`;
+}
+
+function saveBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const [backups, setBackups] = useState<BackupLog[]>([]);
   const [meta, setMeta] = useState<PaginatedMeta | null>(null);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const canCreate = user.permissions.includes('backups.create');
   const canDownload = user.permissions.includes('backups.download');
+
+  const filteredBackups = statusFilter === 'all'
+    ? backups
+    : backups.filter(b => b.status === statusFilter);
+
+  const pendingCount = backups.filter(b => b.status === 'pending').length;
+  const successCount = backups.filter(b => b.status === 'success').length;
+  const failedCount = backups.filter(b => b.status === 'failed').length;
+
+  const lastSuccessBackup = backups.find(b => b.status === 'success');
+  const lastFailedBackup = backups.find(b => b.status === 'failed');
 
   useEffect(() => {
     void loadBackups(page);
@@ -135,21 +188,86 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           </Alert>
         ) : null}
 
+        {!isEmpty && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className={pendingCount > 0 ? 'border-amber-200 bg-amber-50' : 'bg-muted/30'}>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-lg ${pendingCount > 0 ? 'bg-amber-100' : 'bg-muted'}`}>
+                    <Clock className={`h-5 w-5 ${pendingCount > 0 ? 'text-amber-600' : 'text-muted-foreground'}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">
+                      {pendingCount > 0 ? `${pendingCount} en proceso` : 'Sin pendientes'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {pendingCount > 0 ? 'Backups creando' : 'No hay backups en cola'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-emerald-200 bg-emerald-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-lg bg-emerald-100">
+                    <CheckCircle className="h-5 w-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">
+                      {lastSuccessBackup
+                        ? `Último: ${formatRelativeTime(lastSuccessBackup.completed_at ?? lastSuccessBackup.created_at)}`
+                        : 'Sin backups'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {successCount > 0 ? `${successCount} completados` : 'Sin exitosos'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className={failedCount > 0 ? 'border-red-200 bg-red-50' : 'bg-muted/30'}>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-lg ${failedCount > 0 ? 'bg-red-100' : 'bg-muted'}`}>
+                    <XCircle className={`h-5 w-5 ${failedCount > 0 ? 'text-red-600' : 'text-muted-foreground'}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">
+                      {lastFailedBackup
+                        ? `Último: ${formatRelativeTime(lastFailedBackup.completed_at ?? lastFailedBackup.created_at)}`
+                        : 'Sin fallos'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {failedCount > 0
+                        ? `${failedCount} fallidos - click para reintentar`
+                        : 'Sin errores'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {!isEmpty && !loading && (
           <div className="space-y-4">
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />
-                <span>Pendiente: backup en proceso</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                <span>Completado: backup disponible</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" />
-                <span>Fallido: error al crear</span>
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Filtrar:</span>
+              {(['all', 'pending', 'success', 'failed'] as StatusFilter[]).map((filter) => (
+                <Button
+                  key={filter}
+                  type="button"
+                  variant={statusFilter === filter ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => setStatusFilter(filter)}
+                  className="h-8"
+                >
+                  {filter === 'all' ? 'Todos' : filter === 'pending' ? 'Pendientes' : filter === 'success' ? 'Exitosos' : 'Fallidos'}
+                </Button>
+              ))}
             </div>
 
             <Table>
@@ -164,7 +282,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {backups.map((backup) => (
+                {filteredBackups.map((backup) => (
                   <TableRow key={backup.id}>
                     <TableCell>{formatDate(backup.completed_at ?? backup.created_at)}</TableCell>
                     <TableCell className="font-mono text-sm">{backup.filename}</TableCell>
@@ -215,38 +333,4 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       </div>
     </section>
   );
-}
-
-function formatBytes(size: number | null): string {
-  if (size === null) {
-    return '—';
-  }
-
-  if (size < 1024) {
-    return `${size} B`;
-  }
-
-  if (size < 1024 * 1024) {
-    return `${(size / 1024).toFixed(1)} KB`;
-  }
-
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat('es-HN', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value));
-}
-
-function saveBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
 }

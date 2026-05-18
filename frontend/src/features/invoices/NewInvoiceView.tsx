@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Alert } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
 import { Dialog } from '../../components/ui/dialog';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { PatientStep } from './components/PatientStep';
@@ -241,6 +241,12 @@ export function NewInvoiceView({
     );
   }
 
+  function updateDialysisPrescription(index: number, checked: boolean) {
+    setCartItems((current) =>
+      current.map((item, idx) => (idx === index ? { ...item, dialysisPrescription: checked } : item)),
+    );
+  }
+
   function removeItem(index: number) {
     setCartItems((current) => current.filter((_, idx) => idx !== index));
   }
@@ -433,13 +439,10 @@ export function NewInvoiceView({
         </Alert>
       )}
 
-      <div className="grid flex-1 gap-4 lg:grid-cols-[1fr_380px] lg:content-start">
-        <div className="flex flex-col gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Datos del paciente</CardTitle>
-            </CardHeader>
-            <CardContent>
+      <div className="grid flex-1 gap-4 lg:grid-cols-[1fr_380px] lg:min-h-0">
+        <div className="flex flex-col gap-4 lg:min-h-0 lg:overflow-hidden">
+          <Card className="lg:shrink-0">
+            <CardContent className="pt-5">
               <PatientStep
                 patientName={patientName}
                 onPatientNameChange={handlePatientNameChange}
@@ -448,11 +451,8 @@ export function NewInvoiceView({
             </CardContent>
           </Card>
 
-          <Card className="flex-1">
-            <CardHeader>
-              <CardTitle className="text-base">Servicios facturables</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <Card className="lg:flex-1 lg:min-h-0 lg:flex lg:flex-col">
+            <CardContent className="lg:flex-1 lg:min-h-0 lg:overflow-hidden">
               <ServiceSearch
                 categories={categories}
                 services={services}
@@ -470,12 +470,13 @@ export function NewInvoiceView({
           </Card>
         </div>
 
-        <Card className="lg:sticky lg:top-4 lg:h-fit">
+        <Card className="lg:sticky lg:top-4 lg:h-fit lg:shrink-0">
           <CardContent className="pt-5">
             <InvoiceCart
               items={cartItems}
               preview={preview}
               onUpdateQuantity={updateQuantity}
+              onUpdateDialysisPrescription={updateDialysisPrescription}
               onRemoveItem={removeItem}
               onConfirm={handleEmitClick}
               disabled={submitting || !loadedCashSession}
