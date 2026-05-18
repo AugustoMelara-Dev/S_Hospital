@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -905,191 +906,163 @@ describe('App', () => {
 
   it('shows receipt preview after registering payment', async () => {
     window.history.pushState({}, '', '/billing/new');
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 2,
-            name: 'Cajero Demo',
-            email: 'cajero.demo@hospital-billing.local',
-            username: 'cajero.demo',
-            active: true,
-            roles: ['cajero'],
-            permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
-            must_change_password: false,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 7,
-            user_id: 2,
-            opening_amount: '500.00',
-            closing_amount: null,
-            expected_amount: null,
-            difference_amount: null,
-            status: 'open',
-            opening_notes: null,
-            closing_notes: null,
-            opened_at: '2026-05-17T08:00:00-06:00',
-            closed_at: null,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: [
-            {
-              id: 1,
-              name: 'Laboratorio',
-              slug: 'laboratorio',
+    const service = {
+      id: 11,
+      category_id: 1,
+      name: 'Glucosa',
+      slug: 'glucosa',
+      price: '15.00',
+      scan_code: 'LAB-GLU-001',
+      barcode: null,
+      qr_code: null,
+      taxable: true,
+      active: true,
+      special_rule_code: null,
+      category: { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 },
+    };
+    const issuedInvoice = {
+      id: 100,
+      invoice_number: '000-001-01-00000001',
+      patient_name: 'Maria Lopez',
+      subtotal: '15.00',
+      tax_amount: '2.25',
+      discount_amount: '0.00',
+      total: '17.25',
+      paid_amount: '0.00',
+      balance_due: '17.25',
+      status: 'issued',
+      issued_at: '2026-05-17T08:00:00-06:00',
+      items: [],
+    };
+    const paidInvoice = { ...issuedInvoice, paid_amount: '17.25', balance_due: '0.00', status: 'paid' };
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      const method = init?.method?.toUpperCase() ?? 'GET';
+
+      if (url.includes('/sanctum/csrf-cookie')) {
+        return { ok: true, json: async () => ({}) } as Response;
+      }
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Demo',
+              email: 'cajero.demo@hospital-billing.local',
+              username: 'cajero.demo',
               active: true,
-              sort_order: 1,
+              roles: ['cajero'],
+              permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
+              must_change_password: false,
             },
-          ],
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: [
-            {
-              id: 11,
-              category_id: 1,
-              name: 'Glucosa',
-              slug: 'glucosa',
-              price: '15.00',
-              scan_code: 'LAB-GLU-001',
-              barcode: null,
-              qr_code: null,
-              taxable: true,
-              active: true,
-              special_rule_code: null,
-              category: {
-                id: 1,
-                name: 'Laboratorio',
-                slug: 'laboratorio',
-                active: true,
-                sort_order: 1,
-              },
-            },
-          ],
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 100,
-            invoice_number: '000-001-01-00000001',
-            patient_name: 'Maria Lopez',
-            subtotal: '15.00',
-            tax_amount: '2.25',
-            discount_amount: '0.00',
-            total: '17.25',
-            paid_amount: '0.00',
-            balance_due: '17.25',
-            status: 'issued',
-            issued_at: '2026-05-17T08:00:00-06:00',
-            items: [],
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            payment: {
-              id: 50,
-              invoice_id: 100,
-              cash_session_id: 7,
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 7,
               user_id: 2,
-              method: 'cash',
-              amount: '17.25',
-              reference: null,
-              status: 'posted',
-              paid_at: '2026-05-17T08:03:00-06:00',
+              opening_amount: '500.00',
+              closing_amount: null,
+              expected_amount: null,
+              difference_amount: null,
+              status: 'open',
+              opening_notes: null,
+              closing_notes: null,
+              opened_at: '2026-05-17T08:00:00-06:00',
+              closed_at: null,
             },
-            invoice: {
-              id: 100,
-              invoice_number: '000-001-01-00000001',
-              patient_name: 'Maria Lopez',
-              subtotal: '15.00',
-              tax_amount: '2.25',
-              discount_amount: '0.00',
-              total: '17.25',
-              paid_amount: '17.25',
-              balance_due: '0.00',
-              status: 'paid',
-              issued_at: '2026-05-17T08:00:00-06:00',
-              items: [],
-            },
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            width: '80mm',
-            hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
-            fiscal: {
-              cai: 'DEMO-CAI',
-              authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
-              valid_until: '2027-05-17',
-            },
-            invoice: {
-              id: 100,
-              invoice_number: '000-001-01-00000001',
-              issued_at: '2026-05-17T08:00:00-06:00',
-              cashier: 'Cajero Demo',
-              patient_name: 'Maria Lopez',
-              subtotal: '15.00',
-              tax_amount: '2.25',
-              discount_amount: '0.00',
-              total: '17.25',
-              paid_amount: '17.25',
-              balance_due: '0.00',
-              status: 'paid',
-            },
-            items: [
-              {
-                service_name: 'Glucosa',
-                category_name: 'Laboratorio',
-                quantity: '1.00',
-                unit_price: '15.00',
-                tax_amount: '2.25',
-                line_total: '17.25',
-                special_rule_code: null,
-                special_rule_applied: false,
-                notes: null,
-              },
-            ],
-            payments: [
-              {
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/categories')) {
+        return {
+          ok: true,
+          json: async () => ({ data: [{ id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 }] }),
+        } as Response;
+      }
+
+      if (url.includes('/api/services')) {
+        return { ok: true, json: async () => ({ data: [service] }) } as Response;
+      }
+
+      if (url.includes('/api/invoices/100/payments')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              payment: {
                 id: 50,
+                invoice_id: 100,
+                cash_session_id: 7,
+                user_id: 2,
                 method: 'cash',
                 amount: '17.25',
                 reference: null,
+                status: 'posted',
                 paid_at: '2026-05-17T08:03:00-06:00',
-                cashier: 'Cajero Demo',
               },
-            ],
-          },
-        }),
-      } as Response);
+              invoice: paidInvoice,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/invoices/100/receipt')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              width: '80mm',
+              hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+              fiscal: {
+                cai: 'DEMO-CAI',
+                authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
+                valid_until: '2027-05-17',
+              },
+              invoice: { ...paidInvoice, cashier: 'Cajero Demo' },
+              items: [
+                {
+                  service_name: 'Glucosa',
+                  category_name: 'Laboratorio',
+                  quantity: '1.00',
+                  unit_price: '15.00',
+                  tax_amount: '2.25',
+                  line_total: '17.25',
+                  special_rule_code: null,
+                  special_rule_applied: false,
+                  notes: null,
+                },
+              ],
+              payments: [
+                {
+                  id: 50,
+                  method: 'cash',
+                  amount: '17.25',
+                  reference: null,
+                  paid_at: '2026-05-17T08:03:00-06:00',
+                  cashier: 'Cajero Demo',
+                },
+              ],
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.endsWith('/api/invoices') && method === 'POST') {
+        return { ok: true, json: async () => ({ data: issuedInvoice }) } as Response;
+      }
+
+      return { ok: true, json: async () => ({}) } as Response;
+    });
 
     render(<App />);
 
@@ -1494,6 +1467,7 @@ describe('App', () => {
 
   it('scopes receipt print hiding to the explicit printing receipt state', () => {
     const styles = readFileSync('src/styles.css', 'utf8');
+
     expect(styles).toContain('body[data-printing-receipt="true"] *');
     expect(styles).not.toContain('body * {\n      visibility: hidden;');
     expect(styles).not.toContain('body * {\r\n      visibility: hidden;');
