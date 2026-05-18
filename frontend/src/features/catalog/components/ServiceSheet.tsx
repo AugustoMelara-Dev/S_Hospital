@@ -1,12 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { apiClient } from '@/lib/api';
+import { apiClient, userSafeErrorMessage } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert } from '@/components/ui/alert';
 import { Sheet } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
@@ -58,6 +59,7 @@ const defaultValues: ServiceFormData = {
 
 export function ServiceSheet({ open, onOpenChange, service, categories, onSuccess }: ServiceSheetProps) {
   const isEditing = !!service;
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
@@ -94,6 +96,7 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
   }, [open, service, categories, reset]);
 
   async function onSubmit(data: ServiceFormData) {
+    setSubmitError(null);
     const payload = {
       ...data,
       scan_code: data.scan_code ?? null,
@@ -101,10 +104,14 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
       qr_code: data.qr_code ?? null,
       special_rule_code: data.special_rule_code ?? null,
     };
-    await apiClient.saveService(payload, service?.id);
-    onSuccess();
-    onOpenChange(false);
-    reset(defaultValues);
+    try {
+      await apiClient.saveService(payload, service?.id);
+      onSuccess();
+      onOpenChange(false);
+      reset(defaultValues);
+    } catch (error) {
+      setSubmitError(userSafeErrorMessage(error, 'Error al guardar el servicio.'));
+    }
   }
 
   return (
@@ -163,7 +170,9 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
             id="scan_code"
             placeholder="LAB-GLU-001"
             {...register('scan_code')}
+            className={cn(errors.scan_code && 'border-destructive')}
           />
+          {errors.scan_code && <p className="text-sm text-destructive">{errors.scan_code.message}</p>}
         </div>
 
         <div className="space-y-2">
@@ -172,7 +181,9 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
             id="barcode"
             placeholder="Código de barra opcional"
             {...register('barcode')}
+            className={cn(errors.barcode && 'border-destructive')}
           />
+          {errors.barcode && <p className="text-sm text-destructive">{errors.barcode.message}</p>}
         </div>
 
         <div className="space-y-2">
@@ -181,7 +192,9 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
             id="qr_code"
             placeholder="Código QR opcional"
             {...register('qr_code')}
+            className={cn(errors.qr_code && 'border-destructive')}
           />
+          {errors.qr_code && <p className="text-sm text-destructive">{errors.qr_code.message}</p>}
         </div>
 
         <div className="space-y-2">
@@ -210,6 +223,12 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
             <span className="text-sm font-medium">Servicio activo</span>
           </label>
         </div>
+
+        {submitError && (
+          <Alert variant="destructive" title="Error al guardar">
+            {submitError}
+          </Alert>
+        )}
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button

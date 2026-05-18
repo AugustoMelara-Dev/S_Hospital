@@ -60,6 +60,10 @@ async function waitSettled(page) {
   await page.waitForLoadState('networkidle').catch(() => {});
 }
 
+async function waitServicesReady(page) {
+  await page.getByText(/cargando servicios/i).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+}
+
 async function clickFirstVisible(page, candidates, options = {}) {
   for (const candidate of candidates) {
     const locator = typeof candidate === 'string' ? page.getByRole('button', { name: candidate, exact: true }) : candidate;
@@ -99,6 +103,31 @@ async function clearField(locator) {
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
   });
+}
+
+async function isEmitEnabled(page) {
+  const emitButton = page.getByRole('button', { name: /emitir factura/i });
+  if (!(await emitButton.isVisible().catch(() => false))) {
+    return false;
+  }
+
+  return emitButton.isEnabled();
+}
+
+async function firstActiveService(page) {
+  return page.evaluate(async () => {
+    const response = await fetch('/api/services?active=1&per_page=150', {
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const services = (await response.json()).data ?? [];
+    return services.find((service) => service.scan_code || service.barcode || service.qr_code) ?? services[0] ?? null;
+  }).catch(() => null);
 }
 
 async function ensureLoggedIn(page) {
@@ -228,37 +257,64 @@ async function main() {
     await ensureCashOpen(page);
 
     await navigate(page, routeScreens['billing-new-empty'], 'billing-new-empty');
+    await waitServicesReady(page);
     await clearField(page.locator('#nueva-factura input').first());
     await screenshot(page, 'billing-new-empty');
 
-    const emitButton = page.getByRole('button', { name: /emitir factura/i });
     const patientInput = page.locator('#nueva-factura input').first();
     await clearField(patientInput);
 
-    const searchInput = page.getByLabel(/buscar por nombre/i);
-    await searchInput.fill('eritropoyetina');
-    await waitSettled(page);
-
-    const categoryButton = page.getByRole('button', { name: /medicamentos/i }).first();
-    if (await categoryButton.isVisible().catch(() => false)) {
-      await categoryButton.click();
+    const emitEnabledWithoutPatient = await isEmitEnabled(page);
+    if (emitEnabledWithoutPatient) {
+      findings.push('billing-new-empty: el boton Emitir Factura no debe estar habilitado sin paciente.');
     }
 
-    const serviceButton = page.getByRole('button', { name: /eritropoyetina/i }).first();
-    await serviceButton.click();
-    await waitSettled(page);
-    await clearField(patientInput);
+    const serviceForSmoke = await firstActiveService(page);
+    const serviceCode = serviceForSmoke?.scan_code || serviceForSmoke?.barcode || serviceForSmoke?.qr_code || '';
+    const serviceQuery = serviceCode || serviceForSmoke?.name || 'glucosa';
+    const serviceName = serviceForSmoke?.name || serviceQuery;
+
+    if (serviceCode) {
+      await page.getByLabel(/scanner usb o codigo manual/i).fill(serviceCode);
+      await page.getByRole('button', { name: /escanear/i }).click();
+      await waitSettled(page);
+    } else {
+      const searchInput = page.getByLabel(/buscar por nombre/i);
+      await searchInput.fill(serviceQuery);
+      await waitSettled(page);
+
+      const serviceButton = page.getByRole('button', { name: new RegExp(serviceName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }).first();
+      if (await serviceButton.isVisible().catch(() => false)) {
+        await serviceButton.click();
+        await waitSettled(page);
+      } else {
+        await searchInput.fill('');
+        await waitSettled(page);
+        const firstVisibleService = page.locator('#nueva-factura button').filter({ hasText: /L\.\s*\d/ }).first();
+        if (await firstVisibleService.isVisible().catch(() => false)) {
+          await firstVisibleService.click();
+          await waitSettled(page);
+        } else {
+          findings.push(`billing-new-with-services: no se encontro servicio activo visible para ${serviceQuery}.`);
+        }
+      }
+    }
     await screenshot(page, 'billing-new-with-services');
 
-    await clearField(patientInput);
-    await emitButton.click();
-    await page.getByText(/ingrese el nombre del paciente|falta el nombre del paciente/i).waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
-    const missingPatientText = await page.locator('body').innerText();
-    if (!/ingrese el nombre del paciente|falta el nombre del paciente/i.test(missingPatientText)) {
-      findings.push('billing-new-with-services: no se vio alerta inmediata al intentar emitir sin paciente.');
+    const emitEnabledWithoutPatientAfterService = await isEmitEnabled(page);
+    if (emitEnabledWithoutPatientAfterService) {
+      findings.push('billing-new-with-services: el boton Emitir Factura no debe estar habilitado sin paciente.');
     }
 
     await patientInput.fill(`Paciente Smoke ${Date.now()}`);
+    await waitSettled(page);
+
+    const emitButton = page.getByRole('button', { name: /emitir factura/i });
+    const emitEnabledWithPatient = await isEmitEnabled(page);
+    if (!emitEnabledWithPatient) {
+      findings.push('billing-new-with-services: el boton Emitir Factura debe estar habilitado con paciente y servicio.');
+    }
+
     await emitButton.click();
     await page.getByRole('dialog', { name: /confirmar factura/i }).waitFor({ state: 'visible', timeout: 10000 });
     await screenshot(page, 'billing-confirm-modal');

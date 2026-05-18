@@ -366,7 +366,7 @@ describe('App', () => {
     expect(screen.queryByLabelText(/fecha diaria/i)).not.toBeInTheDocument();
   });
 
-  it('renders backups view and empty state for an admin', async () => {
+  it('renders backups view actions for an admin', async () => {
     window.history.pushState({}, '', '/backups');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
@@ -401,7 +401,7 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: /^backups$/i })).toBeInTheDocument();
-    expect(await screen.findByText(/no hay backups/i)).toBeInTheDocument();
+    expect(await screen.findByText(/sistema de backups/i)).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /crear backup/i }).some((button) => !button.hasAttribute('disabled'))).toBe(true);
   });
 
@@ -1009,6 +1009,122 @@ describe('App', () => {
     expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
     expect(await screen.findByText(/hospital demo/i)).toBeInTheDocument();
     expect(screen.getByText('80mm')).toBeInTheDocument();
+  });
+
+  it('rejects inactive services returned by scanner lookup', async () => {
+    window.history.pushState({}, '', '/billing/new');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Demo',
+              email: 'cajero.demo@hospital-billing.local',
+              username: 'cajero.demo',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 7,
+              user_id: 2,
+              opening_amount: '500.00',
+              closing_amount: null,
+              expected_amount: null,
+              difference_amount: null,
+              status: 'open',
+              opening_notes: null,
+              closing_notes: null,
+              opened_at: '2026-05-17T08:00:00-06:00',
+              closed_at: null,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/categories')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: 1,
+                name: 'Laboratorio',
+                slug: 'laboratorio',
+                active: true,
+                sort_order: 1,
+              },
+            ],
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/services') && url.includes('code=INACTIVE-001')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: 12,
+                category_id: 1,
+                name: 'Servicio descontinuado',
+                slug: 'servicio-descontinuado',
+                price: '10.00',
+                scan_code: 'INACTIVE-001',
+                barcode: null,
+                qr_code: null,
+                taxable: true,
+                active: false,
+                special_rule_code: null,
+                category: {
+                  id: 1,
+                  name: 'Laboratorio',
+                  slug: 'laboratorio',
+                  active: true,
+                  sort_order: 1,
+                },
+              },
+            ],
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/services')) {
+        return {
+          ok: true,
+          json: async () => ({ data: [] }),
+        } as Response;
+      }
+
+      return {
+        ok: true,
+        json: async () => ({}),
+      } as Response;
+    });
+
+    render(<App />);
+
+    fireEvent.change(await screen.findByLabelText(/scanner usb o codigo manual/i), {
+      target: { value: 'INACTIVE-001' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
+
+    expect((await screen.findAllByText(/servicio esta inactivo/i)).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /agregar servicios/i })).toBeDisabled();
+    expect(screen.queryByText(/servicio descontinuado/i)).not.toBeInTheDocument();
   });
 
   it('renders invoice history filters and reprint button based on permissions', async () => {

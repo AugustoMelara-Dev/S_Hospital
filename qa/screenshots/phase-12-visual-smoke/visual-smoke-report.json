@@ -60,9 +60,20 @@
       "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\fiscal-settings.png"
     }
   ],
-  "lastInvoiceNumber": "",
+  "lastInvoiceNumber": "000-001-01-00000002",
   "consoleByScreen": {
-    "login": []
+    "login": [],
+    "dashboard": [],
+    "cashbox": [],
+    "billing-new-empty": [],
+    "billing-new-with-services": [],
+    "billing-confirm-modal": [],
+    "receipt-preview": [],
+    "invoices-history": [],
+    "catalog": [],
+    "reports": [],
+    "backups": [],
+    "fiscal-settings": []
   },
   "consoleIssueCount": 0,
   "findings": [],

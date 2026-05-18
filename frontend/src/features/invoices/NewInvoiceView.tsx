@@ -196,6 +196,12 @@ export function NewInvoiceView({
         );
 
         if (localMatch) {
+          if (!localMatch.active) {
+            const message = 'El servicio esta inactivo y no puede facturarse.';
+            setAlertMessage(message);
+            onStatus(message);
+            return;
+          }
           addToCart(localMatch);
           setScanCode('');
           setAlertMessage(null);
@@ -204,7 +210,14 @@ export function NewInvoiceView({
           return;
         }
 
-        const message = 'No se encontro servicio activo para este codigo.';
+        const message = 'No se encontro servicio para este codigo.';
+        setAlertMessage(message);
+        onStatus(message);
+        return;
+      }
+
+      if (!service.active) {
+        const message = 'El servicio esta inactivo y no puede facturarse.';
         setAlertMessage(message);
         onStatus(message);
         return;
@@ -221,6 +234,12 @@ export function NewInvoiceView({
       );
 
       if (localMatch) {
+        if (!localMatch.active) {
+          const message = 'El servicio esta inactivo y no puede facturarse.';
+          setAlertMessage(message);
+          onStatus(message);
+          return;
+        }
         addToCart(localMatch);
         setScanCode('');
         setAlertMessage(null);
@@ -479,7 +498,7 @@ export function NewInvoiceView({
               onUpdateDialysisPrescription={updateDialysisPrescription}
               onRemoveItem={removeItem}
               onConfirm={handleEmitClick}
-              disabled={submitting || !loadedCashSession}
+              disabled={submitting || !canEmit}
               submitting={submitting}
             />
           </CardContent>
