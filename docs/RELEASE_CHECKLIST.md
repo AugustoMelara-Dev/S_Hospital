@@ -1,4 +1,8 @@
-# Release checklist - demo vendible
+# Release checklist - demo vendible y produccion real
+
+Estado actual documentado: `DEMO_READY` y `PRODUCTION_CANDIDATE`. No declarar
+`PRODUCTION_READY` hasta cerrar validacion fisica de cliente LAN, hardware de
+impresora termica y configuracion final del servidor real.
 
 ## Quality gate seguro
 
@@ -49,6 +53,12 @@ HOSPITAL_ALLOW_DESTRUCTIVE_RESET=1 bash scripts/quality_gate_destructive.sh
 
 En produccion offline LAN no se borra la base. La validacion segura usa:
 
+- `.env` real de produccion creado en el servidor y fuera de Git.
+- `APP_ENV=production`.
+- `APP_DEBUG=false`.
+- `APP_URL` con la IP fija o dominio LAN final, por ejemplo `http://192.168.1.10`.
+- `SANCTUM_STATEFUL_DOMAINS` y CORS/Sanctum alineados al host LAN real y a cualquier dominio local permitido.
+- Admin real creado con `php artisan auth:create-initial-admin`; no usar seeders demo.
 - `composer validate`
 - `php artisan test --colors=never` si el servidor tiene entorno de testing aislado.
 - `php artisan config:cache --no-ansi`
@@ -124,6 +134,8 @@ LAN fisica:
 - Confirmar que frontend compilado y backend se sirven desde la PC servidor por IP LAN.
 - Confirmar `APP_ENV=production`, `APP_DEBUG=false` y `php artisan config:cache` antes de entregar servidor real.
 - Confirmar que no se ejecutaron seeders demo en el servidor real.
+- Confirmar que `.env` production queda fuera de Git y no reemplaza secretos durante actualizaciones.
+- Confirmar dominios/IP LAN explicitos para `APP_URL`, CORS y `SANCTUM_STATEFUL_DOMAINS`.
 - Confirmar worker local de backups:
 
 ```powershell
@@ -132,10 +144,21 @@ php artisan queue:work --queue=backups --tries=1 --timeout=600
 
 En Windows, asegurar que la tarea/servicio del worker herede la ruta de `mysqldump.exe` o `mariadb-dump.exe` en PATH. En Fase 11 el worker `--once` proceso jobs; sin dump en PATH fallo de forma controlada, y con PATH de XAMPP el backup usado para restore fue `success`.
 
+El worker debe quedar como servicio o tarea continua, no como comando manual
+temporal. Validar que un backup manual cambie de `pending` a `success`.
+
 ## Antes de produccion final
 
-- Probar restore real en MySQL/MariaDB o Docker.
-- Probar impresora fisica termica 80mm/58mm.
+- Probar restore real en una base descartable del servidor final y guardar checksum/conteos.
+- Probar desde una segunda PC en LAN usando la IP fija o dominio LAN, nunca `localhost`.
+- Probar impresora fisica termica 80mm/58mm desde la PC o cliente que imprimira.
 - Validar concurrencia real con MySQL/MariaDB.
 - Crear admin inicial real con password temporal y cambio obligatorio.
 - Remover o no ejecutar seeders demo fuera de `local`/`testing`.
+- Ejecutar gates finales: `composer validate`, `php artisan test --colors=never`,
+  `vendor/bin/pint --test`, `php artisan config:cache --no-ansi`,
+  `php artisan config:clear --no-ansi`, `npm.cmd run typecheck`,
+  `npm.cmd run lint`, `npm.cmd run test`, `npm.cmd run build`,
+  `npm.cmd run e2e` y smoke visual sin issues bloqueantes.
+- No ejecutar `migrate:fresh` en servidor real. Solo `php artisan migrate --force`
+  con backup previo y migraciones aprobadas.

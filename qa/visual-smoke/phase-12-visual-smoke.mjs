@@ -1,5 +1,5 @@
 import playwright from '../../frontend/node_modules/playwright/index.js';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const { chromium } = playwright;
@@ -444,7 +444,11 @@ async function main() {
       findings,
       blockerCount: allIssues.length + findings.length,
     };
-    await writeFile(path.join(screenshotDir, 'visual-smoke-report.json'), JSON.stringify(report, null, 2));
+    const reportPath = path.join(screenshotDir, 'visual-smoke-report.json');
+    const tempReportPath = path.join(screenshotDir, 'visual-smoke-report.tmp.json');
+    await writeFile(tempReportPath, JSON.stringify(report, null, 2));
+    await copyFile(tempReportPath, reportPath);
+    await rm(tempReportPath, { force: true });
     await browser.close();
 
     if (allIssues.length > 0 || findings.length > 0) {

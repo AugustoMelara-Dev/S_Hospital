@@ -100,9 +100,17 @@ El script destructivo aborta salvo `APP_ENV=local/testing`, variable explicita y
 En servidor real del hospital:
 
 - No ejecutar `php artisan migrate:fresh --seed`.
+- No ejecutar seeders demo ni entregar usuarios demo activos.
+- Mantener `.env` production fuera de Git.
 - Usar `APP_ENV=production`.
 - Usar `APP_DEBUG=false`.
+- Configurar `APP_URL`, CORS y `SANCTUM_STATEFUL_DOMAINS` con la IP fija o dominio LAN real.
+- Crear admin real con `php artisan auth:create-initial-admin`.
 - Ejecutar `php artisan config:cache --no-ansi`.
+- Levantar worker de backups como servicio/tarea continua y validar backup manual `pending` -> `success`.
+- Probar restore real en base descartable, no en la base activa.
+- Probar desde segunda PC en LAN.
+- Probar impresora termica fisica 80mm/58mm.
 - Ejecutar pruebas solo contra entorno de testing aislado.
 - Validar manualmente `/up`, `/login`, `/verify-email`, caja, factura, cobro, impresion y backup sin borrar datos.
 - Si se sirve same-origin desde Laravel, ejecutar `npm.cmd run build` antes de publicar y confirmar que `/login` y `/verify-email` devuelven el build React.

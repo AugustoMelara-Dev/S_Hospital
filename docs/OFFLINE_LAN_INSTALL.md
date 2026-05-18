@@ -48,13 +48,14 @@ Antes de instalar en el hospital:
 4. Copiar backend, `vendor/`, frontend compilado y configuracion al servidor.
 5. Instalar MySQL/MariaDB local en el servidor.
 6. Configurar `.env` real fuera del repositorio con secretos locales, `APP_ENV=production` y `APP_DEBUG=false`.
-7. Generar `APP_KEY` en el servidor.
-8. Ejecutar migraciones aprobadas sin `migrate:fresh`.
-9. Crear admin real con `php artisan auth:create-initial-admin`; no ejecutar seeders demo.
-10. Ejecutar `php artisan config:cache`.
-11. Publicar por IP fija LAN o nombre local.
-12. Levantar worker local de backups con `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
-13. Validar `/up`, `/login` y `/verify-email`.
+7. Configurar `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` y CORS con la IP fija o dominio LAN final, por ejemplo `192.168.1.10`.
+8. Generar `APP_KEY` en el servidor.
+9. Ejecutar migraciones aprobadas sin `migrate:fresh`.
+10. Crear admin real con `php artisan auth:create-initial-admin`; no ejecutar seeders demo.
+11. Ejecutar `php artisan config:cache`.
+12. Publicar por IP fija LAN o nombre local.
+13. Levantar worker local de backups como servicio/tarea continua con `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
+14. Validar `/up`, `/login` y `/verify-email`.
 
 En publicacion same-origin con Laravel, `/`, `/login` y `/verify-email` sirven el build React desde `frontend/dist/index.html`, y `/assets/*` sirve los assets compilados. Si `frontend/dist` no existe, el servidor responde error operativo y no debe entregarse como listo.
 
@@ -102,6 +103,8 @@ No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`,
 - No commitear credenciales, passwords de DB, `APP_KEY` ni rutas privadas.
 - Produccion debe arrancar con `vendor/` y `frontend/dist` ya preparados.
 - No ejecutar `composer install` ni `npm install` como parte del arranque de produccion offline.
+- No ejecutar `php artisan migrate:fresh` en servidor real. Ese comando borra datos
+  historicos y solo pertenece a bases descartables de desarrollo/testing.
 
 ## Actualizacion controlada
 

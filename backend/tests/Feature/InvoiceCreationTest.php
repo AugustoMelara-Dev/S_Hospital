@@ -9,6 +9,7 @@ use App\Models\Service;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -149,6 +150,29 @@ class InvoiceCreationTest extends TestCase
             ->assertJsonPath('data.items.0.category_name', 'Laboratorio')
             ->assertJsonPath('data.items.0.unit_price', '15.00')
             ->assertJsonPath('data.items.0.line_total', '17.25');
+    }
+
+    public function test_invoice_with_items_cannot_be_deleted_and_lose_fiscal_history(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->expectException(QueryException::class);
+
+        try {
+            Invoice::query()->findOrFail($invoiceId)->delete();
+        } finally {
+            $this->assertDatabaseHas('invoices', ['id' => $invoiceId]);
+            $this->assertDatabaseHas('invoice_items', ['invoice_id' => $invoiceId]);
+        }
     }
 
     public function test_erythropoietin_normal_is_charged_at_twenty_five(): void
