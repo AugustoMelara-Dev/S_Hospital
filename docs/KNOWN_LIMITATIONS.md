@@ -9,10 +9,10 @@
 - La validacion LAN desde computadora cliente queda `PENDING_LAN_CLIENT_VALIDATION` hasta probar por IP fija/nombre local del servidor desde otra PC.
 - La configuracion final `APP_ENV=production`, `APP_DEBUG=false`, admin real y worker continuo de backups queda `PENDING_ENVIRONMENT_VALIDATION` hasta preparar el servidor final.
 
-## Estado Fase 11
+## Estado Fase 12
 
 - DEMO_READY: si.
-- PRODUCTION_CANDIDATE: si, con E2E local, rutas LAN, restore real local y concurrencia real local validados.
+- PRODUCTION_CANDIDATE: si, con Fase 12 UX/POS/catalogo/reportes/QA cerrada, E2E local, smoke real no destructivo, rutas LAN, restore real local y concurrencia real local validados.
 - PRODUCTION_READY: no, hasta cerrar LAN fisica desde cliente, impresora fisica y configuracion final de produccion.
 
 ## Alcance de producto

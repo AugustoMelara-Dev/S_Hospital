@@ -87,3 +87,14 @@ Fecha: 2026-05-17
 - Ejecutar smoke real LAN con consola limpia requiere servidor Laravel/API levantado y `E2E_REAL_BASE_URL`, `E2E_REAL_LOGIN` y `E2E_REAL_PASSWORD`.
 - Ejecutar el smoke mutacional contra una base real requiere snapshot/backup previo y `E2E_REAL_ALLOW_MUTATIONS=1`; crea datos auditables de prueba.
 - Factura pendiente queda fuera del flujo principal; si se habilita luego debe ser accion secundaria con permiso y auditoria.
+
+## Continuacion 2026-05-18
+
+- `npm.cmd run smoke:real` ejecutado contra Vite/Laravel local con `E2E_REAL_BASE_URL`, `E2E_REAL_LOGIN` y `E2E_REAL_PASSWORD`: smoke real no destructivo OK.
+- `real-smoke.spec.ts` ignora solo el abort benigno de `/sanctum/csrf-cookie`; `401`, `419`, CORS, `pageerror`, `console.error` y requests fallidas inesperadas siguen bloqueando.
+- `php artisan test --colors=never`: 124 tests / 724 assertions OK.
+- `php artisan config:cache`: OK.
+- `npm.cmd run test`: 20 tests OK.
+- `npm.cmd run lint`: OK.
+- `npm.cmd run build`: OK.
+- `qa/FINAL_UX_ACCEPTANCE_CHECKLIST.md`, `qa/RELEASE_READINESS.md` y `docs/KNOWN_LIMITATIONS.md` actualizados para reflejar Fase 12 como `PRODUCTION_CANDIDATE`, sin declarar `PRODUCTION_READY`.

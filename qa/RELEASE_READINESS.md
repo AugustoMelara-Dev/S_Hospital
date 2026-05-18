@@ -1,13 +1,13 @@
-# Release readiness - Fase 11
+# Release readiness - Fase 12
 
-Fecha: 2026-05-17
-Alcance: field deployment validation sobre entorno real o casi real.
+Fecha: 2026-05-18
+Alcance: cierre local de producto vendible Fase 12, con evidencia de QA real y limites de produccion final.
 
 ## Estado
 
 Estado general: PRODUCTION_CANDIDATE; NO PRODUCTION_READY hasta cerrar validacion completa desde cliente LAN fisico, impresora termica fisica y configuracion final de produccion con admin real.
 
-La demo vendible puede cubrir login, caja, factura, regla de eritropoyetina, cobro, recibo termico, historial, reimpresion, anulacion sin pagos, reportes y backup local. Fase 11 valida restore real MySQL/MariaDB en base descartable local, concurrencia real HTTP/Laravel/MySQL local y rutas LAN por IP desde servidor. Los pendientes de hardware/entorno quedan documentados como limitaciones y no se presentan como validados.
+La demo vendible puede cubrir login, caja, factura, regla de eritropoyetina, scanner/codigos, cobro, recibo termico, historial, reimpresion, anulacion sin pagos, reportes avanzados y backup local. Fase 12 cierra el producto local como demo vendible y conserva la evidencia de Fase 11 para restore/concurrencia/rutas LAN. Los pendientes de hardware/entorno quedan documentados como limitaciones y no se presentan como validados.
 
 ## Definiciones de estado
 
@@ -16,6 +16,25 @@ La demo vendible puede cubrir login, caja, factura, regla de eritropoyetina, cob
 - PRODUCTION_READY: restore real, concurrencia real MySQL/MariaDB, LAN desde cliente fisico e impresora termica real fueron ejecutados y documentados.
 
 ## Evidencia QA ejecutada
+
+Resultado Fase 12:
+
+- `php artisan test --colors=never`: OK, 124 tests / 724 assertions.
+- `php artisan config:cache`: OK.
+- `npm.cmd run test`: OK, 20 tests.
+- `npm.cmd run lint`: OK.
+- `npm.cmd run build`: OK.
+- `npm.cmd run smoke:real` con `E2E_REAL_BASE_URL`, `E2E_REAL_LOGIN` y `E2E_REAL_PASSWORD`: OK para el smoke real no destructivo.
+- `npm.cmd run smoke:real` mantiene el flujo mutacional apagado por defecto; para crear/cobrar factura real exige `E2E_REAL_ALLOW_MUTATIONS=1` y snapshot/backup previo.
+- Navegacion real validada en Vite/Laravel local: login, dashboard y `/billing/new` cargan sin volver a login, sin `Sesion vencida`, sin errores de consola y sin requests fallidas inesperadas.
+
+Cobertura Fase 12 cerrada:
+
+- AppShell profesional con sidebar, topbar, caja, usuario, hora local y estado LAN.
+- POS con categorias, busqueda, scanner/codigo, carrito lateral, confirmacion, caja obligatoria y recibo 80mm/58mm.
+- Catalogo con tabla compartida, filtros, estado activo/inactivo y `scan_code`, `barcode`, `qr_code`.
+- Reportes gerenciales con KPIs, filtros, servicios mas vendidos, auditoria operativa, backups y exportacion autorizada.
+- QA separado entre E2E mockeado, smoke real no destructivo y smoke mutacional opt-in.
 
 Resultado local:
 

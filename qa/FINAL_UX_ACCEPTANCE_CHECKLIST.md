@@ -1,8 +1,8 @@
 # Final UX Acceptance Checklist
 
-Estado: **BLOQUEADO** desde la revision de seis subagentes del 2026-05-17.
+Estado: **APROBADO PARA DEMO / PRODUCTION_CANDIDATE** al 2026-05-18.
 
-Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md`.
+Los bloqueos UX de `docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md` quedaron cerrados por las fases 12A0-12E. Este checklist no declara `PRODUCTION_READY`: siguen pendientes la validacion desde cliente LAN fisico, impresora termica fisica y configuracion final de produccion.
 
 ## App shell
 - [x] Sidebar visible.
@@ -61,3 +61,19 @@ Este checklist no debe marcarse como aprobado hasta cerrar `docs/12_CORRECTED_FI
 - [x] Browser smoke con cero `console.error`, `pageerror` y requests fallidas inesperadas.
 - [x] Build.
 - [x] Demo script actualizado con evidencia honesta.
+
+## Evidencia de cierre Fase 12
+
+- `php artisan test --colors=never`: 124 tests / 724 assertions OK.
+- `php artisan config:cache`: OK.
+- `npm.cmd run test`: 20 tests OK.
+- `npm.cmd run lint`: OK.
+- `npm.cmd run build`: OK.
+- `npm.cmd run smoke:real` con `E2E_REAL_BASE_URL`, `E2E_REAL_LOGIN` y `E2E_REAL_PASSWORD`: smoke real no destructivo OK; flujo mutacional omitido por defecto.
+- `frontend/e2e/real-smoke.spec.ts` mantiene rojo cualquier `401`, `419`, CORS o request fallida inesperada; solo ignora el abort benigno de `/sanctum/csrf-cookie`.
+
+## Limites que siguen fuera del cierre UX
+
+- `PENDING_LAN_CLIENT_VALIDATION`: prueba completa desde otra computadora cliente en la LAN final.
+- `PENDING_HARDWARE_VALIDATION`: impresion real 80mm/58mm en la impresora fisica.
+- `PENDING_ENVIRONMENT_VALIDATION`: `.env` final con `APP_ENV=production`, `APP_DEBUG=false`, admin real, worker continuo de backups y `config:cache` en servidor.
