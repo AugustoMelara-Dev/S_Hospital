@@ -1,9 +1,11 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { PaymentModal } from './features/invoices/components/PaymentModal';
 import { localDateString } from './features/invoices/InvoiceHistoryView';
 import { ReceiptPreview } from './features/receipts/ReceiptPreview';
-import { type ReceiptData } from './lib/api';
+import { apiClient, type ReceiptData } from './lib/api';
 import { queryClient } from './lib/query-client';
 
 describe('App', () => {
@@ -334,6 +336,108 @@ describe('App', () => {
     activateTab(/rango/i);
     expect(await screen.findByLabelText(/desde/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
+  });
+
+  it('hides local report csv export without reports export permission', async () => {
+    window.history.pushState({}, '', '/reports');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 3,
+              name: 'Supervisor Demo',
+              email: 'supervisor.demo@hospital-billing.local',
+              username: 'supervisor.demo',
+              active: true,
+              roles: ['supervisor'],
+              permissions: ['reports.view', 'reports.managerial.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/daily')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date: '2026-05-17',
+              total_billed: '17.25',
+              total_collected: '17.25',
+              invoice_count: 1,
+              payment_count: 1,
+              payments_by_method: { cash: '17.25', transfer: '0.00', card: '0.00', other: '0.00' },
+              invoices_by_status: {
+                issued: { count: 0, total: '0.00' },
+                partial: { count: 0, total: '0.00' },
+                paid: { count: 1, total: '17.25' },
+                void: { count: 0, total: '0.00' },
+              },
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+
+      if (url.includes('/api/reports/income')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { range: { date_from: '2026-05-17', date_to: '2026-05-17' }, totals: { billed: '17.25', collected: '17.25', balance_due: '0.00' }, by_method: [], by_status: [] } }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/categories')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { categories: [{ category: 'Laboratorio', quantity: '1.00', subtotal: '15.00', tax: '2.25', total: '17.25' }] } }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/services')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { services: [{ service: 'Glucosa', category: 'Laboratorio', quantity: '1.00', total: '17.25' }] } }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/operations')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              summary: { void_count: 0, reprint_count: 0, backup_count: 0, failed_backup_count: 0, cashier_count: 1 },
+              voids: [],
+              reprints: [],
+              backups: [],
+              cashiers: [{ user: 'Cajero Demo', cash_session_count: 1, invoice_count: 1, total_collected: '17.25' }],
+            },
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    render(<App />);
+    expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
+
+    activateTab(/servicios/i);
+    fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
+    expect(await screen.findByText(/glucosa/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /exportar csv/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/requiere permiso de exportacion/i)).toBeInTheDocument();
+
+    activateTab(/auditor/i);
+    expect(screen.queryByRole('button', { name: /exportar csv/i })).not.toBeInTheDocument();
+    expect(screen.getAllByText(/requiere permiso de exportacion/i).length).toBeGreaterThan(0);
   });
 
   it('does not render reports for a cashier without reports view permission', async () => {
@@ -1013,7 +1117,7 @@ describe('App', () => {
 
   it('rejects inactive services returned by scanner lookup', async () => {
     window.history.pushState({}, '', '/billing/new');
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
 
       if (url.includes('/api/auth/session')) {
@@ -1125,6 +1229,77 @@ describe('App', () => {
     expect((await screen.findAllByText(/servicio esta inactivo/i)).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /agregar servicios/i })).toBeDisabled();
     expect(screen.queryByText(/servicio descontinuado/i)).not.toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.some(([url]) => {
+        const value = String(url);
+        return value.includes('/api/services') && value.includes('code=INACTIVE-001') && !value.includes('active=1');
+      }),
+    ).toBe(true);
+  });
+
+  it('shows a clear scanner error when the code does not exist', async () => {
+    window.history.pushState({}, '', '/billing/new');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Demo',
+              email: 'cajero.demo@hospital-billing.local',
+              username: 'cajero.demo',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 7,
+              user_id: 2,
+              opening_amount: '500.00',
+              closing_amount: null,
+              expected_amount: null,
+              difference_amount: null,
+              status: 'open',
+              opening_notes: null,
+              closing_notes: null,
+              opened_at: '2026-05-17T08:00:00-06:00',
+              closed_at: null,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+
+      if (url.includes('/api/services')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+
+      return { ok: true, json: async () => ({}) } as Response;
+    });
+
+    render(<App />);
+
+    fireEvent.change(await screen.findByLabelText(/scanner usb o codigo manual/i), {
+      target: { value: 'MISSING-001' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
+
+    expect((await screen.findAllByText(/no se encontro servicio para este codigo/i)).length).toBeGreaterThan(0);
   });
 
   it('renders invoice history filters and reprint button based on permissions', async () => {
@@ -1262,6 +1437,66 @@ describe('App', () => {
       expect(receiptEl).toHaveClass('receipt-80mm');
     });
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(1);
+
+    fireEvent.change(screen.getByLabelText(/ancho de vista previa/i), { target: { value: '58mm' } });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/recibo termico/i)).toHaveClass('receipt-58mm');
+    });
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(1);
+  });
+
+  it('applies received cash as balance due and keeps change visible', () => {
+    const confirmSpy = vi.fn();
+
+    render(
+      <PaymentModal
+        open
+        onOpenChange={vi.fn()}
+        invoiceNumber="000-001-01-00000003"
+        patientName="Maria Lopez"
+        total="17.25"
+        balanceDue="17.25"
+        paymentMethod="cash"
+        paymentAmount="20.00"
+        onPaymentMethodChange={vi.fn()}
+        onPaymentAmountChange={vi.fn()}
+        onConfirm={confirmSpy}
+      />,
+    );
+
+    expect(screen.getByText('L. 2.75')).toBeInTheDocument();
+    expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
+    expect(confirmSpy).toHaveBeenCalledWith('17.25');
+  });
+
+  it('treats persistent 419 responses as an expired session', async () => {
+    const expiredSpy = vi.fn();
+    apiClient.onSessionExpired(expiredSpy);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 419,
+      json: async () => ({ message: 'CSRF token mismatch.' }),
+    } as Response);
+
+    await expect(
+      apiClient.registerPayment(1, {
+        cash_session_id: 1,
+        method: 'cash',
+        amount: '17.25',
+      }),
+    ).rejects.toThrow(/sesion/i);
+
+    expect(expiredSpy).toHaveBeenCalledOnce();
+    apiClient.onSessionExpired(null);
+  });
+
+  it('scopes receipt print hiding to the explicit printing receipt state', () => {
+    const styles = readFileSync('src/styles.css', 'utf8');
+    expect(styles).toContain('body[data-printing-receipt="true"] *');
+    expect(styles).not.toContain('body * {\n      visibility: hidden;');
+    expect(styles).not.toContain('body * {\r\n      visibility: hidden;');
   });
 
   it('formats local dates without converting them through UTC', () => {

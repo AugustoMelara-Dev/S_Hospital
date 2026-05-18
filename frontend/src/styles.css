@@ -586,20 +586,20 @@
   }
 
   @media print {
-    body {
+    body[data-printing-receipt="true"] {
       background: #fff !important;
     }
 
-    body * {
+    body[data-printing-receipt="true"] * {
       visibility: hidden;
     }
 
-    .thermal-receipt,
-    .thermal-receipt * {
+    body[data-printing-receipt="true"] .thermal-receipt,
+    body[data-printing-receipt="true"] .thermal-receipt * {
       visibility: visible;
     }
 
-    .thermal-receipt {
+    body[data-printing-receipt="true"] .thermal-receipt {
       position: absolute;
       left: 0;
       top: 0;
@@ -608,21 +608,21 @@
       background: white;
     }
 
-    .thermal-receipt.receipt-58mm {
+    body[data-printing-receipt="true"] .thermal-receipt.receipt-58mm {
       width: 58mm;
       padding: 12px;
     }
 
-    .no-print {
+    body[data-printing-receipt="true"] .no-print {
       display: none !important;
     }
 
-    .receipt-preview-container {
+    body[data-printing-receipt="true"] .receipt-preview-container {
       background: none !important;
       padding: 0 !important;
     }
 
-    .receipt-preview-panel {
+    body[data-printing-receipt="true"] .receipt-preview-panel {
       padding: 0 !important;
       border: none !important;
       box-shadow: none !important;
@@ -666,20 +666,20 @@
 }
 
 @media print {
-  body {
+  body[data-printing-receipt="true"] {
     background: #fff !important;
   }
 
-  body * {
+  body[data-printing-receipt="true"] * {
     visibility: hidden;
   }
 
-  .thermal-receipt,
-  .thermal-receipt * {
+  body[data-printing-receipt="true"] .thermal-receipt,
+  body[data-printing-receipt="true"] .thermal-receipt * {
     visibility: visible;
   }
 
-  .thermal-receipt {
+  body[data-printing-receipt="true"] .thermal-receipt {
     position: absolute;
     left: 0;
     top: 0;
@@ -688,21 +688,21 @@
     background: white;
   }
 
-  .thermal-receipt.receipt-58mm {
+  body[data-printing-receipt="true"] .thermal-receipt.receipt-58mm {
     width: 58mm;
     padding: 12px;
   }
 
-  .no-print {
+  body[data-printing-receipt="true"] .no-print {
     display: none !important;
   }
 
-  .receipt-preview-container {
+  body[data-printing-receipt="true"] .receipt-preview-container {
     background: none !important;
     padding: 0 !important;
   }
 
-  .receipt-preview-panel {
+  body[data-printing-receipt="true"] .receipt-preview-panel {
     padding: 0 !important;
     border: none !important;
     box-shadow: none !important;

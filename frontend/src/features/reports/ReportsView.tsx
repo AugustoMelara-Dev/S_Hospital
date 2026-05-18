@@ -232,6 +232,7 @@ export function ReportsView({
         <TabsContent value="servicios" className="mt-0">
           {canViewManagerial ? (
             <ServiceSalesTab
+              canExport={canExport}
               dateFrom={dateFrom}
               dateTo={dateTo}
               categories={categories}
@@ -251,6 +252,7 @@ export function ReportsView({
         <TabsContent value="auditoria" className="mt-0">
           {canViewManagerial ? (
             <AuditoriaTab
+              canExport={canExport}
               operations={operations}
               dateFrom={dateFrom}
               dateTo={dateTo}

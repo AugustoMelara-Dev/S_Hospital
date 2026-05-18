@@ -10,6 +10,7 @@ import { KPICard } from './KPICard';
 import type { ServiceSalesReport, CategoryReport } from '../../../lib/api/types';
 
 interface ServiceSalesTabProps {
+  canExport: boolean;
   dateFrom: string;
   dateTo: string;
   categories: CategoryReport | null;
@@ -19,9 +20,9 @@ interface ServiceSalesTabProps {
   onSubmit: () => void;
 }
 
-export function ServiceSalesTab({ dateFrom, dateTo, categories, serviceSales, onDateFromChange, onDateToChange, onSubmit }: ServiceSalesTabProps) {
+export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, serviceSales, onDateFromChange, onDateToChange, onSubmit }: ServiceSalesTabProps) {
   function exportCSV() {
-    if (!serviceSales) return;
+    if (!canExport || !serviceSales) return;
     const rows = [
       ['Servicio', 'Categoría', 'Cantidad', 'Total'],
       ...serviceSales.services.map((s) => [s.service, s.category, s.quantity, s.total]),
@@ -182,12 +183,18 @@ export function ServiceSalesTab({ dateFrom, dateTo, categories, serviceSales, on
             </Card>
           )}
 
-          <div className="flex justify-end">
-            <Button variant="outline" onClick={exportCSV}>
-              <Download className="h-4 w-4 mr-2" />
-              Exportar CSV
-            </Button>
-          </div>
+          {canExport ? (
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={exportCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar CSV
+              </Button>
+            </div>
+          ) : (
+            <p className="text-right text-sm text-muted-foreground">
+              Exportacion CSV requiere permiso de exportacion de reportes.
+            </p>
+          )}
         </>
       )}
 

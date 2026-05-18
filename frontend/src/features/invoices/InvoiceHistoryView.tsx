@@ -24,7 +24,7 @@ import { Dialog } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { PaginationControls } from '../../components/ui/pagination';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { NativeSelect, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Skeleton } from '../../components/ui/states';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { Textarea } from '../../components/ui/textarea';
@@ -496,22 +496,20 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <label htmlFor="receipt-width" className="text-sm font-semibold">Ancho</label>
-                <Select
+                <NativeSelect
+                  id="receipt-width"
+                  aria-label="Ancho de vista previa"
                   value={receiptWidth}
-                  onValueChange={(v) => {
-                    const newWidth = v as ReceiptData['width'];
+                  onChange={(event) => {
+                    const newWidth = event.target.value as ReceiptData['width'];
                     setReceiptWidth(newWidth);
-                    void reprint(newWidth);
+                    setReceipt({ ...receipt, width: newWidth });
                   }}
+                  className="w-[100px]"
                 >
-                  <SelectTrigger className="w-[100px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="80mm">80mm</SelectItem>
-                    <SelectItem value="58mm">58mm</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <option value="80mm">80mm</option>
+                  <option value="58mm">58mm</option>
+                </NativeSelect>
               </div>
 
               <div className="flex items-center gap-2 flex-1">

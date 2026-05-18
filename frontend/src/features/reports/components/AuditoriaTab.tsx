@@ -10,6 +10,7 @@ import { KPICard } from './KPICard';
 import type { OperationsReport } from '../../../lib/api/types';
 
 interface AuditoriaTabProps {
+  canExport: boolean;
   operations: OperationsReport | null;
   dateFrom: string;
   dateTo: string;
@@ -19,6 +20,7 @@ interface AuditoriaTabProps {
 }
 
 export function AuditoriaTab({
+  canExport,
   operations,
   dateFrom,
   dateTo,
@@ -32,7 +34,7 @@ export function AuditoriaTab({
   }
 
   function exportCSV() {
-    if (!operations) return;
+    if (!canExport || !operations) return;
     const rows: string[][] = [
       ['AUDITORIA OPERATIVA'],
       [`Desde: ${dateFrom}`, `Hasta: ${dateTo}`],
@@ -286,12 +288,18 @@ export function AuditoriaTab({
             />
           )}
 
-          <div className="flex justify-end">
-            <Button variant="outline" onClick={exportCSV}>
-              <Download className="mr-2 h-4 w-4" />
-              Exportar CSV
-            </Button>
-          </div>
+          {canExport ? (
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={exportCSV}>
+                <Download className="mr-2 h-4 w-4" />
+                Exportar CSV
+              </Button>
+            </div>
+          ) : (
+            <p className="text-right text-sm text-muted-foreground">
+              Exportacion CSV requiere permiso de exportacion de reportes.
+            </p>
+          )}
         </>
       )}
     </div>

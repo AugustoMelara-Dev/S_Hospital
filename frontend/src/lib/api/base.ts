@@ -125,6 +125,7 @@ export const apiClient = {
       }
 
       if (response.status === 419) {
+        sessionExpiredHandler?.();
         throw new ApiError('La sesion fiscal expiro. Actualice la pantalla e intente de nuevo.', response.status);
       }
 

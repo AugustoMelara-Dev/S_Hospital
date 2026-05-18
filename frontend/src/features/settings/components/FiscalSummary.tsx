@@ -49,7 +49,7 @@ export function FiscalSummary({ settings, sequence }: FiscalSummaryProps) {
             <Label className="text-muted-foreground">Rango Autorizado</Label>
             <p className="font-medium">
               {sequence?.prefix && sequence?.min_number != null && sequence?.max_number != null ? (
-                `${sequence.prefix}-${String(sequence.min_number).padStart(7, '0')} a ${sequence.prefix}-${String(sequence.max_number).padStart(7, '0')}`
+                `${sequence.prefix}-${String(sequence.min_number).padStart(8, '0')} a ${sequence.prefix}-${String(sequence.max_number).padStart(8, '0')}`
               ) : (
                 '-'
               )}
@@ -59,7 +59,7 @@ export function FiscalSummary({ settings, sequence }: FiscalSummaryProps) {
             <Label className="text-muted-foreground">Siguiente Correlativo</Label>
             <p className="font-medium">
               {sequence?.prefix && sequence?.current_number != null ? (
-                `${sequence.prefix}-${String(sequence.current_number + 1).padStart(7, '0')}`
+                `${sequence.prefix}-${String(sequence.current_number + 1).padStart(8, '0')}`
               ) : (
                 '-'
               )}

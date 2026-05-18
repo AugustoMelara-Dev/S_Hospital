@@ -17,7 +17,7 @@ type PaymentModalProps = {
   paymentAmount: string;
   onPaymentMethodChange: (method: Payment['method']) => void;
   onPaymentAmountChange: (amount: string) => void;
-  onConfirm: () => void;
+  onConfirm: (appliedAmount: string) => void;
   submitting?: boolean;
 };
 
@@ -40,6 +40,7 @@ export function PaymentModal({
   const balance = parseFloat(balanceDue);
   const payment = parseFloat(paymentAmount);
   const change = !isNaN(payment) && payment > balance ? payment - balance : null;
+  const appliedAmount = !isNaN(payment) && !isNaN(balance) && payment >= balance ? balance : payment;
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -53,7 +54,7 @@ export function PaymentModal({
       return;
     }
     setError(null);
-    onConfirm();
+    onConfirm(appliedAmount.toFixed(2));
   }
 
   return (
@@ -81,6 +82,12 @@ export function PaymentModal({
             <div className="flex justify-between text-emerald-600">
               <span className="text-muted-foreground">Cambio:</span>
               <span className="font-bold">L. {change.toFixed(2)}</span>
+            </div>
+          )}
+          {!isNaN(appliedAmount) && appliedAmount > 0 && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Pago aplicado:</span>
+              <span className="font-medium">L. {appliedAmount.toFixed(2)}</span>
             </div>
           )}
         </div>

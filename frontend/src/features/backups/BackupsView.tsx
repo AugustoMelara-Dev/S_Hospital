@@ -242,7 +242,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {failedCount > 0
-                        ? `${failedCount} fallidos - click para reintentar`
+                        ? `${failedCount} fallidos - revise el detalle y cree un nuevo backup`
                         : 'Sin errores'}
                     </p>
                   </div>
