@@ -9,6 +9,7 @@ import { KPICard } from './KPICard';
 import type { CashSessionReport } from '../../../lib/api/types';
 
 interface CashSessionReportTabProps {
+  canExport: boolean;
   cashSession: CashSessionReport | null;
   cashReportId: string;
   loading: boolean;
@@ -18,6 +19,7 @@ interface CashSessionReportTabProps {
 }
 
 export function CashSessionReportTab({
+  canExport,
   cashSession,
   cashReportId,
   loading,
@@ -26,7 +28,7 @@ export function CashSessionReportTab({
   onSubmit,
 }: CashSessionReportTabProps) {
   function exportCSV() {
-    if (!cashSession) return;
+    if (!canExport || !cashSession) return;
     const session = cashSession.cash_session;
     const rows: string[][] = [
       ['RESUMEN DE CAJA'],
@@ -216,10 +218,16 @@ export function CashSessionReportTab({
           )}
 
           <div className="flex justify-end">
-            <Button variant="outline" onClick={exportCSV}>
-              <Download className="h-4 w-4 mr-2" />
-              Exportar CSV
-            </Button>
+            {canExport ? (
+              <Button variant="outline" onClick={exportCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar CSV
+              </Button>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Exportacion CSV requiere permiso de exportacion de reportes.
+              </p>
+            )}
           </div>
         </>
       )}

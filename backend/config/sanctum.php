@@ -90,7 +90,8 @@ return [
     */
 
     'middleware' => [
-        'authenticate_session' => AuthenticateSession::class,
+        // Demo/local SPA auth uses the web guard session directly; production can opt in after validating session backend behavior.
+        'authenticate_session' => env('SANCTUM_AUTHENTICATE_SESSION', false) ? AuthenticateSession::class : null,
         'encrypt_cookies' => EncryptCookies::class,
         'validate_csrf_token' => ValidateCsrfToken::class,
     ],

@@ -278,6 +278,8 @@ async function main() {
       await page.getByLabel(/scanner usb o codigo manual/i).fill(serviceCode);
       await page.getByRole('button', { name: /escanear/i }).click();
       await waitSettled(page);
+      await waitServicesReady(page);
+      await page.getByRole('button', { name: /emitir factura|agregar servicios/i }).waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
     } else {
       const searchInput = page.getByLabel(/buscar por nombre/i);
       await searchInput.fill(serviceQuery);
@@ -308,6 +310,8 @@ async function main() {
 
     await patientInput.fill(`Paciente Smoke ${Date.now()}`);
     await waitSettled(page);
+    await waitServicesReady(page);
+    await page.getByRole('button', { name: /emitir factura/i }).waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
 
     const emitButton = page.getByRole('button', { name: /emitir factura/i });
     const emitEnabledWithPatient = await isEmitEnabled(page);
@@ -319,12 +323,24 @@ async function main() {
     await page.getByRole('dialog', { name: /confirmar factura/i }).waitFor({ state: 'visible', timeout: 10000 });
     await screenshot(page, 'billing-confirm-modal');
     await page.getByRole('button', { name: /confirmar emision/i }).click();
-    await page.getByRole('dialog', { name: /factura emitida/i }).waitFor({ state: 'visible', timeout: 15000 });
-    const issuedText = await page.getByRole('dialog', { name: /factura emitida/i }).innerText();
-    lastInvoiceNumber = issuedText.match(/000-\d{3}-\d{2}-\d{8}/)?.[0] ?? '';
 
-    await page.getByRole('button', { name: /cobrar ahora/i }).click();
-    await page.getByRole('heading', { name: /registrar pago/i }).waitFor({ state: 'visible', timeout: 10000 });
+    const successDialog = page.getByRole('dialog', { name: /factura emitida/i });
+    const paymentHeading = page.getByRole('heading', { name: /registrar pago/i });
+    await Promise.race([
+      successDialog.waitFor({ state: 'visible', timeout: 15000 }),
+      paymentHeading.waitFor({ state: 'visible', timeout: 15000 }),
+    ]);
+
+    if (await successDialog.isVisible().catch(() => false)) {
+      const issuedText = await successDialog.innerText();
+      lastInvoiceNumber = issuedText.match(/000-\d{3}-\d{2}-\d{8}/)?.[0] ?? '';
+      await page.getByRole('button', { name: /cobrar ahora/i }).click();
+      await paymentHeading.waitFor({ state: 'visible', timeout: 10000 });
+    } else {
+      const paymentText = await page.getByRole('dialog').filter({ has: paymentHeading }).innerText();
+      lastInvoiceNumber = paymentText.match(/000-\d{3}-\d{2}-\d{8}/)?.[0] ?? '';
+    }
+
     await page.getByRole('button', { name: /confirmar cobro/i }).click();
     await page.getByLabel(/vista previa del recibo/i).waitFor({ state: 'visible', timeout: 15000 });
     await screenshot(page, 'receipt-preview');

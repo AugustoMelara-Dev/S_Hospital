@@ -18,6 +18,7 @@ type InvoiceCartProps = {
   onRemoveItem: (index: number) => void;
   onConfirm: () => void;
   disabled?: boolean;
+  disabledReasons?: string[];
   submitting?: boolean;
 };
 
@@ -31,6 +32,7 @@ export function InvoiceCart({
   onRemoveItem,
   onConfirm,
   disabled,
+  disabledReasons = [],
   submitting,
 }: InvoiceCartProps) {
   const isEmpty = items.length === 0;
@@ -165,6 +167,13 @@ export function InvoiceCart({
             <>Emitir Factura</>
           )}
         </Button>
+        {disabledReasons.length > 0 && (
+          <div className="mt-2 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
+            {disabledReasons.map((reason) => (
+              <p key={reason}>{reason}</p>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

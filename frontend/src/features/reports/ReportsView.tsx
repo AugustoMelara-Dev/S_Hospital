@@ -43,6 +43,8 @@ export function ReportsView({
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
   const [categoryId, setCategoryId] = useState('');
+  const [cashSessionId, setCashSessionId] = useState('');
+  const [cashierId, setCashierId] = useState('');
   const [method, setMethod] = useState<NonNullable<ReportFilters['method']>>('');
   const [status, setStatus] = useState<NonNullable<ReportFilters['status']>>('');
   const [cashReportId, setCashReportId] = useState('');
@@ -143,8 +145,8 @@ export function ReportsView({
       date_from: dateFrom,
       date_to: dateTo,
       category_id: categoryId || null,
-      user_id: null,
-      cash_session_id: null,
+      user_id: cashierId || null,
+      cash_session_id: cashSessionId || null,
       method: method || null,
       status: status || null,
     };
@@ -186,6 +188,7 @@ export function ReportsView({
         <TabsContent value="diario" className="mt-0">
           {canViewManagerial ? (
             <DailyReportTab
+              canExport={canExport}
               daily={daily}
               dailyDate={dailyDate}
               error={dailyError}
@@ -208,6 +211,8 @@ export function ReportsView({
               dateFrom={dateFrom}
               dateTo={dateTo}
               categoryId={categoryId}
+              cashSessionId={cashSessionId}
+              cashierId={cashierId}
               method={method}
               status={status}
               categoryOptions={categoryOptions}
@@ -217,6 +222,8 @@ export function ReportsView({
               onDateFromChange={setDateFrom}
               onDateToChange={setDateTo}
               onCategoryChange={setCategoryId}
+              onCashSessionChange={setCashSessionId}
+              onCashierChange={setCashierId}
               onMethodChange={setMethod}
               onStatusChange={setStatus}
               onSubmit={loadRangeReports}
@@ -271,6 +278,7 @@ export function ReportsView({
         <TabsContent value="caja" className="mt-0">
           {canViewCashSessionReport ? (
             <CashSessionReportTab
+              canExport={canExport}
               cashSession={cashSession}
               cashReportId={cashReportId}
               loading={loading}

@@ -10,6 +10,7 @@ import { KPICard } from './KPICard';
 import type { DailyReport } from '../../../lib/api/types';
 
 interface DailyReportTabProps {
+  canExport: boolean;
   daily: DailyReport | null;
   dailyDate: string;
   error: string;
@@ -18,9 +19,9 @@ interface DailyReportTabProps {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
-export function DailyReportTab({ daily, dailyDate, error, loading, onDateChange, onSubmit }: DailyReportTabProps) {
+export function DailyReportTab({ canExport, daily, dailyDate, error, loading, onDateChange, onSubmit }: DailyReportTabProps) {
   function exportCSV() {
-    if (!daily) return;
+    if (!canExport || !daily) return;
     const rows = [
       ['Fecha', daily.date],
       ['Total Facturado', daily.total_billed],
@@ -167,10 +168,16 @@ export function DailyReportTab({ daily, dailyDate, error, loading, onDateChange,
           )}
 
           <div className="flex justify-end">
-            <Button variant="outline" onClick={exportCSV}>
-              <Download className="h-4 w-4 mr-2" />
-              Exportar CSV
-            </Button>
+            {canExport ? (
+              <Button variant="outline" onClick={exportCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar CSV
+              </Button>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Exportacion CSV requiere permiso de exportacion de reportes.
+              </p>
+            )}
           </div>
         </>
       )}

@@ -34,6 +34,26 @@ class AuthTest extends TestCase
             ->assertJsonPath('data.must_change_password', false);
     }
 
+    public function test_login_session_can_read_protected_api_afterward(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $user = User::factory()->create([
+            'username' => 'admin.local',
+            'email' => 'admin.local@example.test',
+            'password' => Hash::make('Password123!'),
+        ]);
+        $user->assignRole('admin');
+
+        $this->postJson('/api/auth/login', [
+            'login' => 'admin.local',
+            'password' => 'Password123!',
+        ])->assertOk();
+
+        $this->getJson('/api/settings/fiscal')
+            ->assertOk();
+    }
+
     public function test_user_can_login_with_email(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

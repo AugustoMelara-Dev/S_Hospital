@@ -1,4 +1,5 @@
 let sessionExpiredHandler: (() => void) | null = null;
+let requestChain: Promise<unknown> = Promise.resolve();
 
 export class ApiError extends Error {
   readonly status: number;
@@ -62,6 +63,15 @@ function cookieValue(name: string): string | null {
 
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? '';
 
+function enqueueRequest<T>(operation: () => Promise<T>): Promise<T> {
+  const next = requestChain
+    .catch(() => undefined)
+    .then(operation);
+  requestChain = next.catch(() => undefined);
+
+  return next;
+}
+
 export const apiClient = {
   baseUrl: configuredBaseUrl.replace(/\/$/, ''),
 
@@ -81,6 +91,10 @@ export const apiClient = {
   },
 
   async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+    return enqueueRequest(() => this.sendRequest<T>(path, options));
+  },
+
+  async sendRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
     const method = options.method?.toUpperCase() ?? 'GET';
 
     if (method !== 'GET' && method !== 'HEAD') {
@@ -126,7 +140,7 @@ export const apiClient = {
 
       if (response.status === 419) {
         sessionExpiredHandler?.();
-        throw new ApiError('La sesion fiscal expiro. Actualice la pantalla e intente de nuevo.', response.status);
+        throw new ApiError('La sesion expiro. Actualice la pantalla e intente de nuevo.', response.status);
       }
 
       if (response.status === 422 && error?.errors) {

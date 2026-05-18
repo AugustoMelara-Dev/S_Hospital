@@ -78,10 +78,17 @@ export function InvoiceSuccess({
         )}
 
         <div className="grid grid-cols-2 gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={onImprimir}>
-            <Printer className="h-4 w-4 mr-2" />
-            Ver recibo
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button type="button" variant="outline" onClick={onImprimir} disabled={needsPayment}>
+              <Printer className="h-4 w-4 mr-2" />
+              Ver recibo
+            </Button>
+            {needsPayment && (
+              <p className="text-xs text-muted-foreground">
+                Disponible despues de cobrar.
+              </p>
+            )}
+          </div>
           <Button asChild variant="outline">
             <Link to="/invoices">Ver facturas</Link>
           </Button>

@@ -108,7 +108,12 @@ export function NewInvoiceView({
     onStatus('Carrito limpiado.');
   }, [onStatus]);
 
-  const canEmit = Boolean(loadedCashSession && patientName.trim() && cartItems.length > 0);
+  const emitBlockReasons = [
+    !loadedCashSession ? 'Abra caja antes de emitir y cobrar una factura.' : null,
+    patientName.trim() === '' ? 'Ingrese el nombre del paciente para emitir.' : null,
+    cartItems.length === 0 ? 'Agregue al menos un servicio.' : null,
+  ].filter((reason): reason is string => Boolean(reason));
+  const canEmit = emitBlockReasons.length === 0;
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -529,6 +534,7 @@ export function NewInvoiceView({
               onRemoveItem={removeItem}
               onConfirm={handleEmitClick}
               disabled={submitting || !canEmit}
+              disabledReasons={emitBlockReasons}
               submitting={submitting}
             />
           </CardContent>

@@ -119,6 +119,14 @@ function captureConsoleIssues(page: Page, consoleIssues: string[]) {
 
     consoleIssues.push(`requestfailed: ${request.method()} ${request.url()} ${failure?.errorText ?? ''}`.trim());
   });
+  page.on('response', (response) => {
+    const status = response.status();
+    const url = response.url();
+
+    if ([401, 419].includes(status) || status >= 500) {
+      consoleIssues.push(`http.${status}: ${response.request().method()} ${url}`);
+    }
+  });
 }
 
 async function loginToRealApp(page: Page) {
