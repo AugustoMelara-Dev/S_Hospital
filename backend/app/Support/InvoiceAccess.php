@@ -27,7 +27,6 @@ class InvoiceAccess
 
     public function canAccessAnyInvoice(User $user): bool
     {
-        return $user->can('receipts.reprint_any')
-            || $user->can('invoices.void');
+        return $user->can('invoices.void');
     }
 }

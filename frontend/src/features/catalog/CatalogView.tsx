@@ -1,37 +1,27 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
-import {
-  type AuthUser,
-  type Category,
-  type CategoryPayload,
-  type PaginatedMeta,
-  type Service,
-  type ServicePayload,
-  apiClient,
-} from '../../lib/api';
-import { Badge } from '../../components/ui/badge';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type AuthUser, type Category, type Service, apiClient, userSafeErrorMessage } from '../../lib/api';
+import { Plus, Search, MoreHorizontal, Boxes } from 'lucide-react';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { DataTable, type DataTableColumn } from '../../components/ui/data-table';
+import { Card, CardContent } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
-import { Select } from '../../components/ui/select';
-
-const emptyCategory: CategoryPayload = {
-  name: '',
-  active: true,
-  sort_order: 0,
-};
-
-const emptyService: ServicePayload = {
-  category_id: 0,
-  name: '',
-  price: '0.00',
-  scan_code: null,
-  barcode: null,
-  qr_code: null,
-  taxable: true,
-  active: true,
-  special_rule_code: null,
-};
+import { Badge } from '../../components/ui/badge';
+import { PaginationControls } from '../../components/ui/pagination';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '../../components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../../components/ui/dropdown-menu';
+import { ServiceSheet } from './components/ServiceSheet';
+import { CategorySheet } from './components/CategorySheet';
 
 type CatalogViewProps = {
   user: AuthUser;
@@ -39,475 +29,359 @@ type CatalogViewProps = {
 };
 
 export function CatalogView({ user, onStatus }: CatalogViewProps) {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
   const [search, setSearch] = useState('');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>();
-  const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [activeFilter, setActiveFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
-  const [meta, setMeta] = useState<PaginatedMeta>({ current_page: 1, per_page: 15, total: 0 });
-  const [categoryForm, setCategoryForm] = useState<CategoryPayload>(emptyCategory);
-  const [categoryId, setCategoryId] = useState<number | undefined>();
-  const [serviceForm, setServiceForm] = useState<ServicePayload>(emptyService);
-  const [serviceId, setServiceId] = useState<number | undefined>();
-  const [loadingCatalog, setLoadingCatalog] = useState(true);
-  const [catalogError, setCatalogError] = useState('');
+  const [servicesData, setServicesData] = useState<Awaited<ReturnType<typeof apiClient.getServicesPage>> | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [serviceSheetOpen, setServiceSheetOpen] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [categorySheetOpen, setCategorySheetOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   const canManageCatalog = useMemo(
     () => user.permissions.includes('catalog.manage'),
     [user.permissions],
   );
 
+  const services = servicesData?.data ?? [];
+  const meta = servicesData?.meta ?? { current_page: 1, per_page: 15, total: 0 };
+
+  const hasFilters = search !== '' || categoryFilter !== 'all' || activeFilter !== 'all';
+  const isEmpty = services.length === 0 && !isLoading;
+
   useEffect(() => {
-    void loadCatalog();
-  }, []);
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [search]);
 
-  async function loadCatalog(
-    nextSearch = search,
-    nextCategoryId = selectedCategoryId,
-    nextPage = page,
-    nextPerPage = perPage,
-    nextActiveFilter = activeFilter,
-  ) {
-    setLoadingCatalog(true);
-    setCatalogError('');
-
+  const loadCatalogData = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const active =
-        nextActiveFilter === 'all' ? undefined : nextActiveFilter === 'active';
       const [nextCategories, nextServices] = await Promise.all([
         apiClient.getCategories(),
         apiClient.getServicesPage({
-          search: nextSearch,
-          categoryId: nextCategoryId,
-          active,
-          page: nextPage,
-          perPage: nextPerPage,
+          search: debouncedSearch,
+          categoryId: categoryFilter !== 'all' ? Number(categoryFilter) : undefined,
+          active: activeFilter !== 'all' ? activeFilter === 'active' : undefined,
+          page,
+          perPage,
         }),
       ]);
       setCategories(nextCategories);
-      setServices(nextServices.data);
-      setMeta(nextServices.meta);
-      setPage(nextServices.meta.current_page);
-      setPerPage(nextServices.meta.per_page);
-      setServiceForm((current) => ({
-        ...current,
-        category_id: current.category_id || nextCategories[0]?.id || 0,
-      }));
+      setServicesData(nextServices);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo cargar el catalogo.';
-      setCatalogError(message);
-      onStatus(message);
+      onStatus(userSafeErrorMessage(error, 'No se pudo cargar el catalogo.'));
+      setCategories([]);
+      setServicesData(null);
     } finally {
-      setLoadingCatalog(false);
+      setIsLoading(false);
     }
-  }
+  }, [activeFilter, categoryFilter, debouncedSearch, onStatus, page, perPage]);
 
-  async function handleSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  useEffect(() => {
+    void loadCatalogData();
+  }, [loadCatalogData]);
+
+  function handleCategoryFilterChange(value: string) {
+    setCategoryFilter(value);
     setPage(1);
-    await loadCatalog(search, selectedCategoryId, 1);
   }
 
-  async function filterByCategory(categoryId?: number) {
-    setSelectedCategoryId(categoryId);
+  function handleActiveFilterChange(value: string) {
+    setActiveFilter(value);
     setPage(1);
-    await loadCatalog(search, categoryId, 1);
   }
 
-  async function filterByActive(nextActiveFilter: 'all' | 'active' | 'inactive') {
-    setActiveFilter(nextActiveFilter);
+  function handlePerPageChange(value: number) {
+    setPerPage(value);
     setPage(1);
-    await loadCatalog(search, selectedCategoryId, 1, perPage, nextActiveFilter);
   }
 
-  async function changePerPage(nextPerPage: number) {
-    setPerPage(nextPerPage);
+  function clearFilters() {
+    setSearch('');
+    setDebouncedSearch('');
+    setCategoryFilter('all');
+    setActiveFilter('all');
     setPage(1);
-    await loadCatalog(search, selectedCategoryId, 1, nextPerPage);
   }
 
-  async function changePage(nextPage: number) {
-    setPage(nextPage);
-    await loadCatalog(search, selectedCategoryId, nextPage);
+  function openNewService() {
+    setEditingService(null);
+    setServiceSheetOpen(true);
   }
 
-  async function handleCategorySubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function openEditService(service: Service) {
+    setEditingService(service);
+    setServiceSheetOpen(true);
+  }
 
-    if (!canManageCatalog) {
-      return;
-    }
+  function openNewCategory() {
+    setEditingCategory(null);
+    setCategorySheetOpen(true);
+  }
 
+  function handleServiceSuccess() {
+    void loadCatalogData();
+    onStatus('Servicio guardado exitosamente.');
+  }
+
+  function handleCategorySuccess() {
+    void loadCatalogData();
+    onStatus('Categoría guardada exitosamente.');
+  }
+
+  const toggleServiceActive = useCallback(async (service: Service) => {
     try {
-      const saved = await apiClient.saveCategory(categoryForm, categoryId);
-      setCategories((current) =>
-        categoryId
-          ? current.map((category) => (category.id === saved.id ? saved : category))
-          : [...current, saved],
+      await apiClient.saveService(
+        {
+          category_id: service.category_id,
+          name: service.name,
+          price: service.price,
+          scan_code: service.scan_code ?? null,
+          barcode: service.barcode ?? null,
+          qr_code: service.qr_code ?? null,
+          taxable: service.taxable,
+          active: !service.active,
+          special_rule_code: service.special_rule_code,
+        },
+        service.id,
       );
-      setCategoryForm(emptyCategory);
-      setCategoryId(undefined);
-      onStatus('Categoria guardada.');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo guardar la categoria.';
-      setCatalogError(message);
-      onStatus(message);
+      void loadCatalogData();
+      onStatus(service.active ? 'Servicio desactivado.' : 'Servicio activado.');
+    } catch {
+      onStatus('No se pudo cambiar el estado del servicio.');
     }
-  }
+  }, [loadCatalogData, onStatus]);
 
-  async function handleServiceSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!canManageCatalog) {
-      return;
-    }
-
-    try {
-      await apiClient.saveService(serviceForm, serviceId);
-      setServiceForm({ ...emptyService, category_id: categories[0]?.id || 0 });
-      setServiceId(undefined);
-      await loadCatalog(search, selectedCategoryId, serviceId ? page : 1);
-      onStatus('Servicio guardado.');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo guardar el servicio.';
-      setCatalogError(message);
-      onStatus(message);
-    }
-  }
-
-  function editCategory(category: Category) {
-    setCategoryId(category.id);
-    setCategoryForm({
-      name: category.name,
-      active: category.active,
-      sort_order: category.sort_order,
-    });
-  }
-
-  function editService(service: Service) {
-    setServiceId(service.id);
-    setServiceForm({
-      category_id: service.category_id,
-      name: service.name,
-      price: service.price,
+  function normalizeServiceForSheet(service: Service) {
+    return {
+      ...service,
       scan_code: service.scan_code ?? null,
       barcode: service.barcode ?? null,
       qr_code: service.qr_code ?? null,
-      taxable: service.taxable,
-      active: service.active,
-      special_rule_code: service.special_rule_code,
-    });
+      special_rule_code: service.special_rule_code ?? null,
+    };
   }
 
-  const serviceColumns: Array<DataTableColumn<Service>> = [
-    {
-      key: 'name',
-      header: 'Nombre',
-      render: (service) => (
-        <div className="flex flex-col gap-1">
-          <strong>{service.name}</strong>
-          <span className="text-sm text-muted-foreground">{service.slug}</span>
-        </div>
-      ),
-    },
-    {
-      key: 'category',
-      header: 'Categoria',
-      render: (service) => service.category?.name ?? 'Sin categoria',
-    },
-    { key: 'price', header: 'Precio', render: (service) => <strong>L. {service.price}</strong> },
-    {
-      key: 'code',
-      header: 'Codigo',
-      render: (service) => service.scan_code ?? service.barcode ?? service.qr_code ?? 'Sin codigo',
-    },
-    {
-      key: 'status',
-      header: 'Estado',
-      render: (service) => (
-        <Badge variant={service.active ? 'default' : 'outline'}>{service.active ? 'Activo' : 'Inactivo'}</Badge>
-      ),
-    },
-    {
-      key: 'rule',
-      header: 'Regla',
-      render: (service) => service.special_rule_code ? <Badge variant="secondary">Regla especial</Badge> : 'N/A',
-    },
-    ...(canManageCatalog
-      ? [{
-          key: 'action',
-          header: 'Accion',
-          render: (service: Service) => (
-            <Button type="button" variant="secondary" size="sm" onClick={() => editService(service)}>
-              Editar
-            </Button>
-          ),
-        }]
-      : []),
-  ];
-
   return (
-    <section id="catalogo" className="catalog-layout" aria-labelledby="catalog-title">
-      <div className="catalog-main">
-        <Card>
-          <CardHeader className="md:flex-row md:items-end md:justify-between">
-            <div>
-              <CardDescription>Catalogo operativo</CardDescription>
-              <CardTitle id="catalog-title">Categorias y servicios</CardTitle>
-            </div>
-            <Badge variant="secondary">{meta.total} servicios</Badge>
-          </CardHeader>
-
-          <CardContent className="flex flex-col gap-4">
-            <form onSubmit={handleSearch} className="search-form">
-              <label>
-                Buscar servicio
-                <Input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Glucosa, hemograma, eritropoyetina"
-                />
-              </label>
-              <Button type="submit">Buscar</Button>
-            </form>
-
-            <div className="category-strip" aria-label="Categorias">
-              <Button
-                type="button"
-                variant={selectedCategoryId === undefined ? 'default' : 'secondary'}
-                size="sm"
-                onClick={() => void filterByCategory(undefined)}
-              >
-                Todas
-              </Button>
-              {categories.map((category) => (
-                <Button
-                  key={category.id}
-                  type="button"
-                  variant={selectedCategoryId === category.id ? 'default' : 'secondary'}
-                  size="sm"
-                  onClick={() => {
-                    if (canManageCatalog) {
-                      editCategory(category);
-                    }
-                    void filterByCategory(category.id);
-                  }}
-                >
-                  {category.name}
-                  <Badge variant={category.active ? 'secondary' : 'outline'}>
-                    {category.active ? 'Activa' : 'Inactiva'}
-                  </Badge>
-                </Button>
-              ))}
-            </div>
-
-            <div className="catalog-controls" aria-label="Filtros de catalogo">
-              <label>
-                Estado
-                <Select
-                  value={activeFilter}
-                  onChange={(event) =>
-                    void filterByActive(event.target.value as 'all' | 'active' | 'inactive')
-                  }
-                >
-                  <option value="all">Todos</option>
-                  <option value="active">Activos</option>
-                  <option value="inactive">Inactivos</option>
-                </Select>
-              </label>
-              <label>
-                Registros
-                <Select
-                  value={perPage}
-                  onChange={(event) => void changePerPage(Number(event.target.value))}
-                >
-                  <option value={10}>10</option>
-                  <option value={15}>15</option>
-                  <option value={25}>25</option>
-                </Select>
-              </label>
-              <span className="muted">
-                Mostrando {services.length} de {meta.total} servicios.
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-        {catalogError ? <p className="notice error-notice" role="alert">{catalogError}</p> : null}
-
-        <DataTable
-          columns={serviceColumns}
-          emptyTitle="Sin servicios"
-          emptyDescription="No hay servicios para mostrar con los filtros actuales."
-          getRowKey={(service) => service.id}
-          loading={loadingCatalog}
-          loadingLabel="Cargando catalogo..."
-          rows={services}
-        />
-
-        <div className="pagination-row" aria-label="Paginacion de catalogo">
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={page <= 1 || loadingCatalog}
-            onClick={() => void changePage(page - 1)}
-          >
-            Anterior
-          </Button>
-          <span className="muted">
-            Pagina {meta.current_page} de {Math.max(Math.ceil(meta.total / meta.per_page), 1)}
-          </span>
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={page >= Math.ceil(meta.total / meta.per_page) || loadingCatalog}
-            onClick={() => void changePage(page + 1)}
-          >
-            Siguiente
-          </Button>
+    <section id="catalogo" className="flex flex-col gap-5" aria-labelledby="catalog-title">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 id="catalog-title" className="text-2xl font-bold tracking-tight">Catálogo de Servicios</h1>
+          {!canManageCatalog && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Cajero puede consultar catalogo y precios, sin permisos para modificar servicios.
+            </p>
+          )}
+          <p className="text-sm text-muted-foreground">
+            {meta.total} servicio{meta.total !== 1 ? 's' : ''} en el catálogo
+          </p>
         </div>
+        {canManageCatalog && (
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={openNewCategory}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva Categoría
+            </Button>
+            <Button size="sm" onClick={openNewService}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Servicio
+            </Button>
+          </div>
+        )}
       </div>
 
-      {canManageCatalog ? (
-        <aside className="catalog-forms">
-          <form onSubmit={handleCategorySubmit} className="settings-form">
-            <CardDescription>Administracion</CardDescription>
-            <h2>{categoryId ? 'Editar categoria' : 'Nueva categoria'}</h2>
-            <label>
-              Nombre
-              <Input
-                value={categoryForm.name}
-                onChange={(event) => setCategoryForm({ ...categoryForm, name: event.target.value })}
-              />
-            </label>
-            <label>
-              Orden
-              <Input
-                type="number"
-                value={categoryForm.sort_order}
-                onChange={(event) =>
-                  setCategoryForm({ ...categoryForm, sort_order: Number(event.target.value) })
-                }
-              />
-            </label>
-            <label className="checkbox-row">
-              <input
-                type="checkbox"
-                checked={categoryForm.active}
-                onChange={(event) =>
-                  setCategoryForm({ ...categoryForm, active: event.target.checked })
-                }
-              />
-              Categoria activa
-            </label>
-            <Button type="submit">Guardar categoria</Button>
-          </form>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-[200px]">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nombre o código..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
 
-          <form onSubmit={handleServiceSubmit} className="settings-form">
-            <CardDescription>Servicio facturable</CardDescription>
-            <h2>{serviceId ? 'Editar servicio' : 'Nuevo servicio'}</h2>
-            <label>
-              Categoria
-              <Select
-                value={serviceForm.category_id}
-                onChange={(event) =>
-                  setServiceForm({ ...serviceForm, category_id: Number(event.target.value) })
-                }
-              >
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
+            <Select value={categoryFilter} onValueChange={handleCategoryFilterChange}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las categorías</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={String(cat.id)}>
+                    {cat.name}
+                  </SelectItem>
                 ))}
-              </Select>
-            </label>
-            <label>
-              Nombre
-              <Input
-                value={serviceForm.name}
-                onChange={(event) => setServiceForm({ ...serviceForm, name: event.target.value })}
-              />
-            </label>
-            <label>
-              Precio
-              <Input
-                value={serviceForm.price}
-                onChange={(event) => setServiceForm({ ...serviceForm, price: event.target.value })}
-              />
-            </label>
-            <label>
-              Codigo scanner
-              <Input
-                value={serviceForm.scan_code ?? ''}
-                onChange={(event) =>
-                  setServiceForm({ ...serviceForm, scan_code: event.target.value.trim() || null })
-                }
-                placeholder="LAB-GLU-001"
-              />
-            </label>
-            <label>
-              Barcode
-              <Input
-                value={serviceForm.barcode ?? ''}
-                onChange={(event) =>
-                  setServiceForm({ ...serviceForm, barcode: event.target.value.trim() || null })
-                }
-                placeholder="Codigo de barra opcional"
-              />
-            </label>
-            <label>
-              QR
-              <Input
-                value={serviceForm.qr_code ?? ''}
-                onChange={(event) =>
-                  setServiceForm({ ...serviceForm, qr_code: event.target.value.trim() || null })
-                }
-                placeholder="Codigo QR opcional"
-              />
-            </label>
-            <label>
-              Regla especial
-              <Select
-                value={serviceForm.special_rule_code ?? ''}
-                onChange={(event) =>
-                  setServiceForm({
-                    ...serviceForm,
-                    special_rule_code: event.target.value || null,
-                  })
-                }
-              >
-                <option value="">Sin regla</option>
-                <option value="ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION">
-                  Eritropoyetina con receta de dialisis
-                </option>
-              </Select>
-            </label>
-            <label className="checkbox-row">
-              <input
-                type="checkbox"
-                checked={serviceForm.taxable}
-                onChange={(event) =>
-                  setServiceForm({ ...serviceForm, taxable: event.target.checked })
-                }
-              />
-              Aplica ISV
-            </label>
-            <label className="checkbox-row">
-              <input
-                type="checkbox"
-                checked={serviceForm.active}
-                onChange={(event) =>
-                  setServiceForm({ ...serviceForm, active: event.target.checked })
-                }
-              />
-              Servicio activo
-            </label>
-            <Button type="submit">Guardar servicio</Button>
-          </form>
-        </aside>
+              </SelectContent>
+            </Select>
+
+            <Select value={activeFilter} onValueChange={handleActiveFilterChange}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="active">Activos</SelectItem>
+                <SelectItem value="inactive">Inactivos</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {isLoading ? (
+        <Card>
+          <CardContent className="flex min-h-[200px] items-center justify-center">
+            <p className="text-muted-foreground">Cargando catálogo...</p>
+          </CardContent>
+        </Card>
+      ) : isEmpty ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Boxes className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No hay servicios</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              {hasFilters
+                ? 'No se encontraron servicios con los filtros seleccionados.'
+                : 'Comience agregando su primer servicio al catálogo.'}
+            </p>
+            {hasFilters ? (
+              <Button variant="outline" onClick={clearFilters}>
+                Limpiar filtros
+              </Button>
+            ) : canManageCatalog ? (
+              <Button onClick={openNewService}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Servicio
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
       ) : (
-        <aside className="notice">Cajero puede consultar catalogo, pero no editar precios.</aside>
+        <Card>
+          <div className="overflow-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Nombre</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Categoría</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Precio</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Código</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Estado</th>
+                  {canManageCatalog && (
+                    <th className="px-4 py-3 text-right text-sm font-semibold">Acciones</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {services.map((service) => (
+                  <tr key={service.id} className="border-b hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span className="font-medium">{service.name}</span>
+                        <span className="text-xs text-muted-foreground">{service.slug}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm">{service.category?.name ?? 'Sin categoría'}</td>
+                    <td className="px-4 py-3">
+                      <span className="font-semibold">L. {service.price}</span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">
+                      {service.scan_code || service.barcode || service.qr_code || '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant={service.active ? 'default' : 'outline'}>
+                        {service.active ? 'Activo' : 'Inactivo'}
+                      </Badge>
+                    </td>
+                    {canManageCatalog && (
+                      <td className="px-4 py-3 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEditService(service)}>
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => toggleServiceActive(service)}
+                              className={service.active ? 'text-destructive' : 'text-emerald-600'}
+                            >
+                              {service.active ? 'Desactivar' : 'Activar'}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {!isEmpty && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              Mostrando {services.length} de {meta.total} servicios
+            </span>
+            <Select value={String(perPage)} onValueChange={(v: string) => handlePerPageChange(Number(v))}>
+              <SelectTrigger className="w-[100px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10 por pág</SelectItem>
+                <SelectItem value="15">15 por pág</SelectItem>
+                <SelectItem value="25">25 por pág</SelectItem>
+                <SelectItem value="50">50 por pág</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <PaginationControls
+            loading={isLoading}
+            meta={meta}
+            onPageChange={setPage}
+          />
+        </div>
+      )}
+
+      {canManageCatalog && (
+        <>
+          <ServiceSheet
+            open={serviceSheetOpen}
+            onOpenChange={setServiceSheetOpen}
+            service={editingService ? normalizeServiceForSheet(editingService) : null}
+            categories={categories}
+            onSuccess={handleServiceSuccess}
+          />
+
+          <CategorySheet
+            open={categorySheetOpen}
+            onOpenChange={setCategorySheetOpen}
+            category={editingCategory}
+            onSuccess={handleCategorySuccess}
+          />
+        </>
       )}
     </section>
   );

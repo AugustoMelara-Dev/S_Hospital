@@ -19,9 +19,34 @@ class CategoryReportService
     {
         $start = Carbon::createFromFormat('Y-m-d', $filters['date_from'])->startOfDay();
         $end = Carbon::createFromFormat('Y-m-d', $filters['date_to'])->endOfDay();
+        $usesPaymentScope = ! empty($filters['cash_session_id'])
+            || ! empty($filters['user_id'])
+            || ! empty($filters['method']);
+
+        $paymentTotals = DB::table('payments')
+            ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
+            ->where('payments.status', Payment::STATUS_POSTED)
+            ->whereBetween('payments.paid_at', [$start, $end])
+            ->when(! empty($filters['cash_session_id']), function ($query) use ($filters): void {
+                $query->where('payments.cash_session_id', $filters['cash_session_id']);
+            })
+            ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
+                $query->where('payments.user_id', $filters['user_id']);
+            })
+            ->when(! empty($filters['method']), function ($query) use ($filters): void {
+                $query->where('payments.method', $filters['method']);
+            })
+            ->groupBy('payments.invoice_id')
+            ->select('payments.invoice_id')
+            ->selectRaw('COALESCE(SUM(payments.amount), 0) as collected_total');
 
         $rows = DB::table('invoice_items')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+            ->when($usesPaymentScope, function ($query) use ($paymentTotals): void {
+                $query->joinSub($paymentTotals, 'payment_totals', function ($join): void {
+                    $join->on('payment_totals.invoice_id', '=', 'invoices.id');
+                });
+            })
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
             ->when(! empty($filters['status']) && $filters['status'] !== Invoice::STATUS_VOID, function ($query) use ($filters): void {
                 $query->where('invoices.status', $filters['status']);
@@ -33,36 +58,20 @@ class CategoryReportService
             ->when(! empty($filters['category_id']), function ($query) use ($filters): void {
                 $query->where('invoice_items.category_id', $filters['category_id']);
             })
-            ->when(
-                ! empty($filters['cash_session_id']) || ! empty($filters['user_id']) || ! empty($filters['method']),
-                function ($query) use ($filters, $start, $end): void {
-                    $query->whereExists(function ($subquery) use ($filters, $start, $end): void {
-                        $subquery
-                            ->selectRaw('1')
-                            ->from('payments')
-                            ->whereColumn('payments.invoice_id', 'invoices.id')
-                            ->where('payments.status', Payment::STATUS_POSTED)
-                            ->whereBetween('payments.paid_at', [$start, $end])
-                            ->when(! empty($filters['cash_session_id']), function ($paymentQuery) use ($filters): void {
-                                $paymentQuery->where('payments.cash_session_id', $filters['cash_session_id']);
-                            })
-                            ->when(! empty($filters['user_id']), function ($paymentQuery) use ($filters): void {
-                                $paymentQuery->where('payments.user_id', $filters['user_id']);
-                            })
-                            ->when(! empty($filters['method']), function ($paymentQuery) use ($filters): void {
-                                $paymentQuery->where('payments.method', $filters['method']);
-                            });
-                    });
-                },
-            )
             ->groupBy('invoice_items.category_name')
             ->orderBy('invoice_items.category_name')
             ->select('invoice_items.category_name')
             ->selectRaw('COUNT(*) as item_count')
             ->selectRaw('COALESCE(SUM(ROUND(invoice_items.quantity * 100)), 0) as quantity_cents')
-            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.line_subtotal * 100)), 0) as subtotal_cents')
-            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.tax_amount * 100)), 0) as tax_cents')
-            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.line_total * 100)), 0) as total_cents')
+            ->selectRaw($usesPaymentScope
+                ? 'COALESCE(SUM(ROUND(invoice_items.line_subtotal * 100 * payment_totals.collected_total / NULLIF(invoices.total, 0))), 0) as subtotal_cents'
+                : 'COALESCE(SUM(ROUND(invoice_items.line_subtotal * 100)), 0) as subtotal_cents')
+            ->selectRaw($usesPaymentScope
+                ? 'COALESCE(SUM(ROUND(invoice_items.tax_amount * 100 * payment_totals.collected_total / NULLIF(invoices.total, 0))), 0) as tax_cents'
+                : 'COALESCE(SUM(ROUND(invoice_items.tax_amount * 100)), 0) as tax_cents')
+            ->selectRaw($usesPaymentScope
+                ? 'COALESCE(SUM(ROUND(invoice_items.line_total * 100 * payment_totals.collected_total / NULLIF(invoices.total, 0))), 0) as total_cents'
+                : 'COALESCE(SUM(ROUND(invoice_items.line_total * 100)), 0) as total_cents')
             ->get()
             ->map(fn (object $row): array => [
                 'category' => $row->category_name,

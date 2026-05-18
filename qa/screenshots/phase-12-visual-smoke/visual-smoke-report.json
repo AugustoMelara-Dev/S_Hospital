@@ -1,0 +1,79 @@
+{
+  "url": "http://127.0.0.1:8000",
+  "user": "admin.demo",
+  "role": "admin",
+  "environment": "local-real",
+  "screenshots": [
+    {
+      "name": "dashboard",
+      "route": "/dashboard",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\dashboard.png"
+    },
+    {
+      "name": "billing-new-empty",
+      "route": "/billing/new",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\billing-new-empty.png"
+    },
+    {
+      "name": "billing-new-with-services",
+      "route": "/billing/new",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\billing-new-with-services.png"
+    },
+    {
+      "name": "billing-confirm-modal",
+      "route": "/billing/new",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\billing-confirm-modal.png"
+    },
+    {
+      "name": "receipt-preview",
+      "route": "/billing/new",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\receipt-preview.png"
+    },
+    {
+      "name": "cashbox",
+      "route": "/cashbox",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\cashbox.png"
+    },
+    {
+      "name": "catalog",
+      "route": "/catalog",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\catalog.png"
+    },
+    {
+      "name": "invoices-history",
+      "route": "/invoices",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\invoices-history.png"
+    },
+    {
+      "name": "reports",
+      "route": "/reports",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\reports.png"
+    },
+    {
+      "name": "backups",
+      "route": "/backups",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\backups.png"
+    },
+    {
+      "name": "fiscal-settings",
+      "route": "/settings/fiscal",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\fiscal-settings.png"
+    }
+  ],
+  "lastInvoiceNumber": "000-001-01-00000021",
+  "consoleByScreen": {
+    "login": [],
+    "dashboard": [],
+    "cashbox": [],
+    "billing-new-empty": [],
+    "billing-new-with-services": [],
+    "billing-confirm-modal": [],
+    "receipt-preview": [],
+    "invoices-history": []
+  },
+  "consoleIssueCount": 0,
+  "findings": [
+    "invoices-history: la factura 000-001-01-00000021 no aparece visible en historial."
+  ],
+  "blockerCount": 1
+}

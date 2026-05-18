@@ -22,8 +22,10 @@ Route::get('/health', function () {
 
 Route::post('/auth/login', [AuthController::class, 'login'])
     ->middleware('web');
+Route::get('/auth/session', [AuthController::class, 'session'])
+    ->middleware('web');
 
-Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
+Route::middleware(['auth:web', 'user.active'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
     Route::post('/auth/logout', [AuthController::class, 'logout'])

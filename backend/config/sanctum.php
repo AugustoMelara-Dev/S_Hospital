@@ -5,6 +5,12 @@ use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Laravel\Sanctum\Http\Middleware\AuthenticateSession;
 use Laravel\Sanctum\Sanctum;
 
+$statefulDomains = env('SANCTUM_STATEFUL_DOMAINS');
+
+if (env('APP_ENV') === 'production' && ! is_string($statefulDomains)) {
+    throw new RuntimeException('Production Sanctum stateful domains must be explicit.');
+}
+
 return [
 
     /*
@@ -18,7 +24,7 @@ return [
     |
     */
 
-    'stateful' => array_filter(array_map('trim', explode(',', env('SANCTUM_STATEFUL_DOMAINS', implode(',', array_filter([
+    'stateful' => array_filter(array_map('trim', explode(',', $statefulDomains ?? implode(',', array_filter([
         'localhost',
         'localhost:3000',
         'localhost:5173',
@@ -27,8 +33,8 @@ return [
         '127.0.0.1:5173',
         '::1',
         Sanctum::currentApplicationUrlWithPort(),
-        // Sanctum::currentRequestHost(),
-    ])))))),
+        Sanctum::currentRequestHost(),
+    ]))))),
 
     /*
     |--------------------------------------------------------------------------

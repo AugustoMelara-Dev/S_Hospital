@@ -88,6 +88,42 @@ class AuthTest extends TestCase
             ->assertUnauthorized();
     }
 
+    public function test_session_endpoint_returns_null_for_guest_without_console_noise(): void
+    {
+        $this->getJson('/api/auth/session')
+            ->assertOk()
+            ->assertJsonPath('data', null);
+    }
+
+    public function test_session_endpoint_returns_authenticated_user_payload(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $user = User::factory()->create();
+        $user->assignRole('admin');
+
+        $this->actingAs($user)
+            ->getJson('/api/auth/session')
+            ->assertOk()
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('data.roles.0', 'admin');
+    }
+
+    public function test_session_endpoint_does_not_hydrate_inactive_user_payload(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $user = User::factory()->create([
+            'active' => false,
+        ]);
+        $user->assignRole('admin');
+
+        $this->actingAs($user)
+            ->getJson('/api/auth/session')
+            ->assertOk()
+            ->assertJsonPath('data', null);
+    }
+
     public function test_user_can_logout(): void
     {
         $user = User::factory()->create();

@@ -1,211 +1,280 @@
-import { type FormEvent, useEffect, useState } from 'react';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { ConfirmDialog } from '../../components/ui/confirm-dialog';
-import { Input } from '../../components/ui/input';
-import { LoadingState } from '../../components/ui/states';
-import { type CashSession, apiClient } from '../../lib/api';
+import { type FormEvent, useState } from 'react';
+import { RefreshCw, AlertTriangle } from 'lucide-react';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
+import { SessionStatusCard } from './components/SessionStatusCard';
+import { OpenSessionForm } from './components/OpenSessionForm';
+import { SessionSummary } from './components/SessionSummary';
+import { CloseSessionDialog } from './components/CloseSessionDialog';
+import { CashMovementsTable } from './components/CashMovementsTable';
 
 type CashBoxViewProps = {
+  compact?: boolean;
   onStatus: (message: string) => void;
   onSessionChange?: (session: CashSession | null) => void;
 };
 
-export function CashBoxView({ onStatus, onSessionChange }: CashBoxViewProps) {
-  const [session, setSession] = useState<CashSession | null>(null);
-  const [openingAmount, setOpeningAmount] = useState('500.00');
+function parseCents(value: string): number {
+  const normalized = value.trim();
+  if (!/^-?\d+(\.\d{1,2})?$/.test(normalized)) {
+    return 0;
+  }
+  const sign = normalized.startsWith('-') ? -1 : 1;
+  const unsigned = normalized.replace('-', '');
+  const [integer, decimal = '00'] = unsigned.split('.');
+  return sign * (Number(integer) * 100 + Number(decimal.padEnd(2, '0').slice(0, 2)));
+}
+
+function formatCents(cents: number): number {
+  return cents / 100;
+}
+
+export function CashBoxView({ compact = false, onStatus, onSessionChange }: CashBoxViewProps) {
+  const queryClient = useQueryClient();
   const [closingAmount, setClosingAmount] = useState('');
   const [closingNotes, setClosingNotes] = useState('');
   const [formAlert, setFormAlert] = useState<string | null>(null);
   const [confirmingClose, setConfirmingClose] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    void refreshCurrentSession();
-  }, []);
+  const { data: session, isLoading, refetch } = useQuery({
+    queryKey: ['cash-sessions', 'current'],
+    queryFn: () => apiClient.getCurrentCashSession(),
+  });
 
-  async function refreshCurrentSession() {
-    setLoading(true);
+  const { data: movements } = useQuery({
+    queryKey: ['cash-sessions', session?.id, 'movements'],
+    queryFn: () =>
+      session?.id
+        ? apiClient.getCashSessionReport(String(session.id)).then((report) => report.movements)
+        : Promise.resolve([]),
+    enabled: !!session?.id,
+  });
 
-    try {
-      const current = await apiClient.getCurrentCashSession();
-      setSession(current);
-      setFormAlert(null);
-      onSessionChange?.(current);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo leer la caja actual.';
-      setFormAlert(message);
-      onStatus(message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function openSession(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    onStatus('Abriendo caja...');
-
-    try {
-      const opened = await apiClient.openCashSession({ opening_amount: openingAmount });
-      setSession(opened);
-      onSessionChange?.(opened);
+  const openSessionMutation = useMutation({
+    mutationFn: (payload: { opening_amount: string; notes?: string | null }) =>
+      apiClient.openCashSession(payload),
+    onSuccess: (opened) => {
+      queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
       setClosingAmount('');
       setClosingNotes('');
       setFormAlert(null);
+      onSessionChange?.(opened);
       onStatus('Caja abierta.');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo abrir caja.';
+    },
+    onError: (error) => {
+      const message = userSafeErrorMessage(error, 'No se pudo abrir caja.');
       setFormAlert(message);
       onStatus(message);
-    }
+    },
+  });
+
+  const closeSessionMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: { closing_amount: string; notes?: string | null } }) =>
+      apiClient.closeCashSession(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      setClosingAmount('');
+      setClosingNotes('');
+      setFormAlert(null);
+      onSessionChange?.(null);
+      onStatus('Caja cerrada.');
+    },
+    onError: (error) => {
+      const message = userSafeErrorMessage(error, 'No se pudo cerrar caja.');
+      setFormAlert(message);
+      onStatus(message);
+    },
+  });
+
+  const expectedCashAmount = session?.expected_cash_amount ?? session?.expected_amount ?? session?.opening_amount ?? '0.00';
+  const difference = formatCents(parseCents(closingAmount || '0.00') - parseCents(expectedCashAmount));
+  const isOpen = session?.status === 'open';
+
+  function handleOpenSession(data: { opening_amount: string }) {
+    onStatus('Abriendo caja...');
+    openSessionMutation.mutate({ opening_amount: data.opening_amount });
   }
 
-  function requestCloseConfirmation(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!session) {
-      return;
-    }
-
+  function handleCloseConfirmation(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!session) return;
     setConfirmingClose(true);
   }
 
-  async function closeSession() {
-    if (!session) {
-      return;
-    }
-
+  function handleCloseSession() {
+    if (!session) return;
     onStatus('Cerrando caja...');
     setConfirmingClose(false);
-
-    try {
-      const closed = await apiClient.closeCashSession(session.id, {
+    closeSessionMutation.mutate({
+      id: session.id,
+      payload: {
         closing_amount: closingAmount,
         notes: closingNotes.trim() === '' ? null : closingNotes,
-      });
-      setSession(closed);
-      onSessionChange?.(null);
-      setClosingNotes('');
-      setFormAlert(null);
-      onStatus('Caja cerrada.');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo cerrar caja.';
-      setFormAlert(message);
-      onStatus(message);
-    }
+      },
+    });
   }
 
+  const isPOSBlocked = !isOpen;
+
   return (
-    <section id="caja" className="cash-layout" aria-labelledby="cash-title">
-      <Card>
-        <CardHeader className="md:flex-row md:items-end md:justify-between">
-          <div>
-            <CardDescription>Operacion de caja</CardDescription>
-            <CardTitle id="cash-title">Caja</CardTitle>
-          </div>
-          <Button type="button" variant="secondary" size="sm" onClick={refreshCurrentSession}>
-            Actualizar
-          </Button>
-        </CardHeader>
-
-        <CardContent className="flex flex-col gap-4">
-          {formAlert ? (
-            <div className="error-summary" role="alert" aria-live="assertive">
-              {formAlert}
+    <section id="caja" className={compact ? 'flex flex-col gap-4' : 'cash-layout'} aria-labelledby="cash-title">
+      <div className="flex flex-col gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardDescription>Operación de caja</CardDescription>
+              <CardTitle id="cash-title">Caja</CardTitle>
             </div>
-          ) : null}
+            <Button type="button" variant="secondary" size="sm" onClick={() => void refetch()} disabled={isLoading}>
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Actualizar
+            </Button>
+          </CardHeader>
 
-          {loading ? (
-            <LoadingState label="Cargando estado de caja..." />
-          ) : session?.status === 'open' ? (
-            <div className="cash-state open-state" role="status">
-              <Badge>Caja abierta</Badge>
-              <strong>Monto inicial L. {session.opening_amount}</strong>
-              <span>Abierta desde {formatDate(session.opened_at)}</span>
-            </div>
-          ) : (
-            <div className="cash-state" role="status">
-              <Badge variant="outline">Sin caja abierta</Badge>
-              <strong>Pagos bloqueados</strong>
-              <span>Abra caja antes de emitir y cobrar facturas.</span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          <CardContent className="flex flex-col gap-4">
+            {formAlert ? (
+              <Alert variant="destructive" title="No se pudo completar la operación">
+                {formAlert}
+              </Alert>
+            ) : null}
 
-      {session?.status === 'open' ? (
-        <form className="cash-panel" onSubmit={requestCloseConfirmation}>
-          <CardDescription>Cierre auditado</CardDescription>
-          <h2>Cerrar caja</h2>
-          <label>
-            Monto contado
-            <Input
-              value={closingAmount}
-              onChange={(event) => setClosingAmount(event.target.value)}
-              placeholder="517.25"
+            <SessionStatusCard session={session ?? null} />
+
+            {isPOSBlocked && (
+              <Alert variant="warning">
+                <AlertTriangle className="h-4 w-4" />
+                <div>
+                  <strong>Pagos bloqueados.</strong> Abra caja antes de emitir y cobrar facturas.
+                </div>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+
+        {isOpen && session ? (
+          <>
+            <SessionSummary
+              session={session}
+              closingAmount={closingAmount}
+              difference={difference}
+              onClosingAmountChange={setClosingAmount}
             />
-          </label>
-          <label>
-            Nota de cierre
-            <textarea
-              value={closingNotes}
-              onChange={(event) => setClosingNotes(event.target.value)}
-              placeholder="Obligatoria si hay sobrante o faltante."
-            />
-          </label>
-          <Button type="submit">Cerrar caja</Button>
-          <dl className="totals-list">
-            <div>
-              <dt>Esperado</dt>
-              <dd>{session.expected_amount ? `L. ${session.expected_amount}` : 'Se calcula al cierre'}</dd>
-            </div>
-            <div>
-              <dt>Contado</dt>
-              <dd>{session.closing_amount ? `L. ${session.closing_amount}` : 'Pendiente'}</dd>
-            </div>
-            <div>
-              <dt>Diferencia</dt>
-              <dd>{session.difference_amount ? `L. ${session.difference_amount}` : 'Pendiente'}</dd>
-            </div>
-          </dl>
-        </form>
-      ) : (
-        <form className="cash-panel" onSubmit={openSession}>
-          <CardDescription>Apertura de turno</CardDescription>
-          <h2>Abrir caja</h2>
-          <label>
-            Monto inicial
-            <Input value={openingAmount} onChange={(event) => setOpeningAmount(event.target.value)} />
-          </label>
-          <Button type="submit">Abrir caja</Button>
-        </form>
-      )}
 
-      <ConfirmDialog
-        confirmLabel="Confirmar cierre"
-        danger
-        onCancel={() => setConfirmingClose(false)}
-        onConfirm={() => void closeSession()}
+            {session.payments_by_method && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Resumen por Método de Pago</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="flex flex-col">
+                      <span className="text-sm text-muted-foreground">Efectivo</span>
+                      <span className="text-xl font-bold">L. {session.payments_by_method.cash ?? '0.00'}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-muted-foreground">Transferencia</span>
+                      <span className="text-xl font-bold">L. {session.payments_by_method.transfer ?? '0.00'}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-muted-foreground">Tarjeta</span>
+                      <span className="text-xl font-bold">L. {session.payments_by_method.card ?? '0.00'}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-muted-foreground">Pagos registrados</span>
+                      <span className="text-xl font-bold">{session.payments_count ?? 0}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Cerrar Caja</CardTitle>
+                <CardDescription>Cierre auditado de la sesión actual</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleCloseConfirmation} className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-semibold" htmlFor="closing_amount">
+                      Monto Contado (L.) *
+                    </label>
+                    <Input
+                      id="closing_amount"
+                      type="text"
+                      inputMode="decimal"
+                      value={closingAmount}
+                      onChange={(e) => setClosingAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="text-lg"
+                    />
+                  </div>
+
+                  {difference !== 0 && (
+                    <Alert variant="warning">
+                      <AlertTriangle className="h-4 w-4" />
+                      <div>
+                        Hay una diferencia de <strong>L. {difference.toFixed(2)}</strong>. Se requerirá una nota explicativa al cerrar.
+                      </div>
+                    </Alert>
+                  )}
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-semibold" htmlFor="closing_notes">
+                      Nota de Cierre
+                    </label>
+                    <Textarea
+                      id="closing_notes"
+                      value={closingNotes}
+                      onChange={(e) => setClosingNotes(e.target.value)}
+                      placeholder={difference !== 0 ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional...'}
+                      rows={2}
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    variant="default"
+                    disabled={closeSessionMutation.isPending}
+                  >
+                    {closeSessionMutation.isPending ? 'Cerrando...' : 'Cerrar Caja'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {movements && movements.length > 0 && (
+              <CashMovementsTable movements={movements} />
+            )}
+          </>
+        ) : (
+          <OpenSessionForm
+            isSubmitting={openSessionMutation.isPending}
+            onSubmit={handleOpenSession}
+          />
+        )}
+      </div>
+
+      <CloseSessionDialog
         open={confirmingClose}
-        title="Confirmar cierre de caja"
-      >
-        <div className="flex flex-col gap-2">
-          <p>Caja: <strong>{session ? `#${session.id}` : 'Sin caja'}</strong></p>
-          <p>Esperado: <strong>{session?.expected_amount ? `L. ${session.expected_amount}` : 'Se calcula al cierre'}</strong></p>
-          <p>Contado: <strong>L. {closingAmount || '0.00'}</strong></p>
-          <p>Diferencia: <strong>{session?.difference_amount ? `L. ${session.difference_amount}` : 'Se calculara al cerrar'}</strong></p>
-          <p>Nota: <strong>{closingNotes.trim() || 'Sin nota'}</strong></p>
-          <p>Revise el monto contado antes de confirmar. Esta accion queda auditada.</p>
-        </div>
-      </ConfirmDialog>
+        onOpenChange={setConfirmingClose}
+        session={{
+          opening_amount: session?.opening_amount ?? '0',
+          expected_cash_amount: session?.expected_cash_amount ?? session?.expected_amount ?? undefined,
+        }}
+        closingAmount={closingAmount}
+        closingNotes={closingNotes}
+        difference={difference}
+        isSubmitting={closeSessionMutation.isPending}
+        onClosingNotesChange={setClosingNotes}
+        onConfirm={handleCloseSession}
+      />
     </section>
   );
-}
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat('es-HN', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value));
 }

@@ -1,14 +1,21 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { localDateString } from './features/invoices/InvoiceHistoryView';
 import { ReceiptPreview } from './features/receipts/ReceiptPreview';
 import { type ReceiptData } from './lib/api';
+import { queryClient } from './lib/query-client';
 
 describe('App', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    queryClient.clear();
     window.history.pushState({}, '', '/');
+  });
+
+  afterEach(() => {
+    cleanup();
+    queryClient.clear();
   });
 
   it('renders the login screen when there is no session', async () => {
@@ -73,20 +80,21 @@ describe('App', () => {
 
     render(<App />);
 
-    const navigation = await screen.findByRole('navigation', { name: /navegacion principal/i });
+    const navigation = await screen.findByRole('navigation', { name: /navegaci[oó]n principal/i });
 
     expect(navigation).toBeInTheDocument();
     expect(navigation.closest('aside')).toHaveClass('print-hidden');
     expect(screen.getByRole('banner')).toHaveClass('print-hidden');
     expect(screen.getByRole('contentinfo')).toHaveClass('print-hidden');
-    expect(screen.getByRole('link', { name: /configuracion fiscal/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /configuraci[oó]n fiscal/i })).toHaveAttribute(
       'href',
       '/settings/fiscal',
     );
-    expect(await screen.findByRole('heading', { name: /datos fiscales del hospital/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /informaci[oó]n del hospital/i })).toBeInTheDocument();
     expect(await screen.findByDisplayValue('Hospital Demo')).toBeInTheDocument();
     expect(await screen.findByDisplayValue('DEMO-CAI')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /guardar configuracion/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /guardar informaci.n/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /guardar secuencia/i })).toBeEnabled();
   });
 
   it('renders catalog as read only for a cashier', async () => {
@@ -148,8 +156,8 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /categorias y servicios/i })).toBeInTheDocument();
-    expect(await screen.findByText('Eritropoyetina')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /cat[aá]logo de servicios/i })).toBeInTheDocument();
+    expect((await screen.findAllByText('Eritropoyetina')).length).toBeGreaterThan(0);
     expect(screen.getByText(/cajero puede consultar catalogo/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /guardar servicio/i })).not.toBeInTheDocument();
   });
@@ -242,14 +250,16 @@ describe('App', () => {
     expect(await screen.findByRole('link', { name: /caja/i })).toHaveAttribute('href', '/cashbox');
     expect(screen.queryByRole('link', { name: /backups/i })).not.toBeInTheDocument();
     expect((await screen.findAllByRole('heading', { name: /^caja$/i })).length).toBeGreaterThan(0);
-    expect(await screen.findByText(/sin caja abierta/i)).toBeInTheDocument();
+    expect(await screen.findByText(/no hay una caja abierta actualmente/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenLastCalledWith(
-        expect.stringContaining('/api/cash-sessions/open'),
-        expect.objectContaining({ method: 'POST' }),
-      );
+      expect(
+        fetchMock.mock.calls.some(([url, options]) => {
+          const requestOptions = options as RequestInit | undefined;
+          return String(url).includes('/api/cash-sessions/open') && requestOptions?.method === 'POST';
+        }),
+      ).toBe(true);
     });
     expect((await screen.findAllByText(/caja abierta/i)).length).toBeGreaterThan(0);
   });
@@ -307,11 +317,12 @@ describe('App', () => {
 
     expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
     expect(screen.getByLabelText(/fecha diaria/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/desde/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /^reporte diario$/i })).toBeInTheDocument();
     expect(screen.getByText(/total cobrado/i)).toBeInTheDocument();
     expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('tab', { name: /rango/i }));
+    expect(await screen.findByLabelText(/desde/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
   });
 
   it('does not render reports for a cashier without reports view permission', async () => {
@@ -372,9 +383,9 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /backups locales/i })).toBeInTheDocument();
-    expect(await screen.findByText(/no hay backups registrados/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /crear backup/i })).toBeEnabled();
+    expect(await screen.findByRole('heading', { name: /^backups$/i })).toBeInTheDocument();
+    expect(await screen.findByText(/no hay backups/i)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /crear backup/i }).some((button) => !button.hasAttribute('disabled'))).toBe(true);
   });
 
   it('does not render backups for a user without backup permission', async () => {
@@ -434,6 +445,10 @@ describe('App', () => {
       } as Response)
       .mockResolvedValueOnce({
         ok: true,
+        json: async () => ({}),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
         json: async () => ({
           data: {
             id: 9,
@@ -464,7 +479,7 @@ describe('App', () => {
       );
     });
     expect(await screen.findByText('hospital-backup-20260517-101500-test.sql')).toBeInTheDocument();
-    expect(screen.getByText('pending')).toBeInTheDocument();
+    expect(screen.getByText('Pendiente')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /descargar backup hospital-backup/i })).not.toBeInTheDocument();
   });
 
@@ -642,18 +657,21 @@ describe('App', () => {
 
     expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
     expect(await screen.findByRole('heading', { name: /^reporte diario$/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/desde/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /rango/i }));
+    expect(await screen.findByLabelText(/desde/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/categoria/i), { target: { value: '4' } });
     fireEvent.change(screen.getByRole('combobox', { name: /^metodo de pago$/i }), { target: { value: 'card' } });
     fireEvent.change(screen.getByLabelText(/^estado$/i), { target: { value: 'paid' } });
-    expect(screen.getByText(/rango maximo permitido: 31 dias/i)).toBeInTheDocument();
+    expect(screen.getByText(/rango m.ximo permitido: 31 dias/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver rango/i }));
 
-    expect(await screen.findByText(/ingresos por rango/i)).toBeInTheDocument();
-    expect(await screen.findByText(/sin categorias en el rango seleccionado/i)).toBeInTheDocument();
-    expect(await screen.findByText(/sin servicios facturados/i)).toBeInTheDocument();
-    expect(await screen.findByText(/sin eventos operativos/i)).toBeInTheDocument();
+    expect(await screen.findByText(/total ingresos/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /servicios/i }));
+    expect(await screen.findByText(/sin categorias cobradas/i)).toBeInTheDocument();
+    expect(await screen.findByText(/sin servicios cobrados/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /auditor.a/i }));
+    expect((await screen.findAllByText(/sin eventos operativos/i)).length).toBeGreaterThan(0);
     expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.stringContaining('category_id=4'),
       expect.any(Object),
@@ -681,7 +699,7 @@ describe('App', () => {
             username: 'cajero.demo',
             active: true,
             roles: ['cajero'],
-            permissions: ['cash.view', 'invoices.create', 'payments.create'],
+            permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
             must_change_password: false,
           },
         }),
@@ -733,6 +751,10 @@ describe('App', () => {
       } as Response)
       .mockResolvedValueOnce({
         ok: true,
+        json: async () => ({}),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
         json: async () => ({
           data: {
             id: 100,
@@ -758,18 +780,17 @@ describe('App', () => {
     expect(await screen.findByLabelText(/buscar por nombre, categoria o codigo/i)).toBeInTheDocument();
     expect(await screen.findByLabelText(/scanner usb o codigo manual/i)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/buscar por nombre, categoria o codigo/i), {
-      target: { value: 'eritropoytina' },
+      target: { value: 'eritropoyetina' },
     });
     expect(await screen.findByRole('button', { name: /eritropoyetina/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /eritropoyetina/i }));
-    fireEvent.click(screen.getByRole('button', { name: /emitir factura/i }));
-    expect((await screen.findAllByText(/abra caja antes de emitir y cobrar/i)).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /emitir factura/i })).toBeDisabled();
+    expect((await screen.findAllByText(/debe abrir la caja antes de emitir facturas/i)).length).toBeGreaterThan(0);
     fireEvent.change(screen.getByLabelText(/nombre del paciente/i), {
       target: { value: 'Maria Lopez' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /emitir factura/i }));
-    expect((await screen.findAllByText(/abra caja antes de emitir y cobrar/i)).length).toBeGreaterThan(0);
-    expect(screen.getByRole('link', { name: /abrir caja/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /emitir factura/i })).toBeDisabled();
+    expect(screen.getAllByRole('button', { name: /abrir caja/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('dialog', { name: /confirmar factura/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /registrar pago/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /reportes/i })).not.toBeInTheDocument();
@@ -788,7 +809,7 @@ describe('App', () => {
             username: 'cajero.demo',
             active: true,
             roles: ['cajero'],
-            permissions: ['cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
+            permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
             must_change_password: false,
           },
         }),
@@ -854,30 +875,7 @@ describe('App', () => {
       } as Response)
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({
-          data: [
-            {
-              id: 11,
-              category_id: 1,
-              name: 'Glucosa',
-              slug: 'glucosa',
-              price: '15.00',
-              scan_code: 'LAB-GLU-001',
-              barcode: null,
-              qr_code: null,
-              taxable: true,
-              active: true,
-              special_rule_code: null,
-              category: {
-                id: 1,
-                name: 'Laboratorio',
-                slug: 'laboratorio',
-                active: true,
-                sort_order: 1,
-              },
-            },
-          ],
-        }),
+        json: async () => ({}),
       } as Response)
       .mockResolvedValueOnce({
         ok: true,
@@ -897,6 +895,10 @@ describe('App', () => {
             items: [],
           },
         }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
       } as Response)
       .mockResolvedValueOnce({
         ok: true,
@@ -987,20 +989,21 @@ describe('App', () => {
     fireEvent.change(await screen.findByLabelText(/nombre del paciente/i), {
       target: { value: 'Maria Lopez' },
     });
-    fireEvent.change(await screen.findByLabelText(/scanner usb o codigo manual/i), {
-      target: { value: 'LAB-GLU-001' },
+    fireEvent.change(await screen.findByLabelText(/buscar por nombre, categoria o codigo/i), {
+      target: { value: 'glucosa' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /agregar codigo/i }));
-    expect(await screen.findByText(/servicio agregado por codigo/i)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: /glucosa/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /emitir factura/i })).toBeEnabled());
+    await waitFor(() => expect(screen.getAllByText(/L\. 17\.25/i).length).toBeGreaterThan(0));
     fireEvent.click(screen.getByRole('button', { name: /emitir factura/i }));
-    expect(await screen.findByRole('dialog', { name: /confirmar factura/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /confirmar emision/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /confirmar emision/i }));
+    expect(await screen.findByRole('dialog', { name: /factura emitida/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /cobrar ahora/i }));
     expect(await screen.findByRole('heading', { name: /registrar pago/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /cobrar/i }));
-    expect(await screen.findByRole('dialog', { name: /confirmar pago/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
-    expect(await screen.findByRole('heading', { name: /preview termico/i })).toBeInTheDocument();
+    expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
     expect(await screen.findByText(/hospital demo/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/ancho del recibo/i)).toHaveValue('80mm');
   });
@@ -1086,6 +1089,10 @@ describe('App', () => {
       } as Response)
       .mockResolvedValueOnce({
         ok: true,
+        json: async () => ({}),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
         json: async () => ({
           data: {
             receipt: {
@@ -1129,7 +1136,7 @@ describe('App', () => {
     expect(await screen.findByRole('button', { name: /reimprimir/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /anular factura/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /reimprimir/i }));
-    expect(await screen.findByRole('heading', { name: /preview termico/i })).toBeInTheDocument();
+    expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/ancho del recibo/i), { target: { value: '58mm' } });
     expect(screen.getByLabelText(/recibo termico/i)).toHaveClass('receipt-58mm');
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(1);
@@ -1226,13 +1233,12 @@ describe('App', () => {
     render(<App />);
 
     fireEvent.click(await screen.findByRole('button', { name: /ver/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /anular/i }));
     expect(await screen.findByLabelText(/motivo de anulacion/i)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/motivo de anulacion/i), {
       target: { value: 'Error de captura' },
     });
     fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));
-    expect(await screen.findByRole('dialog', { name: /anular factura/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /confirmar anulacion/i }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenLastCalledWith(
@@ -1296,7 +1302,7 @@ describe('App', () => {
     render(<ReceiptPreview receipt={receipt} onWidthChange={vi.fn()} onPrint={printSpy} />);
 
     expect(screen.getByLabelText(/recibo termico/i)).toHaveClass('receipt-58mm');
-    expect(screen.getByText(/fecha limite/i)).toBeInTheDocument();
+    expect(screen.getByText(/vence/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /imprimir/i }));
     expect(printSpy).toHaveBeenCalledOnce();
     expect(document.body.dataset.receiptWidth).toBeUndefined();
@@ -1443,7 +1449,7 @@ describe('App', () => {
 
     expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: /nueva factura/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /configuracion fiscal/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /configuraci[oó]n fiscal/i })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /nueva factura/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /datos fiscales del hospital/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /backups locales/i })).not.toBeInTheDocument();

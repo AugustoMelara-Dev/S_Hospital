@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
+use App\Models\Invoice;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -66,21 +67,32 @@ class DevelopmentDemoSeeder extends Seeder
             ],
         );
 
-        FiscalSequence::query()->updateOrCreate(
+        $sequence = FiscalSequence::query()->firstOrNew(
             [
                 'document_type' => 'invoice',
                 'prefix' => '000-001-01',
                 'cai' => 'DEMO-CAI',
             ],
-            [
-                'min_number' => 1,
-                'max_number' => 99999999,
-                'current_number' => 0,
-                'valid_until' => now()->addYear()->toDateString(),
-                'active' => true,
-                'created_by' => $admin->id,
-                'updated_by' => $admin->id,
-            ],
         );
+
+        $maxIssuedNumber = Invoice::query()
+            ->where('fiscal_prefix', '000-001-01')
+            ->pluck('invoice_number')
+            ->map(function (string $invoiceNumber): int {
+                $parts = explode('-', $invoiceNumber);
+
+                return (int) end($parts);
+            })
+            ->max();
+
+        $sequence->fill([
+            'min_number' => 1,
+            'max_number' => 99999999,
+            'current_number' => max((int) $sequence->current_number, (int) $maxIssuedNumber),
+            'valid_until' => now()->addYear()->toDateString(),
+            'active' => true,
+            'created_by' => $sequence->created_by ?? $admin->id,
+            'updated_by' => $admin->id,
+        ])->save();
     }
 }

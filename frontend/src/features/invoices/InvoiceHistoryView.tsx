@@ -6,14 +6,26 @@ import {
   type PaginatedMeta,
   type ReceiptData,
   apiClient,
+  userSafeErrorMessage,
 } from '../../lib/api';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
+import { Dialog } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
-import { Select } from '../../components/ui/select';
+import { Label } from '../../components/ui/label';
+import { PaginationControls } from '../../components/ui/pagination';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
+import { Textarea } from '../../components/ui/textarea';
+import {
+  FileClock,
+  MoreHorizontal,
+  Printer,
+  Receipt,
+  Search,
+  XCircle,
+} from 'lucide-react';
 
 type InvoiceHistoryViewProps = {
   user: AuthUser;
@@ -41,8 +53,11 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [voidReason, setVoidReason] = useState('');
   const [confirmingVoid, setConfirmingVoid] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [openActionsId, setOpenActionsId] = useState<number | null>(null);
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
 
   const canReprint = user.permissions.includes('receipts.reprint');
+  const canReprintAny = user.permissions.includes('receipts.reprint_any');
   const canVoid = user.permissions.includes('invoices.void');
 
   useEffect(() => {
@@ -57,7 +72,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setInvoices(response.data);
       setMeta(response.meta);
     } catch (error) {
-      onStatus(error instanceof Error ? error.message : 'No se pudo cargar historial.');
+      onStatus(userSafeErrorMessage(error, 'No se pudo cargar historial.'));
     } finally {
       setLoading(false);
     }
@@ -70,15 +85,42 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     await loadInvoices(nextFilters);
   }
 
-  async function openDetail(invoiceId: number) {
-    setReceipt(null);
+  function clearFilters() {
+    const clearedFilters: InvoiceFilters = {
+      date_from: today,
+      date_to: today,
+      status: '',
+      patient: '',
+      invoice_number: '',
+      page: 1,
+      per_page: 10,
+    };
+    setFilters(clearedFilters);
+    void loadInvoices(clearedFilters);
+  }
 
+  async function openDetail(invoiceId: number) {
     try {
       const invoice = await apiClient.getInvoice(invoiceId);
       setSelectedInvoice(invoice);
       onStatus(`Factura ${invoice.invoice_number} cargada.`);
     } catch (error) {
-      onStatus(error instanceof Error ? error.message : 'No se pudo cargar detalle.');
+      onStatus(userSafeErrorMessage(error, 'No se pudo cargar detalle.'));
+    }
+  }
+
+  async function openReceiptModal(invoiceId: number) {
+    setOpenActionsId(null);
+    setReceipt(null);
+
+    try {
+      const invoice = await apiClient.getInvoice(invoiceId);
+      setSelectedInvoice(invoice);
+      const receiptData = await apiClient.getReceipt(invoiceId, receiptWidth);
+      setReceipt(receiptData);
+      setReceiptModalOpen(true);
+    } catch (error) {
+      onStatus(userSafeErrorMessage(error, 'No se pudo cargar recibo.'));
     }
   }
 
@@ -102,7 +144,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setReceiptWidth(width);
       onStatus(`Reimpresion auditada para ${selectedInvoice.invoice_number}.`);
     } catch (error) {
-      onStatus(error instanceof Error ? error.message : 'No se pudo reimprimir.');
+      onStatus(userSafeErrorMessage(error, 'No se pudo reimprimir.'));
     }
   }
 
@@ -118,58 +160,68 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setSelectedInvoice(voided);
       setInvoices((current) => current.map((invoice) => (invoice.id === voided.id ? voided : invoice)));
       setReceipt(null);
+      setVoidReason('');
       onStatus(`Factura ${voided.invoice_number} anulada.`);
     } catch (error) {
-      onStatus(error instanceof Error ? error.message : 'No se pudo anular la factura.');
+      onStatus(userSafeErrorMessage(error, 'No se pudo anular la factura.'));
     }
   }
 
+  function isOwnInvoiceFromToday(invoice: Invoice): boolean {
+    const issuedDate = localDateString(new Date(invoice.issued_at));
+
+    return invoice.issuer?.id === user.id && issuedDate === localDateString();
+  }
+
+  const hasActiveFilters = !!(
+    filters.patient ||
+    filters.invoice_number ||
+    filters.status
+  );
+
+  const isEmpty = invoices.length === 0;
+
   return (
     <section id="historial" className="flex flex-col gap-5" aria-labelledby="invoice-history-title">
+      <div>
+        <h1 id="invoice-history-title" className="text-2xl font-bold tracking-tight">
+          Historial de facturas
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Consulte facturas recientes, reimprima recibos y gestione anulaciones autorizadas.
+        </p>
+      </div>
       <Card>
-        <CardHeader className="md:flex-row md:items-end md:justify-between">
-          <div>
-            <CardDescription>Auditoria de facturas</CardDescription>
-            <CardTitle id="invoice-history-title">Historial de facturas</CardTitle>
-          </div>
-          <Badge variant="secondary">{meta.total} registros</Badge>
+        <CardHeader>
+          <CardTitle>Filtros</CardTitle>
         </CardHeader>
-
-        <CardContent className="flex flex-col gap-4">
-          <form className="history-filters" onSubmit={submitFilters}>
-            <label>
-              Desde
+        <CardContent>
+          <form onSubmit={submitFilters} className="flex flex-wrap gap-4">
+            <div className="w-[150px]">
+              <Label htmlFor="date_from">Desde</Label>
               <Input
+                id="date_from"
                 type="date"
                 value={filters.date_from ?? ''}
                 onChange={(event) => setFilters({ ...filters, date_from: event.target.value })}
               />
-            </label>
-            <label>
-              Hasta
+            </div>
+
+            <div className="w-[150px]">
+              <Label htmlFor="date_to">Hasta</Label>
               <Input
+                id="date_to"
                 type="date"
                 value={filters.date_to ?? ''}
                 onChange={(event) => setFilters({ ...filters, date_to: event.target.value })}
               />
-            </label>
-            <label>
-              Paciente
-              <Input
-                value={filters.patient ?? ''}
-                onChange={(event) => setFilters({ ...filters, patient: event.target.value })}
-              />
-            </label>
-            <label>
-              Numero de factura
-              <Input
-                value={filters.invoice_number ?? ''}
-                onChange={(event) => setFilters({ ...filters, invoice_number: event.target.value })}
-              />
-            </label>
-            <label>
-              Estado
-              <Select
+            </div>
+
+            <div className="w-[150px]">
+              <Label htmlFor="status">Estado</Label>
+              <select
+                id="status"
+                className="flex min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                 value={filters.status ?? ''}
                 onChange={(event) =>
                   setFilters({ ...filters, status: event.target.value as InvoiceFilters['status'] })
@@ -180,244 +232,286 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                 <option value="partial">Parcial</option>
                 <option value="paid">Pagada</option>
                 <option value="void">Anulada</option>
-              </Select>
-            </label>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Buscando...' : 'Filtrar'}
-            </Button>
+              </select>
+            </div>
+
+            <div className="flex-1 min-w-[200px]">
+              <Label htmlFor="patient">Paciente</Label>
+              <Input
+                id="patient"
+                placeholder="Nombre del paciente..."
+                value={filters.patient ?? ''}
+                onChange={(event) => setFilters({ ...filters, patient: event.target.value })}
+              />
+            </div>
+
+            <div className="w-[150px]">
+              <Label htmlFor="invoice_number">Numero de factura</Label>
+              <Input
+                id="invoice_number"
+                placeholder="A-0001..."
+                value={filters.invoice_number ?? ''}
+                onChange={(event) => setFilters({ ...filters, invoice_number: event.target.value })}
+              />
+            </div>
+
+            <div className="flex items-end gap-2">
+              <Button type="submit" disabled={loading}>
+                <Search className="h-4 w-4" />
+                {loading ? 'Buscando...' : 'Buscar'}
+              </Button>
+              <Button type="button" variant="outline" onClick={clearFilters}>
+                Limpiar
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
 
-      <div className="table-wrap">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Numero</th>
-              <th>Fecha</th>
-              <th>Paciente</th>
-              <th>Total</th>
-              <th>Pagado</th>
-              <th>Saldo</th>
-              <th>Estado</th>
-              <th>Cajero</th>
-              <th>Accion</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoices.length === 0 ? (
-              <tr>
-                <td colSpan={9}>No hay facturas para los filtros seleccionados.</td>
-              </tr>
-            ) : (
-              invoices.map((invoice) => (
-                <tr key={invoice.id}>
-                  <td>{invoice.invoice_number}</td>
-                  <td>{formatDate(invoice.issued_at)}</td>
-                  <td>{invoice.patient_name}</td>
-                  <td>L. {invoice.total}</td>
-                  <td>L. {invoice.paid_amount}</td>
-                  <td>L. {invoice.balance_due}</td>
-                  <td><StatusBadge status={invoice.status} /></td>
-                  <td>{invoice.issuer?.name ?? 'No registrado'}</td>
-                  <td>
-                    <Button type="button" variant="secondary" size="sm" onClick={() => openDetail(invoice.id)}>
-                      Ver
-                    </Button>
-                  </td>
-                </tr>
-              ))
+      {isEmpty && !loading ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <FileClock className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No hay facturas</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              {hasActiveFilters
+                ? 'No se encontraron facturas con los filtros seleccionados.'
+                : 'No hay facturas registradas aún.'}
+            </p>
+            {hasActiveFilters && (
+              <Button variant="outline" onClick={clearFilters}>
+                Limpiar filtros
+              </Button>
             )}
-          </tbody>
-        </table>
-      </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>No.</th>
+                    <th>Fecha</th>
+                    <th>Paciente</th>
+                    <th className="text-right">Total</th>
+                    <th className="text-right">Pagado</th>
+                    <th>Estado</th>
+                    <th className="text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.map((invoice) => (
+                    <tr key={invoice.id}>
+                      <td className="font-mono text-sm">{invoice.invoice_number}</td>
+                      <td>{formatDate(invoice.issued_at)}</td>
+                      <td className="font-medium">{invoice.patient_name}</td>
+                      <td className="text-right">L. {invoice.total}</td>
+                      <td className="text-right">L. {invoice.paid_amount}</td>
+                      <td>
+                        <StatusBadge status={invoice.status} />
+                      </td>
+                      <td className="text-right">
+                        <div className="relative inline-block">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            aria-label={`Ver acciones de factura ${invoice.invoice_number}`}
+                            onClick={() =>
+                              setOpenActionsId(openActionsId === invoice.id ? null : invoice.id)
+                            }
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
 
-      <div className="pagination-row">
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={meta.current_page <= 1}
-          onClick={() => changePage(meta.current_page - 1)}
-        >
-          Anterior
-        </Button>
-        <span>
-          Pagina {meta.current_page} de {Math.max(1, Math.ceil(meta.total / meta.per_page))}
-        </span>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={meta.current_page >= Math.ceil(meta.total / meta.per_page)}
-          onClick={() => changePage(meta.current_page + 1)}
-        >
-          Siguiente
-        </Button>
-      </div>
+                          {openActionsId === invoice.id && (
+                            <>
+                              <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setOpenActionsId(null)}
+                              />
+                              <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-md border border-border bg-card shadow-lg">
+                                <div className="py-1">
+                                  <button
+                                    type="button"
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted"
+                                    onClick={() => void openReceiptModal(invoice.id)}
+                                  >
+                                    <Receipt className="h-4 w-4" />
+                                    Ver Recibo
+                                  </button>
 
-      {selectedInvoice ? (
-        <Card aria-labelledby="invoice-detail-title">
-          <CardHeader className="md:flex-row md:items-end md:justify-between">
-            <div>
-              <CardDescription>Detalle auditado</CardDescription>
-              <CardTitle id="invoice-detail-title">{selectedInvoice.invoice_number}</CardTitle>
-            </div>
-            <StatusBadge status={selectedInvoice.status} />
-          </CardHeader>
+                                  {canReprint && (canReprintAny || isOwnInvoiceFromToday(invoice)) && (
+                                    <button
+                                      type="button"
+                                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted"
+                                      onClick={async () => {
+                                        setOpenActionsId(null);
+                                        await openDetail(invoice.id);
+                                        const nextReceipt = await apiClient.reprintInvoice(invoice.id, {
+                                          width: receiptWidth,
+                                          reason: null,
+                                        });
+                                        setReceipt(nextReceipt);
+                                        setReceiptModalOpen(true);
+                                      }}
+                                    >
+                                      <Printer className="h-4 w-4" />
+                                      Reimprimir
+                                    </button>
+                                  )}
 
-          <CardContent className="flex flex-col gap-5">
-            <dl className="detail-grid">
-              <div>
-                <dt>Paciente</dt>
-                <dd>{selectedInvoice.patient_name}</dd>
-              </div>
-              <div>
-                <dt>Total</dt>
-                <dd>L. {selectedInvoice.total}</dd>
-              </div>
-              <div>
-                <dt>Pagado</dt>
-                <dd>L. {selectedInvoice.paid_amount}</dd>
-              </div>
-              <div>
-                <dt>Saldo</dt>
-                <dd>L. {selectedInvoice.balance_due}</dd>
-              </div>
-              <div>
-                <dt>Caja</dt>
-                <dd>{selectedInvoice.cash_session?.id ? `#${selectedInvoice.cash_session.id}` : 'Sin caja'}</dd>
-              </div>
-              <div>
-                <dt>Motivo anulacion</dt>
-                <dd>{selectedInvoice.void_reason ?? 'No aplica'}</dd>
-              </div>
-            </dl>
-
-            <h4>Items snapshot</h4>
-            <div className="snapshot-list">
-              {selectedInvoice.items.map((item) => (
-                <div key={item.id} className="snapshot-item">
-                  <span>{item.quantity} x {item.service_name}</span>
-                  <small>{item.category_name}</small>
-                  <strong>L. {item.line_total}</strong>
-                </div>
-              ))}
-            </div>
-
-            <h4>Pagos</h4>
-            {selectedInvoice.payments && selectedInvoice.payments.length > 0 ? (
-              <div className="snapshot-list">
-                {selectedInvoice.payments.map((payment) => (
-                  <div key={payment.id} className="snapshot-item">
-                    <span>{payment.method}</span>
-                    <small>{formatDate(payment.paid_at)}</small>
-                    <strong>L. {payment.amount}</strong>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="muted">Sin pagos registrados.</p>
-            )}
-
-            <div className="history-actions">
-              {canReprint ? (
-                <div className="action-box">
-                  <label>
-                    Ancho
-                    <Select
-                      value={receiptWidth}
-                      onChange={(event) => setReceiptWidth(event.target.value as ReceiptData['width'])}
-                    >
-                      <option value="80mm">80mm</option>
-                      <option value="58mm">58mm</option>
-                    </Select>
-                  </label>
-                  <label>
-                    Motivo reimpresion
-                    <Input
-                      value={reprintReason}
-                      onChange={(event) => setReprintReason(event.target.value)}
-                    />
-                  </label>
-                  <Button type="button" onClick={() => reprint()}>
-                    Reimprimir
-                  </Button>
-                </div>
-              ) : null}
-
-              {canVoid ? (
-                <div className="action-box danger-zone">
-                  <label>
-                    Motivo de anulacion
-                    <textarea
-                      value={voidReason}
-                      onChange={(event) => setVoidReason(event.target.value)}
-                    />
-                  </label>
-                  <Button
-                    type="button"
-                    variant="danger"
-                    disabled={selectedInvoice.status === 'void'}
-                    onClick={() => {
-                      if (voidReason.trim().length < 5) {
-                        onStatus('Ingrese un motivo de anulacion de al menos 5 caracteres.');
-                        return;
-                      }
-                      setConfirmingVoid(true);
-                    }}
-                  >
-                    Anular factura
-                  </Button>
-                </div>
-              ) : null}
+                                  {canVoid && invoice.status !== 'void' && (
+                                    <>
+                                      <div className="my-1 border-t border-border" />
+                                      <button
+                                        type="button"
+                                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-muted"
+                                        onClick={() => {
+                                          setOpenActionsId(null);
+                                          void openDetail(invoice.id);
+                                          setConfirmingVoid(true);
+                                        }}
+                                      >
+                                        <XCircle className="h-4 w-4" />
+                                        Anular
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </CardContent>
+        </Card>
+      )}
 
-          {receipt ? (
+      {!isEmpty && (
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">
+            {meta.total} registro{meta.total !== 1 ? 's' : ''} en total
+          </span>
+          <PaginationControls
+            meta={meta}
+            loading={loading}
+            onPageChange={(nextPage) => void changePage(nextPage)}
+          />
+        </div>
+      )}
+
+      <Dialog
+        open={receiptModalOpen}
+        onOpenChange={setReceiptModalOpen}
+        title={`Recibo - ${selectedInvoice?.invoice_number ?? ''}`}
+      >
+        {receipt && selectedInvoice && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label htmlFor="receipt-width" className="text-sm font-semibold">Ancho</label>
+                <select
+                  id="receipt-width"
+                  className="flex min-h-9 rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground outline-none"
+                  value={receiptWidth}
+                  onChange={(e) => {
+                    const newWidth = e.target.value as ReceiptData['width'];
+                    setReceiptWidth(newWidth);
+                    void reprint(newWidth);
+                  }}
+                >
+                  <option value="80mm">80mm</option>
+                  <option value="58mm">58mm</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 flex-1">
+                <label htmlFor="reprint-reason" className="text-sm font-semibold">Motivo</label>
+                <Input
+                  id="reprint-reason"
+                  placeholder="Motivo de reimpresión (opcional)"
+                  value={reprintReason}
+                  onChange={(e) => setReprintReason(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+
             <ReceiptPreview
               receipt={receipt}
               onWidthChange={(width) => {
                 setReceipt({ ...receipt, width });
                 setReceiptWidth(width);
               }}
+              onPrint={() => {
+                onStatus(`Recibo ${selectedInvoice.invoice_number} enviado a impresión.`);
+              }}
             />
-          ) : null}
-        </Card>
-      ) : null}
+          </div>
+        )}
+      </Dialog>
 
       <ConfirmDialog
-        confirmLabel="Confirmar anulacion"
-        onCancel={() => setConfirmingVoid(false)}
+        confirmLabel="Anular Factura"
+        danger
+        onCancel={() => {
+          setConfirmingVoid(false);
+          setVoidReason('');
+        }}
         onConfirm={() => {
           setConfirmingVoid(false);
           void voidSelectedInvoice();
         }}
         open={confirmingVoid}
-        title="Anular factura"
+        title={`¿Anular factura ${selectedInvoice?.invoice_number}?`}
       >
-        <div className="flex flex-col gap-2">
-          <p>Factura: <strong>{selectedInvoice?.invoice_number}</strong></p>
-          <p>Paciente: <strong>{selectedInvoice?.patient_name}</strong></p>
-          <p>Motivo: <strong>{voidReason.trim()}</strong></p>
-          <p>Esta accion queda auditada y no borra la factura historica.</p>
+        <div className="flex flex-col gap-4">
+          <p className="text-sm">
+            <strong>Paciente:</strong> {selectedInvoice?.patient_name}
+          </p>
+          <div className="space-y-2">
+            <Label htmlFor="voidReason">Motivo de anulación *</Label>
+            <Textarea
+              id="voidReason"
+              aria-label="Motivo de anulacion"
+              value={voidReason}
+              onChange={(e) => setVoidReason(e.target.value)}
+              placeholder="Explique el motivo de la anulación (mínimo 5 caracteres)..."
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">
+              Esta acción no se puede deshacer. La factura será marcada como anulada.
+            </p>
+          </div>
         </div>
       </ConfirmDialog>
     </section>
   );
 }
 
-function labelStatus(status: Invoice['status']): string {
-  return {
-    issued: 'Emitida',
-    partial: 'Parcial',
-    paid: 'Pagada',
-    void: 'Anulada',
-  }[status];
-}
+const statusConfig = {
+  issued: { label: 'Emitida', className: 'bg-blue-100 text-blue-800' },
+  partial: { label: 'Parcial', className: 'bg-amber-100 text-amber-800' },
+  paid: { label: 'Pagada', className: 'bg-emerald-100 text-emerald-800' },
+  void: { label: 'Anulada', className: 'bg-red-100 text-red-800' },
+} as const;
 
 function StatusBadge({ status }: { status: Invoice['status'] }) {
-  const variant = status === 'void' ? 'destructive' : status === 'paid' ? 'default' : 'secondary';
+  const config = statusConfig[status] ?? statusConfig.issued;
 
-  return <Badge variant={variant}>{labelStatus(status)}</Badge>;
+  return (
+    <Badge className={config.className}>
+      {config.label}
+    </Badge>
+  );
 }
 
 function formatDate(value: string): string {

@@ -8,6 +8,8 @@ use App\Http\Requests\Cash\CloseCashSessionRequest;
 use App\Http\Requests\Cash\IndexCashSessionRequest;
 use App\Http\Requests\Cash\OpenCashSessionRequest;
 use App\Models\CashRegisterSession;
+use App\Models\Payment;
+use App\Support\Money;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -24,7 +26,9 @@ class CashSessionController extends Controller
             ->latest('opened_at')
             ->first();
 
-        return response()->json(['data' => $session]);
+        return response()->json([
+            'data' => $session ? $this->openSessionPayload($session) : null,
+        ]);
     }
 
     public function index(IndexCashSessionRequest $request): JsonResponse
@@ -70,5 +74,40 @@ class CashSessionController extends Controller
         $session = $closeCashSession->execute($cashSession, $request->validated(), $request->user());
 
         return response()->json(['data' => $session]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function openSessionPayload(CashRegisterSession $session): array
+    {
+        $payments = Payment::query()
+            ->where('cash_session_id', $session->id)
+            ->where('status', Payment::STATUS_POSTED)
+            ->get();
+        $paymentsByMethod = [
+            Payment::METHOD_CASH => '0.00',
+            Payment::METHOD_TRANSFER => '0.00',
+            Payment::METHOD_CARD => '0.00',
+            Payment::METHOD_OTHER => '0.00',
+        ];
+
+        foreach ($payments->groupBy('method') as $method => $methodPayments) {
+            $paymentsByMethod[$method] = Money::formatCents(
+                $methodPayments->sum(fn (Payment $payment): int => Money::parseCents((string) $payment->amount, 'payments')),
+            );
+        }
+
+        $openingCents = Money::parseCents((string) $session->opening_amount, 'opening_amount');
+        $cashCents = Money::parseCents($paymentsByMethod[Payment::METHOD_CASH], 'cash_payments');
+
+        return array_merge($session->toArray(), [
+            'payments_count' => $payments->count(),
+            'payments_total' => Money::formatCents(
+                $payments->sum(fn (Payment $payment): int => Money::parseCents((string) $payment->amount, 'payments')),
+            ),
+            'payments_by_method' => $paymentsByMethod,
+            'expected_cash_amount' => Money::formatCents($openingCents + $cashCents),
+        ]);
     }
 }

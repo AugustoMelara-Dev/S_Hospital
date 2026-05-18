@@ -1,14 +1,12 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { type AuthUser, type CashSession, apiClient } from '../lib/api';
+import { type AuthUser, type CashSession, apiClient, userSafeErrorMessage } from '../lib/api';
 import { type PasswordChangeForm } from '../features/auth/PasswordChangeView';
 
 export function useHospitalSession() {
   const location = useLocation();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [cashSession, setCashSession] = useState<CashSession | null>(null);
-  const [cashBootstrapPath, setCashBootstrapPath] = useState<string | null>(null);
-  const [cashBootstrapLoading, setCashBootstrapLoading] = useState(false);
   const [login, setLogin] = useState(import.meta.env.DEV ? 'admin.demo' : '');
   const [password, setPassword] = useState('');
   const [passwordForm, setPasswordForm] = useState<PasswordChangeForm>({
@@ -18,6 +16,7 @@ export function useHospitalSession() {
   });
   const [status, setStatus] = useState('Listo para iniciar sesion local.');
   const [loading, setLoading] = useState(true);
+  const initialPathRef = useRef(location.pathname);
 
   const permissions = useMemo(() => new Set(user?.permissions ?? []), [user?.permissions]);
   const canViewFiscalSettings = permissions.has('settings.fiscal.view');
@@ -26,6 +25,8 @@ export function useHospitalSession() {
   const canCreateInvoices = permissions.has('invoices.create');
   const canViewInvoices = permissions.has('invoices.view');
   const canViewCash = permissions.has('cash.view');
+  const canCreatePayments = permissions.has('payments.create');
+  const canViewReceipts = permissions.has('receipts.view');
   const canViewManagerialReports = permissions.has('reports.managerial.view');
   const canViewCashSessionReports = permissions.has('reports.cash_session.view');
   const canExportReports = permissions.has('reports.export');
@@ -34,60 +35,36 @@ export function useHospitalSession() {
     canViewManagerialReports ||
     canViewCashSessionReports;
   const canViewBackups = permissions.has('backups.view');
-  const needsBillingCashBootstrap =
-    Boolean(user) &&
-    !user?.must_change_password &&
-    canViewCash &&
-    cashSession === null &&
-    location.pathname === '/billing/new' &&
-    cashBootstrapPath !== location.pathname;
+  const needsBillingCashBootstrap = false;
 
   useEffect(() => {
+    apiClient.onSessionExpired(() => {
+      setUser(null);
+      setCashSession(null);
+      setStatus('Sesion vencida. Inicie sesion nuevamente para continuar.');
+    });
+
+    if (initialPathRef.current === '/login') {
+      setLoading(false);
+
+      return () => apiClient.onSessionExpired(null);
+    }
+
     apiClient
-      .me()
+      .session()
       .then((currentUser) => {
         setUser(currentUser);
-        setStatus('Sesion activa.');
+        if (currentUser) {
+          setStatus('Sesion activa.');
+        }
       })
       .catch(() => {
         setUser(null);
       })
       .finally(() => setLoading(false));
+
+    return () => apiClient.onSessionExpired(null);
   }, []);
-
-  useEffect(() => {
-    if (!needsBillingCashBootstrap) {
-      return;
-    }
-
-    let active = true;
-    setCashBootstrapLoading(true);
-
-    apiClient
-      .getCurrentCashSession()
-      .then((current) => {
-        if (!active) {
-          return;
-        }
-
-        setCashSession(current);
-        setCashBootstrapPath(location.pathname);
-      })
-      .catch(() => {
-        if (active) {
-          setCashBootstrapPath(location.pathname);
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setCashBootstrapLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [location.pathname, needsBillingCashBootstrap]);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -95,16 +72,15 @@ export function useHospitalSession() {
 
     try {
       const loggedUser = await apiClient.login(login, password);
-      const currentUser = await apiClient.me().catch(() => loggedUser);
-      setUser(currentUser);
+      setUser(loggedUser);
       setPassword('');
       setStatus(
-        currentUser.must_change_password
+        loggedUser.must_change_password
           ? 'El usuario debe cambiar su contrasena antes de operar.'
           : 'Sesion iniciada.',
       );
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'No se pudo iniciar sesion.');
+      setStatus(userSafeErrorMessage(error, 'No se pudo iniciar sesion.'));
     }
   }
 
@@ -112,7 +88,6 @@ export function useHospitalSession() {
     await apiClient.logout().catch(() => undefined);
     setUser(null);
     setCashSession(null);
-    setCashBootstrapPath(null);
     setStatus('Sesion cerrada.');
   }
 
@@ -130,7 +105,7 @@ export function useHospitalSession() {
       });
       setStatus('Contrasena actualizada.');
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'No se pudo actualizar la contrasena.');
+      setStatus(userSafeErrorMessage(error, 'No se pudo actualizar la contrasena.'));
     }
   }
 
@@ -148,13 +123,15 @@ export function useHospitalSession() {
     setStatus,
     loading,
     needsBillingCashBootstrap,
-    cashBootstrapLoading,
+    cashBootstrapLoading: false,
     canViewFiscalSettings,
     canEditFiscalSettings,
     canViewCatalog,
     canCreateInvoices,
     canViewInvoices,
     canViewCash,
+    canCreatePayments,
+    canViewReceipts,
     canViewManagerialReports,
     canViewCashSessionReports,
     canExportReports,
@@ -168,7 +145,7 @@ export function useHospitalSession() {
       canViewInvoices ||
       canViewReports ||
       canViewBackups,
-    defaultAuthenticatedRoute: canViewCash ? '/cashbox' : '/dashboard',
+    defaultAuthenticatedRoute: '/dashboard',
     handleLogin,
     handleLogout,
     handlePasswordSubmit,

@@ -1,4 +1,5 @@
-import { type ReactNode } from 'react';
+import { type HTMLAttributes, type ReactNode, type TdHTMLAttributes, type ThHTMLAttributes } from 'react';
+import { cn } from '../../lib/utils';
 import { EmptyState, LoadingState } from './states';
 
 export type DataTableColumn<T> = {
@@ -54,4 +55,34 @@ export function DataTable<T>({
       </table>
     </div>
   );
+}
+
+export function Table({ children, className, ...props }: HTMLAttributes<HTMLTableElement>) {
+  return (
+    <div className="table-wrap">
+      <table className={cn('data-table', className)} {...props}>
+        {children}
+      </table>
+    </div>
+  );
+}
+
+export function TableHeader(props: HTMLAttributes<HTMLTableSectionElement>) {
+  return <thead {...props} />;
+}
+
+export function TableBody(props: HTMLAttributes<HTMLTableSectionElement>) {
+  return <tbody {...props} />;
+}
+
+export function TableRow(props: HTMLAttributes<HTMLTableRowElement>) {
+  return <tr {...props} />;
+}
+
+export function TableHead(props: ThHTMLAttributes<HTMLTableCellElement>) {
+  return <th {...props} />;
+}
+
+export function TableCell(props: TdHTMLAttributes<HTMLTableCellElement>) {
+  return <td {...props} />;
 }

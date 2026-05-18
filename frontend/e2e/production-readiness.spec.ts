@@ -110,6 +110,7 @@ async function installApiMocks(page: Page) {
   });
 
   await page.route('**/api/auth/me', (route) => json(route, { data: currentUser }));
+  await page.route('**/api/auth/session', (route) => json(route, { data: currentUser }));
   await page.route('**/api/auth/logout', (route) => {
     currentUser = cashierUser;
     return json(route, { ok: true });
@@ -344,8 +345,11 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.goto('/login');
 
   await expect(page.getByRole('heading', { name: 'Caja', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: /abrir caja/i }).click();
+  await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
   await expect(page.getByText('Caja abierta', { exact: true })).toBeVisible();
+  if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: /cerrar modal/i }).click();
+  }
 
   await page.getByRole('link', { name: /nueva factura/i }).click();
   await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
@@ -354,6 +358,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByLabel(/resumen de factura/i).getByText('L. 25.00').first()).toBeVisible();
   await page.getByRole('button', { name: /emitir factura/i }).click();
   await page.getByRole('button', { name: /confirmar emision/i }).click();
+  await expect(page.getByRole('dialog', { name: /factura emitida/i })).toBeVisible();
+  await page.getByRole('button', { name: /cobrar ahora/i }).click();
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
   await page.getByRole('button', { name: /cobrar/i }).click();
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
@@ -361,6 +367,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByLabel(/ancho del recibo/i)).toHaveValue('80mm');
   await page.getByLabel(/ancho del recibo/i).selectOption('58mm');
   await expect(page.getByLabel(/recibo termico/i)).toHaveClass(/receipt-58mm/);
+  await page.getByRole('button', { name: /cerrar modal/i }).click();
 
   await page.getByRole('link', { name: /nueva factura/i }).click();
   await page.getByLabel(/nombre del paciente/i).fill('Jose Perez');
@@ -369,12 +376,17 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByLabel(/receta de dialisis/i).check();
   await page.getByRole('button', { name: /emitir factura/i }).click();
   await page.getByRole('button', { name: /confirmar emision/i }).click();
+  await expect(page.getByRole('dialog', { name: /factura emitida/i })).toBeVisible();
+  await page.getByRole('button', { name: /cobrar ahora/i }).click();
   await expect(page.getByText('Total L. 0.00')).toBeVisible();
 
   await page.getByRole('link', { name: /historial/i }).click();
   await expect(page.getByRole('heading', { name: /historial de facturas/i })).toBeVisible();
+  if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: /cerrar modal/i }).click();
+  }
   await page.getByRole('button', { name: /filtrar/i }).click();
-  await page.getByRole('button', { name: /ver/i }).first().click();
+  await page.getByRole('main').getByRole('button', { name: /^ver$/i }).first().click();
   await page.getByRole('button', { name: /reimprimir/i }).click();
   await expect(page.getByRole('heading', { name: /preview termico/i })).toBeVisible();
   await page.getByLabel(/ancho del recibo/i).selectOption('58mm');
@@ -392,7 +404,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('link', { name: /backups/i }).click();
   await expect(page.getByRole('heading', { name: /backups locales/i })).toBeVisible();
   await page.getByRole('button', { name: /crear backup/i }).click();
-  await expect(page.getByText('pending')).toBeVisible();
+  await expect(page.getByText('Pendiente', { exact: true })).toBeVisible();
   expect(consoleIssues).toEqual([]);
 });
 

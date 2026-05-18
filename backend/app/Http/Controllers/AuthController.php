@@ -49,6 +49,25 @@ class AuthController extends Controller
         ]);
     }
 
+    public function session(Request $request): JsonResponse
+    {
+        $user = Auth::guard('web')->user();
+
+        if ($user && ! $user->active) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return response()->json([
+                'data' => null,
+            ]);
+        }
+
+        return response()->json([
+            'data' => $user ? $this->userPayload($user) : null,
+        ]);
+    }
+
     public function changePassword(ChangePasswordRequest $request): JsonResponse
     {
         $user = $request->user();

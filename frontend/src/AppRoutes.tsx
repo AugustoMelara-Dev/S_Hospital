@@ -13,10 +13,12 @@ import { type AuthUser, type CashSession } from './lib/api';
 
 type AppRoutesProps = {
   canCreateInvoices: boolean;
+  canCreatePayments: boolean;
   canEditFiscalSettings: boolean;
   canViewBackups: boolean;
   canViewCash: boolean;
   canViewCatalog: boolean;
+  canViewReceipts: boolean;
   canViewFiscalSettings: boolean;
   canViewInvoices: boolean;
   canViewReports: boolean;
@@ -25,6 +27,8 @@ type AppRoutesProps = {
   canExportReports: boolean;
   cashSession: CashSession | null;
   defaultAuthenticatedRoute: string;
+  onQuickCash: () => void;
+  onQuickInvoice: () => void;
   onCashSessionChange: (session: CashSession | null) => void;
   onStatus: (message: string) => void;
   user: AuthUser;
@@ -32,10 +36,12 @@ type AppRoutesProps = {
 
 export function AppRoutes({
   canCreateInvoices,
+  canCreatePayments,
   canEditFiscalSettings,
   canViewBackups,
   canViewCash,
   canViewCatalog,
+  canViewReceipts,
   canViewFiscalSettings,
   canViewInvoices,
   canViewReports,
@@ -44,6 +50,8 @@ export function AppRoutes({
   canExportReports,
   cashSession,
   defaultAuthenticatedRoute,
+  onQuickCash,
+  onQuickInvoice,
   onCashSessionChange,
   onStatus,
   user,
@@ -65,6 +73,8 @@ export function AppRoutes({
             canViewManagerialReports={canViewManagerialReports}
             canViewReports={canViewReports}
             cashSession={cashSession}
+            onQuickCash={onQuickCash}
+            onQuickInvoice={onQuickInvoice}
             onStatus={onStatus}
           />
         }
@@ -72,8 +82,16 @@ export function AppRoutes({
       <Route
         path="/billing/new"
         element={
-          <PermissionGate allowed={canCreateInvoices}>
-            <NewInvoiceView cashSession={cashSession} onStatus={onStatus} />
+          <PermissionGate allowed={canCreateInvoices && canViewCatalog && canViewCash && canCreatePayments && canViewReceipts}>
+            <NewInvoiceView
+              cashSession={cashSession}
+              canCreatePayments={canCreatePayments}
+              canViewCatalog={canViewCatalog}
+              canViewReceipts={canViewReceipts}
+              onCashSessionChange={onCashSessionChange}
+              onOpenCash={onQuickCash}
+              onStatus={onStatus}
+            />
           </PermissionGate>
         }
       />

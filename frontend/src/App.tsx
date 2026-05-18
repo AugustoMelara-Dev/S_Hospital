@@ -1,21 +1,31 @@
 import { BrowserRouter } from 'react-router-dom';
+import { useState } from 'react';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { AppRoutes } from './AppRoutes';
 import { useHospitalSession } from './app/useHospitalSession';
+import { Dialog } from './components/ui/dialog';
 import { EmptyState, LoadingState } from './components/ui/states';
 import { LoginView } from './features/auth/LoginView';
 import { PasswordChangeView } from './features/auth/PasswordChangeView';
+import { CashBoxView } from './features/cash/CashBoxView';
+import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 import { AppShell } from './layout/AppShell';
+import { queryClient } from './lib/query-client';
 
 export function App() {
   return (
-    <BrowserRouter>
-      <HospitalApp />
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <HospitalApp />
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
 
 function HospitalApp() {
   const session = useHospitalSession();
+  const [quickInvoiceOpen, setQuickInvoiceOpen] = useState(false);
+  const [quickCashOpen, setQuickCashOpen] = useState(false);
 
   if (session.loading) {
     return <LoadingState label="Cargando sesion..." />;
@@ -47,6 +57,8 @@ function HospitalApp() {
   return (
     <AppShell
       cashSession={session.cashSession}
+      onQuickCash={() => setQuickCashOpen(true)}
+      onQuickInvoice={() => setQuickInvoiceOpen(true)}
       onLogout={session.handleLogout}
       status={session.status}
       user={session.user}
@@ -56,7 +68,7 @@ function HospitalApp() {
           title="Sin permisos operativos"
           description="No tiene permisos operativos asignados."
         />
-      ) : session.needsBillingCashBootstrap || session.cashBootstrapLoading ? (
+      ) : session.cashBootstrapLoading ? (
         <LoadingState label="Validando caja para facturacion..." />
       ) : (
         <AppRoutes
@@ -64,7 +76,9 @@ function HospitalApp() {
           canEditFiscalSettings={session.canEditFiscalSettings}
           canViewBackups={session.canViewBackups}
           canViewCash={session.canViewCash}
+          canCreatePayments={session.canCreatePayments}
           canViewCatalog={session.canViewCatalog}
+          canViewReceipts={session.canViewReceipts}
           canViewFiscalSettings={session.canViewFiscalSettings}
           canViewInvoices={session.canViewInvoices}
           canViewReports={session.canViewReports}
@@ -73,11 +87,43 @@ function HospitalApp() {
           canExportReports={session.canExportReports}
           cashSession={session.cashSession}
           defaultAuthenticatedRoute={session.defaultAuthenticatedRoute}
+          onQuickCash={() => setQuickCashOpen(true)}
+          onQuickInvoice={() => setQuickInvoiceOpen(true)}
           onCashSessionChange={session.setCashSession}
           onStatus={session.setStatus}
           user={session.user}
         />
       )}
+
+      <Dialog
+        open={quickInvoiceOpen}
+        onOpenChange={setQuickInvoiceOpen}
+        size="fullscreen"
+        title="Emitir factura"
+        description="POS rapido en modal para facturar sin abandonar el contexto actual."
+      >
+        <NewInvoiceView
+          cashSession={session.cashSession}
+          canCreatePayments={session.canCreatePayments}
+          canViewCatalog={session.canViewCatalog}
+          canViewReceipts={session.canViewReceipts}
+          onOpenCash={() => {
+            setQuickInvoiceOpen(false);
+            setQuickCashOpen(true);
+          }}
+          onStatus={session.setStatus}
+        />
+      </Dialog>
+
+      <Dialog
+        open={quickCashOpen}
+        onOpenChange={setQuickCashOpen}
+        size="lg"
+        title={session.cashSession ? 'Caja activa' : 'Abrir caja'}
+        description="Apertura y cierre de turno sin navegar a otra pantalla."
+      >
+        <CashBoxView onStatus={session.setStatus} onSessionChange={session.setCashSession} compact />
+      </Dialog>
     </AppShell>
   );
 }

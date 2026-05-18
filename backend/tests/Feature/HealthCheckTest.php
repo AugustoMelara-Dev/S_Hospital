@@ -41,4 +41,18 @@ class HealthCheckTest extends TestCase
 
         $this->assertContains('127.0.0.1:5173', config('sanctum.stateful'));
     }
+
+    public function test_lan_vite_origin_is_not_allowed_by_default_for_credentialed_cors(): void
+    {
+        $response = $this
+            ->withHeaders([
+                'Origin' => 'http://192.168.56.2:5173',
+                'Access-Control-Request-Method' => 'GET',
+            ])
+            ->options('/sanctum/csrf-cookie');
+
+        $response
+            ->assertNoContent()
+            ->assertHeaderMissing('Access-Control-Allow-Origin');
+    }
 }

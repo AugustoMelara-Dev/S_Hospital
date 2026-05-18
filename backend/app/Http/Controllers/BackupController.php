@@ -23,7 +23,7 @@ class BackupController extends Controller
             ->paginate(max(1, min((int) $request->integer('per_page', 15), 50)));
 
         return response()->json([
-            'data' => $backups->items(),
+            'data' => collect($backups->items())->map(fn (BackupLog $backupLog): array => $this->payload($backupLog))->values(),
             'meta' => [
                 'current_page' => $backups->currentPage(),
                 'per_page' => $backups->perPage(),
@@ -41,7 +41,7 @@ class BackupController extends Controller
         RunBackupJob::dispatch($backupLog->id);
 
         return response()->json([
-            'data' => $backupLog,
+            'data' => $this->payload($backupLog),
         ], 202);
     }
 
@@ -96,5 +96,31 @@ class BackupController extends Controller
         }
 
         return str_starts_with($realPath, rtrim($realRoot, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function payload(BackupLog $backupLog): array
+    {
+        $payload = [
+            'id' => $backupLog->id,
+            'filename' => $backupLog->filename,
+            'size_bytes' => $backupLog->size_bytes,
+            'checksum_sha256' => $backupLog->checksum_sha256,
+            'status' => $backupLog->status,
+            'type' => $backupLog->type,
+            'created_by' => $backupLog->created_by,
+            'completed_at' => $backupLog->completed_at,
+            'created_at' => $backupLog->created_at,
+            'updated_at' => $backupLog->updated_at,
+            'creator' => $backupLog->creator,
+        ];
+
+        if ($backupLog->status === BackupLog::STATUS_FAILED) {
+            $payload['error_message'] = $backupLog->error_message;
+        }
+
+        return $payload;
     }
 }
