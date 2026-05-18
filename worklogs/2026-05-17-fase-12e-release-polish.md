@@ -80,8 +80,10 @@ Fecha: 2026-05-17
 - `php artisan config:cache`: OK.
 - `npm.cmd run e2e`: 1 Playwright workflow mockeado OK; `real-smoke.spec.ts` queda excluido por defecto.
 - `npm.cmd run smoke:real` sin variables reales: falla explicitamente por faltar `E2E_REAL_BASE_URL`, `E2E_REAL_LOGIN` y `E2E_REAL_PASSWORD`; no pasa en falso.
+- `frontend/e2e/real-smoke.spec.ts` separa smoke real no destructivo de flujo mutacional. El flujo que abre caja, emite factura, valida error de paciente, cobra, revisa historial y consulta reportes solo corre con `E2E_REAL_ALLOW_MUTATIONS=1`.
 
 ## Pendiente real
 
 - Ejecutar smoke real LAN con consola limpia requiere servidor Laravel/API levantado y `E2E_REAL_BASE_URL`, `E2E_REAL_LOGIN` y `E2E_REAL_PASSWORD`.
+- Ejecutar el smoke mutacional contra una base real requiere snapshot/backup previo y `E2E_REAL_ALLOW_MUTATIONS=1`; crea datos auditables de prueba.
 - Factura pendiente queda fuera del flujo principal; si se habilita luego debe ser accion secundaria con permiso y auditoria.
