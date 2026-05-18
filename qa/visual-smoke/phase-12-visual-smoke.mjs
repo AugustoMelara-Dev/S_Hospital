@@ -385,8 +385,15 @@ async function main() {
     const invoiceRow = lastInvoiceNumber
       ? page.locator('tr').filter({ hasText: lastInvoiceNumber }).first()
       : page.locator('tr').filter({ has: page.getByRole('button', { name: /ver acciones de factura/i }) }).first();
-    await invoiceRow.getByRole('button', { name: /ver acciones de factura/i }).click();
-    await page.getByRole('button', { name: /reimprimir/i }).click();
+    await page.keyboard.press('Escape').catch(() => {});
+    const directReprint = invoiceRow.getByRole('button', { name: /^reimprimir$/i }).first();
+    if (await directReprint.isVisible().catch(() => false)) {
+      await directReprint.click();
+    } else {
+      await invoiceRow.getByRole('button', { name: /ver acciones de factura/i }).click();
+      await page.getByRole('button', { name: /reimprimir/i }).click();
+    }
+    await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
     await page.getByLabel(/vista previa del recibo/i).waitFor({ state: 'visible', timeout: 15000 });
     await closeOperationalDialogIfPresent(page);
 
