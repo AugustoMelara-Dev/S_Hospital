@@ -16,6 +16,7 @@ export function useHospitalSession() {
   });
   const [status, setStatus] = useState('Listo para iniciar sesion local.');
   const [loading, setLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const initialPathRef = useRef(location.pathname);
 
   const permissions = useMemo(() => new Set(user?.permissions ?? []), [user?.permissions]);
@@ -41,7 +42,8 @@ export function useHospitalSession() {
     apiClient.onSessionExpired(() => {
       setUser(null);
       setCashSession(null);
-      setStatus('Sesion vencida. Inicie sesion nuevamente para continuar.');
+      setStatus('Sesion vencida. Redirigiendo al login...');
+      setSessionExpired(true);
     });
 
     if (initialPathRef.current === '/login') {
@@ -146,6 +148,7 @@ export function useHospitalSession() {
       canViewReports ||
       canViewBackups,
     defaultAuthenticatedRoute: '/dashboard',
+    sessionExpired,
     handleLogin,
     handleLogout,
     handlePasswordSubmit,

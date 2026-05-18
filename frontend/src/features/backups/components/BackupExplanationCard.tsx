@@ -1,4 +1,5 @@
 import { Archive, Info } from 'lucide-react';
+import { Button } from '../../../components/ui/button';
 import { Card, CardContent } from '../../../components/ui/card';
 
 export function BackupExplanationCard() {
@@ -39,14 +40,15 @@ export function BackupEmptyState({
           Cree su primer backup para proteger sus datos.
         </p>
         {canCreate && onCreate && (
-          <button
+          <Button
             type="button"
+            variant="default"
+            size="sm"
             onClick={onCreate}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             <Archive className="h-4 w-4" />
             Crear Backup
-          </button>
+          </Button>
         )}
       </CardContent>
     </Card>

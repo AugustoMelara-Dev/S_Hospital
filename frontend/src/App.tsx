@@ -1,4 +1,5 @@
-import { BrowserRouter } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AppRoutes } from './AppRoutes';
@@ -24,8 +25,15 @@ export function App() {
 
 function HospitalApp() {
   const session = useHospitalSession();
+  const navigate = useNavigate();
   const [quickInvoiceOpen, setQuickInvoiceOpen] = useState(false);
   const [quickCashOpen, setQuickCashOpen] = useState(false);
+
+  useEffect(() => {
+    if (session.sessionExpired) {
+      navigate('/login', { replace: true });
+    }
+  }, [session.sessionExpired, navigate]);
 
   if (session.loading) {
     return <LoadingState label="Cargando sesion..." />;

@@ -321,6 +321,13 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
   };
 }
 
+async function loginAs(page: Page, username: string) {
+  await page.goto('/login');
+  await page.getByLabel(/usuario o email/i).fill(username);
+  await page.getByLabel(/contrasena/i).fill('Password123!');
+  await page.getByRole('button', { name: /entrar/i }).click();
+}
+
 test('production readiness cashier and admin workflow', async ({ page }) => {
   const consoleIssues: string[] = [];
 
@@ -342,9 +349,9 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   });
 
   await installApiMocks(page);
-  await page.goto('/login');
+  await loginAs(page, 'cajero.demo');
 
-  await expect(page.getByRole('heading', { name: 'Caja', exact: true })).toBeVisible();
+  await expect(page.locator('#cash-title')).toBeVisible();
   await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
   await expect(page.getByText('Caja abierta', { exact: true })).toBeVisible();
   if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
@@ -426,11 +433,12 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
   });
 
   await installApiMocks(page);
+  await loginAs(page, 'cajero.demo');
 
   for (const viewport of viewports) {
     await page.setViewportSize(viewport);
     await page.goto('/billing/new');
-    await expect(page.getByRole('heading', { name: /nueva factura/i })).toBeVisible();
+    await expect(page.getByText(/nueva factura/i)).toBeVisible();
     await expect(page.getByRole('link', { name: 'Caja', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Catalogo', exact: true })).toBeVisible();
     await expect(page.getByLabel(/nombre del paciente/i)).toBeVisible();

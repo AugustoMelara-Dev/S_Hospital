@@ -129,11 +129,12 @@ export function ServiceSearch({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[280px] overflow-y-auto pr-1">
             {filteredServices.map((service) => (
-              <button
+              <Button
                 key={service.id}
                 type="button"
+                variant="outline"
+                className="w-full justify-between gap-3 h-auto py-3 px-3"
                 onClick={() => onAddService(service)}
-                className="flex items-center justify-between gap-3 rounded-md border border-border bg-card p-3 text-left hover:bg-muted transition-colors"
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-sm truncate">{service.name}</p>
@@ -145,7 +146,7 @@ export function ServiceSearch({
                 <Badge variant="outline" className="shrink-0">
                   L. {service.price}
                 </Badge>
-              </button>
+                </Button>
             ))}
           </div>
         )}

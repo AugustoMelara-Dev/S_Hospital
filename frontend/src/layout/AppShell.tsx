@@ -234,14 +234,16 @@ export function AppShell({
 
       <div className="flex min-w-0 flex-col lg:ml-64">
         <header className="print-hidden sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-slate-200 bg-white px-4 shadow-sm lg:px-6">
-          <button
+          <Button
             type="button"
-            className="flex size-10 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 lg:hidden"
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
             onClick={() => setMobileMenuOpen(true)}
             aria-label="Abrir menú"
           >
             <Menu className="size-5" aria-hidden="true" />
-          </button>
+          </Button>
 
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -287,13 +289,14 @@ export function AppShell({
 
             <DropdownMenuPrimitive.Root>
               <DropdownMenuPrimitive.Trigger asChild>
-                <button
+                <Button
                   type="button"
-                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                  variant="ghost"
+                  className="gap-2 px-2 py-1.5 h-auto font-medium text-slate-600"
                 >
                   <span className="hidden md:inline">{user.name}</span>
                   <ChevronDown className="size-4" aria-hidden="true" />
-                </button>
+                </Button>
               </DropdownMenuPrimitive.Trigger>
               <DropdownMenuPrimitive.Portal>
                 <DropdownMenuPrimitive.Content

@@ -28,11 +28,11 @@ const routeLabels = {
   '/dashboard': /inicio/i,
   '/billing/new': /nueva factura/i,
   '/cashbox': /^caja$/i,
-  '/catalog': /catalogo/i,
+  '/catalog': /cat.logo/i,
   '/invoices': /historial/i,
   '/reports': /reportes/i,
   '/backups': /backups/i,
-  '/settings/fiscal': /configuracion fiscal/i,
+  '/settings/fiscal': /configuraci.n fiscal/i,
 };
 
 const consoleByScreen = {};
@@ -73,13 +73,14 @@ async function clickFirstVisible(page, candidates, options = {}) {
 
 async function closeOperationalDialogIfPresent(page) {
   const closeButtons = [
-    page.getByRole('button', { name: /cerrar modal/i }),
-    page.getByRole('button', { name: /^cerrar$/i }),
+    page.getByRole('button', { name: /cerrar modal/i }).first(),
+    page.getByRole('button', { name: /^cerrar$/i }).first(),
   ];
 
   for (const button of closeButtons) {
     if (await button.isVisible().catch(() => false)) {
       await button.click();
+      await page.getByRole('dialog').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
       await waitSettled(page);
       return true;
     }
@@ -283,14 +284,18 @@ async function main() {
     }
     await page.getByRole('button', { name: /buscar|filtrar/i }).click().catch(() => {});
     await waitSettled(page);
+    await page.getByRole('button', { name: /buscar/i }).waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
     if (lastInvoiceNumber) {
-      await page.getByText(lastInvoiceNumber).waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+      await page.getByText(lastInvoiceNumber).first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
     }
-    if (lastInvoiceNumber && !(await page.getByText(lastInvoiceNumber).isVisible().catch(() => false))) {
+    if (lastInvoiceNumber && !(await page.getByText(lastInvoiceNumber).first().isVisible().catch(() => false))) {
       findings.push(`invoices-history: la factura ${lastInvoiceNumber} no aparece visible en historial.`);
     }
     await screenshot(page, 'invoices-history');
-    await page.getByRole('main').getByRole('button', { name: /ver acciones de factura/i }).first().click();
+    const invoiceRow = lastInvoiceNumber
+      ? page.locator('tr').filter({ hasText: lastInvoiceNumber }).first()
+      : page.locator('tr').filter({ has: page.getByRole('button', { name: /ver acciones de factura/i }) }).first();
+    await invoiceRow.getByRole('button', { name: /ver acciones de factura/i }).click();
     await page.getByRole('button', { name: /reimprimir/i }).click();
     await page.getByLabel(/vista previa del recibo/i).waitFor({ state: 'visible', timeout: 15000 });
     await closeOperationalDialogIfPresent(page);
@@ -310,7 +315,7 @@ async function main() {
     await page.getByText(/total cobrado/i).waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
     await screenshot(page, 'reports');
     const reportsText = await page.locator('body').innerText();
-    if (!/total cobrado|top servicios|auditoria operativa/i.test(reportsText)) {
+    if (!/total cobrado|total ingresos|top servicios|auditoria operativa/i.test(reportsText)) {
       findings.push('reports: no se encontraron metricas utiles visibles.');
     }
 

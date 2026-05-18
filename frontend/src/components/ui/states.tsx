@@ -2,6 +2,10 @@ import { AlertTriangle, Loader2, SearchX } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card';
 
+export function Skeleton({ className }: { className?: string }) {
+  return <div className={`animate-pulse bg-muted rounded ${className ?? ''}`} />;
+}
+
 export function LoadingState({ label = 'Cargando...' }: { label?: string }) {
   return (
     <Card>

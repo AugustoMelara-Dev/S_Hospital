@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { apiClient } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Sheet } from '@/components/ui/sheet';
@@ -98,11 +99,7 @@ export function CategorySheet({ open, onOpenChange, category, onSuccess }: Categ
         </div>
 
         <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            {...register('active')}
-            className="size-4 rounded border-input"
-          />
+          <Checkbox {...register('active')} />
           <span className="text-sm font-medium">Categoría activa</span>
         </label>
 

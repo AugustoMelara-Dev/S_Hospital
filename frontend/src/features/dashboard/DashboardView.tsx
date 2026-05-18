@@ -5,10 +5,12 @@ import {
   WalletCards,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { type ReactNode } from 'react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { PageHeader } from '../../components/ui/page-header';
+import { Skeleton } from '../../components/ui/states';
 import { type CashSession, type DailyReport, apiClient } from '../../lib/api';
 
 type DashboardViewProps = {
@@ -106,23 +108,23 @@ export function DashboardView({
           <MetricCard
             helper={cashSession ? 'Lista para cobrar facturas.' : 'Abrir caja antes de operar POS.'}
             label="Caja activa"
-            value={cashSession ? `#${cashSession.id}` : 'Sin caja'}
+            value={cashSession ? `#${cashSession.id}` : loadingDaily ? <Skeleton className="h-7 w-16" /> : 'Sin caja'}
             variant={cashSession ? 'success' : 'warning'}
           />
           <MetricCard
             helper={canViewManagerialReports ? 'Total emitido segun backend.' : 'Requiere permiso gerencial.'}
             label="Facturado hoy"
-            value={dailyReport ? `L. ${dailyReport.total_billed}` : loadingDaily ? 'Cargando...' : 'No disponible'}
+            value={dailyReport ? `L. ${dailyReport.total_billed}` : loadingDaily ? <Skeleton className="h-7 w-20" /> : 'No disponible'}
           />
           <MetricCard
             helper={canViewManagerialReports ? 'Pagos registrados del dia.' : 'Requiere permiso gerencial.'}
             label="Cobrado hoy"
-            value={dailyReport ? `L. ${dailyReport.total_collected}` : loadingDaily ? 'Cargando...' : 'No disponible'}
+            value={dailyReport ? `L. ${dailyReport.total_collected}` : loadingDaily ? <Skeleton className="h-7 w-20" /> : 'No disponible'}
           />
           <MetricCard
             helper={dailyReport ? `${dailyReport.payment_count} pagos registrados.` : 'Resumen operativo.'}
             label="Facturas hoy"
-            value={dailyReport ? String(dailyReport.invoice_count) : loadingDaily ? '...' : 'No disponible'}
+            value={dailyReport ? String(dailyReport.invoice_count) : loadingDaily ? <Skeleton className="h-7 w-12" /> : 'No disponible'}
           />
         </section>
 
@@ -187,7 +189,7 @@ function MetricCard({
 }: {
   helper: string;
   label: string;
-  value: string;
+  value: ReactNode;
   variant?: 'neutral' | 'success' | 'warning';
 }) {
   const badge = {

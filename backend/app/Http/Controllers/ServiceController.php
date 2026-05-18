@@ -19,6 +19,8 @@ class ServiceController extends Controller
 {
     public function index(IndexServiceRequest $request): JsonResponse
     {
+        $request->user()->can('catalog.view') || abort(403);
+
         $query = Service::query()
             ->with('category:id,name,slug,active,sort_order')
             ->when($request->filled('code'), function ($query) use ($request): void {

@@ -12,10 +12,20 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Dialog } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { PaginationControls } from '../../components/ui/pagination';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Skeleton } from '../../components/ui/states';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { Textarea } from '../../components/ui/textarea';
 import {
@@ -219,20 +229,21 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
             <div className="w-[150px]">
               <Label htmlFor="status">Estado</Label>
-              <select
-                id="status"
-                className="flex min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
-                value={filters.status ?? ''}
-                onChange={(event) =>
-                  setFilters({ ...filters, status: event.target.value as InvoiceFilters['status'] })
-                }
+              <Select
+                value={filters.status ?? 'all'}
+                onValueChange={(v) => setFilters({ ...filters, status: v === 'all' ? '' : v as InvoiceFilters['status'] })}
               >
-                <option value="">Todos</option>
-                <option value="issued">Emitida</option>
-                <option value="partial">Parcial</option>
-                <option value="paid">Pagada</option>
-                <option value="void">Anulada</option>
-              </select>
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="issued">Emitida</SelectItem>
+                  <SelectItem value="partial">Parcial</SelectItem>
+                  <SelectItem value="paid">Pagada</SelectItem>
+                  <SelectItem value="void">Anulada</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex-1 min-w-[200px]">
@@ -285,34 +296,101 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             )}
           </CardContent>
         </Card>
+      ) : loading ? (
+        <Card>
+          <CardContent className="p-0">
+            <div className="table-wrap">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>No.</TableHead>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">Pagado</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+</CardContent>
+        </Card>
       ) : (
         <Card>
           <CardContent className="p-0">
             <div className="table-wrap">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>No.</th>
-                    <th>Fecha</th>
-                    <th>Paciente</th>
-                    <th className="text-right">Total</th>
-                    <th className="text-right">Pagado</th>
-                    <th>Estado</th>
-                    <th className="text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>No.</TableHead>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">Pagado</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {invoices.map((invoice) => (
-                    <tr key={invoice.id}>
-                      <td className="font-mono text-sm">{invoice.invoice_number}</td>
-                      <td>{formatDate(invoice.issued_at)}</td>
-                      <td className="font-medium">{invoice.patient_name}</td>
-                      <td className="text-right">L. {invoice.total}</td>
-                      <td className="text-right">L. {invoice.paid_amount}</td>
-                      <td>
+                    <TableRow key={invoice.id}>
+                      <TableCell className="font-mono text-sm">{invoice.invoice_number}</TableCell>
+                      <TableCell>{formatDate(invoice.issued_at)}</TableCell>
+                      <TableCell className="font-medium">{invoice.patient_name}</TableCell>
+                      <TableCell className="text-right">L. {invoice.total}</TableCell>
+                      <TableCell className="text-right">L. {invoice.paid_amount}</TableCell>
+                      <TableCell>
                         <StatusBadge status={invoice.status} />
-                      </td>
-                      <td className="text-right">
+                      </TableCell>
+                      <TableCell className="text-right">
                         <div className="relative inline-block">
                           <Button
                             type="button"
@@ -385,11 +463,11 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                             </>
                           )}
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
@@ -418,19 +496,22 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <label htmlFor="receipt-width" className="text-sm font-semibold">Ancho</label>
-                <select
-                  id="receipt-width"
-                  className="flex min-h-9 rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground outline-none"
+                <Select
                   value={receiptWidth}
-                  onChange={(e) => {
-                    const newWidth = e.target.value as ReceiptData['width'];
+                  onValueChange={(v) => {
+                    const newWidth = v as ReceiptData['width'];
                     setReceiptWidth(newWidth);
                     void reprint(newWidth);
                   }}
                 >
-                  <option value="80mm">80mm</option>
-                  <option value="58mm">58mm</option>
-                </select>
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="80mm">80mm</SelectItem>
+                    <SelectItem value="58mm">58mm</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex items-center gap-2 flex-1">

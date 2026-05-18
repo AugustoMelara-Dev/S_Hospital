@@ -2,6 +2,7 @@ import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
 import { AlertTriangle } from 'lucide-react';
 import { type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 interface AlertDialogContentProps {
@@ -158,13 +159,12 @@ export function CloseSessionDialog({
             <label className="text-sm font-semibold" htmlFor="closing_notes">
               Nota sobre la diferencia *
             </label>
-            <textarea
+            <Textarea
               id="closing_notes"
               value={closingNotes}
               onChange={(e) => onClosingNotesChange(e.target.value)}
               placeholder="Explique la diferencia..."
               rows={2}
-              className="flex min-h-20 w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
             />
           </div>
         )}

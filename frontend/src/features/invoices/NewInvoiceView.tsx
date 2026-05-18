@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Alert } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
@@ -84,6 +84,46 @@ export function NewInvoiceView({
 
     return () => window.clearTimeout(timer);
   }, [autoPrintReceiptKey, onStatus, receipt, showReceipt]);
+
+  const handleClearCart = useCallback(() => {
+    setCartItems([]);
+    setPatientName('');
+    setPatientError(undefined);
+    setAlertMessage(null);
+    setSearch('');
+    setScanCode('');
+    setSelectedCategoryId(undefined);
+    onStatus('Carrito limpiado.');
+  }, [onStatus]);
+
+  const canEmit = Boolean(loadedCashSession && patientName.trim() && cartItems.length > 0);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        patientInputRef.current?.focus();
+      }
+
+      if (e.key === 'Escape') {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+        if (confirm('¿Limpiar carrito?')) {
+          handleClearCart();
+        }
+      }
+
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        if (canEmit) {
+          handleEmitClick();
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canEmit, handleClearCart]);
 
   const preview = useMemo(() => calculatePreview(cartItems), [cartItems]);
 
@@ -491,11 +531,30 @@ export function NewInvoiceView({
         open={showReceipt && Boolean(receipt)}
         onOpenChange={setShowReceipt}
         size="lg"
-        title="Documento fiscal"
+        title="Preview térmico"
         description="Solo el ticket se imprime."
       >
         {receipt ? <ReceiptPreview receipt={receipt} onWidthChange={loadReceipt} /> : null}
       </Dialog>
+
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <span>
+          <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Ctrl+N</kbd>{' '}
+          Paciente
+        </span>
+        <span>
+          <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Enter</kbd>{' '}
+          Escanear
+        </span>
+        <span>
+          <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Ctrl+Enter</kbd>{' '}
+          Emitir
+        </span>
+        <span>
+          <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Esc</kbd>{' '}
+          Limpiar
+        </span>
+      </div>
     </section>
   );
 }

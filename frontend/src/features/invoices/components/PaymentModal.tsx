@@ -3,6 +3,7 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Dialog } from '../../../components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import type { Payment } from '../../../lib/api';
 
 type PaymentModalProps = {
@@ -19,13 +20,6 @@ type PaymentModalProps = {
   onConfirm: () => void;
   submitting?: boolean;
 };
-
-const PAYMENT_METHODS: { value: Payment['method']; label: string }[] = [
-  { value: 'cash', label: 'Efectivo' },
-  { value: 'transfer', label: 'Transferencia' },
-  { value: 'card', label: 'Tarjeta' },
-  { value: 'other', label: 'Otro' },
-];
 
 export function PaymentModal({
   open,
@@ -84,7 +78,7 @@ export function PaymentModal({
             <span className="font-bold">L. {balanceDue}</span>
           </div>
           {change !== null && (
-            <div className="flex justify-between text-green-600">
+            <div className="flex justify-between text-emerald-600">
               <span className="text-muted-foreground">Cambio:</span>
               <span className="font-bold">L. {change.toFixed(2)}</span>
             </div>
@@ -94,16 +88,17 @@ export function PaymentModal({
         <div className="space-y-3">
           <div>
             <Label htmlFor="payment-method" className="mb-1.5 block">Metodo de pago</Label>
-            <select
-              id="payment-method"
-              value={paymentMethod}
-              onChange={(e) => onPaymentMethodChange(e.target.value as Payment['method'])}
-              className="flex min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              {PAYMENT_METHODS.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
+            <Select value={paymentMethod} onValueChange={(v) => onPaymentMethodChange(v as Payment['method'])}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccione metodo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash">Efectivo</SelectItem>
+                <SelectItem value="card">Tarjeta</SelectItem>
+                <SelectItem value="transfer">Transferencia</SelectItem>
+                <SelectItem value="other">Otro</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>

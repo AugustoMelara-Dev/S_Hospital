@@ -60,7 +60,7 @@
       "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\fiscal-settings.png"
     }
   ],
-  "lastInvoiceNumber": "000-001-01-00000021",
+  "lastInvoiceNumber": "000-001-01-00000027",
   "consoleByScreen": {
     "login": [],
     "dashboard": [],
@@ -69,11 +69,13 @@
     "billing-new-with-services": [],
     "billing-confirm-modal": [],
     "receipt-preview": [],
-    "invoices-history": []
+    "invoices-history": [],
+    "catalog": [],
+    "reports": [],
+    "backups": [],
+    "fiscal-settings": []
   },
   "consoleIssueCount": 0,
-  "findings": [
-    "invoices-history: la factura 000-001-01-00000021 no aparece visible en historial."
-  ],
-  "blockerCount": 1
+  "findings": [],
+  "blockerCount": 0
 }

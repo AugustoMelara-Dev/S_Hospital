@@ -111,6 +111,8 @@ class InvoiceController extends Controller
         Invoice $invoice,
         VoidInvoiceAction $voidInvoice,
     ): JsonResponse {
+        $request->user()->can('invoices.void') || abort(403);
+
         return response()->json([
             'data' => $voidInvoice->execute($invoice, $request->user(), $request->reason()),
         ]);

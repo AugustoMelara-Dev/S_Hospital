@@ -1,5 +1,6 @@
 import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
+import { Checkbox } from '../../../components/ui/checkbox';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 
@@ -48,17 +49,19 @@ export function InvoiceCart({ items, preview, onUpdateQuantity, onRemoveItem, on
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-sm truncate">{item.service.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        L. {item.service.price} {isFree && <span className="text-green-600 font-medium">(Gratis - Receta dialisis)</span>}
+                        L. {item.service.price} {isFree && <span className="text-emerald-600 font-medium">(Gratis - Receta dialisis)</span>}
                       </p>
                     </div>
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="icon"
                       onClick={() => onRemoveItem(index)}
-                      className="text-muted-foreground hover:text-destructive transition-colors p-1"
+                      className="text-muted-foreground hover:text-destructive"
                       aria-label="Quitar item"
                     >
                       <Trash2 className="h-4 w-4" />
-                    </button>
+                    </Button>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -96,15 +99,14 @@ export function InvoiceCart({ items, preview, onUpdateQuantity, onRemoveItem, on
 
                   {item.service.special_rule_code === ERYTHROPOIETIN_RULE && (
                     <label className="flex items-center gap-2 text-xs">
-                      <input
-                        type="checkbox"
+                      <Checkbox
+                        id={`dialysis-${index}`}
                         checked={item.dialysisPrescription}
-                        onChange={(e) => {
+                        onCheckedChange={(checked) => {
                           const newItems = [...items];
-                          newItems[index] = { ...item, dialysisPrescription: e.target.checked };
+                          newItems[index] = { ...item, dialysisPrescription: checked === true };
                           onUpdateQuantity(index, item.quantity);
                         }}
-                        className="rounded border-input"
                       />
                       <span className="text-muted-foreground">Receta de dialisis (gratis)</span>
                     </label>

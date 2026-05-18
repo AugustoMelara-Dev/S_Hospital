@@ -6,12 +6,13 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
 import { PaginationControls } from '../../components/ui/pagination';
+import { Skeleton } from '../../components/ui/states';
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '../../components/ui/select';
 import {
   DropdownMenu,
@@ -22,6 +23,14 @@ import {
 } from '../../components/ui/dropdown-menu';
 import { ServiceSheet } from './components/ServiceSheet';
 import { CategorySheet } from './components/CategorySheet';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 type CatalogViewProps = {
   user: AuthUser;
@@ -245,8 +254,63 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 
       {isLoading ? (
         <Card>
-          <CardContent className="flex min-h-[200px] items-center justify-center">
-            <p className="text-muted-foreground">Cargando catálogo...</p>
+          <CardContent className="p-0">
+            <div className="table-wrap">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Categoría</TableHead>
+                    <TableHead>Precio</TableHead>
+                    <TableHead>Código</TableHead>
+                    <TableHead>Estado</TableHead>
+                    {canManageCatalog && <TableHead className="text-right">Acciones</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    {canManageCatalog && <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>}
+                  </TableRow>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    {canManageCatalog && <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>}
+                  </TableRow>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    {canManageCatalog && <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>}
+                  </TableRow>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    {canManageCatalog && <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>}
+                  </TableRow>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    {canManageCatalog && <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>}
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       ) : isEmpty ? (
@@ -274,67 +338,67 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       ) : (
         <Card>
           <div className="overflow-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-4 py-3 text-left text-sm font-semibold">Nombre</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">Categoría</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">Precio</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">Código</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold">Estado</th>
-                  {canManageCatalog && (
-                    <th className="px-4 py-3 text-right text-sm font-semibold">Acciones</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {services.map((service) => (
-                  <tr key={service.id} className="border-b hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex flex-col">
-                        <span className="font-medium">{service.name}</span>
-                        <span className="text-xs text-muted-foreground">{service.slug}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm">{service.category?.name ?? 'Sin categoría'}</td>
-                    <td className="px-4 py-3">
-                      <span className="font-semibold">L. {service.price}</span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
-                      {service.scan_code || service.barcode || service.qr_code || '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant={service.active ? 'default' : 'outline'}>
-                        {service.active ? 'Activo' : 'Inactivo'}
-                      </Badge>
-                    </td>
+            <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Categoría</TableHead>
+                    <TableHead>Precio</TableHead>
+                    <TableHead>Código</TableHead>
+                    <TableHead>Estado</TableHead>
                     {canManageCatalog && (
-                      <td className="px-4 py-3 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openEditService(service)}>
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => toggleServiceActive(service)}
-                              className={service.active ? 'text-destructive' : 'text-emerald-600'}
-                            >
-                              {service.active ? 'Desactivar' : 'Activar'}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
+                      <TableHead className="text-right">Acciones</TableHead>
                     )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {services.map((service) => (
+                    <TableRow key={service.id} className="border-b hover:bg-muted/30 transition-colors">
+                      <TableCell className="px-4 py-3">
+                        <div className="flex flex-col">
+                          <span className="font-medium">{service.name}</span>
+                          <span className="text-xs text-muted-foreground">{service.slug}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm">{service.category?.name ?? 'Sin categoría'}</TableCell>
+                      <TableCell className="px-4 py-3">
+                        <span className="font-semibold">L. {service.price}</span>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm text-muted-foreground">
+                        {service.scan_code || service.barcode || service.qr_code || '—'}
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
+                        <Badge variant={service.active ? 'default' : 'outline'}>
+                          {service.active ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </TableCell>
+                      {canManageCatalog && (
+                        <TableCell className="px-4 py-3 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditService(service)}>
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => toggleServiceActive(service)}
+                                className={service.active ? 'text-destructive' : 'text-emerald-600'}
+                              >
+                                {service.active ? 'Desactivar' : 'Activar'}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
           </div>
         </Card>
       )}

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { apiClient } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Sheet } from '@/components/ui/sheet';
@@ -185,12 +186,12 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
 
         <div className="space-y-2">
           <Label htmlFor="special_rule_code">Regla Especial</Label>
-          <Select value={specialRuleCode || ''} onValueChange={(val) => setValue('special_rule_code', val || null)}>
+          <Select value={specialRuleCode ?? 'none'} onValueChange={(val) => setValue('special_rule_code', val === 'none' ? null : val)}>
             <SelectTrigger>
               <SelectValue placeholder="Sin regla" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Sin regla</SelectItem>
+              <SelectItem value="none">Sin regla</SelectItem>
               <SelectItem value="ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION">
                 Eritropoyetina con receta de diálisis
               </SelectItem>
@@ -200,20 +201,12 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
 
         <div className="flex items-center gap-4">
           <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              {...register('taxable')}
-              className="size-4 rounded border-input"
-            />
+            <Checkbox {...register('taxable')} />
             <span className="text-sm font-medium">Aplica ISV</span>
           </label>
 
           <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              {...register('active')}
-              className="size-4 rounded border-input"
-            />
+            <Checkbox {...register('active')} />
             <span className="text-sm font-medium">Servicio activo</span>
           </label>
         </div>

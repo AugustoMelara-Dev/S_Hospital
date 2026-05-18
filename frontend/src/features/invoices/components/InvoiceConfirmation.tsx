@@ -56,7 +56,7 @@ export function InvoiceConfirmation({
                   {item.quantity} x {item.service.name}
                 </span>
                 {item.dialysisPrescription && item.service.special_rule_code === 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION' ? (
-                    <span className="text-green-600 font-medium">GRATIS</span>
+                    <span className="text-emerald-600 font-medium">GRATIS</span>
                   ) : (
                     <span className="text-muted-foreground">L. {item.service.price}</span>
                   )}
