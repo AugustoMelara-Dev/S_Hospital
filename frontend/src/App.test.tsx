@@ -1078,8 +1078,6 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /emitir factura/i }));
     expect(await screen.findByRole('button', { name: /confirmar emision/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /confirmar emision/i }));
-    expect(await screen.findByRole('dialog', { name: /factura emitida/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /cobrar ahora/i }));
     expect(await screen.findByRole('heading', { name: /registrar pago/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 

@@ -408,11 +408,9 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByText(/Total:\s*L\.\s*28\.75/)).toBeVisible();
   await page.getByRole('button', { name: /emitir factura/i }).click();
   await page.getByRole('button', { name: /confirmar emision/i }).click();
-  await expect(page.getByRole('dialog', { name: /factura emitida/i })).toBeVisible();
-  await page.getByRole('button', { name: /cobrar ahora/i }).click();
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
-await expect(page.getByRole('heading', { name: /preview t.rmico/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /preview t.rmico/i })).toBeVisible();
   await expect(page.getByText('80mm')).toBeVisible();
   await page.locator('[aria-label="Ancho del recibo"]').click();
   await page.getByRole('option', { name: '58mm' }).click();

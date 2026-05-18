@@ -361,8 +361,14 @@ export function NewInvoiceView({
       setReceipt(null);
       setCartItems([]);
       setPatientName('');
-      setShowSuccess(true);
-      onStatus(`Factura emitida ${invoice.invoice_number}.`);
+      if (loadedCashSession && Number(invoice.balance_due) > 0) {
+        setShowSuccess(false);
+        setShowPayment(true);
+        onStatus(`Factura emitida ${invoice.invoice_number}. Continue con el cobro.`);
+      } else {
+        setShowSuccess(true);
+        onStatus(`Factura emitida ${invoice.invoice_number}.`);
+      }
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo emitir la factura.');
       setAlertMessage(message);
@@ -412,9 +418,9 @@ export function NewInvoiceView({
       setReceipt(nextReceipt);
       setReceiptWidth(nextReceipt.width);
       setShowReceipt(true);
-      setAutoPrintReceiptKey(`${result.invoice.id}-${result.payment.id}-${nextReceipt.width}`);
+      setAutoPrintReceiptKey(null);
       setAlertMessage(null);
-      onStatus(`Pago registrado. Factura ${result.invoice.status}.`);
+      onStatus(`Pago registrado. Recibo ${nextReceipt.invoice.invoice_number} listo para imprimir.`);
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo registrar el pago.');
       setAlertMessage(message);
