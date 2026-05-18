@@ -95,6 +95,7 @@ async function installApiMocks(page: Page) {
   let currentCashSession: Record<string, unknown> | null = null;
   let invoiceCounter = 1;
   const invoices: Record<number, Record<string, unknown>> = {};
+  const backupLogs: Record<string, unknown>[] = [];
 
   await page.route('**/sanctum/csrf-cookie', (route) => route.fulfill({ status: 204 }));
 
@@ -293,24 +294,26 @@ async function installApiMocks(page: Page) {
   }));
   await page.route(/\/api\/backups(?:\?|$)/, async (route) => {
     if (route.request().method() === 'POST') {
+      const backup = {
+        id: 9,
+        filename: 'hospital-backup-20260517-101500-test.sql',
+        size_bytes: null,
+        checksum_sha256: null,
+        status: 'pending',
+        type: 'manual',
+        created_by: currentUser.id,
+        completed_at: null,
+        created_at: '2026-05-17T10:15:00-06:00',
+        updated_at: '2026-05-17T10:15:00-06:00',
+        creator: currentUser,
+      };
+      backupLogs.unshift(backup);
       return json(route, {
-        data: {
-          id: 9,
-          filename: 'hospital-backup-20260517-101500-test.sql',
-          size_bytes: null,
-          checksum_sha256: null,
-          status: 'pending',
-          type: 'manual',
-          created_by: currentUser.id,
-          completed_at: null,
-          created_at: '2026-05-17T10:15:00-06:00',
-          updated_at: '2026-05-17T10:15:00-06:00',
-          creator: currentUser,
-        },
+        data: backup,
       }, 202);
     }
 
-    return json(route, { data: [], meta: { current_page: 1, per_page: 15, total: 0 } });
+    return json(route, { data: backupLogs, meta: { current_page: 1, per_page: 15, total: backupLogs.length } });
   });
 }
 
@@ -436,9 +439,9 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
     await page.getByRole('button', { name: /cerrar modal/i }).click();
   }
   await page.getByRole('button', { name: /buscar/i }).click();
-  await page.getByRole('button', { name: /ver acciones de factura/i }).first().click();
-  await page.getByRole('button', { name: /reimprimir/i }).click();
-await expect(page.getByRole('heading', { name: /recibo - 000-001-01-00000001/i })).toBeVisible();
+  await page.getByRole('button', { name: /^reimprimir$/i }).first().click();
+  await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
+  await expect(page.getByRole('heading', { name: /recibo - 000-001-01-00000001/i })).toBeVisible();
   await page.locator('[aria-label="Ancho del recibo"]').click();
   await page.getByRole('option', { name: '58mm' }).click();
   await expect(page.getByLabel(/recibo termico/i)).toHaveClass(/receipt-58mm/);
@@ -456,6 +459,7 @@ await expect(page.getByRole('heading', { name: /recibo - 000-001-01-00000001/i }
   await page.getByRole('link', { name: /backups/i }).click();
   await expect(page.getByRole('heading', { name: /^backups$/i })).toBeVisible();
   await page.getByRole('button', { name: /crear backup/i }).first().click();
+  await page.getByRole('button', { name: /^crear backup$/i }).click();
   await expect(page.getByText('Pendiente', { exact: true })).toBeVisible();
   expect(consoleIssues).toEqual([]);
 });

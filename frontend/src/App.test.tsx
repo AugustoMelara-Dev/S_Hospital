@@ -593,6 +593,7 @@ describe('App', () => {
     const createBackupButton = await screen.findByRole('button', { name: /crear backup/i });
     await waitFor(() => expect(createBackupButton).toBeEnabled());
     fireEvent.click(createBackupButton);
+    fireEvent.click(await screen.findByRole('button', { name: /^crear backup$/i }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenLastCalledWith(
@@ -1396,11 +1397,11 @@ describe('App', () => {
     expect(screen.getByLabelText(/paciente/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/numero de factura/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/estado/i)).toBeInTheDocument();
-    fireEvent.click(await screen.findByRole('button', { name: /ver/i }));
 
     expect(await screen.findByRole('button', { name: /reimprimir/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /anular factura/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /reimprimir/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /registrar reimpresi/i }));
     expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
     await waitFor(() => {
       const receiptEl = screen.getByLabelText(/recibo termico/i);
