@@ -1141,7 +1141,6 @@ describe('App', () => {
 
   it('shows void reason confirmation for users with invoice void permission', async () => {
     window.history.pushState({}, '', '/invoices');
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const fetchMock = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
@@ -1232,9 +1231,10 @@ describe('App', () => {
       target: { value: 'Error de captura' },
     });
     fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));
+    expect(await screen.findByRole('dialog', { name: /anular factura/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /confirmar anulacion/i }));
 
     await waitFor(() => {
-      expect(confirmSpy).toHaveBeenCalled();
       expect(fetchMock).toHaveBeenLastCalledWith(
         expect.stringContaining('/api/invoices/101/void'),
         expect.objectContaining({ method: 'POST' }),

@@ -8,7 +8,12 @@ import {
   type ServicePayload,
   apiClient,
 } from '../../lib/api';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { DataTable, type DataTableColumn } from '../../components/ui/data-table';
+import { Input } from '../../components/ui/input';
+import { Select } from '../../components/ui/select';
 
 const emptyCategory: CategoryPayload = {
   name: '',
@@ -197,28 +202,47 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   }
 
   const serviceColumns: Array<DataTableColumn<Service>> = [
-    { key: 'name', header: 'Nombre', render: (service) => service.name },
+    {
+      key: 'name',
+      header: 'Nombre',
+      render: (service) => (
+        <div className="flex flex-col gap-1">
+          <strong>{service.name}</strong>
+          <span className="text-sm text-muted-foreground">{service.slug}</span>
+        </div>
+      ),
+    },
     {
       key: 'category',
       header: 'Categoria',
       render: (service) => service.category?.name ?? 'Sin categoria',
     },
-    { key: 'price', header: 'Precio', render: (service) => `L. ${service.price}` },
+    { key: 'price', header: 'Precio', render: (service) => <strong>L. {service.price}</strong> },
     {
       key: 'code',
       header: 'Codigo',
       render: (service) => service.scan_code ?? service.barcode ?? service.qr_code ?? 'Sin codigo',
     },
-    { key: 'status', header: 'Estado', render: (service) => (service.active ? 'Activo' : 'Inactivo') },
-    { key: 'rule', header: 'Regla', render: (service) => service.special_rule_code ?? 'N/A' },
+    {
+      key: 'status',
+      header: 'Estado',
+      render: (service) => (
+        <Badge variant={service.active ? 'default' : 'outline'}>{service.active ? 'Activo' : 'Inactivo'}</Badge>
+      ),
+    },
+    {
+      key: 'rule',
+      header: 'Regla',
+      render: (service) => service.special_rule_code ? <Badge variant="secondary">Regla especial</Badge> : 'N/A',
+    },
     ...(canManageCatalog
       ? [{
           key: 'action',
           header: 'Accion',
           render: (service: Service) => (
-            <button type="button" className="secondary-button" onClick={() => editService(service)}>
+            <Button type="button" variant="secondary" size="sm" onClick={() => editService(service)}>
               Editar
-            </button>
+            </Button>
           ),
         }]
       : []),
@@ -227,82 +251,89 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   return (
     <section id="catalogo" className="catalog-layout" aria-labelledby="catalog-title">
       <div className="catalog-main">
-        <div className="section-heading">
-          <div>
-            <p className="app-kicker">Catalogo</p>
-            <h2 id="catalog-title">Categorias y servicios</h2>
-          </div>
-          <form onSubmit={handleSearch} className="search-form">
-            <label>
-              Buscar servicio
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Glucosa, hemograma, eritropoyetina"
-              />
-            </label>
-            <button type="submit">Buscar</button>
-          </form>
-        </div>
+        <Card>
+          <CardHeader className="md:flex-row md:items-end md:justify-between">
+            <div>
+              <CardDescription>Catalogo operativo</CardDescription>
+              <CardTitle id="catalog-title">Categorias y servicios</CardTitle>
+            </div>
+            <Badge variant="secondary">{meta.total} servicios</Badge>
+          </CardHeader>
 
-        <div className="category-strip" aria-label="Categorias">
-          <button
-            type="button"
-            className={
-              selectedCategoryId === undefined ? 'secondary-button selected-filter' : 'secondary-button'
-            }
-            onClick={() => void filterByCategory(undefined)}
-          >
-            Todas
-          </button>
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              className={
-                selectedCategoryId === category.id ? 'secondary-button selected-filter' : 'secondary-button'
-              }
-              onClick={() => {
-                if (canManageCatalog) {
-                  editCategory(category);
-                }
-                void filterByCategory(category.id);
-              }}
-            >
-              {category.name} - {category.active ? 'Activa' : 'Inactiva'}
-            </button>
-          ))}
-        </div>
+          <CardContent className="flex flex-col gap-4">
+            <form onSubmit={handleSearch} className="search-form">
+              <label>
+                Buscar servicio
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Glucosa, hemograma, eritropoyetina"
+                />
+              </label>
+              <Button type="submit">Buscar</Button>
+            </form>
 
-        <div className="catalog-controls" aria-label="Filtros de catalogo">
-          <label>
-            Estado
-            <select
-              value={activeFilter}
-              onChange={(event) =>
-                void filterByActive(event.target.value as 'all' | 'active' | 'inactive')
-              }
-            >
-              <option value="all">Todos</option>
-              <option value="active">Activos</option>
-              <option value="inactive">Inactivos</option>
-            </select>
-          </label>
-          <label>
-            Registros
-            <select
-              value={perPage}
-              onChange={(event) => void changePerPage(Number(event.target.value))}
-            >
-              <option value={10}>10</option>
-              <option value={15}>15</option>
-              <option value={25}>25</option>
-            </select>
-          </label>
-          <span className="muted">
-            Mostrando {services.length} de {meta.total} servicios.
-          </span>
-        </div>
+            <div className="category-strip" aria-label="Categorias">
+              <Button
+                type="button"
+                variant={selectedCategoryId === undefined ? 'default' : 'secondary'}
+                size="sm"
+                onClick={() => void filterByCategory(undefined)}
+              >
+                Todas
+              </Button>
+              {categories.map((category) => (
+                <Button
+                  key={category.id}
+                  type="button"
+                  variant={selectedCategoryId === category.id ? 'default' : 'secondary'}
+                  size="sm"
+                  onClick={() => {
+                    if (canManageCatalog) {
+                      editCategory(category);
+                    }
+                    void filterByCategory(category.id);
+                  }}
+                >
+                  {category.name}
+                  <Badge variant={category.active ? 'secondary' : 'outline'}>
+                    {category.active ? 'Activa' : 'Inactiva'}
+                  </Badge>
+                </Button>
+              ))}
+            </div>
+
+            <div className="catalog-controls" aria-label="Filtros de catalogo">
+              <label>
+                Estado
+                <Select
+                  value={activeFilter}
+                  onChange={(event) =>
+                    void filterByActive(event.target.value as 'all' | 'active' | 'inactive')
+                  }
+                >
+                  <option value="all">Todos</option>
+                  <option value="active">Activos</option>
+                  <option value="inactive">Inactivos</option>
+                </Select>
+              </label>
+              <label>
+                Registros
+                <Select
+                  value={perPage}
+                  onChange={(event) => void changePerPage(Number(event.target.value))}
+                >
+                  <option value={10}>10</option>
+                  <option value={15}>15</option>
+                  <option value={25}>25</option>
+                </Select>
+              </label>
+              <span className="muted">
+                Mostrando {services.length} de {meta.total} servicios.
+              </span>
+            </div>
+          </CardContent>
+        </Card>
         {catalogError ? <p className="notice error-notice" role="alert">{catalogError}</p> : null}
 
         <DataTable
@@ -316,42 +347,43 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         />
 
         <div className="pagination-row" aria-label="Paginacion de catalogo">
-          <button
+          <Button
             type="button"
-            className="secondary-button"
+            variant="secondary"
             disabled={page <= 1 || loadingCatalog}
             onClick={() => void changePage(page - 1)}
           >
             Anterior
-          </button>
+          </Button>
           <span className="muted">
             Pagina {meta.current_page} de {Math.max(Math.ceil(meta.total / meta.per_page), 1)}
           </span>
-          <button
+          <Button
             type="button"
-            className="secondary-button"
+            variant="secondary"
             disabled={page >= Math.ceil(meta.total / meta.per_page) || loadingCatalog}
             onClick={() => void changePage(page + 1)}
           >
             Siguiente
-          </button>
+          </Button>
         </div>
       </div>
 
       {canManageCatalog ? (
         <aside className="catalog-forms">
           <form onSubmit={handleCategorySubmit} className="settings-form">
+            <CardDescription>Administracion</CardDescription>
             <h2>{categoryId ? 'Editar categoria' : 'Nueva categoria'}</h2>
             <label>
               Nombre
-              <input
+              <Input
                 value={categoryForm.name}
                 onChange={(event) => setCategoryForm({ ...categoryForm, name: event.target.value })}
               />
             </label>
             <label>
               Orden
-              <input
+              <Input
                 type="number"
                 value={categoryForm.sort_order}
                 onChange={(event) =>
@@ -369,14 +401,15 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
               />
               Categoria activa
             </label>
-            <button type="submit">Guardar categoria</button>
+            <Button type="submit">Guardar categoria</Button>
           </form>
 
           <form onSubmit={handleServiceSubmit} className="settings-form">
+            <CardDescription>Servicio facturable</CardDescription>
             <h2>{serviceId ? 'Editar servicio' : 'Nuevo servicio'}</h2>
             <label>
               Categoria
-              <select
+              <Select
                 value={serviceForm.category_id}
                 onChange={(event) =>
                   setServiceForm({ ...serviceForm, category_id: Number(event.target.value) })
@@ -387,25 +420,25 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                     {category.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label>
               Nombre
-              <input
+              <Input
                 value={serviceForm.name}
                 onChange={(event) => setServiceForm({ ...serviceForm, name: event.target.value })}
               />
             </label>
             <label>
               Precio
-              <input
+              <Input
                 value={serviceForm.price}
                 onChange={(event) => setServiceForm({ ...serviceForm, price: event.target.value })}
               />
             </label>
             <label>
               Codigo scanner
-              <input
+              <Input
                 value={serviceForm.scan_code ?? ''}
                 onChange={(event) =>
                   setServiceForm({ ...serviceForm, scan_code: event.target.value.trim() || null })
@@ -415,7 +448,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             </label>
             <label>
               Barcode
-              <input
+              <Input
                 value={serviceForm.barcode ?? ''}
                 onChange={(event) =>
                   setServiceForm({ ...serviceForm, barcode: event.target.value.trim() || null })
@@ -425,7 +458,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             </label>
             <label>
               QR
-              <input
+              <Input
                 value={serviceForm.qr_code ?? ''}
                 onChange={(event) =>
                   setServiceForm({ ...serviceForm, qr_code: event.target.value.trim() || null })
@@ -435,7 +468,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             </label>
             <label>
               Regla especial
-              <select
+              <Select
                 value={serviceForm.special_rule_code ?? ''}
                 onChange={(event) =>
                   setServiceForm({
@@ -448,7 +481,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                 <option value="ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION">
                   Eritropoyetina con receta de dialisis
                 </option>
-              </select>
+              </Select>
             </label>
             <label className="checkbox-row">
               <input
@@ -470,7 +503,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
               />
               Servicio activo
             </label>
-            <button type="submit">Guardar servicio</button>
+            <Button type="submit">Guardar servicio</Button>
           </form>
         </aside>
       ) : (
