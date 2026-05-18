@@ -8,6 +8,11 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Card, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Input } from '../../components/ui/input';
+import { Select } from '../../components/ui/select';
 import {
   type CashSessionReport,
   type Category,
@@ -156,22 +161,26 @@ export function ReportsView({
 
   return (
     <section id="reportes" className="reports-layout" aria-labelledby="reports-title">
-      <div className="section-heading">
+      <Card>
+        <CardHeader className="md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="app-kicker">Gerencia hospitalaria</p>
-          <h2 id="reports-title">Reportes</h2>
+          <CardDescription>Gerencia hospitalaria</CardDescription>
+          <CardTitle id="reports-title">Reportes</CardTitle>
         </div>
-        <span className="muted">{loading ? 'Consultando...' : 'Agregaciones del backend'}</span>
-      </div>
+        <Badge variant={loading ? 'outline' : 'secondary'}>
+          {loading ? 'Consultando...' : 'Agregaciones del backend'}
+        </Badge>
+        </CardHeader>
+      </Card>
 
       {canViewManagerial ? (
         <>
           <form className="report-filters" onSubmit={handleDailySubmit}>
             <label>
               Fecha diaria
-              <input type="date" value={dailyDate} onChange={(event) => setDailyDate(event.target.value)} />
+              <Input type="date" value={dailyDate} onChange={(event) => setDailyDate(event.target.value)} />
             </label>
-            <button type="submit">Ver diario</button>
+            <Button type="submit">Ver diario</Button>
           </form>
           {dailyError ? <p className="notice error-notice">{dailyError}</p> : null}
 
@@ -211,15 +220,15 @@ export function ReportsView({
           <form className="report-filters range-filters" onSubmit={handleRangeSubmit}>
             <label>
               Desde
-              <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
+              <Input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
             </label>
             <label>
               Hasta
-              <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+              <Input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
             </label>
             <label>
               Caja
-              <input
+              <Input
                 type="number"
                 inputMode="numeric"
                 min="1"
@@ -229,7 +238,7 @@ export function ReportsView({
             </label>
             <label>
               Cajero
-              <input
+              <Input
                 type="number"
                 inputMode="numeric"
                 min="1"
@@ -239,36 +248,36 @@ export function ReportsView({
             </label>
             <label>
               Categoria
-              <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
+              <Select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
                 <option value="">Todas</option>
                 {categoryOptions.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label>
               Metodo de pago
-              <select value={method} onChange={(event) => setMethod(event.target.value)}>
+              <Select value={method} onChange={(event) => setMethod(event.target.value)}>
                 <option value="">Todos</option>
                 <option value="cash">Efectivo</option>
                 <option value="transfer">Transferencia</option>
                 <option value="card">Tarjeta</option>
                 <option value="other">Otro</option>
-              </select>
+              </Select>
             </label>
             <label>
               Estado
-              <select value={status} onChange={(event) => setStatus(event.target.value)}>
+              <Select value={status} onChange={(event) => setStatus(event.target.value)}>
                 <option value="">Financieros no anulados</option>
                 <option value="issued">Emitida</option>
                 <option value="partial">Parcial</option>
                 <option value="paid">Pagada</option>
                 <option value="void">Anulada</option>
-              </select>
+              </Select>
             </label>
-            <button type="submit">Ver rango</button>
+            <Button type="submit">Ver rango</Button>
             <p className="muted">
               Rango maximo permitido: 31 dias. Categoria prorratea cobros por items; backups solo respetan fecha y usuario.
             </p>
@@ -284,9 +293,9 @@ export function ReportsView({
           <div className="report-card-heading">
             <h3>Ingresos por rango</h3>
             {canExport ? (
-              <button
+              <Button
                 type="button"
-                className="secondary-button"
+                variant="secondary"
                 onClick={() =>
                   window.location.assign(apiClient.reportExportUrl({
                     date_from: income.date_from,
@@ -300,7 +309,7 @@ export function ReportsView({
                 }
               >
                 Exportar CSV
-              </button>
+              </Button>
             ) : null}
           </div>
           <div className="metric-grid">
@@ -467,7 +476,7 @@ export function ReportsView({
         <form className="report-filters" onSubmit={handleCashReportSubmit}>
           <label>
             Numero de caja
-            <input
+            <Input
               type="number"
               inputMode="numeric"
               min="1"
@@ -475,7 +484,7 @@ export function ReportsView({
               onChange={(event) => setCashReportId(event.target.value)}
             />
           </label>
-          <button type="submit">Ver caja</button>
+          <Button type="submit">Ver caja</Button>
         </form>
       ) : null}
       {cashError ? <p className="notice error-notice">{cashError}</p> : null}
