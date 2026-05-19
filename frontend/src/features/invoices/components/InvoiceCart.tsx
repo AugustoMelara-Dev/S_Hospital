@@ -19,6 +19,8 @@ type InvoiceCartProps = {
   onConfirm: () => void;
   disabled?: boolean;
   disabledReasons?: string[];
+  actionLabel?: string;
+  emptyActionLabel?: string;
   submitting?: boolean;
 };
 
@@ -33,6 +35,8 @@ export function InvoiceCart({
   onConfirm,
   disabled,
   disabledReasons = [],
+  actionLabel = 'Emitir Factura',
+  emptyActionLabel = 'Agregar servicios',
   submitting,
 }: InvoiceCartProps) {
   const isEmpty = items.length === 0;
@@ -164,9 +168,9 @@ export function InvoiceCart({
               Emitiendo...
             </>
           ) : isEmpty ? (
-            'Agregar servicios'
+            emptyActionLabel
           ) : (
-            <>Emitir Factura</>
+            <>{actionLabel}</>
           )}
         </Button>
         {disabledReasons.length > 0 && (

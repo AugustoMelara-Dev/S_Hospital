@@ -160,9 +160,9 @@ async function installApiMocks(page: Page) {
         tax_amount: hasDialysisPrescription ? '0.00' : '3.75',
         discount_amount: '0.00',
         total: hasDialysisPrescription ? '0.00' : '28.75',
-        paid_amount: '0.00',
+        paid_amount: hasDialysisPrescription ? '0.00' : '0.00',
         balance_due: hasDialysisPrescription ? '0.00' : '28.75',
-        status: 'issued',
+        status: hasDialysisPrescription ? 'paid' : 'issued',
         issued_at: '2026-05-18T08:00:00-06:00',
         items: [{
           id: 1,
@@ -409,8 +409,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
   await expect(page.getByText(/Total:\s*L\.\s*28\.75/)).toBeVisible();
-  await page.getByRole('button', { name: /emitir factura/i }).click();
-  await page.getByRole('button', { name: /confirmar emision/i }).click();
+  await page.getByRole('button', { name: /emitir y cobrar/i }).click();
+  await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
   await expect(page.getByRole('heading', { name: /preview t.rmico/i })).toBeVisible();
@@ -419,6 +419,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('option', { name: '58mm' }).click();
   await expect(page.getByLabel(/recibo termico/i)).toHaveClass(/receipt-58mm/);
   await page.getByRole('button', { name: /cerrar modal/i }).click();
+  await page.getByRole('button', { name: /crear otra factura/i }).click();
 
   await page.getByRole('link', { name: /nueva factura/i }).click();
   await page.getByLabel(/nombre del paciente/i).fill('Jose Perez');
@@ -426,12 +427,12 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
   await page.getByLabel(/receta de dialisis/i).click();
   await expect(page.getByLabel(/receta de dialisis/i)).toHaveAttribute('aria-checked', 'true');
-  await page.getByRole('button', { name: /emitir factura/i }).click();
+  await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await page.getByRole('button', { name: /confirmar emision/i }).click();
-  await expect(page.getByRole('dialog', { name: /factura emitida/i })).toBeVisible();
-  await page.getByRole('button', { name: /cobrar ahora/i }).click();
-  await expect(page.getByRole('dialog', { name: /registrar pago/i }).getByText(/Total:\s*L\.\s*0\.00/)).toBeVisible();
-  await page.getByRole('button', { name: /cancelar/i }).click();
+  await expect(page.getByRole('heading', { name: /preview t.rmico/i })).toBeVisible();
+  await expect(page.getByText('L. 0.00').first()).toBeVisible();
+  await page.getByRole('button', { name: /cerrar modal/i }).click();
+  await page.getByRole('button', { name: /crear otra factura/i }).click();
 
   await page.getByRole('link', { name: /historial/i }).click();
   await expect(page.getByRole('heading', { name: /historial de facturas/i })).toBeVisible();

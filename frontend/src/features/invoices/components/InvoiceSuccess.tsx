@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Printer } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Dialog } from '../../../components/ui/dialog';
 
@@ -36,6 +37,13 @@ export function InvoiceSuccess({
   onNuevaFactura,
 }: InvoiceSuccessProps) {
   const needsPayment = status === 'issued' || status === 'partial';
+  const primaryActionRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      window.setTimeout(() => primaryActionRef.current?.focus(), 0);
+    }
+  }, [open, needsPayment]);
 
   return (
     <Dialog
@@ -57,9 +65,9 @@ export function InvoiceSuccess({
         {needsPayment ? (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground text-center">
-              Que desea hacer a continuacion?
+              La factura ya fue emitida. El siguiente paso operativo es registrar el cobro.
             </p>
-            <Button type="button" size="lg" className="w-full font-semibold" onClick={onCobrar}>
+            <Button ref={primaryActionRef} type="button" size="lg" className="w-full font-semibold" onClick={onCobrar}>
               Cobrar ahora
             </Button>
             <Button type="button" variant="secondary" className="w-full" onClick={onNuevaFactura}>
@@ -68,7 +76,7 @@ export function InvoiceSuccess({
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            <Button type="button" size="lg" className="w-full font-semibold" onClick={onImprimir}>
+            <Button ref={primaryActionRef} type="button" size="lg" className="w-full font-semibold" onClick={onImprimir}>
               Imprimir recibo termico
             </Button>
             <Button type="button" variant="secondary" className="w-full" onClick={onNuevaFactura}>

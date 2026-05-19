@@ -1,92 +1,140 @@
 # Auditoria UX operativa - 2026-05-18
 
-Decision final: UX OPERATIVA APROBADA para demo operativa.
+Decision final de este tramo: **UX-1 APROBADA**.
 
-Estado de release recomendado: DEMO_READY / PRODUCTION_CANDIDATE. No declarar PRODUCTION_READY hasta validar cliente LAN real, impresora termica fisica 80mm/58mm y configuracion final del servidor.
+Estado de release recomendado: **DEMO_READY / PRODUCTION_CANDIDATE**. No declarar `PRODUCTION_READY` hasta validar cliente LAN fisico, impresora termica fisica 80mm/58mm y configuracion final del servidor.
 
-## Alcance auditado
+## Alcance de esta pasada
 
-- Dashboard.
-- Nueva Factura / POS.
-- Caja.
-- Catalogo.
-- Historial de facturas.
-- Reportes.
-- Backups.
-- Configuracion fiscal.
-- Recibo termico.
-- Modales de confirmacion, pago y recibo.
-- Estados de carga, empty states, errores, acciones deshabilitadas, permisos visibles, tabulacion y consola.
+Tramo aprobado: **Fase UX-0 + UX-1 solamente**.
 
-## Flujo POS medido
+No se implemento UX-2, UX-3, UX-4 ni UX-5. No se cambiaron reglas fiscales, migraciones, permisos, CORS/Sanctum ni backend profundo.
 
-Objetivo: factura simple con caja abierta en `http://127.0.0.1:8000`.
+Archivos de producto tocados:
 
-Resultado de pasada manual con Playwright:
+- `frontend/src/features/invoices/NewInvoiceView.tsx`
+- `frontend/src/features/invoices/components/PatientStep.tsx`
+- `frontend/src/features/invoices/components/InvoiceCart.tsx`
+- `frontend/src/features/invoices/components/InvoiceConfirmation.tsx`
+- `frontend/src/features/invoices/components/PaymentModal.tsx`
+- `frontend/src/features/invoices/components/InvoiceSuccess.tsx`
+
+Archivos de validacion tocados:
+
+- `frontend/src/App.test.tsx`
+- `frontend/e2e/production-readiness.spec.ts`
+- `frontend/e2e/real-smoke.spec.ts`
+- `qa/visual-smoke/phase-12-visual-smoke.mjs`
+
+## UX-0 - Medicion antes
+
+URL usada: `http://127.0.0.1:8000/billing/new`.
+
+Usuario/rol inicial: `cajero.demo / cajero`.
+
+Estado de caja: `Caja #2 abierta`.
+
+Servicio usado: `Acido Urico`.
+
+Codigo visible: `LAB-ACIDO-URICO`.
+
+Resultado:
 
 - Foco inicial: `patient-name`.
-- Despues de paciente + `Tab`: `Buscar por nombre, categoria o codigo`.
-- Despues de escribir servicio + `Enter`: servicio agregado y foco vuelve a busqueda.
-- Confirmacion: `Ctrl+Enter` abre confirmar factura.
-- Pago: el modal enfoca `payment-amount`.
-- Final: recibo visible.
-- Clicks manuales usados: 1 (`Confirmar emision`).
-- Secuencia principal: paciente -> Tab -> busqueda -> Enter -> Ctrl+Enter -> confirmar -> pago -> Enter -> recibo.
-- Factura creada en smoke manual: `000-001-01-00000048`.
-- Consola y red: sin `console.error`, `pageerror`, `401`, `419` ni `>=500`.
+- Desde paciente, la medicion con navegador integrado no movio foco con `Tab` de forma confiable; el flujo se completo usando localizadores para continuar la inspeccion.
+- Enter en busqueda agrego `Acido Urico` cuando el resultado estaba disponible.
+- `Ctrl+Enter` abrio el dialogo de confirmacion.
+- El dialogo decia `Confirmar factura` y el CTA decia `Confirmar emision`, sin dejar suficientemente claro que despues abriria cobro.
+- Al emitir, se genero `000-001-01-00000081`.
+- El modal de pago enfoco `payment-amount`.
+- Cerrar/abandonar pago podia dejar factura emitida sin una pantalla persistente de siguiente paso suficientemente obvia.
+- El intento de cobro con `cajero.demo` termino con `No tiene permiso para esta accion`; por eso la medicion completa de recibo se repitio con `admin.demo`.
+- Clics observados para avanzar en la medicion antes: 2 clics manuales criticos (`Confirmar emision`, `Confirmar cobro`) cuando Enter no completo la interaccion en esa corrida.
+- Scroll: no hubo scroll operativo de pagina relevante; `window.scrollY` se mantuvo en 0 o muy bajo por ajuste del navegador.
+- Consola: sin `console.error` ni `pageerror` en la corrida observada.
+- Red: sin 401/419/CORS/500 inesperados en la observacion; el bloqueo fue permiso backend de pago para el usuario usado.
 
-## Problemas corregidos
+Veredicto UX-0 antes: **REQUIERE CAMBIOS** por ambiguedad `emitir` vs `cobrar`, cierre de pago sin guia persistente y dependencia de clicks en pasos criticos.
 
-- POS conectaba refs de foco que no estaban adjuntos a inputs reales.
-- `Tab` desde paciente caia en categorias antes que busqueda.
-- `Enter` podia perderse si el usuario lo presionaba mientras la busqueda aun cargaba.
-- Despues de agregar un servicio, el foco no volvia de forma confiable a busqueda.
-- Factura de eritropoyetina gratis podia quedar `issued` con total `0.00`, sin ruta usable para recibo.
-- Botones `+/-` de cantidad rompian cantidades decimales.
-- Errores de paciente y pago no estaban asociados con `aria-describedby`.
-- Pago no enfocaba monto al abrir ni al fallar validacion.
-- `Esc` global podia interferir con modales del POS.
-- Caja mostraba abrir/cerrar sin validar permisos `cash.open` / `cash.close`.
-- Cerrar caja podia abrir confirmacion con monto contado vacio.
-- Abrir caja con `0.00` estaba bloqueado en UI aunque el backend lo acepta.
-- Historial mostraba `Ver Recibo` aunque el backend podia negar por permisos.
-- Quick action de nueva factura no usaba el mismo gate compuesto que la ruta.
-- Configuracion fiscal permitia editar localmente aunque el usuario no pudiera guardar.
-- Backups mostraba resumen de pagina sin explicarlo.
-- Acciones icon-only de catalogo/cantidad tenian labels incompletos.
+## UX-1 - Cambios aplicados
 
-## Pendientes no bloqueantes
+- El CTA principal del carrito ahora dice `Emitir y cobrar` cuando el flujo incluye pago y recibo.
+- La confirmacion ahora dice `Confirmar emision y cobro` y el boton primario `Emitir y abrir cobro`.
+- Si se cierra el modal de pago con factura emitida pendiente, aparece `Factura emitida exitosamente` con accion primaria `Cobrar ahora`.
+- Despues de cerrar el recibo de una factura pagada, aparece una decision clara: imprimir recibo o `Crear otra factura`.
+- Se elimino la autoimpresion del caso de factura cero; el recibo queda visible y la impresion es accion explicita.
+- `Esc` ya no usa `window.confirm()` para limpiar; abre un dialog accesible de confirmacion.
+- `Enter` en paciente enfoca busqueda cuando el nombre ya esta escrito.
+- `Ctrl+Enter` valida y abre el flujo de emision solo si la factura esta lista; si falta algo, muestra el motivo.
+- `Enter` en monto recibido confirma el pago si el monto es valido.
+- Mensajes de bloqueo por paciente/servicios/caja siguen cerca del CTA.
+- Los tests y smoke se actualizaron para el camino `emitir y cobrar`.
 
-- Reportes: extraer un `ReportFilterBar` compartido para que filtros activos sean visibles en todas las pestañas.
-- Reportes: mover exportaciones CSV generadas en frontend al endpoint backend o agregar escaping CSV robusto.
-- Historial: migrar el menu manual de acciones a Radix DropdownMenu con roles/flechas/Escape completos.
-- Backups: crear endpoint de resumen global por ultimo exito, ultimo fallo y pendientes, en vez de depender de la pagina cargada.
-- Prueba fisica: validar impresora termica real 80mm/58mm.
-- Prueba LAN: validar desde otra computadora cliente en la red local.
+## Medicion despues
+
+URL usada: `http://127.0.0.1:8000/billing/new`.
+
+Usuario/rol: `admin.demo / admin`.
+
+Estado de caja: `Caja #1 abierta`.
+
+Servicio usado: `Acido Urico`.
+
+Codigo visible: `LAB-ACIDO-URICO`.
+
+Factura manual generada: `000-001-01-00000082`.
+
+Factura generada por smoke visual: `000-001-01-00000083`.
+
+Flujo medido con viewport `1366x768`:
+
+1. Foco inicial: `patient-name`.
+2. Teclas: escribir paciente.
+3. `Tab`: cae en `Buscar por nombre, categoria o codigo`.
+4. Teclas: escribir `acido`.
+5. `Enter`: agrega el primer servicio disponible.
+6. Foco vuelve a busqueda.
+7. `Ctrl+Enter`: abre `Confirmar emision y cobro`.
+8. Foco cae en `Emitir y abrir cobro`.
+9. `Enter`: emite factura y abre pago.
+10. Foco cae en `payment-amount`.
+11. `Ctrl+A`, escribir `1000.00`.
+12. `Enter`: confirma cobro.
+13. Recibo aparece como siguiente paso natural.
+14. Cerrar recibo muestra accion de continuar.
+15. `Crear otra factura` limpia estado y enfoca paciente.
+16. Historial encuentra `Paciente UX Despues 20260518`.
+
+Medicion despues:
+
+- Clics desde Nueva Factura hasta recibo: **0**.
+- Teclas usadas: paciente, `Tab`, busqueda, `Enter`, `Ctrl+Enter`, `Enter`, monto, `Enter`.
+- Scroll: **0** en desktop.
+- Recibo aparece al final: **si**.
+- Factura aparece en historial: **si**.
+- Se puede repetir sin refrescar: **si**.
+- Consola/red: visual smoke con `consoleIssueCount: 0`, `blockerCount: 0`, `findings: []`. La medicion Playwright directa observo aborts benignos de `/sanctum/csrf-cookie` iguales al filtro existente del smoke real; no hubo 401, 419, CORS ni >=500 inesperados.
 
 ## Validacion ejecutada
 
-- `php artisan test --colors=never`: 133 passed, 762 assertions.
-- `php artisan config:cache`: passed.
-- `npm.cmd run typecheck`: passed.
-- `npm.cmd run lint`: passed.
-- `npm.cmd run test`: 26 passed.
-- `npm.cmd run build`: passed con warning de chunk grande.
-- `npm.cmd run e2e`: 2 passed.
-- `/up`: 200.
-- `/login`: 200.
-- `/verify-email`: 200.
-- `npm.cmd run visual:smoke` contra `http://127.0.0.1:8000`: passed.
+- `php artisan test --colors=never`: **136 passed, 777 assertions**.
+- `vendor/bin/pint --test`: **passed**.
+- `npm.cmd run typecheck`: **passed**.
+- `npm.cmd run lint`: **passed**.
+- `npm.cmd run test`: **27 passed**.
+- `npm.cmd run build`: **passed** con warning conocido de chunk grande.
+- `npm.cmd run e2e`: **2 passed**.
+- `VISUAL_SMOKE_BASE_URL=http://127.0.0.1:8000 node qa/visual-smoke/phase-12-visual-smoke.mjs`: **passed**.
 
 ## Smoke visual
 
-Reporte final:
+Reporte:
 
 - `qa/screenshots/phase-12-visual-smoke/visual-smoke-report.json`
 - `blockerCount`: 0.
 - `consoleIssueCount`: 0.
 - `findings`: [].
-- Ultima factura del smoke visual: `000-001-01-00000049`.
+- Ultima factura del smoke visual: `000-001-01-00000083`.
 
 Capturas regeneradas:
 
@@ -102,12 +150,14 @@ Capturas regeneradas:
 - `qa/screenshots/phase-12-visual-smoke/backups.png`
 - `qa/screenshots/phase-12-visual-smoke/fiscal-settings.png`
 
-## Demo
+## Pendientes fuera de UX-1
 
-Recomendacion: se puede ensenar el demo operativo del flujo principal.
-
-Condicion al presentarlo: describirlo como demo operativa / candidata a produccion local, no como produccion final instalada. La validacion fisica de LAN e impresora sigue pendiente.
+- UX-2: caja/cierre/recibo a profundidad.
+- UX-3: historial, catalogo, backups y fiscal a profundidad.
+- UX-4: reportes/admin/permisos a profundidad.
+- UX-5: cierre final de todos los gates como frente completo.
+- Validacion fisica: impresora termica 80mm/58mm y cliente LAN real.
 
 ## Commit sugerido
 
-`fix(pos): harden operational keyboard flow and receipt edge cases`
+`fix(pos): harden keyboard billing flow`

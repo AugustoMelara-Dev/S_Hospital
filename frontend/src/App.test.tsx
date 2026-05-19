@@ -893,12 +893,12 @@ describe('App', () => {
     });
     expect(await screen.findByRole('button', { name: /eritropoyetina/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /eritropoyetina/i }));
-    expect(screen.getByRole('button', { name: /emitir factura/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /emitir y cobrar/i })).toBeDisabled();
     expect((await screen.findAllByText(/debe abrir la caja antes de emitir facturas/i)).length).toBeGreaterThan(0);
     fireEvent.change(screen.getByLabelText(/nombre del paciente/i), {
       target: { value: 'Maria Lopez' },
     });
-    expect(screen.getByRole('button', { name: /emitir factura/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /emitir y cobrar/i })).toBeDisabled();
     expect(screen.getAllByRole('button', { name: /abrir caja/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('dialog', { name: /confirmar factura/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /registrar pago/i })).not.toBeInTheDocument();
@@ -1074,11 +1074,11 @@ describe('App', () => {
       target: { value: 'glucosa' },
     });
     fireEvent.click(await screen.findByRole('button', { name: /glucosa/i }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /emitir factura/i })).toBeEnabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: /emitir y cobrar/i })).toBeEnabled());
     await waitFor(() => expect(screen.getAllByText(/L\. 17\.25/i).length).toBeGreaterThan(0));
-    fireEvent.click(screen.getByRole('button', { name: /emitir factura/i }));
-    expect(await screen.findByRole('button', { name: /confirmar emision/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /confirmar emision/i }));
+    fireEvent.click(screen.getByRole('button', { name: /emitir y cobrar/i }));
+    expect(await screen.findByRole('button', { name: /emitir y abrir cobro/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
     expect(await screen.findByRole('heading', { name: /registrar pago/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
@@ -1199,7 +1199,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
 
     expect((await screen.findAllByText(/servicio esta inactivo/i)).length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: /agregar servicios/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /agregue servicios/i })).toBeDisabled();
     expect(screen.queryByText(/servicio descontinuado/i)).not.toBeInTheDocument();
     expect(
       fetchMock.mock.calls.some(([url]) => {

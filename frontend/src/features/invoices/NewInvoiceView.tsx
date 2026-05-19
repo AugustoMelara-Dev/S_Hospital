@@ -5,6 +5,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { Dialog } from '../../components/ui/dialog';
+import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { PatientStep } from './components/PatientStep';
 import { ServiceSearch } from './components/ServiceSearch';
@@ -55,17 +56,27 @@ export function NewInvoiceView({
   const [showPayment, setShowPayment] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [loadingServices, setLoadingServices] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [paying, setPaying] = useState(false);
-  const [autoPrintReceiptKey, setAutoPrintReceiptKey] = useState<string | null>(null);
   const patientInputRef = useRef<HTMLInputElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const scannerInputRef = useRef<HTMLInputElement | null>(null);
-  const autoPrintedReceiptKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     void loadPointOfSaleData();
+  }, []);
+
+  useEffect(() => {
+    window.setTimeout(() => {
+      if (patientName.trim()) {
+        searchInputRef.current?.focus();
+        return;
+      }
+
+      patientInputRef.current?.focus();
+    }, 0);
   }, []);
 
   useEffect(() => {
@@ -86,19 +97,6 @@ export function NewInvoiceView({
     }
   }, [cashSession]);
 
-  useEffect(() => {
-    if (!receipt || !showReceipt || !autoPrintReceiptKey) return;
-    if (autoPrintedReceiptKeyRef.current === autoPrintReceiptKey) return;
-
-    autoPrintedReceiptKeyRef.current = autoPrintReceiptKey;
-    const timer = window.setTimeout(() => {
-      printReceiptDocument(receipt.width, () => window.print());
-      onStatus(`Recibo ${receipt.invoice.invoice_number} enviado a impresion.`);
-    }, 350);
-
-    return () => window.clearTimeout(timer);
-  }, [autoPrintReceiptKey, onStatus, receipt, showReceipt]);
-
   const handleClearCart = useCallback(() => {
     setCartItems([]);
     setPatientName('');
@@ -108,6 +106,7 @@ export function NewInvoiceView({
     setScanCode('');
     setSelectedCategoryId(undefined);
     onStatus('Carrito limpiado.');
+    window.setTimeout(() => patientInputRef.current?.focus(), 0);
   }, [onStatus]);
 
   const emitBlockReasons = [
@@ -119,7 +118,7 @@ export function NewInvoiceView({
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.ctrlKey && e.key === 'n') {
+      if (e.ctrlKey && e.key.toLowerCase() === 'n') {
         e.preventDefault();
         patientInputRef.current?.focus();
       }
@@ -129,8 +128,9 @@ export function NewInvoiceView({
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
         if (showConfirmation || showPayment || showSuccess || showReceipt) return;
         if (target.closest('[data-dialog-content]')) return;
-        if (confirm('¿Limpiar carrito?')) {
-          handleClearCart();
+        if (patientName || search || scanCode || cartItems.length > 0) {
+          e.preventDefault();
+          setShowClearConfirm(true);
         }
       }
 
@@ -138,13 +138,15 @@ export function NewInvoiceView({
         e.preventDefault();
         if (canEmit) {
           handleEmitClick();
+        } else {
+          validateForm();
         }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canEmit, handleClearCart, showConfirmation, showPayment, showSuccess, showReceipt]);
+  }, [canEmit, cartItems.length, handleClearCart, patientName, scanCode, search, showConfirmation, showPayment, showReceipt, showSuccess]);
 
   const preview = useMemo(() => calculatePreview(cartItems), [cartItems]);
 
@@ -323,6 +325,17 @@ export function NewInvoiceView({
     }
   }
 
+  function handlePatientSubmit() {
+    if (patientName.trim() === '') {
+      setPatientError('Ingrese el nombre del paciente para continuar.');
+      patientInputRef.current?.focus();
+      return;
+    }
+
+    setPatientError(undefined);
+    searchInputRef.current?.focus();
+  }
+
   function validateForm(): boolean {
     if (!loadedCashSession) {
       setAlertMessage('Abra caja antes de emitir y cobrar una factura.');
@@ -374,13 +387,12 @@ export function NewInvoiceView({
       if (loadedCashSession && Number(invoice.balance_due) > 0) {
         setShowSuccess(false);
         setShowPayment(true);
-        onStatus(`Factura emitida ${invoice.invoice_number}. Continue con el cobro.`);
+        onStatus(`Factura emitida ${invoice.invoice_number}. Cobro abierto.`);
       } else if (isZeroMoney(invoice.total) && invoice.status === 'paid') {
         const nextReceipt = await apiClient.getReceipt(invoice.id, receiptWidth);
         setReceipt(nextReceipt);
         setReceiptWidth(nextReceipt.width);
         setShowReceipt(true);
-        setAutoPrintReceiptKey(`${invoice.id}-zero-total-${nextReceipt.width}`);
         onStatus(`Factura emitida ${invoice.invoice_number}. Recibo listo para imprimir.`);
       } else {
         setShowSuccess(true);
@@ -435,7 +447,6 @@ export function NewInvoiceView({
       setReceipt(nextReceipt);
       setReceiptWidth(nextReceipt.width);
       setShowReceipt(true);
-      setAutoPrintReceiptKey(null);
       setAlertMessage(null);
       onStatus(`Pago registrado. Recibo ${nextReceipt.invoice.invoice_number} listo para imprimir.`);
     } catch (error) {
@@ -454,7 +465,6 @@ export function NewInvoiceView({
 
     try {
       setReceipt(await apiClient.getReceipt(issuedInvoice.id, width));
-      setAutoPrintReceiptKey(null);
       setShowReceipt(true);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo generar el recibo.'));
@@ -464,6 +474,11 @@ export function NewInvoiceView({
   function handleNuevaFactura() {
     setIssuedInvoice(null);
     setReceipt(null);
+    setShowPayment(false);
+    setShowSuccess(false);
+    setShowReceipt(false);
+    setShowConfirmation(false);
+    setShowClearConfirm(false);
     setCartItems([]);
     setPatientName('');
     setPatientError(undefined);
@@ -471,6 +486,23 @@ export function NewInvoiceView({
     setScanCode('');
     setSelectedCategoryId(undefined);
     window.setTimeout(() => patientInputRef.current?.focus(), 0);
+  }
+
+  function handlePaymentOpenChange(nextOpen: boolean) {
+    setShowPayment(nextOpen);
+
+    if (!nextOpen && issuedInvoice && (issuedInvoice.status === 'issued' || issuedInvoice.status === 'partial')) {
+      setShowSuccess(true);
+      onStatus(`Factura ${issuedInvoice.invoice_number} emitida y pendiente de cobro.`);
+    }
+  }
+
+  function handleReceiptOpenChange(nextOpen: boolean) {
+    setShowReceipt(nextOpen);
+
+    if (!nextOpen && issuedInvoice?.status === 'paid') {
+      setShowSuccess(true);
+    }
   }
 
   return (
@@ -525,6 +557,7 @@ export function NewInvoiceView({
                 ref={patientInputRef}
                 patientName={patientName}
                 onPatientNameChange={handlePatientNameChange}
+                onPatientSubmit={handlePatientSubmit}
                 error={patientError}
               />
             </CardContent>
@@ -562,6 +595,8 @@ export function NewInvoiceView({
               onConfirm={handleEmitClick}
               disabled={submitting || !canEmit}
               disabledReasons={emitBlockReasons}
+              actionLabel={canCreatePayments && canViewReceipts ? 'Emitir y cobrar' : 'Emitir factura'}
+              emptyActionLabel="Agregue servicios"
               submitting={submitting}
             />
           </CardContent>
@@ -582,7 +617,7 @@ export function NewInvoiceView({
       {issuedInvoice && (
         <PaymentModal
           open={showPayment}
-          onOpenChange={setShowPayment}
+          onOpenChange={handlePaymentOpenChange}
           invoiceNumber={issuedInvoice.invoice_number}
           patientName={issuedInvoice.patient_name}
           total={issuedInvoice.total}
@@ -612,13 +647,27 @@ export function NewInvoiceView({
 
       <Dialog
         open={showReceipt && Boolean(receipt)}
-        onOpenChange={setShowReceipt}
+        onOpenChange={handleReceiptOpenChange}
         size="lg"
         title="Preview térmico"
         description="Solo el ticket se imprime."
       >
         {receipt ? <ReceiptPreview receipt={receipt} onWidthChange={loadReceipt} /> : null}
       </Dialog>
+
+      <ConfirmDialog
+        open={showClearConfirm}
+        title="Limpiar factura en curso"
+        confirmLabel="Limpiar"
+        cancelLabel="Seguir editando"
+        onCancel={() => setShowClearConfirm(false)}
+        onConfirm={() => {
+          setShowClearConfirm(false);
+          handleClearCart();
+        }}
+      >
+        Se borraran paciente, busqueda y servicios agregados. Use esta accion solo si quiere empezar de nuevo.
+      </ConfirmDialog>
 
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <span>
@@ -631,7 +680,7 @@ export function NewInvoiceView({
         </span>
         <span>
           <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Ctrl+Enter</kbd>{' '}
-          Emitir
+          Emitir y cobrar
         </span>
         <span>
           <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Esc</kbd>{' '}
@@ -692,22 +741,3 @@ function formatCents(cents: number): string {
   return `${Math.trunc(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
 }
 
-function printReceiptDocument(width: ReceiptData['width'], print: () => void) {
-  const previousWidth = document.body.dataset.receiptWidth;
-  const previousPrinting = document.body.dataset.printingReceipt;
-  document.body.dataset.receiptWidth = width;
-  document.body.dataset.printingReceipt = 'true';
-  print();
-
-  if (previousWidth) {
-    document.body.dataset.receiptWidth = previousWidth;
-  } else {
-    delete document.body.dataset.receiptWidth;
-  }
-
-  if (previousPrinting) {
-    document.body.dataset.printingReceipt = previousPrinting;
-  } else {
-    delete document.body.dataset.printingReceipt;
-  }
-}

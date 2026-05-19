@@ -6,11 +6,12 @@ import { Input } from '../../../components/ui/input';
 type PatientStepProps = {
   patientName: string;
   onPatientNameChange: (value: string) => void;
+  onPatientSubmit?: () => void;
   error?: string;
 };
 
 export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(function PatientStep(
-  { patientName, onPatientNameChange, error },
+  { patientName, onPatientNameChange, onPatientSubmit, error },
   ref,
 ) {
   const errorId = error ? 'patient-name-error' : undefined;
@@ -28,6 +29,12 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
             id="patient-name"
             value={patientName}
             onChange={(e) => onPatientNameChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                onPatientSubmit?.();
+              }
+            }}
             placeholder="Ingrese nombre del paciente"
             autoFocus
             className={`pl-10 ${error ? 'border-destructive ring-destructive' : ''}`}

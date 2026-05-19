@@ -75,15 +75,14 @@ test('real cashier can issue and collect an invoice against Laravel DB', async (
   await expect(page.getByRole('heading', { name: /nueva factura/i })).toBeVisible();
   await page.getByLabel(/buscar por nombre/i).fill(serviceQuery);
   await page.getByRole('button', { name: new RegExp(serviceQuery, 'i') }).first().click();
-  await page.getByRole('button', { name: /emitir factura/i }).click();
-  await expect(page.getByRole('alert').filter({ hasText: /falta el nombre del paciente/i })).toBeVisible();
+  await page.getByRole('button', { name: /emitir y cobrar/i }).click();
+  await expect(page.getByText(/ingrese el nombre del paciente/i)).toBeVisible();
 
   await page.getByLabel(/nombre del paciente/i).fill(patientName);
-  await page.getByRole('button', { name: /emitir factura/i }).click();
-  await page.getByRole('button', { name: /confirmar emision/i }).click();
+  await page.getByRole('button', { name: /emitir y cobrar/i }).click();
+  await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
 
-  await page.getByRole('button', { name: /^cobrar$/i }).click();
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
   await expect(page.getByRole('heading', { name: /preview termico/i })).toBeVisible();
 

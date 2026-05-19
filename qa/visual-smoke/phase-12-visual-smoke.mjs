@@ -121,7 +121,7 @@ async function clearField(locator) {
 }
 
 async function isEmitEnabled(page) {
-  const emitButton = page.getByRole('button', { name: /emitir factura/i });
+  const emitButton = page.getByRole('button', { name: /emitir y cobrar|emitir factura/i });
   if (!(await emitButton.isVisible().catch(() => false))) {
     return false;
   }
@@ -281,7 +281,7 @@ async function main() {
 
     const emitEnabledWithoutPatient = await isEmitEnabled(page);
     if (emitEnabledWithoutPatient) {
-      findings.push('billing-new-empty: el boton Emitir Factura no debe estar habilitado sin paciente.');
+      findings.push('billing-new-empty: el boton Emitir y cobrar no debe estar habilitado sin paciente.');
     }
 
     const serviceForSmoke = await firstActiveService(page);
@@ -294,7 +294,7 @@ async function main() {
       await page.getByRole('button', { name: /escanear/i }).click();
       await waitSettled(page);
       await waitServicesReady(page);
-      await page.getByRole('button', { name: /emitir factura/i }).waitFor({ state: 'visible', timeout: 15000 });
+      await page.getByRole('button', { name: /emitir y cobrar|emitir factura/i }).waitFor({ state: 'visible', timeout: 15000 });
     } else {
       const searchInput = page.getByLabel(/buscar por nombre/i);
       await searchInput.fill(serviceQuery);
@@ -323,24 +323,24 @@ async function main() {
 
     const emitEnabledWithoutPatientAfterService = await isEmitEnabled(page);
     if (emitEnabledWithoutPatientAfterService) {
-      findings.push('billing-new-with-services: el boton Emitir Factura no debe estar habilitado sin paciente.');
+      findings.push('billing-new-with-services: el boton Emitir y cobrar no debe estar habilitado sin paciente.');
     }
 
     await patientInput.fill(`Paciente Smoke ${Date.now()}`);
     await waitSettled(page);
     await waitServicesReady(page);
-    await page.getByRole('button', { name: /emitir factura/i }).waitFor({ state: 'visible', timeout: 15000 });
+    await page.getByRole('button', { name: /emitir y cobrar|emitir factura/i }).waitFor({ state: 'visible', timeout: 15000 });
 
-    const emitButton = page.getByRole('button', { name: /emitir factura/i });
+    const emitButton = page.getByRole('button', { name: /emitir y cobrar|emitir factura/i });
     const emitEnabledWithPatient = await isEmitEnabled(page);
     if (!emitEnabledWithPatient) {
-      findings.push('billing-new-with-services: el boton Emitir Factura debe estar habilitado con paciente y servicio.');
+      findings.push('billing-new-with-services: el boton Emitir y cobrar debe estar habilitado con paciente y servicio.');
     }
 
     await emitButton.click();
-    await page.getByRole('dialog', { name: /confirmar factura/i }).waitFor({ state: 'visible', timeout: 10000 });
+    await page.getByRole('dialog', { name: /confirmar factura|confirmar emisi.n y cobro/i }).waitFor({ state: 'visible', timeout: 10000 });
     await screenshot(page, 'billing-confirm-modal');
-    await page.getByRole('button', { name: /confirmar emision/i }).click();
+    await page.getByRole('button', { name: /emitir y abrir cobro|confirmar emision/i }).click();
 
     const successDialog = page.getByRole('dialog', { name: /factura emitida/i });
     const paymentHeading = page.getByRole('heading', { name: /registrar pago/i });
