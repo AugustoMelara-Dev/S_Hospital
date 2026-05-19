@@ -397,3 +397,20 @@ Consecuencia:
 
 - El CTA visible desde POS lleva a Caja cuando falta sesion abierta.
 - El backend mantiene sus permisos y reglas; la UI evita el camino operativo ambiguo.
+
+### 2026-05-18 - Preflight final de produccion
+
+Decision:
+
+- `PRODUCTION_READY` queda ligado a evidencia ejecutable del servidor final, no solo a docs.
+- `scripts/production_readiness_preflight.ps1` valida entorno production, build frontend, rutas `/up`, `/login`, `/verify-email`, herramientas MySQL/dump, carpeta de backups y pruebas fisicas documentadas.
+- `scripts/install_backup_tasks_windows.ps1` registra tareas Windows para worker continuo de backups y backup diario programado.
+- La evidencia de segunda PC LAN e impresora fisica se documenta en archivos separados bajo `qa/` y el preflight puede exigirlos con flags explicitos.
+
+Motivo:
+
+- El cierre real depende de entorno, red y hardware; esos puntos deben fallar de forma visible hasta que existan pruebas fisicas.
+
+Consecuencia:
+
+- El codigo puede avanzar como paquete operativo listo para servidor final, pero la etiqueta `PRODUCTION_READY` solo se usa despues del preflight completo y evidencia de campo.

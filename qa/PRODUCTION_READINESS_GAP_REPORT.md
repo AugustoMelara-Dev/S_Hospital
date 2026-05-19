@@ -17,6 +17,7 @@ No declarar `PRODUCTION_READY` hasta cerrar todos los bloqueantes de entorno y h
 | Configuracion production real | PENDING_ENVIRONMENT_VALIDATION | `.env` actual es local/debug para validacion | Cambiar en servidor final a `APP_ENV=production`, `APP_DEBUG=false`, admin real, sin seeders demo, `config:cache` |
 | Worker continuo de backups | PENDING_ENVIRONMENT_VALIDATION | Worker `--once` proceso job; restore con PATH de XAMPP genero backup success | Crear tarea/servicio Windows con PATH correcto para `mysqldump`/`mariadb-dump` |
 | CORS/Sanctum LAN final | PENDING_ENVIRONMENT_VALIDATION | Validado localmente con host de desarrollo; falta IP/dominio final | Configurar `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` y CORS con IP fija/dominio LAN real |
+| Preflight final ejecutable | READY_TO_RUN | `scripts/production_readiness_preflight.ps1` verifica env production, build, rutas, herramientas de dump, backup writable y pruebas fisicas documentadas | Ejecutarlo en el servidor final con `-RequireLanClientProof -RequirePrinterProof` |
 
 ## Gaps cerrados en Fase 11
 
@@ -47,6 +48,7 @@ No declarar `PRODUCTION_READY` hasta cerrar todos los bloqueantes de entorno y h
 9. Validar concurrencia en base descartable/snapshot del servidor final.
 10. Validar desde otra computadora cliente en LAN.
 11. Validar impresora fisica 80mm/58mm.
+12. Ejecutar `scripts/production_readiness_preflight.ps1` con `-RequireLanClientProof -RequirePrinterProof`.
 
 ## Estado de alcance
 
