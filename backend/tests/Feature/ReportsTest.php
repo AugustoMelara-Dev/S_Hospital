@@ -297,6 +297,57 @@ class ReportsTest extends TestCase
             ->assertJsonValidationErrors('method');
     }
 
+    public function test_managerial_reports_without_close_any_are_scoped_to_own_activity(): void
+    {
+        $this->seedBillingBase();
+        $viewer = $this->cashier();
+        $viewer->givePermissionTo('reports.view', 'reports.managerial.view', 'reports.export');
+        $otherCashier = $this->cashier();
+        $viewerSessionId = $this->openSession($viewer);
+        $otherSessionId = $this->openSession($otherCashier);
+        $viewerInvoice = $this->createInvoice($viewer, 'Glucosa');
+        $otherInvoice = $this->createInvoice($otherCashier, 'Eritropoyetina');
+
+        $this->payInvoice($viewer, $viewerInvoice, $viewerSessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($otherCashier, $otherInvoice, $otherSessionId, Payment::METHOD_CARD, '28.75');
+
+        $query = 'date_from='.now()->toDateString().'&date_to='.now()->toDateString();
+
+        $this->actingAs($viewer)
+            ->getJson("/api/reports/categories?{$query}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.categories')
+            ->assertJsonPath('data.categories.0.category', 'Laboratorio')
+            ->assertJsonPath('data.categories.0.total', '17.25');
+
+        $this->actingAs($viewer)
+            ->getJson("/api/reports/services?{$query}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.services')
+            ->assertJsonPath('data.services.0.service', 'Glucosa')
+            ->assertJsonPath('data.services.0.total', '17.25');
+
+        $this->actingAs($viewer)
+            ->getJson("/api/reports/operations?{$query}")
+            ->assertOk()
+            ->assertJsonPath('data.summary.cashier_count', 1)
+            ->assertJsonPath('data.cashiers.0.user_id', $viewer->id)
+            ->assertJsonPath('data.cashiers.0.total_collected', '17.25');
+
+        $this->actingAs($viewer)
+            ->getJson("/api/reports/income?{$query}&cash_session_id={$otherSessionId}")
+            ->assertForbidden();
+
+        $csv = $this->actingAs($viewer)
+            ->get("/api/reports/export?{$query}")
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertStringContainsString('servicio,Glucosa,Laboratorio,1.00,17.25', $csv);
+        $this->assertStringNotContainsString('Eritropoyetina', $csv);
+        $this->assertStringNotContainsString($otherCashier->username, $csv);
+    }
+
     public function test_category_filtered_collections_are_allocated_to_matching_items(): void
     {
         $this->seedBillingBase();

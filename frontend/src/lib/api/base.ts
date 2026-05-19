@@ -3,11 +3,13 @@ let requestChain: Promise<unknown> = Promise.resolve();
 
 export class ApiError extends Error {
   readonly status: number;
+  readonly validationErrors?: Record<string, string[]>;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, validationErrors?: Record<string, string[]>) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.validationErrors = validationErrors;
   }
 }
 
@@ -168,7 +170,7 @@ export const apiClient = {
 
       if (response.status === 422 && error?.errors) {
         const validationMessage = Object.values(error.errors).flat().filter(Boolean).slice(0, 3).join(' ');
-        throw new ApiError(validationMessage || 'Revise los datos del formulario.', response.status);
+        throw new ApiError(validationMessage || 'Revise los datos del formulario.', response.status, error.errors);
       }
 
       throw new ApiError(error?.message ?? `HTTP ${response.status}`, response.status);

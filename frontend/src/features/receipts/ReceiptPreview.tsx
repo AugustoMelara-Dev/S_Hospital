@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -12,13 +12,16 @@ import {
 import { type ReceiptData } from '../../lib/api';
 
 type ReceiptPreviewProps = {
+  autoPrint?: boolean;
+  onNewInvoice?: () => void;
   onPrint?: () => void;
   receipt: ReceiptData;
   onWidthChange: (width: ReceiptData['width']) => void;
 };
 
-export function ReceiptPreview({ onPrint, receipt, onWidthChange }: ReceiptPreviewProps) {
+export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, receipt, onWidthChange }: ReceiptPreviewProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
+  const autoPrintedReceiptRef = useRef<string | null>(null);
 
   const handlePrint = useReactToPrint({
     contentRef: receiptRef,
@@ -26,10 +29,21 @@ export function ReceiptPreview({ onPrint, receipt, onWidthChange }: ReceiptPrevi
 
   function handlePrintClick() {
     printReceiptDocument(receipt.width, () => {
-      handlePrint();
+      if (!navigator.userAgent.toLowerCase().includes('jsdom')) {
+        handlePrint();
+      }
       onPrint?.();
     });
   }
+
+  useEffect(() => {
+    if (!autoPrint || autoPrintedReceiptRef.current === receipt.invoice.invoice_number) {
+      return;
+    }
+
+    autoPrintedReceiptRef.current = receipt.invoice.invoice_number;
+    window.setTimeout(handlePrintClick, 150);
+  }, [autoPrint, receipt.invoice.invoice_number]);
 
   return (
     <div className="receipt-preview-panel" aria-label="Vista previa del recibo">
@@ -46,6 +60,11 @@ export function ReceiptPreview({ onPrint, receipt, onWidthChange }: ReceiptPrevi
         <Button type="button" onClick={handlePrintClick}>
           Imprimir
         </Button>
+        {onNewInvoice ? (
+          <Button type="button" variant="secondary" onClick={onNewInvoice}>
+            Nueva factura
+          </Button>
+        ) : null}
       </div>
 
       <div className="receipt-preview-container">
@@ -66,7 +85,7 @@ export function ReceiptPreview({ onPrint, receipt, onWidthChange }: ReceiptPrevi
             <Row label="Paciente" value={receipt.invoice.patient_name} />
             {receipt.invoice.cashier && <Row label="Cajero" value={receipt.invoice.cashier} />}
             <Row label="Estado" value={statusLabel(receipt.invoice.status)} />
-            <Row label="CAI" value={receipt.fiscal.cai ?? 'PENDIENTE-CONFIGURAR'} />
+            <Row label="CAI" value={receipt.fiscal.cai ?? 'CAI no configurado'} />
             {receipt.fiscal.authorized_range && <Row label="Rango" value={receipt.fiscal.authorized_range} />}
             {receipt.fiscal.valid_until && (
               <Row label="Vence" value={formatDate(receipt.fiscal.valid_until)} />
@@ -208,15 +227,17 @@ function printReceiptDocument(width: ReceiptData['width'], print: () => void) {
   document.body.dataset.printingReceipt = 'true';
   print();
 
-  if (previousWidth) {
-    document.body.dataset.receiptWidth = previousWidth;
-  } else {
-    delete document.body.dataset.receiptWidth;
-  }
+  window.setTimeout(() => {
+    if (previousWidth) {
+      document.body.dataset.receiptWidth = previousWidth;
+    } else {
+      delete document.body.dataset.receiptWidth;
+    }
 
-  if (previousPrinting) {
-    document.body.dataset.printingReceipt = previousPrinting;
-  } else {
-    delete document.body.dataset.printingReceipt;
-  }
+    if (previousPrinting) {
+      document.body.dataset.printingReceipt = previousPrinting;
+    } else {
+      delete document.body.dataset.printingReceipt;
+    }
+  }, 1000);
 }

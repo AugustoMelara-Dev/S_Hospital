@@ -33,6 +33,26 @@ El comando crea y ejecuta el backup en el mismo proceso; se recomienda para tare
 
 Los archivos quedan bajo `storage/app/private/backups`. El API solo descarga archivos registrados en `backup_logs`, existentes y dentro de esa carpeta.
 
+El backend busca `mariadb-dump` o `mysqldump` en el `PATH` y en rutas locales comunes como `C:\xampp\mysql\bin\mysqldump.exe`. Si el servidor usa otra ruta, definir:
+
+```powershell
+HOSPITAL_DUMP_BINARY=C:\ruta\mysql\bin\mysqldump.exe
+```
+
+## Programacion automatica diaria
+
+El backend registra una tarea Laravel diaria:
+
+```powershell
+cd C:\HospitalBilling\backend
+php artisan schedule:list
+php artisan schedule:run
+```
+
+Por defecto corre `hospital:backup --type=scheduled` a las `02:00`. La hora se puede ajustar con `HOSPITAL_DAILY_BACKUP_TIME=HH:MM` en `.env` antes de ejecutar `php artisan config:cache`.
+
+En Windows de produccion se recomienda usar el Programador de tareas para llamar `php artisan schedule:run` cada minuto, o usar el helper de abajo si se prefiere registrar directamente la tarea diaria `hospital:backup --type=scheduled`. El backup automatico queda registrado como usuario `Sistema` en la UI porque no depende de un usuario web. La creacion y descarga manual desde navegador siguen permitidas solo para usuarios con permisos `backups.create` y `backups.download`.
+
 ## Programar backup diario en Windows
 
 Crear una tarea del Programador de tareas:
@@ -49,6 +69,44 @@ Crear otra tarea o servicio local para el worker:
 - Argumentos: `artisan queue:work --queue=backups --tries=1 --timeout=600`
 - Iniciar en: `C:\HospitalBilling\backend`
 - Frecuencia: al iniciar Windows o como servicio supervisado.
+
+Tambien existe un helper para registrar las tareas de Windows:
+
+```powershell
+cd C:\Projects\S_Hospital
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -PhpPath C:\xampp\php\php.exe
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
+```
+
+El helper crea una tarea de worker al iniciar Windows y una tarea diaria de
+backup programado. Primero ejecutar `-WhatIfOnly` para confirmar rutas y el
+binario real de PHP.
+Si las tareas ya existen, el helper falla sin sobrescribirlas; usar
+`-UpdateExisting` para reemplazarlas explicitamente. Para desinstalarlas, usar
+`-Uninstall`. La instalacion, actualizacion y desinstalacion requieren abrir
+PowerShell como administrador.
+
+Tambien se incluyen wrappers directos para entornos Windows/XAMPP:
+
+```powershell
+scripts\run_scheduled_backup.cmd
+scripts\run_backup_worker.cmd
+```
+
+Por defecto usan `C:\xampp\php\php.exe`. Si PHP esta en otra ruta, definir `HOSPITAL_PHP_PATH` antes de ejecutarlos o al crear la tarea programada.
+
+Si el Programador de tareas esta bloqueado por permisos/UAC, existe una alternativa por usuario actual:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -PhpPath C:\xampp\php\php.exe -DailyBackupTime 02:00
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status
+scripts\start_backup_automation.cmd
+```
+
+Esta alternativa arranca el worker y un scheduler local al iniciar sesion del usuario Windows. No sustituye una tarea de sistema para produccion final, pero deja backup diario automatico sin permisos de administrador mientras ese usuario permanezca iniciado.
+El instalador registra tanto un archivo en la carpeta Startup como una entrada `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` para tolerar politicas locales donde uno de los dos mecanismos este restringido.
+El log operativo queda en `backend/storage/logs/backup-automation.log`.
 
 Después de cada backup diario, copiar el archivo más reciente a una unidad USB o disco externo del hospital. No usar servicios cloud como requisito operativo.
 

@@ -161,3 +161,61 @@ Capturas regeneradas:
 ## Commit sugerido
 
 `fix(pos): harden keyboard billing flow`
+
+---
+
+# UX-4 - Reportes, administracion y permisos
+
+Decision final de este tramo: **UX-4 APROBADA**.
+
+URL base usada: `http://127.0.0.1:8000`.
+
+Usuarios/roles usados: `admin.demo / admin`, `supervisor.demo / supervisor`, `cajero.demo / cajero`.
+
+## Medicion antes
+
+- `AppShell` mostraba `Reportes` con `reports.view`, `reports.managerial.view` o `reports.cash_session.view`.
+- `AppRoutes` permitia `/reports` solo con `reports.view`.
+- Usuario con solo `reports.cash_session.view` podia ver acceso a reportes de caja pero quedaba bloqueado por ruta.
+- Las tabs Diario, Rango, Servicios, Auditoria y Caja generaban CSV local con `Blob` en frontend.
+- La UI condicionaba el boton por `reports.export`, pero la descarga no usaba `/api/reports/export`.
+
+Reportes revisados: diario, rango, servicios, auditoria y caja.
+Filtros revisados: fecha diaria, desde/hasta, categoria, metodo, estado, cajero ID y caja ID.
+Exportaciones probadas: CSV de reportes para admin/supervisor y ausencia de boton para cajero sin permiso.
+
+## Cambios realizados
+
+- `/reports` ahora permite `reports.view` o `reports.cash_session.view`.
+- Usuario con solo `reports.cash_session.view` entra a la tab `Caja` y no ve tabs gerenciales.
+- Las tabs gerenciales se ocultan si falta `reports.managerial.view`.
+- `Exportar CSV` usa `apiClient.downloadReportExport()` contra `/api/reports/export`.
+- Se elimino CSV local desde frontend en reportes.
+- Se agregaron tests frontend para export backend y rol con solo reporte de caja.
+
+## Medicion despues
+
+- Admin: ve reportes gerenciales, Caja y exporta CSV desde backend.
+- Supervisor: ve reportes y exporta si tiene `reports.export`; no ve Backups.
+- Cajero: no ve Reportes/Backups/Fiscal si no tiene permisos; con `reports.cash_session.view` ve solo Caja.
+- Ruta no permitida muestra pantalla humana, sin JSON crudo.
+- No se observaron 401/419/CORS/500 inesperados ni errores rojos de consola.
+
+## Seguridad y permisos
+
+Backend mantiene la fuente de verdad para `reports.export`, 403 sin permiso y 401 para invitado. Frontend ya no ofrece descarga CSV sensible generada localmente.
+
+## Validacion ejecutada
+
+- `php artisan test --colors=never`: **passed**.
+- `vendor/bin/pint --test`: **passed**.
+- `npm.cmd run typecheck`: **passed**.
+- `npm.cmd run lint`: **passed**.
+- `npm.cmd run test`: **passed**.
+- `npm.cmd run build`: **passed**.
+- `npm.cmd run e2e`: **passed**.
+- `VISUAL_SMOKE_BASE_URL=http://127.0.0.1:8000 node qa/visual-smoke/phase-12-visual-smoke.mjs`: **passed**.
+
+## Commit sugerido
+
+`fix(reports): harden admin permissions and exports UX`

@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   type AuthUser,
   type Invoice,
@@ -46,15 +47,8 @@ type InvoiceHistoryViewProps = {
 const today = localDateString();
 
 export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) {
-  const [filters, setFilters] = useState<InvoiceFilters>({
-    date_from: today,
-    date_to: today,
-    status: '',
-    patient: '',
-    invoice_number: '',
-    page: 1,
-    per_page: 10,
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [filters, setFilters] = useState<InvoiceFilters>(() => filtersFromSearchParams(searchParams));
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [meta, setMeta] = useState<PaginatedMeta>({ current_page: 1, per_page: 10, total: 0 });
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -99,6 +93,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     event.preventDefault();
     const nextFilters = { ...filters, page: 1 };
     setFilters(nextFilters);
+    setSearchParams(searchParamsFromFilters(nextFilters));
     await loadInvoices(nextFilters);
   }
 
@@ -113,6 +108,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       per_page: 10,
     };
     setFilters(clearedFilters);
+    setSearchParams({});
     void loadInvoices(clearedFilters);
   }
 
@@ -144,6 +140,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   async function changePage(page: number) {
     const nextFilters = { ...filters, page };
     setFilters(nextFilters);
+    setSearchParams(searchParamsFromFilters(nextFilters));
     await loadInvoices(nextFilters);
   }
 
@@ -500,6 +497,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         open={receiptModalOpen}
         onOpenChange={setReceiptModalOpen}
         title={`Recibo - ${selectedInvoice?.invoice_number ?? ''}`}
+        description="Vista previa de recibo. Cambiar entre 80mm y 58mm no registra reimpresion."
       >
         {receipt && selectedInvoice && (
           <div className="space-y-4">
@@ -633,4 +631,30 @@ export function localDateString(date = new Date()): string {
   const day = String(date.getDate()).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
+}
+
+function filtersFromSearchParams(searchParams: URLSearchParams): InvoiceFilters {
+  return {
+    date_from: searchParams.get('date_from') || today,
+    date_to: searchParams.get('date_to') || today,
+    status: (searchParams.get('status') ?? '') as InvoiceFilters['status'],
+    patient: searchParams.get('patient') ?? '',
+    invoice_number: searchParams.get('invoice_number') ?? '',
+    page: Number(searchParams.get('page') || '1'),
+    per_page: Number(searchParams.get('per_page') || '10'),
+  };
+}
+
+function searchParamsFromFilters(filters: InvoiceFilters): Record<string, string> {
+  const params: Record<string, string> = {};
+
+  if (filters.date_from && filters.date_from !== today) params.date_from = filters.date_from;
+  if (filters.date_to && filters.date_to !== today) params.date_to = filters.date_to;
+  if (filters.status) params.status = filters.status;
+  if (filters.patient) params.patient = filters.patient;
+  if (filters.invoice_number) params.invoice_number = filters.invoice_number;
+  if (filters.page && filters.page > 1) params.page = String(filters.page);
+  if (filters.per_page && filters.per_page !== 10) params.per_page = String(filters.per_page);
+
+  return params;
 }

@@ -256,6 +256,13 @@ class BackupWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_daily_scheduled_backup_is_registered_for_local_automation(): void
+    {
+        $this->artisan('schedule:list', ['--no-ansi' => true])
+            ->expectsOutputToContain('hospital:backup --type=scheduled')
+            ->assertSuccessful();
+    }
+
     public function test_restore_endpoint_is_not_exposed(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

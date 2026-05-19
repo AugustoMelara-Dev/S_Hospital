@@ -71,7 +71,7 @@ export function InvoiceSuccess({
               Cobrar ahora
             </Button>
             <Button type="button" variant="secondary" className="w-full" onClick={onNuevaFactura}>
-              Crear otra factura
+              Dejar pendiente y crear otra
             </Button>
           </div>
         ) : (
@@ -98,7 +98,7 @@ export function InvoiceSuccess({
             )}
           </div>
           <Button asChild variant="outline">
-            <Link to="/invoices">Ver facturas</Link>
+            <Link to={`/invoices?invoice_number=${encodeURIComponent(invoiceNumber)}`}>Ver factura</Link>
           </Button>
         </div>
       </div>

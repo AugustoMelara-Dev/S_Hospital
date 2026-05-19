@@ -135,7 +135,10 @@ export function AppRoutes({
       <Route
         path="/reports"
         element={
-          <PermissionGate allowed={canViewReports} reason="Requiere permiso para consultar reportes operativos.">
+          <PermissionGate
+            allowed={canViewReports || canViewCashSessionReports}
+            reason="Requiere permiso para consultar reportes operativos o reportes de caja."
+          >
             <ReportsView
               canExport={canExportReports}
               canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}

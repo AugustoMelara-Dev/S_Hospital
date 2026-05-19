@@ -1,4 +1,4 @@
-import { type FormEvent, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -49,6 +49,7 @@ export function CashBoxView({
   const [closingAmount, setClosingAmount] = useState('');
   const [closingNotes, setClosingNotes] = useState('');
   const [formAlert, setFormAlert] = useState<string | null>(null);
+  const [closingAmountError, setClosingAmountError] = useState<string | null>(null);
   const [confirmingClose, setConfirmingClose] = useState(false);
   const closingAmountRef = useRef<HTMLInputElement | null>(null);
 
@@ -104,8 +105,16 @@ export function CashBoxView({
   });
 
   const expectedCashAmount = session?.expected_cash_amount ?? session?.expected_amount ?? session?.opening_amount ?? '0.00';
-  const difference = formatCents(parseCents(closingAmount || '0.00') - parseCents(expectedCashAmount));
+  const hasValidClosingAmount = /^\d+(\.\d{1,2})?$/.test(closingAmount.trim());
+  const difference = hasValidClosingAmount ? formatCents(parseCents(closingAmount) - parseCents(expectedCashAmount)) : null;
+  const hasCashDifference = difference !== null && difference !== 0;
   const isOpen = session?.status === 'open';
+
+  useEffect(() => {
+    if (isOpen) {
+      window.setTimeout(() => closingAmountRef.current?.focus(), 0);
+    }
+  }, [isOpen, session?.id]);
 
   function handleOpenSession(data: { opening_amount: string }) {
     onStatus('Abriendo caja...');
@@ -120,10 +129,18 @@ export function CashBoxView({
       return;
     }
     if (closingAmount.trim() === '') {
-      setFormAlert('Ingrese el monto contado antes de cerrar caja.');
+      setClosingAmountError('Falta ingresar el monto contado antes de cerrar caja.');
+      setFormAlert(null);
       closingAmountRef.current?.focus();
       return;
     }
+    if (!hasValidClosingAmount) {
+      setClosingAmountError('Ingrese un monto contado valido, por ejemplo 100.00.');
+      setFormAlert(null);
+      closingAmountRef.current?.focus();
+      return;
+    }
+    setClosingAmountError(null);
     setConfirmingClose(true);
   }
 
@@ -181,18 +198,20 @@ export function CashBoxView({
           <>
             <SessionSummary
               session={session}
-              closingAmount={closingAmount}
+              closingAmount={hasValidClosingAmount ? closingAmount : null}
               difference={difference}
-              onClosingAmountChange={setClosingAmount}
             />
 
             {session.payments_by_method && (
               <Card>
                 <CardHeader>
                   <CardTitle>Resumen por Método de Pago</CardTitle>
+                  <CardDescription>
+                    Efectivo entra al efectivo esperado. Transferencias, tarjetas y otros metodos quedan separados para conciliacion.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Efectivo</span>
                       <span className="text-xl font-bold">L. {session.payments_by_method.cash ?? '0.00'}</span>
@@ -204,6 +223,10 @@ export function CashBoxView({
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Tarjeta</span>
                       <span className="text-xl font-bold">L. {session.payments_by_method.card ?? '0.00'}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-muted-foreground">Otros</span>
+                      <span className="text-xl font-bold">L. {session.payments_by_method.other ?? '0.00'}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Pagos registrados</span>
@@ -231,14 +254,27 @@ export function CashBoxView({
                       type="text"
                       inputMode="decimal"
                       value={closingAmount}
-                      onChange={(e) => setClosingAmount(e.target.value)}
+                      onChange={(e) => {
+                        setClosingAmount(e.target.value);
+                        if (closingAmountError) setClosingAmountError(null);
+                      }}
                       placeholder="0.00"
                       className="text-lg"
-                      aria-invalid={formAlert?.includes('monto contado') ? 'true' : 'false'}
+                      aria-invalid={closingAmountError ? 'true' : 'false'}
+                      aria-describedby={closingAmountError ? 'closing-amount-error' : 'closing-amount-help'}
                     />
+                    {closingAmountError ? (
+                      <p id="closing-amount-error" className="text-sm text-destructive" role="alert">
+                        {closingAmountError}
+                      </p>
+                    ) : (
+                      <p id="closing-amount-help" className="text-xs text-muted-foreground">
+                        Cuente el efectivo fisico en gaveta. No incluya tarjeta ni transferencia.
+                      </p>
+                    )}
                   </div>
 
-                  {difference !== 0 && (
+                  {hasCashDifference && (
                     <Alert variant="warning">
                       <AlertTriangle className="h-4 w-4" />
                       <div>
@@ -255,7 +291,7 @@ export function CashBoxView({
                       id="closing_notes"
                       value={closingNotes}
                       onChange={(e) => setClosingNotes(e.target.value)}
-                      placeholder={difference !== 0 ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional...'}
+                      placeholder={hasCashDifference ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional...'}
                       rows={2}
                     />
                   </div>
@@ -301,7 +337,7 @@ export function CashBoxView({
         }}
         closingAmount={closingAmount}
         closingNotes={closingNotes}
-        difference={difference}
+        difference={difference ?? 0}
         isSubmitting={closeSessionMutation.isPending}
         onClosingNotesChange={setClosingNotes}
         onConfirm={handleCloseSession}

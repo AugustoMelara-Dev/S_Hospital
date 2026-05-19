@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { apiClient, userSafeErrorMessage } from '@/lib/api';
+import { ApiError, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -65,6 +65,8 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
     register,
     handleSubmit,
     reset,
+    setError,
+    setFocus,
     setValue,
     watch,
     formState: { errors, isSubmitting },
@@ -114,6 +116,10 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
       onOpenChange(false);
       reset(defaultValues);
     } catch (error) {
+      if (error instanceof ApiError && error.validationErrors) {
+        applyBackendErrors(error.validationErrors, setError);
+        focusFirstServiceError(error.validationErrors, setFocus);
+      }
       setSubmitError(userSafeErrorMessage(error, 'Error al guardar el servicio.'));
     }
   }
@@ -132,7 +138,12 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
             value={String(categoryId)}
             onValueChange={(val) => setValue('category_id', Number(val))}
           >
-            <SelectTrigger className={cn(errors.category_id && 'border-destructive')}>
+            <SelectTrigger
+              id="category_id"
+              aria-invalid={Boolean(errors.category_id)}
+              aria-describedby={errors.category_id ? 'service-category-error' : undefined}
+              className={cn(errors.category_id && 'border-destructive')}
+            >
               <SelectValue placeholder="Seleccione una categoría" />
             </SelectTrigger>
             <SelectContent>
@@ -143,7 +154,7 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
               ))}
             </SelectContent>
           </Select>
-          {errors.category_id && <p className="text-sm text-destructive">{errors.category_id.message}</p>}
+          {errors.category_id && <p id="service-category-error" role="alert" className="text-sm text-destructive">{errors.category_id.message}</p>}
         </div>
 
         <div className="space-y-2">
@@ -151,9 +162,11 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
           <Input
             id="name"
             {...register('name')}
+            aria-invalid={Boolean(errors.name)}
+            aria-describedby={errors.name ? 'service-name-error' : undefined}
             className={cn(errors.name && 'border-destructive')}
           />
-          {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+          {errors.name && <p id="service-name-error" role="alert" className="text-sm text-destructive">{errors.name.message}</p>}
         </div>
 
         <div className="space-y-2">
@@ -163,9 +176,11 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
             type="text"
             inputMode="decimal"
             {...register('price')}
+            aria-invalid={Boolean(errors.price)}
+            aria-describedby={errors.price ? 'service-price-error' : undefined}
             className={cn(errors.price && 'border-destructive')}
           />
-          {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
+          {errors.price && <p id="service-price-error" role="alert" className="text-sm text-destructive">{errors.price.message}</p>}
         </div>
 
         <div className="space-y-2">
@@ -174,9 +189,11 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
             id="scan_code"
             placeholder="LAB-GLU-001"
             {...register('scan_code')}
+            aria-invalid={Boolean(errors.scan_code)}
+            aria-describedby={errors.scan_code ? 'service-scan-code-error' : undefined}
             className={cn(errors.scan_code && 'border-destructive')}
           />
-          {errors.scan_code && <p className="text-sm text-destructive">{errors.scan_code.message}</p>}
+          {errors.scan_code && <p id="service-scan-code-error" role="alert" className="text-sm text-destructive">{errors.scan_code.message}</p>}
         </div>
 
         <div className="space-y-2">
@@ -185,9 +202,11 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
             id="barcode"
             placeholder="Código de barra opcional"
             {...register('barcode')}
+            aria-invalid={Boolean(errors.barcode)}
+            aria-describedby={errors.barcode ? 'service-barcode-error' : undefined}
             className={cn(errors.barcode && 'border-destructive')}
           />
-          {errors.barcode && <p className="text-sm text-destructive">{errors.barcode.message}</p>}
+          {errors.barcode && <p id="service-barcode-error" role="alert" className="text-sm text-destructive">{errors.barcode.message}</p>}
         </div>
 
         <div className="space-y-2">
@@ -196,15 +215,17 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
             id="qr_code"
             placeholder="Código QR opcional"
             {...register('qr_code')}
+            aria-invalid={Boolean(errors.qr_code)}
+            aria-describedby={errors.qr_code ? 'service-qr-code-error' : undefined}
             className={cn(errors.qr_code && 'border-destructive')}
           />
-          {errors.qr_code && <p className="text-sm text-destructive">{errors.qr_code.message}</p>}
+          {errors.qr_code && <p id="service-qr-code-error" role="alert" className="text-sm text-destructive">{errors.qr_code.message}</p>}
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="special_rule_code">Regla Especial</Label>
           <Select value={specialRuleCode ?? 'none'} onValueChange={(val) => setValue('special_rule_code', val === 'none' ? null : val)}>
-            <SelectTrigger>
+            <SelectTrigger id="special_rule_code">
               <SelectValue placeholder="Sin regla" />
             </SelectTrigger>
             <SelectContent>
@@ -249,4 +270,26 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
       </form>
     </Sheet>
   );
+}
+
+function applyBackendErrors(
+  validationErrors: Record<string, string[]>,
+  setError: ReturnType<typeof useForm<ServiceFormData>>['setError'],
+) {
+  (['category_id', 'name', 'price', 'scan_code', 'barcode', 'qr_code'] as const).forEach((field) => {
+    const message = validationErrors[field]?.[0];
+    if (message) {
+      setError(field, { type: 'server', message });
+    }
+  });
+}
+
+function focusFirstServiceError(
+  validationErrors: Record<string, string[]>,
+  setFocus: ReturnType<typeof useForm<ServiceFormData>>['setFocus'],
+) {
+  const firstFocusable = (['name', 'price', 'scan_code', 'barcode', 'qr_code'] as const).find((field) => validationErrors[field]?.[0]);
+  if (firstFocusable) {
+    window.setTimeout(() => setFocus(firstFocusable), 0);
+  }
 }

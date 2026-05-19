@@ -49,9 +49,13 @@ export function NewInvoiceView({
   const [issuedInvoice, setIssuedInvoice] = useState<Invoice | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<Payment['method']>('cash');
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [previewBeforePrint, setPreviewBeforePrint] = useState(false);
   const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('80mm');
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [autoPrintReceipt, setAutoPrintReceipt] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -102,6 +106,8 @@ export function NewInvoiceView({
     setPatientName('');
     setPatientError(undefined);
     setAlertMessage(null);
+    setWarningMessage(null);
+    setSuccessMessage(null);
     setSearch('');
     setScanCode('');
     setSelectedCategoryId(undefined);
@@ -118,13 +124,16 @@ export function NewInvoiceView({
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement;
+      const isInsideDialog = Boolean(target.closest('[data-dialog-content], [role="dialog"], [role="alertdialog"]'));
+      const hasOpenOverlay = showConfirmation || showPayment || showSuccess || showReceipt || showClearConfirm;
+
       if (e.ctrlKey && e.key.toLowerCase() === 'n') {
         e.preventDefault();
         patientInputRef.current?.focus();
       }
 
       if (e.key === 'Escape') {
-        const target = e.target as HTMLElement;
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
         if (showConfirmation || showPayment || showSuccess || showReceipt) return;
         if (target.closest('[data-dialog-content]')) return;
@@ -136,6 +145,11 @@ export function NewInvoiceView({
 
       if (e.ctrlKey && e.key === 'Enter') {
         e.preventDefault();
+
+        if (isInsideDialog || hasOpenOverlay) {
+          return;
+        }
+
         if (canEmit) {
           handleEmitClick();
         } else {
@@ -146,7 +160,7 @@ export function NewInvoiceView({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canEmit, cartItems.length, handleClearCart, patientName, scanCode, search, showConfirmation, showPayment, showReceipt, showSuccess]);
+  }, [canEmit, cartItems.length, handleClearCart, patientName, scanCode, search, showClearConfirm, showConfirmation, showPayment, showReceipt, showSuccess]);
 
   const preview = useMemo(() => calculatePreview(cartItems), [cartItems]);
 
@@ -196,6 +210,13 @@ export function NewInvoiceView({
 
   function addToCart(service: Service) {
     setAlertMessage(null);
+    setWarningMessage(null);
+    const message = `Agregado: ${service.name}`;
+    setSuccessMessage(message);
+    onStatus(message);
+    window.setTimeout(() => {
+      setSuccessMessage((current) => (current === message ? null : current));
+    }, 2200);
     setPatientError(undefined);
     setCartItems((current) => {
       const existingIndex = current.findIndex(
@@ -368,6 +389,7 @@ export function NewInvoiceView({
     setSubmitting(true);
     setShowConfirmation(false);
     setAlertMessage(null);
+    setWarningMessage(null);
 
     try {
       const invoice = await apiClient.createInvoice({
@@ -380,8 +402,9 @@ export function NewInvoiceView({
       });
 
       setIssuedInvoice(invoice);
-      setPaymentAmount(invoice.balance_due);
+      setPaymentAmount('0.00');
       setReceipt(null);
+      setAutoPrintReceipt(false);
       setCartItems([]);
       setPatientName('');
       if (loadedCashSession && Number(invoice.balance_due) > 0) {
@@ -419,6 +442,10 @@ export function NewInvoiceView({
     }
 
     setShowSuccess(false);
+    setWarningMessage(null);
+    if (!paymentAmount || Number(paymentAmount) <= 0) {
+      setPaymentAmount('0.00');
+    }
     setShowPayment(true);
   }
 
@@ -446,9 +473,15 @@ export function NewInvoiceView({
       const nextReceipt = await apiClient.getReceipt(result.invoice.id, receiptWidth);
       setReceipt(nextReceipt);
       setReceiptWidth(nextReceipt.width);
+      setAutoPrintReceipt(!previewBeforePrint);
       setShowReceipt(true);
       setAlertMessage(null);
-      onStatus(`Pago registrado. Recibo ${nextReceipt.invoice.invoice_number} listo para imprimir.`);
+      setWarningMessage(null);
+      onStatus(
+        previewBeforePrint
+          ? `Pago registrado. Preview ${nextReceipt.invoice.invoice_number} listo.`
+          : `Pago registrado. Recibo ${nextReceipt.invoice.invoice_number} enviado a impresion.`,
+      );
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo registrar el pago.');
       setAlertMessage(message);
@@ -479,6 +512,8 @@ export function NewInvoiceView({
     setShowReceipt(false);
     setShowConfirmation(false);
     setShowClearConfirm(false);
+    setAutoPrintReceipt(false);
+    setWarningMessage(null);
     setCartItems([]);
     setPatientName('');
     setPatientError(undefined);
@@ -493,6 +528,7 @@ export function NewInvoiceView({
 
     if (!nextOpen && issuedInvoice && (issuedInvoice.status === 'issued' || issuedInvoice.status === 'partial')) {
       setShowSuccess(true);
+      setWarningMessage(`Factura ${issuedInvoice.invoice_number} emitida. Quedo pendiente de cobro; puede cobrarla desde este panel o desde Historial.`);
       onStatus(`Factura ${issuedInvoice.invoice_number} emitida y pendiente de cobro.`);
     }
   }
@@ -500,7 +536,8 @@ export function NewInvoiceView({
   function handleReceiptOpenChange(nextOpen: boolean) {
     setShowReceipt(nextOpen);
 
-    if (!nextOpen && issuedInvoice?.status === 'paid') {
+    if (!nextOpen && (issuedInvoice?.status === 'paid' || issuedInvoice?.status === 'partial')) {
+      setAutoPrintReceipt(false);
       setShowSuccess(true);
     }
   }
@@ -546,6 +583,18 @@ export function NewInvoiceView({
       {alertMessage && (
         <Alert variant="destructive" title="Revise antes de continuar">
           {alertMessage}
+        </Alert>
+      )}
+
+      {warningMessage && (
+        <Alert variant="warning" title="Factura pendiente">
+          {warningMessage}
+        </Alert>
+      )}
+
+      {successMessage && (
+        <Alert variant="success" title="Servicio agregado">
+          {successMessage.replace(/^Agregado: /, '')}
         </Alert>
       )}
 
@@ -624,8 +673,10 @@ export function NewInvoiceView({
           balanceDue={issuedInvoice.balance_due}
           paymentMethod={paymentMethod}
           paymentAmount={paymentAmount}
+          previewBeforePrint={previewBeforePrint}
           onPaymentMethodChange={setPaymentMethod}
           onPaymentAmountChange={setPaymentAmount}
+          onPreviewBeforePrintChange={setPreviewBeforePrint}
           onConfirm={(appliedAmount) => void submitPayment(appliedAmount)}
           submitting={paying}
         />
@@ -649,10 +700,18 @@ export function NewInvoiceView({
         open={showReceipt && Boolean(receipt)}
         onOpenChange={handleReceiptOpenChange}
         size="lg"
-        title="Preview térmico"
+        title="Preview termico"
         description="Solo el ticket se imprime."
       >
-        {receipt ? <ReceiptPreview receipt={receipt} onWidthChange={loadReceipt} /> : null}
+        {receipt ? (
+          <ReceiptPreview
+            autoPrint={autoPrintReceipt}
+            receipt={receipt}
+            onWidthChange={loadReceipt}
+            onNewInvoice={handleNuevaFactura}
+            onPrint={() => setAutoPrintReceipt(false)}
+          />
+        ) : null}
       </Dialog>
 
       <ConfirmDialog

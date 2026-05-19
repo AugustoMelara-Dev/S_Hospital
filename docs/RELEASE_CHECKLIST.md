@@ -70,6 +70,24 @@ En produccion offline LAN no se borra la base. La validacion segura usa:
 
 No ejecutar `php artisan migrate:fresh --seed` en el servidor real del hospital.
 
+Preflight ejecutable en el servidor final:
+
+```powershell
+cd C:\Projects\S_Hospital
+powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 `
+  -BaseUrl http://IP_DEL_SERVIDOR
+```
+
+Este preflight falla si el servidor no usa `APP_ENV=production`, si `APP_DEBUG`
+no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o
+`mariadb-dump`, si las rutas publicas no responden, o si no existen las pruebas
+documentadas de cliente LAN e impresora fisica.
+
+La evidencia fisica de LAN e impresora es obligatoria por defecto. El flag
+`-AllowMissingPhysicalProof` solo permite una corrida parcial de entorno y deja
+un warning fuerte mas salida no cero: ese resultado no puede llamarse
+`PRODUCTION_READY` ni usarse como gate automatico de produccion.
+
 ## Validaciones reales antes de PRODUCTION_READY
 
 Restore MySQL/MariaDB:
@@ -147,11 +165,28 @@ En Windows, asegurar que la tarea/servicio del worker herede la ruta de `mysqldu
 El worker debe quedar como servicio o tarea continua, no como comando manual
 temporal. Validar que un backup manual cambie de `pending` a `success`.
 
+Helper para crear tareas Windows en el servidor final:
+
+```powershell
+cd C:\Projects\S_Hospital
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -PhpPath C:\xampp\php\php.exe
+Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
+```
+
+Usar `-WhatIfOnly` primero para revisar rutas. Despues de registrar las tareas,
+crear un backup desde la UI y confirmar que pasa de `pending` a `success`.
+Si las tareas ya existen, el script falla salvo que se use `-UpdateExisting`.
+Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Uninstall`.
+
 ## Antes de produccion final
 
 - Probar restore real en una base descartable del servidor final y guardar checksum/conteos.
 - Probar desde una segunda PC en LAN usando la IP fija o dominio LAN, nunca `localhost`.
 - Probar impresora fisica termica 80mm/58mm desde la PC o cliente que imprimira.
+- Crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
+- Crear `qa/THERMAL_PRINTER_PROOF.md` usando `qa/THERMAL_PRINTER_PROOF.example.md`.
 - Validar concurrencia real con MySQL/MariaDB.
 - Crear admin inicial real con password temporal y cambio obligatorio.
 - Remover o no ejecutar seeders demo fuera de `local`/`testing`.

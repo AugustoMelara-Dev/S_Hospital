@@ -103,9 +103,11 @@ export function FiscalSettingsForm({
                   id="hospital_name"
                   {...registerSettings('hospital_name')}
                   placeholder="Hospital Nacional de..."
+                  aria-invalid={Boolean(errorsSettings.hospital_name)}
+                  aria-describedby={errorsSettings.hospital_name ? 'hospital-name-error' : undefined}
                 />
                 {errorsSettings.hospital_name && (
-                  <p className="text-sm text-destructive">{errorsSettings.hospital_name.message}</p>
+                  <p id="hospital-name-error" role="alert" className="text-sm text-destructive">{errorsSettings.hospital_name.message}</p>
                 )}
               </div>
 
@@ -125,7 +127,7 @@ export function FiscalSettingsForm({
                 value={watchSettings('receipt_width')}
                 onValueChange={(v: string) => setValueSettings('receipt_width', v as '80mm' | '58mm')}
               >
-                <SelectTrigger>
+                <SelectTrigger id="receipt_width">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -171,9 +173,11 @@ export function FiscalSettingsForm({
                   {...registerSequence('prefix')}
                   placeholder="A"
                   className="uppercase"
+                  aria-invalid={Boolean(errorsSequence.prefix)}
+                  aria-describedby={errorsSequence.prefix ? 'sequence-prefix-error' : undefined}
                 />
                 {errorsSequence.prefix && (
-                  <p className="text-sm text-destructive">{errorsSequence.prefix.message}</p>
+                  <p id="sequence-prefix-error" role="alert" className="text-sm text-destructive">{errorsSequence.prefix.message}</p>
                 )}
               </div>
 
@@ -183,9 +187,11 @@ export function FiscalSettingsForm({
                   id="cai"
                   {...registerSequence('cai')}
                   placeholder="CAI-XXXXX-XXXXX-XXXXX"
+                  aria-invalid={Boolean(errorsSequence.cai)}
+                  aria-describedby={errorsSequence.cai ? 'sequence-cai-error' : undefined}
                 />
                 {errorsSequence.cai && (
-                  <p className="text-sm text-destructive">{errorsSequence.cai.message}</p>
+                  <p id="sequence-cai-error" role="alert" className="text-sm text-destructive">{errorsSequence.cai.message}</p>
                 )}
               </div>
 
@@ -196,9 +202,11 @@ export function FiscalSettingsForm({
                   type="number"
                   {...registerSequence('min_number', { valueAsNumber: true })}
                   placeholder="1"
+                  aria-invalid={Boolean(errorsSequence.min_number)}
+                  aria-describedby={errorsSequence.min_number ? 'sequence-min-number-error' : undefined}
                 />
                 {errorsSequence.min_number && (
-                  <p className="text-sm text-destructive">{errorsSequence.min_number.message}</p>
+                  <p id="sequence-min-number-error" role="alert" className="text-sm text-destructive">{errorsSequence.min_number.message}</p>
                 )}
               </div>
 
@@ -209,9 +217,11 @@ export function FiscalSettingsForm({
                   type="number"
                   {...registerSequence('max_number', { valueAsNumber: true })}
                   placeholder="10000"
+                  aria-invalid={Boolean(errorsSequence.max_number)}
+                  aria-describedby={errorsSequence.max_number ? 'sequence-max-number-error' : undefined}
                 />
                 {errorsSequence.max_number && (
-                  <p className="text-sm text-destructive">{errorsSequence.max_number.message}</p>
+                  <p id="sequence-max-number-error" role="alert" className="text-sm text-destructive">{errorsSequence.max_number.message}</p>
                 )}
               </div>
 

@@ -71,6 +71,11 @@ async function waitServicesReady(page) {
 }
 
 async function cartItemCount(page) {
+  const removeButtons = await page.getByRole('button', { name: /quitar/i }).count().catch(() => 0);
+  if (removeButtons > 0) {
+    return removeButtons;
+  }
+
   const emptyCartVisible = await page.getByText(/no hay servicios agregados/i).isVisible().catch(() => false);
   if (emptyCartVisible) return 0;
 
@@ -162,24 +167,9 @@ async function ensureLoggedIn(page) {
 }
 
 async function ensureCashOpen(page) {
-  const current = await page.evaluate(async () => {
-    const response = await fetch('/api/cash-sessions/current', {
-      credentials: 'include',
-      headers: { Accept: 'application/json' },
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    return (await response.json()).data;
-  }).catch(() => null);
+  const current = await currentCashSession(page);
 
   if (current?.status === 'open') {
-    return;
-  }
-
-  if (await page.getByText(/caja abierta/i).isVisible().catch(() => false)) {
     return;
   }
 
@@ -188,7 +178,11 @@ async function ensureCashOpen(page) {
     const openButtons = page.getByRole('button', { name: /^abrir caja$/i });
     const count = await openButtons.count();
     await openButtons.nth(Math.max(0, count - 1)).click();
-    await waitSettled(page);
+    const opened = await waitCurrentCashOpen(page);
+
+    if (opened?.status !== 'open') {
+      findings.push('cashbox: no se pudo confirmar caja abierta para el usuario actual.');
+    }
     await closeOperationalDialogIfPresent(page);
     return;
   }
@@ -201,10 +195,41 @@ async function ensureCashOpen(page) {
       const openButtons = page.getByRole('button', { name: /^abrir caja$/i });
       const count = await openButtons.count();
       await openButtons.nth(Math.max(0, count - 1)).click();
-      await waitSettled(page);
+    }
+    const opened = await waitCurrentCashOpen(page);
+
+    if (opened?.status !== 'open') {
+      findings.push('cashbox: no se pudo confirmar caja abierta para el usuario actual.');
     }
     await closeOperationalDialogIfPresent(page);
   }
+}
+
+async function currentCashSession(page) {
+  return await page.evaluate(async () => {
+    const response = await fetch('/api/cash-sessions/current', {
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return (await response.json()).data;
+  }).catch(() => null);
+}
+
+async function waitCurrentCashOpen(page) {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    await waitSettled(page);
+    const current = await currentCashSession(page);
+    if (current?.status === 'open') {
+      return current;
+    }
+  }
+
+  return null;
 }
 
 async function navigate(page, route, screen) {
@@ -294,6 +319,7 @@ async function main() {
       await page.getByRole('button', { name: /escanear/i }).click();
       await waitSettled(page);
       await waitServicesReady(page);
+      await page.getByRole('button', { name: /quitar/i }).first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
       await page.getByRole('button', { name: /emitir y cobrar|emitir factura/i }).waitFor({ state: 'visible', timeout: 15000 });
     } else {
       const searchInput = page.getByLabel(/buscar por nombre/i);

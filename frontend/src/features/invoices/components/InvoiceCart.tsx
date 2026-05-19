@@ -40,6 +40,20 @@ export function InvoiceCart({
   submitting,
 }: InvoiceCartProps) {
   const isEmpty = items.length === 0;
+  const primaryBlockReason = disabledReasons[0];
+  const disabledActionLabel = isEmpty
+    ? emptyActionLabel
+    : primaryBlockReason
+    ? actionLabelForBlockReason(primaryBlockReason, emptyActionLabel)
+    : emptyActionLabel;
+  const disabledReasonId = disabledReasons.length > 0 ? 'invoice-submit-blockers' : undefined;
+  const displayActionLabel = submitting
+    ? 'Emitiendo...'
+    : disabled || isEmpty
+      ? disabledActionLabel
+      : actionLabel;
+  const actionAriaLabel = disabled || isEmpty ? `${actionLabel}: ${displayActionLabel}` : undefined;
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 mb-4">
@@ -160,6 +174,8 @@ export function InvoiceCart({
           size="lg"
           className="w-full font-semibold"
           disabled={disabled || isEmpty}
+          aria-describedby={disabledReasonId}
+          aria-label={actionAriaLabel}
           onClick={onConfirm}
         >
           {submitting ? (
@@ -167,14 +183,14 @@ export function InvoiceCart({
               <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
               Emitiendo...
             </>
-          ) : isEmpty ? (
-            emptyActionLabel
+          ) : disabled || isEmpty ? (
+            disabledActionLabel
           ) : (
             <>{actionLabel}</>
           )}
         </Button>
         {disabledReasons.length > 0 && (
-          <div className="mt-2 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
+          <div id="invoice-submit-blockers" className="mt-2 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
             {disabledReasons.map((reason) => (
               <p key={reason}>{reason}</p>
             ))}
@@ -183,6 +199,22 @@ export function InvoiceCart({
       </div>
     </div>
   );
+}
+
+function actionLabelForBlockReason(reason: string, emptyActionLabel: string): string {
+  if (reason.toLowerCase().includes('caja')) {
+    return 'Abra caja primero';
+  }
+
+  if (reason.toLowerCase().includes('paciente')) {
+    return 'Ingrese paciente';
+  }
+
+  if (reason.toLowerCase().includes('servicio')) {
+    return emptyActionLabel;
+  }
+
+  return 'Complete requisitos';
 }
 
 function parseQuantityUnits(value: string): number {

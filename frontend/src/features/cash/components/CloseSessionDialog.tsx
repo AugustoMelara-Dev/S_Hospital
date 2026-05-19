@@ -1,6 +1,6 @@
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
 import { AlertTriangle } from 'lucide-react';
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -121,9 +121,16 @@ export function CloseSessionDialog({
   onClosingNotesChange,
   onConfirm,
 }: CloseSessionDialogProps) {
+  const closingNotesRef = useRef<HTMLTextAreaElement | null>(null);
   const openingAmount = parseFloat(session.opening_amount || '0');
   const expectedAmount = parseFloat(session.expected_cash_amount ?? session.expected_amount ?? '0');
   const isDifference = difference !== 0;
+
+  useEffect(() => {
+    if (open && isDifference) {
+      window.setTimeout(() => closingNotesRef.current?.focus(), 0);
+    }
+  }, [isDifference, open]);
 
   return (
     <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -160,11 +167,14 @@ export function CloseSessionDialog({
               Nota sobre la diferencia *
             </label>
             <Textarea
+              ref={closingNotesRef}
               id="closing_notes"
               value={closingNotes}
               onChange={(e) => onClosingNotesChange(e.target.value)}
               placeholder="Explique la diferencia..."
               rows={2}
+              aria-invalid={isDifference && !closingNotes.trim()}
+              aria-describedby={isDifference && !closingNotes.trim() ? 'closing-notes-error' : undefined}
             />
           </div>
         )}
@@ -177,7 +187,7 @@ export function CloseSessionDialog({
         </AlertDialogFooter>
 
         {isDifference && !closingNotes.trim() && (
-          <div className="mt-2 flex items-center gap-2 text-sm text-destructive">
+          <div id="closing-notes-error" role="alert" className="mt-2 flex items-center gap-2 text-sm text-destructive">
             <AlertTriangle className="h-4 w-4" />
             <span>La nota es obligatoria cuando hay diferencia.</span>
           </div>

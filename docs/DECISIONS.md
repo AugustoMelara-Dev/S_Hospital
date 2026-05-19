@@ -397,3 +397,40 @@ Consecuencia:
 
 - El CTA visible desde POS lleva a Caja cuando falta sesion abierta.
 - El backend mantiene sus permisos y reglas; la UI evita el camino operativo ambiguo.
+
+### 2026-05-18 - Preflight final de produccion
+
+Decision:
+
+- `PRODUCTION_READY` queda ligado a evidencia ejecutable del servidor final, no solo a docs.
+- `scripts/production_readiness_preflight.ps1` valida entorno production, build frontend, rutas `/up`, `/login`, `/verify-email`, herramientas MySQL/dump, carpeta de backups y pruebas fisicas documentadas.
+- `scripts/install_backup_tasks_windows.ps1` registra tareas Windows para worker continuo de backups y backup diario programado.
+- La evidencia de segunda PC LAN e impresora fisica se documenta en archivos separados bajo `qa/` y el preflight la exige por defecto.
+- La evidencia fisica queda obligatoria por defecto; solo puede omitirse con `-AllowMissingPhysicalProof`, y esa salida no puede llamarse `PRODUCTION_READY`.
+- Las tareas Windows no se sobrescriben silenciosamente; `-UpdateExisting` debe usarse de forma explicita.
+
+Motivo:
+
+- El cierre real depende de entorno, red y hardware; esos puntos deben fallar de forma visible hasta que existan pruebas fisicas.
+
+Consecuencia:
+
+- El codigo puede avanzar como paquete operativo listo para servidor final, pero la etiqueta `PRODUCTION_READY` solo se usa despues del preflight completo y evidencia de campo.
+
+### 2026-05-19 - Backups automaticos diarios y permisos manuales
+
+Decision:
+
+- Laravel registra `hospital:backup --type=scheduled` en el scheduler diario a las `02:00`.
+- La hora operativa se puede ajustar con `HOSPITAL_DAILY_BACKUP_TIME=HH:MM`.
+- El backup automatico queda como tarea de sistema sin usuario web; los backups manuales de UI siguen limitados a `backups.view`, `backups.create` y `backups.download`.
+
+Motivo:
+
+- El servidor LAN debe poder respaldar cada dia aunque nadie entre al panel.
+- El panel manual sigue siendo una accion administrativa auditada, no una herramienta disponible para supervisor o cajero.
+
+Consecuencia:
+
+- Produccion puede usar `php artisan schedule:run` via Programador de tareas o el helper Windows directo.
+- La UI muestra backups programados como creados por `Sistema`; la seguridad real permanece en backend por permisos.

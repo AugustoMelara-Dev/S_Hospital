@@ -26,45 +26,29 @@ class ReportController extends Controller
 
     public function income(DateRangeReportRequest $request, IncomeReportService $reports): JsonResponse
     {
-        $filters = $request->validated();
-
-        if (! $request->user()->can('cash.close_any')) {
-            if (
-                ! empty($filters['cash_session_id'])
-                && CashRegisterSession::query()
-                    ->whereKey($filters['cash_session_id'])
-                    ->where('user_id', $request->user()->id)
-                    ->doesntExist()
-            ) {
-                abort(403);
-            }
-
-            $filters['user_id'] = $request->user()->id;
-        }
-
         return response()->json([
-            'data' => $reports->report($filters),
+            'data' => $reports->report($this->scopedFilters($request)),
         ]);
     }
 
     public function categories(DateRangeReportRequest $request, CategoryReportService $reports): JsonResponse
     {
         return response()->json([
-            'data' => $reports->report($request->validated()),
+            'data' => $reports->report($this->scopedFilters($request)),
         ]);
     }
 
     public function services(DateRangeReportRequest $request, ServiceSalesReportService $reports): JsonResponse
     {
         return response()->json([
-            'data' => $reports->report($request->validated()),
+            'data' => $reports->report($this->scopedFilters($request)),
         ]);
     }
 
     public function operations(DateRangeReportRequest $request, OperationsReportService $reports): JsonResponse
     {
         return response()->json([
-            'data' => $reports->report($request->validated(), $request->user()->can('backups.view')),
+            'data' => $reports->report($this->scopedFilters($request), $request->user()->can('backups.view')),
         ]);
     }
 
@@ -77,10 +61,11 @@ class ReportController extends Controller
     ): StreamedResponse {
         $request->user()->can('reports.export') || abort(403);
 
-        $income = $incomeReports->report($request->validated());
-        $categories = $categoryReports->report($request->validated());
-        $services = $serviceReports->report($request->validated());
-        $operations = $operationReports->report($request->validated(), $request->user()->can('backups.view'));
+        $filters = $this->scopedFilters($request);
+        $income = $incomeReports->report($filters);
+        $categories = $categoryReports->report($filters);
+        $services = $serviceReports->report($filters);
+        $operations = $operationReports->report($filters, $request->user()->can('backups.view'));
         $filename = sprintf('reporte-hospital-%s-a-%s.csv', $request->dateFrom(), $request->dateTo());
 
         return response()->streamDownload(function () use ($income, $categories, $services, $operations): void {
@@ -151,5 +136,31 @@ class ReportController extends Controller
         return response()->json([
             'data' => $reports->report($cashSession),
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function scopedFilters(DateRangeReportRequest $request): array
+    {
+        $filters = $request->validated();
+
+        if ($request->user()->can('cash.close_any')) {
+            return $filters;
+        }
+
+        if (
+            ! empty($filters['cash_session_id'])
+            && CashRegisterSession::query()
+                ->whereKey($filters['cash_session_id'])
+                ->where('user_id', $request->user()->id)
+                ->doesntExist()
+        ) {
+            abort(403);
+        }
+
+        $filters['user_id'] = $request->user()->id;
+
+        return $filters;
     }
 }
