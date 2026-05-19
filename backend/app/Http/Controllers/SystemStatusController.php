@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\BackupLog;
+use App\Models\FiscalSequence;
+use App\Models\FiscalSetting;
+use App\Models\Service;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
@@ -130,6 +134,26 @@ class SystemStatusController extends Controller
                 'runtime' => $this->runtimeStatus(),
                 'readiness' => $this->readinessStatus(),
                 'preflight' => $this->preflightStatus(),
+            ],
+        ]);
+    }
+
+    public function setupStatus(): JsonResponse
+    {
+        $fiscalSettings = FiscalSetting::query()->exists();
+        $adminExists = User::role('admin')->exists();
+        $catalogHasServices = Service::query()->exists();
+        $fiscalSequenceExists = FiscalSequence::query()->exists();
+
+        $needsSetup = ! ($fiscalSettings && $adminExists && $catalogHasServices && $fiscalSequenceExists);
+
+        return response()->json([
+            'needs_setup' => $needsSetup,
+            'steps' => [
+                'fiscal_settings' => $fiscalSettings,
+                'admin_exists' => $adminExists,
+                'catalog_has_services' => $catalogHasServices,
+                'fiscal_sequence_exists' => $fiscalSequenceExists,
             ],
         ]);
     }
@@ -471,8 +495,8 @@ class SystemStatusController extends Controller
     }
 
     /**
-     * @param array<int, string> $requiredFields
-     * @param array<int, string> $requiredChecks
+     * @param  array<int, string>  $requiredFields
+     * @param  array<int, string>  $requiredChecks
      * @return array{status: string, detail: string}
      */
     private function evaluateProofFile(string $relativePath, array $requiredFields, array $requiredChecks): array

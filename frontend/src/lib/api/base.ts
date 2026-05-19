@@ -1,6 +1,10 @@
 let sessionExpiredHandler: (() => void) | null = null;
 let requestChain: Promise<unknown> = Promise.resolve();
 
+export function resetRequestChain() {
+  requestChain = Promise.resolve();
+}
+
 export class ApiError extends Error {
   readonly status: number;
   readonly validationErrors?: Record<string, string[]>;
@@ -126,13 +130,20 @@ export const apiClient = {
       const xsrfToken = method === 'GET' || method === 'HEAD' ? null : cookieValue('XSRF-TOKEN');
 
       try {
+        const headers: Record<string, string> = {
+          Accept: 'application/json',
+          ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+        };
+
+        if (!(options.body instanceof FormData)) {
+          headers['Content-Type'] = 'application/json';
+        }
+
         return await fetch(this.url(path), {
           ...options,
           credentials: 'include',
           headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+            ...headers,
             ...options.headers,
           },
         });

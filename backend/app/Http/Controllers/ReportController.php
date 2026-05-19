@@ -5,18 +5,30 @@ namespace App\Http\Controllers;
 use App\Actions\Reports\CashSessionReportService;
 use App\Actions\Reports\CategoryReportService;
 use App\Actions\Reports\DailyReportService;
+use App\Actions\Reports\DashboardReportService;
+use App\Actions\Reports\ExcelReportService;
 use App\Actions\Reports\IncomeReportService;
 use App\Actions\Reports\OperationsReportService;
 use App\Actions\Reports\ServiceSalesReportService;
 use App\Http\Requests\Reports\DailyReportRequest;
+use App\Http\Requests\Reports\DashboardReportRequest;
 use App\Http\Requests\Reports\DateRangeReportRequest;
 use App\Models\CashRegisterSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
+    public function dashboard(DashboardReportRequest $request, DashboardReportService $reports): JsonResponse
+    {
+        return response()->json([
+            'data' => $reports->report(),
+        ]);
+    }
+
     public function daily(DailyReportRequest $request, DailyReportService $reports): JsonResponse
     {
         return response()->json([
@@ -66,58 +78,31 @@ class ReportController extends Controller
         $categories = $categoryReports->report($filters);
         $services = $serviceReports->report($filters);
         $operations = $operationReports->report($filters, $request->user()->can('backups.view'));
-        $filename = sprintf('reporte-hospital-%s-a-%s.csv', $request->dateFrom(), $request->dateTo());
 
-        return response()->streamDownload(function () use ($income, $categories, $services, $operations): void {
-            $output = fopen('php://output', 'w');
+        $excelService = new ExcelReportService;
+        $spreadsheet = $excelService->generate(
+            $income,
+            $categories,
+            $services,
+            $operations,
+            Carbon::parse($request->dateFrom()),
+            Carbon::parse($request->dateTo())
+        );
 
-            if ($output === false) {
-                return;
-            }
+        $writer = new Xlsx($spreadsheet);
+        $writer->setIncludeCharts(true);
+        $filename = sprintf(
+            'reporte-hospital-%s-a-%s.xlsx',
+            $request->dateFrom(),
+            $request->dateTo()
+        );
 
-            fputcsv($output, ['seccion', 'nombre', 'categoria', 'cantidad', 'total']);
-            fputcsv($output, ['ingresos', 'Total cobrado', '', '', $income['total_collected']]);
-
-            foreach ($income['payments_by_method'] as $method => $total) {
-                fputcsv($output, ['metodo_pago', $method, '', '', $total]);
-            }
-
-            foreach ($categories['categories'] as $category) {
-                fputcsv($output, [
-                    'categoria',
-                    $category['category'],
-                    $category['category'],
-                    $category['quantity'],
-                    $category['total'],
-                ]);
-            }
-
-            foreach ($services['services'] as $service) {
-                fputcsv($output, [
-                    'servicio',
-                    $service['service'],
-                    $service['category'],
-                    $service['quantity'],
-                    $service['total'],
-                ]);
-            }
-
-            foreach ($operations['voids'] as $void) {
-                fputcsv($output, ['anulacion', $void['invoice_number'], '', '', $void['total']]);
-            }
-
-            foreach ($operations['reprints'] as $reprint) {
-                fputcsv($output, ['reimpresion', $reprint['invoice_number'], '', '', $reprint['width']]);
-            }
-
-            foreach ($operations['backups'] as $backup) {
-                fputcsv($output, ['backup', $backup['filename'], $backup['status'], '', (string) ($backup['size_bytes'] ?? '')]);
-            }
-
-            foreach ($operations['cashiers'] as $cashier) {
-                fputcsv($output, ['cajero', $cashier['name'], $cashier['username'], (string) $cashier['payment_count'], $cashier['total_collected']]);
-            }
-        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+        return response()->streamDownload(function () use ($writer): void {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 
     public function cashSession(

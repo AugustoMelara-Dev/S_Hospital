@@ -267,7 +267,7 @@ export function IncomeReportTab({
             <div className="flex justify-end">
               <Button variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar CSV
+                Exportar Excel
               </Button>
             </div>
           )}

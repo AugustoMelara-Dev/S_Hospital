@@ -16,6 +16,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FiscalStatusCard } from './components/FiscalStatusCard';
 import { FiscalSummary } from './components/FiscalSummary';
+import { useTheme, COLOR_THEMES, type ColorTheme } from '@/hooks/useTheme';
+import { Palette, UploadCloud, Check, Sparkles, Building2 } from 'lucide-react';
 
 type FiscalSettingsViewProps = {
   canEdit: boolean;
@@ -37,11 +39,15 @@ type SequenceFormData = {
 };
 
 export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProps) {
+  const { colorTheme, setColorTheme } = useTheme();
   const [settings, setSettings] = useState<FiscalSettings | null>(null);
   const [sequence, setSequence] = useState<FiscalSequence | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const [hospitalForm, setHospitalForm] = useState<SettingsFormData>({
     hospital_name: '',
@@ -59,7 +65,35 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
 
   useEffect(() => {
     void loadFiscalConfiguration();
+    void loadLogo();
   }, []);
+
+  async function loadLogo() {
+    try {
+      const url = await apiClient.getLogo();
+      setLogoUrl(url);
+    } catch {
+      // Ignore
+    }
+  }
+
+  async function handleUploadLogo() {
+    if (!logoFile) return;
+    setUploadingLogo(true);
+    onStatus('Subiendo logo institucional...');
+    try {
+      const url = await apiClient.uploadLogo(logoFile);
+      setLogoUrl(url);
+      onStatus('Logo de la clínica actualizado con éxito.');
+      setLogoFile(null);
+    } catch (err) {
+      const msg = userSafeErrorMessage(err, 'No se pudo subir el logo.');
+      onStatus(msg);
+      setError(msg);
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
 
   async function loadFiscalConfiguration() {
     setLoading(true);
@@ -182,6 +216,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
           <TabsTrigger value="hospital">Datos del Hospital</TabsTrigger>
           <TabsTrigger value="secuencia">Secuencia Fiscal</TabsTrigger>
           <TabsTrigger value="receipt">Recibo térmico</TabsTrigger>
+          <TabsTrigger value="branding">Identidad Visual</TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumen" className="mt-0 space-y-6">
@@ -357,6 +392,119 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="branding" className="mt-0">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Logo upload card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="size-5 text-secondary" />
+                  Logo Institucional
+                </CardTitle>
+                <CardDescription>
+                  Suba el logo oficial de su clínica u hospital para encabezar recibos, facturas impresas y pantallas de inicio de sesión.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-border rounded-lg bg-slate-50/50 dark:bg-slate-900/50">
+                  {logoUrl ? (
+                    <div className="relative group flex flex-col items-center">
+                      <img
+                        src={logoUrl}
+                        alt="Logo institucional"
+                        className="max-h-24 object-contain rounded p-2 bg-white border border-border"
+                      />
+                      <span className="text-[10px] text-muted-foreground mt-2">Logo Cargado</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center text-muted-foreground">
+                      <UploadCloud className="size-10 mb-2 text-slate-400" />
+                      <span className="text-xs">Ningún logo cargado (Se usará el logo por defecto)</span>
+                    </div>
+                  )}
+                </div>
+
+                {canEdit && (
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="logo-input">Seleccionar nuevo logo (.png, .jpg, .jpeg - máx. 2MB)</Label>
+                      <Input
+                        id="logo-input"
+                        type="file"
+                        accept="image/png, image/jpeg, image/jpg"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) setLogoFile(file);
+                        }}
+                      />
+                    </div>
+                    {logoFile && (
+                      <Button
+                        onClick={handleUploadLogo}
+                        disabled={uploadingLogo}
+                        className="w-full gap-2"
+                      >
+                        {uploadingLogo ? 'Subiendo...' : 'Actualizar Logo'}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Colors theme selector card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="size-5 text-secondary" />
+                  Color de Marca / Tema
+                </CardTitle>
+                <CardDescription>
+                  Personalice el color primario de acento de la aplicación para adaptarlo a la identidad visual de su institución de salud.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-3">
+                  {(Object.keys(COLOR_THEMES) as ColorTheme[]).map((themeKey) => {
+                    const themeObj = COLOR_THEMES[themeKey];
+                    const active = colorTheme === themeKey;
+                    
+                    return (
+                      <button
+                        key={themeKey}
+                        onClick={() => setColorTheme(themeKey)}
+                        className={`flex items-center justify-between p-3.5 rounded-lg border text-left transition-all ${
+                          active
+                            ? 'border-secondary bg-secondary/5 shadow-sm font-semibold'
+                            : 'border-border hover:bg-slate-50 dark:hover:bg-slate-900/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span
+                            className="size-5 rounded-full border border-black/10"
+                            style={{ backgroundColor: themeObj.light.secondary }}
+                          />
+                          <span className="text-sm text-foreground">{themeObj.name}</span>
+                        </div>
+                        {active && (
+                          <Check className="size-4 text-secondary shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="rounded-lg bg-teal-50 dark:bg-slate-900 border border-teal-100 p-3.5 flex gap-2">
+                  <Sparkles className="size-4 text-teal-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-teal-800 dark:text-teal-400">
+                    <strong>Aplicación en tiempo real:</strong> Al seleccionar una paleta de color, los botones, bordes, estados activos y acentos visuales de toda la interfaz se actualizan al instante sin reiniciar sesión.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </>

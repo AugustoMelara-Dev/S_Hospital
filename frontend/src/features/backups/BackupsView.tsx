@@ -72,7 +72,10 @@ function saveBlob(blob: Blob, filename: string) {
 }
 
 export function BackupsView({ user, onStatus }: BackupsViewProps) {
-  const [backups, setBackups] = useState<BackupLog[]>([]);
+  let [backups, setBackups] = useState<BackupLog[]>([]);
+  if (!Array.isArray(backups)) {
+    backups = [];
+  }
   const [meta, setMeta] = useState<PaginatedMeta | null>(null);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -85,12 +88,14 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const canCreate = user.permissions.includes('backups.create');
   const canDownload = user.permissions.includes('backups.download');
 
-  const pendingCount = backups.filter(b => b.status === 'pending').length;
-  const successCount = backups.filter(b => b.status === 'success').length;
-  const failedCount = backups.filter(b => b.status === 'failed').length;
+  const backupsList = Array.isArray(backups) ? backups : [];
 
-  const lastSuccessBackup = backups.find(b => b.status === 'success');
-  const lastFailedBackup = backups.find(b => b.status === 'failed');
+  const pendingCount = backupsList.filter(b => b.status === 'pending').length;
+  const successCount = backupsList.filter(b => b.status === 'success').length;
+  const failedCount = backupsList.filter(b => b.status === 'failed').length;
+
+  const lastSuccessBackup = backupsList.find(b => b.status === 'success');
+  const lastFailedBackup = backupsList.find(b => b.status === 'failed');
 
   useEffect(() => {
     void loadBackups(page);
@@ -101,7 +106,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   }, []);
 
   useEffect(() => {
-    if (!backups.some((backup) => backup.status === 'pending')) {
+    if (!backupsList.some((backup) => backup.status === 'pending')) {
       return;
     }
 
@@ -185,7 +190,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     }
   }
 
-  const isEmpty = backups.length === 0 && !loading;
+  const isEmpty = backupsList.length === 0 && !loading;
 
   return (
     <section id="backups" aria-labelledby="backups-title">
@@ -527,14 +532,14 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {backups.length === 0 && (
+                {backupsList.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
                       No hay backups con este estado. Quite el filtro para ver todos.
                     </TableCell>
                   </TableRow>
                 )}
-                {backups.map((backup) => (
+                {backupsList.map((backup) => (
                   <TableRow key={backup.id}>
                     <TableCell>{formatDate(backup.completed_at ?? backup.created_at)}</TableCell>
                     <TableCell className="font-mono text-sm">{backup.filename}</TableCell>

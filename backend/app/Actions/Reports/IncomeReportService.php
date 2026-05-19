@@ -75,6 +75,18 @@ class IncomeReportService
                 }
             });
 
+        $billedCents = Invoice::query()
+            ->where('status', '!=', Invoice::STATUS_VOID)
+            ->whereBetween('issued_at', [$start, $end])
+            ->when(! empty($filters['user_id']), function (Builder $query) use ($filters): void {
+                $query->where('user_id', $filters['user_id']);
+            })
+            ->when(! empty($filters['cash_session_id']), function (Builder $query) use ($filters): void {
+                $query->where('cash_session_id', $filters['cash_session_id']);
+            })
+            ->selectRaw('COALESCE(SUM(ROUND(total * 100)), 0) as billed_cents')
+            ->value('billed_cents');
+
         return [
             'date_from' => $filters['date_from'],
             'date_to' => $filters['date_to'],
@@ -87,6 +99,7 @@ class IncomeReportService
                 'method' => $filters['method'] ?? null,
                 'status' => $filters['status'] ?? null,
             ],
+            'total_billed' => $this->centsToMoney($billedCents),
             'total_collected' => $this->centsToMoney($summary?->collected_cents),
             'payments_by_method' => $methods,
             'payment_count' => (int) ($summary?->payment_count ?? 0),

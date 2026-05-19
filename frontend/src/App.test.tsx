@@ -8,6 +8,8 @@ import { localDateString } from './features/invoices/InvoiceHistoryView';
 import { ReceiptPreview } from './features/receipts/ReceiptPreview';
 import { apiClient, type ReceiptData } from './lib/api';
 import { queryClient } from './lib/query-client';
+import { resetRequestChain } from './lib/api/base';
+
 
 describe('App', () => {
   function mockSystemStatus() {
@@ -168,8 +170,10 @@ describe('App', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    resetRequestChain();
     queryClient.clear();
     window.history.pushState({}, '', '/');
+    vi.spyOn(apiClient, 'getLogo').mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -522,7 +526,7 @@ describe('App', () => {
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
   });
 
-  it('exports reports through the protected backend CSV endpoint', async () => {
+  it('exports reports through the protected backend Excel endpoint', async () => {
     window.history.pushState({}, '', '/reports');
     Object.defineProperty(URL, 'createObjectURL', {
       configurable: true,
@@ -585,7 +589,7 @@ describe('App', () => {
       if (url.includes('/api/reports/export')) {
         return {
           ok: true,
-          blob: async () => new Blob(['seccion,nombre,categoria,cantidad,total'], { type: 'text/csv' }),
+          blob: async () => new Blob(['excel-data'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
         } as Response;
       }
 
@@ -595,7 +599,7 @@ describe('App', () => {
     render(<App />);
 
     expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
-    fireEvent.click(await screen.findByRole('button', { name: /exportar csv/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /exportar excel/i }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -607,7 +611,7 @@ describe('App', () => {
     expect(createObjectUrl).toHaveBeenCalled();
     expect(revokeObjectUrl).toHaveBeenCalledWith('blob:report');
   });
-  it('hides local report csv export without reports export permission', async () => {
+  it('hides local report excel export without reports export permission', async () => {
     window.history.pushState({}, '', '/reports');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
@@ -701,11 +705,11 @@ describe('App', () => {
     activateTab(/servicios/i);
     fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
     expect(await screen.findByText(/glucosa/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /exportar csv/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /exportar excel/i })).not.toBeInTheDocument();
     expect(screen.getByText(/requiere permiso de exportacion/i)).toBeInTheDocument();
 
     activateTab(/auditor/i);
-    expect(screen.queryByRole('button', { name: /exportar csv/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /exportar excel/i })).not.toBeInTheDocument();
     expect(screen.getAllByText(/requiere permiso de exportacion/i).length).toBeGreaterThan(0);
   });
 
@@ -2002,6 +2006,11 @@ describe('App', () => {
             must_change_password: true,
           },
         }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 204,
+        json: async () => ({}),
       } as Response)
       .mockResolvedValueOnce({
         ok: true,

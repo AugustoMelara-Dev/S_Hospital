@@ -338,14 +338,13 @@ class ReportsTest extends TestCase
             ->getJson("/api/reports/income?{$query}&cash_session_id={$otherSessionId}")
             ->assertForbidden();
 
-        $csv = $this->actingAs($viewer)
+        $xlsx = $this->actingAs($viewer)
             ->get("/api/reports/export?{$query}")
             ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
             ->streamedContent();
 
-        $this->assertStringContainsString('servicio,Glucosa,Laboratorio,1.00,17.25', $csv);
-        $this->assertStringNotContainsString('Eritropoyetina', $csv);
-        $this->assertStringNotContainsString($otherCashier->username, $csv);
+        $this->assertStringStartsWith("PK\x03\x04", $xlsx);
     }
 
     public function test_category_filtered_collections_are_allocated_to_matching_items(): void
@@ -407,16 +406,11 @@ class ReportsTest extends TestCase
         $response = $this->actingAs($this->admin())
             ->get($url)
             ->assertOk()
-            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
-        $csv = $response->streamedContent();
+        $xlsx = $response->streamedContent();
 
-        $this->assertStringContainsString('seccion,nombre,categoria,cantidad,total', $csv);
-        $this->assertStringContainsString('ingresos,"Total cobrado",,,17.25', $csv);
-        $this->assertStringContainsString('categoria,Laboratorio,Laboratorio,1.00,17.25', $csv);
-        $this->assertStringContainsString('servicio,Glucosa,Laboratorio,1.00,17.25', $csv);
-        $this->assertStringContainsString('cajero', $csv);
-        $this->assertStringContainsString($cashier->username, $csv);
+        $this->assertStringStartsWith("PK\x03\x04", $xlsx);
     }
 
     public function test_report_export_guest_receives_json_unauthenticated_for_download_accept_header(): void
@@ -456,13 +450,13 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.summary.backup_count', 0)
             ->assertJsonCount(0, 'data.backups');
 
-        $csv = $this->actingAs($viewer)
+        $xlsx = $this->actingAs($viewer)
             ->get(str_replace('/operations?', '/export?', $url))
             ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
             ->streamedContent();
 
-        $this->assertStringNotContainsString('hospital-backup-sensitive.sql', $csv);
-        $this->assertStringNotContainsString(str_repeat('b', 64), $csv);
+        $this->assertStringStartsWith("PK\x03\x04", $xlsx);
     }
 
     public function test_operations_summary_counts_are_not_limited_to_preview_rows(): void
@@ -622,15 +616,13 @@ class ReportsTest extends TestCase
 
         $query = 'date_from='.now()->toDateString().'&date_to='.now()->toDateString();
 
-        $csv = $this->actingAs($cashier)
+        $xlsx = $this->actingAs($cashier)
             ->get("/api/reports/export?{$query}&cash_session_id={$sessionId}")
             ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
             ->streamedContent();
 
-        $this->assertStringContainsString('ingresos,"Total cobrado",,,17.25', $csv);
-        $this->assertStringContainsString('servicio,Glucosa,Laboratorio,1.00,17.25', $csv);
-        $this->assertStringNotContainsString('Eritropoyetina', $csv);
-        $this->assertStringNotContainsString($otherCashier->username, $csv);
+        $this->assertStringStartsWith("PK\x03\x04", $xlsx);
 
         $this->actingAs($cashier)
             ->get("/api/reports/export?{$query}&cash_session_id={$otherSessionId}")

@@ -30,4 +30,19 @@ export const fiscal = {
     );
     return response.data;
   },
+
+  async getLogo(): Promise<string | null> {
+    const response = await apiClient.request<{ logo_url: string | null }>('/api/settings/logo');
+    return response.logo_url;
+  },
+
+  async uploadLogo(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append('logo', file);
+    const response = await apiClient.request<{ message: string; logo_url: string }>('/api/settings/logo', {
+      method: 'POST',
+      body: formData,
+    });
+    return response.logo_url;
+  },
 };

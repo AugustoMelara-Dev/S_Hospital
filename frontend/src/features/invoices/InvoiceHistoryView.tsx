@@ -50,6 +50,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState<InvoiceFilters>(() => filtersFromSearchParams(searchParams));
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const invoicesList = Array.isArray(invoices) ? invoices : [];
   const [meta, setMeta] = useState<PaginatedMeta>({ current_page: 1, per_page: 10, total: 0 });
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
@@ -154,7 +155,10 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     try {
       const voided = await apiClient.voidInvoice(selectedInvoice.id, voidReason.trim());
       setSelectedInvoice(voided);
-      setInvoices((current) => current.map((invoice) => (invoice.id === voided.id ? voided : invoice)));
+      setInvoices((current) => {
+        const currentList = Array.isArray(current) ? current : [];
+        return currentList.map((invoice) => (invoice.id === voided.id ? voided : invoice));
+      });
       setReceipt(null);
       setVoidReason('');
       onStatus(`Factura ${voided.invoice_number} anulada.`);
@@ -196,7 +200,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     filters.status
   );
 
-  const isEmpty = invoices.length === 0;
+  const isEmpty = invoicesList.length === 0;
 
   return (
     <section id="historial" className="flex flex-col gap-5" aria-labelledby="invoice-history-title">
@@ -393,7 +397,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invoices.map((invoice) => (
+                  {invoicesList.map((invoice) => (
                     <TableRow key={invoice.id}>
                       <TableCell className="font-mono text-sm">{invoice.invoice_number}</TableCell>
                       <TableCell>{formatDate(invoice.issued_at)}</TableCell>

@@ -10,6 +10,7 @@ type LoginViewProps = {
   onLoginChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  logoUrl?: string | null;
 };
 
 export function LoginView({
@@ -19,13 +20,29 @@ export function LoginView({
   onSubmit,
   password,
   status,
+  logoUrl,
 }: LoginViewProps) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-5">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardDescription>Hospital Billing OS Offline</CardDescription>
-          <CardTitle>Acceso local</CardTitle>
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950 p-5">
+      <Card className="w-full max-w-md shadow-lg border-border">
+        <CardHeader className="text-center pb-2">
+          {logoUrl ? (
+            <div className="flex justify-center mb-4">
+              <img
+                src={logoUrl}
+                alt="Logo institucional"
+                className="max-h-16 object-contain rounded p-1 bg-white border border-border"
+              />
+            </div>
+          ) : (
+            <div className="flex justify-center mb-4">
+              <span className="flex size-12 items-center justify-center rounded-lg bg-secondary text-white font-bold text-lg">
+                H
+              </span>
+            </div>
+          )}
+          <CardDescription className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Hospital Billing OS</CardDescription>
+          <CardTitle className="text-2xl font-bold tracking-tight">Acceso local</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="flex flex-col gap-4">

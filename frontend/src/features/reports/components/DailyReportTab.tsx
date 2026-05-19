@@ -23,10 +23,23 @@ interface DailyReportTabProps {
 export function DailyReportTab({ canExport, daily, dailyDate, error, loading, onDateChange,
   onExport, onSubmit }: DailyReportTabProps) {
 
+  const paymentsByMethod = daily?.payments_by_method || {
+    cash: '0.00',
+    transfer: '0.00',
+    card: '0.00',
+    other: '0.00',
+  };
+  const invoicesByStatus = daily?.invoices_by_status || {
+    issued: { count: 0, total: '0.00' },
+    partial: { count: 0, total: '0.00' },
+    paid: { count: 0, total: '0.00' },
+    void: { count: 0, total: '0.00' },
+  };
+
   const chartData = daily
-    ? Object.entries(daily.payments_by_method).map(([method, amount]) => ({
+    ? Object.entries(paymentsByMethod).map(([method, amount]) => ({
         method: methodLabel(method),
-        amount: Number.parseFloat(amount),
+        amount: Number.parseFloat(amount as string) || 0,
       }))
     : [];
 
@@ -69,7 +82,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
             <KPICard
               title="Facturas"
               value={daily.invoice_count}
-              description={`${daily.invoices_by_status.paid.count + daily.invoices_by_status.partial.count} pagadas`}
+              description={`${(invoicesByStatus.paid?.count ?? 0) + (invoicesByStatus.partial?.count ?? 0)} pagadas`}
               icon={<FileText className="h-4 w-4" />}
             />
             <KPICard
@@ -92,7 +105,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Object.entries(daily.payments_by_method).map(([method, amount]) => (
+                  {Object.entries(paymentsByMethod).map(([method, amount]) => (
                     <TableRow key={method}>
                       <TableCell className="font-medium">{methodLabel(method)}</TableCell>
                       <TableCell className="text-right">L. {amount}</TableCell>
@@ -117,11 +130,11 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Object.entries(daily.invoices_by_status).map(([status, data]) => (
+                  {Object.entries(invoicesByStatus).map(([status, data]) => (
                     <TableRow key={status}>
                       <TableCell className="font-medium">{statusLabel(status)}</TableCell>
-                      <TableCell className="text-right">{data.count}</TableCell>
-                      <TableCell className="text-right">L. {data.total}</TableCell>
+                      <TableCell className="text-right">{(data as any)?.count ?? 0}</TableCell>
+                      <TableCell className="text-right">L. {(data as any)?.total ?? '0.00'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -152,11 +165,11 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
             {canExport ? (
               <Button variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar CSV
+                Exportar Excel
               </Button>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Exportacion CSV requiere permiso de exportacion de reportes.
+                Exportación Excel requiere permiso de exportacion de reportes.
               </p>
             )}
           </div>

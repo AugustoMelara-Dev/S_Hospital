@@ -241,12 +241,12 @@ export function AuditoriaTab({
             <div className="flex justify-end">
               <Button variant="outline" onClick={onExport}>
                 <Download className="mr-2 h-4 w-4" />
-                Exportar CSV
+                Exportar Excel
               </Button>
             </div>
           ) : (
             <p className="text-right text-sm text-muted-foreground">
-              Exportacion CSV requiere permiso de exportacion de reportes.
+              Exportación Excel requiere permiso de exportacion de reportes.
             </p>
           )}
         </>

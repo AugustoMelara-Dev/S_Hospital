@@ -16,6 +16,11 @@ class SystemStatusTest extends TestCase
 
     public function test_admin_can_view_operational_status_without_secret_values(): void
     {
+        $proofRoot = storage_path('framework/testing-production-proofs-empty');
+        File::deleteDirectory($proofRoot);
+        File::ensureDirectoryExists($proofRoot.'/qa');
+        Config::set('hospital.project_root', $proofRoot);
+
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
 

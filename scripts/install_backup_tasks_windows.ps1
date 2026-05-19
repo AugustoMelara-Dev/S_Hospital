@@ -53,8 +53,8 @@ function Show-TaskStatus([string] $taskName) {
     Write-Host "${taskName}: state=$($task.State), lastRun=$($info.LastRunTime), lastResult=$($info.LastTaskResult), nextRun=$($info.NextRunTime)"
 }
 
-$workerArgs = "/c `"$workerScript`" `"$PhpPath`""
-$backupArgs = "/c `"$dailyScript`" `"$PhpPath`""
+$workerArgs = "/c `"`"`$workerScript`" `"$PhpPath`"`""
+$backupArgs = "/c `"`"`$dailyScript`" `"$PhpPath`"`""
 
 Write-Host "Preparing Windows scheduled tasks for Hospital Billing OS backups."
 Write-Host "ProjectRoot: $ProjectRoot"

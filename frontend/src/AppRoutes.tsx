@@ -9,6 +9,7 @@ import { InvoiceHistoryView } from './features/invoices/InvoiceHistoryView';
 import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 import { ReportsView } from './features/reports/ReportsView';
 import { FiscalSettingsView } from './features/settings/FiscalSettingsView';
+import { UsersView } from './features/admin/UsersView';
 import { type AuthUser, type CashSession } from './lib/api';
 
 type AppRoutesProps = {
@@ -27,6 +28,7 @@ type AppRoutesProps = {
   canViewManagerialReports: boolean;
   canViewCashSessionReports: boolean;
   canExportReports: boolean;
+  canViewUsers: boolean;
   cashSession: CashSession | null;
   defaultAuthenticatedRoute: string;
   onQuickCash: () => void;
@@ -52,6 +54,7 @@ export function AppRoutes({
   canViewManagerialReports,
   canViewCashSessionReports,
   canExportReports,
+  canViewUsers,
   cashSession,
   defaultAuthenticatedRoute,
   onQuickCash,
@@ -162,6 +165,14 @@ export function AppRoutes({
         element={
           <PermissionGate allowed={canViewFiscalSettings} reason="Requiere permiso para consultar configuracion fiscal.">
             <FiscalSettingsView canEdit={canEditFiscalSettings} onStatus={onStatus} />
+          </PermissionGate>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <PermissionGate allowed={canViewUsers} reason="Requiere permiso para gestionar usuarios.">
+            <UsersView onStatus={onStatus} />
           </PermissionGate>
         }
       />

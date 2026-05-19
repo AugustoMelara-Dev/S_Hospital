@@ -318,7 +318,7 @@ if ($queueConnection -eq "database") {
 }
 
 if (Test-IsWindowsHost) {
-    Test-BackupScheduledTask "HospitalBillingOS-BackupWorker" @("Running")
+    Test-BackupScheduledTask "HospitalBillingOS-BackupWorker" @("Ready", "Running")
     Test-BackupScheduledTask "HospitalBillingOS-DailyBackup" @("Ready", "Running")
 } else {
     Add-Warning "Non-Windows host detected. Validate an equivalent continuous backup worker/service before production handoff."

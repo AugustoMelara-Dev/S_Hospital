@@ -12,12 +12,15 @@ import { CashBoxView } from './features/cash/CashBoxView';
 import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 import { AppShell } from './layout/AppShell';
 import { queryClient } from './lib/query-client';
+import { apiClient } from './lib/api';
+import { Toaster } from './components/ui/toaster';
 
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <HospitalApp />
+        <Toaster />
       </BrowserRouter>
     </QueryClientProvider>
   );
@@ -28,12 +31,19 @@ function HospitalApp() {
   const navigate = useNavigate();
   const [quickInvoiceOpen, setQuickInvoiceOpen] = useState(false);
   const [quickCashOpen, setQuickCashOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (session.sessionExpired) {
       navigate('/login', { replace: true });
     }
   }, [session.sessionExpired, navigate]);
+
+  useEffect(() => {
+    apiClient.getLogo()
+      .then((url) => setLogoUrl(url))
+      .catch(() => {});
+  }, [session.user]); // Refresh when user changes/logs in
 
   if (session.loading) {
     return <LoadingState label="Cargando sesion..." />;
@@ -48,6 +58,7 @@ function HospitalApp() {
         onLoginChange={session.setLogin}
         onPasswordChange={session.setPassword}
         onSubmit={session.handleLogin}
+        logoUrl={logoUrl}
       />
     );
   }
@@ -70,6 +81,7 @@ function HospitalApp() {
       onLogout={session.handleLogout}
       status={session.status}
       user={session.user}
+      logoUrl={logoUrl}
     >
       {!session.hasAnyOperationalPermission ? (
         <EmptyState
@@ -95,6 +107,7 @@ function HospitalApp() {
           canViewManagerialReports={session.canViewManagerialReports}
           canViewCashSessionReports={session.canViewCashSessionReports}
           canExportReports={session.canExportReports}
+          canViewUsers={session.canViewUsers}
           cashSession={session.cashSession}
           defaultAuthenticatedRoute={session.defaultAuthenticatedRoute}
           onQuickCash={() => setQuickCashOpen(true)}

@@ -174,12 +174,12 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
             <div className="flex justify-end">
               <Button variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar CSV
+                Exportar Excel
               </Button>
             </div>
           ) : (
             <p className="text-right text-sm text-muted-foreground">
-              Exportacion CSV requiere permiso de exportacion de reportes.
+              Exportación Excel requiere permiso de exportacion de reportes.
             </p>
           )}
         </>

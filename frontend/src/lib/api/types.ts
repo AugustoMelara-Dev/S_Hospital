@@ -478,3 +478,33 @@ export type ReportFilters = {
   method?: Payment['method'] | '' | null;
   status?: Invoice['status'] | '' | null;
 };
+
+export type DashboardReport = {
+  last_7_days: Array<{
+    date: string;
+    total_billed: string;
+    total_collected: string;
+    invoice_count: number;
+    payment_count: number;
+  }>;
+  current_month: {
+    total_billed: string;
+    total_collected: string;
+    invoice_count: number;
+    payment_count: number;
+  };
+  payments_by_method: MoneyByMethod;
+  top_services: Array<{
+    service_name: string;
+    category_name: string;
+    quantity: string;
+    total: string;
+  }>;
+  cashiers_summary: Array<{
+    user_id: number;
+    name: string;
+    username: string;
+    payment_count: number;
+    total_collected: string;
+  }>;
+};

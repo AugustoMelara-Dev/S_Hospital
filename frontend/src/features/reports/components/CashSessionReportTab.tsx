@@ -188,11 +188,11 @@ export function CashSessionReportTab({
             {canExport ? (
               <Button variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar CSV
+                Exportar Excel
               </Button>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Exportacion CSV requiere permiso de exportacion de reportes.
+                Exportación Excel requiere permiso de exportacion de reportes.
               </p>
             )}
           </div>
