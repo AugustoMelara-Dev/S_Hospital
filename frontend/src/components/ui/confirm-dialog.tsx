@@ -35,7 +35,6 @@ export function ConfirmDialog({
       <AlertDialogPrimitive.Portal>
         <AlertDialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-950/45" />
         <AlertDialogPrimitive.Content
-          role="dialog"
           className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-1.5rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card p-5 text-card-foreground shadow-lg"
         >
           <div className="flex flex-col gap-4">

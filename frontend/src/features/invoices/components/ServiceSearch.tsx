@@ -47,19 +47,7 @@ export function ServiceSearch({
       selectedCategoryId === 'all' ||
       service.category_id === selectedCategoryId;
 
-    if (!search.trim()) return matchesCategory ? service : null;
-
-    const needle = search.toLowerCase().trim();
-    const haystack = [
-      service.name,
-      service.category?.name ?? '',
-      service.scan_code ?? '',
-      service.barcode ?? '',
-      service.qr_code ?? '',
-    ];
-    const matchesSearch = haystack.some((h) => h.toLowerCase().includes(needle));
-
-    return matchesCategory && matchesSearch ? service : null;
+    return matchesCategory;
   });
   const hasIntent = Boolean(search.trim()) || (selectedCategoryId !== undefined && selectedCategoryId !== 'all');
   const visibleServices = hasIntent ? filteredServices.slice(0, SERVICE_RESULT_LIMIT) : [];
@@ -75,6 +63,16 @@ export function ServiceSearch({
   useEffect(() => {
     if (!addFirstWhenReady || loading || !firstVisibleService) return;
     handleAddService(firstVisibleService);
+  }, [addFirstWhenReady, firstVisibleService, loading]);
+
+  useEffect(() => {
+    setAddFirstWhenReady(false);
+  }, [search, selectedCategoryId]);
+
+  useEffect(() => {
+    if (!loading && addFirstWhenReady && !firstVisibleService) {
+      setAddFirstWhenReady(false);
+    }
   }, [addFirstWhenReady, firstVisibleService, loading]);
 
   return (
@@ -130,8 +128,14 @@ export function ServiceSearch({
 
         <div>
           <Label className="mb-1.5 block" id="service-category-label">Categoria</Label>
-          <Tabs value={selectedCategoryId === undefined ? 'all' : String(selectedCategoryId)} onValueChange={(v) => onCategoryChange(v === 'all' ? 'all' : Number(v))}>
-            <TabsList className="flex flex-wrap h-auto p-1 gap-1">
+          <Tabs
+            value={selectedCategoryId === undefined ? 'all' : String(selectedCategoryId)}
+            onValueChange={(v) => onCategoryChange(v === 'all' ? 'all' : Number(v))}
+          >
+            <TabsList
+              aria-labelledby="service-category-label"
+              className="flex h-auto max-w-full flex-nowrap gap-1 overflow-x-auto p-1"
+            >
               <TabsTrigger value="all">Todos</TabsTrigger>
               {categories.map((cat) => (
                 <TabsTrigger key={cat.id} value={String(cat.id)}>
@@ -183,7 +187,7 @@ export function ServiceSearch({
                 <button
                   key={service.id}
                   type="button"
-                  className="group relative flex items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-all duration-150 hover:border-primary/40 hover:bg-accent/40 hover:scale-[1.02] hover:shadow-sm active:scale-[0.99] disabled:opacity-50 disabled:hover:scale-100 disabled:hover:bg-card disabled:hover:border-border disabled:hover:shadow-none cursor-pointer"
+                  className="group relative flex items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-all duration-150 hover:border-primary/40 hover:bg-accent/40 hover:scale-[1.02] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.99] disabled:opacity-50 disabled:hover:scale-100 disabled:hover:bg-card disabled:hover:border-border disabled:hover:shadow-none cursor-pointer"
                   onClick={() => handleAddService(service)}
                 >
                   <div className="flex min-w-0 flex-1 flex-col gap-1">

@@ -107,6 +107,7 @@ export function CashBoxView({
   const expectedCashAmount = session?.expected_cash_amount ?? session?.expected_amount ?? session?.opening_amount ?? '0.00';
   const hasValidClosingAmount = /^\d+(\.\d{1,2})?$/.test(closingAmount.trim());
   const difference = hasValidClosingAmount ? formatCents(parseCents(closingAmount) - parseCents(expectedCashAmount)) : null;
+  const hasCashDifference = difference !== null && difference !== 0;
   const isOpen = session?.status === 'open';
 
   useEffect(() => {
@@ -273,7 +274,7 @@ export function CashBoxView({
                     )}
                   </div>
 
-                  {difference !== null && difference !== 0 && (
+                  {hasCashDifference && (
                     <Alert variant="warning">
                       <AlertTriangle className="h-4 w-4" />
                       <div>
@@ -290,7 +291,7 @@ export function CashBoxView({
                       id="closing_notes"
                       value={closingNotes}
                       onChange={(e) => setClosingNotes(e.target.value)}
-                      placeholder={difference !== 0 ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional...'}
+                      placeholder={hasCashDifference ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional...'}
                       rows={2}
                     />
                   </div>

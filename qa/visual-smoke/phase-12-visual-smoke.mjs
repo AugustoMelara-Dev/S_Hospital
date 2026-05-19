@@ -71,6 +71,11 @@ async function waitServicesReady(page) {
 }
 
 async function cartItemCount(page) {
+  const removeButtons = await page.getByRole('button', { name: /quitar/i }).count().catch(() => 0);
+  if (removeButtons > 0) {
+    return removeButtons;
+  }
+
   const emptyCartVisible = await page.getByText(/no hay servicios agregados/i).isVisible().catch(() => false);
   if (emptyCartVisible) return 0;
 
@@ -314,6 +319,7 @@ async function main() {
       await page.getByRole('button', { name: /escanear/i }).click();
       await waitSettled(page);
       await waitServicesReady(page);
+      await page.getByRole('button', { name: /quitar/i }).first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
       await page.getByRole('button', { name: /emitir y cobrar|emitir factura/i }).waitFor({ state: 'visible', timeout: 15000 });
     } else {
       const searchInput = page.getByLabel(/buscar por nombre/i);

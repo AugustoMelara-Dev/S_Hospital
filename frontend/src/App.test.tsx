@@ -1774,7 +1774,7 @@ describe('App', () => {
     });
   });
 
-  it('renders 58mm receipt print structure with fiscal valid until date', () => {
+  it('renders 58mm receipt print structure with fiscal valid until date', async () => {
     const receipt: ReceiptData = {
       width: '58mm',
       hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
@@ -1831,7 +1831,7 @@ describe('App', () => {
     expect(screen.getByText(/vence/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /imprimir/i }));
     expect(printSpy).toHaveBeenCalledOnce();
-    expect(document.body.dataset.receiptWidth).toBeUndefined();
+    await waitFor(() => expect(document.body.dataset.receiptWidth).toBeUndefined());
   });
 
   it('lets a user with required password change submit a new password', async () => {

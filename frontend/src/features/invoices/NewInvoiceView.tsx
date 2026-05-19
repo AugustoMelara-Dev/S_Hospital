@@ -118,13 +118,16 @@ export function NewInvoiceView({
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement;
+      const isInsideDialog = Boolean(target.closest('[data-dialog-content], [role="dialog"], [role="alertdialog"]'));
+      const hasOpenOverlay = showConfirmation || showPayment || showSuccess || showReceipt || showClearConfirm;
+
       if (e.ctrlKey && e.key.toLowerCase() === 'n') {
         e.preventDefault();
         patientInputRef.current?.focus();
       }
 
       if (e.key === 'Escape') {
-        const target = e.target as HTMLElement;
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
         if (showConfirmation || showPayment || showSuccess || showReceipt) return;
         if (target.closest('[data-dialog-content]')) return;
@@ -136,6 +139,11 @@ export function NewInvoiceView({
 
       if (e.ctrlKey && e.key === 'Enter') {
         e.preventDefault();
+
+        if (isInsideDialog || hasOpenOverlay) {
+          return;
+        }
+
         if (canEmit) {
           handleEmitClick();
         } else {
@@ -146,7 +154,7 @@ export function NewInvoiceView({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canEmit, cartItems.length, handleClearCart, patientName, scanCode, search, showConfirmation, showPayment, showReceipt, showSuccess]);
+  }, [canEmit, cartItems.length, handleClearCart, patientName, scanCode, search, showClearConfirm, showConfirmation, showPayment, showReceipt, showSuccess]);
 
   const preview = useMemo(() => calculatePreview(cartItems), [cartItems]);
 
@@ -500,7 +508,7 @@ export function NewInvoiceView({
   function handleReceiptOpenChange(nextOpen: boolean) {
     setShowReceipt(nextOpen);
 
-    if (!nextOpen && issuedInvoice?.status === 'paid') {
+    if (!nextOpen && (issuedInvoice?.status === 'paid' || issuedInvoice?.status === 'partial')) {
       setShowSuccess(true);
     }
   }
@@ -649,10 +657,16 @@ export function NewInvoiceView({
         open={showReceipt && Boolean(receipt)}
         onOpenChange={handleReceiptOpenChange}
         size="lg"
-        title="Preview térmico"
+        title="Preview termico"
         description="Solo el ticket se imprime."
       >
-        {receipt ? <ReceiptPreview receipt={receipt} onWidthChange={loadReceipt} /> : null}
+        {receipt ? (
+          <ReceiptPreview
+            receipt={receipt}
+            onWidthChange={loadReceipt}
+            onNewInvoice={handleNuevaFactura}
+          />
+        ) : null}
       </Dialog>
 
       <ConfirmDialog
