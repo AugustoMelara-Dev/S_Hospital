@@ -39,7 +39,7 @@ export function ReportsView({
   canViewManagerial,
   onStatus,
 }: ReportsViewProps) {
-  const [activeTab, setActiveTab] = useState<ReportTab>('diario');
+  const [activeTab, setActiveTab] = useState<ReportTab>(canViewManagerial ? 'diario' : 'caja');
   const [dailyDate, setDailyDate] = useState(today);
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
@@ -68,6 +68,12 @@ export function ReportsView({
       void loadCategories();
     }
   }, [canViewManagerial]);
+
+  useEffect(() => {
+    if (!canViewManagerial && activeTab !== 'caja') {
+      setActiveTab('caja');
+    }
+  }, [activeTab, canViewManagerial]);
 
   async function loadDaily(date: string) {
     setLoading(true);
@@ -156,6 +162,28 @@ export function ReportsView({
     };
   }
 
+  async function downloadBackendExport(filters: ReportFilters) {
+    if (!canExport) {
+      onStatus('Exportacion CSV requiere permiso de exportacion de reportes.');
+      return;
+    }
+
+    onStatus('Preparando exportacion CSV...');
+
+    try {
+      const blob = await apiClient.downloadReportExport(filters);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `reporte-hospital-${filters.date_from ?? today}-a-${filters.date_to ?? today}.csv`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      onStatus('Exportacion CSV descargada.');
+    } catch (error) {
+      const message = userSafeErrorMessage(error, 'No se pudo exportar el reporte.');
+      onStatus(message);
+    }
+  }
   function handleDailySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void loadDaily(dailyDate);
@@ -180,10 +208,14 @@ export function ReportsView({
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ReportTab)} className="space-y-6">
         <TabsList className="bg-muted/50">
-          <TabsTrigger value="diario">Diario</TabsTrigger>
-          <TabsTrigger value="rango">Por Rango</TabsTrigger>
-          <TabsTrigger value="servicios">Servicios</TabsTrigger>
-          <TabsTrigger value="auditoria">AuditorÃ­a</TabsTrigger>
+          {canViewManagerial && (
+            <>
+              <TabsTrigger value="diario">Diario</TabsTrigger>
+              <TabsTrigger value="rango">Por Rango</TabsTrigger>
+              <TabsTrigger value="servicios">Servicios</TabsTrigger>
+              <TabsTrigger value="auditoria">Auditoría</TabsTrigger>
+            </>
+          )}
           {canViewCashSessionReport && (
             <TabsTrigger value="caja">Caja</TabsTrigger>
           )}
@@ -198,6 +230,7 @@ export function ReportsView({
               error={dailyError}
               loading={loading}
               onDateChange={setDailyDate}
+              onExport={() => downloadBackendExport({ date_from: dailyDate, date_to: dailyDate })}
               onSubmit={handleDailySubmit}
             />
           ) : (
@@ -235,6 +268,7 @@ export function ReportsView({
                 onCashSessionChange={setCashSessionId}
                 onCashierChange={setCashierId}
                 onMethodChange={setMethod}
+                onExport={() => downloadBackendExport(reportFilters())}
                 onStatusChange={setStatus}
                 onSubmit={loadRangeReports}
               />
@@ -257,6 +291,7 @@ export function ReportsView({
               serviceSales={serviceSales}
               onDateFromChange={setDateFrom}
               onDateToChange={setDateTo}
+              onExport={() => downloadBackendExport(reportFilters())}
               onSubmit={loadRangeReports}
             />
           ) : (
@@ -276,6 +311,7 @@ export function ReportsView({
               dateTo={dateTo}
               onDateFromChange={setDateFrom}
               onDateToChange={setDateTo}
+              onExport={() => downloadBackendExport(reportFilters())}
               onSubmit={loadRangeReports}
             />
           ) : (
@@ -295,6 +331,7 @@ export function ReportsView({
               loading={loading}
               error={cashError}
               onCashReportIdChange={setCashReportId}
+              onExport={() => downloadBackendExport({ ...reportFilters(), cash_session_id: cashReportId || null })}
               onSubmit={handleCashSubmit}
             />
           ) : (

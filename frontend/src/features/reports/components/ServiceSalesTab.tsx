@@ -17,25 +17,12 @@ interface ServiceSalesTabProps {
   serviceSales: ServiceSalesReport | null;
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
+  onExport: () => void;
   onSubmit: () => void;
 }
 
-export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, serviceSales, onDateFromChange, onDateToChange, onSubmit }: ServiceSalesTabProps) {
-  function exportCSV() {
-    if (!canExport || !serviceSales) return;
-    const rows = [
-      ['Servicio', 'Categoría', 'Cantidad', 'Total'],
-      ...serviceSales.services.map((s) => [s.service, s.category, s.quantity, s.total]),
-    ];
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reporte-servicios-${dateFrom}-a-${dateTo}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, serviceSales, onDateFromChange, onDateToChange,
+  onExport, onSubmit }: ServiceSalesTabProps) {
 
   const chartData = serviceSales
     ? serviceSales.services.slice(0, 10).map((s) => ({
@@ -185,7 +172,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
 
           {canExport ? (
             <div className="flex justify-end">
-              <Button variant="outline" onClick={exportCSV}>
+              <Button variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
                 Exportar CSV
               </Button>

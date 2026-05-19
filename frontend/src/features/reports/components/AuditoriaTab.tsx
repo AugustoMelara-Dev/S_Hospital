@@ -16,6 +16,7 @@ interface AuditoriaTabProps {
   dateTo: string;
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
+  onExport: () => void;
   onSubmit: () => void;
 }
 
@@ -26,6 +27,7 @@ export function AuditoriaTab({
   dateTo,
   onDateFromChange,
   onDateToChange,
+  onExport,
   onSubmit,
 }: AuditoriaTabProps) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -33,59 +35,6 @@ export function AuditoriaTab({
     onSubmit();
   }
 
-  function exportCSV() {
-    if (!canExport || !operations) return;
-    const rows: string[][] = [
-      ['AUDITORIA OPERATIVA'],
-      [`Desde: ${dateFrom}`, `Hasta: ${dateTo}`],
-      [],
-      ['RESUMEN'],
-      ['Anulaciones', String(operations.summary.void_count)],
-      ['Reimpresiones', String(operations.summary.reprint_count)],
-      ['Backups', String(operations.summary.backup_count)],
-      ['Backups Fallidos', String(operations.summary.failed_backup_count)],
-      ['Cajeros', String(operations.summary.cashier_count)],
-      [],
-      ['ANULACIONES'],
-      ['Factura', 'Paciente', 'Total', 'Motivo', 'Usuario', 'Fecha'],
-      ...operations.voids.map((v) => [
-        v.invoice_number,
-        v.patient_name,
-        v.total,
-        v.reason ?? '',
-        v.user ?? '',
-        formatDate(v.voided_at),
-      ]),
-      [],
-      ['REIMPRESIONES'],
-      ['Factura', 'Ancho', 'Motivo', 'Usuario', 'Fecha'],
-      ...operations.reprints.map((r) => [
-        r.invoice_number ?? '',
-        r.width ?? '',
-        r.reason ?? '',
-        r.user ?? '',
-        formatDate(r.created_at),
-      ]),
-      [],
-      ['BACKUPS'],
-      ['Archivo', 'Estado', 'Tamano', 'Usuario', 'Fecha'],
-      ...operations.backups.map((b) => [
-        b.filename,
-        backupStatusLabel(b.status),
-        formatBytes(b.size_bytes),
-        b.creator ?? 'Sistema',
-        formatDate(b.completed_at ?? b.created_at),
-      ]),
-    ];
-    const csv = rows.map((r) => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `auditoria-${dateFrom}-a-${dateTo}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
 
   const hasOperationalEvents = operations
     ? operations.voids.length > 0 ||
@@ -290,7 +239,7 @@ export function AuditoriaTab({
 
           {canExport ? (
             <div className="flex justify-end">
-              <Button variant="outline" onClick={exportCSV}>
+              <Button variant="outline" onClick={onExport}>
                 <Download className="mr-2 h-4 w-4" />
                 Exportar CSV
               </Button>

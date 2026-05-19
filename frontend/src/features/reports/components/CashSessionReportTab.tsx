@@ -15,6 +15,7 @@ interface CashSessionReportTabProps {
   loading: boolean;
   error: string;
   onCashReportIdChange: (value: string) => void;
+  onExport: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
@@ -25,43 +26,9 @@ export function CashSessionReportTab({
   loading,
   error,
   onCashReportIdChange,
+  onExport,
   onSubmit,
 }: CashSessionReportTabProps) {
-  function exportCSV() {
-    if (!canExport || !cashSession) return;
-    const session = cashSession.cash_session;
-    const rows: string[][] = [
-      ['RESUMEN DE CAJA'],
-      ['Caja #', cashReportId],
-      ['Cajero', session.user?.name ?? 'Sin cajero'],
-      ['Apertura', session.opening_amount],
-      ['Esperado', session.expected_amount ?? '0'],
-      ['Contado', session.closing_amount ?? '0'],
-      ['Diferencia', session.difference_amount ?? '0'],
-      [],
-      ['MÉTODOS DE PAGO'],
-      ['Método', 'Total'],
-      ...Object.entries(cashSession.totals_by_method).map(([m, t]) => [m, t]),
-      [],
-      ['PAGOS'],
-      ['Factura', 'Paciente', 'Método', 'Monto', 'Fecha'],
-      ...cashSession.payments.map((p) => [
-        p.invoice?.invoice_number ?? '—',
-        p.invoice?.patient_name ?? '—',
-        p.method,
-        p.amount,
-        formatDate(p.paid_at),
-      ]),
-    ];
-    const csv = rows.map((r) => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `caja-${cashReportId}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
 
   return (
     <div className="space-y-6">
@@ -219,7 +186,7 @@ export function CashSessionReportTab({
 
           <div className="flex justify-end">
             {canExport ? (
-              <Button variant="outline" onClick={exportCSV}>
+              <Button variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
                 Exportar CSV
               </Button>

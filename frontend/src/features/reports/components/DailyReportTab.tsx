@@ -16,31 +16,12 @@ interface DailyReportTabProps {
   error: string;
   loading: boolean;
   onDateChange: (value: string) => void;
+  onExport: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
-export function DailyReportTab({ canExport, daily, dailyDate, error, loading, onDateChange, onSubmit }: DailyReportTabProps) {
-  function exportCSV() {
-    if (!canExport || !daily) return;
-    const rows = [
-      ['Fecha', daily.date],
-      ['Total Facturado', daily.total_billed],
-      ['Total Cobrado', daily.total_collected],
-      ['Facturas', String(daily.invoice_count)],
-      ['Pagos', String(daily.payment_count)],
-      [],
-      ['MÉTODO', 'CANTIDAD', 'MONTO'],
-      ...Object.entries(daily.payments_by_method).map(([method, amount]) => [method, '1', amount]),
-    ];
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reporte-diario-${dailyDate}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
+export function DailyReportTab({ canExport, daily, dailyDate, error, loading, onDateChange,
+  onExport, onSubmit }: DailyReportTabProps) {
 
   const chartData = daily
     ? Object.entries(daily.payments_by_method).map(([method, amount]) => ({
@@ -169,7 +150,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
 
           <div className="flex justify-end">
             {canExport ? (
-              <Button variant="outline" onClick={exportCSV}>
+              <Button variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
                 Exportar CSV
               </Button>

@@ -34,6 +34,7 @@ interface IncomeReportTabProps {
   onCashSessionChange: (value: string) => void;
   onCashierChange: (value: string) => void;
   onMethodChange: (value: NonNullable<ReportFilters['method']>) => void;
+  onExport: () => void;
   onStatusChange: (value: NonNullable<ReportFilters['status']>) => void;
   onSubmit: () => void;
 }
@@ -57,35 +58,13 @@ export function IncomeReportTab({
   onCashSessionChange,
   onCashierChange,
   onMethodChange,
+  onExport,
   onStatusChange,
   onSubmit,
 }: IncomeReportTabProps) {
-  function exportCSV() {
-    if (!income) return;
-    const rows = [
-      ['Reporte de Ingresos'],
-      ['Desde', dateFrom, 'Hasta', dateTo],
-      [],
-      ['Total Cobrado', income.total_collected],
-      ['Cantidad de Pagos', String(income.payment_count)],
-      ['Facturas', String(invoice_count)],
-      [],
-      ['Método', 'Monto'],
-      ...Object.entries(income.payments_by_method).map(([m, a]) => [m, a]),
-    ];
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reporte-ingresos-${dateFrom}-a-${dateTo}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
 
   const daysInRange = Math.max(1, Math.ceil((new Date(dateTo).getTime() - new Date(dateFrom).getTime()) / (1000 * 60 * 60 * 24)) + 1);
   const averagePerDay = income ? (Number.parseFloat(income.total_collected) / daysInRange).toFixed(2) : '0.00';
-  const invoice_count = income?.invoice_count ?? 0;
 
   const chartData = income
     ? Object.entries(income.payments_by_method).map(([method, amount]) => ({
@@ -286,7 +265,7 @@ export function IncomeReportTab({
 
           {canExport && (
             <div className="flex justify-end">
-              <Button variant="outline" onClick={exportCSV}>
+              <Button variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
                 Exportar CSV
               </Button>

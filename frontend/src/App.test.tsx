@@ -397,6 +397,91 @@ describe('App', () => {
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
   });
 
+  it('exports reports through the protected backend CSV endpoint', async () => {
+    window.history.pushState({}, '', '/reports');
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: vi.fn(() => 'blob:report'),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: vi.fn(),
+    });
+    const createObjectUrl = vi.mocked(URL.createObjectURL);
+    const revokeObjectUrl = vi.mocked(URL.revokeObjectURL);
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Admin Demo',
+              email: 'admin.demo@hospital-billing.local',
+              username: 'admin.demo',
+              active: true,
+              roles: ['admin'],
+              permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/daily')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date: '2026-05-17',
+              total_billed: '17.25',
+              total_collected: '17.25',
+              invoice_count: 1,
+              payment_count: 1,
+              payments_by_method: { cash: '17.25', transfer: '0.00', card: '0.00', other: '0.00' },
+              invoices_by_status: {
+                issued: { count: 0, total: '0.00' },
+                partial: { count: 0, total: '0.00' },
+                paid: { count: 1, total: '17.25' },
+                void: { count: 0, total: '0.00' },
+              },
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+
+      if (url.includes('/api/reports/export')) {
+        return {
+          ok: true,
+          blob: async () => new Blob(['seccion,nombre,categoria,cantidad,total'], { type: 'text/csv' }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    render(<App />);
+
+    expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
+    fireEvent.click(await screen.findByRole('button', { name: /exportar csv/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/reports/export?'),
+        expect.objectContaining({ credentials: 'include' }),
+      );
+    });
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('date_from=') && String(url).includes('date_to='))).toBe(true);
+    expect(createObjectUrl).toHaveBeenCalled();
+    expect(revokeObjectUrl).toHaveBeenCalledWith('blob:report');
+  });
   it('hides local report csv export without reports export permission', async () => {
     window.history.pushState({}, '', '/reports');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
@@ -529,6 +614,31 @@ describe('App', () => {
     expect(screen.queryByLabelText(/fecha diaria/i)).not.toBeInTheDocument();
   });
 
+  it('allows cash-session-only report users to open the cash report tab without managerial reports', async () => {
+    window.history.pushState({}, '', '/reports');
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: {
+          id: 2,
+          name: 'Cajero Demo',
+          email: 'cajero.demo@hospital-billing.local',
+          username: 'cajero.demo',
+          active: true,
+          roles: ['cajero'],
+          permissions: ['reports.cash_session.view'],
+          must_change_password: false,
+        },
+      }),
+    } as Response);
+
+    render(<App />);
+
+    expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
+    expect(screen.getByRole('tab', { name: /^caja$/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/n.mero de caja/i)).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /diario/i })).not.toBeInTheDocument();
+  });
   it('renders backups view actions for an admin', async () => {
     window.history.pushState({}, '', '/backups');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
