@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { CloseSessionDialog } from './components/CloseSessionDialog';
 import { CashMovementsTable } from './components/CashMovementsTable';
 
 type CashBoxViewProps = {
+  cashSession?: CashSession | null;
   canCloseCash?: boolean;
   canOpenCash?: boolean;
   canViewCashSessionReport?: boolean;
@@ -38,6 +40,7 @@ function formatCents(cents: number): number {
 }
 
 export function CashBoxView({
+  cashSession = null,
   canCloseCash = true,
   canOpenCash = true,
   canViewCashSessionReport = false,
@@ -71,6 +74,7 @@ export function CashBoxView({
     mutationFn: (payload: { opening_amount: string; notes?: string | null }) =>
       apiClient.openCashSession(payload),
     onSuccess: (opened) => {
+      queryClient.setQueryData(['cash-sessions', 'current'], opened);
       queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
       setClosingAmount('');
       setClosingNotes('');
@@ -89,6 +93,7 @@ export function CashBoxView({
     mutationFn: ({ id, payload }: { id: number; payload: { closing_amount: string; notes?: string | null } }) =>
       apiClient.closeCashSession(id, payload),
     onSuccess: () => {
+      queryClient.setQueryData(['cash-sessions', 'current'], null);
       queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       setClosingAmount('');
@@ -104,17 +109,18 @@ export function CashBoxView({
     },
   });
 
-  const expectedCashAmount = session?.expected_cash_amount ?? session?.expected_amount ?? session?.opening_amount ?? '0.00';
+  const activeSession = session ?? cashSession;
+  const expectedCashAmount = activeSession?.expected_cash_amount ?? activeSession?.expected_amount ?? activeSession?.opening_amount ?? '0.00';
   const hasValidClosingAmount = /^\d+(\.\d{1,2})?$/.test(closingAmount.trim());
   const difference = hasValidClosingAmount ? formatCents(parseCents(closingAmount) - parseCents(expectedCashAmount)) : null;
   const hasCashDifference = difference !== null && difference !== 0;
-  const isOpen = session?.status === 'open';
+  const isOpen = activeSession?.status === 'open';
 
   useEffect(() => {
     if (isOpen) {
       window.setTimeout(() => closingAmountRef.current?.focus(), 0);
     }
-  }, [isOpen, session?.id]);
+  }, [isOpen, activeSession?.id]);
 
   function handleOpenSession(data: { opening_amount: string }) {
     onStatus('Abriendo caja...');
@@ -123,7 +129,7 @@ export function CashBoxView({
 
   function handleCloseConfirmation(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!session) return;
+    if (!activeSession) return;
     if (!canCloseCash) {
       setFormAlert('Este usuario no tiene permiso para cerrar caja.');
       return;
@@ -145,11 +151,11 @@ export function CashBoxView({
   }
 
   function handleCloseSession() {
-    if (!session) return;
+    if (!activeSession) return;
     onStatus('Cerrando caja...');
     setConfirmingClose(false);
     closeSessionMutation.mutate({
-      id: session.id,
+      id: activeSession.id,
       payload: {
         closing_amount: closingAmount,
         notes: closingNotes.trim() === '' ? null : closingNotes,
@@ -181,7 +187,20 @@ export function CashBoxView({
               </Alert>
             ) : null}
 
-            <SessionStatusCard session={session ?? null} />
+            <SessionStatusCard session={activeSession ?? null} />
+
+            {isOpen && (
+              <Alert variant="success" title="Caja lista para facturar">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <span className="flex-1">
+                    La caja esta abierta. Puede pasar directamente al POS para crear y cobrar facturas.
+                  </span>
+                  <Button asChild size="sm">
+                    <Link to="/billing/new">Nueva factura</Link>
+                  </Button>
+                </div>
+              </Alert>
+            )}
 
             {isPOSBlocked && (
               <Alert variant="warning">
@@ -194,15 +213,15 @@ export function CashBoxView({
           </CardContent>
         </Card>
 
-        {isOpen && session ? (
+        {isOpen && activeSession ? (
           <>
             <SessionSummary
-              session={session}
+              session={activeSession}
               closingAmount={hasValidClosingAmount ? closingAmount : null}
               difference={difference}
             />
 
-            {session.payments_by_method && (
+            {activeSession.payments_by_method && (
               <Card>
                 <CardHeader>
                   <CardTitle>Resumen por Método de Pago</CardTitle>
@@ -214,23 +233,23 @@ export function CashBoxView({
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Efectivo</span>
-                      <span className="text-xl font-bold">L. {session.payments_by_method.cash ?? '0.00'}</span>
+                      <span className="text-xl font-bold">L. {activeSession.payments_by_method.cash ?? '0.00'}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Transferencia</span>
-                      <span className="text-xl font-bold">L. {session.payments_by_method.transfer ?? '0.00'}</span>
+                      <span className="text-xl font-bold">L. {activeSession.payments_by_method.transfer ?? '0.00'}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Tarjeta</span>
-                      <span className="text-xl font-bold">L. {session.payments_by_method.card ?? '0.00'}</span>
+                      <span className="text-xl font-bold">L. {activeSession.payments_by_method.card ?? '0.00'}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Otros</span>
-                      <span className="text-xl font-bold">L. {session.payments_by_method.other ?? '0.00'}</span>
+                      <span className="text-xl font-bold">L. {activeSession.payments_by_method.other ?? '0.00'}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Pagos registrados</span>
-                      <span className="text-xl font-bold">{session.payments_count ?? 0}</span>
+                      <span className="text-xl font-bold">{activeSession.payments_count ?? 0}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -332,8 +351,8 @@ export function CashBoxView({
         open={confirmingClose}
         onOpenChange={setConfirmingClose}
         session={{
-          opening_amount: session?.opening_amount ?? '0',
-          expected_cash_amount: session?.expected_cash_amount ?? session?.expected_amount ?? undefined,
+          opening_amount: activeSession?.opening_amount ?? '0',
+          expected_cash_amount: activeSession?.expected_cash_amount ?? activeSession?.expected_amount ?? undefined,
         }}
         closingAmount={closingAmount}
         closingNotes={closingNotes}

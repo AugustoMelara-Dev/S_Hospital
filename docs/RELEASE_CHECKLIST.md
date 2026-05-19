@@ -187,6 +187,24 @@ Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_b
 - Probar impresora fisica termica 80mm/58mm desde la PC o cliente que imprimira.
 - Crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
 - Crear `qa/THERMAL_PRINTER_PROOF.md` usando `qa/THERMAL_PRINTER_PROOF.example.md`.
+- Para preparar ambos archivos sin escribir evidencia falsa:
+
+```powershell
+cd C:\Projects\S_Hospital
+powershell.exe -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1
+```
+
+- Desde la segunda PC cliente LAN, generar evidencia inicial de rutas:
+
+```powershell
+cd C:\Projects\S_Hospital
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 `
+  -BaseUrl http://IP_DEL_SERVIDOR `
+  -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+```
+
+Luego completar manualmente en ese mismo archivo login, caja, factura, pago,
+recibo, historial, reportes y backup `pending` -> `success`.
 - Validar concurrencia real con MySQL/MariaDB.
 - Crear admin inicial real con password temporal y cambio obligatorio.
 - Remover o no ejecutar seeders demo fuera de `local`/`testing`.

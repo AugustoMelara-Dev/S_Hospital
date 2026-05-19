@@ -289,86 +289,61 @@ describe('App', () => {
 
   it('shows cash status and allows opening a cash session', async () => {
     window.history.pushState({}, '', '/cashbox');
-    const fetchMock = vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 2,
-            name: 'Cajero Demo',
-            email: 'cajero.demo@hospital-billing.local',
-            username: 'cajero.demo',
-            active: true,
-            roles: ['cajero'],
-            permissions: ['cash.view', 'cash.open', 'cash.close'],
-            must_change_password: false,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: null }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: [
-            {
-              id: 1,
-              name: 'Medicamentos',
-              slug: 'medicamentos',
+    const openedSession = {
+      id: 7,
+      user_id: 2,
+      opening_amount: '500.00',
+      closing_amount: null,
+      expected_amount: null,
+      difference_amount: null,
+      status: 'open',
+      opening_notes: null,
+      closing_notes: null,
+      opened_at: '2026-05-17T08:00:00-06:00',
+      closed_at: null,
+    };
+    let currentSession: typeof openedSession | null = null;
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, options) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Demo',
+              email: 'cajero.demo@hospital-billing.local',
+              username: 'cajero.demo',
               active: true,
-              sort_order: 4,
+              roles: ['cajero'],
+              permissions: ['cash.view', 'cash.open', 'cash.close'],
+              must_change_password: false,
             },
-          ],
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/open') && options?.method === 'POST') {
+        currentSession = openedSession;
+        return {
+          ok: true,
+          json: async () => ({ data: openedSession }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({ data: currentSession }),
+        } as Response;
+      }
+
+      return {
         ok: true,
-        json: async () => ({
-          data: [
-            {
-              id: 1,
-              name: 'Medicamentos',
-              slug: 'medicamentos',
-              active: true,
-              sort_order: 4,
-            },
-          ],
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: [
-            {
-              id: 1,
-              name: 'Medicamentos',
-              slug: 'medicamentos',
-              active: true,
-              sort_order: 4,
-            },
-          ],
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 7,
-            user_id: 2,
-            opening_amount: '500.00',
-            closing_amount: null,
-            expected_amount: null,
-            difference_amount: null,
-            status: 'open',
-            opening_notes: null,
-            closing_notes: null,
-            opened_at: '2026-05-17T08:00:00-06:00',
-            closed_at: null,
-          },
-        }),
-      } as Response);
+        json: async () => ({ data: [] }),
+      } as Response;
+    });
 
     render(<App />);
 
@@ -388,6 +363,8 @@ describe('App', () => {
       ).toBe(true);
     });
     expect((await screen.findAllByText(/caja abierta/i)).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/caja lista para facturar/i)).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /nueva factura/i }).length).toBeGreaterThan(0);
   });
 
   it('keeps close-session difference hidden until counted amount is entered', async () => {

@@ -107,6 +107,7 @@ export function AppRoutes({
         element={
           <PermissionGate allowed={canViewCash} reason="Requiere permiso para consultar y operar caja.">
             <CashBoxView
+              cashSession={cashSession}
               canCloseCash={canCloseCash}
               canOpenCash={canOpenCash}
               canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}

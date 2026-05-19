@@ -133,6 +133,7 @@ function HospitalApp() {
         description="Apertura y cierre de turno sin navegar a otra pantalla."
       >
         <CashBoxView
+          cashSession={session.cashSession}
           canCloseCash={session.canCloseCash}
           canOpenCash={session.canOpenCash}
           canViewCashSessionReport={session.canViewCashSessionReports || session.canViewManagerialReports}

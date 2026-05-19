@@ -16,7 +16,10 @@ No ejecutar `migrate:fresh` en el servidor real.
 9. Registrar tareas Windows para backup worker y scheduler con `scripts\install_backup_tasks_windows.ps1`.
 10. Abrir la app como admin, entrar a Backups y revisar el checklist operativo: `APP_ENV=production`, `APP_DEBUG=false`, MySQL/MariaDB, dump tool, storage local, worker continuo, rutas `/up`, `/login`, `/verify-email` y evidencias LAN/impresora.
 11. Crear un backup manual y confirmar que cambia de `pending` a `success`.
-12. Ejecutar `scripts\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR` sin `-AllowMissingPhysicalProof` solo cuando ya existan pruebas de segunda PC LAN e impresora.
+12. Preparar archivos de evidencia con `scripts\init_production_proofs.ps1`.
+13. Desde una segunda PC cliente, ejecutar `scripts\validate_lan_client.ps1 -BaseUrl http://IP_DEL_SERVIDOR -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md` y completar los checks manuales de login, caja, factura, pago, reportes y backup.
+14. Completar `qa\THERMAL_PRINTER_PROOF.md` con la impresora fisica 80mm/58mm.
+15. Ejecutar `scripts\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR` sin `-AllowMissingPhysicalProof` solo cuando ya existan pruebas de segunda PC LAN e impresora.
 
 Si el preflight falla por evidencia fisica pendiente, el servidor puede seguir en `PRODUCTION_CANDIDATE`, pero no se debe vender como `PRODUCTION_READY`.
 

@@ -116,7 +116,7 @@ if ($UpdateExisting) {
 }
 
 $workerAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $workerArgs -WorkingDirectory $ProjectRoot
-$workerTrigger = New-ScheduledTaskTrigger -AtStartup
+$workerTrigger = New-ScheduledTaskTrigger -AtLogOn
 $workerSettings = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 5) -ExecutionTimeLimit (New-TimeSpan -Hours 0)
 
 Register-ScheduledTask `

@@ -17,6 +17,23 @@ export default defineConfig({
       output: {
         manualChunks: {
           charts: ['recharts'],
+          forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
+          query: ['@tanstack/react-query'],
+          ui: [
+            'lucide-react',
+            '@radix-ui/react-alert-dialog',
+            '@radix-ui/react-avatar',
+            '@radix-ui/react-checkbox',
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-scroll-area',
+            '@radix-ui/react-select',
+            '@radix-ui/react-separator',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-tooltip',
+          ],
           vendor: ['react', 'react-dom', 'react-router-dom'],
         },
       },

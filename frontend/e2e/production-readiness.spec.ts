@@ -529,7 +529,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
     await page.getByRole('button', { name: /cerrar modal/i }).click();
   }
 
-  await page.getByRole('link', { name: /nueva factura/i }).click();
+  await page.getByRole('link', { name: 'Nueva Factura', exact: true }).click();
   await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
   await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();

@@ -456,3 +456,20 @@ Consecuencia:
 - Cajeros y supervisores siguen sin acceso a estado operativo de backups/servidor.
 - La UI ayuda a instalar y operar, pero no reemplaza `scripts/production_readiness_preflight.ps1` ni la evidencia fisica requerida.
 - `PRODUCTION_READY` requiere que el preflight final pase sin `-AllowMissingPhysicalProof` y que existan `qa/LAN_CLIENT_VALIDATION_PROOF.md` y `qa/THERMAL_PRINTER_PROOF.md` completados en el servidor/campo real.
+
+### 2026-05-19 - Helpers de evidencia de campo
+
+Decision:
+
+- Se agregan `scripts\init_production_proofs.ps1` y `scripts\validate_lan_client.ps1`.
+- `init_production_proofs.ps1` crea los archivos reales de evidencia desde las plantillas sin marcarlos como completos.
+- `validate_lan_client.ps1` se ejecuta desde una segunda PC cliente y verifica `/up`, `/login`, `/verify-email` y el primer asset JS del build, con opcion de escribir un borrador de `qa\LAN_CLIENT_VALIDATION_PROOF.md`.
+- La evidencia de login, caja, factura, pago, recibo, reportes, backup e impresora sigue siendo manual/fisica y debe completarse antes del preflight final.
+
+Motivo:
+
+- Las pruebas de campo deben ser repetibles para el operador, pero no se debe fabricar evidencia que solo puede venir del cliente LAN y la impresora real.
+
+Consecuencia:
+
+- El cierre de produccion queda mas guiado: primero se generan archivos, luego se validan rutas desde cliente, despues se completan los flujos fisicos y finalmente se ejecuta `production_readiness_preflight.ps1` sin excepciones.
