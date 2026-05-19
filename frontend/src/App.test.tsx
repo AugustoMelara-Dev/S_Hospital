@@ -103,12 +103,14 @@ describe('App', () => {
               label: 'Segunda PC en LAN',
               required_file: 'qa/LAN_CLIENT_VALIDATION_PROOF.md',
               status: 'pending',
+              detail: 'Archivo de evidencia no existe todavia.',
             },
             {
               code: 'THERMAL_PRINTER_PROOF',
               label: 'Impresora termica 80mm/58mm',
               required_file: 'qa/THERMAL_PRINTER_PROOF.md',
               status: 'pending',
+              detail: 'Archivo de evidencia no existe todavia.',
             },
           ],
           commands: {

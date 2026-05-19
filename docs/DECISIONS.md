@@ -493,3 +493,41 @@ Consecuencia:
 - El operador puede ejecutar un solo handoff guiado, pero `PRODUCTION_READY` sigue dependiendo del preflight completo, archivos de evidencia reales y backup worker funcional.
 - Si el helper falla por evidencia faltante, el estado correcto sigue siendo `PRODUCTION_CANDIDATE` con bloqueantes exactos.
 - El reporte de handoff es evidencia operativa de la corrida, no sustituto de la evidencia fisica de LAN o impresora.
+
+### 2026-05-19 - Evidencia fisica visible en estado operativo
+
+Decision:
+
+- `/api/system/status` ahora evalua `qa\LAN_CLIENT_VALIDATION_PROOF.md` y `qa\THERMAL_PRINTER_PROOF.md` en vez de reportarlos siempre como pendientes.
+- La evaluacion marca `pending` si falta el archivo, `partial` si quedan campos/checks/placeholders incompletos y `validated` si el archivo cumple la estructura minima de evidencia.
+- Aunque ambas evidencias aparezcan `validated`, el endpoint mantiene `PRODUCTION_READY=false`; la aprobacion final sigue dependiendo de `scripts\production_readiness_preflight.ps1` ejecutado sin bypass en el servidor final.
+- La pantalla de Backups muestra el detalle de cada evidencia para que el operador sepa si falta crear el archivo, completar campos o correr el preflight final.
+
+Motivo:
+
+- El panel administrativo debe reflejar avance real de campo sin fabricar aprobacion de produccion desde el codigo.
+- La evidencia fisica completa debe ser visible para soporte, pero el cierre final debe seguir siendo un gate ejecutable y auditable.
+
+Consecuencia:
+
+- Cuando el hospital complete segunda PC LAN e impresora, el panel dejara de mostrar esos archivos como pendientes falsos.
+- Si alguien copia una plantilla o deja placeholders, el sistema lo mostrara como parcial y no como validado.
+
+### 2026-05-19 - Worker continuo como bloqueo de preflight
+
+Decision:
+
+- `scripts\production_readiness_preflight.ps1` ahora valida en Windows que existan las tareas `HospitalBillingOS-BackupWorker` y `HospitalBillingOS-DailyBackup`.
+- El worker continuo debe estar en estado `Running`; la tarea diaria debe estar `Ready` o `Running`.
+- Si las tareas no existen, estan deshabilitadas o el worker no esta corriendo, el preflight falla y no permite declarar `PRODUCTION_READY`.
+- En hosts no Windows, el preflight emite advertencia para validar un servicio equivalente antes del handoff.
+
+Motivo:
+
+- Un backup manual que queda `pending` por falta de worker es un riesgo operativo real; no debe quedar como nota manual si el servidor final es Windows.
+- La promesa de backups locales exige automatizacion continua, no solo scripts disponibles en el repo.
+
+Consecuencia:
+
+- El cierre final debe instalar o actualizar tareas con `scripts\install_backup_tasks_windows.ps1 -UpdateExisting`, iniciar `HospitalBillingOS-BackupWorker` y confirmar que la UI mueve backups de `pending` a `success`.
+- Una corrida de preflight en Windows sin tareas instaladas queda bloqueada aunque ambiente, rutas y evidencias fisicas esten completas.

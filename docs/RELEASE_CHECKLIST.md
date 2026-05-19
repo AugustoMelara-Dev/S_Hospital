@@ -101,6 +101,9 @@ no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o
 `mariadb-dump`, si las rutas publicas no responden, o si no existen las pruebas
 documentadas de cliente LAN e impresora fisica.
 
+En Windows tambien falla si no existen `HospitalBillingOS-BackupWorker` y
+`HospitalBillingOS-DailyBackup`, o si el worker continuo no esta `Running`.
+
 La evidencia fisica de LAN e impresora es obligatoria por defecto. El flag
 `-AllowMissingPhysicalProof` solo permite una corrida parcial de entorno y deja
 un warning fuerte mas salida no cero: ese resultado no puede llamarse

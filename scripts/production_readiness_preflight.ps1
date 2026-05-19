@@ -98,6 +98,31 @@ function Find-FirstExecutableCandidate([string[]] $candidates) {
     return $null
 }
 
+function Test-IsWindowsHost {
+    return $env:OS -eq "Windows_NT" -or $PSVersionTable.Platform -eq "Win32NT" -or $null -ne (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue)
+}
+
+function Test-BackupScheduledTask([string] $taskName, [string[]] $AllowedStates) {
+    if ($null -eq (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue)) {
+        Add-Failure "Get-ScheduledTask is not available; cannot validate Windows backup task $taskName"
+        return
+    }
+
+    $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    if ($null -eq $task) {
+        Add-Failure "Windows scheduled task '$taskName' is not installed."
+        return
+    }
+
+    if ($AllowedStates -notcontains [string] $task.State) {
+        Add-Failure "Windows scheduled task '$taskName' must be $($AllowedStates -join ' or '), current state is '$($task.State)'."
+        return
+    }
+
+    $info = Get-ScheduledTaskInfo -TaskName $taskName
+    Add-Pass "Windows scheduled task '$taskName' state=$($task.State), lastResult=$($info.LastTaskResult), nextRun=$($info.NextRunTime)"
+}
+
 function Normalize-ProofContent([string] $content) {
     return ($content -replace "`r", "") -replace "\s+", " "
 }
@@ -290,6 +315,13 @@ if ($queueConnection -eq "database") {
     Add-Pass "QUEUE_CONNECTION=database"
 } else {
     Add-Warning "QUEUE_CONNECTION is '$queueConnection'. Backups queued from UI need a durable local queue worker."
+}
+
+if (Test-IsWindowsHost) {
+    Test-BackupScheduledTask "HospitalBillingOS-BackupWorker" @("Running")
+    Test-BackupScheduledTask "HospitalBillingOS-DailyBackup" @("Ready", "Running")
+} else {
+    Add-Warning "Non-Windows host detected. Validate an equivalent continuous backup worker/service before production handoff."
 }
 
 if (Test-Path -LiteralPath (Join-Path $frontendDist "index.html")) {

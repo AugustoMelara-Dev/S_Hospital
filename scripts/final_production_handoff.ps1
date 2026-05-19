@@ -55,7 +55,7 @@ function Test-ProofLooksCompleted([string] $path) {
         return $false
     }
 
-    if ($content -match '(?i)\bTODO\b|\bPENDING_[A-Z_]+\b|\bREPLACE\b|\bTBD\b|\[ \]') {
+    if ($content -match '(?i)\bTODO\b|\bPENDING_[A-Z_]+\b|\bREPLACE\b|\bN/A\b|\bTBD\b|\[ \]|example|template|use this file') {
         return $false
     }
 

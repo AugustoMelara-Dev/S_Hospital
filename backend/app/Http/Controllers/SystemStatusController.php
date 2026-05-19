@@ -13,6 +13,70 @@ use Symfony\Component\Process\ExecutableFinder;
 
 class SystemStatusController extends Controller
 {
+    /**
+     * @var array<string, array{label: string, required_file: string, fields: array<int, string>, checks: array<int, string>}>
+     */
+    private const PHYSICAL_PROOFS = [
+        'LAN_CLIENT_VALIDATION_PROOF' => [
+            'label' => 'Segunda PC en LAN',
+            'required_file' => 'qa/LAN_CLIENT_VALIDATION_PROOF.md',
+            'fields' => [
+                'Date/time',
+                'Responsible person',
+                'Client computer name',
+                'Server IP or LAN name',
+                'Server LAN URL',
+                'Client browser/version',
+                'User/role used',
+                'Evidence/capture reference',
+                'Final conclusion',
+            ],
+            'checks' => [
+                '/up',
+                '/login',
+                '/verify-email',
+                'assets',
+                'Login',
+                'Cashbox',
+                'Invoice',
+                'Payment',
+                'Receipt',
+                'history',
+                'Reports',
+                'Backup',
+            ],
+        ],
+        'THERMAL_PRINTER_PROOF' => [
+            'label' => 'Impresora termica 80mm/58mm',
+            'required_file' => 'qa/THERMAL_PRINTER_PROOF.md',
+            'fields' => [
+                'Date/time',
+                'Responsible person',
+                'Printer brand/model',
+                'Printer driver',
+                'Connection type',
+                'Browser/version',
+                'Cashier computer',
+                'Invoice used',
+                '80mm result',
+                '58mm result',
+                'Reprint result',
+                'Margins result',
+                'Browser headers/footers result',
+                'Problems found',
+                'Evidence/photo reference',
+                'Final conclusion',
+            ],
+            'checks' => [
+                '80mm',
+                '58mm',
+                'Reprint',
+                'headers/footers',
+                'historical',
+            ],
+        ],
+    ];
+
     public function show(Request $request): JsonResponse
     {
         $request->user()->can('backups.view') || abort(403);
@@ -173,6 +237,9 @@ class SystemStatusController extends Controller
     {
         $appEnv = (string) Config::get('app.env');
         $appDebug = (bool) Config::get('app.debug');
+        $proofs = $this->physicalProofStatuses();
+        $lanProof = $proofs[0];
+        $printerProof = $proofs[1];
 
         return [
             'state' => 'PRODUCTION_CANDIDATE',
@@ -181,12 +248,12 @@ class SystemStatusController extends Controller
                 [
                     'code' => 'PENDING_LAN_CLIENT_VALIDATION',
                     'label' => 'Validacion desde segunda PC LAN',
-                    'status' => 'pending',
+                    'status' => $lanProof['status'] === 'validated' ? 'validated' : 'pending',
                 ],
                 [
                     'code' => 'PENDING_HARDWARE_VALIDATION',
                     'label' => 'Impresora termica fisica 80mm/58mm',
-                    'status' => 'pending',
+                    'status' => $printerProof['status'] === 'validated' ? 'validated' : 'pending',
                 ],
                 [
                     'code' => 'PENDING_ENVIRONMENT_VALIDATION',
@@ -207,6 +274,7 @@ class SystemStatusController extends Controller
         $environment = $this->environmentStatus();
         $database = $this->databaseStatus();
         $backups = $this->backupStatus();
+        $physicalProofs = $this->physicalProofStatuses();
 
         return [
             'production_checks' => [
@@ -264,25 +332,146 @@ class SystemStatusController extends Controller
                     'status' => 'manual_required',
                 ],
             ],
-            'physical_proofs' => [
-                [
-                    'code' => 'LAN_CLIENT_VALIDATION_PROOF',
-                    'label' => 'Segunda PC en LAN',
-                    'required_file' => 'qa/LAN_CLIENT_VALIDATION_PROOF.md',
-                    'status' => 'pending',
-                ],
-                [
-                    'code' => 'THERMAL_PRINTER_PROOF',
-                    'label' => 'Impresora termica 80mm/58mm',
-                    'required_file' => 'qa/THERMAL_PRINTER_PROOF.md',
-                    'status' => 'pending',
-                ],
-            ],
+            'physical_proofs' => $physicalProofs,
             'commands' => [
                 'preflight' => 'powershell.exe -ExecutionPolicy Bypass -File scripts\\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR',
                 'backup_worker' => $backups['queue']['worker_command'],
                 'scheduler' => $backups['queue']['scheduler_command'],
             ],
         ];
+    }
+
+    /**
+     * @return array<int, array{code: string, label: string, required_file: string, status: string, detail: string}>
+     */
+    private function physicalProofStatuses(): array
+    {
+        return array_map(function (string $code): array {
+            $proof = self::PHYSICAL_PROOFS[$code];
+            $result = $this->evaluateProofFile(
+                $proof['required_file'],
+                $proof['fields'],
+                $proof['checks'],
+            );
+
+            return [
+                'code' => $code,
+                'label' => $proof['label'],
+                'required_file' => $proof['required_file'],
+                'status' => $result['status'],
+                'detail' => $result['detail'],
+            ];
+        }, array_keys(self::PHYSICAL_PROOFS));
+    }
+
+    /**
+     * @param array<int, string> $requiredFields
+     * @param array<int, string> $requiredChecks
+     * @return array{status: string, detail: string}
+     */
+    private function evaluateProofFile(string $relativePath, array $requiredFields, array $requiredChecks): array
+    {
+        $path = $this->projectPath($relativePath);
+
+        if (! is_file($path)) {
+            return [
+                'status' => 'pending',
+                'detail' => 'Archivo de evidencia no existe todavia.',
+            ];
+        }
+
+        $content = (string) file_get_contents($path);
+        $normalized = preg_replace('/\s+/', ' ', str_replace("\r", '', $content)) ?? '';
+
+        if (trim($normalized) === '' || strlen(trim($normalized)) < 300) {
+            return [
+                'status' => 'partial',
+                'detail' => 'Archivo demasiado corto para evidencia real.',
+            ];
+        }
+
+        $missingFields = array_values(array_filter(
+            $requiredFields,
+            fn (string $field): bool => ! $this->proofHasCompletedField($content, $field),
+        ));
+
+        if ($missingFields !== []) {
+            return [
+                'status' => 'partial',
+                'detail' => 'Faltan campos: '.implode(', ', array_slice($missingFields, 0, 3)),
+            ];
+        }
+
+        $missingChecks = array_values(array_filter(
+            $requiredChecks,
+            fn (string $check): bool => ! $this->proofHasCompletedCheckedItem($content, $check),
+        ));
+
+        if ($missingChecks !== []) {
+            return [
+                'status' => 'partial',
+                'detail' => 'Faltan checks con evidencia: '.implode(', ', array_slice($missingChecks, 0, 3)),
+            ];
+        }
+
+        if (preg_match('/\b(TODO|PENDING_[A-Z_]+|REPLACE|N\/A|TBD)\b|\[ \]|example|template|use this file/i', $content) === 1) {
+            return [
+                'status' => 'partial',
+                'detail' => 'Quedan placeholders o instrucciones de plantilla.',
+            ];
+        }
+
+        return [
+            'status' => 'validated',
+            'detail' => 'Evidencia completada; el preflight final debe confirmarla sin bypass.',
+        ];
+    }
+
+    private function proofHasCompletedField(string $content, string $fieldLabel): bool
+    {
+        $value = $this->proofFieldValue($content, $fieldLabel);
+
+        return ! $this->proofValueIsIncomplete($value);
+    }
+
+    private function proofFieldValue(string $content, string $fieldLabel): ?string
+    {
+        $pattern = '/^\s*-\s*'.preg_quote($fieldLabel, '/').'\s*:[ \t]*(?<value>[^\r\n]*)$/im';
+
+        if (preg_match($pattern, $content, $matches) !== 1) {
+            return null;
+        }
+
+        return trim((string) $matches['value']);
+    }
+
+    private function proofHasCompletedCheckedItem(string $content, string $labelPattern): bool
+    {
+        $linePattern = '/^\s*-\s*\[[xX]\]\s*.*'.preg_quote($labelPattern, '/').'.*$/im';
+
+        if (preg_match($linePattern, $content, $matches) !== 1) {
+            return false;
+        }
+
+        if (preg_match('/:[ \t]*(?<value>[^\r\n]*)$/', (string) $matches[0], $result) !== 1) {
+            return false;
+        }
+
+        return ! $this->proofValueIsIncomplete((string) $result['value']);
+    }
+
+    private function proofValueIsIncomplete(?string $value): bool
+    {
+        $trimmed = trim((string) $value);
+
+        return $trimmed === ''
+            || preg_match('/^(TODO|PENDING|PENDING_[A-Z_]+|REPLACE|N\/A|NA|NONE|TBD|-|\[ \])$/i', $trimmed) === 1;
+    }
+
+    private function projectPath(string $relativePath): string
+    {
+        $projectRoot = (string) Config::get('hospital.project_root', dirname(base_path()));
+
+        return $projectRoot.DIRECTORY_SEPARATOR.str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relativePath);
     }
 }

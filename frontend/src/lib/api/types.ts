@@ -411,6 +411,7 @@ export type SystemStatus = {
       label: string;
       required_file: string;
       status: 'pending' | 'partial' | 'validated' | 'manual_required';
+      detail: string;
     }>;
     commands: {
       preflight: string;

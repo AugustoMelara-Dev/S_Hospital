@@ -366,6 +366,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                             </span>
                           </div>
                           <p className="mt-1 break-words font-mono text-xs text-muted-foreground">{proof.required_file}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{proof.detail}</p>
                         </li>
                       ))}
                     </ul>
