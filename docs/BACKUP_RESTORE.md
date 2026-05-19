@@ -33,6 +33,12 @@ El comando crea y ejecuta el backup en el mismo proceso; se recomienda para tare
 
 Los archivos quedan bajo `storage/app/private/backups`. El API solo descarga archivos registrados en `backup_logs`, existentes y dentro de esa carpeta.
 
+El backend busca `mariadb-dump` o `mysqldump` en el `PATH` y en rutas locales comunes como `C:\xampp\mysql\bin\mysqldump.exe`. Si el servidor usa otra ruta, definir:
+
+```powershell
+HOSPITAL_DUMP_BINARY=C:\ruta\mysql\bin\mysqldump.exe
+```
+
 ## Programacion automatica diaria
 
 El backend registra una tarea Laravel diaria:
