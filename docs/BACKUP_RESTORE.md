@@ -96,6 +96,17 @@ scripts\run_backup_worker.cmd
 
 Por defecto usan `C:\xampp\php\php.exe`. Si PHP esta en otra ruta, definir `HOSPITAL_PHP_PATH` antes de ejecutarlos o al crear la tarea programada.
 
+Si el Programador de tareas esta bloqueado por permisos/UAC, existe una alternativa por usuario actual:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -PhpPath C:\xampp\php\php.exe -DailyBackupTime 02:00
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status
+scripts\start_backup_automation.cmd
+```
+
+Esta alternativa arranca el worker y un scheduler local al iniciar sesion del usuario Windows. No sustituye una tarea de sistema para produccion final, pero deja backup diario automatico sin permisos de administrador mientras ese usuario permanezca iniciado.
+El log operativo queda en `backend/storage/logs/backup-automation.log`.
+
 Después de cada backup diario, copiar el archivo más reciente a una unidad USB o disco externo del hospital. No usar servicios cloud como requisito operativo.
 
 ## Restore manual en entorno de prueba

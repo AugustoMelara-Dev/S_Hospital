@@ -20,6 +20,16 @@ if (-not (Test-Path -LiteralPath $artisanPath)) {
 
 $workerTaskName = "$TaskPrefix-BackupWorker"
 $dailyTaskName = "$TaskPrefix-DailyBackup"
+$workerScript = Join-Path $ProjectRoot "scripts\run_backup_worker.cmd"
+$dailyScript = Join-Path $ProjectRoot "scripts\run_scheduled_backup.cmd"
+
+if (-not (Test-Path -LiteralPath $workerScript)) {
+    throw "Missing backup worker wrapper at $workerScript"
+}
+
+if (-not (Test-Path -LiteralPath $dailyScript)) {
+    throw "Missing scheduled backup wrapper at $dailyScript"
+}
 
 function Test-IsAdmin {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -43,11 +53,14 @@ function Show-TaskStatus([string] $taskName) {
     Write-Host "${taskName}: state=$($task.State), lastRun=$($info.LastRunTime), lastResult=$($info.LastTaskResult), nextRun=$($info.NextRunTime)"
 }
 
-$workerArgs = "-NoProfile -ExecutionPolicy Bypass -Command `"cd '$backendDir'; & '$PhpPath' artisan queue:work --queue=backups --tries=1 --timeout=600`""
-$backupArgs = "-NoProfile -ExecutionPolicy Bypass -Command `"cd '$backendDir'; & '$PhpPath' artisan hospital:backup --type=scheduled`""
+$workerArgs = "/c `"$workerScript`" `"$PhpPath`""
+$backupArgs = "/c `"$dailyScript`" `"$PhpPath`""
 
 Write-Host "Preparing Windows scheduled tasks for Hospital Billing OS backups."
 Write-Host "ProjectRoot: $ProjectRoot"
+Write-Host "PhpPath: $PhpPath"
+Write-Host "Worker wrapper: $workerScript"
+Write-Host "Daily backup wrapper: $dailyScript"
 Write-Host "Worker task: $workerTaskName"
 Write-Host "Daily backup task: $dailyTaskName at $DailyBackupTime"
 
@@ -61,8 +74,8 @@ if ($Status) {
 
 if ($WhatIfOnly) {
     Write-Host "WhatIfOnly enabled. No tasks were registered."
-    Write-Host "Worker command: powershell.exe $workerArgs"
-    Write-Host "Daily backup command: powershell.exe $backupArgs"
+    Write-Host "Worker command: cmd.exe $workerArgs"
+    Write-Host "Daily backup command: cmd.exe $backupArgs"
     Write-Host "Update existing tasks with: -UpdateExisting"
     Write-Host "Remove tasks with: -Uninstall"
     Write-Host "Check tasks with: -Status"
@@ -102,7 +115,7 @@ if ($UpdateExisting) {
     }
 }
 
-$workerAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $workerArgs -WorkingDirectory $backendDir
+$workerAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $workerArgs -WorkingDirectory $ProjectRoot
 $workerTrigger = New-ScheduledTaskTrigger -AtStartup
 $workerSettings = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 5) -ExecutionTimeLimit (New-TimeSpan -Hours 0)
 
@@ -113,7 +126,7 @@ Register-ScheduledTask `
     -Settings $workerSettings `
     -Description "Hospital Billing OS continuous backup queue worker." | Out-Null
 
-$dailyAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $backupArgs -WorkingDirectory $backendDir
+$dailyAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $backupArgs -WorkingDirectory $ProjectRoot
 $dailyTrigger = New-ScheduledTaskTrigger -Daily -At $DailyBackupTime
 $dailySettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 2)
 
