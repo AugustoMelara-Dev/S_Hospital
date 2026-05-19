@@ -76,9 +76,10 @@ Modules covered:
 - `npm.cmd run e2e`: passed, 2 tests. First run hit a transient service-search timeout; immediate rerun passed without code changes.
 - `npm.cmd run smoke:real` against `http://192.168.1.7:8000`: passed, 1 non-mutating real navigation test; mutation test intentionally skipped without `E2E_REAL_ALLOW_MUTATIONS=1`.
 - Real scheduled backup command: passed after detecting XAMPP dump binary. Created `hospital-backup-20260519-143246-t2tcamra.sql`, status `success`, size `299891`, SHA256 `4633427ffb79efec03b97fd98997d2d367d809580e4816d90040b44da1c3c49b`.
+- Windows wrapper backup command: passed. `scripts/run_scheduled_backup.cmd` created `hospital-backup-20260519-144322-ys8wi5a9.sql`.
 
 ## Remaining Field Validation
 
 - Physical LAN client access from a second device still needs to be tested on the final server IP.
 - Physical thermal printer 80mm/58mm still needs real hardware evidence before claiming `PRODUCTION_READY`.
-- Windows scheduled tasks were not installed in this shell because Task Scheduler requires an elevated PowerShell session. `scripts/install_backup_tasks_windows.ps1 -Status` reports both tasks as not installed.
+- Windows scheduled task management requires an elevated PowerShell session on this machine. Non-elevated attempts can run the backup wrapper but cannot reliably create/start/query the scheduled tasks.

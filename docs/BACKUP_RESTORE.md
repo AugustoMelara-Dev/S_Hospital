@@ -87,6 +87,15 @@ Si las tareas ya existen, el helper falla sin sobrescribirlas; usar
 `-Uninstall`. La instalacion, actualizacion y desinstalacion requieren abrir
 PowerShell como administrador.
 
+Tambien se incluyen wrappers directos para entornos Windows/XAMPP:
+
+```powershell
+scripts\run_scheduled_backup.cmd
+scripts\run_backup_worker.cmd
+```
+
+Por defecto usan `C:\xampp\php\php.exe`. Si PHP esta en otra ruta, definir `HOSPITAL_PHP_PATH` antes de ejecutarlos o al crear la tarea programada.
+
 Después de cada backup diario, copiar el archivo más reciente a una unidad USB o disco externo del hospital. No usar servicios cloud como requisito operativo.
 
 ## Restore manual en entorno de prueba
