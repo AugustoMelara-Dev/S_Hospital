@@ -46,7 +46,10 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.readiness.production_ready', false)
             ->assertJsonPath('data.backups.pending_count', 1)
             ->assertJsonPath('data.backups.last_success_filename', 'hospital-backup-ok.sql')
+            ->assertJsonPath('data.backups.queue.jobs_table_available', true)
             ->assertJsonPath('data.backups.queue.worker_command', 'php artisan queue:work --queue=backups --tries=1 --timeout=600')
+            ->assertJsonPath('data.runtime.logs_writable', true)
+            ->assertJsonPath('data.runtime.cache_writable', true)
             ->assertJsonPath('data.preflight.public_routes.0.path', '/up')
             ->assertJsonPath('data.preflight.public_routes.1.path', '/login')
             ->assertJsonPath('data.preflight.public_routes.2.path', '/verify-email')
@@ -127,6 +130,17 @@ class SystemStatusTest extends TestCase
                 ->getJson('/api/system/status')
                 ->assertForbidden();
         }
+    }
+
+    public function test_backups_permission_alone_cannot_view_operational_status(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $user = User::factory()->create();
+        $user->givePermissionTo('backups.view');
+
+        $this->actingAs($user)
+            ->getJson('/api/system/status')
+            ->assertForbidden();
     }
 
     private function admin(): User

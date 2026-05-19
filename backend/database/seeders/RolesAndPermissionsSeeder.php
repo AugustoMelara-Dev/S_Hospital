@@ -38,6 +38,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'backups.view',
         'backups.create',
         'backups.download',
+        'system.status.view',
         'audit.view',
     ];
 

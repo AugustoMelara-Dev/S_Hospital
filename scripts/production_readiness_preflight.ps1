@@ -450,6 +450,47 @@ if ($AllowMissingPhysicalProof) {
             "headers/footers",
             "historical"
         )
+
+    Test-ProofFile `
+        -path (Join-Path $ProjectRoot "qa\FINAL_RESTORE_PROOF.md") `
+        -proofName "final restore" `
+        -requiredFields @(
+            "Date/time",
+            "Responsible person",
+            "Source database",
+            "Disposable restore database",
+            "Backup file",
+            "Backup SHA256",
+            "Backup size bytes",
+            "Evidence/capture reference",
+            "Final conclusion"
+        ) `
+        -requiredChecks @(
+            "Disposable restore database",
+            "Backup file",
+            "Restore imports",
+            "Migration table",
+            "Services table",
+            "Core counts"
+        )
+
+    Test-ProofFile `
+        -path (Join-Path $ProjectRoot "qa\FINAL_CONCURRENCY_PROOF.md") `
+        -proofName "final concurrency" `
+        -requiredFields @(
+            "Date/time",
+            "Responsible person",
+            "Server LAN URL",
+            "Target environment",
+            "Run ID",
+            "Evidence/capture reference",
+            "Final conclusion"
+        ) `
+        -requiredChecks @(
+            "Double cash-session open",
+            "Concurrent invoice emission",
+            "Double payment"
+        )
 }
 
 if ($failures.Count -gt 0) {

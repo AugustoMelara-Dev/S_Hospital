@@ -91,8 +91,8 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Base URL: $($BaseUrl.TrimEnd('/'))"
     Add-ReportLine $lines "- Project root: $ProjectRoot"
     Add-ReportLine $lines "- Decision: $decision"
-    Add-ReportLine $lines "- LAN client proof completed: $lanProofCompleted"
-    Add-ReportLine $lines "- Thermal printer proof completed: $printerProofCompleted"
+    Add-ReportLine $lines "- LAN client proof present without obvious placeholders: $lanProofCompleted"
+    Add-ReportLine $lines "- Thermal printer proof present without obvious placeholders: $printerProofCompleted"
     Add-ReportLine $lines "- Preflight skipped: $preflightSkipped"
     Add-ReportLine $lines "- Preflight exit code: $preflightExit"
     Add-ReportLine $lines ""
@@ -176,8 +176,8 @@ if ($InitializeProofFiles) {
 
 $lanProofCompleted = Test-ProofLooksCompleted $lanProofPath
 $printerProofCompleted = Test-ProofLooksCompleted $printerProofPath
-Write-Result $lanProofCompleted "Second-client LAN proof completed at qa\LAN_CLIENT_VALIDATION_PROOF.md"
-Write-Result $printerProofCompleted "Physical thermal-printer proof completed at qa\THERMAL_PRINTER_PROOF.md"
+Write-Result $lanProofCompleted "Second-client LAN proof file looks present; preflight performs strict validation."
+Write-Result $printerProofCompleted "Physical thermal-printer proof file looks present; preflight performs strict validation."
 
 if (-not $lanProofCompleted) {
     Write-Host "Run from the second LAN client:"

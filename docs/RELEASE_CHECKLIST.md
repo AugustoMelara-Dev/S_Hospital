@@ -99,7 +99,7 @@ siguientes.
 Este preflight falla si el servidor no usa `APP_ENV=production`, si `APP_DEBUG`
 no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o
 `mariadb-dump`, si las rutas publicas no responden, o si no existen las pruebas
-documentadas de cliente LAN e impresora fisica.
+documentadas de cliente LAN, impresora fisica, restore final y concurrencia final.
 
 En Windows tambien falla si no existen `HospitalBillingOS-BackupWorker` y
 `HospitalBillingOS-DailyBackup`, o si el worker continuo no esta `Running`.
@@ -208,6 +208,8 @@ Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_b
 - Probar impresora fisica termica 80mm/58mm desde la PC o cliente que imprimira.
 - Crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
 - Crear `qa/THERMAL_PRINTER_PROOF.md` usando `qa/THERMAL_PRINTER_PROOF.example.md`.
+- Crear `qa/FINAL_RESTORE_PROOF.md` usando `qa/FINAL_RESTORE_PROOF.example.md`.
+- Crear `qa/FINAL_CONCURRENCY_PROOF.md` usando `qa/FINAL_CONCURRENCY_PROOF.example.md`.
 - Para preparar ambos archivos sin escribir evidencia falsa:
 
 ```powershell

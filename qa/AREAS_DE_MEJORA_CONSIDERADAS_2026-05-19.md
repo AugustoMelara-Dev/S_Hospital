@@ -12,6 +12,10 @@ Actualizacion de cierre repo-local:
 - El panel operativo ya no muestra la evidencia fisica como pendiente fija: `/api/system/status` evalua `qa/LAN_CLIENT_VALIDATION_PROOF.md` y `qa/THERMAL_PRINTER_PROOF.md` como `pending`, `partial` o `validated`.
 - Aun con ambas evidencias `validated`, el sistema mantiene `PRODUCTION_READY=false` hasta que el preflight final pase sin bypass.
 - En Windows, `scripts/production_readiness_preflight.ps1` ahora bloquea si faltan `HospitalBillingOS-BackupWorker` o `HospitalBillingOS-DailyBackup`, o si el worker continuo no esta `Running`.
+- Restore y concurrencia final ya tienen plantillas de evidencia (`qa/FINAL_RESTORE_PROOF.example.md`, `qa/FINAL_CONCURRENCY_PROOF.example.md`) y el preflight las exige sin bypass.
+- `scripts/validate_restore_mysql.sh`, `scripts/validate_mysql_concurrency.mjs` y `scripts/validate_backup_worker_smoke.ps1` pueden generar evidencia durable para restore, concurrencia y worker `pending` a `success`.
+- Se agregaron manuales cortos para cajero, admin y cierre diario en `docs/TRAINING_CAJERO.md`, `docs/TRAINING_ADMIN.md` y `docs/DAILY_CLOSE_PROTOCOL.md`.
+- Se corrigio la exportacion de caja propia para que `reports.cash_session.view + reports.export` funcione solo con `cash_session_id` propio.
 - El estado honesto sigue siendo `PRODUCTION_CANDIDATE` mientras no exista evidencia real de segunda PC LAN, impresora fisica y entorno final.
 
 Las mejoras consideradas se agrupan en tres niveles:
@@ -338,6 +342,8 @@ Riesgo si no se documenta:
 3. Repetir restore y concurrencia en servidor/base descartable final si cambia el entorno.
 4. Ejecutar gates completos y smoke real no destructivo.
 
+Estado repo-local: los puntos P1 anteriores ya tienen scripts, plantillas y gates reproducibles. La ejecucion real queda pendiente solo cuando requiere servidor/base descartable final o credenciales reales.
+
 ### P2 - Mejora posterior a primera instalacion controlada
 
 1. Manuales cortos por rol.
@@ -345,6 +351,8 @@ Riesgo si no se documenta:
 3. Observabilidad local ampliada.
 4. Exportaciones/reportes adicionales basados en uso real.
 5. Ajustes UX despues de observar caja real.
+
+Estado repo-local: manuales, observabilidad local ampliada y exportacion de caja propia quedaron cubiertos. Analisis estatico PHP formal y accesibilidad automatizada quedan como mejoras futuras no bloqueantes porque requieren adoptar dependencias/gates nuevos.
 
 ## Criterio de cierre recomendado
 

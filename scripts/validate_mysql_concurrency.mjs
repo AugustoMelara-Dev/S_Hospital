@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
+
 const baseUrl = (process.env.HOSPITAL_CONCURRENCY_BASE_URL ?? '').replace(/\/$/, '');
 const targetEnv = process.env.HOSPITAL_CONCURRENCY_TARGET_ENV ?? process.env.TARGET_ENV ?? process.env.APP_ENV ?? '';
 const login = process.env.HOSPITAL_CONCURRENCY_LOGIN ?? 'cajero.demo';
 const password = process.env.HOSPITAL_CONCURRENCY_PASSWORD ?? 'Password123!';
+const evidencePath = process.env.HOSPITAL_CONCURRENCY_EVIDENCE_PATH ?? '';
 const runId = `concurrency-validation-${new Date().toISOString().replace(/[^0-9A-Za-z]/g, '').slice(0, 14)}`;
 
 if (process.env.HOSPITAL_VALIDATE_REAL_MYSQL !== '1') {
@@ -147,18 +151,57 @@ async function main() {
     throw new Error(`double payment expected one success and one validation failure, got ${paymentStatuses.join(', ')}`);
   }
 
-  console.log(JSON.stringify({
+  const result = {
     status: 'VALIDATED',
     baseUrl,
     target_env: targetEnv,
     run_id: runId,
+    executed_at: new Date().toISOString(),
     cleanup: 'NOT_PERFORMED_AUDIT_RECORDS_REQUIRE_DISPOSABLE_DB_SNAPSHOT',
     checks: {
       double_cash_open: openStatuses,
       concurrent_invoice_numbers: invoiceNumbers,
       double_payment: paymentStatuses,
     },
-  }, null, 2));
+  };
+
+  if (evidencePath) {
+    await writeEvidence(evidencePath, result);
+  }
+
+  console.log(JSON.stringify(result, null, 2));
+}
+
+async function writeEvidence(path, result) {
+  await mkdir(dirname(path), { recursive: true });
+  const checks = [
+    `- [x] Double cash-session open leaves one truth. Result/evidence: HTTP ${result.checks.double_cash_open.join(' / ')}.`,
+    `- [x] Concurrent invoice emission keeps unique numbers. Result/evidence: ${result.checks.concurrent_invoice_numbers.join(', ')}.`,
+    `- [x] Double payment leaves one posted payment. Result/evidence: HTTP ${result.checks.double_payment.join(' / ')}.`,
+  ];
+  const content = `# Final concurrency proof
+
+## Environment
+
+- Date/time: ${result.executed_at}
+- Responsible person: Automated validation script
+- Server LAN URL: ${result.baseUrl}
+- Target environment: ${result.target_env}
+- Run ID: ${result.run_id}
+- Evidence/capture reference: ${path}
+- Final conclusion: Concurrency validation completed against a disposable target. Audit records were intentionally kept in the disposable database.
+
+## Required checks
+
+${checks.join('\n')}
+
+## Evidence
+
+\`\`\`json
+${JSON.stringify(result, null, 2)}
+\`\`\`
+`;
+  await writeFile(path, content, 'utf8');
 }
 
 main().catch((error) => {

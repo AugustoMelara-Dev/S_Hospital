@@ -602,6 +602,45 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.cash_session.id', $sessionId);
     }
 
+    public function test_cash_session_export_allows_cashier_scoped_permission_only_for_own_session(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $otherCashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $otherSessionId = $this->openSession($otherCashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+        $otherInvoiceId = $this->createInvoice($otherCashier, 'Eritropoyetina');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($otherCashier, $otherInvoiceId, $otherSessionId, Payment::METHOD_CARD, '28.75');
+
+        $cashier->givePermissionTo(
+            Permission::findByName('reports.cash_session.view', 'web'),
+            Permission::findByName('reports.export', 'web'),
+        );
+
+        $query = 'date_from='.now()->toDateString().'&date_to='.now()->toDateString();
+
+        $csv = $this->actingAs($cashier)
+            ->get("/api/reports/export?{$query}&cash_session_id={$sessionId}")
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertStringContainsString('ingresos,"Total cobrado",,,17.25', $csv);
+        $this->assertStringContainsString('servicio,Glucosa,Laboratorio,1.00,17.25', $csv);
+        $this->assertStringNotContainsString('Eritropoyetina', $csv);
+        $this->assertStringNotContainsString($otherCashier->username, $csv);
+
+        $this->actingAs($cashier)
+            ->get("/api/reports/export?{$query}&cash_session_id={$otherSessionId}")
+            ->assertForbidden();
+
+        $this->actingAs($cashier)
+            ->get("/api/reports/export?{$query}")
+            ->assertForbidden();
+    }
+
     public function test_report_indexes_exist_for_payment_and_category_queries(): void
     {
         $this->assertContains('payments_status_paid_at_index', $this->indexNames('payments'));

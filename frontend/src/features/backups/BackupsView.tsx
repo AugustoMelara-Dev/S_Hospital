@@ -287,6 +287,9 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                     <p className="text-xs text-muted-foreground">
                       DB: {systemStatus.database.driver} · URL {systemStatus.environment.app_url}
                     </p>
+                    <p className="text-xs text-muted-foreground">
+                      Hora: {formatDate(systemStatus.environment.server_time)} · {systemStatus.environment.timezone}
+                    </p>
                     <p className="text-xs text-sky-800">
                       PRODUCTION_READY: {systemStatus.readiness.production_ready ? 'si' : 'no'}
                     </p>
@@ -330,6 +333,50 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                       <p className="mt-1 break-words text-xs text-muted-foreground">{check.detail}</p>
                     </div>
                   ))}
+                  <div className="rounded-md border border-border p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-medium">Migraciones aplicadas</p>
+                      <span className="shrink-0 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800">
+                        {systemStatus.runtime.migration_count ?? 'N/D'}
+                      </span>
+                    </div>
+                    <p className="mt-1 break-words font-mono text-xs text-muted-foreground">
+                      {systemStatus.runtime.latest_migration ?? 'migrations no disponible'}
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-border p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-medium">Jobs fallidos</p>
+                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.backups.queue.failed_jobs_count ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
+                        {systemStatus.backups.queue.failed_jobs_count ?? 'N/D'}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Tabla jobs: {systemStatus.backups.queue.jobs_table_available ? 'si' : 'no'} · failed_jobs: {systemStatus.backups.queue.failed_jobs_table_available ? 'si' : 'no'}
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-border p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-medium">Log Laravel</p>
+                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.runtime.laravel_log.exists ? 'border-sky-200 bg-sky-50 text-sky-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
+                        {systemStatus.runtime.laravel_log.exists ? formatBytes(systemStatus.runtime.laravel_log.size_bytes) : 'no existe'}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Ultima escritura: {systemStatus.runtime.laravel_log.modified_at ? formatDate(systemStatus.runtime.laravel_log.modified_at) : 'sin registro'}
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-border p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-medium">Log backup worker</p>
+                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.runtime.backup_automation_log.exists ? 'border-sky-200 bg-sky-50 text-sky-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
+                        {systemStatus.runtime.backup_automation_log.exists ? formatBytes(systemStatus.runtime.backup_automation_log.size_bytes) : 'no existe'}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Reiniciar: Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

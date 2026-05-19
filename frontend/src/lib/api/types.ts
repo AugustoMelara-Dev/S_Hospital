@@ -357,6 +357,8 @@ export type SystemStatus = {
     queue_connection: string;
     filesystem_disk: string;
     php_version: string;
+    server_time: string;
+    timezone: string;
   };
   database: {
     connection: string;
@@ -380,10 +382,29 @@ export type SystemStatus = {
     };
     queue: {
       connection: string;
+      jobs_table_available: boolean;
+      failed_jobs_table_available: boolean;
+      failed_jobs_count: number | null;
       pending_backup_jobs: number | null;
       worker_command: string;
       scheduler_command: string;
     };
+  };
+  runtime: {
+    logs_writable: boolean;
+    cache_writable: boolean;
+    laravel_log: {
+      exists: boolean;
+      size_bytes: number | null;
+      modified_at: string | null;
+    };
+    backup_automation_log: {
+      exists: boolean;
+      size_bytes: number | null;
+      modified_at: string | null;
+    };
+    latest_migration: string | null;
+    migration_count: number | null;
   };
   readiness: {
     state: 'DEMO_READY' | 'PRODUCTION_CANDIDATE' | 'PRODUCTION_READY';

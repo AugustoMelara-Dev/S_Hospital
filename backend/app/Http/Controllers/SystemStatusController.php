@@ -75,17 +75,59 @@ class SystemStatusController extends Controller
                 'historical',
             ],
         ],
+        'FINAL_RESTORE_PROOF' => [
+            'label' => 'Restore MySQL/MariaDB final',
+            'required_file' => 'qa/FINAL_RESTORE_PROOF.md',
+            'fields' => [
+                'Date/time',
+                'Responsible person',
+                'Source database',
+                'Disposable restore database',
+                'Backup file',
+                'Backup SHA256',
+                'Backup size bytes',
+                'Evidence/capture reference',
+                'Final conclusion',
+            ],
+            'checks' => [
+                'Disposable restore database',
+                'Backup file',
+                'Restore imports',
+                'Migration table',
+                'Services table',
+                'Core counts',
+            ],
+        ],
+        'FINAL_CONCURRENCY_PROOF' => [
+            'label' => 'Concurrencia transaccional final',
+            'required_file' => 'qa/FINAL_CONCURRENCY_PROOF.md',
+            'fields' => [
+                'Date/time',
+                'Responsible person',
+                'Server LAN URL',
+                'Target environment',
+                'Run ID',
+                'Evidence/capture reference',
+                'Final conclusion',
+            ],
+            'checks' => [
+                'Double cash-session open',
+                'Concurrent invoice emission',
+                'Double payment',
+            ],
+        ],
     ];
 
     public function show(Request $request): JsonResponse
     {
-        $request->user()->can('backups.view') || abort(403);
+        $request->user()->can('system.status.view') || abort(403);
 
         return response()->json([
             'data' => [
                 'environment' => $this->environmentStatus(),
                 'database' => $this->databaseStatus(),
                 'backups' => $this->backupStatus(),
+                'runtime' => $this->runtimeStatus(),
                 'readiness' => $this->readinessStatus(),
                 'preflight' => $this->preflightStatus(),
             ],
@@ -104,6 +146,8 @@ class SystemStatusController extends Controller
             'queue_connection' => (string) Config::get('queue.default'),
             'filesystem_disk' => (string) Config::get('filesystems.default'),
             'php_version' => PHP_VERSION,
+            'server_time' => now()->toJSON(),
+            'timezone' => (string) Config::get('app.timezone'),
         ];
     }
 
@@ -150,6 +194,53 @@ class SystemStatusController extends Controller
             'dump_binary' => $this->dumpBinaryStatus(),
             'storage' => $this->backupStorageStatus(),
             'queue' => $this->queueStatus(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function runtimeStatus(): array
+    {
+        $logsPath = storage_path('logs');
+        $cachePath = base_path('bootstrap/cache');
+        $latestMigration = null;
+        $migrationCount = null;
+
+        if (Schema::hasTable('migrations')) {
+            $latestMigration = DB::table('migrations')->max('migration');
+            $migrationCount = DB::table('migrations')->count();
+        }
+
+        return [
+            'logs_writable' => is_dir($logsPath) && is_writable($logsPath),
+            'cache_writable' => is_dir($cachePath) && is_writable($cachePath),
+            'laravel_log' => $this->fileStatus(storage_path('logs/laravel.log')),
+            'backup_automation_log' => $this->fileStatus(base_path('scripts/backup-automation.log')),
+            'latest_migration' => $latestMigration,
+            'migration_count' => $migrationCount,
+        ];
+    }
+
+    /**
+     * @return array{exists: bool, size_bytes: int|null, modified_at: string|null}
+     */
+    private function fileStatus(string $path): array
+    {
+        if (! is_file($path)) {
+            return [
+                'exists' => false,
+                'size_bytes' => null,
+                'modified_at' => null,
+            ];
+        }
+
+        $modifiedAt = filemtime($path);
+
+        return [
+            'exists' => true,
+            'size_bytes' => filesize($path) ?: 0,
+            'modified_at' => $modifiedAt === false ? null : now()->setTimestamp($modifiedAt)->toJSON(),
         ];
     }
 
@@ -224,6 +315,9 @@ class SystemStatusController extends Controller
 
         return [
             'connection' => $connection,
+            'jobs_table_available' => Schema::hasTable('jobs'),
+            'failed_jobs_table_available' => Schema::hasTable('failed_jobs'),
+            'failed_jobs_count' => Schema::hasTable('failed_jobs') ? DB::table('failed_jobs')->count() : null,
             'pending_backup_jobs' => $pendingJobs,
             'worker_command' => 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
             'scheduler_command' => 'php artisan schedule:run',
@@ -313,6 +407,18 @@ class SystemStatusController extends Controller
                     'label' => 'Worker de backups como tarea/servicio',
                     'status' => 'manual_required',
                     'detail' => $backups['queue']['worker_command'],
+                ],
+                [
+                    'code' => 'SERVER_LOGS_WRITABLE',
+                    'label' => 'Logs locales escribibles',
+                    'status' => $this->runtimeStatus()['logs_writable'] ? 'validated' : 'pending',
+                    'detail' => $this->runtimeStatus()['logs_writable'] ? 'storage/logs disponible' : 'storage/logs no escribible',
+                ],
+                [
+                    'code' => 'APP_CACHE_WRITABLE',
+                    'label' => 'Cache de Laravel escribible',
+                    'status' => $this->runtimeStatus()['cache_writable'] ? 'validated' : 'pending',
+                    'detail' => $this->runtimeStatus()['cache_writable'] ? 'bootstrap/cache disponible' : 'bootstrap/cache no escribible',
                 ],
             ],
             'public_routes' => [

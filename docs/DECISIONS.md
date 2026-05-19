@@ -531,3 +531,26 @@ Consecuencia:
 
 - El cierre final debe instalar o actualizar tareas con `scripts\install_backup_tasks_windows.ps1 -UpdateExisting`, iniciar `HospitalBillingOS-BackupWorker` y confirmar que la UI mueve backups de `pending` a `success`.
 - Una corrida de preflight en Windows sin tareas instaladas queda bloqueada aunque ambiente, rutas y evidencias fisicas esten completas.
+
+### 2026-05-19 - Robustez operativa final y evidencias durables
+
+Decision:
+
+- El cierre final ahora exige evidencia de restore (`qa\FINAL_RESTORE_PROOF.md`) y concurrencia (`qa\FINAL_CONCURRENCY_PROOF.md`) ademas de LAN e impresora.
+- `scripts\validate_restore_mysql.sh` puede escribir evidencia con SHA256, tamano de backup y conteos minimos de tablas restauradas usando `HOSPITAL_RESTORE_EVIDENCE_PATH`.
+- `scripts\validate_mysql_concurrency.mjs` puede escribir evidencia durable con `HOSPITAL_CONCURRENCY_EVIDENCE_PATH`.
+- Se agrega `scripts\validate_backup_worker_smoke.ps1` para crear un backup por API, esperar `success`, validar SHA256/tamano y escribir evidencia del worker.
+- `/api/system/status` queda separado por permiso `system.status.view`, no por `backups.view`, y expone diagnostico no secreto: hora del servidor, zona horaria, jobs/failed_jobs, migraciones y metadata de logs.
+- La exportacion CSV de caja propia permite `reports.cash_session.view + reports.export` solo con `cash_session_id`; el backend mantiene `scopedFilters()` como defensa para impedir exportar cajas ajenas.
+
+Motivo:
+
+- Robustez operativa significa pruebas repetibles, no instrucciones sueltas.
+- El admin necesita diagnostico local accionable sin exponer secretos ni dar acceso a roles que solo pueden operar backups.
+- La caja propia exportable debe ser coherente entre UI y backend sin convertir al cajero en usuario gerencial.
+
+Consecuencia:
+
+- `PRODUCTION_READY` queda bloqueado por cuatro evidencias: segunda PC LAN, impresora fisica, restore final y concurrencia final.
+- Backups, restore y concurrencia ahora pueden dejar artefactos verificables en `qa/`.
+- Cajeros con permiso de reporte de caja pueden exportar solo su caja si tambien reciben `reports.export`.
