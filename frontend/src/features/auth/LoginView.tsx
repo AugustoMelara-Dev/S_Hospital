@@ -46,23 +46,29 @@ export function LoginView({
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
-            <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
-              Usuario o email
+            <div className="flex flex-col gap-2">
+              <label htmlFor="login-input" className="text-sm font-semibold text-muted-foreground">
+                Usuario o email
+              </label>
               <Input
+                id="login-input"
                 value={login}
                 autoComplete="username"
                 onChange={(event) => onLoginChange(event.target.value)}
               />
-            </label>
-            <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
-              Contrasena
+            </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="password-input" className="text-sm font-semibold text-muted-foreground">
+                Contraseña
+              </label>
               <Input
+                id="password-input"
                 type="password"
                 value={password}
                 autoComplete="current-password"
                 onChange={(event) => onPasswordChange(event.target.value)}
               />
-            </label>
+            </div>
             <Button type="submit">Entrar</Button>
           </form>
           <p className="mt-4 text-sm text-muted-foreground" role="status">

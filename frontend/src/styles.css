@@ -676,6 +676,16 @@ html.dark {
 }
 
 @media print {
+  .print-hidden,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
   body[data-printing-receipt="true"] {
     background: #fff !important;
   }
@@ -703,10 +713,6 @@ html.dark {
     padding: 12px;
   }
 
-  body[data-printing-receipt="true"] .no-print {
-    display: none !important;
-  }
-
   body[data-printing-receipt="true"] .receipt-preview-container {
     background: none !important;
     padding: 0 !important;
@@ -716,6 +722,10 @@ html.dark {
     padding: 0 !important;
     border: none !important;
     box-shadow: none !important;
+  }
+
+  @page {
+    margin: 1.5cm;
   }
 
   @page receipt-80 {

@@ -207,7 +207,7 @@ export function AppShell({
   logoUrl,
 }: AppShellProps) {
   const location = useLocation();
-  const { theme, setTheme, isDark } = useTheme();
+  const { setTheme, isDark } = useTheme();
   const [now, setNow] = useState(() => new Date());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -297,6 +297,12 @@ export function AppShell({
 
   return (
     <div className="app-shell min-h-screen bg-slate-50 text-slate-900">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-teal-600 focus:px-4 focus:py-2 focus:text-white focus:font-bold focus:shadow-lg"
+      >
+        Omitir al contenido principal
+      </a>
       <MobileSidebar
         open={mobileMenuOpen}
         onOpenChange={setMobileMenuOpen}
@@ -336,7 +342,7 @@ export function AppShell({
             {isMinimalTopbar ? null : (
               <nav className="flex items-center gap-1.5 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium" aria-label="Breadcrumb">
                 {crumbs.map((crumb, idx) => (
-                  <div key={crumb.path} className="flex items-center gap-1.5">
+                  <div key={`${crumb.path}-${idx}`} className="flex items-center gap-1.5">
                     {idx > 0 && <span className="text-slate-300 dark:text-slate-600">/</span>}
                     {idx === crumbs.length - 1 ? (
                       <span className="text-slate-800 dark:text-slate-200 font-semibold truncate max-w-[120px] sm:max-w-none">{crumb.label}</span>
@@ -436,7 +442,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-6">
+        <main id="main-content" className="flex-1 p-4 lg:p-6" tabIndex={-1}>
           <div className="mx-auto flex max-w-7xl flex-col gap-5">{children}</div>
         </main>
 

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - S_Hospital OS</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent: #0d9488;
+            --accent-light: #f0fdfa;
+            --accent-border: #ccfbf1;
+            --text: #334155;
+            --text-muted: #64748b;
+            --bg: #f8fafc;
+            --border: #e2e8f0;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: var(--text);
+            background-color: var(--bg);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: var(--card-bg);
+            padding: 50px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        /* Header design */
+        header {
+            border-bottom: 3px solid var(--accent);
+            padding-bottom: 25px;
+            margin-bottom: 40px;
+        }
+
+        .header-title-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .header-tag {
+            background-color: var(--accent-light);
+            color: var(--accent);
+            border: 1px solid var(--accent-border);
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .header-subtitle {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin: 8px 0 0 0;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+            border-left: 4px solid var(--accent);
+            padding-left: 12px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-light);
+            margin-top: 25px;
+            margin-bottom: 12px;
+        }
+
+        p {
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        /* Keyboard shortcut keys */
+        .key {
+            background-color: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            box-shadow: 0 2px 0 0 #cbd5e1;
+            color: #1e293b;
+            display: inline-block;
+            font-family: Consolas, monospace;
+            font-size: 12px;
+            font-weight: bold;
+            line-height: 1;
+            padding: 4px 8px;
+            white-space: nowrap;
+        }
+
+        /* Custom Table design */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        tr:nth-child(even) td {
+            background-color: #f8fafc;
+        }
+
+        /* Callout alert boxes */
+        .callout {
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin: 24px 0;
+            font-size: 14px;
+        }
+
+        .callout-caution {
+            background-color: #fef2f2;
+            border-left: 4px solid #ef4444;
+            color: #991b1b;
+            border-top: 1px solid #fee2e2;
+            border-right: 1px solid #fee2e2;
+            border-bottom: 1px solid #fee2e2;
+        }
+
+        .callout-note {
+            background-color: var(--accent-light);
+            border-left: 4px solid var(--accent);
+            color: #0f766e;
+            border-top: 1px solid var(--accent-border);
+            border-right: 1px solid var(--accent-border);
+            border-bottom: 1px solid var(--accent-border);
+        }
+
+        .callout-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.05em;
+        }
+
+        /* Code snippets */
+        pre {
+            background-color: #0f172a;
+            color: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: Consolas, 'Courier New', Courier, monospace;
+            font-size: 13px;
+            margin: 15px 0;
+        }
+
+        code {
+            font-family: Consolas, monospace;
+            background-color: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #0f172a;
+            font-size: 13px;
+        }
+
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: inherit;
+            font-size: inherit;
+        }
+
+        /* Print formatting */
+        @media print {
+            body {
+                background-color: white;
+                color: black;
+            }
+            .container {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+                margin: 0;
+                max-width: 100%;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="header-title-container">
+                <h1 class="header-title">Manual de Usuario</h1>
+                <span class="header-tag">Servidor Local LAN - Offline</span>
+            </div>
+            <p class="header-subtitle">Guía de Operaciones, Protocolos de Caja, Respaldos y Activación del Sistema S_Hospital OS</p>
+        </header>
+
+        <section id="shortcuts">
+            <h2>1. Introducción y Accesos Rápidos (Shortcuts)</h2>
+            <p>El sistema <strong>S_Hospital</strong> está optimizado para agilizar el registro y cobro de transacciones en la clínica u hospital sin depender de una conexión a internet. La pantalla de facturación permite al cajero registrar servicios rápidamente con el teclado.</p>
+            
+            <h3>Atajos de Teclado del Punto de Venta (POS)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Atajo</th>
+                        <th>Acción en Pantalla</th>
+                        <th>Detalle Técnico</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="key">F2</span></td>
+                        <td><strong>Cobrar / Pagar</strong></td>
+                        <td>Abre el modal de cobro directo para seleccionar método de pago e ingresar el efectivo.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">F4</span></td>
+                        <td><strong>Buscar Paciente</strong></td>
+                        <td>Enfoca el campo del nombre del paciente para una captura ágil sin usar el mouse.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">F8</span></td>
+                        <td><strong>Vaciar Carrito</strong></td>
+                        <td>Limpia todos los servicios agregados de la venta activa.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">Esc</span></td>
+                        <td><strong>Cerrar Modales</strong></td>
+                        <td>Cierra cualquier modal emergente en pantalla de manera instantánea.</td>
+                    </tr>
+                    <tr>
+                        <td><span class="key">Enter</span></td>
+                        <td><strong>Confirmar</strong></td>
+                        <td>Acepta selecciones o confirma transacciones en formularios activos.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="void-protocols">
+            <h2>2. Protocolos de Anulación de Facturas</h2>
+            <p>Por motivos de transparencia, cumplimiento fiscal y auditorías administrativas internas, <strong>ninguna factura es borrada físicamente</strong> de la base de datos de S_Hospital.</p>
+            
+            <div class="callout callout-note">
+                <div class="callout-title">Regla Fiscal</div>
+                El correlativo fiscal otorgado en la secuencia activa debe mantenerse consecutivo. Si una factura se emite incorrectamente, se debe anular agregando una auditoría en lugar de eliminarla.
+            </div>
+
+            <h3>Procedimiento Operativo de Anulación:</h3>
+            <ol>
+                <li>Un cajero identifica un error en una factura emitida y solicita la presencia del <strong>Supervisor</strong> o <strong>Administrador</strong>.</li>
+                <li>El supervisor inicia sesión con su cuenta que dispone del permiso <code>invoices.void</code>.</li>
+                <li>Ingresa al panel de <strong>Facturas</strong> y abre el detalle de la transacción correspondiente.</li>
+                <li>Hace clic en <strong>Anular Factura</strong>.</li>
+                <li>El sistema exige ingresar un <strong>motivo detallado</strong> de la anulación (mínimo de 10 caracteres). Ej: <em>"Error de captura del servicio de Glucosa por parte del médico"</em>.</li>
+                <li>Una vez confirmada, el estado cambia a <code>void</code> y el sistema registra de forma automática la anulación en el listado de auditoría operativa.</li>
+            </ol>
+        </section>
+
+        <div class="page-break"></div>
+
+        <section id="cashbox-audits">
+            <h2>3. Apertura, Auditoría y Cierres de Caja</h2>
+            <p>El control del flujo de dinero en efectivo y cobros digitales se administra de forma rigurosa por cada turno de cajero.</p>
+            
+            <h3>Ciclo de Caja Diario:</h3>
+            <ul>
+                <li><strong>Apertura:</strong> Al iniciar el turno, el cajero debe aperturar la sesión ingresando el fondo de caja disponible en efectivo (ej. <code>L. 500.00</code>).</li>
+                <li><strong>Registro:</strong> Todos los pagos de facturas emitidas por el cajero activo quedan estrictamente ligados a su sesión de caja.</li>
+                <li><strong>Salidas y Entradas:</strong> Cualquier movimiento de efectivo ajeno a una factura (ej. pago menor a proveedor local) debe registrarse en el panel de caja.</li>
+                <li><strong>Cierre y Arqueo:</strong> Al terminar el turno, el cajero cuenta físicamente el dinero, ingresa el monto total de cierre, y el sistema calcula la diferencia esperada.</li>
+            </ul>
+
+            <div class="callout callout-caution">
+                <div class="callout-title">Atención Auditores</div>
+                Cualquier diferencia mayor a la tolerancia configurada por administración debe justificarse formalmente por el cajero y validarse por el supervisor a cargo antes de permitir un nuevo turno.
+            </div>
+        </section>
+
+        <section id="backups">
+            <h2>4. Respaldos (Backups) y Recuperación ante Desastres</h2>
+            <p>El sistema S_Hospital almacena de forma 100% local todos sus datos. La seguridad de la información reside en un plan regular de respaldos.</p>
+            
+            <h3>Creación de Backups Manuales</h3>
+            <p>Los administradores pueden generar y descargar copias de seguridad de la base de datos MariaDB directamente desde el panel administrativo web en el apartado de <strong>Copias de Seguridad</strong>.</p>
+            
+            <h3>Procedimiento de Restauración (Restore) en Servidor</h3>
+            <p>Para restaurar la base de datos de S_Hospital ante un fallo catastrófico de disco, siga estos pasos:</p>
+
+            <div class="callout callout-caution">
+                <div class="callout-title">Peligro de Pérdida de Datos</div>
+                Nunca intente restaurar base de datos en producción directamente sin haber verificado primero la integridad del archivo y haberlo probado en una base limpia de pruebas.
+            </div>
+
+            <h4>Paso A: Comprobación de Hash del Archivo</h4>
+            <p>Verifique que el archivo SQL de respaldo no esté corrupto calculando su hash SHA256:</p>
+            <pre>Get-FileHash C:\backups\hospital-backup.sql -Algorithm SHA256</pre>
+
+            <h4>Paso B: Restaurar en Entorno de Pruebas</h4>
+            <p>1. Inicie sesión en MariaDB local y cree una base de datos limpia de pruebas:</p>
+            <pre>CREATE DATABASE hospital_restore_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</pre>
+            <p>2. Cargue el archivo SQL en la base de pruebas:</p>
+            <pre>mysql -u root -p hospital_restore_test &lt; C:\backups\hospital-backup.sql</pre>
+            <p>3. Modifique temporalmente el archivo <code>.env</code> en el backend para apuntar a la base de pruebas y corra el test suite para validar la integridad de la base:</p>
+            <pre>php artisan test</pre>
+
+            <h4>Paso C: Restaurar en Producción</h4>
+            <p>Una vez verificado que el backup está íntegro y que el sistema arranca con normalidad en pruebas, aplique la restauración en producción deteniendo previamente los accesos LAN para evitar colisiones.</p>
+        </section>
+
+        <div class="page-break"></div>
+
+        <section id="licensing">
+            <h2>5. Activación de Licencia Offline</h2>
+            <p>S_Hospital corre localmente en modo desarrollo/demo por defecto. Para su despliegue comercial en red LAN multi-usuario, requiere cargar un archivo de licencia comercial offline emitido por su proveedor.</p>
+            
+            <h3>Configuración del Archivo de Licencia</h3>
+            <p>El sistema busca la licencia offline en la ruta local del backend: <code>backend/storage/app/license.json</code>.</p>
+            
+            <h3>Formato del Archivo license.json:</h3>
+            <pre>{
+  "licensee": "Nombre de la Clinica o Hospital",
+  "rtn": "08011999123456",
+  "expires_at": "2027-12-31",
+  "signature": "de78fb216cb34ea7205a28b0304859a1122a2bf89ee60731f8b1d8f58b7333a9"
+}</pre>
+
+            <div class="callout callout-note">
+                <div class="callout-title">Integridad de la Firma</div>
+                El valor <code>signature</code> es una firma criptográfica HMAC-SHA256 del payload <code>licensee|rtn|expires_at</code> calculada con la clave privada interna. Si se edita de forma manual el nombre del hospital o el RTN en este archivo, el sistema detectará firma alterada y denegará los accesos.
+            </div>
+        </section>
+
+        <section id="support">
+            <h2>6. Soporte Técnico y Logs del Sistema</h2>
+            <p>Ante cualquier eventualidad con la base de datos o fallos de transacciones en red local LAN:</p>
+            <ul>
+                <li><strong>Log de Laravel:</strong> Revise <code>backend/storage/logs/laravel.log</code> para obtener trazas detalladas de errores de PHP.</li>
+                <li><strong>Servidor de Base de Datos:</strong> Puerto local estándar <code>3306</code> de MySQL/MariaDB.</li>
+                <li><strong>Apertura de Firewall:</strong> Puerto de red LAN <code>8000</code>.</li>
+            </ul>
+        </section>
+
+        <footer style="margin-top: 50px; text-align: center; border-top: 1px solid var(--border); padding-top: 20px;" class="no-print">
+            <button onclick="window.print()" style="background-color: var(--accent); color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer;">Imprimir Manual en Papel / Guardar PDF</button>
+        </footer>
+    </div>
+
+</body>
+</html>

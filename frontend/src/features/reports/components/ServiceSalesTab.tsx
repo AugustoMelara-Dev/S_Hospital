@@ -18,11 +18,12 @@ interface ServiceSalesTabProps {
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
   onExport: () => void;
+  onExportPdf: () => void;
   onSubmit: () => void;
 }
 
 export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, serviceSales, onDateFromChange, onDateToChange,
-  onExport, onSubmit }: ServiceSalesTabProps) {
+  onExport, onExportPdf, onSubmit }: ServiceSalesTabProps) {
 
   const chartData = serviceSales
     ? serviceSales.services.slice(0, 10).map((s) => ({
@@ -171,15 +172,19 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
           )}
 
           {canExport ? (
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
                 Exportar Excel
               </Button>
+              <Button variant="outline" onClick={onExportPdf}>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
             </div>
           ) : (
             <p className="text-right text-sm text-muted-foreground">
-              Exportación Excel requiere permiso de exportacion de reportes.
+              Exportación requiere permiso de exportación de reportes.
             </p>
           )}
         </>

@@ -17,6 +17,7 @@ interface AuditoriaTabProps {
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
   onExport: () => void;
+  onExportPdf: () => void;
   onSubmit: () => void;
 }
 
@@ -28,6 +29,7 @@ export function AuditoriaTab({
   onDateFromChange,
   onDateToChange,
   onExport,
+  onExportPdf,
   onSubmit,
 }: AuditoriaTabProps) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -238,15 +240,19 @@ export function AuditoriaTab({
           )}
 
           {canExport ? (
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={onExport}>
                 <Download className="mr-2 h-4 w-4" />
                 Exportar Excel
               </Button>
+              <Button variant="outline" onClick={onExportPdf}>
+                <Download className="mr-2 h-4 w-4" />
+                Exportar PDF
+              </Button>
             </div>
           ) : (
             <p className="text-right text-sm text-muted-foreground">
-              Exportación Excel requiere permiso de exportacion de reportes.
+              Exportación requiere permiso de exportación de reportes.
             </p>
           )}
         </>

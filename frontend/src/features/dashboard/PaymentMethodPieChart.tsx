@@ -6,10 +6,10 @@ type PaymentMethodPieChartProps = {
 };
 
 const COLORS = {
-  cash: '#10b981',     // Green
-  transfer: '#3b82f6', // Blue
-  card: '#8b5cf6',     // Violet
-  other: '#f59e0b',    // Amber
+  cash: 'var(--color-success)',
+  transfer: 'var(--color-info)',
+  card: 'var(--color-secondary)',
+  other: 'var(--color-warning)',
 };
 
 const LABELS = {
@@ -67,8 +67,9 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
               fontSize: '12px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             }}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             formatter={(value: any) => [
-              `L. ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${((Number(value) / total) * 100).toFixed(1)}%)`,
+              `L. ${Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${((Number(value ?? 0) / total) * 100).toFixed(1)}%)`,
               'Total',
             ]}
           />
@@ -76,7 +77,7 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
             verticalAlign="bottom"
             iconType="circle"
             iconSize={8}
-            formatter={(value, entry: any) => {
+            formatter={(value) => {
               const item = chartData.find((d) => d.name === value);
               const amountStr = item ? ` (L. ${Math.round(item.value).toLocaleString()})` : '';
               return <span className="text-xs text-muted-foreground">{value}{amountStr}</span>;

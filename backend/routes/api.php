@@ -79,6 +79,7 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
         Route::get('/reports/operations', [ReportController::class, 'operations']);
         Route::get('/reports/export', [ReportController::class, 'export'])
             ->middleware('throttle:30,1');
+        Route::get('/reports/pdf', [ReportController::class, 'pdfExport']);
         Route::get('/reports/cash-sessions/{cashSession}', [ReportController::class, 'cashSession']);
 
         Route::get('/backups', [BackupController::class, 'index']);

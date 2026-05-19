@@ -13,12 +13,6 @@ import {
   ArrowRight,
   ArrowLeft,
   CheckCircle,
-  FileText,
-  BadgeCent,
-  UserPlus,
-  Settings,
-  HelpCircle,
-  UploadCloud,
   Loader2,
 } from 'lucide-react';
 
@@ -323,7 +317,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                 <Label htmlFor="wiz-hosp-width">Papel Impresora Térmica por Defecto</Label>
                 <Select
                   value={hospitalForm.receipt_width}
-                  onValueChange={(val: any) => setHospitalForm({ ...hospitalForm, receipt_width: val })}
+                  onValueChange={(val: '80mm' | '58mm') => setHospitalForm({ ...hospitalForm, receipt_width: val })}
                 >
                   <SelectTrigger id="wiz-hosp-width">
                     <SelectValue />

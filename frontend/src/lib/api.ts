@@ -212,6 +212,10 @@ export const apiClient = {
     return reports.downloadExport(filters);
   },
 
+  async downloadReportPdf(filters: ReportFilters & { date?: string }): Promise<Blob> {
+    return reports.downloadPdf(filters);
+  },
+
   async getBackups(filters: { page?: number; perPage?: number; status?: BackupLog['status'] | 'all' } = {}): Promise<{ data: BackupLog[]; meta: PaginatedMeta }> {
     return backups.getBackups(filters);
   },

@@ -35,6 +35,7 @@ interface IncomeReportTabProps {
   onCashierChange: (value: string) => void;
   onMethodChange: (value: NonNullable<ReportFilters['method']>) => void;
   onExport: () => void;
+  onExportPdf: () => void;
   onStatusChange: (value: NonNullable<ReportFilters['status']>) => void;
   onSubmit: () => void;
 }
@@ -59,6 +60,7 @@ export function IncomeReportTab({
   onCashierChange,
   onMethodChange,
   onExport,
+  onExportPdf,
   onStatusChange,
   onSubmit,
 }: IncomeReportTabProps) {
@@ -264,10 +266,14 @@ export function IncomeReportTab({
           )}
 
           {canExport && (
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
                 Exportar Excel
+              </Button>
+              <Button variant="outline" onClick={onExportPdf}>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar PDF
               </Button>
             </div>
           )}

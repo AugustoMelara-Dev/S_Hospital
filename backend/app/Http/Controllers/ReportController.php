@@ -6,10 +6,11 @@ use App\Actions\Reports\CashSessionReportService;
 use App\Actions\Reports\CategoryReportService;
 use App\Actions\Reports\DailyReportService;
 use App\Actions\Reports\DashboardReportService;
-use App\Actions\Reports\ExcelReportService;
+use App\Actions\Reports\PremiumExcelExportService;
 use App\Actions\Reports\IncomeReportService;
 use App\Actions\Reports\OperationsReportService;
 use App\Actions\Reports\ServiceSalesReportService;
+use App\Actions\Reports\PdfExportService;
 use App\Http\Requests\Reports\DailyReportRequest;
 use App\Http\Requests\Reports\DashboardReportRequest;
 use App\Http\Requests\Reports\DateRangeReportRequest;
@@ -79,7 +80,7 @@ class ReportController extends Controller
         $services = $serviceReports->report($filters);
         $operations = $operationReports->report($filters, $request->user()->can('backups.view'));
 
-        $excelService = new ExcelReportService;
+        $excelService = new PremiumExcelExportService;
         $spreadsheet = $excelService->generate(
             $income,
             $categories,
@@ -102,6 +103,82 @@ class ReportController extends Controller
         }, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Cache-Control' => 'max-age=0',
+        ]);
+    }
+
+    public function pdfExport(
+        Request $request,
+        DailyReportService $dailyReports,
+        IncomeReportService $incomeReports,
+        CategoryReportService $categoryReports,
+        ServiceSalesReportService $servicesReports,
+        OperationsReportService $operationsReports,
+        PdfExportService $pdfService
+    ) {
+        $request->user()->can('reports.view') || abort(403);
+
+        $fiscal = \App\Models\FiscalSetting::first() ?? new \App\Models\FiscalSetting([
+            'hospital_name' => 'Hospital Local',
+            'rtn' => 'N/A'
+        ]);
+
+        if ($request->filled('date') || (!$request->filled('date_from') && !$request->filled('date_to'))) {
+            $date = $request->input('date', now()->toDateString());
+            $data = $dailyReports->report($date);
+            
+            $pdf = $pdfService->generateDailyClosurePdf($data, $fiscal->toArray());
+            
+            return response($pdf, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="cierre_diario_' . $date . '.pdf"',
+            ]);
+        }
+
+        $request->validate([
+            'date_from' => ['required', 'date_format:Y-m-d'],
+            'date_to' => ['required', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+        ]);
+
+        $filters = [
+            'date_from' => $request->input('date_from'),
+            'date_to' => $request->input('date_to'),
+            'cash_session_id' => $request->input('cash_session_id'),
+            'user_id' => $request->input('user_id'),
+            'category_id' => $request->input('category_id'),
+            'method' => $request->input('method'),
+            'status' => $request->input('status'),
+        ];
+
+        if (!$request->user()->can('cash.close_any')) {
+            if (!empty($filters['cash_session_id'])) {
+                $exists = \App\Models\CashRegisterSession::query()
+                    ->whereKey($filters['cash_session_id'])
+                    ->where('user_id', $request->user()->id)
+                    ->exists();
+                if (!$exists) {
+                    abort(403);
+                }
+            }
+            $filters['user_id'] = $request->user()->id;
+        }
+
+        $income = $incomeReports->report($filters);
+        $categories = $categoryReports->report($filters);
+        $services = $servicesReports->report($filters);
+        $operations = $operationsReports->report($filters, $request->user()->can('backups.view'));
+
+        $pdf = $pdfService->generateRangeClosurePdf([
+            'income' => $income,
+            'categories' => $categories,
+            'services' => $services,
+            'operations' => $operations,
+            'date_from' => $filters['date_from'],
+            'date_to' => $filters['date_to'],
+        ], $fiscal->toArray());
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="cierre_periodo_' . $filters['date_from'] . '_a_' . $filters['date_to'] . '.pdf"',
         ]);
     }
 

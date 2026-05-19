@@ -164,26 +164,53 @@ export function ReportsView({
 
   async function downloadBackendExport(filters: ReportFilters) {
     if (!canExport) {
-      onStatus('Exportacion CSV requiere permiso de exportacion de reportes.');
+      onStatus('Exportaci贸n Excel requiere permiso de exportacion de reportes.');
       return;
     }
 
-    onStatus('Preparando exportacion CSV...');
+    onStatus('Preparando exportaci贸n Excel...');
 
     try {
       const blob = await apiClient.downloadReportExport(filters);
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `reporte-hospital-${filters.date_from ?? today}-a-${filters.date_to ?? today}.csv`;
+      anchor.download = `reporte-hospital-${filters.date_from ?? today}-a-${filters.date_to ?? today}.xlsx`;
       anchor.click();
       URL.revokeObjectURL(url);
-      onStatus('Exportacion CSV descargada.');
+      onStatus('Exportaci贸n Excel descargada.');
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo exportar el reporte.');
       onStatus(message);
     }
   }
+
+  async function downloadBackendPdf(filters: ReportFilters & { date?: string }) {
+    if (!canExport) {
+      onStatus('Exportaci贸n PDF requiere permiso de exportaci贸n de reportes.');
+      return;
+    }
+
+    onStatus('Preparando exportaci贸n PDF...');
+
+    try {
+      const blob = await apiClient.downloadReportPdf(filters);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      const filename = filters.date 
+        ? `cierre_diario_${filters.date}.pdf`
+        : `cierre_periodo_${filters.date_from}_a_${filters.date_to}.pdf`;
+      anchor.download = filename;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      onStatus('Exportaci贸n PDF descargada.');
+    } catch (error) {
+      const message = userSafeErrorMessage(error, 'No se pudo exportar el reporte PDF.');
+      onStatus(message);
+    }
+  }
+
   function handleDailySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void loadDaily(dailyDate);
@@ -213,7 +240,7 @@ export function ReportsView({
               <TabsTrigger value="diario">Diario</TabsTrigger>
               <TabsTrigger value="rango">Por Rango</TabsTrigger>
               <TabsTrigger value="servicios">Servicios</TabsTrigger>
-              <TabsTrigger value="auditoria">Auditor韆</TabsTrigger>
+              <TabsTrigger value="auditoria">Auditor锟絘</TabsTrigger>
             </>
           )}
           {canViewCashSessionReport && (
@@ -231,6 +258,7 @@ export function ReportsView({
               loading={loading}
               onDateChange={setDailyDate}
               onExport={() => downloadBackendExport({ date_from: dailyDate, date_to: dailyDate })}
+              onExportPdf={() => downloadBackendPdf({ date: dailyDate, date_from: dailyDate, date_to: dailyDate })}
               onSubmit={handleDailySubmit}
             />
           ) : (
@@ -269,6 +297,7 @@ export function ReportsView({
                 onCashierChange={setCashierId}
                 onMethodChange={setMethod}
                 onExport={() => downloadBackendExport(reportFilters())}
+                onExportPdf={() => downloadBackendPdf(reportFilters())}
                 onStatusChange={setStatus}
                 onSubmit={loadRangeReports}
               />
@@ -292,6 +321,7 @@ export function ReportsView({
               onDateFromChange={setDateFrom}
               onDateToChange={setDateTo}
               onExport={() => downloadBackendExport(reportFilters())}
+              onExportPdf={() => downloadBackendPdf(reportFilters())}
               onSubmit={loadRangeReports}
             />
           ) : (
@@ -312,6 +342,7 @@ export function ReportsView({
               onDateFromChange={setDateFrom}
               onDateToChange={setDateTo}
               onExport={() => downloadBackendExport(reportFilters())}
+              onExportPdf={() => downloadBackendPdf(reportFilters())}
               onSubmit={loadRangeReports}
             />
           ) : (
@@ -352,3 +383,4 @@ function localDateString(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+

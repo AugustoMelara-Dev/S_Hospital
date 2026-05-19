@@ -72,10 +72,8 @@ function saveBlob(blob: Blob, filename: string) {
 }
 
 export function BackupsView({ user, onStatus }: BackupsViewProps) {
-  let [backups, setBackups] = useState<BackupLog[]>([]);
-  if (!Array.isArray(backups)) {
-    backups = [];
-  }
+  const [backupsState, setBackups] = useState<BackupLog[]>([]);
+  const backups = Array.isArray(backupsState) ? backupsState : [];
   const [meta, setMeta] = useState<PaginatedMeta | null>(null);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);

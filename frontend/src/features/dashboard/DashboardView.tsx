@@ -1,11 +1,9 @@
 import {
   Activity,
-  ClipboardList,
   ReceiptText,
   WalletCards,
   TrendingUp,
   CreditCard,
-  Users,
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
@@ -73,7 +71,6 @@ export function DashboardView({
 
   // Setup Wizard Banner state
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
-  const [loadingSetup, setLoadingSetup] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
   const fetchDashboard = () => {
@@ -102,17 +99,13 @@ export function DashboardView({
     if (!canViewFiscalSettings && !canViewManagerialReports) {
       return;
     }
-    setLoadingSetup(true);
     // Call our new public setup-status API endpoint
-    apiClient.request<{ needs_setup: boolean; steps: any }>('/api/system/setup-status')
-      .then((res: any) => {
+    apiClient.request<SetupStatus>('/api/system/setup-status')
+      .then((res: SetupStatus) => {
         setSetupStatus(res);
       })
       .catch(() => {
         // Silently catch or ignore setup check errors
-      })
-      .finally(() => {
-        setLoadingSetup(false);
       });
   };
 

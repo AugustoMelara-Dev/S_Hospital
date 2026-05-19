@@ -740,6 +740,49 @@ class ReportsTest extends TestCase
             ->json('data.id');
     }
 
+    public function test_pdf_export_requires_reports_view_permission(): void
+    {
+        $this->seedBillingBase();
+        $user = User::factory()->create();
+        $date = now()->toDateString();
+
+        $this->getJson("/api/reports/pdf?date={$date}")
+            ->assertUnauthorized();
+
+        $this->actingAs($user)
+            ->getJson("/api/reports/pdf?date={$date}")
+            ->assertForbidden();
+    }
+
+    public function test_daily_closure_pdf_export_succeeds(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $date = now()->toDateString();
+
+        $response = $this->actingAs($admin)
+            ->get("/api/reports/pdf?date={$date}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $this->assertStringStartsWith("%PDF", $response->getContent());
+    }
+
+    public function test_period_closure_pdf_export_succeeds(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $dateFrom = now()->toDateString();
+        $dateTo = now()->toDateString();
+
+        $response = $this->actingAs($admin)
+            ->get("/api/reports/pdf?date_from={$dateFrom}&date_to={$dateTo}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $this->assertStringStartsWith("%PDF", $response->getContent());
+    }
+
     private function admin(): User
     {
         $admin = User::factory()->create();

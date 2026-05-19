@@ -24,7 +24,6 @@ import {
   Edit2,
   Mail,
   User,
-  ShieldCheck,
   Lock,
 } from 'lucide-react';
 

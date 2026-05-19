@@ -17,11 +17,12 @@ interface DailyReportTabProps {
   loading: boolean;
   onDateChange: (value: string) => void;
   onExport: () => void;
+  onExportPdf: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
 export function DailyReportTab({ canExport, daily, dailyDate, error, loading, onDateChange,
-  onExport, onSubmit }: DailyReportTabProps) {
+  onExport, onExportPdf, onSubmit }: DailyReportTabProps) {
 
   const paymentsByMethod = daily?.payments_by_method || {
     cash: '0.00',
@@ -133,8 +134,8 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
                   {Object.entries(invoicesByStatus).map(([status, data]) => (
                     <TableRow key={status}>
                       <TableCell className="font-medium">{statusLabel(status)}</TableCell>
-                      <TableCell className="text-right">{(data as any)?.count ?? 0}</TableCell>
-                      <TableCell className="text-right">L. {(data as any)?.total ?? '0.00'}</TableCell>
+                      <TableCell className="text-right">{(data as { count: number; total: string })?.count ?? 0}</TableCell>
+                      <TableCell className="text-right">L. {(data as { count: number; total: string })?.total ?? '0.00'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -161,15 +162,21 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
             </Card>
           )}
 
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
             {canExport ? (
-              <Button variant="outline" onClick={onExport}>
-                <Download className="h-4 w-4 mr-2" />
-                Exportar Excel
-              </Button>
+              <>
+                <Button variant="outline" onClick={onExport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar Excel
+                </Button>
+                <Button variant="outline" onClick={onExportPdf}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar PDF
+                </Button>
+              </>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Exportación Excel requiere permiso de exportacion de reportes.
+                Exportación requiere permiso de exportación de reportes.
               </p>
             )}
           </div>

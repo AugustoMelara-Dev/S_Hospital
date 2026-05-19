@@ -89,7 +89,7 @@ class UserController extends Controller
         $request->user()->can('users.update') || abort(403);
 
         $validated = $request->validate([
-            'password' => ['required', 'string', 'min:6'],
+            'password' => ['required', 'string', \Illuminate\Validation\Rules\Password::min(10)->letters()->numbers()],
         ]);
 
         $user->forceFill([

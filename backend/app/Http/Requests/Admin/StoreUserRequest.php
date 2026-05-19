@@ -4,6 +4,8 @@ namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+use Illuminate\Validation\Rules\Password;
+
 class StoreUserRequest extends FormRequest
 {
     public function authorize(): bool
@@ -20,7 +22,7 @@ class StoreUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'username' => ['required', 'string', 'max:255', 'alpha_dash', 'unique:users,username'],
-            'password' => ['required', 'string', 'min:6'],
+            'password' => ['required', 'string', Password::min(10)->letters()->numbers()],
             'role' => ['required', 'string', 'exists:roles,name'],
             'active' => ['boolean'],
         ];
