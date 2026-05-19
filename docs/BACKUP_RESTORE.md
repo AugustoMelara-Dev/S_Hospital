@@ -33,6 +33,20 @@ El comando crea y ejecuta el backup en el mismo proceso; se recomienda para tare
 
 Los archivos quedan bajo `storage/app/private/backups`. El API solo descarga archivos registrados en `backup_logs`, existentes y dentro de esa carpeta.
 
+## Programacion automatica diaria
+
+El backend registra una tarea Laravel diaria:
+
+```powershell
+cd C:\HospitalBilling\backend
+php artisan schedule:list
+php artisan schedule:run
+```
+
+Por defecto corre `hospital:backup --type=scheduled` a las `02:00`. La hora se puede ajustar con `HOSPITAL_DAILY_BACKUP_TIME=HH:MM` en `.env` antes de ejecutar `php artisan config:cache`.
+
+En Windows de produccion se recomienda usar el Programador de tareas para llamar `php artisan schedule:run` cada minuto, o usar el helper de abajo si se prefiere registrar directamente la tarea diaria `hospital:backup --type=scheduled`. El backup automatico queda registrado como usuario `Sistema` en la UI porque no depende de un usuario web. La creacion y descarga manual desde navegador siguen permitidas solo para usuarios con permisos `backups.create` y `backups.download`.
+
 ## Programar backup diario en Windows
 
 Crear una tarea del Programador de tareas:

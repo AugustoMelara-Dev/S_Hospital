@@ -4,6 +4,7 @@ use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -44,3 +45,10 @@ Artisan::command('auth:create-initial-admin
 
     return 0;
 })->purpose('Crear el admin inicial de produccion offline con password temporal.');
+
+Schedule::command('hospital:backup --type=scheduled')
+    ->dailyAt((string) env('HOSPITAL_DAILY_BACKUP_TIME', '02:00'))
+    ->withoutOverlapping(120)
+    ->onOneServer()
+    ->runInBackground()
+    ->description('Hospital Billing OS daily scheduled database backup');

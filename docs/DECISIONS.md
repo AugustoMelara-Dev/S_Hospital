@@ -416,3 +416,21 @@ Motivo:
 Consecuencia:
 
 - El codigo puede avanzar como paquete operativo listo para servidor final, pero la etiqueta `PRODUCTION_READY` solo se usa despues del preflight completo y evidencia de campo.
+
+### 2026-05-19 - Backups automaticos diarios y permisos manuales
+
+Decision:
+
+- Laravel registra `hospital:backup --type=scheduled` en el scheduler diario a las `02:00`.
+- La hora operativa se puede ajustar con `HOSPITAL_DAILY_BACKUP_TIME=HH:MM`.
+- El backup automatico queda como tarea de sistema sin usuario web; los backups manuales de UI siguen limitados a `backups.view`, `backups.create` y `backups.download`.
+
+Motivo:
+
+- El servidor LAN debe poder respaldar cada dia aunque nadie entre al panel.
+- El panel manual sigue siendo una accion administrativa auditada, no una herramienta disponible para supervisor o cajero.
+
+Consecuencia:
+
+- Produccion puede usar `php artisan schedule:run` via Programador de tareas o el helper Windows directo.
+- La UI muestra backups programados como creados por `Sistema`; la seguridad real permanece en backend por permisos.
