@@ -35,6 +35,6 @@
     "paymentFocus": "Monto recibido"
   },
   "officialEvidence": [
-    "qa/screenshots/operational-sim/receipt-multi-service.png"
+    "qa/screenshots/operational-sim/receipt-keyboard-flow.png"
   ]
 }
