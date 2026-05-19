@@ -481,6 +481,7 @@ Decision:
 - Se agrega `scripts\final_production_handoff.ps1` como orquestador operativo del cierre final.
 - El helper puede inicializar plantillas de evidencia, mostrar estado de tareas de backup y ejecutar `production_readiness_preflight.ps1` sin `-AllowMissingPhysicalProof`.
 - El helper no marca LAN ni impresora como validadas; si faltan los archivos reales de evidencia o contienen placeholders, la salida mantiene `PRODUCTION_READY` bloqueado.
+- Cada corrida escribe `qa\FINAL_PRODUCTION_HANDOFF_RESULT.md` con decision, bloqueantes, comandos siguientes, estado de tareas de backup y salida del preflight.
 
 Motivo:
 
@@ -491,3 +492,4 @@ Consecuencia:
 
 - El operador puede ejecutar un solo handoff guiado, pero `PRODUCTION_READY` sigue dependiendo del preflight completo, archivos de evidencia reales y backup worker funcional.
 - Si el helper falla por evidencia faltante, el estado correcto sigue siendo `PRODUCTION_CANDIDATE` con bloqueantes exactos.
+- El reporte de handoff es evidencia operativa de la corrida, no sustituto de la evidencia fisica de LAN o impresora.

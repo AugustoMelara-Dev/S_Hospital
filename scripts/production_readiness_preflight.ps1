@@ -200,18 +200,29 @@ function Test-ProofFile([string] $path, [string] $proofName, [string[]] $require
     Add-Pass "$proofName evidence is present and completed."
 }
 
-function Invoke-RouteCheck([string] $url, [string] $label, [int[]] $AllowedStatusCodes = @(200)) {
-    try {
-        $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 15
-        if ($AllowedStatusCodes -contains [int] $response.StatusCode) {
-            Add-Pass "$label responded $($response.StatusCode)"
-            return
+function Invoke-RouteCheck([string] $url, [string] $label, [int[]] $AllowedStatusCodes = @(200), [int] $Attempts = 3) {
+    $lastError = ""
+
+    for ($attempt = 1; $attempt -le $Attempts; $attempt++) {
+        try {
+            $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 15
+            if ($AllowedStatusCodes -contains [int] $response.StatusCode) {
+                $attemptSuffix = if ($attempt -eq 1) { "" } else { " after $attempt attempts" }
+                Add-Pass "$label responded $($response.StatusCode)$attemptSuffix"
+                return
+            }
+
+            $lastError = "unexpected status $($response.StatusCode)"
+        } catch {
+            $lastError = $_.Exception.Message
         }
 
-        Add-Failure "$label returned unexpected status $($response.StatusCode)"
-    } catch {
-        Add-Failure "$label failed: $($_.Exception.Message)"
+        if ($attempt -lt $Attempts) {
+            Start-Sleep -Seconds 2
+        }
     }
+
+    Add-Failure "$label failed after $Attempts attempts: $lastError"
 }
 
 $backendDir = Join-Path $ProjectRoot "backend"

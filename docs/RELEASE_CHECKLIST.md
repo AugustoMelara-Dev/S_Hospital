@@ -92,7 +92,9 @@ Este helper no aprueba produccion por si solo: crea o muestra archivos de
 evidencia pendientes, muestra el estado de tareas de backup y ejecuta el
 preflight sin `-AllowMissingPhysicalProof`. Si faltan `qa/LAN_CLIENT_VALIDATION_PROOF.md`
 o `qa/THERMAL_PRINTER_PROOF.md` completos, el resultado correcto sigue siendo
-`PRODUCTION_CANDIDATE`.
+`PRODUCTION_CANDIDATE`. Tambien deja un resumen operativo en
+`qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` con la decision, bloqueantes y comandos
+siguientes.
 
 Este preflight falla si el servidor no usa `APP_ENV=production`, si `APP_DEBUG`
 no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o
