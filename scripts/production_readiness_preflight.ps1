@@ -70,6 +70,39 @@ function Test-CommandExists([string] $name) {
     return $null -ne (Get-Command $name -ErrorAction SilentlyContinue)
 }
 
+function Test-ExecutableCandidate([string] $candidate) {
+    if ($candidate.Trim() -eq "") {
+        return $false
+    }
+
+    $isPath = $candidate.Contains("\") -or $candidate.Contains("/")
+    if ($isPath -and -not (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+        return $false
+    }
+
+    $stdoutPath = [System.IO.Path]::GetTempFileName()
+    $stderrPath = [System.IO.Path]::GetTempFileName()
+
+    try {
+        $process = Start-Process -FilePath $candidate -ArgumentList "--version" -NoNewWindow -PassThru -Wait -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+        return $process.ExitCode -eq 0
+    } catch {
+        return $false
+    } finally {
+        Remove-Item -LiteralPath $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Find-FirstExecutableCandidate([string[]] $candidates) {
+    foreach ($candidate in $candidates) {
+        if (Test-ExecutableCandidate $candidate) {
+            return $candidate
+        }
+    }
+
+    return $null
+}
+
 function Normalize-ProofContent([string] $content) {
     return ($content -replace "`r", "") -replace "\s+", " "
 }
@@ -208,6 +241,7 @@ $corsOriginPatterns = Get-EnvValue $envValues "CORS_ALLOWED_ORIGIN_PATTERNS" ""
 $corsOriginsIsExplicit = $envValues.ContainsKey("CORS_ALLOWED_ORIGINS")
 $corsOriginList = @($corsOrigins.Split(",") | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" })
 $queueConnection = Get-EnvValue $envValues "QUEUE_CONNECTION" ""
+$configuredDumpBinary = Get-EnvValue $envValues "HOSPITAL_DUMP_BINARY" ""
 
 Write-Host "Production readiness preflight for $BaseUrl"
 Write-Host "Project root: $ProjectRoot"
@@ -267,11 +301,36 @@ if (Test-Path -LiteralPath $assetDir) {
 }
 
 if (Test-CommandExists "php") { Add-Pass "php is available in PATH" } else { Add-Failure "php is not available in PATH" }
-if (Test-CommandExists "mysql") { Add-Pass "mysql client is available in PATH" } else { Add-Failure "mysql client is not available in PATH" }
-if ((Test-CommandExists "mariadb-dump") -or (Test-CommandExists "mysqldump")) {
-    Add-Pass "database dump tool is available in PATH"
+
+$mysqlClient = Find-FirstExecutableCandidate @(
+    "mysql",
+    "mariadb",
+    "C:\xampp\mysql\bin\mysql.exe",
+    "C:\xampp\mysql\bin\mariadb.exe",
+    "C:\laragon\bin\mysql\mysql-8.0\bin\mysql.exe",
+    "/usr/bin/mysql",
+    "/usr/bin/mariadb",
+    "/usr/local/bin/mysql",
+    "/usr/local/bin/mariadb"
+)
+if ($null -ne $mysqlClient) { Add-Pass "mysql client is available: $mysqlClient" } else { Add-Failure "mysql or mariadb client is not available" }
+
+$dumpTool = Find-FirstExecutableCandidate @(
+    $configuredDumpBinary,
+    "mariadb-dump",
+    "mysqldump",
+    "C:\xampp\mysql\bin\mariadb-dump.exe",
+    "C:\xampp\mysql\bin\mysqldump.exe",
+    "C:\laragon\bin\mysql\mysql-8.0\bin\mysqldump.exe",
+    "/usr/bin/mariadb-dump",
+    "/usr/bin/mysqldump",
+    "/usr/local/bin/mariadb-dump",
+    "/usr/local/bin/mysqldump"
+)
+if ($null -ne $dumpTool) {
+    Add-Pass "database dump tool is available: $dumpTool"
 } else {
-    Add-Failure "mariadb-dump or mysqldump must be available in PATH for backups"
+    Add-Failure "mariadb-dump or mysqldump must be available for backups"
 }
 
 $backupDir = Join-Path $backendDir "storage\app\private\backups"
