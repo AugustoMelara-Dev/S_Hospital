@@ -1,24 +1,23 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import type { CashSession } from '@/lib/api';
 
 interface SessionSummaryProps {
   session: CashSession;
-  closingAmount: string;
-  difference: number;
-  onClosingAmountChange: (value: string) => void;
+  closingAmount: string | null;
+  difference: number | null;
 }
 
 export function SessionSummary({
   session,
   closingAmount,
   difference,
-  onClosingAmountChange,
 }: SessionSummaryProps) {
   const expectedAmount = parseFloat(session.expected_cash_amount ?? session.expected_amount ?? '0');
   const openingAmount = parseFloat(session.opening_amount ?? '0');
+  const cashPayments = parseFloat(session.payments_by_method?.cash ?? '0');
+  const hasCountedAmount = closingAmount !== null;
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -31,36 +30,39 @@ export function SessionSummary({
 
       <Card>
         <CardContent className="pt-6">
-          <Label className="text-muted-foreground">Total Esperado</Label>
+          <Label className="text-muted-foreground">Efectivo esperado</Label>
           <p className="text-2xl font-bold">L. {expectedAmount.toFixed(2)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Apertura + pagos en efectivo. Tarjeta y transferencia no aumentan este monto.
+          </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardContent className="pt-6">
-          <Label className="text-muted-foreground">Contado</Label>
-          <Input
-            type="number"
-            step="0.01"
-            min="0"
-            value={closingAmount}
-            onChange={(e) => onClosingAmountChange(e.target.value)}
-            placeholder="0.00"
-            className="text-lg"
-          />
+          <Label className="text-muted-foreground">Cobros en efectivo</Label>
+          <p className="text-2xl font-bold">L. {cashPayments.toFixed(2)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Solo pagos posteados con metodo efectivo.
+          </p>
         </CardContent>
       </Card>
 
-      <Card className={cn(difference !== 0 ? 'border-amber-200 bg-amber-50' : '')}>
+      <Card className={cn(hasCountedAmount && difference !== 0 ? 'border-amber-200 bg-amber-50' : '')}>
         <CardContent className="pt-6">
-          <Label className="text-muted-foreground">Diferencia</Label>
+          <Label className="text-muted-foreground">Contado y diferencia</Label>
+          <p className="text-2xl font-bold">
+            {hasCountedAmount ? `L. ${Number(closingAmount).toFixed(2)}` : 'Pendiente'}
+          </p>
           <p
             className={cn(
-              'text-2xl font-bold',
-              difference > 0 ? 'text-emerald-600' : difference < 0 ? 'text-red-600' : '',
+              'mt-1 text-sm font-semibold',
+              difference && difference > 0 ? 'text-emerald-600' : difference && difference < 0 ? 'text-red-600' : 'text-muted-foreground',
             )}
           >
-            {difference === 0
+            {!hasCountedAmount
+              ? 'Ingrese monto contado para calcular diferencia.'
+              : difference === null || difference === 0
               ? 'L. 0.00'
               : `L. ${difference > 0 ? '+' : ''}${difference.toFixed(2)}`}
           </p>

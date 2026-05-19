@@ -265,6 +265,7 @@ describe('App', () => {
     expect(screen.queryByRole('link', { name: /backups/i })).not.toBeInTheDocument();
     expect((await screen.findAllByRole('heading', { name: /^caja$/i })).length).toBeGreaterThan(0);
     expect(await screen.findByText(/no hay una caja abierta actualmente/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/monto inicial/i)).toHaveValue('0.00');
     fireEvent.click(screen.getByRole('button', { name: /abrir caja/i }));
 
     await waitFor(() => {
@@ -276,6 +277,63 @@ describe('App', () => {
       ).toBe(true);
     });
     expect((await screen.findAllByText(/caja abierta/i)).length).toBeGreaterThan(0);
+  });
+
+  it('keeps close-session difference hidden until counted amount is entered', async () => {
+    window.history.pushState({}, '', '/cashbox');
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 2,
+            name: 'Cajero Demo',
+            email: 'cajero.demo@hospital-billing.local',
+            username: 'cajero.demo',
+            active: true,
+            roles: ['cajero'],
+            permissions: ['cash.view', 'cash.close'],
+            must_change_password: false,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 9,
+            user_id: 2,
+            opening_amount: '100.00',
+            closing_amount: null,
+            expected_amount: null,
+            expected_cash_amount: '100.00',
+            difference_amount: null,
+            payments_count: 0,
+            payments_by_method: {
+              cash: '0.00',
+              transfer: '0.00',
+              card: '0.00',
+              other: '0.00',
+            },
+            status: 'open',
+            opening_notes: null,
+            closing_notes: null,
+            opened_at: '2026-05-17T08:00:00-06:00',
+            closed_at: null,
+          },
+        }),
+      } as Response);
+
+    render(<App />);
+
+    expect(await screen.findByLabelText(/monto contado/i)).toBeInTheDocument();
+    expect(screen.queryByText(/hay una diferencia/i)).not.toBeInTheDocument();
+    expect(screen.getAllByLabelText(/monto contado/i)).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole('button', { name: /^cerrar caja$/i }));
+
+    expect(await screen.findByText(/falta ingresar el monto contado/i)).toBeInTheDocument();
+    expect(document.activeElement).toHaveAttribute('id', 'closing_amount');
   });
 
   it('renders reports view for a user with reports view permission', async () => {

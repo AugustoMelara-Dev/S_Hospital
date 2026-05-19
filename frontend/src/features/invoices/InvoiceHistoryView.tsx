@@ -500,6 +500,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         open={receiptModalOpen}
         onOpenChange={setReceiptModalOpen}
         title={`Recibo - ${selectedInvoice?.invoice_number ?? ''}`}
+        description="Vista previa de recibo. Cambiar entre 80mm y 58mm no registra reimpresion."
       >
         {receipt && selectedInvoice && (
           <div className="space-y-4">

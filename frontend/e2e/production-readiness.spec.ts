@@ -82,6 +82,18 @@ const services = [
   },
 ];
 
+function localDateString(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+const operationalDate = localDateString();
+const operationalIssuedAt = `${operationalDate}T08:00:00-06:00`;
+const operationalPaidAt = `${operationalDate}T08:03:00-06:00`;
+
 function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({
     status,
@@ -163,7 +175,7 @@ async function installApiMocks(page: Page) {
         paid_amount: hasDialysisPrescription ? '0.00' : '0.00',
         balance_due: hasDialysisPrescription ? '0.00' : '28.75',
         status: hasDialysisPrescription ? 'paid' : 'issued',
-        issued_at: '2026-05-18T08:00:00-06:00',
+        issued_at: operationalIssuedAt,
         items: [{
           id: 1,
           service_id: 10,
@@ -210,7 +222,7 @@ async function installApiMocks(page: Page) {
           amount: invoice.total,
           reference: null,
           status: 'posted',
-          paid_at: '2026-05-18T08:03:00-06:00',
+          paid_at: operationalPaidAt,
         },
         invoice,
       },
@@ -346,7 +358,7 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
       method: 'cash',
       amount: invoice.total,
       reference: null,
-      paid_at: '2026-05-18T08:03:00-06:00',
+      paid_at: operationalPaidAt,
       cashier: 'Cajero Demo',
     }],
   };
