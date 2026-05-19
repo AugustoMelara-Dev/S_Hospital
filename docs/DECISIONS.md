@@ -473,3 +473,21 @@ Motivo:
 Consecuencia:
 
 - El cierre de produccion queda mas guiado: primero se generan archivos, luego se validan rutas desde cliente, despues se completan los flujos fisicos y finalmente se ejecuta `production_readiness_preflight.ps1` sin excepciones.
+
+### 2026-05-19 - Handoff final de produccion sin evidencia falsa
+
+Decision:
+
+- Se agrega `scripts\final_production_handoff.ps1` como orquestador operativo del cierre final.
+- El helper puede inicializar plantillas de evidencia, mostrar estado de tareas de backup y ejecutar `production_readiness_preflight.ps1` sin `-AllowMissingPhysicalProof`.
+- El helper no marca LAN ni impresora como validadas; si faltan los archivos reales de evidencia o contienen placeholders, la salida mantiene `PRODUCTION_READY` bloqueado.
+
+Motivo:
+
+- El servidor final necesita un comando de cierre repetible que reduzca errores humanos sin maquillar pruebas fisicas.
+- La evidencia de segunda PC LAN, impresora termica y production env debe seguir siendo verificable y separada de los mocks o pruebas locales.
+
+Consecuencia:
+
+- El operador puede ejecutar un solo handoff guiado, pero `PRODUCTION_READY` sigue dependiendo del preflight completo, archivos de evidencia reales y backup worker funcional.
+- Si el helper falla por evidencia faltante, el estado correcto sigue siendo `PRODUCTION_CANDIDATE` con bloqueantes exactos.

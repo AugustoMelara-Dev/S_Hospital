@@ -80,16 +80,11 @@ function Test-ExecutableCandidate([string] $candidate) {
         return $false
     }
 
-    $stdoutPath = [System.IO.Path]::GetTempFileName()
-    $stderrPath = [System.IO.Path]::GetTempFileName()
-
     try {
-        $process = Start-Process -FilePath $candidate -ArgumentList "--version" -NoNewWindow -PassThru -Wait -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
-        return $process.ExitCode -eq 0
+        & $candidate --version *> $null
+        return $LASTEXITCODE -eq 0
     } catch {
         return $false
-    } finally {
-        Remove-Item -LiteralPath $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
     }
 }
 

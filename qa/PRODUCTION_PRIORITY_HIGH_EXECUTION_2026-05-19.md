@@ -83,3 +83,52 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_window
 Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath C:\xampp\php\php.exe
 ```
+
+## Guided handoff command
+
+Use this command on the final server to run the closing checks without creating
+fake physical evidence:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 `
+  -BaseUrl http://192.168.1.7:8000 `
+  -PhpPath C:\xampp\php\php.exe `
+  -InitializeProofFiles
+```
+
+Expected result until field evidence exists: `PRODUCTION_READY` remains blocked
+and the system stays `PRODUCTION_CANDIDATE`.
+
+## Current preflight rerun
+
+Latest rerun from this branch:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://192.168.1.7:8000
+```
+
+Validated as passing:
+
+- `APP_ENV=production`.
+- `APP_DEBUG=false`.
+- `APP_URL=http://192.168.1.7:8000`.
+- `DB_CONNECTION=mysql`.
+- `QUEUE_CONNECTION=database`.
+- Frontend build exists.
+- `C:\xampp\mysql\bin\mysql.exe`.
+- `C:\xampp\mysql\bin\mysqldump.exe`.
+- Backup directory writable.
+- `/up`, `/login` and `/verify-email` respond 200.
+
+Result: `PRODUCTION_READY: NO (2 blocking issue(s))`.
+
+Remaining blockers:
+
+- Missing `qa/LAN_CLIENT_VALIDATION_PROOF.md` with real second-client LAN evidence.
+- Missing `qa/THERMAL_PRINTER_PROOF.md` with real physical thermal printer evidence.
+
+During the handoff dry run, Windows scheduled tasks named
+`HospitalBillingOS-BackupWorker` and `HospitalBillingOS-DailyBackup` were not
+installed in this session. Install or update them from elevated PowerShell
+before handoff, then create a UI backup and confirm it changes from `pending` to
+`success`.

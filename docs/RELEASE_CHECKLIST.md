@@ -78,6 +78,22 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_prefli
   -BaseUrl http://IP_DEL_SERVIDOR
 ```
 
+Handoff guiado de cierre final:
+
+```powershell
+cd C:\Projects\S_Hospital
+powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 `
+  -BaseUrl http://IP_DEL_SERVIDOR `
+  -PhpPath C:\xampp\php\php.exe `
+  -InitializeProofFiles
+```
+
+Este helper no aprueba produccion por si solo: crea o muestra archivos de
+evidencia pendientes, muestra el estado de tareas de backup y ejecuta el
+preflight sin `-AllowMissingPhysicalProof`. Si faltan `qa/LAN_CLIENT_VALIDATION_PROOF.md`
+o `qa/THERMAL_PRINTER_PROOF.md` completos, el resultado correcto sigue siendo
+`PRODUCTION_CANDIDATE`.
+
 Este preflight falla si el servidor no usa `APP_ENV=production`, si `APP_DEBUG`
 no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o
 `mariadb-dump`, si las rutas publicas no responden, o si no existen las pruebas
