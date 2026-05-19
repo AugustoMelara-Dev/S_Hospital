@@ -424,6 +424,9 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
+  await expect(page.getByText(/ingrese el monto recibido/i)).toBeVisible();
+  await page.getByLabel(/monto recibido/i).fill('17.25');
+  await expect(page.getByText(/ingrese el monto recibido/i)).toBeHidden();
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
   await expect(page.getByRole('heading', { name: /preview t.rmico/i })).toBeVisible();
   await expect(page.getByText('80mm')).toBeVisible();

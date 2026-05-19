@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -12,14 +12,16 @@ import {
 import { type ReceiptData } from '../../lib/api';
 
 type ReceiptPreviewProps = {
+  autoPrint?: boolean;
   onNewInvoice?: () => void;
   onPrint?: () => void;
   receipt: ReceiptData;
   onWidthChange: (width: ReceiptData['width']) => void;
 };
 
-export function ReceiptPreview({ onNewInvoice, onPrint, receipt, onWidthChange }: ReceiptPreviewProps) {
+export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, receipt, onWidthChange }: ReceiptPreviewProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
+  const autoPrintedReceiptRef = useRef<string | null>(null);
 
   const handlePrint = useReactToPrint({
     contentRef: receiptRef,
@@ -33,6 +35,15 @@ export function ReceiptPreview({ onNewInvoice, onPrint, receipt, onWidthChange }
       onPrint?.();
     });
   }
+
+  useEffect(() => {
+    if (!autoPrint || autoPrintedReceiptRef.current === receipt.invoice.invoice_number) {
+      return;
+    }
+
+    autoPrintedReceiptRef.current = receipt.invoice.invoice_number;
+    window.setTimeout(handlePrintClick, 150);
+  }, [autoPrint, receipt.invoice.invoice_number]);
 
   return (
     <div className="receipt-preview-panel" aria-label="Vista previa del recibo">

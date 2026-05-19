@@ -1248,6 +1248,8 @@ describe('App', () => {
     expect(await screen.findByRole('button', { name: /emitir y abrir cobro/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
     expect(await screen.findByRole('heading', { name: /registrar pago/i })).toBeInTheDocument();
+    expect(screen.getByText(/ingrese el monto recibido/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '17.25' } });
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
     expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();

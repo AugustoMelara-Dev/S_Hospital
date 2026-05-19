@@ -187,12 +187,13 @@ export function ServiceSearch({
                 <button
                   key={service.id}
                   type="button"
+                  aria-label={`Agregar ${service.name} por L. ${service.price}`}
                   className="group relative flex items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-all duration-150 hover:border-primary/40 hover:bg-accent/40 hover:scale-[1.02] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.99] disabled:opacity-50 disabled:hover:scale-100 disabled:hover:bg-card disabled:hover:border-border disabled:hover:shadow-none cursor-pointer"
                   onClick={() => handleAddService(service)}
                 >
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <p className="font-medium text-sm leading-tight truncate pr-16">{service.name}</p>
-                    <div className="flex items-center gap-1.5">
+                    <p className="pr-20 text-sm font-semibold leading-tight text-foreground">{service.name}</p>
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className="inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                         {service.category?.name ?? 'Sin categoria'}
                       </span>

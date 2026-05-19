@@ -9,6 +9,7 @@ import type { Payment } from '../../../lib/api';
 type PaymentModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  previewBeforePrint?: boolean;
   invoiceNumber: string;
   patientName: string;
   total: string;
@@ -17,6 +18,7 @@ type PaymentModalProps = {
   paymentAmount: string;
   onPaymentMethodChange: (method: Payment['method']) => void;
   onPaymentAmountChange: (amount: string) => void;
+  onPreviewBeforePrintChange?: (enabled: boolean) => void;
   onConfirm: (appliedAmount: string) => void;
   submitting?: boolean;
 };
@@ -24,6 +26,7 @@ type PaymentModalProps = {
 export function PaymentModal({
   open,
   onOpenChange,
+  previewBeforePrint = false,
   invoiceNumber,
   patientName,
   total,
@@ -32,6 +35,7 @@ export function PaymentModal({
   paymentAmount,
   onPaymentMethodChange,
   onPaymentAmountChange,
+  onPreviewBeforePrintChange,
   onConfirm,
   submitting,
 }: PaymentModalProps) {
@@ -45,6 +49,7 @@ export function PaymentModal({
     ? balance - payment
     : null;
   const appliedAmount = !isNaN(payment) && !isNaN(balance) && payment >= balance ? balance : payment;
+  const needsAmount = isNaN(payment) || payment <= 0;
 
   useEffect(() => {
     if (open) {
@@ -70,7 +75,7 @@ export function PaymentModal({
       open={open}
       onOpenChange={onOpenChange}
       title="Registrar pago"
-      description={`Cobrar factura ${invoiceNumber}`}
+      description={`Factura ${invoiceNumber} ya fue emitida. Si sale de este paso quedara pendiente de cobro.`}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="space-y-2 text-sm">
@@ -107,6 +112,12 @@ export function PaymentModal({
         </div>
 
         <div className="space-y-3">
+          {needsAmount && !error ? (
+            <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="alert">
+              Ingrese el monto recibido para registrar el cobro.
+            </div>
+          ) : null}
+
           <div>
             <Label htmlFor="payment-method" className="mb-1.5 block">Metodo de pago</Label>
             <Select value={paymentMethod} onValueChange={(v) => onPaymentMethodChange(v as Payment['method'])}>
@@ -131,7 +142,10 @@ export function PaymentModal({
               step="0.01"
               min="0"
               value={paymentAmount}
-              onChange={(e) => onPaymentAmountChange(e.target.value)}
+              onChange={(e) => {
+                setError(null);
+                onPaymentAmountChange(e.target.value);
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   handleSubmit(e);
@@ -143,14 +157,34 @@ export function PaymentModal({
             />
             {error && <p id="payment-amount-error" className="mt-1 text-sm text-destructive" role="alert">{error}</p>}
           </div>
+
+          <label className="flex items-start gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={previewBeforePrint}
+              onChange={(e) => onPreviewBeforePrintChange?.(e.target.checked)}
+            />
+            <span>
+              Ver preview antes de imprimir
+              <span className="block text-xs text-muted-foreground">
+                Desactivado: al confirmar cobro se prepara el recibo para impresion directa.
+              </span>
+            </span>
+          </label>
         </div>
 
         <div className="flex gap-3 pt-2">
           <Button type="button" variant="secondary" className="flex-1" onClick={() => onOpenChange(false)}>
-            Cancelar
+            Dejar pendiente
           </Button>
-          <Button type="submit" className="flex-1" disabled={submitting}>
-            {submitting ? 'Cobrando...' : 'Confirmar cobro'}
+          <Button
+            type="submit"
+            className="flex-1"
+            disabled={submitting}
+            aria-label={previewBeforePrint ? 'Confirmar cobro y ver preview' : 'Confirmar cobro e imprimir'}
+          >
+            {submitting ? 'Cobrando...' : previewBeforePrint ? 'Cobrar y ver preview' : 'Cobrar e imprimir'}
           </Button>
         </div>
       </form>
