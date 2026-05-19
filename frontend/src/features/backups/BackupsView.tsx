@@ -1,4 +1,4 @@
-import { Download, RefreshCw, Archive, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Download, RefreshCw, Archive, CheckCircle, Clock, XCircle, HardDrive, Server, ShieldAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { Alert } from '../../components/ui/alert';
@@ -9,7 +9,7 @@ import { PageHeader } from '../../components/ui/page-header';
 import { Card, CardContent } from '../../components/ui/card';
 import { BackupStatusBadge, getStatusDescription } from './components/BackupStatusBadge';
 import { BackupExplanationCard, BackupEmptyState } from './components/BackupExplanationCard';
-import { type AuthUser, type BackupLog, type PaginatedMeta, apiClient, userSafeErrorMessage } from '../../lib/api';
+import { type AuthUser, type BackupLog, type PaginatedMeta, type SystemStatus, apiClient, userSafeErrorMessage } from '../../lib/api';
 
 type BackupsViewProps = {
   user: AuthUser;
@@ -46,6 +46,20 @@ function formatRelativeTime(value: string): string {
   return `hace ${diffDays}d`;
 }
 
+function statusLabel(status: 'pending' | 'partial' | 'validated' | 'manual_required'): string {
+  if (status === 'validated') return 'Validado';
+  if (status === 'partial') return 'Parcial';
+  if (status === 'manual_required') return 'Requiere prueba';
+  return 'Pendiente';
+}
+
+function statusClass(status: 'pending' | 'partial' | 'validated' | 'manual_required'): string {
+  if (status === 'validated') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
+  if (status === 'partial') return 'border-sky-200 bg-sky-50 text-sky-800';
+  if (status === 'manual_required') return 'border-amber-200 bg-amber-50 text-amber-800';
+  return 'border-red-200 bg-red-50 text-red-800';
+}
+
 function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -63,6 +77,8 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
+  const [systemStatusError, setSystemStatusError] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [confirmCreateOpen, setConfirmCreateOpen] = useState(false);
   const [downloadTarget, setDownloadTarget] = useState<BackupLog | null>(null);
@@ -79,6 +95,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   useEffect(() => {
     void loadBackups(page);
   }, [page, statusFilter]);
+
+  useEffect(() => {
+    void loadSystemStatus();
+  }, []);
 
   useEffect(() => {
     if (!backups.some((backup) => backup.status === 'pending')) {
@@ -113,6 +133,22 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadSystemStatus() {
+    setSystemStatusError('');
+
+    try {
+      setSystemStatus(await apiClient.getSystemStatus());
+    } catch (error) {
+      const message = userSafeErrorMessage(error, 'No se pudo cargar el estado operativo del servidor.');
+      setSystemStatusError(message);
+    }
+  }
+
+  function refreshOperationalStatus() {
+    void loadBackups(page);
+    void loadSystemStatus();
   }
 
   async function handleCreateBackup() {
@@ -163,7 +199,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => void loadBackups(page)}
+                onClick={refreshOperationalStatus}
                 disabled={loading}
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
@@ -180,6 +216,165 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
       <div className="space-y-6">
         <BackupExplanationCard />
+
+        {systemStatusError ? (
+          <Alert variant="destructive" title="Estado operativo no disponible">
+            {systemStatusError}
+          </Alert>
+        ) : null}
+
+        {systemStatus ? (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+            <Card className={systemStatus.backups.dump_binary.available && systemStatus.backups.storage.writable ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}>
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-lg bg-white/80 p-2.5">
+                    <HardDrive className="h-5 w-5 text-slate-700" />
+                  </div>
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-sm font-semibold">Backups del servidor</p>
+                    <p className="text-xs text-muted-foreground">
+                      Dump: {systemStatus.backups.dump_binary.available ? systemStatus.backups.dump_binary.name : 'no detectado'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Almacenamiento: {systemStatus.backups.storage.writable ? 'escribible' : 'no escribible'} · libre {formatBytes(systemStatus.backups.storage.free_bytes)}
+                    </p>
+                    {systemStatus.backups.last_success_at ? (
+                      <p className="text-xs text-muted-foreground">
+                        Ultimo exitoso: {formatRelativeTime(systemStatus.backups.last_success_at)}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-amber-700">Sin backup exitoso registrado.</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className={systemStatus.backups.pending_count > 0 ? 'border-amber-200 bg-amber-50' : 'bg-muted/30'}>
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-lg bg-white/80 p-2.5">
+                    <Server className="h-5 w-5 text-slate-700" />
+                  </div>
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-sm font-semibold">Worker y cola local</p>
+                    <p className="text-xs text-muted-foreground">
+                      Conexion: {systemStatus.backups.queue.connection}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Jobs backup: {systemStatus.backups.queue.pending_backup_jobs ?? 'no medible'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Pendientes registrados: {systemStatus.backups.pending_count}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-sky-200 bg-sky-50">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-lg bg-white/80 p-2.5">
+                    <ShieldAlert className="h-5 w-5 text-slate-700" />
+                  </div>
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-sm font-semibold">{systemStatus.readiness.state}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Entorno: {systemStatus.environment.app_env} · debug {systemStatus.environment.app_debug ? 'activo' : 'apagado'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      DB: {systemStatus.database.driver} · URL {systemStatus.environment.app_url}
+                    </p>
+                    <p className="text-xs text-sky-800">
+                      PRODUCTION_READY: {systemStatus.readiness.production_ready ? 'si' : 'no'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
+
+        {systemStatus?.readiness.blockers.length ? (
+          <Alert title="Pendientes antes de PRODUCTION_READY">
+            {systemStatus.readiness.blockers.map((blocker) => blocker.label).join(' · ')}
+          </Alert>
+        ) : null}
+
+        {systemStatus ? (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold">Checklist operativo de producción</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Estos checks preparan el servidor, pero no sustituyen la prueba física final.
+                    </p>
+                  </div>
+                  <span className="rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800">
+                    {systemStatus.readiness.production_ready ? 'PRODUCTION_READY' : 'PRODUCTION_READY: no'}
+                  </span>
+                </div>
+                <div className="grid gap-2 md:grid-cols-2">
+                  {systemStatus.preflight.production_checks.map((check) => (
+                    <div key={check.code} className="rounded-md border border-border p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-sm font-medium">{check.label}</p>
+                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusClass(check.status)}`}>
+                          {statusLabel(check.status)}
+                        </span>
+                      </div>
+                      <p className="mt-1 break-words text-xs text-muted-foreground">{check.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-sm font-semibold">Pruebas de campo obligatorias</h3>
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Rutas públicas LAN</p>
+                    <ul className="mt-2 space-y-2">
+                      {systemStatus.preflight.public_routes.map((route) => (
+                        <li key={route.path} className="flex items-start justify-between gap-3 rounded-md border border-border p-2">
+                          <span>
+                            <span className="block font-mono text-sm">{route.path}</span>
+                            <span className="text-xs text-muted-foreground">{route.expected}</span>
+                          </span>
+                          <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusClass(route.status)}`}>
+                            {statusLabel(route.status)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">Evidencia física</p>
+                    <ul className="mt-2 space-y-2">
+                      {systemStatus.preflight.physical_proofs.map((proof) => (
+                        <li key={proof.code} className="rounded-md border border-border p-2">
+                          <div className="flex items-start justify-between gap-3">
+                            <span className="text-sm font-medium">{proof.label}</span>
+                            <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusClass(proof.status)}`}>
+                              {statusLabel(proof.status)}
+                            </span>
+                          </div>
+                          <p className="mt-1 break-words font-mono text-xs text-muted-foreground">{proof.required_file}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
 
         {error ? (
           <Alert variant="destructive" title="Error al cargar backups">

@@ -5,11 +5,31 @@ use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Laravel\Sanctum\Http\Middleware\AuthenticateSession;
 use Laravel\Sanctum\Sanctum;
 
+$defaultLocalStatefulDomains = [
+    'localhost',
+    'localhost:3000',
+    'localhost:5173',
+    '127.0.0.1',
+    '127.0.0.1:8000',
+    '127.0.0.1:5173',
+    '::1',
+    Sanctum::currentApplicationUrlWithPort(),
+    Sanctum::currentRequestHost(),
+];
+
 $statefulDomains = env('SANCTUM_STATEFUL_DOMAINS');
 
 if (env('APP_ENV') === 'production' && (! is_string($statefulDomains) || trim($statefulDomains) === '')) {
     throw new RuntimeException('Production Sanctum stateful domains must be explicit.');
 }
+
+$configuredStatefulDomains = is_string($statefulDomains)
+    ? array_filter(array_map('trim', explode(',', $statefulDomains)))
+    : [];
+
+$resolvedStatefulDomains = env('APP_ENV') === 'production'
+    ? $configuredStatefulDomains
+    : array_values(array_unique(array_filter(array_merge($defaultLocalStatefulDomains, $configuredStatefulDomains))));
 
 return [
 
@@ -24,17 +44,7 @@ return [
     |
     */
 
-    'stateful' => array_filter(array_map('trim', explode(',', $statefulDomains ?? implode(',', array_filter([
-        'localhost',
-        'localhost:3000',
-        'localhost:5173',
-        '127.0.0.1',
-        '127.0.0.1:8000',
-        '127.0.0.1:5173',
-        '::1',
-        Sanctum::currentApplicationUrlWithPort(),
-        Sanctum::currentRequestHost(),
-    ]))))),
+    'stateful' => $resolvedStatefulDomains,
 
     /*
     |--------------------------------------------------------------------------

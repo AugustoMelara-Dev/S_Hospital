@@ -6,6 +6,7 @@ import { cash } from './api/cash';
 import { reports } from './api/reports';
 import { backups } from './api/backups';
 import { fiscal } from './api/fiscal';
+import { system } from './api/system';
 import type {
   AuthUser,
   FiscalSettings,
@@ -29,6 +30,7 @@ import type {
   OperationsReport,
   CashSessionReport,
   BackupLog,
+  SystemStatus,
   PaginatedMeta,
   ServiceFilters,
   InvoiceFilters,
@@ -46,6 +48,7 @@ export {
   reports,
   backups,
   fiscal,
+  system,
 };
 export type {
   AuthUser,
@@ -70,6 +73,7 @@ export type {
   OperationsReport,
   CashSessionReport,
   BackupLog,
+  SystemStatus,
   PaginatedMeta,
   ServiceFilters,
   InvoiceFilters,
@@ -193,6 +197,10 @@ export const apiClient = {
 
   async downloadBackup(id: number): Promise<Blob> {
     return backups.downloadBackup(id);
+  },
+
+  async getSystemStatus(): Promise<SystemStatus> {
+    return system.getStatus();
   },
 
   async getFiscalSettings(): Promise<FiscalSettings | null> {

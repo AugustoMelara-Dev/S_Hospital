@@ -327,6 +327,119 @@ async function installApiMocks(page: Page) {
 
     return json(route, { data: backupLogs, meta: { current_page: 1, per_page: 15, total: backupLogs.length } });
   });
+  await page.route('**/api/system/status', (route) => json(route, {
+    data: {
+      environment: {
+        app_env: 'local',
+        app_debug: true,
+        app_url: 'http://127.0.0.1:5173',
+        queue_connection: 'database',
+        filesystem_disk: 'local',
+        php_version: '8.3.0',
+      },
+      database: {
+        connection: 'mysql',
+        driver: 'mysql',
+        is_mysql_family: true,
+      },
+      backups: {
+        pending_count: backupLogs.filter((backup) => backup.status === 'pending').length,
+        last_success_at: null,
+        last_success_filename: null,
+        last_failure_at: null,
+        last_failure_message: null,
+        dump_binary: {
+          configured: false,
+          available: true,
+          name: 'mysqldump.exe',
+        },
+        storage: {
+          writable: true,
+          free_bytes: 1048576,
+        },
+        queue: {
+          connection: 'database',
+          pending_backup_jobs: 0,
+          worker_command: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
+          scheduler_command: 'php artisan schedule:run',
+        },
+      },
+      readiness: {
+        state: 'PRODUCTION_CANDIDATE',
+        production_ready: false,
+        blockers: [
+          {
+            code: 'PENDING_LAN_CLIENT_VALIDATION',
+            label: 'Validacion desde segunda PC LAN',
+            status: 'pending',
+          },
+          {
+            code: 'PENDING_HARDWARE_VALIDATION',
+            label: 'Impresora termica fisica 80mm/58mm',
+            status: 'pending',
+          },
+        ],
+      },
+      preflight: {
+        production_checks: [
+          {
+            code: 'APP_ENV_PRODUCTION',
+            label: 'APP_ENV=production',
+            status: 'pending',
+            detail: 'Actual: local',
+          },
+          {
+            code: 'DUMP_BINARY_AVAILABLE',
+            label: 'mysqldump/mariadb-dump disponible',
+            status: 'validated',
+            detail: 'mysqldump.exe',
+          },
+          {
+            code: 'BACKUP_WORKER_CONTINUOUS',
+            label: 'Worker de backups como tarea/servicio',
+            status: 'manual_required',
+            detail: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
+          },
+        ],
+        public_routes: [
+          {
+            path: '/up',
+            expected: 'HTTP 200',
+            status: 'manual_required',
+          },
+          {
+            path: '/login',
+            expected: 'SPA cargada desde host LAN',
+            status: 'manual_required',
+          },
+          {
+            path: '/verify-email',
+            expected: 'SPA o ruta esperada cargada desde host LAN',
+            status: 'manual_required',
+          },
+        ],
+        physical_proofs: [
+          {
+            code: 'LAN_CLIENT_VALIDATION_PROOF',
+            label: 'Segunda PC en LAN',
+            required_file: 'qa/LAN_CLIENT_VALIDATION_PROOF.md',
+            status: 'pending',
+          },
+          {
+            code: 'THERMAL_PRINTER_PROOF',
+            label: 'Impresora termica 80mm/58mm',
+            required_file: 'qa/THERMAL_PRINTER_PROOF.md',
+            status: 'pending',
+          },
+        ],
+        commands: {
+          preflight: 'powershell.exe -ExecutionPolicy Bypass -File scripts\\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR',
+          backup_worker: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
+          scheduler: 'php artisan schedule:run',
+        },
+      },
+    },
+  }));
 }
 
 function receiptFor(invoice: Record<string, unknown>, width: string) {
@@ -476,7 +589,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /^backups$/i })).toBeVisible();
   await page.getByRole('button', { name: /crear backup/i }).first().click();
   await page.getByRole('button', { name: /^crear backup$/i }).click();
-  await expect(page.getByText('Pendiente', { exact: true })).toBeVisible();
+  await expect(page.getByRole('table').getByText('Pendiente', { exact: true })).toBeVisible();
   expect(consoleIssues).toEqual([]);
 });
 

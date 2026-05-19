@@ -11,6 +11,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\SystemStatusController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -72,5 +73,7 @@ Route::middleware(['web', 'auth:web', 'user.active'])->group(function () {
         Route::get('/backups', [BackupController::class, 'index']);
         Route::post('/backups', [BackupController::class, 'store']);
         Route::get('/backups/{backupLog}/download', [BackupController::class, 'download']);
+
+        Route::get('/system/status', [SystemStatusController::class, 'show']);
     });
 });

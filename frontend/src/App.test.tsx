@@ -10,6 +10,117 @@ import { apiClient, type ReceiptData } from './lib/api';
 import { queryClient } from './lib/query-client';
 
 describe('App', () => {
+  function mockSystemStatus() {
+    return {
+      data: {
+        environment: {
+          app_env: 'local',
+          app_debug: true,
+          app_url: 'http://127.0.0.1:8000',
+          queue_connection: 'database',
+          filesystem_disk: 'local',
+          php_version: '8.3.0',
+        },
+        database: {
+          connection: 'mysql',
+          driver: 'mysql',
+          is_mysql_family: true,
+        },
+        backups: {
+          pending_count: 0,
+          last_success_at: null,
+          last_success_filename: null,
+          last_failure_at: null,
+          last_failure_message: null,
+          dump_binary: {
+            configured: false,
+            available: true,
+            name: 'mysqldump.exe',
+          },
+          storage: {
+            writable: true,
+            free_bytes: 1048576,
+          },
+          queue: {
+            connection: 'database',
+            pending_backup_jobs: 0,
+            worker_command: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
+            scheduler_command: 'php artisan schedule:run',
+          },
+        },
+        readiness: {
+          state: 'PRODUCTION_CANDIDATE',
+          production_ready: false,
+          blockers: [
+            {
+              code: 'PENDING_LAN_CLIENT_VALIDATION',
+              label: 'Validacion desde segunda PC LAN',
+              status: 'pending',
+            },
+          ],
+        },
+        preflight: {
+          production_checks: [
+            {
+              code: 'APP_ENV_PRODUCTION',
+              label: 'APP_ENV=production',
+              status: 'pending',
+              detail: 'Actual: local',
+            },
+            {
+              code: 'DUMP_BINARY_AVAILABLE',
+              label: 'mysqldump/mariadb-dump disponible',
+              status: 'validated',
+              detail: 'mysqldump.exe',
+            },
+            {
+              code: 'BACKUP_WORKER_CONTINUOUS',
+              label: 'Worker de backups como tarea/servicio',
+              status: 'manual_required',
+              detail: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
+            },
+          ],
+          public_routes: [
+            {
+              path: '/up',
+              expected: 'HTTP 200',
+              status: 'manual_required',
+            },
+            {
+              path: '/login',
+              expected: 'SPA cargada desde host LAN',
+              status: 'manual_required',
+            },
+            {
+              path: '/verify-email',
+              expected: 'SPA o ruta esperada cargada desde host LAN',
+              status: 'manual_required',
+            },
+          ],
+          physical_proofs: [
+            {
+              code: 'LAN_CLIENT_VALIDATION_PROOF',
+              label: 'Segunda PC en LAN',
+              required_file: 'qa/LAN_CLIENT_VALIDATION_PROOF.md',
+              status: 'pending',
+            },
+            {
+              code: 'THERMAL_PRINTER_PROOF',
+              label: 'Impresora termica 80mm/58mm',
+              required_file: 'qa/THERMAL_PRINTER_PROOF.md',
+              status: 'pending',
+            },
+          ],
+          commands: {
+            preflight: 'powershell.exe -ExecutionPolicy Bypass -File scripts\\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR',
+            backup_worker: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
+            scheduler: 'php artisan schedule:run',
+          },
+        },
+      },
+    };
+  }
+
   function activateTab(name: RegExp) {
     const tab = screen.getByRole('tab', { name });
     tab.focus();
@@ -662,6 +773,13 @@ describe('App', () => {
         } as Response;
       }
 
+      if (url.includes('/api/system/status')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatus(),
+        } as Response;
+      }
+
       return {
         ok: true,
         json: async () => ({
@@ -675,6 +793,13 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: /^backups$/i })).toBeInTheDocument();
     expect(await screen.findByText(/sistema de backups/i)).toBeInTheDocument();
+    expect(await screen.findByText(/worker y cola local/i)).toBeInTheDocument();
+    expect(await screen.findByText(/checklist operativo de producci/i)).toBeInTheDocument();
+    expect(screen.getByText('/up')).toBeInTheDocument();
+    expect(screen.getByText('/verify-email')).toBeInTheDocument();
+    expect(screen.getByText('qa/LAN_CLIENT_VALIDATION_PROOF.md')).toBeInTheDocument();
+    expect(screen.getByText('qa/THERMAL_PRINTER_PROOF.md')).toBeInTheDocument();
+    expect(screen.getByText(/production_candidate/i)).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /crear backup/i }).some((button) => !button.hasAttribute('disabled'))).toBe(true);
   });
 
@@ -735,6 +860,10 @@ describe('App', () => {
       } as Response)
       .mockResolvedValueOnce({
         ok: true,
+        json: async () => mockSystemStatus(),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
         json: async () => ({}),
       } as Response)
       .mockResolvedValueOnce({
@@ -770,7 +899,7 @@ describe('App', () => {
       );
     });
     expect(await screen.findByText('hospital-backup-20260517-101500-test.sql')).toBeInTheDocument();
-    expect(screen.getByText('Pendiente')).toBeInTheDocument();
+    expect(screen.getAllByText('Pendiente').length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: /descargar backup hospital-backup/i })).not.toBeInTheDocument();
   });
 
@@ -812,6 +941,10 @@ describe('App', () => {
           ],
           meta: { current_page: 1, per_page: 15, total: 16 },
         }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockSystemStatus(),
       } as Response);
 
     render(<App />);

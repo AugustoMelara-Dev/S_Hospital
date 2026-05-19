@@ -434,3 +434,25 @@ Consecuencia:
 
 - Produccion puede usar `php artisan schedule:run` via Programador de tareas o el helper Windows directo.
 - La UI muestra backups programados como creados por `Sistema`; la seguridad real permanece en backend por permisos.
+
+### 2026-05-19 - Estado operativo visible para backups y produccion final
+
+Decision:
+
+- Se agrega un endpoint admin `/api/system/status` protegido por `backups.view`.
+- El endpoint expone estado operativo no secreto: `APP_ENV`, `APP_DEBUG`, `APP_URL`, conexion de cola, driver de base de datos, disponibilidad de herramienta de dump, almacenamiento local, jobs pendientes de backups y bloqueos restantes para `PRODUCTION_READY`.
+- La pantalla de Backups muestra ese estado junto al historial de backups para que el admin vea si falta worker, dump local, espacio o evidencia de campo.
+- El estado sigue declarando `PRODUCTION_CANDIDATE` y `PRODUCTION_READY=false` hasta validar segunda PC LAN, impresora termica fisica y entorno final production.
+- El endpoint tambien devuelve un bloque `preflight` con checks accionables: entorno production/debug, MySQL/MariaDB, dump tool, storage local, worker continuo, rutas publicas `/up`, `/login`, `/verify-email`, archivos de evidencia LAN/impresora y comandos operativos.
+
+Motivo:
+
+- En produccion offline LAN no basta con que exista un boton de backup; soporte necesita diagnostico inmediato sin leer scripts ni exponer secretos.
+- Los bloqueos fisicos no deben maquillarse como aprobados desde codigo.
+- El panel debe decir exactamente que falta sin obligar al operador a interpretar logs o documentos largos durante la instalacion.
+
+Consecuencia:
+
+- Cajeros y supervisores siguen sin acceso a estado operativo de backups/servidor.
+- La UI ayuda a instalar y operar, pero no reemplaza `scripts/production_readiness_preflight.ps1` ni la evidencia fisica requerida.
+- `PRODUCTION_READY` requiere que el preflight final pase sin `-AllowMissingPhysicalProof` y que existan `qa/LAN_CLIENT_VALIDATION_PROOF.md` y `qa/THERMAL_PRINTER_PROOF.md` completados en el servidor/campo real.

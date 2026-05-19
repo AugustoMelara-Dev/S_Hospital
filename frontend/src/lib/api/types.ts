@@ -349,6 +349,77 @@ export type BackupLog = {
   creator?: Pick<AuthUser, 'id' | 'name' | 'username'> | null;
 };
 
+export type SystemStatus = {
+  environment: {
+    app_env: string;
+    app_debug: boolean;
+    app_url: string;
+    queue_connection: string;
+    filesystem_disk: string;
+    php_version: string;
+  };
+  database: {
+    connection: string;
+    driver: string;
+    is_mysql_family: boolean;
+  };
+  backups: {
+    pending_count: number;
+    last_success_at: string | null;
+    last_success_filename: string | null;
+    last_failure_at: string | null;
+    last_failure_message: string | null;
+    dump_binary: {
+      configured: boolean;
+      available: boolean;
+      name: string | null;
+    };
+    storage: {
+      writable: boolean;
+      free_bytes: number | null;
+    };
+    queue: {
+      connection: string;
+      pending_backup_jobs: number | null;
+      worker_command: string;
+      scheduler_command: string;
+    };
+  };
+  readiness: {
+    state: 'DEMO_READY' | 'PRODUCTION_CANDIDATE' | 'PRODUCTION_READY';
+    production_ready: boolean;
+    blockers: Array<{
+      code: string;
+      label: string;
+      status: 'pending' | 'partial' | 'validated';
+    }>;
+  };
+  preflight: {
+    production_checks: Array<{
+      code: string;
+      label: string;
+      status: 'pending' | 'partial' | 'validated' | 'manual_required';
+      detail: string;
+    }>;
+    public_routes: Array<{
+      path: string;
+      expected: string;
+      status: 'pending' | 'partial' | 'validated' | 'manual_required';
+    }>;
+    physical_proofs: Array<{
+      code: string;
+      label: string;
+      required_file: string;
+      status: 'pending' | 'partial' | 'validated' | 'manual_required';
+    }>;
+    commands: {
+      preflight: string;
+      backup_worker: string;
+      scheduler: string;
+    };
+  };
+};
+
 export type PaginatedMeta = {
   current_page: number;
   per_page: number;
