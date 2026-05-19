@@ -56,11 +56,16 @@ Tambien existe un helper para registrar las tareas de Windows:
 cd C:\Projects\S_Hospital
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -PhpPath C:\xampp\php\php.exe
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
 ```
 
 El helper crea una tarea de worker al iniciar Windows y una tarea diaria de
 backup programado. Primero ejecutar `-WhatIfOnly` para confirmar rutas y el
 binario real de PHP.
+Si las tareas ya existen, el helper falla sin sobrescribirlas; usar
+`-UpdateExisting` para reemplazarlas explicitamente. Para desinstalarlas, usar
+`-Uninstall`. La instalacion, actualizacion y desinstalacion requieren abrir
+PowerShell como administrador.
 
 Después de cada backup diario, copiar el archivo más reciente a una unidad USB o disco externo del hospital. No usar servicios cloud como requisito operativo.
 

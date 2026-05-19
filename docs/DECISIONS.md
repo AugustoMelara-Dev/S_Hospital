@@ -405,7 +405,9 @@ Decision:
 - `PRODUCTION_READY` queda ligado a evidencia ejecutable del servidor final, no solo a docs.
 - `scripts/production_readiness_preflight.ps1` valida entorno production, build frontend, rutas `/up`, `/login`, `/verify-email`, herramientas MySQL/dump, carpeta de backups y pruebas fisicas documentadas.
 - `scripts/install_backup_tasks_windows.ps1` registra tareas Windows para worker continuo de backups y backup diario programado.
-- La evidencia de segunda PC LAN e impresora fisica se documenta en archivos separados bajo `qa/` y el preflight puede exigirlos con flags explicitos.
+- La evidencia de segunda PC LAN e impresora fisica se documenta en archivos separados bajo `qa/` y el preflight la exige por defecto.
+- La evidencia fisica queda obligatoria por defecto; solo puede omitirse con `-AllowMissingPhysicalProof`, y esa salida no puede llamarse `PRODUCTION_READY`.
+- Las tareas Windows no se sobrescriben silenciosamente; `-UpdateExisting` debe usarse de forma explicita.
 
 Motivo:
 

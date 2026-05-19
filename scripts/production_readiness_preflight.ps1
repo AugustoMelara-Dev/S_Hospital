@@ -4,9 +4,7 @@ param(
 
     [string] $ProjectRoot = "",
 
-    [switch] $RequireLanClientProof,
-
-    [switch] $RequirePrinterProof
+    [switch] $AllowMissingPhysicalProof
 )
 
 $ErrorActionPreference = "Stop"
@@ -31,6 +29,12 @@ function Add-Warning([string] $message) {
 
 function Add-Pass([string] $message) {
     Write-Host "[ OK ] $message" -ForegroundColor Green
+}
+
+function Add-Strong-Warning([string] $message) {
+    $warnings.Add($message) | Out-Null
+    Write-Host "[WARN] $message" -ForegroundColor Yellow
+    Write-Host "[WARN] PRODUCTION_READY remains forbidden while this warning is present." -ForegroundColor Yellow
 }
 
 function Read-EnvFile([string] $path) {
@@ -66,6 +70,83 @@ function Test-CommandExists([string] $name) {
     return $null -ne (Get-Command $name -ErrorAction SilentlyContinue)
 }
 
+function Normalize-ProofContent([string] $content) {
+    return ($content -replace "`r", "") -replace "\s+", " "
+}
+
+function Test-ProofHasCompletedField([string] $content, [string] $fieldLabel) {
+    $escaped = [regex]::Escape($fieldLabel)
+    $pattern = "(?im)^\s*-\s*$escaped\s*:\s*(.+?)\s*$"
+    $match = [regex]::Match($content, $pattern)
+
+    if (-not $match.Success) {
+        return $false
+    }
+
+    $value = $match.Groups[1].Value.Trim()
+
+    if ($value -eq "" -or $value -match "^(TODO|PENDING|REPLACE|N/A|NA|NONE|TBD|-|\[ \])$") {
+        return $false
+    }
+
+    return $true
+}
+
+function Test-ProofHasCheckedItem([string] $content, [string] $labelPattern) {
+    return $content -match "(?im)^\s*-\s*\[[xX]\]\s*.*$labelPattern"
+}
+
+function Test-ProofFile([string] $path, [string] $proofName, [string[]] $requiredFields, [string[]] $requiredChecks) {
+    if (-not (Test-Path -LiteralPath $path)) {
+        Add-Failure "Missing $path with real $proofName evidence."
+        return
+    }
+
+    $content = Get-Content -LiteralPath $path -Raw
+    $normalized = Normalize-ProofContent $content
+
+    if ($normalized.Trim().Length -lt 300) {
+        Add-Failure "$path is too short to contain real $proofName evidence."
+        return
+    }
+
+    $placeholderPatterns = @(
+        '(?i)\bTODO\b',
+        '(?i)\bPENDING_[A-Z_]+\b',
+        '(?i)\bREPLACE\b',
+        '(?i)\bN/A\b',
+        '(?i)\bTBD\b',
+        '(?i)example',
+        '(?i)template',
+        '(?i)use this file',
+        '\[ \]',
+        '(?im):\s*$'
+    )
+
+    foreach ($pattern in $placeholderPatterns) {
+        if ($content -match $pattern) {
+            Add-Failure "$path still contains placeholder or incomplete proof content matching '$pattern'."
+            return
+        }
+    }
+
+    foreach ($field in $requiredFields) {
+        if (-not (Test-ProofHasCompletedField $content $field)) {
+            Add-Failure "$path must include a completed '${field}:' field."
+            return
+        }
+    }
+
+    foreach ($check in $requiredChecks) {
+        if (-not (Test-ProofHasCheckedItem $content $check)) {
+            Add-Failure "$path must include a completed checked evidence item for '$check'."
+            return
+        }
+    }
+
+    Add-Pass "$proofName evidence is present and completed."
+}
+
 function Invoke-RouteCheck([string] $url, [string] $label, [int[]] $AllowedStatusCodes = @(200)) {
     try {
         $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 15
@@ -94,6 +175,7 @@ $dbConnection = Get-EnvValue $envValues "DB_CONNECTION" ""
 $sanctumDomains = Get-EnvValue $envValues "SANCTUM_STATEFUL_DOMAINS" ""
 $corsOrigins = Get-EnvValue $envValues "CORS_ALLOWED_ORIGINS" ""
 $corsOriginsIsExplicit = $envValues.ContainsKey("CORS_ALLOWED_ORIGINS")
+$corsOriginList = @($corsOrigins.Split(",") | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" })
 $queueConnection = Get-EnvValue $envValues "QUEUE_CONNECTION" ""
 
 Write-Host "Production readiness preflight for $BaseUrl"
@@ -117,9 +199,11 @@ if ($sanctumDomains.Split(",").Trim() -contains $baseHostWithPort -or $sanctumDo
     Add-Failure "SANCTUM_STATEFUL_DOMAINS must include $baseHostWithPort or $($baseUri.Host)"
 }
 
-if ($corsOrigins -eq "" -and $corsOriginsIsExplicit) {
+if ($corsOriginList -contains "*") {
+    Add-Failure "CORS_ALLOWED_ORIGINS must not contain wildcard '*'. Configure explicit LAN origins or an explicitly empty same-origin value."
+} elseif ($corsOrigins -eq "" -and $corsOriginsIsExplicit) {
     Add-Pass "CORS origins are explicitly empty for same-origin production"
-} elseif ($corsOrigins.Split(",").Trim() -contains $BaseUrl.TrimEnd("/")) {
+} elseif ($corsOriginList -contains $BaseUrl.TrimEnd("/")) {
     Add-Pass "CORS origins are same-origin or include BaseUrl"
 } else {
     Add-Failure "CORS_ALLOWED_ORIGINS must be explicitly empty for same-origin or include $($BaseUrl.TrimEnd('/'))"
@@ -171,26 +255,60 @@ Invoke-RouteCheck "$($BaseUrl.TrimEnd('/'))/up" "/up"
 Invoke-RouteCheck "$($BaseUrl.TrimEnd('/'))/login" "/login"
 Invoke-RouteCheck "$($BaseUrl.TrimEnd('/'))/verify-email" "/verify-email" @(200, 302)
 
-if ($RequireLanClientProof) {
-    $proofPath = Join-Path $ProjectRoot "qa\LAN_CLIENT_VALIDATION_PROOF.md"
-    if (Test-Path -LiteralPath $proofPath) {
-        Add-Pass "LAN client proof file exists"
-    } else {
-        Add-Failure "Missing qa/LAN_CLIENT_VALIDATION_PROOF.md with second-client LAN evidence"
-    }
+if ($AllowMissingPhysicalProof) {
+    Add-Strong-Warning "AllowMissingPhysicalProof was used. This run is only an environment preflight and MUST NOT be called PRODUCTION_READY."
 } else {
-    Add-Warning "Second-client LAN proof not required by this run. Use -RequireLanClientProof before PRODUCTION_READY."
-}
+    Test-ProofFile `
+        -path (Join-Path $ProjectRoot "qa\LAN_CLIENT_VALIDATION_PROOF.md") `
+        -proofName "second-client LAN" `
+        -requiredFields @(
+            "Date/time",
+            "Responsible person",
+            "Client computer name",
+            "Server IP or LAN name",
+            "Client browser/version",
+            "User/role used",
+            "Evidence/capture reference",
+            "Final conclusion"
+        ) `
+        -requiredChecks @(
+            "/up",
+            "/login",
+            "/verify-email",
+            "assets",
+            "Login",
+            "Cashbox",
+            "Invoice",
+            "Payment",
+            "Receipt",
+            "history",
+            "Reports",
+            "Backup"
+        )
 
-if ($RequirePrinterProof) {
-    $proofPath = Join-Path $ProjectRoot "qa\THERMAL_PRINTER_PROOF.md"
-    if (Test-Path -LiteralPath $proofPath) {
-        Add-Pass "thermal printer proof file exists"
-    } else {
-        Add-Failure "Missing qa/THERMAL_PRINTER_PROOF.md with physical 80mm/58mm print evidence"
-    }
-} else {
-    Add-Warning "Physical printer proof not required by this run. Use -RequirePrinterProof before PRODUCTION_READY."
+    Test-ProofFile `
+        -path (Join-Path $ProjectRoot "qa\THERMAL_PRINTER_PROOF.md") `
+        -proofName "physical thermal printer" `
+        -requiredFields @(
+            "Date/time",
+            "Responsible person",
+            "Printer brand/model",
+            "Printer driver",
+            "Browser/version",
+            "Invoice used",
+            "80mm result",
+            "58mm result",
+            "Problems found",
+            "Evidence/photo reference",
+            "Final conclusion"
+        ) `
+        -requiredChecks @(
+            "80mm",
+            "58mm",
+            "Reprint",
+            "headers/footers",
+            "historical"
+        )
 }
 
 if ($failures.Count -gt 0) {
@@ -202,6 +320,9 @@ if ($failures.Count -gt 0) {
 Write-Host ""
 if ($warnings.Count -gt 0) {
     Write-Host "PRODUCTION_PREFLIGHT_PASSED_WITH_WARNINGS: $($warnings.Count) warning(s)" -ForegroundColor Yellow
+    if ($AllowMissingPhysicalProof) {
+        Write-Host "PRODUCTION_READY: NO. Physical LAN/printer proof was explicitly bypassed." -ForegroundColor Yellow
+    }
 } else {
     Write-Host "PRODUCTION_PREFLIGHT_PASSED" -ForegroundColor Green
 }

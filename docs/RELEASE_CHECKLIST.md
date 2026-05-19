@@ -75,15 +75,17 @@ Preflight ejecutable en el servidor final:
 ```powershell
 cd C:\Projects\S_Hospital
 powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 `
-  -BaseUrl http://IP_DEL_SERVIDOR `
-  -RequireLanClientProof `
-  -RequirePrinterProof
+  -BaseUrl http://IP_DEL_SERVIDOR
 ```
 
 Este preflight falla si el servidor no usa `APP_ENV=production`, si `APP_DEBUG`
 no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o
 `mariadb-dump`, si las rutas publicas no responden, o si no existen las pruebas
 documentadas de cliente LAN e impresora fisica.
+
+La evidencia fisica de LAN e impresora es obligatoria por defecto. El flag
+`-AllowMissingPhysicalProof` solo permite una corrida parcial de entorno y deja
+un warning fuerte: ese resultado no puede llamarse `PRODUCTION_READY`.
 
 ## Validaciones reales antes de PRODUCTION_READY
 
@@ -169,10 +171,13 @@ cd C:\Projects\S_Hospital
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -PhpPath C:\xampp\php\php.exe
 Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
 ```
 
 Usar `-WhatIfOnly` primero para revisar rutas. Despues de registrar las tareas,
 crear un backup desde la UI y confirmar que pasa de `pending` a `success`.
+Si las tareas ya existen, el script falla salvo que se use `-UpdateExisting`.
+Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Uninstall`.
 
 ## Antes de produccion final
 

@@ -8,23 +8,28 @@ hospital.
 ## Environment
 
 - Date/time:
-- Printer model:
+- Responsible person:
+- Printer brand/model:
+- Printer driver:
 - Connection type:
-- Browser:
+- Browser/version:
 - Cashier computer:
-- Operator:
+- Invoice used:
+- Evidence/photo reference:
+- Final conclusion:
 
 ## Required checks
 
-- [ ] 80mm receipt prints at 100 percent scale.
-- [ ] 80mm receipt does not print as letter-size page.
-- [ ] 80mm receipt includes hospital name, RTN/CAI when configured, invoice number, patient, cashier, services and totals.
-- [ ] 58mm receipt prints at 100 percent scale.
-- [ ] 58mm receipt does not cut totals or patient name.
-- [ ] Reprint from invoice history prints with historical snapshots.
-- [ ] Margins are minimal and no browser headers/footers appear.
+- [ ] 80mm receipt prints at 100 percent scale. 80mm result:
+- [ ] 80mm receipt does not print as letter-size page. Result/evidence:
+- [ ] 80mm receipt includes hospital name, RTN/CAI when configured, invoice number, patient, cashier, services and totals. Result/evidence:
+- [ ] 58mm receipt prints at 100 percent scale. 58mm result:
+- [ ] 58mm receipt does not cut totals or patient name. Result/evidence:
+- [ ] Reprint from invoice history prints with historical snapshots. Result/evidence:
+- [ ] Margins are minimal and no browser headers/footers appear. Result/evidence:
 
 ## Evidence
 
-- Photo path or printed-sample reference:
+- Problems found:
+- Photo path, printed-sample reference, or signed local note:
 - Notes:

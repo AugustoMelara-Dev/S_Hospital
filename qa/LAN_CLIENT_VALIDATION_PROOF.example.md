@@ -7,28 +7,31 @@ computer on the hospital LAN.
 ## Environment
 
 - Date/time:
-- Server LAN URL:
+- Responsible person:
 - Client computer name:
+- Server IP or LAN name:
+- Server LAN URL:
 - Client browser/version:
-- Server IP:
-- Operator:
+- User/role used:
+- Evidence/capture reference:
+- Final conclusion:
 
 ## Required checks
 
-- [ ] `GET /up` responds from the client computer.
-- [ ] `/login` loads from the client computer using the server IP or LAN name.
-- [ ] `/verify-email` loads the expected SPA route or documented response.
-- [ ] At least one `/assets/*.js` file loads as JavaScript.
-- [ ] Login completes without 419 or session-expired state.
-- [ ] Cashbox opens.
-- [ ] Invoice is created with patient name.
-- [ ] Payment is registered.
-- [ ] Receipt preview opens.
-- [ ] Invoice history and reprint work.
-- [ ] Reports load.
-- [ ] Backup request from UI changes from `pending` to `success`.
+- [ ] `/up` responds from the client computer. Result/evidence:
+- [ ] `/login` loads from the client computer using the server IP or LAN name. Result/evidence:
+- [ ] `/verify-email` loads the expected SPA route or documented response. Result/evidence:
+- [ ] `/assets/*.js` loads as JavaScript. Result/evidence:
+- [ ] Login completes without 419 or session-expired state. Result/evidence:
+- [ ] Cashbox opens. Result/evidence:
+- [ ] Invoice is created with patient name. Result/evidence:
+- [ ] Payment is registered. Result/evidence:
+- [ ] Receipt preview opens. Result/evidence:
+- [ ] Invoice history and reprint work. Result/evidence:
+- [ ] Reports load. Result/evidence:
+- [ ] Backup request from UI changes from `pending` to `success`. Result/evidence:
 
 ## Evidence
 
-- Screenshot path or photo reference:
+- Screenshot/photo/log reference per step:
 - Notes:
