@@ -218,11 +218,13 @@ export function NewInvoiceView({
 
   async function addByScanCode() {
     const code = scanCode.trim();
+    const refocusScanner = () => window.setTimeout(() => scannerInputRef.current?.focus(), 0);
 
     if (code === '') {
       const message = 'Ingrese o escanee un codigo.';
       setAlertMessage(message);
       onStatus(message);
+      refocusScanner();
       return;
     }
 
@@ -239,19 +241,21 @@ export function NewInvoiceView({
             const message = 'El servicio esta inactivo y no puede facturarse.';
             setAlertMessage(message);
             onStatus(message);
+            refocusScanner();
             return;
           }
           addToCart(localMatch);
           setScanCode('');
           setAlertMessage(null);
           onStatus(`Servicio agregado por codigo: ${localMatch.name}.`);
-          window.setTimeout(() => scannerInputRef.current?.focus(), 0);
+          refocusScanner();
           return;
         }
 
-        const message = 'No se encontro servicio para este codigo.';
+        const message = 'No se encontro servicio activo para este codigo.';
         setAlertMessage(message);
         onStatus(message);
+        refocusScanner();
         return;
       }
 
@@ -259,6 +263,7 @@ export function NewInvoiceView({
         const message = 'El servicio esta inactivo y no puede facturarse.';
         setAlertMessage(message);
         onStatus(message);
+        refocusScanner();
         return;
       }
 
@@ -266,7 +271,7 @@ export function NewInvoiceView({
       setScanCode('');
       setAlertMessage(null);
       onStatus(`Servicio agregado por codigo: ${service.name}.`);
-      window.setTimeout(() => scannerInputRef.current?.focus(), 0);
+      refocusScanner();
     } catch (error) {
       const localMatch = services.find((s) =>
         [s.scan_code, s.barcode, s.qr_code].some((v) => v === code),
@@ -277,19 +282,21 @@ export function NewInvoiceView({
           const message = 'El servicio esta inactivo y no puede facturarse.';
           setAlertMessage(message);
           onStatus(message);
+          refocusScanner();
           return;
         }
         addToCart(localMatch);
         setScanCode('');
         setAlertMessage(null);
         onStatus(`Servicio agregado por codigo: ${localMatch.name}.`);
-        window.setTimeout(() => scannerInputRef.current?.focus(), 0);
+        refocusScanner();
         return;
       }
 
       const message = userSafeErrorMessage(error, 'No se pudo buscar el codigo escaneado.');
       setAlertMessage(message);
       onStatus(message);
+      refocusScanner();
     }
   }
 

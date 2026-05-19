@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Dialog } from '../../../components/ui/dialog';
 
@@ -28,6 +29,14 @@ export function InvoiceConfirmation({
   onConfirm,
   submitting,
 }: InvoiceConfirmationProps) {
+  const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      window.setTimeout(() => confirmButtonRef.current?.focus(), 0);
+    }
+  }, [open]);
+
   return (
     <Dialog
       open={open}
@@ -88,7 +97,7 @@ export function InvoiceConfirmation({
           <Button type="button" variant="secondary" className="flex-1" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button type="button" className="flex-1" onClick={onConfirm} disabled={submitting}>
+          <Button ref={confirmButtonRef} type="button" className="flex-1" onClick={onConfirm} disabled={submitting}>
             {submitting ? 'Emitiendo...' : 'Confirmar emision'}
           </Button>
         </div>

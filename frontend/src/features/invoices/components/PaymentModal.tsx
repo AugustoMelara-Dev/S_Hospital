@@ -41,6 +41,9 @@ export function PaymentModal({
   const balance = parseFloat(balanceDue);
   const payment = parseFloat(paymentAmount);
   const change = !isNaN(payment) && payment > balance ? payment - balance : null;
+  const remainingBalance = !isNaN(payment) && !isNaN(balance) && payment > 0 && payment < balance
+    ? balance - payment
+    : null;
   const appliedAmount = !isNaN(payment) && !isNaN(balance) && payment >= balance ? balance : payment;
 
   useEffect(() => {
@@ -55,11 +58,6 @@ export function PaymentModal({
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) {
       setError('Ingrese un monto valido');
-      amountInputRef.current?.focus();
-      return;
-    }
-    if (amount < balance) {
-      setError(`El monto debe ser al menos L. ${balance.toFixed(2)}`);
       amountInputRef.current?.focus();
       return;
     }
@@ -92,6 +90,12 @@ export function PaymentModal({
             <div className="flex justify-between text-emerald-600">
               <span className="text-muted-foreground">Cambio:</span>
               <span className="font-bold">L. {change.toFixed(2)}</span>
+            </div>
+          )}
+          {remainingBalance !== null && (
+            <div className="flex justify-between text-amber-700">
+              <span className="text-muted-foreground">Saldo pendiente:</span>
+              <span className="font-bold">L. {remainingBalance.toFixed(2)}</span>
             </div>
           )}
           {!isNaN(appliedAmount) && appliedAmount > 0 && (

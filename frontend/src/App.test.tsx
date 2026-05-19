@@ -1271,7 +1271,10 @@ describe('App', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
 
-    expect((await screen.findAllByText(/no se encontro servicio para este codigo/i)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/no se encontro servicio activo para este codigo/i)).length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(screen.getByLabelText(/scanner usb o codigo manual/i)).toHaveFocus();
+    });
   });
 
   it('renders invoice history filters and reprint button based on permissions', async () => {
@@ -1441,6 +1444,31 @@ describe('App', () => {
     expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
     expect(confirmSpy).toHaveBeenCalledWith('17.25');
+  });
+
+  it('allows partial payment and shows the remaining balance clearly', () => {
+    const confirmSpy = vi.fn();
+
+    render(
+      <PaymentModal
+        open
+        onOpenChange={vi.fn()}
+        invoiceNumber="000-001-01-00000004"
+        patientName="Maria Lopez"
+        total="17.25"
+        balanceDue="17.25"
+        paymentMethod="cash"
+        paymentAmount="10.00"
+        onPaymentMethodChange={vi.fn()}
+        onPaymentAmountChange={vi.fn()}
+        onConfirm={confirmSpy}
+      />,
+    );
+
+    expect(screen.getAllByText(/saldo pendiente/i).length).toBeGreaterThan(0);
+    expect(screen.getByText('L. 7.25')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
+    expect(confirmSpy).toHaveBeenCalledWith('10.00');
   });
 
   it('treats persistent 419 responses as an expired session', async () => {

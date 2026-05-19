@@ -91,6 +91,7 @@ export function ServiceSearch({
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
+                  if (e.ctrlKey || e.metaKey || e.altKey) return;
                   e.preventDefault();
                   if (firstVisibleService) {
                     handleAddService(firstVisibleService);
@@ -114,6 +115,7 @@ export function ServiceSearch({
                 onChange={(e) => onScanCodeChange(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
+                    if (e.ctrlKey || e.metaKey || e.altKey) return;
                     e.preventDefault();
                     onAddByScanCode();
                   }
