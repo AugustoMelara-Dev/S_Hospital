@@ -64,36 +64,47 @@ test('real cashier can issue and collect an invoice against Laravel DB', async (
   await loginToRealApp(page);
 
   await page.getByRole('link', { name: /caja/i }).click();
-  await expect(page.getByRole('heading', { name: /^caja$/i })).toBeVisible();
-  const openCashButton = page.getByRole('button', { name: /abrir caja/i });
-  if (await openCashButton.isVisible().catch(() => false)) {
+  const main = page.getByRole('main');
+  await expect(main.getByRole('heading', { name: /^caja$/i })).toBeVisible();
+  const openSessionHeading = main.getByRole('heading', { name: /caja abierta/i });
+  const currentCashSession = await page.evaluate(async () => {
+    const response = await fetch('/api/cash-sessions/current', { headers: { Accept: 'application/json' } });
+
+    return response.ok ? response.json() : null;
+  });
+
+  if (!currentCashSession?.data) {
+    const openCashButton = main.getByRole('button', { name: /^abrir caja$/i });
+    await expect(openCashButton).toBeVisible();
     await openCashButton.click();
-    await expect(page.getByText('Caja abierta', { exact: true })).toBeVisible();
   }
+  await expect(openSessionHeading).toBeVisible();
 
   await page.getByRole('link', { name: /nueva factura/i }).click();
   await expect(page.getByRole('heading', { name: /nueva factura/i })).toBeVisible();
   await page.getByLabel(/buscar por nombre/i).fill(serviceQuery);
   await page.getByRole('button', { name: new RegExp(serviceQuery, 'i') }).first().click();
-  await page.getByRole('button', { name: /emitir y cobrar/i }).click();
-  await expect(page.getByText(/ingrese el nombre del paciente/i)).toBeVisible();
+  await expect(page.getByText(/ingrese paciente/i)).toBeVisible();
 
   await page.getByLabel(/nombre del paciente/i).fill(patientName);
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
 
+  await expect(page.getByText(/ingrese el monto recibido/i)).toBeVisible();
+  await page.getByLabel(/ver preview antes de imprimir/i).check();
+  await page.getByLabel(/monto recibido/i).fill('17.25');
+  await expect(page.getByText(/ingrese el monto recibido/i)).toBeHidden();
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
   await expect(page.getByRole('heading', { name: /preview termico/i })).toBeVisible();
+  await expect(page.getByText(patientName)).toBeVisible();
+  await page.getByRole('button', { name: /cerrar modal/i }).click();
 
-  await page.getByRole('link', { name: /historial/i }).click();
-  await page.getByLabel(/paciente/i).fill(patientName);
-  await page.getByRole('button', { name: /filtrar/i }).click();
+  await page.getByRole('link', { name: /ver factura/i }).click();
   await expect(page.getByText(patientName)).toBeVisible();
 
   await page.getByRole('link', { name: /reportes/i }).click();
-  await page.getByRole('button', { name: /ver rango/i }).click();
-  await expect(page.getByRole('heading', { name: /ingresos por rango/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /reporte diario/i })).toBeVisible();
   await expect(page.getByText(/total cobrado/i)).toBeVisible();
 
   await expect.poll(() => consoleIssues, {
@@ -122,7 +133,7 @@ function captureConsoleIssues(page: Page, consoleIssues: string[]) {
     const status = response.status();
     const url = response.url();
 
-    if ([401, 419].includes(status) || status >= 500) {
+    if ([401, 419, 422].includes(status) || status >= 500) {
       consoleIssues.push(`http.${status}: ${response.request().method()} ${url}`);
     }
   });
