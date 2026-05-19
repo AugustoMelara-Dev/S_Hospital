@@ -35,6 +35,25 @@ class ServiceCatalogTest extends TestCase
         $this->assertNotNull($erythropoietin->source_hash);
     }
 
+    public function test_service_catalog_seeder_assigns_demo_scan_codes(): void
+    {
+        $this->seed(ServiceCatalogSeeder::class);
+
+        $this->assertDatabaseHas('services', [
+            'slug' => 'acido-urico',
+            'scan_code' => 'LAB-ACIDO-URICO',
+            'barcode' => '7700000001001',
+            'qr_code' => 'QR-LAB-ACIDO-URICO',
+        ]);
+
+        $this->assertDatabaseHas('services', [
+            'slug' => 'abdomen-simple',
+            'scan_code' => 'RX-ABDOMEN',
+            'barcode' => '7700000002001',
+            'qr_code' => 'QR-RX-ABDOMEN',
+        ]);
+    }
+
     public function test_service_catalog_seeder_is_idempotent(): void
     {
         $this->seed(ServiceCatalogSeeder::class);
@@ -42,6 +61,27 @@ class ServiceCatalogTest extends TestCase
 
         $this->assertSame(5, Category::query()->count());
         $this->assertSame(122, Service::query()->count());
+    }
+
+    public function test_service_catalog_seeder_does_not_clear_existing_non_demo_codes(): void
+    {
+        $this->seed(ServiceCatalogSeeder::class);
+
+        $service = Service::query()
+            ->where('slug', 'eritropoyetina')
+            ->firstOrFail();
+        $service->update([
+            'scan_code' => 'MED-ERI-LOCAL',
+            'barcode' => '7700000003001',
+            'qr_code' => 'QR-MED-ERI-LOCAL',
+        ]);
+
+        $this->seed(ServiceCatalogSeeder::class);
+
+        $service->refresh();
+        $this->assertSame('MED-ERI-LOCAL', $service->scan_code);
+        $this->assertSame('7700000003001', $service->barcode);
+        $this->assertSame('QR-MED-ERI-LOCAL', $service->qr_code);
     }
 
     public function test_service_catalog_seeder_updates_seeded_rows_by_stable_source_key_after_rename(): void
@@ -327,6 +367,15 @@ class ServiceCatalogTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['scan_code', 'qr_code']);
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", ['scan_code' => 'PARTIAL-SAME-CODE'])
+            ->assertOk();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", ['qr_code' => 'PARTIAL-SAME-CODE'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('qr_code');
     }
 
     public function test_price_change_and_active_change_are_audited(): void

@@ -2,6 +2,10 @@
 
 Estado actual: PENDING_HARDWARE_VALIDATION hasta probar en impresora fisica 80mm/58mm.
 
+El CSS de impresion debe permanecer aislado al recibo. Solo se activa cuando
+`body[data-printing-receipt="true"]` esta presente; imprimir otra vista del
+sistema no debe ocultar sidebar/topbar/app completa ni dejar paginas en blanco.
+
 ## Equipo
 
 - PC de caja identificada.

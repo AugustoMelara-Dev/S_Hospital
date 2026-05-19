@@ -50,6 +50,6 @@ export function getStatusDescription(status: BackupStatus): string {
   return {
     pending: 'El backup está siendo creado...',
     success: 'Backup creado exitosamente',
-    failed: 'El backup falló. Intente nuevamente.',
+    failed: 'El backup falló. Revise el detalle antes de crear uno nuevo.',
   }[status];
 }

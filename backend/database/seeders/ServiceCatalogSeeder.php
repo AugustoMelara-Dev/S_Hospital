@@ -15,6 +15,24 @@ class ServiceCatalogSeeder extends Seeder
 
     private const CATALOG_PATH = 'database/seeders/data/catalogo_servicios_inicial.csv';
 
+    /**
+     * Demo-only operational codes used by barcode/USB scanner validation.
+     *
+     * @var array<string, array{scan_code: string|null, barcode: string|null, qr_code: string|null}>
+     */
+    private const DEMO_CODES = [
+        'csv:service:laboratorio:acido-urico' => [
+            'scan_code' => 'LAB-ACIDO-URICO',
+            'barcode' => '7700000001001',
+            'qr_code' => 'QR-LAB-ACIDO-URICO',
+        ],
+        'csv:service:radiologia:abdomen-simple' => [
+            'scan_code' => 'RX-ABDOMEN',
+            'barcode' => '7700000002001',
+            'qr_code' => 'QR-RX-ABDOMEN',
+        ],
+    ];
+
     public function run(): void
     {
         $rows = $this->readCatalogRows();
@@ -52,7 +70,7 @@ class ServiceCatalogSeeder extends Seeder
                     })
                     ->firstOrNew();
 
-                $service->fill([
+                $serviceData = [
                     'source_key' => $serviceSourceKey,
                     'name' => $row['servicio'],
                     'category_id' => $category->id,
@@ -62,7 +80,13 @@ class ServiceCatalogSeeder extends Seeder
                     'taxable' => $this->truthy($row['taxable']),
                     'active' => true,
                     'special_rule_code' => $this->specialRuleCode($row),
-                ])->save();
+                ];
+
+                if (isset(self::DEMO_CODES[$serviceSourceKey])) {
+                    $serviceData = array_merge($serviceData, self::DEMO_CODES[$serviceSourceKey]);
+                }
+
+                $service->fill($serviceData)->save();
             }
         });
 

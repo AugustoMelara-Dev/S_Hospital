@@ -35,7 +35,7 @@ export function SelectTrigger({ className, children, ...props }: SelectPrimitive
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDown className="h-4 w-4 opacity-50" />
+        <ChevronDown aria-hidden="true" className="h-4 w-4 opacity-50" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );

@@ -14,7 +14,6 @@ export type ChangePasswordPayload = {
 
 export const auth = {
   async login(credentials: LoginCredentials): Promise<AuthUser> {
-    await apiClient.csrf();
     const response = await apiClient.request<{ data: AuthUser }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),

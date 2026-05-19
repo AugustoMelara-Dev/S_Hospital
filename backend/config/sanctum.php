@@ -7,7 +7,7 @@ use Laravel\Sanctum\Sanctum;
 
 $statefulDomains = env('SANCTUM_STATEFUL_DOMAINS');
 
-if (env('APP_ENV') === 'production' && ! is_string($statefulDomains)) {
+if (env('APP_ENV') === 'production' && (! is_string($statefulDomains) || trim($statefulDomains) === '')) {
     throw new RuntimeException('Production Sanctum stateful domains must be explicit.');
 }
 
@@ -90,7 +90,8 @@ return [
     */
 
     'middleware' => [
-        'authenticate_session' => AuthenticateSession::class,
+        // Local demo can opt out while production stays fail-closed by default.
+        'authenticate_session' => env('SANCTUM_AUTHENTICATE_SESSION', env('APP_ENV') === 'production') ? AuthenticateSession::class : null,
         'encrypt_cookies' => EncryptCookies::class,
         'validate_csrf_token' => ValidateCsrfToken::class,
     ],

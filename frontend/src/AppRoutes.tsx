@@ -15,6 +15,8 @@ type AppRoutesProps = {
   canCreateInvoices: boolean;
   canCreatePayments: boolean;
   canEditFiscalSettings: boolean;
+  canOpenCash: boolean;
+  canCloseCash: boolean;
   canViewBackups: boolean;
   canViewCash: boolean;
   canViewCatalog: boolean;
@@ -38,6 +40,8 @@ export function AppRoutes({
   canCreateInvoices,
   canCreatePayments,
   canEditFiscalSettings,
+  canOpenCash,
+  canCloseCash,
   canViewBackups,
   canViewCash,
   canViewCatalog,
@@ -82,7 +86,10 @@ export function AppRoutes({
       <Route
         path="/billing/new"
         element={
-          <PermissionGate allowed={canCreateInvoices && canViewCatalog && canViewCash && canCreatePayments && canViewReceipts}>
+          <PermissionGate
+            allowed={canCreateInvoices && canViewCatalog && canViewCash && canCreatePayments && canViewReceipts}
+            reason="Requiere permisos de facturacion, catalogo, caja, pagos y recibos. Solicite el rol Cajero completo."
+          >
             <NewInvoiceView
               cashSession={cashSession}
               canCreatePayments={canCreatePayments}
@@ -98,15 +105,21 @@ export function AppRoutes({
       <Route
         path="/cashbox"
         element={
-          <PermissionGate allowed={canViewCash}>
-            <CashBoxView onStatus={onStatus} onSessionChange={onCashSessionChange} />
+          <PermissionGate allowed={canViewCash} reason="Requiere permiso para consultar y operar caja.">
+            <CashBoxView
+              canCloseCash={canCloseCash}
+              canOpenCash={canOpenCash}
+              canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}
+              onStatus={onStatus}
+              onSessionChange={onCashSessionChange}
+            />
           </PermissionGate>
         }
       />
       <Route
         path="/catalog"
         element={
-          <PermissionGate allowed={canViewCatalog}>
+          <PermissionGate allowed={canViewCatalog} reason="Requiere permiso para consultar el catalogo de servicios.">
             <CatalogView user={user} onStatus={onStatus} />
           </PermissionGate>
         }
@@ -114,7 +127,7 @@ export function AppRoutes({
       <Route
         path="/invoices"
         element={
-          <PermissionGate allowed={canViewInvoices}>
+          <PermissionGate allowed={canViewInvoices} reason="Requiere permiso para consultar historial de facturas y recibos.">
             <InvoiceHistoryView user={user} onStatus={onStatus} />
           </PermissionGate>
         }
@@ -122,7 +135,7 @@ export function AppRoutes({
       <Route
         path="/reports"
         element={
-          <PermissionGate allowed={canViewReports}>
+          <PermissionGate allowed={canViewReports} reason="Requiere permiso para consultar reportes operativos.">
             <ReportsView
               canExport={canExportReports}
               canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}
@@ -135,7 +148,7 @@ export function AppRoutes({
       <Route
         path="/backups"
         element={
-          <PermissionGate allowed={canViewBackups}>
+          <PermissionGate allowed={canViewBackups} reason="Requiere permiso para consultar backups locales.">
             <BackupsView user={user} onStatus={onStatus} />
           </PermissionGate>
         }
@@ -143,7 +156,7 @@ export function AppRoutes({
       <Route
         path="/settings/fiscal"
         element={
-          <PermissionGate allowed={canViewFiscalSettings}>
+          <PermissionGate allowed={canViewFiscalSettings} reason="Requiere permiso para consultar configuracion fiscal.">
             <FiscalSettingsView canEdit={canEditFiscalSettings} onStatus={onStatus} />
           </PermissionGate>
         }

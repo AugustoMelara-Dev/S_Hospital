@@ -37,6 +37,8 @@ Secuencia fiscal:
 - No emitir factura si el siguiente correlativo es mayor que `max_number`.
 - No permitir duplicar `invoice_number`.
 - No permitir bajar `current_number` por debajo de un numero ya emitido.
+- No permitir borrar una factura con items. `invoice_items.invoice_id` debe usar
+  `restrictOnDelete()` para que una eliminacion manual no borre detalle historico fiscal.
 - Si la demo usa CAI de prueba, ese CAI de prueba debe estar guardado en la configuracion fiscal antes de emitir.
 
 ## Correlativo atomico

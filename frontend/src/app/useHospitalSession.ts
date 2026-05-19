@@ -26,6 +26,8 @@ export function useHospitalSession() {
   const canCreateInvoices = permissions.has('invoices.create');
   const canViewInvoices = permissions.has('invoices.view');
   const canViewCash = permissions.has('cash.view');
+  const canOpenCash = permissions.has('cash.open');
+  const canCloseCash = permissions.has('cash.close');
   const canCreatePayments = permissions.has('payments.create');
   const canViewReceipts = permissions.has('receipts.view');
   const canViewManagerialReports = permissions.has('reports.managerial.view');
@@ -153,6 +155,8 @@ export function useHospitalSession() {
     canCreateInvoices,
     canViewInvoices,
     canViewCash,
+    canOpenCash,
+    canCloseCash,
     canCreatePayments,
     canViewReceipts,
     canViewManagerialReports,

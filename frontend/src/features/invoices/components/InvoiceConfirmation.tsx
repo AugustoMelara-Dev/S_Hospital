@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Dialog } from '../../../components/ui/dialog';
 
@@ -28,12 +29,25 @@ export function InvoiceConfirmation({
   onConfirm,
   submitting,
 }: InvoiceConfirmationProps) {
+  const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
+  const willOpenPayment = Boolean(cashSessionId) && Number(preview.total) > 0;
+
+  useEffect(() => {
+    if (open) {
+      window.setTimeout(() => confirmButtonRef.current?.focus(), 0);
+    }
+  }, [open]);
+
   return (
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Confirmar factura"
-      description="Revise los detalles antes de emitir la factura."
+      title={willOpenPayment ? 'Confirmar emisión y cobro' : 'Confirmar factura'}
+      description={
+        willOpenPayment
+          ? 'Se emitirá la factura y el sistema abrirá el cobro inmediatamente.'
+          : 'Revise los detalles antes de emitir la factura.'
+      }
     >
       <div className="flex flex-col gap-4">
         <div className="space-y-2 text-sm">
@@ -88,8 +102,20 @@ export function InvoiceConfirmation({
           <Button type="button" variant="secondary" className="flex-1" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button type="button" className="flex-1" onClick={onConfirm} disabled={submitting}>
-            {submitting ? 'Emitiendo...' : 'Confirmar emision'}
+          <Button
+            ref={confirmButtonRef}
+            type="button"
+            className="flex-1"
+            onClick={onConfirm}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !submitting) {
+                e.preventDefault();
+                onConfirm();
+              }
+            }}
+            disabled={submitting}
+          >
+            {submitting ? 'Emitiendo...' : willOpenPayment ? 'Emitir y abrir cobro' : 'Confirmar emision'}
           </Button>
         </div>
       </div>

@@ -69,7 +69,9 @@ class UpdateServiceRequest extends FormRequest
     private function validateGlobalCodes(Validator $validator, Service $service): void
     {
         $codes = collect(['scan_code', 'barcode', 'qr_code'])
-            ->mapWithKeys(fn (string $field): array => [$field => trim((string) $this->input($field, ''))])
+            ->mapWithKeys(fn (string $field): array => [
+                $field => trim((string) ($this->has($field) ? $this->input($field, '') : $service->{$field})),
+            ])
             ->filter();
 
         if ($codes->isEmpty()) {

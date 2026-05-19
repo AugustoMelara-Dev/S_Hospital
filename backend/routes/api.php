@@ -25,11 +25,10 @@ Route::post('/auth/login', [AuthController::class, 'login'])
 Route::get('/auth/session', [AuthController::class, 'session'])
     ->middleware('web');
 
-Route::middleware(['auth:web', 'user.active'])->group(function () {
+Route::middleware(['web', 'auth:web', 'user.active'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
-    Route::post('/auth/logout', [AuthController::class, 'logout'])
-        ->middleware('web');
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
 
     Route::middleware('password.changed')->group(function () {
         Route::get('/settings/fiscal', [FiscalSettingsController::class, 'show']);

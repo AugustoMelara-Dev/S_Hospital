@@ -2,10 +2,11 @@ import { apiClient } from './base';
 import type { BackupLog } from './types';
 
 export const backups = {
-  async getBackups(filters: { page?: number; perPage?: number } = {}): Promise<{ data: BackupLog[]; meta: import('./types').PaginatedMeta }> {
+  async getBackups(filters: { page?: number; perPage?: number; status?: BackupLog['status'] | 'all' } = {}): Promise<{ data: BackupLog[]; meta: import('./types').PaginatedMeta }> {
     const params = new URLSearchParams();
     if (filters.page) params.set('page', String(filters.page));
     if (filters.perPage) params.set('per_page', String(filters.perPage));
+    if (filters.status && filters.status !== 'all') params.set('status', filters.status);
     const query = params.toString() ? `?${params.toString()}` : '';
     return apiClient.request<{ data: BackupLog[]; meta: import('./types').PaginatedMeta }>(`/api/backups${query}`);
   },

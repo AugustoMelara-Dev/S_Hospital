@@ -132,7 +132,7 @@ Resultado esperado:
 
 - Se genera numero fiscal atomico.
 - Se valida CAI activo, fecha limite y rango.
-- Factura queda en estado `issued` con saldo pendiente.
+- Factura queda Emitida con saldo pendiente.
 - Items guardan snapshots de nombre, categoria, precio, impuesto y total.
 
 ### 9. Cobrar
@@ -147,7 +147,7 @@ Resultado esperado:
 
 - Pago queda asociado a factura, caja, cajero, metodo y fecha.
 - Se crea movimiento de caja.
-- Factura queda `paid` con saldo `0.00`.
+- Factura queda Pagada con saldo L.0.00.
 
 ### 10. Imprimir recibo termico
 

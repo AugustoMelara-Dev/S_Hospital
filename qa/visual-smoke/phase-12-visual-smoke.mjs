@@ -1,5 +1,5 @@
 import playwright from '../../frontend/node_modules/playwright/index.js';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const { chromium } = playwright;
@@ -9,6 +9,12 @@ const screenshotDir = path.join(root, 'screenshots', 'phase-12-visual-smoke');
 const baseUrl = process.env.VISUAL_SMOKE_BASE_URL ?? 'http://127.0.0.1:5173';
 const user = process.env.VISUAL_SMOKE_USER ?? 'admin.demo';
 const password = process.env.VISUAL_SMOKE_PASSWORD ?? 'Password123!';
+const isLocalDemoTarget = baseUrl === 'http://127.0.0.1:8000' && user === 'admin.demo';
+const allowMutations = process.env.VISUAL_SMOKE_ALLOW_MUTATIONS === '1' || isLocalDemoTarget;
+
+if (!allowMutations) {
+  throw new Error('Visual smoke creates invoices/payments. Set VISUAL_SMOKE_ALLOW_MUTATIONS=1 or use the local admin.demo target.');
+}
 
 const routeScreens = {
   dashboard: '/dashboard',
@@ -64,6 +70,15 @@ async function waitServicesReady(page) {
   await page.getByText(/cargando servicios/i).waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
 }
 
+async function cartItemCount(page) {
+  const emptyCartVisible = await page.getByText(/no hay servicios agregados/i).isVisible().catch(() => false);
+  if (emptyCartVisible) return 0;
+
+  const countText = await page.locator('#nueva-factura').getByText(/^\d+$/).last().textContent().catch(() => '');
+  const parsed = Number.parseInt(countText || '1', 10);
+  return Number.isFinite(parsed) ? parsed : 1;
+}
+
 async function clickFirstVisible(page, candidates, options = {}) {
   for (const candidate of candidates) {
     const locator = typeof candidate === 'string' ? page.getByRole('button', { name: candidate, exact: true }) : candidate;
@@ -106,7 +121,7 @@ async function clearField(locator) {
 }
 
 async function isEmitEnabled(page) {
-  const emitButton = page.getByRole('button', { name: /emitir factura/i });
+  const emitButton = page.getByRole('button', { name: /emitir y cobrar|emitir factura/i });
   if (!(await emitButton.isVisible().catch(() => false))) {
     return false;
   }
@@ -266,7 +281,7 @@ async function main() {
 
     const emitEnabledWithoutPatient = await isEmitEnabled(page);
     if (emitEnabledWithoutPatient) {
-      findings.push('billing-new-empty: el boton Emitir Factura no debe estar habilitado sin paciente.');
+      findings.push('billing-new-empty: el boton Emitir y cobrar no debe estar habilitado sin paciente.');
     }
 
     const serviceForSmoke = await firstActiveService(page);
@@ -278,6 +293,8 @@ async function main() {
       await page.getByLabel(/scanner usb o codigo manual/i).fill(serviceCode);
       await page.getByRole('button', { name: /escanear/i }).click();
       await waitSettled(page);
+      await waitServicesReady(page);
+      await page.getByRole('button', { name: /emitir y cobrar|emitir factura/i }).waitFor({ state: 'visible', timeout: 15000 });
     } else {
       const searchInput = page.getByLabel(/buscar por nombre/i);
       await searchInput.fill(serviceQuery);
@@ -299,32 +316,49 @@ async function main() {
         }
       }
     }
+    if ((await cartItemCount(page)) < 1) {
+      findings.push(`billing-new-with-services: scanner/busqueda no agrego ${serviceName} al carrito.`);
+    }
     await screenshot(page, 'billing-new-with-services');
 
     const emitEnabledWithoutPatientAfterService = await isEmitEnabled(page);
     if (emitEnabledWithoutPatientAfterService) {
-      findings.push('billing-new-with-services: el boton Emitir Factura no debe estar habilitado sin paciente.');
+      findings.push('billing-new-with-services: el boton Emitir y cobrar no debe estar habilitado sin paciente.');
     }
 
     await patientInput.fill(`Paciente Smoke ${Date.now()}`);
     await waitSettled(page);
+    await waitServicesReady(page);
+    await page.getByRole('button', { name: /emitir y cobrar|emitir factura/i }).waitFor({ state: 'visible', timeout: 15000 });
 
-    const emitButton = page.getByRole('button', { name: /emitir factura/i });
+    const emitButton = page.getByRole('button', { name: /emitir y cobrar|emitir factura/i });
     const emitEnabledWithPatient = await isEmitEnabled(page);
     if (!emitEnabledWithPatient) {
-      findings.push('billing-new-with-services: el boton Emitir Factura debe estar habilitado con paciente y servicio.');
+      findings.push('billing-new-with-services: el boton Emitir y cobrar debe estar habilitado con paciente y servicio.');
     }
 
     await emitButton.click();
-    await page.getByRole('dialog', { name: /confirmar factura/i }).waitFor({ state: 'visible', timeout: 10000 });
+    await page.getByRole('dialog', { name: /confirmar factura|confirmar emisi.n y cobro/i }).waitFor({ state: 'visible', timeout: 10000 });
     await screenshot(page, 'billing-confirm-modal');
-    await page.getByRole('button', { name: /confirmar emision/i }).click();
-    await page.getByRole('dialog', { name: /factura emitida/i }).waitFor({ state: 'visible', timeout: 15000 });
-    const issuedText = await page.getByRole('dialog', { name: /factura emitida/i }).innerText();
-    lastInvoiceNumber = issuedText.match(/000-\d{3}-\d{2}-\d{8}/)?.[0] ?? '';
+    await page.getByRole('button', { name: /emitir y abrir cobro|confirmar emision/i }).click();
 
-    await page.getByRole('button', { name: /cobrar ahora/i }).click();
-    await page.getByRole('heading', { name: /registrar pago/i }).waitFor({ state: 'visible', timeout: 10000 });
+    const successDialog = page.getByRole('dialog', { name: /factura emitida/i });
+    const paymentHeading = page.getByRole('heading', { name: /registrar pago/i });
+    await Promise.race([
+      successDialog.waitFor({ state: 'visible', timeout: 15000 }),
+      paymentHeading.waitFor({ state: 'visible', timeout: 15000 }),
+    ]);
+
+    if (await successDialog.isVisible().catch(() => false)) {
+      const issuedText = await successDialog.innerText();
+      lastInvoiceNumber = issuedText.match(/000-\d{3}-\d{2}-\d{8}/)?.[0] ?? '';
+      await page.getByRole('button', { name: /cobrar ahora/i }).click();
+      await paymentHeading.waitFor({ state: 'visible', timeout: 10000 });
+    } else {
+      const paymentText = await page.getByRole('dialog').filter({ has: paymentHeading }).innerText();
+      lastInvoiceNumber = paymentText.match(/000-\d{3}-\d{2}-\d{8}/)?.[0] ?? '';
+    }
+
     await page.getByRole('button', { name: /confirmar cobro/i }).click();
     await page.getByLabel(/vista previa del recibo/i).waitFor({ state: 'visible', timeout: 15000 });
     await screenshot(page, 'receipt-preview');
@@ -351,8 +385,15 @@ async function main() {
     const invoiceRow = lastInvoiceNumber
       ? page.locator('tr').filter({ hasText: lastInvoiceNumber }).first()
       : page.locator('tr').filter({ has: page.getByRole('button', { name: /ver acciones de factura/i }) }).first();
-    await invoiceRow.getByRole('button', { name: /ver acciones de factura/i }).click();
-    await page.getByRole('button', { name: /reimprimir/i }).click();
+    await page.keyboard.press('Escape').catch(() => {});
+    const directReprint = invoiceRow.getByRole('button', { name: /^reimprimir$/i }).first();
+    if (await directReprint.isVisible().catch(() => false)) {
+      await directReprint.click();
+    } else {
+      await invoiceRow.getByRole('button', { name: /ver acciones de factura/i }).click();
+      await page.getByRole('button', { name: /reimprimir/i }).click();
+    }
+    await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
     await page.getByLabel(/vista previa del recibo/i).waitFor({ state: 'visible', timeout: 15000 });
     await closeOperationalDialogIfPresent(page);
 
@@ -398,6 +439,7 @@ async function main() {
       user,
       role: 'admin',
       environment: 'local-real',
+      mutationMode: process.env.VISUAL_SMOKE_ALLOW_MUTATIONS === '1' ? 'explicit' : 'local-admin-demo-default',
       screenshots: Object.keys(routeScreens).map((name) => ({
         name,
         route: routeScreens[name],
@@ -409,7 +451,11 @@ async function main() {
       findings,
       blockerCount: allIssues.length + findings.length,
     };
-    await writeFile(path.join(screenshotDir, 'visual-smoke-report.json'), JSON.stringify(report, null, 2));
+    const reportPath = path.join(screenshotDir, 'visual-smoke-report.json');
+    const tempReportPath = path.join(screenshotDir, 'visual-smoke-report.tmp.json');
+    await writeFile(tempReportPath, JSON.stringify(report, null, 2));
+    await copyFile(tempReportPath, reportPath);
+    await rm(tempReportPath, { force: true });
     await browser.close();
 
     if (allIssues.length > 0 || findings.length > 0) {

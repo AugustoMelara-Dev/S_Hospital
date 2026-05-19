@@ -176,7 +176,11 @@ class CashPaymentsReceiptTest extends TestCase
         $this->seedBillingBase();
         $cashier = $this->cashier();
         $otherCashier = $this->cashier();
+        $invoiceSessionId = $this->openSession($cashier, '500.00');
         $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$invoiceSessionId}/close", ['closing_amount' => '500.00'])
+            ->assertOk();
 
         $this->actingAs($cashier)
             ->postJson("/api/invoices/{$invoiceId}/payments", [
@@ -217,6 +221,7 @@ class CashPaymentsReceiptTest extends TestCase
         $cashier = $this->cashier();
         $otherCashier = $this->cashier();
         $sessionId = $this->openSession($cashier, '500.00');
+        $this->openSession($otherCashier, '500.00');
         $otherInvoiceId = $this->createInvoice($otherCashier, 'Glucosa');
 
         $this->actingAs($cashier)
@@ -431,6 +436,48 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.width', '58mm');
     }
 
+    public function test_zero_total_dialysis_prescription_invoice_is_paid_and_receiptable_without_payment(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+        $this->openSession($cashier, '0.00');
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [[
+                    'service_id' => $service->id,
+                    'quantity' => '1.00',
+                    'dialysis_prescription' => true,
+                ]],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.total', '0.00')
+            ->assertJsonPath('data.balance_due', '0.00')
+            ->assertJsonPath('data.status', Invoice::STATUS_PAID)
+            ->json('data.id');
+
+        $this->actingAs($cashier)
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=80mm")
+            ->assertOk()
+            ->assertJsonPath('data.invoice.total', '0.00')
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID)
+            ->assertJsonPath('data.items.0.special_rule_applied', true)
+            ->assertJsonCount(0, 'data.payments');
+    }
+
+    public function test_cash_session_can_open_with_zero_initial_cash(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+
+        $this->actingAs($cashier)
+            ->postJson('/api/cash-sessions/open', ['opening_amount' => '0.00'])
+            ->assertCreated()
+            ->assertJsonPath('data.opening_amount', '0.00');
+    }
+
     public function test_receipt_defaults_to_configured_width_and_uses_payment_cashier(): void
     {
         $this->seedBillingBase();
@@ -439,6 +486,7 @@ class CashPaymentsReceiptTest extends TestCase
         $collector = User::factory()->create(['name' => 'Supervisor Caja']);
         $collector->assignRole('supervisor');
         $sessionId = $this->openSession($collector, '500.00');
+        $this->openSession($issuer, '500.00');
         $invoiceId = $this->createInvoice($issuer, 'Glucosa');
 
         $this->actingAs($collector)
@@ -496,6 +544,8 @@ class CashPaymentsReceiptTest extends TestCase
 
     private function createInvoice(User $cashier, string $serviceName): int
     {
+        $this->ensureOpenSession($cashier);
+
         return $this->actingAs($cashier)
             ->postJson('/api/invoices', [
                 'patient_name' => 'Maria Lopez',
@@ -506,5 +556,15 @@ class CashPaymentsReceiptTest extends TestCase
             ])
             ->assertCreated()
             ->json('data.id');
+    }
+
+    private function ensureOpenSession(User $cashier): int
+    {
+        $openSession = CashRegisterSession::query()
+            ->where('user_id', $cashier->id)
+            ->where('status', CashRegisterSession::STATUS_OPEN)
+            ->first();
+
+        return $openSession?->id ?? $this->openSession($cashier, '500.00');
     }
 }

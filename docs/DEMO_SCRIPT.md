@@ -76,7 +76,7 @@ Configuracion demo:
 6. Cobrar factura
    - En la factura emitida, usar metodo Efectivo.
    - Cobrar el saldo.
-   - Confirmar estado `paid` y saldo L.0.00.
+   - Confirmar estado Pagada y saldo L.0.00.
 
 7. Ver recibo termico
    - Confirmar preview termico 80mm.
@@ -119,9 +119,9 @@ Configuracion demo:
     - Entrar como `admin.demo`.
     - Ir a Backups.
     - Crear backup.
-    - Confirmar estado `pending`.
-    - Confirmar que el worker local lo cambia a `success` si existe `mariadb-dump` o `mysqldump`.
-    - Descargar solo backups con `success`.
+    - Confirmar estado Pendiente.
+    - Confirmar que el worker local lo cambia a Completado si existe `mariadb-dump` o `mysqldump`.
+    - Descargar solo backups Completados.
 
 ## Validaciones que se deben mencionar en demo
 

@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, type SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
@@ -36,21 +36,29 @@ export function PaymentModal({
   submitting,
 }: PaymentModalProps) {
   const [error, setError] = useState<string | null>(null);
+  const amountInputRef = useRef<HTMLInputElement | null>(null);
 
   const balance = parseFloat(balanceDue);
   const payment = parseFloat(paymentAmount);
   const change = !isNaN(payment) && payment > balance ? payment - balance : null;
+  const remainingBalance = !isNaN(payment) && !isNaN(balance) && payment > 0 && payment < balance
+    ? balance - payment
+    : null;
   const appliedAmount = !isNaN(payment) && !isNaN(balance) && payment >= balance ? balance : payment;
 
-  function handleSubmit(e: FormEvent) {
+  useEffect(() => {
+    if (open) {
+      setError(null);
+      window.setTimeout(() => amountInputRef.current?.focus(), 0);
+    }
+  }, [open]);
+
+  function handleSubmit(e: FormEvent | SyntheticEvent) {
     e.preventDefault();
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) {
       setError('Ingrese un monto valido');
-      return;
-    }
-    if (amount < balance) {
-      setError(`El monto debe ser al menos L. ${balance.toFixed(2)}`);
+      amountInputRef.current?.focus();
       return;
     }
     setError(null);
@@ -84,6 +92,12 @@ export function PaymentModal({
               <span className="font-bold">L. {change.toFixed(2)}</span>
             </div>
           )}
+          {remainingBalance !== null && (
+            <div className="flex justify-between text-amber-700">
+              <span className="text-muted-foreground">Saldo pendiente:</span>
+              <span className="font-bold">L. {remainingBalance.toFixed(2)}</span>
+            </div>
+          )}
           {!isNaN(appliedAmount) && appliedAmount > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Pago aplicado:</span>
@@ -96,7 +110,7 @@ export function PaymentModal({
           <div>
             <Label htmlFor="payment-method" className="mb-1.5 block">Metodo de pago</Label>
             <Select value={paymentMethod} onValueChange={(v) => onPaymentMethodChange(v as Payment['method'])}>
-              <SelectTrigger>
+              <SelectTrigger id="payment-method">
                 <SelectValue placeholder="Seleccione metodo" />
               </SelectTrigger>
               <SelectContent>
@@ -111,15 +125,23 @@ export function PaymentModal({
           <div>
             <Label htmlFor="payment-amount" className="mb-1.5 block">Monto recibido (L.)</Label>
             <Input
+              ref={amountInputRef}
               id="payment-amount"
               type="number"
               step="0.01"
               min="0"
               value={paymentAmount}
               onChange={(e) => onPaymentAmountChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSubmit(e);
+                }
+              }}
               placeholder="0.00"
+              aria-invalid={error ? 'true' : 'false'}
+              aria-describedby={error ? 'payment-amount-error' : undefined}
             />
-            {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
+            {error && <p id="payment-amount-error" className="mt-1 text-sm text-destructive" role="alert">{error}</p>}
           </div>
         </div>
 

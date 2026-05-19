@@ -20,6 +20,8 @@ interface IncomeReportTabProps {
   dateFrom: string;
   dateTo: string;
   categoryId: string;
+  cashSessionId: string;
+  cashierId: string;
   method: NonNullable<ReportFilters['method']>;
   status: NonNullable<ReportFilters['status']>;
   categoryOptions: Category[];
@@ -29,6 +31,8 @@ interface IncomeReportTabProps {
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
+  onCashSessionChange: (value: string) => void;
+  onCashierChange: (value: string) => void;
   onMethodChange: (value: NonNullable<ReportFilters['method']>) => void;
   onStatusChange: (value: NonNullable<ReportFilters['status']>) => void;
   onSubmit: () => void;
@@ -39,6 +43,8 @@ export function IncomeReportTab({
   dateFrom,
   dateTo,
   categoryId,
+  cashSessionId,
+  cashierId,
   method,
   status,
   categoryOptions,
@@ -48,6 +54,8 @@ export function IncomeReportTab({
   onDateFromChange,
   onDateToChange,
   onCategoryChange,
+  onCashSessionChange,
+  onCashierChange,
   onMethodChange,
   onStatusChange,
   onSubmit,
@@ -148,6 +156,30 @@ export function IncomeReportTab({
                   <SelectItem value="void">Anulada</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="w-[150px]">
+              <Label htmlFor="income-cashier-id">Cajero ID</Label>
+              <Input
+                id="income-cashier-id"
+                type="number"
+                inputMode="numeric"
+                min="1"
+                placeholder="Todos"
+                value={cashierId}
+                onChange={(e) => onCashierChange(e.target.value)}
+              />
+            </div>
+            <div className="w-[150px]">
+              <Label htmlFor="income-cash-session-id">Caja ID</Label>
+              <Input
+                id="income-cash-session-id"
+                type="number"
+                inputMode="numeric"
+                min="1"
+                placeholder="Todas"
+                value={cashSessionId}
+                onChange={(e) => onCashSessionChange(e.target.value)}
+              />
             </div>
             <Button onClick={onSubmit} disabled={loading}>
               {loading ? 'Consultando...' : 'Ver rango'}

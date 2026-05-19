@@ -1,4 +1,5 @@
 let sessionExpiredHandler: (() => void) | null = null;
+let requestChain: Promise<unknown> = Promise.resolve();
 
 export class ApiError extends Error {
   readonly status: number;
@@ -11,7 +12,7 @@ export class ApiError extends Error {
 }
 
 export function isSessionExpiredError(error: unknown): boolean {
-  return error instanceof ApiError && error.status === 401;
+  return error instanceof ApiError && (error.status === 401 || error.status === 419);
 }
 
 export function userSafeErrorMessage(error: unknown, fallback: string): string {
@@ -62,6 +63,19 @@ function cookieValue(name: string): string | null {
 
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? '';
 
+function networkError(): ApiError {
+  return new ApiError('No se pudo conectar con el servidor LAN. Revise que el servidor local este encendido y vuelva a intentar.', 0);
+}
+
+function enqueueRequest<T>(operation: () => Promise<T>): Promise<T> {
+  const next = requestChain
+    .catch(() => undefined)
+    .then(operation);
+  requestChain = next.catch(() => undefined);
+
+  return next;
+}
+
 export const apiClient = {
   baseUrl: configuredBaseUrl.replace(/\/$/, ''),
 
@@ -75,12 +89,31 @@ export const apiClient = {
   },
 
   async csrf(): Promise<void> {
-    await fetch(this.url('/sanctum/csrf-cookie'), {
-      credentials: 'include',
-    });
+    let response: Response;
+
+    try {
+      response = await fetch(this.url('/sanctum/csrf-cookie'), {
+        credentials: 'include',
+      });
+    } catch {
+      throw networkError();
+    }
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 419) {
+        sessionExpiredHandler?.();
+        throw new ApiError('Sesion vencida. Vuelva a iniciar sesion para continuar.', response.status);
+      }
+
+      throw new ApiError('No se pudo preparar la sesion segura. Revise el servidor local e intente de nuevo.', response.status);
+    }
   },
 
   async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+    return enqueueRequest(() => this.sendRequest<T>(path, options));
+  },
+
+  async sendRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
     const method = options.method?.toUpperCase() ?? 'GET';
 
     if (method !== 'GET' && method !== 'HEAD') {
@@ -90,16 +123,20 @@ export const apiClient = {
     const send = async (): Promise<Response> => {
       const xsrfToken = method === 'GET' || method === 'HEAD' ? null : cookieValue('XSRF-TOKEN');
 
-      return fetch(this.url(path), {
-        ...options,
-        credentials: 'include',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
-          ...options.headers,
-        },
-      });
+      try {
+        return await fetch(this.url(path), {
+          ...options,
+          credentials: 'include',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+            ...options.headers,
+          },
+        });
+      } catch {
+        throw networkError();
+      }
     };
 
     let response = await send();
@@ -126,7 +163,7 @@ export const apiClient = {
 
       if (response.status === 419) {
         sessionExpiredHandler?.();
-        throw new ApiError('La sesion fiscal expiro. Actualice la pantalla e intente de nuevo.', response.status);
+        throw new ApiError('La sesion expiro. Actualice la pantalla e intente de nuevo.', response.status);
       }
 
       if (response.status === 422 && error?.errors) {
@@ -141,12 +178,18 @@ export const apiClient = {
   },
 
   async download(path: string): Promise<Blob> {
-    const response = await fetch(this.url(path), {
-      credentials: 'include',
-      headers: {
-        Accept: 'application/octet-stream, text/csv, application/json',
-      },
-    });
+    let response: Response;
+
+    try {
+      response = await fetch(this.url(path), {
+        credentials: 'include',
+        headers: {
+          Accept: 'application/json, application/octet-stream, text/csv',
+        },
+      });
+    } catch {
+      throw networkError();
+    }
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -158,7 +201,13 @@ export const apiClient = {
         throw new ApiError('No tiene permiso para esta accion.', response.status);
       }
 
-      throw new ApiError(`HTTP ${response.status}`, response.status);
+      if (response.status === 419) {
+        sessionExpiredHandler?.();
+        throw new ApiError('La sesion expiro. Actualice la pantalla e intente de nuevo.', response.status);
+      }
+
+      const error = (await response.json().catch(() => null)) as { message?: string } | null;
+      throw new ApiError(error?.message ?? `HTTP ${response.status}`, response.status);
     }
 
     return response.blob();

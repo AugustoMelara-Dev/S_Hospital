@@ -9,6 +9,7 @@ use App\Models\BackupLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class BackupController extends Controller
@@ -16,9 +17,20 @@ class BackupController extends Controller
     public function index(Request $request): JsonResponse
     {
         $request->user()->can('backups.view') || abort(403);
+        $validated = $request->validate([
+            'status' => ['sometimes', 'string', Rule::in([
+                BackupLog::STATUS_PENDING,
+                BackupLog::STATUS_SUCCESS,
+                BackupLog::STATUS_FAILED,
+            ])],
+        ]);
 
         $backups = BackupLog::query()
             ->with('creator:id,name,username')
+            ->when(
+                ! empty($validated['status']),
+                fn ($query) => $query->where('status', $validated['status']),
+            )
             ->latest()
             ->paginate(max(1, min((int) $request->integer('per_page', 15), 50)));
 

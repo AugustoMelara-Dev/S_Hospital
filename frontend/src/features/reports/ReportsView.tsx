@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
 import { Badge } from '../../components/ui/badge';
+import { Alert } from '../../components/ui/alert';
 import { PageHeader } from '../../components/ui/page-header';
 import { EmptyState } from '../../components/ui/states';
 import { DailyReportTab } from './components/DailyReportTab';
@@ -43,10 +44,13 @@ export function ReportsView({
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
   const [categoryId, setCategoryId] = useState('');
+  const [cashSessionId, setCashSessionId] = useState('');
+  const [cashierId, setCashierId] = useState('');
   const [method, setMethod] = useState<NonNullable<ReportFilters['method']>>('');
   const [status, setStatus] = useState<NonNullable<ReportFilters['status']>>('');
   const [cashReportId, setCashReportId] = useState('');
   const [dailyError, setDailyError] = useState('');
+  const [rangeError, setRangeError] = useState('');
   const [cashError, setCashError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -92,6 +96,7 @@ export function ReportsView({
 
   async function loadRangeReports() {
     setLoading(true);
+    setRangeError('');
     onStatus('Cargando reportes por rango...');
 
     try {
@@ -109,6 +114,7 @@ export function ReportsView({
       onStatus('Reportes por rango cargados.');
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudieron cargar los reportes.');
+      setRangeError(message);
       onStatus(message);
     } finally {
       setLoading(false);
@@ -143,8 +149,8 @@ export function ReportsView({
       date_from: dateFrom,
       date_to: dateTo,
       category_id: categoryId || null,
-      user_id: null,
-      cash_session_id: null,
+      user_id: cashierId || null,
+      cash_session_id: cashSessionId || null,
       method: method || null,
       status: status || null,
     };
@@ -186,6 +192,7 @@ export function ReportsView({
         <TabsContent value="diario" className="mt-0">
           {canViewManagerial ? (
             <DailyReportTab
+              canExport={canExport}
               daily={daily}
               dailyDate={dailyDate}
               error={dailyError}
@@ -203,24 +210,35 @@ export function ReportsView({
 
         <TabsContent value="rango" className="mt-0">
           {canViewManagerial ? (
-            <IncomeReportTab
-              canExport={canExport}
-              dateFrom={dateFrom}
-              dateTo={dateTo}
-              categoryId={categoryId}
-              method={method}
-              status={status}
-              categoryOptions={categoryOptions}
-              loading={loading}
-              income={income}
-              categories={categories}
-              onDateFromChange={setDateFrom}
-              onDateToChange={setDateTo}
-              onCategoryChange={setCategoryId}
-              onMethodChange={setMethod}
-              onStatusChange={setStatus}
-              onSubmit={loadRangeReports}
-            />
+            <div className="space-y-4">
+              {rangeError ? (
+                <Alert variant="destructive" title="No se pudo cargar el rango">
+                  {rangeError}
+                </Alert>
+              ) : null}
+              <IncomeReportTab
+                canExport={canExport}
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                categoryId={categoryId}
+                cashSessionId={cashSessionId}
+                cashierId={cashierId}
+                method={method}
+                status={status}
+                categoryOptions={categoryOptions}
+                loading={loading}
+                income={income}
+                categories={categories}
+                onDateFromChange={setDateFrom}
+                onDateToChange={setDateTo}
+                onCategoryChange={setCategoryId}
+                onCashSessionChange={setCashSessionId}
+                onCashierChange={setCashierId}
+                onMethodChange={setMethod}
+                onStatusChange={setStatus}
+                onSubmit={loadRangeReports}
+              />
+            </div>
           ) : (
             <EmptyState
               title="Reportes gerenciales no disponibles"
@@ -271,6 +289,7 @@ export function ReportsView({
         <TabsContent value="caja" className="mt-0">
           {canViewCashSessionReport ? (
             <CashSessionReportTab
+              canExport={canExport}
               cashSession={cashSession}
               cashReportId={cashReportId}
               loading={loading}

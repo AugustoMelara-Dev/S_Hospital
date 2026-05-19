@@ -593,6 +593,7 @@ describe('App', () => {
     const createBackupButton = await screen.findByRole('button', { name: /crear backup/i });
     await waitFor(() => expect(createBackupButton).toBeEnabled());
     fireEvent.click(createBackupButton);
+    fireEvent.click(await screen.findByRole('button', { name: /^crear backup$/i }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenLastCalledWith(
@@ -892,12 +893,12 @@ describe('App', () => {
     });
     expect(await screen.findByRole('button', { name: /eritropoyetina/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /eritropoyetina/i }));
-    expect(screen.getByRole('button', { name: /emitir factura/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /emitir y cobrar/i })).toBeDisabled();
     expect((await screen.findAllByText(/debe abrir la caja antes de emitir facturas/i)).length).toBeGreaterThan(0);
     fireEvent.change(screen.getByLabelText(/nombre del paciente/i), {
       target: { value: 'Maria Lopez' },
     });
-    expect(screen.getByRole('button', { name: /emitir factura/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /emitir y cobrar/i })).toBeDisabled();
     expect(screen.getAllByRole('button', { name: /abrir caja/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('dialog', { name: /confirmar factura/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /registrar pago/i })).not.toBeInTheDocument();
@@ -1073,13 +1074,11 @@ describe('App', () => {
       target: { value: 'glucosa' },
     });
     fireEvent.click(await screen.findByRole('button', { name: /glucosa/i }));
-    await waitFor(() => expect(screen.getByRole('button', { name: /emitir factura/i })).toBeEnabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: /emitir y cobrar/i })).toBeEnabled());
     await waitFor(() => expect(screen.getAllByText(/L\. 17\.25/i).length).toBeGreaterThan(0));
-    fireEvent.click(screen.getByRole('button', { name: /emitir factura/i }));
-    expect(await screen.findByRole('button', { name: /confirmar emision/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /confirmar emision/i }));
-    expect(await screen.findByRole('dialog', { name: /factura emitida/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /cobrar ahora/i }));
+    fireEvent.click(screen.getByRole('button', { name: /emitir y cobrar/i }));
+    expect(await screen.findByRole('button', { name: /emitir y abrir cobro/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
     expect(await screen.findByRole('heading', { name: /registrar pago/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
@@ -1200,7 +1199,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
 
     expect((await screen.findAllByText(/servicio esta inactivo/i)).length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: /agregar servicios/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /agregue servicios/i })).toBeDisabled();
     expect(screen.queryByText(/servicio descontinuado/i)).not.toBeInTheDocument();
     expect(
       fetchMock.mock.calls.some(([url]) => {
@@ -1272,7 +1271,10 @@ describe('App', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
 
-    expect((await screen.findAllByText(/no se encontro servicio para este codigo/i)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/no se encontro servicio activo para este codigo/i)).length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(screen.getByLabelText(/scanner usb o codigo manual/i)).toHaveFocus();
+    });
   });
 
   it('renders invoice history filters and reprint button based on permissions', async () => {
@@ -1398,11 +1400,11 @@ describe('App', () => {
     expect(screen.getByLabelText(/paciente/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/numero de factura/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/estado/i)).toBeInTheDocument();
-    fireEvent.click(await screen.findByRole('button', { name: /ver/i }));
 
     expect(await screen.findByRole('button', { name: /reimprimir/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /anular factura/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /reimprimir/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /registrar reimpresi/i }));
     expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
     await waitFor(() => {
       const receiptEl = screen.getByLabelText(/recibo termico/i);
@@ -1442,6 +1444,31 @@ describe('App', () => {
     expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
     expect(confirmSpy).toHaveBeenCalledWith('17.25');
+  });
+
+  it('allows partial payment and shows the remaining balance clearly', () => {
+    const confirmSpy = vi.fn();
+
+    render(
+      <PaymentModal
+        open
+        onOpenChange={vi.fn()}
+        invoiceNumber="000-001-01-00000004"
+        patientName="Maria Lopez"
+        total="17.25"
+        balanceDue="17.25"
+        paymentMethod="cash"
+        paymentAmount="10.00"
+        onPaymentMethodChange={vi.fn()}
+        onPaymentAmountChange={vi.fn()}
+        onConfirm={confirmSpy}
+      />,
+    );
+
+    expect(screen.getAllByText(/saldo pendiente/i).length).toBeGreaterThan(0);
+    expect(screen.getByText('L. 7.25')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
+    expect(confirmSpy).toHaveBeenCalledWith('10.00');
   });
 
   it('treats persistent 419 responses as an expired session', async () => {

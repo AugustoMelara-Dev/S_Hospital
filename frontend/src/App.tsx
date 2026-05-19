@@ -70,7 +70,6 @@ function HospitalApp() {
       onLogout={session.handleLogout}
       status={session.status}
       user={session.user}
-      topbarVariant="minimal"
     >
       {!session.hasAnyOperationalPermission ? (
         <EmptyState
@@ -83,6 +82,8 @@ function HospitalApp() {
         <AppRoutes
           canCreateInvoices={session.canCreateInvoices}
           canEditFiscalSettings={session.canEditFiscalSettings}
+          canOpenCash={session.canOpenCash}
+          canCloseCash={session.canCloseCash}
           canViewBackups={session.canViewBackups}
           canViewCash={session.canViewCash}
           canCreatePayments={session.canCreatePayments}
@@ -131,7 +132,14 @@ function HospitalApp() {
         title={session.cashSession ? 'Caja activa' : 'Abrir caja'}
         description="Apertura y cierre de turno sin navegar a otra pantalla."
       >
-        <CashBoxView onStatus={session.setStatus} onSessionChange={session.setCashSession} compact />
+        <CashBoxView
+          canCloseCash={session.canCloseCash}
+          canOpenCash={session.canOpenCash}
+          canViewCashSessionReport={session.canViewCashSessionReports || session.canViewManagerialReports}
+          onStatus={session.setStatus}
+          onSessionChange={session.setCashSession}
+          compact
+        />
       </Dialog>
     </AppShell>
   );

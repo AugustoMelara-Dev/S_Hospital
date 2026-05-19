@@ -64,8 +64,10 @@ export function ReceiptPreview({ onPrint, receipt, onWidthChange }: ReceiptPrevi
             <Row label="No." value={receipt.invoice.invoice_number} />
             <Row label="Fecha" value={formatDate(receipt.invoice.issued_at)} />
             <Row label="Paciente" value={receipt.invoice.patient_name} />
+            {receipt.invoice.cashier && <Row label="Cajero" value={receipt.invoice.cashier} />}
             <Row label="Estado" value={statusLabel(receipt.invoice.status)} />
             <Row label="CAI" value={receipt.fiscal.cai ?? 'PENDIENTE-CONFIGURAR'} />
+            {receipt.fiscal.authorized_range && <Row label="Rango" value={receipt.fiscal.authorized_range} />}
             {receipt.fiscal.valid_until && (
               <Row label="Vence" value={formatDate(receipt.fiscal.valid_until)} />
             )}
@@ -111,6 +113,7 @@ export function ReceiptPreview({ onPrint, receipt, onWidthChange }: ReceiptPrevi
                     <span>
                       {paymentLabel(payment.method)}
                       {payment.reference && ` / Ref: ${payment.reference}`}
+                      {payment.cashier && ` / ${payment.cashier}`}
                     </span>
                     <strong>L. {payment.amount}</strong>
                   </Row>

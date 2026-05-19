@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
@@ -9,6 +10,7 @@ use App\Models\Service;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -70,6 +72,21 @@ class InvoiceCreationTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('patient_name');
+    }
+
+    public function test_invoice_requires_open_cash_session(): void
+    {
+        $this->seedBillingBase();
+        $cashier = User::factory()->create();
+        $cashier->assignRole('cajero');
+
+        $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('cash_session_id');
     }
 
     public function test_invoice_requires_items(): void
@@ -149,6 +166,29 @@ class InvoiceCreationTest extends TestCase
             ->assertJsonPath('data.items.0.category_name', 'Laboratorio')
             ->assertJsonPath('data.items.0.unit_price', '15.00')
             ->assertJsonPath('data.items.0.line_total', '17.25');
+    }
+
+    public function test_invoice_with_items_cannot_be_deleted_and_lose_fiscal_history(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->expectException(QueryException::class);
+
+        try {
+            Invoice::query()->findOrFail($invoiceId)->delete();
+        } finally {
+            $this->assertDatabaseHas('invoices', ['id' => $invoiceId]);
+            $this->assertDatabaseHas('invoice_items', ['invoice_id' => $invoiceId]);
+        }
     }
 
     public function test_erythropoietin_normal_is_charged_at_twenty_five(): void
@@ -368,6 +408,13 @@ class InvoiceCreationTest extends TestCase
     {
         $cashier = User::factory()->create();
         $cashier->assignRole('cajero');
+        CashRegisterSession::query()->create([
+            'user_id' => $cashier->id,
+            'open_user_id' => $cashier->id,
+            'opening_amount' => '500.00',
+            'status' => CashRegisterSession::STATUS_OPEN,
+            'opened_at' => now(),
+        ]);
 
         return $cashier;
     }

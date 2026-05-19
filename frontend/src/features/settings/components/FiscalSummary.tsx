@@ -38,35 +38,31 @@ export function FiscalSummary({ settings, sequence }: FiscalSummaryProps) {
           <div>
             <Label className="text-muted-foreground">CAI</Label>
             <p className="font-medium">
-              {sequence?.cai ? (
-                sequence.cai
-              ) : (
-                <span className="text-destructive">No configurado</span>
-              )}
+              {sequence?.cai ? sequence.cai : <span className="text-destructive">No configurado</span>}
             </p>
           </div>
           <div>
             <Label className="text-muted-foreground">Rango Autorizado</Label>
             <p className="font-medium">
-              {sequence?.prefix && sequence?.min_number != null && sequence?.max_number != null ? (
-                `${sequence.prefix}-${String(sequence.min_number).padStart(8, '0')} a ${sequence.prefix}-${String(sequence.max_number).padStart(8, '0')}`
-              ) : (
-                '-'
-              )}
+              {sequence?.prefix && sequence?.min_number != null && sequence?.max_number != null
+                ? `${sequence.prefix}-${String(sequence.min_number).padStart(8, '0')} a ${sequence.prefix}-${String(sequence.max_number).padStart(8, '0')}`
+                : '-'}
             </p>
           </div>
           <div>
             <Label className="text-muted-foreground">Siguiente Correlativo</Label>
             <p className="font-medium">
-              {sequence?.prefix && sequence?.current_number != null ? (
-                `${sequence.prefix}-${String(sequence.current_number + 1).padStart(8, '0')}`
-              ) : (
-                '-'
-              )}
+              {sequence?.prefix && sequence?.current_number != null
+                ? `${sequence.prefix}-${String(sequence.current_number + 1).padStart(8, '0')}`
+                : '-'}
             </p>
           </div>
           <div>
-            <Label className="text-muted-foreground">Válido Hasta</Label>
+            <Label className="text-muted-foreground">Ancho de Recibo</Label>
+            <p className="font-medium">{settings?.receipt_width ?? '-'}</p>
+          </div>
+          <div>
+            <Label className="text-muted-foreground">Valido Hasta</Label>
             <p className={`font-medium ${isExpired ? 'text-destructive' : ''}`}>
               {sequence?.valid_until ? formatDate(sequence.valid_until) : '-'}
             </p>

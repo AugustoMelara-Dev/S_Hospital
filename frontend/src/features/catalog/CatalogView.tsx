@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { type AuthUser, type Category, type Service, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { Plus, Search, MoreHorizontal, Boxes } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import { Alert } from '../../components/ui/alert';
 import { Card, CardContent } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
@@ -47,6 +48,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const [servicesData, setServicesData] = useState<Awaited<ReturnType<typeof apiClient.getServicesPage>> | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   const [serviceSheetOpen, setServiceSheetOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
@@ -74,6 +76,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 
   const loadCatalogData = useCallback(async () => {
     setIsLoading(true);
+    setLoadError('');
     try {
       const [nextCategories, nextServices] = await Promise.all([
         apiClient.getCategories(),
@@ -88,7 +91,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       setCategories(nextCategories);
       setServicesData(nextServices);
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo cargar el catalogo.'));
+      const message = userSafeErrorMessage(error, 'No se pudo cargar el catalogo.');
+      setLoadError(message);
+      onStatus(message);
       setCategories([]);
       setServicesData(null);
     } finally {
@@ -252,6 +257,12 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         </CardContent>
       </Card>
 
+      {loadError ? (
+        <Alert variant="destructive" title="No se pudo cargar el catálogo">
+          {loadError}
+        </Alert>
+      ) : null}
+
       {isLoading ? (
         <Card>
           <CardContent className="p-0">
@@ -313,7 +324,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             </div>
           </CardContent>
         </Card>
-      ) : isEmpty ? (
+      ) : isEmpty && !loadError ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Boxes className="h-12 w-12 text-muted-foreground mb-4" />
@@ -335,7 +346,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             ) : null}
           </CardContent>
         </Card>
-      ) : (
+      ) : !loadError ? (
         <Card>
           <div className="overflow-auto">
             <Table>
@@ -387,10 +398,10 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                       </TableCell>
                       {canManageCatalog && (
                         <TableCell className="px-4 py-3 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" aria-label={`Acciones de servicio ${service.name}`}>
+                                <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -414,7 +425,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
               </Table>
           </div>
         </Card>
-      )}
+      ) : null}
 
       {!isEmpty && (
         <div className="flex items-center justify-between">

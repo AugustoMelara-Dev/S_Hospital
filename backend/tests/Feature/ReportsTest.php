@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AuditLog;
 use App\Models\BackupLog;
+use App\Models\CashRegisterSession;
 use App\Models\Category;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -367,6 +368,17 @@ class ReportsTest extends TestCase
         $this->assertStringContainsString($cashier->username, $csv);
     }
 
+    public function test_report_export_guest_receives_json_unauthenticated_for_download_accept_header(): void
+    {
+        $date = now()->toDateString();
+
+        $this
+            ->withHeaders(['Accept' => 'application/json, application/octet-stream, text/csv'])
+            ->get("/api/reports/export?date_from={$date}&date_to={$date}")
+            ->assertUnauthorized()
+            ->assertJsonPath('message', 'Unauthenticated.');
+    }
+
     public function test_operations_and_export_hide_backup_metadata_without_backup_permission(): void
     {
         $this->seedBillingBase();
@@ -598,6 +610,18 @@ class ReportsTest extends TestCase
 
     private function createInvoice(User $cashier, string $serviceName): int
     {
+        CashRegisterSession::query()->firstOrCreate(
+            [
+                'user_id' => $cashier->id,
+                'status' => CashRegisterSession::STATUS_OPEN,
+            ],
+            [
+                'open_user_id' => $cashier->id,
+                'opening_amount' => '500.00',
+                'opened_at' => now(),
+            ],
+        );
+
         return $this->actingAs($cashier)
             ->postJson('/api/invoices', [
                 'patient_name' => 'Maria Lopez',

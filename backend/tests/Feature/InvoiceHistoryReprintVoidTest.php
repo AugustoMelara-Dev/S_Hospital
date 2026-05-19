@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
@@ -368,6 +369,18 @@ class InvoiceHistoryReprintVoidTest extends TestCase
 
     private function createInvoice(User $cashier, string $patientName, string $serviceName): int
     {
+        CashRegisterSession::query()->firstOrCreate(
+            [
+                'user_id' => $cashier->id,
+                'status' => CashRegisterSession::STATUS_OPEN,
+            ],
+            [
+                'open_user_id' => $cashier->id,
+                'opening_amount' => '500.00',
+                'opened_at' => now(),
+            ],
+        );
+
         return $this->actingAs($cashier)
             ->postJson('/api/invoices', [
                 'patient_name' => $patientName,
