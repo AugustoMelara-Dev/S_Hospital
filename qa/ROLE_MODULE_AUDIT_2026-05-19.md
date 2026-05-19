@@ -78,6 +78,7 @@ Modules covered:
 - Real scheduled backup command: passed after detecting XAMPP dump binary. Created `hospital-backup-20260519-143246-t2tcamra.sql`, status `success`, size `299891`, SHA256 `4633427ffb79efec03b97fd98997d2d367d809580e4816d90040b44da1c3c49b`.
 - Windows wrapper backup command: passed. `scripts/run_scheduled_backup.cmd` created `hospital-backup-20260519-144322-ys8wi5a9.sql`.
 - Current-user startup automation: installed under `C:\Users\melar\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\HospitalBillingOSBackupAutomation.cmd`.
+- Current-user HKCU Run automation: installed as `"C:\Projects\S_Hospital\scripts\start_backup_automation.cmd"` according to `scripts/install_backup_startup_current_user.ps1 -Status`.
 - Runtime automation process: started successfully, log at `backend/storage/logs/backup-automation.log`; worker PID observed in process list after launcher start.
 
 ## Remaining Field Validation

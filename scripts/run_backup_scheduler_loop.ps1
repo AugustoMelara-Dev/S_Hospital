@@ -53,6 +53,7 @@ function Start-BackupWorker {
 }
 
 $workerProcess = Start-BackupWorker
+$lastHeartbeat = Get-Date
 
 while ($true) {
     try {
@@ -65,6 +66,11 @@ while ($true) {
         }
 
         $now = Get-Date
+        if (($now - $lastHeartbeat).TotalMinutes -ge 5) {
+            Write-AutomationLog "Heartbeat. WorkerPid=$($workerProcess.Id) WorkerExited=$($workerProcess.HasExited)"
+            $lastHeartbeat = $now
+        }
+
         $target = [DateTime]::ParseExact($DailyBackupTime, "HH:mm", [Globalization.CultureInfo]::InvariantCulture)
         $targetToday = Get-Date -Hour $target.Hour -Minute $target.Minute -Second 0
         $lastRunDate = if (Test-Path -LiteralPath $stateFile) {
