@@ -1448,7 +1448,7 @@ describe('App', () => {
   });
 
   it('renders invoice history filters and reprint button based on permissions', async () => {
-    window.history.pushState({}, '', '/invoices');
+    window.history.pushState({}, '', '/invoices?invoice_number=00000001');
     const fetchMock = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce({
         ok: true,
@@ -1568,8 +1568,11 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: /historial de facturas/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/desde/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/paciente/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/numero de factura/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/numero de factura/i)).toHaveValue('00000001');
     expect(screen.getByLabelText(/estado/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([url]) => String(url).includes('invoice_number=00000001'))).toBe(true);
+    });
 
     expect(await screen.findByRole('button', { name: /reimprimir/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /anular factura/i })).not.toBeInTheDocument();

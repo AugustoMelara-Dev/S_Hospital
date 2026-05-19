@@ -168,10 +168,14 @@ export function PaymentModal({
             <span>
               Ver preview antes de imprimir
               <span className="block text-xs text-muted-foreground">
-                Desactivado: al confirmar cobro se prepara el recibo para impresion directa.
+                Desactivado: al confirmar cobro se registra el pago y se abre impresion directa.
               </span>
             </span>
           </label>
+
+          <p className="text-xs text-muted-foreground">
+            Cancelar la ventana de impresion no revierte el pago. Si necesita corregir una factura pagada, use el flujo de anulacion autorizado.
+          </p>
         </div>
 
         <div className="flex gap-3 pt-2">
@@ -184,7 +188,7 @@ export function PaymentModal({
             disabled={submitting}
             aria-label={previewBeforePrint ? 'Confirmar cobro y ver preview' : 'Confirmar cobro e imprimir'}
           >
-            {submitting ? 'Cobrando...' : previewBeforePrint ? 'Cobrar y ver preview' : 'Cobrar e imprimir'}
+            {submitting ? 'Cobrando...' : previewBeforePrint ? 'Registrar cobro y ver preview' : 'Registrar cobro e imprimir'}
           </Button>
         </div>
       </form>

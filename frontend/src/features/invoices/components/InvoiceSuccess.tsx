@@ -98,7 +98,7 @@ export function InvoiceSuccess({
             )}
           </div>
           <Button asChild variant="outline">
-            <Link to="/invoices">Ver facturas</Link>
+            <Link to={`/invoices?invoice_number=${encodeURIComponent(invoiceNumber)}`}>Ver factura</Link>
           </Button>
         </div>
       </div>
