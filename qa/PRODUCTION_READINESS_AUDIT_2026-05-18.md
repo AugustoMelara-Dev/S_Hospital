@@ -50,7 +50,9 @@ las pruebas fisicas y operativas.
 de los puntos anteriores. La evidencia fisica es obligatoria por defecto.
 
 El override `-AllowMissingPhysicalProof` solo permite una corrida parcial de
-entorno. Cualquier salida con ese override mantiene `PRODUCTION_READY: NO`.
+entorno para diagnostico. Cualquier salida con ese override mantiene
+`PRODUCTION_READY: NO` y termina con codigo no cero para que no pueda usarse
+como gate automatico de produccion.
 
 ## Negative validation expected locally
 

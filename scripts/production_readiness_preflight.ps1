@@ -74,26 +74,52 @@ function Normalize-ProofContent([string] $content) {
     return ($content -replace "`r", "") -replace "\s+", " "
 }
 
-function Test-ProofHasCompletedField([string] $content, [string] $fieldLabel) {
+function Test-ProofValueIsIncomplete([string] $value) {
+    if ($null -eq $value) {
+        return $true
+    }
+
+    $trimmed = $value.Trim()
+    if ($trimmed -eq "") {
+        return $true
+    }
+
+    return $trimmed -match "^(TODO|PENDING|PENDING_[A-Z_]+|REPLACE|N/A|NA|NONE|TBD|-|\[ \])$"
+}
+
+function Get-ProofFieldValue([string] $content, [string] $fieldLabel) {
     $escaped = [regex]::Escape($fieldLabel)
-    $pattern = "(?im)^\s*-\s*$escaped\s*:\s*(.+?)\s*$"
+    $pattern = "(?im)^\s*-\s*$escaped\s*:[ \t]*(?<value>[^\r\n]*)$"
     $match = [regex]::Match($content, $pattern)
 
     if (-not $match.Success) {
-        return $false
+        return $null
     }
 
-    $value = $match.Groups[1].Value.Trim()
-
-    if ($value -eq "" -or $value -match "^(TODO|PENDING|REPLACE|N/A|NA|NONE|TBD|-|\[ \])$") {
-        return $false
-    }
-
-    return $true
+    return $match.Groups["value"].Value.Trim()
 }
 
-function Test-ProofHasCheckedItem([string] $content, [string] $labelPattern) {
-    return $content -match "(?im)^\s*-\s*\[[xX]\]\s*.*$labelPattern"
+function Test-ProofHasCompletedField([string] $content, [string] $fieldLabel) {
+    $value = Get-ProofFieldValue $content $fieldLabel
+    return -not (Test-ProofValueIsIncomplete $value)
+}
+
+function Test-ProofHasCompletedCheckedItem([string] $content, [string] $labelPattern) {
+    $escaped = [regex]::Escape($labelPattern)
+    $linePattern = "(?im)^\s*-\s*\[[xX]\]\s*.*$escaped.*$"
+    $lineMatch = [regex]::Match($content, $linePattern)
+
+    if (-not $lineMatch.Success) {
+        return $false
+    }
+
+    $line = $lineMatch.Value
+    $resultMatch = [regex]::Match($line, ":[ \t]*(?<value>[^\r\n]*)$")
+    if (-not $resultMatch.Success) {
+        return $false
+    }
+
+    return -not (Test-ProofValueIsIncomplete $resultMatch.Groups["value"].Value)
 }
 
 function Test-ProofFile([string] $path, [string] $proofName, [string[]] $requiredFields, [string[]] $requiredChecks) {
@@ -110,36 +136,35 @@ function Test-ProofFile([string] $path, [string] $proofName, [string[]] $require
         return
     }
 
-    $placeholderPatterns = @(
-        '(?i)\bTODO\b',
-        '(?i)\bPENDING_[A-Z_]+\b',
-        '(?i)\bREPLACE\b',
-        '(?i)\bN/A\b',
-        '(?i)\bTBD\b',
-        '(?i)example',
-        '(?i)template',
-        '(?i)use this file',
-        '\[ \]',
-        '(?im):\s*$'
-    )
-
-    foreach ($pattern in $placeholderPatterns) {
-        if ($content -match $pattern) {
-            Add-Failure "$path still contains placeholder or incomplete proof content matching '$pattern'."
-            return
-        }
-    }
-
     foreach ($field in $requiredFields) {
         if (-not (Test-ProofHasCompletedField $content $field)) {
-            Add-Failure "$path must include a completed '${field}:' field."
+            Add-Failure "Complete '${field}:' in $path."
             return
         }
     }
 
     foreach ($check in $requiredChecks) {
-        if (-not (Test-ProofHasCheckedItem $content $check)) {
-            Add-Failure "$path must include a completed checked evidence item for '$check'."
+        if (-not (Test-ProofHasCompletedCheckedItem $content $check)) {
+            Add-Failure "Complete a checked evidence item with a result for '$check' in $path."
+            return
+        }
+    }
+
+    $placeholderPatterns = @(
+        @{ Pattern = '(?i)\bTODO\b'; Message = 'Remove TODO placeholders' },
+        @{ Pattern = '(?i)\bPENDING_[A-Z_]+\b'; Message = 'Replace PENDING_* placeholders' },
+        @{ Pattern = '(?i)\bREPLACE\b'; Message = 'Replace placeholder text' },
+        @{ Pattern = '(?i)\bN/A\b'; Message = 'Replace N/A with a real result or a concrete value such as none found' },
+        @{ Pattern = '(?i)\bTBD\b'; Message = 'Replace TBD placeholders' },
+        @{ Pattern = '(?i)example'; Message = 'Remove example/template instructions from the proof file' },
+        @{ Pattern = '(?i)template'; Message = 'Remove template instructions from the proof file' },
+        @{ Pattern = '(?i)use this file'; Message = 'Remove template instructions from the proof file' },
+        @{ Pattern = '\[ \]'; Message = 'Check every required evidence item after testing it' }
+    )
+
+    foreach ($placeholder in $placeholderPatterns) {
+        if ($content -match $placeholder.Pattern) {
+            Add-Failure "$($placeholder.Message) in $path."
             return
         }
     }
@@ -166,7 +191,12 @@ $frontendDist = Join-Path $ProjectRoot "frontend\dist"
 $envPath = Join-Path $backendDir ".env"
 $envValues = Read-EnvFile $envPath
 
-$baseUri = [Uri] $BaseUrl.TrimEnd("/")
+$baseUri = $null
+if (-not [Uri]::TryCreate($BaseUrl.TrimEnd("/"), [UriKind]::Absolute, [ref] $baseUri) -or $baseUri.Scheme -notin @("http", "https")) {
+    Add-Failure "BaseUrl must be an absolute http(s) LAN URL, for example http://192.168.1.10"
+    $baseUri = [Uri] "http://invalid.local"
+}
+
 $baseHostWithPort = if ($baseUri.IsDefaultPort) { $baseUri.Host } else { "$($baseUri.Host):$($baseUri.Port)" }
 $appEnv = Get-EnvValue $envValues "APP_ENV" "local"
 $appDebug = Get-EnvValue $envValues "APP_DEBUG" "true"
@@ -174,6 +204,7 @@ $appUrl = Get-EnvValue $envValues "APP_URL" ""
 $dbConnection = Get-EnvValue $envValues "DB_CONNECTION" ""
 $sanctumDomains = Get-EnvValue $envValues "SANCTUM_STATEFUL_DOMAINS" ""
 $corsOrigins = Get-EnvValue $envValues "CORS_ALLOWED_ORIGINS" ""
+$corsOriginPatterns = Get-EnvValue $envValues "CORS_ALLOWED_ORIGIN_PATTERNS" ""
 $corsOriginsIsExplicit = $envValues.ContainsKey("CORS_ALLOWED_ORIGINS")
 $corsOriginList = @($corsOrigins.Split(",") | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" })
 $queueConnection = Get-EnvValue $envValues "QUEUE_CONNECTION" ""
@@ -199,7 +230,7 @@ if ($sanctumDomains.Split(",").Trim() -contains $baseHostWithPort -or $sanctumDo
     Add-Failure "SANCTUM_STATEFUL_DOMAINS must include $baseHostWithPort or $($baseUri.Host)"
 }
 
-if ($corsOriginList -contains "*") {
+if ($corsOriginList | Where-Object { $_ -match "\*" }) {
     Add-Failure "CORS_ALLOWED_ORIGINS must not contain wildcard '*'. Configure explicit LAN origins or an explicitly empty same-origin value."
 } elseif ($corsOrigins -eq "" -and $corsOriginsIsExplicit) {
     Add-Pass "CORS origins are explicitly empty for same-origin production"
@@ -207,6 +238,12 @@ if ($corsOriginList -contains "*") {
     Add-Pass "CORS origins are same-origin or include BaseUrl"
 } else {
     Add-Failure "CORS_ALLOWED_ORIGINS must be explicitly empty for same-origin or include $($BaseUrl.TrimEnd('/'))"
+}
+
+if ($corsOriginPatterns.Trim() -ne "") {
+    Add-Failure "CORS_ALLOWED_ORIGIN_PATTERNS must be empty in production preflight. Use explicit CORS_ALLOWED_ORIGINS instead."
+} else {
+    Add-Pass "CORS origin patterns are empty"
 }
 
 if ($queueConnection -eq "database") {
@@ -257,6 +294,7 @@ Invoke-RouteCheck "$($BaseUrl.TrimEnd('/'))/verify-email" "/verify-email" @(200,
 
 if ($AllowMissingPhysicalProof) {
     Add-Strong-Warning "AllowMissingPhysicalProof was used. This run is only an environment preflight and MUST NOT be called PRODUCTION_READY."
+    Add-Failure "Physical LAN/printer proof was bypassed. Re-run without -AllowMissingPhysicalProof before declaring PRODUCTION_READY."
 } else {
     Test-ProofFile `
         -path (Join-Path $ProjectRoot "qa\LAN_CLIENT_VALIDATION_PROOF.md") `
@@ -266,6 +304,7 @@ if ($AllowMissingPhysicalProof) {
             "Responsible person",
             "Client computer name",
             "Server IP or LAN name",
+            "Server LAN URL",
             "Client browser/version",
             "User/role used",
             "Evidence/capture reference",
@@ -294,10 +333,15 @@ if ($AllowMissingPhysicalProof) {
             "Responsible person",
             "Printer brand/model",
             "Printer driver",
+            "Connection type",
             "Browser/version",
+            "Cashier computer",
             "Invoice used",
             "80mm result",
             "58mm result",
+            "Reprint result",
+            "Margins result",
+            "Browser headers/footers result",
             "Problems found",
             "Evidence/photo reference",
             "Final conclusion"

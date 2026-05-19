@@ -1,8 +1,12 @@
 # LAN client validation proof
 
-Use this file as the template for `qa/LAN_CLIENT_VALIDATION_PROOF.md` on the final server.
-Do not mark `PRODUCTION_READY` until this evidence is filled from a real second
-computer on the hospital LAN.
+Copy this file to `qa/LAN_CLIENT_VALIDATION_PROOF.md` on the final server,
+delete this instruction block, and fill every required field below from a real
+second computer on the hospital LAN. Do not mark `PRODUCTION_READY` until this
+evidence is complete.
+
+Do not rename required field labels. The production preflight validates these
+exact labels and the checked items below.
 
 ## Environment
 

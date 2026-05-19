@@ -85,7 +85,8 @@ documentadas de cliente LAN e impresora fisica.
 
 La evidencia fisica de LAN e impresora es obligatoria por defecto. El flag
 `-AllowMissingPhysicalProof` solo permite una corrida parcial de entorno y deja
-un warning fuerte: ese resultado no puede llamarse `PRODUCTION_READY`.
+un warning fuerte mas salida no cero: ese resultado no puede llamarse
+`PRODUCTION_READY` ni usarse como gate automatico de produccion.
 
 ## Validaciones reales antes de PRODUCTION_READY
 
