@@ -167,19 +167,8 @@ class OperationsReportService
                 ->all();
         }
 
-        $collectedExpression = ! empty($filters['category_id'])
-            ? 'COALESCE(SUM(ROUND(payments.amount * 100 * (
-                SELECT COALESCE(SUM(invoice_items.line_total), 0)
-                FROM invoice_items
-                WHERE invoice_items.invoice_id = invoices.id
-                AND invoice_items.category_id = ?
-            ) / NULLIF(invoices.total, 0))), 0) as collected_cents'
-            : 'COALESCE(SUM(ROUND(payments.amount * 100)), 0) as collected_cents';
-        $collectedBindings = ! empty($filters['category_id']) ? [$filters['category_id']] : [];
-
-        $cashiers = Payment::query()
+        $paymentsData = Payment::query()
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
-            ->join('users', 'payments.user_id', '=', 'users.id')
             ->where('payments.status', Payment::STATUS_POSTED)
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
             ->when(! empty($filters['status']) && $filters['status'] !== Invoice::STATUS_VOID, function ($query) use ($filters): void {
@@ -207,25 +196,76 @@ class OperationsReportService
                         ->where('invoice_items.category_id', $filters['category_id']);
                 });
             })
-            ->groupBy('payments.user_id', 'users.name', 'users.username')
-            ->orderByDesc('collected_cents')
-            ->select('payments.user_id', 'users.name', 'users.username')
-            ->selectRaw('COUNT(*) as payment_count')
-            ->selectRaw('COUNT(DISTINCT payments.cash_session_id) as cash_session_count')
-            ->selectRaw('COUNT(DISTINCT payments.invoice_id) as invoice_count')
-            ->selectRaw($collectedExpression, $collectedBindings)
-            ->get()
-            ->map(fn (object $row): array => [
-                'user_id' => (int) $row->user_id,
-                'name' => $row->name,
-                'username' => $row->username,
-                'payment_count' => (int) $row->payment_count,
-                'cash_session_count' => (int) $row->cash_session_count,
-                'invoice_count' => (int) $row->invoice_count,
-                'total_collected' => $this->centsToMoney($row->collected_cents),
-            ])
-            ->values()
-            ->all();
+            ->select('payments.*')
+            ->with(['user', 'invoice.items'])
+            ->get();
+
+        $grouped = [];
+        foreach ($paymentsData as $payment) {
+            $userId = $payment->user_id;
+            if (! isset($grouped[$userId])) {
+                $grouped[$userId] = [
+                    'user_id' => $userId,
+                    'name' => $payment->user?->name ?? 'Desconocido',
+                    'username' => $payment->user?->username ?? '',
+                    'payment_count' => 0,
+                    'cash_sessions' => [],
+                    'invoices' => [],
+                    'collected_cents' => 0,
+                ];
+            }
+
+            $grouped[$userId]['payment_count']++;
+            $grouped[$userId]['cash_sessions'][] = $payment->cash_session_id;
+            $grouped[$userId]['invoices'][] = $payment->invoice_id;
+
+            $paymentAmountCents = (int) round(((float) $payment->amount) * 100);
+            if (! empty($filters['category_id'])) {
+                $categoryTotal = 0.0;
+                $invoice = $payment->invoice;
+                if ($invoice) {
+                    foreach ($invoice->items as $item) {
+                        if ((int) $item->category_id === (int) $filters['category_id']) {
+                            $categoryTotal += (float) $item->line_total;
+                        }
+                    }
+                    $invoiceTotal = (float) $invoice->total;
+                    if ($invoiceTotal > 0) {
+                        $collectedCents = (int) round($paymentAmountCents * ($categoryTotal / $invoiceTotal));
+                    } else {
+                        $collectedCents = 0;
+                    }
+                } else {
+                    $collectedCents = 0;
+                }
+            } else {
+                $collectedCents = $paymentAmountCents;
+            }
+
+            $grouped[$userId]['collected_cents'] += $collectedCents;
+        }
+
+        $cashiers = [];
+        foreach ($grouped as $userId => $data) {
+            $cashiers[] = [
+                'user_id' => (int) $userId,
+                'name' => $data['name'],
+                'username' => $data['username'],
+                'payment_count' => $data['payment_count'],
+                'cash_session_count' => count(array_unique($data['cash_sessions'])),
+                'invoice_count' => count(array_unique($data['invoices'])),
+                'total_collected' => $this->centsToMoney($data['collected_cents']),
+                'collected_cents_raw' => $data['collected_cents'],
+            ];
+        }
+
+        usort($cashiers, function ($a, $b) {
+            return $b['collected_cents_raw'] <=> $a['collected_cents_raw'];
+        });
+
+        foreach ($cashiers as &$cashier) {
+            unset($cashier['collected_cents_raw']);
+        }
 
         return [
             'date_from' => $filters['date_from'],

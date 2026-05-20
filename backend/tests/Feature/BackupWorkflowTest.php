@@ -172,16 +172,26 @@ class BackupWorkflowTest extends TestCase
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
-        Config::set('database.connections.sqlite.database', '');
-        Config::set('database.connections.sqlite.password', 'secret-db-password');
+        $connection = Config::get('database.default');
+        
+        $originalDb = Config::get("database.connections.{$connection}.database");
+        $originalPassword = Config::get("database.connections.{$connection}.password");
 
-        $backup = app(CreateBackupAction::class)->execute($admin, BackupLog::TYPE_MANUAL);
+        try {
+            Config::set("database.connections.{$connection}.database", 'invalid-db-name');
+            Config::set("database.connections.{$connection}.password", 'secret-db-password');
 
-        $this->assertSame(BackupLog::STATUS_FAILED, $backup->status);
-        $this->assertNotNull($backup->completed_at);
-        $this->assertNull($backup->checksum_sha256);
-        $this->assertStringNotContainsString('secret-db-password', (string) $backup->error_message);
-        $this->assertFalse(Storage::disk('local')->exists((string) $backup->path));
+            $backup = app(CreateBackupAction::class)->execute($admin, BackupLog::TYPE_MANUAL);
+
+            $this->assertSame(BackupLog::STATUS_FAILED, $backup->status);
+            $this->assertNotNull($backup->completed_at);
+            $this->assertNull($backup->checksum_sha256);
+            $this->assertStringNotContainsString('secret-db-password', (string) $backup->error_message);
+            $this->assertFalse(Storage::disk('local')->exists((string) $backup->path));
+        } finally {
+            Config::set("database.connections.{$connection}.database", $originalDb);
+            Config::set("database.connections.{$connection}.password", $originalPassword);
+        }
     }
 
     public function test_download_only_serves_registered_existing_backup_files_and_audits_downloads(): void

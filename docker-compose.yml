@@ -2,8 +2,6 @@ services:
   backend:
     build:
       context: ./backend
-    env_file:
-      - ./backend/.env.docker.example
     environment:
       APP_ENV: local
       APP_DEBUG: "true"

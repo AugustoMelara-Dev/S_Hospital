@@ -23,7 +23,7 @@ class FiscalSettingsController extends Controller
     public function update(UpdateFiscalSettingsRequest $request): JsonResponse
     {
         $setting = DB::transaction(function () use ($request): FiscalSetting {
-            $setting = FiscalSetting::query()->firstOrNew(['id' => 1]);
+            $setting = FiscalSetting::query()->first() ?? new FiscalSetting();
             $fieldsToTrack = [
                 'hospital_name',
                 'rtn',
