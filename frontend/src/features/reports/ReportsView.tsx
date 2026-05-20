@@ -101,6 +101,25 @@ export function ReportsView({
   }
 
   async function loadRangeReports() {
+    // Validar rango de fechas en el frontend
+    const d1 = new Date(dateFrom + 'T00:00:00');
+    const d2 = new Date(dateTo + 'T00:00:00');
+    const diffTime = d2.getTime() - d1.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    if (diffDays > 31) {
+      const msg = 'El rango máximo permitido para reportes es de 31 días.';
+      setRangeError(msg);
+      onStatus(msg);
+      return;
+    }
+    if (diffDays < 1) {
+      const msg = 'La fecha de inicio debe ser anterior o igual a la fecha de fin.';
+      setRangeError(msg);
+      onStatus(msg);
+      return;
+    }
+
     setLoading(true);
     setRangeError('');
     onStatus('Cargando reportes por rango...');

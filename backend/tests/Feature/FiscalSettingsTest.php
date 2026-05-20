@@ -95,6 +95,9 @@ class FiscalSettingsTest extends TestCase
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
             'receipt_width' => '80mm',
+            'primary_color' => 'indigo',
+            'address' => 'Barrio El Centro',
+            'slogan' => 'Tu salud es nuestra prioridad',
         ];
     }
 }

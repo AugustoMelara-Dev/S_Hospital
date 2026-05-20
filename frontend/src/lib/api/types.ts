@@ -15,6 +15,9 @@ export type FiscalSettings = {
   rtn: string;
   default_tax_rate: string;
   receipt_width: '80mm' | '58mm';
+  primary_color: 'teal' | 'blue' | 'indigo' | 'green' | 'rose';
+  address?: string;
+  slogan?: string;
 };
 
 export type FiscalSequence = {

@@ -13,6 +13,8 @@ describe('CashBoxView', () => {
     queryClient.clear();
     window.history.pushState({}, '', '/');
     vi.spyOn(apiClient, 'getLogo').mockResolvedValue(null);
+    document.body.removeAttribute('data-printing-receipt');
+    document.body.removeAttribute('data-receipt-width');
   });
 
   afterEach(() => {
@@ -102,48 +104,61 @@ describe('CashBoxView', () => {
 
   it('keeps close-session difference hidden until counted amount is entered', async () => {
     window.history.pushState({}, '', '/cashbox');
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 2,
-            name: 'Cajero Demo',
-            email: 'cajero.demo@hospital-billing.local',
-            username: 'cajero.demo',
-            active: true,
-            roles: ['cajero'],
-            permissions: ['cash.view', 'cash.close'],
-            must_change_password: false,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 9,
-            user_id: 2,
-            opening_amount: '100.00',
-            closing_amount: null,
-            expected_amount: null,
-            expected_cash_amount: '100.00',
-            difference_amount: null,
-            payments_count: 0,
-            payments_by_method: {
-              cash: '0.00',
-              transfer: '0.00',
-              card: '0.00',
-              other: '0.00',
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Demo',
+              email: 'cajero.demo@hospital-billing.local',
+              username: 'cajero.demo',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['cash.view', 'cash.close'],
+              must_change_password: false,
             },
-            status: 'open',
-            opening_notes: null,
-            closing_notes: null,
-            opened_at: '2026-05-17T08:00:00-06:00',
-            closed_at: null,
-          },
-        }),
-      } as Response);
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 9,
+              user_id: 2,
+              opening_amount: '100.00',
+              closing_amount: null,
+              expected_amount: null,
+              expected_cash_amount: '100.00',
+              difference_amount: null,
+              payments_count: 0,
+              payments_by_method: {
+                cash: '0.00',
+                transfer: '0.00',
+                card: '0.00',
+                other: '0.00',
+              },
+              status: 'open',
+              opening_notes: null,
+              closing_notes: null,
+              opened_at: '2026-05-17T08:00:00-06:00',
+              closed_at: null,
+            },
+          }),
+        } as Response;
+      }
+
+      return {
+        ok: true,
+        json: async () => ({ data: [] }),
+      } as Response;
+    });
 
     render(<App />);
 

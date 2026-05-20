@@ -13,7 +13,7 @@ import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 import { AppShell } from './layout/AppShell';
 import { queryClient } from './lib/query-client';
 import { apiClient } from './lib/api';
-import { Toaster } from './components/ui/toaster';
+import { Toaster } from './components/ui/toaster';import { useFiscalSettings } from './hooks/useFiscalSettings';
 
 export function App() {
   return (
@@ -32,6 +32,28 @@ function HospitalApp() {
   const [quickInvoiceOpen, setQuickInvoiceOpen] = useState(false);
   const [quickCashOpen, setQuickCashOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  const { data: fiscal } = useFiscalSettings();
+
+  useEffect(() => {
+    if (!fiscal?.primary_color) return;
+
+    const colors = {
+      indigo: { primary: '#4f46e5', accent: '#f5f3ff', hover: '#4338ca' },
+      blue: { primary: '#2563eb', accent: '#eff6ff', hover: '#1d4ed8' },
+      teal: { primary: '#0d9488', accent: '#f0fdfa', hover: '#0f766e' },
+      green: { primary: '#16a34a', accent: '#f0fdf4', hover: '#15803d' },
+      rose: { primary: '#e11d48', accent: '#fff1f2', hover: '#be123c' },
+    };
+
+    const theme = colors[fiscal.primary_color] || colors.indigo;
+
+    document.documentElement.style.setProperty('--color-secondary', theme.primary);
+    document.documentElement.style.setProperty('--color-ring', theme.primary);
+    document.documentElement.style.setProperty('--color-sidebar-primary', theme.primary);
+    document.documentElement.style.setProperty('--color-accent', theme.accent);
+    document.documentElement.style.setProperty('--color-accent-foreground', theme.primary);
+  }, [fiscal?.primary_color]);
 
   useEffect(() => {
     if (session.sessionExpired) {

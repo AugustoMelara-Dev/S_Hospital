@@ -20,6 +20,7 @@ services:
     volumes:
       - ./backend:/var/www/html
       - backend_vendor:/var/www/html/vendor
+      - ./frontend/dist:/var/www/frontend/dist
     ports:
       - "${APP_PORT:-8000}:8000"
     depends_on:

@@ -14,6 +14,9 @@ const settingsFormSchema = z.object({
   hospital_name: z.string().min(1, 'El nombre del hospital es requerido'),
   rtn: z.string(),
   receipt_width: z.enum(['80mm', '58mm']),
+  primary_color: z.enum(['teal', 'blue', 'indigo', 'green', 'rose']),
+  address: z.string().optional(),
+  slogan: z.string().optional(),
 });
 
 type SettingsFormData = z.infer<typeof settingsFormSchema>;
@@ -57,6 +60,9 @@ export function FiscalSettingsForm({
       hospital_name: settings?.hospital_name ?? '',
       rtn: settings?.rtn ?? '',
       receipt_width: settings?.receipt_width ?? '80mm',
+      primary_color: settings?.primary_color ?? 'indigo',
+      address: settings?.address ?? '',
+      slogan: settings?.slogan ?? '',
     },
   });
 
@@ -121,25 +127,75 @@ export function FiscalSettingsForm({
               </div>
             </div>
 
-            <div className="w-[200px]">
-              <Label htmlFor="receipt_width">Ancho de Recibo</Label>
-              <Select
-                value={watchSettings('receipt_width')}
-                onValueChange={(v: string) => setValueSettings('receipt_width', v as '80mm' | '58mm')}
-              >
-                <SelectTrigger id="receipt_width">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="80mm">80mm (Estándar)</SelectItem>
-                  <SelectItem value="58mm">58mm (Angosto)</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="address">Dirección del Hospital</Label>
+                <Input
+                  id="address"
+                  {...registerSettings('address')}
+                  placeholder="Barrio Centro, Avenida Principal..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="slogan">Eslogan o Lema</Label>
+                <Input
+                  id="slogan"
+                  {...registerSettings('slogan')}
+                  placeholder="Al servicio de tu salud..."
+                />
+              </div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <div className="w-full">
+                <Label htmlFor="receipt_width">Ancho de Recibo</Label>
+                <Select
+                  value={watchSettings('receipt_width')}
+                  onValueChange={(v: string) => setValueSettings('receipt_width', v as '80mm' | '58mm')}
+                >
+                  <SelectTrigger id="receipt_width">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="80mm">80mm (Estándar)</SelectItem>
+                    <SelectItem value="58mm">58mm (Angosto)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Color de Marca del Hospital (Color Tema)</Label>
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { id: 'indigo', name: 'Índigo', color: 'bg-indigo-600' },
+                  { id: 'blue', name: 'Azul Clínico', color: 'bg-blue-600' },
+                  { id: 'teal', name: 'Turquesa', color: 'bg-teal-600' },
+                  { id: 'green', name: 'Verde Médico', color: 'bg-green-600' },
+                  { id: 'rose', name: 'Rosa Cálido', color: 'bg-rose-600' },
+                ].map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    disabled={!canEdit}
+                    onClick={() => setValueSettings('primary_color', c.id as any)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 text-sm font-semibold transition ${
+                      watchSettings('primary_color') === c.id
+                        ? 'border-primary ring-2 ring-primary/20 bg-accent text-accent-foreground'
+                        : 'border-transparent bg-muted/40 hover:bg-muted/70 text-muted-foreground'
+                    }`}
+                  >
+                    <span className={`h-4.5 w-4.5 rounded-full ${c.color} shadow-sm`} />
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4 border-t">
               <Button type="submit" disabled={!canEdit}>
-                Guardar Información
+                Guardar Información del Hospital
               </Button>
             </div>
           </form>

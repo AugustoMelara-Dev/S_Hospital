@@ -169,6 +169,8 @@ describe('App', () => {
     queryClient.clear();
     window.history.pushState({}, '', '/');
     vi.spyOn(apiClient, 'getLogo').mockResolvedValue(null);
+    document.body.removeAttribute('data-printing-receipt');
+    document.body.removeAttribute('data-receipt-width');
   });
 
   afterEach(() => {
@@ -184,57 +186,66 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /acceso local/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /S_Hospital Billing OS/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/usuario o email/i)).toBeInTheDocument();
   });
 
   it('renders app shell and fiscal settings route for an authenticated admin', async () => {
     window.history.pushState({}, '', '/settings/fiscal');
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 1,
-            name: 'Admin Demo',
-            email: 'admin.demo@hospital-billing.local',
-            username: 'admin.demo',
-            active: true,
-            roles: ['admin'],
-            permissions: ['settings.fiscal.view', 'settings.fiscal.update'],
-            must_change_password: false,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            hospital_name: 'Hospital Demo',
-            rtn: '08011999123456',
-            default_tax_rate: '15.00',
-            receipt_width: '80mm',
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: [
-            {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
               id: 1,
-              document_type: 'invoice',
-              prefix: '000-001-01',
-              min_number: 1,
-              max_number: 99999999,
-              current_number: 0,
-              cai: 'DEMO-CAI',
-              valid_until: '2027-05-17',
+              name: 'Admin Demo',
+              email: 'admin.demo@hospital-billing.local',
+              username: 'admin.demo',
               active: true,
+              roles: ['admin'],
+              permissions: ['settings.fiscal.view', 'settings.fiscal.update'],
+              must_change_password: false,
             },
-          ],
-        }),
-      } as Response);
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/settings/fiscal')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              hospital_name: 'Hospital Demo',
+              rtn: '08011999123456',
+              default_tax_rate: '15.00',
+              receipt_width: '80mm',
+            },
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/fiscal-sequences')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: 1,
+                document_type: 'invoice',
+                prefix: '000-001-01',
+                min_number: 1,
+                max_number: 99999999,
+                current_number: 0,
+                cai: 'DEMO-CAI',
+                valid_until: '2027-05-17',
+                active: true,
+              },
+            ],
+          }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({}) } as Response;
+    });
 
     render(<App />);
 
@@ -395,26 +406,27 @@ describe('App', () => {
 
   it('does not render backups for a user without backup permission', async () => {
     window.history.pushState({}, '', '/cashbox');
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 2,
-            name: 'Cajero Demo',
-            email: 'cajero.demo@hospital-billing.local',
-            username: 'cajero.demo',
-            active: true,
-            roles: ['cajero'],
-            permissions: ['cash.view'],
-            must_change_password: false,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: null }),
-      } as Response);
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Demo',
+              email: 'cajero.demo@hospital-billing.local',
+              username: 'cajero.demo',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['cash.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
 
     render(<App />);
 
@@ -425,41 +437,39 @@ describe('App', () => {
 
   it('creates a manual backup from the admin backups view', async () => {
     window.history.pushState({}, '', '/backups');
-    const fetchMock = vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 1,
-            name: 'Admin Demo',
-            email: 'admin.demo@hospital-billing.local',
-            username: 'admin.demo',
-            active: true,
-            roles: ['admin'],
-            permissions: ['backups.view', 'backups.create', 'backups.download'],
-            must_change_password: false,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: [],
-          meta: { current_page: 1, per_page: 15, total: 0 },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockSystemStatus(),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({}),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
+    const backupList: unknown[] = [];
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      const method = init?.method || 'GET';
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Admin Demo',
+              email: 'admin.demo@hospital-billing.local',
+              username: 'admin.demo',
+              active: true,
+              roles: ['admin'],
+              permissions: ['backups.view', 'backups.create', 'backups.download'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatus(),
+        } as Response;
+      }
+
+      if (url.includes('/api/backups')) {
+        if (method === 'POST') {
+          const newBackup = {
             id: 9,
             filename: 'hospital-backup-20260517-101500-test.sql',
             size_bytes: 2048,
@@ -471,9 +481,30 @@ describe('App', () => {
             created_at: '2026-05-17T10:15:00-06:00',
             updated_at: '2026-05-17T10:15:00-06:00',
             creator: { id: 1, name: 'Admin Demo', username: 'admin.demo' },
-          },
-        }),
-      } as Response);
+          };
+          backupList.push(newBackup);
+          return {
+            ok: true,
+            json: async () => ({
+              data: newBackup,
+            }),
+          } as Response;
+        }
+
+        return {
+          ok: true,
+          json: async () => ({
+            data: backupList,
+            meta: { current_page: 1, per_page: 15, total: backupList.length },
+          }),
+        } as Response;
+      }
+
+      return {
+        ok: true,
+        json: async () => ({}),
+      } as Response;
+    });
 
     render(<App />);
 
@@ -488,54 +519,70 @@ describe('App', () => {
         expect.objectContaining({ method: 'POST' }),
       );
     });
-    expect(await screen.findByText('hospital-backup-20260517-101500-test.sql')).toBeInTheDocument();
+    expect((await screen.findAllByText('hospital-backup-20260517-101500-test.sql')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Pendiente').length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: /descargar backup hospital-backup/i })).not.toBeInTheDocument();
   });
 
   it('renders successful backups with accessible download and pagination controls', async () => {
     window.history.pushState({}, '', '/backups');
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 1,
-            name: 'Admin Demo',
-            email: 'admin.demo@hospital-billing.local',
-            username: 'admin.demo',
-            active: true,
-            roles: ['admin'],
-            permissions: ['backups.view', 'backups.download'],
-            must_change_password: false,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: [
-            {
-              id: 10,
-              filename: 'hospital-backup-20260517-101500-test.sql',
-              size_bytes: 2048,
-              checksum_sha256: 'b'.repeat(64),
-              status: 'success',
-              type: 'manual',
-              created_by: 1,
-              completed_at: '2026-05-17T10:15:00-06:00',
-              created_at: '2026-05-17T10:15:00-06:00',
-              updated_at: '2026-05-17T10:15:00-06:00',
-              creator: { id: 1, name: 'Admin Demo', username: 'admin.demo' },
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Admin Demo',
+              email: 'admin.demo@hospital-billing.local',
+              username: 'admin.demo',
+              active: true,
+              roles: ['admin'],
+              permissions: ['backups.view', 'backups.download'],
+              must_change_password: false,
             },
-          ],
-          meta: { current_page: 1, per_page: 15, total: 16 },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatus(),
+        } as Response;
+      }
+
+      if (url.includes('/api/backups')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: 10,
+                filename: 'hospital-backup-20260517-101500-test.sql',
+                size_bytes: 2048,
+                checksum_sha256: 'b'.repeat(64),
+                status: 'success',
+                type: 'manual',
+                created_by: 1,
+                completed_at: '2026-05-17T10:15:00-06:00',
+                created_at: '2026-05-17T10:15:00-06:00',
+                updated_at: '2026-05-17T10:15:00-06:00',
+                creator: { id: 1, name: 'Admin Demo', username: 'admin.demo' },
+              },
+            ],
+            meta: { current_page: 1, per_page: 15, total: 16 },
+          }),
+        } as Response;
+      }
+
+      return {
         ok: true,
-        json: async () => mockSystemStatus(),
-      } as Response);
+        json: async () => ({}),
+      } as Response;
+    });
 
     render(<App />);
 
@@ -551,42 +598,39 @@ describe('App', () => {
   });
 
   it('lets a user with required password change submit a new password', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 1,
-            name: 'Admin Demo',
-            email: 'admin.demo@hospital-billing.local',
-            username: 'admin.demo',
-            active: true,
-            roles: ['admin'],
-            permissions: ['settings.fiscal.view', 'settings.fiscal.update'],
-            must_change_password: true,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 204,
-        json: async () => ({}),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 1,
-            name: 'Admin Demo',
-            email: 'admin.demo@hospital-billing.local',
-            username: 'admin.demo',
-            active: true,
-            roles: ['admin'],
-            permissions: ['settings.fiscal.view', 'settings.fiscal.update'],
-            must_change_password: false,
-          },
-        }),
-      } as Response);
+    let mustChange = true;
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Admin Demo',
+              email: 'admin.demo@hospital-billing.local',
+              username: 'admin.demo',
+              active: true,
+              roles: ['admin'],
+              permissions: ['settings.fiscal.view', 'settings.fiscal.update'],
+              must_change_password: mustChange,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/auth/change-password')) {
+        mustChange = false;
+        return {
+          ok: true,
+          status: 204,
+          json: async () => ({}),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({}) } as Response;
+    });
 
     render(<App />);
 
@@ -615,22 +659,27 @@ describe('App', () => {
 
   it('renders not found for an unknown authenticated route', async () => {
     window.history.pushState({}, '', '/ruta-inexistente');
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 1,
-            name: 'Admin Demo',
-            email: 'admin.demo@hospital-billing.local',
-            username: 'admin.demo',
-            active: true,
-            roles: ['admin'],
-            permissions: ['reports.view'],
-            must_change_password: false,
-          },
-        }),
-      } as Response);
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Admin Demo',
+              email: 'admin.demo@hospital-billing.local',
+              username: 'admin.demo',
+              active: true,
+              roles: ['admin'],
+              permissions: ['reports.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
 
     render(<App />);
 
@@ -640,57 +689,67 @@ describe('App', () => {
 
   it('renders only the active module instead of all modules at once', async () => {
     window.history.pushState({}, '', '/reports');
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 1,
-            name: 'Admin Demo',
-            email: 'admin.demo@hospital-billing.local',
-            username: 'admin.demo',
-            active: true,
-            roles: ['admin'],
-            permissions: [
-              'cash.view',
-              'catalog.view',
-              'invoices.create',
-              'invoices.view',
-              'reports.view',
-              'reports.managerial.view',
-              'reports.export',
-              'reports.cash_session.view',
-              'backups.view',
-              'settings.fiscal.view',
-            ],
-            must_change_password: false,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            date: '2026-05-17',
-            total_billed: '0.00',
-            total_collected: '0.00',
-            invoice_count: 0,
-            payment_count: 0,
-            payments_by_method: {
-              cash: '0.00',
-              transfer: '0.00',
-              card: '0.00',
-              other: '0.00',
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Admin Demo',
+              email: 'admin.demo@hospital-billing.local',
+              username: 'admin.demo',
+              active: true,
+              roles: ['admin'],
+              permissions: [
+                'cash.view',
+                'catalog.view',
+                'invoices.create',
+                'invoices.view',
+                'reports.view',
+                'reports.managerial.view',
+                'reports.export',
+                'reports.cash_session.view',
+                'backups.view',
+                'settings.fiscal.view',
+              ],
+              must_change_password: false,
             },
-            invoices_by_status: {
-              issued: { count: 0, total: '0.00' },
-              partial: { count: 0, total: '0.00' },
-              paid: { count: 0, total: '0.00' },
-              void: { count: 0, total: '0.00' },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/daily')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date: '2026-05-17',
+              total_billed: '0.00',
+              total_collected: '0.00',
+              invoice_count: 0,
+              payment_count: 0,
+              payments_by_method: {
+                cash: '0.00',
+                transfer: '0.00',
+                card: '0.00',
+                other: '0.00',
+              },
+              invoices_by_status: {
+                issued: { count: 0, total: '0.00' },
+                partial: { count: 0, total: '0.00' },
+                paid: { count: 0, total: '0.00' },
+                void: { count: 0, total: '0.00' },
+              },
             },
-          },
-        }),
-      } as Response);
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({}) } as Response;
+    });
 
     render(<App />);
 

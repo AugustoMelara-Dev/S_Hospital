@@ -4,7 +4,7 @@ import type { FiscalSettings, FiscalSequence } from './types';
 export const fiscal = {
   async getFiscalSettings(): Promise<FiscalSettings | null> {
     const response = await apiClient.request<{ data: FiscalSettings | null }>('/api/settings/fiscal');
-    return response.data;
+    return response?.data ?? null;
   },
 
   async updateFiscalSettings(payload: FiscalSettings): Promise<FiscalSettings> {
@@ -17,7 +17,7 @@ export const fiscal = {
 
   async getFiscalSequences(): Promise<FiscalSequence[]> {
     const response = await apiClient.request<{ data: FiscalSequence[] }>('/api/fiscal-sequences');
-    return response.data;
+    return response?.data ?? [];
   },
 
   async saveFiscalSequence(payload: FiscalSequence): Promise<FiscalSequence> {
@@ -33,7 +33,7 @@ export const fiscal = {
 
   async getLogo(): Promise<string | null> {
     const response = await apiClient.request<{ logo_url: string | null }>('/api/settings/logo');
-    return response.logo_url;
+    return response?.logo_url ?? null;
   },
 
   async uploadLogo(file: File): Promise<string> {

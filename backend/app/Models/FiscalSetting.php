@@ -11,6 +11,9 @@ class FiscalSetting extends Model
         'rtn',
         'default_tax_rate',
         'receipt_width',
+        'primary_color',
+        'address',
+        'slogan',
         'created_by',
         'updated_by',
     ];

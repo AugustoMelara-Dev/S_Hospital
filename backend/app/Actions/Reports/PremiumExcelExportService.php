@@ -16,6 +16,8 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 
 class PremiumExcelExportService
 {
@@ -98,31 +100,121 @@ class PremiumExcelExportService
             ],
         ];
 
+        $borderStyle = [
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['rgb' => 'CBD5E1'],
+                ],
+            ],
+        ];
+
+        // SHEET 0: Filtros Aplicados (Nueva Hoja al Inicio)
+        $sheet0 = $spreadsheet->createSheet();
+        $sheet0->setTitle('Filtros Aplicados');
+        $sheet0->setShowGridlines(true);
+
+        // Header Title
+        $sheet0->mergeCells('B2:E2');
+        $sheet0->setCellValue('B2', 'REPORTES CONSOLIDADOS - FILTROS APLICADOS');
+        $sheet0->getStyle('B2:E2')->applyFromArray($titleStyle);
+
+        // Subtitle / Brand
+        $sheet0->setCellValue('B3', "Establecimiento: {$hospitalName}");
+        $sheet0->getStyle('B3')->applyFromArray($subtitleStyle);
+        $sheet0->setCellValue('B4', "RTN: {$hospitalRtn}");
+        $sheet0->getStyle('B4')->applyFromArray($subtitleStyle);
+
+        // Filters Table Headers
+        $sheet0->setCellValue('B6', 'Filtro / Parámetro');
+        $sheet0->setCellValue('C6', 'Valor Aplicado');
+        $sheet0->getStyle('B6:C6')->applyFromArray($headerStyle);
+
+        // Filters Content
+        $sheet0->setCellValue('B7', 'Fecha Inicial (Desde)');
+        $sheet0->setCellValue('C7', $from->format('d/m/Y'));
+        
+        $sheet0->setCellValue('B8', 'Fecha Final (Hasta)');
+        $sheet0->setCellValue('C8', $to->format('d/m/Y'));
+
+        $sheet0->setCellValue('B9', 'Nombre del Hospital');
+        $sheet0->setCellValue('C9', $hospitalName);
+
+        $sheet0->setCellValue('B10', 'RTN del Hospital');
+        $sheet0->setCellValue('C10', $hospitalRtn);
+
+        $sheet0->setCellValue('B11', 'Fecha de Generación');
+        $sheet0->setCellValue('C11', now()->format('d/m/Y H:i:s'));
+
+        $sheet0->setCellValue('B12', 'Generado Por');
+        $sheet0->setCellValue('C12', auth()->user()?->name ?? 'Sistema');
+
+        $sheet0->getStyle('B7:C12')->applyFromArray($borderStyle);
+        $sheet0->getStyle('B7:B12')->applyFromArray($boldRowStyle);
+        $sheet0->getStyle('C7:C12')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+
+        // Auto widths
+        foreach (['B', 'C'] as $col) {
+            $sheet0->getColumnDimension($col)->setAutoSize(true);
+        }
+
         // SHEET 1: Resumen General
         $sheet1 = $spreadsheet->createSheet();
         $sheet1->setTitle('Resumen General');
         $sheet1->setShowGridlines(true);
 
-        // Hospital Brand Block & Header Logo Placeholder
-        $sheet1->mergeCells('B2:C4');
-        $sheet1->setCellValue('B2', "✚\nHOSPITAL OS");
-        $sheet1->getStyle('B2:C4')->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 14,
-                'color' => ['rgb' => 'FFFFFF'],
-                'name' => 'Segoe UI',
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => '0F766E'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-                'wrapText' => true,
-            ],
-        ]);
+        // Hospital Brand Block & Header Logo Loader
+        $logoPath = Storage::disk('public')->path('branding/logo.png');
+        if (Storage::disk('public')->exists('branding/logo.png') && file_exists($logoPath)) {
+            $sheet1->mergeCells('B2:C4');
+            $sheet1->getStyle('B2:C4')->applyFromArray([
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => '0F766E'],
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+            ]);
+
+            try {
+                $drawing = new Drawing();
+                $drawing->setName('Logo del Hospital');
+                $drawing->setDescription('Logo oficial de la institucion');
+                $drawing->setPath($logoPath);
+                $drawing->setHeight(50); // Balanced height for the 3 merged rows
+                $drawing->setCoordinates('B2');
+                $drawing->setOffsetX(15);
+                $drawing->setOffsetY(5);
+                $drawing->setWorksheet($sheet1);
+            } catch (\Exception $e) {
+                // Fail-safe default placeholder if image loading fails
+                $sheet1->setCellValue('B2', "✚\nHOSPITAL OS");
+                $sheet1->getStyle('B2:C4')->getFont()->getColor()->setRGB('FFFFFF');
+            }
+        } else {
+            // Default Medical Placeholder if no custom logo is uploaded
+            $sheet1->mergeCells('B2:C4');
+            $sheet1->setCellValue('B2', "✚\nHOSPITAL OS");
+            $sheet1->getStyle('B2:C4')->applyFromArray([
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                    'size' => 14,
+                    'name' => 'Segoe UI',
+                ],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => '0F766E'],
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                    'wrapText' => true,
+                ],
+            ]);
+        }
 
         $sheet1->setCellValue('D2', $hospitalName);
         $sheet1->getStyle('D2')->applyFromArray($titleStyle);
@@ -184,47 +276,54 @@ class PremiumExcelExportService
         $sheet1->getStyle('B'.$row.':C'.$row)->applyFromArray($boldRowStyle);
         $sheet1->getStyle('B'.$row.':C'.$row)->getBorders()->getTop()->setBorderStyle(Border::BORDER_DOUBLE);
 
+        // Freeze pane
+        $sheet1->freezePane('A11');
+
         // Dynamic Interactive Excel Pie Chart for Payment Methods
-        $dataSeriesLabels1 = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Resumen General'!\$C\$10", null, 1),
-        ];
-        $xAxisTickValues1 = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Resumen General'!\$B\$11:\$B\$14", null, 4),
-        ];
-        $dataSeriesValues1 = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Resumen General'!\$C\$11:\$C\$14", null, 4),
-        ];
+        $methodCount = count($income['payments_by_method']);
+        if ($methodCount > 0) {
+            $lastMethodRow = 11 + $methodCount - 1;
+            $dataSeriesLabels1 = [
+                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Resumen General'!\$C\$10", null, 1),
+            ];
+            $xAxisTickValues1 = [
+                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Resumen General'!\$B\$11:\$B\$" . $lastMethodRow, null, $methodCount),
+            ];
+            $dataSeriesValues1 = [
+                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Resumen General'!\$C\$11:\$C\$" . $lastMethodRow, null, $methodCount),
+            ];
 
-        $series1 = new DataSeries(
-            DataSeries::TYPE_PIECHART,
-            null,
-            range(0, count($dataSeriesValues1) - 1),
-            $dataSeriesLabels1,
-            $xAxisTickValues1,
-            $dataSeriesValues1
-        );
+            $series1 = new DataSeries(
+                DataSeries::TYPE_PIECHART,
+                null,
+                range(0, count($dataSeriesValues1) - 1),
+                $dataSeriesLabels1,
+                $xAxisTickValues1,
+                $dataSeriesValues1
+            );
 
-        $layout1 = new Layout;
-        $layout1->setShowVal(true);
-        $layout1->setShowPercent(true);
+            $layout1 = new Layout;
+            $layout1->setShowVal(true);
+            $layout1->setShowPercent(true);
 
-        $plotArea1 = new PlotArea($layout1, [$series1]);
-        $legend1 = new Legend(Legend::POSITION_RIGHT, null, false);
-        $title1 = new Title('Distribución de Ingresos por Método de Pago');
+            $plotArea1 = new PlotArea($layout1, [$series1]);
+            $legend1 = new Legend(Legend::POSITION_RIGHT, null, false);
+            $title1 = new Title('Distribución de Ingresos por Método de Pago');
 
-        $chart1 = new Chart(
-            'payment_methods_chart',
-            $title1,
-            $legend1,
-            $plotArea1,
-            true,
-            DataSeries::EMPTY_AS_GAP
-        );
+            $chart1 = new Chart(
+                'payment_methods_chart',
+                $title1,
+                $legend1,
+                $plotArea1,
+                true,
+                DataSeries::EMPTY_AS_GAP
+            );
 
-        $chart1->setTopLeftPosition('E10');
-        $chart1->setBottomRightPosition('L23');
+            $chart1->setTopLeftPosition('E10');
+            $chart1->setBottomRightPosition('L23');
 
-        $sheet1->addChart($chart1);
+            $sheet1->addChart($chart1);
+        }
 
         // Auto widths
         foreach (['B', 'C', 'D', 'E', 'F', 'H', 'I'] as $col) {
@@ -266,6 +365,10 @@ class PremiumExcelExportService
         $sheet2->getStyle('D'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
         $sheet2->getStyle('B'.$row.':D'.$row)->applyFromArray($boldRowStyle);
         $sheet2->getStyle('B'.$row.':D'.$row)->getBorders()->getTop()->setBorderStyle(Border::BORDER_DOUBLE);
+
+        // Freeze pane & auto-filter
+        $sheet2->freezePane('A6');
+        $sheet2->setAutoFilter('B5:D'.($row-1));
 
         // Dynamic Interactive Excel Column Chart for Service Categories
         $categoryCount = count($categories['categories']);
@@ -353,80 +456,68 @@ class PremiumExcelExportService
         $sheet3->getStyle('B'.$row.':E'.$row)->applyFromArray($boldRowStyle);
         $sheet3->getStyle('B'.$row.':E'.$row)->getBorders()->getTop()->setBorderStyle(Border::BORDER_DOUBLE);
 
+        // Freeze pane & auto-filter
+        $sheet3->freezePane('A6');
+        $sheet3->setAutoFilter('B5:E'.$lastServiceRow);
+
         // Premium Highlight: Top 5 Services Horizontal Bar Chart
-        // Let's create a dedicated "Top 5 más vendidos" helper table in G5:I10
-        $sheet3->setCellValue('G5', 'Top 5 Servicios');
-        $sheet3->setCellValue('H5', 'Monto');
-        $sheet3->getStyle('G5:H5')->applyFromArray([
-            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => '0D9488'], // Secondary Teal Hue
-            ],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-        ]);
+        $topServices = array_slice($services['services'], 0, 5);
+        $topCount = count($topServices);
 
-        // Copy and sort top 5 services in memory
-        $servicesSorted = $services['services'];
-        usort($servicesSorted, function($a, $b) {
-            return $b['total'] <=> $a['total'];
-        });
-        $top5 = array_slice($servicesSorted, 0, 5);
+        if ($topCount > 0) {
+            // Write top 5 to a dedicated calculation block to the side
+            $sheet3->setCellValue('G10', 'Top 5 Servicios');
+            $sheet3->setCellValue('H10', 'Ventas');
+            $sheet3->getStyle('G10:H10')->applyFromArray($headerStyle);
+            $sheet3->getStyle('G10:H10')->getFill()->setStartColor(new Color('0D9488'));
 
-        $tRow = 6;
-        foreach ($top5 as $svc) {
-            $sheet3->setCellValue('G'.$tRow, $svc['service']);
-            $sheet3->setCellValue('H'.$tRow, (float) $svc['total']);
-            $sheet3->getStyle('H'.$tRow)->getNumberFormat()->setFormatCode('L. #,##0.00');
-            $tRow++;
+            $calcRow = 11;
+            foreach ($topServices as $svc) {
+                $sheet3->setCellValue('G'.$calcRow, $svc['service']);
+                $sheet3->setCellValue('H'.$calcRow, (float) $svc['total']);
+                $sheet3->getStyle('H'.$calcRow)->getNumberFormat()->setFormatCode('L. #,##0.00');
+                $calcRow++;
+            }
+
+            // Add Horizontal Bar Chart for Top 5
+            $dataSeriesLabels3 = [
+                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Servicios'!\$H\$10", null, 1),
+            ];
+            $xAxisTickValues3 = [
+                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Servicios'!\$G\$11:\$G\$".(10 + $topCount), null, $topCount),
+            ];
+            $dataSeriesValues3 = [
+                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Servicios'!\$H\$11:\$H\$".(10 + $topCount), null, $topCount),
+            ];
+
+            $series3 = new DataSeries(
+                DataSeries::TYPE_BARCHART,
+                DataSeries::GROUPING_STANDARD,
+                range(0, count($dataSeriesValues3) - 1),
+                $dataSeriesLabels3,
+                $xAxisTickValues3,
+                $dataSeriesValues3
+            );
+            $series3->setPlotDirection(DataSeries::DIRECTION_BAR);
+
+            $plotArea3 = new PlotArea(null, [$series3]);
+            $legend3 = new Legend(Legend::POSITION_RIGHT, null, false);
+            $title3 = new Title('Top 5 Servicios con Mayor Recaudación (L.)');
+
+            $chart3 = new Chart(
+                'top_services_chart',
+                $title3,
+                $legend3,
+                $plotArea3,
+                true,
+                DataSeries::EMPTY_AS_GAP
+            );
+
+            $chart3->setTopLeftPosition('G12');
+            $chart3->setBottomRightPosition('N26');
+
+            $sheet3->addChart($chart3);
         }
-
-        // Fill formula or dummy values if top 5 is smaller than 5
-        while ($tRow <= 10) {
-            $sheet3->setCellValue('G'.$tRow, '-');
-            $sheet3->setCellValue('H'.$tRow, 0.0);
-            $sheet3->getStyle('H'.$tRow)->getNumberFormat()->setFormatCode('L. #,##0.00');
-            $tRow++;
-        }
-
-        // Add Horizontal Bar Chart for Top 5
-        $dataSeriesLabels3 = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Servicios'!\$H\$5", null, 1),
-        ];
-        $xAxisTickValues3 = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Servicios'!\$G\$6:\$G\$10", null, 5),
-        ];
-        $dataSeriesValues3 = [
-            new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Servicios'!\$H\$6:\$H\$10", null, 5),
-        ];
-
-        $series3 = new DataSeries(
-            DataSeries::TYPE_BARCHART,
-            DataSeries::GROUPING_CLUSTERED,
-            range(0, count($dataSeriesValues3) - 1),
-            $dataSeriesLabels3,
-            $xAxisTickValues3,
-            $dataSeriesValues3
-        );
-        $series3->setPlotDirection(DataSeries::DIRECTION_HORIZONTAL); // DIRECTION_HORIZONTAL is horizontal bar!
-
-        $plotArea3 = new PlotArea(null, [$series3]);
-        $legend3 = new Legend(Legend::POSITION_RIGHT, null, false);
-        $title3 = new Title('Top 5 Servicios con Mayor Facturación (L.)');
-
-        $chart3 = new Chart(
-            'top_services_chart',
-            $title3,
-            $legend3,
-            $plotArea3,
-            true,
-            DataSeries::EMPTY_AS_GAP
-        );
-
-        $chart3->setTopLeftPosition('G12');
-        $chart3->setBottomRightPosition('N26');
-
-        $sheet3->addChart($chart3);
 
         foreach (['B', 'C', 'D', 'E', 'G', 'H'] as $col) {
             $sheet3->getColumnDimension($col)->setAutoSize(true);
@@ -469,6 +560,52 @@ class PremiumExcelExportService
         $sheet4->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
         $sheet4->getStyle('B'.$row.':E'.$row)->applyFromArray($boldRowStyle);
         $sheet4->getStyle('B'.$row.':E'.$row)->getBorders()->getTop()->setBorderStyle(Border::BORDER_DOUBLE);
+
+        // Freeze pane & auto-filter
+        $sheet4->freezePane('A6');
+        $sheet4->setAutoFilter('B5:E'.($row-1));
+
+        // Add Bar Chart for Cashiers (only if there are more than 1 cashier)
+        $cashierCount = count($operations['cashiers']);
+        if ($cashierCount > 1) {
+            $dataSeriesLabels4 = [
+                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Cajeros'!\$E\$5", null, 1),
+            ];
+            $xAxisTickValues4 = [
+                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Cajeros'!\$B\$6:\$B\$".(5 + $cashierCount), null, $cashierCount),
+            ];
+            $dataSeriesValues4 = [
+                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Cajeros'!\$E\$6:\$E\$".(5 + $cashierCount), null, $cashierCount),
+            ];
+
+            $series4 = new DataSeries(
+                DataSeries::TYPE_BARCHART,
+                DataSeries::GROUPING_CLUSTERED,
+                range(0, count($dataSeriesValues4) - 1),
+                $dataSeriesLabels4,
+                $xAxisTickValues4,
+                $dataSeriesValues4
+            );
+            $series4->setPlotDirection(DataSeries::DIRECTION_COL);
+
+            $plotArea4 = new PlotArea(null, [$series4]);
+            $legend4 = new Legend(Legend::POSITION_RIGHT, null, false);
+            $title4 = new Title('Total Recaudado por Cajero (L.)');
+
+            $chart4 = new Chart(
+                'cashiers_chart',
+                $title4,
+                $legend4,
+                $plotArea4,
+                true,
+                DataSeries::EMPTY_AS_GAP
+            );
+
+            $chart4->setTopLeftPosition('G5');
+            $chart4->setBottomRightPosition('N20');
+
+            $sheet4->addChart($chart4);
+        }
 
         foreach (['B', 'C', 'D', 'E'] as $col) {
             $sheet4->getColumnDimension($col)->setAutoSize(true);
@@ -533,6 +670,9 @@ class PremiumExcelExportService
             $sheet5->setCellValue('F'.$row, $reprint['username'] ?? 'N/A');
             $row++;
         }
+
+        // Freeze pane
+        $sheet5->freezePane('A5');
 
         foreach (['B', 'C', 'D', 'E', 'F'] as $col) {
             $sheet5->getColumnDimension($col)->setAutoSize(true);

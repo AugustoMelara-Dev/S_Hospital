@@ -21,6 +21,8 @@ describe('ReportsView', () => {
     queryClient.clear();
     window.history.pushState({}, '', '/');
     vi.spyOn(apiClient, 'getLogo').mockResolvedValue(null);
+    document.body.removeAttribute('data-printing-receipt');
+    document.body.removeAttribute('data-receipt-width');
   });
 
   afterEach(() => {
@@ -30,52 +32,61 @@ describe('ReportsView', () => {
 
   it('renders reports view for a user with reports view permission', async () => {
     window.history.pushState({}, '', '/reports');
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 3,
-            name: 'Supervisor Demo',
-            email: 'supervisor.demo@hospital-billing.local',
-            username: 'supervisor.demo',
-            active: true,
-            roles: ['supervisor'],
-            permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
-            must_change_password: false,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            date: '2026-05-17',
-            total_billed: '28.75',
-            total_collected: '17.25',
-            invoice_count: 2,
-            payment_count: 1,
-            payments_by_method: {
-              cash: '17.25',
-              transfer: '0.00',
-              card: '0.00',
-              other: '0.00',
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 3,
+              name: 'Supervisor Demo',
+              email: 'supervisor.demo@hospital-billing.local',
+              username: 'supervisor.demo',
+              active: true,
+              roles: ['supervisor'],
+              permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
+              must_change_password: false,
             },
-            invoices_by_status: {
-              issued: { count: 1, total: '11.50' },
-              partial: { count: 0, total: '0.00' },
-              paid: { count: 1, total: '17.25' },
-              void: { count: 0, total: '0.00' },
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/reports/daily')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date: '2026-05-17',
+              total_billed: '28.75',
+              total_collected: '17.25',
+              invoice_count: 2,
+              payment_count: 1,
+              payments_by_method: {
+                cash: '17.25',
+                transfer: '0.00',
+                card: '0.00',
+                other: '0.00',
+              },
+              invoices_by_status: {
+                issued: { count: 1, total: '11.50' },
+                partial: { count: 0, total: '0.00' },
+                paid: { count: 1, total: '17.25' },
+                void: { count: 0, total: '0.00' },
+              },
             },
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: [],
-        }),
-      } as Response);
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/categories')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [],
+          }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
 
     render(<App />);
 
@@ -279,26 +290,27 @@ describe('ReportsView', () => {
 
   it('does not render reports for a cashier without reports view permission', async () => {
     window.history.pushState({}, '', '/cashbox');
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 2,
-            name: 'Cajero Demo',
-            email: 'cajero.demo@hospital-billing.local',
-            username: 'cajero.demo',
-            active: true,
-            roles: ['cajero'],
-            permissions: ['cash.view'],
-            must_change_password: false,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: null }),
-      } as Response);
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Demo',
+              email: 'cajero.demo@hospital-billing.local',
+              username: 'cajero.demo',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['cash.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
 
     render(<App />);
 
@@ -309,21 +321,27 @@ describe('ReportsView', () => {
 
   it('allows cash-session-only report users to open the cash report tab without managerial reports', async () => {
     window.history.pushState({}, '', '/reports');
-    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        data: {
-          id: 2,
-          name: 'Cajero Demo',
-          email: 'cajero.demo@hospital-billing.local',
-          username: 'cajero.demo',
-          active: true,
-          roles: ['cajero'],
-          permissions: ['reports.cash_session.view'],
-          must_change_password: false,
-        },
-      }),
-    } as Response);
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Demo',
+              email: 'cajero.demo@hospital-billing.local',
+              username: 'cajero.demo',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['reports.cash_session.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
 
     render(<App />);
 
@@ -335,120 +353,145 @@ describe('ReportsView', () => {
 
   it('renders report date filters and empty category state after loading range', async () => {
     window.history.pushState({}, '', '/reports');
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            id: 1,
-            name: 'Admin Demo',
-            email: 'admin.demo@hospital-billing.local',
-            username: 'admin.demo',
-            active: true,
-            roles: ['admin'],
-            permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
-            must_change_password: false,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            date: '2026-05-17',
-            total_billed: '0.00',
-            total_collected: '0.00',
-            invoice_count: 0,
-            payment_count: 0,
-            payments_by_method: {
-              cash: '0.00',
-              transfer: '0.00',
-              card: '0.00',
-              other: '0.00',
-            },
-            invoices_by_status: {
-              issued: { count: 0, total: '0.00' },
-              partial: { count: 0, total: '0.00' },
-              paid: { count: 0, total: '0.00' },
-              void: { count: 0, total: '0.00' },
-            },
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: [
-            {
-              id: 4,
-              name: 'Radiologia',
-              slug: 'radiologia',
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Admin Demo',
+              email: 'admin.demo@hospital-billing.local',
+              username: 'admin.demo',
               active: true,
-              sort_order: 20,
+              roles: ['admin'],
+              permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
+              must_change_password: false,
             },
-          ],
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            date_from: '2026-05-17',
-            date_to: '2026-05-17',
-            cash_session_id: null,
-            user_id: null,
-            total_collected: '0.00',
-            payments_by_method: {
-              cash: '0.00',
-              transfer: '0.00',
-              card: '0.00',
-              other: '0.00',
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/daily')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date: '2026-05-17',
+              total_billed: '0.00',
+              total_collected: '0.00',
+              invoice_count: 0,
+              payment_count: 0,
+              payments_by_method: {
+                cash: '0.00',
+                transfer: '0.00',
+                card: '0.00',
+                other: '0.00',
+              },
+              invoices_by_status: {
+                issued: { count: 0, total: '0.00' },
+                partial: { count: 0, total: '0.00' },
+                paid: { count: 0, total: '0.00' },
+                void: { count: 0, total: '0.00' },
+              },
             },
-            payment_count: 0,
-            invoice_count: 0,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            date_from: '2026-05-17',
-            date_to: '2026-05-17',
-            categories: [],
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            date_from: '2026-05-17',
-            date_to: '2026-05-17',
-            services: [],
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            date_from: '2026-05-17',
-            date_to: '2026-05-17',
-            summary: {
-              void_count: 0,
-              reprint_count: 0,
-              backup_count: 0,
-              failed_backup_count: 0,
-              cashier_count: 0,
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/categories')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: 4,
+                name: 'Radiologia',
+                slug: 'radiologia',
+                active: true,
+                sort_order: 20,
+              },
+            ],
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/income')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date_from: '2026-05-17',
+              date_to: '2026-05-17',
+              cash_session_id: null,
+              user_id: null,
+              total_collected: '0.00',
+              payments_by_method: {
+                cash: '0.00',
+                transfer: '0.00',
+                card: '0.00',
+                other: '0.00',
+              },
+              payment_count: 0,
+              invoice_count: 0,
             },
-            voids: [],
-            reprints: [],
-            backups: [],
-            cashiers: [],
-          },
-        }),
-      } as Response);
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/categories')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date_from: '2026-05-17',
+              date_to: '2026-05-17',
+              categories: [],
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/services')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date_from: '2026-05-17',
+              date_to: '2026-05-17',
+              services: [],
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/operations')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date_from: '2026-05-17',
+              date_to: '2026-05-17',
+              summary: {
+                void_count: 0,
+                reprint_count: 0,
+                backup_count: 0,
+                failed_backup_count: 0,
+                cashier_count: 0,
+              },
+              voids: [],
+              reprints: [],
+              backups: [],
+              cashiers: [],
+            },
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
 
     render(<App />);
 

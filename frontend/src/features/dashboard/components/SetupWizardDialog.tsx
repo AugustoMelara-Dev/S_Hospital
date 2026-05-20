@@ -33,6 +33,9 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
     rtn: '',
     default_tax_rate: '15.00',
     receipt_width: '80mm' as '80mm' | '58mm',
+    primary_color: 'indigo' as 'teal' | 'blue' | 'indigo' | 'green' | 'rose',
+    address: '',
+    slogan: '',
   });
 
   // Step 2: Fiscal sequence
@@ -70,6 +73,9 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
           rtn: settings.rtn || '',
           default_tax_rate: settings.default_tax_rate || '15.00',
           receipt_width: (settings.receipt_width as '80mm' | '58mm') || '80mm',
+          primary_color: settings.primary_color || 'indigo',
+          address: settings.address || '',
+          slogan: settings.slogan || '',
         });
       }
 
@@ -102,6 +108,9 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         rtn: hospitalForm.rtn,
         default_tax_rate: hospitalForm.default_tax_rate,
         receipt_width: hospitalForm.receipt_width,
+        primary_color: hospitalForm.primary_color,
+        address: hospitalForm.address,
+        slogan: hospitalForm.slogan,
       });
       setStep(2);
     } catch (err) {

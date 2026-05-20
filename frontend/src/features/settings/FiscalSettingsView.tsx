@@ -28,6 +28,9 @@ type SettingsFormData = {
   hospital_name: string;
   rtn: string;
   receipt_width: '80mm' | '58mm';
+  primary_color: 'teal' | 'blue' | 'indigo' | 'green' | 'rose';
+  address: string;
+  slogan: string;
 };
 
 type SequenceFormData = {
@@ -53,6 +56,9 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
     hospital_name: '',
     rtn: '',
     receipt_width: '80mm',
+    primary_color: 'indigo',
+    address: '',
+    slogan: '',
   });
 
   const [sequenceForm, setSequenceForm] = useState<SequenceFormData>({
@@ -113,7 +119,13 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
           hospital_name: settingsData.hospital_name ?? '',
           rtn: settingsData.rtn ?? '',
           receipt_width: (settingsData.receipt_width as '80mm' | '58mm') ?? '80mm',
+          primary_color: settingsData.primary_color ?? 'indigo',
+          address: settingsData.address ?? '',
+          slogan: settingsData.slogan ?? '',
         });
+        if (settingsData.primary_color) {
+          setColorTheme(settingsData.primary_color);
+        }
       }
 
       if (sequenceData[0]) {
@@ -148,6 +160,9 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         hospital_name: hospitalForm.hospital_name,
         rtn: hospitalForm.rtn,
         receipt_width: hospitalForm.receipt_width,
+        primary_color: hospitalForm.primary_color,
+        address: hospitalForm.address,
+        slogan: hospitalForm.slogan,
         default_tax_rate: settings?.default_tax_rate ?? '15.00',
       });
       setSettings(updated);
@@ -158,6 +173,30 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       onStatus(message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSaveColorTheme(newColor: ColorTheme) {
+    setColorTheme(newColor);
+    setHospitalForm(prev => ({ ...prev, primary_color: newColor }));
+    
+    if (!settings) return;
+    
+    try {
+      onStatus('Guardando color de marca en el servidor...');
+      const updated = await apiClient.updateFiscalSettings({
+        hospital_name: hospitalForm.hospital_name || settings.hospital_name,
+        rtn: hospitalForm.rtn || settings.rtn,
+        receipt_width: hospitalForm.receipt_width || settings.receipt_width,
+        primary_color: newColor,
+        address: hospitalForm.address || settings.address,
+        slogan: hospitalForm.slogan || settings.slogan,
+        default_tax_rate: settings.default_tax_rate ?? '15.00',
+      });
+      setSettings(updated);
+      onStatus(`Color de marca cambiado a ${COLOR_THEMES[newColor].name}.`);
+    } catch (err) {
+      onStatus('No se pudo persistir el color de marca.');
     }
   }
 
@@ -238,7 +277,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                   Solo supervisor o administrador puede modificar la configuracion fiscal.
                 </Alert>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="hospital_name">Nombre del Hospital *</Label>
                   <Input
@@ -257,6 +296,30 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     value={hospitalForm.rtn}
                     onChange={(e) => setHospitalForm(prev => ({ ...prev, rtn: e.target.value }))}
                     placeholder="0801-XXXX-XXXXX"
+                    disabled={!canEdit}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="address">Dirección del Hospital</Label>
+                  <Input
+                    id="address"
+                    value={hospitalForm.address}
+                    onChange={(e) => setHospitalForm(prev => ({ ...prev, address: e.target.value }))}
+                    placeholder="Barrio Centro, Avenida Principal..."
+                    disabled={!canEdit}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="slogan">Eslogan o Lema</Label>
+                  <Input
+                    id="slogan"
+                    value={hospitalForm.slogan}
+                    onChange={(e) => setHospitalForm(prev => ({ ...prev, slogan: e.target.value }))}
+                    placeholder="Al servicio de tu salud..."
                     disabled={!canEdit}
                   />
                 </div>
@@ -474,7 +537,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     return (
                       <button
                         key={themeKey}
-                        onClick={() => setColorTheme(themeKey)}
+                        onClick={() => handleSaveColorTheme(themeKey)}
                         className={`flex items-center justify-between p-3.5 rounded-lg border text-left transition-all ${
                           active
                             ? 'border-secondary bg-secondary/5 shadow-sm font-semibold'

@@ -10,6 +10,7 @@ import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 import { ReportsView } from './features/reports/ReportsView';
 import { FiscalSettingsView } from './features/settings/FiscalSettingsView';
 import { UsersView } from './features/admin/UsersView';
+import { AboutView } from './features/about/AboutView';
 import { type AuthUser, type CashSession } from './lib/api';
 
 type AppRoutesProps = {
@@ -175,6 +176,10 @@ export function AppRoutes({
             <UsersView onStatus={onStatus} />
           </PermissionGate>
         }
+      />
+      <Route
+        path="/about"
+        element={<AboutView onStatus={onStatus} />}
       />
       <Route path="*" element={<NotFoundView />} />
     </Routes>

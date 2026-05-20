@@ -365,6 +365,16 @@ export function NewInvoiceView({
         patientInputRef.current?.focus();
       }
 
+      if (e.ctrlKey && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+
+      if (e.ctrlKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        scannerInputRef.current?.focus();
+      }
+
       if (e.key === 'Escape') {
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
         if (showConfirmation || showPayment || showSuccess || showReceipt) return;
@@ -955,8 +965,16 @@ export function NewInvoiceView({
           Paciente
         </span>
         <span>
+          <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Ctrl+B</kbd>{' '}
+          Buscar
+        </span>
+        <span>
+          <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Ctrl+K</kbd>{' '}
+          Lector
+        </span>
+        <span>
           <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Enter</kbd>{' '}
-          Escanear
+          Agregar Codigo
         </span>
         <span>
           <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Ctrl+Enter</kbd>{' '}

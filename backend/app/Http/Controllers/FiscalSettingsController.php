@@ -24,12 +24,16 @@ class FiscalSettingsController extends Controller
     {
         $setting = DB::transaction(function () use ($request): FiscalSetting {
             $setting = FiscalSetting::query()->firstOrNew(['id' => 1]);
-            $oldValues = $setting->exists ? $setting->only([
+            $fieldsToTrack = [
                 'hospital_name',
                 'rtn',
                 'default_tax_rate',
                 'receipt_width',
-            ]) : null;
+                'primary_color',
+                'address',
+                'slogan',
+            ];
+            $oldValues = $setting->exists ? $setting->only($fieldsToTrack) : null;
 
             $setting->fill($request->validated());
 
@@ -46,12 +50,7 @@ class FiscalSettingsController extends Controller
                 'entity_type' => FiscalSetting::class,
                 'entity_id' => $setting->id,
                 'old_values' => $oldValues,
-                'new_values' => $setting->only([
-                    'hospital_name',
-                    'rtn',
-                    'default_tax_rate',
-                    'receipt_width',
-                ]),
+                'new_values' => $setting->only($fieldsToTrack),
             ]);
 
             return $setting;
