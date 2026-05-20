@@ -1,8 +1,9 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useState, useEffect } from 'react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import { Alert } from '../../components/ui/alert';
 import { Lock, User, Eye, EyeOff, Building2, Sparkles } from 'lucide-react';
 
 type LoginViewProps = {
@@ -25,6 +26,22 @@ export function LoginView({
   logoUrl,
 }: LoginViewProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  useEffect(() => {
+    if (status.includes('Demasiados intentos') || status.includes('bloqueado temporalmente')) {
+      setCountdown(60);
+    }
+  }, [status]);
+
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setTimeout(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
 
   return (
     <main className="relative flex min-h-screen items-center justify-center p-4 sm:p-6 overflow-hidden bg-slate-900 text-slate-100">
@@ -117,22 +134,24 @@ export function LoginView({
               
               <Button 
                 type="submit" 
-                className="h-11 mt-2 text-sm font-semibold bg-teal-600 hover:bg-teal-500 text-white transition-colors duration-150 shadow-lg shadow-teal-600/10 focus:ring-2 focus:ring-teal-500/20"
+                disabled={countdown > 0}
+                className="h-11 mt-2 text-sm font-semibold bg-teal-600 hover:bg-teal-500 text-white transition-colors duration-150 shadow-lg shadow-teal-600/10 focus:ring-2 focus:ring-teal-500/20 disabled:bg-slate-800 disabled:text-slate-500 disabled:border-slate-800"
               >
-                Iniciar Sesión
+                {countdown > 0 ? `Bloqueado (${countdown}s)` : 'Iniciar Sesión'}
               </Button>
             </form>
             
             {status && (
-              <div 
-                className={`mt-5 p-3 rounded-lg border text-xs font-semibold text-center animate-fade-in ${
-                  status.includes('error') || status.includes('No se pudo') || status.includes('incorrecta')
-                    ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
-                    : 'bg-teal-500/10 border-teal-500/20 text-teal-400'
-                }`}
-                role="status"
-              >
-                {status}
+              <div className="mt-5 animate-fade-in text-xs font-semibold">
+                <Alert
+                  variant={
+                    status.includes('error') || status.includes('No se pudo') || status.includes('incorrecta') || status.includes('Demasiados')
+                      ? 'destructive'
+                      : 'success'
+                  }
+                >
+                  {status}
+                </Alert>
               </div>
             )}
           </CardContent>

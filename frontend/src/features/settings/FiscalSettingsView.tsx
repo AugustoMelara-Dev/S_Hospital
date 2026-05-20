@@ -195,7 +195,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       });
       setSettings(updated);
       onStatus(`Color de marca cambiado a ${COLOR_THEMES[newColor].name}.`);
-    } catch (err) {
+    } catch {
       onStatus('No se pudo persistir el color de marca.');
     }
   }

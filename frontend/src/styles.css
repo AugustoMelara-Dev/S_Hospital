@@ -236,23 +236,7 @@ html.dark {
     @apply flex flex-col gap-2 text-sm font-semibold text-muted-foreground;
   }
 
-  input:not([type="checkbox"]),
-  select,
-  textarea {
-    @apply min-h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60;
-  }
 
-  textarea {
-    @apply min-h-24 resize-y;
-  }
-
-  button {
-    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-60;
-  }
-
-  button svg {
-    @apply size-4 shrink-0;
-  }
 
   .secondary-button {
     @apply border border-border bg-card text-foreground hover:bg-muted;
@@ -306,18 +290,7 @@ html.dark {
     @apply overflow-x-auto rounded-xl border border-border bg-card;
   }
 
-  table {
-    @apply w-full min-w-[760px] border-collapse;
-  }
 
-  th,
-  td {
-    @apply border-b border-border px-4 py-3 text-left align-top;
-  }
-
-  th {
-    @apply text-xs font-semibold uppercase tracking-normal text-muted-foreground;
-  }
 
   .history-filters,
   .range-filters {

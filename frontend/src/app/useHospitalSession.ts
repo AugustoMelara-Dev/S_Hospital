@@ -61,6 +61,7 @@ export function useHospitalSession() {
         setUser(currentUser);
         if (currentUser) {
           setStatus('Sesion activa.');
+          setSessionExpired(false);
         }
         if (currentUser?.permissions.includes('cash.view') && import.meta.env.MODE !== 'test') {
           void apiClient
@@ -87,6 +88,7 @@ export function useHospitalSession() {
 
     try {
       const loggedUser = await apiClient.login(login, password);
+      setSessionExpired(false);
       setUser(loggedUser);
       setPassword('');
       setStatus(

@@ -16,6 +16,14 @@ import { Dialog } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
   Search,
   UserPlus,
   UserCheck,
@@ -253,49 +261,49 @@ export function UsersView({ onStatus }: UsersViewProps) {
 
       <Card className="border border-border">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm" role="table">
-              <thead className="bg-slate-50 dark:bg-slate-900 border-b border-border text-xs font-semibold uppercase text-muted-foreground">
-                <tr role="row">
-                  <th scope="col" className="px-6 py-4">Usuario</th>
-                  <th scope="col" className="px-6 py-4">Username / Email</th>
-                  <th scope="col" className="px-6 py-4">Rol / Permisos</th>
-                  <th scope="col" className="px-6 py-4">Estado</th>
-                  <th scope="col" className="px-6 py-4 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border" role="rowgroup">
-                {filteredUsers.length === 0 ? (
-                  <tr role="row">
-                    <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground">
-                      No se encontraron usuarios que coincidan con la búsqueda.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors" role="row">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">
-                            {user.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-foreground">{user.name}</p>
-                            {user.must_change_password && (
-                              <Badge variant="warning" className="text-[10px] px-1 py-0 mt-0.5">
-                                Requiere cambio de clave
-                              </Badge>
-                            )}
-                          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[30%]">Usuario</TableHead>
+                <TableHead>Username / Email</TableHead>
+                <TableHead>Rol / Permisos</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    No se encontraron usuarios que coincidan con la búsqueda.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">
+                          {user.name.charAt(0).toUpperCase()}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 text-muted-foreground">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-mono text-xs">{user.username}</span>
-                          <span className="text-xs">{user.email}</span>
+                        <div>
+                          <p className="font-semibold text-foreground">{user.name}</p>
+                          {user.must_change_password && (
+                            <Badge variant="warning" className="text-[10px] px-1 py-0 mt-0.5">
+                              Requiere cambio de clave
+                            </Badge>
+                          )}
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-mono text-xs text-muted-foreground">{user.username}</span>
+                        <span className="text-xs text-muted-foreground">{user.email}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
                         {user.roles.map((role) => (
                           <Badge
                             key={role}
@@ -311,55 +319,55 @@ export function UsersView({ onStatus }: UsersViewProps) {
                             {role}
                           </Badge>
                         ))}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold ${
-                          user.active
-                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
-                            : 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
-                        }`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${user.active ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                          {user.active ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            title="Editar detalles"
-                            onClick={() => handleOpenEditModal(user)}
-                          >
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            title="Restablecer clave"
-                            onClick={() => handleOpenResetModal(user)}
-                          >
-                            <KeyRound className="h-3.5 w-3.5 text-orange-500" />
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            title={user.active ? 'Desactivar usuario' : 'Activar usuario'}
-                            onClick={() => handleOpenToggleDialog(user)}
-                          >
-                            {user.active ? (
-                              <UserX className="h-3.5 w-3.5 text-rose-500" />
-                            ) : (
-                              <UserCheck className="h-3.5 w-3.5 text-emerald-500" />
-                            )}
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold ${
+                        user.active
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                          : 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
+                      }`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${user.active ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                        {user.active ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          title="Editar detalles"
+                          onClick={() => handleOpenEditModal(user)}
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          title="Restablecer clave"
+                          onClick={() => handleOpenResetModal(user)}
+                        >
+                          <KeyRound className="h-3.5 w-3.5 text-orange-500" />
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          title={user.active ? 'Desactivar usuario' : 'Activar usuario'}
+                          onClick={() => handleOpenToggleDialog(user)}
+                        >
+                          {user.active ? (
+                            <UserX className="h-3.5 w-3.5 text-rose-500" />
+                          ) : (
+                            <UserCheck className="h-3.5 w-3.5 text-emerald-500" />
+                          )}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 

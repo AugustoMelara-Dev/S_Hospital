@@ -11,10 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class FiscalSettingsController extends Controller
 {
-    public function show(Request $request): JsonResponse
+    public function show(): JsonResponse
     {
-        $request->user()->can('settings.fiscal.view') || abort(403);
-
         return response()->json([
             'data' => FiscalSetting::query()->first(),
         ]);

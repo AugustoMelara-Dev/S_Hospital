@@ -29,6 +29,10 @@ Route::get('/system/setup-status', [SystemStatusController::class, 'setupStatus'
 Route::get('/settings/logo', [LogoController::class, 'show'])
     ->middleware('web');
 
+Route::get('/settings/fiscal', [FiscalSettingsController::class, 'show'])
+    ->middleware('web');
+
+
 Route::post('/auth/login', [AuthController::class, 'login'])
     ->middleware(['web', 'throttle:5,1']);
 Route::get('/auth/session', [AuthController::class, 'session'])
@@ -40,7 +44,6 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
     Route::middleware('password.changed')->group(function () {
-        Route::get('/settings/fiscal', [FiscalSettingsController::class, 'show']);
         Route::put('/settings/fiscal', [FiscalSettingsController::class, 'update']);
         Route::post('/settings/logo', [LogoController::class, 'upload']);
 

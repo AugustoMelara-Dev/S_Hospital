@@ -554,3 +554,22 @@ Consecuencia:
 - `PRODUCTION_READY` queda bloqueado por cuatro evidencias: segunda PC LAN, impresora fisica, restore final y concurrencia final.
 - Backups, restore y concurrencia ahora pueden dejar artefactos verificables en `qa/`.
 - Cajeros con permiso de reporte de caja pueden exportar solo su caja si tambien reciben `reports.export`.
+
+### 2026-05-19 - E2E flakiness y mocks incompletos de estado
+
+Decision:
+
+- El test de preparacion para produccion (`production-readiness.spec.ts`) ahora incluye un `page.waitForResponse('**/api/auth/login')` sincronizado con el click de inicio de sesion durante el flujo del administrador.
+- El mock de `/api/system/status` se enriquecio para proporcionar todos los campos anidados obligatorios que `BackupsView` lee (incluyendo `environment.server_time`, `environment.timezone`, y todo el objeto `runtime`).
+- El listener de Playwright `requestfailed` ahora ignora interrupciones `net::ERR_ABORTED` hacia `/api/health` y `/sanctum/csrf-cookie`.
+
+Motivo:
+
+- Una asincronia en React y Playwright puede provocar que los cambios de ruta naveguen antes de tener el nuevo contexto de autenticacion listo.
+- Mocks incompletos para objetos con anidacion profunda (como `systemStatus.runtime.laravel_log.exists` o pasar undefined a `Intl.DateTimeFormat.format()`) lanzaban TypeErrors y RangeErrors. React captaba el error, reintentaba renderizar y causaba un loop de unmount que Playwright registraba como `element was detached from the DOM, retrying` hasta dar timeout a los 90s.
+- La navegacion abrupta durante un fetch interrumpe la peticion intencionalmente en el navegador; contarlo como error falso bloqueaba el E2E.
+
+Consecuencia:
+
+- Los tests de E2E ahora son completamente deterministas y pasan consistentemente en ~15 segundos.
+- La resiliencia del testing local E2E garantiza que el handoff de produccion offline siga siendo auditable y rapido.

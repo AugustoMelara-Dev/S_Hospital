@@ -168,18 +168,18 @@ export function FiscalSettingsForm({
             <div className="space-y-2">
               <Label>Color de Marca del Hospital (Color Tema)</Label>
               <div className="flex flex-wrap gap-3">
-                {[
+                {([
                   { id: 'indigo', name: 'Índigo', color: 'bg-indigo-600' },
                   { id: 'blue', name: 'Azul Clínico', color: 'bg-blue-600' },
                   { id: 'teal', name: 'Turquesa', color: 'bg-teal-600' },
                   { id: 'green', name: 'Verde Médico', color: 'bg-green-600' },
                   { id: 'rose', name: 'Rosa Cálido', color: 'bg-rose-600' },
-                ].map((c) => (
+                ] as const).map((c) => (
                   <button
                     key={c.id}
                     type="button"
                     disabled={!canEdit}
-                    onClick={() => setValueSettings('primary_color', c.id as any)}
+                    onClick={() => setValueSettings('primary_color', c.id)}
                     className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 text-sm font-semibold transition ${
                       watchSettings('primary_color') === c.id
                         ? 'border-primary ring-2 ring-primary/20 bg-accent text-accent-foreground'

@@ -34,6 +34,10 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
     return error.message;
   }
 
+  if (error instanceof ApiError && error.status === 429) {
+    return 'Demasiados intentos. Por seguridad local LAN, su acceso ha sido bloqueado temporalmente. Por favor espere 60 segundos antes de intentar de nuevo.';
+  }
+
   if (error instanceof ApiError && error.status === 409) {
     return 'La accion no se pudo completar porque el estado actual cambio. Actualice la pantalla e intente de nuevo.';
   }

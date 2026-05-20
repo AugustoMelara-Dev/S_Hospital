@@ -111,6 +111,20 @@ async function installApiMocks(page: Page) {
 
   await page.route('**/sanctum/csrf-cookie', (route) => route.fulfill({ status: 204 }));
 
+  await page.route('**/api/settings/fiscal', (route) => json(route, {
+    data: {
+      primary_color: 'indigo',
+      name: 'Hospital Demo',
+      rtn: '08011999123456',
+      address: 'Direccion Demo',
+      phone: '2222-2222',
+      email: 'contacto@hospital-demo.local'
+    }
+  }));
+
+  await page.route('**/api/settings/logo', (route) => json(route, { logo_url: null }));
+  await page.route('**/api/health', (route) => json(route, { status: 'ok' }));
+
   await page.route('**/api/auth/login', async (route) => {
     let payload: { login?: string } = {};
     try {
@@ -336,6 +350,8 @@ async function installApiMocks(page: Page) {
         queue_connection: 'database',
         filesystem_disk: 'local',
         php_version: '8.3.0',
+        server_time: new Date().toISOString(),
+        timezone: 'America/Tegucigalpa',
       },
       database: {
         connection: 'mysql',
@@ -362,6 +378,23 @@ async function installApiMocks(page: Page) {
           pending_backup_jobs: 0,
           worker_command: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
           scheduler_command: 'php artisan schedule:run',
+          failed_jobs_count: 0,
+          jobs_table_available: true,
+          failed_jobs_table_available: true,
+        },
+      },
+      runtime: {
+        migration_count: 12,
+        latest_migration: '2026_05_01_000001_create_backup_logs_table',
+        laravel_log: {
+          exists: true,
+          size_bytes: 2048,
+          modified_at: new Date().toISOString(),
+        },
+        backup_automation_log: {
+          exists: false,
+          size_bytes: null,
+          modified_at: null,
         },
       },
       readiness: {
@@ -433,7 +466,7 @@ async function installApiMocks(page: Page) {
           },
         ],
         commands: {
-          preflight: 'powershell.exe -ExecutionPolicy Bypass -File scripts\\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR',
+          preflight: 'powershell.exe -ExecutionPolicy Bypass -File scripts\\\\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR',
           backup_worker: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
           scheduler: 'php artisan schedule:run',
         },
@@ -480,8 +513,11 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
 async function loginAs(page: Page, username: string) {
   await page.goto('/login');
   await page.getByLabel(/usuario o email/i).fill(username);
-  await page.getByLabel(/contrasena/i).fill('Password123!');
-  await page.getByRole('button', { name: /entrar/i }).click();
+  await page.getByLabel(/^contraseña$|^contrasena$/i).fill('Password123!');
+  await Promise.all([
+    page.waitForResponse('**/api/auth/login'),
+    page.getByRole('button', { name: /iniciar|entrar/i }).click(),
+  ]);
 }
 
 async function expectOperationalNavigation(page: Page) {
@@ -511,7 +547,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   });
   page.on('requestfailed', (request) => {
     const failure = request.failure();
-    if (request.url().includes('/sanctum/csrf-cookie') && failure?.errorText === 'net::ERR_ABORTED') {
+    const url = request.url();
+    if ((url.includes('/sanctum/csrf-cookie') || url.includes('/api/health')) && failure?.errorText === 'net::ERR_ABORTED') {
       return;
     }
 
@@ -578,8 +615,11 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /cerrar modal/i }).click();
   await page.getByRole('button', { name: /cerrar sesi.n/i }).click();
   await page.getByLabel(/usuario o email/i).fill('admin.demo');
-  await page.getByLabel(/contrasena/i).fill('Password123!');
-  await page.getByRole('button', { name: /entrar/i }).click();
+  await page.getByLabel(/^contraseña$|^contrasena$/i).fill('Password123!');
+  await Promise.all([
+    page.waitForResponse('**/api/auth/login'),
+    page.getByRole('button', { name: /iniciar|entrar/i }).click(),
+  ]);
   await expect(page.getByRole('link', { name: /reportes/i })).toBeVisible();
   await page.getByRole('link', { name: /reportes/i }).click();
   await expect(page.getByRole('heading', { name: /^reportes$/i })).toBeVisible();
