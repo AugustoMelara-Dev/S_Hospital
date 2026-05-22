@@ -738,3 +738,22 @@ Consecuencia:
 - El build genera un chunk `DashboardView` independiente y el chunk principal queda por debajo del umbral de advertencia de Vite.
 - Reportes queda estatico por ahora; si se vuelve a diferir, primero debe agregarse un harness de pruebas compatible con `Suspense`.
 - `npm.cmd run test`, `npm.cmd run typecheck`, `npm.cmd run lint` y `npm.cmd run build` pasan en frontend.
+
+### 2026-05-22 - Smoke accesible para caja y POS
+
+Decision:
+
+- La regresion UX/accesibilidad se valida con Playwright existente, sin agregar dependencias nuevas.
+- `production-readiness.spec.ts` cubre foco inicial de caja, labels de paciente/busqueda/scanner, agregado por teclado en POS, foco de confirmacion, foco de cobro, selector de ancho de recibo y cierre de caja con diferencia.
+- `CloseSessionDialog` usa un `id` unico para la nota de diferencia y una descripcion Radix con HTML valido.
+
+Motivo:
+
+- La ruta critica del hospital es operativa y offline; antes de agregar herramientas como axe, el gate debe proteger teclado, foco, labels y ausencia de errores de consola en los flujos de caja.
+- El dialogo de cierre de caja tenia un riesgo real de label ambiguo por `id` duplicado y generaba errores de HTML anidado invalido.
+
+Consecuencia:
+
+- `qa/ACCESSIBILITY_UX_AUDIT.md` registra el alcance, hallazgos corregidos y comandos ejecutados.
+- `npm.cmd run e2e`, `npm.cmd run test`, `npm.cmd run typecheck`, `npm.cmd run lint` y `npm.cmd run build` pasan en frontend.
+- La validacion con impresora termica fisica y LAN real sigue separada como evidencia de produccion.

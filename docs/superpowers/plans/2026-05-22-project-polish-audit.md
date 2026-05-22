@@ -48,6 +48,7 @@ Each phase is small, testable, and committable. No new risky feature is enabled 
 
 - Phase 1 completed on 2026-05-22 with commit `42ebaa1`: report money arithmetic is isolated in cent-based helpers and protected by `ReportMoneyArchitectureTest`.
 - Phase 2 completed on 2026-05-22: dashboard is split into a lazy route chunk, chart tooltip formatters no longer use explicit `any`, and frontend test/typecheck/lint/build gates pass.
+- Phase 3 completed on 2026-05-22: Playwright accessibility/UX smoke covers POS keyboard flow, cash close focus/cancel safety and responsive operational navigation without adding dependencies.
 
 ## Explicit Assumptions
 
@@ -184,12 +185,12 @@ If Phase 4 adds PWA metadata, expected files are frontend/public assets or Vite-
 
 **Steps**
 
-- [ ] Decide dev dependency strategy: use `@axe-core/playwright` if approved; otherwise use role, label, keyboard, focus-trap, and screenshot assertions.
-- [ ] Add Playwright checks for `/billing/new`: patient input label, service search label, keyboard add flow, confirm dialog focus, payment modal focus, and receipt width selector.
-- [ ] Add Playwright checks for `/cashbox`: open session form, close session dialog, required note on difference, and cancel safety.
-- [ ] Add viewport checks for 390x844, 768x1024, and 1366x768.
-- [ ] Run `npm.cmd run e2e` or the scoped production readiness command used by the repo.
-- [ ] Document results in `qa/ACCESSIBILITY_UX_AUDIT.md`.
+- [x] Decide dev dependency strategy: use existing Playwright role, label, keyboard, focus-trap, and viewport assertions without adding axe.
+- [x] Add Playwright checks for `/billing/new`: patient input label, service search label, keyboard add flow, confirm dialog focus, payment modal focus, and receipt width selector.
+- [x] Add Playwright checks for `/cashbox`: open session form, close session dialog, required note on difference, and cancel safety.
+- [x] Add viewport checks for 390x844, 768x1024, and 1280x800.
+- [x] Run `npm.cmd run e2e` or the scoped production readiness command used by the repo.
+- [x] Document results in `qa/ACCESSIBILITY_UX_AUDIT.md`.
 - [ ] Commit: `test(ux): add accessibility regression smoke`.
 
 **Risks**
