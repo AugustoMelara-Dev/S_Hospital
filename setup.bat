@@ -37,6 +37,13 @@ if %errorlevel% neq 0 (
 echo OK: Docker esta instalado y activo.
 echo.
 
+REM Detectar la IP LAN real de la ruta por defecto activa.
+set "SERVER_IP=127.0.0.1"
+for /f "tokens=4 delims= " %%a in ('route print 0.0.0.0 ^| findstr /r "^[ ]*0.0.0.0"') do (
+    set "SERVER_IP=%%a"
+)
+if "%SERVER_IP%"=="" set "SERVER_IP=127.0.0.1"
+
 REM 2. Compilar Frontend React usando un contenedor Docker
 echo [2/5] Compilando Frontend React de forma aislada en Docker...
 echo Esto puede tomar un momento...
@@ -59,6 +66,8 @@ if not exist "%~dp0backend\.env" (
     echo Creando archivo de entorno backend\.env...
     copy "%~dp0backend\.env.docker.example" "%~dp0backend\.env" > nul
 )
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$path='%~dp0backend\.env'; $content=Get-Content -Raw $path; $ip='%SERVER_IP%'; $pairs=@{APP_URL='http://'+$ip+':8000'; CACHE_STORE='file'; SANCTUM_STATEFUL_DOMAINS='localhost,localhost:3000,localhost:5173,127.0.0.1,127.0.0.1:8000,127.0.0.1:5173,'+$ip+','+$ip+':8000,::1'}; foreach ($key in $pairs.Keys) { $value=$pairs[$key]; if ($content -match ('(?m)^'+[regex]::Escape($key)+'=')) { $content=[regex]::Replace($content,'(?m)^'+[regex]::Escape($key)+'=.*',$key+'='+$value) } else { $content=$content.TrimEnd()+[Environment]::NewLine+$key+'='+$value+[Environment]::NewLine } }; Set-Content -Path $path -Value $content -NoNewline"
 
 docker compose down >nul 2>nul
 docker compose up -d backend mysql
@@ -96,12 +105,6 @@ if %errorlevel% neq 0 (
 echo.
 echo OK: Base de Datos migrada y optimizada para produccion.
 echo.
-
-REM Obtener la IP local del servidor
-set "SERVER_IP=127.0.0.1"
-for /f "tokens=4 delims= " %%a in ('route print ^| findstr "\<0.0.0.0\>"') do (
-    set "SERVER_IP=%%a"
-)
 
 echo ======================================================================
 echo        HOSPITAL BILLING OS ESTA LISTO Y EN LINEA

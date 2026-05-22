@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Backups\CreateBackupAction;
-use App\Jobs\RunBackupJob;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use Illuminate\Http\JsonResponse;
@@ -48,13 +47,11 @@ class BackupController extends Controller
     {
         $request->user()->can('backups.create') || abort(403);
 
-        $backupLog = $createBackup->createPending($request->user(), BackupLog::TYPE_MANUAL);
-
-        RunBackupJob::dispatch($backupLog->id);
+        $backupLog = $createBackup->execute($request->user(), BackupLog::TYPE_MANUAL);
 
         return response()->json([
             'data' => $this->payload($backupLog),
-        ], 202);
+        ], $backupLog->status === BackupLog::STATUS_SUCCESS ? 201 : 500);
     }
 
     public function download(Request $request, BackupLog $backupLog): BinaryFileResponse

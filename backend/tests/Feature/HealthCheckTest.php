@@ -25,6 +25,17 @@ class HealthCheckTest extends TestCase
             ]);
     }
 
+    public function test_responses_include_security_headers(): void
+    {
+        $this->getJson('/api/health')
+            ->assertOk()
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('X-Frame-Options', 'DENY')
+            ->assertHeader('Referrer-Policy', 'same-origin')
+            ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+            ->assertHeader('Content-Security-Policy');
+    }
+
     public function test_local_vite_origin_can_request_sanctum_csrf_cookie(): void
     {
         $response = $this

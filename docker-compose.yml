@@ -12,7 +12,7 @@ services:
       DB_DATABASE: ${DB_DATABASE:-hospital_billing}
       DB_USERNAME: ${DB_USERNAME:-hospital}
       DB_PASSWORD: ${DB_PASSWORD:-hospital_dev}
-      CACHE_STORE: database
+      CACHE_STORE: file
       QUEUE_CONNECTION: database
       SESSION_DRIVER: database
     volumes:

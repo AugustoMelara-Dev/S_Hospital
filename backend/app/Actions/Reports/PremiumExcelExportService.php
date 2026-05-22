@@ -3,6 +3,7 @@
 namespace App\Actions\Reports;
 
 use App\Models\FiscalSetting;
+use App\Support\HospitalName;
 use Illuminate\Support\Carbon;
 use PhpOffice\PhpSpreadsheet\Chart\Chart;
 use PhpOffice\PhpSpreadsheet\Chart\DataSeries;
@@ -35,7 +36,7 @@ class PremiumExcelExportService
         $spreadsheet->removeSheetByIndex(0);
 
         $settings = FiscalSetting::query()->first();
-        $hospitalName = $settings?->hospital_name ?? 'Hospital Billing OS';
+        $hospitalName = HospitalName::display($settings?->hospital_name);
         $hospitalRtn = $settings?->rtn ?? 'N/A';
 
         // Style presets

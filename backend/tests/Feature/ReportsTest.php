@@ -740,16 +740,22 @@ class ReportsTest extends TestCase
             ->json('data.id');
     }
 
-    public function test_pdf_export_requires_reports_view_permission(): void
+    public function test_pdf_export_requires_reports_export_permission(): void
     {
         $this->seedBillingBase();
         $user = User::factory()->create();
+        $reportViewer = User::factory()->create();
+        $reportViewer->givePermissionTo('reports.view', 'reports.managerial.view');
         $date = now()->toDateString();
 
         $this->getJson("/api/reports/pdf?date={$date}")
             ->assertUnauthorized();
 
         $this->actingAs($user)
+            ->getJson("/api/reports/pdf?date={$date}")
+            ->assertForbidden();
+
+        $this->actingAs($reportViewer)
             ->getJson("/api/reports/pdf?date={$date}")
             ->assertForbidden();
     }

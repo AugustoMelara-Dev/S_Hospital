@@ -573,3 +573,129 @@ Consecuencia:
 
 - Los tests de E2E ahora son completamente deterministas y pasan consistentemente en ~15 segundos.
 - La resiliencia del testing local E2E garantiza que el handoff de produccion offline siga siendo auditable y rapido.
+
+### 2026-05-20 - Rescate visual inicial y contencion de pantalla blanca
+
+Decision:
+
+- El arranque de sesion ya no omite `/api/auth/session` cuando la URL inicial es `/login`; una recarga fuerte con cookie valida recupera el usuario y vuelve al dashboard.
+- La aplicacion queda envuelta en `AppErrorBoundary` para evitar una pantalla totalmente blanca si una vista React falla al renderizar.
+- El login se reestructura como una pantalla sobria basada en componentes locales tipo shadcn: `Card`, `Input`, `Label`, `Button` y `Alert`, sin decoracion fragil.
+- Los tests de frontend agregan `ResizeObserver` mock para cubrir componentes Radix/shadcn usados por dialogos, selects y checkbox.
+- El POS conserva atajos internos, pero deja de mostrar una barra de instrucciones visible dentro de la pantalla operativa.
+
+Motivo:
+
+- El usuario reporto recargas que quedaban en blanco e imposibilidad de iniciar sesion; el primer rescate debe proteger el flujo de acceso antes de ampliar el rediseño.
+- Un sistema de caja vendible no puede depender de que cada componente renderice perfecto para no dejar al operador sin pantalla.
+- La UI debe sentirse como herramienta de caja hospitalaria, no como demo con texto de uso y controles decorativos.
+
+Consecuencia:
+
+- Login, sesion y tests unitarios quedan estabilizados como base para continuar Fase 12.
+- Si aparece un fallo de interfaz, el operador vera una pantalla controlada con accion de recarga en lugar de blanco total.
+- El siguiente corte debe continuar la migracion de AppShell, POS, caja, tablas y reportes hacia componentes compartidos sin mezclar cambios fiscales o transaccionales no relacionados.
+
+### 2026-05-20 - Shell blanco shadcn y eliminacion de botones manuales
+
+Decision:
+
+- `AppShell`, `Sidebar` y `Topbar` pasan a una base blanca/minimalista usando tokens semanticos (`background`, `card`, `border`, `muted`, `primary`, `secondary`) en vez de clases oscuras `slate/dark`.
+- Los botones manuales restantes en login, POS, historial y configuracion fiscal se reemplazan por `Button` local compatible con shadcn.
+- `SelectItem` usa icono `Check` de lucide y elimina el simbolo corrupto que aparecia en opciones Radix.
+- Se guardan capturas Playwright en `qa/screenshots/login-shadcn-white.png`, `qa/screenshots/dashboard-shadcn-white.png` y `qa/screenshots/billing-pos-shadcn-white.png`.
+
+Motivo:
+
+- La experiencia solicitada exige consistencia visual, blanco/minimalista, controles de libreria y cero botones crudos en la superficie React.
+- El shell es la pieza comun de todas las pantallas; estabilizarlo reduce regresiones visuales antes de seguir refinando reportes, caja y configuracion.
+
+Consecuencia:
+
+- `rg '<button' frontend/src` queda sin resultados.
+- Las pantallas principales heredan un marco visual consistente y validado con capturas reales.
+- La refactorizacion visual puede continuar por pantallas especificas sin volver al shell oscuro anterior.
+
+### 2026-05-21 - Login LAN y cache runtime
+
+Decision:
+
+- El runtime Docker usa `CACHE_STORE=file` para que el rate limiter y el arranque de login no dependan de la tabla `cache` ni de credenciales antiguas de base de datos.
+- `setup.bat` detecta la IP de la ruta por defecto activa, escribe `APP_URL` y `SANCTUM_STATEFUL_DOMAINS` en `backend\.env`, y despues ejecuta `config:cache`.
+- La URL LAN validada en esta maquina es `http://192.168.1.3:8000`; `http://192.168.1.7:8000` es una IP anterior/no alcanzable en el estado actual.
+- La evidencia de navegador queda en `qa/screenshots/lan-dashboard-fixed.png` y la captura de login en `qa/screenshots/lan-login-fixed.png`.
+
+Motivo:
+
+- El login devolvia errores mezclados (`401` de sesion invitada, `422` de credenciales rechazadas y fallos internos de cache) porque el runtime estaba leyendo configuracion LAN/DB inconsistente.
+- En una instalacion offline LAN, el operador no debe depender de recordar la IP correcta ni de limpiar caches manualmente.
+
+Consecuencia:
+
+- `admin.demo` puede iniciar sesion por HTTP en `127.0.0.1:8000` y en la IP LAN activa.
+- El instalador debe evitar volver a publicar una URL muerta despues de cambios de red o DHCP.
+
+### 2026-05-21 - Headers de seguridad y exportacion PDF protegida
+
+Decision:
+
+- Todas las respuestas pasan por `AddSecurityHeaders`, que agrega `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` y una politica CSP conservadora para la SPA local.
+- La exportacion PDF de reportes exige `reports.export`, igual que la exportacion Excel, en vez de aceptar solo permiso de visualizacion.
+- `/up`, la SPA publica y los assets se sirven sin middleware de sesion para que los smokes de despliegue no dependan de la base de datos cuando solo validan disponibilidad.
+
+Motivo:
+
+- La Fase 1 exige revisar CSRF/Sanctum, headers de seguridad y permisos por rol antes de operar dinero o reportes.
+- Exportar cierres y reportes financieros es una accion mas sensible que verlos en pantalla; debe requerir permiso explicito.
+
+Consecuencia:
+
+- `/api/health`, la SPA y las rutas autenticadas heredan hardening HTTP sin depender del servidor web externo.
+- Usuarios con `reports.view` o `reports.managerial.view` pero sin `reports.export` no pueden descargar PDF.
+- `/up`, `/login` y `/verify-email` pueden validarse despues de `config:cache` aunque el navegador local no tenga abierta una sesion.
+
+### 2026-05-21 - Dark mode, guia reactivable y ayuda interna
+
+Decision:
+
+- El frontend usa tokens CSS dinamicos con `@theme`, de modo que `html.dark` cambia toda la aplicacion sin reinyectar colores desde configuracion fiscal.
+- La guia operativa vive en `features/onboarding`, se abre manualmente desde Topbar y solo autoabre si una preferencia local explicita lo permite.
+- Se agrega `/help` con guias visuales y FAQ para caja, facturacion, pagos, impresion, reportes y backups.
+- Los graficos de dashboard dejan de depender de `ResponsiveContainer` y usan ancho medido para evitar warnings de Recharts en contenedores inestables.
+
+Motivo:
+
+- La caja hospitalaria necesita un tema oscuro real, consistente y accesible para turnos largos, pero sin romper recibos, formularios ni tablas.
+- El onboarding debe poder repetirse sin molestar automaticamente al cajero en produccion.
+- La ayuda debe estar disponible dentro del sistema offline LAN, sin depender de documentacion externa.
+- Los warnings visuales de Recharts escondian problemas reales de layout en QA.
+
+Consecuencia:
+
+- El toggle claro/oscuro afecta shell, tablas, formularios, modales, badges, alertas y dashboard.
+- El usuario puede abrir la guia cuando lo necesite y navegar a `/help` desde el sidebar.
+- Dashboard queda mas estable en pruebas de navegador y con consola limpia durante cambios de tema.
+
+### 2026-05-21 - Auditoria UX/UI final con capturas de modulos
+
+Decision:
+
+- Se auditaron las pantallas principales con navegador sobre el build servido por Laravel: login, inicio, nueva factura, caja, catalogo, historial, reportes, respaldos, configuracion fiscal, usuarios y ayuda.
+- Las capturas y pruebas de interaccion quedaron en `qa/screenshots/ux-cleanup-2026-05-21-browser/`, incluyendo `ux-cleanup-browser-report.json`, `interaction-proof.json`, `settled-screens-proof.json` y `login-proof.json`.
+- El shell conserva una sola accion visible para cerrar sesion dentro del menu de usuario; el logout duplicado del sidebar queda fuera de la navegacion principal.
+- Los textos visibles evitan conceptos tecnicos como `APP_ENV`, comandos de cola, Laravel/React, `PRODUCTION_READY`, `S_Hospital` y referencias a backups en ingles.
+- Los reportes PDF dejan de firmarse con `S_Hospital` y muestran "Respaldos" en vez de "Copias de Seguridad (Backups)".
+- La ruta publica `/admin/users` se sirve desde la SPA igual que el resto de modulos internos, para evitar 404 al recargar o navegar directo.
+- El nombre del hospital se mantiene editable desde configuracion fiscal y se refleja en login, sidebar/topbar, resumen fiscal y recibos/reportes donde corresponde.
+
+Motivo:
+
+- El cierre UX/UI requiere evidencia visual actual, no solo tests unitarios ni busquedas de texto.
+- Un sistema hospitalario LAN no debe mostrar al operador comandos, estados de despliegue o nombres internos del stack.
+- Las rutas internas deben soportar recarga directa porque los clientes LAN acceden por navegador y pueden guardar marcadores.
+
+Consecuencia:
+
+- La evidencia visual actual queda versionable y auditable por modulo.
+- `npm.cmd run test`, `npm.cmd run typecheck`, `npm.cmd run lint`, `npm.cmd run build`, `php artisan test --colors=never --filter=BackupWorkflowTest`, `php artisan test --colors=never --filter=ReportsTest` y `php artisan test --colors=never --filter=ProductionSpaRouteTest` pasan.
+- El build conserva una advertencia no bloqueante de Vite por un chunk apenas mayor a 500 kB; debe tratarse como optimizacion posterior, no como bloqueo funcional.

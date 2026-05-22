@@ -2,13 +2,14 @@
 
 namespace App\Actions\Reports;
 
+use App\Support\HospitalName;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class PdfExportService
 {
     public function generateDailyClosurePdf(array $data, array $fiscal): string
     {
-        $hospitalName = $fiscal['hospital_name'] ?? 'HOSPITAL DE PRUEBA';
+        $hospitalName = HospitalName::display($fiscal['hospital_name'] ?? null);
         $rtn = $fiscal['rtn'] ?? 'N/A';
         $date = $data['date'];
 
@@ -232,7 +233,7 @@ class PdfExportService
     </div>
 
     <div class='footer'>
-        Reporte generado automáticamente por S_Hospital Sistema de Facturación Local LAN - " . now()->format('Y-m-d H:i:s') . "
+        Reporte generado automáticamente por el sistema hospitalario local - " . now()->format('Y-m-d H:i:s') . "
     </div>
 
 </body>
@@ -245,7 +246,7 @@ class PdfExportService
 
     public function generateRangeClosurePdf(array $data, array $fiscal): string
     {
-        $hospitalName = $fiscal['hospital_name'] ?? 'HOSPITAL DE PRUEBA';
+        $hospitalName = HospitalName::display($fiscal['hospital_name'] ?? null);
         $rtn = $fiscal['rtn'] ?? 'N/A';
         $dateFrom = $data['date_from'];
         $dateTo = $data['date_to'];
@@ -507,7 +508,7 @@ class PdfExportService
             <tr>
                 <td style='font-weight: bold; background-color: #f8fafc;'>Cajeros Activos:</td>
                 <td>{$operations['summary']['cashier_count']}</td>
-                <td style='font-weight: bold; background-color: #f8fafc;'>Copias de Seguridad (Backups):</td>
+                <td style='font-weight: bold; background-color: #f8fafc;'>Respaldos:</td>
                 <td>" . ($operations['summary']['backup_count'] ?? 0) . "</td>
             </tr>
         </table>
@@ -542,7 +543,7 @@ class PdfExportService
 
         $html .= "
     <div class='footer'>
-        Reporte consolidado generado automáticamente por S_Hospital - " . now()->format('Y-m-d H:i:s') . "
+        Reporte consolidado generado automáticamente por el sistema hospitalario local - " . now()->format('Y-m-d H:i:s') . "
     </div>
 
 </body>

@@ -115,7 +115,7 @@ class ReportController extends Controller
         OperationsReportService $operationsReports,
         PdfExportService $pdfService
     ) {
-        $request->user()->can('reports.view') || abort(403);
+        $request->user()->can('reports.export') || abort(403);
 
         $fiscal = \App\Models\FiscalSetting::first() ?? new \App\Models\FiscalSetting([
             'hospital_name' => 'Hospital Local',

@@ -25,7 +25,7 @@ class LicenseHelper
     public static function checkLicense(): array
     {
         $settings = FiscalSetting::query()->first();
-        $hospitalName = $settings?->hospital_name ?? 'Hospital Billing OS';
+        $hospitalName = HospitalName::display($settings?->hospital_name);
         $rtn = $settings?->rtn ?? 'N/A';
 
         // Check if manual offline license file exists
