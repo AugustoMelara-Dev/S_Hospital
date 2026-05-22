@@ -12,14 +12,22 @@ class ProductionSpaRouteTest extends TestCase
         $distPath = base_path('../frontend/dist');
         $assetsPath = $distPath.'/assets';
         $indexPath = $distPath.'/index.html';
+        $manifestPath = $distPath.'/manifest.webmanifest';
+        $iconsPath = $distPath.'/icons';
+        $iconPath = $iconsPath.'/icon.svg';
         $jsAssetPath = $assetsPath.'/phase10-test.js';
         $cssAssetPath = $assetsPath.'/phase10-test.css';
         $originalIndex = File::exists($indexPath) ? File::get($indexPath) : null;
+        $originalManifest = File::exists($manifestPath) ? File::get($manifestPath) : null;
+        $originalIcon = File::exists($iconPath) ? File::get($iconPath) : null;
         $originalJsAsset = File::exists($jsAssetPath) ? File::get($jsAssetPath) : null;
         $originalCssAsset = File::exists($cssAssetPath) ? File::get($cssAssetPath) : null;
 
         File::ensureDirectoryExists($assetsPath);
+        File::ensureDirectoryExists($iconsPath);
         File::put($indexPath, '<!doctype html><html><body><div id="root">Hospital Billing OS</div></body></html>');
+        File::put($manifestPath, '{"name":"Caja hospitalaria"}');
+        File::put($iconPath, '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
         File::put($jsAssetPath, 'console.log("phase10");');
         File::put($cssAssetPath, 'body { color: #111; }');
 
@@ -62,11 +70,33 @@ class ProductionSpaRouteTest extends TestCase
                 ->assertOk()
                 ->assertHeader('Content-Type', 'text/css; charset=UTF-8')
                 ->assertHeader('X-Content-Type-Options', 'nosniff');
+
+            $this->get('/manifest.webmanifest')
+                ->assertOk()
+                ->assertHeader('Content-Type', 'application/manifest+json; charset=UTF-8')
+                ->assertHeader('X-Content-Type-Options', 'nosniff');
+
+            $this->get('/icons/icon.svg')
+                ->assertOk()
+                ->assertHeader('Content-Type', 'image/svg+xml')
+                ->assertHeader('X-Content-Type-Options', 'nosniff');
         } finally {
             if ($originalIndex === null) {
                 File::delete($indexPath);
             } else {
                 File::put($indexPath, $originalIndex);
+            }
+
+            if ($originalManifest === null) {
+                File::delete($manifestPath);
+            } else {
+                File::put($manifestPath, $originalManifest);
+            }
+
+            if ($originalIcon === null) {
+                File::delete($iconPath);
+            } else {
+                File::put($iconPath, $originalIcon);
             }
 
             if ($originalJsAsset === null) {
@@ -92,5 +122,31 @@ class ProductionSpaRouteTest extends TestCase
     public function test_health_route_remains_available(): void
     {
         $this->get('/up')->assertOk();
+    }
+
+    public function test_frontend_source_declares_private_lan_app_metadata(): void
+    {
+        $indexPath = base_path('../frontend/index.html');
+        $manifestPath = base_path('../frontend/public/manifest.webmanifest');
+        $robotsPath = base_path('../frontend/public/robots.txt');
+
+        $this->assertFileExists($indexPath);
+        $this->assertFileExists($manifestPath);
+        $this->assertFileExists($robotsPath);
+
+        $index = File::get($indexPath);
+        $manifest = json_decode(File::get($manifestPath), true, flags: JSON_THROW_ON_ERROR);
+        $robots = File::get($robotsPath);
+
+        $this->assertStringContainsString('<html lang="es"', $index);
+        $this->assertStringContainsString('name="description"', $index);
+        $this->assertStringContainsString('name="robots" content="noindex,nofollow,noarchive"', $index);
+        $this->assertStringContainsString('rel="manifest" href="/manifest.webmanifest"', $index);
+        $this->assertStringContainsString('rel="icon" href="/icons/icon.svg"', $index);
+
+        $this->assertSame('Caja hospitalaria', $manifest['name']);
+        $this->assertSame('/login', $manifest['start_url']);
+        $this->assertSame('standalone', $manifest['display']);
+        $this->assertStringContainsString('Disallow: /', $robots);
     }
 }

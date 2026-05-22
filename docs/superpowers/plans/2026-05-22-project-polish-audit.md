@@ -49,6 +49,7 @@ Each phase is small, testable, and committable. No new risky feature is enabled 
 - Phase 1 completed on 2026-05-22 with commit `42ebaa1`: report money arithmetic is isolated in cent-based helpers and protected by `ReportMoneyArchitectureTest`.
 - Phase 2 completed on 2026-05-22: dashboard is split into a lazy route chunk, chart tooltip formatters no longer use explicit `any`, and frontend test/typecheck/lint/build gates pass.
 - Phase 3 completed on 2026-05-22: Playwright accessibility/UX smoke covers POS keyboard flow, cash close focus/cancel safety and responsive operational navigation without adding dependencies.
+- Phase 4 completed on 2026-05-22: local app metadata, private robots policy, manifest and SVG icons are served from the offline build.
 
 ## Explicit Assumptions
 
@@ -221,12 +222,12 @@ If Phase 4 adds PWA metadata, expected files are frontend/public assets or Vite-
 
 **Steps**
 
-- [ ] Add test coverage for SPA metadata served in production build route if backend currently validates built assets.
-- [ ] Add `meta description`, `theme-color`, app name, viewport, manifest link, and local-friendly robots policy.
-- [ ] Ensure `backend/public/robots.txt` and frontend metadata do not conflict.
-- [ ] Add app icons only as local static assets, no remote CDN.
-- [ ] Run `npm.cmd run build`.
-- [ ] Run `php artisan test --colors=never --filter=ProductionSpaRouteTest`.
+- [x] Add test coverage for SPA metadata served in production build route if backend currently validates built assets.
+- [x] Add `meta description`, `theme-color`, app name, viewport, manifest link, and local-friendly robots policy.
+- [x] Ensure `backend/public/robots.txt` and frontend metadata do not conflict.
+- [x] Add app icons only as local static assets, no remote CDN.
+- [x] Run `npm.cmd run build`.
+- [x] Run `php artisan test --colors=never --filter=ProductionSpaRouteTest`.
 - [ ] Commit: `feat(app): add offline lan app metadata`.
 
 **Risks**

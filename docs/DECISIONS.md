@@ -757,3 +757,22 @@ Consecuencia:
 - `qa/ACCESSIBILITY_UX_AUDIT.md` registra el alcance, hallazgos corregidos y comandos ejecutados.
 - `npm.cmd run e2e`, `npm.cmd run test`, `npm.cmd run typecheck`, `npm.cmd run lint` y `npm.cmd run build` pasan en frontend.
 - La validacion con impresora termica fisica y LAN real sigue separada como evidencia de produccion.
+
+### 2026-05-22 - Metadata privada para app LAN
+
+Decision:
+
+- `frontend/index.html` declara descripcion, nombre de aplicacion, robots `noindex,nofollow,noarchive`, colores de tema claro/oscuro, manifest e icono local.
+- `frontend/public/manifest.webmanifest` e `frontend/public/icons/*.svg` son assets locales copiados por Vite; no usan CDN ni red externa.
+- Laravel sirve `/manifest.webmanifest` y `/icons/*` desde `frontend/dist` para la instalacion LAN, y `robots.txt` bloquea indexacion.
+
+Motivo:
+
+- El producto no busca SEO publico; necesita identidad clara de navegador/atajo instalable y privacidad por defecto en una red local.
+- Los clientes LAN deben poder cargar metadata e iconos sin depender de internet ni de rutas del dev server.
+
+Consecuencia:
+
+- `/login`, accesos directos e instalacion tipo PWA identifican el sistema como "Caja hospitalaria".
+- `ProductionSpaRouteTest` protege rutas SPA, assets, manifest, icono y metadata fuente.
+- `npm.cmd run build` y `php artisan test --colors=never --filter=ProductionSpaRouteTest` pasan.
