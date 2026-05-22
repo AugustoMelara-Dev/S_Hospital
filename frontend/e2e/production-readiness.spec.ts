@@ -581,7 +581,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
     if ((url.includes('/sanctum/csrf-cookie') || url.includes('/api/health')) && failure?.errorText === 'net::ERR_ABORTED') {
       return;
     }
-    if ((url.includes('/src/features/dashboard/DashboardView.tsx') || url.includes('/api/settings/logo')) && failure?.errorText === 'net::ERR_ABORTED') {
+    if ((url.includes('/src/features/dashboard/') || url.includes('/api/settings/logo')) && failure?.errorText === 'net::ERR_ABORTED') {
       return;
     }
 

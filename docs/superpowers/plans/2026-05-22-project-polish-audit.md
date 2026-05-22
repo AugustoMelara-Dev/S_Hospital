@@ -51,6 +51,7 @@ Each phase is small, testable, and committable. No new risky feature is enabled 
 - Phase 3 completed on 2026-05-22: Playwright accessibility/UX smoke covers POS keyboard flow, cash close focus/cancel safety and responsive operational navigation without adding dependencies.
 - Phase 4 completed on 2026-05-22: local app metadata, private robots policy, manifest and SVG icons are served from the offline build.
 - Phase 5 completed on 2026-05-22: current backend/frontend architecture and release gates are documented.
+- Phase 6 completed on 2026-05-22: full automated gates and local `/up`, `/login`, `/verify-email` smoke passed, with residual physical risks documented.
 
 ## Explicit Assumptions
 
@@ -290,17 +291,17 @@ If Phase 4 adds PWA metadata, expected files are frontend/public assets or Vite-
 
 **Steps**
 
-- [ ] Run `php artisan test --colors=never`.
-- [ ] Run `php artisan config:cache`.
-- [ ] Run `npm.cmd run typecheck`.
-- [ ] Run `npm.cmd run lint`.
-- [ ] Run `npm.cmd run test`.
-- [ ] Run `npm.cmd run build`.
-- [ ] Run `npm.cmd run e2e` if Playwright browsers and app mocks are available.
-- [ ] If local app is running, validate `/up`, `/login`, and `/verify-email`; otherwise record as not executed with reason.
-- [ ] Write `qa/PROJECT_POLISH_FINAL_REPORT.md` with commands, dates, outcomes, and residual risks.
-- [ ] Execute commit-review prompt `prompts/03_COMMIT_CODE_REVIEW_ORCHESTRATOR.md` against the diff.
-- [ ] Correct critical/high findings.
+- [x] Run `php artisan test --colors=never`.
+- [x] Run `php artisan config:cache`.
+- [x] Run `npm.cmd run typecheck`.
+- [x] Run `npm.cmd run lint`.
+- [x] Run `npm.cmd run test`.
+- [x] Run `npm.cmd run build`.
+- [x] Run `npm.cmd run e2e` if Playwright browsers and app mocks are available.
+- [x] If local app is running, validate `/up`, `/login`, and `/verify-email`; otherwise record as not executed with reason.
+- [x] Write `qa/PROJECT_POLISH_FINAL_REPORT.md` with commands, dates, outcomes, and residual risks.
+- [x] Execute commit-review prompt `prompts/03_COMMIT_CODE_REVIEW_ORCHESTRATOR.md` against the diff.
+- [x] Correct critical/high findings.
 - [ ] Commit: `test(release): record project polish evidence`.
 
 **Risks**

@@ -793,3 +793,20 @@ Consecuencia:
 
 - Un contribuidor puede ubicar los modulos de facturacion, caja, pagos, recibos, reportes, backups, UI y metadata sin leer todo el historial.
 - Las fases futuras deben actualizar `ARCHITECTURE_CURRENT.md` si cambian limites de modulo o gates obligatorios.
+
+### 2026-05-22 - Evidencia final del pase de pulido
+
+Decision:
+
+- `qa/PROJECT_POLISH_FINAL_REPORT.md` registra comandos finales, resultados, smoke local HTTP y riesgos residuales.
+- El pase de pulido no declara `PRODUCTION_READY`; mantiene separadas las evidencias fisicas de LAN, impresora, restore, concurrencia y backup worker.
+
+Motivo:
+
+- La definicion de terminado requiere evidencia reproducible y honesta, no solo cambios commiteados.
+- Los gates automatizados pueden pasar sin validar hardware o segunda PC LAN real.
+
+Consecuencia:
+
+- El cierre tecnico queda listo para revision/PR con gates automatizados verdes.
+- El handoff de produccion sigue bloqueado hasta completar evidencia fisica/final en servidor real.
