@@ -776,3 +776,20 @@ Consecuencia:
 - `/login`, accesos directos e instalacion tipo PWA identifican el sistema como "Caja hospitalaria".
 - `ProductionSpaRouteTest` protege rutas SPA, assets, manifest, icono y metadata fuente.
 - `npm.cmd run build` y `php artisan test --colors=never --filter=ProductionSpaRouteTest` pasan.
+
+### 2026-05-22 - Mapa actual de arquitectura
+
+Decision:
+
+- `docs/ARCHITECTURE_CURRENT.md` documenta los limites actuales de backend, frontend, assets runtime y quality gates.
+- `docs/RELEASE_CHECKLIST.md` registra los gates de pulido ejecutados el 2026-05-22 y el caveat de Composer fuera de PATH.
+
+Motivo:
+
+- El proyecto ya no necesita una reescritura; necesita que nuevos cambios respeten las fronteras existentes de controllers, Form Requests, Actions, servicios de reportes, UI primitives y features React.
+- El checklist debe distinguir pruebas automatizadas de evidencia fisica real para no declarar `PRODUCTION_READY` por accidente.
+
+Consecuencia:
+
+- Un contribuidor puede ubicar los modulos de facturacion, caja, pagos, recibos, reportes, backups, UI y metadata sin leer todo el historial.
+- Las fases futuras deben actualizar `ARCHITECTURE_CURRENT.md` si cambian limites de modulo o gates obligatorios.

@@ -50,6 +50,7 @@ Each phase is small, testable, and committable. No new risky feature is enabled 
 - Phase 2 completed on 2026-05-22: dashboard is split into a lazy route chunk, chart tooltip formatters no longer use explicit `any`, and frontend test/typecheck/lint/build gates pass.
 - Phase 3 completed on 2026-05-22: Playwright accessibility/UX smoke covers POS keyboard flow, cash close focus/cancel safety and responsive operational navigation without adding dependencies.
 - Phase 4 completed on 2026-05-22: local app metadata, private robots policy, manifest and SVG icons are served from the offline build.
+- Phase 5 completed on 2026-05-22: current backend/frontend architecture and release gates are documented.
 
 ## Explicit Assumptions
 
@@ -257,11 +258,11 @@ If Phase 4 adds PWA metadata, expected files are frontend/public assets or Vite-
 
 **Steps**
 
-- [ ] Document backend boundaries: controllers, Form Requests, Actions, report services, support helpers.
-- [ ] Document frontend boundaries: routes, layout, feature modules, UI primitives, query hooks, schemas.
-- [ ] Document money handling policy after Phase 1.
-- [ ] Document route-splitting policy after Phase 2.
-- [ ] Update release checklist with exact commands that passed locally and note composer PATH caveat if still unresolved.
+- [x] Document backend boundaries: controllers, Form Requests, Actions, report services, support helpers.
+- [x] Document frontend boundaries: routes, layout, feature modules, UI primitives, query hooks, schemas.
+- [x] Document money handling policy after Phase 1.
+- [x] Document route-splitting policy after Phase 2.
+- [x] Update release checklist with exact commands that passed locally and note composer PATH caveat if still unresolved.
 - [ ] Commit: `docs(architecture): document current module boundaries`.
 
 **Risks**
