@@ -699,3 +699,23 @@ Consecuencia:
 - La evidencia visual actual queda versionable y auditable por modulo.
 - `npm.cmd run test`, `npm.cmd run typecheck`, `npm.cmd run lint`, `npm.cmd run build`, `php artisan test --colors=never --filter=BackupWorkflowTest`, `php artisan test --colors=never --filter=ReportsTest` y `php artisan test --colors=never --filter=ProductionSpaRouteTest` pasan.
 - El build conserva una advertencia no bloqueante de Vite por un chunk apenas mayor a 500 kB; debe tratarse como optimizacion posterior, no como bloqueo funcional.
+
+### 2026-05-22 - Dinero de reportes calculado en centavos
+
+Decision:
+
+- Los reportes operativos asignan cobros filtrados por categoria usando centavos enteros, no casts directos a `float`.
+- `FormatsReportMoney` centraliza conversiones de dinero para reportes: parseo a centavos, formato decimal y conversion display-only para celdas de Excel/PDF.
+- Los exportadores Excel/PDF pueden recibir un decimal numerico solo en la frontera de presentacion, pero la logica autoritativa de totales queda en centavos o strings decimales.
+
+Motivo:
+
+- El proyecto prohibe depender de floats para reglas de dinero.
+- Los reportes por categoria distribuyen pagos proporcionalmente entre items de una factura, una operacion sensible a redondeos de centavos.
+- Centralizar el formato evita que cada exportador vuelva a introducir conversiones inconsistentes.
+
+Consecuencia:
+
+- `IncomeReportService` y `OperationsReportService` ya no contienen casts `(float)` para aritmetica de dinero.
+- La prueba `ReportMoneyArchitectureTest` protege esta regla arquitectonica.
+- `php artisan test --colors=never --filter=ReportMoneyArchitectureTest`, `php artisan test --colors=never --filter=ReportsTest`, `php artisan test --colors=never` y `php artisan config:cache` pasan.
