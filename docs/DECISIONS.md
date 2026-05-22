@@ -719,3 +719,22 @@ Consecuencia:
 - `IncomeReportService` y `OperationsReportService` ya no contienen casts `(float)` para aritmetica de dinero.
 - La prueba `ReportMoneyArchitectureTest` protege esta regla arquitectonica.
 - `php artisan test --colors=never --filter=ReportMoneyArchitectureTest`, `php artisan test --colors=never --filter=ReportsTest`, `php artisan test --colors=never` y `php artisan config:cache` pasan.
+
+### 2026-05-22 - Chunk diferido para dashboard
+
+Decision:
+
+- `AppRoutes` carga el dashboard con `React.lazy` y un `LoadingState` compartido, mientras mantiene POS, caja, catalogo, historial, reportes, respaldos, configuracion, usuarios, ayuda y acerca de como rutas estaticas.
+- Los tooltips de graficos del dashboard usan tipos explicitos en lugar de `any`.
+
+Motivo:
+
+- El dashboard concentra graficos y resumenes que no son necesarios para operar la ruta critica de caja/facturacion.
+- Diferir demasiadas rutas pequenas hizo fragiles las pruebas por `Suspense`; el splitting debe priorizar beneficio medible sin volver inestable la navegacion operativa.
+- Eliminar `any` en los formatters de Recharts mantiene el contrato TypeScript estricto.
+
+Consecuencia:
+
+- El build genera un chunk `DashboardView` independiente y el chunk principal queda por debajo del umbral de advertencia de Vite.
+- Reportes queda estatico por ahora; si se vuelve a diferir, primero debe agregarse un harness de pruebas compatible con `Suspense`.
+- `npm.cmd run test`, `npm.cmd run typecheck`, `npm.cmd run lint` y `npm.cmd run build` pasan en frontend.

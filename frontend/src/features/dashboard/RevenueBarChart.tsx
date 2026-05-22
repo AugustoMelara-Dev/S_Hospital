@@ -22,6 +22,17 @@ type RevenueBarChartProps = {
   data: DailyTrendData[];
 };
 
+type TooltipValue = string | number | readonly (string | number)[] | undefined;
+type TooltipName = string | number | undefined;
+
+function numericTooltipValue(value: TooltipValue): number {
+  if (Array.isArray(value)) {
+    return Number(value[0] ?? 0);
+  }
+
+  return Number(value ?? 0);
+}
+
 export function RevenueBarChart({ data }: RevenueBarChartProps) {
   const { ref, width } = useElementWidth();
   const chartData = data.map((d) => {
@@ -85,9 +96,8 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
               fontSize: '12px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             }}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            formatter={(value: any, name: any) => [
-              `L. ${Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            formatter={(value: TooltipValue, name: TooltipName) => [
+              `L. ${numericTooltipValue(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
               name === 'Billed' ? 'Facturado' : 'Cobrado',
             ]}
             labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}

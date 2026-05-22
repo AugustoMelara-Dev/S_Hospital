@@ -44,6 +44,11 @@ The project should not be rewritten. The best polish path is a six-phase finishi
 
 Each phase is small, testable, and committable. No new risky feature is enabled globally. Any new gate starts as CI/local tooling and does not affect runtime billing.
 
+## Implementation Progress
+
+- Phase 1 completed on 2026-05-22 with commit `42ebaa1`: report money arithmetic is isolated in cent-based helpers and protected by `ReportMoneyArchitectureTest`.
+- Phase 2 completed on 2026-05-22: dashboard is split into a lazy route chunk, chart tooltip formatters no longer use explicit `any`, and frontend test/typecheck/lint/build gates pass.
+
 ## Explicit Assumptions
 
 - Production remains offline LAN with one server PC and browser clients.
@@ -128,7 +133,7 @@ If Phase 4 adds PWA metadata, expected files are frontend/public assets or Vite-
 
 **Scope**
 
-- Split heavy dashboard/report/chart routes.
+- Split heavy dashboard/chart route.
 - Remove explicit `any` in chart tooltip formatters.
 - Keep POS route fast and stable.
 
@@ -137,19 +142,19 @@ If Phase 4 adds PWA metadata, expected files are frontend/public assets or Vite-
 - Modify: `frontend/src/AppRoutes.tsx`
 - Modify: `frontend/src/features/dashboard/RevenueBarChart.tsx`
 - Modify: `frontend/src/features/dashboard/PaymentMethodPieChart.tsx`
-- Possibly modify: `frontend/src/features/reports/ReportsView.tsx`
 - Test: `frontend/src/App.test.tsx`
 - Test: `frontend/src/features/reports/ReportsView.test.tsx`
 
 **Steps**
 
-- [ ] Add or adjust a route render test proving lazy route fallback renders and then shows the dashboard/reports route.
-- [ ] Replace chart formatter `any` with Recharts-compatible value/name types, for example `type ChartTooltipValue = string | number | Array<string | number>`.
-- [ ] Convert heavy feature route imports to `React.lazy` in `AppRoutes.tsx`.
-- [ ] Wrap routes with the existing loading state and preserve permission gates.
-- [ ] Run `npm.cmd run typecheck`; expected result: pass.
-- [ ] Run `npm.cmd run lint`; expected result: pass.
-- [ ] Run `npm.cmd run build`; expected result: pass and chunks still build without route regressions.
+- [x] Add or adjust route coverage proving active modules render without mounting unrelated views.
+- [x] Replace chart formatter `any` with Recharts-compatible value/name types, for example `type ChartTooltipValue = string | number | Array<string | number>`.
+- [x] Convert the dashboard feature route import to `React.lazy` in `AppRoutes.tsx`.
+- [x] Wrap routes with the existing loading state and preserve permission gates.
+- [x] Run `npm.cmd run typecheck`; expected result: pass.
+- [x] Run `npm.cmd run lint`; expected result: pass.
+- [x] Run `npm.cmd run test`; expected result: pass.
+- [x] Run `npm.cmd run build`; expected result: pass and chunks still build without route regressions.
 - [ ] Commit: `perf(frontend): split heavy operational routes`.
 
 **Risks**
@@ -158,7 +163,7 @@ If Phase 4 adds PWA metadata, expected files are frontend/public assets or Vite-
 
 **Acceptance Criteria**
 
-- POS remains reachable without chart dependencies in its initial route.
+- POS remains reachable without dashboard route code in its initial route.
 - No explicit `any` remains in the dashboard chart tooltip formatters.
 - Build output shows route or chart chunks separated cleanly.
 
