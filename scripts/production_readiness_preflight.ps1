@@ -80,16 +80,11 @@ function Test-ExecutableCandidate([string] $candidate) {
         return $false
     }
 
-    $stdoutPath = [System.IO.Path]::GetTempFileName()
-    $stderrPath = [System.IO.Path]::GetTempFileName()
-
     try {
-        $process = Start-Process -FilePath $candidate -ArgumentList "--version" -NoNewWindow -PassThru -Wait -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
-        return $process.ExitCode -eq 0
+        & $candidate --version *> $null
+        return $LASTEXITCODE -eq 0
     } catch {
         return $false
-    } finally {
-        Remove-Item -LiteralPath $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
     }
 }
 
@@ -101,6 +96,31 @@ function Find-FirstExecutableCandidate([string[]] $candidates) {
     }
 
     return $null
+}
+
+function Test-IsWindowsHost {
+    return $env:OS -eq "Windows_NT" -or $PSVersionTable.Platform -eq "Win32NT" -or $null -ne (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue)
+}
+
+function Test-BackupScheduledTask([string] $taskName, [string[]] $AllowedStates) {
+    if ($null -eq (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue)) {
+        Add-Failure "Get-ScheduledTask is not available; cannot validate Windows backup task $taskName"
+        return
+    }
+
+    $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    if ($null -eq $task) {
+        Add-Failure "Windows scheduled task '$taskName' is not installed."
+        return
+    }
+
+    if ($AllowedStates -notcontains [string] $task.State) {
+        Add-Failure "Windows scheduled task '$taskName' must be $($AllowedStates -join ' or '), current state is '$($task.State)'."
+        return
+    }
+
+    $info = Get-ScheduledTaskInfo -TaskName $taskName
+    Add-Pass "Windows scheduled task '$taskName' state=$($task.State), lastResult=$($info.LastTaskResult), nextRun=$($info.NextRunTime)"
 }
 
 function Normalize-ProofContent([string] $content) {
@@ -205,18 +225,29 @@ function Test-ProofFile([string] $path, [string] $proofName, [string[]] $require
     Add-Pass "$proofName evidence is present and completed."
 }
 
-function Invoke-RouteCheck([string] $url, [string] $label, [int[]] $AllowedStatusCodes = @(200)) {
-    try {
-        $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 15
-        if ($AllowedStatusCodes -contains [int] $response.StatusCode) {
-            Add-Pass "$label responded $($response.StatusCode)"
-            return
+function Invoke-RouteCheck([string] $url, [string] $label, [int[]] $AllowedStatusCodes = @(200), [int] $Attempts = 3) {
+    $lastError = ""
+
+    for ($attempt = 1; $attempt -le $Attempts; $attempt++) {
+        try {
+            $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 15
+            if ($AllowedStatusCodes -contains [int] $response.StatusCode) {
+                $attemptSuffix = if ($attempt -eq 1) { "" } else { " after $attempt attempts" }
+                Add-Pass "$label responded $($response.StatusCode)$attemptSuffix"
+                return
+            }
+
+            $lastError = "unexpected status $($response.StatusCode)"
+        } catch {
+            $lastError = $_.Exception.Message
         }
 
-        Add-Failure "$label returned unexpected status $($response.StatusCode)"
-    } catch {
-        Add-Failure "$label failed: $($_.Exception.Message)"
+        if ($attempt -lt $Attempts) {
+            Start-Sleep -Seconds 2
+        }
     }
+
+    Add-Failure "$label failed after $Attempts attempts: $lastError"
 }
 
 $backendDir = Join-Path $ProjectRoot "backend"
@@ -284,6 +315,13 @@ if ($queueConnection -eq "database") {
     Add-Pass "QUEUE_CONNECTION=database"
 } else {
     Add-Warning "QUEUE_CONNECTION is '$queueConnection'. Backups queued from UI need a durable local queue worker."
+}
+
+if (Test-IsWindowsHost) {
+    Test-BackupScheduledTask "HospitalBillingOS-BackupWorker" @("Ready", "Running")
+    Test-BackupScheduledTask "HospitalBillingOS-DailyBackup" @("Ready", "Running")
+} else {
+    Add-Warning "Non-Windows host detected. Validate an equivalent continuous backup worker/service before production handoff."
 }
 
 if (Test-Path -LiteralPath (Join-Path $frontendDist "index.html")) {
@@ -411,6 +449,47 @@ if ($AllowMissingPhysicalProof) {
             "Reprint",
             "headers/footers",
             "historical"
+        )
+
+    Test-ProofFile `
+        -path (Join-Path $ProjectRoot "qa\FINAL_RESTORE_PROOF.md") `
+        -proofName "final restore" `
+        -requiredFields @(
+            "Date/time",
+            "Responsible person",
+            "Source database",
+            "Disposable restore database",
+            "Backup file",
+            "Backup SHA256",
+            "Backup size bytes",
+            "Evidence/capture reference",
+            "Final conclusion"
+        ) `
+        -requiredChecks @(
+            "Disposable restore database",
+            "Backup file",
+            "Restore imports",
+            "Migration table",
+            "Services table",
+            "Core counts"
+        )
+
+    Test-ProofFile `
+        -path (Join-Path $ProjectRoot "qa\FINAL_CONCURRENCY_PROOF.md") `
+        -proofName "final concurrency" `
+        -requiredFields @(
+            "Date/time",
+            "Responsible person",
+            "Server LAN URL",
+            "Target environment",
+            "Run ID",
+            "Evidence/capture reference",
+            "Final conclusion"
+        ) `
+        -requiredChecks @(
+            "Double cash-session open",
+            "Concurrent invoice emission",
+            "Double payment"
         )
 }
 

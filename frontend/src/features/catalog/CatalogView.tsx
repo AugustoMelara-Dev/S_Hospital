@@ -190,7 +190,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     <section id="catalogo" className="flex flex-col gap-5" aria-labelledby="catalog-title">
       <div className="flex items-center justify-between">
         <div>
-          <h1 id="catalog-title" className="text-2xl font-bold tracking-tight">Catálogo de Servicios</h1>
+          <h1 id="catalog-title" className="text-2xl font-bold tracking-tight">Catalogo de servicios</h1>
           {!canManageCatalog && (
             <p className="mt-1 text-sm text-muted-foreground">
               Cajero puede consultar catalogo y precios, sin permisos para modificar servicios.
@@ -204,11 +204,11 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={openNewCategory}>
               <Plus className="h-4 w-4 mr-2" />
-              Nueva Categoría
+              Nueva categoria
             </Button>
             <Button size="sm" onClick={openNewService}>
               <Plus className="h-4 w-4 mr-2" />
-              Nuevo Servicio
+              Nuevo servicio
             </Button>
           </div>
         )}
@@ -368,7 +368,6 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                       <TableCell className="px-4 py-3">
                         <div className="flex flex-col">
                           <span className="font-medium">{service.name}</span>
-                          <span className="text-xs text-muted-foreground">{service.slug}</span>
                         </div>
                       </TableCell>
                       <TableCell className="px-4 py-3 text-sm">{service.category?.name ?? 'Sin categoría'}</TableCell>
@@ -378,13 +377,13 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                       <TableCell className="px-4 py-3 text-sm text-muted-foreground">
                         <div className="flex flex-col gap-1">
                           {([
-                            ['Scanner', service.scan_code],
+                            ['Escaner', service.scan_code],
                             ['Barra', service.barcode],
                             ['QR', service.qr_code],
                           ] as const)
                             .filter(([, code]) => Boolean(code))
                             .map(([label, code]) => (
-                              <span key={`${service.id}-${label}`} className="font-mono text-xs">
+                              <span key={`${service.id}-${label}`} className="text-xs">
                                 {label}: {code}
                               </span>
                             ))}

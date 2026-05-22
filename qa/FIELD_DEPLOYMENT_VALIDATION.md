@@ -133,6 +133,18 @@ Pendiente para produccion final:
 - Confirmar IP fija o reserva DHCP.
 - Confirmar que los clientes usan `http://192.168.1.7:8000` o nombre local, nunca `localhost`.
 
+Helper operativo agregado:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 `
+  -BaseUrl http://IP_DEL_SERVIDOR `
+  -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+```
+
+El helper solo automatiza `/up`, `/login`, `/verify-email` y asset JS. El
+operador debe completar en navegador real login, caja, factura, pago, recibo,
+historial, reportes y backup `pending` -> `success`.
+
 ## Impresora termica
 
 Estado: PENDING_HARDWARE_VALIDATION.

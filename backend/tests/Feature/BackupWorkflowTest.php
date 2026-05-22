@@ -3,13 +3,11 @@
 namespace Tests\Feature;
 
 use App\Actions\Backups\CreateBackupAction;
-use App\Jobs\RunBackupJob;
 use App\Models\BackupLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -117,30 +115,33 @@ class BackupWorkflowTest extends TestCase
         }
     }
 
-    public function test_manual_backup_endpoint_registers_pending_log_and_queues_local_backup(): void
+    public function test_manual_backup_endpoint_creates_local_backup_immediately(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
-        Queue::fake();
 
         $response = $this->actingAs($admin)
             ->postJson('/api/backups')
-            ->assertAccepted()
-            ->assertJsonPath('data.status', BackupLog::STATUS_PENDING)
+            ->assertCreated()
+            ->assertJsonPath('data.status', BackupLog::STATUS_SUCCESS)
             ->assertJsonPath('data.type', BackupLog::TYPE_MANUAL);
 
         $backup = BackupLog::query()->findOrFail($response->json('data.id'));
 
-        $this->assertSame(BackupLog::STATUS_PENDING, $backup->status);
-        $this->assertNull($backup->completed_at);
-        $this->assertNull($backup->checksum_sha256);
-        $this->assertFalse(Storage::disk('local')->exists((string) $backup->path));
-
-        Queue::assertPushed(RunBackupJob::class);
+        $this->assertSame(BackupLog::STATUS_SUCCESS, $backup->status);
+        $this->assertNotNull($backup->completed_at);
+        $this->assertNotNull($backup->checksum_sha256);
+        $this->assertTrue(Storage::disk('local')->exists((string) $backup->path));
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $admin->id,
             'action' => 'backup.requested',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $backup->id,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'backup.created',
             'entity_type' => BackupLog::class,
             'entity_id' => $backup->id,
         ]);
@@ -172,16 +173,26 @@ class BackupWorkflowTest extends TestCase
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
-        Config::set('database.connections.sqlite.database', '');
-        Config::set('database.connections.sqlite.password', 'secret-db-password');
+        $connection = Config::get('database.default');
+        
+        $originalDb = Config::get("database.connections.{$connection}.database");
+        $originalPassword = Config::get("database.connections.{$connection}.password");
 
-        $backup = app(CreateBackupAction::class)->execute($admin, BackupLog::TYPE_MANUAL);
+        try {
+            Config::set("database.connections.{$connection}.database", 'invalid-db-name');
+            Config::set("database.connections.{$connection}.password", 'secret-db-password');
 
-        $this->assertSame(BackupLog::STATUS_FAILED, $backup->status);
-        $this->assertNotNull($backup->completed_at);
-        $this->assertNull($backup->checksum_sha256);
-        $this->assertStringNotContainsString('secret-db-password', (string) $backup->error_message);
-        $this->assertFalse(Storage::disk('local')->exists((string) $backup->path));
+            $backup = app(CreateBackupAction::class)->execute($admin, BackupLog::TYPE_MANUAL);
+
+            $this->assertSame(BackupLog::STATUS_FAILED, $backup->status);
+            $this->assertNotNull($backup->completed_at);
+            $this->assertNull($backup->checksum_sha256);
+            $this->assertStringNotContainsString('secret-db-password', (string) $backup->error_message);
+            $this->assertFalse(Storage::disk('local')->exists((string) $backup->path));
+        } finally {
+            Config::set("database.connections.{$connection}.database", $originalDb);
+            Config::set("database.connections.{$connection}.password", $originalPassword);
+        }
     }
 
     public function test_download_only_serves_registered_existing_backup_files_and_audits_downloads(): void

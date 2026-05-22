@@ -1,9 +1,14 @@
 <?php
 
-$allowedOrigins = array_filter(array_map('trim', explode(',', env(
-    'CORS_ALLOWED_ORIGINS',
-    'http://localhost:5173,http://127.0.0.1:5173'
-))));
+$defaultLocalOrigins = 'http://localhost:5173,http://127.0.0.1:5173';
+$configuredOrigins = env('CORS_ALLOWED_ORIGINS');
+$originSource = is_string($configuredOrigins) ? trim($configuredOrigins) : '';
+
+if ($originSource === '' && env('APP_ENV') !== 'production') {
+    $originSource = $defaultLocalOrigins;
+}
+
+$allowedOrigins = array_filter(array_map('trim', explode(',', $originSource)));
 
 $allowedOriginPatterns = array_filter(array_map('trim', explode(',', env(
     'CORS_ALLOWED_ORIGIN_PATTERNS',

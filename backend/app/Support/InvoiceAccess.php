@@ -27,6 +27,9 @@ class InvoiceAccess
 
     public function canAccessAnyInvoice(User $user): bool
     {
-        return $user->can('invoices.void');
+        return $user->hasRole(['admin', 'supervisor'])
+            || $user->can('receipts.reprint_any')
+            || $user->can('reports.managerial.view')
+            || $user->can('invoices.void');
     }
 }

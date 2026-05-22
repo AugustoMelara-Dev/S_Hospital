@@ -15,6 +15,9 @@ export type FiscalSettings = {
   rtn: string;
   default_tax_rate: string;
   receipt_width: '80mm' | '58mm';
+  primary_color: 'teal' | 'blue' | 'indigo' | 'green' | 'rose';
+  address?: string;
+  slogan?: string;
 };
 
 export type FiscalSequence = {
@@ -349,6 +352,99 @@ export type BackupLog = {
   creator?: Pick<AuthUser, 'id' | 'name' | 'username'> | null;
 };
 
+export type SystemStatus = {
+  environment: {
+    app_env: string;
+    app_debug: boolean;
+    app_url: string;
+    queue_connection: string;
+    filesystem_disk: string;
+    php_version: string;
+    server_time: string;
+    timezone: string;
+  };
+  database: {
+    connection: string;
+    driver: string;
+    is_mysql_family: boolean;
+  };
+  backups: {
+    pending_count: number;
+    last_success_at: string | null;
+    last_success_filename: string | null;
+    last_failure_at: string | null;
+    last_failure_message: string | null;
+    dump_binary: {
+      configured: boolean;
+      available: boolean;
+      name: string | null;
+    };
+    storage: {
+      writable: boolean;
+      free_bytes: number | null;
+    };
+    queue: {
+      connection: string;
+      jobs_table_available: boolean;
+      failed_jobs_table_available: boolean;
+      failed_jobs_count: number | null;
+      pending_backup_jobs: number | null;
+      worker_command: string;
+      scheduler_command: string;
+    };
+  };
+  runtime: {
+    logs_writable: boolean;
+    cache_writable: boolean;
+    laravel_log: {
+      exists: boolean;
+      size_bytes: number | null;
+      modified_at: string | null;
+    };
+    backup_automation_log: {
+      exists: boolean;
+      size_bytes: number | null;
+      modified_at: string | null;
+    };
+    latest_migration: string | null;
+    migration_count: number | null;
+  };
+  readiness: {
+    state: 'DEMO_READY' | 'PRODUCTION_CANDIDATE' | 'PRODUCTION_READY';
+    production_ready: boolean;
+    blockers: Array<{
+      code: string;
+      label: string;
+      status: 'pending' | 'partial' | 'validated';
+    }>;
+  };
+  preflight: {
+    production_checks: Array<{
+      code: string;
+      label: string;
+      status: 'pending' | 'partial' | 'validated' | 'manual_required';
+      detail: string;
+    }>;
+    public_routes: Array<{
+      path: string;
+      expected: string;
+      status: 'pending' | 'partial' | 'validated' | 'manual_required';
+    }>;
+    physical_proofs: Array<{
+      code: string;
+      label: string;
+      required_file: string;
+      status: 'pending' | 'partial' | 'validated' | 'manual_required';
+      detail: string;
+    }>;
+    commands: {
+      preflight: string;
+      backup_worker: string;
+      scheduler: string;
+    };
+  };
+};
+
 export type PaginatedMeta = {
   current_page: number;
   per_page: number;
@@ -384,4 +480,34 @@ export type ReportFilters = {
   category_id?: string | number | null;
   method?: Payment['method'] | '' | null;
   status?: Invoice['status'] | '' | null;
+};
+
+export type DashboardReport = {
+  last_7_days: Array<{
+    date: string;
+    total_billed: string;
+    total_collected: string;
+    invoice_count: number;
+    payment_count: number;
+  }>;
+  current_month: {
+    total_billed: string;
+    total_collected: string;
+    invoice_count: number;
+    payment_count: number;
+  };
+  payments_by_method: MoneyByMethod;
+  top_services: Array<{
+    service_name: string;
+    category_name: string;
+    quantity: string;
+    total: string;
+  }>;
+  cashiers_summary: Array<{
+    user_id: number;
+    name: string;
+    username: string;
+    payment_count: number;
+    total_collected: string;
+  }>;
 };

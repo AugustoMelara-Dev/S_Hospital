@@ -1,6 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
-import { Badge } from '../../components/ui/badge';
 import { Alert } from '../../components/ui/alert';
 import { PageHeader } from '../../components/ui/page-header';
 import { EmptyState } from '../../components/ui/states';
@@ -101,6 +100,25 @@ export function ReportsView({
   }
 
   async function loadRangeReports() {
+    // Validar rango de fechas en el frontend
+    const d1 = new Date(dateFrom + 'T00:00:00');
+    const d2 = new Date(dateTo + 'T00:00:00');
+    const diffTime = d2.getTime() - d1.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    if (diffDays > 31) {
+      const msg = 'El rango máximo permitido para reportes es de 31 días.';
+      setRangeError(msg);
+      onStatus(msg);
+      return;
+    }
+    if (diffDays < 1) {
+      const msg = 'La fecha de inicio debe ser anterior o igual a la fecha de fin.';
+      setRangeError(msg);
+      onStatus(msg);
+      return;
+    }
+
     setLoading(true);
     setRangeError('');
     onStatus('Cargando reportes por rango...');
@@ -164,26 +182,53 @@ export function ReportsView({
 
   async function downloadBackendExport(filters: ReportFilters) {
     if (!canExport) {
-      onStatus('Exportacion CSV requiere permiso de exportacion de reportes.');
+      onStatus('Exportación Excel requiere permiso de exportación de reportes.');
       return;
     }
 
-    onStatus('Preparando exportacion CSV...');
+    onStatus('Preparando exportación Excel...');
 
     try {
       const blob = await apiClient.downloadReportExport(filters);
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `reporte-hospital-${filters.date_from ?? today}-a-${filters.date_to ?? today}.csv`;
+      anchor.download = `reporte-hospital-${filters.date_from ?? today}-a-${filters.date_to ?? today}.xlsx`;
       anchor.click();
       URL.revokeObjectURL(url);
-      onStatus('Exportacion CSV descargada.');
+      onStatus('Exportación Excel descargada.');
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo exportar el reporte.');
       onStatus(message);
     }
   }
+
+  async function downloadBackendPdf(filters: ReportFilters & { date?: string }) {
+    if (!canExport) {
+      onStatus('Exportación PDF requiere permiso de exportación de reportes.');
+      return;
+    }
+
+    onStatus('Preparando exportación PDF...');
+
+    try {
+      const blob = await apiClient.downloadReportPdf(filters);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      const filename = filters.date 
+        ? `cierre_diario_${filters.date}.pdf`
+        : `cierre_periodo_${filters.date_from}_a_${filters.date_to}.pdf`;
+      anchor.download = filename;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      onStatus('Exportación PDF descargada.');
+    } catch (error) {
+      const message = userSafeErrorMessage(error, 'No se pudo exportar el reporte PDF.');
+      onStatus(message);
+    }
+  }
+
   function handleDailySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void loadDaily(dailyDate);
@@ -198,12 +243,7 @@ export function ReportsView({
     <section id="reportes" aria-labelledby="reports-title">
       <PageHeader
         title="Reportes"
-        description="Gerencia hospitalaria"
-        actions={
-          <Badge variant={loading ? 'outline' : 'secondary'}>
-            {loading ? 'Consultando...' : 'Datos auditables'}
-          </Badge>
-        }
+        description="Ventas, cobros, caja y auditoria en una vista clara."
       />
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ReportTab)} className="space-y-6">
@@ -213,7 +253,7 @@ export function ReportsView({
               <TabsTrigger value="diario">Diario</TabsTrigger>
               <TabsTrigger value="rango">Por Rango</TabsTrigger>
               <TabsTrigger value="servicios">Servicios</TabsTrigger>
-              <TabsTrigger value="auditoria">Auditor�a</TabsTrigger>
+              <TabsTrigger value="auditoria">Auditoría</TabsTrigger>
             </>
           )}
           {canViewCashSessionReport && (
@@ -231,6 +271,7 @@ export function ReportsView({
               loading={loading}
               onDateChange={setDailyDate}
               onExport={() => downloadBackendExport({ date_from: dailyDate, date_to: dailyDate })}
+              onExportPdf={() => downloadBackendPdf({ date: dailyDate, date_from: dailyDate, date_to: dailyDate })}
               onSubmit={handleDailySubmit}
             />
           ) : (
@@ -269,6 +310,7 @@ export function ReportsView({
                 onCashierChange={setCashierId}
                 onMethodChange={setMethod}
                 onExport={() => downloadBackendExport(reportFilters())}
+                onExportPdf={() => downloadBackendPdf(reportFilters())}
                 onStatusChange={setStatus}
                 onSubmit={loadRangeReports}
               />
@@ -292,6 +334,7 @@ export function ReportsView({
               onDateFromChange={setDateFrom}
               onDateToChange={setDateTo}
               onExport={() => downloadBackendExport(reportFilters())}
+              onExportPdf={() => downloadBackendPdf(reportFilters())}
               onSubmit={loadRangeReports}
             />
           ) : (
@@ -312,6 +355,7 @@ export function ReportsView({
               onDateFromChange={setDateFrom}
               onDateToChange={setDateTo}
               onExport={() => downloadBackendExport(reportFilters())}
+              onExportPdf={() => downloadBackendPdf(reportFilters())}
               onSubmit={loadRangeReports}
             />
           ) : (
@@ -352,3 +396,4 @@ function localDateString(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+

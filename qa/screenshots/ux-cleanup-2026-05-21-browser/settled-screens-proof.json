@@ -1,0 +1,18 @@
+[
+  {
+    "name": "reports",
+    "settled": true,
+    "hasMarker": true,
+    "loadingStillVisible": false,
+    "badMatch": null,
+    "consoleIssues": 0
+  },
+  {
+    "name": "settings-fiscal",
+    "settled": true,
+    "hasMarker": true,
+    "loadingStillVisible": false,
+    "badMatch": null,
+    "consoleIssues": 0
+  }
+]

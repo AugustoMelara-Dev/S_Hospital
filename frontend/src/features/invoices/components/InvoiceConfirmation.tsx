@@ -120,7 +120,7 @@ export function InvoiceConfirmation({
             }}
             disabled={submitting}
           >
-            {submitting ? 'Emitiendo...' : willOpenPayment ? 'Emitir y abrir cobro' : 'Confirmar emision'}
+            {submitting ? 'Emitiendo...' : willOpenPayment ? 'Emitir y abrir cobro' : 'Confirmar emisión'}
           </Button>
         </div>
       </div>

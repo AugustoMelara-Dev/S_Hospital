@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 
 const baseUrl = process.env.E2E_REAL_BASE_URL;
 const login = process.env.E2E_REAL_LOGIN;
@@ -6,6 +8,8 @@ const password = process.env.E2E_REAL_PASSWORD;
 const realBaseUrl = baseUrl?.replace(/\/$/, '');
 const allowMutations = process.env.E2E_REAL_ALLOW_MUTATIONS === '1';
 const serviceQuery = process.env.E2E_REAL_SERVICE_QUERY ?? 'Glucosa';
+const reportPath = resolve(process.env.E2E_REAL_REPORT_PATH ?? '../qa/screenshots/real-smoke/real-smoke-report.json');
+const smokeResults: Array<Record<string, unknown>> = [];
 
 test.beforeAll(() => {
   const missing = [
@@ -21,13 +25,28 @@ test.beforeAll(() => {
   }
 });
 
+test.afterAll(() => {
+  mkdirSync(dirname(reportPath), { recursive: true });
+  writeFileSync(reportPath, JSON.stringify({
+    generated_at: new Date().toISOString(),
+    base_url: realBaseUrl,
+    allow_mutations: allowMutations,
+    results: smokeResults,
+  }, null, 2));
+});
+
 test('real hospital workflow surfaces load without console errors', async ({ page }) => {
   const consoleIssues: string[] = [];
+  const routeChecks: Record<string, number> = {};
 
   captureConsoleIssues(page, consoleIssues);
 
-  await expect((await page.request.get(`${realBaseUrl}/up`)).ok()).toBe(true);
-  await expect((await page.request.get(`${realBaseUrl}/verify-email`)).ok()).toBe(true);
+  for (const path of ['/up', '/login', '/verify-email']) {
+    const response = await page.request.get(`${realBaseUrl}${path}`);
+    routeChecks[path] = response.status();
+    await expect(response.ok()).toBe(true);
+  }
+  await expectFirstAssetLoadsAsJavaScript(page);
 
   await loginToRealApp(page);
 
@@ -52,6 +71,13 @@ test('real hospital workflow surfaces load without console errors', async ({ pag
   await expect.poll(() => consoleIssues, {
     message: consoleIssues.join('\n') || 'No console issues captured.',
   }).toHaveLength(0);
+
+  smokeResults.push({
+    name: 'real hospital workflow surfaces load without console errors',
+    status: 'passed',
+    route_checks: routeChecks,
+    console_issues: consoleIssues,
+  });
 });
 
 test('real cashier can issue and collect an invoice against Laravel DB', async ({ page }) => {
@@ -110,6 +136,13 @@ test('real cashier can issue and collect an invoice against Laravel DB', async (
   await expect.poll(() => consoleIssues, {
     message: consoleIssues.join('\n') || 'No console issues captured.',
   }).toHaveLength(0);
+
+  smokeResults.push({
+    name: 'real cashier can issue and collect an invoice against Laravel DB',
+    status: 'passed',
+    patient_name: patientName,
+    console_issues: consoleIssues,
+  });
 });
 
 function captureConsoleIssues(page: Page, consoleIssues: string[]) {
@@ -142,7 +175,18 @@ function captureConsoleIssues(page: Page, consoleIssues: string[]) {
 async function loginToRealApp(page: Page) {
   await page.goto(`${realBaseUrl}/login`);
   await page.getByLabel(/usuario|email/i).fill(login ?? '');
-  await page.getByLabel(/contrasena|contraseña/i).fill(password ?? '');
+  await page.getByLabel(/contrasena|contrase.na|password/i).fill(password ?? '');
   await page.getByRole('button', { name: /entrar|iniciar/i }).click();
   await expect(page.getByRole('heading', { name: /dashboard|caja|reportes/i })).toBeVisible();
+}
+
+async function expectFirstAssetLoadsAsJavaScript(page: Page) {
+  const loginResponse = await page.request.get(`${realBaseUrl}/login`);
+  const html = await loginResponse.text();
+  const assetMatch = html.match(/<script[^>]+src="(?<src>\/assets\/[^"]+\.js)"/i);
+  expect(assetMatch?.groups?.src, 'login HTML should reference a built JS asset').toBeTruthy();
+
+  const assetResponse = await page.request.get(`${realBaseUrl}${assetMatch?.groups?.src}`);
+  expect(assetResponse.ok()).toBe(true);
+  expect(assetResponse.headers()['content-type'] ?? '').toContain('javascript');
 }

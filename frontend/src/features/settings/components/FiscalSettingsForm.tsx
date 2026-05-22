@@ -14,6 +14,9 @@ const settingsFormSchema = z.object({
   hospital_name: z.string().min(1, 'El nombre del hospital es requerido'),
   rtn: z.string(),
   receipt_width: z.enum(['80mm', '58mm']),
+  primary_color: z.enum(['teal', 'blue', 'indigo', 'green', 'rose']),
+  address: z.string().optional(),
+  slogan: z.string().optional(),
 });
 
 type SettingsFormData = z.infer<typeof settingsFormSchema>;
@@ -57,6 +60,9 @@ export function FiscalSettingsForm({
       hospital_name: settings?.hospital_name ?? '',
       rtn: settings?.rtn ?? '',
       receipt_width: settings?.receipt_width ?? '80mm',
+      primary_color: settings?.primary_color ?? 'indigo',
+      address: settings?.address ?? '',
+      slogan: settings?.slogan ?? '',
     },
   });
 
@@ -89,16 +95,16 @@ export function FiscalSettingsForm({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Información del Hospital</CardTitle>
+          <CardTitle>Hospital y recibo</CardTitle>
           <CardDescription>
-            Estos datos aparecerán en los recibos térmicos.
+            Estos datos aparecen en recibos, facturas impresas y pantalla de ingreso.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmitSettings(handleSettingsSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="hospital_name">Nombre del Hospital *</Label>
+                <Label htmlFor="hospital_name">Nombre del hospital *</Label>
                 <Input
                   id="hospital_name"
                   {...registerSettings('hospital_name')}
@@ -121,25 +127,72 @@ export function FiscalSettingsForm({
               </div>
             </div>
 
-            <div className="w-[200px]">
-              <Label htmlFor="receipt_width">Ancho de Recibo</Label>
-              <Select
-                value={watchSettings('receipt_width')}
-                onValueChange={(v: string) => setValueSettings('receipt_width', v as '80mm' | '58mm')}
-              >
-                <SelectTrigger id="receipt_width">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="80mm">80mm (Estándar)</SelectItem>
-                  <SelectItem value="58mm">58mm (Angosto)</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="address">Direccion del hospital</Label>
+                <Input
+                  id="address"
+                  {...registerSettings('address')}
+                  placeholder="Barrio Centro, Avenida Principal..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="slogan">Eslogan o Lema</Label>
+                <Input
+                  id="slogan"
+                  {...registerSettings('slogan')}
+                  placeholder="Al servicio de tu salud..."
+                />
+              </div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <div className="w-full">
+                <Label htmlFor="receipt_width">Ancho de Recibo</Label>
+                <Select
+                  value={watchSettings('receipt_width')}
+                  onValueChange={(v: string) => setValueSettings('receipt_width', v as '80mm' | '58mm')}
+                >
+                  <SelectTrigger id="receipt_width">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="80mm">80mm (Estándar)</SelectItem>
+                    <SelectItem value="58mm">58mm (Angosto)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+                <Label>Color de marca</Label>
+              <div className="flex flex-wrap gap-3">
+                {([
+                  { id: 'indigo', name: 'Índigo', color: 'bg-indigo-600' },
+                  { id: 'blue', name: 'Azul Clínico', color: 'bg-blue-600' },
+                  { id: 'teal', name: 'Turquesa', color: 'bg-teal-600' },
+                  { id: 'green', name: 'Verde Médico', color: 'bg-green-600' },
+                  { id: 'rose', name: 'Rosa Cálido', color: 'bg-rose-600' },
+                ] as const).map((c) => (
+                  <Button
+                    key={c.id}
+                    type="button"
+                    variant={watchSettings('primary_color') === c.id ? 'secondary' : 'outline'}
+                    disabled={!canEdit}
+                    onClick={() => setValueSettings('primary_color', c.id)}
+                    className="gap-2"
+                  >
+                    <span className={`h-4.5 w-4.5 rounded-full ${c.color} shadow-sm`} />
+                    {c.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4 border-t">
               <Button type="submit" disabled={!canEdit}>
-                Guardar Información
+                Guardar hospital y recibo
               </Button>
             </div>
           </form>
@@ -148,9 +201,9 @@ export function FiscalSettingsForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>Secuencia Fiscal</CardTitle>
+          <CardTitle>Numeracion de facturas</CardTitle>
           <CardDescription>
-            Configure la secuencia de facturación autorizada por la autoridad fiscal.
+            Configure el rango autorizado para emitir facturas.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -237,7 +290,7 @@ export function FiscalSettingsForm({
 
             <div className="flex justify-end">
               <Button type="submit" disabled={!canEdit}>
-                Guardar Secuencia
+                Guardar numeracion
               </Button>
             </div>
           </form>

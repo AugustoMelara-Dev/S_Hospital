@@ -47,33 +47,69 @@ class IncomeReportService
                 });
             });
 
-        $collectedExpression = ! empty($filters['category_id'])
-            ? 'COALESCE(SUM(ROUND(payments.amount * 100 * (
-                SELECT COALESCE(SUM(invoice_items.line_total), 0)
-                FROM invoice_items
-                WHERE invoice_items.invoice_id = invoices.id
-                AND invoice_items.category_id = ?
-            ) / NULLIF(invoices.total, 0))), 0) as collected_cents'
-            : 'COALESCE(SUM(ROUND(payments.amount * 100)), 0) as collected_cents';
-        $collectedBindings = ! empty($filters['category_id']) ? [$filters['category_id']] : [];
+        $payments = (clone $base)
+            ->select('payments.*')
+            ->with(['invoice.items'])
+            ->get();
 
-        $summary = (clone $base)
-            ->selectRaw('COUNT(*) as payment_count')
-            ->selectRaw('COUNT(DISTINCT payments.invoice_id) as invoice_count')
-            ->selectRaw($collectedExpression, $collectedBindings)
-            ->first();
-
+        $totalCents = 0;
+        $paymentCount = $payments->count();
+        $invoiceIds = [];
         $methods = $this->zeroMethodTotals();
-        (clone $base)
-            ->groupBy('payments.method')
-            ->select('payments.method')
-            ->selectRaw(str_replace(' as collected_cents', ' as total_cents', $collectedExpression), $collectedBindings)
-            ->get()
-            ->each(function (object $row) use (&$methods): void {
-                if (array_key_exists($row->method, $methods)) {
-                    $methods[$row->method] = $this->centsToMoney($row->total_cents);
+        $methodCents = array_fill_keys(array_keys($methods), 0);
+
+        foreach ($payments as $payment) {
+            $invoiceIds[] = $payment->invoice_id;
+            $invoice = $payment->invoice;
+            $paymentAmountCents = (int) round(((float) $payment->amount) * 100);
+
+            if (! empty($filters['category_id'])) {
+                $categoryTotal = 0.0;
+                if ($invoice) {
+                    foreach ($invoice->items as $item) {
+                        if ((int) $item->category_id === (int) $filters['category_id']) {
+                            $categoryTotal += (float) $item->line_total;
+                        }
+                    }
+                    $invoiceTotal = (float) $invoice->total;
+                    if ($invoiceTotal > 0) {
+                        $collectedCents = (int) round($paymentAmountCents * ($categoryTotal / $invoiceTotal));
+                    } else {
+                        $collectedCents = 0;
+                    }
+                } else {
+                    $collectedCents = 0;
                 }
-            });
+            } else {
+                $collectedCents = $paymentAmountCents;
+            }
+
+            $totalCents += $collectedCents;
+
+            if (array_key_exists($payment->method, $methodCents)) {
+                $methodCents[$payment->method] += $collectedCents;
+            }
+        }
+
+        foreach ($methodCents as $method => $cents) {
+            if (array_key_exists($method, $methods)) {
+                $methods[$method] = $this->centsToMoney($cents);
+            }
+        }
+
+        $invoiceCount = count(array_unique($invoiceIds));
+
+        $billedCents = Invoice::query()
+            ->where('status', '!=', Invoice::STATUS_VOID)
+            ->whereBetween('issued_at', [$start, $end])
+            ->when(! empty($filters['user_id']), function (Builder $query) use ($filters): void {
+                $query->where('issued_by', $filters['user_id']);
+            })
+            ->when(! empty($filters['cash_session_id']), function (Builder $query) use ($filters): void {
+                $query->where('cash_session_id', $filters['cash_session_id']);
+            })
+            ->selectRaw('COALESCE(SUM(ROUND(total * 100)), 0) as billed_cents')
+            ->value('billed_cents');
 
         return [
             'date_from' => $filters['date_from'],
@@ -87,10 +123,11 @@ class IncomeReportService
                 'method' => $filters['method'] ?? null,
                 'status' => $filters['status'] ?? null,
             ],
-            'total_collected' => $this->centsToMoney($summary?->collected_cents),
+            'total_billed' => $this->centsToMoney($billedCents),
+            'total_collected' => $this->centsToMoney($totalCents),
             'payments_by_method' => $methods,
-            'payment_count' => (int) ($summary?->payment_count ?? 0),
-            'invoice_count' => (int) ($summary?->invoice_count ?? 0),
+            'payment_count' => (int) ($paymentCount ?? 0),
+            'invoice_count' => (int) ($invoiceCount ?? 0),
         ];
     }
 }

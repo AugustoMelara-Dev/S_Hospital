@@ -44,7 +44,9 @@ class ProductionSpaRouteTest extends TestCase
                 '/invoices',
                 '/reports',
                 '/backups',
+                '/help',
                 '/settings/fiscal',
+                '/admin/users',
             ] as $route) {
                 $this->get($route)
                     ->assertOk()

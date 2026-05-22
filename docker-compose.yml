@@ -2,8 +2,6 @@ services:
   backend:
     build:
       context: ./backend
-    env_file:
-      - ./backend/.env.docker.example
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
@@ -14,12 +12,13 @@ services:
       DB_DATABASE: ${DB_DATABASE:-hospital_billing}
       DB_USERNAME: ${DB_USERNAME:-hospital}
       DB_PASSWORD: ${DB_PASSWORD:-hospital_dev}
-      CACHE_STORE: database
+      CACHE_STORE: file
       QUEUE_CONNECTION: database
       SESSION_DRIVER: database
     volumes:
       - ./backend:/var/www/html
       - backend_vendor:/var/www/html/vendor
+      - ./frontend/dist:/var/www/frontend/dist
     ports:
       - "${APP_PORT:-8000}:8000"
     depends_on:

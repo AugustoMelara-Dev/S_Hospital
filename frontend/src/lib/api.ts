@@ -6,6 +6,8 @@ import { cash } from './api/cash';
 import { reports } from './api/reports';
 import { backups } from './api/backups';
 import { fiscal } from './api/fiscal';
+import { system } from './api/system';
+import { users, type UserPayload } from './api/users';
 import type {
   AuthUser,
   FiscalSettings,
@@ -29,10 +31,12 @@ import type {
   OperationsReport,
   CashSessionReport,
   BackupLog,
+  SystemStatus,
   PaginatedMeta,
   ServiceFilters,
   InvoiceFilters,
   ReportFilters,
+  DashboardReport,
 } from './api/types';
 
 export {
@@ -46,6 +50,8 @@ export {
   reports,
   backups,
   fiscal,
+  system,
+  users,
 };
 export type {
   AuthUser,
@@ -70,16 +76,39 @@ export type {
   OperationsReport,
   CashSessionReport,
   BackupLog,
+  SystemStatus,
   PaginatedMeta,
   ServiceFilters,
   InvoiceFilters,
   ReportFilters,
+  DashboardReport,
+  UserPayload,
 };
 
 
 
 export const apiClient = {
   ...baseClient,
+
+  async getUsers(): Promise<AuthUser[]> {
+    return users.getUsers();
+  },
+
+  async createUser(payload: UserPayload): Promise<AuthUser> {
+    return users.createUser(payload);
+  },
+
+  async updateUser(id: number, payload: Omit<UserPayload, 'password'>): Promise<AuthUser> {
+    return users.updateUser(id, payload);
+  },
+
+  async toggleUserActive(id: number): Promise<AuthUser> {
+    return users.toggleActive(id);
+  },
+
+  async resetUserPassword(id: number, password: string): Promise<AuthUser> {
+    return users.resetPassword(id, password);
+  },
 
   async getCategories(active?: boolean): Promise<Category[]> {
     return catalog.getCategories(active);
@@ -147,6 +176,10 @@ export const apiClient = {
     return cash.closeCashSession(id, payload);
   },
 
+  async getDashboardReport(): Promise<DashboardReport> {
+    return reports.getDashboardReport();
+  },
+
   async getDailyReport(date?: string): Promise<DailyReport> {
     return reports.getDailyReport(date);
   },
@@ -179,6 +212,10 @@ export const apiClient = {
     return reports.downloadExport(filters);
   },
 
+  async downloadReportPdf(filters: ReportFilters & { date?: string }): Promise<Blob> {
+    return reports.downloadPdf(filters);
+  },
+
   async getBackups(filters: { page?: number; perPage?: number; status?: BackupLog['status'] | 'all' } = {}): Promise<{ data: BackupLog[]; meta: PaginatedMeta }> {
     return backups.getBackups(filters);
   },
@@ -195,6 +232,10 @@ export const apiClient = {
     return backups.downloadBackup(id);
   },
 
+  async getSystemStatus(): Promise<SystemStatus> {
+    return system.getStatus();
+  },
+
   async getFiscalSettings(): Promise<FiscalSettings | null> {
     return fiscal.getFiscalSettings();
   },
@@ -209,6 +250,14 @@ export const apiClient = {
 
   async saveFiscalSequence(payload: FiscalSequence): Promise<FiscalSequence> {
     return fiscal.saveFiscalSequence(payload);
+  },
+
+  async getLogo(): Promise<string | null> {
+    return fiscal.getLogo();
+  },
+
+  async uploadLogo(file: File): Promise<string> {
+    return fiscal.uploadLogo(file);
   },
 
   async login(login: string, password: string): Promise<AuthUser> {

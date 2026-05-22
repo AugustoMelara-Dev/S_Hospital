@@ -1,0 +1,188 @@
+[
+  {
+    "module": "dashboard",
+    "route": "/dashboard",
+    "url": "http://127.0.0.1:8000/dashboard",
+    "title": "Hospital Billing OS",
+    "hasExpected": true,
+    "stillOnLogin": false,
+    "loadingStillVisible": false,
+    "technicalMatches": [
+      "/Hospital Billing OS/i"
+    ],
+    "visibleLogoutMatches": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-live-auth-2026-05-21-browser\\dashboard.png",
+    "consoleIssues": 0,
+    "consoleSamples": [],
+    "textSample": "Omitir al contenido principal\n\nCaja hospitalaria\n\nSin caja\n\nInicio\nNueva Factura\nCaja\nCatálogo\nHistorial\nReportes\nRespaldos\nConfiguración\nUsuarios\nAyuda\n\nAdmin Demo\n\nadmin\n\nOperación en red local\nCaja hospitalaria\nInicio\nLAN conectado\n10:12:20\nA\nAdmin Demo\n\nPANEL HOSPITALARIO\n\nInicio\n\nResumen operativo para caja, cobros y reportes del hospital.\n\nCAJA OPERATIVA\nAtención\nInactiva\nDebe abrir caja antes de facturar\nFACTURADO (MES)\nListo\nResumen mensual de facturación\nRECAUDADO (MES)\nListo\nRecaudaciones acumuladas del mes\nMÓDULOS DISPONIBLES\nActivo\n7 activos\nFunciones autorizadas para su rol\nTendencia Operativa (Últimos 7 Días)\n\nComparativa entre monto facturado y montos cobrados en caja.\n\nCierre"
+  },
+  {
+    "module": "billing-new",
+    "route": "/billing/new",
+    "url": "http://127.0.0.1:8000/billing/new",
+    "title": "Hospital Billing OS",
+    "hasExpected": true,
+    "stillOnLogin": false,
+    "loadingStillVisible": true,
+    "technicalMatches": [
+      "/Hospital Billing OS/i"
+    ],
+    "visibleLogoutMatches": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-live-auth-2026-05-21-browser\\billing-new.png",
+    "consoleIssues": 0,
+    "consoleSamples": [],
+    "textSample": "Omitir al contenido principal\n\nCaja hospitalaria\n\nSin caja\n\nInicio\nNueva Factura\nCaja\nCatálogo\nHistorial\nReportes\nRespaldos\nConfiguración\nUsuarios\nAyuda\n\nAdmin Demo\n\nadmin\n\nOperación en red local\nCaja hospitalaria\nInicio\n/\nFacturación\n/\nNueva Factura\nLAN conectado\n10:12:24\nA\nAdmin Demo\n\nCAJA HOSPITALARIA\n\nNueva factura\n\nPOS hospitalario\n\nCaja cerrada\n\nCaja no abierta\n\nDebe abrir la caja antes de emitir facturas.\nAbrir Caja\nNombre del Paciente *\nEscanear\nCategoria\nTodos\nServicios (0)\nLimpiar\nCargando servicios...\nCarrito\n\nNo hay servicios agregados\n\nSubtotal:\nL. 0.00\nISV (15%):\nL. 0.00\nTotal:\nL. 0.00\nAgregue servicios\n\nAbra caja antes de emitir y cobrar una factura.\n\nIngrese el nombre del pac"
+  },
+  {
+    "module": "cashbox",
+    "route": "/cashbox",
+    "url": "http://127.0.0.1:8000/cashbox",
+    "title": "Hospital Billing OS",
+    "hasExpected": true,
+    "stillOnLogin": false,
+    "loadingStillVisible": false,
+    "technicalMatches": [
+      "/Hospital Billing OS/i"
+    ],
+    "visibleLogoutMatches": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-live-auth-2026-05-21-browser\\cashbox.png",
+    "consoleIssues": 0,
+    "consoleSamples": [],
+    "textSample": "Omitir al contenido principal\n\nCaja hospitalaria\n\nSin caja\n\nInicio\nNueva Factura\nCaja\nCatálogo\nHistorial\nReportes\nRespaldos\nConfiguración\nUsuarios\nAyuda\n\nAdmin Demo\n\nadmin\n\nOperación en red local\nCaja hospitalaria\nInicio\n/\nCaja\nLAN conectado\n10:12:31\nA\nAdmin Demo\n\nOperación de caja\n\nCaja\nActualizar\nCaja Cerrada\n\nNo hay una caja abierta actualmente\n\nCerrada\nPagos bloqueados. Abra caja antes de emitir y cobrar facturas.\nAbrir Caja\n\nIngrese el efectivo real disponible al iniciar. Puede ser L.0.00.\n\nMonto Inicial (L.) *\n\nEl monto inicial debe registrar el efectivo disponible en la caja al abrir.\n\nAbrir Caja\n\nSesión activa."
+  },
+  {
+    "module": "catalog",
+    "route": "/catalog",
+    "url": "http://127.0.0.1:8000/catalog",
+    "title": "Hospital Billing OS",
+    "hasExpected": true,
+    "stillOnLogin": false,
+    "loadingStillVisible": false,
+    "technicalMatches": [
+      "/Hospital Billing OS/i"
+    ],
+    "visibleLogoutMatches": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-live-auth-2026-05-21-browser\\catalog.png",
+    "consoleIssues": 0,
+    "consoleSamples": [],
+    "textSample": "Omitir al contenido principal\n\nCaja hospitalaria\n\nSin caja\n\nInicio\nNueva Factura\nCaja\nCatálogo\nHistorial\nReportes\nRespaldos\nConfiguración\nUsuarios\nAyuda\n\nAdmin Demo\n\nadmin\n\nOperación en red local\nCaja hospitalaria\nInicio\n/\nCatálogo\nLAN conectado\n10:12:36\nA\nAdmin Demo\nCatálogo de Servicios\n\n0 servicios en el catálogo\n\nNueva Categoría\nNuevo Servicio\nTodas las categorías\nTodos\nNombre\tCategoría\tPrecio\tCódigo\tEstado\tAcciones\n\n\t\n\t\n\t\n\t\n\t\n\n\n\t\n\t\n\t\n\t\n\t\n\n\n\t\n\t\n\t\n\t\n\t\n\n\n\t\n\t\n\t\n\t\n\t\n\n\n\t\n\t\n\t\n\t\n\t\nMostrando 0 de 0 servicios\n15 por pág\nAnterior\nPagina 1 de 1\nSiguiente\n\nSesión activa."
+  },
+  {
+    "module": "invoices",
+    "route": "/invoices",
+    "url": "http://127.0.0.1:8000/invoices",
+    "title": "Hospital Billing OS",
+    "hasExpected": true,
+    "stillOnLogin": false,
+    "loadingStillVisible": false,
+    "technicalMatches": [
+      "/Hospital Billing OS/i"
+    ],
+    "visibleLogoutMatches": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-live-auth-2026-05-21-browser\\invoices.png",
+    "consoleIssues": 0,
+    "consoleSamples": [],
+    "textSample": "Omitir al contenido principal\n\nCaja hospitalaria\n\nCaja #73 abierta\n\nInicio\nNueva Factura\nCaja\nCatálogo\nHistorial\nReportes\nRespaldos\nConfiguración\nUsuarios\nAyuda\n\nAdmin Demo\n\nadmin\n\nOperación en red local\nCaja hospitalaria\nInicio\n/\nHistorial\nLAN conectado\n10:12:40\nA\nAdmin Demo\nHistorial de facturas\n\nConsulte facturas recientes, reimprima recibos y gestione anulaciones autorizadas.\n\nDesde\nHasta\nHoy\nAyer\n7D\nEste mes\nEstado\nTodos\nTodos\nEmitida\nParcial\nPagada\nAnulada\nPaciente\nNúmero de factura\nBuscando...\nLimpiar\nNo.\tFecha\tPaciente\tTotal\tPagado\tEstado\tAcciones\n\n\t\n\t\n\t\n\t\n\t\n\t\n\n\n\t\n\t\n\t\n\t\n\t\n\t\n\n\n\t\n\t\n\t\n\t\n\t\n\t\n\n\n\t\n\t\n\t\n\t\n\t\n\t\n\n\n\t\n\t\n\t\n\t\n\t\n\t\n\nSesión activa."
+  },
+  {
+    "module": "reports",
+    "route": "/reports",
+    "url": "http://127.0.0.1:8000/reports",
+    "title": "Hospital Billing OS",
+    "hasExpected": true,
+    "stillOnLogin": false,
+    "loadingStillVisible": true,
+    "technicalMatches": [
+      "/Hospital Billing OS/i"
+    ],
+    "visibleLogoutMatches": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-live-auth-2026-05-21-browser\\reports.png",
+    "consoleIssues": 0,
+    "consoleSamples": [],
+    "textSample": "Omitir al contenido principal\n\nCaja hospitalaria\n\nSin caja\n\nInicio\nNueva Factura\nCaja\nCatálogo\nHistorial\nReportes\nRespaldos\nConfiguración\nUsuarios\nAyuda\n\nAdmin Demo\n\nadmin\n\nOperación en red local\nCaja hospitalaria\nInicio\n/\nReportes\nLAN conectado\n10:12:44\nA\nAdmin Demo\n\nPANEL HOSPITALARIO\n\nReportes\n\nGerencia hospitalaria\n\nConsultando...\nDiario\nPor Rango\nServicios\nAuditoría\nCaja\nReporte diario\nFecha diaria\nConsultando...\n\nCargando reporte diario..."
+  },
+  {
+    "module": "backups",
+    "route": "/backups",
+    "url": "http://127.0.0.1:8000/backups",
+    "title": "Hospital Billing OS",
+    "hasExpected": true,
+    "stillOnLogin": false,
+    "loadingStillVisible": true,
+    "technicalMatches": [
+      "/Hospital Billing OS/i"
+    ],
+    "visibleLogoutMatches": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-live-auth-2026-05-21-browser\\backups.png",
+    "consoleIssues": 0,
+    "consoleSamples": [],
+    "textSample": "Omitir al contenido principal\n\nCaja hospitalaria\n\nCaja #73 abierta\n\nInicio\nNueva Factura\nCaja\nCatálogo\nHistorial\nReportes\nRespaldos\nConfiguración\nUsuarios\nAyuda\n\nAdmin Demo\n\nadmin\n\nOperación en red local\nCaja hospitalaria\nInicio\n/\nBackups\nLAN conectado\n10:12:48\nA\nAdmin Demo\n\nPANEL HOSPITALARIO\n\nRespaldos\n\nCopias de seguridad de facturación, caja y reportes\n\nActualizar\nCrear respaldo\nRespaldos del hospital\n\nLos respaldos protegen la información de facturación, caja y reportes. Cree uno antes de cambios importantes y confirme que quede completado.\n\nSin pendientes\n\nNo hay pendientes en esta página\n\nSin respaldos\n\nSin respaldos completados en esta página\n\nSin fallos\n\nSin fallos en esta página\n\nC"
+  },
+  {
+    "module": "settings-fiscal",
+    "route": "/settings/fiscal",
+    "url": "http://127.0.0.1:8000/settings/fiscal",
+    "title": "Hospital Billing OS",
+    "hasExpected": true,
+    "stillOnLogin": false,
+    "loadingStillVisible": true,
+    "technicalMatches": [
+      "/Hospital Billing OS/i"
+    ],
+    "visibleLogoutMatches": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-live-auth-2026-05-21-browser\\settings-fiscal.png",
+    "consoleIssues": 0,
+    "consoleSamples": [],
+    "textSample": "Omitir al contenido principal\n\nCaja hospitalaria\n\nSin caja\n\nInicio\nNueva Factura\nCaja\nCatálogo\nHistorial\nReportes\nRespaldos\nConfiguración\nUsuarios\nAyuda\n\nAdmin Demo\n\nadmin\n\nOperación en red local\nCaja hospitalaria\nInicio\n/\nConfiguración\n/\nFiscal\nLAN conectado\n10:12:52\nA\nAdmin Demo\nCargando configuración fiscal...\n\nSesión activa."
+  },
+  {
+    "module": "users",
+    "route": "/admin/users",
+    "url": "http://127.0.0.1:8000/admin/users",
+    "title": "Hospital Billing OS",
+    "hasExpected": true,
+    "stillOnLogin": false,
+    "loadingStillVisible": true,
+    "technicalMatches": [
+      "/Hospital Billing OS/i"
+    ],
+    "visibleLogoutMatches": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-live-auth-2026-05-21-browser\\users.png",
+    "consoleIssues": 0,
+    "consoleSamples": [],
+    "textSample": "Omitir al contenido principal\n\nCaja hospitalaria\n\nCaja #73 abierta\n\nInicio\nNueva Factura\nCaja\nCatálogo\nHistorial\nReportes\nRespaldos\nConfiguración\nUsuarios\nAyuda\n\nAdmin Demo\n\nadmin\n\nOperación en red local\nCaja hospitalaria\nInicio\n/\nAdministración\n/\nUsuarios\nLAN conectado\n10:12:55\nA\nAdmin Demo\nCargando usuarios...\n\nSesión activa."
+  },
+  {
+    "module": "help",
+    "route": "/help",
+    "url": "http://127.0.0.1:8000/help",
+    "title": "Hospital Billing OS",
+    "hasExpected": true,
+    "stillOnLogin": false,
+    "loadingStillVisible": false,
+    "technicalMatches": [
+      "/Hospital Billing OS/i"
+    ],
+    "visibleLogoutMatches": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-live-auth-2026-05-21-browser\\help.png",
+    "consoleIssues": 0,
+    "consoleSamples": [],
+    "textSample": "Omitir al contenido principal\n\nCaja hospitalaria\n\nCaja #73 abierta\n\nInicio\nNueva Factura\nCaja\nCatálogo\nHistorial\nReportes\nRespaldos\nConfiguración\nUsuarios\nAyuda\n\nAdmin Demo\n\nadmin\n\nOperación en red local\nCaja hospitalaria\nInicio\n/\nAyuda\nLAN conectado\n10:13:00\nA\nAdmin Demo\n\nPANEL HOSPITALARIO\n\nAyuda\n\nGuía operativa para caja hospitalaria, recibos, reportes y respaldos.\n\nManual interno\nAbrir caja\n\nPasos principales\n\n1\nEntre a Caja\n2\nRegistre el efectivo inicial\n3\nConfirme la apertura\n4\nRevise que la caja quede activa\nCrear factura\n\nPasos principales\n\n1\nEntre a Nueva Factura\n2\nEscriba el nombre del paciente\n3\nBusque por nombre, categoría o código\n4\nRevise el carrito antes de emitir\nCobrar\n\nPaso"
+  },
+  {
+    "module": "dashboard-user-menu",
+    "route": "/dashboard",
+    "url": "http://127.0.0.1:8000/dashboard",
+    "title": "Hospital Billing OS",
+    "hasExpected": true,
+    "stillOnLogin": false,
+    "loadingStillVisible": false,
+    "technicalMatches": [
+      "/Hospital Billing OS/i"
+    ],
+    "visibleLogoutMatches": 1,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-live-auth-2026-05-21-browser\\dashboard-user-menu.png",
+    "consoleIssues": 0,
+    "textSample": "Omitir al contenido principal\n\nHospital Demo\n\nCaja #73 abierta\n\nInicio\nNueva Factura\nCaja\nCatálogo\nHistorial\nReportes\nRespaldos\nConfiguración\nUsuarios\nAyuda\n\nAdmin Demo\n\nadmin\n\nOperación en red local\nHospital Demo\nInicio\nLAN conectado\n10:13:04\nA\nAdmin Demo\n\nPANEL HOSPITALARIO\n\nInicio\n\nResumen operativo para caja, cobros y reportes del hospital.\n\nCAJA OPERATIVA\nAbierta\nCaja #73\nLista para procesar cobros\nFACTURADO (MES)\nListo\nResumen mensual de facturación\nRECAUDADO (MES)\nListo\nRecaudaciones acumuladas del mes\nMÓDULOS DISPONIBLES\nActivo\n7 activos\nFunciones autorizadas para su rol\nTendencia Operativa (Últimos 7 Días)\n\nComparativa entre monto facturado y montos cobrados en caja.\n\nCierre Operati"
+  }
+]

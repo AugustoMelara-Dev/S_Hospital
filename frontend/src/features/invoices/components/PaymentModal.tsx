@@ -4,6 +4,7 @@ import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Dialog } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
+import { Checkbox } from '../../../components/ui/checkbox';
 import type { Payment } from '../../../lib/api';
 
 type PaymentModalProps = {
@@ -158,19 +159,21 @@ export function PaymentModal({
             {error && <p id="payment-amount-error" className="mt-1 text-sm text-destructive" role="alert">{error}</p>}
           </div>
 
-          <label className="flex items-start gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
-            <input
-              type="checkbox"
-              className="mt-1"
+          <label className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5 text-sm cursor-pointer select-none">
+            <Checkbox
+              id="preview-before-print"
               checked={previewBeforePrint}
-              onChange={(e) => onPreviewBeforePrintChange?.(e.target.checked)}
+              onCheckedChange={(checked) => onPreviewBeforePrintChange?.(checked === true)}
+              className="mt-0.5"
             />
-            <span>
-              Ver preview antes de imprimir
-              <span className="block text-xs text-muted-foreground">
+            <div className="grid gap-0.5 leading-none">
+              <span className="font-medium text-foreground">
+                Ver preview antes de imprimir
+              </span>
+              <span className="text-xs text-muted-foreground mt-0.5">
                 Desactivado: al confirmar cobro se registra el pago y se abre impresion directa.
               </span>
-            </span>
+            </div>
           </label>
 
           <p className="text-xs text-muted-foreground">

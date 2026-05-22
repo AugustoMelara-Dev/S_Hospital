@@ -3,8 +3,8 @@ import { type RefObject, useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
-import { Tabs, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 import type { Category, Service } from '../../../lib/api';
+import { cn } from '../../../lib/utils';
 
 const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 const SERVICE_RESULT_LIMIT = 24;
@@ -127,23 +127,26 @@ export function ServiceSearch({
         </div>
 
         <div>
-          <Label className="mb-1.5 block" id="service-category-label">Categoria</Label>
-          <Tabs
-            value={selectedCategoryId === undefined ? 'all' : String(selectedCategoryId)}
-            onValueChange={(v) => onCategoryChange(v === 'all' ? 'all' : Number(v))}
+          <Label className="mb-2 block" id="service-category-label">Categoria</Label>
+          <div
+            aria-labelledby="service-category-label"
+            className="grid max-h-28 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-4"
+            role="radiogroup"
           >
-            <TabsList
-              aria-labelledby="service-category-label"
-              className="flex h-auto max-w-full flex-nowrap gap-1 overflow-x-auto p-1"
-            >
-              <TabsTrigger value="all">Todos</TabsTrigger>
-              {categories.map((cat) => (
-                <TabsTrigger key={cat.id} value={String(cat.id)}>
-                  {cat.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+            <CategoryButton
+              active={selectedCategoryId === undefined || selectedCategoryId === 'all'}
+              label="Todos"
+              onClick={() => onCategoryChange('all')}
+            />
+            {categories.map((cat) => (
+              <CategoryButton
+                key={cat.id}
+                active={selectedCategoryId === cat.id}
+                label={cat.name}
+                onClick={() => onCategoryChange(cat.id)}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -169,14 +172,15 @@ export function ServiceSearch({
           </div>
         ) : !hasIntent ? (
           <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-muted-foreground">
-            <span className="font-medium text-foreground">Busque, escanee o elija una categoria</span>
-            <span className="max-w-md text-sm">
-              Escanee un codigo, escriba el nombre o toque una categoria.
+            <span className="font-medium text-foreground">Busque o elija una categoria</span>
+            <span className="max-w-sm text-sm">
+              Escriba el nombre del servicio, escanee un codigo o toque una categoria para ver opciones facturables.
             </span>
           </div>
         ) : filteredServices.length === 0 ? (
-          <div className="flex items-center justify-center py-8 text-muted-foreground">
-            Sin servicios encontrados
+          <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-muted-foreground">
+            <span className="font-medium text-foreground">Sin servicios encontrados</span>
+            <span className="max-w-sm text-sm">Revise la busqueda o quite filtros para consultar todo el catalogo activo.</span>
           </div>
         ) : (
           <>
@@ -184,11 +188,12 @@ export function ServiceSearch({
             {visibleServices.map((service) => {
               const isErythropoietin = service.special_rule_code === ERYTHROPOIETIN_RULE;
               return (
-                <button
+                <Button
                   key={service.id}
                   type="button"
+                  variant="outline"
                   aria-label={`Agregar ${service.name} por L. ${service.price}`}
-                  className="group relative flex items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-all duration-150 hover:border-primary/40 hover:bg-accent/40 hover:scale-[1.02] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.99] disabled:opacity-50 disabled:hover:scale-100 disabled:hover:bg-card disabled:hover:border-border disabled:hover:shadow-none cursor-pointer"
+                  className="group relative h-auto min-h-24 items-center justify-start gap-3 p-3 text-left font-normal transition-transform hover:border-primary/40 hover:bg-accent/40 hover:shadow-sm active:scale-[0.99]"
                   onClick={() => handleAddService(service)}
                 >
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -198,7 +203,7 @@ export function ServiceSearch({
                         {service.category?.name ?? 'Sin categoria'}
                       </span>
                       {(service.scan_code || service.barcode || service.qr_code) && (
-                        <span className="text-[10px] text-muted-foreground font-mono">
+                        <span className="text-[10px] text-muted-foreground">
                           {service.scan_code ?? service.barcode ?? service.qr_code}
                         </span>
                       )}
@@ -216,7 +221,7 @@ export function ServiceSearch({
                       </span>
                     </div>
                   )}
-                </button>
+                </Button>
               );
             })}
             </div>
@@ -229,5 +234,32 @@ export function ServiceSearch({
         )}
       </div>
     </div>
+  );
+}
+
+function CategoryButton({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      aria-checked={active}
+      className={cn(
+        'min-h-10 rounded-md border px-3 py-2 text-left text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        active
+          ? 'border-secondary bg-secondary text-secondary-foreground shadow-sm'
+          : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground',
+      )}
+      onClick={onClick}
+      role="radio"
+      type="button"
+    >
+      <span className="line-clamp-2 leading-tight">{label}</span>
+    </button>
   );
 }

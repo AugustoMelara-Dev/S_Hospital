@@ -53,8 +53,8 @@ function Show-TaskStatus([string] $taskName) {
     Write-Host "${taskName}: state=$($task.State), lastRun=$($info.LastRunTime), lastResult=$($info.LastTaskResult), nextRun=$($info.NextRunTime)"
 }
 
-$workerArgs = "/c `"$workerScript`" `"$PhpPath`""
-$backupArgs = "/c `"$dailyScript`" `"$PhpPath`""
+$workerArgs = "/c `"`"`$workerScript`" `"$PhpPath`"`""
+$backupArgs = "/c `"`"`$dailyScript`" `"$PhpPath`"`""
 
 Write-Host "Preparing Windows scheduled tasks for Hospital Billing OS backups."
 Write-Host "ProjectRoot: $ProjectRoot"
@@ -116,7 +116,7 @@ if ($UpdateExisting) {
 }
 
 $workerAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $workerArgs -WorkingDirectory $ProjectRoot
-$workerTrigger = New-ScheduledTaskTrigger -AtStartup
+$workerTrigger = New-ScheduledTaskTrigger -AtLogOn
 $workerSettings = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 5) -ExecutionTimeLimit (New-TimeSpan -Hours 0)
 
 Register-ScheduledTask `

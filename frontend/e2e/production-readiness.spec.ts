@@ -111,6 +111,20 @@ async function installApiMocks(page: Page) {
 
   await page.route('**/sanctum/csrf-cookie', (route) => route.fulfill({ status: 204 }));
 
+  await page.route('**/api/settings/fiscal', (route) => json(route, {
+    data: {
+      primary_color: 'indigo',
+      name: 'Hospital Demo',
+      rtn: '08011999123456',
+      address: 'Direccion Demo',
+      phone: '2222-2222',
+      email: 'contacto@hospital-demo.local'
+    }
+  }));
+
+  await page.route('**/api/settings/logo', (route) => json(route, { logo_url: null }));
+  await page.route('**/api/health', (route) => json(route, { status: 'ok' }));
+
   await page.route('**/api/auth/login', async (route) => {
     let payload: { login?: string } = {};
     try {
@@ -327,6 +341,138 @@ async function installApiMocks(page: Page) {
 
     return json(route, { data: backupLogs, meta: { current_page: 1, per_page: 15, total: backupLogs.length } });
   });
+  await page.route('**/api/system/status', (route) => json(route, {
+    data: {
+      environment: {
+        app_env: 'local',
+        app_debug: true,
+        app_url: 'http://127.0.0.1:5173',
+        queue_connection: 'database',
+        filesystem_disk: 'local',
+        php_version: '8.3.0',
+        server_time: new Date().toISOString(),
+        timezone: 'America/Tegucigalpa',
+      },
+      database: {
+        connection: 'mysql',
+        driver: 'mysql',
+        is_mysql_family: true,
+      },
+      backups: {
+        pending_count: backupLogs.filter((backup) => backup.status === 'pending').length,
+        last_success_at: null,
+        last_success_filename: null,
+        last_failure_at: null,
+        last_failure_message: null,
+        dump_binary: {
+          configured: false,
+          available: true,
+          name: 'mysqldump.exe',
+        },
+        storage: {
+          writable: true,
+          free_bytes: 1048576,
+        },
+        queue: {
+          connection: 'database',
+          pending_backup_jobs: 0,
+          worker_command: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
+          scheduler_command: 'php artisan schedule:run',
+          failed_jobs_count: 0,
+          jobs_table_available: true,
+          failed_jobs_table_available: true,
+        },
+      },
+      runtime: {
+        migration_count: 12,
+        latest_migration: '2026_05_01_000001_create_backup_logs_table',
+        laravel_log: {
+          exists: true,
+          size_bytes: 2048,
+          modified_at: new Date().toISOString(),
+        },
+        backup_automation_log: {
+          exists: false,
+          size_bytes: null,
+          modified_at: null,
+        },
+      },
+      readiness: {
+        state: 'PRODUCTION_CANDIDATE',
+        production_ready: false,
+        blockers: [
+          {
+            code: 'PENDING_LAN_CLIENT_VALIDATION',
+            label: 'Validacion desde segunda PC LAN',
+            status: 'pending',
+          },
+          {
+            code: 'PENDING_HARDWARE_VALIDATION',
+            label: 'Impresora termica fisica 80mm/58mm',
+            status: 'pending',
+          },
+        ],
+      },
+      preflight: {
+        production_checks: [
+          {
+            code: 'APP_ENV_PRODUCTION',
+            label: 'APP_ENV=production',
+            status: 'pending',
+            detail: 'Actual: local',
+          },
+          {
+            code: 'DUMP_BINARY_AVAILABLE',
+            label: 'mysqldump/mariadb-dump disponible',
+            status: 'validated',
+            detail: 'mysqldump.exe',
+          },
+          {
+            code: 'BACKUP_WORKER_CONTINUOUS',
+            label: 'Worker de backups como tarea/servicio',
+            status: 'manual_required',
+            detail: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
+          },
+        ],
+        public_routes: [
+          {
+            path: '/up',
+            expected: 'HTTP 200',
+            status: 'manual_required',
+          },
+          {
+            path: '/login',
+            expected: 'SPA cargada desde host LAN',
+            status: 'manual_required',
+          },
+          {
+            path: '/verify-email',
+            expected: 'SPA o ruta esperada cargada desde host LAN',
+            status: 'manual_required',
+          },
+        ],
+        physical_proofs: [
+          {
+            code: 'LAN_CLIENT_VALIDATION_PROOF',
+            label: 'Segunda PC en LAN',
+            required_file: 'qa/LAN_CLIENT_VALIDATION_PROOF.md',
+            status: 'pending',
+          },
+          {
+            code: 'THERMAL_PRINTER_PROOF',
+            label: 'Impresora termica 80mm/58mm',
+            required_file: 'qa/THERMAL_PRINTER_PROOF.md',
+            status: 'pending',
+          },
+        ],
+        commands: {
+          preflight: 'powershell.exe -ExecutionPolicy Bypass -File scripts\\\\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR',
+          backup_worker: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
+          scheduler: 'php artisan schedule:run',
+        },
+      },
+    },
+  }));
 }
 
 function receiptFor(invoice: Record<string, unknown>, width: string) {
@@ -366,9 +512,26 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
 
 async function loginAs(page: Page, username: string) {
   await page.goto('/login');
-  await page.getByLabel(/usuario o email/i).fill(username);
-  await page.getByLabel(/contrasena/i).fill('Password123!');
-  await page.getByRole('button', { name: /entrar/i }).click();
+  const loginInput = page.getByLabel(/usuario o email/i);
+  const visibleState = await Promise.any([
+    loginInput.waitFor({ state: 'visible', timeout: 10_000 }).then(() => 'login' as const),
+    page.getByRole('heading', { name: /dashboard/i }).waitFor({ state: 'visible', timeout: 10_000 }).then(() => 'session' as const),
+  ]).catch(() => 'timeout' as const);
+
+  if (visibleState === 'session') {
+    return;
+  }
+
+  if (visibleState === 'timeout') {
+    await expect(loginInput).toBeVisible();
+  }
+
+  await loginInput.fill(username);
+  await page.getByLabel(/^contraseña$|^contrasena$/i).fill('Password123!');
+  await Promise.all([
+    page.waitForResponse('**/api/auth/login'),
+    page.getByRole('button', { name: /iniciar|entrar/i }).click(),
+  ]);
 }
 
 async function expectOperationalNavigation(page: Page) {
@@ -379,7 +542,7 @@ async function expectOperationalNavigation(page: Page) {
     return;
   }
 
-  await page.getByRole('button', { name: 'Abrir menú', exact: true }).click();
+  await page.getByRole('button', { name: 'Abrir menu', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Caja', exact: true }).first()).toBeVisible();
   await expect(page.getByRole('link', { name: /cat.logo/i }).first()).toBeVisible();
   await page.keyboard.press('Escape');
@@ -398,7 +561,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   });
   page.on('requestfailed', (request) => {
     const failure = request.failure();
-    if (request.url().includes('/sanctum/csrf-cookie') && failure?.errorText === 'net::ERR_ABORTED') {
+    const url = request.url();
+    if ((url.includes('/sanctum/csrf-cookie') || url.includes('/api/health')) && failure?.errorText === 'net::ERR_ABORTED') {
       return;
     }
 
@@ -409,14 +573,14 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await loginAs(page, 'cajero.demo');
   await page.goto('/cashbox');
 
-  await expect(page.locator('#cash-title')).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^caja$/i })).toBeVisible();
   await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
   await expect(page.getByRole('heading', { name: /cerrar caja/i })).toBeVisible();
   if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
     await page.getByRole('button', { name: /cerrar modal/i }).click();
   }
 
-  await page.getByRole('link', { name: /nueva factura/i }).click();
+  await page.getByRole('link', { name: 'Nueva Factura', exact: true }).click();
   await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
   await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
@@ -465,8 +629,11 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /cerrar modal/i }).click();
   await page.getByRole('button', { name: /cerrar sesi.n/i }).click();
   await page.getByLabel(/usuario o email/i).fill('admin.demo');
-  await page.getByLabel(/contrasena/i).fill('Password123!');
-  await page.getByRole('button', { name: /entrar/i }).click();
+  await page.getByLabel(/^contraseña$|^contrasena$/i).fill('Password123!');
+  await Promise.all([
+    page.waitForResponse('**/api/auth/login'),
+    page.getByRole('button', { name: /iniciar|entrar/i }).click(),
+  ]);
   await expect(page.getByRole('link', { name: /reportes/i })).toBeVisible();
   await page.getByRole('link', { name: /reportes/i }).click();
   await expect(page.getByRole('heading', { name: /^reportes$/i })).toBeVisible();
@@ -476,7 +643,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /^backups$/i })).toBeVisible();
   await page.getByRole('button', { name: /crear backup/i }).first().click();
   await page.getByRole('button', { name: /^crear backup$/i }).click();
-  await expect(page.getByText('Pendiente', { exact: true })).toBeVisible();
+  await expect(page.getByRole('table').getByText('Pendiente', { exact: true })).toBeVisible();
   expect(consoleIssues).toEqual([]);
 });
 

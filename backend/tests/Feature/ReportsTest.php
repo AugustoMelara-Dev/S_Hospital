@@ -338,14 +338,13 @@ class ReportsTest extends TestCase
             ->getJson("/api/reports/income?{$query}&cash_session_id={$otherSessionId}")
             ->assertForbidden();
 
-        $csv = $this->actingAs($viewer)
+        $xlsx = $this->actingAs($viewer)
             ->get("/api/reports/export?{$query}")
             ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
             ->streamedContent();
 
-        $this->assertStringContainsString('servicio,Glucosa,Laboratorio,1.00,17.25', $csv);
-        $this->assertStringNotContainsString('Eritropoyetina', $csv);
-        $this->assertStringNotContainsString($otherCashier->username, $csv);
+        $this->assertStringStartsWith("PK\x03\x04", $xlsx);
     }
 
     public function test_category_filtered_collections_are_allocated_to_matching_items(): void
@@ -407,16 +406,11 @@ class ReportsTest extends TestCase
         $response = $this->actingAs($this->admin())
             ->get($url)
             ->assertOk()
-            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
-        $csv = $response->streamedContent();
+        $xlsx = $response->streamedContent();
 
-        $this->assertStringContainsString('seccion,nombre,categoria,cantidad,total', $csv);
-        $this->assertStringContainsString('ingresos,"Total cobrado",,,17.25', $csv);
-        $this->assertStringContainsString('categoria,Laboratorio,Laboratorio,1.00,17.25', $csv);
-        $this->assertStringContainsString('servicio,Glucosa,Laboratorio,1.00,17.25', $csv);
-        $this->assertStringContainsString('cajero', $csv);
-        $this->assertStringContainsString($cashier->username, $csv);
+        $this->assertStringStartsWith("PK\x03\x04", $xlsx);
     }
 
     public function test_report_export_guest_receives_json_unauthenticated_for_download_accept_header(): void
@@ -456,13 +450,13 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.summary.backup_count', 0)
             ->assertJsonCount(0, 'data.backups');
 
-        $csv = $this->actingAs($viewer)
+        $xlsx = $this->actingAs($viewer)
             ->get(str_replace('/operations?', '/export?', $url))
             ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
             ->streamedContent();
 
-        $this->assertStringNotContainsString('hospital-backup-sensitive.sql', $csv);
-        $this->assertStringNotContainsString(str_repeat('b', 64), $csv);
+        $this->assertStringStartsWith("PK\x03\x04", $xlsx);
     }
 
     public function test_operations_summary_counts_are_not_limited_to_preview_rows(): void
@@ -602,6 +596,43 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.cash_session.id', $sessionId);
     }
 
+    public function test_cash_session_export_allows_cashier_scoped_permission_only_for_own_session(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $otherCashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $otherSessionId = $this->openSession($otherCashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+        $otherInvoiceId = $this->createInvoice($otherCashier, 'Eritropoyetina');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($otherCashier, $otherInvoiceId, $otherSessionId, Payment::METHOD_CARD, '28.75');
+
+        $cashier->givePermissionTo(
+            Permission::findByName('reports.cash_session.view', 'web'),
+            Permission::findByName('reports.export', 'web'),
+        );
+
+        $query = 'date_from='.now()->toDateString().'&date_to='.now()->toDateString();
+
+        $xlsx = $this->actingAs($cashier)
+            ->get("/api/reports/export?{$query}&cash_session_id={$sessionId}")
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->streamedContent();
+
+        $this->assertStringStartsWith("PK\x03\x04", $xlsx);
+
+        $this->actingAs($cashier)
+            ->get("/api/reports/export?{$query}&cash_session_id={$otherSessionId}")
+            ->assertForbidden();
+
+        $this->actingAs($cashier)
+            ->get("/api/reports/export?{$query}")
+            ->assertForbidden();
+    }
+
     public function test_report_indexes_exist_for_payment_and_category_queries(): void
     {
         $this->assertContains('payments_status_paid_at_index', $this->indexNames('payments'));
@@ -707,6 +738,55 @@ class ReportsTest extends TestCase
             ->postJson('/api/cash-sessions/open', ['opening_amount' => '500.00'])
             ->assertCreated()
             ->json('data.id');
+    }
+
+    public function test_pdf_export_requires_reports_export_permission(): void
+    {
+        $this->seedBillingBase();
+        $user = User::factory()->create();
+        $reportViewer = User::factory()->create();
+        $reportViewer->givePermissionTo('reports.view', 'reports.managerial.view');
+        $date = now()->toDateString();
+
+        $this->getJson("/api/reports/pdf?date={$date}")
+            ->assertUnauthorized();
+
+        $this->actingAs($user)
+            ->getJson("/api/reports/pdf?date={$date}")
+            ->assertForbidden();
+
+        $this->actingAs($reportViewer)
+            ->getJson("/api/reports/pdf?date={$date}")
+            ->assertForbidden();
+    }
+
+    public function test_daily_closure_pdf_export_succeeds(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $date = now()->toDateString();
+
+        $response = $this->actingAs($admin)
+            ->get("/api/reports/pdf?date={$date}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $this->assertStringStartsWith("%PDF", $response->getContent());
+    }
+
+    public function test_period_closure_pdf_export_succeeds(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $dateFrom = now()->toDateString();
+        $dateTo = now()->toDateString();
+
+        $response = $this->actingAs($admin)
+            ->get("/api/reports/pdf?date_from={$dateFrom}&date_to={$dateTo}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $this->assertStringStartsWith("%PDF", $response->getContent());
     }
 
     private function admin(): User

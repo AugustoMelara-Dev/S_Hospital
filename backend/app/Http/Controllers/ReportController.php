@@ -5,18 +5,31 @@ namespace App\Http\Controllers;
 use App\Actions\Reports\CashSessionReportService;
 use App\Actions\Reports\CategoryReportService;
 use App\Actions\Reports\DailyReportService;
+use App\Actions\Reports\DashboardReportService;
+use App\Actions\Reports\PremiumExcelExportService;
 use App\Actions\Reports\IncomeReportService;
 use App\Actions\Reports\OperationsReportService;
 use App\Actions\Reports\ServiceSalesReportService;
+use App\Actions\Reports\PdfExportService;
 use App\Http\Requests\Reports\DailyReportRequest;
+use App\Http\Requests\Reports\DashboardReportRequest;
 use App\Http\Requests\Reports\DateRangeReportRequest;
 use App\Models\CashRegisterSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
+    public function dashboard(DashboardReportRequest $request, DashboardReportService $reports): JsonResponse
+    {
+        return response()->json([
+            'data' => $reports->report(),
+        ]);
+    }
+
     public function daily(DailyReportRequest $request, DailyReportService $reports): JsonResponse
     {
         return response()->json([
@@ -66,58 +79,107 @@ class ReportController extends Controller
         $categories = $categoryReports->report($filters);
         $services = $serviceReports->report($filters);
         $operations = $operationReports->report($filters, $request->user()->can('backups.view'));
-        $filename = sprintf('reporte-hospital-%s-a-%s.csv', $request->dateFrom(), $request->dateTo());
 
-        return response()->streamDownload(function () use ($income, $categories, $services, $operations): void {
-            $output = fopen('php://output', 'w');
+        $excelService = new PremiumExcelExportService;
+        $spreadsheet = $excelService->generate(
+            $income,
+            $categories,
+            $services,
+            $operations,
+            Carbon::parse($request->dateFrom()),
+            Carbon::parse($request->dateTo())
+        );
 
-            if ($output === false) {
-                return;
+        $writer = new Xlsx($spreadsheet);
+        $writer->setIncludeCharts(true);
+        $filename = sprintf(
+            'reporte-hospital-%s-a-%s.xlsx',
+            $request->dateFrom(),
+            $request->dateTo()
+        );
+
+        return response()->streamDownload(function () use ($writer): void {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
+    }
+
+    public function pdfExport(
+        Request $request,
+        DailyReportService $dailyReports,
+        IncomeReportService $incomeReports,
+        CategoryReportService $categoryReports,
+        ServiceSalesReportService $servicesReports,
+        OperationsReportService $operationsReports,
+        PdfExportService $pdfService
+    ) {
+        $request->user()->can('reports.export') || abort(403);
+
+        $fiscal = \App\Models\FiscalSetting::first() ?? new \App\Models\FiscalSetting([
+            'hospital_name' => 'Hospital Local',
+            'rtn' => 'N/A'
+        ]);
+
+        if ($request->filled('date') || (!$request->filled('date_from') && !$request->filled('date_to'))) {
+            $date = $request->input('date', now()->toDateString());
+            $data = $dailyReports->report($date);
+            
+            $pdf = $pdfService->generateDailyClosurePdf($data, $fiscal->toArray());
+            
+            return response($pdf, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="cierre_diario_' . $date . '.pdf"',
+            ]);
+        }
+
+        $request->validate([
+            'date_from' => ['required', 'date_format:Y-m-d'],
+            'date_to' => ['required', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+        ]);
+
+        $filters = [
+            'date_from' => $request->input('date_from'),
+            'date_to' => $request->input('date_to'),
+            'cash_session_id' => $request->input('cash_session_id'),
+            'user_id' => $request->input('user_id'),
+            'category_id' => $request->input('category_id'),
+            'method' => $request->input('method'),
+            'status' => $request->input('status'),
+        ];
+
+        if (!$request->user()->can('cash.close_any')) {
+            if (!empty($filters['cash_session_id'])) {
+                $exists = \App\Models\CashRegisterSession::query()
+                    ->whereKey($filters['cash_session_id'])
+                    ->where('user_id', $request->user()->id)
+                    ->exists();
+                if (!$exists) {
+                    abort(403);
+                }
             }
+            $filters['user_id'] = $request->user()->id;
+        }
 
-            fputcsv($output, ['seccion', 'nombre', 'categoria', 'cantidad', 'total']);
-            fputcsv($output, ['ingresos', 'Total cobrado', '', '', $income['total_collected']]);
+        $income = $incomeReports->report($filters);
+        $categories = $categoryReports->report($filters);
+        $services = $servicesReports->report($filters);
+        $operations = $operationsReports->report($filters, $request->user()->can('backups.view'));
 
-            foreach ($income['payments_by_method'] as $method => $total) {
-                fputcsv($output, ['metodo_pago', $method, '', '', $total]);
-            }
+        $pdf = $pdfService->generateRangeClosurePdf([
+            'income' => $income,
+            'categories' => $categories,
+            'services' => $services,
+            'operations' => $operations,
+            'date_from' => $filters['date_from'],
+            'date_to' => $filters['date_to'],
+        ], $fiscal->toArray());
 
-            foreach ($categories['categories'] as $category) {
-                fputcsv($output, [
-                    'categoria',
-                    $category['category'],
-                    $category['category'],
-                    $category['quantity'],
-                    $category['total'],
-                ]);
-            }
-
-            foreach ($services['services'] as $service) {
-                fputcsv($output, [
-                    'servicio',
-                    $service['service'],
-                    $service['category'],
-                    $service['quantity'],
-                    $service['total'],
-                ]);
-            }
-
-            foreach ($operations['voids'] as $void) {
-                fputcsv($output, ['anulacion', $void['invoice_number'], '', '', $void['total']]);
-            }
-
-            foreach ($operations['reprints'] as $reprint) {
-                fputcsv($output, ['reimpresion', $reprint['invoice_number'], '', '', $reprint['width']]);
-            }
-
-            foreach ($operations['backups'] as $backup) {
-                fputcsv($output, ['backup', $backup['filename'], $backup['status'], '', (string) ($backup['size_bytes'] ?? '')]);
-            }
-
-            foreach ($operations['cashiers'] as $cashier) {
-                fputcsv($output, ['cajero', $cashier['name'], $cashier['username'], (string) $cashier['payment_count'], $cashier['total_collected']]);
-            }
-        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="cierre_periodo_' . $filters['date_from'] . '_a_' . $filters['date_to'] . '.pdf"',
+        ]);
     }
 
     public function cashSession(

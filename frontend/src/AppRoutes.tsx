@@ -9,6 +9,9 @@ import { InvoiceHistoryView } from './features/invoices/InvoiceHistoryView';
 import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 import { ReportsView } from './features/reports/ReportsView';
 import { FiscalSettingsView } from './features/settings/FiscalSettingsView';
+import { UsersView } from './features/admin/UsersView';
+import { AboutView } from './features/about/AboutView';
+import { HelpView } from './features/help/HelpView';
 import { type AuthUser, type CashSession } from './lib/api';
 
 type AppRoutesProps = {
@@ -27,6 +30,7 @@ type AppRoutesProps = {
   canViewManagerialReports: boolean;
   canViewCashSessionReports: boolean;
   canExportReports: boolean;
+  canViewUsers: boolean;
   cashSession: CashSession | null;
   defaultAuthenticatedRoute: string;
   onQuickCash: () => void;
@@ -52,6 +56,7 @@ export function AppRoutes({
   canViewManagerialReports,
   canViewCashSessionReports,
   canExportReports,
+  canViewUsers,
   cashSession,
   defaultAuthenticatedRoute,
   onQuickCash,
@@ -88,7 +93,7 @@ export function AppRoutes({
         element={
           <PermissionGate
             allowed={canCreateInvoices && canViewCatalog && canViewCash && canCreatePayments && canViewReceipts}
-            reason="Requiere permisos de facturacion, catalogo, caja, pagos y recibos. Solicite el rol Cajero completo."
+            reason="Requiere permisos de facturación, catálogo, caja, pagos y recibos. Solicite el rol Cajero completo."
           >
             <NewInvoiceView
               cashSession={cashSession}
@@ -107,6 +112,7 @@ export function AppRoutes({
         element={
           <PermissionGate allowed={canViewCash} reason="Requiere permiso para consultar y operar caja.">
             <CashBoxView
+              cashSession={cashSession}
               canCloseCash={canCloseCash}
               canOpenCash={canOpenCash}
               canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}
@@ -151,7 +157,7 @@ export function AppRoutes({
       <Route
         path="/backups"
         element={
-          <PermissionGate allowed={canViewBackups} reason="Requiere permiso para consultar backups locales.">
+          <PermissionGate allowed={canViewBackups} reason="Requiere permiso para consultar respaldos locales.">
             <BackupsView user={user} onStatus={onStatus} />
           </PermissionGate>
         }
@@ -159,10 +165,26 @@ export function AppRoutes({
       <Route
         path="/settings/fiscal"
         element={
-          <PermissionGate allowed={canViewFiscalSettings} reason="Requiere permiso para consultar configuracion fiscal.">
+          <PermissionGate allowed={canViewFiscalSettings} reason="Requiere permiso para consultar configuración fiscal.">
             <FiscalSettingsView canEdit={canEditFiscalSettings} onStatus={onStatus} />
           </PermissionGate>
         }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <PermissionGate allowed={canViewUsers} reason="Requiere permiso para gestionar usuarios.">
+            <UsersView onStatus={onStatus} />
+          </PermissionGate>
+        }
+      />
+      <Route
+        path="/help"
+        element={<HelpView />}
+      />
+      <Route
+        path="/about"
+        element={<AboutView onStatus={onStatus} />}
       />
       <Route path="*" element={<NotFoundView />} />
     </Routes>

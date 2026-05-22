@@ -434,3 +434,268 @@ Consecuencia:
 
 - Produccion puede usar `php artisan schedule:run` via Programador de tareas o el helper Windows directo.
 - La UI muestra backups programados como creados por `Sistema`; la seguridad real permanece en backend por permisos.
+
+### 2026-05-19 - Estado operativo visible para backups y produccion final
+
+Decision:
+
+- Se agrega un endpoint admin `/api/system/status` protegido por `backups.view`.
+- El endpoint expone estado operativo no secreto: `APP_ENV`, `APP_DEBUG`, `APP_URL`, conexion de cola, driver de base de datos, disponibilidad de herramienta de dump, almacenamiento local, jobs pendientes de backups y bloqueos restantes para `PRODUCTION_READY`.
+- La pantalla de Backups muestra ese estado junto al historial de backups para que el admin vea si falta worker, dump local, espacio o evidencia de campo.
+- El estado sigue declarando `PRODUCTION_CANDIDATE` y `PRODUCTION_READY=false` hasta validar segunda PC LAN, impresora termica fisica y entorno final production.
+- El endpoint tambien devuelve un bloque `preflight` con checks accionables: entorno production/debug, MySQL/MariaDB, dump tool, storage local, worker continuo, rutas publicas `/up`, `/login`, `/verify-email`, archivos de evidencia LAN/impresora y comandos operativos.
+
+Motivo:
+
+- En produccion offline LAN no basta con que exista un boton de backup; soporte necesita diagnostico inmediato sin leer scripts ni exponer secretos.
+- Los bloqueos fisicos no deben maquillarse como aprobados desde codigo.
+- El panel debe decir exactamente que falta sin obligar al operador a interpretar logs o documentos largos durante la instalacion.
+
+Consecuencia:
+
+- Cajeros y supervisores siguen sin acceso a estado operativo de backups/servidor.
+- La UI ayuda a instalar y operar, pero no reemplaza `scripts/production_readiness_preflight.ps1` ni la evidencia fisica requerida.
+- `PRODUCTION_READY` requiere que el preflight final pase sin `-AllowMissingPhysicalProof` y que existan `qa/LAN_CLIENT_VALIDATION_PROOF.md` y `qa/THERMAL_PRINTER_PROOF.md` completados en el servidor/campo real.
+
+### 2026-05-19 - Helpers de evidencia de campo
+
+Decision:
+
+- Se agregan `scripts\init_production_proofs.ps1` y `scripts\validate_lan_client.ps1`.
+- `init_production_proofs.ps1` crea los archivos reales de evidencia desde las plantillas sin marcarlos como completos.
+- `validate_lan_client.ps1` se ejecuta desde una segunda PC cliente y verifica `/up`, `/login`, `/verify-email` y el primer asset JS del build, con opcion de escribir un borrador de `qa\LAN_CLIENT_VALIDATION_PROOF.md`.
+- La evidencia de login, caja, factura, pago, recibo, reportes, backup e impresora sigue siendo manual/fisica y debe completarse antes del preflight final.
+
+Motivo:
+
+- Las pruebas de campo deben ser repetibles para el operador, pero no se debe fabricar evidencia que solo puede venir del cliente LAN y la impresora real.
+
+Consecuencia:
+
+- El cierre de produccion queda mas guiado: primero se generan archivos, luego se validan rutas desde cliente, despues se completan los flujos fisicos y finalmente se ejecuta `production_readiness_preflight.ps1` sin excepciones.
+
+### 2026-05-19 - Handoff final de produccion sin evidencia falsa
+
+Decision:
+
+- Se agrega `scripts\final_production_handoff.ps1` como orquestador operativo del cierre final.
+- El helper puede inicializar plantillas de evidencia, mostrar estado de tareas de backup y ejecutar `production_readiness_preflight.ps1` sin `-AllowMissingPhysicalProof`.
+- El helper no marca LAN ni impresora como validadas; si faltan los archivos reales de evidencia o contienen placeholders, la salida mantiene `PRODUCTION_READY` bloqueado.
+- Cada corrida escribe `qa\FINAL_PRODUCTION_HANDOFF_RESULT.md` con decision, bloqueantes, comandos siguientes, estado de tareas de backup y salida del preflight.
+
+Motivo:
+
+- El servidor final necesita un comando de cierre repetible que reduzca errores humanos sin maquillar pruebas fisicas.
+- La evidencia de segunda PC LAN, impresora termica y production env debe seguir siendo verificable y separada de los mocks o pruebas locales.
+
+Consecuencia:
+
+- El operador puede ejecutar un solo handoff guiado, pero `PRODUCTION_READY` sigue dependiendo del preflight completo, archivos de evidencia reales y backup worker funcional.
+- Si el helper falla por evidencia faltante, el estado correcto sigue siendo `PRODUCTION_CANDIDATE` con bloqueantes exactos.
+- El reporte de handoff es evidencia operativa de la corrida, no sustituto de la evidencia fisica de LAN o impresora.
+
+### 2026-05-19 - Evidencia fisica visible en estado operativo
+
+Decision:
+
+- `/api/system/status` ahora evalua `qa\LAN_CLIENT_VALIDATION_PROOF.md` y `qa\THERMAL_PRINTER_PROOF.md` en vez de reportarlos siempre como pendientes.
+- La evaluacion marca `pending` si falta el archivo, `partial` si quedan campos/checks/placeholders incompletos y `validated` si el archivo cumple la estructura minima de evidencia.
+- Aunque ambas evidencias aparezcan `validated`, el endpoint mantiene `PRODUCTION_READY=false`; la aprobacion final sigue dependiendo de `scripts\production_readiness_preflight.ps1` ejecutado sin bypass en el servidor final.
+- La pantalla de Backups muestra el detalle de cada evidencia para que el operador sepa si falta crear el archivo, completar campos o correr el preflight final.
+
+Motivo:
+
+- El panel administrativo debe reflejar avance real de campo sin fabricar aprobacion de produccion desde el codigo.
+- La evidencia fisica completa debe ser visible para soporte, pero el cierre final debe seguir siendo un gate ejecutable y auditable.
+
+Consecuencia:
+
+- Cuando el hospital complete segunda PC LAN e impresora, el panel dejara de mostrar esos archivos como pendientes falsos.
+- Si alguien copia una plantilla o deja placeholders, el sistema lo mostrara como parcial y no como validado.
+
+### 2026-05-19 - Worker continuo como bloqueo de preflight
+
+Decision:
+
+- `scripts\production_readiness_preflight.ps1` ahora valida en Windows que existan las tareas `HospitalBillingOS-BackupWorker` y `HospitalBillingOS-DailyBackup`.
+- El worker continuo debe estar en estado `Running`; la tarea diaria debe estar `Ready` o `Running`.
+- Si las tareas no existen, estan deshabilitadas o el worker no esta corriendo, el preflight falla y no permite declarar `PRODUCTION_READY`.
+- En hosts no Windows, el preflight emite advertencia para validar un servicio equivalente antes del handoff.
+
+Motivo:
+
+- Un backup manual que queda `pending` por falta de worker es un riesgo operativo real; no debe quedar como nota manual si el servidor final es Windows.
+- La promesa de backups locales exige automatizacion continua, no solo scripts disponibles en el repo.
+
+Consecuencia:
+
+- El cierre final debe instalar o actualizar tareas con `scripts\install_backup_tasks_windows.ps1 -UpdateExisting`, iniciar `HospitalBillingOS-BackupWorker` y confirmar que la UI mueve backups de `pending` a `success`.
+- Una corrida de preflight en Windows sin tareas instaladas queda bloqueada aunque ambiente, rutas y evidencias fisicas esten completas.
+
+### 2026-05-19 - Robustez operativa final y evidencias durables
+
+Decision:
+
+- El cierre final ahora exige evidencia de restore (`qa\FINAL_RESTORE_PROOF.md`) y concurrencia (`qa\FINAL_CONCURRENCY_PROOF.md`) ademas de LAN e impresora.
+- `scripts\validate_restore_mysql.sh` puede escribir evidencia con SHA256, tamano de backup y conteos minimos de tablas restauradas usando `HOSPITAL_RESTORE_EVIDENCE_PATH`.
+- `scripts\validate_mysql_concurrency.mjs` puede escribir evidencia durable con `HOSPITAL_CONCURRENCY_EVIDENCE_PATH`.
+- Se agrega `scripts\validate_backup_worker_smoke.ps1` para crear un backup por API, esperar `success`, validar SHA256/tamano y escribir evidencia del worker.
+- `/api/system/status` queda separado por permiso `system.status.view`, no por `backups.view`, y expone diagnostico no secreto: hora del servidor, zona horaria, jobs/failed_jobs, migraciones y metadata de logs.
+- La exportacion CSV de caja propia permite `reports.cash_session.view + reports.export` solo con `cash_session_id`; el backend mantiene `scopedFilters()` como defensa para impedir exportar cajas ajenas.
+
+Motivo:
+
+- Robustez operativa significa pruebas repetibles, no instrucciones sueltas.
+- El admin necesita diagnostico local accionable sin exponer secretos ni dar acceso a roles que solo pueden operar backups.
+- La caja propia exportable debe ser coherente entre UI y backend sin convertir al cajero en usuario gerencial.
+
+Consecuencia:
+
+- `PRODUCTION_READY` queda bloqueado por cuatro evidencias: segunda PC LAN, impresora fisica, restore final y concurrencia final.
+- Backups, restore y concurrencia ahora pueden dejar artefactos verificables en `qa/`.
+- Cajeros con permiso de reporte de caja pueden exportar solo su caja si tambien reciben `reports.export`.
+
+### 2026-05-19 - E2E flakiness y mocks incompletos de estado
+
+Decision:
+
+- El test de preparacion para produccion (`production-readiness.spec.ts`) ahora incluye un `page.waitForResponse('**/api/auth/login')` sincronizado con el click de inicio de sesion durante el flujo del administrador.
+- El mock de `/api/system/status` se enriquecio para proporcionar todos los campos anidados obligatorios que `BackupsView` lee (incluyendo `environment.server_time`, `environment.timezone`, y todo el objeto `runtime`).
+- El listener de Playwright `requestfailed` ahora ignora interrupciones `net::ERR_ABORTED` hacia `/api/health` y `/sanctum/csrf-cookie`.
+
+Motivo:
+
+- Una asincronia en React y Playwright puede provocar que los cambios de ruta naveguen antes de tener el nuevo contexto de autenticacion listo.
+- Mocks incompletos para objetos con anidacion profunda (como `systemStatus.runtime.laravel_log.exists` o pasar undefined a `Intl.DateTimeFormat.format()`) lanzaban TypeErrors y RangeErrors. React captaba el error, reintentaba renderizar y causaba un loop de unmount que Playwright registraba como `element was detached from the DOM, retrying` hasta dar timeout a los 90s.
+- La navegacion abrupta durante un fetch interrumpe la peticion intencionalmente en el navegador; contarlo como error falso bloqueaba el E2E.
+
+Consecuencia:
+
+- Los tests de E2E ahora son completamente deterministas y pasan consistentemente en ~15 segundos.
+- La resiliencia del testing local E2E garantiza que el handoff de produccion offline siga siendo auditable y rapido.
+
+### 2026-05-20 - Rescate visual inicial y contencion de pantalla blanca
+
+Decision:
+
+- El arranque de sesion ya no omite `/api/auth/session` cuando la URL inicial es `/login`; una recarga fuerte con cookie valida recupera el usuario y vuelve al dashboard.
+- La aplicacion queda envuelta en `AppErrorBoundary` para evitar una pantalla totalmente blanca si una vista React falla al renderizar.
+- El login se reestructura como una pantalla sobria basada en componentes locales tipo shadcn: `Card`, `Input`, `Label`, `Button` y `Alert`, sin decoracion fragil.
+- Los tests de frontend agregan `ResizeObserver` mock para cubrir componentes Radix/shadcn usados por dialogos, selects y checkbox.
+- El POS conserva atajos internos, pero deja de mostrar una barra de instrucciones visible dentro de la pantalla operativa.
+
+Motivo:
+
+- El usuario reporto recargas que quedaban en blanco e imposibilidad de iniciar sesion; el primer rescate debe proteger el flujo de acceso antes de ampliar el rediseño.
+- Un sistema de caja vendible no puede depender de que cada componente renderice perfecto para no dejar al operador sin pantalla.
+- La UI debe sentirse como herramienta de caja hospitalaria, no como demo con texto de uso y controles decorativos.
+
+Consecuencia:
+
+- Login, sesion y tests unitarios quedan estabilizados como base para continuar Fase 12.
+- Si aparece un fallo de interfaz, el operador vera una pantalla controlada con accion de recarga en lugar de blanco total.
+- El siguiente corte debe continuar la migracion de AppShell, POS, caja, tablas y reportes hacia componentes compartidos sin mezclar cambios fiscales o transaccionales no relacionados.
+
+### 2026-05-20 - Shell blanco shadcn y eliminacion de botones manuales
+
+Decision:
+
+- `AppShell`, `Sidebar` y `Topbar` pasan a una base blanca/minimalista usando tokens semanticos (`background`, `card`, `border`, `muted`, `primary`, `secondary`) en vez de clases oscuras `slate/dark`.
+- Los botones manuales restantes en login, POS, historial y configuracion fiscal se reemplazan por `Button` local compatible con shadcn.
+- `SelectItem` usa icono `Check` de lucide y elimina el simbolo corrupto que aparecia en opciones Radix.
+- Se guardan capturas Playwright en `qa/screenshots/login-shadcn-white.png`, `qa/screenshots/dashboard-shadcn-white.png` y `qa/screenshots/billing-pos-shadcn-white.png`.
+
+Motivo:
+
+- La experiencia solicitada exige consistencia visual, blanco/minimalista, controles de libreria y cero botones crudos en la superficie React.
+- El shell es la pieza comun de todas las pantallas; estabilizarlo reduce regresiones visuales antes de seguir refinando reportes, caja y configuracion.
+
+Consecuencia:
+
+- `rg '<button' frontend/src` queda sin resultados.
+- Las pantallas principales heredan un marco visual consistente y validado con capturas reales.
+- La refactorizacion visual puede continuar por pantallas especificas sin volver al shell oscuro anterior.
+
+### 2026-05-21 - Login LAN y cache runtime
+
+Decision:
+
+- El runtime Docker usa `CACHE_STORE=file` para que el rate limiter y el arranque de login no dependan de la tabla `cache` ni de credenciales antiguas de base de datos.
+- `setup.bat` detecta la IP de la ruta por defecto activa, escribe `APP_URL` y `SANCTUM_STATEFUL_DOMAINS` en `backend\.env`, y despues ejecuta `config:cache`.
+- La URL LAN validada en esta maquina es `http://192.168.1.3:8000`; `http://192.168.1.7:8000` es una IP anterior/no alcanzable en el estado actual.
+- La evidencia de navegador queda en `qa/screenshots/lan-dashboard-fixed.png` y la captura de login en `qa/screenshots/lan-login-fixed.png`.
+
+Motivo:
+
+- El login devolvia errores mezclados (`401` de sesion invitada, `422` de credenciales rechazadas y fallos internos de cache) porque el runtime estaba leyendo configuracion LAN/DB inconsistente.
+- En una instalacion offline LAN, el operador no debe depender de recordar la IP correcta ni de limpiar caches manualmente.
+
+Consecuencia:
+
+- `admin.demo` puede iniciar sesion por HTTP en `127.0.0.1:8000` y en la IP LAN activa.
+- El instalador debe evitar volver a publicar una URL muerta despues de cambios de red o DHCP.
+
+### 2026-05-21 - Headers de seguridad y exportacion PDF protegida
+
+Decision:
+
+- Todas las respuestas pasan por `AddSecurityHeaders`, que agrega `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` y una politica CSP conservadora para la SPA local.
+- La exportacion PDF de reportes exige `reports.export`, igual que la exportacion Excel, en vez de aceptar solo permiso de visualizacion.
+- `/up`, la SPA publica y los assets se sirven sin middleware de sesion para que los smokes de despliegue no dependan de la base de datos cuando solo validan disponibilidad.
+
+Motivo:
+
+- La Fase 1 exige revisar CSRF/Sanctum, headers de seguridad y permisos por rol antes de operar dinero o reportes.
+- Exportar cierres y reportes financieros es una accion mas sensible que verlos en pantalla; debe requerir permiso explicito.
+
+Consecuencia:
+
+- `/api/health`, la SPA y las rutas autenticadas heredan hardening HTTP sin depender del servidor web externo.
+- Usuarios con `reports.view` o `reports.managerial.view` pero sin `reports.export` no pueden descargar PDF.
+- `/up`, `/login` y `/verify-email` pueden validarse despues de `config:cache` aunque el navegador local no tenga abierta una sesion.
+
+### 2026-05-21 - Dark mode, guia reactivable y ayuda interna
+
+Decision:
+
+- El frontend usa tokens CSS dinamicos con `@theme`, de modo que `html.dark` cambia toda la aplicacion sin reinyectar colores desde configuracion fiscal.
+- La guia operativa vive en `features/onboarding`, se abre manualmente desde Topbar y solo autoabre si una preferencia local explicita lo permite.
+- Se agrega `/help` con guias visuales y FAQ para caja, facturacion, pagos, impresion, reportes y backups.
+- Los graficos de dashboard dejan de depender de `ResponsiveContainer` y usan ancho medido para evitar warnings de Recharts en contenedores inestables.
+
+Motivo:
+
+- La caja hospitalaria necesita un tema oscuro real, consistente y accesible para turnos largos, pero sin romper recibos, formularios ni tablas.
+- El onboarding debe poder repetirse sin molestar automaticamente al cajero en produccion.
+- La ayuda debe estar disponible dentro del sistema offline LAN, sin depender de documentacion externa.
+- Los warnings visuales de Recharts escondian problemas reales de layout en QA.
+
+Consecuencia:
+
+- El toggle claro/oscuro afecta shell, tablas, formularios, modales, badges, alertas y dashboard.
+- El usuario puede abrir la guia cuando lo necesite y navegar a `/help` desde el sidebar.
+- Dashboard queda mas estable en pruebas de navegador y con consola limpia durante cambios de tema.
+
+### 2026-05-21 - Auditoria UX/UI final con capturas de modulos
+
+Decision:
+
+- Se auditaron las pantallas principales con navegador sobre el build servido por Laravel: login, inicio, nueva factura, caja, catalogo, historial, reportes, respaldos, configuracion fiscal, usuarios y ayuda.
+- Las capturas y pruebas de interaccion quedaron en `qa/screenshots/ux-cleanup-2026-05-21-browser/`, incluyendo `ux-cleanup-browser-report.json`, `interaction-proof.json`, `settled-screens-proof.json` y `login-proof.json`.
+- El shell conserva una sola accion visible para cerrar sesion dentro del menu de usuario; el logout duplicado del sidebar queda fuera de la navegacion principal.
+- Los textos visibles evitan conceptos tecnicos como `APP_ENV`, comandos de cola, Laravel/React, `PRODUCTION_READY`, `S_Hospital` y referencias a backups en ingles.
+- Los reportes PDF dejan de firmarse con `S_Hospital` y muestran "Respaldos" en vez de "Copias de Seguridad (Backups)".
+- La ruta publica `/admin/users` se sirve desde la SPA igual que el resto de modulos internos, para evitar 404 al recargar o navegar directo.
+- El nombre del hospital se mantiene editable desde configuracion fiscal y se refleja en login, sidebar/topbar, resumen fiscal y recibos/reportes donde corresponde.
+
+Motivo:
+
+- El cierre UX/UI requiere evidencia visual actual, no solo tests unitarios ni busquedas de texto.
+- Un sistema hospitalario LAN no debe mostrar al operador comandos, estados de despliegue o nombres internos del stack.
+- Las rutas internas deben soportar recarga directa porque los clientes LAN acceden por navegador y pueden guardar marcadores.
+
+Consecuencia:
+
+- La evidencia visual actual queda versionable y auditable por modulo.
+- `npm.cmd run test`, `npm.cmd run typecheck`, `npm.cmd run lint`, `npm.cmd run build`, `php artisan test --colors=never --filter=BackupWorkflowTest`, `php artisan test --colors=never --filter=ReportsTest` y `php artisan test --colors=never --filter=ProductionSpaRouteTest` pasan.
+- El build conserva una advertencia no bloqueante de Vite por un chunk apenas mayor a 500 kB; debe tratarse como optimizacion posterior, no como bloqueo funcional.

@@ -35,6 +35,7 @@ interface IncomeReportTabProps {
   onCashierChange: (value: string) => void;
   onMethodChange: (value: NonNullable<ReportFilters['method']>) => void;
   onExport: () => void;
+  onExportPdf: () => void;
   onStatusChange: (value: NonNullable<ReportFilters['status']>) => void;
   onSubmit: () => void;
 }
@@ -59,6 +60,7 @@ export function IncomeReportTab({
   onCashierChange,
   onMethodChange,
   onExport,
+  onExportPdf,
   onStatusChange,
   onSubmit,
 }: IncomeReportTabProps) {
@@ -137,7 +139,7 @@ export function IncomeReportTab({
               </Select>
             </div>
             <div className="w-[150px]">
-              <Label htmlFor="income-cashier-id">Cajero ID</Label>
+              <Label htmlFor="income-cashier-id">No. de cajero</Label>
               <Input
                 id="income-cashier-id"
                 type="number"
@@ -149,7 +151,7 @@ export function IncomeReportTab({
               />
             </div>
             <div className="w-[150px]">
-              <Label htmlFor="income-cash-session-id">Caja ID</Label>
+              <Label htmlFor="income-cash-session-id">No. de caja</Label>
               <Input
                 id="income-cash-session-id"
                 type="number"
@@ -164,7 +166,7 @@ export function IncomeReportTab({
               {loading ? 'Consultando...' : 'Ver rango'}
             </Button>
           </div>
-          <p className="mt-3 text-sm text-muted-foreground">Rango máximo permitido: 31 dias.</p>
+          <p className="mt-3 text-sm text-muted-foreground">Puede consultar hasta 31 dias por busqueda.</p>
         </CardContent>
       </Card>
 
@@ -177,12 +179,12 @@ export function IncomeReportTab({
               icon={<DollarSign className="h-4 w-4" />}
             />
             <KPICard
-              title="Días en Rango"
+              title="Dias en rango"
               value={daysInRange}
               icon={<Calendar className="h-4 w-4" />}
             />
             <KPICard
-              title="Promedio/Día"
+              title="Promedio diario"
               value={`L. ${averagePerDay}`}
               icon={<TrendingUp className="h-4 w-4" />}
             />
@@ -190,7 +192,7 @@ export function IncomeReportTab({
 
           <Card>
             <CardHeader>
-              <CardTitle>Por Método de Pago</CardTitle>
+              <CardTitle>Cobros por metodo</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -247,7 +249,7 @@ export function IncomeReportTab({
           {chartData.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Visualización por Método</CardTitle>
+                <CardTitle>Grafico por metodo</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
@@ -264,10 +266,14 @@ export function IncomeReportTab({
           )}
 
           {canExport && (
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar CSV
+                Exportar Excel
+              </Button>
+              <Button variant="outline" onClick={onExportPdf}>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar PDF
               </Button>
             </div>
           )}

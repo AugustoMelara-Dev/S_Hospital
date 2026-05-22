@@ -12,7 +12,7 @@ import {
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Alert } from '../../components/ui/alert';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import {
   Table,
@@ -27,15 +27,16 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { PaginationControls } from '../../components/ui/pagination';
 import { NativeSelect, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { Skeleton } from '../../components/ui/states';
+import { LoadingState } from '../../components/ui/states';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { Textarea } from '../../components/ui/textarea';
+import { DateRangePicker } from '../../components/ui/date-range-picker';
+import { FilterBar } from '../../components/ui/filter-bar';
 import {
   FileClock,
   MoreHorizontal,
   Printer,
   Receipt,
-  Search,
   XCircle,
 } from 'lucide-react';
 
@@ -50,6 +51,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState<InvoiceFilters>(() => filtersFromSearchParams(searchParams));
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const invoicesList = Array.isArray(invoices) ? invoices : [];
   const [meta, setMeta] = useState<PaginatedMeta>({ current_page: 1, per_page: 10, total: 0 });
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
@@ -154,7 +156,10 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     try {
       const voided = await apiClient.voidInvoice(selectedInvoice.id, voidReason.trim());
       setSelectedInvoice(voided);
-      setInvoices((current) => current.map((invoice) => (invoice.id === voided.id ? voided : invoice)));
+      setInvoices((current) => {
+        const currentList = Array.isArray(current) ? current : [];
+        return currentList.map((invoice) => (invoice.id === voided.id ? voided : invoice));
+      });
       setReceipt(null);
       setVoidReason('');
       onStatus(`Factura ${voided.invoice_number} anulada.`);
@@ -196,7 +201,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     filters.status
   );
 
-  const isEmpty = invoices.length === 0;
+  const isEmpty = invoicesList.length === 0;
 
   return (
     <section id="historial" className="flex flex-col gap-5" aria-labelledby="invoice-history-title">
@@ -208,83 +213,61 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           Consulte facturas recientes, reimprima recibos y gestione anulaciones autorizadas.
         </p>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={submitFilters} className="flex flex-wrap gap-4">
-            <div className="w-[150px]">
-              <Label htmlFor="date_from">Desde</Label>
-              <Input
-                id="date_from"
-                type="date"
-                value={filters.date_from ?? ''}
-                onChange={(event) => setFilters({ ...filters, date_from: event.target.value })}
-              />
-            </div>
+      <FilterBar
+        onSearch={(e) => void submitFilters(e)}
+        onClear={clearFilters}
+        isLoading={loading}
+        hasActiveFilters={hasActiveFilters}
+      >
+        <DateRangePicker
+          startDate={filters.date_from ?? ''}
+          endDate={filters.date_to ?? ''}
+          onStartDateChange={(val) => setFilters({ ...filters, date_from: val })}
+          onEndDateChange={(val) => setFilters({ ...filters, date_to: val })}
+          className="col-span-1 sm:col-span-2"
+        />
 
-            <div className="w-[150px]">
-              <Label htmlFor="date_to">Hasta</Label>
-              <Input
-                id="date_to"
-                type="date"
-                value={filters.date_to ?? ''}
-                onChange={(event) => setFilters({ ...filters, date_to: event.target.value })}
-              />
-            </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="status" className="text-xs font-semibold text-slate-600 dark:text-slate-400">Estado</Label>
+          <Select
+            value={filters.status ?? 'all'}
+            onValueChange={(v) => setFilters({ ...filters, status: v === 'all' ? '' : v as InvoiceFilters['status'] })}
+          >
+            <SelectTrigger id="status" className="h-10">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="issued">Emitida</SelectItem>
+              <SelectItem value="partial">Parcial</SelectItem>
+              <SelectItem value="paid">Pagada</SelectItem>
+              <SelectItem value="void">Anulada</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-            <div className="w-[150px]">
-              <Label htmlFor="status">Estado</Label>
-              <Select
-                value={filters.status ?? 'all'}
-                onValueChange={(v) => setFilters({ ...filters, status: v === 'all' ? '' : v as InvoiceFilters['status'] })}
-              >
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="issued">Emitida</SelectItem>
-                  <SelectItem value="partial">Parcial</SelectItem>
-                  <SelectItem value="paid">Pagada</SelectItem>
-                  <SelectItem value="void">Anulada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="patient" className="text-xs font-semibold text-slate-600 dark:text-slate-400">Paciente</Label>
+          <Input
+            id="patient"
+            placeholder="Nombre del paciente..."
+            value={filters.patient ?? ''}
+            onChange={(event) => setFilters({ ...filters, patient: event.target.value })}
+            className="h-10"
+          />
+        </div>
 
-            <div className="flex-1 min-w-[200px]">
-              <Label htmlFor="patient">Paciente</Label>
-              <Input
-                id="patient"
-                placeholder="Nombre del paciente..."
-                value={filters.patient ?? ''}
-                onChange={(event) => setFilters({ ...filters, patient: event.target.value })}
-              />
-            </div>
-
-            <div className="w-[150px]">
-              <Label htmlFor="invoice_number">Numero de factura</Label>
-              <Input
-                id="invoice_number"
-                placeholder="A-0001..."
-                value={filters.invoice_number ?? ''}
-                onChange={(event) => setFilters({ ...filters, invoice_number: event.target.value })}
-              />
-            </div>
-
-            <div className="flex items-end gap-2">
-              <Button type="submit" disabled={loading}>
-                <Search className="h-4 w-4" />
-                {loading ? 'Buscando...' : 'Buscar'}
-              </Button>
-              <Button type="button" variant="outline" onClick={clearFilters}>
-                Limpiar
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+        <div className="space-y-1.5">
+          <Label htmlFor="invoice_number" className="text-xs font-semibold text-slate-600 dark:text-slate-400">Número de factura</Label>
+          <Input
+            id="invoice_number"
+            placeholder="A-0001..."
+            value={filters.invoice_number ?? ''}
+            onChange={(event) => setFilters({ ...filters, invoice_number: event.target.value })}
+            className="h-10"
+          />
+        </div>
+      </FilterBar>
 
       {loadError ? (
         <Alert variant="destructive" title="No se pudo cargar el historial">
@@ -310,72 +293,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           </CardContent>
         </Card>
       ) : loading ? (
-        <Card>
-          <CardContent className="p-0">
-            <div className="table-wrap">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>No.</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Pagado</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-</CardContent>
-        </Card>
+        <LoadingState label="Cargando facturas..." />
       ) : !loadError ? (
         <Card>
           <CardContent className="p-0">
@@ -393,9 +311,9 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invoices.map((invoice) => (
+                  {invoicesList.map((invoice) => (
                     <TableRow key={invoice.id}>
-                      <TableCell className="font-mono text-sm">{invoice.invoice_number}</TableCell>
+                      <TableCell className="text-sm font-medium">{invoice.invoice_number}</TableCell>
                       <TableCell>{formatDate(invoice.issued_at)}</TableCell>
                       <TableCell className="font-medium">{invoice.patient_name}</TableCell>
                       <TableCell className="text-right">L. {invoice.total}</TableCell>
@@ -451,9 +369,11 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                               />
                               <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-md border border-border bg-card shadow-lg">
                                 <div className="py-1">
-                                      <button
+                                      <Button
                                         type="button"
-                                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-muted"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full justify-start text-destructive hover:bg-destructive/10"
                                         onClick={() => {
                                           setOpenActionsId(null);
                                           void openDetail(invoice.id);
@@ -462,7 +382,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                                       >
                                         <XCircle className="h-4 w-4" aria-hidden="true" />
                                         Anular
-                                      </button>
+                                      </Button>
                                 </div>
                               </div>
                             </>

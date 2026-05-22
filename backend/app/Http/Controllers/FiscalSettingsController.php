@@ -11,10 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class FiscalSettingsController extends Controller
 {
-    public function show(Request $request): JsonResponse
+    public function show(): JsonResponse
     {
-        $request->user()->can('settings.fiscal.view') || abort(403);
-
         return response()->json([
             'data' => FiscalSetting::query()->first(),
         ]);
@@ -23,13 +21,17 @@ class FiscalSettingsController extends Controller
     public function update(UpdateFiscalSettingsRequest $request): JsonResponse
     {
         $setting = DB::transaction(function () use ($request): FiscalSetting {
-            $setting = FiscalSetting::query()->firstOrNew(['id' => 1]);
-            $oldValues = $setting->exists ? $setting->only([
+            $setting = FiscalSetting::query()->first() ?? new FiscalSetting();
+            $fieldsToTrack = [
                 'hospital_name',
                 'rtn',
                 'default_tax_rate',
                 'receipt_width',
-            ]) : null;
+                'primary_color',
+                'address',
+                'slogan',
+            ];
+            $oldValues = $setting->exists ? $setting->only($fieldsToTrack) : null;
 
             $setting->fill($request->validated());
 
@@ -46,12 +48,7 @@ class FiscalSettingsController extends Controller
                 'entity_type' => FiscalSetting::class,
                 'entity_id' => $setting->id,
                 'old_values' => $oldValues,
-                'new_values' => $setting->only([
-                    'hospital_name',
-                    'rtn',
-                    'default_tax_rate',
-                    'receipt_width',
-                ]),
+                'new_values' => $setting->only($fieldsToTrack),
             ]);
 
             return $setting;

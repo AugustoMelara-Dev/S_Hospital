@@ -254,6 +254,7 @@ El recibo debe incluir paciente, factura, fecha, cajero, items, subtotal, impues
 | GET | `/api/reports/income` | `reports.view` | Query: `date_from`, `date_to`, `cash_session_id`, `user_id` | Ingresos agregados | Sumar en backend. |
 | GET | `/api/reports/categories` | `reports.view` | Query: `date_from`, `date_to` | Totales por categoria | No traer todo al frontend. |
 | GET | `/api/reports/cash-sessions/{id}` | `reports.view` | N/A | Resumen de caja | Esperado vs contado. |
+| GET | `/api/reports/pdf` | `reports.view` | Query: `date` o (`date_from`, `date_to`) | Archivo PDF de cierre | Cierre de caja diario o consolidado mensual en formato PDF listo para imprimir. |
 
 ## Backups
 

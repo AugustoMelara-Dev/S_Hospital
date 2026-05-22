@@ -17,6 +17,7 @@ interface AuditoriaTabProps {
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
   onExport: () => void;
+  onExportPdf: () => void;
   onSubmit: () => void;
 }
 
@@ -28,6 +29,7 @@ export function AuditoriaTab({
   onDateFromChange,
   onDateToChange,
   onExport,
+  onExportPdf,
   onSubmit,
 }: AuditoriaTabProps) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -74,7 +76,7 @@ export function AuditoriaTab({
       {!operations && (
         <EmptyState
           title="Consulte auditoria operativa"
-          description="Seleccione un rango de fechas para revisar anulaciones, reimpresiones, backups y actividad de cajeros."
+          description="Seleccione un rango de fechas para revisar anulaciones, reimpresiones, respaldos y actividad de cajeros."
         />
       )}
 
@@ -83,16 +85,16 @@ export function AuditoriaTab({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
             <KPICard title="Anulaciones" value={operations.summary.void_count} icon={<AlertTriangle className="h-4 w-4" />} />
             <KPICard title="Reimpresiones" value={operations.summary.reprint_count} icon={<Printer className="h-4 w-4" />} />
-            <KPICard title="Backups" value={operations.summary.backup_count} icon={<Database className="h-4 w-4" />} />
+            <KPICard title="Respaldos" value={operations.summary.backup_count} icon={<Database className="h-4 w-4" />} />
             <KPICard title="Fallidos" value={operations.summary.failed_backup_count} />
-            <KPICard title="Cajeros Activos" value={operations.summary.cashier_count} icon={<Users className="h-4 w-4" />} />
+            <KPICard title="Cajeros activos" value={operations.summary.cashier_count} icon={<Users className="h-4 w-4" />} />
           </div>
 
           {operations.voids.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Facturas Anuladas</CardTitle>
-                <CardDescription>Ultimas anulaciones en el rango</CardDescription>
+                <CardTitle>Facturas anuladas</CardTitle>
+                <CardDescription>Anulaciones en el rango consultado</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -159,8 +161,8 @@ export function AuditoriaTab({
           {operations.backups.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Backups</CardTitle>
-                <CardDescription>Backups realizados en el rango</CardDescription>
+                <CardTitle>Respaldos</CardTitle>
+                <CardDescription>Respaldos realizados en el rango</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -168,7 +170,7 @@ export function AuditoriaTab({
                     <TableRow>
                       <TableHead>Archivo</TableHead>
                       <TableHead>Estado</TableHead>
-                      <TableHead>Tamano</TableHead>
+                      <TableHead>Tamaño</TableHead>
                       <TableHead>Tipo</TableHead>
                       <TableHead>Usuario</TableHead>
                       <TableHead>Fecha</TableHead>
@@ -184,7 +186,7 @@ export function AuditoriaTab({
                           </span>
                         </TableCell>
                         <TableCell>{formatBytes(backup.size_bytes)}</TableCell>
-                        <TableCell>{backup.type}</TableCell>
+                        <TableCell>{backupTypeLabel(backup.type)}</TableCell>
                         <TableCell>{backup.creator ?? 'Sistema'}</TableCell>
                         <TableCell>{formatDate(backup.completed_at ?? backup.created_at)}</TableCell>
                       </TableRow>
@@ -198,8 +200,8 @@ export function AuditoriaTab({
           {operations.cashiers.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Actividad de Cajeros</CardTitle>
-                <CardDescription>Cajeros con movimiento en el rango</CardDescription>
+                <CardTitle>Actividad de cajeros</CardTitle>
+                <CardDescription>Cajeros con movimiento en el rango consultado</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -233,20 +235,24 @@ export function AuditoriaTab({
           {!hasOperationalEvents && (
             <EmptyState
               title="Sin eventos operativos"
-              description="No hay anulaciones, reimpresiones, backups ni actividad de cajeros para el rango seleccionado."
+              description="No hay anulaciones, reimpresiones, respaldos ni actividad de cajeros para el rango seleccionado."
             />
           )}
 
           {canExport ? (
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={onExport}>
                 <Download className="mr-2 h-4 w-4" />
-                Exportar CSV
+                Exportar Excel
+              </Button>
+              <Button variant="outline" onClick={onExportPdf}>
+                <Download className="mr-2 h-4 w-4" />
+                Exportar PDF
               </Button>
             </div>
           ) : (
             <p className="text-right text-sm text-muted-foreground">
-              Exportacion CSV requiere permiso de exportacion de reportes.
+              La exportación requiere permiso de reportes.
             </p>
           )}
         </>
@@ -262,6 +268,10 @@ function formatDate(value: string | null): string {
 
 function backupStatusLabel(status: string): string {
   return { pending: 'Pendiente', success: 'Completado', failed: 'Fallido' }[status] ?? status;
+}
+
+function backupTypeLabel(type: string): string {
+  return { manual: 'Manual', scheduled: 'Automatico' }[type] ?? 'Operativo';
 }
 
 function formatBytes(size: number | null): string {

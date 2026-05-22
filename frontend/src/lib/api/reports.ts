@@ -8,6 +8,7 @@ import type {
   CashSessionReport,
   ReportFilters,
   PaginatedMeta,
+  DashboardReport,
 } from './types';
 
 function buildReportParams(filters: ReportFilters): URLSearchParams {
@@ -21,6 +22,11 @@ function buildReportParams(filters: ReportFilters): URLSearchParams {
 }
 
 export const reports = {
+  async getDashboardReport(): Promise<DashboardReport> {
+    const response = await apiClient.request<{ data: DashboardReport }>(`/api/reports/dashboard`);
+    return response.data;
+  },
+
   async getDailyReport(date?: string): Promise<DailyReport> {
     const query = date ? `?date=${encodeURIComponent(date)}` : '';
     const response = await apiClient.request<{ data: DailyReport }>(`/api/reports/daily${query}`);
@@ -82,5 +88,13 @@ export const reports = {
   async downloadExport(filters: ReportFilters): Promise<Blob> {
     const params = buildReportParams(filters);
     return apiClient.download(`/api/reports/export?${params.toString()}`);
+  },
+
+  async downloadPdf(filters: ReportFilters & { date?: string }): Promise<Blob> {
+    const params = buildReportParams(filters as ReportFilters);
+    if (filters.date) {
+      params.set('date', filters.date);
+    }
+    return apiClient.download(`/api/reports/pdf?${params.toString()}`);
   },
 };

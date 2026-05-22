@@ -38,6 +38,7 @@ DB_DATABASE_VALUE="$(env_value DB_DATABASE hospital_billing)"
 DB_USERNAME_VALUE="$(env_value DB_USERNAME hospital)"
 DB_PASSWORD_VALUE="$(env_value DB_PASSWORD "")"
 RESTORE_TEST_DATABASE_VALUE="${RESTORE_TEST_DATABASE:-}"
+RESTORE_EVIDENCE_PATH="${HOSPITAL_RESTORE_EVIDENCE_PATH:-}"
 RESTORE_TEST_DATABASE_LOWER="${RESTORE_TEST_DATABASE_VALUE,,}"
 DB_DATABASE_LOWER="${DB_DATABASE_VALUE,,}"
 
@@ -140,5 +141,74 @@ mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE
   -e "DROP DATABASE IF EXISTS \`${RESTORE_TEST_DATABASE_VALUE}\`; CREATE DATABASE \`${RESTORE_TEST_DATABASE_VALUE}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" "$RESTORE_TEST_DATABASE_VALUE" < "$BACKUP_ABSOLUTE"
 
+BACKUP_SHA256="$(php -r 'echo hash_file("sha256", $argv[1]);' "$BACKUP_ABSOLUTE")"
+BACKUP_BYTES="$(php -r 'echo filesize($argv[1]);' "$BACKUP_ABSOLUTE")"
+MIGRATION_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM migrations;" 2>/dev/null || printf '0')"
+USER_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM users;" 2>/dev/null || printf '0')"
+SERVICE_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM services;" 2>/dev/null || printf '0')"
+INVOICE_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM invoices;" 2>/dev/null || printf '0')"
+PAYMENT_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM payments;" 2>/dev/null || printf '0')"
+BACKUP_LOG_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM backup_logs;" 2>/dev/null || printf '0')"
+
+if [ "$MIGRATION_COUNT" -le 0 ]; then
+  echo "Abort: restored database has no migrations."
+  exit 1
+fi
+
+if [ "$SERVICE_COUNT" -le 0 ]; then
+  echo "Abort: restored database has no services."
+  exit 1
+fi
+
+if [ -n "$RESTORE_EVIDENCE_PATH" ]; then
+  mkdir -p "$(dirname "$RESTORE_EVIDENCE_PATH")"
+  cat > "$RESTORE_EVIDENCE_PATH" <<EOF
+# Final restore proof
+
+## Environment
+
+- Date/time: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+- Responsible person: Automated validation script
+- Source database: ${DB_DATABASE_VALUE}
+- Disposable restore database: ${RESTORE_TEST_DATABASE_VALUE}
+- Backup file: ${BACKUP_ABSOLUTE}
+- Backup SHA256: ${BACKUP_SHA256}
+- Backup size bytes: ${BACKUP_BYTES}
+- Evidence/capture reference: ${RESTORE_EVIDENCE_PATH}
+- Final conclusion: Restore validation completed against a disposable database with schema and core table counts verified.
+
+## Required checks
+
+- [x] Disposable restore database is not the active database. Result/evidence: ${RESTORE_TEST_DATABASE_VALUE} != ${DB_DATABASE_VALUE}.
+- [x] Backup file exists and has SHA256. Result/evidence: ${BACKUP_SHA256}.
+- [x] Restore imports without SQL error. Result/evidence: mysql import completed.
+- [x] Migration table has rows. Result/evidence: migrations=${MIGRATION_COUNT}.
+- [x] Services table has rows. Result/evidence: services=${SERVICE_COUNT}.
+- [x] Core counts captured. Result/evidence: users=${USER_COUNT}, invoices=${INVOICE_COUNT}, payments=${PAYMENT_COUNT}, backup_logs=${BACKUP_LOG_COUNT}.
+
+## Evidence
+
+\`\`\`json
+{
+  "status": "VALIDATED",
+  "source_database": "${DB_DATABASE_VALUE}",
+  "restore_database": "${RESTORE_TEST_DATABASE_VALUE}",
+  "backup_file": "${BACKUP_ABSOLUTE}",
+  "backup_sha256": "${BACKUP_SHA256}",
+  "backup_size_bytes": ${BACKUP_BYTES},
+  "counts": {
+    "migrations": ${MIGRATION_COUNT},
+    "users": ${USER_COUNT},
+    "services": ${SERVICE_COUNT},
+    "invoices": ${INVOICE_COUNT},
+    "payments": ${PAYMENT_COUNT},
+    "backup_logs": ${BACKUP_LOG_COUNT}
+  }
+}
+\`\`\`
+EOF
+  echo "Restore evidence written to $RESTORE_EVIDENCE_PATH"
+fi
+
 echo "Restore validation completed. Backup: $BACKUP_ABSOLUTE"
-echo "Next manual checks: point a temporary .env to ${RESTORE_TEST_DATABASE_VALUE}, then run php artisan migrate:status, php artisan config:cache --no-ansi, and browser checks for /up, /login, /verify-email."
+echo "Counts: migrations=$MIGRATION_COUNT users=$USER_COUNT services=$SERVICE_COUNT invoices=$INVOICE_COUNT payments=$PAYMENT_COUNT backup_logs=$BACKUP_LOG_COUNT"

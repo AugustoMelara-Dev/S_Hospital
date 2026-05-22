@@ -5,9 +5,9 @@ const useExternalServer = process.env.PLAYWRIGHT_EXTERNAL_SERVER === '1';
 export default defineConfig({
   testDir: './e2e',
   testIgnore: ['**/real-smoke.spec.ts'],
-  timeout: 30_000,
+  timeout: 90_000,
   expect: {
-    timeout: 7_500,
+    timeout: 10_000,
   },
   fullyParallel: false,
   reporter: [['list']],

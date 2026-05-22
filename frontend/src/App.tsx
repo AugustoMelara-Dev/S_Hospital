@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AppRoutes } from './AppRoutes';
 import { useHospitalSession } from './app/useHospitalSession';
+import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { Dialog } from './components/ui/dialog';
 import { EmptyState, LoadingState } from './components/ui/states';
 import { LoginView } from './features/auth/LoginView';
@@ -12,12 +13,17 @@ import { CashBoxView } from './features/cash/CashBoxView';
 import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 import { AppShell } from './layout/AppShell';
 import { queryClient } from './lib/query-client';
+import { apiClient } from './lib/api';
+import { Toaster } from './components/ui/toaster';
 
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <HospitalApp />
+        <AppErrorBoundary>
+          <HospitalApp />
+        </AppErrorBoundary>
+        <Toaster />
       </BrowserRouter>
     </QueryClientProvider>
   );
@@ -28,6 +34,7 @@ function HospitalApp() {
   const navigate = useNavigate();
   const [quickInvoiceOpen, setQuickInvoiceOpen] = useState(false);
   const [quickCashOpen, setQuickCashOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (session.sessionExpired) {
@@ -35,8 +42,14 @@ function HospitalApp() {
     }
   }, [session.sessionExpired, navigate]);
 
+  useEffect(() => {
+    apiClient.getLogo()
+      .then((url) => setLogoUrl(url))
+      .catch(() => {});
+  }, [session.user]); // Refresh when user changes/logs in
+
   if (session.loading) {
-    return <LoadingState label="Cargando sesion..." />;
+    return <LoadingState label="Cargando sesión..." />;
   }
 
   if (!session.user) {
@@ -48,6 +61,7 @@ function HospitalApp() {
         onLoginChange={session.setLogin}
         onPasswordChange={session.setPassword}
         onSubmit={session.handleLogin}
+        logoUrl={logoUrl}
       />
     );
   }
@@ -65,11 +79,10 @@ function HospitalApp() {
   return (
     <AppShell
       cashSession={session.cashSession}
-      onQuickCash={() => setQuickCashOpen(true)}
-      onQuickInvoice={() => setQuickInvoiceOpen(true)}
       onLogout={session.handleLogout}
       status={session.status}
       user={session.user}
+      logoUrl={logoUrl}
     >
       {!session.hasAnyOperationalPermission ? (
         <EmptyState
@@ -77,7 +90,7 @@ function HospitalApp() {
           description="No tiene permisos operativos asignados."
         />
       ) : session.cashBootstrapLoading ? (
-        <LoadingState label="Validando caja para facturacion..." />
+        <LoadingState label="Validando caja para facturación..." />
       ) : (
         <AppRoutes
           canCreateInvoices={session.canCreateInvoices}
@@ -95,6 +108,7 @@ function HospitalApp() {
           canViewManagerialReports={session.canViewManagerialReports}
           canViewCashSessionReports={session.canViewCashSessionReports}
           canExportReports={session.canExportReports}
+          canViewUsers={session.canViewUsers}
           cashSession={session.cashSession}
           defaultAuthenticatedRoute={session.defaultAuthenticatedRoute}
           onQuickCash={() => setQuickCashOpen(true)}
@@ -110,7 +124,7 @@ function HospitalApp() {
         onOpenChange={setQuickInvoiceOpen}
         size="fullscreen"
         title="Emitir factura"
-        description="POS rapido en modal para facturar sin abandonar el contexto actual."
+        description="Facturación rápida sin abandonar la pantalla actual."
       >
         <NewInvoiceView
           cashSession={session.cashSession}
@@ -133,6 +147,7 @@ function HospitalApp() {
         description="Apertura y cierre de turno sin navegar a otra pantalla."
       >
         <CashBoxView
+          cashSession={session.cashSession}
           canCloseCash={session.canCloseCash}
           canOpenCash={session.canOpenCash}
           canViewCashSessionReport={session.canViewCashSessionReports || session.canViewManagerialReports}

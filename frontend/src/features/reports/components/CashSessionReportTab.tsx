@@ -48,7 +48,7 @@ export function CashSessionReportTab({
               />
             </div>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Consultando...' : 'Ver Caja'}
+              {loading ? 'Consultando...' : 'Ver caja'}
             </Button>
           </form>
           {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
@@ -64,16 +64,16 @@ export function CashSessionReportTab({
               icon={<User className="h-4 w-4" />}
             />
             <KPICard
-              title="Monto Apertura"
+              title="Apertura"
               value={`L. ${cashSession.cash_session.opening_amount}`}
               icon={<DollarSign className="h-4 w-4" />}
             />
             <KPICard
-              title="Total Esperado"
+              title="Esperado"
               value={`L. ${cashSession.cash_session.expected_amount ?? '0.00'}`}
             />
             <KPICard
-              title="Total Contado"
+              title="Contado"
               value={`L. ${cashSession.cash_session.closing_amount ?? '0.00'}`}
             />
           </div>
@@ -96,7 +96,7 @@ export function CashSessionReportTab({
 
           <Card>
             <CardHeader>
-              <CardTitle>Totales por Método</CardTitle>
+              <CardTitle>Totales por metodo</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -188,11 +188,11 @@ export function CashSessionReportTab({
             {canExport ? (
               <Button variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar CSV
+                Exportar Excel
               </Button>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Exportacion CSV requiere permiso de exportacion de reportes.
+                Exportación Excel requiere permiso de exportación de reportes.
               </p>
             )}
           </div>

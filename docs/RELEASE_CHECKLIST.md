@@ -78,10 +78,31 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_prefli
   -BaseUrl http://IP_DEL_SERVIDOR
 ```
 
+Handoff guiado de cierre final:
+
+```powershell
+cd C:\Projects\S_Hospital
+powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 `
+  -BaseUrl http://IP_DEL_SERVIDOR `
+  -PhpPath C:\xampp\php\php.exe `
+  -InitializeProofFiles
+```
+
+Este helper no aprueba produccion por si solo: crea o muestra archivos de
+evidencia pendientes, muestra el estado de tareas de backup y ejecuta el
+preflight sin `-AllowMissingPhysicalProof`. Si faltan `qa/LAN_CLIENT_VALIDATION_PROOF.md`
+o `qa/THERMAL_PRINTER_PROOF.md` completos, el resultado correcto sigue siendo
+`PRODUCTION_CANDIDATE`. Tambien deja un resumen operativo en
+`qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` con la decision, bloqueantes y comandos
+siguientes.
+
 Este preflight falla si el servidor no usa `APP_ENV=production`, si `APP_DEBUG`
 no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o
 `mariadb-dump`, si las rutas publicas no responden, o si no existen las pruebas
-documentadas de cliente LAN e impresora fisica.
+documentadas de cliente LAN, impresora fisica, restore final y concurrencia final.
+
+En Windows tambien falla si no existen `HospitalBillingOS-BackupWorker` y
+`HospitalBillingOS-DailyBackup`, o si el worker continuo no esta `Running`.
 
 La evidencia fisica de LAN e impresora es obligatoria por defecto. El flag
 `-AllowMissingPhysicalProof` solo permite una corrida parcial de entorno y deja
@@ -187,6 +208,26 @@ Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_b
 - Probar impresora fisica termica 80mm/58mm desde la PC o cliente que imprimira.
 - Crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
 - Crear `qa/THERMAL_PRINTER_PROOF.md` usando `qa/THERMAL_PRINTER_PROOF.example.md`.
+- Crear `qa/FINAL_RESTORE_PROOF.md` usando `qa/FINAL_RESTORE_PROOF.example.md`.
+- Crear `qa/FINAL_CONCURRENCY_PROOF.md` usando `qa/FINAL_CONCURRENCY_PROOF.example.md`.
+- Para preparar ambos archivos sin escribir evidencia falsa:
+
+```powershell
+cd C:\Projects\S_Hospital
+powershell.exe -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1
+```
+
+- Desde la segunda PC cliente LAN, generar evidencia inicial de rutas:
+
+```powershell
+cd C:\Projects\S_Hospital
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 `
+  -BaseUrl http://IP_DEL_SERVIDOR `
+  -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+```
+
+Luego completar manualmente en ese mismo archivo login, caja, factura, pago,
+recibo, historial, reportes y backup `pending` -> `success`.
 - Validar concurrencia real con MySQL/MariaDB.
 - Crear admin inicial real con password temporal y cambio obligatorio.
 - Remover o no ejecutar seeders demo fuera de `local`/`testing`.

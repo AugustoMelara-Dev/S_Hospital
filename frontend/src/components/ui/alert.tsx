@@ -10,9 +10,9 @@ type AlertProps = HTMLAttributes<HTMLDivElement> & {
 
 const variants = {
   default: 'border-border bg-card text-card-foreground',
-  success: 'border-primary/30 bg-primary/10 text-foreground',
-  warning: 'border-amber-300 bg-amber-50 text-amber-950',
-  destructive: 'border-destructive/40 bg-rose-50 text-destructive',
+  success: 'border-success/30 bg-success/10 text-success',
+  warning: 'border-warning/30 bg-warning/10 text-warning',
+  destructive: 'border-destructive/40 bg-destructive/10 text-destructive',
 };
 
 const icons = {
