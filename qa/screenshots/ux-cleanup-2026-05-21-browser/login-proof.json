@@ -1,0 +1,7 @@
+{
+  "finalUrl": "http://127.0.0.1:8000/login",
+  "hasLogin": true,
+  "hasHospitalName": true,
+  "badMatch": null,
+  "consoleIssues": 0
+}

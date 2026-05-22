@@ -1,0 +1,11 @@
+{
+  "title": "Caja hospitalaria",
+  "usersHasSpanishHeader": false,
+  "usersHasEnglishHeader": false,
+  "usersFile": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-live-auth-2026-05-21-browser\\users-after-copy-fix-authenticated.png",
+  "createButtonCount": 0,
+  "backupsHasCompleted": false,
+  "backupsHasPending": false,
+  "backupsFile": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-live-auth-2026-05-21-browser\\backups-after-create-authenticated.png",
+  "backupsSample": "Caja hospitalaria\n\nAcceso en red local\n\nCaja hospitalaria rápida y clara.\n\nFacturación, cobros, reportes y recibos térmicos para operar dentro del hospital.\n\nFunciona dentro de la red local.\nSesión protegida para usuarios autorizados.\n\nOperación local\n\nACCESO OPERATIVO\n\nCaja hospitalaria\n\nInicie sesión con sus credenciales para abrir el panel de caja.\n\nUsuario o correo\nContraseña\nIniciar sesión\nListo para iniciar sesión local."
+}

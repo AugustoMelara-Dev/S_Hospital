@@ -1,0 +1,92 @@
+[
+  {
+    "name": "dashboard",
+    "url": "http://127.0.0.1:8000/dashboard",
+    "expected": "Inicio",
+    "hasExpected": true,
+    "badMatch": null,
+    "consoleIssues": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-cleanup-2026-05-21-browser\\dashboard.png"
+  },
+  {
+    "name": "billing-new",
+    "url": "http://127.0.0.1:8000/billing/new",
+    "expected": "Nueva Factura",
+    "hasExpected": true,
+    "badMatch": null,
+    "consoleIssues": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-cleanup-2026-05-21-browser\\billing-new.png"
+  },
+  {
+    "name": "cashbox",
+    "url": "http://127.0.0.1:8000/cashbox",
+    "expected": "Caja",
+    "hasExpected": true,
+    "badMatch": null,
+    "consoleIssues": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-cleanup-2026-05-21-browser\\cashbox.png"
+  },
+  {
+    "name": "catalog",
+    "url": "http://127.0.0.1:8000/catalog",
+    "expected": "Catálogo",
+    "hasExpected": true,
+    "badMatch": null,
+    "consoleIssues": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-cleanup-2026-05-21-browser\\catalog.png"
+  },
+  {
+    "name": "invoices",
+    "url": "http://127.0.0.1:8000/invoices",
+    "expected": "Historial de facturas",
+    "hasExpected": true,
+    "badMatch": null,
+    "consoleIssues": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-cleanup-2026-05-21-browser\\invoices.png"
+  },
+  {
+    "name": "reports",
+    "url": "http://127.0.0.1:8000/reports",
+    "expected": "Reportes",
+    "hasExpected": false,
+    "badMatch": null,
+    "consoleIssues": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-cleanup-2026-05-21-browser\\reports.png"
+  },
+  {
+    "name": "backups",
+    "url": "http://127.0.0.1:8000/backups",
+    "expected": "Respaldos",
+    "hasExpected": true,
+    "badMatch": null,
+    "consoleIssues": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-cleanup-2026-05-21-browser\\backups.png"
+  },
+  {
+    "name": "settings-fiscal",
+    "url": "http://127.0.0.1:8000/settings/fiscal",
+    "expected": "Configuración Fiscal",
+    "hasExpected": false,
+    "badMatch": null,
+    "consoleIssues": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-cleanup-2026-05-21-browser\\settings-fiscal.png"
+  },
+  {
+    "name": "users",
+    "url": "http://127.0.0.1:8000/admin/users",
+    "expected": "Usuarios",
+    "hasExpected": true,
+    "badMatch": null,
+    "consoleIssues": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-cleanup-2026-05-21-browser\\users.png"
+  },
+  {
+    "name": "help",
+    "url": "http://127.0.0.1:8000/help",
+    "expected": "Ayuda",
+    "hasExpected": false,
+    "badMatch": null,
+    "consoleIssues": 0,
+    "file": "C:\\Projects\\S_Hospital\\qa\\screenshots\\ux-cleanup-2026-05-21-browser\\help.png"
+  }
+]
