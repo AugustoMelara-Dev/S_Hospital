@@ -342,7 +342,7 @@ export function CashBoxView({
           />
         ) : (
           <Alert variant="warning" title="Caja en modo consulta">
-            Este usuario puede ver caja, pero no tiene permiso para abrir una nueva sesion.
+            Este usuario puede ver caja, pero no tiene permiso para abrir una nueva sesión.
           </Alert>
         )}
       </div>

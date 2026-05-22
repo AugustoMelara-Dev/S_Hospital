@@ -23,7 +23,7 @@ export function isSessionExpiredError(error: unknown): boolean {
 
 export function userSafeErrorMessage(error: unknown, fallback: string): string {
   if (isSessionExpiredError(error)) {
-    return 'Sesion vencida. Vuelva a iniciar sesion para continuar.';
+    return 'Sesión vencida. Vuelva a iniciar sesión para continuar.';
   }
 
   if (error instanceof ApiError && error.status === 403) {
@@ -112,10 +112,10 @@ export const apiClient = {
     if (!response.ok) {
       if (response.status === 401 || response.status === 419) {
         sessionExpiredHandler?.();
-        throw new ApiError('Sesion vencida. Vuelva a iniciar sesion para continuar.', response.status);
+        throw new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status);
       }
 
-      throw new ApiError('No se pudo preparar la sesion segura. Revise el servidor local e intente de nuevo.', response.status);
+      throw new ApiError('No se pudo preparar la sesión segura. Revise el servidor local e intente de nuevo.', response.status);
     }
   },
 
@@ -171,7 +171,7 @@ export const apiClient = {
 
       if (response.status === 401) {
         sessionExpiredHandler?.();
-        throw new ApiError('Sesion vencida. Vuelva a iniciar sesion para continuar.', response.status);
+        throw new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status);
       }
 
       if (response.status === 403) {
@@ -180,7 +180,7 @@ export const apiClient = {
 
       if (response.status === 419) {
         sessionExpiredHandler?.();
-        throw new ApiError('La sesion expiro. Actualice la pantalla e intente de nuevo.', response.status);
+        throw new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status);
       }
 
       if (response.status === 422 && error?.errors) {
@@ -211,7 +211,7 @@ export const apiClient = {
     if (!response.ok) {
       if (response.status === 401) {
         sessionExpiredHandler?.();
-        throw new ApiError('Sesion vencida. Vuelva a iniciar sesion para continuar.', response.status);
+        throw new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status);
       }
 
       if (response.status === 403) {
@@ -220,7 +220,7 @@ export const apiClient = {
 
       if (response.status === 419) {
         sessionExpiredHandler?.();
-        throw new ApiError('La sesion expiro. Actualice la pantalla e intente de nuevo.', response.status);
+        throw new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status);
       }
 
       const error = (await response.json().catch(() => null)) as { message?: string } | null;

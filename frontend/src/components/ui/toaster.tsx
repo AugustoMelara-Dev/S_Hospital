@@ -3,7 +3,7 @@ import toast, { Toaster as HotToaster } from 'react-hot-toast';
 export { toast };
 
 /**
- * Preconfigured Toaster for Hospital Billing OS.
+ * Preconfigured application toaster.
  * Dark-mode aware, positioned top-right, with professional styling.
  */
 export function Toaster() {

@@ -51,18 +51,18 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
           </div>
           <div>
             <h3 className="font-semibold">
-              {isConfigured ? 'Configuracion completa' : 'Configuracion incompleta'}
+              {isConfigured ? 'Configuración completa' : 'Configuración incompleta'}
             </h3>
             <p className="text-sm text-muted-foreground">
               {isConfigured
-                ? 'El sistema esta listo para emitir facturas en la demo.'
-                : 'Complete los datos fiscales antes de demostrar emision de facturas.'}
+                ? 'El sistema está listo para emitir facturas.'
+                : 'Complete los datos fiscales antes de emitir facturas.'}
             </p>
           </div>
         </div>
         {blockers.length > 0 && (
           <p className="mt-3 text-sm text-amber-700">
-            Faltan o requieren revision: {blockers.join(', ')}.
+            Faltan o requieren revisión: {blockers.join(', ')}.
           </p>
         )}
       </CardContent>

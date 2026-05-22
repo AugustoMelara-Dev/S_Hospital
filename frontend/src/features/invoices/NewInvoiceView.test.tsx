@@ -333,7 +333,7 @@ describe('NewInvoiceView', () => {
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '17.25' } });
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
-    expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
+    expect((await screen.findAllByLabelText(/vista previa del recibo/i)).length).toBeGreaterThan(0);
     expect(await screen.findByText(/hospital demo/i)).toBeInTheDocument();
     expect(screen.getByText('80mm')).toBeInTheDocument();
   });
@@ -711,7 +711,7 @@ describe('NewInvoiceView', () => {
     fireEvent.click(await screen.findByRole('button', { name: /registrar reimpresi/i }));
     expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
     await waitFor(() => {
-      const receiptEl = screen.getByLabelText(/recibo termico/i);
+      const receiptEl = screen.getByLabelText(/recibo t[eé]rmico/i);
       expect(receiptEl).toBeInTheDocument();
       expect(receiptEl).toHaveClass('receipt-80mm');
     });
@@ -720,7 +720,7 @@ describe('NewInvoiceView', () => {
     fireEvent.change(screen.getByLabelText(/ancho de vista previa/i), { target: { value: '58mm' } });
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/recibo termico/i)).toHaveClass('receipt-58mm');
+      expect(screen.getByLabelText(/recibo t[eé]rmico/i)).toHaveClass('receipt-58mm');
     });
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(1);
   });
@@ -961,7 +961,7 @@ describe('NewInvoiceView', () => {
 
     render(<ReceiptPreview receipt={receipt} onWidthChange={vi.fn()} onPrint={printSpy} />);
 
-    expect(screen.getByLabelText(/recibo termico/i)).toHaveClass('receipt-58mm');
+    expect(screen.getByLabelText(/recibo t[eé]rmico/i)).toHaveClass('receipt-58mm');
     expect(screen.getByText(/vence/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /imprimir/i }));
     expect(printSpy).toHaveBeenCalledOnce();

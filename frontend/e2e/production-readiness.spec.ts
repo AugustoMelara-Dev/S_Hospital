@@ -512,7 +512,21 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
 
 async function loginAs(page: Page, username: string) {
   await page.goto('/login');
-  await page.getByLabel(/usuario o email/i).fill(username);
+  const loginInput = page.getByLabel(/usuario o email/i);
+  const visibleState = await Promise.any([
+    loginInput.waitFor({ state: 'visible', timeout: 10_000 }).then(() => 'login' as const),
+    page.getByRole('heading', { name: /dashboard/i }).waitFor({ state: 'visible', timeout: 10_000 }).then(() => 'session' as const),
+  ]).catch(() => 'timeout' as const);
+
+  if (visibleState === 'session') {
+    return;
+  }
+
+  if (visibleState === 'timeout') {
+    await expect(loginInput).toBeVisible();
+  }
+
+  await loginInput.fill(username);
   await page.getByLabel(/^contraseña$|^contrasena$/i).fill('Password123!');
   await Promise.all([
     page.waitForResponse('**/api/auth/login'),
@@ -528,7 +542,7 @@ async function expectOperationalNavigation(page: Page) {
     return;
   }
 
-  await page.getByRole('button', { name: 'Abrir menú', exact: true }).click();
+  await page.getByRole('button', { name: 'Abrir menu', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Caja', exact: true }).first()).toBeVisible();
   await expect(page.getByRole('link', { name: /cat.logo/i }).first()).toBeVisible();
   await page.keyboard.press('Escape');
@@ -559,7 +573,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await loginAs(page, 'cajero.demo');
   await page.goto('/cashbox');
 
-  await expect(page.locator('#cash-title')).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^caja$/i })).toBeVisible();
   await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
   await expect(page.getByRole('heading', { name: /cerrar caja/i })).toBeVisible();
   if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {

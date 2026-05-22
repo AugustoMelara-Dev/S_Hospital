@@ -3,6 +3,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert } from '@/components/ui/alert';
 import { apiClient, userSafeErrorMessage } from '@/lib/api';
@@ -241,37 +242,37 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
       open={open}
       onOpenChange={onOpenChange}
       size="lg"
-      title="Asistente de Configuración Inicial"
-      description="Ponga en marcha el sistema hospitalario S_Hospital completando estos pasos fundamentales."
+      title="Preparar caja"
+      description="Complete los datos minimos para comenzar a facturar."
     >
       <div className="space-y-6 py-2">
         {/* Step Indicators */}
         <div className="flex items-center justify-between border-b border-border pb-4">
           <div className="flex items-center gap-6">
-            <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 1 ? 'text-teal-600' : 'text-muted-foreground'}`}>
-              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 1 ? 'bg-teal-600 text-white animate-pulse' : step > 1 ? 'bg-teal-100 text-teal-700' : 'bg-muted'}`}>1</span>
-              <span>Datos Hospital</span>
+            <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 1 ? 'text-secondary' : 'text-muted-foreground'}`}>
+              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 1 ? 'bg-secondary text-secondary-foreground animate-pulse' : step > 1 ? 'bg-secondary/10 text-secondary' : 'bg-muted'}`}>1</span>
+              <span>Hospital</span>
             </div>
             <div className="h-px w-8 bg-border" />
-            <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 2 ? 'text-teal-600' : 'text-muted-foreground'}`}>
-              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 2 ? 'bg-teal-600 text-white animate-pulse' : step > 2 ? 'bg-teal-100 text-teal-700' : 'bg-muted'}`}>2</span>
-              <span>Rango Fiscal</span>
+            <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 2 ? 'text-secondary' : 'text-muted-foreground'}`}>
+              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 2 ? 'bg-secondary text-secondary-foreground animate-pulse' : step > 2 ? 'bg-secondary/10 text-secondary' : 'bg-muted'}`}>2</span>
+              <span>Numeracion</span>
             </div>
             <div className="h-px w-8 bg-border" />
-            <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 3 ? 'text-teal-600' : 'text-muted-foreground'}`}>
-              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 3 ? 'bg-teal-600 text-white animate-pulse' : step > 3 ? 'bg-teal-100 text-teal-700' : 'bg-muted'}`}>3</span>
-              <span>Catálogo</span>
+            <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 3 ? 'text-secondary' : 'text-muted-foreground'}`}>
+              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 3 ? 'bg-secondary text-secondary-foreground animate-pulse' : step > 3 ? 'bg-secondary/10 text-secondary' : 'bg-muted'}`}>3</span>
+              <span>Catalogo</span>
             </div>
             <div className="h-px w-8 bg-border" />
-            <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 4 ? 'text-teal-600' : 'text-muted-foreground'}`}>
-              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 4 ? 'bg-teal-600 text-white' : 'bg-muted'}`}>4</span>
+            <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 4 ? 'text-secondary' : 'text-muted-foreground'}`}>
+              <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 4 ? 'bg-secondary text-secondary-foreground' : 'bg-muted'}`}>4</span>
               <span>Finalizar</span>
             </div>
           </div>
         </div>
 
         {error && (
-          <Alert variant="destructive" title="Error de configuración">
+          <Alert variant="destructive" title="No se pudo guardar">
             {error}
           </Alert>
         )}
@@ -279,19 +280,19 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         {/* Step 1: Hospital details form */}
         {step === 1 && (
           <div className="space-y-4">
-            <div className="flex gap-4 p-4 rounded-lg bg-teal-50/50 dark:bg-slate-900 border border-teal-500/10">
-              <Building2 className="size-10 text-teal-600 shrink-0" />
+            <div className="flex gap-4 p-4 rounded-lg bg-accent border border-secondary/10">
+              <Building2 className="size-10 text-secondary shrink-0" />
               <div>
-                <h4 className="font-semibold text-foreground text-sm">Paso 1: Información Legal de la Institución</h4>
+                <h4 className="font-semibold text-foreground text-sm">Paso 1: Datos del hospital</h4>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Ingrese la denominación comercial y el RTN autorizado. Esta información se incrustará de forma obligatoria en la cabecera de las facturas impresas.
+                  Estos datos aparecen en facturas, recibos y pantalla de ingreso.
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="wiz-hosp-name">Nombre del Hospital / Clínica *</Label>
+                <Label htmlFor="wiz-hosp-name">Nombre del hospital *</Label>
                 <Input
                   id="wiz-hosp-name"
                   value={hospitalForm.hospital_name}
@@ -301,7 +302,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="wiz-hosp-rtn">RTN del Hospital *</Label>
+                <Label htmlFor="wiz-hosp-rtn">RTN *</Label>
                 <Input
                   id="wiz-hosp-rtn"
                   value={hospitalForm.rtn}
@@ -311,7 +312,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="wiz-hosp-tax">Tasa de Impuesto General (%)</Label>
+                <Label htmlFor="wiz-hosp-tax">Impuesto general (%)</Label>
                 <Input
                   id="wiz-hosp-tax"
                   type="number"
@@ -323,7 +324,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="wiz-hosp-width">Papel Impresora Térmica por Defecto</Label>
+                <Label htmlFor="wiz-hosp-width">Ancho del recibo</Label>
                 <Select
                   value={hospitalForm.receipt_width}
                   onValueChange={(val: '80mm' | '58mm') => setHospitalForm({ ...hospitalForm, receipt_width: val })}
@@ -332,8 +333,8 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="80mm">80mm (Estándar de hospital)</SelectItem>
-                    <SelectItem value="58mm">58mm (Formatos pequeños)</SelectItem>
+                    <SelectItem value="80mm">80mm (estandar)</SelectItem>
+                    <SelectItem value="58mm">58mm (angosto)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -351,19 +352,19 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         {/* Step 2: Fiscal sequence form */}
         {step === 2 && (
           <div className="space-y-4">
-            <div className="flex gap-4 p-4 rounded-lg bg-teal-50/50 dark:bg-slate-900 border border-teal-500/10">
-              <FileCheck className="size-10 text-teal-600 shrink-0" />
+            <div className="flex gap-4 p-4 rounded-lg bg-accent border border-secondary/10">
+              <FileCheck className="size-10 text-secondary shrink-0" />
               <div>
-                <h4 className="font-semibold text-foreground text-sm">Paso 2: Rango Fiscal Autorizado (CAI)</h4>
+                <h4 className="font-semibold text-foreground text-sm">Paso 2: Numeracion de facturas</h4>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Establezca el CAI único y el prefijo de numeración tributaria asignado por la autoridad fiscal para facturación física.
+                  Registre el CAI, prefijo y rango autorizado para imprimir facturas.
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="wiz-seq-prefix">Prefijo / Punto Emisión *</Label>
+                <Label htmlFor="wiz-seq-prefix">Prefijo *</Label>
                 <Input
                   id="wiz-seq-prefix"
                   value={sequenceForm.prefix}
@@ -373,7 +374,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="wiz-seq-cai">Código de Autorización CAI *</Label>
+                <Label htmlFor="wiz-seq-cai">CAI *</Label>
                 <Input
                   id="wiz-seq-cai"
                   value={sequenceForm.cai}
@@ -383,7 +384,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="wiz-seq-min">Desde el número *</Label>
+                <Label htmlFor="wiz-seq-min">Desde el numero *</Label>
                 <Input
                   id="wiz-seq-min"
                   type="number"
@@ -393,7 +394,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="wiz-seq-max">Hasta el número *</Label>
+                <Label htmlFor="wiz-seq-max">Hasta el numero *</Label>
                 <Input
                   id="wiz-seq-max"
                   type="number"
@@ -403,7 +404,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
 
               <div className="space-y-1.5 md:col-span-2">
-                <Label htmlFor="wiz-seq-date">Fecha Límite de Emisión *</Label>
+                <Label htmlFor="wiz-seq-date">Fecha limite *</Label>
                 <Input
                   id="wiz-seq-date"
                   type="date"
@@ -416,7 +417,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             <div className="flex justify-between pt-4">
               <Button type="button" variant="secondary" onClick={() => setStep(1)} className="gap-2">
                 <ArrowLeft className="size-4" />
-                Atrás
+                Atras
               </Button>
               <Button onClick={handleSaveSequence} disabled={loading} className="gap-2">
                 Siguiente
@@ -429,24 +430,24 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         {/* Step 3: Catalog Import form */}
         {step === 3 && (
           <div className="space-y-4">
-            <div className="flex gap-4 p-4 rounded-lg bg-teal-50/50 dark:bg-slate-900 border border-teal-500/10">
-              <PackagePlus className="size-10 text-teal-600 shrink-0" />
+            <div className="flex gap-4 p-4 rounded-lg bg-accent border border-secondary/10">
+              <PackagePlus className="size-10 text-secondary shrink-0" />
               <div>
-                <h4 className="font-semibold text-foreground text-sm">Paso 3: Carga del Catálogo de Servicios</h4>
+                <h4 className="font-semibold text-foreground text-sm">Paso 3: Catalogo de servicios</h4>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Importe masivamente su portafolio de servicios médicos inicial. Edite la plantilla de muestra abajo o copie y pegue su propio archivo de Excel/CSV.
+                  Pegue la lista inicial de servicios. Luego podra editarla desde Catalogo.
                 </p>
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="wiz-cat-csv">Listado de Servicios (Formato: Categoría, Servicio, Precio, Grabado)</Label>
-                <span className="text-[10px] text-muted-foreground">Grabado = S (Sí) o N (No / Exento)</span>
+                <Label htmlFor="wiz-cat-csv">Servicios: categoria, servicio, precio, impuesto</Label>
+                <span className="text-[10px] text-muted-foreground">Use S para impuesto o N para exento</span>
               </div>
-              <textarea
+              <Textarea
                 id="wiz-cat-csv"
-                className="w-full h-44 rounded-md border border-input bg-card p-3 font-mono text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-44 bg-card text-xs"
                 value={csvText}
                 onChange={(e) => setCsvText(e.target.value)}
                 disabled={loading}
@@ -454,14 +455,14 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             </div>
 
             {importProgress && (
-              <div className="space-y-1 bg-slate-100 dark:bg-slate-800 p-3 rounded border border-border">
+              <div className="space-y-1 bg-muted p-3 rounded border border-border">
                 <div className="flex justify-between text-xs font-semibold">
-                  <span>Importando registros del catálogo...</span>
+                  <span>Importando servicios...</span>
                   <span>{importProgress.current} / {importProgress.total}</span>
                 </div>
-                <div className="h-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-2 w-full bg-background rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-teal-600 transition-all duration-200"
+                    className="h-full bg-secondary transition-all duration-200"
                     style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
                   />
                 </div>
@@ -471,7 +472,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             <div className="flex justify-between pt-4">
               <Button type="button" variant="secondary" onClick={() => setStep(2)} className="gap-2" disabled={loading}>
                 <ArrowLeft className="size-4" />
-                Atrás
+                Atras
               </Button>
               <Button onClick={handleImportCatalog} disabled={loading} className="gap-2">
                 {loading ? (
@@ -481,7 +482,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                   </>
                 ) : (
                   <>
-                    Importar Catálogo
+                    Importar catalogo
                     <ArrowRight className="size-4" />
                   </>
                 )}
@@ -494,34 +495,34 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         {step === 4 && (
           <div className="space-y-6 text-center py-6">
             <div className="flex justify-center">
-              <CheckCircle className="size-16 text-emerald-500 fill-emerald-100 dark:fill-emerald-950/30 animate-bounce" />
+              <CheckCircle className="size-16 text-success fill-success/15 animate-bounce" />
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-bold text-foreground">¡Configuración Inicial Completada!</h3>
+              <h3 className="text-xl font-bold text-foreground">Configuracion lista</h3>
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                El sistema ha sido configurado con los datos de su hospital, secuencias fiscales válidas y portafolio de servicios médicos base.
+                Ya puede iniciar la operacion con datos del hospital, numeracion y servicios base.
               </p>
             </div>
 
-            <div className="rounded-lg border border-border p-4 max-w-sm mx-auto text-left space-y-3 bg-slate-50 dark:bg-slate-900">
-              <div className="flex items-center gap-2.5 text-xs text-emerald-700 dark:text-emerald-400 font-semibold">
-                <span className="flex size-4 items-center justify-center rounded-full bg-emerald-100 text-[10px]">✓</span>
-                <span>Datos fiscales validados</span>
+            <div className="rounded-lg border border-border p-4 max-w-sm mx-auto text-left space-y-3 bg-muted/50">
+              <div className="flex items-center gap-2.5 text-xs text-success font-semibold">
+                <span className="flex size-4 items-center justify-center rounded-full bg-success/15 text-[10px]">✓</span>
+                <span>Datos del hospital guardados</span>
               </div>
-              <div className="flex items-center gap-2.5 text-xs text-emerald-700 dark:text-emerald-400 font-semibold">
-                <span className="flex size-4 items-center justify-center rounded-full bg-emerald-100 text-[10px]">✓</span>
-                <span>Secuencia y prefijo listos para facturación</span>
+              <div className="flex items-center gap-2.5 text-xs text-success font-semibold">
+                <span className="flex size-4 items-center justify-center rounded-full bg-success/15 text-[10px]">✓</span>
+                <span>Numeracion lista para facturar</span>
               </div>
-              <div className="flex items-center gap-2.5 text-xs text-emerald-700 dark:text-emerald-400 font-semibold">
-                <span className="flex size-4 items-center justify-center rounded-full bg-emerald-100 text-[10px]">✓</span>
-                <span>Catálogo de servicios importado</span>
+              <div className="flex items-center gap-2.5 text-xs text-success font-semibold">
+                <span className="flex size-4 items-center justify-center rounded-full bg-success/15 text-[10px]">✓</span>
+                <span>Catalogo importado</span>
               </div>
             </div>
 
             <div className="flex justify-center pt-4">
-              <Button onClick={handleFinish} className="px-8 bg-teal-600 hover:bg-teal-700">
-                Entrar al Sistema
+              <Button onClick={handleFinish} className="px-8">
+                Entrar
               </Button>
             </div>
           </div>

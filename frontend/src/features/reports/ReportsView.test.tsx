@@ -91,9 +91,9 @@ describe('ReportsView', () => {
     render(<App />);
 
     expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
-    expect(screen.getByLabelText(/fecha diaria/i)).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: /^reporte diario$/i })).toBeInTheDocument();
-    expect(screen.getByText(/total cobrado/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^fecha$/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^resumen del dia$/i })).toBeInTheDocument();
+    expect(screen.getByText(/^cobrado$/i)).toBeInTheDocument();
     expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
     activateTab(/rango/i);
     expect(await screen.findByLabelText(/desde/i)).toBeInTheDocument();
@@ -281,11 +281,11 @@ describe('ReportsView', () => {
     fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
     expect(await screen.findByText(/glucosa/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /exportar excel/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/requiere permiso de exportaci[oó]n/i)).toBeInTheDocument();
+    expect(screen.getByText(/permiso de exportaci[oó]n de reportes/i)).toBeInTheDocument();
 
     activateTab(/auditor/i);
     expect(screen.queryByRole('button', { name: /exportar excel/i })).not.toBeInTheDocument();
-    expect(screen.getAllByText(/requiere permiso de exportaci[oó]n/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/permiso de reportes/i).length).toBeGreaterThan(0);
   });
 
   it('does not render reports for a cashier without reports view permission', async () => {
@@ -316,7 +316,7 @@ describe('ReportsView', () => {
 
     expect((await screen.findAllByRole('heading', { name: /^caja$/i })).length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: /^reportes$/i })).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/fecha diaria/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^fecha$/i)).not.toBeInTheDocument();
   });
 
   it('allows cash-session-only report users to open the cash report tab without managerial reports', async () => {
@@ -496,12 +496,11 @@ describe('ReportsView', () => {
     render(<App />);
 
     expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
-    expect(await screen.findByRole('heading', { name: /^reporte diario$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^resumen del dia$/i })).toBeInTheDocument();
     activateTab(/rango/i);
     expect(await screen.findByLabelText(/desde/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
-    expect(screen.getByText(/rango m.ximo permitido: 31 dias/i)).toBeInTheDocument();
-    expect(screen.getByText(/rango m.ximo permitido: 31 dias/i)).toBeInTheDocument();
+    expect(screen.getByText(/puede consultar hasta 31 dias por busqueda/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver rango/i }));
 
     expect(await screen.findByText(/total ingresos/i)).toBeInTheDocument();

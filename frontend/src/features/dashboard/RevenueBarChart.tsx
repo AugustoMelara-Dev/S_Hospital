@@ -2,13 +2,13 @@ import {
   Bar,
   CartesianGrid,
   Legend,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
   ComposedChart,
   Area,
 } from 'recharts';
+import { useElementWidth } from './useElementWidth';
 
 type DailyTrendData = {
   date: string;
@@ -23,6 +23,7 @@ type RevenueBarChartProps = {
 };
 
 export function RevenueBarChart({ data }: RevenueBarChartProps) {
+  const { ref, width } = useElementWidth();
   const chartData = data.map((d) => {
     // Format date from YYYY-MM-DD to DD/MM
     const dateParts = d.date.split('-');
@@ -42,32 +43,34 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
   };
 
   return (
-    <div className="h-[300px] w-full" style={{ minWidth: 0 }}>
-      <ResponsiveContainer width="100%" height="100%">
+    <div ref={ref} className="h-[300px] w-full min-w-px" style={{ minHeight: 300 }}>
+      {width > 0 ? (
         <ComposedChart
           data={chartData}
+          width={width}
+          height={300}
           margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
         >
           <defs>
             <linearGradient id="colorBilled" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.2} />
-              <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.01} />
+              <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.2} />
+              <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0.01} />
             </linearGradient>
             <linearGradient id="colorCollected" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="var(--color-success)" stopOpacity={0.3} />
               <stop offset="95%" stopColor="var(--color-success)" stopOpacity={0.01} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" opacity={0.5} />
           <XAxis
             dataKey="name"
-            stroke="var(--muted-foreground)"
+            stroke="var(--color-muted-foreground)"
             fontSize={12}
             tickLine={false}
             axisLine={false}
           />
           <YAxis
-            stroke="var(--muted-foreground)"
+            stroke="var(--color-muted-foreground)"
             fontSize={11}
             tickLine={false}
             axisLine={false}
@@ -75,10 +78,10 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: 'var(--card)',
-              borderColor: 'var(--border)',
-              borderRadius: 'var(--radius)',
-              color: 'var(--foreground)',
+              backgroundColor: 'var(--color-card)',
+              borderColor: 'var(--color-border)',
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--color-foreground)',
               fontSize: '12px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             }}
@@ -104,7 +107,7 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
             type="monotone"
             dataKey="Billed"
             fill="url(#colorBilled)"
-            stroke="var(--primary)"
+            stroke="var(--color-primary)"
             strokeWidth={2}
             activeDot={{ r: 6 }}
           />
@@ -117,7 +120,7 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
             radius={[4, 4, 0, 0]}
           />
         </ComposedChart>
-      </ResponsiveContainer>
+      ) : null}
     </div>
   );
 }

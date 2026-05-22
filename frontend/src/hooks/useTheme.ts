@@ -12,7 +12,7 @@ export const COLOR_THEMES: Record<ColorTheme, {
   dark: { secondary: string; ring: string; accent: string; accentForeground: string };
 }> = {
   teal: {
-    name: 'Teal Clínico',
+    name: 'Verde clínico',
     light: { secondary: '#0d9488', ring: '#0d9488', accent: '#f0fdfa', accentForeground: '#0d9488' },
     dark: { secondary: '#14b8a6', ring: '#14b8a6', accent: '#042f2e', accentForeground: '#14b8a6' },
   },
@@ -27,7 +27,7 @@ export const COLOR_THEMES: Record<ColorTheme, {
     dark: { secondary: '#10b981', ring: '#10b981', accent: '#064e3b', accentForeground: '#10b981' },
   },
   indigo: {
-    name: 'Índigo Corporativo',
+    name: 'Índigo institucional',
     light: { secondary: '#4f46e5', ring: '#4f46e5', accent: '#e0e7ff', accentForeground: '#4f46e5' },
     dark: { secondary: '#6366f1', ring: '#6366f1', accent: '#312e81', accentForeground: '#6366f1' },
   },

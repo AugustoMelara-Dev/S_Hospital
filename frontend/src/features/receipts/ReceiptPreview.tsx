@@ -68,7 +68,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
       </div>
 
       <div className="receipt-preview-container">
-        <div ref={receiptRef} className={`thermal-receipt receipt-${receipt.width}`} aria-label="Recibo termico">
+        <div ref={receiptRef} className={`thermal-receipt receipt-${receipt.width}`} aria-label="Recibo térmico">
           <header className="receipt-header">
             <strong className="hospital-name">{receipt.hospital.name}</strong>
             <span>Tocoa, Colon, Honduras</span>

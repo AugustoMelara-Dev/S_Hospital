@@ -46,12 +46,12 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold tracking-tight">Reporte diario</h2>
+      <h2 className="text-xl font-semibold tracking-tight">Resumen del dia</h2>
       <Card>
         <CardContent className="pt-6">
           <form onSubmit={onSubmit} className="flex items-end gap-4">
             <div className="w-[200px]">
-              <Label htmlFor="daily-date">Fecha diaria</Label>
+              <Label htmlFor="daily-date">Fecha</Label>
               <Input
                 id="daily-date"
                 type="date"
@@ -71,12 +71,12 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <KPICard
-              title="Total Facturado"
+              title="Facturado"
               value={`L. ${daily.total_billed}`}
               icon={<DollarSign className="h-4 w-4" />}
             />
             <KPICard
-              title="Total Cobrado"
+              title="Cobrado"
               value={`L. ${daily.total_collected}`}
               icon={<Banknote className="h-4 w-4" />}
             />
@@ -95,7 +95,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
 
           <Card>
             <CardHeader>
-              <CardTitle>Por Método de Pago</CardTitle>
+              <CardTitle>Cobros por metodo</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -146,7 +146,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
           {chartData.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Visualización por Método</CardTitle>
+                <CardTitle>Grafico por metodo</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>

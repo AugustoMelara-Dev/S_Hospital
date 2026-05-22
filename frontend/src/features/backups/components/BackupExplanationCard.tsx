@@ -11,10 +11,10 @@ export function BackupExplanationCard() {
             <Info className="h-5 w-5 text-muted-foreground" />
           </div>
           <div>
-            <h3 className="font-semibold mb-1">Sistema de Backups</h3>
+            <h3 className="mb-1 font-semibold">Respaldos del hospital</h3>
             <p className="text-sm text-muted-foreground">
-              Los backups son copias de seguridad de la base de datos del sistema.
-              Se recomienda crear un backup antes de cambios importantes.
+              Los respaldos protegen la información de facturación, caja y reportes.
+              Cree uno antes de cambios importantes y confirme que quede completado.
             </p>
           </div>
         </div>
@@ -33,21 +33,15 @@ export function BackupEmptyState({
   return (
     <Card>
       <CardContent className="flex flex-col items-center justify-center py-12">
-        <Archive className="h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold mb-2">No hay backups</h3>
-        <p className="text-muted-foreground text-center mb-4">
-          No se han creado backups todavía.
-          Cree su primer backup para proteger sus datos.
+        <Archive className="mb-4 h-12 w-12 text-muted-foreground" />
+        <h3 className="mb-2 text-lg font-semibold">No hay respaldos</h3>
+        <p className="mb-4 text-center text-muted-foreground">
+          Todavía no se ha creado ningún respaldo. Cree el primero para proteger los datos del hospital.
         </p>
         {canCreate && onCreate && (
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            onClick={onCreate}
-          >
+          <Button type="button" variant="default" size="sm" onClick={onCreate}>
             <Archive className="h-4 w-4" />
-            Crear Backup
+            Crear respaldo
           </Button>
         )}
       </CardContent>

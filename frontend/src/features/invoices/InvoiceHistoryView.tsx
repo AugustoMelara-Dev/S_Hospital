@@ -27,7 +27,7 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { PaginationControls } from '../../components/ui/pagination';
 import { NativeSelect, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { Skeleton } from '../../components/ui/states';
+import { LoadingState } from '../../components/ui/states';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { Textarea } from '../../components/ui/textarea';
 import { DateRangePicker } from '../../components/ui/date-range-picker';
@@ -293,72 +293,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           </CardContent>
         </Card>
       ) : loading ? (
-        <Card>
-          <CardContent className="p-0">
-            <div className="table-wrap">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>No.</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Pagado</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-</CardContent>
-        </Card>
+        <LoadingState label="Cargando facturas..." />
       ) : !loadError ? (
         <Card>
           <CardContent className="p-0">
@@ -378,7 +313,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                 <TableBody>
                   {invoicesList.map((invoice) => (
                     <TableRow key={invoice.id}>
-                      <TableCell className="font-mono text-sm">{invoice.invoice_number}</TableCell>
+                      <TableCell className="text-sm font-medium">{invoice.invoice_number}</TableCell>
                       <TableCell>{formatDate(invoice.issued_at)}</TableCell>
                       <TableCell className="font-medium">{invoice.patient_name}</TableCell>
                       <TableCell className="text-right">L. {invoice.total}</TableCell>
@@ -434,9 +369,11 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                               />
                               <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-md border border-border bg-card shadow-lg">
                                 <div className="py-1">
-                                      <button
+                                      <Button
                                         type="button"
-                                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-muted"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full justify-start text-destructive hover:bg-destructive/10"
                                         onClick={() => {
                                           setOpenActionsId(null);
                                           void openDetail(invoice.id);
@@ -445,7 +382,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                                       >
                                         <XCircle className="h-4 w-4" aria-hidden="true" />
                                         Anular
-                                      </button>
+                                      </Button>
                                 </div>
                               </div>
                             </>

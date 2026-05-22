@@ -10,9 +10,9 @@ const variants = {
   secondary: 'bg-muted text-muted-foreground',
   outline: 'border border-border bg-card text-foreground',
   destructive: 'bg-destructive text-destructive-foreground',
-  success: 'bg-emerald-100 text-emerald-800',
-  warning: 'bg-amber-100 text-amber-800',
-  info: 'bg-sky-100 text-sky-800',
+  success: 'bg-success/15 text-success',
+  warning: 'bg-warning/15 text-warning',
+  info: 'bg-info/15 text-info',
 };
 
 export function Badge({ className, variant = 'default', ...props }: BadgeProps) {

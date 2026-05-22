@@ -1,29 +1,27 @@
 import {
   Activity,
-  ReceiptText,
-  WalletCards,
-  TrendingUp,
-  CreditCard,
-  CheckCircle2,
   AlertTriangle,
   ArrowRight,
-  Clock,
-  Sparkles,
-  ShieldCheck,
+  CheckCircle2,
+  CreditCard,
   RefreshCw,
+  ReceiptText,
+  ShieldCheck,
+  Sparkles,
+  TrendingUp,
+  WalletCards,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { PageHeader } from '../../components/ui/page-header';
 import { Skeleton } from '../../components/ui/states';
 import { type CashSession, type DashboardReport, apiClient } from '../../lib/api';
-import { RevenueBarChart } from './RevenueBarChart';
-import { PaymentMethodPieChart } from './PaymentMethodPieChart';
-import { TopServicesChart } from './TopServicesChart';
 import { CashierList } from './CashierList';
+import { PaymentMethodPieChart } from './PaymentMethodPieChart';
+import { RevenueBarChart } from './RevenueBarChart';
+import { TopServicesChart } from './TopServicesChart';
 import { SetupWizardDialog } from './components/SetupWizardDialog';
 
 type DashboardViewProps = {
@@ -53,13 +51,9 @@ type SetupStatus = {
 
 export function DashboardView({
   canCreateInvoices,
-  canViewBackups,
   canViewCash,
-  canViewCatalog,
   canViewFiscalSettings,
-  canViewInvoices,
   canViewManagerialReports,
-  canViewReports,
   cashSession,
   onQuickCash,
   onQuickInvoice,
@@ -68,8 +62,6 @@ export function DashboardView({
   const [dashboardData, setDashboardData] = useState<DashboardReport | null>(null);
   const [dashboardError, setDashboardError] = useState('');
   const [loadingDashboard, setLoadingDashboard] = useState(false);
-
-  // Setup Wizard Banner state
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
@@ -77,6 +69,7 @@ export function DashboardView({
     if (!canViewManagerialReports) {
       return;
     }
+
     setLoadingDashboard(true);
     apiClient
       .getDashboardReport()
@@ -85,7 +78,7 @@ export function DashboardView({
         setDashboardError('');
       })
       .catch((err) => {
-        const msg = err instanceof Error ? err.message : 'No se pudo cargar el reporte gerencial.';
+        const msg = err instanceof Error ? err.message : 'No se pudo cargar el resumen.';
         setDashboardError(msg);
         onStatus(msg);
       })
@@ -95,17 +88,16 @@ export function DashboardView({
   };
 
   const fetchSetupStatus = () => {
-    // Only check setup status for users who can view fiscal settings or are admin/supervisor
     if (!canViewFiscalSettings && !canViewManagerialReports) {
       return;
     }
-    // Call our new public setup-status API endpoint
+
     apiClient.request<SetupStatus>('/api/system/setup-status')
       .then((res: SetupStatus) => {
         setSetupStatus(res);
       })
       .catch(() => {
-        // Silently catch or ignore setup check errors
+        setSetupStatus(null);
       });
   };
 
@@ -114,150 +106,112 @@ export function DashboardView({
     fetchSetupStatus();
   }, [canViewManagerialReports, canViewFiscalSettings]);
 
-  const enabledModuleCount = [
-    canCreateInvoices,
-    canViewBackups,
-    canViewCash,
-    canViewCatalog,
-    canViewFiscalSettings,
-    canViewInvoices,
-    canViewReports,
-  ].filter(Boolean).length;
-
   return (
     <>
       <PageHeader
-        title="Dashboard"
-        description="Sistema de Facturación Hospitalaria S_Hospital. Panel gerencial y operativo de caja local."
+        title="Inicio"
+        description="Lo necesario para operar caja, cobros y facturacion sin perderse."
       />
 
-      {/* Onboarding Wizard Checklist Alert for Admin/Supervisor */}
       {setupStatus?.needs_setup && (
-        <Card className="border-warning/30 bg-warning/5 dark:bg-warning/10 animate-fade-in mb-6">
+        <Card className="border-warning/30 bg-warning/5">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="size-5 text-warning animate-pulse" />
-                <CardTitle className="text-base font-bold text-warning-foreground">
-                  Asistente de Configuración Inicial (Pendiente)
-                </CardTitle>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warning" />
+                <div>
+                  <CardTitle className="text-base font-bold text-warning-foreground">
+                    Configuracion pendiente
+                  </CardTitle>
+                  <CardDescription className="mt-1 text-xs text-warning-foreground/80">
+                    Complete estos datos para emitir facturas correctamente.
+                  </CardDescription>
+                </div>
               </div>
               {canViewFiscalSettings && (
                 <Button
                   size="sm"
-                  className="bg-amber-600 hover:bg-amber-700 text-white border-0 text-xs font-semibold gap-1.5 h-8 px-3"
+                  className="h-8 gap-1.5 text-xs font-semibold"
                   onClick={() => setIsWizardOpen(true)}
                 >
                   <Sparkles className="size-3.5" />
-                  Iniciar Asistente
+                  Revisar
                 </Button>
               )}
             </div>
-            <CardDescription className="text-xs text-warning-foreground/80 mt-1">
-              Para vender y operar legalmente el software en red local, complete los siguientes requisitos iniciales:
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <SetupStepCheck
-                label="Datos del Hospital"
+                label="Datos del hospital"
                 done={setupStatus.steps.fiscal_settings}
-                helper="Nombre de la institución y RTN"
+                helper="Nombre y RTN"
               />
               <SetupStepCheck
-                label="Usuario Administrador"
+                label="Usuario administrador"
                 done={setupStatus.steps.admin_exists}
-                helper="Acceso administrador configurado"
+                helper="Acceso principal listo"
               />
               <SetupStepCheck
-                label="Catálogo de Servicios"
+                label="Catalogo"
                 done={setupStatus.steps.catalog_has_services}
-                helper="Servicios médicos disponibles"
+                helper="Servicios para facturar"
               />
               <SetupStepCheck
-                label="Rango Fiscal (CAI)"
+                label="Rango fiscal"
                 done={setupStatus.steps.fiscal_sequence_exists}
-                helper="Rangos autorizados vigentes"
+                helper="Numeracion vigente"
               />
             </div>
           </CardContent>
         </Card>
       )}
 
-      <div className="grid gap-6">
-        {/* KPI Cards Grid */}
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Resumen operativo del mes">
+      <div className="grid gap-5">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumen operativo del mes">
           <MetricCard
-            icon={<WalletCards className="size-4 text-emerald-500" />}
-            label="Caja operativa"
-            value={cashSession ? `Caja #${cashSession.id}` : 'Inactiva'}
-            helper={cashSession ? 'Lista para procesar cobros' : 'Debe abrir caja antes de facturar'}
+            icon={<WalletCards className="size-4 text-emerald-600" />}
+            label="Caja"
+            value={cashSession ? `Caja #${cashSession.id}` : 'Cerrada'}
+            helper={cashSession ? 'Lista para cobrar' : 'Abra caja antes de facturar'}
             variant={cashSession ? 'success' : 'warning'}
           />
 
           <MetricCard
             icon={<TrendingUp className="size-4 text-primary" />}
-            label="Facturado (Mes)"
-            value={
-              loadingDashboard ? (
-                <Skeleton className="h-7 w-24" />
-              ) : dashboardData ? (
-                `L. ${Number(dashboardData.current_month.total_billed).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-              ) : (
-                'L. 0.00'
-              )
-            }
-            helper={
-              dashboardData
-                ? `${dashboardData.current_month.invoice_count} facturas emitidas este mes`
-                : 'Resumen mensual de facturación'
-            }
+            label="Facturado"
+            value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : money(dashboardData?.current_month.total_billed)}
+            helper={dashboardData ? `${dashboardData.current_month.invoice_count} facturas este mes` : 'Ventas del mes'}
           />
 
           <MetricCard
-            icon={<CreditCard className="size-4 text-emerald-500" />}
-            label="Recaudado (Mes)"
-            value={
-              loadingDashboard ? (
-                <Skeleton className="h-7 w-24" />
-              ) : dashboardData ? (
-                `L. ${Number(dashboardData.current_month.total_collected).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-              ) : (
-                'L. 0.00'
-              )
-            }
-            helper={
-              dashboardData
-                ? `${dashboardData.current_month.payment_count} transacciones recibidas`
-                : 'Recaudaciones acumuladas del mes'
-            }
+            icon={<CreditCard className="size-4 text-emerald-600" />}
+            label="Cobrado"
+            value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : money(dashboardData?.current_month.total_collected)}
+            helper={dashboardData ? `${dashboardData.current_month.payment_count} pagos recibidos` : 'Cobros del mes'}
           />
 
           <MetricCard
-            icon={<Activity className="size-4 text-purple-500" />}
-            label="Módulos del Sistema"
-            value={`${enabledModuleCount} activos`}
-            helper="Funciones autorizadas para su rol"
+            icon={<ReceiptText className="size-4 text-info" />}
+            label="Facturas"
+            value={loadingDashboard ? <Skeleton className="h-7 w-16" /> : String(dashboardData?.current_month.invoice_count ?? 0)}
+            helper="Emitidas este mes"
             variant="info"
           />
         </section>
 
-        {/* Dashboard Analytics & Main Layout Grid */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          
-          {/* Main Area: Charts and Tables (2 Columns) */}
-          <div className="lg:col-span-2 flex flex-col gap-6">
-            
-            {/* Sales vs Collections Trend Chart */}
-            <Card className="overflow-hidden">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+          <div className="flex flex-col gap-5">
+            <Card>
+              <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <CardTitle className="text-base font-bold">Tendencia Operativa (Últimos 7 Días)</CardTitle>
-                  <CardDescription>Comparativa entre monto facturado y montos cobrados en caja.</CardDescription>
+                  <CardTitle className="text-base font-bold">Ventas y cobros</CardTitle>
+                  <CardDescription>Ultimos 7 dias.</CardDescription>
                 </div>
                 {canViewManagerialReports && (
-                  <Button variant="ghost" size="icon" className="size-8" onClick={fetchDashboard}>
+                  <Button variant="outline" size="sm" className="gap-2" onClick={fetchDashboard}>
                     <RefreshCw className={`size-4 ${loadingDashboard ? 'animate-spin' : ''}`} />
+                    Actualizar
                   </Button>
                 )}
               </CardHeader>
@@ -273,18 +227,15 @@ export function DashboardView({
                 ) : dashboardData ? (
                   <RevenueBarChart data={dashboardData.last_7_days} />
                 ) : (
-                  <div className="flex h-[300px] items-center justify-center text-muted-foreground">
-                    No hay datos disponibles.
-                  </div>
+                  <EmptyPanel message="No hay datos disponibles." />
                 )}
               </CardContent>
             </Card>
 
-            {/* Cashiers collection today */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base font-bold">Cierre Operativo de Cajeros (Hoy)</CardTitle>
-                <CardDescription>Resumen de cobros por cajero para la fecha actual.</CardDescription>
+                <CardTitle className="text-base font-bold">Cajeros hoy</CardTitle>
+                <CardDescription>Cobros recibidos por usuario.</CardDescription>
               </CardHeader>
               <CardContent>
                 {!canViewManagerialReports ? (
@@ -301,53 +252,47 @@ export function DashboardView({
                 ) : null}
               </CardContent>
             </Card>
-
           </div>
 
-          {/* Sidebar Area: Actions & Right Side Widgets */}
-          <div className="flex flex-col gap-6">
-            
-            {/* Quick Actions Card */}
-            <Card className="border-primary/20 bg-primary/5 dark:bg-primary/10">
+          <div className="flex flex-col gap-5">
+            <Card className="border-primary/20 bg-primary/5">
               <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Sparkles className="size-5 text-primary" />
-                  <CardTitle className="text-base font-bold text-foreground">Acciones rápidas</CardTitle>
-                </div>
-                <CardDescription>Operaciones rápidas según el estado de la sesión.</CardDescription>
+                <CardTitle className="text-base font-bold">Siguiente accion</CardTitle>
+                <CardDescription>Una accion principal segun el estado de caja.</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
                 {!cashSession && canViewCash ? (
-                  <Button type="button" onClick={onQuickCash} className="w-full justify-start gap-2 h-10 font-medium">
+                  <Button type="button" onClick={onQuickCash} className="h-10 w-full justify-start gap-2 font-medium">
                     <WalletCards className="size-4 shrink-0" />
-                    Abrir Caja Registradora
-                    <ArrowRight className="size-4 ml-auto shrink-0" />
+                    Abrir caja
+                    <ArrowRight className="ml-auto size-4 shrink-0" />
                   </Button>
                 ) : canCreateInvoices ? (
-                  <Button type="button" onClick={onQuickInvoice} className="w-full justify-start gap-2 h-10 font-medium">
+                  <Button type="button" onClick={onQuickInvoice} className="h-10 w-full justify-start gap-2 font-medium">
                     <ReceiptText className="size-4 shrink-0" />
-                    Emitir Nueva Factura
-                    <ArrowRight className="size-4 ml-auto shrink-0" />
+                    Nueva factura
+                    <ArrowRight className="ml-auto size-4 shrink-0" />
                   </Button>
-                ) : null}
+                ) : (
+                  <EmptyPanel message="No hay acciones disponibles para este usuario." compact />
+                )}
 
                 <div className="rounded-md border border-border bg-background p-3 text-xs text-muted-foreground">
                   <div className="flex gap-2">
                     <ShieldCheck className="size-4 shrink-0 text-primary" />
                     <div>
-                      <p className="font-semibold text-foreground">Seguridad Offline LAN</p>
-                      <p className="mt-0.5">El sistema corre localmente sin depender de internet. Los respaldos se guardan en el disco duro del servidor.</p>
+                      <p className="font-semibold text-foreground">Red local</p>
+                      <p className="mt-0.5">Los cobros y respaldos se guardan en el servidor del hospital.</p>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Payment Methods Today */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-bold">Métodos de Pago (Hoy)</CardTitle>
-                <CardDescription>Distribución de cobros realizados hoy.</CardDescription>
+                <CardTitle className="text-base font-bold">Cobros de hoy</CardTitle>
+                <CardDescription>Distribucion por metodo de pago.</CardDescription>
               </CardHeader>
               <CardContent>
                 {!canViewManagerialReports ? (
@@ -364,11 +309,10 @@ export function DashboardView({
               </CardContent>
             </Card>
 
-            {/* Top services */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base font-bold">Servicios Más Vendidos (Mes)</CardTitle>
-                <CardDescription>Top 5 de servicios de salud con mayor facturación.</CardDescription>
+                <CardTitle className="text-base font-bold">Servicios principales</CardTitle>
+                <CardDescription>Top 5 del mes.</CardDescription>
               </CardHeader>
               <CardContent>
                 {!canViewManagerialReports ? (
@@ -386,9 +330,7 @@ export function DashboardView({
                 ) : null}
               </CardContent>
             </Card>
-
           </div>
-
         </div>
       </div>
 
@@ -406,8 +348,6 @@ export function DashboardView({
   );
 }
 
-// Helpers
-
 function MetricCard({
   icon,
   helper,
@@ -424,17 +364,17 @@ function MetricCard({
   const badgeText = {
     neutral: 'Listo',
     success: 'Abierta',
-    warning: 'Atención',
-    info: 'Activo',
+    warning: 'Atencion',
+    info: 'Mes',
   }[variant];
 
   return (
-    <Card className="hover:shadow-md transition-all duration-200">
+    <Card>
       <CardContent className="pt-6">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             {icon}
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
+            <span className="truncate text-xs font-semibold uppercase text-muted-foreground">{label}</span>
           </div>
           <Badge variant={variant === 'warning' ? 'warning' : variant === 'success' ? 'success' : 'secondary'}>
             {badgeText}
@@ -451,17 +391,17 @@ function MetricCard({
 
 function SetupStepCheck({ label, done, helper }: { label: string; done: boolean; helper: string }) {
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-border/40 bg-background/50 p-3 shadow-sm">
+    <div className="flex items-start gap-3 rounded-md border border-border bg-background p-3">
       <div className="mt-0.5 shrink-0">
         {done ? (
-          <CheckCircle2 className="size-4 text-emerald-500 fill-emerald-500/20" />
+          <CheckCircle2 className="size-4 text-emerald-600" />
         ) : (
-          <Clock className="size-4 text-warning" />
+          <AlertTriangle className="size-4 text-warning" />
         )}
       </div>
       <div className="min-w-0">
-        <p className="text-xs font-semibold text-foreground truncate">{label}</p>
-        <p className="text-[10px] text-muted-foreground mt-0.5">{helper}</p>
+        <p className="truncate text-xs font-semibold text-foreground">{label}</p>
+        <p className="mt-0.5 text-[10px] text-muted-foreground">{helper}</p>
       </div>
     </div>
   );
@@ -469,13 +409,13 @@ function SetupStepCheck({ label, done, helper }: { label: string; done: boolean;
 
 function PermissionLockedState() {
   return (
-    <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-      <div className="size-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground mb-3">
+    <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+      <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <Activity className="size-6" />
       </div>
-      <p className="text-sm font-semibold text-foreground">Acceso Limitado</p>
-      <p className="text-xs text-muted-foreground max-w-[240px] mt-1">
-        Su rol no tiene autorización para visualizar gráficos y balances financieros gerenciales.
+      <p className="text-sm font-semibold text-foreground">Sin permiso para ver este resumen</p>
+      <p className="mt-1 max-w-[240px] text-xs text-muted-foreground">
+        El resto de acciones disponibles para su rol siguen visibles en el menu.
       </p>
     </div>
   );
@@ -483,16 +423,28 @@ function PermissionLockedState() {
 
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-      <div className="size-12 rounded-full bg-destructive/10 flex items-center justify-center text-destructive mb-3">
+    <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+      <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
         <AlertTriangle className="size-6" />
       </div>
-      <p className="text-sm font-semibold text-foreground">Error al cargar datos</p>
-      <p className="text-xs text-muted-foreground max-w-[320px] mt-1 mb-4">{message}</p>
+      <p className="text-sm font-semibold text-foreground">No se pudo cargar</p>
+      <p className="mb-4 mt-1 max-w-[320px] text-xs text-muted-foreground">{message}</p>
       <Button variant="outline" size="sm" onClick={onRetry} className="gap-2">
         <RefreshCw className="size-3.5" />
         Reintentar
       </Button>
     </div>
   );
+}
+
+function EmptyPanel({ message, compact = false }: { message: string; compact?: boolean }) {
+  return (
+    <div className={`flex items-center justify-center rounded-md border border-dashed border-border bg-muted/20 px-4 text-center text-sm text-muted-foreground ${compact ? 'min-h-20' : 'h-[300px]'}`}>
+      {message}
+    </div>
+  );
+}
+
+function money(value: string | undefined) {
+  return `L. ${Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }

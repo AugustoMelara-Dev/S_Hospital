@@ -1,5 +1,6 @@
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Cell, Legend, Pie, PieChart, Tooltip } from 'recharts';
 import { type MoneyByMethod } from '../../lib/api';
+import { useElementWidth } from './useElementWidth';
 
 type PaymentMethodPieChartProps = {
   data: MoneyByMethod;
@@ -20,6 +21,7 @@ const LABELS = {
 };
 
 export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
+  const { ref, width } = useElementWidth();
   const chartData = Object.entries(data)
     .map(([method, amountStr]) => ({
       name: LABELS[method as keyof typeof LABELS] || method,
@@ -39,9 +41,9 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
   }
 
   return (
-    <div className="h-[240px] w-full" style={{ minWidth: 0 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
+    <div ref={ref} className="h-[240px] w-full min-w-px" style={{ minHeight: 240 }}>
+      {width > 0 ? (
+        <PieChart width={width} height={240}>
           <Pie
             data={chartData}
             cx="50%"
@@ -54,16 +56,16 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
             {chartData.map((entry) => (
               <Cell
                 key={`cell-${entry.key}`}
-                fill={COLORS[entry.key as keyof typeof COLORS] || '#94a3b8'}
+                fill={COLORS[entry.key as keyof typeof COLORS] || 'var(--color-muted-foreground)'}
               />
             ))}
           </Pie>
           <Tooltip
             contentStyle={{
-              backgroundColor: 'var(--card)',
-              borderColor: 'var(--border)',
-              borderRadius: 'var(--radius)',
-              color: 'var(--foreground)',
+              backgroundColor: 'var(--color-card)',
+              borderColor: 'var(--color-border)',
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--color-foreground)',
               fontSize: '12px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             }}
@@ -84,7 +86,7 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
             }}
           />
         </PieChart>
-      </ResponsiveContainer>
+      ) : null}
     </div>
   );
 }

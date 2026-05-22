@@ -56,7 +56,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
     hospital_name: '',
     rtn: '',
     receipt_width: '80mm',
-    primary_color: 'indigo',
+    primary_color: 'teal',
     address: '',
     slogan: '',
   });
@@ -239,8 +239,8 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
   return (
     <>
       <PageHeader
-        title="Configuración Fiscal"
-        description="Configure los datos fiscales y la secuencia de facturación para emitir recibos."
+        title="Configuracion"
+        description="Datos del hospital, numeracion, recibos y apariencia."
       />
 
       {error ? (
@@ -252,10 +252,9 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       <Tabs defaultValue="resumen" className="space-y-6">
         <TabsList className="bg-muted/50">
           <TabsTrigger value="resumen">Resumen</TabsTrigger>
-          <TabsTrigger value="hospital">Datos del Hospital</TabsTrigger>
-          <TabsTrigger value="secuencia">Secuencia Fiscal</TabsTrigger>
-          <TabsTrigger value="receipt">Recibo térmico</TabsTrigger>
-          <TabsTrigger value="branding">Identidad Visual</TabsTrigger>
+          <TabsTrigger value="hospital">Hospital</TabsTrigger>
+          <TabsTrigger value="secuencia">Numeracion</TabsTrigger>
+          <TabsTrigger value="branding">Apariencia</TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumen" className="mt-0 space-y-6">
@@ -266,20 +265,20 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         <TabsContent value="hospital" className="mt-0">
           <Card>
             <CardHeader>
-              <CardTitle>Datos del Hospital</CardTitle>
+              <CardTitle>Hospital y recibo</CardTitle>
               <CardDescription>
-                Estos datos aparecerán en los recibos térmicos.
+                Estos datos aparecen en recibos, facturas impresas y pantalla de ingreso.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {!canEdit && (
                 <Alert variant="warning" title="Modo solo lectura">
-                  Solo supervisor o administrador puede modificar la configuracion fiscal.
+                  Solo supervisor o administrador puede modificar la configuración fiscal.
                 </Alert>
               )}
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="hospital_name">Nombre del Hospital *</Label>
+                  <Label htmlFor="hospital_name">Nombre del hospital *</Label>
                   <Input
                     id="hospital_name"
                     value={hospitalForm.hospital_name}
@@ -303,7 +302,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="address">Dirección del Hospital</Label>
+                  <Label htmlFor="address">Direccion del hospital</Label>
                   <Input
                     id="address"
                     value={hospitalForm.address}
@@ -314,7 +313,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="slogan">Eslogan o Lema</Label>
+                  <Label htmlFor="slogan">Frase institucional</Label>
                   <Input
                     id="slogan"
                     value={hospitalForm.slogan}
@@ -325,9 +324,26 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="receipt_width">Ancho del recibo</Label>
+                <Select
+                  value={hospitalForm.receipt_width}
+                  onValueChange={(v: string) => setHospitalForm(prev => ({ ...prev, receipt_width: v as '80mm' | '58mm' }))}
+                  disabled={!canEdit}
+                >
+                  <SelectTrigger id="receipt_width" className="w-[220px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="80mm">80mm (estandar)</SelectItem>
+                    <SelectItem value="58mm">58mm (angosto)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex justify-end">
                 <Button onClick={handleSaveHospital} disabled={saving || !canEdit}>
-                  {saving ? 'Guardando...' : 'Guardar Información'}
+                  {saving ? 'Guardando...' : 'Guardar hospital y recibo'}
                 </Button>
               </div>
             </CardContent>
@@ -337,9 +353,9 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         <TabsContent value="secuencia" className="mt-0">
           <Card>
             <CardHeader>
-              <CardTitle>Secuencia Fiscal</CardTitle>
+              <CardTitle>Numeracion de facturas</CardTitle>
               <CardDescription>
-                Configure la secuencia de facturación autorizada por la autoridad fiscal.
+                Configure el rango autorizado para emitir facturas.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -373,7 +389,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="min_number">Desde el número *</Label>
+                  <Label htmlFor="min_number">Desde el numero *</Label>
                   <Input
                     id="min_number"
                     type="number"
@@ -385,7 +401,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="max_number">Hasta el número *</Label>
+                  <Label htmlFor="max_number">Hasta el numero *</Label>
                   <Input
                     id="max_number"
                     type="number"
@@ -397,7 +413,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="valid_until">Válido hasta</Label>
+                  <Label htmlFor="valid_until">Valido hasta</Label>
                   <Input
                     id="valid_until"
                     type="date"
@@ -410,47 +426,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
 
               <div className="flex justify-end">
                 <Button onClick={handleSaveSequence} disabled={saving || !canEdit}>
-                  {saving ? 'Guardando...' : 'Guardar Secuencia'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="receipt" className="mt-0">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recibo térmico</CardTitle>
-              <CardDescription>
-                Configure el ancho del papel para impresión térmica.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!canEdit && (
-                <Alert variant="warning" title="Modo solo lectura">
-                  Solo supervisor o administrador puede cambiar el ancho por defecto.
-                </Alert>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="receipt_width">Ancho de Recibo</Label>
-                <Select
-                  value={hospitalForm.receipt_width}
-                  onValueChange={(v: string) => setHospitalForm(prev => ({ ...prev, receipt_width: v as '80mm' | '58mm' }))}
-                  disabled={!canEdit}
-                >
-                  <SelectTrigger id="receipt_width" className="w-[200px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="80mm">80mm (Estándar)</SelectItem>
-                    <SelectItem value="58mm">58mm (Angosto)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={handleSaveHospital} disabled={saving || !canEdit}>
-                  {saving ? 'Guardando...' : 'Guardar Configuración'}
+                  {saving ? 'Guardando...' : 'Guardar numeracion'}
                 </Button>
               </div>
             </CardContent>
@@ -459,15 +435,14 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
 
         <TabsContent value="branding" className="mt-0">
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Logo upload card */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building2 className="size-5 text-secondary" />
-                  Logo Institucional
+                  Logo institucional
                 </CardTitle>
                 <CardDescription>
-                  Suba el logo oficial de su clínica u hospital para encabezar recibos, facturas impresas y pantallas de inicio de sesión.
+                  Se mostrara en recibos, facturas impresas y pantalla de ingreso.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -479,12 +454,12 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                         alt="Logo institucional"
                         className="max-h-24 object-contain rounded p-2 bg-white border border-border"
                       />
-                      <span className="text-[10px] text-muted-foreground mt-2">Logo Cargado</span>
+                      <span className="text-[10px] text-muted-foreground mt-2">Logo cargado</span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center text-muted-foreground">
                       <UploadCloud className="size-10 mb-2 text-slate-400" />
-                      <span className="text-xs">Ningún logo cargado (Se usará el logo por defecto)</span>
+                      <span className="text-xs">Sin logo cargado. Se usara el icono del sistema.</span>
                     </div>
                   )}
                 </div>
@@ -492,7 +467,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 {canEdit && (
                   <div className="space-y-4">
                     <div className="space-y-1.5">
-                      <Label htmlFor="logo-input">Seleccionar nuevo logo (.png, .jpg, .jpeg - máx. 2MB)</Label>
+                      <Label htmlFor="logo-input">Seleccionar logo (.png, .jpg, .jpeg - max. 2MB)</Label>
                       <Input
                         id="logo-input"
                         type="file"
@@ -509,7 +484,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                         disabled={uploadingLogo}
                         className="w-full gap-2"
                       >
-                        {uploadingLogo ? 'Subiendo...' : 'Actualizar Logo'}
+                        {uploadingLogo ? 'Subiendo...' : 'Actualizar logo'}
                       </Button>
                     )}
                   </div>
@@ -517,15 +492,14 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
               </CardContent>
             </Card>
 
-            {/* Colors theme selector card */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Palette className="size-5 text-secondary" />
-                  Color de Marca / Tema
+                  Color de marca
                 </CardTitle>
                 <CardDescription>
-                  Personalice el color primario de acento de la aplicación para adaptarlo a la identidad visual de su institución de salud.
+                  Elija el color principal de los botones, estados activos y acentos visuales.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -535,14 +509,12 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     const active = colorTheme === themeKey;
                     
                     return (
-                      <button
+                      <Button
                         key={themeKey}
+                        type="button"
+                        variant={active ? 'secondary' : 'outline'}
                         onClick={() => handleSaveColorTheme(themeKey)}
-                        className={`flex items-center justify-between p-3.5 rounded-lg border text-left transition-all ${
-                          active
-                            ? 'border-secondary bg-secondary/5 shadow-sm font-semibold'
-                            : 'border-border hover:bg-slate-50 dark:hover:bg-slate-900/50'
-                        }`}
+                        className="h-auto justify-between p-3.5 text-left"
                       >
                         <div className="flex items-center gap-3">
                           <span
@@ -554,7 +526,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                         {active && (
                           <Check className="size-4 text-secondary shrink-0" />
                         )}
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -562,7 +534,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 <div className="rounded-lg bg-teal-50 dark:bg-slate-900 border border-teal-100 p-3.5 flex gap-2">
                   <Sparkles className="size-4 text-teal-600 shrink-0 mt-0.5" />
                   <p className="text-xs text-teal-800 dark:text-teal-400">
-                    <strong>Aplicación en tiempo real:</strong> Al seleccionar una paleta de color, los botones, bordes, estados activos y acentos visuales de toda la interfaz se actualizan al instante sin reiniciar sesión.
+                    <strong>Vista inmediata:</strong> al elegir un color, la pantalla se actualiza al momento.
                   </p>
                 </div>
               </CardContent>

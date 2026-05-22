@@ -186,8 +186,50 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /S_Hospital Billing OS/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/usuario o email/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /caja hospitalaria rápida y clara/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/usuario o correo/i)).toBeInTheDocument();
+  });
+
+  it('recovers an authenticated session after a hard refresh on login', async () => {
+    window.history.pushState({}, '', '/login');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Admin Demo',
+              email: 'admin.demo@hospital-billing.local',
+              username: 'admin.demo',
+              active: true,
+              roles: ['admin'],
+              permissions: ['settings.fiscal.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/settings/fiscal')) {
+        return {
+          ok: true,
+          json: async () => ({ data: {} }),
+        } as Response;
+      }
+
+      return {
+        ok: true,
+        json: async () => ({ data: null }),
+      } as Response;
+    });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/dashboard');
+    });
+    expect(screen.queryByRole('heading', { name: /S_Hospital Billing OS/i })).not.toBeInTheDocument();
   });
 
   it('renders app shell and fiscal settings route for an authenticated admin', async () => {
@@ -255,18 +297,18 @@ describe('App', () => {
     expect(navigation.closest('aside')).toHaveClass('print-hidden');
     expect(screen.getByRole('banner')).toHaveClass('print-hidden');
     expect(screen.getByRole('contentinfo')).toHaveClass('print-hidden');
-    expect(screen.getByRole('link', { name: /configuraci[oó]n fiscal/i })).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: /^configuraci[oó]n$/i })[0]).toHaveAttribute(
       'href',
       '/settings/fiscal',
     );
-    expect(await screen.findByRole('heading', { name: /configuraci[oó]n fiscal/i })).toBeInTheDocument();
-    activateTab(/datos del hospital/i);
-    expect(await screen.findByRole('heading', { name: /datos del hospital/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^configuracion$/i })).toBeInTheDocument();
+    activateTab(/^hospital$/i);
+    expect(await screen.findByRole('heading', { name: /hospital y recibo/i })).toBeInTheDocument();
     expect(await screen.findByDisplayValue('Hospital Demo')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /guardar informaci.n/i })).toBeEnabled();
-    activateTab(/secuencia fiscal/i);
+    expect(screen.getByRole('button', { name: /guardar hospital y recibo/i })).toBeEnabled();
+    activateTab(/numeracion/i);
     expect(await screen.findByDisplayValue('DEMO-CAI')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /guardar secuencia/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /guardar numeracion/i })).toBeEnabled();
   });
 
   it('renders catalog as read only for a cashier', async () => {
@@ -392,16 +434,16 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /^backups$/i })).toBeInTheDocument();
-    expect(await screen.findByText(/sistema de backups/i)).toBeInTheDocument();
-    expect(await screen.findByText(/worker y cola local/i)).toBeInTheDocument();
-    expect(await screen.findByText(/checklist operativo de producci/i)).toBeInTheDocument();
-    expect(screen.getByText('/up')).toBeInTheDocument();
-    expect(screen.getByText('/verify-email')).toBeInTheDocument();
-    expect(screen.getByText('qa/LAN_CLIENT_VALIDATION_PROOF.md')).toBeInTheDocument();
-    expect(screen.getByText('qa/THERMAL_PRINTER_PROOF.md')).toBeInTheDocument();
-    expect(screen.getByText(/production_candidate/i)).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /crear backup/i }).some((button) => !button.hasAttribute('disabled'))).toBe(true);
+    expect(await screen.findByRole('heading', { name: /^respaldos$/i })).toBeInTheDocument();
+    expect(await screen.findByText(/respaldos del hospital/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/respaldos autom[aá]ticos/i)).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/checklist operativo/i)).toBeInTheDocument();
+    expect(screen.getByText(/modo de operaci[oó]n final/i)).toBeInTheDocument();
+    expect(screen.getByText(/pantalla de ingreso abre/i)).toBeInTheDocument();
+    expect(screen.getByText(/segunda pc en lan/i)).toBeInTheDocument();
+    expect(screen.getByText(/impresora t[eé]rmica/i)).toBeInTheDocument();
+    expect(screen.queryByText(/production_candidate/i)).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /crear respaldo/i }).some((button) => !button.hasAttribute('disabled'))).toBe(true);
   });
 
   it('does not render backups for a user without backup permission', async () => {
@@ -431,8 +473,8 @@ describe('App', () => {
     render(<App />);
 
     expect((await screen.findAllByRole('heading', { name: /^caja$/i })).length).toBeGreaterThan(0);
-    expect(screen.queryByRole('heading', { name: /backups locales/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /crear backup/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /respaldos/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /crear respaldo/i })).not.toBeInTheDocument();
   });
 
   it('creates a manual backup from the admin backups view', async () => {
@@ -508,10 +550,10 @@ describe('App', () => {
 
     render(<App />);
 
-    const createBackupButton = await screen.findByRole('button', { name: /crear backup/i });
+    const createBackupButton = await screen.findByRole('button', { name: /crear respaldo/i });
     await waitFor(() => expect(createBackupButton).toBeEnabled());
     fireEvent.click(createBackupButton);
-    fireEvent.click(await screen.findByRole('button', { name: /^crear backup$/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /^crear respaldo$/i }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenLastCalledWith(
@@ -521,7 +563,7 @@ describe('App', () => {
     });
     expect((await screen.findAllByText('hospital-backup-20260517-101500-test.sql')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Pendiente').length).toBeGreaterThan(0);
-    expect(screen.queryByRole('button', { name: /descargar backup hospital-backup/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /descargar respaldo hospital-backup/i })).not.toBeInTheDocument();
   });
 
   it('renders successful backups with accessible download and pagination controls', async () => {
@@ -589,11 +631,11 @@ describe('App', () => {
     expect(await screen.findByText('hospital-backup-20260517-101500-test.sql')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
-        name: /descargar backup hospital-backup-20260517-101500-test\.sql/i,
+        name: /descargar respaldo hospital-backup-20260517-101500-test\.sql/i,
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /crear backup/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/pagina 1 de 2/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /crear respaldo/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/p[aá]gina 1 de 2/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /siguiente/i })).toBeEnabled();
   });
 
@@ -635,19 +677,19 @@ describe('App', () => {
     render(<App />);
 
     expect(
-      await screen.findByRole('heading', { name: /cambio obligatorio de contrasena/i }),
+      await screen.findByRole('heading', { name: /cambio obligatorio de contrase[nñ]a/i }),
     ).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText(/contrasena actual/i), {
+    fireEvent.change(screen.getByLabelText(/contrase[nñ]a actual/i), {
       target: { value: 'Password123!' },
     });
-    fireEvent.change(screen.getByLabelText(/^nueva contrasena$/i), {
+    fireEvent.change(screen.getByLabelText(/^nueva contrase[nñ]a$/i), {
       target: { value: 'NewPassword123' },
     });
-    fireEvent.change(screen.getByLabelText(/confirmar nueva contrasena/i), {
+    fireEvent.change(screen.getByLabelText(/confirmar nueva contrase[nñ]a/i), {
       target: { value: 'NewPassword123' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /actualizar contrasena/i }));
+    fireEvent.click(screen.getByRole('button', { name: /actualizar contrase[nñ]a/i }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenLastCalledWith(
@@ -755,9 +797,9 @@ describe('App', () => {
 
     expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: /nueva factura/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /configuraci[oó]n fiscal/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /^configuraci[oó]n$/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: /nueva factura/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /datos fiscales del hospital/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /backups locales/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /respaldos/i })).not.toBeInTheDocument();
   });
 });

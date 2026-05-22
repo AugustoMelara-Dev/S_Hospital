@@ -17,7 +17,7 @@ export function CashierList({ cashiers }: CashierListProps) {
   if (cashiers.length === 0) {
     return (
       <div className="flex h-[200px] items-center justify-center rounded-md border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
-        Ningun cajero ha recibido pagos hoy
+        Ningún cajero ha recibido pagos hoy
       </div>
     );
   }

@@ -50,7 +50,7 @@ export function DateRangePicker({
     <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-end", className)} {...props}>
       <div className="flex-1 grid grid-cols-2 gap-2">
         <div className="space-y-1.5">
-          <Label htmlFor="range-start" className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+          <Label htmlFor="range-start" className="text-xs font-semibold text-muted-foreground">
             Desde
           </Label>
           <Input
@@ -58,11 +58,11 @@ export function DateRangePicker({
             type="date"
             value={startDate}
             onChange={(e) => onStartDateChange(e.target.value)}
-            className="w-full h-10 px-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-md focus:ring-teal-500 focus:border-teal-500"
+            className="w-full"
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="range-end" className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+          <Label htmlFor="range-end" className="text-xs font-semibold text-muted-foreground">
             Hasta
           </Label>
           <Input
@@ -70,7 +70,7 @@ export function DateRangePicker({
             type="date"
             value={endDate}
             onChange={(e) => onEndDateChange(e.target.value)}
-            className="w-full h-10 px-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-md focus:ring-teal-500 focus:border-teal-500"
+            className="w-full"
           />
         </div>
       </div>
@@ -82,7 +82,7 @@ export function DateRangePicker({
             variant="outline"
             size="sm"
             onClick={() => setQuickRange(0)}
-            className="h-8 text-xs font-medium border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="h-8 text-xs font-medium"
           >
             Hoy
           </Button>
@@ -91,7 +91,7 @@ export function DateRangePicker({
             variant="outline"
             size="sm"
             onClick={() => setQuickRange(1)}
-            className="h-8 text-xs font-medium border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="h-8 text-xs font-medium"
           >
             Ayer
           </Button>
@@ -100,7 +100,7 @@ export function DateRangePicker({
             variant="outline"
             size="sm"
             onClick={() => setQuickRange(7)}
-            className="h-8 text-xs font-medium border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="h-8 text-xs font-medium"
           >
             7D
           </Button>
@@ -109,7 +109,7 @@ export function DateRangePicker({
             variant="outline"
             size="sm"
             onClick={setThisMonth}
-            className="h-8 text-xs font-medium border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="h-8 text-xs font-medium"
           >
             Este mes
           </Button>

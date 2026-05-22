@@ -95,16 +95,16 @@ export function FiscalSettingsForm({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Información del Hospital</CardTitle>
+          <CardTitle>Hospital y recibo</CardTitle>
           <CardDescription>
-            Estos datos aparecerán en los recibos térmicos.
+            Estos datos aparecen en recibos, facturas impresas y pantalla de ingreso.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmitSettings(handleSettingsSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="hospital_name">Nombre del Hospital *</Label>
+                <Label htmlFor="hospital_name">Nombre del hospital *</Label>
                 <Input
                   id="hospital_name"
                   {...registerSettings('hospital_name')}
@@ -129,7 +129,7 @@ export function FiscalSettingsForm({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="address">Dirección del Hospital</Label>
+                <Label htmlFor="address">Direccion del hospital</Label>
                 <Input
                   id="address"
                   {...registerSettings('address')}
@@ -166,7 +166,7 @@ export function FiscalSettingsForm({
             </div>
 
             <div className="space-y-2">
-              <Label>Color de Marca del Hospital (Color Tema)</Label>
+                <Label>Color de marca</Label>
               <div className="flex flex-wrap gap-3">
                 {([
                   { id: 'indigo', name: 'Índigo', color: 'bg-indigo-600' },
@@ -175,27 +175,24 @@ export function FiscalSettingsForm({
                   { id: 'green', name: 'Verde Médico', color: 'bg-green-600' },
                   { id: 'rose', name: 'Rosa Cálido', color: 'bg-rose-600' },
                 ] as const).map((c) => (
-                  <button
+                  <Button
                     key={c.id}
                     type="button"
+                    variant={watchSettings('primary_color') === c.id ? 'secondary' : 'outline'}
                     disabled={!canEdit}
                     onClick={() => setValueSettings('primary_color', c.id)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 text-sm font-semibold transition ${
-                      watchSettings('primary_color') === c.id
-                        ? 'border-primary ring-2 ring-primary/20 bg-accent text-accent-foreground'
-                        : 'border-transparent bg-muted/40 hover:bg-muted/70 text-muted-foreground'
-                    }`}
+                    className="gap-2"
                   >
                     <span className={`h-4.5 w-4.5 rounded-full ${c.color} shadow-sm`} />
                     {c.name}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
 
             <div className="flex justify-end pt-4 border-t">
               <Button type="submit" disabled={!canEdit}>
-                Guardar Información del Hospital
+                Guardar hospital y recibo
               </Button>
             </div>
           </form>
@@ -204,9 +201,9 @@ export function FiscalSettingsForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>Secuencia Fiscal</CardTitle>
+          <CardTitle>Numeracion de facturas</CardTitle>
           <CardDescription>
-            Configure la secuencia de facturación autorizada por la autoridad fiscal.
+            Configure el rango autorizado para emitir facturas.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -293,7 +290,7 @@ export function FiscalSettingsForm({
 
             <div className="flex justify-end">
               <Button type="submit" disabled={!canEdit}>
-                Guardar Secuencia
+                Guardar numeracion
               </Button>
             </div>
           </form>

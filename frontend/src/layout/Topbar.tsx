@@ -1,95 +1,75 @@
 import {
   ChevronDown,
+  HelpCircle,
+  LogOut,
   Menu,
   Moon,
-  Plus,
   Sun,
-  WalletCards,
-  LogOut,
-  Clock,
   Wifi,
   WifiOff,
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
-import { type AuthUser, type CashSession } from '../lib/api';
-import { cn } from '../lib/utils';
-import { Button } from '../components/ui/button';
-import { useTheme } from '../hooks/useTheme';
-import { useClock } from '../hooks/useClock';
-import { useServerStatus } from '../hooks/useServerStatus';
-import { useFiscalSettings } from '../hooks/useFiscalSettings';
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
+import { NavLink } from 'react-router-dom';
+import { Button } from '../components/ui/button';
+import { useFiscalSettings } from '../hooks/useFiscalSettings';
+import { useServerStatus } from '../hooks/useServerStatus';
+import { useTheme } from '../hooks/useTheme';
+import { type AuthUser } from '../lib/api';
+import { displayHospitalName } from '../lib/hospital-name';
+import { cn } from '../lib/utils';
 
 interface TopbarProps {
   user: AuthUser;
-  cashSession: CashSession | null;
   status: string;
   isMinimalTopbar?: boolean;
   crumbs: Array<{ label: string; path: string }>;
-  showInvoiceAction: boolean;
-  showCashAction: boolean;
   onOpenMobileMenu: () => void;
-  onQuickInvoice: () => void;
-  onQuickCash: () => void;
+  onOpenGuide: () => void;
   onLogout: () => void;
 }
 
 export function Topbar({
   user,
-  cashSession,
   status,
   isMinimalTopbar = false,
   crumbs,
-  showInvoiceAction,
-  showCashAction,
   onOpenMobileMenu,
-  onQuickInvoice,
-  onQuickCash,
+  onOpenGuide,
   onLogout,
 }: TopbarProps) {
   const { setTheme, isDark } = useTheme();
-  const { timeString, dateString } = useClock();
   const { isOnline, lastCheck } = useServerStatus();
   const { data: fiscal } = useFiscalSettings();
-
-  const hospitalName = fiscal?.hospital_name || 'Hospital Billing OS';
+  const hospitalName = displayHospitalName(fiscal?.hospital_name);
+  const lanStatusTitle = isOnline
+    ? `Red local disponible${lastCheck ? `. Ultima revision: ${lastCheck.toLocaleTimeString()}` : ''}`
+    : `Sin conexion al servidor local. Estado: ${status}`;
 
   return (
-    <header className="print-hidden sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm px-4 shadow-sm lg:px-6">
+    <header className="print-hidden sticky top-0 z-10 flex min-h-16 items-center gap-3 border-b border-border bg-card/95 px-4 shadow-sm backdrop-blur-sm lg:px-6">
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className="lg:hidden shrink-0 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+        className="shrink-0 lg:hidden"
         onClick={onOpenMobileMenu}
-        aria-label="Abrir menú"
+        aria-label="Abrir menu"
       >
-        <Menu className="size-5" aria-hidden="true" />
+        <Menu data-icon="inline-start" aria-hidden="true" />
       </Button>
 
-      {/* Hospital Title (Visible on larger screens) */}
-      <div className="hidden md:flex items-center gap-2 border-r border-slate-200 dark:border-slate-800 pr-4 shrink-0">
-        <span className="text-sm font-bold text-slate-800 dark:text-white truncate max-w-[200px]" title={hospitalName}>
-          {hospitalName}
-        </span>
-      </div>
-
-      {/* Contextual Navigation (Breadcrumbs) */}
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         {!isMinimalTopbar && (
-          <nav className="flex items-center gap-1.5 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium" aria-label="Breadcrumb">
-            {crumbs.map((crumb, idx) => (
-              <div key={`${crumb.path}-${idx}`} className="flex items-center gap-1.5">
-                {idx > 0 && <span className="text-slate-300 dark:text-slate-600">/</span>}
-                {idx === crumbs.length - 1 ? (
-                  <span className="text-slate-800 dark:text-slate-200 font-semibold truncate max-w-[120px] sm:max-w-none">
+          <nav className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground" aria-label="Ubicacion">
+            {crumbs.map((crumb, index) => (
+              <div key={`${crumb.path}-${index}`} className="flex min-w-0 items-center gap-1.5">
+                {index > 0 && <span className="text-border">/</span>}
+                {index === crumbs.length - 1 ? (
+                  <span className="max-w-[8rem] truncate font-semibold text-foreground sm:max-w-none">
                     {crumb.label}
                   </span>
                 ) : (
-                  <NavLink
-                    to={crumb.path}
-                    className="hover:text-slate-700 dark:hover:text-slate-300 transition-colors truncate max-w-[80px] sm:max-w-none"
-                  >
+                  <NavLink to={crumb.path} className="max-w-[5rem] truncate transition-colors hover:text-foreground sm:max-w-none">
                     {crumb.label}
                   </NavLink>
                 )}
@@ -99,94 +79,72 @@ export function Topbar({
         )}
       </div>
 
-      {/* Right Side Actions & Badges */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {/* Quick Actions */}
-        {!isMinimalTopbar && showInvoiceAction && (
-          <Button type="button" size="sm" onClick={onQuickInvoice} className="shadow-sm">
-            <Plus className="size-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Nueva Factura</span>
-          </Button>
-        )}
-        {!isMinimalTopbar && showCashAction && (
-          <Button type="button" variant="secondary" size="sm" onClick={onQuickCash} className="shadow-sm">
-            <WalletCards className="size-4" aria-hidden="true" />
-            <span className="hidden sm:inline">{cashSession ? 'Ver Caja' : 'Abrir Caja'}</span>
-          </Button>
-        )}
-
-        {/* Server & Network LAN Status Badge */}
+      <div className="flex shrink-0 items-center gap-1.5">
         {!isMinimalTopbar && (
           <div
             className={cn(
-              'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm transition-all duration-300',
-              isOnline
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/50'
-                : 'bg-rose-50 text-rose-700 border border-rose-200/50 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/50 animate-pulse',
+              'hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold sm:flex',
+              isOnline ? 'border-secondary/30 bg-secondary/10 text-secondary' : 'border-destructive/30 bg-destructive/10 text-destructive',
             )}
-            title={isOnline ? `Conexión LAN estable. Último check: ${lastCheck?.toLocaleTimeString()}` : `Desconectado del servidor local. Estado: ${status}`}
+            title={lanStatusTitle}
           >
-            {isOnline ? (
-              <Wifi className="size-3.5 text-emerald-500 dark:text-emerald-400" />
-            ) : (
-              <WifiOff className="size-3.5 text-rose-500 dark:text-rose-400" />
-            )}
-            <span className="hidden sm:inline">{isOnline ? 'LAN Conectado' : 'Sin Conexión'}</span>
+            {isOnline ? <Wifi data-icon="inline-start" aria-hidden="true" /> : <WifiOff data-icon="inline-start" aria-hidden="true" />}
+            <span>{isOnline ? 'Red local' : 'Sin red'}</span>
           </div>
         )}
 
-        {/* Live Clock */}
-        {!isMinimalTopbar && (
-          <div className="hidden items-center gap-2 text-xs font-mono font-medium text-slate-500 dark:text-slate-400 md:flex border-l border-slate-200 dark:border-slate-800 pl-3">
-            <Clock className="size-3.5 text-slate-400" />
-            <span title={`Fecha local: ${dateString}`}>{timeString}</span>
-          </div>
-        )}
-
-        {/* Dark Mode Toggle */}
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="text-slate-650 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
-          onClick={() => setTheme(isDark ? 'light' : 'dark')}
-          title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          onClick={onOpenGuide}
+          title="Ayuda"
+          aria-label="Abrir ayuda"
         >
-          {isDark ? <Sun className="size-5 text-amber-500" /> : <Moon className="size-5" />}
+          <HelpCircle data-icon="inline-start" aria-hidden="true" />
         </Button>
 
-        {/* User Dropdown */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => setTheme(isDark ? 'light' : 'dark')}
+          title={isDark ? 'Cambiar a claro' : 'Cambiar a oscuro'}
+          aria-label={isDark ? 'Cambiar a claro' : 'Cambiar a oscuro'}
+        >
+          {isDark ? <Sun data-icon="inline-start" aria-hidden="true" /> : <Moon data-icon="inline-start" aria-hidden="true" />}
+        </Button>
+
         <DropdownMenuPrimitive.Root>
           <DropdownMenuPrimitive.Trigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              className="gap-2 px-2 py-1.5 h-auto font-medium text-slate-605 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              aria-label="Abrir menu de usuario"
-            >
-              <div className="size-7 rounded-full bg-slate-150 dark:bg-slate-800 flex items-center justify-center font-bold text-xs text-secondary">
+            <Button type="button" variant="ghost" className="h-auto gap-2 px-2 py-1.5" aria-label="Abrir menu de usuario">
+              <div className="flex size-7 items-center justify-center rounded-full border border-border bg-muted text-xs font-bold text-secondary">
                 {user.name.charAt(0).toUpperCase()}
               </div>
-              <span className="hidden lg:inline text-xs">{user.name}</span>
-              <ChevronDown className="size-4 text-slate-400" aria-hidden="true" />
+              <span className="hidden max-w-[10rem] truncate text-xs lg:inline" title={user.name}>
+                {user.name}
+              </span>
+              <ChevronDown data-icon="inline-end" aria-hidden="true" />
             </Button>
           </DropdownMenuPrimitive.Trigger>
           <DropdownMenuPrimitive.Portal>
             <DropdownMenuPrimitive.Content
               align="end"
-              className="z-50 min-w-48 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+              className="z-50 min-w-56 rounded-md border border-border bg-card p-1 text-card-foreground shadow-lg data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
               sideOffset={8}
             >
-              <div className="px-3 py-1.5 text-xs border-b border-slate-100 dark:border-slate-850 mb-1">
-                <p className="font-semibold text-slate-800 dark:text-slate-200">{user.name}</p>
-                <p className="text-slate-400 truncate">@{user.username}</p>
+              <div className="mb-1 border-b border-border px-3 py-2 text-xs">
+                <p className="font-semibold text-foreground">{user.name}</p>
+                <p className="truncate text-muted-foreground" title={hospitalName}>
+                  {hospitalName}
+                </p>
               </div>
               <DropdownMenuPrimitive.Item
-                className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-xs text-rose-600 dark:text-rose-400 outline-none hover:bg-rose-50 dark:hover:bg-rose-950/20 focus:bg-rose-50 dark:focus:bg-rose-950/20 font-medium"
+                className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-destructive outline-none transition-colors hover:bg-destructive/10 focus:bg-destructive/10"
                 onClick={onLogout}
               >
-                <LogOut className="size-4" aria-hidden="true" />
-                Cerrar Sesión
+                <LogOut data-icon="inline-start" aria-hidden="true" />
+                Cerrar sesion
               </DropdownMenuPrimitive.Item>
             </DropdownMenuPrimitive.Content>
           </DropdownMenuPrimitive.Portal>

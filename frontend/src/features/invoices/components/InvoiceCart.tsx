@@ -71,7 +71,6 @@ export function InvoiceCart({
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <ShoppingCart className="h-10 w-10 mb-3 opacity-40" />
             <p className="text-sm font-medium">No hay servicios agregados</p>
-            <p className="text-xs mt-1">Haga clic en un servicio para agregarlo</p>
           </div>
         ) : (
           <div className="space-y-2 pr-1">

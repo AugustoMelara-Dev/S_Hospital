@@ -11,7 +11,7 @@ export function PaginationControls({ loading = false, meta, onPageChange }: Pagi
   const lastPage = Math.max(1, Math.ceil(meta.total / meta.per_page));
 
   return (
-    <div className="pagination-row" aria-label="Paginacion">
+    <div className="pagination-row" aria-label="Paginación">
       <Button
         type="button"
         variant="secondary"

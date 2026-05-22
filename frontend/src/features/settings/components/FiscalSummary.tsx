@@ -62,7 +62,7 @@ export function FiscalSummary({ settings, sequence }: FiscalSummaryProps) {
             <p className="font-medium">{settings?.receipt_width ?? '-'}</p>
           </div>
           <div>
-            <Label className="text-muted-foreground">Valido Hasta</Label>
+            <Label className="text-muted-foreground">Válido hasta</Label>
             <p className={`font-medium ${isExpired ? 'text-destructive' : ''}`}>
               {sequence?.valid_until ? formatDate(sequence.valid_until) : '-'}
             </p>

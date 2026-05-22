@@ -1,50 +1,50 @@
 @import "tailwindcss";
 
-@theme inline {
-  /* Hospital Billing OS - Professional Design System */
+@theme {
+  /* Sistema de diseño de caja hospitalaria */
 
   /* Background & Foreground */
-  --color-background: #f8fafc;
-  --color-foreground: #0f172a;
+  --color-background: #f7f8fb;
+  --color-foreground: #111827;
 
   /* Card */
   --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
+  --color-card-foreground: #111827;
 
-  /* Primary - Slate-700 for professional admin feel */
-  --color-primary: #334155;
+  /* Primary - neutral ink for minimal hospital operations */
+  --color-primary: #111827;
   --color-primary-foreground: #ffffff;
 
-  /* Secondary - Teal-600 for actions and highlights */
-  --color-secondary: #0d9488;
+  /* Secondary - restrained clinical accent */
+  --color-secondary: #0f766e;
   --color-secondary-foreground: #ffffff;
 
   /* Muted */
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
+  --color-muted: #f3f4f6;
+  --color-muted-foreground: #6b7280;
 
   /* Accent */
-  --color-accent: #f0fdfa;
-  --color-accent-foreground: #0d9488;
+  --color-accent: #ecfdf5;
+  --color-accent-foreground: #0f766e;
 
   /* Destructive - Rose-600 */
   --color-destructive: #e11d48;
   --color-destructive-foreground: #ffffff;
 
   /* Border & Input */
-  --color-border: #e2e8f0;
-  --color-input: #e2e8f0;
-  --color-ring: #0d9488;
+  --color-border: #e5e7eb;
+  --color-input: #d1d5db;
+  --color-ring: #0f766e;
 
-  /* Sidebar - Dark Slate */
-  --color-sidebar: #0f172a;
-  --color-sidebar-foreground: #f8fafc;
-  --color-sidebar-primary: #0d9488;
+  /* Sidebar - white minimal shell */
+  --color-sidebar: #ffffff;
+  --color-sidebar-foreground: #111827;
+  --color-sidebar-primary: #0f766e;
   --color-sidebar-primary-foreground: #ffffff;
-  --color-sidebar-accent: #1e293b;
-  --color-sidebar-accent-foreground: #f8fafc;
-  --color-sidebar-border: #334155;
-  --color-sidebar-ring: #0d9488;
+  --color-sidebar-accent: #f3f4f6;
+  --color-sidebar-accent-foreground: #111827;
+  --color-sidebar-border: #e5e7eb;
+  --color-sidebar-ring: #0f766e;
 
   /* Status Colors */
   --color-success: #059669;
@@ -57,8 +57,8 @@
   /* Border Radius */
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.5rem;
 
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -420,23 +420,19 @@ html.dark {
   }
 
   .status-success {
-    @apply bg-emerald-50 text-emerald-700 border border-emerald-200;
+    @apply border border-success/30 bg-success/10 text-success;
   }
 
   .status-failed {
-    @apply bg-rose-50 text-rose-700 border border-rose-200;
+    @apply border border-destructive/30 bg-destructive/10 text-destructive;
   }
 
   .status-pending {
-    @apply bg-amber-50 text-amber-700 border border-amber-200;
+    @apply border border-warning/30 bg-warning/10 text-warning;
   }
 
   .status-info {
-    @apply bg-sky-50 text-sky-700 border border-sky-200;
-  }
-
-  .checksum-cell {
-    @apply max-w-64 break-all font-mono text-xs;
+    @apply border border-info/30 bg-info/10 text-info;
   }
 
   .notice-inline {
@@ -628,23 +624,23 @@ html.dark {
   }
 
   .badge-success {
-    @apply bg-emerald-100 text-emerald-800;
+    @apply bg-success/15 text-success;
   }
 
   .badge-warning {
-    @apply bg-amber-100 text-amber-800;
+    @apply bg-warning/15 text-warning;
   }
 
   .badge-danger {
-    @apply bg-rose-100 text-rose-800;
+    @apply bg-destructive/15 text-destructive;
   }
 
   .badge-info {
-    @apply bg-sky-100 text-sky-800;
+    @apply bg-info/15 text-info;
   }
 
   .badge-secondary {
-    @apply bg-slate-100 text-slate-800;
+    @apply bg-muted text-muted-foreground;
   }
 }
 

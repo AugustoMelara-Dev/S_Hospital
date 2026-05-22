@@ -239,8 +239,8 @@ export function UsersView({ onStatus }: UsersViewProps) {
   return (
     <>
       <PageHeader
-        title="Gestión de Usuarios"
-        description="Administre el personal médico, cajeros y supervisores autorizados para operar el sistema."
+        title="Usuarios"
+        description="Administre el personal autorizado para facturar, cobrar y supervisar."
       />
 
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
@@ -255,7 +255,7 @@ export function UsersView({ onStatus }: UsersViewProps) {
         </div>
         <Button onClick={handleOpenCreateModal} className="w-full md:w-auto">
           <UserPlus className="mr-2 h-4 w-4" />
-          Crear Usuario
+          Crear usuario
         </Button>
       </div>
 
@@ -265,8 +265,8 @@ export function UsersView({ onStatus }: UsersViewProps) {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[30%]">Usuario</TableHead>
-                <TableHead>Username / Email</TableHead>
-                <TableHead>Rol / Permisos</TableHead>
+                <TableHead>Usuario / Correo</TableHead>
+                <TableHead>Rol</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -298,7 +298,7 @@ export function UsersView({ onStatus }: UsersViewProps) {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-0.5">
-                        <span className="font-mono text-xs text-muted-foreground">{user.username}</span>
+                        <span className="text-xs text-muted-foreground">{user.username}</span>
                         <span className="text-xs text-muted-foreground">{user.email}</span>
                       </div>
                     </TableCell>
@@ -376,8 +376,8 @@ export function UsersView({ onStatus }: UsersViewProps) {
         open={isUserModalOpen}
         onOpenChange={setIsUserModalOpen}
         size="md"
-        title={editingUser ? 'Editar detalles del usuario' : 'Crear nuevo usuario'}
-        description="Configure la información personal, credenciales y rol operativo del usuario."
+        title={editingUser ? 'Editar usuario' : 'Crear usuario'}
+        description="Configure nombre, acceso y rol operativo."
       >
         <form onSubmit={handleSaveUser} className="space-y-4">
           {formErrors.form && (
@@ -418,12 +418,12 @@ export function UsersView({ onStatus }: UsersViewProps) {
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="username">Nombre de usuario (Login) *</Label>
+            <Label htmlFor="username">Nombre de usuario *</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 id="username"
-                className="pl-9 font-mono"
+                className="pl-9"
                 placeholder="jperez"
                 value={userForm.username}
                 onChange={(e) => setUserForm((prev) => ({ ...prev, username: e.target.value }))}
@@ -462,7 +462,7 @@ export function UsersView({ onStatus }: UsersViewProps) {
               <SelectContent>
                 <SelectItem value="cajero">Cajero (POS y cobros diarios)</SelectItem>
                 <SelectItem value="supervisor">Supervisor (Auditoría, caja general y anulaciones)</SelectItem>
-                <SelectItem value="admin">Administrador (Control total del sistema)</SelectItem>
+                <SelectItem value="admin">Administrador (control completo)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -472,7 +472,7 @@ export function UsersView({ onStatus }: UsersViewProps) {
               Cancelar
             </Button>
             <Button type="submit">
-              {editingUser ? 'Guardar Cambios' : 'Crear Usuario'}
+              {editingUser ? 'Guardar cambios' : 'Crear usuario'}
             </Button>
           </div>
         </form>
@@ -513,7 +513,7 @@ export function UsersView({ onStatus }: UsersViewProps) {
               Cancelar
             </Button>
             <Button type="submit" variant="default">
-              Restablecer Contraseña
+              Restablecer clave
             </Button>
           </div>
         </form>

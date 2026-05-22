@@ -1,10 +1,8 @@
-import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { type AuthUser, type CashSession, apiClient, userSafeErrorMessage } from '../lib/api';
 import { type PasswordChangeForm } from '../features/auth/PasswordChangeView';
 
 export function useHospitalSession() {
-  const location = useLocation();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [cashSession, setCashSession] = useState<CashSession | null>(null);
   const [login, setLogin] = useState(import.meta.env.DEV ? 'admin.demo' : '');
@@ -14,10 +12,9 @@ export function useHospitalSession() {
     password: '',
     password_confirmation: '',
   });
-  const [status, setStatus] = useState('Listo para iniciar sesion local.');
+  const [status, setStatus] = useState('Listo para iniciar sesión local.');
   const [loading, setLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
-  const initialPathRef = useRef(location.pathname);
 
   const permissions = useMemo(() => new Set(user?.permissions ?? []), [user?.permissions]);
   const canViewFiscalSettings = permissions.has('settings.fiscal.view');
@@ -45,22 +42,16 @@ export function useHospitalSession() {
     apiClient.onSessionExpired(() => {
       setUser(null);
       setCashSession(null);
-      setStatus('Sesion vencida. Redirigiendo al login...');
+      setStatus('Sesión vencida. Redirigiendo al login...');
       setSessionExpired(true);
     });
-
-    if (initialPathRef.current === '/login') {
-      setLoading(false);
-
-      return () => apiClient.onSessionExpired(null);
-    }
 
     apiClient
       .session()
       .then((currentUser) => {
         setUser(currentUser);
         if (currentUser) {
-          setStatus('Sesion activa.');
+          setStatus('Sesión activa.');
           setSessionExpired(false);
         }
         if (currentUser?.permissions.includes('cash.view') && import.meta.env.MODE !== 'test') {
@@ -76,6 +67,8 @@ export function useHospitalSession() {
       })
       .catch(() => {
         setUser(null);
+        setSessionExpired(false);
+        setStatus('Listo para iniciar sesión local.');
       })
       .finally(() => setLoading(false));
 
@@ -93,11 +86,11 @@ export function useHospitalSession() {
       setPassword('');
       setStatus(
         loggedUser.must_change_password
-          ? 'El usuario debe cambiar su contrasena antes de operar.'
-          : 'Sesion iniciada.',
+          ? 'El usuario debe cambiar su contraseña antes de operar.'
+          : 'Sesión iniciada.',
       );
     } catch (error) {
-      setStatus(userSafeErrorMessage(error, 'No se pudo iniciar sesion.'));
+      setStatus(userSafeErrorMessage(error, 'No se pudo iniciar sesión.'));
     }
   }
 
@@ -105,7 +98,7 @@ export function useHospitalSession() {
     await apiClient.logout().catch(() => undefined);
     setUser(null);
     setCashSession(null);
-    setStatus('Sesion cerrada.');
+    setStatus('Sesión cerrada.');
   }
 
   async function refreshCashSession() {
@@ -121,7 +114,7 @@ export function useHospitalSession() {
 
   async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatus('Actualizando contrasena...');
+    setStatus('Actualizando contraseña...');
 
     try {
       const updatedUser = await apiClient.changePassword(passwordForm);
@@ -131,9 +124,9 @@ export function useHospitalSession() {
         password: '',
         password_confirmation: '',
       });
-      setStatus('Contrasena actualizada.');
+      setStatus('Contraseña actualizada.');
     } catch (error) {
-      setStatus(userSafeErrorMessage(error, 'No se pudo actualizar la contrasena.'));
+      setStatus(userSafeErrorMessage(error, 'No se pudo actualizar la contraseña.'));
     }
   }
 

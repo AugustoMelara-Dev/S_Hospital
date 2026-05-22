@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AppRoutes } from './AppRoutes';
 import { useHospitalSession } from './app/useHospitalSession';
+import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { Dialog } from './components/ui/dialog';
 import { EmptyState, LoadingState } from './components/ui/states';
 import { LoginView } from './features/auth/LoginView';
@@ -13,13 +14,15 @@ import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 import { AppShell } from './layout/AppShell';
 import { queryClient } from './lib/query-client';
 import { apiClient } from './lib/api';
-import { Toaster } from './components/ui/toaster';import { useFiscalSettings } from './hooks/useFiscalSettings';
+import { Toaster } from './components/ui/toaster';
 
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <HospitalApp />
+        <AppErrorBoundary>
+          <HospitalApp />
+        </AppErrorBoundary>
         <Toaster />
       </BrowserRouter>
     </QueryClientProvider>
@@ -32,28 +35,6 @@ function HospitalApp() {
   const [quickInvoiceOpen, setQuickInvoiceOpen] = useState(false);
   const [quickCashOpen, setQuickCashOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
-
-  const { data: fiscal } = useFiscalSettings();
-
-  useEffect(() => {
-    if (!fiscal?.primary_color) return;
-
-    const colors = {
-      indigo: { primary: '#4f46e5', accent: '#f5f3ff', hover: '#4338ca' },
-      blue: { primary: '#2563eb', accent: '#eff6ff', hover: '#1d4ed8' },
-      teal: { primary: '#0d9488', accent: '#f0fdfa', hover: '#0f766e' },
-      green: { primary: '#16a34a', accent: '#f0fdf4', hover: '#15803d' },
-      rose: { primary: '#e11d48', accent: '#fff1f2', hover: '#be123c' },
-    };
-
-    const theme = colors[fiscal.primary_color] || colors.indigo;
-
-    document.documentElement.style.setProperty('--color-secondary', theme.primary);
-    document.documentElement.style.setProperty('--color-ring', theme.primary);
-    document.documentElement.style.setProperty('--color-sidebar-primary', theme.primary);
-    document.documentElement.style.setProperty('--color-accent', theme.accent);
-    document.documentElement.style.setProperty('--color-accent-foreground', theme.primary);
-  }, [fiscal?.primary_color]);
 
   useEffect(() => {
     if (session.sessionExpired) {
@@ -68,7 +49,7 @@ function HospitalApp() {
   }, [session.user]); // Refresh when user changes/logs in
 
   if (session.loading) {
-    return <LoadingState label="Cargando sesion..." />;
+    return <LoadingState label="Cargando sesión..." />;
   }
 
   if (!session.user) {
@@ -98,8 +79,6 @@ function HospitalApp() {
   return (
     <AppShell
       cashSession={session.cashSession}
-      onQuickCash={() => setQuickCashOpen(true)}
-      onQuickInvoice={() => setQuickInvoiceOpen(true)}
       onLogout={session.handleLogout}
       status={session.status}
       user={session.user}
@@ -111,7 +90,7 @@ function HospitalApp() {
           description="No tiene permisos operativos asignados."
         />
       ) : session.cashBootstrapLoading ? (
-        <LoadingState label="Validando caja para facturacion..." />
+        <LoadingState label="Validando caja para facturación..." />
       ) : (
         <AppRoutes
           canCreateInvoices={session.canCreateInvoices}
@@ -145,7 +124,7 @@ function HospitalApp() {
         onOpenChange={setQuickInvoiceOpen}
         size="fullscreen"
         title="Emitir factura"
-        description="POS rapido en modal para facturar sin abandonar el contexto actual."
+        description="Facturación rápida sin abandonar la pantalla actual."
       >
         <NewInvoiceView
           cashSession={session.cashSession}

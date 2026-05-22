@@ -1,6 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
-import { Badge } from '../../components/ui/badge';
 import { Alert } from '../../components/ui/alert';
 import { PageHeader } from '../../components/ui/page-header';
 import { EmptyState } from '../../components/ui/states';
@@ -183,7 +182,7 @@ export function ReportsView({
 
   async function downloadBackendExport(filters: ReportFilters) {
     if (!canExport) {
-      onStatus('Exportación Excel requiere permiso de exportacion de reportes.');
+      onStatus('Exportación Excel requiere permiso de exportación de reportes.');
       return;
     }
 
@@ -244,12 +243,7 @@ export function ReportsView({
     <section id="reportes" aria-labelledby="reports-title">
       <PageHeader
         title="Reportes"
-        description="Gerencia hospitalaria"
-        actions={
-          <Badge variant={loading ? 'outline' : 'secondary'}>
-            {loading ? 'Consultando...' : 'Datos auditables'}
-          </Badge>
-        }
+        description="Ventas, cobros, caja y auditoria en una vista clara."
       />
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ReportTab)} className="space-y-6">
@@ -259,7 +253,7 @@ export function ReportsView({
               <TabsTrigger value="diario">Diario</TabsTrigger>
               <TabsTrigger value="rango">Por Rango</TabsTrigger>
               <TabsTrigger value="servicios">Servicios</TabsTrigger>
-              <TabsTrigger value="auditoria">Auditor�a</TabsTrigger>
+              <TabsTrigger value="auditoria">Auditoría</TabsTrigger>
             </>
           )}
           {canViewCashSessionReport && (

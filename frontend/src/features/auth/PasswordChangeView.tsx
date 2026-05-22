@@ -20,13 +20,13 @@ export function PasswordChangeView({ form, onChange, onSubmit }: PasswordChangeV
     <main className="flex min-h-screen items-center justify-center bg-background p-5">
       <Card className="w-full max-w-xl">
         <CardHeader>
-          <CardTitle>Cambio obligatorio de contrasena</CardTitle>
-          <CardDescription>Actualice su contrasena antes de operar el sistema.</CardDescription>
+          <CardTitle>Cambio obligatorio de contraseña</CardTitle>
+          <CardDescription>Actualice su contraseña antes de operar el sistema.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
-              Contrasena actual
+              Contraseña actual
               <Input
                 type="password"
                 value={form.current_password}
@@ -35,7 +35,7 @@ export function PasswordChangeView({ form, onChange, onSubmit }: PasswordChangeV
               />
             </label>
             <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
-              Nueva contrasena
+              Nueva contraseña
               <Input
                 type="password"
                 value={form.password}
@@ -44,7 +44,7 @@ export function PasswordChangeView({ form, onChange, onSubmit }: PasswordChangeV
               />
             </label>
             <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
-              Confirmar nueva contrasena
+              Confirmar nueva contraseña
               <Input
                 type="password"
                 value={form.password_confirmation}
@@ -52,7 +52,7 @@ export function PasswordChangeView({ form, onChange, onSubmit }: PasswordChangeV
                 onChange={(event) => onChange({ ...form, password_confirmation: event.target.value })}
               />
             </label>
-            <Button type="submit">Actualizar contrasena</Button>
+            <Button type="submit">Actualizar contraseña</Button>
           </form>
         </CardContent>
       </Card>

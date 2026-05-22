@@ -720,8 +720,8 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
       onStatus(
         previewBeforePrint
-          ? `Pago registrado. Preview ${nextReceipt.invoice.invoice_number} listo.`
-          : `Pago registrado. Recibo ${nextReceipt.invoice.invoice_number} enviado a impresion.`,
+          ? `Pago registrado. Vista previa ${nextReceipt.invoice.invoice_number} lista.`
+          : `Pago registrado. Recibo ${nextReceipt.invoice.invoice_number} enviado a impresión.`,
       );
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo registrar el pago.');
@@ -777,9 +777,9 @@ export function NewInvoiceView({
     <section id="nueva-factura" className="flex flex-col h-full gap-4 p-4 lg:p-6">
       <header className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col gap-1">
-          <p className="text-xs font-semibold uppercase tracking-normal text-primary">Hospital Billing OS</p>
+          <p className="text-xs font-semibold uppercase tracking-normal text-primary">Caja hospitalaria</p>
           <h1 className="text-2xl font-semibold tracking-normal text-foreground">Nueva factura</h1>
-          <p className="text-sm text-muted-foreground">POS hospitalario</p>
+          <p className="text-sm text-muted-foreground">Factura y cobro en caja</p>
         </div>
         <div className="flex items-center gap-3">
           {loadedCashSession ? (
@@ -931,7 +931,7 @@ export function NewInvoiceView({
         open={showReceipt && Boolean(receipt)}
         onOpenChange={handleReceiptOpenChange}
         size="lg"
-        title="Preview termico"
+        title="Vista previa del recibo"
         description="Solo el ticket se imprime."
       >
         {receipt ? (
@@ -959,32 +959,6 @@ export function NewInvoiceView({
         Se borraran paciente, busqueda y servicios agregados. Use esta accion solo si quiere empezar de nuevo.
       </ConfirmDialog>
 
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <span>
-          <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Ctrl+N</kbd>{' '}
-          Paciente
-        </span>
-        <span>
-          <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Ctrl+B</kbd>{' '}
-          Buscar
-        </span>
-        <span>
-          <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Ctrl+K</kbd>{' '}
-          Lector
-        </span>
-        <span>
-          <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Enter</kbd>{' '}
-          Agregar Codigo
-        </span>
-        <span>
-          <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Ctrl+Enter</kbd>{' '}
-          Emitir y cobrar
-        </span>
-        <span>
-          <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">Esc</kbd>{' '}
-          Limpiar
-        </span>
-      </div>
     </section>
   );
 }
