@@ -6,6 +6,7 @@ impresora termica y configuracion final del servidor real.
 
 ## Quality gate seguro
 
+- `powershell.exe -ExecutionPolicy Bypass -File scripts\security\run-security-checks.ps1`
 - `composer validate`
 - `php artisan test --colors=never`
 - `vendor/bin/pint --test`
@@ -17,6 +18,7 @@ impresora termica y configuracion final del servidor real.
 - `bash scripts/quality_gate.sh` si Bash esta disponible en el entorno.
 
 El quality gate normal es no destructivo. No ejecuta `php artisan migrate:fresh --seed` contra el `.env` activo.
+El gate de supply chain es local/offline-friendly y revisa locks/manifests contra IOCs conocidos antes de build.
 
 Nota de entorno: en la shell de trabajo del 2026-05-22, `composer` no estaba
 disponible en PATH, por lo que `composer validate` debe ejecutarse en una

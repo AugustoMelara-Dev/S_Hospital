@@ -810,3 +810,24 @@ Consecuencia:
 
 - El cierre tecnico queda listo para revision/PR con gates automatizados verdes.
 - El handoff de produccion sigue bloqueado hasta completar evidencia fisica/final en servidor real.
+
+### 2026-05-25 - Guard local contra ataques supply chain
+
+Decision:
+
+- `scripts/security/supply-chain-check.ps1` revisa manifests, lockfiles, vendor/node_modules relevantes, `backend/public` y temporales contra IOCs recientes de npm/Composer.
+- `scripts/security/run-security-checks.ps1` ejecuta el guard y `npm audit --omit=dev` en frontend/backend cuando hay lockfile.
+- `frontend/.npmrc` y `backend/.npmrc` activan `package-lock`, `save-exact`, `audit` y desactivan `fund` para nuevas instalaciones.
+- `backend/package-lock.json` queda versionado para evitar que Laravel/Vite resuelva dependencias flotantes sin revision.
+- `docs/SECURITY_SUPPLY_CHAIN_RUNBOOK.md` documenta respuesta ante IOCs y reglas de cambio de dependencias.
+
+Motivo:
+
+- Los incidentes recientes de `package.json`, npm/Axios y Laravel-Lang no siempre aparecen como CVEs; el proyecto necesita una barrera local que falle por indicadores concretos sin depender de servicios cloud.
+- Produccion es offline LAN, pero las dependencias se resuelven en desarrollo/release; el control debe ejecutarse antes de crear artefactos para el servidor hospitalario.
+
+Consecuencia:
+
+- El release checklist incluye el gate supply-chain antes del build normal.
+- Las futuras actualizaciones de dependencias deben conservar lockfiles y pasar el guard antes de push/release.
+- El guard no reemplaza antivirus, revision manual de paquetes nuevos ni rotacion de secretos si se detecta un IOC.
