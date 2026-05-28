@@ -21,31 +21,26 @@ No ejecutar `migrate:fresh` en el servidor real.
 14. Completar `qa\THERMAL_PRINTER_PROOF.md` con la impresora fisica 80mm/58mm.
 15. Ejecutar `scripts\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR` sin `-AllowMissingPhysicalProof` solo cuando ya existan pruebas de segunda PC LAN e impresora.
 
-Si el preflight falla por evidencia fisica pendiente, el servidor puede seguir en `PRODUCTION_CANDIDATE`, pero no se debe vender como `PRODUCTION_READY`.
+## Preparación y Despliegue Automatizado (Recomendado)
 
-## Preparacion
+El despliegue está completamente automatizado a través de un asistente inteligente. Ya no es necesario ejecutar comandos manuales en producción:
 
-1. Construir frontend antes de llevar al servidor.
-2. Copiar backend, `vendor/`, frontend compilado y configuracion aprobada.
-3. Instalar PHP, extensiones necesarias y MySQL/MariaDB local.
-4. Crear `.env` real en el servidor, fuera de Git, con secretos locales.
-5. Configurar obligatoriamente `APP_ENV=production` y `APP_DEBUG=false`.
-6. Generar `APP_KEY` si no existe.
-7. Ejecutar migraciones aprobadas sin `migrate:fresh`.
-8. Crear admin real con `php artisan auth:create-initial-admin`; no ejecutar seeders demo en servidor real.
-9. Ejecutar `php artisan config:cache`.
+1. **Copiar el proyecto** a la carpeta final del Servidor.
+2. Hacer clic derecho en **`setup.bat`** y seleccionar **"Ejecutar como administrador"** (esencial para configurar el firewall del puerto 8000 y el programador de tareas en Windows).
+3. Seleccionar el modo de despliegue:
+   - **Opción 1 (Contenedores Docker):** Levantará Nginx, MariaDB, PHP-FPM y el queue worker en contenedores aislados y de alto rendimiento. Compila el frontend automáticamente dentro de la construcción de la imagen sin depender de volumenes host locales (bulletproof).
+   - **Opción 2 (Bare-Metal Windows):** Usará PHP local, pedirá credenciales de base de datos MySQL de forma interactiva (sin sobreescribir valores preexistentes en el `.env`) y registrará automáticamente las tareas en el **Windows Task Scheduler**.
+4. Crear la cuenta inicial del administrador del hospital.
+5. Iniciar sesión y validar el checklist.
 
-No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`, `supervisor.demo` y `cajero.demo` son exclusivamente para desarrollo/testing.
+---
 
-## Servidor LAN
+## Arquitectura de Red LAN Local Hospitalaria
 
-- Servidor: una PC local con Laravel API, frontend compilado, MySQL/MariaDB y backups.
-- Clientes: navegadores apuntando a la IP local del servidor, por ejemplo `http://192.168.1.10`.
-- No usar `localhost` desde clientes.
-- No requerir internet para login, facturacion, caja, reportes, impresion o backups.
-- Produccion debe correr con `APP_ENV=production` y `APP_DEBUG=false`.
-- Si se publica same-origin desde Laravel, las rutas `/`, `/login` y `/verify-email` deben servir el build React generado en `frontend/dist`.
-- La ruta `/assets/*` debe servir los assets del build React; ejecutar `npm.cmd run build` antes de copiar artefactos.
+- **Servidor LAN:** Una única PC local de alto rendimiento ejecuta el sistema completo, base de datos y automatización de backups. Debe contar con una **IP fija estática** configurada en Windows para evitar que el router cambie su IP.
+- **Estaciones Cliente (3+ terminales):** Computadoras de caja, consultorios y admisión. No instalan absolutamente nada. Abren el navegador (Chrome/Edge) e ingresan a: `http://IP_DEL_SERVIDOR:8000`.
+- **⚠️ ADVERTENCIA DE SEGURIDAD Y FISCAL:** *No instalar el sistema local por PC individual.* Cada estación de cobro debe conectarse a la misma base de datos del servidor para evitar la duplicación de números fiscales correlativos de facturación y para garantizar un único flujo consolidado de arqueo de caja diario.
+
 
 ## Worker de backups
 

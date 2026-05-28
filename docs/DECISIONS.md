@@ -831,3 +831,25 @@ Consecuencia:
 - El release checklist incluye el gate supply-chain antes del build normal.
 - Las futuras actualizaciones de dependencias deben conservar lockfiles y pasar el guard antes de push/release.
 - El guard no reemplaza antivirus, revision manual de paquetes nuevos ni rotacion de secretos si se detecta un IOC.
+- El handoff de produccion sigue bloqueado hasta completar evidencia fisica/final en servidor real.
+
+### 2026-05-27 - Unificación del instalador setup.bat y deploy_hospital_lan.ps1
+
+Decision:
+
+- Unificar `setup.bat` como lanzador administrativo raíz que invoca directamente a `scripts/deploy_hospital_lan.ps1` con ExecutionPolicy Bypass.
+- Implementar la función de lectura no destructiva `Read-EnvFile` y de actualización `Update-DotEnv` en `deploy_hospital_lan.ps1` para evitar sobreescribir configuraciones manuales locales de base de datos o claves.
+- En modo Bare-Metal, el script ahora solicita de forma interactiva las credenciales locales de la base de datos (Host, Puerto, Nombre, Usuario, Contraseña) y fuerza `APP_ENV=production` y `APP_DEBUG=false` en el archivo `.env`.
+- Integrar la llamada automática de `install_backup_tasks_windows.ps1` durante la instalación Bare-Metal para registrar `HospitalBillingOS-BackupWorker` y `HospitalBillingOS-DailyBackup` en Windows Task Scheduler.
+
+Motivo:
+
+- Evitar que `setup.bat` levante un entorno de desarrollo local con debug activo en el hospital.
+- Evitar la pérdida destructiva de contraseñas de bases de datos preconfiguradas en sitio.
+- Asegurar que la validación de preflight de producción de backups esté automatizada desde el primer instante de la instalación en el servidor.
+
+Consecuencia:
+
+- La instalación Bare-Metal es 100% interactiva, idempotente, segura y no destructiva.
+- El preflight de producción ya no falla por tareas de copia de seguridad faltantes en instalaciones Windows Bare-Metal.
+- Se consolida el flujo Cliente-Servidor LAN como la única arquitectura recomendada para el hospital.

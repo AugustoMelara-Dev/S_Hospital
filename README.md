@@ -53,43 +53,43 @@ El sistema está construido con tecnologías modernas y robustas diseñadas para
 
 ---
 
-## 🚀 Guía de Instalación y Despliegue LAN
+## 🚀 Arquitectura de Despliegue & Guía de Instalación LAN
 
-### Requisitos Previos (Servidor)
-- Servidor local Windows con **XAMPP** (PHP 8.2+, MySQL/MariaDB) o **Docker**.
-- Node.js 18+ para compilación y desarrollo.
+### 📋 Arquitectura LAN Recomendada para el Hospital
+Para garantizar la integridad fiscal y la sincronización de la caja, el sistema debe operarse en una estructura de **Cliente-Servidor local**:
+1. **1 Computadora Servidor Central (LAN):** Aloja el backend, base de datos MariaDB/MySQL, el SPA compilado y realiza las copias de seguridad locales programadas. Debe tener una **IP LAN Estática** configurada.
+2. **Estaciones Cliente (Caja, Admisión, Consultorio):** No instalan nada. Acceden exclusivamente a través del navegador web moderno (Chrome o Edge) apuntando a la IP del Servidor.
+3. **⚠️ ADVERTENCIA:** *Instalar el sistema localmente por completo en múltiples computadoras individuales (Bare-Metal individual) está estrictamente prohibido para producción hospitalaria.* Esto rompería la coherencia del catálogo, duplicaría los números fiscales e impediría un control de caja unificado.
 
-### Configuración del Servidor LAN
+---
 
-1. **Instalar Dependencias:**
-   ```bash
-   # Backend
-   cd backend
-   composer install
-   cp .env.example .env
-   php artisan key:generate
-   php artisan migrate --seed
+### ⚙️ Requisitos del Servidor
+- **Opción Docker (Recomendada):** Docker Desktop para Windows instalado y corriendo.
+- **Opción Bare-Metal:** Windows 10/11 o Server, PHP 8.2+ (con extensiones pdo_mysql, intl, gd, zip, mbstring) y MySQL/MariaDB.
+- **Privilegios:** Cuenta con privilegios de Administrador para abrir puertos del firewall y programar backups.
 
-   # Frontend
-   cd ../frontend
-   npm install
-   npm run build
-   ```
+---
 
-2. **Iniciar Servidor Local:**
-   Puedes usar el servidor local Apache/MySQL de XAMPP y apuntar el VirtualHost al directorio `/public` de Laravel.
-   Alternativamente, inicia de forma reproducible usando Docker Compose:
-   ```bash
-   docker compose up -d
-   docker compose exec app php artisan migrate --seed
-   ```
+### 📥 Proceso de Instalación en el Servidor (Fácil y Automatizado)
 
-### Acceso de Clientes LAN
-Para que otras computadoras en la misma clínica/hospital utilicen el sistema:
-1. Obtén la dirección IP del servidor local (ej. `192.168.1.150`).
-2. Configura los hosts o accede directamente en los navegadores de las computadoras cliente ingresando:
-   `http://192.168.1.150:8000` (o el puerto configurado en Apache/Docker).
-3. ¡Listo! El sistema funciona instantáneamente compartiendo la misma base de datos local de forma segura.
+El sistema incluye un script automatizado que realiza pre-diagnósticos de red, DHCP, firewall y puertos antes de configurar el entorno de forma idempotente y segura:
+
+1. **Descargar / Copiar** los archivos del proyecto a la carpeta final en el Servidor.
+2. Haz clic derecho sobre el archivo **[setup.bat](file:///setup.bat)** en la raíz del proyecto.
+3. Selecciona **"Ejecutar como administrador"** (obligatorio para configurar el firewall y backups).
+4. Sigue el asistente interactivo en pantalla:
+   - **Opción 1 (Docker):** Levantará la arquitectura de contenedores aislados con Nginx, MariaDB y PHP-FPM, optimizada para producción con secrets autogenerados.
+   - **Opción 2 (Bare-Metal):** Validará tu motor de PHP local, solicitará credenciales de base de datos MySQL de forma interactiva (conservando otros valores locales en el `.env`) y registrará automáticamente las tareas en el **Windows Task Scheduler**.
+5. Configura la cuenta del primer Administrador de Hospital y guarda la URL web LAN de acceso.
+
+---
+
+### 🌐 Conexión de Estaciones Cliente
+1. Conecta la estación cliente (Caja, Admisión) a la misma red local (LAN/WiFi) del servidor.
+2. Abre Google Chrome o Microsoft Edge en la estación cliente.
+3. Ingresa la URL LAN del servidor, por ejemplo: `http://192.168.1.15:8000` (reemplaza `192.168.1.15` por la IP fija del servidor).
+4. Inicia sesión con la cuenta asignada. La impresora térmica se conecta directamente a la estación cliente y el navegador procesará las impresiones de 80mm o 58mm nativamente.
+
 
 ---
 
