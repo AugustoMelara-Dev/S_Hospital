@@ -28,8 +28,10 @@ El despliegue está completamente automatizado a través de un asistente intelig
 1. **Copiar el proyecto** a la carpeta final del Servidor.
 2. Hacer clic derecho en **`setup.bat`** y seleccionar **"Ejecutar como administrador"** (esencial para configurar el firewall del puerto 8000 y el programador de tareas en Windows).
 3. Seleccionar el modo de despliegue:
-   - **Opción 1 (Contenedores Docker):** Levantará Nginx, MariaDB, PHP-FPM y el queue worker en contenedores aislados y de alto rendimiento. Compila el frontend automáticamente dentro de la construcción de la imagen sin depender de volumenes host locales (bulletproof).
-   - **Opción 2 (Bare-Metal Windows):** Usará PHP local, pedirá credenciales de base de datos MySQL de forma interactiva (sin sobreescribir valores preexistentes en el `.env`) y registrará automáticamente las tareas en el **Windows Task Scheduler**.
+    - **Opción 1 (Contenedores Docker):** Levantará Nginx, MariaDB, PHP-FPM y el queue worker en contenedores aislados y de alto rendimiento. Soporta dos modalidades:
+      - **Modo Online:** Si no existe la carpeta `offline-images/`, el instalador descarga y construye automáticamente todo desde internet.
+      - **Modo Offline:** Si se incluye la carpeta `offline-images/` (generada previamente mediante `make_offline_release.ps1`), el instalador importará automáticamente las imágenes precargadas `.tar` usando `docker load` sin requerir conexión a internet.
+    - **Opción 2 (Bare-Metal Windows):** Usará PHP local, pedirá credenciales de base de datos MySQL de forma interactiva (sin sobreescribir valores preexistentes en el `.env`) y registrará automáticamente las tareas en el **Windows Task Scheduler**.
 4. Crear la cuenta inicial del administrador del hospital.
 5. Iniciar sesión y validar el checklist.
 

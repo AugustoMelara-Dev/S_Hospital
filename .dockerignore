@@ -7,9 +7,13 @@ dist
 **/dist
 .env
 .env.*
+!frontend/.env.production
 *.log
 storage/app/private/backups/*
 mysql_prod_data
 backup_data
 playwright-report
 test-results
+offline-release
+offline-images
+

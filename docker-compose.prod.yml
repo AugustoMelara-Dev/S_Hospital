@@ -1,5 +1,6 @@
 services:
   backend:
+    image: s_hospital-backend:latest
     build:
       context: .
       dockerfile: ./backend/Dockerfile.prod
@@ -63,6 +64,7 @@ services:
       retries: 10
 
   queue-worker:
+    image: s_hospital-queue-worker:latest
     build:
       context: .
       dockerfile: ./backend/Dockerfile.prod

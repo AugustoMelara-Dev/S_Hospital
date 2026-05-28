@@ -193,8 +193,31 @@ if ($choice -eq "1") {
     
     # Levantar contenedores
     $composePath = Join-Path $projectRoot "docker-compose.prod.yml"
-    Write-Host "[*] Construyendo y levantando contenedores Docker..." -ForegroundColor Yellow
-    docker compose -f $composePath --env-file $envPath up -d --build
+    $offlineImagesDir = Join-Path $projectRoot "offline-images"
+    $isOfflineMode = Test-Path $offlineImagesDir
+
+    if ($isOfflineMode) {
+        Write-Host ""
+        Write-Host "[*] Modo offline detectado: usando imagenes locales de offline-images/." -ForegroundColor Green
+        $loadScriptPath = Join-Path $projectRoot "scripts\load_offline_images.ps1"
+        if (Test-Path $loadScriptPath) {
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $loadScriptPath
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "[FAIL] Error al cargar las imagenes offline." -ForegroundColor Red
+                exit 1
+            }
+        } else {
+            Write-Host "[WARN] Carpeta offline-images/ detectada pero no se encontro scripts\load_offline_images.ps1." -ForegroundColor Yellow
+        }
+        Write-Host "[*] Levantando contenedores Docker en modo offline..." -ForegroundColor Yellow
+        docker compose -f $composePath --env-file $envPath up -d --no-build
+    } else {
+        Write-Host ""
+        Write-Host "[*] Modo online: se construiran/descargaran imagenes desde internet." -ForegroundColor Yellow
+        Write-Host "[*] Construyendo y levantando contenedores Docker..." -ForegroundColor Yellow
+        docker compose -f $composePath --env-file $envPath up -d --build
+    }
+
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[FAIL] Error al levantar Docker Compose de produccion." -ForegroundColor Red
         exit 1

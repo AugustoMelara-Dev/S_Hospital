@@ -3,3 +3,11 @@
 .env.backup
 .env.local
 .env.*.local
+
+# Offline deployment ignores
+offline-release/
+offline-images/
+*.tar
+*.zip
+*.tgz
+
