@@ -12,8 +12,8 @@ RUN npm run build
 # === STAGE 2: Install backend Composer dependencies ===
 FROM composer:2 AS composer-builder
 WORKDIR /app
-COPY backend/composer*.json ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+COPY backend/composer.json backend/composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --ignore-platform-reqs
 
 # === STAGE 3: Final Production Image (PHP-FPM) ===
 FROM php:8.3-fpm-alpine
@@ -66,7 +66,8 @@ COPY --from=composer-builder /app/vendor/ ./vendor/
 COPY --from=frontend-builder /app/dist/ /var/www/frontend/dist/
 
 # Create public assets directories for Laravel
-RUN mkdir -p storage/framework/views storage/framework/cache storage/framework/sessions bootstrap/cache
+RUN mkdir -p storage/framework/views storage/framework/cache storage/framework/sessions bootstrap/cache \
+    && rm -f bootstrap/cache/*.php
 
 # Adjust directory permissions so php-fpm (www-data) can write to storage & bootstrap
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache

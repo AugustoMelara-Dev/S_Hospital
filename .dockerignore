@@ -1,0 +1,15 @@
+.git
+node_modules
+**/node_modules
+vendor
+**/vendor
+dist
+**/dist
+.env
+.env.*
+*.log
+storage/app/private/backups/*
+mysql_prod_data
+backup_data
+playwright-report
+test-results

@@ -1,0 +1,5 @@
+# Ignore local environment files at the root level
+.env
+.env.backup
+.env.local
+.env.*.local
