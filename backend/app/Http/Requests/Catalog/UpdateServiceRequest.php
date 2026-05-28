@@ -12,7 +12,7 @@ class UpdateServiceRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('catalog.manage') === true;
+        return $this->user()?->can('update', $this->route('service')) === true;
     }
 
     /**

@@ -82,12 +82,17 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
         Route::get('/reports/operations', [ReportController::class, 'operations']);
         Route::get('/reports/export', [ReportController::class, 'export'])
             ->middleware('throttle:30,1');
-        Route::get('/reports/pdf', [ReportController::class, 'pdfExport']);
+        $testing = app()->environment('testing');
+        Route::get('/reports/pdf', [ReportController::class, 'pdfExport'])
+            ->middleware($testing ? 'throttle:100,1' : 'throttle:10,1');
         Route::get('/reports/cash-sessions/{cashSession}', [ReportController::class, 'cashSession']);
 
-        Route::get('/backups', [BackupController::class, 'index']);
-        Route::post('/backups', [BackupController::class, 'store']);
-        Route::get('/backups/{backupLog}/download', [BackupController::class, 'download']);
+        Route::get('/backups', [BackupController::class, 'index'])
+            ->middleware($testing ? 'throttle:100,1' : 'throttle:10,1');
+        Route::post('/backups', [BackupController::class, 'store'])
+            ->middleware($testing ? 'throttle:100,1' : 'throttle:3,1');
+        Route::get('/backups/{backupLog}/download', [BackupController::class, 'download'])
+            ->middleware($testing ? 'throttle:100,1' : 'throttle:5,1');
 
         Route::get('/system/status', [SystemStatusController::class, 'show']);
 

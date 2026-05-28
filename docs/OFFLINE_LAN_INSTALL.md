@@ -61,40 +61,69 @@ En publicacion same-origin con Laravel, `/`, `/login` y `/verify-email` sirven e
 
 No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`, `supervisor.demo` y `cajero.demo` pertenecen solo a desarrollo/testing.
 
-## Red local
+## Red local y Arquitectura Multi-Estación (3+ concurrentes)
 
-- Configurar IP fija en el servidor.
-- Permitir HTTP/HTTPS en firewall local.
-- No abrir el sistema a internet salvo decision explicita posterior.
-- Si se configura HTTPS local, instalar certificado confiable para los clientes.
-- Los clientes deben entrar por la IP o nombre LAN del servidor, por ejemplo `http://192.168.1.10`.
-- No usar `localhost` en clientes; en una caja cliente, `localhost` apunta a esa misma caja, no al servidor.
-- Reservar la IP fija en el router o configurar IP estatica en Windows para evitar que cambie despues de reinicios.
+El sistema está diseñado de forma nativa para soportar múltiples estaciones de trabajo (ej. Admisión, Caja Principal, Caja de Diálisis) conectadas de forma concurrente a un solo Servidor Central:
 
-## Firewall y puertos
+1. **PC Servidor Central**:
+   - Es la computadora donde se ejecuta el backend Laravel, la base de datos MariaDB y el frontend compilado (servido por Nginx).
+   - Es la única PC que requiere instalación y configuración de bases de datos.
+   - Debe permanecer encendida durante todo el horario operativo.
 
-- Permitir solo el puerto publicado para HTTP/HTTPS dentro del perfil de red privada.
-- No exponer MySQL/MariaDB a internet.
-- Si MySQL/MariaDB debe aceptar conexiones solo del backend local, mantenerlo escuchando en `127.0.0.1`.
-- Si se usa un servidor web local, validar que `/up`, `/login` y `/verify-email` respondan desde otra computadora LAN.
+2. **Estaciones Clientes (Cajas / Admisión)**:
+   - Son las computadoras desde las cuales facturarán los cajeros.
+   - **No requieren instalación de ningún tipo**. No necesitan Docker, PHP, Composer ni Node.
+   - Solo necesitan abrir un navegador web moderno (Google Chrome o Microsoft Edge recomendado) e ingresar a la URL del servidor local: `http://<IP_DEL_SERVIDOR>:8000`.
 
-## Impresora termica
+### Configuración del Servidor: IP Fija (Estática) en Windows
 
-- Instalar la impresora 80mm o 58mm en la computadora que imprimira.
-- Validar una impresion de prueba desde el navegador usado en caja.
-- Configurar el tamano de papel del driver para evitar salida tipo carta.
-- Si la impresora se comparte en red, probar desde cada cliente autorizado antes de operar.
-- Marcar escala 100%, margenes minimos o ninguno, encabezados/pies del navegador desactivados si el navegador lo permite.
-- Ejecutar una prueba 80mm y una prueba 58mm con una factura pagada y una reimpresion desde historial.
+Para evitar que las estaciones clientes pierdan la conexión al reiniciar el router del hospital (lo cual cambia la IP del servidor si está en automático/DHCP), es MANDATORIO configurar una IP Estática en el Servidor:
 
-## Backups
+1. Abra el **Panel de Control** en Windows.
+2. Vaya a **Centro de redes y recursos compartidos** > **Cambiar configuración del adaptador**.
+3. Haga clic derecho sobre su conexión de red activa (Ethernet o Wi-Fi) y seleccione **Propiedades**.
+4. Seleccione **Protocolo de Internet versión 4 (TCP/IPv4)** y haga clic en **Propiedades**.
+5. Seleccione **Usar la siguiente dirección IP** e ingrese:
+   - **Dirección IP**: Una IP libre en el rango de su red (ej. `192.168.1.150`).
+   - **Máscara de subred**: Normalmente `255.255.255.0`.
+   - **Puerta de enlace predeterminada**: La IP de su router (ej. `192.168.1.1`).
+6. En DNS use los de su red o DNS locales. Guarde y acepte los cambios.
+7. Escriba esta IP en el script de instalación (`scripts/deploy_hospital_lan.ps1`).
 
-- Programar backup diario con `php artisan hospital:backup --type=scheduled`.
-- Permitir backup manual desde admin.
-- Mantener un worker local de cola `backups` para ejecutar backups pedidos desde la UI sin bloquear el request HTTP.
-- Guardar archivos en carpeta local protegida y copiar una version a USB o disco externo.
-- No usar cloud backups como dependencia de produccion.
-- Ver `docs/BACKUP_RESTORE.md` para restore manual y checklist de validacion.
+### Firewall y Perfil de Red: Pública vs Privada
+
+Por defecto, Windows Defender Firewall bloquea todo tráfico entrante en redes marcadas como **Públicas** (para proteger su PC en cafeterías o aeropuertos). En el hospital, para que los clientes accedan al servidor, el perfil de red del servidor debe configurarse como **Privado**:
+
+1. En la barra de tareas de Windows, haga clic en el ícono de red (Wi-Fi o Ethernet).
+2. Haga clic en **Propiedades** de la red a la que está conectado.
+3. En **Perfil de red**, seleccione **Privada** (esto permite que otras computadoras en la LAN vean su servidor).
+4. El instalador `scripts/deploy_hospital_lan.ps1` creará automáticamente la regla de excepción de firewall para permitir conexiones entrantes en el puerto 8000 dentro del perfil privado.
+
+---
+
+## Impresora térmica en Multi-Estación
+
+Cada estación de caja puede tener su propia impresora térmica conectada localmente por USB, o compartir una sola impresora en la red local:
+
+1. **Conexión Local (USB por Estación)**:
+   - Conecte la impresora térmica (80mm o 58mm) a la estación cliente mediante USB.
+   - Instale el driver oficial del fabricante en esa estación cliente.
+   - Cuando el cajero imprima desde Chrome/Edge, el navegador detectará la impresora conectada directamente por USB.
+
+2. **Compartir Impresora en Red**:
+   - Si la impresora está físicamente conectada al Servidor, vaya a **Impresoras y Escáneres** en Windows Server.
+   - Propiedades de la Impresora > pestaña **Compartir** > activar **Compartir esta impresora**.
+   - En las estaciones clientes, agregue la impresora de red navegando por la ruta de red del servidor (ej. `\\<IP_DEL_SERVIDOR>\NombreImpresora`).
+
+3. **Parámetros del Navegador (Esencial para evitar descuadres)**:
+   - Margen: Seleccionar **Ninguno** o **Mínimo**.
+   - Escala: **100%** (no usar "Ajustar al área de impresión").
+   - Opciones: Desmarcar **Encabezados y pies de página** para evitar que se imprima la URL y la fecha del navegador arriba y abajo del recibo térmico.
+
+---
+
+## Backups y Resiliencia
+
 
 ## Variables de entorno y artefactos
 

@@ -4,7 +4,7 @@
     "type": "project",
     "description": "Laravel API backend for Hospital Billing OS Offline.",
     "keywords": ["laravel", "hospital", "billing", "offline-lan"],
-    "license": "MIT",
+    "license": "proprietary",
     "require": {
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "^3.1",

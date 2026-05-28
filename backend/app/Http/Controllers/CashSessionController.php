@@ -17,7 +17,7 @@ class CashSessionController extends Controller
 {
     public function current(Request $request): JsonResponse
     {
-        $request->user()->can('cash.view') || abort(403);
+        $this->authorize('viewAny', CashRegisterSession::class);
 
         $session = CashRegisterSession::query()
             ->with('user:id,name,username')
@@ -33,6 +33,7 @@ class CashSessionController extends Controller
 
     public function index(IndexCashSessionRequest $request): JsonResponse
     {
+        $this->authorize('viewAny', CashRegisterSession::class);
         $query = CashRegisterSession::query()
             ->with('user:id,name,username')
             ->latest('opened_at');

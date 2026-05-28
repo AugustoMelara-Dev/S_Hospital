@@ -12,7 +12,7 @@ class StoreServiceRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('catalog.manage') === true;
+        return $this->user()?->can('create', Service::class) === true;
     }
 
     /**

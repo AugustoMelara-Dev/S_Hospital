@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\BackupLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -15,7 +16,7 @@ class BackupController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $request->user()->can('backups.view') || abort(403);
+        Gate::authorize('viewAny', BackupLog::class);
         $validated = $request->validate([
             'status' => ['sometimes', 'string', Rule::in([
                 BackupLog::STATUS_PENDING,
@@ -45,7 +46,7 @@ class BackupController extends Controller
 
     public function store(Request $request, CreateBackupAction $createBackup): JsonResponse
     {
-        $request->user()->can('backups.create') || abort(403);
+        Gate::authorize('create', BackupLog::class);
 
         $backupLog = $createBackup->execute($request->user(), BackupLog::TYPE_MANUAL);
 
@@ -56,7 +57,7 @@ class BackupController extends Controller
 
     public function download(Request $request, BackupLog $backupLog): BinaryFileResponse
     {
-        $request->user()->can('backups.download') || abort(403);
+        Gate::authorize('download', $backupLog);
 
         abort_unless($backupLog->status === BackupLog::STATUS_SUCCESS, 404);
         abort_unless($backupLog->disk === 'local', 404);

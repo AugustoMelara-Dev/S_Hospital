@@ -91,8 +91,7 @@ class InvoiceController extends Controller
 
     public function show(Request $request, Invoice $invoice): JsonResponse
     {
-        $request->user()->can('invoices.view') || abort(403);
-        $this->authorizeInvoiceAccess($request->user(), $invoice);
+        $this->authorize('view', $invoice);
 
         return response()->json([
             'data' => $invoice->load([
@@ -111,7 +110,7 @@ class InvoiceController extends Controller
         Invoice $invoice,
         VoidInvoiceAction $voidInvoice,
     ): JsonResponse {
-        $request->user()->can('invoices.void') || abort(403);
+        $this->authorize('void', $invoice);
 
         return response()->json([
             'data' => $voidInvoice->execute($invoice, $request->user(), $request->reason()),

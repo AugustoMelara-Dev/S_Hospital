@@ -11,7 +11,7 @@ class StoreCategoryRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('catalog.manage') === true;
+        return $this->user()?->can('create', Category::class) === true;
     }
 
     /**

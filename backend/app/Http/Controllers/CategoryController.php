@@ -15,7 +15,7 @@ class CategoryController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $request->user()->can('catalog.view') || abort(403);
+        $this->authorize('viewAny', Category::class);
 
         $categories = Category::query()
             ->when($request->has('active'), fn ($query) => $query->where('active', $request->boolean('active')))

@@ -8,7 +8,7 @@ class VoidInvoiceRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('invoices.void') === true;
+        return $this->user()?->can('void', $this->route('invoice')) === true;
     }
 
     /**

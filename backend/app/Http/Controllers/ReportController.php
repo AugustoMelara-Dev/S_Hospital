@@ -18,6 +18,7 @@ use App\Models\CashRegisterSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use App\Http\Requests\Reports\PdfExportReportRequest;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -107,7 +108,7 @@ class ReportController extends Controller
     }
 
     public function pdfExport(
-        Request $request,
+        PdfExportReportRequest $request,
         DailyReportService $dailyReports,
         IncomeReportService $incomeReports,
         CategoryReportService $categoryReports,
@@ -115,8 +116,6 @@ class ReportController extends Controller
         OperationsReportService $operationsReports,
         PdfExportService $pdfService
     ) {
-        $request->user()->can('reports.export') || abort(403);
-
         $fiscal = \App\Models\FiscalSetting::first() ?? new \App\Models\FiscalSetting([
             'hospital_name' => 'Hospital Local',
             'rtn' => 'N/A'
@@ -133,11 +132,6 @@ class ReportController extends Controller
                 'Content-Disposition' => 'attachment; filename="cierre_diario_' . $date . '.pdf"',
             ]);
         }
-
-        $request->validate([
-            'date_from' => ['required', 'date_format:Y-m-d'],
-            'date_to' => ['required', 'date_format:Y-m-d', 'after_or_equal:date_from'],
-        ]);
 
         $filters = [
             'date_from' => $request->input('date_from'),
