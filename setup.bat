@@ -51,10 +51,11 @@ echo ======================================================================
 echo.
 timeout /t 2 /nobreak >nul
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\deploy_hospital_lan.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\deploy_hospital_lan.ps1" %*
 if %errorlevel% neq 0 (
     echo.
     echo [ERROR] La instalacion o configuracion ha devuelto un codigo de error (%errorlevel%).
+    echo La instalacion fallo. Revise la carpeta install-logs.
     echo Revisa los mensajes superiores para diagnosticar y corregir el problema.
     echo.
     pause

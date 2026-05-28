@@ -12,6 +12,9 @@ function Read-EnvFile([string] $path) {
     }
     Get-Content -LiteralPath $path | ForEach-Object {
         $line = $_.Trim()
+        if ($line.Length -gt 0 -and [char]$line[0] -eq [char]0xFEFF) {
+            $line = $line.Substring(1).Trim()
+        }
         if ($line -eq "" -or $line.StartsWith("#") -or -not $line.Contains("=")) {
             return
         }
@@ -43,6 +46,9 @@ function Update-DotEnv {
 
     foreach ($line in $lines) {
         $trimmed = $line.Trim()
+        if ($trimmed.Length -gt 0 -and [char]$trimmed[0] -eq [char]0xFEFF) {
+            $trimmed = $trimmed.Substring(1).Trim()
+        }
         if ($trimmed.StartsWith("#") -or -not $trimmed.Contains("=")) {
             $newLines += $line
             continue

@@ -11,3 +11,6 @@ offline-images/
 *.zip
 *.tgz
 
+# Field installation logs
+install-logs/
+
