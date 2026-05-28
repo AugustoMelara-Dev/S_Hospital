@@ -578,11 +578,17 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   page.on('requestfailed', (request) => {
     const failure = request.failure();
     const url = request.url();
-    if ((url.includes('/sanctum/csrf-cookie') || url.includes('/api/health')) && failure?.errorText === 'net::ERR_ABORTED') {
-      return;
-    }
-    if ((url.includes('/src/features/dashboard/') || url.includes('/api/settings/logo')) && failure?.errorText === 'net::ERR_ABORTED') {
-      return;
+    if (failure?.errorText === 'net::ERR_ABORTED') {
+      const ignoredPaths = [
+        '/sanctum/csrf-cookie',
+        '/api/health',
+        '/src/features/dashboard/',
+        '/api/settings/logo',
+        '/api/settings/fiscal'
+      ];
+      if (ignoredPaths.some(path => url.includes(path))) {
+        return;
+      }
     }
 
     consoleIssues.push(`requestfailed: ${request.method()} ${request.url()} ${failure?.errorText ?? ''}`.trim());

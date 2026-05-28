@@ -181,7 +181,7 @@ function Test-ProofFile([string] $path, [string] $proofName, [string[]] $require
         return
     }
 
-    $content = Get-Content -LiteralPath $path -Raw
+    $content = (Get-Content -LiteralPath $path -Raw) -replace "`r", ""
     $normalized = Normalize-ProofContent $content
 
     if ($normalized.Trim().Length -lt 300) {
