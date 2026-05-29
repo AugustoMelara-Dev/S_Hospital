@@ -438,6 +438,8 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: /^respaldos$/i })).toBeInTheDocument();
     expect(await screen.findByText(/respaldos del hospital/i)).toBeInTheDocument();
+    expect(screen.getByText(/restaurar con prueba/i)).toBeInTheDocument();
+    expect(screen.getByText(/base descartable/i)).toBeInTheDocument();
     expect((await screen.findAllByText(/respaldos autom[aá]ticos/i)).length).toBeGreaterThan(0);
     expect(await screen.findByText(/checklist operativo/i)).toBeInTheDocument();
     expect(screen.getByText(/modo de operaci[oó]n final/i)).toBeInTheDocument();
@@ -565,6 +567,7 @@ describe('App', () => {
     });
     expect((await screen.findAllByText('hospital-backup-20260517-101500-test.sql')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Pendiente').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/en proceso/i).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: /descargar respaldo hospital-backup/i })).not.toBeInTheDocument();
   });
 
@@ -631,6 +634,8 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByText('hospital-backup-20260517-101500-test.sql')).toBeInTheDocument();
+    expect(screen.getByText(/SHA256 bbbbbbbb/i)).toBeInTheDocument();
+    expect(screen.getByText(/huella de integridad/i)).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: /descargar respaldo hospital-backup-20260517-101500-test\.sql/i,

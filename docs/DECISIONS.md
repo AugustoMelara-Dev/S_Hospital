@@ -781,3 +781,23 @@ Consecuencia:
 - Anuladas no inflan facturado ni saldo pendiente.
 - Parciales aparecen con conteo propio y saldo pendiente.
 - Los tests de reportes validan los nuevos campos y mantienen cobertura de filtros por metodo, estado, categoria, caja y usuario.
+
+### 2026-05-29 - Respaldos con verificacion y restore fuera de UI
+
+Decision:
+
+- La pantalla de respaldos muestra tipo, estado, tamano y huella SHA256 corta para respaldos completados.
+- La UI explica que restaurar no se hace directo desde el navegador; primero debe validarse en una base descartable.
+- Se mantiene sin endpoint de restore destructivo en el backend.
+
+Motivo:
+
+- Un respaldo no es confiable solo por existir; el administrador necesita ver tamano, estado y verificacion.
+- Restaurar sobre produccion desde UI seria riesgoso para un hospital si no hay parada operativa y prueba previa.
+- El sistema debe ser comprensible para administracion local sin mostrar rutas internas ni comandos como operacion diaria.
+
+Consecuencia:
+
+- El historial de respaldos queda orientado a accion: manual/automatico, pendiente/completado/fallido y verificado/no verificado.
+- La restauracion sigue siendo un procedimiento controlado con evidencia en base descartable.
+- `BackupWorkflowTest` mantiene cobertura de no exponer paths, bloquear path traversal y no publicar endpoint de restore.

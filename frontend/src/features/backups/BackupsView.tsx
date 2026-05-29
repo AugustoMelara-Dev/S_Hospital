@@ -25,6 +25,18 @@ function formatBytes(size: number | null): string {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatBackupType(type: BackupLog['type']): string {
+  return type === 'scheduled' ? 'Automatico' : 'Manual';
+}
+
+function formatVerification(backup: BackupLog): string {
+  if (backup.status === 'pending') return 'En proceso';
+  if (backup.status === 'failed') return 'No verificado';
+  if (!backup.checksum_sha256) return 'Pendiente';
+
+  return `SHA256 ${backup.checksum_sha256.slice(0, 8)}`;
+}
+
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat('es-HN', {
     dateStyle: 'short',
@@ -574,8 +586,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Fecha</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Tamaño</TableHead>
+                  <TableHead>Verificacion</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Usuario</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -584,7 +598,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               <TableBody>
                 {backupsList.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
                       No hay respaldos con este estado. Quite el filtro para ver todos.
                     </TableCell>
                   </TableRow>
@@ -592,8 +606,15 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 {backupsList.map((backup) => (
                   <TableRow key={backup.id}>
                     <TableCell>{formatDate(backup.completed_at ?? backup.created_at)}</TableCell>
+                    <TableCell>{formatBackupType(backup.type)}</TableCell>
                     <TableCell className="text-sm">{backup.filename}</TableCell>
                     <TableCell>{formatBytes(backup.size_bytes)}</TableCell>
+                    <TableCell>
+                      <span className="text-sm font-medium">{formatVerification(backup)}</span>
+                      {backup.checksum_sha256 && backup.status === 'success' ? (
+                        <span className="block text-xs text-muted-foreground">Huella de integridad</span>
+                      ) : null}
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <BackupStatusBadge status={backup.status as 'pending' | 'success' | 'failed'} />
@@ -646,9 +667,9 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           void handleCreateBackup();
         }}
         open={confirmCreateOpen}
-        title="¿Crear respaldo local?"
+        title="Crear respaldo local"
       >
-        Se creará una copia de seguridad local. Confirme que aparezca como completada antes de cerrar esta pantalla.
+        Se creara una copia de seguridad local. Confirme que aparezca como completada y verificada antes de cerrar esta pantalla.
       </ConfirmDialog>
       <ConfirmDialog
         confirmLabel="Descargar"
@@ -659,9 +680,9 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           if (target) void handleDownloadBackup(target);
         }}
         open={Boolean(downloadTarget)}
-        title="¿Descargar respaldo?"
+        title="Descargar respaldo"
       >
-        Descargará el archivo {downloadTarget?.filename}. Esta acción queda auditada.
+        Descargara el archivo {downloadTarget?.filename}. Esta accion queda auditada.
       </ConfirmDialog>
     </section>
   );

@@ -48,8 +48,8 @@ export function BackupStatusBadge({ status, className }: BackupStatusBadgeProps)
 
 export function getStatusDescription(status: BackupStatus): string {
   return {
-    pending: 'El respaldo se está creando.',
+    pending: 'El respaldo se esta creando.',
     success: 'Respaldo creado correctamente.',
-    failed: 'El respaldo falló. Revise el detalle antes de crear uno nuevo.',
+    failed: 'El respaldo fallo. Revise el detalle antes de crear uno nuevo.',
   }[status];
 }
