@@ -51,7 +51,7 @@ class SystemStatusController extends Controller
             ],
         ],
         'THERMAL_PRINTER_PROOF' => [
-            'label' => 'Impresora termica 80mm/58mm',
+            'label' => 'Impresora institucional media carta/carta/A5',
             'required_file' => 'qa/THERMAL_PRINTER_PROOF.md',
             'fields' => [
                 'Date/time',
@@ -62,8 +62,9 @@ class SystemStatusController extends Controller
                 'Browser/version',
                 'Cashier computer',
                 'Invoice used',
-                '80mm result',
-                '58mm result',
+                'Media carta result',
+                'Carta result',
+                'A5 result',
                 'Reprint result',
                 'Margins result',
                 'Browser headers/footers result',
@@ -72,8 +73,9 @@ class SystemStatusController extends Controller
                 'Final conclusion',
             ],
             'checks' => [
-                '80mm',
-                '58mm',
+                'media carta',
+                'carta',
+                'A5',
                 'Reprint',
                 'headers/footers',
                 'historical',
@@ -370,7 +372,7 @@ class SystemStatusController extends Controller
                 ],
                 [
                     'code' => 'PENDING_HARDWARE_VALIDATION',
-                    'label' => 'Impresora termica fisica 80mm/58mm',
+                    'label' => 'Impresora institucional fisica media carta/carta/A5',
                     'status' => $printerProof['status'] === 'validated' ? 'validated' : 'pending',
                 ],
                 [

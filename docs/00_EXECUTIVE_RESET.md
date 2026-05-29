@@ -1,8 +1,8 @@
-# 00 Executive Reset - Fase 12
+﻿# 00 Executive Reset - Fase 12
 
 ## Veredicto
 
-El sistema Hospital Billing OS esta tecnicamente avanzado, pero no puede considerarse producto final mientras su UX/UI parezca prototipo. El core de facturacion, pagos, caja, recibos, historial, backups y reglas fiscales debe conservarse; el problema critico esta en como el usuario opera el sistema.
+El sistema Sistema de Caja Hospitalaria esta tecnicamente avanzado, pero no puede considerarse producto final mientras su UX/UI parezca prototipo. El core de facturacion, pagos, caja, recibos, historial, backups y reglas fiscales debe conservarse; el problema critico esta en como el usuario opera el sistema.
 
 ## Problema principal
 

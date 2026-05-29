@@ -55,7 +55,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [meta, setMeta] = useState<PaginatedMeta>({ current_page: 1, per_page: 10, total: 0 });
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
-  const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('80mm');
+  const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('half_letter');
   const [voidReason, setVoidReason] = useState('');
   const [reprintReason, setReprintReason] = useState('');
   const [confirmingVoid, setConfirmingVoid] = useState(false);
@@ -417,26 +417,27 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         open={receiptModalOpen}
         onOpenChange={setReceiptModalOpen}
         title={`Recibo - ${selectedInvoice?.invoice_number ?? ''}`}
-        description="Vista previa de recibo. Cambiar entre 80mm y 58mm no registra reimpresion."
+        description="Vista previa de recibo institucional. Cambiar el tamano no registra reimpresion."
       >
         {receipt && selectedInvoice && (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <label htmlFor="receipt-width" className="text-sm font-semibold">Ancho</label>
+                <label htmlFor="receipt-width" className="text-sm font-semibold">Tamano</label>
                 <NativeSelect
                   id="receipt-width"
-                  aria-label="Ancho de vista previa"
+                  aria-label="Tamano de vista previa"
                   value={receiptWidth}
                   onChange={(event) => {
                     const newWidth = event.target.value as ReceiptData['width'];
                     setReceiptWidth(newWidth);
                     setReceipt({ ...receipt, width: newWidth });
                   }}
-                  className="w-[100px]"
+                  className="w-[140px]"
                 >
-                  <option value="80mm">80mm</option>
-                  <option value="58mm">58mm</option>
+                  <option value="half_letter">Media carta</option>
+                  <option value="letter">Carta</option>
+                  <option value="a5">A5</option>
                 </NativeSelect>
               </div>
 
@@ -503,7 +504,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       >
         <div className="flex flex-col gap-3">
           <p>
-            Esta acción queda auditada. Cambiar entre 80mm y 58mm en la vista previa no registra reimpresión; este botón sí.
+            Esta acción queda auditada. Cambiar el tamaño en la vista previa no registra reimpresión; este botón sí.
           </p>
           <div className="space-y-2">
             <Label htmlFor="reprintReason">Motivo opcional</Label>

@@ -122,7 +122,7 @@ test('real cashier can issue and collect an invoice against Laravel DB', async (
   await page.getByLabel(/monto recibido/i).fill('17.25');
   await expect(page.getByText(/ingrese el monto recibido/i)).toBeHidden();
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
-  await expect(page.getByRole('heading', { name: /preview termico/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
   await expect(page.getByText(patientName)).toBeVisible();
   await page.getByRole('button', { name: /cerrar modal/i }).click();
 

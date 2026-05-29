@@ -1,4 +1,4 @@
-# Technical Decisions - Hospital Billing OS Offline
+﻿# Technical Decisions - Sistema de Caja Hospitalaria
 
 ## Registro de decisiones
 
@@ -177,7 +177,7 @@ Consecuencia:
 - Fase 4 no implementa caja, pagos, recibos, reportes, reimpresion ni anulacion.
 - Fase 5 debera asociar pagos/caja a facturas ya emitidas sin recalcular `invoice_items`.
 
-### 2026-05-17 - Caja, pagos y recibo termico MVP
+### 2026-05-17 - Caja, pagos y recibo institucional MVP
 
 Decision:
 
@@ -185,7 +185,7 @@ Decision:
 - La unicidad real de caja abierta se defiende tambien en base de datos con `open_user_id` nullable y unico: solo las cajas abiertas llenan ese campo, y las cajas cerradas lo dejan `NULL` para permitir historico.
 - Registro de pago guarda `payments`, `cash_movements` y actualiza `invoices.paid_amount`, `invoices.balance_due` y `invoices.status` dentro de una sola transaccion.
 - `expected_amount` de cierre representa efectivo esperado: monto inicial mas pagos en efectivo registrados en la caja.
-- El recibo MVP devuelve datos renderizables para 80mm/58mm y usa exclusivamente snapshots de `invoice_items` junto con datos fiscales persistidos.
+- El recibo MVP devuelve datos renderizables para media carta/carta/A5 y usa exclusivamente snapshots de `invoice_items` junto con datos fiscales persistidos.
 
 Motivo:
 
@@ -271,7 +271,7 @@ Decision:
 - Playwright E2E queda como gate separado en `scripts/e2e_gate.sh`, no mezclado dentro del quality gate seguro.
 - Restore MySQL/MariaDB real y concurrencia MySQL/MariaDB real quedan como scripts verificables (`scripts/validate_restore_mysql.sh` y `scripts/validate_mysql_concurrency.sh`) que requieren banderas explicitas antes de tocar entornos reales.
 - Produccion same-origin desde Laravel sirve `/`, `/login`, `/verify-email` y `/assets/*` desde `frontend/dist` para que los clientes LAN puedan entrar por IP o nombre del servidor.
-- Impresora termica fisica no se marca validada sin hardware; queda checklist operativo en `docs/THERMAL_PRINTER_VALIDATION.md`.
+- impresora institucional fisica no se marca validada sin hardware; queda checklist operativo en `docs/THERMAL_PRINTER_VALIDATION.md`.
 
 Motivo:
 
@@ -290,7 +290,7 @@ Decision:
 - Restore MySQL/MariaDB real se valida solo contra una base descartable confirmada.
 - Concurrencia HTTP/Laravel/MySQL se valida solo contra entorno local/descartable confirmado y deja `RUN_ID` visible en datos auditables.
 - LAN desde servidor por IP puede quedar validada, pero LAN fisica completa requiere otra computadora cliente.
-- Impresora termica 80mm/58mm solo se marca validada con hardware real.
+- impresora institucional media carta/carta/A5 solo se marca validada con hardware real.
 
 Motivo:
 
@@ -442,7 +442,7 @@ Decision:
 - Se agrega un endpoint admin `/api/system/status` protegido por `backups.view`.
 - El endpoint expone estado operativo no secreto: `APP_ENV`, `APP_DEBUG`, `APP_URL`, conexion de cola, driver de base de datos, disponibilidad de herramienta de dump, almacenamiento local, jobs pendientes de backups y bloqueos restantes para `PRODUCTION_READY`.
 - La pantalla de Backups muestra ese estado junto al historial de backups para que el admin vea si falta worker, dump local, espacio o evidencia de campo.
-- El estado sigue declarando `PRODUCTION_CANDIDATE` y `PRODUCTION_READY=false` hasta validar segunda PC LAN, impresora termica fisica y entorno final production.
+- El estado sigue declarando `PRODUCTION_CANDIDATE` y `PRODUCTION_READY=false` hasta validar segunda PC LAN, impresora institucional fisica y entorno final production.
 - El endpoint tambien devuelve un bloque `preflight` con checks accionables: entorno production/debug, MySQL/MariaDB, dump tool, storage local, worker continuo, rutas publicas `/up`, `/login`, `/verify-email`, archivos de evidencia LAN/impresora y comandos operativos.
 
 Motivo:
@@ -486,7 +486,7 @@ Decision:
 Motivo:
 
 - El servidor final necesita un comando de cierre repetible que reduzca errores humanos sin maquillar pruebas fisicas.
-- La evidencia de segunda PC LAN, impresora termica y production env debe seguir siendo verificable y separada de los mocks o pruebas locales.
+- La evidencia de segunda PC LAN, impresora institucional y production env debe seguir siendo verificable y separada de los mocks o pruebas locales.
 
 Consecuencia:
 
@@ -586,7 +586,7 @@ Decision:
 
 Motivo:
 
-- El usuario reporto recargas que quedaban en blanco e imposibilidad de iniciar sesion; el primer rescate debe proteger el flujo de acceso antes de ampliar el rediseño.
+- El usuario reporto recargas que quedaban en blanco e imposibilidad de iniciar sesion; el primer rescate debe proteger el flujo de acceso antes de ampliar el rediseÃ±o.
 - Un sistema de caja vendible no puede depender de que cada componente renderice perfecto para no dejar al operador sin pantalla.
 - La UI debe sentirse como herramienta de caja hospitalaria, no como demo con texto de uso y controles decorativos.
 

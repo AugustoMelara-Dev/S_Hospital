@@ -1,8 +1,8 @@
-# Demo vendible - Hospital Billing OS Offline
+﻿# Demo vendible - Sistema de Caja Hospitalaria
 
 ## Objetivo
 
-Mostrar el flujo operativo completo sin depender de internet: login local, caja, factura, regla de eritropoyetina, cobro, recibo termico, historial, reportes y backup local.
+Mostrar el flujo operativo completo sin depender de internet: login local, caja, factura, regla de eritropoyetina, cobro, recibo institucional, historial, reportes y backup local.
 
 ## Datos demo sugeridos
 
@@ -57,7 +57,7 @@ Configuracion demo:
    - No marcar receta de dialisis.
    - Confirmar preview con precio normal L.25 antes de emitir.
    - Emitir factura con caja abierta.
-   - Registrar pago e imprimir/visualizar recibo termico.
+   - Registrar pago e imprimir/visualizar recibo institucional.
 
 4. Crear factura con Eritropoyetina con receta de dialisis
    - Paciente: Jose Perez.
@@ -78,8 +78,8 @@ Configuracion demo:
    - Cobrar el saldo.
    - Confirmar estado Pagada y saldo L.0.00.
 
-7. Ver recibo termico
-   - Confirmar preview termico 80mm.
+7. Ver recibo institucional
+   - Confirmar vista previa institucional 80mm.
    - Cambiar a 58mm y confirmar que el ancho cambia.
    - Usar Imprimir solo en entorno con impresora o impresora virtual.
 
@@ -87,7 +87,7 @@ Configuracion demo:
    - Ir a Historial.
    - Abrir la factura pagada.
    - Agregar motivo de reimpresion.
-   - Reimprimir en 80mm o 58mm.
+   - Reimprimir en media carta, carta o A5.
    - Confirmar que usa snapshots historicos.
 
 9. Anular factura sin pagos
@@ -138,7 +138,7 @@ Configuracion demo:
 ## Pendientes no vendibles como completados
 
 - Restore real: `PENDING_ENVIRONMENT_VALIDATION` hasta probar con MySQL/MariaDB real o Docker.
-- Impresion fisica termica: pendiente hasta tener impresora 80mm/58mm.
+- Impresion fisica termica: pendiente hasta tener impresora media carta/carta/A5.
 - Concurrencia real MySQL/MariaDB: validar antes de produccion final.
 - LAN fisica desde cliente: validar por IP fija/nombre servidor antes de produccion final.
 - E2E Playwright local: disponible con `npm.cmd run e2e`; no reemplaza restore/concurrencia/hardware real.

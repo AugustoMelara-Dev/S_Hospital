@@ -20,7 +20,7 @@ const guides = [
   {
     title: 'Crear factura',
     icon: ReceiptText,
-    steps: ['Entre a Nueva Factura', 'Escriba el nombre del paciente', 'Busque por nombre, categoría o código', 'Revise el carrito antes de emitir'],
+    steps: ['Entre a Nueva Factura', 'Escriba el nombre del paciente', 'Busque por nombre, categoría o código si está habilitado', 'Revise el carrito antes de emitir'],
   },
   {
     title: 'Cobrar',
@@ -30,7 +30,7 @@ const guides = [
   {
     title: 'Imprimir',
     icon: Printer,
-    steps: ['Abra la vista de recibo', 'Elija 80mm o 58mm según impresora', 'Revise paciente y total', 'Imprima solo el recibo térmico'],
+    steps: ['Abra la vista de recibo', 'Elija media carta, carta o A5', 'Revise paciente y total', 'Imprima el recibo institucional'],
   },
   {
     title: 'Reimprimir',

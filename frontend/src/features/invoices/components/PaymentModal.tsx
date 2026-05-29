@@ -22,6 +22,7 @@ type PaymentModalProps = {
   onPreviewBeforePrintChange?: (enabled: boolean) => void;
   onConfirm: (appliedAmount: string) => void;
   submitting?: boolean;
+  partialPaymentsEnabled?: boolean;
 };
 
 export function PaymentModal({
@@ -39,6 +40,7 @@ export function PaymentModal({
   onPreviewBeforePrintChange,
   onConfirm,
   submitting,
+  partialPaymentsEnabled = false,
 }: PaymentModalProps) {
   const [error, setError] = useState<string | null>(null);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
@@ -64,6 +66,11 @@ export function PaymentModal({
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) {
       setError('Ingrese un monto valido');
+      amountInputRef.current?.focus();
+      return;
+    }
+    if (amount < balance && !partialPaymentsEnabled) {
+      setError('El monto recibido es menor al total.');
       amountInputRef.current?.focus();
       return;
     }
@@ -104,6 +111,16 @@ export function PaymentModal({
               <span className="font-bold">L. {remainingBalance.toFixed(2)}</span>
             </div>
           )}
+          {remainingBalance !== null && !partialPaymentsEnabled ? (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive" role="alert">
+              El monto recibido es menor al total.
+            </div>
+          ) : null}
+          {remainingBalance !== null && partialPaymentsEnabled ? (
+            <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="alert">
+              Este pago quedara como abono parcial y mantendra saldo pendiente.
+            </div>
+          ) : null}
           {!isNaN(appliedAmount) && appliedAmount > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Pago aplicado:</span>

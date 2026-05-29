@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type React from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -45,16 +46,20 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
     window.setTimeout(handlePrintClick, 150);
   }, [autoPrint, receipt.invoice.invoice_number]);
 
+  const location = receipt.institutional?.location ?? receipt.hospital.address;
+  const taxLabel = `${receipt.invoice.tax_label ?? 'ISV'}${receipt.invoice.tax_rate ? ` ${receipt.invoice.tax_rate}%` : ''}`;
+
   return (
     <div className="receipt-preview-panel" aria-label="Vista previa del recibo">
       <div className="receipt-preview-controls no-print">
         <Select value={receipt.width} onValueChange={(v) => onWidthChange(v as ReceiptData['width'])}>
-          <SelectTrigger aria-label="Ancho del recibo" className="w-[120px]">
+          <SelectTrigger aria-label="Tamano del recibo" className="w-[170px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="80mm">80mm</SelectItem>
-            <SelectItem value="58mm">58mm</SelectItem>
+            <SelectItem value="half_letter">Media carta</SelectItem>
+            <SelectItem value="letter">Carta</SelectItem>
+            <SelectItem value="a5">A5</SelectItem>
           </SelectContent>
         </Select>
         <Button type="button" onClick={handlePrintClick}>
@@ -68,34 +73,38 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
       </div>
 
       <div className="receipt-preview-container">
-        <div ref={receiptRef} className={`thermal-receipt receipt-${receipt.width}`} aria-label="Recibo térmico">
+        <div ref={receiptRef} className={`institutional-receipt receipt-${receipt.width}`} aria-label="Recibo institucional">
           <header className="receipt-header">
+            <span>{receipt.institutional?.government_line ?? 'Gobierno de Honduras'}</span>
+            <span>{receipt.institutional?.secretariat_line ?? 'Secretaria de Salud Publica'}</span>
             <strong className="hospital-name">{receipt.hospital.name}</strong>
-            <span>Tocoa, Colon, Honduras</span>
-            {receipt.hospital.rtn && <span>RTN: {receipt.hospital.rtn}</span>}
+            {location ? <span>{location}</span> : null}
+            {receipt.hospital.rtn ? <span>RTN: {receipt.hospital.rtn}</span> : null}
+            {receipt.hospital.slogan ? <span>{receipt.hospital.slogan}</span> : null}
           </header>
 
           <div className="receipt-rule" aria-hidden="true" />
 
-          <h1 className="receipt-title">FACTURA / RECIBO</h1>
+          <div className="receipt-title-row">
+            <h1 className="receipt-title">RECIBO INSTITUCIONAL</h1>
+            <span>{receipt.institutional?.copy_label ?? 'Original'}</span>
+          </div>
 
           <div className="receipt-meta">
-            <Row label="No." value={receipt.invoice.invoice_number} />
+            <Row label="Serie / No." value={receipt.invoice.invoice_number} />
             <Row label="Fecha" value={formatDate(receipt.invoice.issued_at)} />
-            <Row label="Paciente" value={receipt.invoice.patient_name} />
-            {receipt.invoice.cashier && <Row label="Cajero" value={receipt.invoice.cashier} />}
+            <Row label="Paciente / enterante" value={receipt.invoice.patient_name} />
+            {receipt.invoice.cashier ? <Row label="Cajero" value={receipt.invoice.cashier} /> : null}
             <Row label="Estado" value={statusLabel(receipt.invoice.status)} />
-            <Row label="CAI" value={receipt.fiscal.cai ?? 'CAI no configurado'} />
-            {receipt.fiscal.authorized_range && <Row label="Rango" value={receipt.fiscal.authorized_range} />}
-            {receipt.fiscal.valid_until && (
-              <Row label="Vence" value={formatDate(receipt.fiscal.valid_until)} />
-            )}
+            <Row label="CAI" value={receipt.fiscal.cai ?? 'Pendiente de configurar'} />
+            {receipt.fiscal.authorized_range ? <Row label="Rango" value={receipt.fiscal.authorized_range} /> : null}
+            {receipt.fiscal.valid_until ? <Row label="Vence" value={formatDate(receipt.fiscal.valid_until)} /> : null}
           </div>
 
           <div className="receipt-rule" aria-hidden="true" />
 
           <div className="receipt-table-head">
-            <span>Servicio</span>
+            <span>Concepto / servicio</span>
             <span>Valor</span>
           </div>
 
@@ -112,41 +121,41 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
 
           <div className="receipt-totals">
             <Row label="Subtotal" value={`L. ${receipt.invoice.subtotal}`} />
-            <Row label="ISV 15%" value={`L. ${receipt.invoice.tax_amount}`} />
+            <Row label={taxLabel} value={`L. ${receipt.invoice.tax_amount}`} />
             <Row label="TOTAL" value={`L. ${receipt.invoice.total}`} strong />
-            {Number(receipt.invoice.paid_amount) > 0 && (
+            {Number(receipt.invoice.paid_amount) > 0 ? (
               <Row label="Pagado" value={`L. ${receipt.invoice.paid_amount}`} />
-            )}
-            {Number(receipt.invoice.balance_due) > 0 && (
+            ) : null}
+            {Number(receipt.invoice.balance_due) > 0 ? (
               <Row label="Saldo" value={`L. ${receipt.invoice.balance_due}`} />
-            )}
+            ) : null}
           </div>
 
-          {receipt.payments.length > 0 && (
+          {receipt.payments.length > 0 ? (
             <>
               <div className="receipt-rule" aria-hidden="true" />
-              <h2 className="receipt-section-title">PAGOS</h2>
+              <h2 className="receipt-section-title">Pagos</h2>
               <div className="receipt-items">
                 {receipt.payments.map((payment) => (
                   <Row key={payment.id}>
                     <span>
                       {paymentLabel(payment.method)}
-                      {payment.reference && ` / Ref: ${payment.reference}`}
-                      {payment.cashier && ` / ${payment.cashier}`}
+                      {payment.reference ? ` / Ref: ${payment.reference}` : ''}
+                      {payment.cashier ? ` / ${payment.cashier}` : ''}
                     </span>
                     <strong>L. {payment.amount}</strong>
                   </Row>
                 ))}
               </div>
             </>
-          )}
+          ) : null}
 
           <div className="receipt-rule" aria-hidden="true" />
 
           <footer className="receipt-footer">
-            <span>Gracias por su visita</span>
-            <span>Conserve su factura</span>
-            <span>La factura es beneficio de todos, exijalo.</span>
+            <div className="receipt-signature-line" aria-hidden="true" />
+            <span>{receipt.institutional?.signature_label ?? 'Firma y sello del receptor de fondos'}</span>
+            {receipt.institutional?.footer_text ? <span>{receipt.institutional.footer_text}</span> : null}
           </footer>
         </div>
       </div>
@@ -179,12 +188,12 @@ function Row({
 function ItemName({ item }: { item: ReceiptData['items'][number] }) {
   return (
     <span className="item-name">
-      {item.category_name && <small className="category">{item.category_name}</small>}
+      {item.category_name ? <small className="category">{item.category_name}</small> : null}
       <span className="name">{item.service_name}</span>
-      {Number(item.quantity) !== 1 && <span className="qty"> x {item.quantity}</span>}
-      {item.special_rule_applied && (
+      {Number(item.quantity) !== 1 ? <span className="qty"> x {item.quantity}</span> : null}
+      {item.special_rule_applied ? (
         <Badge variant="secondary" className="special-rule-badge">Regla</Badge>
-      )}
+      ) : null}
     </span>
   );
 }

@@ -19,7 +19,7 @@ $statelessWebMiddleware = [
 Route::get('/up', function () {
     return response()->json([
         'status' => 'ok',
-        'service' => config('app.name'),
+        'service' => 'Sistema de Caja Hospitalaria',
     ]);
 })->withoutMiddleware($statelessWebMiddleware);
 

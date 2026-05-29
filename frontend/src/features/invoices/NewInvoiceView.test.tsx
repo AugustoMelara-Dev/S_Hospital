@@ -136,7 +136,7 @@ describe('NewInvoiceView', () => {
     expect(await screen.findByRole('heading', { name: /nueva factura/i })).toBeInTheDocument();
     expect(await screen.findByLabelText(/nombre del paciente/i)).toBeInTheDocument();
     expect(await screen.findByLabelText(/buscar por nombre, categoria o codigo/i)).toBeInTheDocument();
-    expect(await screen.findByLabelText(/scanner usb o codigo manual/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/scanner usb o codigo manual/i)).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/buscar por nombre, categoria o codigo/i), {
       target: { value: 'eritropoyetina' },
     });
@@ -271,7 +271,7 @@ describe('NewInvoiceView', () => {
           ok: true,
           json: async () => ({
             data: {
-              width: '80mm',
+              width: 'half_letter',
               hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
               fiscal: {
                 cai: 'DEMO-CAI',
@@ -335,13 +335,20 @@ describe('NewInvoiceView', () => {
 
     expect((await screen.findAllByLabelText(/vista previa del recibo/i)).length).toBeGreaterThan(0);
     expect(await screen.findByText(/hospital demo/i)).toBeInTheDocument();
-    expect(screen.getByText('80mm')).toBeInTheDocument();
+    expect(screen.getByText('Media carta')).toBeInTheDocument();
   });
 
   it('rejects inactive services returned by scanner lookup', async () => {
     window.history.pushState({}, '', '/billing/new');
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
+
+      if (url.includes('/api/settings/fiscal')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { scanner_enabled: true, partial_payments_enabled: false, receipt_paper_size: 'half_letter' } }),
+        } as Response;
+      }
 
       if (url.includes('/api/auth/session')) {
         return {
@@ -464,6 +471,13 @@ describe('NewInvoiceView', () => {
     window.history.pushState({}, '', '/billing/new');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
+
+      if (url.includes('/api/settings/fiscal')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { scanner_enabled: true, partial_payments_enabled: false, receipt_paper_size: 'half_letter' } }),
+        } as Response;
+      }
 
       if (url.includes('/api/auth/session')) {
         return {
@@ -624,7 +638,7 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               receipt: {
-                width: '80mm',
+                width: 'half_letter',
                 hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
                 fiscal: {
                   cai: 'TEST-CAI',
@@ -659,7 +673,7 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               receipt: {
-                width: '80mm',
+                width: 'half_letter',
                 hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
                 fiscal: {
                   cai: 'TEST-CAI',
@@ -711,16 +725,9 @@ describe('NewInvoiceView', () => {
     fireEvent.click(await screen.findByRole('button', { name: /registrar reimpresi/i }));
     expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
     await waitFor(() => {
-      const receiptEl = screen.getByLabelText(/recibo t[eé]rmico/i);
+      const receiptEl = screen.getByLabelText(/recibo institucional/i);
       expect(receiptEl).toBeInTheDocument();
-      expect(receiptEl).toHaveClass('receipt-80mm');
-    });
-    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(1);
-
-    fireEvent.change(screen.getByLabelText(/ancho de vista previa/i), { target: { value: '58mm' } });
-
-    await waitFor(() => {
-      expect(screen.getByLabelText(/recibo t[eé]rmico/i)).toHaveClass('receipt-58mm');
+      expect(receiptEl).toHaveClass('receipt-half_letter');
     });
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(1);
   });
@@ -766,6 +773,7 @@ describe('NewInvoiceView', () => {
         onPaymentMethodChange={vi.fn()}
         onPaymentAmountChange={vi.fn()}
         onConfirm={confirmSpy}
+        partialPaymentsEnabled
       />,
     );
 
@@ -908,9 +916,9 @@ describe('NewInvoiceView', () => {
     });
   });
 
-  it('renders 58mm receipt print structure with fiscal valid until date', async () => {
+  it('renders institutional receipt print structure with fiscal valid until date', async () => {
     const receipt: ReceiptData = {
-      width: '58mm',
+      width: 'half_letter',
       hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
       fiscal: {
         cai: 'DEMO-CAI',
@@ -956,12 +964,12 @@ describe('NewInvoiceView', () => {
       ],
     };
     const printSpy = vi.fn(() => {
-      expect(document.body.dataset.receiptWidth).toBe('58mm');
+      expect(document.body.dataset.receiptWidth).toBe('half_letter');
     });
 
     render(<ReceiptPreview receipt={receipt} onWidthChange={vi.fn()} onPrint={printSpy} />);
 
-    expect(screen.getByLabelText(/recibo t[eé]rmico/i)).toHaveClass('receipt-58mm');
+    expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-half_letter');
     expect(screen.getByText(/vence/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /imprimir/i }));
     expect(printSpy).toHaveBeenCalledOnce();

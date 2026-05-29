@@ -5,6 +5,7 @@ namespace App\Actions\Payments;
 use App\Models\AuditLog;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
+use App\Models\FiscalSetting;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
@@ -12,6 +13,7 @@ use App\Support\InvoiceAccess;
 use App\Support\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class RegisterPaymentAction
@@ -64,6 +66,16 @@ class RegisterPaymentAction
             if ($amountCents > $balanceCents) {
                 throw ValidationException::withMessages([
                     'amount' => 'El pago no puede exceder el saldo pendiente.',
+                ]);
+            }
+
+            $partialPaymentsEnabled = Schema::hasColumn('fiscal_settings', 'partial_payments_enabled')
+                ? (bool) (FiscalSetting::query()->value('partial_payments_enabled') ?? false)
+                : false;
+
+            if ($amountCents < $balanceCents && ! $partialPaymentsEnabled) {
+                throw ValidationException::withMessages([
+                    'amount' => 'El monto recibido es menor al total.',
                 ]);
             }
 

@@ -74,6 +74,7 @@ class ReportsTest extends TestCase
     public function test_daily_report_calculates_collected_totals_methods_and_statuses_without_void_income(): void
     {
         $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
         $cashier = $this->cashier();
         $sessionId = $this->openSession($cashier);
         $cashInvoice = $this->createInvoice($cashier, 'Glucosa');

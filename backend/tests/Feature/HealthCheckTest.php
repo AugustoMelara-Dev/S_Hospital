@@ -21,7 +21,7 @@ class HealthCheckTest extends TestCase
             ->assertOk()
             ->assertJson([
                 'status' => 'ok',
-                'service' => 'Hospital Billing OS',
+                'service' => 'Sistema de Caja Hospitalaria',
             ]);
     }
 

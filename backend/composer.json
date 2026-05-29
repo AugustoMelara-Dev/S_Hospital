@@ -1,8 +1,8 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "hospital-billing-os/backend",
+    "name": "s-hospital/backend",
     "type": "project",
-    "description": "Laravel API backend for Hospital Billing OS Offline.",
+    "description": "Laravel API backend for Sistema de Caja Hospitalaria.",
     "keywords": ["laravel", "hospital", "billing", "offline-lan"],
     "license": "MIT",
     "require": {

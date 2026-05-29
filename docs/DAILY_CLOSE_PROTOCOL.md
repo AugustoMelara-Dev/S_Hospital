@@ -1,4 +1,4 @@
-# Protocolo de cierre diario
+﻿# Protocolo de cierre diario
 
 ## Caja
 

@@ -18,6 +18,7 @@ use App\Models\CashRegisterSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -73,6 +74,7 @@ class ReportController extends Controller
         OperationsReportService $operationReports,
     ): StreamedResponse {
         $request->user()->can('reports.export') || abort(403);
+        ($request->user()->can('reports.managerial.view') || $request->user()->can('reports.cash_session.view')) || abort(403);
 
         $filters = $this->scopedFilters($request);
         $income = $incomeReports->report($filters);
@@ -116,6 +118,7 @@ class ReportController extends Controller
         PdfExportService $pdfService
     ) {
         $request->user()->can('reports.export') || abort(403);
+        ($request->user()->can('reports.managerial.view') || $request->user()->can('reports.cash_session.view')) || abort(403);
 
         $fiscal = \App\Models\FiscalSetting::first() ?? new \App\Models\FiscalSetting([
             'hospital_name' => 'Hospital Local',
@@ -134,9 +137,28 @@ class ReportController extends Controller
             ]);
         }
 
+        $dateFromForLimit = is_string($request->input('date_from')) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $request->input('date_from'))
+            ? Carbon::parse((string) $request->input('date_from'))->addDays(DateRangeReportRequest::MAX_RANGE_DAYS - 1)->toDateString()
+            : '9999-12-31';
+
         $request->validate([
             'date_from' => ['required', 'date_format:Y-m-d'],
-            'date_to' => ['required', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+            'date_to' => [
+                'required',
+                'date_format:Y-m-d',
+                'after_or_equal:date_from',
+                'before_or_equal:'.$dateFromForLimit,
+            ],
+            'cash_session_id' => ['sometimes', 'integer', 'exists:cash_register_sessions,id'],
+            'user_id' => ['sometimes', 'integer', 'exists:users,id'],
+            'category_id' => ['sometimes', 'integer', 'exists:categories,id'],
+            'method' => ['sometimes', Rule::in(\App\Models\Payment::METHODS)],
+            'status' => ['sometimes', Rule::in([
+                \App\Models\Invoice::STATUS_ISSUED,
+                \App\Models\Invoice::STATUS_PARTIAL,
+                \App\Models\Invoice::STATUS_PAID,
+                \App\Models\Invoice::STATUS_VOID,
+            ])],
         ]);
 
         $filters = [
@@ -149,7 +171,9 @@ class ReportController extends Controller
             'status' => $request->input('status'),
         ];
 
-        if (!$request->user()->can('cash.close_any')) {
+        if (!$request->user()->can('reports.managerial.view')) {
+            abort_if(empty($filters['cash_session_id']), 403);
+
             if (!empty($filters['cash_session_id'])) {
                 $exists = \App\Models\CashRegisterSession::query()
                     ->whereKey($filters['cash_session_id'])

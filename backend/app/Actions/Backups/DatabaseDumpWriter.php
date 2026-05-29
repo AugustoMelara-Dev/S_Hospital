@@ -90,7 +90,7 @@ class DatabaseDumpWriter
             "select name, sql from sqlite_master where type = 'table' and name not like 'sqlite_%' order by name"
         ));
         $lines = [
-            '-- Hospital Billing OS local SQLite test backup',
+            '-- Sistema de Caja Hospitalaria local SQLite test backup',
             'PRAGMA foreign_keys=OFF;',
             'BEGIN TRANSACTION;',
         ];

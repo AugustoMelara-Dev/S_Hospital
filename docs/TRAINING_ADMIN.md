@@ -1,4 +1,4 @@
-# Guia rapida para administrador
+﻿# Guia rapida para administrador
 
 ## Inicio de servidor
 
@@ -35,7 +35,7 @@ Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
 ## Validacion final
 
 1. Completar pruebas LAN desde segunda PC.
-2. Completar prueba fisica de impresora 80mm/58mm.
+2. Completar prueba fisica de impresora media carta/carta/A5.
 3. Ejecutar restore en base descartable.
 4. Ejecutar concurrencia en entorno descartable.
 5. Correr preflight sin bypass:

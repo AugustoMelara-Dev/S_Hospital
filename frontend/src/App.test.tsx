@@ -125,7 +125,7 @@ describe('App', () => {
             },
             {
               code: 'THERMAL_PRINTER_PROOF',
-              label: 'Impresora termica 80mm/58mm',
+              label: 'Impresora institucional media carta/carta/A5',
               required_file: 'qa/THERMAL_PRINTER_PROOF.md',
               status: 'pending',
               detail: 'Archivo de evidencia no existe todavia.',
@@ -441,7 +441,7 @@ describe('App', () => {
     expect(screen.getByText(/modo de operaci[oó]n final/i)).toBeInTheDocument();
     expect(screen.getByText(/pantalla de ingreso abre/i)).toBeInTheDocument();
     expect(screen.getByText(/segunda pc en lan/i)).toBeInTheDocument();
-    expect(screen.getByText(/impresora t[eé]rmica/i)).toBeInTheDocument();
+    expect(screen.getByText(/impresora institucional/i)).toBeInTheDocument();
     expect(screen.queryByText(/production_candidate/i)).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /crear respaldo/i }).some((button) => !button.hasAttribute('disabled'))).toBe(true);
   });

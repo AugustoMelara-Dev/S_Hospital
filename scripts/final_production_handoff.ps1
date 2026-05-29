@@ -164,7 +164,7 @@ Assert-ScriptExists $preflightScript
 Assert-ScriptExists $proofInitScript
 Assert-ScriptExists $backupTasksScript
 
-Write-Host "Hospital Billing OS final production handoff"
+Write-Host "Sistema de Caja Hospitalaria final production handoff"
 Write-Host "ProjectRoot: $ProjectRoot"
 Write-Host "BaseUrl: $($BaseUrl.TrimEnd('/'))"
 Write-Host "PhpPath: $PhpPath"
@@ -177,7 +177,7 @@ if ($InitializeProofFiles) {
 $lanProofCompleted = Test-ProofLooksCompleted $lanProofPath
 $printerProofCompleted = Test-ProofLooksCompleted $printerProofPath
 Write-Result $lanProofCompleted "Second-client LAN proof file looks present; preflight performs strict validation."
-Write-Result $printerProofCompleted "Physical thermal-printer proof file looks present; preflight performs strict validation."
+Write-Result $printerProofCompleted "Physical printer proof file looks present; preflight performs strict validation."
 
 if (-not $lanProofCompleted) {
     Write-Host "Run from the second LAN client:"
@@ -185,7 +185,7 @@ if (-not $lanProofCompleted) {
 }
 
 if (-not $printerProofCompleted) {
-    Write-Host "Print real 80mm and 58mm samples, then complete qa\THERMAL_PRINTER_PROOF.md with physical evidence."
+    Write-Host "Print real media carta/carta/A5 samples, then complete qa\THERMAL_PRINTER_PROOF.md with physical evidence."
 }
 
 Write-Section "Backup automation"

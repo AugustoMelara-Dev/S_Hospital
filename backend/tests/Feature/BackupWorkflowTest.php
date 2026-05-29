@@ -115,23 +115,20 @@ class BackupWorkflowTest extends TestCase
         }
     }
 
-    public function test_manual_backup_endpoint_creates_local_backup_immediately(): void
+    public function test_manual_backup_endpoint_queues_local_backup(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
 
         $response = $this->actingAs($admin)
             ->postJson('/api/backups')
-            ->assertCreated()
-            ->assertJsonPath('data.status', BackupLog::STATUS_SUCCESS)
+            ->assertAccepted()
+            ->assertJsonPath('data.status', BackupLog::STATUS_PENDING)
             ->assertJsonPath('data.type', BackupLog::TYPE_MANUAL);
 
         $backup = BackupLog::query()->findOrFail($response->json('data.id'));
 
-        $this->assertSame(BackupLog::STATUS_SUCCESS, $backup->status);
-        $this->assertNotNull($backup->completed_at);
-        $this->assertNotNull($backup->checksum_sha256);
-        $this->assertTrue(Storage::disk('local')->exists((string) $backup->path));
+        $this->assertContains($backup->status, [BackupLog::STATUS_PENDING, BackupLog::STATUS_SUCCESS]);
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $admin->id,
@@ -139,12 +136,11 @@ class BackupWorkflowTest extends TestCase
             'entity_type' => BackupLog::class,
             'entity_id' => $backup->id,
         ]);
-        $this->assertDatabaseHas('audit_logs', [
-            'user_id' => $admin->id,
-            'action' => 'backup.created',
-            'entity_type' => BackupLog::class,
-            'entity_id' => $backup->id,
-        ]);
+        if ($backup->status === BackupLog::STATUS_SUCCESS) {
+            $this->assertNotNull($backup->completed_at);
+            $this->assertNotNull($backup->checksum_sha256);
+            $this->assertTrue(Storage::disk('local')->exists((string) $backup->path));
+        }
     }
 
     public function test_backup_runner_creates_success_log_checksum_and_audit_entry(): void

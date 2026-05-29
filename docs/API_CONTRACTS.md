@@ -1,4 +1,4 @@
-# API Contracts - Hospital Billing OS Offline
+﻿# API Contracts - Sistema de Caja Hospitalaria
 
 ## Convenciones generales
 

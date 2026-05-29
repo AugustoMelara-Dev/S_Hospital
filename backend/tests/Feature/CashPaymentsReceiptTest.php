@@ -176,11 +176,13 @@ class CashPaymentsReceiptTest extends TestCase
         $this->seedBillingBase();
         $cashier = $this->cashier();
         $otherCashier = $this->cashier();
+        $closedOwnSessionId = $this->openSession($cashier, '100.00');
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$closedOwnSessionId}/close", ['closing_amount' => '100.00'])
+            ->assertOk();
+
         $invoiceSessionId = $this->openSession($cashier, '500.00');
         $invoiceId = $this->createInvoice($cashier, 'Glucosa');
-        $this->actingAs($cashier)
-            ->postJson("/api/cash-sessions/{$invoiceSessionId}/close", ['closing_amount' => '500.00'])
-            ->assertOk();
 
         $this->actingAs($cashier)
             ->postJson("/api/invoices/{$invoiceId}/payments", [
@@ -200,14 +202,9 @@ class CashPaymentsReceiptTest extends TestCase
             ])
             ->assertForbidden();
 
-        $ownSessionId = $this->openSession($cashier, '100.00');
-        $this->actingAs($cashier)
-            ->postJson("/api/cash-sessions/{$ownSessionId}/close", ['closing_amount' => '100.00'])
-            ->assertOk();
-
         $this->actingAs($cashier)
             ->postJson("/api/invoices/{$invoiceId}/payments", [
-                'cash_session_id' => $ownSessionId,
+                'cash_session_id' => $closedOwnSessionId,
                 'method' => Payment::METHOD_CASH,
                 'amount' => '1.00',
             ])
@@ -272,6 +269,7 @@ class CashPaymentsReceiptTest extends TestCase
     public function test_register_payment_creates_cash_movement_and_updates_partial_then_paid_invoice(): void
     {
         $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
         $cashier = $this->cashier();
         $sessionId = $this->openSession($cashier, '500.00');
         $invoiceId = $this->createInvoice($cashier, 'Glucosa');
@@ -481,7 +479,7 @@ class CashPaymentsReceiptTest extends TestCase
     public function test_receipt_defaults_to_configured_width_and_uses_payment_cashier(): void
     {
         $this->seedBillingBase();
-        FiscalSetting::query()->update(['receipt_width' => '58mm']);
+        FiscalSetting::query()->update(['receipt_paper_size' => 'letter']);
         $issuer = $this->cashier();
         $collector = User::factory()->create(['name' => 'Supervisor Caja']);
         $collector->assignRole('supervisor');
@@ -500,7 +498,7 @@ class CashPaymentsReceiptTest extends TestCase
         $this->actingAs($collector)
             ->getJson("/api/invoices/{$invoiceId}/receipt")
             ->assertOk()
-            ->assertJsonPath('data.width', '58mm')
+            ->assertJsonPath('data.width', 'letter')
             ->assertJsonPath('data.invoice.cashier', 'Supervisor Caja')
             ->assertJsonPath('data.payments.0.cashier', 'Supervisor Caja');
     }

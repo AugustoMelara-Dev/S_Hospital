@@ -62,7 +62,7 @@ export function AboutView({ onStatus }: AboutViewProps) {
           <CardContent className="space-y-4 text-sm text-muted-foreground">
             <p>
               Diseñado para operar dentro del hospital con facturación, caja, reportes,
-              recibos térmicos y respaldos locales.
+              recibos institucionales y respaldos locales.
             </p>
 
             <div className="rounded-lg border border-border bg-muted/30 p-4">

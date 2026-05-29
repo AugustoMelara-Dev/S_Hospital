@@ -15,6 +15,7 @@ import { PaymentModal } from './components/PaymentModal';
 import { InvoiceSuccess } from './components/InvoiceSuccess';
 import { type Category, type CashSession, type Invoice, type Payment, type ReceiptData, type Service, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { invoiceSchema } from '../../schemas/invoice.schema';
+import { useFiscalSettings } from '../../hooks/useFiscalSettings';
 
 const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 const POS_SERVICE_PAGE_SIZE = 24;
@@ -34,6 +35,8 @@ interface POSState {
   paymentAmount: string;
   previewBeforePrint: boolean;
   receiptWidth: ReceiptData['width'];
+  scannerEnabled: boolean;
+  partialPaymentsEnabled: boolean;
   receipt: ReceiptData | null;
   alertMessage: string | null;
   warningMessage: string | null;
@@ -64,6 +67,8 @@ type POSAction =
   | { type: 'SET_PAYMENT_AMOUNT'; payload: string }
   | { type: 'SET_PREVIEW_BEFORE_PRINT'; payload: boolean }
   | { type: 'SET_RECEIPT_WIDTH'; payload: ReceiptData['width'] }
+  | { type: 'SET_SCANNER_ENABLED'; payload: boolean }
+  | { type: 'SET_PARTIAL_PAYMENTS_ENABLED'; payload: boolean }
   | { type: 'SET_RECEIPT'; payload: ReceiptData | null }
   | { type: 'SET_ALERT_MESSAGE'; payload: string | null }
   | { type: 'SET_WARNING_MESSAGE'; payload: string | null }
@@ -102,7 +107,9 @@ function getInitialState(cashSession: CashSession | null): POSState {
     paymentMethod: 'cash',
     paymentAmount: '',
     previewBeforePrint: false,
-    receiptWidth: '80mm',
+    receiptWidth: 'half_letter',
+    scannerEnabled: false,
+    partialPaymentsEnabled: false,
     receipt: null,
     alertMessage: null,
     warningMessage: null,
@@ -149,6 +156,10 @@ function posReducer(state: POSState, action: POSAction): POSState {
       return { ...state, previewBeforePrint: action.payload };
     case 'SET_RECEIPT_WIDTH':
       return { ...state, receiptWidth: action.payload };
+    case 'SET_SCANNER_ENABLED':
+      return { ...state, scannerEnabled: action.payload };
+    case 'SET_PARTIAL_PAYMENTS_ENABLED':
+      return { ...state, partialPaymentsEnabled: action.payload };
     case 'SET_RECEIPT':
       return { ...state, receipt: action.payload };
     case 'SET_ALERT_MESSAGE':
@@ -274,6 +285,7 @@ export function NewInvoiceView({
   onStatus,
 }: NewInvoiceViewProps) {
   const [state, dispatch] = useReducer(posReducer, cashSession, getInitialState);
+  const { data: fiscalSettings } = useFiscalSettings();
   const {
     patientName,
     patientError,
@@ -289,6 +301,8 @@ export function NewInvoiceView({
     paymentAmount,
     previewBeforePrint,
     receiptWidth,
+    scannerEnabled,
+    partialPaymentsEnabled,
     receipt,
     alertMessage,
     warningMessage,
@@ -340,6 +354,19 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_LOADED_CASH_SESSION', payload: cashSession });
     }
   }, [cashSession]);
+
+  useEffect(() => {
+    if (!fiscalSettings) {
+      return;
+    }
+
+    dispatch({ type: 'SET_SCANNER_ENABLED', payload: fiscalSettings.scanner_enabled === true });
+    dispatch({ type: 'SET_PARTIAL_PAYMENTS_ENABLED', payload: fiscalSettings.partial_payments_enabled === true });
+    dispatch({
+      type: 'SET_RECEIPT_WIDTH',
+      payload: fiscalSettings.receipt_paper_size ?? fiscalSettings.receipt_width ?? 'half_letter',
+    });
+  }, [fiscalSettings]);
 
   const handleClearCart = useCallback(() => {
     dispatch({ type: 'CLEAR_CART_COMPLETELY' });
@@ -859,6 +886,7 @@ export function NewInvoiceView({
                 searchInputRef={searchInputRef}
                 scannerInputRef={scannerInputRef}
                 loading={loadingServices}
+                scannerEnabled={scannerEnabled}
               />
             </CardContent>
           </Card>
@@ -905,6 +933,7 @@ export function NewInvoiceView({
           paymentMethod={paymentMethod}
           paymentAmount={paymentAmount}
           previewBeforePrint={previewBeforePrint}
+          partialPaymentsEnabled={partialPaymentsEnabled}
           onPaymentMethodChange={(val) => dispatch({ type: 'SET_PAYMENT_METHOD', payload: val })}
           onPaymentAmountChange={(val) => dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: val })}
           onPreviewBeforePrintChange={(val) => dispatch({ type: 'SET_PREVIEW_BEFORE_PRINT', payload: val })}
@@ -932,7 +961,7 @@ export function NewInvoiceView({
         onOpenChange={handleReceiptOpenChange}
         size="lg"
         title="Vista previa del recibo"
-        description="Solo el ticket se imprime."
+        description="Vista previa institucional lista para imprimir."
       >
         {receipt ? (
           <ReceiptPreview

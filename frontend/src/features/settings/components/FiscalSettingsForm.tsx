@@ -149,7 +149,7 @@ export function FiscalSettingsForm({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
               <div className="w-full">
-                <Label htmlFor="receipt_width">Ancho de Recibo</Label>
+                <Label htmlFor="receipt_width">Recibo institucional</Label>
                 <Select
                   value={watchSettings('receipt_width')}
                   onValueChange={(v: string) => setValueSettings('receipt_width', v as '80mm' | '58mm')}
@@ -158,8 +158,8 @@ export function FiscalSettingsForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="80mm">80mm (Estándar)</SelectItem>
-                    <SelectItem value="58mm">58mm (Angosto)</SelectItem>
+                    <SelectItem value="80mm">Formato legado 80mm</SelectItem>
+                    <SelectItem value="58mm">Formato legado 58mm</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

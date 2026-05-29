@@ -15,9 +15,17 @@ export type FiscalSettings = {
   rtn: string;
   default_tax_rate: string;
   receipt_width: '80mm' | '58mm';
+  receipt_paper_size?: ReceiptPaperSize;
   primary_color: 'teal' | 'blue' | 'indigo' | 'green' | 'rose';
   address?: string;
   slogan?: string;
+  scanner_enabled?: boolean;
+  partial_payments_enabled?: boolean;
+  receipt_template_mode?: 'institutional';
+  government_line?: string | null;
+  secretariat_line?: string | null;
+  receipt_location?: string | null;
+  receipt_footer_text?: string | null;
 };
 
 export type FiscalSequence = {
@@ -155,11 +163,25 @@ export type Payment = {
   paid_at: string;
 };
 
+export type ReceiptPaperSize = 'letter' | 'half_letter' | 'a5' | '80mm' | '58mm';
+
 export type ReceiptData = {
-  width: '80mm' | '58mm';
+  width: ReceiptPaperSize;
   hospital: {
     name: string;
     rtn: string | null;
+    address?: string | null;
+    slogan?: string | null;
+  };
+  institutional?: {
+    template_mode: 'institutional' | string;
+    paper_size: ReceiptPaperSize;
+    government_line: string | null;
+    secretariat_line: string | null;
+    location: string | null;
+    footer_text: string | null;
+    copy_label: string | null;
+    signature_label: string | null;
   };
   fiscal: {
     cai: string | null;
@@ -181,6 +203,8 @@ export type ReceiptData = {
   > & {
     issued_at: string;
     cashier: string | null;
+    tax_label?: string | null;
+    tax_rate?: string | null;
   };
   items: Array<
     Pick<

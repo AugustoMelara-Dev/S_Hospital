@@ -1,4 +1,4 @@
-# Backup y Restore Local - Hospital Billing OS
+﻿# Backup y Restore Local - Sistema de Caja Hospitalaria
 
 ## Alcance de Fase 8
 
@@ -108,11 +108,11 @@ Esta alternativa arranca el worker y un scheduler local al iniciar sesion del us
 El instalador registra tanto un archivo en la carpeta Startup como una entrada `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` para tolerar politicas locales donde uno de los dos mecanismos este restringido.
 El log operativo queda en `backend/storage/logs/backup-automation.log`.
 
-Después de cada backup diario, copiar el archivo más reciente a una unidad USB o disco externo del hospital. No usar servicios cloud como requisito operativo.
+DespuÃ©s de cada backup diario, copiar el archivo mÃ¡s reciente a una unidad USB o disco externo del hospital. No usar servicios cloud como requisito operativo.
 
 ## Restore manual en entorno de prueba
 
-Restore debe probarse en una base limpia de prueba, nunca directo en producción sin parada controlada.
+Restore debe probarse en una base limpia de prueba, nunca directo en producciÃ³n sin parada controlada.
 
 Pasos para MySQL/MariaDB:
 
@@ -147,33 +147,33 @@ php artisan test --colors=never
 7. Validar en navegador local de prueba:
    - `/up` responde OK.
    - `/login` carga.
-   - Admin puede iniciar sesión.
+   - Admin puede iniciar sesiÃ³n.
    - Existen usuarios, permisos, servicios, facturas, pagos y cajas esperadas.
-   - Último backup aparece en `backup_logs`.
+   - Ãšltimo backup aparece en `backup_logs`.
 
-## Restore en producción
+## Restore en producciÃ³n
 
-Restore en producción requiere:
+Restore en producciÃ³n requiere:
 
 1. Avisar parada operativa y detener acceso de clientes LAN.
 2. Crear un backup nuevo antes del restore.
 3. Copiar la base actual a un destino externo.
-4. Validar checksum del archivo que se restaurará.
+4. Validar checksum del archivo que se restaurarÃ¡.
 5. Restaurar primero en prueba si no se hizo antes.
-6. Restaurar en producción con el servicio web detenido o en modo mantenimiento.
+6. Restaurar en producciÃ³n con el servicio web detenido o en modo mantenimiento.
 7. Ejecutar `php artisan config:cache`.
 8. Validar `/up`, `/login`, `/verify-email`, login admin, listado de facturas, caja y reporte diario.
 9. Documentar fecha, operador, archivo usado, checksum y resultado.
 
-## Checklist de evidencia mínima
+## Checklist de evidencia mÃ­nima
 
 - Fecha y hora del restore de prueba.
-- Equipo donde se probó.
+- Equipo donde se probÃ³.
 - Archivo restaurado.
 - Checksum esperado y checksum calculado.
 - Resultado de `php artisan migrate:status`.
 - Resultado de `/up`, `/login`, `/verify-email`.
-- Conteos mínimos revisados: users, roles, permissions, services, invoices, payments, cash_register_sessions, backup_logs.
+- Conteos mÃ­nimos revisados: users, roles, permissions, services, invoices, payments, cash_register_sessions, backup_logs.
 - Firma o nombre del responsable local.
 
 ## Script Fase 10

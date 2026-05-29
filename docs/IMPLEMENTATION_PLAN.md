@@ -1,8 +1,8 @@
-# Hospital Billing OS Offline - Implementation Plan
+﻿# Sistema de Caja Hospitalaria - Implementation Plan
 
 ## 1. Resumen ejecutivo
 
-Hospital Billing OS Offline se construira desde cero en este repositorio como una app LAN local para facturacion hospitalaria, caja, pagos, catalogo de servicios, recibos termicos, reportes, usuarios, permisos, auditoria y respaldos.
+Sistema de Caja Hospitalaria se construira desde cero en este repositorio como una app LAN local para facturacion hospitalaria, caja, pagos, catalogo de servicios, recibos institucionales, reportes, usuarios, permisos, auditoria y respaldos.
 
 La implementacion usara:
 
@@ -12,7 +12,7 @@ La implementacion usara:
 - Desarrollo: Docker Compose reproducible.
 - Produccion: instalacion offline LAN en una computadora servidor, documentada tambien para Windows servidor.
 
-La prioridad de producto es una demo vendible temprana: login, abrir caja, crear factura con nombre de paciente, buscar servicios, aplicar regla de eritropoyetina, cobrar, imprimir recibo termico 80mm/58mm, reimprimir y ver reporte diario. El diseno debe permitir completar el sistema sin rehacer la arquitectura.
+La prioridad de producto es una demo vendible temprana: login, abrir caja, crear factura con nombre de paciente, buscar servicios, aplicar regla de eritropoyetina, cobrar, imprimir recibo institucional media carta/carta/A5, reimprimir y ver reporte diario. El diseno debe permitir completar el sistema sin rehacer la arquitectura.
 
 ## 2. Principios obligatorios
 
@@ -332,7 +332,7 @@ Commit sugerido:
 
 - `feat(billing): create transactional invoice workflow`
 
-### Fase 5 - Caja, pagos y recibo termico MVP
+### Fase 5 - Caja, pagos y recibo institucional MVP
 
 Alcance:
 
@@ -341,7 +341,7 @@ Alcance:
 - Crear movimiento de caja.
 - Actualizar `paid_amount`, `balance_due` y estado de factura dentro de transaccion.
 - Cerrar caja con esperado vs contado.
-- Agregar preview/print MVP de recibo 80mm/58mm.
+- Agregar preview/print MVP de recibo media carta/carta/A5.
 
 Archivos probables:
 
@@ -482,7 +482,7 @@ Alcance:
 - Rutas LAN finales para `/login`, `/verify-email`, `/up` y assets del frontend compilado.
 - Script verificable de restore real MySQL/MariaDB.
 - Script verificable de concurrencia real MySQL/MariaDB.
-- Checklist fisico de impresora termica 80mm/58mm.
+- Checklist fisico de impresora institucional media carta/carta/A5.
 - Documentacion de estados `DEMO_READY`, `PRODUCTION_CANDIDATE` y `PRODUCTION_READY`.
 
 Archivos probables:
@@ -517,7 +517,7 @@ Alcance:
 - Ejecutar concurrencia real solo contra target local/descartable confirmado.
 - Validar rutas LAN por IP y documentar si falta computadora cliente fisica.
 - Validar worker de backups y documentar como dejarlo corriendo en Windows.
-- Documentar pendientes reales de impresora termica y configuracion final de produccion.
+- Documentar pendientes reales de impresora institucional y configuracion final de produccion.
 
 Archivos probables:
 

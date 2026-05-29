@@ -10,7 +10,7 @@ interface FiscalStatusCardProps {
 export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) {
   const isHospitalConfigured = Boolean(settings?.hospital_name?.trim());
   const hasRtn = Boolean(settings?.rtn?.trim());
-  const hasReceiptWidth = settings?.receipt_width === '80mm' || settings?.receipt_width === '58mm';
+  const hasReceiptPaperSize = ['half_letter', 'letter', 'a5'].includes(settings?.receipt_paper_size ?? '');
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const validUntil = sequence?.valid_until ? new Date(sequence.valid_until) : null;
@@ -30,7 +30,7 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
   const blockers = [
     !isHospitalConfigured ? 'nombre del hospital' : null,
     !hasRtn ? 'RTN del hospital' : null,
-    !hasReceiptWidth ? 'ancho de recibo' : null,
+    !hasReceiptPaperSize ? 'tamano de recibo institucional' : null,
     !isSequenceConfigured ? 'CAI y prefijo fiscal' : null,
     !isSequenceActive ? 'secuencia fiscal activa' : null,
     !isDateValid ? 'fecha limite vigente' : null,

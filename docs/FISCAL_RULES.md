@@ -1,4 +1,4 @@
-# Fiscal Rules - Hospital Billing OS Offline
+﻿# Fiscal Rules - Sistema de Caja Hospitalaria
 
 ## Objetivo
 

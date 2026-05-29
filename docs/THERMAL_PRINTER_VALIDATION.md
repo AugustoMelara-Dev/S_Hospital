@@ -1,6 +1,6 @@
-# Thermal printer validation checklist
+﻿# Thermal printer validation checklist
 
-Estado actual: PENDING_HARDWARE_VALIDATION hasta probar en impresora fisica 80mm/58mm.
+Estado actual: PENDING_HARDWARE_VALIDATION hasta probar en impresora fisica media carta/carta/A5.
 
 El CSS de impresion debe permanecer aislado al recibo. Solo se activa cuando
 `body[data-printing-receipt="true"]` esta presente; imprimir otra vista del
@@ -19,7 +19,7 @@ sistema no debe ocultar sidebar/topbar/app completa ni dejar paginas en blanco.
 - Escala 100%.
 - Margenes minimos o ninguno.
 - Encabezados y pies desactivados cuando el navegador lo permita.
-- Tamano de papel del driver configurado como 80mm o 58mm, no carta.
+- Tamano de papel del driver configurado como media carta, carta o A5, no carta.
 - Prueba realizada desde la PC real de caja, no solo desde desarrollo.
 
 ## Prueba 80mm

@@ -1,7 +1,7 @@
 param(
     [string] $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
     [string] $PhpPath = "php",
-    [string] $TaskPrefix = "HospitalBillingOS",
+    [string] $TaskPrefix = "SistemaCajaHospitalaria",
     [string] $DailyBackupTime = "02:00",
     [switch] $WhatIfOnly,
     [switch] $UpdateExisting,
@@ -56,7 +56,7 @@ function Show-TaskStatus([string] $taskName) {
 $workerArgs = "/c `"`"`$workerScript`" `"$PhpPath`"`""
 $backupArgs = "/c `"`"`$dailyScript`" `"$PhpPath`"`""
 
-Write-Host "Preparing Windows scheduled tasks for Hospital Billing OS backups."
+Write-Host "Preparing Windows scheduled tasks for Sistema de Caja Hospitalaria backups."
 Write-Host "ProjectRoot: $ProjectRoot"
 Write-Host "PhpPath: $PhpPath"
 Write-Host "Worker wrapper: $workerScript"
@@ -106,7 +106,7 @@ foreach ($taskName in @($workerTaskName, $dailyTaskName)) {
 }
 
 if ($UpdateExisting) {
-    Write-Host "UpdateExisting enabled. Existing Hospital Billing OS backup tasks will be replaced."
+    Write-Host "UpdateExisting enabled. Existing Sistema de Caja Hospitalaria backup tasks will be replaced."
     foreach ($taskName in @($workerTaskName, $dailyTaskName)) {
         if (Get-TaskIfExists $taskName) {
             Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
@@ -124,7 +124,7 @@ Register-ScheduledTask `
     -Action $workerAction `
     -Trigger $workerTrigger `
     -Settings $workerSettings `
-    -Description "Hospital Billing OS continuous backup queue worker." | Out-Null
+    -Description "Sistema de Caja Hospitalaria continuous backup queue worker." | Out-Null
 
 $dailyAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $backupArgs -WorkingDirectory $ProjectRoot
 $dailyTrigger = New-ScheduledTaskTrigger -Daily -At $DailyBackupTime
@@ -135,7 +135,7 @@ Register-ScheduledTask `
     -Action $dailyAction `
     -Trigger $dailyTrigger `
     -Settings $dailySettings `
-    -Description "Hospital Billing OS scheduled local database backup." | Out-Null
+    -Description "Sistema de Caja Hospitalaria scheduled local database backup." | Out-Null
 
 Write-Host "Registered scheduled tasks."
 Write-Host "Start the worker now with: Start-ScheduledTask -TaskName '$workerTaskName'"

@@ -23,6 +23,7 @@ type ServiceSearchProps = {
   searchInputRef?: RefObject<HTMLInputElement | null>;
   scannerInputRef?: RefObject<HTMLInputElement | null>;
   loading?: boolean;
+  scannerEnabled?: boolean;
 };
 
 export function ServiceSearch({
@@ -39,6 +40,7 @@ export function ServiceSearch({
   searchInputRef,
   scannerInputRef,
   loading,
+  scannerEnabled = false,
 }: ServiceSearchProps) {
   const [addFirstWhenReady, setAddFirstWhenReady] = useState(false);
   const filteredServices = services.filter((service) => {
@@ -49,7 +51,7 @@ export function ServiceSearch({
 
     return matchesCategory;
   });
-  const hasIntent = Boolean(search.trim()) || (selectedCategoryId !== undefined && selectedCategoryId !== 'all');
+  const hasIntent = Boolean(search.trim()) || selectedCategoryId !== undefined;
   const visibleServices = hasIntent ? filteredServices.slice(0, SERVICE_RESULT_LIMIT) : [];
   const hiddenCount = Math.max(0, filteredServices.length - visibleServices.length);
   const firstVisibleService = visibleServices[0];
@@ -78,7 +80,7 @@ export function ServiceSearch({
   return (
     <div className="flex flex-col gap-4 lg:h-full lg:overflow-hidden">
       <div className="flex flex-col gap-3 lg:shrink-0">
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+        <div className={scannerEnabled ? 'grid gap-3 sm:grid-cols-[1fr_auto]' : 'grid gap-3'}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -103,27 +105,29 @@ export function ServiceSearch({
               className="pl-10"
             />
           </div>
-          <div className="flex gap-2">
-            <div className="relative w-36">
-              <Input
-                ref={scannerInputRef}
-                aria-label="Scanner USB o codigo manual"
-                placeholder="Codigo"
-                value={scanCode}
-                onChange={(e) => onScanCodeChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    if (e.ctrlKey || e.metaKey || e.altKey) return;
-                    e.preventDefault();
-                    onAddByScanCode();
-                  }
-                }}
-              />
+          {scannerEnabled ? (
+            <div className="flex gap-2">
+              <div className="relative w-36">
+                <Input
+                  ref={scannerInputRef}
+                  aria-label="Scanner USB o codigo manual"
+                  placeholder="Codigo"
+                  value={scanCode}
+                  onChange={(e) => onScanCodeChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      if (e.ctrlKey || e.metaKey || e.altKey) return;
+                      e.preventDefault();
+                      onAddByScanCode();
+                    }
+                  }}
+                />
+              </div>
+              <Button type="button" variant="secondary" size="sm" onClick={() => onAddByScanCode()}>
+                Escanear
+              </Button>
             </div>
-            <Button type="button" variant="secondary" size="sm" onClick={() => onAddByScanCode()}>
-              Escanear
-            </Button>
-          </div>
+          ) : null}
         </div>
 
         <div>
@@ -202,7 +206,7 @@ export function ServiceSearch({
                       <span className="inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                         {service.category?.name ?? 'Sin categoria'}
                       </span>
-                      {(service.scan_code || service.barcode || service.qr_code) && (
+                      {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) && (
                         <span className="text-[10px] text-muted-foreground">
                           {service.scan_code ?? service.barcode ?? service.qr_code}
                         </span>

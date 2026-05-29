@@ -22,6 +22,18 @@ class GenerateReceiptDataAction
             'hospital' => [
                 'name' => $invoice->hospital_name ?? 'Hospital',
                 'rtn' => $invoice->hospital_rtn,
+                'address' => $invoice->hospital_address,
+                'slogan' => $invoice->hospital_slogan,
+            ],
+            'institutional' => [
+                'template_mode' => $invoice->receipt_template_mode ?? 'institutional',
+                'paper_size' => $invoice->receipt_paper_size ?? $width,
+                'government_line' => $invoice->receipt_government_line ?? 'Gobierno de Honduras',
+                'secretariat_line' => $invoice->receipt_secretariat_line ?? 'Secretaria de Salud Publica',
+                'location' => $invoice->receipt_location,
+                'footer_text' => $invoice->receipt_footer_text,
+                'copy_label' => 'Original',
+                'signature_label' => 'Firma y sello del receptor de fondos',
             ],
             'fiscal' => [
                 'cai' => $invoice->fiscal_cai,
@@ -43,6 +55,8 @@ class GenerateReceiptDataAction
                 'paid_amount' => $invoice->paid_amount,
                 'balance_due' => $invoice->balance_due,
                 'status' => $invoice->status,
+                'tax_label' => $invoice->tax_label ?? 'ISV',
+                'tax_rate' => $invoice->tax_rate_snapshot,
             ],
             'items' => $invoice->items->map(fn ($item): array => [
                 'service_name' => $item->service_name,

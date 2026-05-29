@@ -1,4 +1,4 @@
-# Offline LAN Install - Hospital Billing OS
+﻿# Offline LAN Install - Sistema de Caja Hospitalaria
 
 ## Proposito
 
@@ -78,9 +78,9 @@ No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`,
 - Si MySQL/MariaDB debe aceptar conexiones solo del backend local, mantenerlo escuchando en `127.0.0.1`.
 - Si se usa un servidor web local, validar que `/up`, `/login` y `/verify-email` respondan desde otra computadora LAN.
 
-## Impresora termica
+## impresora institucional
 
-- Instalar la impresora 80mm o 58mm en la computadora que imprimira.
+- Instalar la impresora media carta, carta o A5 en la computadora que imprimira.
 - Validar una impresion de prueba desde el navegador usado en caja.
 - Configurar el tamano de papel del driver para evitar salida tipo carta.
 - Si la impresora se comparte en red, probar desde cada cliente autorizado antes de operar.
@@ -137,7 +137,7 @@ No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`,
 - Concurrencia real fue validada contra `http://192.168.1.7:8000` con `RUN_ID=concurrency-validation-20260517T20435`.
 - Rutas por IP desde servidor respondieron para `/up`, `/login`, `/verify-email` y assets.
 - No se declara LAN fisica completa hasta repetir el checklist desde otra computadora cliente.
-- No se declara impresora fisica validada hasta imprimir 80mm/58mm en hardware real.
+- No se declara impresora fisica validada hasta imprimir media carta/carta/A5 en hardware real.
 
 ## Scripts de validacion real
 

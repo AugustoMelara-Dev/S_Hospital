@@ -31,7 +31,7 @@ class ReprintReceiptRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'width' => ['required', Rule::in(['80mm', '58mm'])],
+            'width' => ['required', Rule::in(['letter', 'half_letter', 'a5', '80mm', '58mm'])],
             'reason' => ['nullable', 'string', 'max:500'],
         ];
     }

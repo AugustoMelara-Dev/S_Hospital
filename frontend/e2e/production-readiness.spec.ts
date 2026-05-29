@@ -118,7 +118,10 @@ async function installApiMocks(page: Page) {
       rtn: '08011999123456',
       address: 'Direccion Demo',
       phone: '2222-2222',
-      email: 'contacto@hospital-demo.local'
+      email: 'contacto@hospital-demo.local',
+      scanner_enabled: false,
+      partial_payments_enabled: false,
+      receipt_paper_size: 'half_letter',
     }
   }));
 
@@ -245,13 +248,13 @@ async function installApiMocks(page: Page) {
 
   await page.route('**/api/invoices/*/receipt**', (route) => {
     const invoiceId = Number(route.request().url().match(/invoices\/(\d+)\/receipt/)?.[1]);
-    const width = new URL(route.request().url()).searchParams.get('width') ?? '80mm';
+    const width = new URL(route.request().url()).searchParams.get('width') ?? 'half_letter';
     return json(route, { data: receiptFor(invoices[invoiceId], width) });
   });
 
   await page.route('**/api/invoices/*/reprint', (route) => {
     const invoiceId = Number(route.request().url().match(/invoices\/(\d+)\/reprint/)?.[1]);
-    const width = new URL(route.request().url()).searchParams.get('width') ?? '80mm';
+    const width = new URL(route.request().url()).searchParams.get('width') ?? 'half_letter';
     return json(route, { data: { receipt: receiptFor(invoices[invoiceId], width) } });
   });
 
@@ -408,7 +411,7 @@ async function installApiMocks(page: Page) {
           },
           {
             code: 'PENDING_HARDWARE_VALIDATION',
-            label: 'Impresora termica fisica 80mm/58mm',
+            label: 'Impresora institucional fisica media carta/carta/A5',
             status: 'pending',
           },
         ],
@@ -460,7 +463,7 @@ async function installApiMocks(page: Page) {
           },
           {
             code: 'THERMAL_PRINTER_PROOF',
-            label: 'Impresora termica 80mm/58mm',
+            label: 'Impresora institucional media carta/carta/A5',
             required_file: 'qa/THERMAL_PRINTER_PROOF.md',
             status: 'pending',
           },
@@ -512,10 +515,10 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
 
 async function loginAs(page: Page, username: string) {
   await page.goto('/login');
-  const loginInput = page.getByLabel(/usuario o email/i);
+  const loginInput = page.getByLabel(/usuario o (correo|email)/i);
   const visibleState = await Promise.any([
     loginInput.waitFor({ state: 'visible', timeout: 10_000 }).then(() => 'login' as const),
-    page.getByRole('heading', { name: /dashboard/i }).waitFor({ state: 'visible', timeout: 10_000 }).then(() => 'session' as const),
+    page.getByRole('heading', { name: /inicio|dashboard/i }).waitFor({ state: 'visible', timeout: 10_000 }).then(() => 'session' as const),
   ]).catch(() => 'timeout' as const);
 
   if (visibleState === 'session') {
@@ -562,7 +565,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   page.on('requestfailed', (request) => {
     const failure = request.failure();
     const url = request.url();
-    if ((url.includes('/sanctum/csrf-cookie') || url.includes('/api/health')) && failure?.errorText === 'net::ERR_ABORTED') {
+    if ((url.includes('/sanctum/csrf-cookie') || url.includes('/api/health') || url.includes('/api/settings/logo')) && failure?.errorText === 'net::ERR_ABORTED') {
       return;
     }
 
@@ -580,7 +583,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
     await page.getByRole('button', { name: /cerrar modal/i }).click();
   }
 
-  await page.getByRole('link', { name: 'Nueva Factura', exact: true }).click();
+  await page.getByLabel('Navegacion principal').getByRole('link', { name: /nueva factura/i }).click();
   await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
   await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
@@ -589,14 +592,14 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
   await expect(page.getByText(/ingrese el monto recibido/i)).toBeVisible();
-  await page.getByLabel(/monto recibido/i).fill('17.25');
+  await page.getByLabel(/monto recibido/i).fill('28.75');
   await expect(page.getByText(/ingrese el monto recibido/i)).toBeHidden();
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
-  await expect(page.getByRole('heading', { name: /preview t.rmico/i })).toBeVisible();
-  await expect(page.getByText('80mm')).toBeVisible();
-  await page.locator('[aria-label="Ancho del recibo"]').click();
-  await page.getByRole('option', { name: '58mm' }).click();
-  await expect(page.getByLabel(/recibo termico/i)).toHaveClass(/receipt-58mm/);
+  await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
+  await expect(page.getByText('Media carta')).toBeVisible();
+  await page.locator('[aria-label="Tamano del recibo"]').click();
+  await page.getByRole('option', { name: 'Carta', exact: true }).click();
+  await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-letter/);
   await page.getByRole('button', { name: /cerrar modal/i }).click();
   await page.getByRole('button', { name: /crear otra factura/i }).click();
 
@@ -607,8 +610,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByLabel(/receta de dialisis/i).click();
   await expect(page.getByLabel(/receta de dialisis/i)).toHaveAttribute('aria-checked', 'true');
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
-  await page.getByRole('button', { name: /confirmar emision/i }).click();
-  await expect(page.getByRole('heading', { name: /preview t.rmico/i })).toBeVisible();
+  await page.getByRole('button', { name: /confirmar emisi.n/i }).click();
+  await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
   await expect(page.getByText('L. 0.00').first()).toBeVisible();
   await page.getByRole('button', { name: /cerrar modal/i }).click();
   await page.getByRole('button', { name: /crear otra factura/i }).click();
@@ -622,13 +625,14 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /^reimprimir$/i }).first().click();
   await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
   await expect(page.getByRole('heading', { name: /recibo - 000-001-01-00000001/i })).toBeVisible();
-  await page.locator('[aria-label="Ancho del recibo"]').click();
-  await page.getByRole('option', { name: '58mm' }).click();
-  await expect(page.getByLabel(/recibo termico/i)).toHaveClass(/receipt-58mm/);
+  await page.locator('[aria-label="Tamano del recibo"]').click();
+  await page.getByRole('option', { name: 'Carta', exact: true }).click();
+  await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-letter/);
 
   await page.getByRole('button', { name: /cerrar modal/i }).click();
-  await page.getByRole('button', { name: /cerrar sesi.n/i }).click();
-  await page.getByLabel(/usuario o email/i).fill('admin.demo');
+  await page.getByRole('button', { name: /abrir menu de usuario/i }).click();
+  await page.getByText(/cerrar sesi.n/i).click();
+  await page.getByLabel(/usuario o (correo|email)/i).fill('admin.demo');
   await page.getByLabel(/^contraseña$|^contrasena$/i).fill('Password123!');
   await Promise.all([
     page.waitForResponse('**/api/auth/login'),
@@ -637,12 +641,12 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByRole('link', { name: /reportes/i })).toBeVisible();
   await page.getByRole('link', { name: /reportes/i }).click();
   await expect(page.getByRole('heading', { name: /^reportes$/i })).toBeVisible();
-  await expect(page.getByText(/total cobrado/i)).toBeVisible();
+  await expect(page.getByRole('heading', { name: /cobrado/i })).toBeVisible();
 
-  await page.getByRole('link', { name: /backups/i }).click();
-  await expect(page.getByRole('heading', { name: /^backups$/i })).toBeVisible();
-  await page.getByRole('button', { name: /crear backup/i }).first().click();
-  await page.getByRole('button', { name: /^crear backup$/i }).click();
+  await page.getByRole('link', { name: /respaldos/i }).click();
+  await expect(page.getByRole('heading', { name: /^respaldos$/i })).toBeVisible();
+  await page.getByRole('button', { name: /crear respaldo/i }).first().click();
+  await page.getByRole('button', { name: /^crear respaldo$/i }).click();
   await expect(page.getByRole('table').getByText('Pendiente', { exact: true })).toBeVisible();
   expect(consoleIssues).toEqual([]);
 });
@@ -673,7 +677,8 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
     await expect(page.getByRole('heading', { name: /nueva factura/i })).toBeVisible();
     await expectOperationalNavigation(page);
     await expect(page.getByLabel(/nombre del paciente/i)).toBeVisible();
-    await expect(page.getByLabel(/scanner usb o codigo manual/i)).toBeVisible();
+    await expect(page.getByLabel(/buscar por nombre/i)).toBeVisible();
+    await expect(page.getByLabel(/scanner usb o codigo manual/i)).toHaveCount(0);
   }
 
   expect(consoleIssues).toEqual([]);

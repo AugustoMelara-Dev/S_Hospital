@@ -1,8 +1,8 @@
-# Demo Flow - Hospital Billing OS Offline
+﻿# Demo Flow - Sistema de Caja Hospitalaria
 
 ## Objetivo
 
-Demostrar un flujo vendible temprano sin internet: cajero inicia sesion, abre caja, crea factura, aplica reglas de servicios, cobra, imprime recibo termico, reimprime y revisa reporte diario.
+Demostrar un flujo vendible temprano sin internet: cajero inicia sesion, abre caja, crea factura, aplica reglas de servicios, cobra, imprime recibo institucional, reimprime y revisa reporte diario.
 
 ## Datos demo sugeridos
 
@@ -149,7 +149,7 @@ Resultado esperado:
 - Se crea movimiento de caja.
 - Factura queda Pagada con saldo L.0.00.
 
-### 10. Imprimir recibo termico
+### 10. Imprimir recibo institucional
 
 Accion:
 

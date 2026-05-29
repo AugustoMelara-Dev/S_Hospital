@@ -10,7 +10,7 @@ class BackupDatabaseCommand extends Command
 {
     protected $signature = 'hospital:backup {--type=scheduled : Tipo de backup: manual o scheduled}';
 
-    protected $description = 'Crear un backup local de la base de datos y registrar backup_logs.';
+    protected $description = 'Crear un respaldo local de la base de datos y registrarlo en backup_logs.';
 
     public function handle(CreateBackupAction $createBackup): int
     {
@@ -25,12 +25,12 @@ class BackupDatabaseCommand extends Command
         $backupLog = $createBackup->execute(type: $type);
 
         if ($backupLog->status === BackupLog::STATUS_SUCCESS) {
-            $this->info("Backup local creado: {$backupLog->filename}");
+            $this->info("Respaldo local creado: {$backupLog->filename}");
 
             return self::SUCCESS;
         }
 
-        $this->error("Backup local fallido: {$backupLog->filename}. Revise backup_logs para el detalle operativo.");
+        $this->error("Respaldo local fallido: {$backupLog->filename}. Revise backup_logs para el detalle operativo.");
 
         return self::FAILURE;
     }

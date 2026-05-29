@@ -51,4 +51,12 @@ Schedule::command('hospital:backup --type=scheduled')
     ->withoutOverlapping(120)
     ->onOneServer()
     ->runInBackground()
-    ->description('Hospital Billing OS daily scheduled database backup');
+    ->description('Respaldo diario del Sistema de Caja Hospitalaria');
+
+Schedule::command('hospital:backup --type=scheduled')
+    ->everyFifteenMinutes()
+    ->between((string) env('HOSPITAL_OPERATION_START', '06:00'), (string) env('HOSPITAL_OPERATION_END', '18:00'))
+    ->withoutOverlapping(120)
+    ->onOneServer()
+    ->runInBackground()
+    ->description('Respaldo automatico operativo del Sistema de Caja Hospitalaria');

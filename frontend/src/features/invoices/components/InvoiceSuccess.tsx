@@ -81,7 +81,7 @@ export function InvoiceSuccess({
         ) : (
           <div className="flex flex-col gap-3">
             <Button ref={primaryActionRef} type="button" size="lg" className="w-full font-semibold" onClick={onImprimir}>
-              Imprimir recibo térmico
+              Imprimir recibo institucional
             </Button>
             <Button type="button" variant="secondary" className="w-full" onClick={onNuevaFactura}>
               Crear otra factura

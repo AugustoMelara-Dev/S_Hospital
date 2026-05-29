@@ -1,4 +1,4 @@
-# 08 Critical Acceptance Criteria
+﻿# 08 Critical Acceptance Criteria
 
 ## Bloqueantes de producto
 
@@ -15,7 +15,7 @@
 
 - App shell con sidebar izquierdo, topbar, rutas internas y layout persistente.
 - Modulos separados: Nueva factura/POS, Caja, Catalogo, Historial, Reportes avanzados, Backups, Configuracion fiscal y Usuarios/roles si existe.
-- POS con busqueda rapida, categorias, servicios compactos, carrito lateral, resumen, pago y recibo termico.
+- POS con busqueda rapida, categorias, servicios compactos, carrito lateral, resumen, pago y recibo institucional.
 - Catalogo con categorias, servicios, precio, activo/inactivo, scan_code y regla Eritropoyetina.
 - Reportes con filtros por fecha, cajero, categoria, metodo y estado.
 - Dashboard con metricas claras y tablas legibles.

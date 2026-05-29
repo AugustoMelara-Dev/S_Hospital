@@ -1,8 +1,8 @@
-# Release checklist - demo vendible y produccion real
+﻿# Release checklist - demo vendible y produccion real
 
 Estado actual documentado: `DEMO_READY` y `PRODUCTION_CANDIDATE`. No declarar
 `PRODUCTION_READY` hasta cerrar validacion fisica de cliente LAN, hardware de
-impresora termica y configuracion final del servidor real.
+impresora institucional y configuracion final del servidor real.
 
 ## Quality gate seguro
 
@@ -33,7 +33,7 @@ cd C:\Projects\S_Hospital
 & "C:\Program Files\Git\usr\bin\bash.exe" scripts/e2e_gate.sh
 ```
 
-El E2E local usa ambiente seguro y API mockeada para cubrir login, caja, factura, eritropoyetina normal/gratis, pago, recibo 80mm/58mm, historial, reimpresion, reportes y backup pending. No valida MySQL/MariaDB real ni hardware.
+El E2E local usa ambiente seguro y API mockeada para cubrir login, caja, factura, eritropoyetina normal/gratis, pago, recibo media carta/carta/A5, historial, reimpresion, reportes y backup pending. No valida MySQL/MariaDB real ni hardware.
 
 ## Reset dev/testing con base descartable
 
@@ -160,7 +160,7 @@ LAN fisica:
 - Eritropoyetina normal L.25.
 - Eritropoyetina con receta de dialisis L.0.
 - Cobrar factura.
-- Ver recibo 80mm y 58mm.
+- Ver recibo media carta, carta y A5.
 - Reimprimir desde historial.
 - Anular factura sin pagos con motivo.
 - Ver reportes.
@@ -205,7 +205,7 @@ Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_b
 
 - Probar restore real en una base descartable del servidor final y guardar checksum/conteos.
 - Probar desde una segunda PC en LAN usando la IP fija o dominio LAN, nunca `localhost`.
-- Probar impresora fisica termica 80mm/58mm desde la PC o cliente que imprimira.
+- Probar impresora fisica termica media carta/carta/A5 desde la PC o cliente que imprimira.
 - Crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
 - Crear `qa/THERMAL_PRINTER_PROOF.md` usando `qa/THERMAL_PRINTER_PROOF.example.md`.
 - Crear `qa/FINAL_RESTORE_PROOF.md` usando `qa/FINAL_RESTORE_PROOF.example.md`.

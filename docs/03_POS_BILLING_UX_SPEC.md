@@ -1,4 +1,4 @@
-# 03 POS Billing UX Spec
+﻿# 03 POS Billing UX Spec
 
 ## Objetivo
 
@@ -21,7 +21,7 @@ La pantalla de Nueva factura debe sentirse como POS/caja profesional: rapida, cl
 7. Revisa subtotal, ISV/descuentos/reglas especiales y total.
 8. Selecciona metodo de pago.
 9. Confirma emision/cobro.
-10. Imprime recibo termico 80mm o 58mm segun configuracion.
+10. Imprime recibo institucional media carta, carta o A5 segun configuracion.
 
 ## Busqueda rapida
 
@@ -67,4 +67,4 @@ Debe mostrar:
 - Frontend solo previsualiza.
 - Eritropoyetina se cobra L.25, salvo receta de dialisis marcada.
 - Toda factura pagada debe asociarse a caja, cajero, metodo y fecha.
-- El recibo termico debe estar disponible al completar el cobro.
+- El recibo institucional debe estar disponible al completar el cobro.

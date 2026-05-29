@@ -461,25 +461,44 @@ html.dark {
     border-radius: 0.5rem;
   }
 
-  /* Thermal Receipt Styles */
+  /* Institutional receipt styles */
+  .institutional-receipt,
   .thermal-receipt {
-    width: 80mm;
-    padding: 16px;
+    width: 5.5in;
+    min-height: 8.5in;
+    padding: 28px;
     background: white;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 10px;
-    line-height: 1.3;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    line-height: 1.35;
     color: #000;
-    page: receipt-80;
+    border: 1px solid #0f172a;
+    page: receipt-half-letter;
   }
 
+  .institutional-receipt.receipt-letter {
+    width: 8.5in;
+    min-height: 11in;
+    page: receipt-letter;
+  }
+
+  .institutional-receipt.receipt-a5 {
+    width: 148mm;
+    min-height: 210mm;
+    page: receipt-a5;
+  }
+
+  .institutional-receipt.receipt-80mm,
+  .institutional-receipt.receipt-58mm,
   .thermal-receipt.receipt-58mm {
-    width: 58mm;
-    font-size: 9px;
-    padding: 12px;
-    page: receipt-58;
+    width: 5.5in;
+    min-height: 8.5in;
+    font-size: 12px;
+    padding: 28px;
+    page: receipt-half-letter;
   }
 
+  .institutional-receipt *,
   .thermal-receipt * {
     box-sizing: border-box;
   }
@@ -491,11 +510,8 @@ html.dark {
 
   .receipt-header .hospital-name {
     display: block;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: bold;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     max-width: 100%;
   }
 
@@ -506,16 +522,29 @@ html.dark {
 
   .receipt-rule {
     border: none;
-    border-top: 1px dashed #000;
-    margin: 8px 0;
+    border-top: 1px solid #000;
+    margin: 10px 0;
   }
 
   .receipt-title {
-    font-size: 12px;
+    font-size: 16px;
     font-weight: bold;
-    text-align: center;
-    margin: 8px 0;
-    letter-spacing: 0.5px;
+    margin: 0;
+  }
+
+  .receipt-title-row {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+    text-transform: uppercase;
+  }
+
+  .receipt-title-row span {
+    border: 1px solid #000;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
   }
 
   .receipt-section-title {
@@ -526,16 +555,15 @@ html.dark {
   }
 
   .receipt-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+    display: grid;
+    gap: 4px;
   }
 
   .receipt-table-head {
     display: flex;
     justify-content: space-between;
     font-weight: bold;
-    border-bottom: 1px solid #000;
+    border-bottom: 2px solid #000;
     padding-bottom: 4px;
     margin-bottom: 4px;
   }
@@ -551,6 +579,7 @@ html.dark {
     justify-content: space-between;
     align-items: flex-start;
     gap: 8px;
+    min-height: 22px;
   }
 
   .receipt-row .strong {
@@ -612,10 +641,17 @@ html.dark {
 
   .receipt-footer {
     text-align: center;
-    font-size: 8px;
+    font-size: 11px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 6px;
+    margin-top: 32px;
+  }
+
+  .receipt-signature-line {
+    border-top: 1px solid #000;
+    margin: 36px auto 0;
+    width: 60%;
   }
 
   /* Badge variants */
@@ -663,23 +699,41 @@ html.dark {
     visibility: hidden;
   }
 
+  body[data-printing-receipt="true"] .institutional-receipt,
+  body[data-printing-receipt="true"] .institutional-receipt *,
   body[data-printing-receipt="true"] .thermal-receipt,
   body[data-printing-receipt="true"] .thermal-receipt * {
     visibility: visible;
   }
 
+  body[data-printing-receipt="true"] .institutional-receipt,
   body[data-printing-receipt="true"] .thermal-receipt {
     position: absolute;
     left: 0;
     top: 0;
-    width: 80mm;
-    padding: 16px;
+    width: 5.5in;
+    min-height: 8.5in;
+    padding: 28px;
     background: white;
+    color: black;
   }
 
+  body[data-printing-receipt="true"] .institutional-receipt.receipt-letter {
+    width: 8.5in;
+    min-height: 11in;
+  }
+
+  body[data-printing-receipt="true"] .institutional-receipt.receipt-a5 {
+    width: 148mm;
+    min-height: 210mm;
+  }
+
+  body[data-printing-receipt="true"] .institutional-receipt.receipt-80mm,
+  body[data-printing-receipt="true"] .institutional-receipt.receipt-58mm,
   body[data-printing-receipt="true"] .thermal-receipt.receipt-58mm {
-    width: 58mm;
-    padding: 12px;
+    width: 5.5in;
+    min-height: 8.5in;
+    padding: 28px;
   }
 
   body[data-printing-receipt="true"] .receipt-preview-container {
@@ -697,13 +751,18 @@ html.dark {
     margin: 1.5cm;
   }
 
-  @page receipt-80 {
-    size: 80mm auto;
-    margin: 0;
+  @page receipt-half-letter {
+    size: 5.5in 8.5in;
+    margin: 0.35in;
   }
 
-  @page receipt-58 {
-    size: 58mm auto;
-    margin: 0;
+  @page receipt-letter {
+    size: letter;
+    margin: 0.5in;
+  }
+
+  @page receipt-a5 {
+    size: A5;
+    margin: 10mm;
   }
 }
