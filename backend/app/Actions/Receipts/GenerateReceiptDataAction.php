@@ -9,6 +9,8 @@ class GenerateReceiptDataAction
 {
     public function execute(Invoice $invoice, string $width): array
     {
+        $paperSize = $this->paperSize($width);
+
         $invoice->loadMissing([
             'items',
             'payments.user:id,name,username',
@@ -17,9 +19,14 @@ class GenerateReceiptDataAction
         $cashierName = $invoice->payments
             ->sortByDesc(fn ($payment): int => $payment->paid_at?->getTimestamp() ?? 0)
             ->first()?->user?->name ?? $invoice->issuer?->name;
+        $fiscalCai = $this->fiscalValue($invoice->fiscal_cai);
+        $hasFiscalAuthorization = $fiscalCai !== null
+            && $invoice->fiscal_range_from
+            && $invoice->fiscal_range_to
+            && $invoice->fiscal_valid_until;
 
         return [
-            'width' => $width,
+            'width' => $paperSize,
             'hospital' => [
                 'name' => HospitalName::display($invoice->hospital_name),
                 'rtn' => $invoice->hospital_rtn,
@@ -28,7 +35,7 @@ class GenerateReceiptDataAction
             ],
             'institutional' => [
                 'template_mode' => $invoice->receipt_template_mode ?? 'institutional',
-                'paper_size' => $invoice->receipt_paper_size ?? $width,
+                'paper_size' => $this->paperSize($invoice->receipt_paper_size ?? $paperSize),
                 'government_line' => $invoice->receipt_government_line ?? 'Gobierno de Honduras',
                 'secretariat_line' => $invoice->receipt_secretariat_line ?? 'Secretaria de Salud Publica',
                 'location' => $invoice->receipt_location,
@@ -37,11 +44,11 @@ class GenerateReceiptDataAction
                 'signature_label' => 'Firma y sello del receptor de fondos',
             ],
             'fiscal' => [
-                'cai' => $invoice->fiscal_cai,
-                'authorized_range' => $invoice->fiscal_range_from && $invoice->fiscal_range_to
+                'cai' => $fiscalCai,
+                'authorized_range' => $hasFiscalAuthorization
                     ? $invoice->fiscal_range_from.' a '.$invoice->fiscal_range_to
                     : null,
-                'valid_until' => $invoice->fiscal_valid_until?->toDateString(),
+                'valid_until' => $hasFiscalAuthorization ? $invoice->fiscal_valid_until?->toDateString() : null,
             ],
             'invoice' => [
                 'id' => $invoice->id,
@@ -79,5 +86,28 @@ class GenerateReceiptDataAction
                 'cashier' => $payment->user?->name,
             ])->values(),
         ];
+    }
+
+    private function paperSize(?string $value): string
+    {
+        return in_array($value, ['letter', 'half_letter', 'a5'], true)
+            ? $value
+            : 'half_letter';
+    }
+
+    private function fiscalValue(?string $value): ?string
+    {
+        $trimmed = trim((string) $value);
+
+        if ($trimmed === '') {
+            return null;
+        }
+
+        return in_array(strtolower($trimmed), [
+            'demo-cai',
+            'test-cai',
+            'configuracion-pendiente',
+            'configuración-pendiente',
+        ], true) ? null : $trimmed;
     }
 }

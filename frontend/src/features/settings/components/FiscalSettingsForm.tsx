@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { FiscalSettings, FiscalSequence } from '@/lib/api';
 
@@ -144,24 +143,6 @@ export function FiscalSettingsForm({
                   {...registerSettings('slogan')}
                   placeholder="Al servicio de tu salud..."
                 />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-              <div className="w-full">
-                <Label htmlFor="receipt_width">Recibo institucional</Label>
-                <Select
-                  value={watchSettings('receipt_width')}
-                  onValueChange={(v: string) => setValueSettings('receipt_width', v as '80mm' | '58mm')}
-                >
-                  <SelectTrigger id="receipt_width">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="80mm">Formato legado 80mm</SelectItem>
-                    <SelectItem value="58mm">Formato legado 58mm</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 

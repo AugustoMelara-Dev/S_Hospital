@@ -137,7 +137,7 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->assertJsonPath('data.payments.0.amount', '17.25')
             ->assertJsonPath('data.cash_session.id', $sessionId)
             ->assertJsonPath('data.status', Invoice::STATUS_PAID)
-            ->assertJsonPath('data.fiscal_sequence.cai', 'TEST-CAI');
+            ->assertJsonPath('data.fiscal_sequence.cai', 'REAL-CAI-2026');
     }
 
     public function test_reprint_uses_snapshots_and_writes_audit_log(): void
@@ -149,11 +149,11 @@ class InvoiceHistoryReprintVoidTest extends TestCase
 
         $this->actingAs($cashier)
             ->postJson("/api/invoices/{$invoiceId}/reprint", [
-                'width' => '58mm',
+                'width' => 'a5',
                 'reason' => 'Copia para paciente',
             ])
             ->assertOk()
-            ->assertJsonPath('data.receipt.width', '58mm')
+            ->assertJsonPath('data.receipt.width', 'a5')
             ->assertJsonPath('data.receipt.items.0.service_name', 'Glucosa')
             ->assertJsonPath('data.receipt.items.0.unit_price', '15.00')
             ->assertJsonPath('data.audit.action', 'invoice.reprinted');
@@ -185,11 +185,11 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         ]);
 
         $this->actingAs($cashier)
-            ->postJson("/api/invoices/{$invoiceId}/reprint", ['width' => '80mm'])
+            ->postJson("/api/invoices/{$invoiceId}/reprint", ['width' => 'half_letter'])
             ->assertOk()
-            ->assertJsonPath('data.receipt.hospital.name', 'Caja hospitalaria')
+            ->assertJsonPath('data.receipt.hospital.name', 'Hospital San Isidro')
             ->assertJsonPath('data.receipt.hospital.rtn', '08011999123456')
-            ->assertJsonPath('data.receipt.fiscal.cai', 'TEST-CAI')
+            ->assertJsonPath('data.receipt.fiscal.cai', 'REAL-CAI-2026')
             ->assertJsonPath('data.receipt.fiscal.authorized_range', '000-001-01-00000001 a 000-001-01-99999999')
             ->assertJsonPath('data.receipt.fiscal.valid_until', now()->addYear()->toDateString());
     }
@@ -204,11 +204,11 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         Invoice::query()->whereKey($ownOldId)->update(['issued_at' => now()->subDay()]);
 
         $this->actingAs($cashier)
-            ->postJson("/api/invoices/{$otherId}/reprint", ['width' => '80mm'])
+            ->postJson("/api/invoices/{$otherId}/reprint", ['width' => 'half_letter'])
             ->assertForbidden();
 
         $this->actingAs($cashier)
-            ->postJson("/api/invoices/{$ownOldId}/reprint", ['width' => '80mm'])
+            ->postJson("/api/invoices/{$ownOldId}/reprint", ['width' => 'half_letter'])
             ->assertForbidden();
     }
 
@@ -220,11 +220,11 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         Invoice::query()->whereKey($oldId)->update(['issued_at' => now()->subDays(2)]);
 
         $this->actingAs($this->supervisor())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => '80mm'])
+            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => 'letter'])
             ->assertOk();
 
         $this->actingAs($this->admin())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => '58mm'])
+            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => 'a5'])
             ->assertOk();
     }
 
@@ -361,7 +361,7 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             'min_number' => 1,
             'max_number' => 99999999,
             'current_number' => 0,
-            'cai' => 'TEST-CAI',
+            'cai' => 'REAL-CAI-2026',
             'valid_until' => now()->addYear()->toDateString(),
             'active' => true,
         ]);

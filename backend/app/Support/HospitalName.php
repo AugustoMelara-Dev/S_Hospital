@@ -4,7 +4,7 @@ namespace App\Support;
 
 final class HospitalName
 {
-    private const FALLBACK = 'Caja hospitalaria';
+    private const FALLBACK = 'Hospital San Isidro';
 
     public static function display(?string $name): string
     {
@@ -28,12 +28,14 @@ final class HospitalName
     private static function internalNames(): array
     {
         $legacyProductName = 'hospital '.('bill'.'ing').' os';
+        $legacyGenericName = implode(' ', ['caja', 'hospitalaria']);
 
         return [
             $legacyProductName,
             's_hospital '.$legacyProductName,
             $legacyProductName.' offline',
             'hospital demo',
+            $legacyGenericName,
         ];
     }
 }

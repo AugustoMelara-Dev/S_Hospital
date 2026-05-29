@@ -14,11 +14,19 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Tests\TestCase;
 
 class CashPaymentsReceiptTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutMiddleware(ThrottleRequests::class);
+    }
 
     public function test_cashier_can_open_cash_session_and_cannot_open_two(): void
     {
@@ -398,7 +406,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_receipt_uses_invoice_item_snapshots_and_supports_80mm_and_58mm(): void
+    public function test_receipt_uses_invoice_item_snapshots_and_supports_institutional_paper_sizes(): void
     {
         $this->seedBillingBase();
         $cashier = $this->cashier();
@@ -415,12 +423,12 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertCreated();
 
         $this->actingAs($cashier)
-            ->getJson("/api/invoices/{$invoiceId}/receipt?width=80mm")
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter")
             ->assertOk()
-            ->assertJsonPath('data.width', '80mm')
-            ->assertJsonPath('data.hospital.name', 'Caja hospitalaria')
+            ->assertJsonPath('data.width', 'half_letter')
+            ->assertJsonPath('data.hospital.name', 'Hospital San Isidro')
             ->assertJsonPath('data.hospital.rtn', '08011999123456')
-            ->assertJsonPath('data.fiscal.cai', 'TEST-CAI')
+            ->assertJsonPath('data.fiscal.cai', 'REAL-CAI-2026')
             ->assertJsonPath('data.fiscal.authorized_range', '000-001-01-00000001 a 000-001-01-99999999')
             ->assertJsonPath('data.fiscal.valid_until', now()->addYear()->toDateString())
             ->assertJsonPath('data.items.0.service_name', 'Glucosa')
@@ -429,9 +437,35 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonCount(1, 'data.payments');
 
         $this->actingAs($cashier)
-            ->getJson("/api/invoices/{$invoiceId}/receipt?width=58mm")
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=a5")
             ->assertOk()
-            ->assertJsonPath('data.width', '58mm');
+            ->assertJsonPath('data.width', 'a5');
+
+        $this->actingAs($cashier)
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=80mm")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('width');
+    }
+
+    public function test_receipt_marks_placeholder_fiscal_values_as_pending(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        Invoice::query()->whereKey($invoiceId)->update([
+            'fiscal_cai' => 'TEST-CAI',
+            'fiscal_range_from' => '000-001-01-00000001',
+            'fiscal_range_to' => '000-001-01-99999999',
+            'fiscal_valid_until' => now()->addYear()->toDateString(),
+        ]);
+
+        $this->actingAs($cashier)
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=letter")
+            ->assertOk()
+            ->assertJsonPath('data.fiscal.cai', null)
+            ->assertJsonPath('data.fiscal.authorized_range', null)
+            ->assertJsonPath('data.fiscal.valid_until', null);
     }
 
     public function test_zero_total_dialysis_prescription_invoice_is_paid_and_receiptable_without_payment(): void
@@ -457,7 +491,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->json('data.id');
 
         $this->actingAs($cashier)
-            ->getJson("/api/invoices/{$invoiceId}/receipt?width=80mm")
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter")
             ->assertOk()
             ->assertJsonPath('data.invoice.total', '0.00')
             ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID)
@@ -518,7 +552,7 @@ class CashPaymentsReceiptTest extends TestCase
             'min_number' => 1,
             'max_number' => 99999999,
             'current_number' => 0,
-            'cai' => 'TEST-CAI',
+            'cai' => 'REAL-CAI-2026',
             'valid_until' => now()->addYear()->toDateString(),
             'active' => true,
         ]);

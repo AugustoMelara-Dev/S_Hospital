@@ -19,6 +19,7 @@ import { useFiscalSettings } from '../../hooks/useFiscalSettings';
 
 const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 const POS_SERVICE_PAGE_SIZE = 24;
+const RECEIPT_PAPER_SIZES: ReceiptData['width'][] = ['half_letter', 'letter', 'a5'];
 
 interface POSState {
   patientName: string;
@@ -364,7 +365,7 @@ export function NewInvoiceView({
     dispatch({ type: 'SET_PARTIAL_PAYMENTS_ENABLED', payload: fiscalSettings.partial_payments_enabled === true });
     dispatch({
       type: 'SET_RECEIPT_WIDTH',
-      payload: fiscalSettings.receipt_paper_size ?? fiscalSettings.receipt_width ?? 'half_letter',
+      payload: normalizeReceiptPaperSize(fiscalSettings.receipt_paper_size),
     });
   }, [fiscalSettings]);
 
@@ -1020,6 +1021,12 @@ function calculatePreview(items: CartItem[]) {
 
 function isZeroMoney(value: string): boolean {
   return Number(value) === 0;
+}
+
+function normalizeReceiptPaperSize(value: string | null | undefined): ReceiptData['width'] {
+  return RECEIPT_PAPER_SIZES.includes(value as ReceiptData['width'])
+    ? value as ReceiptData['width']
+    : 'half_letter';
 }
 
 function parseCents(value: string): number {

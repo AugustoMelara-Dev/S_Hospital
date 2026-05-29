@@ -23,7 +23,7 @@ class DevelopmentDemoSeeder extends Seeder
             ['username' => 'admin.demo'],
             [
                 'name' => 'Admin Demo',
-                'email' => 'admin.demo@hospital-billing.local',
+                'email' => 'admin.demo@hospital-san-isidro.local',
                 'password' => $password,
                 'active' => true,
                 'must_change_password' => false,
@@ -35,7 +35,7 @@ class DevelopmentDemoSeeder extends Seeder
             ['username' => 'supervisor.demo'],
             [
                 'name' => 'Supervisor Demo',
-                'email' => 'supervisor.demo@hospital-billing.local',
+                'email' => 'supervisor.demo@hospital-san-isidro.local',
                 'password' => $password,
                 'active' => true,
                 'must_change_password' => false,
@@ -47,7 +47,7 @@ class DevelopmentDemoSeeder extends Seeder
             ['username' => 'cajero.demo'],
             [
                 'name' => 'Cajero Demo',
-                'email' => 'cajero.demo@hospital-billing.local',
+                'email' => 'cajero.demo@hospital-san-isidro.local',
                 'password' => $password,
                 'active' => true,
                 'must_change_password' => false,
@@ -58,7 +58,7 @@ class DevelopmentDemoSeeder extends Seeder
         FiscalSetting::query()->updateOrCreate(
             ['id' => 1],
             [
-                'hospital_name' => 'Hospital Demo',
+                'hospital_name' => 'Hospital San Isidro',
                 'rtn' => '08011999123456',
                 'default_tax_rate' => '15.00',
                 'receipt_width' => '80mm',
@@ -79,7 +79,7 @@ class DevelopmentDemoSeeder extends Seeder
             [
                 'document_type' => 'invoice',
                 'prefix' => '000-001-01',
-                'cai' => 'DEMO-CAI',
+                'cai' => 'CONFIGURACION-PENDIENTE',
             ],
         );
 

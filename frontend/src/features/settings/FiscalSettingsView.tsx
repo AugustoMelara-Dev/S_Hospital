@@ -34,7 +34,7 @@ type SettingsFormData = {
   slogan: string;
   scanner_enabled: boolean;
   partial_payments_enabled: boolean;
-  receipt_paper_size: 'letter' | 'half_letter' | 'a5' | '80mm' | '58mm';
+  receipt_paper_size: 'letter' | 'half_letter' | 'a5';
   government_line: string;
   secretariat_line: string;
   receipt_location: string;

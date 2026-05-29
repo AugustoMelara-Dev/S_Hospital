@@ -720,3 +720,24 @@ Consecuencia:
 - La evidencia visual actual queda versionable y auditable por modulo.
 - `npm.cmd run test`, `npm.cmd run typecheck`, `npm.cmd run lint`, `npm.cmd run build`, `php artisan test --colors=never --filter=BackupWorkflowTest`, `php artisan test --colors=never --filter=ReportsTest` y `php artisan test --colors=never --filter=ProductionSpaRouteTest` pasan.
 - El build conserva una advertencia no bloqueante de Vite por un chunk apenas mayor a 500 kB; debe tratarse como optimizacion posterior, no como bloqueo funcional.
+
+### 2026-05-29 - Recibo institucional en papel y placeholders fiscales
+
+Decision:
+
+- El recibo operativo se limita a papel institucional `letter`, `half_letter` y `a5`; los formatos heredados de ticket se rechazan en endpoints de recibo y se normalizan a media carta si aparecen en snapshots antiguos.
+- Los valores fiscales placeholder (`DEMO-CAI`, `TEST-CAI` o configuracion pendiente) no se imprimen como autorizacion real. La API de recibos los devuelve como pendientes para que el frontend muestre `Configuracion pendiente`.
+- El build y el smoke visual bloquean texto visible de ticket termico, `80mm`, `58mm`, QR/barcode y nombres internos en las pantallas principales.
+- Los seeders locales restauran Hospital San Isidro y datos de acceso reproducibles sin simular CAI real.
+
+Motivo:
+
+- El hospital pidio recibos parecidos al talonario manual, no tickets termicos ni codigos internos.
+- No se debe inventar cumplimiento fiscal; cuando faltan datos reales, el sistema debe decirlo claramente.
+- Las reimpresiones deben seguir usando snapshots historicos, pero sin perpetuar placeholders como si fueran autorizacion valida.
+
+Consecuencia:
+
+- El recibo impreso siempre usa fondo blanco, encabezado Gobierno/Secretaria/Hospital, serie, fecha, paciente, servicios, valor en lempiras, total, pagado, saldo si aplica, cajero, metodo y firma/sello.
+- Las pruebas de recibo validan snapshots, papel institucional, rechazo de ticket heredado y placeholders fiscales pendientes.
+- La evidencia visual queda en `qa/screenshots/field-qa-2026-05-29-fixed/10-receipt-preview.png`.

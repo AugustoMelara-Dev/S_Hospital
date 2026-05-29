@@ -29,7 +29,7 @@ class ShowReceiptRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'width' => ['sometimes', Rule::in(['letter', 'half_letter', 'a5', '80mm', '58mm'])],
+            'width' => ['sometimes', Rule::in(['letter', 'half_letter', 'a5'])],
         ];
     }
 
@@ -39,8 +39,10 @@ class ShowReceiptRequest extends FormRequest
             return (string) $this->input('width');
         }
 
-        return FiscalSetting::query()->latest('id')->value('receipt_paper_size')
-            ?? FiscalSetting::query()->latest('id')->value('receipt_width')
-            ?? 'half_letter';
+        $configured = FiscalSetting::query()->latest('id')->value('receipt_paper_size');
+
+        return in_array($configured, ['letter', 'half_letter', 'a5'], true)
+            ? $configured
+            : 'half_letter';
     }
 }

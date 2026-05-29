@@ -37,6 +37,7 @@ const globalBlockers = [
   ['http200', /HTTP 200/i],
   ['spaLoaded', /SPA cargada/i],
   ['containers', /\b(container|contenedor|docker compose)\b/i],
+  ['thermalTicket', /ticket t[eé]rmico|80mm|58mm/i],
 ];
 
 const operationalBlockers = [
@@ -125,10 +126,11 @@ for (const [name, route, expected] of screens.slice(1)) {
 
 await page.goto(`${baseUrl}/invoices`);
 await waitSettled(page);
-const viewReceipt = page.getByRole('button', { name: /ver recibo/i }).first();
-if (await viewReceipt.isVisible().catch(() => false)) {
-  await viewReceipt.click();
+const viewReceiptButtons = page.getByText(/ver recibo/i);
+if (await viewReceiptButtons.count() > 0) {
+  await viewReceiptButtons.first().click();
   await waitSettled(page);
+  await page.getByLabel(/recibo institucional/i).waitFor({ timeout: 12000 }).catch(() => {});
   await page.waitForTimeout(500);
   const screenshot = path.join(outputDir, `${String(index).padStart(2, '0')}-receipt-preview.png`);
   await page.screenshot({ path: screenshot, fullPage: false });

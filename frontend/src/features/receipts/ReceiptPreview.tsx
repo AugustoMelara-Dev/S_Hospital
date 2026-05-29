@@ -20,16 +20,19 @@ type ReceiptPreviewProps = {
   onWidthChange: (width: ReceiptData['width']) => void;
 };
 
+const CONFIGURATION_PENDING = 'Configuración pendiente';
+
 export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, receipt, onWidthChange }: ReceiptPreviewProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
   const autoPrintedReceiptRef = useRef<string | null>(null);
+  const paperSize = receipt.width;
 
   const handlePrint = useReactToPrint({
     contentRef: receiptRef,
   });
 
   function handlePrintClick() {
-    printReceiptDocument(receipt.width, () => {
+    printReceiptDocument(paperSize, () => {
       if (!navigator.userAgent.toLowerCase().includes('jsdom')) {
         handlePrint();
       }
@@ -52,7 +55,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
   return (
     <div className="receipt-preview-panel" aria-label="Vista previa del recibo">
       <div className="receipt-preview-controls no-print">
-        <Select value={receipt.width} onValueChange={(v) => onWidthChange(v as ReceiptData['width'])}>
+        <Select value={paperSize} onValueChange={(v) => onWidthChange(v as ReceiptData['width'])}>
           <SelectTrigger aria-label="Tamano del recibo" className="w-[170px]">
             <SelectValue />
           </SelectTrigger>
@@ -73,7 +76,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
       </div>
 
       <div className="receipt-preview-container">
-        <div ref={receiptRef} className={`institutional-receipt receipt-${receipt.width}`} aria-label="Recibo institucional">
+        <div ref={receiptRef} className={`institutional-receipt receipt-${paperSize}`} aria-label="Recibo institucional">
           <header className="receipt-header">
             <span>{receipt.institutional?.government_line ?? 'Gobierno de Honduras'}</span>
             <span>{receipt.institutional?.secretariat_line ?? 'Secretaria de Salud Publica'}</span>
@@ -96,9 +99,9 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
             <Row label="Paciente / enterante" value={receipt.invoice.patient_name} />
             {receipt.invoice.cashier ? <Row label="Cajero" value={receipt.invoice.cashier} /> : null}
             <Row label="Estado" value={statusLabel(receipt.invoice.status)} />
-            <Row label="CAI" value={receipt.fiscal.cai ?? 'Pendiente de configurar'} />
-            {receipt.fiscal.authorized_range ? <Row label="Rango" value={receipt.fiscal.authorized_range} /> : null}
-            {receipt.fiscal.valid_until ? <Row label="Vence" value={formatDate(receipt.fiscal.valid_until)} /> : null}
+            <Row label="CAI" value={configuredValue(receipt.fiscal.cai)} />
+            <Row label="Rango autorizado" value={configuredValue(receipt.fiscal.authorized_range)} />
+            <Row label="Fecha limite" value={receipt.fiscal.valid_until ? formatDate(receipt.fiscal.valid_until) : CONFIGURATION_PENDING} />
           </div>
 
           <div className="receipt-rule" aria-hidden="true" />
@@ -122,6 +125,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
           <div className="receipt-totals">
             <Row label="Subtotal" value={`L. ${receipt.invoice.subtotal}`} />
             <Row label={taxLabel} value={`L. ${receipt.invoice.tax_amount}`} />
+            <Row label="Valor en lempiras" value={`L. ${receipt.invoice.total}`} />
             <Row label="TOTAL" value={`L. ${receipt.invoice.total}`} strong />
             {Number(receipt.invoice.paid_amount) > 0 ? (
               <Row label="Pagado" value={`L. ${receipt.invoice.paid_amount}`} />
@@ -218,6 +222,10 @@ function paymentLabel(method?: ReceiptData['payments'][number]['method']): strin
     other: 'Otro',
   };
   return method ? labels[method] : 'Pendiente';
+}
+
+function configuredValue(value: string | null | undefined): string {
+  return value && value.trim() !== '' ? value : CONFIGURATION_PENDING;
 }
 
 function statusLabel(status: ReceiptData['invoice']['status']): string {

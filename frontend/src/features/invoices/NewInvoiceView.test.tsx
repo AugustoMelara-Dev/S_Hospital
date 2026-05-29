@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../App';
@@ -272,9 +272,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               width: 'half_letter',
-              hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+              hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
               fiscal: {
-                cai: 'DEMO-CAI',
+                cai: 'TEST-CAI',
                 authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
                 valid_until: '2027-05-17',
               },
@@ -334,7 +334,8 @@ describe('NewInvoiceView', () => {
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
     expect((await screen.findAllByLabelText(/vista previa del recibo/i)).length).toBeGreaterThan(0);
-    expect(await screen.findByText(/hospital demo/i)).toBeInTheDocument();
+    const receiptPreview = await screen.findByLabelText(/recibo institucional/i);
+    expect(within(receiptPreview).getByText(/Hospital San Isidro/i)).toBeInTheDocument();
     expect(screen.getByText('Media carta')).toBeInTheDocument();
   });
 
@@ -639,7 +640,7 @@ describe('NewInvoiceView', () => {
             data: {
               receipt: {
                 width: 'half_letter',
-                hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+                hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
                 fiscal: {
                   cai: 'TEST-CAI',
                   authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
@@ -674,7 +675,7 @@ describe('NewInvoiceView', () => {
             data: {
               receipt: {
                 width: 'half_letter',
-                hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+                hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
                 fiscal: {
                   cai: 'TEST-CAI',
                   authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
@@ -919,9 +920,9 @@ describe('NewInvoiceView', () => {
   it('renders institutional receipt print structure with fiscal valid until date', async () => {
     const receipt: ReceiptData = {
       width: 'half_letter',
-      hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+      hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
       fiscal: {
-        cai: 'DEMO-CAI',
+        cai: 'TEST-CAI',
         authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
         valid_until: '2027-05-17',
       },
@@ -970,9 +971,43 @@ describe('NewInvoiceView', () => {
     render(<ReceiptPreview receipt={receipt} onWidthChange={vi.fn()} onPrint={printSpy} />);
 
     expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-half_letter');
-    expect(screen.getByText(/vence/i)).toBeInTheDocument();
+    expect(screen.getByText(/fecha limite/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /imprimir/i }));
     expect(printSpy).toHaveBeenCalledOnce();
     await waitFor(() => expect(document.body.dataset.receiptWidth).toBeUndefined());
+  });
+
+  it('shows pending fiscal configuration on receipts without real authorization data', () => {
+    const receipt: ReceiptData = {
+      width: 'letter',
+      hospital: { name: 'Hospital San Isidro', rtn: null },
+      fiscal: {
+        cai: null,
+        authorized_range: null,
+        valid_until: null,
+      },
+      invoice: {
+        id: 100,
+        invoice_number: '000-001-01-00000001',
+        issued_at: '2026-05-17T08:00:00-06:00',
+        cashier: 'Cajero',
+        patient_name: 'Maria Lopez',
+        subtotal: '15.00',
+        tax_amount: '2.25',
+        discount_amount: '0.00',
+        total: '17.25',
+        paid_amount: '17.25',
+        balance_due: '0.00',
+        status: 'paid',
+      },
+      items: [],
+      payments: [],
+    };
+
+    render(<ReceiptPreview receipt={receipt} onWidthChange={vi.fn()} />);
+
+    expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-letter');
+    expect(screen.getAllByText(/configuración pendiente/i)).toHaveLength(3);
+    expect(screen.queryByText(/\bQR\b|barra|barcode|codigo interno/i)).not.toBeInTheDocument();
   });
 });

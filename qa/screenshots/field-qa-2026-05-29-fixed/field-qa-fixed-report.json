@@ -14,7 +14,8 @@
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
-        "containers": false
+        "containers": false,
+        "thermalTicket": false
       }
     },
     {
@@ -30,7 +31,8 @@
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
-        "containers": false
+        "containers": false,
+        "thermalTicket": false
       }
     },
     {
@@ -46,7 +48,8 @@
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
-        "containers": false
+        "containers": false,
+        "thermalTicket": false
       }
     },
     {
@@ -62,7 +65,8 @@
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
-        "containers": false
+        "containers": false,
+        "thermalTicket": false
       }
     },
     {
@@ -79,6 +83,7 @@
         "http200": false,
         "spaLoaded": false,
         "containers": false,
+        "thermalTicket": false,
         "scanner": false,
         "barcode": false,
         "qr": false,
@@ -99,6 +104,7 @@
         "http200": false,
         "spaLoaded": false,
         "containers": false,
+        "thermalTicket": false,
         "scanner": false,
         "barcode": false,
         "qr": false,
@@ -118,7 +124,8 @@
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
-        "containers": false
+        "containers": false,
+        "thermalTicket": false
       }
     },
     {
@@ -134,7 +141,8 @@
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
-        "containers": false
+        "containers": false,
+        "thermalTicket": false
       }
     },
     {
@@ -150,7 +158,8 @@
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
-        "containers": false
+        "containers": false,
+        "thermalTicket": false
       }
     },
     {
@@ -167,6 +176,7 @@
         "http200": false,
         "spaLoaded": false,
         "containers": false,
+        "thermalTicket": false,
         "scanner": false,
         "barcode": false,
         "qr": false,

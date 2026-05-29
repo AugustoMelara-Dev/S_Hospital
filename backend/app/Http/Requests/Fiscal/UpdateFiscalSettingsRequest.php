@@ -27,7 +27,7 @@ class UpdateFiscalSettingsRequest extends FormRequest
             'scanner_enabled' => ['sometimes', 'boolean'],
             'partial_payments_enabled' => ['sometimes', 'boolean'],
             'receipt_template_mode' => ['sometimes', 'string', 'in:institutional'],
-            'receipt_paper_size' => ['sometimes', 'string', 'in:letter,half_letter,a5,80mm,58mm'],
+            'receipt_paper_size' => ['sometimes', 'string', 'in:letter,half_letter,a5'],
             'government_line' => ['nullable', 'string', 'max:120'],
             'secretariat_line' => ['nullable', 'string', 'max:160'],
             'receipt_location' => ['nullable', 'string', 'max:160'],

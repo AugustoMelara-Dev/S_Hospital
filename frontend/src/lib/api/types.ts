@@ -163,7 +163,7 @@ export type Payment = {
   paid_at: string;
 };
 
-export type ReceiptPaperSize = 'letter' | 'half_letter' | 'a5' | '80mm' | '58mm';
+export type ReceiptPaperSize = 'letter' | 'half_letter' | 'a5';
 
 export type ReceiptData = {
   width: ReceiptPaperSize;
