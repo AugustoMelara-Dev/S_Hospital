@@ -22,7 +22,7 @@ class DevelopmentDemoSeeder extends Seeder
         $admin = User::updateOrCreate(
             ['username' => 'admin.demo'],
             [
-                'name' => 'Admin Demo',
+                'name' => 'Administrador Hospital San Isidro',
                 'email' => 'admin.demo@hospital-san-isidro.local',
                 'password' => $password,
                 'active' => true,
@@ -34,7 +34,7 @@ class DevelopmentDemoSeeder extends Seeder
         $supervisor = User::updateOrCreate(
             ['username' => 'supervisor.demo'],
             [
-                'name' => 'Supervisor Demo',
+                'name' => 'Supervisor Hospital San Isidro',
                 'email' => 'supervisor.demo@hospital-san-isidro.local',
                 'password' => $password,
                 'active' => true,
@@ -46,7 +46,7 @@ class DevelopmentDemoSeeder extends Seeder
         $cashier = User::updateOrCreate(
             ['username' => 'cajero.demo'],
             [
-                'name' => 'Cajero Demo',
+                'name' => 'Cajero Hospital San Isidro',
                 'email' => 'cajero.demo@hospital-san-isidro.local',
                 'password' => $password,
                 'active' => true,

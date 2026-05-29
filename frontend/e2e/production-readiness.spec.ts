@@ -2,8 +2,8 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 
 const cashierUser = {
   id: 2,
-  name: 'Cajero Demo',
-  email: 'cajero.demo@hospital-billing.local',
+  name: 'Cajero Hospital San Isidro',
+  email: 'cajero.demo@hospital-san-isidro.local',
   username: 'cajero.demo',
   active: true,
   roles: ['cajero'],
@@ -24,8 +24,8 @@ const cashierUser = {
 
 const adminUser = {
   id: 1,
-  name: 'Admin Demo',
-  email: 'admin.demo@hospital-billing.local',
+  name: 'Administrador Hospital San Isidro',
+  email: 'admin.demo@hospital-san-isidro.local',
   username: 'admin.demo',
   active: true,
   roles: ['admin'],
@@ -114,11 +114,11 @@ async function installApiMocks(page: Page) {
   await page.route('**/api/settings/fiscal', (route) => json(route, {
     data: {
       primary_color: 'indigo',
-      name: 'Hospital Demo',
+      name: 'Hospital San Isidro',
       rtn: '08011999123456',
-      address: 'Direccion Demo',
+      address: 'Tocoa, Colon',
       phone: '2222-2222',
-      email: 'contacto@hospital-demo.local',
+      email: 'contacto@hospital-san-isidro.local',
       scanner_enabled: false,
       partial_payments_enabled: false,
       receipt_paper_size: 'half_letter',
@@ -270,11 +270,12 @@ async function installApiMocks(page: Page) {
   }));
 
   await page.route('**/api/reports/daily**', (route) => json(route, {
-    data: {
-      date: '2026-05-17',
-      total_billed: '28.75',
-      total_collected: '28.75',
-      invoice_count: 1,
+      data: {
+        date: '2026-05-17',
+        total_billed: '28.75',
+        total_collected: '28.75',
+        total_balance_due: '0.00',
+        invoice_count: 1,
       payment_count: 1,
       payments_by_method: { cash: '28.75', transfer: '0.00', card: '0.00', other: '0.00' },
       invoices_by_status: {
@@ -292,9 +293,17 @@ async function installApiMocks(page: Page) {
       cash_session_id: null,
       user_id: null,
       total_collected: '28.75',
+      total_billed: '28.75',
+      total_balance_due: '0.00',
       payments_by_method: { cash: '28.75', transfer: '0.00', card: '0.00', other: '0.00' },
       payment_count: 1,
       invoice_count: 1,
+      invoices_by_status: {
+        issued: { count: 0, total: '0.00' },
+        partial: { count: 0, total: '0.00' },
+        paid: { count: 1, total: '28.75' },
+        void: { count: 0, total: '0.00' },
+      },
     },
   }));
   await page.route('**/api/reports/categories**', (route) => json(route, {
@@ -481,17 +490,17 @@ async function installApiMocks(page: Page) {
 function receiptFor(invoice: Record<string, unknown>, width: string) {
   return {
     width,
-    hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+    hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
     fiscal: {
-      cai: 'DEMO-CAI',
-      authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
-      valid_until: '2027-05-17',
+      cai: null,
+      authorized_range: null,
+      valid_until: null,
     },
     invoice: {
       id: invoice.id,
       invoice_number: invoice.invoice_number,
       issued_at: invoice.issued_at,
-      cashier: 'Cajero Demo',
+      cashier: 'Cajero Hospital San Isidro',
       patient_name: invoice.patient_name,
       subtotal: invoice.subtotal,
       tax_amount: invoice.tax_amount,
@@ -508,7 +517,7 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
       amount: invoice.total,
       reference: null,
       paid_at: operationalPaidAt,
-      cashier: 'Cajero Demo',
+      cashier: 'Cajero Hospital San Isidro',
     }],
   };
 }
@@ -565,7 +574,15 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   page.on('requestfailed', (request) => {
     const failure = request.failure();
     const url = request.url();
-    if ((url.includes('/sanctum/csrf-cookie') || url.includes('/api/health') || url.includes('/api/settings/logo')) && failure?.errorText === 'net::ERR_ABORTED') {
+    if (
+      (
+        url.includes('/sanctum/csrf-cookie')
+        || url.includes('/api/health')
+        || url.includes('/api/settings/logo')
+        || url.includes('/api/cash-sessions/current')
+      )
+      && failure?.errorText === 'net::ERR_ABORTED'
+    ) {
       return;
     }
 

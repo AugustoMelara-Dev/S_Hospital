@@ -819,3 +819,22 @@ Consecuencia:
 
 - Los manuales son aptos para cajero, administrador y responsable local.
 - Las validaciones fisicas pendientes quedan explicitas y no se confunden con cumplimiento ya realizado.
+
+### 2026-05-29 - Gate final RC y datos visibles de desarrollo
+
+Decision:
+
+- Los usuarios sembrados para `local` y `testing` conservan usernames tecnicos conocidos, pero sus nombres visibles dejan de decir "Demo".
+- El E2E mockeado usa identidad Hospital San Isidro, recibo institucional y fiscalidad pendiente en vez de CAI ficticio.
+- El gate final documenta pruebas automatizadas, migracion desde cero en testing y pendientes fisicos fuera del alcance automatizable.
+
+Motivo:
+
+- La release candidate no debe producir capturas o evidencia con nombres heredados de demo.
+- Mantener usernames tecnicos en desarrollo evita romper scripts locales, mientras produccion sigue requiriendo admin real sin seeders de desarrollo.
+- Los datos fiscales no deben aparentar autorizacion real si el hospital no los ha configurado.
+
+Consecuencia:
+
+- El flujo E2E principal queda alineado con la identidad institucional.
+- La evidencia automatizada no reemplaza validacion fisica de impresora, LAN, reinicio Windows, acceso directo y restauracion en base descartable.
