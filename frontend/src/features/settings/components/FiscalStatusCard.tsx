@@ -1,6 +1,6 @@
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import type { FiscalSettings, FiscalSequence } from '@/lib/api';
+import type { FiscalSequence, FiscalSettings } from '@/lib/api';
 
 interface FiscalStatusCardProps {
   settings: FiscalSettings | null;
@@ -8,7 +8,11 @@ interface FiscalStatusCardProps {
 }
 
 export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) {
-  const isHospitalConfigured = Boolean(settings?.hospital_name?.trim());
+  const hospitalName = settings?.hospital_name?.trim() ?? '';
+  const cai = sequence?.cai?.trim() ?? '';
+  const isDemoHospital = /^hospital demo$/i.test(hospitalName);
+  const isDemoCai = /^demo-cai$/i.test(cai);
+  const isHospitalConfigured = Boolean(hospitalName) && !isDemoHospital;
   const hasRtn = Boolean(settings?.rtn?.trim());
   const hasReceiptPaperSize = ['half_letter', 'letter', 'a5'].includes(settings?.receipt_paper_size ?? '');
   const today = new Date();
@@ -16,7 +20,7 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
   const validUntil = sequence?.valid_until ? new Date(sequence.valid_until) : null;
   validUntil?.setHours(0, 0, 0, 0);
   const nextNumber = sequence?.current_number != null ? Number(sequence.current_number) + 1 : null;
-  const isSequenceConfigured = Boolean(sequence?.cai?.trim() && sequence?.prefix?.trim());
+  const isSequenceConfigured = Boolean(cai && sequence?.prefix?.trim()) && !isDemoCai;
   const isSequenceActive = sequence?.active === true;
   const isDateValid = Boolean(validUntil && validUntil >= today);
   const isRangeValid = Boolean(
@@ -35,6 +39,7 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
     !isSequenceActive ? 'secuencia fiscal activa' : null,
     !isDateValid ? 'fecha limite vigente' : null,
     !isRangeValid ? 'siguiente correlativo dentro del rango autorizado' : null,
+    isDemoHospital || isDemoCai ? 'datos demo o temporales' : null,
   ].filter(Boolean);
   const isConfigured = blockers.length === 0;
 
@@ -51,18 +56,18 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
           </div>
           <div>
             <h3 className="font-semibold">
-              {isConfigured ? 'Configuración completa' : 'Configuración incompleta'}
+              {isConfigured ? 'Configuracion completa' : 'Configuracion pendiente'}
             </h3>
             <p className="text-sm text-muted-foreground">
               {isConfigured
-                ? 'El sistema está listo para emitir facturas.'
-                : 'Complete los datos fiscales antes de emitir facturas.'}
+                ? 'El sistema esta listo para emitir facturas.'
+                : 'Complete los datos autorizados antes de emitir recibos finales.'}
             </p>
           </div>
         </div>
         {blockers.length > 0 && (
           <p className="mt-3 text-sm text-amber-700">
-            Faltan o requieren revisión: {blockers.join(', ')}.
+            Faltan o requieren revision: {blockers.join(', ')}.
           </p>
         )}
       </CardContent>

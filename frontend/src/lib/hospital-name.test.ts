@@ -9,6 +9,7 @@ describe('displayHospitalName', () => {
     expect(displayHospitalName('')).toBe('Caja hospitalaria');
     expect(displayHospitalName(legacyProductName)).toBe('Caja hospitalaria');
     expect(displayHospitalName(`S_Hospital ${legacyProductName}`)).toBe('Caja hospitalaria');
+    expect(displayHospitalName('Hospital Demo')).toBe('Caja hospitalaria');
   });
 
   it('keeps the configured hospital name when it is not a legacy internal name', () => {

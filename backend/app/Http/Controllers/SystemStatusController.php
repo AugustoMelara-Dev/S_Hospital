@@ -379,7 +379,7 @@ class SystemStatusController extends Controller
                     'code' => 'PENDING_ENVIRONMENT_VALIDATION',
                     'label' => $appEnv === 'production' && ! $appDebug
                         ? 'Entorno production configurado; falta evidencia fisica final'
-                        : 'Servidor final con APP_ENV=production y APP_DEBUG=false',
+                        : 'Servidor final pendiente de configuracion operativa',
                     'status' => $appEnv === 'production' && ! $appDebug ? 'partial' : 'pending',
                 ],
             ],
@@ -400,27 +400,31 @@ class SystemStatusController extends Controller
             'production_checks' => [
                 [
                     'code' => 'APP_ENV_PRODUCTION',
-                    'label' => 'APP_ENV=production',
+                    'label' => 'Modo final de operacion',
                     'status' => $environment['app_env'] === 'production' ? 'validated' : 'pending',
-                    'detail' => "Actual: {$environment['app_env']}",
+                    'detail' => $environment['app_env'] === 'production'
+                        ? 'Configurado para instalacion final'
+                        : 'Pendiente para instalacion final',
                 ],
                 [
                     'code' => 'APP_DEBUG_FALSE',
-                    'label' => 'APP_DEBUG=false',
+                    'label' => 'Mensajes internos ocultos',
                     'status' => $environment['app_debug'] === false ? 'validated' : 'pending',
-                    'detail' => $environment['app_debug'] ? 'Debug activo' : 'Debug apagado',
+                    'detail' => $environment['app_debug']
+                        ? 'Requiere ocultar mensajes internos antes de produccion'
+                        : 'Listo para operacion normal',
                 ],
                 [
                     'code' => 'MYSQL_FAMILY_DATABASE',
                     'label' => 'MySQL/MariaDB local',
                     'status' => $database['is_mysql_family'] ? 'validated' : 'pending',
-                    'detail' => "Driver: {$database['driver']}",
+                    'detail' => $database['is_mysql_family'] ? 'Base de datos local detectada' : 'Base de datos local pendiente',
                 ],
                 [
                     'code' => 'DUMP_BINARY_AVAILABLE',
-                    'label' => 'mysqldump/mariadb-dump disponible',
+                    'label' => 'Creacion de respaldos disponible',
                     'status' => $backups['dump_binary']['available'] ? 'validated' : 'pending',
-                    'detail' => $backups['dump_binary']['name'] ?? 'No detectado',
+                    'detail' => $backups['dump_binary']['available'] ? 'Disponible' : 'No detectado',
                 ],
                 [
                     'code' => 'BACKUP_STORAGE_WRITABLE',
@@ -432,7 +436,7 @@ class SystemStatusController extends Controller
                     'code' => 'BACKUP_WORKER_CONTINUOUS',
                     'label' => 'Worker de backups como tarea/servicio',
                     'status' => 'manual_required',
-                    'detail' => $backups['queue']['worker_command'],
+                    'detail' => 'Debe estar activo para completar respaldos automaticos.',
                 ],
                 [
                     'code' => 'SERVER_LOGS_WRITABLE',
@@ -450,17 +454,17 @@ class SystemStatusController extends Controller
             'public_routes' => [
                 [
                     'path' => '/up',
-                    'expected' => 'HTTP 200',
+                    'expected' => 'Servidor responde',
                     'status' => 'manual_required',
                 ],
                 [
                     'path' => '/login',
-                    'expected' => 'SPA cargada desde host LAN',
+                    'expected' => 'Pantalla de ingreso abre desde otra computadora',
                     'status' => 'manual_required',
                 ],
                 [
                     'path' => '/verify-email',
-                    'expected' => 'SPA o ruta esperada cargada desde host LAN',
+                    'expected' => 'Pantalla esperada abre desde la red local',
                     'status' => 'manual_required',
                 ],
             ],

@@ -15,6 +15,7 @@ class HospitalNameTest extends TestCase
         $this->assertSame('Caja hospitalaria', HospitalName::display(''));
         $this->assertSame('Caja hospitalaria', HospitalName::display($legacyProductName));
         $this->assertSame('Caja hospitalaria', HospitalName::display('S_Hospital '.$legacyProductName));
+        $this->assertSame('Caja hospitalaria', HospitalName::display('Hospital Demo'));
     }
 
     public function test_it_keeps_the_configured_hospital_name_when_it_is_not_a_legacy_internal_name(): void

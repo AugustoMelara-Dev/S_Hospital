@@ -64,14 +64,26 @@ function friendlyProductionCheck(code: string, fallback: string): string {
   const labels: Record<string, string> = {
     APP_ENV_PRODUCTION: 'Modo de operación final',
     APP_DEBUG_OFF: 'Mensajes internos ocultos',
+    APP_DEBUG_FALSE: 'Mensajes internos ocultos',
     MYSQL_FAMILY: 'Base de datos local correcta',
+    MYSQL_FAMILY_DATABASE: 'Base de datos local correcta',
     DUMP_BINARY_AVAILABLE: 'Creación de respaldos disponible',
     STORAGE_WRITABLE: 'Carpeta de respaldos lista',
+    BACKUP_STORAGE_WRITABLE: 'Carpeta de respaldos lista',
     BACKUP_WORKER_CONTINUOUS: 'Respaldos automaticos activos',
     PUBLIC_ROUTES_AVAILABLE: 'Acceso desde la red local',
+    SERVER_LOGS_WRITABLE: 'Registro operativo disponible',
+    APP_CACHE_WRITABLE: 'Archivos temporales del sistema listos',
   };
 
-  return labels[code] ?? fallback;
+  return labels[code] ?? sanitizeTechnicalText(fallback);
+}
+
+function sanitizeTechnicalText(value: string): string {
+  return value
+    .replace(/APP_ENV|APP_DEBUG|debug|mysqldump|mariadb-dump|php artisan|queue:work|--queue=backups|--tries=1|--timeout=600|HTTP 200|SPA cargada/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim() || 'Pendiente de revision.';
 }
 
 function friendlyProductionDetail(code: string, fallback: string): string {
@@ -83,14 +95,23 @@ function friendlyProductionDetail(code: string, fallback: string): string {
     return 'El servidor puede generar archivos de respaldo.';
   }
 
-  if (code === 'APP_ENV_PRODUCTION' || code === 'APP_DEBUG_OFF') {
+  if (code === 'APP_ENV_PRODUCTION' || code === 'APP_DEBUG_OFF' || code === 'APP_DEBUG_FALSE') {
     return 'Este punto se revisa durante la instalación final.';
   }
 
-  return fallback
-    .replace(/APP_ENV|debug|mysqldump|mariadb-dump|php artisan|queue:work|--queue=backups|--tries=1|--timeout=600/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim() || 'Pendiente de revisión.';
+  if (code === 'MYSQL_FAMILY_DATABASE') {
+    return fallback.includes('detectada') ? 'Base de datos local detectada.' : 'Base de datos local pendiente.';
+  }
+
+  if (code === 'BACKUP_STORAGE_WRITABLE') {
+    return fallback.includes('Disponible') ? 'Carpeta de respaldos lista.' : 'Carpeta de respaldos pendiente.';
+  }
+
+  if (code === 'SERVER_LOGS_WRITABLE' || code === 'APP_CACHE_WRITABLE') {
+    return fallback.includes('disponible') ? 'Listo para operar.' : 'Requiere revision tecnica.';
+  }
+
+  return sanitizeTechnicalText(fallback);
 }
 
 function saveBlob(blob: Blob, filename: string) {
@@ -581,7 +602,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                         </span>
                         {backup.status === 'failed' && backup.error_message && (
                           <span className="text-xs text-destructive max-w-[200px] truncate">
-                            {backup.error_message}
+                            No se completo. Revise con soporte tecnico.
                           </span>
                         )}
                       </div>

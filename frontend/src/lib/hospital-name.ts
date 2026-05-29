@@ -5,6 +5,7 @@ function internalHospitalNames(): string[] {
     legacyProductName,
     `s_hospital ${legacyProductName}`,
     `${legacyProductName} offline`,
+    'hospital demo',
   ];
 }
 

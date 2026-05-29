@@ -418,7 +418,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->getJson("/api/invoices/{$invoiceId}/receipt?width=80mm")
             ->assertOk()
             ->assertJsonPath('data.width', '80mm')
-            ->assertJsonPath('data.hospital.name', 'Hospital Demo')
+            ->assertJsonPath('data.hospital.name', 'Caja hospitalaria')
             ->assertJsonPath('data.hospital.rtn', '08011999123456')
             ->assertJsonPath('data.fiscal.cai', 'TEST-CAI')
             ->assertJsonPath('data.fiscal.authorized_range', '000-001-01-00000001 a 000-001-01-99999999')

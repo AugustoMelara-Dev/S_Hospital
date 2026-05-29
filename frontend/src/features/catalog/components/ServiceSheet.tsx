@@ -42,6 +42,7 @@ type ServiceSheetProps = {
     special_rule_code?: string | null;
   } | null;
   categories: Array<{ id: number; name: string }>;
+  scannerEnabled?: boolean;
   onSuccess: () => void;
 };
 
@@ -57,7 +58,7 @@ const defaultValues: ServiceFormData = {
   special_rule_code: null,
 };
 
-export function ServiceSheet({ open, onOpenChange, service, categories, onSuccess }: ServiceSheetProps) {
+export function ServiceSheet({ open, onOpenChange, service, categories, scannerEnabled = false, onSuccess }: ServiceSheetProps) {
   const isEditing = !!service;
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -183,44 +184,48 @@ export function ServiceSheet({ open, onOpenChange, service, categories, onSucces
           {errors.price && <p id="service-price-error" role="alert" className="text-sm text-destructive">{errors.price.message}</p>}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="scan_code">Código de Scanner</Label>
-          <Input
-            id="scan_code"
-            placeholder="LAB-GLU-001"
-            {...register('scan_code')}
-            aria-invalid={Boolean(errors.scan_code)}
-            aria-describedby={errors.scan_code ? 'service-scan-code-error' : undefined}
-            className={cn(errors.scan_code && 'border-destructive')}
-          />
-          {errors.scan_code && <p id="service-scan-code-error" role="alert" className="text-sm text-destructive">{errors.scan_code.message}</p>}
-        </div>
+        {scannerEnabled && (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="scan_code">Código de Scanner</Label>
+              <Input
+                id="scan_code"
+                placeholder="LAB-GLU-001"
+                {...register('scan_code')}
+                aria-invalid={Boolean(errors.scan_code)}
+                aria-describedby={errors.scan_code ? 'service-scan-code-error' : undefined}
+                className={cn(errors.scan_code && 'border-destructive')}
+              />
+              {errors.scan_code && <p id="service-scan-code-error" role="alert" className="text-sm text-destructive">{errors.scan_code.message}</p>}
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="barcode">Código de Barra</Label>
-          <Input
-            id="barcode"
-            placeholder="Código de barra opcional"
-            {...register('barcode')}
-            aria-invalid={Boolean(errors.barcode)}
-            aria-describedby={errors.barcode ? 'service-barcode-error' : undefined}
-            className={cn(errors.barcode && 'border-destructive')}
-          />
-          {errors.barcode && <p id="service-barcode-error" role="alert" className="text-sm text-destructive">{errors.barcode.message}</p>}
-        </div>
+            <div className="space-y-2">
+              <Label htmlFor="barcode">Código de Barra</Label>
+              <Input
+                id="barcode"
+                placeholder="Código de barra opcional"
+                {...register('barcode')}
+                aria-invalid={Boolean(errors.barcode)}
+                aria-describedby={errors.barcode ? 'service-barcode-error' : undefined}
+                className={cn(errors.barcode && 'border-destructive')}
+              />
+              {errors.barcode && <p id="service-barcode-error" role="alert" className="text-sm text-destructive">{errors.barcode.message}</p>}
+            </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="qr_code">Código QR</Label>
-          <Input
-            id="qr_code"
-            placeholder="Código QR opcional"
-            {...register('qr_code')}
-            aria-invalid={Boolean(errors.qr_code)}
-            aria-describedby={errors.qr_code ? 'service-qr-code-error' : undefined}
-            className={cn(errors.qr_code && 'border-destructive')}
-          />
-          {errors.qr_code && <p id="service-qr-code-error" role="alert" className="text-sm text-destructive">{errors.qr_code.message}</p>}
-        </div>
+            <div className="space-y-2">
+              <Label htmlFor="qr_code">Código QR</Label>
+              <Input
+                id="qr_code"
+                placeholder="Código QR opcional"
+                {...register('qr_code')}
+                aria-invalid={Boolean(errors.qr_code)}
+                aria-describedby={errors.qr_code ? 'service-qr-code-error' : undefined}
+                className={cn(errors.qr_code && 'border-destructive')}
+              />
+              {errors.qr_code && <p id="service-qr-code-error" role="alert" className="text-sm text-destructive">{errors.qr_code.message}</p>}
+            </div>
+          </>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="special_rule_code">Regla Especial</Label>

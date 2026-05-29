@@ -49,6 +49,14 @@ type SequenceFormData = {
   valid_until: string;
 };
 
+function isDemoHospitalName(value: string | null | undefined): boolean {
+  return /^hospital demo$/i.test(value?.trim() ?? '');
+}
+
+function isDemoCai(value: string | null | undefined): boolean {
+  return /^demo-cai$/i.test(value?.trim() ?? '');
+}
+
 export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProps) {
   const { colorTheme, setColorTheme } = useTheme();
   const [settings, setSettings] = useState<FiscalSettings | null>(null);
@@ -130,8 +138,9 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       setSequence(sequenceData[0] ?? null);
 
       if (settingsData) {
+        const hospitalName = isDemoHospitalName(settingsData.hospital_name) ? '' : settingsData.hospital_name;
         setHospitalForm({
-          hospital_name: settingsData.hospital_name ?? '',
+          hospital_name: hospitalName ?? '',
           rtn: settingsData.rtn ?? '',
           receipt_width: (settingsData.receipt_width as '80mm' | '58mm') ?? '80mm',
           primary_color: settingsData.primary_color ?? 'indigo',
@@ -153,7 +162,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       if (sequenceData[0]) {
         setSequenceForm({
           prefix: sequenceData[0].prefix ?? '',
-          cai: sequenceData[0].cai ?? '',
+          cai: isDemoCai(sequenceData[0].cai) ? '' : sequenceData[0].cai ?? '',
           min_number: sequenceData[0].min_number ?? 1,
           max_number: sequenceData[0].max_number ?? 99999999,
           valid_until: sequenceData[0].valid_until ?? '',

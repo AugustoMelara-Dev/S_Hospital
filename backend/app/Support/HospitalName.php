@@ -33,6 +33,7 @@ final class HospitalName
             $legacyProductName,
             's_hospital '.$legacyProductName,
             $legacyProductName.' offline',
+            'hospital demo',
         ];
     }
 }

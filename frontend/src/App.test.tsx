@@ -302,12 +302,14 @@ describe('App', () => {
       '/settings/fiscal',
     );
     expect(await screen.findByRole('heading', { name: /^configuracion$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /configuracion pendiente/i })).toBeInTheDocument();
+    expect(screen.getByText(/datos demo o temporales/i)).toBeInTheDocument();
     activateTab(/^hospital$/i);
     expect(await screen.findByRole('heading', { name: /hospital y recibo/i })).toBeInTheDocument();
-    expect(await screen.findByDisplayValue('Hospital Demo')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('Hospital Demo')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar hospital y recibo/i })).toBeEnabled();
     activateTab(/numeracion/i);
-    expect(await screen.findByDisplayValue('DEMO-CAI')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('DEMO-CAI')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar numeracion/i })).toBeEnabled();
   });
 

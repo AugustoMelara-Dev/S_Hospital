@@ -3,6 +3,7 @@
 namespace App\Actions\Receipts;
 
 use App\Models\Invoice;
+use App\Support\HospitalName;
 
 class GenerateReceiptDataAction
 {
@@ -20,7 +21,7 @@ class GenerateReceiptDataAction
         return [
             'width' => $width,
             'hospital' => [
-                'name' => $invoice->hospital_name ?? 'Hospital',
+                'name' => HospitalName::display($invoice->hospital_name),
                 'rtn' => $invoice->hospital_rtn,
                 'address' => $invoice->hospital_address,
                 'slogan' => $invoice->hospital_slogan,
