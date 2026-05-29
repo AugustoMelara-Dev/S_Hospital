@@ -236,6 +236,7 @@ export type DailyReport = {
   date: string;
   total_billed: string;
   total_collected: string;
+  total_balance_due: string;
   invoice_count: number;
   payment_count: number;
   payments_by_method: MoneyByMethod;
@@ -248,8 +249,11 @@ export type IncomeReport = {
   cash_session_id: number | null;
   user_id: number | null;
   filters: ReportFilters;
+  total_billed: string;
   total_collected: string;
+  total_balance_due: string;
   payments_by_method: MoneyByMethod;
+  invoices_by_status: Record<'issued' | 'partial' | 'paid' | 'void', { count: number; total: string }>;
   payment_count: number;
   invoice_count: number;
 };

@@ -15,6 +15,7 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
@@ -22,6 +23,13 @@ use Tests\TestCase;
 class ReportsTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutMiddleware(ThrottleRequests::class);
+    }
 
     public function test_reports_view_permission_is_required(): void
     {
@@ -97,6 +105,7 @@ class ReportsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.total_billed', '28.75')
             ->assertJsonPath('data.total_collected', '22.25')
+            ->assertJsonPath('data.total_balance_due', '6.50')
             ->assertJsonPath('data.invoice_count', 3)
             ->assertJsonPath('data.payment_count', 2)
             ->assertJsonPath('data.payments_by_method.cash', '17.25')
@@ -122,9 +131,13 @@ class ReportsTest extends TestCase
         $this->actingAs($this->admin())
             ->getJson('/api/reports/income?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
             ->assertOk()
+            ->assertJsonPath('data.total_billed', '28.75')
             ->assertJsonPath('data.total_collected', '17.25')
+            ->assertJsonPath('data.total_balance_due', '0.00')
             ->assertJsonPath('data.payment_count', 1)
-            ->assertJsonPath('data.invoice_count', 1);
+            ->assertJsonPath('data.invoice_count', 1)
+            ->assertJsonPath('data.invoices_by_status.paid.count', 2)
+            ->assertJsonPath('data.invoices_by_status.issued.count', 0);
 
         $this->actingAs($this->admin())
             ->getJson('/api/reports/income?date_from='.now()->toDateString().'&date_to='.now()->subDay()->toDateString())
@@ -262,9 +275,13 @@ class ReportsTest extends TestCase
             ->getJson("/api/reports/income?{$filters}")
             ->assertOk()
             ->assertJsonPath('data.total_collected', '17.25')
+            ->assertJsonPath('data.total_billed', '17.25')
+            ->assertJsonPath('data.total_balance_due', '0.00')
             ->assertJsonPath('data.payment_count', 1)
             ->assertJsonPath('data.payments_by_method.cash', '17.25')
             ->assertJsonPath('data.payments_by_method.card', '0.00')
+            ->assertJsonPath('data.invoices_by_status.paid.count', 1)
+            ->assertJsonPath('data.invoices_by_status.partial.count', 0)
             ->assertJsonPath('data.filters.category_id', (string) $laboratoryId)
             ->assertJsonPath('data.filters.method', Payment::METHOD_CASH)
             ->assertJsonPath('data.filters.status', Invoice::STATUS_PAID);
@@ -772,7 +789,7 @@ class ReportsTest extends TestCase
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf');
 
-        $this->assertStringStartsWith("%PDF", $response->getContent());
+        $this->assertStringStartsWith('%PDF', $response->getContent());
     }
 
     public function test_period_closure_pdf_export_succeeds(): void
@@ -787,7 +804,7 @@ class ReportsTest extends TestCase
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf');
 
-        $this->assertStringStartsWith("%PDF", $response->getContent());
+        $this->assertStringStartsWith('%PDF', $response->getContent());
     }
 
     private function admin(): User

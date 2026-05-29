@@ -69,7 +69,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
 
       {daily && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
             <KPICard
               title="Facturado"
               value={`L. ${daily.total_billed}`}
@@ -81,9 +81,15 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
               icon={<Banknote className="h-4 w-4" />}
             />
             <KPICard
+              title="Saldo pendiente"
+              value={`L. ${daily.total_balance_due}`}
+              description="Facturas emitidas o parciales"
+              icon={<DollarSign className="h-4 w-4" />}
+            />
+            <KPICard
               title="Facturas"
               value={daily.invoice_count}
-              description={`${(invoicesByStatus.paid?.count ?? 0) + (invoicesByStatus.partial?.count ?? 0)} pagadas`}
+              description={`${invoicesByStatus.paid?.count ?? 0} pagadas, ${invoicesByStatus.partial?.count ?? 0} parciales`}
               icon={<FileText className="h-4 w-4" />}
             />
             <KPICard
@@ -101,7 +107,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Método</TableHead>
+                    <TableHead>Metodo</TableHead>
                     <TableHead className="text-right">Monto</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -119,7 +125,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
 
           <Card>
             <CardHeader>
-              <CardTitle>Estado de Facturas</CardTitle>
+              <CardTitle>Estado de facturas</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -176,7 +182,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
               </>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Exportación requiere permiso de exportación de reportes.
+                Exportacion requiere permiso de exportacion de reportes.
               </p>
             )}
           </div>

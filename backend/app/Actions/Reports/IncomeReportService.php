@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class IncomeReportService
 {
@@ -98,9 +99,7 @@ class IncomeReportService
         }
 
         $invoiceCount = count(array_unique($invoiceIds));
-
-        $billedCents = Invoice::query()
-            ->where('status', '!=', Invoice::STATUS_VOID)
+        $invoiceBase = Invoice::query()
             ->whereBetween('issued_at', [$start, $end])
             ->when(! empty($filters['user_id']), function (Builder $query) use ($filters): void {
                 $query->where('issued_by', $filters['user_id']);
@@ -108,8 +107,59 @@ class IncomeReportService
             ->when(! empty($filters['cash_session_id']), function (Builder $query) use ($filters): void {
                 $query->where('cash_session_id', $filters['cash_session_id']);
             })
+            ->when(! empty($filters['status']), function (Builder $query) use ($filters): void {
+                $query->where('status', $filters['status']);
+            })
+            ->when(! empty($filters['method']), function (Builder $query) use ($filters, $start, $end): void {
+                $query->whereExists(function ($subquery) use ($filters, $start, $end): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('payments')
+                        ->whereColumn('payments.invoice_id', 'invoices.id')
+                        ->where('payments.status', Payment::STATUS_POSTED)
+                        ->where('payments.method', $filters['method'])
+                        ->whereBetween('payments.paid_at', [$start, $end]);
+                });
+            })
+            ->when(! empty($filters['category_id']), function (Builder $query) use ($filters): void {
+                $query->whereExists(function ($subquery) use ($filters): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('invoice_items')
+                        ->whereColumn('invoice_items.invoice_id', 'invoices.id')
+                        ->where('invoice_items.category_id', $filters['category_id']);
+                });
+            });
+
+        $billedCents = (clone $invoiceBase)
+            ->where('status', '!=', Invoice::STATUS_VOID)
             ->selectRaw('COALESCE(SUM(ROUND(total * 100)), 0) as billed_cents')
             ->value('billed_cents');
+
+        $balanceDueCents = (clone $invoiceBase)
+            ->where('status', '!=', Invoice::STATUS_VOID)
+            ->selectRaw('COALESCE(SUM(ROUND(balance_due * 100)), 0) as balance_due_cents')
+            ->value('balance_due_cents');
+
+        $statuses = collect([
+            Invoice::STATUS_ISSUED,
+            Invoice::STATUS_PARTIAL,
+            Invoice::STATUS_PAID,
+            Invoice::STATUS_VOID,
+        ])->mapWithKeys(fn (string $status): array => [
+            $status => ['count' => 0, 'total' => '0.00'],
+        ])->all();
+
+        (clone $invoiceBase)
+            ->groupBy('status')
+            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('COALESCE(SUM(ROUND(total * 100)), 0) as total_cents'))
+            ->get()
+            ->each(function (object $row) use (&$statuses): void {
+                $statuses[$row->status] = [
+                    'count' => (int) $row->count,
+                    'total' => $this->centsToMoney($row->total_cents),
+                ];
+            });
 
         return [
             'date_from' => $filters['date_from'],
@@ -125,7 +175,9 @@ class IncomeReportService
             ],
             'total_billed' => $this->centsToMoney($billedCents),
             'total_collected' => $this->centsToMoney($totalCents),
+            'total_balance_due' => $this->centsToMoney($balanceDueCents),
             'payments_by_method' => $methods,
+            'invoices_by_status' => $statuses,
             'payment_count' => (int) ($paymentCount ?? 0),
             'invoice_count' => (int) ($invoiceCount ?? 0),
         ];

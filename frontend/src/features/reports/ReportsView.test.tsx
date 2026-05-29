@@ -59,6 +59,7 @@ describe('ReportsView', () => {
               date: '2026-05-17',
               total_billed: '28.75',
               total_collected: '17.25',
+              total_balance_due: '11.50',
               invoice_count: 2,
               payment_count: 1,
               payments_by_method: {
@@ -94,7 +95,9 @@ describe('ReportsView', () => {
     expect(screen.getByLabelText(/^fecha$/i)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /^resumen del dia$/i })).toBeInTheDocument();
     expect(screen.getByText(/^cobrado$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^saldo pendiente$/i)).toBeInTheDocument();
     expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('L. 11.50').length).toBeGreaterThan(0);
     activateTab(/rango/i);
     expect(await screen.findByLabelText(/desde/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
@@ -142,6 +145,7 @@ describe('ReportsView', () => {
               date: '2026-05-17',
               total_billed: '17.25',
               total_collected: '17.25',
+              total_balance_due: '0.00',
               invoice_count: 1,
               payment_count: 1,
               payments_by_method: { cash: '17.25', transfer: '0.00', card: '0.00', other: '0.00' },
@@ -217,6 +221,7 @@ describe('ReportsView', () => {
               date: '2026-05-17',
               total_billed: '17.25',
               total_collected: '17.25',
+              total_balance_due: '0.00',
               invoice_count: 1,
               payment_count: 1,
               payments_by_method: { cash: '17.25', transfer: '0.00', card: '0.00', other: '0.00' },
@@ -238,7 +243,27 @@ describe('ReportsView', () => {
       if (url.includes('/api/reports/income')) {
         return {
           ok: true,
-          json: async () => ({ data: { range: { date_from: '2026-05-17', date_to: '2026-05-17' }, totals: { billed: '17.25', collected: '17.25', balance_due: '0.00' }, by_method: [], by_status: [] } }),
+          json: async () => ({
+            data: {
+              date_from: '2026-05-17',
+              date_to: '2026-05-17',
+              cash_session_id: null,
+              user_id: null,
+              filters: {},
+              total_billed: '17.25',
+              total_collected: '17.25',
+              total_balance_due: '0.00',
+              payments_by_method: { cash: '17.25', transfer: '0.00', card: '0.00', other: '0.00' },
+              invoices_by_status: {
+                issued: { count: 0, total: '0.00' },
+                partial: { count: 0, total: '0.00' },
+                paid: { count: 1, total: '17.25' },
+                void: { count: 0, total: '0.00' },
+              },
+              payment_count: 1,
+              invoice_count: 1,
+            },
+          }),
         } as Response;
       }
 
@@ -382,6 +407,7 @@ describe('ReportsView', () => {
               date: '2026-05-17',
               total_billed: '0.00',
               total_collected: '0.00',
+              total_balance_due: '0.00',
               invoice_count: 0,
               payment_count: 0,
               payments_by_method: {
@@ -427,12 +453,21 @@ describe('ReportsView', () => {
               date_to: '2026-05-17',
               cash_session_id: null,
               user_id: null,
+              filters: {},
+              total_billed: '0.00',
               total_collected: '0.00',
+              total_balance_due: '0.00',
               payments_by_method: {
                 cash: '0.00',
                 transfer: '0.00',
                 card: '0.00',
                 other: '0.00',
+              },
+              invoices_by_status: {
+                issued: { count: 0, total: '0.00' },
+                partial: { count: 0, total: '0.00' },
+                paid: { count: 0, total: '0.00' },
+                void: { count: 0, total: '0.00' },
               },
               payment_count: 0,
               invoice_count: 0,
@@ -503,7 +538,8 @@ describe('ReportsView', () => {
     expect(screen.getByText(/puede consultar hasta 31 dias por busqueda/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver rango/i }));
 
-    expect(await screen.findByText(/total ingresos/i)).toBeInTheDocument();
+    expect(await screen.findByText(/^facturado$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^saldo pendiente$/i)).toBeInTheDocument();
     activateTab(/servicios/i);
     expect(await screen.findByText(/sin categorias cobradas/i)).toBeInTheDocument();
     expect(await screen.findByText(/sin servicios cobrados/i)).toBeInTheDocument();

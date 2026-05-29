@@ -761,3 +761,23 @@ Consecuencia:
 - `payments.reference` se aprovecha como snapshot historico de comprobante.
 - Las pruebas de caja validan subpago bloqueado, referencia persistida, factura parcial y cierre bloqueado por saldo.
 - Queda pendiente un E2E de navegador para registrar transferencia desde UI y verificar referencia en recibo final.
+
+### 2026-05-29 - Reportes separados por facturado, cobrado y saldo
+
+Decision:
+
+- Los reportes diario y por rango exponen `total_billed`, `total_collected` y `total_balance_due` como metricas separadas.
+- El reporte por rango tambien devuelve `invoices_by_status` para emitidas, parciales, pagadas y anuladas.
+- La UI deja de llamar `Total ingresos` al monto cobrado y muestra facturado, cobrado, saldo pendiente, metodos y estados como conceptos distintos.
+
+Motivo:
+
+- Caja y administracion necesitan ver cuanto se facturo, cuanto entro realmente y cuanto queda pendiente sin mezclar conceptos.
+- Las facturas parciales y anuladas deben ser visibles para auditoria, no absorbidas en un total unico.
+- Los metodos de pago deben leerse junto al total cobrado para conciliar efectivo, tarjeta y transferencia.
+
+Consecuencia:
+
+- Anuladas no inflan facturado ni saldo pendiente.
+- Parciales aparecen con conteo propio y saldo pendiente.
+- Los tests de reportes validan los nuevos campos y mantienen cobertura de filtros por metodo, estado, categoria, caja y usuario.

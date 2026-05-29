@@ -1,5 +1,5 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { DollarSign, TrendingUp, Calendar, Download } from 'lucide-react';
+import { Banknote, DollarSign, Download, TrendingUp } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Input } from '../../../components/ui/input';
@@ -67,6 +67,12 @@ export function IncomeReportTab({
 
   const daysInRange = Math.max(1, Math.ceil((new Date(dateTo).getTime() - new Date(dateFrom).getTime()) / (1000 * 60 * 60 * 24)) + 1);
   const averagePerDay = income ? (Number.parseFloat(income.total_collected) / daysInRange).toFixed(2) : '0.00';
+  const invoicesByStatus = income?.invoices_by_status || {
+    issued: { count: 0, total: '0.00' },
+    partial: { count: 0, total: '0.00' },
+    paid: { count: 0, total: '0.00' },
+    void: { count: 0, total: '0.00' },
+  };
 
   const chartData = income
     ? Object.entries(income.payments_by_method).map(([method, amount]) => ({
@@ -89,9 +95,9 @@ export function IncomeReportTab({
               <Input id="income-date-to" type="date" value={dateTo} onChange={(e) => onDateToChange(e.target.value)} />
             </div>
             <div className="w-[180px]">
-              <Label>Categoría</Label>
+              <Label>Categoria</Label>
               <Select value={categoryId || 'all'} onValueChange={(v) => onCategoryChange(v === 'all' ? '' : v)}>
-                <SelectTrigger id="income-category" aria-label="Categoría">
+                <SelectTrigger id="income-category" aria-label="Categoria">
                   <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
@@ -108,7 +114,7 @@ export function IncomeReportTab({
                 const mapped = v === 'all' ? '' : v;
                 onMethodChange(mapped as NonNullable<ReportFilters['method']>);
               }}>
-                <SelectTrigger id="income-method" aria-label="Método de pago">
+                <SelectTrigger id="income-method" aria-label="Metodo de pago">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -172,16 +178,22 @@ export function IncomeReportTab({
 
       {income && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             <KPICard
-              title="Total Ingresos"
-              value={`L. ${income.total_collected}`}
+              title="Facturado"
+              value={`L. ${income.total_billed}`}
               icon={<DollarSign className="h-4 w-4" />}
             />
             <KPICard
-              title="Dias en rango"
-              value={daysInRange}
-              icon={<Calendar className="h-4 w-4" />}
+              title="Cobrado"
+              value={`L. ${income.total_collected}`}
+              icon={<Banknote className="h-4 w-4" />}
+            />
+            <KPICard
+              title="Saldo pendiente"
+              value={`L. ${income.total_balance_due}`}
+              description="Facturas emitidas o parciales"
+              icon={<DollarSign className="h-4 w-4" />}
             />
             <KPICard
               title="Promedio diario"
@@ -198,7 +210,7 @@ export function IncomeReportTab({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Método</TableHead>
+                    <TableHead>Metodo</TableHead>
                     <TableHead className="text-right">Monto</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -214,16 +226,42 @@ export function IncomeReportTab({
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle>Estado de facturas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Cantidad</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Object.entries(invoicesByStatus).map(([invoiceStatus, data]) => (
+                    <TableRow key={invoiceStatus}>
+                      <TableCell className="font-medium">{statusLabel(invoiceStatus)}</TableCell>
+                      <TableCell className="text-right">{data.count}</TableCell>
+                      <TableCell className="text-right">L. {data.total}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
           {categories && categories.categories.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Por Categoría</CardTitle>
+                <CardTitle>Por categoria</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Categoría</TableHead>
+                      <TableHead>Categoria</TableHead>
                       <TableHead className="text-right">Items</TableHead>
                       <TableHead className="text-right">Subtotal</TableHead>
                       <TableHead className="text-right">ISV</TableHead>
@@ -265,18 +303,24 @@ export function IncomeReportTab({
             </Card>
           )}
 
-          {canExport && (
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={onExport}>
-                <Download className="h-4 w-4 mr-2" />
-                Exportar Excel
-              </Button>
-              <Button variant="outline" onClick={onExportPdf}>
-                <Download className="h-4 w-4 mr-2" />
-                Exportar PDF
-              </Button>
-            </div>
-          )}
+          <div className="flex justify-end gap-2">
+            {canExport ? (
+              <>
+                <Button variant="outline" onClick={onExport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar Excel
+                </Button>
+                <Button variant="outline" onClick={onExportPdf}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar PDF
+                </Button>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Exportacion requiere permiso de exportacion de reportes.
+              </p>
+            )}
+          </div>
         </>
       )}
     </div>
@@ -285,4 +329,8 @@ export function IncomeReportTab({
 
 function methodLabel(method: string): string {
   return { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta', other: 'Otro' }[method] ?? method;
+}
+
+function statusLabel(status: string): string {
+  return { issued: 'Emitida', partial: 'Parcial', paid: 'Pagada', void: 'Anulada' }[status] ?? status;
 }

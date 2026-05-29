@@ -22,6 +22,7 @@ class DailyReportService
             ->whereBetween('issued_at', [$start, $end])
             ->selectRaw('COUNT(*) as invoice_count')
             ->selectRaw('COALESCE(SUM(CASE WHEN status != ? THEN ROUND(total * 100) ELSE 0 END), 0) as billed_cents', [Invoice::STATUS_VOID])
+            ->selectRaw('COALESCE(SUM(CASE WHEN status != ? THEN ROUND(balance_due * 100) ELSE 0 END), 0) as balance_due_cents', [Invoice::STATUS_VOID])
             ->first();
 
         $paymentSummary = Payment::query()
@@ -73,6 +74,7 @@ class DailyReportService
             'date' => $date,
             'total_billed' => $this->centsToMoney($invoiceSummary?->billed_cents),
             'total_collected' => $this->centsToMoney($paymentSummary?->collected_cents),
+            'total_balance_due' => $this->centsToMoney($invoiceSummary?->balance_due_cents),
             'invoice_count' => (int) ($invoiceSummary?->invoice_count ?? 0),
             'payment_count' => (int) ($paymentSummary?->payment_count ?? 0),
             'payments_by_method' => $methods,
