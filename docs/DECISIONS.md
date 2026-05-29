@@ -801,3 +801,21 @@ Consecuencia:
 - El historial de respaldos queda orientado a accion: manual/automatico, pendiente/completado/fallido y verificado/no verificado.
 - La restauracion sigue siendo un procedimiento controlado con evidencia en base descartable.
 - `BackupWorkflowTest` mantiene cobertura de no exponer paths, bloquear path traversal y no publicar endpoint de restore.
+
+### 2026-05-29 - Manuales operativos por rol
+
+Decision:
+
+- La documentacion de entrega se divide en manual de cajero, manual de administrador, instalacion operativa, respaldos/restauracion y checklist de capacitacion.
+- Los manuales usan lenguaje operativo y evitan presentar comandos, contenedores o variables como flujo de usuario normal.
+- El checklist fisico exige impresora, LAN, reinicio Windows, acceso directo, backup manual/automatico y restore en base descartable.
+
+Motivo:
+
+- Un sistema institucional no queda listo si solo compila; el personal debe poder operar y capacitarse sin leer codigo ni prompts.
+- La entrega al hospital requiere evidencia fisica y responsabilidades claras.
+
+Consecuencia:
+
+- Los manuales son aptos para cajero, administrador y responsable local.
+- Las validaciones fisicas pendientes quedan explicitas y no se confunden con cumplimiento ya realizado.

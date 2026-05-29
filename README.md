@@ -27,7 +27,7 @@ La aplicacion esta pensada para operar sin internet en una red local LAN: una co
 1. Frontend: React + TypeScript + Tailwind CSS.
 2. Backend: Laravel API.
 3. Base de datos: MySQL/MariaDB local.
-4. Despliegue recomendado: Docker Compose en servidor local Windows.
+4. Despliegue recomendado: servidor local Windows con MySQL/MariaDB y acceso LAN controlado.
 
 ## Instalacion Local
 
@@ -58,13 +58,13 @@ Despues de instalar, configure un usuario administrador real y valide:
 Servidor local:
 
 ```text
-http://127.0.0.1:5173
+http://127.0.0.1
 ```
 
 Clientes en red local:
 
 ```text
-http://IP-DEL-SERVIDOR:5173
+http://IP-DEL-SERVIDOR
 ```
 
 ## Documentacion Para Operacion

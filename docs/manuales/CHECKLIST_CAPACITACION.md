@@ -1,45 +1,63 @@
-﻿# Checklist De Capacitacion
+# Checklist de capacitacion y entrega
 
-Use esta lista para capacitar a personal de caja y administracion.
+Use esta lista en papel durante capacitacion y entrega.
 
 ## Cajero
 
 - [ ] Abre el sistema con el acceso directo.
-- [ ] Inicia sesion con su usuario.
-- [ ] Abre caja con monto inicial.
+- [ ] Inicia sesion con usuario propio.
+- [ ] Abre caja con efectivo inicial.
 - [ ] Busca servicios por nombre.
-- [ ] Usa la categoria **Todos**.
-- [ ] Agrega y quita servicios del carrito.
+- [ ] Usa categoria **Todos**.
+- [ ] Agrega y quita servicios.
 - [ ] Revisa total antes de emitir.
-- [ ] Cobra con efectivo.
-- [ ] Identifica cambio/vuelto.
-- [ ] Reconoce el bloqueo si el monto recibido es menor al total.
+- [ ] Cobra en efectivo.
+- [ ] Cobra con tarjeta o transferencia y registra referencia.
+- [ ] Reconoce cambio.
+- [ ] Reconoce saldo pendiente.
+- [ ] Sabe que pago menor no marca pagado completo.
 - [ ] Imprime recibo institucional.
 - [ ] Reimprime desde historial si tiene permiso.
-- [ ] Cierra caja y revisa diferencia.
+- [ ] Cierra caja contando solo efectivo fisico.
 
-## Supervisor O Administrador
+## Supervisor o administrador
 
-- [ ] Configura datos del hospital.
-- [ ] Configura serie/numeracion autorizada.
-- [ ] Revisa vista previa de recibo.
-- [ ] Revisa reporte diario.
-- [ ] Revisa pagos por metodo.
-- [ ] Identifica facturas parciales y anuladas.
+- [ ] Configura datos reales del hospital.
+- [ ] Deja CAI/serie/rango como pendiente si no hay datos reales.
+- [ ] Revisa vista previa del recibo.
+- [ ] Revisa reporte diario: facturado, cobrado y saldo pendiente.
+- [ ] Revisa metodos de pago.
+- [ ] Identifica parciales y anuladas.
 - [ ] Autoriza anulaciones con motivo.
 - [ ] Crea respaldo manual.
-- [ ] Verifica ultimo respaldo.
-- [ ] Sabe a quien llamar ante error tecnico.
+- [ ] Verifica tamano y SHA256.
+- [ ] Sabe que restore primero se prueba en base descartable.
 
-## Prueba Final De Flujo
+## Prueba final del flujo
 
-- [ ] Login correcto.
+- [ ] Login.
 - [ ] Caja cerrada bloquea facturacion.
 - [ ] Abrir caja.
 - [ ] Crear factura.
 - [ ] Cobrar.
 - [ ] Imprimir.
 - [ ] Reimprimir.
+- [ ] Revisar reporte del dia.
 - [ ] Crear respaldo.
 - [ ] Cerrar caja.
-- [ ] Revisar reporte del dia.
+
+## Checklist fisico del servidor
+
+- [ ] Servidor en ubicacion definida.
+- [ ] IP LAN confirmada: __________________________
+- [ ] Acceso desde segunda PC probado.
+- [ ] Acceso directo creado.
+- [ ] Reinicio Windows probado.
+- [ ] Sistema abre despues del reinicio.
+- [ ] Impresora institucional probada.
+- [ ] Papel carta/media carta/A5 disponible segun configuracion.
+- [ ] Respaldo manual completado.
+- [ ] Respaldo automatico configurado.
+- [ ] Restore probado en base descartable.
+- [ ] Copia externa/USB definida.
+- [ ] Responsable local asignado: __________________
