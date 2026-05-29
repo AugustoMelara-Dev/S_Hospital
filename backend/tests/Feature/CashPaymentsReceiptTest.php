@@ -319,10 +319,46 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.invoice.paid_amount', '17.25')
             ->assertJsonPath('data.invoice.balance_due', '0.00');
 
+        $this->assertDatabaseHas('payments', [
+            'invoice_id' => $invoiceId,
+            'cash_session_id' => $sessionId,
+            'method' => Payment::METHOD_TRANSFER,
+            'amount' => '7.25',
+            'reference' => 'TRX-1',
+        ]);
+
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $cashier->id,
             'action' => 'payment.registered',
             'entity_type' => Payment::class,
+        ]);
+    }
+
+    public function test_cash_session_cannot_close_with_partial_invoice_balance(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '10.00',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_PARTIAL);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '510.00'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('cash_session');
+
+        $this->assertDatabaseHas('cash_register_sessions', [
+            'id' => $sessionId,
+            'status' => CashRegisterSession::STATUS_OPEN,
         ]);
     }
 
@@ -338,6 +374,15 @@ class CashPaymentsReceiptTest extends TestCase
                 'cash_session_id' => $sessionId,
                 'method' => Payment::METHOD_CASH,
                 'amount' => '0.00',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('amount');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '10.00',
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('amount');

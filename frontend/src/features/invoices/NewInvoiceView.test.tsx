@@ -746,8 +746,10 @@ describe('NewInvoiceView', () => {
         balanceDue="17.25"
         paymentMethod="cash"
         paymentAmount="20.00"
+        paymentReference=""
         onPaymentMethodChange={vi.fn()}
         onPaymentAmountChange={vi.fn()}
+        onPaymentReferenceChange={vi.fn()}
         onConfirm={confirmSpy}
       />,
     );
@@ -771,8 +773,10 @@ describe('NewInvoiceView', () => {
         balanceDue="17.25"
         paymentMethod="cash"
         paymentAmount="10.00"
+        paymentReference=""
         onPaymentMethodChange={vi.fn()}
         onPaymentAmountChange={vi.fn()}
+        onPaymentReferenceChange={vi.fn()}
         onConfirm={confirmSpy}
         partialPaymentsEnabled
       />,
@@ -782,6 +786,34 @@ describe('NewInvoiceView', () => {
     expect(screen.getByText('L. 7.25')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
     expect(confirmSpy).toHaveBeenCalledWith('10.00');
+  });
+
+  it('shows a reference field for non-cash payments and separates them from expected cash', () => {
+    const referenceSpy = vi.fn();
+
+    render(
+      <PaymentModal
+        open
+        onOpenChange={vi.fn()}
+        invoiceNumber="000-001-01-00000005"
+        patientName="Maria Lopez"
+        total="17.25"
+        balanceDue="17.25"
+        paymentMethod="transfer"
+        paymentAmount="17.25"
+        paymentReference=""
+        onPaymentMethodChange={vi.fn()}
+        onPaymentAmountChange={vi.fn()}
+        onPaymentReferenceChange={referenceSpy}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/separado del efectivo esperado/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/referencia de pago/i), {
+      target: { value: 'TRX-555' },
+    });
+    expect(referenceSpy).toHaveBeenCalledWith('TRX-555');
   });
 
   it('scopes receipt print hiding to the explicit printing receipt state', () => {

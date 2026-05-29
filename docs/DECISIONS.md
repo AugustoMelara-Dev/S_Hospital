@@ -741,3 +741,23 @@ Consecuencia:
 - El recibo impreso siempre usa fondo blanco, encabezado Gobierno/Secretaria/Hospital, serie, fecha, paciente, servicios, valor en lempiras, total, pagado, saldo si aplica, cajero, metodo y firma/sello.
 - Las pruebas de recibo validan snapshots, papel institucional, rechazo de ticket heredado y placeholders fiscales pendientes.
 - La evidencia visual queda en `qa/screenshots/field-qa-2026-05-29-fixed/10-receipt-preview.png`.
+
+### 2026-05-29 - Referencia de pago y conciliacion de caja
+
+Decision:
+
+- Los pagos no efectivos capturan una referencia visible de comprobante desde el modal de cobro.
+- El modal explica que tarjeta, transferencia y otros metodos quedan separados del efectivo esperado.
+- El backend mantiene la regla de no aceptar subpagos si los abonos parciales estan desactivados; si estan activados, la factura queda parcial y bloquea cierre de caja hasta resolver saldo.
+
+Motivo:
+
+- Caja necesita conciliar efectivo fisico sin inflarlo con movimientos bancarios o tarjeta.
+- Las transferencias y tarjetas requieren una referencia comprensible para auditoria y reimpresion del recibo, sin pedir datos sensibles.
+- Una factura con saldo no debe quedar como pagada ni permitir cerrar caja como si todo estuviera cobrado.
+
+Consecuencia:
+
+- `payments.reference` se aprovecha como snapshot historico de comprobante.
+- Las pruebas de caja validan subpago bloqueado, referencia persistida, factura parcial y cierre bloqueado por saldo.
+- Queda pendiente un E2E de navegador para registrar transferencia desde UI y verificar referencia en recibo final.

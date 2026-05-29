@@ -17,8 +17,10 @@ type PaymentModalProps = {
   balanceDue: string;
   paymentMethod: Payment['method'];
   paymentAmount: string;
+  paymentReference: string;
   onPaymentMethodChange: (method: Payment['method']) => void;
   onPaymentAmountChange: (amount: string) => void;
+  onPaymentReferenceChange: (reference: string) => void;
   onPreviewBeforePrintChange?: (enabled: boolean) => void;
   onConfirm: (appliedAmount: string) => void;
   submitting?: boolean;
@@ -35,8 +37,10 @@ export function PaymentModal({
   balanceDue,
   paymentMethod,
   paymentAmount,
+  paymentReference,
   onPaymentMethodChange,
   onPaymentAmountChange,
+  onPaymentReferenceChange,
   onPreviewBeforePrintChange,
   onConfirm,
   submitting,
@@ -53,6 +57,7 @@ export function PaymentModal({
     : null;
   const appliedAmount = !isNaN(payment) && !isNaN(balance) && payment >= balance ? balance : payment;
   const needsAmount = isNaN(payment) || payment <= 0;
+  const showReference = paymentMethod !== 'cash';
 
   useEffect(() => {
     if (open) {
@@ -149,6 +154,15 @@ export function PaymentModal({
                 <SelectItem value="other">Otro</SelectItem>
               </SelectContent>
             </Select>
+            {paymentMethod === 'cash' ? (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Solo los pagos en efectivo aumentan el efectivo esperado en caja.
+              </p>
+            ) : (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Este metodo queda separado del efectivo esperado de caja.
+              </p>
+            )}
           </div>
 
           <div>
@@ -175,6 +189,22 @@ export function PaymentModal({
             />
             {error && <p id="payment-amount-error" className="mt-1 text-sm text-destructive" role="alert">{error}</p>}
           </div>
+
+          {showReference ? (
+            <div>
+              <Label htmlFor="payment-reference" className="mb-1.5 block">Referencia de pago</Label>
+              <Input
+                id="payment-reference"
+                value={paymentReference}
+                maxLength={120}
+                onChange={(e) => onPaymentReferenceChange(e.target.value)}
+                placeholder={paymentMethod === 'transfer' ? 'Numero de transferencia' : 'Autorizacion o comprobante'}
+              />
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Use el numero visible en el voucher, transferencia o comprobante. No escriba datos sensibles de tarjeta.
+              </p>
+            </div>
+          ) : null}
 
           <label className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5 text-sm cursor-pointer select-none">
             <Checkbox

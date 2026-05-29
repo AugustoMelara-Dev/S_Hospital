@@ -34,6 +34,7 @@ interface POSState {
   issuedInvoice: Invoice | null;
   paymentMethod: Payment['method'];
   paymentAmount: string;
+  paymentReference: string;
   previewBeforePrint: boolean;
   receiptWidth: ReceiptData['width'];
   scannerEnabled: boolean;
@@ -66,6 +67,7 @@ type POSAction =
   | { type: 'SET_ISSUED_INVOICE'; payload: Invoice | null }
   | { type: 'SET_PAYMENT_METHOD'; payload: Payment['method'] }
   | { type: 'SET_PAYMENT_AMOUNT'; payload: string }
+  | { type: 'SET_PAYMENT_REFERENCE'; payload: string }
   | { type: 'SET_PREVIEW_BEFORE_PRINT'; payload: boolean }
   | { type: 'SET_RECEIPT_WIDTH'; payload: ReceiptData['width'] }
   | { type: 'SET_SCANNER_ENABLED'; payload: boolean }
@@ -107,6 +109,7 @@ function getInitialState(cashSession: CashSession | null): POSState {
     issuedInvoice: null,
     paymentMethod: 'cash',
     paymentAmount: '',
+    paymentReference: '',
     previewBeforePrint: false,
     receiptWidth: 'half_letter',
     scannerEnabled: false,
@@ -150,9 +153,15 @@ function posReducer(state: POSState, action: POSAction): POSState {
     case 'SET_ISSUED_INVOICE':
       return { ...state, issuedInvoice: action.payload };
     case 'SET_PAYMENT_METHOD':
-      return { ...state, paymentMethod: action.payload };
+      return {
+        ...state,
+        paymentMethod: action.payload,
+        paymentReference: action.payload === 'cash' ? '' : state.paymentReference,
+      };
     case 'SET_PAYMENT_AMOUNT':
       return { ...state, paymentAmount: action.payload };
+    case 'SET_PAYMENT_REFERENCE':
+      return { ...state, paymentReference: action.payload };
     case 'SET_PREVIEW_BEFORE_PRINT':
       return { ...state, previewBeforePrint: action.payload };
     case 'SET_RECEIPT_WIDTH':
@@ -300,6 +309,7 @@ export function NewInvoiceView({
     issuedInvoice,
     paymentMethod,
     paymentAmount,
+    paymentReference,
     previewBeforePrint,
     receiptWidth,
     scannerEnabled,
@@ -735,10 +745,12 @@ export function NewInvoiceView({
         cash_session_id: sessionToUse.id,
         method: paymentMethod,
         amount: appliedAmount,
+        reference: paymentReference.trim() || null,
       });
 
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: result.invoice });
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: result.invoice.balance_due });
+      dispatch({ type: 'SET_PAYMENT_REFERENCE', payload: '' });
       const nextReceipt = await apiClient.getReceipt(result.invoice.id, receiptWidth);
       dispatch({ type: 'SET_RECEIPT', payload: nextReceipt });
       dispatch({ type: 'SET_RECEIPT_WIDTH', payload: nextReceipt.width });
@@ -933,10 +945,12 @@ export function NewInvoiceView({
           balanceDue={issuedInvoice.balance_due}
           paymentMethod={paymentMethod}
           paymentAmount={paymentAmount}
+          paymentReference={paymentReference}
           previewBeforePrint={previewBeforePrint}
           partialPaymentsEnabled={partialPaymentsEnabled}
           onPaymentMethodChange={(val) => dispatch({ type: 'SET_PAYMENT_METHOD', payload: val })}
           onPaymentAmountChange={(val) => dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: val })}
+          onPaymentReferenceChange={(val) => dispatch({ type: 'SET_PAYMENT_REFERENCE', payload: val })}
           onPreviewBeforePrintChange={(val) => dispatch({ type: 'SET_PREVIEW_BEFORE_PRINT', payload: val })}
           onConfirm={(appliedAmount) => void submitPayment(appliedAmount)}
           submitting={paying}
