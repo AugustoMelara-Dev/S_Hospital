@@ -5,11 +5,12 @@ describe('displayHospitalName', () => {
   it('uses a clean operational fallback for empty or legacy internal names', () => {
     const legacyProductName = `Hospital ${'Bill' + 'ing'} OS`;
 
-    expect(displayHospitalName(null)).toBe('Caja hospitalaria');
-    expect(displayHospitalName('')).toBe('Caja hospitalaria');
-    expect(displayHospitalName(legacyProductName)).toBe('Caja hospitalaria');
-    expect(displayHospitalName(`S_Hospital ${legacyProductName}`)).toBe('Caja hospitalaria');
-    expect(displayHospitalName('Hospital Demo')).toBe('Caja hospitalaria');
+    expect(displayHospitalName(null)).toBe('Hospital San Isidro');
+    expect(displayHospitalName('')).toBe('Hospital San Isidro');
+    expect(displayHospitalName(legacyProductName)).toBe('Hospital San Isidro');
+    expect(displayHospitalName(`S_Hospital ${legacyProductName}`)).toBe('Hospital San Isidro');
+    expect(displayHospitalName('Hospital Demo')).toBe('Hospital San Isidro');
+    expect(displayHospitalName('Caja hospitalaria')).toBe('Hospital San Isidro');
   });
 
   it('keeps the configured hospital name when it is not a legacy internal name', () => {

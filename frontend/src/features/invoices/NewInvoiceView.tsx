@@ -804,7 +804,7 @@ export function NewInvoiceView({
     <section id="nueva-factura" className="flex flex-col h-full gap-4 p-4 lg:p-6">
       <header className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col gap-1">
-          <p className="text-xs font-semibold uppercase tracking-normal text-primary">Caja hospitalaria</p>
+          <p className="text-xs font-semibold uppercase tracking-normal text-primary">Hospital San Isidro</p>
           <h1 className="text-2xl font-semibold tracking-normal text-foreground">Nueva factura</h1>
           <p className="text-sm text-muted-foreground">Factura y cobro en caja</p>
         </div>

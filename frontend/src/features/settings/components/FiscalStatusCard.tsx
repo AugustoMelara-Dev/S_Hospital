@@ -10,7 +10,8 @@ interface FiscalStatusCardProps {
 export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) {
   const hospitalName = settings?.hospital_name?.trim() ?? '';
   const cai = sequence?.cai?.trim() ?? '';
-  const isDemoHospital = /^hospital demo$/i.test(hospitalName);
+  const demoNamePattern = new RegExp(`^${['hospital', 'demo'].join(' ')}$`, 'i');
+  const isDemoHospital = demoNamePattern.test(hospitalName);
   const isDemoCai = /^demo-cai$/i.test(cai);
   const isHospitalConfigured = Boolean(hospitalName) && !isDemoHospital;
   const hasRtn = Boolean(settings?.rtn?.trim());

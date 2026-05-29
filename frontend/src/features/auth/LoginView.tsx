@@ -84,7 +84,7 @@ export function LoginView({
 
           <div className="flex flex-col gap-5">
             <div className="max-w-md">
-              <h1 className="text-3xl font-semibold leading-tight">Caja hospitalaria rápida y clara.</h1>
+              <h1 className="text-3xl font-semibold leading-tight">Caja institucional rápida y clara.</h1>
               <p className="mt-3 text-sm leading-6 text-sidebar-foreground/75">
                 Facturacion, cobros, reportes y recibos institucionales para operar dentro del hospital.
               </p>

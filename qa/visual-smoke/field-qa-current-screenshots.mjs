@@ -10,7 +10,7 @@ const password = process.env.FIELD_QA_PASSWORD ?? 'Password123!';
 const outputDir = path.resolve(import.meta.dirname, '..', 'screenshots', 'field-qa-2026-05-29-fixed');
 
 const screens = [
-  ['login', '/', /sistema de caja hospitalaria|caja hospitalaria/i],
+  ['login', '/', /caja institucional|hospital san isidro/i],
   ['dashboard', '/dashboard', /inicio|dashboard/i],
   ['fiscal-settings', '/settings/fiscal', /configuracion|hospital y recibo/i],
   ['backups', '/backups', /respaldos/i],
@@ -30,6 +30,7 @@ const forbiddenBranding = new RegExp(
 const globalBlockers = [
   ['forbiddenBranding', forbiddenBranding],
   ['hospitalDemo', /Hospital Demo/i],
+  ['genericHospitalCashBrand', /Caja hospitalaria/i],
   ['demoCai', /DEMO-CAI/i],
   ['appEnv', /APP_ENV/i],
   ['appDebug', /APP_DEBUG/i],

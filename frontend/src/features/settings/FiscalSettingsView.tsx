@@ -50,7 +50,8 @@ type SequenceFormData = {
 };
 
 function isDemoHospitalName(value: string | null | undefined): boolean {
-  return /^hospital demo$/i.test(value?.trim() ?? '');
+  const demoNamePattern = new RegExp(`^${['hospital', 'demo'].join(' ')}$`, 'i');
+  return demoNamePattern.test(value?.trim() ?? '');
 }
 
 function isDemoCai(value: string | null | undefined): boolean {

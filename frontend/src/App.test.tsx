@@ -186,7 +186,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /caja hospitalaria rápida y clara/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /caja institucional rápida y clara/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/usuario o correo/i)).toBeInTheDocument();
   });
 

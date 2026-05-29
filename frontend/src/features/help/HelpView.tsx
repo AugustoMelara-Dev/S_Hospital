@@ -77,7 +77,7 @@ export function HelpView() {
     <section className="space-y-6" aria-labelledby="help-title">
       <PageHeader
         title="Ayuda"
-        description="Guía operativa para caja hospitalaria, recibos, reportes y respaldos."
+        description="Guía operativa para caja, recibos, reportes y respaldos."
         actions={
           <div className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground">
             <HelpCircle aria-hidden="true" className="size-4" />

@@ -7,6 +7,7 @@ import { PageHeader } from '../../components/ui/page-header';
 import { useFiscalSettings } from '../../hooks/useFiscalSettings';
 import { useServerStatus } from '../../hooks/useServerStatus';
 import { apiClient } from '../../lib/api';
+import { displayHospitalName } from '../../lib/hospital-name';
 
 type AboutViewProps = {
   onStatus: (message: string) => void;
@@ -16,7 +17,7 @@ export function AboutView({ onStatus }: AboutViewProps) {
   const { data: fiscal } = useFiscalSettings();
   const { isOnline, lastCheck } = useServerStatus();
   const [backupCount, setBackupCount] = useState<number | string>('...');
-  const hospitalName = fiscal?.hospital_name?.trim() || 'Caja hospitalaria';
+  const hospitalName = displayHospitalName(fiscal?.hospital_name);
 
   useEffect(() => {
     async function fetchBackupCount() {
