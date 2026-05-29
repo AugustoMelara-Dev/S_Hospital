@@ -1,6 +1,6 @@
 # PROMPT 05 - REVISIÓN DE PREPARACIÓN PARA ENTREGA
 
-Revisa si Hospital Billing OS Offline está listo para demo/entrega al cliente.
+Revisa si S_Hospital Offline está listo para demo/entrega al cliente.
 
 ## Verificar
 - Facturación completa con nombre del paciente.

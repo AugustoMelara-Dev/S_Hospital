@@ -1,4 +1,4 @@
-# Changelog - Hospital Billing OS
+# Changelog - Sistema de Caja Hospitalaria
 
 ## v1.0.0-rc.1 - Phase 12 Final (2026-05-18)
 

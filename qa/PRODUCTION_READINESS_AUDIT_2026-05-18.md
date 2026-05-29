@@ -4,7 +4,7 @@
 
 `BLOQUEADO PARA PRODUCTION_READY`
 
-Hospital Billing OS no puede declararse `PRODUCTION_READY` hasta tener evidencia
+Sistema de Caja Hospitalaria no puede declararse `PRODUCTION_READY` hasta tener evidencia
 real de entorno final, cliente LAN fisico, impresora termica fisica, herramientas
 MySQL/dump, worker persistente y backup/restore validado.
 

@@ -29,7 +29,7 @@ New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
 $createdMutex = $false
-$mutex = New-Object System.Threading.Mutex($true, "Local\HospitalBillingOSBackupAutomation", [ref] $createdMutex)
+$mutex = New-Object System.Threading.Mutex($true, "Local\SistemaCajaHospitalariaBackupAutomation", [ref] $createdMutex)
 if (-not $createdMutex) {
     Write-AutomationLog "Another backup automation loop is already running. Exiting."
     exit 0

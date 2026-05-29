@@ -1,4 +1,4 @@
-﻿# Guia rapida para administrador
+# Guia rapida para administrador
 
 ## Inicio de servidor
 
@@ -19,7 +19,7 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_window
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath C:\xampp\php\php.exe
-Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
+Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 ```
 
 3. Crear backup manual desde UI.

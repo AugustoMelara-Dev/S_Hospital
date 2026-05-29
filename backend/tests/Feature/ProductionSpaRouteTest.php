@@ -19,7 +19,7 @@ class ProductionSpaRouteTest extends TestCase
         $originalCssAsset = File::exists($cssAssetPath) ? File::get($cssAssetPath) : null;
 
         File::ensureDirectoryExists($assetsPath);
-        File::put($indexPath, '<!doctype html><html><body><div id="root">Hospital Billing OS</div></body></html>');
+        File::put($indexPath, '<!doctype html><html><body><div id="root">Sistema de Caja Hospitalaria</div></body></html>');
         File::put($jsAssetPath, 'console.log("phase10");');
         File::put($cssAssetPath, 'body { color: #111; }');
 

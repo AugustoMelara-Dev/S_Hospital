@@ -22,23 +22,23 @@ The preflight passed without bypass flags. Keep this report with the completed p
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://192.168.1.7:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath C:\xampp\php\php.exe
-Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
+Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://192.168.1.7:8000 -PhpPath C:\xampp\php\php.exe
 ```
 
 ## Backup task status output
 
 ```text
-Preparing Windows scheduled tasks for Hospital Billing OS backups.
+Preparing Windows scheduled tasks for Sistema de Caja Hospitalaria backups.
 ProjectRoot: C:\Projects\S_Hospital
 PhpPath: C:\xampp\php\php.exe
 Worker wrapper: C:\Projects\S_Hospital\scripts\run_backup_worker.cmd
 Daily backup wrapper: C:\Projects\S_Hospital\scripts\run_scheduled_backup.cmd
-Worker task: HospitalBillingOS-BackupWorker
-Daily backup task: HospitalBillingOS-DailyBackup at 02:00
-HospitalBillingOS-BackupWorker: state=Ready, lastRun=05/19/2026 15:29:47, lastResult=1, nextRun=
-HospitalBillingOS-DailyBackup: state=Ready, lastRun=11/30/1999 00:00:00, lastResult=267011, nextRun=05/20/2026 02:00:00
-Confirm the worker is running with: Get-ScheduledTask -TaskName 'HospitalBillingOS-BackupWorker'
+Worker task: SistemaCajaHospitalaria-BackupWorker
+Daily backup task: SistemaCajaHospitalaria-DailyBackup at 02:00
+SistemaCajaHospitalaria-BackupWorker: state=Ready, lastRun=05/19/2026 15:29:47, lastResult=1, nextRun=
+SistemaCajaHospitalaria-DailyBackup: state=Ready, lastRun=11/30/1999 00:00:00, lastResult=267011, nextRun=05/20/2026 02:00:00
+Confirm the worker is running with: Get-ScheduledTask -TaskName 'SistemaCajaHospitalaria-BackupWorker'
 Confirm UI backups finish by creating a backup and checking it changes from pending to success.
 ```
 
@@ -56,8 +56,8 @@ Project root: C:\Projects\S_Hospital
 [ OK ] CORS origins are explicitly empty for same-origin production
 [ OK ] CORS origin patterns are empty
 [ OK ] QUEUE_CONNECTION=database
-[ OK ] Windows scheduled task 'HospitalBillingOS-BackupWorker' state=Ready, lastResult=1, nextRun=
-[ OK ] Windows scheduled task 'HospitalBillingOS-DailyBackup' state=Ready, lastResult=267011, nextRun=05/20/2026 02:00:00
+[ OK ] Windows scheduled task 'SistemaCajaHospitalaria-BackupWorker' state=Ready, lastResult=1, nextRun=
+[ OK ] Windows scheduled task 'SistemaCajaHospitalaria-DailyBackup' state=Ready, lastResult=267011, nextRun=05/20/2026 02:00:00
 [ OK ] frontend/dist/index.html exists
 [ OK ] frontend/dist/assets contains 7 files
 [ OK ] php is available in PATH

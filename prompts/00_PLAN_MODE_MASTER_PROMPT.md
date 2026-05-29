@@ -1,6 +1,6 @@
 # PROMPT 00 - MODO PLAN MAESTRO PARA CODEX
 
-Actúa como arquitecto senior y tech lead del proyecto **Hospital Billing OS Offline**.
+Actúa como arquitecto senior y tech lead del proyecto **S_Hospital Offline**.
 
 ## Contexto obligatorio
 Sistema hospitalario local para facturación y caja. Debe funcionar sin internet en producción, con una computadora servidor en red local y varias computadoras cliente accediendo por navegador. Stack: React + TypeScript + Laravel API + MySQL/MariaDB.

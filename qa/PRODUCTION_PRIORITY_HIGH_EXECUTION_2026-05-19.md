@@ -80,7 +80,7 @@ These cannot be closed from the server machine alone. They require a real second
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath C:\xampp\php\php.exe
-Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
+Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath C:\xampp\php\php.exe
 ```
 
@@ -128,7 +128,7 @@ Remaining blockers:
 - Missing `qa/THERMAL_PRINTER_PROOF.md` with real physical thermal printer evidence.
 
 During the handoff dry run, Windows scheduled tasks named
-`HospitalBillingOS-BackupWorker` and `HospitalBillingOS-DailyBackup` were not
+`SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup` were not
 installed in this session. Install or update them from elevated PowerShell
 before handoff, then create a UI backup and confirm it changes from `pending` to
 `success`.

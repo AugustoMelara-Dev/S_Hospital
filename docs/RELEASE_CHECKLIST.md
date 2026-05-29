@@ -1,4 +1,4 @@
-﻿# Release checklist - demo vendible y produccion real
+# Release checklist - demo vendible y produccion real
 
 Estado actual documentado: `DEMO_READY` y `PRODUCTION_CANDIDATE`. No declarar
 `PRODUCTION_READY` hasta cerrar validacion fisica de cliente LAN, hardware de
@@ -101,8 +101,8 @@ no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o
 `mariadb-dump`, si las rutas publicas no responden, o si no existen las pruebas
 documentadas de cliente LAN, impresora fisica, restore final y concurrencia final.
 
-En Windows tambien falla si no existen `HospitalBillingOS-BackupWorker` y
-`HospitalBillingOS-DailyBackup`, o si el worker continuo no esta `Running`.
+En Windows tambien falla si no existen `SistemaCajaHospitalaria-BackupWorker` y
+`SistemaCajaHospitalaria-DailyBackup`, o si el worker continuo no esta `Running`.
 
 La evidencia fisica de LAN e impresora es obligatoria por defecto. El flag
 `-AllowMissingPhysicalProof` solo permite una corrida parcial de entorno y deja
@@ -192,7 +192,7 @@ Helper para crear tareas Windows en el servidor final:
 cd C:\Projects\S_Hospital
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -PhpPath C:\xampp\php\php.exe
-Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
+Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
 ```
 

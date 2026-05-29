@@ -1,6 +1,6 @@
 # PROMPT 03 - ORQUESTADOR DE REVISIÓN DE CÓDIGO POR COMMIT
 
-Revisa el diff del commit actual de Hospital Billing OS Offline. Actúa como 8 subagentes especializados reutilizando los mismos criterios del plan.
+Revisa el diff del commit actual de S_Hospital Offline. Actúa como 8 subagentes especializados reutilizando los mismos criterios del plan.
 
 ## Entrada esperada
 - Diff del commit o salida de `git show --stat && git show`.

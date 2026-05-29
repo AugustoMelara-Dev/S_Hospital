@@ -1,6 +1,6 @@
 # LAN client validation proof
 
-This file documents the verification of the Hospital Billing OS from a real second computer on the hospital LAN.
+This file documents the verification of the Sistema de Caja Hospitalaria from a real second computer on the hospital LAN.
 
 ## Environment
 

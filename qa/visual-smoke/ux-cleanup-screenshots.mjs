@@ -23,7 +23,7 @@ const modules = [
 ];
 
 const technicalTerms = [
-  /Hospital Billing OS/i,
+  /Sistema de Caja Hospitalaria/i,
   /S_Hospital/i,
   /PRODUCTION_READY/i,
   /PRODUCTION_CANDIDATE/i,

@@ -1,6 +1,6 @@
 # PROMPT 01 - ORQUESTADOR DE REVISIÓN DEL PLAN CON 8 SUBAGENTES
 
-Toma el plan redactado para Hospital Billing OS Offline y revisa su calidad antes de codificar.
+Toma el plan redactado para S_Hospital Offline y revisa su calidad antes de codificar.
 
 ## Instrucción principal
 Ejecuta mentalmente 8 subagentes especializados. Cada subagente debe revisar el plan desde su área, usando los documentos de referencia indicados. No seas complaciente. Busca fallos reales, riesgos ocultos, ambigüedades, sobreingeniería, falta de pruebas, problemas offline, problemas fiscales y problemas de concurrencia.

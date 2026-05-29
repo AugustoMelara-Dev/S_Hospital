@@ -229,7 +229,7 @@ describe('App', () => {
     await waitFor(() => {
       expect(window.location.pathname).toBe('/dashboard');
     });
-    expect(screen.queryByRole('heading', { name: /S_Hospital Billing OS/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /S_Sistema de Caja Hospitalaria/i })).not.toBeInTheDocument();
   });
 
   it('renders app shell and fiscal settings route for an authenticated admin', async () => {

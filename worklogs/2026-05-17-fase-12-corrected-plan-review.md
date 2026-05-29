@@ -2,7 +2,7 @@
 
 ## Contexto
 
-El usuario pidio continuar tratando Hospital Billing OS como producto real, no como practica que solo compila. Se ejecuto revision de plan/superficie actual con seis roles:
+El usuario pidio continuar tratando Sistema de Caja Hospitalaria como producto real, no como practica que solo compila. Se ejecuto revision de plan/superficie actual con seis roles:
 
 - Direccion UX/UI.
 - Flujo POS/caja.

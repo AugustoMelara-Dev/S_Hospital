@@ -1,4 +1,4 @@
-# AGENTS.md - Hospital Billing OS Offline
+# AGENTS.md - S_Hospital Offline
 
 ## Identidad del proyecto
 Construir un sistema hospitalario local para facturación, caja, pagos, reportes, catálogo de servicios y emisión de recibos térmicos.

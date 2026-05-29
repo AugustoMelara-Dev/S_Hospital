@@ -23,8 +23,8 @@ rechaza evidencia incompleta.
 | Evidencia de impresora con campos minimos y checks llenos | La seccion de proof pasa con `physical thermal printer evidence is present and completed`. |
 | `CORS_ALLOWED_ORIGINS=*` | Falla siempre. |
 | `CORS_ALLOWED_ORIGIN_PATTERNS` no vacio | Falla siempre. |
-| Windows sin `HospitalBillingOS-BackupWorker` instalado y corriendo | Falla siempre. |
-| Windows sin `HospitalBillingOS-DailyBackup` instalado | Falla siempre. |
+| Windows sin `SistemaCajaHospitalaria-BackupWorker` instalado y corriendo | Falla siempre. |
+| Windows sin `SistemaCajaHospitalaria-DailyBackup` instalado | Falla siempre. |
 | `-AllowMissingPhysicalProof` | Falla con `PRODUCTION_READY: NO`; solo sirve para diagnostico parcial. |
 
 ## Campos criticos de impresora

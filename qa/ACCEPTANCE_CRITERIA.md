@@ -1,4 +1,4 @@
-# Acceptance Criteria - Hospital Billing OS Offline
+# Acceptance Criteria - S_Hospital Offline
 
 ## Facturación
 - Crear factura con nombre del paciente obligatorio.

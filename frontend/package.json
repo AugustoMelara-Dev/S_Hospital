@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "build": "tsc --noEmit && vite build",
+    "check:branding": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/check-branding.ps1",
     "e2e": "playwright test",
     "smoke:real": "playwright test --config=playwright.real.config.ts",
     "visual:smoke": "node ../qa/visual-smoke/phase-12-visual-smoke.mjs"

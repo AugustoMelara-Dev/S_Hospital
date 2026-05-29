@@ -129,7 +129,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```powershell'
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $PhpPath"
-    Add-ReportLine $lines "Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker"
+    Add-ReportLine $lines "Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -PhpPath $PhpPath"
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
@@ -193,7 +193,7 @@ $backupStatusOutput = @(& powershell.exe -ExecutionPolicy Bypass -File $backupTa
 $backupStatusOutput | ForEach-Object { Write-Host $_ }
 Write-Host "If tasks are missing or stale, run elevated PowerShell:"
 Write-Host "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $PhpPath"
-Write-Host "Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker"
+Write-Host "Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker"
 Write-Host "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath $PhpPath"
 
 if ($SkipPreflight) {

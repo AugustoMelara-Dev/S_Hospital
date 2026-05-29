@@ -1,4 +1,4 @@
-# Areas de mejora consideradas - Hospital Billing OS Offline
+# Areas de mejora consideradas - S_Hospital Offline
 
 Fecha: 2026-05-19
 Alcance: consolidar las areas de mejora consideradas para el estado actual de `C:\Projects\S_Hospital`, separando lo ya cerrado, lo pendiente para `PRODUCTION_READY` y lo recomendable para fases posteriores sin ampliar el alcance hospitalario.
@@ -11,7 +11,7 @@ Actualizacion de cierre repo-local:
 
 - El panel operativo ya no muestra la evidencia fisica como pendiente fija: `/api/system/status` evalua `qa/LAN_CLIENT_VALIDATION_PROOF.md` y `qa/THERMAL_PRINTER_PROOF.md` como `pending`, `partial` o `validated`.
 - Aun con ambas evidencias `validated`, el sistema mantiene `PRODUCTION_READY=false` hasta que el preflight final pase sin bypass.
-- En Windows, `scripts/production_readiness_preflight.ps1` ahora bloquea si faltan `HospitalBillingOS-BackupWorker` o `HospitalBillingOS-DailyBackup`, o si el worker continuo no esta `Running`.
+- En Windows, `scripts/production_readiness_preflight.ps1` ahora bloquea si faltan `SistemaCajaHospitalaria-BackupWorker` o `SistemaCajaHospitalaria-DailyBackup`, o si el worker continuo no esta `Running`.
 - Restore y concurrencia final ya tienen plantillas de evidencia (`qa/FINAL_RESTORE_PROOF.example.md`, `qa/FINAL_CONCURRENCY_PROOF.example.md`) y el preflight las exige sin bypass.
 - `scripts/validate_restore_mysql.sh`, `scripts/validate_mysql_concurrency.mjs` y `scripts/validate_backup_worker_smoke.ps1` pueden generar evidencia durable para restore, concurrencia y worker `pending` a `success`.
 - Se agregaron manuales cortos para cajero, admin y cierre diario en `docs/TRAINING_CAJERO.md`, `docs/TRAINING_ADMIN.md` y `docs/DAILY_CLOSE_PROTOCOL.md`.
@@ -131,7 +131,7 @@ Estado actual:
 Mejora considerada:
 
 - Ejecutar `scripts/install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath C:\xampp\php\php.exe` desde PowerShell elevado.
-- Confirmar `HospitalBillingOS-BackupWorker` y `HospitalBillingOS-DailyBackup`.
+- Confirmar `SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup`.
 - Crear un backup desde UI y validar que cambia de `pending` a `success`.
 - Confirmar que `mysqldump.exe` o `mariadb-dump.exe` esta en PATH para el contexto que ejecuta el worker.
 

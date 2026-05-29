@@ -10,10 +10,10 @@ param(
 $ErrorActionPreference = "Stop"
 
 $startupDir = [Environment]::GetFolderPath("Startup")
-$startupFile = Join-Path $startupDir "HospitalBillingOSBackupAutomation.cmd"
+$startupFile = Join-Path $startupDir "SistemaCajaHospitalariaBackupAutomation.cmd"
 $launcher = Join-Path $ProjectRoot "scripts\start_backup_automation.cmd"
 $runKeyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
-$runKeyName = "HospitalBillingOSBackupAutomation"
+$runKeyName = "SistemaCajaHospitalariaBackupAutomation"
 $runKeyValue = "`"$launcher`""
 
 if (-not (Test-Path -LiteralPath $launcher)) {

@@ -20,7 +20,7 @@
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_KEY" value="base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="/>
-        <env name="APP_NAME" value="Hospital Billing OS"/>
+        <env name="APP_NAME" value="Sistema de Caja Hospitalaria"/>
         <env name="APP_CONFIG_CACHE" value="storage/framework/testing/config.php"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

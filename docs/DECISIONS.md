@@ -1,4 +1,4 @@
-﻿# Technical Decisions - Sistema de Caja Hospitalaria
+# Technical Decisions - Sistema de Caja Hospitalaria
 
 ## Registro de decisiones
 
@@ -517,7 +517,7 @@ Consecuencia:
 
 Decision:
 
-- `scripts\production_readiness_preflight.ps1` ahora valida en Windows que existan las tareas `HospitalBillingOS-BackupWorker` y `HospitalBillingOS-DailyBackup`.
+- `scripts\production_readiness_preflight.ps1` ahora valida en Windows que existan las tareas `SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup`.
 - El worker continuo debe estar en estado `Running`; la tarea diaria debe estar `Ready` o `Running`.
 - Si las tareas no existen, estan deshabilitadas o el worker no esta corriendo, el preflight falla y no permite declarar `PRODUCTION_READY`.
 - En hosts no Windows, el preflight emite advertencia para validar un servicio equivalente antes del handoff.
@@ -529,7 +529,7 @@ Motivo:
 
 Consecuencia:
 
-- El cierre final debe instalar o actualizar tareas con `scripts\install_backup_tasks_windows.ps1 -UpdateExisting`, iniciar `HospitalBillingOS-BackupWorker` y confirmar que la UI mueve backups de `pending` a `success`.
+- El cierre final debe instalar o actualizar tareas con `scripts\install_backup_tasks_windows.ps1 -UpdateExisting`, iniciar `SistemaCajaHospitalaria-BackupWorker` y confirmar que la UI mueve backups de `pending` a `success`.
 - Una corrida de preflight en Windows sin tareas instaladas queda bloqueada aunque ambiente, rutas y evidencias fisicas esten completas.
 
 ### 2026-05-19 - Robustez operativa final y evidencias durables
@@ -586,7 +586,7 @@ Decision:
 
 Motivo:
 
-- El usuario reporto recargas que quedaban en blanco e imposibilidad de iniciar sesion; el primer rescate debe proteger el flujo de acceso antes de ampliar el rediseÃ±o.
+- El usuario reporto recargas que quedaban en blanco e imposibilidad de iniciar sesion; el primer rescate debe proteger el flujo de acceso antes de ampliar el rediseño.
 - Un sistema de caja vendible no puede depender de que cada componente renderice perfecto para no dejar al operador sin pantalla.
 - La UI debe sentirse como herramienta de caja hospitalaria, no como demo con texto de uso y controles decorativos.
 
