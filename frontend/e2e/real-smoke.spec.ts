@@ -8,7 +8,7 @@ const password = process.env.E2E_REAL_PASSWORD;
 const realBaseUrl = baseUrl?.replace(/\/$/, '');
 const allowMutations = process.env.E2E_REAL_ALLOW_MUTATIONS === '1';
 const serviceQuery = process.env.E2E_REAL_SERVICE_QUERY ?? 'Glucosa';
-const reportPath = resolve(process.env.E2E_REAL_REPORT_PATH ?? '../qa/screenshots/real-smoke/real-smoke-report.json');
+const reportPath = resolve(process.env.E2E_REAL_REPORT_PATH ?? 'test-results/real-smoke-report.json');
 const smokeResults: Array<Record<string, unknown>> = [];
 
 test.beforeAll(() => {
@@ -174,10 +174,13 @@ function captureConsoleIssues(page: Page, consoleIssues: string[]) {
 
 async function loginToRealApp(page: Page) {
   await page.goto(`${realBaseUrl}/login`);
+  if (await page.getByRole('link', { name: /dashboard|inicio|nueva factura|caja/i }).first().isVisible().catch(() => false)) {
+    return;
+  }
   await page.getByLabel(/usuario|email/i).fill(login ?? '');
-  await page.getByLabel(/contrasena|contrase.na|password/i).fill(password ?? '');
+  await page.getByRole('textbox', { name: /contrase(?:ñ|n)a|password/i }).fill(password ?? '');
   await page.getByRole('button', { name: /entrar|iniciar/i }).click();
-  await expect(page.getByRole('heading', { name: /dashboard|caja|reportes/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /nueva factura|reportes|respaldos/i }).first()).toBeVisible();
 }
 
 async function expectFirstAssetLoadsAsJavaScript(page: Page) {
