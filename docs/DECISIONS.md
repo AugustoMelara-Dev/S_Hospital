@@ -2,6 +2,27 @@
 
 ## Registro de decisiones
 
+### 2026-05-29 - Hospital San Isidro RC y recibo institucional en papel
+
+Decision:
+
+- La nueva línea de trabajo para Hospital San Isidro prioriza un recibo institucional en papel, parecido al talonario manual del hospital, con formatos carta, media carta o A5.
+- El recibo visible para paciente/enterante no debe ser ticket térmico, ni mostrar QR, barcode, scan_code ni códigos internos.
+- Las referencias históricas a 80mm/58mm quedan como compatibilidad legada o deuda documental, no como criterio de aceptación del recibo final.
+- Si scanner/códigos están deshabilitados, la UI de caja y catálogo operativo no debe mostrar controles de escaneo ni códigos internos a usuarios normales.
+- Si faltan datos fiscales/institucionales reales, el sistema debe mostrar "Configuración pendiente" y no inventar cumplimiento fiscal.
+
+Motivo:
+
+- El objetivo actual es presentar un sistema institucional para Hospital San Isidro y Gobierno de Honduras, no una caja POS comercial genérica.
+- La impresión debe parecer comprobante formal de hospital público, ser legible en papel blanco y conservar snapshots históricos.
+
+Consecuencia:
+
+- Fases futuras deben limpiar docs, QA, scripts y UI que todavía hablen de "térmico", "80mm", "58mm", "QR" o "barcode" como flujo principal.
+- Las reimpresiones siguen usando snapshots de factura e items.
+- Cualquier migración relacionada debe ser aditiva y precedida por backup o entorno descartable confirmado.
+
 ### 2026-05-16 - Backend Laravel API
 
 Decision:
