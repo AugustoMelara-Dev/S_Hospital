@@ -33,6 +33,22 @@ cd C:\Projects\S_Hospital
 & "C:\Program Files\Git\usr\bin\bash.exe" scripts/e2e_gate.sh
 ```
 
+Contra una instalacion ya levantada, por ejemplo Apache/Laravel en el servidor
+local o una URL LAN, usar el gate Windows sin iniciar Vite:
+
+```powershell
+cd C:\Projects\S_Hospital
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1 `
+  -UseExistingServer `
+  -BaseUrl http://127.0.0.1:8000
+```
+
+Cambiar `-BaseUrl` por la IP LAN real cuando se valide desde la red, por
+ejemplo `http://192.168.1.10`. Este gate sigue usando los escenarios E2E
+controlados de Playwright; ayuda a detectar rutas rotas, pantalla inicial,
+errores de navegador y regresiones de flujo. No reemplaza las pruebas fisicas
+de impresora, cliente LAN, MySQL/MariaDB real, restore o concurrencia.
+
 El E2E local usa ambiente seguro y API mockeada para cubrir login, caja, factura, eritropoyetina normal/gratis, pago, recibo media carta/carta/A5, historial, reimpresion, reportes y backup pending. No valida MySQL/MariaDB real ni hardware.
 
 ## Reset dev/testing con base descartable

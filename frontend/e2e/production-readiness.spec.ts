@@ -153,6 +153,7 @@ async function installApiMocks(page: Page) {
       { id: 2, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 2 },
     ],
   }));
+  await page.route('**/api/areas**', (route) => json(route, { data: [] }));
   await page.route('**/api/service-areas**', (route) => json(route, { data: [] }));
   await page.route('**/api/services**', (route) => json(route, { data: services, meta: { total: services.length } }));
   await page.route('**/api/cash-sessions/current', (route) => json(route, { data: currentCashSession }));
@@ -286,6 +287,39 @@ async function installApiMocks(page: Page) {
         paid: { count: 1, total: '28.75' },
         void: { count: 0, total: '0.00' },
       },
+    },
+  }));
+  await page.route('**/api/reports/monthly**', (route) => json(route, {
+    data: {
+      month: '2026-05',
+      date_from: '2026-05-01',
+      date_to: '2026-05-31',
+      total_billed: '28.75',
+      total_collected: '28.75',
+      total_pending: '0.00',
+      total_partial: '0.00',
+      total_voided: '0.00',
+      invoice_count: 1,
+      payment_count: 1,
+      payments_by_method: { cash: '28.75', transfer: '0.00', card: '0.00', other: '0.00' },
+      invoices_by_status: {
+        issued: { count: 0, total: '0.00' },
+        partial: { count: 0, total: '0.00' },
+        paid: { count: 1, total: '28.75' },
+        void: { count: 0, total: '0.00' },
+      },
+      daily_totals: [
+        {
+          date: '2026-05-17',
+          total_billed: '28.75',
+          total_collected: '28.75',
+          total_pending: '0.00',
+          total_partial: '0.00',
+          total_voided: '0.00',
+          invoice_count: 1,
+          payment_count: 1,
+        },
+      ],
     },
   }));
   await page.route('**/api/reports/income**', (route) => json(route, {

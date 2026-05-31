@@ -29,6 +29,10 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | `72aa99f` | Ayuda prepara resumen seguro para soporte y conserva capturas. | Implementado |
 | `3ec6442` | Manuales explican como usar resumen seguro. | Implementado |
 | `9b0c677` | Script `collect_support_packet.ps1` genera paquete seguro de soporte. | Implementado |
+| `77a4991` | Instalador usa migraciones no destructivas y agrega `APP_VERSION`. | Implementado |
+| `4a0b161` | Instalador registra worker continuo y respaldo diario en tareas Windows. | Implementado |
+| `a16ffef` | Manual de usuario se rehizo con lenguaje institucional no tecnico. | Implementado |
+| Esta fase | Gate E2E acepta `-UseExistingServer -BaseUrl` para validar instalacion local/LAN sin iniciar Vite; mock E2E cubre reporte mensual y areas para evitar fugas al backend real. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -86,20 +90,23 @@ Resultado observado:
 | `php artisan test tests/Feature/CashPaymentsReceiptTest.php` | Paso: 18 tests, ejecutado por cambios concurrentes de pagos/caja. |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check-branding.ps1` | Paso sin hallazgos. |
 | Parser PowerShell de `repair_hospital_system.ps1` y `collect_support_packet.ps1` | Paso. |
+| Parser PowerShell de `scripts\e2e_gate.ps1` | Paso. |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1` | Paso: 2 specs Playwright. Detecto y se corrigio fuga de `/api/areas?active=1` al backend local durante el flujo Reportes -> Respaldos. |
 
 ## Hallazgos Operativos Pendientes
 
-- `APP_VERSION` debe definirse en el `.env` instalado para identificar la
-  version real en diagnosticos.
-- Las tareas Windows `SistemaCajaHospitalaria-BackupWorker` y
-  `SistemaCajaHospitalaria-DailyBackup` aparecieron como no registradas en el
-  smoke local de reparacion segura.
+- Validar en una PC instalada que el `.env` generado por instalador conserva
+  `APP_VERSION` real para diagnosticos.
+- Validar en una PC instalada que `SistemaCajaHospitalaria-BackupWorker` queda
+  `Running` y que `SistemaCajaHospitalaria-DailyBackup` queda registrado con la
+  hora institucional acordada.
 - Falta validar desde una segunda computadora LAN usando IP fija o nombre local.
 - Falta prueba fisica de impresora institucional media carta/carta/A5.
 - Falta repetir restore MySQL/MariaDB en el servidor final si cambia equipo,
   rutas de dump o base real.
 - Falta full gate final despues de estabilizar cambios concurrentes:
-  backend tests completos, Pint, frontend tests/build, E2E y smoke navegador.
+  backend tests completos, Pint, frontend tests/build, E2E real contra servidor
+  instalado y smoke navegador.
 - Falta cerrar evidencia fisica en `qa/LAN_CLIENT_VALIDATION_PROOF.md` y
   `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`.
 
