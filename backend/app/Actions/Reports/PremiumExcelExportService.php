@@ -730,8 +730,8 @@ class PremiumExcelExportService
             $sheet5->setCellValue('B'.$row, $void['invoice_number']);
             $sheet5->setCellValue('C'.$row, $void['patient_name'] ?? 'N/A');
             $sheet5->setCellValue('D'.$row, (float) $void['total']);
-            $sheet5->setCellValue('E'.$row, $void['void_reason'] ?? 'Sin motivo');
-            $sheet5->setCellValue('F'.$row, $void['voided_by_name'] ?? 'N/A');
+            $sheet5->setCellValue('E'.$row, $void['reason'] ?? $void['void_reason'] ?? 'Sin motivo');
+            $sheet5->setCellValue('F'.$row, $void['user'] ?? $void['voided_by_name'] ?? 'N/A');
 
             $sheet5->getStyle('D'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
             $row++;
@@ -746,7 +746,7 @@ class PremiumExcelExportService
 
         // Reprints section (below voids table)
         $row += 3;
-        $sheet5->setCellValue('B'.$row, 'Historial de Reimpresiones Térmicas');
+        $sheet5->setCellValue('B'.$row, 'Historial de Reimpresiones Institucionales');
         $sheet5->getStyle('B'.$row)->applyFromArray($titleStyle);
 
         $row += 2;
@@ -762,19 +762,73 @@ class PremiumExcelExportService
         foreach ($operations['reprints'] as $reprint) {
             $sheet5->setCellValue('B'.$row, $reprint['invoice_number']);
             $sheet5->setCellValue('C'.$row, $reprint['patient_name'] ?? 'N/A');
-            $sheet5->setCellValue('D'.$row, "{$reprint['width']}mm");
+            $sheet5->setCellValue('D'.$row, $this->receiptWidthLabel($reprint['width'] ?? null));
             $sheet5->setCellValue('E'.$row, $reprint['reason'] ?? 'Sin motivo');
-            $sheet5->setCellValue('F'.$row, $reprint['username'] ?? 'N/A');
+            $sheet5->setCellValue('F'.$row, $reprint['user'] ?? $reprint['username'] ?? 'N/A');
+            $row++;
+        }
+
+        // Payment reversals section
+        $row += 3;
+        $sheet5->setCellValue('B'.$row, 'Historial de Reversos de Pago');
+        $sheet5->getStyle('B'.$row)->applyFromArray($titleStyle);
+
+        $row += 2;
+        $sheet5->setCellValue('B'.$row, 'Factura');
+        $sheet5->setCellValue('C'.$row, 'Paciente');
+        $sheet5->setCellValue('D'.$row, 'Método');
+        $sheet5->setCellValue('E'.$row, 'Monto');
+        $sheet5->setCellValue('F'.$row, 'Motivo');
+        $sheet5->setCellValue('G'.$row, 'Reversado por');
+        $sheet5->setCellValue('H'.$row, 'Fecha');
+        $sheet5->getStyle("B{$row}:H{$row}")->applyFromArray($headerStyle);
+        $sheet5->getStyle("B{$row}:H{$row}")->getFill()->setStartColor(new Color('6D28D9'));
+
+        $row++;
+        foreach ($operations['payment_voids'] ?? [] as $paymentVoid) {
+            $sheet5->setCellValue('B'.$row, $paymentVoid['invoice_number'] ?? 'N/A');
+            $sheet5->setCellValue('C'.$row, $paymentVoid['patient_name'] ?? 'N/A');
+            $sheet5->setCellValue('D'.$row, $this->paymentMethodLabel($paymentVoid['method'] ?? ''));
+            $sheet5->setCellValue('E'.$row, (float) ($paymentVoid['amount'] ?? 0));
+            $sheet5->setCellValue('F'.$row, $paymentVoid['reason'] ?? 'Sin motivo');
+            $sheet5->setCellValue('G'.$row, $paymentVoid['voided_by'] ?? 'N/A');
+            $sheet5->setCellValue('H'.$row, isset($paymentVoid['voided_at'])
+                ? Carbon::parse($paymentVoid['voided_at'])->format('d/m/Y H:i')
+                : 'N/A');
+            $sheet5->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
             $row++;
         }
 
         // Freeze pane
         $sheet5->freezePane('A5');
 
-        foreach (['B', 'C', 'D', 'E', 'F'] as $col) {
+        foreach (['B', 'C', 'D', 'E', 'F', 'G', 'H'] as $col) {
             $sheet5->getColumnDimension($col)->setAutoSize(true);
         }
 
         return $spreadsheet;
+    }
+
+    private function paymentMethodLabel(string $method): string
+    {
+        return [
+            'cash' => 'Efectivo',
+            'transfer' => 'Transferencia',
+            'card' => 'Tarjeta',
+            'other' => 'Otro',
+        ][$method] ?? ucfirst($method);
+    }
+
+    private function receiptWidthLabel(?string $width): string
+    {
+        return [
+            '58' => '58mm',
+            '80' => '80mm',
+            '58mm' => '58mm',
+            '80mm' => '80mm',
+            'a5' => 'A5',
+            'half_letter' => 'Media carta',
+            'letter' => 'Carta',
+        ][$width ?? ''] ?? 'N/A';
     }
 }

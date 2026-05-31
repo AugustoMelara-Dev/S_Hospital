@@ -794,6 +794,69 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.backups.0.filename', 'hospital-backup-test.sql');
     }
 
+    public function test_operations_report_lists_payment_reversals(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $supervisor = $this->supervisor();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $paymentId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->json('data.payment.id');
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/payments/{$paymentId}/void", [
+                'reason' => 'Cobro registrado por error',
+            ])
+            ->assertOk();
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/operations?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertJsonPath('data.summary.payment_void_count', 1)
+            ->assertJsonCount(1, 'data.payment_voids')
+            ->assertJsonPath('data.payment_voids.0.invoice_number', '000-001-01-00000001')
+            ->assertJsonPath('data.payment_voids.0.method', Payment::METHOD_CASH)
+            ->assertJsonPath('data.payment_voids.0.amount', '17.25')
+            ->assertJsonPath('data.payment_voids.0.reason', 'Cobro registrado por error')
+            ->assertJsonPath('data.payment_voids.0.voided_by', $supervisor->name);
+
+        $xlsx = $this->actingAs($this->admin())
+            ->get('/api/reports/export?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->streamedContent();
+
+        $path = tempnam(sys_get_temp_dir(), 'payment-voids-');
+        file_put_contents($path, $xlsx);
+
+        try {
+            $spreadsheet = IOFactory::load($path);
+            $sheet = $spreadsheet->getSheetByName('Auditoría');
+
+            $this->assertNotNull($sheet);
+            $this->assertSame('Historial de Reversos de Pago', $sheet->getCell('B14')->getValue());
+            $this->assertSame('Factura', $sheet->getCell('B16')->getValue());
+            $this->assertSame('Método', $sheet->getCell('D16')->getValue());
+            $this->assertSame('000-001-01-00000001', $sheet->getCell('B17')->getValue());
+            $this->assertSame('Efectivo', $sheet->getCell('D17')->getValue());
+            $this->assertSame(17.25, $sheet->getCell('E17')->getValue());
+            $this->assertSame('Cobro registrado por error', $sheet->getCell('F17')->getValue());
+            $this->assertSame($supervisor->name, $sheet->getCell('G17')->getValue());
+        } finally {
+            if ($path !== false && file_exists($path)) {
+                unlink($path);
+            }
+        }
+    }
+
     public function test_cash_session_report_returns_expected_amounts_payments_movements_and_permissions(): void
     {
         $this->seedBillingBase();

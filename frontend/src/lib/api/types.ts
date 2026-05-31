@@ -358,6 +358,7 @@ export type OperationsReport = {
   summary: {
     void_count: number;
     reprint_count: number;
+    payment_void_count?: number;
     backup_count: number;
     failed_backup_count: number;
     cashier_count: number;
@@ -378,6 +379,16 @@ export type OperationsReport = {
     reason: string | null;
     created_at: string | null;
     user: string | null;
+  }>;
+  payment_voids?: Array<{
+    invoice_number: string | null;
+    patient_name: string | null;
+    method: Payment['method'];
+    amount: string;
+    reason: string | null;
+    voided_at: string | null;
+    voided_by: string | null;
+    cashier: string | null;
   }>;
   backups: Array<{
     id: number;

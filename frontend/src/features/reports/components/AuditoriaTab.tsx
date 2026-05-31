@@ -1,5 +1,5 @@
 import { type FormEvent } from 'react';
-import { AlertTriangle, Database, Download, Printer, Users } from 'lucide-react';
+import { AlertTriangle, Database, Download, Printer, RotateCcw, Users } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Input } from '../../../components/ui/input';
@@ -37,10 +37,10 @@ export function AuditoriaTab({
     onSubmit();
   }
 
-
   const hasOperationalEvents = operations
     ? operations.voids.length > 0 ||
       operations.reprints.length > 0 ||
+      (operations.payment_voids?.length ?? 0) > 0 ||
       operations.backups.length > 0 ||
       operations.cashiers.length > 0
     : false;
@@ -82,9 +82,10 @@ export function AuditoriaTab({
 
       {operations && (
         <>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
             <KPICard title="Anulaciones" value={operations.summary.void_count} icon={<AlertTriangle className="h-4 w-4" />} />
             <KPICard title="Reimpresiones" value={operations.summary.reprint_count} icon={<Printer className="h-4 w-4" />} />
+            <KPICard title="Reversos" value={operations.summary.payment_void_count ?? 0} icon={<RotateCcw className="h-4 w-4" />} />
             <KPICard title="Respaldos" value={operations.summary.backup_count} icon={<Database className="h-4 w-4" />} />
             <KPICard title="Fallidos" value={operations.summary.failed_backup_count} />
             <KPICard title="Cajeros activos" value={operations.summary.cashier_count} icon={<Users className="h-4 w-4" />} />
@@ -109,8 +110,8 @@ export function AuditoriaTab({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {operations.voids.map((voidedInvoice) => (
-                      <TableRow key={voidedInvoice.invoice_id}>
+                    {operations.voids.map((voidedInvoice, index) => (
+                      <TableRow key={`void-${voidedInvoice.invoice_id ?? voidedInvoice.invoice_number ?? index}`}>
                         <TableCell className="font-medium">{voidedInvoice.invoice_number}</TableCell>
                         <TableCell>{voidedInvoice.patient_name}</TableCell>
                         <TableCell className="text-right">L. {voidedInvoice.total}</TableCell>
@@ -158,6 +159,43 @@ export function AuditoriaTab({
             </Card>
           )}
 
+          {(operations.payment_voids?.length ?? 0) > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Reversos de pago</CardTitle>
+                <CardDescription>Pagos corregidos en el rango consultado</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Factura</TableHead>
+                      <TableHead>Paciente</TableHead>
+                      <TableHead>Método</TableHead>
+                      <TableHead className="text-right">Monto</TableHead>
+                      <TableHead>Motivo</TableHead>
+                      <TableHead>Reversado por</TableHead>
+                      <TableHead>Fecha</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {operations.payment_voids?.map((paymentVoid, index) => (
+                      <TableRow key={`${paymentVoid.invoice_number ?? 'sin-factura'}-${index}`}>
+                        <TableCell className="font-medium">{paymentVoid.invoice_number ?? '-'}</TableCell>
+                        <TableCell>{paymentVoid.patient_name ?? '-'}</TableCell>
+                        <TableCell>{paymentMethodLabel(paymentVoid.method)}</TableCell>
+                        <TableCell className="text-right">L. {paymentVoid.amount}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{paymentVoid.reason ?? 'Sin motivo'}</TableCell>
+                        <TableCell>{paymentVoid.voided_by ?? 'Sin usuario'}</TableCell>
+                        <TableCell>{formatDate(paymentVoid.voided_at)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
           {operations.backups.length > 0 && (
             <Card>
               <CardHeader>
@@ -177,8 +215,8 @@ export function AuditoriaTab({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {operations.backups.map((backup) => (
-                      <TableRow key={backup.id}>
+                    {operations.backups.map((backup, index) => (
+                      <TableRow key={`backup-${backup.id ?? backup.filename ?? index}`}>
                         <TableCell className="max-w-[200px] truncate font-medium">{backup.filename}</TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${backup.status === 'success' ? 'bg-green-100 text-green-800' : backup.status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
@@ -216,8 +254,8 @@ export function AuditoriaTab({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {operations.cashiers.map((cashier) => (
-                      <TableRow key={cashier.user_id}>
+                    {operations.cashiers.map((cashier, index) => (
+                      <TableRow key={`cashier-${cashier.user_id ?? cashier.username ?? index}`}>
                         <TableCell className="font-medium">{cashier.name}</TableCell>
                         <TableCell>{cashier.username}</TableCell>
                         <TableCell className="text-right">{cashier.payment_count}</TableCell>
@@ -235,7 +273,7 @@ export function AuditoriaTab({
           {!hasOperationalEvents && (
             <EmptyState
               title="Sin eventos operativos"
-              description="No hay anulaciones, reimpresiones, respaldos ni actividad de cajeros para el rango seleccionado."
+              description="No hay anulaciones, reversos, reimpresiones, respaldos ni actividad de cajeros para el rango seleccionado."
             />
           )}
 
@@ -272,6 +310,10 @@ function backupStatusLabel(status: string): string {
 
 function backupTypeLabel(type: string): string {
   return { manual: 'Manual', scheduled: 'Automatico' }[type] ?? 'Operativo';
+}
+
+function paymentMethodLabel(method: string): string {
+  return { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta', other: 'Otro' }[method] ?? method;
 }
 
 function formatBytes(size: number | null): string {

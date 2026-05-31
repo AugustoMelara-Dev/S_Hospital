@@ -134,6 +134,51 @@ class OperationsReportService
             ->values()
             ->all();
 
+        $paymentVoidQuery = Payment::query()
+            ->with(['invoice:id,invoice_number,patient_name', 'voidedBy:id,name,username', 'user:id,name,username'])
+            ->where('payments.status', Payment::STATUS_VOID)
+            ->whereBetween('payments.voided_at', [$start, $end])
+            ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
+                $query->where('payments.voided_by', $filters['user_id']);
+            })
+            ->when(! empty($filters['cash_session_id']), function ($query) use ($filters): void {
+                $query->where('payments.cash_session_id', $filters['cash_session_id']);
+            })
+            ->when(! empty($filters['method']), function ($query) use ($filters): void {
+                $query->where('payments.method', $filters['method']);
+            })
+            ->when($this->hasInvoiceFilters($filters), function ($query) use ($filters): void {
+                $query->whereHas('invoice', function ($invoiceQuery) use ($filters): void {
+                    $invoiceQuery
+                        ->when(! empty($filters['status']), function ($query) use ($filters): void {
+                            $query->where('status', $filters['status']);
+                        })
+                        ->when(! empty($filters['category_id']), function ($query) use ($filters): void {
+                            $query->whereHas('items', function ($itemQuery) use ($filters): void {
+                                $itemQuery->where('category_id', $filters['category_id']);
+                            });
+                        });
+                });
+            });
+
+        $paymentVoidCount = (clone $paymentVoidQuery)->count();
+        $paymentVoids = (clone $paymentVoidQuery)
+            ->latest('payments.voided_at')
+            ->limit(25)
+            ->get()
+            ->map(fn (Payment $payment): array => [
+                'invoice_number' => $payment->invoice?->invoice_number,
+                'patient_name' => $payment->invoice?->patient_name,
+                'method' => $payment->method,
+                'amount' => (string) $payment->amount,
+                'reason' => $payment->void_reason,
+                'voided_at' => $payment->voided_at?->toISOString(),
+                'voided_by' => $payment->voidedBy?->name,
+                'cashier' => $payment->user?->name,
+            ])
+            ->values()
+            ->all();
+
         $backupCount = 0;
         $failedBackupCount = 0;
         $backups = [];
@@ -280,12 +325,14 @@ class OperationsReportService
             'summary' => [
                 'void_count' => $voidCount,
                 'reprint_count' => $reprintCount,
+                'payment_void_count' => $paymentVoidCount,
                 'backup_count' => $backupCount,
                 'failed_backup_count' => $failedBackupCount,
                 'cashier_count' => count($cashiers),
             ],
             'voids' => $voids,
             'reprints' => $reprints,
+            'payment_voids' => $paymentVoids,
             'backups' => $backups,
             'cashiers' => $cashiers,
         ];
