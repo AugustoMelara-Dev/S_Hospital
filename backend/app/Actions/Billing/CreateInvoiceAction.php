@@ -108,7 +108,7 @@ class CreateInvoiceAction
     {
         $serviceIds = collect($items)->pluck('service_id')->unique()->values();
         $services = Service::query()
-            ->with('category:id,name')
+            ->with(['category:id,name', 'area:id,name'])
             ->whereIn('id', $serviceIds)
             ->get()
             ->keyBy('id');

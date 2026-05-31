@@ -58,6 +58,9 @@ class ServiceSalesReportService
             ->when(! empty($filters['category_id']), function ($query) use ($filters): void {
                 $query->where('invoice_items.category_id', $filters['category_id']);
             })
+            ->when(! empty($filters['area_id']), function ($query) use ($filters): void {
+                $query->where('invoice_items.area_id', $filters['area_id']);
+            })
             ->groupBy('invoice_items.service_name', 'invoice_items.category_name')
             ->orderByDesc('total_cents')
             ->orderBy('invoice_items.service_name')
@@ -86,6 +89,7 @@ class ServiceSalesReportService
                 'cash_session_id' => $filters['cash_session_id'] ?? null,
                 'user_id' => $filters['user_id'] ?? null,
                 'category_id' => $filters['category_id'] ?? null,
+                'area_id' => $filters['area_id'] ?? null,
                 'method' => $filters['method'] ?? null,
                 'status' => $filters['status'] ?? null,
             ],

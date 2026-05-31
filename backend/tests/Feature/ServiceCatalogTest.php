@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Area;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Service;
@@ -24,7 +25,9 @@ class ServiceCatalogTest extends TestCase
         $this->seed(ServiceCatalogSeeder::class);
 
         $this->assertSame(5, Category::query()->count());
+        $this->assertSame(5, Area::query()->count());
         $this->assertSame(122, Service::query()->count());
+        $this->assertSame(0, Service::query()->whereNull('area_id')->count());
 
         $erythropoietin = Service::query()
             ->where('name', 'Eritropoyetina')

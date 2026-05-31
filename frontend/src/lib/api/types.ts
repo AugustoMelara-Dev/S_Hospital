@@ -48,9 +48,17 @@ export type Category = {
   sort_order: number;
 };
 
+export type Area = {
+  id: number;
+  name: string;
+  slug: string;
+  active: boolean;
+};
+
 export type Service = {
   id: number;
   category_id: number;
+  area_id?: number | null;
   name: string;
   aliases?: string | null;
   slug: string;
@@ -64,6 +72,7 @@ export type Service = {
   is_billable?: boolean;
   special_rule_code: string | null;
   category?: Category;
+  area?: Area | null;
 };
 
 export type CategoryPayload = {
@@ -74,6 +83,7 @@ export type CategoryPayload = {
 
 export type ServicePayload = {
   category_id: number;
+  area_id?: number | null;
   name: string;
   aliases?: string | null;
   price: string;
@@ -105,6 +115,8 @@ export type InvoiceItem = {
   service_name: string;
   category_id: number;
   category_name: string;
+  area_id?: number | null;
+  area_name?: string | null;
   quantity: string;
   unit_price: string;
   tax_rate: string;
@@ -291,6 +303,19 @@ export type ServiceSalesReport = {
   services: Array<{
     service: string;
     category: string;
+    item_count: number;
+    quantity: string;
+    total: string;
+  }>;
+};
+
+export type AreaIncomeReport = {
+  date_from: string;
+  date_to: string;
+  filters: ReportFilters;
+  areas: Array<{
+    area_id: number | null;
+    area: string;
     item_count: number;
     quantity: string;
     total: string;
@@ -524,6 +549,7 @@ export type ReportFilters = {
   cash_session_id?: string | number | null;
   user_id?: string | number | null;
   category_id?: string | number | null;
+  area_id?: string | number | null;
   method?: Payment['method'] | '' | null;
   status?: Invoice['status'] | '' | null;
 };

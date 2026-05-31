@@ -739,3 +739,21 @@ Consecuencia:
 
 - Produccion sigue sin ejecutar seeders de validacion fuera de `local` o `testing`.
 - El branding check falla si reaparecen nombres de hospital temporales, usuarios con sufijo de demostracion, `hospital-billing.local`, CAI temporal o el seeder anterior en codigo, e2e, tests o manuales clave.
+
+### 2026-05-31 - Areas institucionales con snapshot financiero
+
+Decision:
+
+- El catalogo incorpora `areas` como dimension institucional separada de categorias tecnicas.
+- Cada item facturado guarda `area_id` y `area_name` como snapshot historico junto con categoria, nombre y precio del servicio.
+- El reporte `/api/reports/areas` suma desde `invoice_items` y excluye facturas anuladas, de modo que un cambio posterior de area en el catalogo no reescribe ingresos historicos.
+
+Motivo:
+
+- Administracion necesita lectura por area sin depender del estado vivo del catalogo.
+- Los cambios de precio, nombre, categoria o area solo deben afectar facturas futuras; las emitidas deben conservar su evidencia original.
+
+Consecuencia:
+
+- Las migraciones son aditivas y permiten servicios o facturas antiguas sin area hasta su normalizacion.
+- Los filtros financieros aceptan `area_id` y las pruebas cubren que una factura emitida antes de cambiar el servicio de area sigue reportando contra el area original.

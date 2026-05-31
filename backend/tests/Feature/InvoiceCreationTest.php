@@ -189,6 +189,7 @@ class InvoiceCreationTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.items.0.service_name', 'Glucosa')
             ->assertJsonPath('data.items.0.category_name', 'Laboratorio')
+            ->assertJsonPath('data.items.0.area_name', 'Laboratorio')
             ->assertJsonPath('data.items.0.unit_price', '15.00')
             ->assertJsonPath('data.items.0.line_total', '17.25');
     }

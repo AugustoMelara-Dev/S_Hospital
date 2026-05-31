@@ -23,7 +23,7 @@ class ServiceController extends Controller
         $request->user()->can('catalog.view') || abort(403);
 
         $query = Service::query()
-            ->with('category:id,name,slug,active,sort_order')
+            ->with(['category:id,name,slug,active,sort_order', 'area:id,name,slug,active'])
             ->when($request->filled('code'), function ($query) use ($request): void {
                 $code = $request->string('code')->toString();
 
@@ -35,6 +35,7 @@ class ServiceController extends Controller
                 });
             })
             ->when($request->filled('category_id'), fn ($query) => $query->where('category_id', $request->integer('category_id')))
+            ->when($request->filled('area_id'), fn ($query) => $query->where('area_id', $request->integer('area_id')))
             ->when($request->has('active'), fn ($query) => $query->where('active', $request->boolean('active')))
             ->when($request->boolean('billing'), fn ($query) => $query
                 ->where('active', true)
@@ -95,7 +96,7 @@ class ServiceController extends Controller
         });
 
         return response()->json([
-            'data' => $service->load('category:id,name,slug,active,sort_order'),
+            'data' => $service->load('category:id,name,slug,active,sort_order', 'area:id,name,slug,active'),
         ], 201);
     }
 
@@ -134,7 +135,7 @@ class ServiceController extends Controller
         });
 
         return response()->json([
-            'data' => $service->load('category:id,name,slug,active,sort_order'),
+            'data' => $service->load('category:id,name,slug,active,sort_order', 'area:id,name,slug,active'),
         ]);
     }
 
@@ -145,6 +146,7 @@ class ServiceController extends Controller
     {
         return $service->only([
             'category_id',
+            'area_id',
             'name',
             'aliases',
             'slug',

@@ -20,6 +20,7 @@ class IndexServiceRequest extends FormRequest
             'search' => ['sometimes', 'string', 'max:120'],
             'code' => ['sometimes', 'string', 'max:120'],
             'category_id' => ['sometimes', 'integer', 'exists:categories,id'],
+            'area_id' => ['sometimes', 'integer', 'exists:areas,id'],
             'active' => ['sometimes', 'boolean'],
             'billing' => ['sometimes', 'boolean'],
             'page' => ['sometimes', 'integer', 'min:1'],

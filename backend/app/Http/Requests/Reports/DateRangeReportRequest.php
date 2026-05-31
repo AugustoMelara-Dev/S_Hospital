@@ -36,6 +36,7 @@ class DateRangeReportRequest extends FormRequest
             'cash_session_id' => ['sometimes', 'integer', 'exists:cash_register_sessions,id'],
             'user_id' => ['sometimes', 'integer', 'exists:users,id'],
             'category_id' => ['sometimes', 'integer', 'exists:categories,id'],
+            'area_id' => ['sometimes', 'integer', 'exists:areas,id'],
             'method' => ['sometimes', Rule::in(Payment::METHODS)],
             'status' => ['sometimes', Rule::in([
                 Invoice::STATUS_ISSUED,

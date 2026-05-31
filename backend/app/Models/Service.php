@@ -15,6 +15,7 @@ class Service extends Model
 
     protected $fillable = [
         'category_id',
+        'area_id',
         'name',
         'aliases',
         'slug',
@@ -47,6 +48,11 @@ class Service extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function area(): BelongsTo
+    {
+        return $this->belongsTo(Area::class);
     }
 
     public function priceHistories(): HasMany

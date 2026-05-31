@@ -125,6 +125,15 @@ class FinancialFactsService
                         ->where('invoice_items.category_id', $filters['category_id']);
                 });
             })
+            ->when(! empty($filters['area_id']), function (Builder $query) use ($filters): void {
+                $query->whereExists(function ($subquery) use ($filters): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('invoice_items')
+                        ->whereColumn('invoice_items.invoice_id', 'invoices.id')
+                        ->where('invoice_items.area_id', $filters['area_id']);
+                });
+            })
             ->when(! empty($filters['status']), function (Builder $query) use ($filters): void {
                 $query->where('status', $filters['status']);
             });
@@ -155,6 +164,15 @@ class FinancialFactsService
                         ->from('invoice_items')
                         ->whereColumn('invoice_items.invoice_id', 'invoices.id')
                         ->where('invoice_items.category_id', $filters['category_id']);
+                });
+            })
+            ->when(! empty($filters['area_id']), function (Builder $query) use ($filters): void {
+                $query->whereExists(function ($subquery) use ($filters): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('invoice_items')
+                        ->whereColumn('invoice_items.invoice_id', 'invoices.id')
+                        ->where('invoice_items.area_id', $filters['area_id']);
                 });
             });
     }

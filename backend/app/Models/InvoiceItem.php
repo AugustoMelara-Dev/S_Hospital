@@ -13,6 +13,8 @@ class InvoiceItem extends Model
         'service_name',
         'category_id',
         'category_name',
+        'area_id',
+        'area_name',
         'scan_code',
         'barcode',
         'qr_code',
@@ -48,5 +50,10 @@ class InvoiceItem extends Model
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
+    }
+
+    public function area(): BelongsTo
+    {
+        return $this->belongsTo(Area::class);
     }
 }

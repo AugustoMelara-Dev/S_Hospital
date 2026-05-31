@@ -22,6 +22,7 @@ class ServiceSearch
             $service->barcode,
             $service->qr_code,
             $service->category?->name,
+            $service->area?->name,
         ])));
 
         if (str_contains($haystack, $needle)) {

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Area;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use App\Models\CashRegisterSession;
@@ -232,6 +233,43 @@ class ReportsTest extends TestCase
             ->assertJsonMissing(['service' => 'Eritropoyetina']);
 
         $this->assertNotSame($glucoseInvoice, $hemogramInvoice);
+    }
+
+    public function test_area_income_report_uses_invoice_item_snapshots_and_excludes_void_invoices(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $glucoseInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $voidInvoice = $this->createInvoice($cashier, 'Hemograma Completo');
+        $laboratoryArea = Area::query()->where('slug', 'laboratorio')->firstOrFail();
+        $changedArea = Area::query()->create([
+            'name' => 'Area cambiada',
+            'slug' => 'area-cambiada',
+            'active' => true,
+        ]);
+
+        Service::query()->where('name', 'Glucosa')->update(['area_id' => $changedArea->id]);
+        Invoice::query()->whereKey($voidInvoice)->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => now(),
+            'void_reason' => 'No cuenta para ingresos por area',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/areas?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertJsonCount(1, 'data.areas')
+            ->assertJsonPath('data.areas.0.area_id', $laboratoryArea->id)
+            ->assertJsonPath('data.areas.0.area', 'Laboratorio')
+            ->assertJsonPath('data.areas.0.total', '17.25');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/areas?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&area_id='.$changedArea->id)
+            ->assertOk()
+            ->assertJsonCount(0, 'data.areas');
+
+        $this->assertNotSame($glucoseInvoice, $voidInvoice);
     }
 
     public function test_range_filters_apply_to_category_services_and_cashier_reports(): void

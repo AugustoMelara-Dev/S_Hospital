@@ -13,6 +13,7 @@ import type {
   FiscalSettings,
   FiscalSequence,
   Category,
+  Area,
   Service,
   CategoryPayload,
   ServicePayload,
@@ -27,6 +28,7 @@ import type {
   DailyReport,
   IncomeReport,
   CategoryReport,
+  AreaIncomeReport,
   ServiceSalesReport,
   OperationsReport,
   CashSessionReport,
@@ -58,6 +60,7 @@ export type {
   FiscalSettings,
   FiscalSequence,
   Category,
+  Area,
   Service,
   CategoryPayload,
   ServicePayload,
@@ -72,6 +75,7 @@ export type {
   DailyReport,
   IncomeReport,
   CategoryReport,
+  AreaIncomeReport,
   ServiceSalesReport,
   OperationsReport,
   CashSessionReport,
@@ -190,6 +194,10 @@ export const apiClient = {
 
   async getCategoryReport(filters: ReportFilters): Promise<CategoryReport> {
     return reports.getCategoryReport(filters);
+  },
+
+  async getAreaIncomeReport(filters: ReportFilters): Promise<AreaIncomeReport> {
+    return reports.getAreaIncomeReport(filters);
   },
 
   async getServiceSalesReport(filters: ReportFilters): Promise<ServiceSalesReport> {

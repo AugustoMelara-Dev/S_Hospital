@@ -48,6 +48,15 @@ class IncomeReportService
                         ->whereColumn('invoice_items.invoice_id', 'invoices.id')
                         ->where('invoice_items.category_id', $filters['category_id']);
                 });
+            })
+            ->when(! empty($filters['area_id']), function (Builder $query) use ($filters): void {
+                $query->whereExists(function ($subquery) use ($filters): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('invoice_items')
+                        ->whereColumn('invoice_items.invoice_id', 'invoices.id')
+                        ->where('invoice_items.area_id', $filters['area_id']);
+                });
             });
 
         $payments = (clone $base)
@@ -66,17 +75,22 @@ class IncomeReportService
             $invoice = $payment->invoice;
             $paymentAmountCents = (int) round(((float) $payment->amount) * 100);
 
-            if (! empty($filters['category_id'])) {
-                $categoryTotal = 0.0;
+            if (! empty($filters['category_id']) || ! empty($filters['area_id'])) {
+                $filteredTotal = 0.0;
                 if ($invoice) {
                     foreach ($invoice->items as $item) {
-                        if ((int) $item->category_id === (int) $filters['category_id']) {
-                            $categoryTotal += (float) $item->line_total;
+                        $matchesCategory = empty($filters['category_id'])
+                            || (int) $item->category_id === (int) $filters['category_id'];
+                        $matchesArea = empty($filters['area_id'])
+                            || (int) $item->area_id === (int) $filters['area_id'];
+
+                        if ($matchesCategory && $matchesArea) {
+                            $filteredTotal += (float) $item->line_total;
                         }
                     }
                     $invoiceTotal = (float) $invoice->total;
                     if ($invoiceTotal > 0) {
-                        $collectedCents = (int) round($paymentAmountCents * ($categoryTotal / $invoiceTotal));
+                        $collectedCents = (int) round($paymentAmountCents * ($filteredTotal / $invoiceTotal));
                     } else {
                         $collectedCents = 0;
                     }
@@ -111,6 +125,7 @@ class IncomeReportService
                 'cash_session_id' => $filters['cash_session_id'] ?? null,
                 'user_id' => $filters['user_id'] ?? null,
                 'category_id' => $filters['category_id'] ?? null,
+                'area_id' => $filters['area_id'] ?? null,
                 'method' => $filters['method'] ?? null,
                 'status' => $filters['status'] ?? null,
             ],

@@ -2,19 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Reports\AreaIncomeReportService;
 use App\Actions\Reports\CashSessionReportService;
 use App\Actions\Reports\CategoryReportService;
 use App\Actions\Reports\DailyReportService;
 use App\Actions\Reports\DashboardReportService;
-use App\Actions\Reports\PremiumExcelExportService;
 use App\Actions\Reports\IncomeReportService;
 use App\Actions\Reports\OperationsReportService;
-use App\Actions\Reports\ServiceSalesReportService;
 use App\Actions\Reports\PdfExportService;
+use App\Actions\Reports\PremiumExcelExportService;
+use App\Actions\Reports\ServiceSalesReportService;
 use App\Http\Requests\Reports\DailyReportRequest;
 use App\Http\Requests\Reports\DashboardReportRequest;
 use App\Http\Requests\Reports\DateRangeReportRequest;
 use App\Models\CashRegisterSession;
+use App\Models\FiscalSetting;
+use App\Models\Invoice;
+use App\Models\Payment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -46,6 +50,13 @@ class ReportController extends Controller
     }
 
     public function categories(DateRangeReportRequest $request, CategoryReportService $reports): JsonResponse
+    {
+        return response()->json([
+            'data' => $reports->report($this->scopedFilters($request)),
+        ]);
+    }
+
+    public function areas(DateRangeReportRequest $request, AreaIncomeReportService $reports): JsonResponse
     {
         return response()->json([
             'data' => $reports->report($this->scopedFilters($request)),
@@ -120,20 +131,20 @@ class ReportController extends Controller
         $request->user()->can('reports.export') || abort(403);
         ($request->user()->can('reports.managerial.view') || $request->user()->can('reports.cash_session.view')) || abort(403);
 
-        $fiscal = \App\Models\FiscalSetting::first() ?? new \App\Models\FiscalSetting([
+        $fiscal = FiscalSetting::first() ?? new FiscalSetting([
             'hospital_name' => 'Hospital Local',
-            'rtn' => 'N/A'
+            'rtn' => 'N/A',
         ]);
 
-        if ($request->filled('date') || (!$request->filled('date_from') && !$request->filled('date_to'))) {
+        if ($request->filled('date') || (! $request->filled('date_from') && ! $request->filled('date_to'))) {
             $date = $request->input('date', now()->toDateString());
             $data = $dailyReports->report($date);
-            
+
             $pdf = $pdfService->generateDailyClosurePdf($data, $fiscal->toArray());
-            
+
             return response($pdf, 200, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="cierre_diario_' . $date . '.pdf"',
+                'Content-Disposition' => 'attachment; filename="cierre_diario_'.$date.'.pdf"',
             ]);
         }
 
@@ -152,12 +163,13 @@ class ReportController extends Controller
             'cash_session_id' => ['sometimes', 'integer', 'exists:cash_register_sessions,id'],
             'user_id' => ['sometimes', 'integer', 'exists:users,id'],
             'category_id' => ['sometimes', 'integer', 'exists:categories,id'],
-            'method' => ['sometimes', Rule::in(\App\Models\Payment::METHODS)],
+            'area_id' => ['sometimes', 'integer', 'exists:areas,id'],
+            'method' => ['sometimes', Rule::in(Payment::METHODS)],
             'status' => ['sometimes', Rule::in([
-                \App\Models\Invoice::STATUS_ISSUED,
-                \App\Models\Invoice::STATUS_PARTIAL,
-                \App\Models\Invoice::STATUS_PAID,
-                \App\Models\Invoice::STATUS_VOID,
+                Invoice::STATUS_ISSUED,
+                Invoice::STATUS_PARTIAL,
+                Invoice::STATUS_PAID,
+                Invoice::STATUS_VOID,
             ])],
         ]);
 
@@ -167,19 +179,20 @@ class ReportController extends Controller
             'cash_session_id' => $request->input('cash_session_id'),
             'user_id' => $request->input('user_id'),
             'category_id' => $request->input('category_id'),
+            'area_id' => $request->input('area_id'),
             'method' => $request->input('method'),
             'status' => $request->input('status'),
         ];
 
-        if (!$request->user()->can('reports.managerial.view')) {
+        if (! $request->user()->can('reports.managerial.view')) {
             abort_if(empty($filters['cash_session_id']), 403);
 
-            if (!empty($filters['cash_session_id'])) {
-                $exists = \App\Models\CashRegisterSession::query()
+            if (! empty($filters['cash_session_id'])) {
+                $exists = CashRegisterSession::query()
                     ->whereKey($filters['cash_session_id'])
                     ->where('user_id', $request->user()->id)
                     ->exists();
-                if (!$exists) {
+                if (! $exists) {
                     abort(403);
                 }
             }
@@ -202,7 +215,7 @@ class ReportController extends Controller
 
         return response($pdf, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="cierre_periodo_' . $filters['date_from'] . '_a_' . $filters['date_to'] . '.pdf"',
+            'Content-Disposition' => 'attachment; filename="cierre_periodo_'.$filters['date_from'].'_a_'.$filters['date_to'].'.pdf"',
         ]);
     }
 

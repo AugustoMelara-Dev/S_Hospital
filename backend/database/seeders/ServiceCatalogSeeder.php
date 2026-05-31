@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Area;
 use App\Models\Category;
 use App\Models\Service;
 use Illuminate\Database\Seeder;
@@ -44,6 +45,13 @@ class ServiceCatalogSeeder extends Seeder
                 $categorySlug = $this->slug($row['categoria']);
                 $categorySourceKey = $this->categorySourceKey($row['categoria']);
                 $categoryOrders[$categorySlug] ??= count($categoryOrders);
+                $area = Area::query()->firstOrCreate(
+                    ['slug' => $categorySlug],
+                    [
+                        'name' => $row['categoria'],
+                        'active' => true,
+                    ],
+                );
 
                 $category = Category::query()
                     ->where('source_key', $categorySourceKey)
@@ -73,6 +81,7 @@ class ServiceCatalogSeeder extends Seeder
                 $serviceData = [
                     'source_key' => $serviceSourceKey,
                     'name' => $row['servicio'],
+                    'area_id' => $area->id,
                     'category_id' => $category->id,
                     'slug' => $serviceSlug,
                     'source_hash' => $this->serviceSourceHash($row),
