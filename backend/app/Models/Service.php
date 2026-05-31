@@ -14,6 +14,7 @@ class Service extends Model
 
     protected $fillable = [
         'category_id',
+        'area_id',
         'name',
         'slug',
         'source_key',
@@ -21,10 +22,16 @@ class Service extends Model
         'scan_code',
         'barcode',
         'qr_code',
+        'aliases',
+        'description',
+        'internal_code',
         'price',
         'taxable',
         'active',
         'special_rule_code',
+        'print_on_receipt',
+        'visible_in_billing',
+        'is_billable',
         'created_by',
         'updated_by',
     ];
@@ -35,11 +42,20 @@ class Service extends Model
             'price' => 'decimal:2',
             'taxable' => 'boolean',
             'active' => 'boolean',
+            'aliases' => 'array',
+            'print_on_receipt' => 'boolean',
+            'visible_in_billing' => 'boolean',
+            'is_billable' => 'boolean',
         ];
     }
 
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function area(): BelongsTo
+    {
+        return $this->belongsTo(ServiceArea::class, 'area_id');
     }
 }

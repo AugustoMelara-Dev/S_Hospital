@@ -22,7 +22,10 @@ class ServiceController extends Controller
         $request->user()->can('catalog.view') || abort(403);
 
         $query = Service::query()
-            ->with('category:id,name,slug,active,sort_order')
+            ->with([
+                'category:id,name,slug,active,sort_order',
+                'area:id,name,slug,active,sort_order',
+            ])
             ->when($request->filled('code'), function ($query) use ($request): void {
                 $code = $request->string('code')->toString();
 
@@ -88,7 +91,10 @@ class ServiceController extends Controller
         });
 
         return response()->json([
-            'data' => $service->load('category:id,name,slug,active,sort_order'),
+            'data' => $service->load([
+                'category:id,name,slug,active,sort_order',
+                'area:id,name,slug,active,sort_order',
+            ]),
         ], 201);
     }
 
@@ -117,7 +123,10 @@ class ServiceController extends Controller
         });
 
         return response()->json([
-            'data' => $service->load('category:id,name,slug,active,sort_order'),
+            'data' => $service->load([
+                'category:id,name,slug,active,sort_order',
+                'area:id,name,slug,active,sort_order',
+            ]),
         ]);
     }
 
@@ -128,15 +137,22 @@ class ServiceController extends Controller
     {
         return $service->only([
             'category_id',
+            'area_id',
             'name',
             'slug',
             'scan_code',
             'barcode',
             'qr_code',
+            'aliases',
+            'description',
+            'internal_code',
             'price',
             'taxable',
             'active',
             'special_rule_code',
+            'print_on_receipt',
+            'visible_in_billing',
+            'is_billable',
         ]);
     }
 

@@ -7,6 +7,7 @@ use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
 use App\Models\Service;
+use App\Models\ServiceArea;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
@@ -166,6 +167,34 @@ class InvoiceCreationTest extends TestCase
             ->assertJsonPath('data.items.0.category_name', 'Laboratorio')
             ->assertJsonPath('data.items.0.unit_price', '15.00')
             ->assertJsonPath('data.items.0.line_total', '17.25');
+    }
+
+    public function test_invoice_items_keep_service_area_snapshot_when_catalog_area_changes_later(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $laboratoryArea = ServiceArea::query()->where('slug', 'laboratorio')->firstOrFail();
+        $rayosArea = ServiceArea::query()->where('slug', 'rayos-x')->firstOrFail();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $glucose->forceFill(['area_id' => $laboratoryArea->id])->save();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.items.0.service_area_name', 'Laboratorio')
+            ->json('data.id');
+
+        $glucose->forceFill(['area_id' => $rayosArea->id])->save();
+
+        $this->actingAs($cashier)
+            ->getJson("/api/invoices/{$invoiceId}")
+            ->assertOk()
+            ->assertJsonPath('data.items.0.service_name', 'Glucosa')
+            ->assertJsonPath('data.items.0.service_area_name', 'Laboratorio')
+            ->assertJsonPath('data.items.0.service_area_id', $laboratoryArea->id);
     }
 
     public function test_invoice_with_items_cannot_be_deleted_and_lose_fiscal_history(): void

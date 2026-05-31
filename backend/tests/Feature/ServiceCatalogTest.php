@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Service;
+use App\Models\ServiceArea;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
@@ -23,6 +24,7 @@ class ServiceCatalogTest extends TestCase
         $this->seed(ServiceCatalogSeeder::class);
 
         $this->assertSame(5, Category::query()->count());
+        $this->assertSame(6, ServiceArea::query()->count());
         $this->assertSame(122, Service::query()->count());
 
         $erythropoietin = Service::query()
@@ -33,6 +35,12 @@ class ServiceCatalogTest extends TestCase
         $this->assertSame(Service::ERYTHROPOIETIN_RULE, $erythropoietin->special_rule_code);
         $this->assertNotNull($erythropoietin->source_key);
         $this->assertNotNull($erythropoietin->source_hash);
+
+        $this->assertSame('Farmacia', $erythropoietin->area?->name);
+        $this->assertSame(
+            'Laboratorio',
+            Service::query()->where('name', 'Glucosa')->firstOrFail()->area?->name,
+        );
     }
 
     public function test_service_catalog_seeder_assigns_demo_scan_codes(): void
@@ -60,6 +68,7 @@ class ServiceCatalogTest extends TestCase
         $this->seed(ServiceCatalogSeeder::class);
 
         $this->assertSame(5, Category::query()->count());
+        $this->assertSame(6, ServiceArea::query()->count());
         $this->assertSame(122, Service::query()->count());
     }
 
@@ -224,6 +233,55 @@ class ServiceCatalogTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.price', '125.00')
             ->assertJsonPath('data.barcode', '7700000000011');
+    }
+
+    public function test_services_can_store_area_and_operational_metadata(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+        $category = Category::query()->create([
+            'name' => 'Laboratorio',
+            'slug' => 'laboratorio',
+            'active' => true,
+            'sort_order' => 1,
+        ]);
+        $area = ServiceArea::query()->create([
+            'name' => 'Laboratorio',
+            'slug' => 'laboratorio',
+            'active' => true,
+            'sort_order' => 1,
+        ]);
+
+        $serviceId = $this->actingAs($admin)
+            ->postJson('/api/services', [
+                'category_id' => $category->id,
+                'area_id' => $area->id,
+                'name' => 'Acido urico',
+                'price' => '80.00',
+                'taxable' => true,
+                'active' => true,
+                'aliases' => ['urico', 'au'],
+                'description' => 'Examen de laboratorio',
+                'internal_code' => 'LAB-AU',
+                'print_on_receipt' => true,
+                'visible_in_billing' => true,
+                'is_billable' => true,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.area.name', 'Laboratorio')
+            ->assertJsonPath('data.aliases.0', 'urico')
+            ->assertJsonPath('data.internal_code', 'LAB-AU')
+            ->assertJsonPath('data.visible_in_billing', true)
+            ->json('data.id');
+
+        $this->assertDatabaseHas('services', [
+            'id' => $serviceId,
+            'area_id' => $area->id,
+            'internal_code' => 'LAB-AU',
+            'visible_in_billing' => true,
+            'is_billable' => true,
+            'print_on_receipt' => true,
+        ]);
     }
 
     public function test_cashier_cannot_create_or_edit_services(): void

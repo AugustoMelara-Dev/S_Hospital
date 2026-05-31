@@ -37,6 +37,8 @@ class CalculateInvoiceTotalsAction
                 'service_name' => $service->name,
                 'category_id' => $service->category_id,
                 'category_name' => $service->category?->name ?? 'Sin categoria',
+                'service_area_id' => $service->area_id,
+                'service_area_name' => $service->area?->name,
                 'scan_code' => $service->scan_code,
                 'barcode' => $service->barcode,
                 'qr_code' => $service->qr_code,
