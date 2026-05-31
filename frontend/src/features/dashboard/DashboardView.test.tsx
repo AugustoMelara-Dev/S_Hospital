@@ -1,6 +1,6 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { apiClient } from '../../lib/api';
+import { ApiError, apiClient } from '../../lib/api';
 import { DashboardView } from './DashboardView';
 
 describe('DashboardView financial labels', () => {
@@ -70,8 +70,36 @@ describe('DashboardView financial labels', () => {
     expect(screen.getByText(/sin servicios facturados este mes/i)).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(document.body.textContent).toContain('L. 275.50');
+      expect(document.body.textContent).toMatch(/L\. 275[,.]50/);
     });
     expect(document.body.textContent).not.toMatch(/ventas|ingresos cobrados|flujo/i);
+  });
+
+  it('hides technical dashboard failures behind an operator-safe message', async () => {
+    vi.spyOn(apiClient, 'getDashboardReport').mockRejectedValue(
+      new ApiError('SQLSTATE[HY000]: stack trace in storage/logs/laravel.log', 500),
+    );
+    const onStatus = vi.fn();
+
+    render(
+      <DashboardView
+        canCreateInvoices
+        canViewBackups
+        canViewCash
+        canViewCatalog
+        canViewFiscalSettings
+        canViewInvoices
+        canViewManagerialReports
+        canViewReports
+        cashSession={null}
+        onQuickCash={vi.fn()}
+        onQuickInvoice={vi.fn()}
+        onStatus={onStatus}
+      />,
+    );
+
+    expect(await screen.findAllByText(/el servidor lan no pudo completar la operacion/i)).not.toHaveLength(0);
+    expect(document.body.textContent).not.toMatch(/SQLSTATE|stack trace|storage\/logs/i);
+    expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/servidor lan/i));
   });
 });

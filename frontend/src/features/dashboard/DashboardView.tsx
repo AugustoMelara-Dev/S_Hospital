@@ -17,7 +17,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { PageHeader } from '../../components/ui/page-header';
 import { Skeleton } from '../../components/ui/states';
-import { type CashSession, type DashboardReport, apiClient } from '../../lib/api';
+import { type CashSession, type DashboardReport, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { CashierList } from './CashierList';
 import { PaymentMethodPieChart } from './PaymentMethodPieChart';
 import { RevenueBarChart } from './RevenueBarChart';
@@ -78,7 +78,7 @@ export function DashboardView({
         setDashboardError('');
       })
       .catch((err) => {
-        const msg = err instanceof Error ? err.message : 'No se pudo cargar el resumen.';
+        const msg = userSafeErrorMessage(err, 'No se pudo cargar el resumen.');
         setDashboardError(msg);
         onStatus(msg);
       })
