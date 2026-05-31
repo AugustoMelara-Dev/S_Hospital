@@ -272,6 +272,51 @@ class ReportsTest extends TestCase
         $this->assertNotSame($glucoseInvoice, $voidInvoice);
     }
 
+    public function test_income_report_area_filter_prorates_mixed_invoice_financial_facts(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $fingerXray = Service::query()->where('name', 'Dedo')->firstOrFail();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [
+                    [
+                        'service_id' => $glucose->id,
+                        'quantity' => '1.00',
+                    ],
+                    [
+                        'service_id' => $fingerXray->id,
+                        'quantity' => '1.00',
+                    ],
+                ],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '69.00');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/income?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&area_id='.$glucose->area_id)
+            ->assertOk()
+            ->assertJsonPath('data.total_billed', '17.25')
+            ->assertJsonPath('data.total_collected', '17.25')
+            ->assertJsonPath('data.total_pending', '0.00')
+            ->assertJsonPath('data.payments_by_method.cash', '17.25')
+            ->assertJsonPath('data.invoice_count', 1)
+            ->assertJsonPath('data.payment_count', 1);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/income?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&area_id='.$fingerXray->area_id)
+            ->assertOk()
+            ->assertJsonPath('data.total_billed', '51.75')
+            ->assertJsonPath('data.total_collected', '51.75')
+            ->assertJsonPath('data.payments_by_method.cash', '51.75');
+    }
+
     public function test_range_filters_apply_to_category_services_and_cashier_reports(): void
     {
         $this->seedBillingBase();

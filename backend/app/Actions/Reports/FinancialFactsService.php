@@ -39,6 +39,10 @@ class FinancialFactsService
      */
     private function invoiceFacts(Carbon $start, Carbon $end, array $filters): object
     {
+        if ($this->hasItemFilter($filters)) {
+            return $this->itemScopedInvoiceFacts($start, $end, $filters);
+        }
+
         return Invoice::query()
             ->whereBetween('issued_at', [$start, $end])
             ->tap(fn (Builder $query) => $this->applyInvoiceFilters($query, $filters))
@@ -64,27 +68,68 @@ class FinancialFactsService
 
     /**
      * @param  array<string, mixed>  $filters
+     */
+    private function itemScopedInvoiceFacts(Carbon $start, Carbon $end, array $filters): object
+    {
+        return Invoice::query()
+            ->joinSub($this->itemTotalsSubquery($filters), 'filtered_items', function ($join): void {
+                $join->on('filtered_items.invoice_id', '=', 'invoices.id');
+            })
+            ->whereBetween('invoices.issued_at', [$start, $end])
+            ->tap(fn (Builder $query) => $this->applyInvoiceFilters($query, $filters, includeItemFilters: false))
+            ->selectRaw('COUNT(*) as invoice_count')
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN invoices.status != ? THEN filtered_items.item_total_cents ELSE 0 END), 0) as billed_cents',
+                [Invoice::STATUS_VOID],
+            )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN invoices.status IN (?, ?) THEN ROUND(invoices.balance_due * 100 * filtered_items.item_total_cents / NULLIF(ROUND(invoices.total * 100), 0)) ELSE 0 END), 0) as pending_cents',
+                [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIAL],
+            )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN invoices.status = ? THEN filtered_items.item_total_cents ELSE 0 END), 0) as partial_cents',
+                [Invoice::STATUS_PARTIAL],
+            )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN invoices.status = ? THEN filtered_items.item_total_cents ELSE 0 END), 0) as voided_cents',
+                [Invoice::STATUS_VOID],
+            )
+            ->first() ?? (object) [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
      * @return array{payment_count: int, collected_cents: int, payments_by_method: array<string, string>}
      */
     private function paymentFacts(Carbon $start, Carbon $end, array $filters): array
     {
+        $hasItemFilter = $this->hasItemFilter($filters);
+        $amountExpression = $hasItemFilter
+            ? 'ROUND(payments.amount * 100 * filtered_items.item_total_cents / NULLIF(ROUND(invoices.total * 100), 0))'
+            : 'ROUND(payments.amount * 100)';
+
         $base = Payment::query()
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
+            ->when($hasItemFilter, function (Builder $query) use ($filters): void {
+                $query->joinSub($this->itemTotalsSubquery($filters), 'filtered_items', function ($join): void {
+                    $join->on('filtered_items.invoice_id', '=', 'invoices.id');
+                });
+            })
             ->where('payments.status', Payment::STATUS_POSTED)
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
             ->whereBetween('payments.paid_at', [$start, $end])
-            ->tap(fn (Builder $query) => $this->applyPaymentFilters($query, $filters));
+            ->tap(fn (Builder $query) => $this->applyPaymentFilters($query, $filters, includeItemFilters: ! $hasItemFilter));
 
         $summary = (clone $base)
             ->selectRaw('COUNT(*) as payment_count')
-            ->selectRaw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as collected_cents')
+            ->selectRaw("COALESCE(SUM({$amountExpression}), 0) as collected_cents")
             ->first();
 
         $methodCents = array_fill_keys(array_keys($this->zeroMethodTotals()), 0);
 
         (clone $base)
             ->groupBy('payments.method')
-            ->select('payments.method', DB::raw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as total_cents'))
+            ->select('payments.method', DB::raw("COALESCE(SUM({$amountExpression}), 0) as total_cents"))
             ->get()
             ->each(function (object $row) use (&$methodCents): void {
                 if (array_key_exists($row->method, $methodCents)) {
@@ -107,7 +152,7 @@ class FinancialFactsService
     /**
      * @param  array<string, mixed>  $filters
      */
-    private function applyInvoiceFilters(Builder $query, array $filters): void
+    private function applyInvoiceFilters(Builder $query, array $filters, bool $includeItemFilters = true): void
     {
         $query
             ->when(! empty($filters['user_id']), function (Builder $query) use ($filters): void {
@@ -116,7 +161,7 @@ class FinancialFactsService
             ->when(! empty($filters['cash_session_id']), function (Builder $query) use ($filters): void {
                 $query->where('cash_session_id', $filters['cash_session_id']);
             })
-            ->when(! empty($filters['category_id']), function (Builder $query) use ($filters): void {
+            ->when($includeItemFilters && ! empty($filters['category_id']), function (Builder $query) use ($filters): void {
                 $query->whereExists(function ($subquery) use ($filters): void {
                     $subquery
                         ->selectRaw('1')
@@ -125,7 +170,7 @@ class FinancialFactsService
                         ->where('invoice_items.category_id', $filters['category_id']);
                 });
             })
-            ->when(! empty($filters['area_id']), function (Builder $query) use ($filters): void {
+            ->when($includeItemFilters && ! empty($filters['area_id']), function (Builder $query) use ($filters): void {
                 $query->whereExists(function ($subquery) use ($filters): void {
                     $subquery
                         ->selectRaw('1')
@@ -142,7 +187,7 @@ class FinancialFactsService
     /**
      * @param  array<string, mixed>  $filters
      */
-    private function applyPaymentFilters(Builder $query, array $filters): void
+    private function applyPaymentFilters(Builder $query, array $filters, bool $includeItemFilters = true): void
     {
         $query
             ->when(! empty($filters['user_id']), function (Builder $query) use ($filters): void {
@@ -157,7 +202,7 @@ class FinancialFactsService
             ->when(! empty($filters['status']), function (Builder $query) use ($filters): void {
                 $query->where('invoices.status', $filters['status']);
             })
-            ->when(! empty($filters['category_id']), function (Builder $query) use ($filters): void {
+            ->when($includeItemFilters && ! empty($filters['category_id']), function (Builder $query) use ($filters): void {
                 $query->whereExists(function ($subquery) use ($filters): void {
                     $subquery
                         ->selectRaw('1')
@@ -166,7 +211,7 @@ class FinancialFactsService
                         ->where('invoice_items.category_id', $filters['category_id']);
                 });
             })
-            ->when(! empty($filters['area_id']), function (Builder $query) use ($filters): void {
+            ->when($includeItemFilters && ! empty($filters['area_id']), function (Builder $query) use ($filters): void {
                 $query->whereExists(function ($subquery) use ($filters): void {
                     $subquery
                         ->selectRaw('1')
@@ -175,5 +220,30 @@ class FinancialFactsService
                         ->where('invoice_items.area_id', $filters['area_id']);
                 });
             });
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function hasItemFilter(array $filters): bool
+    {
+        return ! empty($filters['category_id']) || ! empty($filters['area_id']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function itemTotalsSubquery(array $filters): \Illuminate\Database\Query\Builder
+    {
+        return DB::table('invoice_items')
+            ->select('invoice_items.invoice_id')
+            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.line_total * 100)), 0) as item_total_cents')
+            ->when(! empty($filters['category_id']), function ($query) use ($filters): void {
+                $query->where('invoice_items.category_id', $filters['category_id']);
+            })
+            ->when(! empty($filters['area_id']), function ($query) use ($filters): void {
+                $query->where('invoice_items.area_id', $filters['area_id']);
+            })
+            ->groupBy('invoice_items.invoice_id');
     }
 }
