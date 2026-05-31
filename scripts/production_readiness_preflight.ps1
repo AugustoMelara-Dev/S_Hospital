@@ -181,16 +181,17 @@ function Test-ProofReferencedLocalEvidence([string] $path, [string] $proofName, 
     }
 
     $reference = $value.Trim()
-    $looksLikeLocalPath = $reference -match '^(qa|docs|scripts|frontend|backend)[\\/]' -or [System.IO.Path]::IsPathRooted($reference)
+    if ([System.IO.Path]::IsPathRooted($reference)) {
+        Add-Failure "$proofName evidence must use a relative evidence reference, not an absolute local path, in $path."
+        return
+    }
+
+    $looksLikeLocalPath = $reference -match '^(qa|docs|scripts|frontend|backend)[\\/]'
     if (-not $looksLikeLocalPath) {
         return
     }
 
-    $candidate = if ([System.IO.Path]::IsPathRooted($reference)) {
-        $reference
-    } else {
-        Join-Path $ProjectRoot $reference
-    }
+    $candidate = Join-Path $ProjectRoot $reference
 
     if (-not (Test-Path -LiteralPath $candidate)) {
         Add-Failure "$proofName evidence references missing local evidence '$reference' in $path."

@@ -97,16 +97,16 @@ function Test-ProofReferencedLocalEvidenceExists([string] $content, [string] $fi
     }
 
     $reference = $value.Trim()
-    $looksLikeLocalPath = $reference -match '^(qa|docs|scripts|frontend|backend)[\\/]' -or [System.IO.Path]::IsPathRooted($reference)
+    if ([System.IO.Path]::IsPathRooted($reference)) {
+        return $false
+    }
+
+    $looksLikeLocalPath = $reference -match '^(qa|docs|scripts|frontend|backend)[\\/]'
     if (-not $looksLikeLocalPath) {
         return $true
     }
 
-    $candidate = if ([System.IO.Path]::IsPathRooted($reference)) {
-        $reference
-    } else {
-        Join-Path $ProjectRoot $reference
-    }
+    $candidate = Join-Path $ProjectRoot $reference
 
     return Test-Path -LiteralPath $candidate
 }
