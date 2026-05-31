@@ -497,11 +497,28 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.payments_by_method.cash', '0.00')
             ->assertJsonPath('data.payments_by_method.transfer', '7.25');
 
+        $this->actingAs($supervisor)
+            ->getJson("/api/reports/cash-sessions/{$sessionId}")
+            ->assertOk()
+            ->assertJsonPath('data.total_cash', '0.00')
+            ->assertJsonPath('data.total_transfer', '7.25')
+            ->assertJsonPath('data.payments_count', 1)
+            ->assertJsonCount(4, 'data.movements')
+            ->assertJsonPath('data.movements.3.type', CashMovement::TYPE_PAYMENT_VOID)
+            ->assertJsonPath('data.movements.3.amount', '-10.00');
+
         $this->assertDatabaseHas('payments', [
             'id' => $cashPaymentId,
             'status' => Payment::STATUS_VOID,
             'voided_by' => $supervisor->id,
             'void_reason' => 'Pago registrado con metodo incorrecto',
+        ]);
+        $this->assertDatabaseHas('cash_movements', [
+            'cash_session_id' => $sessionId,
+            'payment_id' => $cashPaymentId,
+            'type' => CashMovement::TYPE_PAYMENT_VOID,
+            'method' => Payment::METHOD_CASH,
+            'amount' => '-10.00',
         ]);
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $supervisor->id,

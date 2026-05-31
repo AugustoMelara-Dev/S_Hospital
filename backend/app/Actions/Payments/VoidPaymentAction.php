@@ -3,6 +3,7 @@
 namespace App\Actions\Payments;
 
 use App\Models\AuditLog;
+use App\Models\CashMovement;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
@@ -59,6 +60,17 @@ class VoidPaymentAction
                 'voided_at' => now(),
                 'void_reason' => trim($payload['reason']),
             ])->save();
+
+            CashMovement::query()->create([
+                'cash_session_id' => $lockedPayment->cash_session_id,
+                'payment_id' => $lockedPayment->id,
+                'user_id' => $user->id,
+                'type' => CashMovement::TYPE_PAYMENT_VOID,
+                'method' => $lockedPayment->method,
+                'amount' => Money::formatCents(-Money::parseCents((string) $lockedPayment->amount, 'amount')),
+                'notes' => substr($lockedInvoice->invoice_number.' - '.$lockedPayment->void_reason, 0, 255),
+                'occurred_at' => now(),
+            ]);
 
             $postedPaidCents = (int) Payment::query()
                 ->where('invoice_id', $lockedInvoice->id)

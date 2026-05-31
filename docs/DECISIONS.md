@@ -795,20 +795,22 @@ Consecuencia:
 - La migracion es aditiva y nullable para preservar instalaciones existentes.
 - El detalle vivo de pagos puede seguir reflejando el estado actual, pero los totales principales del cierre cerrado permanecen historicos.
 
-### 2026-05-31 - Reversion auditable de pagos
+### 2026-05-31 - Reversión auditable de pagos
 
 Decision:
 
-- Los pagos se corrigen mediante reversion auditable (`status=void`) y no se borran.
-- Cada reversion exige permiso `payments.void`, motivo de servidor, usuario, fecha y auditoria.
-- La factura se recalcula dentro de la misma transaccion desde pagos `posted`, dejando `paid_amount`, `balance_due` y `status` consistentes.
+- Los pagos se corrigen mediante reversión auditable (`status=void`) y no se borran.
+- Cada reversión exige permiso `payments.void`, motivo de servidor, usuario, fecha y auditoría.
+- La factura se recalcula dentro de la misma transacción desde pagos `posted`, dejando `paid_amount`, `balance_due` y `status` consistentes.
 
 Motivo:
 
-- Caja y reportes deben excluir pagos reversados sin perder la evidencia de que el pago existio.
-- Una correccion de metodo o monto no debe depender de edicion manual ni de memoria humana.
+- Caja y reportes deben excluir pagos reversados sin perder la evidencia de que el pago existió.
+- Una corrección de método o monto no debe depender de edición manual ni de memoria humana.
+- El arqueo debe conservar la huella del reverso con un movimiento negativo asociado al pago original.
 
 Consecuencia:
 
-- Los reportes existentes, que ya filtran pagos `posted`, excluyen reversos automaticamente.
-- La UI puede consumir el nuevo endpoint de reversion sin crear una fuente secundaria de verdad para estados de pago.
+- Los reportes existentes, que ya filtran pagos `posted`, excluyen reversos automáticamente.
+- El detalle de movimientos de caja puede mostrar `payment_void` para explicar por qué el efectivo esperado bajó.
+- La UI puede consumir el nuevo endpoint de reversión sin crear una fuente secundaria de verdad para estados de pago.
