@@ -5,7 +5,8 @@ param(
     [int] $Retries = 30,
     [int] $DelaySeconds = 2,
     [switch] $SkipDockerStart,
-    [switch] $NoBrowser
+    [switch] $NoBrowser,
+    [switch] $WhatIfOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -15,12 +16,41 @@ if ($ProjectRoot -eq "") {
     $ProjectRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
 }
 
+$ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+
 if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
     $BaseUrl = "http://127.0.0.1:8000"
 }
 
 if ($ReportPath -eq "") {
     $ReportPath = Join-Path $ProjectRoot "qa\LOCAL_REPAIR_DIAGNOSTIC.md"
+}
+
+$candidateReportPath = if ([System.IO.Path]::IsPathRooted($ReportPath)) {
+    $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ReportPath)
+} else {
+    Join-Path $ProjectRoot $ReportPath
+}
+$ReportPath = [System.IO.Path]::GetFullPath($candidateReportPath)
+$rootPrefix = $ProjectRoot.TrimEnd("\") + "\"
+
+if ($ReportPath -eq $ProjectRoot -or -not $ReportPath.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "El diagnostico debe guardarse dentro de la carpeta instalada del sistema."
+}
+
+if ($Retries -lt 1 -or $Retries -gt 120) {
+    throw "Retries debe estar entre 1 y 120."
+}
+
+if ($DelaySeconds -lt 1 -or $DelaySeconds -gt 30) {
+    throw "DelaySeconds debe estar entre 1 y 30."
+}
+
+if ($WhatIfOnly) {
+    Write-Host "Validacion de reparacion segura completada."
+    Write-Host "Modo WhatIf: no se levanta Docker, no se abre navegador y no se escribe diagnostico."
+    Write-Host "Ruta de diagnostico validada dentro del sistema instalado."
+    exit 0
 }
 
 $reportLines = New-Object System.Collections.Generic.List[string]

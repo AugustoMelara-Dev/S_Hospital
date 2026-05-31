@@ -143,6 +143,10 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\start_hospital_services.ps1
 4. Si soporte necesita repetir la reparacion manualmente, ejecute:
 
 ```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -WhatIfOnly
+```
+
+```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -BaseUrl http://127.0.0.1:8000
 ```
 
