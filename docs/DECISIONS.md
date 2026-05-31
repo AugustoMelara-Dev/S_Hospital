@@ -851,6 +851,24 @@ Consecuencia:
 - Los exports usan los mismos hechos financieros backend que alimentan las pantallas.
 - Las pruebas abren el XLSX real y verifican montos y fuentes, no solo que el archivo descargue.
 
+### 2026-05-31 - Duplicados de servicios por categoria y area
+
+Decision:
+
+- La unicidad de servicios se valida por `category_id`, `area_id` y `slug`.
+- El mismo nombre normalizado puede existir en otra area institucional si el par categoria/area es distinto.
+- Mover o renombrar un servicio vuelve a validar ese par para evitar duplicados operativos.
+
+Motivo:
+
+- El catalogo debe evitar duplicados que confundan facturacion dentro de una misma area.
+- A la vez, no debe bloquear servicios legitimamente repetidos por area cuando administracion los separa institucionalmente.
+
+Consecuencia:
+
+- La migracion cambia el indice unico antiguo de `category_id + slug` a `category_id + area_id + slug`.
+- Las pruebas cubren alta y edicion para que request y base de datos mantengan la misma regla.
+
 ### 2026-05-31 - Instalador registra worker y respaldo diario
 
 Decision:
