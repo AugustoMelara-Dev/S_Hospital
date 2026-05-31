@@ -23,6 +23,7 @@
 2. Buscar factura por paciente, fecha o numero.
 3. Abrir detalle y usar reimpresion.
 4. No crear una factura nueva para resolver una reimpresion.
+5. Escribir motivo si el sistema lo solicita; la reimpresion queda registrada.
 
 ## Cierre de caja
 
@@ -37,3 +38,5 @@
 - Si aparece sesion expirada, volver a iniciar sesion.
 - Si no hay caja abierta, no se puede facturar.
 - Si un backup queda pendiente, avisar al admin; el cajero no debe tocar scripts del servidor.
+- Si se cobro mal, avisar al supervisor; el cajero no debe borrar facturas ni intentar compensar con otra factura.
+- Si hay diferencia de caja, cerrar con una nota clara y avisar al supervisor.

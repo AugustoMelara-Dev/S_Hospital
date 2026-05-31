@@ -82,7 +82,7 @@ class InvoiceController extends Controller
 
     public function store(StoreInvoiceRequest $request, CreateInvoiceAction $createInvoice): JsonResponse
     {
-        $invoice = $createInvoice->execute($request->validated(), $request->user());
+        $invoice = $createInvoice->execute($request->validated(), $request->user(), $request);
 
         return response()->json([
             'data' => $invoice,
@@ -114,7 +114,7 @@ class InvoiceController extends Controller
         $request->user()->can('invoices.void') || abort(403);
 
         return response()->json([
-            'data' => $voidInvoice->execute($invoice, $request->user(), $request->reason()),
+            'data' => $voidInvoice->execute($invoice, $request->user(), $request->reason(), $request),
         ]);
     }
 

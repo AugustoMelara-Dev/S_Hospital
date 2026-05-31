@@ -601,7 +601,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   }
 
   await page.getByLabel('Navegacion principal').getByRole('link', { name: /nueva factura/i }).click();
-  await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
+  await page.locator('#patient-name').fill('Maria Lopez');
+  await expect(page.locator('#patient-name')).toHaveValue('Maria Lopez');
   await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
   await expect(page.getByText(/Total:\s*L\.\s*28\.75/)).toBeVisible();
@@ -621,7 +622,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /crear otra factura/i }).click();
 
   await page.getByRole('link', { name: /nueva factura/i }).click();
-  await page.getByLabel(/nombre del paciente/i).fill('Jose Perez');
+  await page.locator('#patient-name').fill('Jose Perez');
+  await expect(page.locator('#patient-name')).toHaveValue('Jose Perez');
   await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
   await page.getByLabel(/receta de dialisis/i).click();

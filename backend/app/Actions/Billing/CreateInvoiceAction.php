@@ -2,12 +2,13 @@
 
 namespace App\Actions\Billing;
 
-use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
 use App\Models\Service;
 use App\Models\User;
+use App\Support\AuditLogger;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -16,14 +17,15 @@ class CreateInvoiceAction
     public function __construct(
         private readonly GenerateFiscalNumberAction $generateFiscalNumber,
         private readonly CalculateInvoiceTotalsAction $calculateInvoiceTotals,
+        private readonly AuditLogger $auditLogger,
     ) {}
 
     /**
      * @param  array{patient_name: string, items: list<array{service_id: int, quantity: string, dialysis_prescription?: bool, notes?: ?string}>}  $payload
      */
-    public function execute(array $payload, User $issuer): Invoice
+    public function execute(array $payload, User $issuer, ?Request $request = null): Invoice
     {
-        return DB::transaction(function () use ($payload, $issuer): Invoice {
+        return DB::transaction(function () use ($payload, $issuer, $request): Invoice {
             $cashSession = CashRegisterSession::query()
                 ->where('user_id', $issuer->id)
                 ->where('status', CashRegisterSession::STATUS_OPEN)
@@ -81,20 +83,20 @@ class CreateInvoiceAction
                 $invoice->items()->create($item);
             }
 
-            AuditLog::query()->create([
-                'user_id' => $issuer->id,
-                'action' => 'invoice.issued',
-                'entity_type' => Invoice::class,
-                'entity_id' => $invoice->id,
-                'old_values' => null,
-                'new_values' => [
+            $this->auditLogger->log(
+                action: 'invoice.issued',
+                entity: $invoice,
+                user: $issuer,
+                request: $request,
+                oldValues: null,
+                newValues: [
                     'invoice_number' => $invoice->invoice_number,
                     'patient_name' => $invoice->patient_name,
                     'total' => $invoice->total,
                     'status' => $invoice->status,
                     'cash_session_id' => $cashSession->id,
                 ],
-            ]);
+            );
 
             return $invoice->load('items', 'issuer:id,name,username');
         });

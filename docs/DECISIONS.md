@@ -859,3 +859,25 @@ Consecuencia:
 
 - El flujo E2E principal queda alineado con la identidad institucional.
 - La evidencia automatizada no reemplaza validacion fisica de impresora, LAN, reinicio Windows, acceso directo y restauracion en base descartable.
+
+### 2026-05-31 - Auditoria y control interno institucional
+
+Decision:
+
+- `audit_logs` se fortalece con resultado, motivo, IP y user agent para eventos HTTP.
+- Se agrega `App\Support\AuditLogger` como punto comun para eventos nuevos.
+- Se agregan roles `auditor` y `soporte_tecnico`.
+- La reversion de pagos se implementa como flujo transaccional: pago en `void`, motivo obligatorio, ajuste de factura, movimiento de caja negativo y evento `payment.voided`.
+- Reportes > Auditoria muestra eventos de control generales ademas de anulaciones, reimpresiones, respaldos y actividad de cajeros.
+
+Motivo:
+
+- El hospital necesita trazabilidad administrativa sobre caja, facturas, pagos, recibos, configuracion fiscal, usuarios y respaldos sin depender de revision manual de base de datos.
+
+Consecuencia:
+
+- Las migraciones son aditivas y no borran historico.
+- Los cajeros no reciben permisos nuevos.
+- El auditor consulta informacion sensible sin poder operar caja ni facturar.
+- Soporte tecnico queda limitado a diagnostico.
+- Las anulaciones de factura pagada siguen bloqueadas hasta que los pagos se reviertan con motivo y auditoria.

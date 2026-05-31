@@ -32,6 +32,14 @@ Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 3. Configurar CAI/rango fiscal antes de operar con datos reales.
 4. No ejecutar seeders demo en servidor real.
 
+## Auditoria y control interno
+
+1. Revisar **Reportes > Auditoria** al cierre del dia.
+2. Confirmar anulaciones, reimpresiones, diferencias de caja, reversos de pago y cambios fiscales.
+3. Asignar `auditor` solo a usuarios de consulta; no deben facturar ni operar caja.
+4. Asignar `soporte_tecnico` solo para diagnostico tecnico; no debe tener permisos de caja ni backups.
+5. Si un cajero se equivoca en un cobro, usar reversion de pago con motivo antes de cualquier anulacion de factura.
+
 ## Validacion final
 
 1. Completar pruebas LAN desde segunda PC.

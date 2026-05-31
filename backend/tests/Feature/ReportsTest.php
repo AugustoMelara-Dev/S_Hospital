@@ -531,6 +531,20 @@ class ReportsTest extends TestCase
             'created_at' => now(),
         ]);
 
+        AuditLog::query()->create([
+            'user_id' => $admin->id,
+            'action' => 'payment.voided',
+            'entity_type' => Payment::class,
+            'entity_id' => 99,
+            'reason' => 'Reversion validada por supervisor',
+            'result' => 'success',
+            'new_values' => [
+                'invoice_number' => '000-001-01-00000001',
+                'amount' => '17.25',
+            ],
+            'created_at' => now(),
+        ]);
+
         BackupLog::query()->create([
             'filename' => 'hospital-backup-test.sql',
             'path' => 'backups/hospital-backup-test.sql',
@@ -549,9 +563,12 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.summary.void_count', 1)
             ->assertJsonPath('data.summary.reprint_count', 1)
             ->assertJsonPath('data.summary.backup_count', 1)
+            ->assertJsonPath('data.summary.audit_event_count', 2)
             ->assertJsonPath('data.summary.cashier_count', 0)
             ->assertJsonPath('data.voids.0.reason', 'Error de captura')
             ->assertJsonPath('data.reprints.0.reason', 'Paciente solicita copia')
+            ->assertJsonPath('data.audit_events.0.action', 'payment.voided')
+            ->assertJsonPath('data.audit_events.0.reason', 'Reversion validada por supervisor')
             ->assertJsonPath('data.backups.0.filename', 'hospital-backup-test.sql');
     }
 

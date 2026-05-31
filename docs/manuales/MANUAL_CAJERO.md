@@ -92,5 +92,5 @@ No cierre caja si quedan facturas pendientes o parciales sin resolver.
 - No imprime: revise papel, impresora predeterminada y conexion. Avise si persiste.
 - Servicio no aparece: revise categoria **Todos** y busqueda; si sigue sin aparecer, avise a administracion.
 - El total parece incorrecto: no cobre; revise carrito y reglas antes de emitir.
-- Cobro equivocado: avise al supervisor. No intente borrar facturas.
+- Cobro equivocado: avise al supervisor. No intente borrar facturas ni compensar con otra factura.
 - Sistema lento o no abre: avise al responsable. No apague el servidor sin autorizacion.

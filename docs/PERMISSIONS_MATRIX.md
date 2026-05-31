@@ -5,6 +5,8 @@
 - `admin`: administra sistema, usuarios, configuracion, catalogo, reportes, backups y acciones criticas.
 - `supervisor`: supervisa operacion, reportes, caja, anulaciones y reimpresiones.
 - `cajero`: opera facturacion, caja propia, pagos y reimpresion limitada.
+- `auditor`: consulta reportes, historial, auditoria y respaldos sin operar caja ni facturar.
+- `soporte_tecnico`: consulta diagnostico tecnico sin permisos de caja, facturacion, fiscal o backups.
 
 El backend debe validar todos los permisos con Policies/Gates o middleware equivalente. Ocultar botones en el frontend no cuenta como seguridad.
 
@@ -42,6 +44,7 @@ El backend debe validar todos los permisos con Policies/Gates o middleware equiv
 | Crear backup manual | `backups.create` | Si | No | No |
 | Descargar backup | `backups.download` | Si | No | No |
 | Ver auditoria | `audit.view` | Si | Si | No |
+| Ver diagnostico tecnico | `system.status.view` | Si | No | No |
 
 ## Reglas de alcance por rol
 
@@ -70,12 +73,23 @@ El backend debe validar todos los permisos con Policies/Gates o middleware equiv
 - No puede anular facturas/pagos.
 - No puede ver reportes gerenciales.
 
+### Auditor/Consulta
+
+- Puede ver reportes, historial, auditoria y registros de backup.
+- No puede abrir/cerrar caja, facturar, cobrar, anular, revertir pagos, editar catalogo, fiscal, usuarios ni backups.
+
+### Soporte tecnico
+
+- Puede ver diagnostico tecnico del sistema.
+- No puede manipular caja, facturas, pagos, catalogo, configuracion fiscal, usuarios ni backups.
+
 ## Acciones criticas que siempre requieren auditoria
 
 - Cambios en configuracion fiscal.
 - Cambios de precio o activacion/desactivacion de servicios.
 - Creacion de factura.
 - Registro o anulacion de pago.
+- Reversion/anulacion de pago.
 - Anulacion de factura.
 - Cierre de caja.
 - Reimpresion de factura.

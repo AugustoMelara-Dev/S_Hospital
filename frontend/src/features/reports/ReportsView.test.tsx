@@ -515,9 +515,25 @@ describe('ReportsView', () => {
                 backup_count: 0,
                 failed_backup_count: 0,
                 cashier_count: 0,
+                audit_event_count: 1,
               },
               voids: [],
               reprints: [],
+              audit_events: [
+                {
+                  id: 1,
+                  action: 'payment.voided',
+                  result: 'success',
+                  entity_type: 'App\\Models\\Payment',
+                  entity_id: 7,
+                  reason: 'Reversion validada por supervisor',
+                  created_at: '2026-05-17T10:30:00.000000Z',
+                  user: 'Supervisor Demo',
+                  ip_address: '127.0.0.1',
+                  user_agent: 'Caja-LAN/1.0',
+                  details: {},
+                },
+              ],
               backups: [],
               cashiers: [],
             },
@@ -544,6 +560,8 @@ describe('ReportsView', () => {
     expect(await screen.findByText(/sin categorias cobradas/i)).toBeInTheDocument();
     expect(await screen.findByText(/sin servicios cobrados/i)).toBeInTheDocument();
     activateTab(/auditor.a/i);
-    expect((await screen.findAllByText(/sin eventos operativos/i)).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/eventos de control/i)).toBeInTheDocument();
+    expect(await screen.findByText(/reversion de pago/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Reversion validada por supervisor/i)).toBeInTheDocument();
   });
 });

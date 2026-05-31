@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
+use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,12 +14,27 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function login(LoginRequest $request): JsonResponse
+    public function login(LoginRequest $request, AuditLogger $auditLogger): JsonResponse
     {
         $credentials = $request->validated();
         $loginField = filter_var($credentials['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        $attemptedUser = User::query()->where($loginField, $credentials['login'])->first();
 
         if (! Auth::attempt([$loginField => $credentials['login'], 'password' => $credentials['password']])) {
+            $auditLogger->log(
+                action: 'auth.login_failed',
+                entity: User::class,
+                entityId: $attemptedUser?->id,
+                user: $attemptedUser,
+                request: $request,
+                newValues: [
+                    'login' => $credentials['login'],
+                    'login_field' => $loginField,
+                ],
+                reason: 'Credenciales no validas.',
+                result: 'failed',
+            );
+
             throw ValidationException::withMessages([
                 'login' => ['Las credenciales no son validas.'],
             ]);
@@ -28,6 +45,20 @@ class AuthController extends Controller
         $user = $request->user();
 
         if (! $user->active) {
+            $auditLogger->log(
+                action: 'auth.login_failed',
+                entity: $user,
+                user: $user,
+                request: $request,
+                newValues: [
+                    'login' => $credentials['login'],
+                    'login_field' => $loginField,
+                    'active' => false,
+                ],
+                reason: 'Usuario inactivo.',
+                result: 'failed',
+            );
+
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -36,6 +67,17 @@ class AuthController extends Controller
                 'login' => ['El usuario esta inactivo.'],
             ]);
         }
+
+        $auditLogger->log(
+            action: 'auth.login_success',
+            entity: $user,
+            user: $user,
+            request: $request,
+            newValues: [
+                'login_field' => $loginField,
+                'roles' => $user->getRoleNames()->values()->all(),
+            ],
+        );
 
         return response()->json([
             'data' => $this->userPayload($user),
@@ -68,12 +110,21 @@ class AuthController extends Controller
         ]);
     }
 
-    public function changePassword(ChangePasswordRequest $request): JsonResponse
+    public function changePassword(ChangePasswordRequest $request, AuditLogger $auditLogger): JsonResponse
     {
         $user = $request->user();
         $validated = $request->validated();
 
         if (! Hash::check($validated['current_password'], $user->password)) {
+            $auditLogger->log(
+                action: 'user.password_change_failed',
+                entity: $user,
+                user: $user,
+                request: $request,
+                reason: 'Contrasena actual invalida.',
+                result: 'failed',
+            );
+
             throw ValidationException::withMessages([
                 'current_password' => ['La contrasena actual no es valida.'],
             ]);
@@ -83,6 +134,15 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
             'must_change_password' => false,
         ])->save();
+
+        $auditLogger->log(
+            action: 'user.password_changed',
+            entity: $user,
+            user: $user,
+            request: $request,
+            oldValues: ['must_change_password' => true],
+            newValues: ['must_change_password' => false],
+        );
 
         return response()->json([
             'data' => $this->userPayload($user->refresh()),

@@ -2,23 +2,28 @@
 
 namespace App\Actions\Cash;
 
-use App\Models\AuditLog;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class OpenCashSessionAction
 {
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+    ) {}
+
     /**
      * @param  array{opening_amount: string, notes?: ?string}  $payload
      */
-    public function execute(array $payload, User $user): CashRegisterSession
+    public function execute(array $payload, User $user, ?Request $request = null): CashRegisterSession
     {
         try {
-            return DB::transaction(function () use ($payload, $user): CashRegisterSession {
+            return DB::transaction(function () use ($payload, $user, $request): CashRegisterSession {
                 $alreadyOpen = CashRegisterSession::query()
                     ->where('user_id', $user->id)
                     ->where('status', CashRegisterSession::STATUS_OPEN)
@@ -50,16 +55,16 @@ class OpenCashSessionAction
                     'occurred_at' => now(),
                 ]);
 
-                AuditLog::query()->create([
-                    'user_id' => $user->id,
-                    'action' => 'cash_session.opened',
-                    'entity_type' => CashRegisterSession::class,
-                    'entity_id' => $session->id,
-                    'new_values' => [
+                $this->auditLogger->log(
+                    action: 'cash_session.opened',
+                    entity: $session,
+                    user: $user,
+                    request: $request,
+                    newValues: [
                         'opening_amount' => $session->opening_amount,
                         'opened_at' => $session->opened_at?->toISOString(),
                     ],
-                ]);
+                );
 
                 return $session->load('user:id,name,username');
             });

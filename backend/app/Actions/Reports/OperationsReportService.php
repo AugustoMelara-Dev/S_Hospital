@@ -134,6 +134,66 @@ class OperationsReportService
             ->values()
             ->all();
 
+        $auditEventActions = [
+            'auth.login_success',
+            'auth.login_failed',
+            'cash_session.closed',
+            'cash_session.difference',
+            'invoice.reprinted',
+            'invoice.voided',
+            'invoice.void_blocked_paid',
+            'payment.voided',
+            'fiscal_settings.created',
+            'fiscal_settings.updated',
+            'fiscal_sequence.created',
+            'fiscal_sequence.updated',
+            'service.created',
+            'service.updated',
+            'service.price_updated',
+            'service.active_updated',
+            'category.created',
+            'category.updated',
+            'user.created',
+            'user.updated',
+            'user.activated',
+            'user.deactivated',
+            'user.password_reset',
+            'user.password_changed',
+            'backup.requested',
+            'backup.created',
+            'backup.downloaded',
+        ];
+
+        $auditQuery = AuditLog::query()
+            ->with('user:id,name,username')
+            ->whereIn('action', $auditEventActions)
+            ->whereBetween('created_at', [$start, $end])
+            ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
+                $query->where('user_id', $filters['user_id']);
+            });
+
+        $auditEventCount = (clone $auditQuery)->count();
+        $auditEvents = (clone $auditQuery)
+            ->latest('created_at')
+            ->latest('id')
+            ->limit(50)
+            ->get()
+            ->map(fn (AuditLog $audit): array => [
+                'id' => $audit->id,
+                'action' => $audit->action,
+                'result' => $audit->result ?? 'success',
+                'entity_type' => $audit->entity_type,
+                'entity_id' => $audit->entity_id,
+                'reason' => $audit->reason,
+                'created_at' => $audit->created_at?->toISOString(),
+                'user' => $audit->user?->name,
+                'ip_address' => $audit->ip_address,
+                'user_agent' => $audit->user_agent,
+                'details' => $audit->new_values,
+            ])
+            ->values()
+            ->all();
+
         $backupCount = 0;
         $failedBackupCount = 0;
         $backups = [];
@@ -280,12 +340,14 @@ class OperationsReportService
             'summary' => [
                 'void_count' => $voidCount,
                 'reprint_count' => $reprintCount,
+                'audit_event_count' => $auditEventCount,
                 'backup_count' => $backupCount,
                 'failed_backup_count' => $failedBackupCount,
                 'cashier_count' => count($cashiers),
             ],
             'voids' => $voids,
             'reprints' => $reprints,
+            'audit_events' => $auditEvents,
             'backups' => $backups,
             'cashiers' => $cashiers,
         ];

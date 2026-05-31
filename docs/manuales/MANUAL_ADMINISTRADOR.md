@@ -30,6 +30,8 @@ Use una cuenta por persona.
 - Cajero: abrir/cerrar caja propia, facturar, cobrar e imprimir.
 - Supervisor: revisar caja, historial, reportes, reimpresiones y anulaciones autorizadas.
 - Administrador: configurar sistema, usuarios, reportes, respaldos y datos fiscales.
+- Auditor/Consulta: revisar reportes, historial, auditoria y respaldos sin operar caja.
+- Soporte tecnico: revisar diagnostico tecnico sin manipular caja, facturas, fiscal ni respaldos.
 
 Desactive usuarios que ya no trabajen en caja. No reutilice cuentas entre turnos.
 
@@ -49,9 +51,25 @@ Los recibos y facturas historicas conservan snapshot de nombre y precio. Cambiar
 
 - Toda factura pagada queda asociada a caja, cajero, metodo y fecha.
 - Toda anulacion requiere permiso, motivo y auditoria.
+- Toda reversion de pago requiere permiso, motivo y auditoria.
 - No borre facturas.
 - Si hay saldo parcial, resuelva el saldo antes de cerrar caja.
 - Tarjeta y transferencia se revisan por reportes; no se cuentan como efectivo en gaveta.
+
+## Auditoria
+
+Revise **Reportes > Auditoria** para consultar:
+
+- aperturas y cierres de caja;
+- diferencias de caja;
+- facturas emitidas y anuladas;
+- pagos registrados y revertidos;
+- reimpresiones;
+- cambios de configuracion fiscal;
+- cambios de usuarios;
+- respaldos creados, fallidos o descargados.
+
+Use el rango de fechas del turno o dia. Si aparece una accion inesperada, compare usuario, motivo, hora y origen antes de cerrar administrativamente.
 
 ## Reportes diarios
 
@@ -64,6 +82,7 @@ Revise:
 - Cobros por metodo.
 - Diferencias de caja.
 - Reimpresiones y anulaciones.
+- Eventos de control y reversos de pago.
 
 Use estos reportes para cierre del dia y conciliacion con caja fisica.
 

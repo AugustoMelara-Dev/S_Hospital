@@ -2,33 +2,34 @@
 
 namespace App\Actions\Receipts;
 
-use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\User;
+use App\Support\AuditLogger;
+use Illuminate\Http\Request;
 
 class ReprintReceiptAction
 {
     public function __construct(
         private readonly GenerateReceiptDataAction $generateReceiptData,
+        private readonly AuditLogger $auditLogger,
     ) {}
 
-    public function execute(Invoice $invoice, User $user, string $width, ?string $reason = null): array
+    public function execute(Invoice $invoice, User $user, string $width, ?string $reason = null, ?Request $request = null): array
     {
         $receipt = $this->generateReceiptData->execute($invoice, $width);
 
-        AuditLog::query()->create([
-            'user_id' => $user->id,
-            'action' => 'invoice.reprinted',
-            'entity_type' => Invoice::class,
-            'entity_id' => $invoice->id,
-            'old_values' => null,
-            'new_values' => [
+        $this->auditLogger->log(
+            action: 'invoice.reprinted',
+            entity: $invoice,
+            user: $user,
+            request: $request,
+            oldValues: null,
+            newValues: [
                 'invoice_number' => $invoice->invoice_number,
                 'width' => $width,
-                'reason' => $reason,
             ],
-            'created_at' => now(),
-        ]);
+            reason: $reason,
+        );
 
         return [
             'receipt' => $receipt,

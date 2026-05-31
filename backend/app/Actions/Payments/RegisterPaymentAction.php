@@ -2,30 +2,35 @@
 
 namespace App\Actions\Payments;
 
-use App\Models\AuditLog;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\AuditLogger;
 use App\Support\InvoiceAccess;
 use App\Support\Money;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class RegisterPaymentAction
 {
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+    ) {}
+
     /**
      * @param  array{cash_session_id: int, method: string, amount: string, reference?: ?string}  $payload
      *
      * @throws AuthorizationException
      */
-    public function execute(Invoice $invoice, array $payload, User $user, InvoiceAccess $invoiceAccess): Payment
+    public function execute(Invoice $invoice, array $payload, User $user, InvoiceAccess $invoiceAccess, ?Request $request = null): Payment
     {
-        return DB::transaction(function () use ($invoice, $payload, $user, $invoiceAccess): Payment {
+        return DB::transaction(function () use ($invoice, $payload, $user, $invoiceAccess, $request): Payment {
             $lockedInvoice = Invoice::query()
                 ->whereKey($invoice->id)
                 ->lockForUpdate()
@@ -111,12 +116,12 @@ class RegisterPaymentAction
                 'cash_session_id' => $lockedInvoice->cash_session_id ?? $cashSession->id,
             ])->save();
 
-            AuditLog::query()->create([
-                'user_id' => $user->id,
-                'action' => 'payment.registered',
-                'entity_type' => Payment::class,
-                'entity_id' => $payment->id,
-                'new_values' => [
+            $this->auditLogger->log(
+                action: 'payment.registered',
+                entity: $payment,
+                user: $user,
+                request: $request,
+                newValues: [
                     'invoice_id' => $lockedInvoice->id,
                     'invoice_number' => $lockedInvoice->invoice_number,
                     'cash_session_id' => $cashSession->id,
@@ -125,7 +130,7 @@ class RegisterPaymentAction
                     'invoice_status' => $lockedInvoice->status,
                     'balance_due' => $lockedInvoice->balance_due,
                 ],
-            ]);
+            );
 
             return $payment->load('user:id,name,username', 'cashSession:id,user_id,status,opened_at');
         });

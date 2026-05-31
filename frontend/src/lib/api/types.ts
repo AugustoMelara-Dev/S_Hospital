@@ -6,6 +6,7 @@ export type AuthUser = {
   active: boolean;
   roles: string[];
   permissions: string[];
+  service_area_id?: number | null;
   must_change_password: boolean;
 };
 
@@ -77,6 +78,22 @@ export type Service = {
   special_rule_code: string | null;
   category?: Category;
   area?: ServiceArea | null;
+};
+
+export type AreaPaidService = {
+  id: number;
+  invoice_id: number;
+  invoice_number: string;
+  patient_name: string;
+  service_name: string;
+  service_area_id: number | null;
+  service_area_name: string | null;
+  quantity: string;
+  line_total: string;
+  payment_status: Invoice['status'];
+  issued_at: string;
+  paid_at: string | null;
+  administrative_note?: string | null;
 };
 
 export type CategoryPayload = {
@@ -315,6 +332,7 @@ export type OperationsReport = {
   summary: {
     void_count: number;
     reprint_count: number;
+    audit_event_count: number;
     backup_count: number;
     failed_backup_count: number;
     cashier_count: number;
@@ -335,6 +353,19 @@ export type OperationsReport = {
     reason: string | null;
     created_at: string | null;
     user: string | null;
+  }>;
+  audit_events: Array<{
+    id: number;
+    action: string;
+    result: string;
+    entity_type: string;
+    entity_id: number | null;
+    reason: string | null;
+    created_at: string | null;
+    user: string | null;
+    ip_address: string | null;
+    user_agent: string | null;
+    details: Record<string, unknown> | null;
   }>;
   backups: Array<{
     id: number;

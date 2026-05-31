@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Fiscal\UpdateFiscalSettingsRequest;
-use App\Models\AuditLog;
 use App\Models\FiscalSetting;
+use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class FiscalSettingsController extends Controller
@@ -18,9 +17,9 @@ class FiscalSettingsController extends Controller
         ]);
     }
 
-    public function update(UpdateFiscalSettingsRequest $request): JsonResponse
+    public function update(UpdateFiscalSettingsRequest $request, AuditLogger $auditLogger): JsonResponse
     {
-        $setting = DB::transaction(function () use ($request): FiscalSetting {
+        $setting = DB::transaction(function () use ($request, $auditLogger): FiscalSetting {
             $setting = FiscalSetting::query()->first() ?? new FiscalSetting();
             $fieldsToTrack = [
                 'hospital_name',
@@ -50,14 +49,14 @@ class FiscalSettingsController extends Controller
             $setting->updated_by = $request->user()->id;
             $setting->save();
 
-            AuditLog::query()->create([
-                'user_id' => $request->user()->id,
-                'action' => $oldValues ? 'fiscal_settings.updated' : 'fiscal_settings.created',
-                'entity_type' => FiscalSetting::class,
-                'entity_id' => $setting->id,
-                'old_values' => $oldValues,
-                'new_values' => $setting->only($fieldsToTrack),
-            ]);
+            $auditLogger->log(
+                action: $oldValues ? 'fiscal_settings.updated' : 'fiscal_settings.created',
+                entity: $setting,
+                user: $request->user(),
+                request: $request,
+                oldValues: $oldValues,
+                newValues: $setting->only($fieldsToTrack),
+            );
 
             return $setting;
         });

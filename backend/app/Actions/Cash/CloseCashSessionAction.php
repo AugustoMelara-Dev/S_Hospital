@@ -11,22 +11,28 @@ use App\Models\CashRegisterSession;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\AuditLogger;
 use App\Support\Money;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class CloseCashSessionAction
 {
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+    ) {}
+
     /**
      * @param  array{closing_amount: string, notes?: ?string}  $payload
      *
      * @throws AuthorizationException
      */
-    public function execute(CashRegisterSession $session, array $payload, User $user): CashRegisterSession
+    public function execute(CashRegisterSession $session, array $payload, User $user, ?Request $request = null): CashRegisterSession
     {
-        return DB::transaction(function () use ($session, $payload, $user): CashRegisterSession {
+        return DB::transaction(function () use ($session, $payload, $user, $request): CashRegisterSession {
             $lockedSession = CashRegisterSession::query()
                 ->whereKey($session->id)
                 ->lockForUpdate()
@@ -102,6 +108,21 @@ class CloseCashSessionAction
                     'difference_amount' => $lockedSession->difference_amount,
                 ],
             ]);
+
+            if ($differenceCents !== 0) {
+                $this->auditLogger->log(
+                    action: 'cash_session.difference',
+                    entity: $lockedSession,
+                    user: $user,
+                    request: $request,
+                    newValues: [
+                        'closing_amount' => $lockedSession->closing_amount,
+                        'expected_amount' => $lockedSession->expected_amount,
+                        'difference_amount' => $lockedSession->difference_amount,
+                    ],
+                    reason: $notes,
+                );
+            }
 
             DB::afterCommit(function () use ($user): void {
                 try {

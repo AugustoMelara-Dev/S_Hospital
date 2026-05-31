@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AreaPaidServiceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CashSessionController;
@@ -64,6 +65,8 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
         Route::post('/services', [ServiceController::class, 'store']);
         Route::patch('/services/{service}', [ServiceController::class, 'update']);
 
+        Route::get('/area-services/paid', [AreaPaidServiceController::class, 'index']);
+
         Route::get('/invoices', [InvoiceController::class, 'index']);
         Route::post('/invoices', [InvoiceController::class, 'store']);
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
@@ -76,6 +79,7 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
 
         Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store']);
         Route::get('/invoices/{invoice}/payments', [PaymentController::class, 'index']);
+        Route::post('/payments/{payment}/void', [PaymentController::class, 'void']);
         Route::get('/invoices/{invoice}/receipt', [ReceiptController::class, 'show']);
         Route::post('/invoices/{invoice}/reprint', [ReceiptController::class, 'reprint']);
 

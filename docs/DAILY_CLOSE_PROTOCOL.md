@@ -12,7 +12,8 @@
 2. Revisar rango del dia.
 3. Comparar total cobrado por metodo contra caja fisica.
 4. Revisar anulaciones y reimpresiones del dia.
-5. Exportar CSV solo con permiso autorizado.
+5. Revisar eventos de control: diferencias de caja, reversos de pago, cambios fiscales, cambios de usuario y respaldos.
+6. Exportar reportes solo con permiso autorizado.
 
 ## Backup
 
@@ -32,3 +33,4 @@ Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 1. Guardar CSV diario si administracion lo requiere.
 2. Registrar cualquier diferencia de caja.
 3. No declarar cierre correcto si backup queda `pending` o `failed`.
+4. Documentar cualquier reversion de pago o anulacion con el motivo usado en el sistema.

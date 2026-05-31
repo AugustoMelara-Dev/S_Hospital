@@ -11,6 +11,8 @@ class CashMovement extends Model
 
     public const TYPE_PAYMENT = 'payment';
 
+    public const TYPE_PAYMENT_VOID = 'payment_void';
+
     public const TYPE_CLOSING = 'closing';
 
     protected $fillable = [

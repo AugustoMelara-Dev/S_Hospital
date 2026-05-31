@@ -2,18 +2,23 @@
 
 namespace App\Actions\Billing;
 
-use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\User;
+use App\Support\AuditLogger;
 use App\Support\Money;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class VoidInvoiceAction
 {
-    public function execute(Invoice $invoice, User $user, string $reason): Invoice
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+    ) {}
+
+    public function execute(Invoice $invoice, User $user, string $reason, ?Request $request = null): Invoice
     {
-        $result = DB::transaction(function () use ($invoice, $user, $reason): ?Invoice {
+        $result = DB::transaction(function () use ($invoice, $user, $reason, $request): ?Invoice {
             $lockedInvoice = Invoice::query()
                 ->withCount('payments')
                 ->lockForUpdate()
@@ -26,23 +31,23 @@ class VoidInvoiceAction
             }
 
             if ($this->hasPaymentState($lockedInvoice)) {
-                AuditLog::query()->create([
-                    'user_id' => $user->id,
-                    'action' => 'invoice.void_blocked_paid',
-                    'entity_type' => Invoice::class,
-                    'entity_id' => $lockedInvoice->id,
-                    'old_values' => [
+                $this->auditLogger->log(
+                    action: 'invoice.void_blocked_paid',
+                    entity: $lockedInvoice,
+                    user: $user,
+                    request: $request,
+                    oldValues: [
                         'status' => $lockedInvoice->status,
                         'paid_amount' => $lockedInvoice->paid_amount,
                         'balance_due' => $lockedInvoice->balance_due,
                         'payments_count' => $lockedInvoice->payments_count,
                     ],
-                    'new_values' => [
-                        'reason' => $reason,
+                    newValues: [
                         'message' => 'No se puede anular una factura con pagos registrados sin flujo de reversión.',
                     ],
-                    'created_at' => now(),
-                ]);
+                    reason: $reason,
+                    result: 'failed',
+                );
 
                 return null;
             }
@@ -61,20 +66,20 @@ class VoidInvoiceAction
                 'voided_at' => now(),
             ])->save();
 
-            AuditLog::query()->create([
-                'user_id' => $user->id,
-                'action' => 'invoice.voided',
-                'entity_type' => Invoice::class,
-                'entity_id' => $lockedInvoice->id,
-                'old_values' => $oldValues,
-                'new_values' => [
+            $this->auditLogger->log(
+                action: 'invoice.voided',
+                entity: $lockedInvoice,
+                user: $user,
+                request: $request,
+                oldValues: $oldValues,
+                newValues: [
                     'status' => $lockedInvoice->status,
                     'void_reason' => $lockedInvoice->void_reason,
                     'voided_by' => $lockedInvoice->voided_by,
                     'voided_at' => $lockedInvoice->voided_at,
                 ],
-                'created_at' => now(),
-            ]);
+                reason: $reason,
+            );
 
             return $lockedInvoice->load([
                 'items',

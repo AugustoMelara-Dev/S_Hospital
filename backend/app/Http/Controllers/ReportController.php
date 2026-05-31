@@ -231,7 +231,7 @@ class ReportController extends Controller
     {
         $filters = $request->validated();
 
-        if ($request->user()->can('cash.close_any')) {
+        if ($request->user()->can('cash.close_any') || $request->user()->can('audit.view')) {
             return $filters;
         }
 

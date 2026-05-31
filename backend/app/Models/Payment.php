@@ -9,6 +9,8 @@ class Payment extends Model
 {
     public const STATUS_POSTED = 'posted';
 
+    public const STATUS_VOID = 'void';
+
     public const METHOD_CASH = 'cash';
 
     public const METHOD_TRANSFER = 'transfer';
@@ -32,6 +34,9 @@ class Payment extends Model
         'amount',
         'reference',
         'status',
+        'voided_by',
+        'voided_at',
+        'void_reason',
         'paid_at',
     ];
 
@@ -40,6 +45,7 @@ class Payment extends Model
         return [
             'amount' => 'decimal:2',
             'paid_at' => 'datetime',
+            'voided_at' => 'datetime',
         ];
     }
 
@@ -56,5 +62,10 @@ class Payment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function voidedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'voided_by');
     }
 }
