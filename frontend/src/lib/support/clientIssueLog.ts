@@ -13,15 +13,23 @@ export type StoredClientIssue = {
   occurred_at: string;
 };
 
+type SupportSummaryContext = {
+  current_route?: string;
+  app_origin?: string;
+  generated_at?: string;
+};
+
 const STORAGE_KEY = 'hospital_client_issue_log';
 const MAX_ISSUES = 20;
 
 export const PERMISSION_DENIED_MESSAGE =
-  'Su usuario no tiene permiso para esta accion. Solicite a un supervisor que revise su rol; no repita la operacion varias veces.';
+  'Su usuario no tiene permiso para esta acción. Solicite a un supervisor que revise su rol; no repita la operación varias veces.';
 
 export function safeClientMessage(value: string): string {
   return value
+    .replace(/(?:password|contrase.{0,2}a|token|secret|APP_KEY|DB_PASSWORD)\s*[:=]\s*\S+/gi, '[redacted]')
     .replace(/password|contrase.{0,2}a|token|secret|APP_KEY|DB_PASSWORD/gi, '[redacted]')
+    .replace(/[A-Z]:\\[^\s]+/gi, '[ruta-local]')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 500);
@@ -43,6 +51,39 @@ export function logClientIssue(error: unknown, context: ClientIssueContext = {})
   } catch {
     // Support logging must never block the cashier workflow.
   }
+}
+
+export function buildClientIssueSupportSummary(issues: StoredClientIssue[], context: SupportSummaryContext = {}): string {
+  const generatedAt = context.generated_at ?? new Date().toISOString();
+  const lines = [
+    'Resumen seguro para soporte',
+    `Generado: ${safeClientMessage(generatedAt)}`,
+    `Pantalla: ${safeClientMessage(context.current_route ?? 'no indicada')}`,
+    `Dirección local: ${safeClientMessage(context.app_origin ?? 'no indicada')}`,
+    `Incidentes guardados en este navegador: ${issues.length}`,
+    '',
+    'Últimos incidentes seguros:',
+  ];
+
+  if (issues.length === 0) {
+    lines.push('- Sin incidentes guardados en este navegador.');
+  } else {
+    issues.slice(0, 3).forEach((issue, index) => {
+      lines.push(
+        [
+          `${index + 1}. ${safeClientMessage(issue.module ?? 'sistema')} - ${safeClientMessage(issue.action ?? 'acción no indicada')}`,
+          `   Pantalla: ${safeClientMessage(issue.route)}`,
+          `   Mensaje: ${safeClientMessage(issue.safe_message)}`,
+          `   Código técnico: ${safeClientMessage(issue.technical_code)}`,
+          `   Fecha: ${safeClientMessage(issue.occurred_at)}`,
+        ].join('\n'),
+      );
+    });
+  }
+
+  lines.push('', 'Acción segura: no repetir facturas ni cobros hasta que caja e historial confirmen el estado.');
+
+  return lines.join('\n');
 }
 
 export function getClientIssues(): StoredClientIssue[] {
