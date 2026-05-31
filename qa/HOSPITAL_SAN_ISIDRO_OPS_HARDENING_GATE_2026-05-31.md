@@ -10,8 +10,8 @@ It does not replace final hospital-server proof. A new production handoff still 
 
 ## Current evidence
 
-- Current commit reviewed: `90f0525`.
-- Working tree was clean before this evidence refresh.
+- Current commit reviewed: `4a99b52`.
+- Working tree was clean before this gate refresh.
 - Running stack: Docker backend, frontend and MariaDB active; MariaDB healthy.
 - Direct SPA route proof: `http://127.0.0.1:8000/support` returned 200; `http://127.0.0.1:8000/about` returned 200.
 - Support screenshot: `qa/screenshots/ops-hardening-audit-2026-05-31/support-center-after-status-summary.png`.
@@ -19,6 +19,8 @@ It does not replace final hospital-server proof. A new production handoff still 
 - Safe training screenshot: `qa/screenshots/ops-hardening-audit-2026-05-31/support-center-training-safe-after.png`.
 - Safe training console/network evidence: `qa/screenshots/ops-hardening-audit-2026-05-31/support-center-training-safe-console.json` with only 200 responses for setup/status endpoints and no browser console errors.
 - Catalog/invoice scanner cleanup: `90f0525 fix(catalog): hide technical scanner codes` reduced user-facing technical code exposure when scanner workflows are not enabled.
+- Permission error cleanup: `b0ee773 fix(support): guide permission errors to supervisor` gives normal users next steps instead of a bare technical denial.
+- Institutional printer proof cleanup: `4a99b52 test(release): require institutional printer proof` resets the physical printer proof to pending media carta/carta/A5 validation and updates the preflight contract.
 - Visual smoke report: `qa/screenshots/phase-12-visual-smoke/visual-smoke-report.json`, `consoleIssueCount: 0`, `blockerCount: 0`.
 - Local restore proof: `qa/ops-hardening-restore-validation-2026-05-31.md`.
 
@@ -37,6 +39,11 @@ It does not replace final hospital-server proof. A new production handoff still 
 | `npm.cmd run e2e` | PASS | 2 Playwright tests |
 | `scripts/validate_installer_safety.ps1` | PASS | no destructive installer findings |
 | `scripts/repair_hospital_system.ps1 -WhatIf` | PASS | non-destructive repair path prints intended actions |
+| `docker compose exec backend php artisan test --filter=SystemStatusTest --colors=never` | PASS | 7 tests, 58 assertions |
+| `npm.cmd test -- errorCatalog` | PASS | 2 tests |
+| `npm.cmd test -- App.test.tsx` | PASS | 14 tests |
+| `npm.cmd run typecheck` | PASS | `tsc --noEmit` |
+| `npm.cmd run lint` | PASS | ESLint completed |
 | Local restore into disposable DB | PASS | `hospital_restore_validation_ops_test`, backup SHA256 recorded |
 
 ## Production preflight result
@@ -58,6 +65,7 @@ Blocking issues reported:
 - Windows scheduled task `SistemaCajaHospitalaria-BackupWorker` is not installed here.
 - Windows scheduled task `SistemaCajaHospitalaria-DailyBackup` is not installed here.
 - Physical LAN/printer proof was bypassed with `-AllowMissingPhysicalProof`.
+- Current printer proof must be institutional paper output: media carta, carta and A5. Older 80mm/58mm roll-paper proof no longer satisfies the final preflight.
 
 Positive checks in the same preflight:
 
@@ -77,6 +85,7 @@ Positive checks in the same preflight:
 | Advanced diagnostics restricted | Implemented | `/api/system/status`, permission tests |
 | No secrets/raw env in normal diagnostics | Implemented | `SystemStatusTest`, client log tests |
 | Human error messages and support logging | Implemented | `errorCatalog`, `client_error_logs`, `ClientErrorLogTest` |
+| Permission-denied recovery guidance | Implemented | 403 copy tells user to contact supervisor and avoid repeated attempts; PermissionGate links to `/support` |
 | Safe installer/no destructive setup | Implemented | installer safety script PASS |
 | Safe repair script | Implemented | repair WhatIf PASS |
 | No duplicate invoice/payment on retry | Implemented | idempotency tests in invoice/payment suites |
@@ -87,7 +96,7 @@ Positive checks in the same preflight:
 | Restore validation | Verified locally only | disposable DB proof |
 | Browser smoke | Verified locally | Playwright E2E and visual smoke report |
 | Final LAN client proof | Pending physical field validation | Must rerun on hospital LAN |
-| Final printer proof | Pending physical field validation | Must rerun with real printer/paper |
+| Final printer proof | Pending physical field validation | Must rerun on real cashier printer with media carta, carta and A5 proof fields |
 | Final Windows startup/backup tasks | Pending field validation | Missing on this workstation |
 | Production environment settings | Pending final server | preflight blockers above |
 
@@ -95,7 +104,7 @@ Positive checks in the same preflight:
 
 - This machine is not the final hospital server, so production readiness remains unproven.
 - The local restore proof confirms recovery mechanics, but final restore must be repeated with final backup paths and final server configuration.
-- Physical printer behavior cannot be inferred from screenshots or PDFs.
+- Physical printer behavior cannot be inferred from screenshots or PDFs; the proof file is intentionally pending until real media carta/carta/A5 output is tested.
 - The main frontend bundle still emits a Vite size warning; not a blocker for LAN use, but worth monitoring if more modules are added.
 - The latest scanner-code cleanup is included in this gate; rerun the final visual smoke on the hospital server after field configuration is set.
 

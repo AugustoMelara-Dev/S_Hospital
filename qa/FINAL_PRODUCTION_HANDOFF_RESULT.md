@@ -2,7 +2,7 @@
 
 - Current update: 2026-05-31
 - Project root: `C:\Projects\S_Hospital`
-- Current commit reviewed for ops gate: `90f0525`
+- Current commit reviewed for ops gate: `4a99b52`
 - Current decision: `PRODUCTION_CANDIDATE_PENDING_FIELD_REVALIDATION`
 - Push status: not pushed by this agent
 
@@ -23,6 +23,8 @@ This file supersedes older handoff text that referenced a historical 2026-05-19 
 - Browser console for support center captured as empty `[]`.
 - Safe training guidance captured in `/support` with console/network evidence showing only 200 status endpoint responses.
 - User-facing catalog/invoice wording no longer leads with technical scanner codes when scanner workflows are not enabled.
+- Permission-denied messages now tell the user to contact a supervisor and avoid repeating the operation.
+- Printer proof now requires institutional media carta/carta/A5 validation; older 80mm/58mm proof is not accepted for final handoff.
 - Local backend tests passed: 178 tests, 1104 assertions.
 - Local frontend tests passed: 6 files, 41 tests.
 - E2E passed: 2 Playwright tests.
@@ -39,7 +41,7 @@ This file supersedes older handoff text that referenced a historical 2026-05-19 
 - Handoff must use the final LAN IP or local domain, not localhost.
 - Windows scheduled task `SistemaCajaHospitalaria-BackupWorker` must exist and be verified.
 - Windows scheduled task `SistemaCajaHospitalaria-DailyBackup` must exist and be verified.
-- Physical LAN/printer proof must be rerun without bypass flags.
+- Physical LAN/printer proof must be rerun without bypass flags, using real institutional paper output.
 
 ## Required final handoff commands
 
@@ -62,5 +64,6 @@ Final server restore must still be repeated into a disposable database using the
 
 - Do not claim final fiscal compliance beyond the implemented technical controls.
 - Do not claim physical printer readiness from screenshots.
+- Do not reuse old roll-paper printer evidence as proof of the current institutional receipt target.
 - Do not claim production readiness while preflight uses `-AllowMissingPhysicalProof`.
 - Do not run destructive restore against the active production database.
