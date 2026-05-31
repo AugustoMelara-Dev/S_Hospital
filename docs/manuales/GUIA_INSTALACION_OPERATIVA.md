@@ -95,6 +95,13 @@ backups para el usuario actual sin cambiar el registro ni iniciar procesos:
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -WhatIfOnly
 ```
 
+Ese modo valida hora y PHP sin crear archivo Startup, sin cambiar registro y sin
+iniciar worker. Para revisar estado sin exponer rutas locales:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status
+```
+
 Luego debe crear un respaldo manual desde la UI y confirmar que cambia de
 **Pendiente** a **Protegido**.
 

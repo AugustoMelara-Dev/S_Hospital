@@ -47,6 +47,18 @@ Si una verificacion falla, no reintente muchas veces. Revise primero el mensaje:
 PHP no encontrado, instalacion incompleta, permisos insuficientes o falta de
 espacio. Luego genere paquete de soporte.
 
+Si no hay permisos de administrador para tareas de Windows, soporte puede usar
+el arranque por usuario actual. Primero valide sin tocar registro ni iniciar
+procesos:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -WhatIfOnly
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status
+```
+
+La salida de estado no debe mostrar rutas locales crudas ni el contenido del
+archivo Startup.
+
 El responsable tecnico puede validar que el worker procesa respaldos sin dejar
 la contrasena escrita en el historial de PowerShell:
 

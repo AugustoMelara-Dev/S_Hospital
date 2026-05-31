@@ -60,6 +60,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Paquete de soporte recoge los logs reales de respaldo desde `backend\storage\logs`, incluyendo worker, respaldo programado y automatizacion. | Verificado |
 | Esta fase | Instalador de tareas Windows de respaldo sanitiza consola/errores, valida PHP antes de registrar tareas, conserva rutas reales solo dentro de la tarea y recuerda no borrar datos para corregir fallos. | Verificado |
 | Esta fase | Scripts de soporte y evidencia sanitizan rutas en consola: arranque manual, paquete de soporte, smoke de worker y validacion LAN. | Verificado |
+| Esta fase | Arranque de respaldos por usuario actual valida PHP, oculta contenido Startup en `-Status` y usa hora/PHP validados al ejecutar `-StartNow`. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -169,6 +170,9 @@ Resultado observado:
 | `production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:1 -AllowMissingPhysicalProof` | Paso esperado con fallos: consola no expone `C:\Projects\S_Hospital` ni rutas de usuario. |
 | `install_backup_startup_current_user.ps1 -WhatIfOnly -DailyBackupTime 99:99` | Falla antes de tocar inicio/registro con mensaje humano de formato HH:mm. |
 | `install_backup_startup_current_user.ps1 -WhatIfOnly -DailyBackupTime 23:30` | Paso: no crea archivo de inicio, no cambia registro y no inicia worker. |
+| `install_backup_startup_current_user.ps1 -WhatIfOnly -PhpPath C:\tmp\does-not-exist-php.exe` | Falla antes de tocar inicio/registro con mensaje humano de PHP faltante, sin ruta local cruda. |
+| `install_backup_startup_current_user.ps1 -ProjectRoot C:\tmp\does-not-exist-shospital -WhatIfOnly` | Falla antes de tocar inicio/registro con mensaje humano de carpeta del sistema, sin ruta local cruda. |
+| `install_backup_startup_current_user.ps1 -Status -PhpPath C:\tmp\does-not-exist-php.exe -DailyBackupTime 99:99` | Paso: revisa estado sin validar hora/PHP irrelevantes y no imprime contenido crudo de Startup. |
 | Parser PowerShell de `run_backup_scheduler_loop.ps1` despues de `-WhatIfOnly` | Paso. |
 | `run_backup_worker.cmd --check` | Paso: valida backend, PHP y carpeta de logs sin iniciar worker ni tocar datos. |
 | `run_scheduled_backup.cmd --check` | Paso: valida backend, PHP y carpeta de logs sin crear respaldo. |

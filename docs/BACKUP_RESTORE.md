@@ -127,6 +127,10 @@ scripts\start_backup_automation.cmd
 
 Esta alternativa arranca el worker y un scheduler local al iniciar sesion del usuario Windows. No sustituye una tarea de sistema para produccion final, pero deja backup diario automatico sin permisos de administrador mientras ese usuario permanezca iniciado.
 El instalador registra tanto un archivo en la carpeta Startup como una entrada `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` para tolerar politicas locales donde uno de los dos mecanismos este restringido.
+Primero use `-WhatIfOnly`: valida hora y PHP sin crear archivo Startup, sin
+cambiar registro y sin iniciar el worker. El modo `-Status` no imprime el
+contenido crudo del archivo Startup; muestra solo estado y rutas protegidas para
+evitar exponer carpetas locales en capturas de soporte.
 El log operativo queda en `backend/storage/logs/backup-automation.log`.
 
 DespuÃ©s de cada backup diario, copiar el archivo mÃ¡s reciente a una unidad USB o disco externo del hospital. No usar servicios cloud como requisito operativo.
