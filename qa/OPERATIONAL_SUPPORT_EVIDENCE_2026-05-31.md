@@ -49,6 +49,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Instalador LAN usa texto visible ASCII para evitar mojibake en consola/WPF durante soporte offline. | Verificado |
 | Esta fase | Instalador de acceso directo valida URL/carpeta antes de tocar escritorio o tareas y ofrece `-WhatIfOnly` para soporte. | Verificado |
 | Esta fase | Paquete seguro para soporte valida carpeta, limites y `-WhatIfOnly` antes de crear archivos. | Verificado |
+| Esta fase | Handoff final sanitiza rutas locales tambien en consola, no solo en el reporte. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -142,6 +143,7 @@ Resultado observado:
 | `collect_support_packet.ps1 -OutputDir C:\tmp\support-packet-outside -WhatIfOnly` | Falla antes de crear carpeta, con mensaje humano de usar carpeta dentro del sistema. |
 | `collect_support_packet.ps1 -OutputDir ..\support-packet-outside -WhatIfOnly` | Falla antes de crear carpeta; la ruta relativa se normaliza antes de validar contencion. |
 | `collect_support_packet.ps1 -WhatIfOnly -TailLines 5 -RepairRetries 1 -RepairDelaySeconds 1` | Paso: valida parametros y confirma que no crea carpeta ni copia logs. |
+| `final_production_handoff.ps1 -SkipPreflight` con `-PhpPath C:\tmp\php.exe` | Paso: consola y reporte usan `%PROJECT_ROOT%` o `[ruta-local]`, sin rutas locales crudas. |
 | Parser PowerShell de `scripts\e2e_gate.ps1` | Paso. |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1` | Paso: 2 specs Playwright. Detecto y se corrigio fuga de `/api/areas?active=1` al backend local durante el flujo Reportes -> Respaldos. |
 | `php artisan test tests/Feature/SystemStatusTest.php` | Paso: 7 tests, 47 assertions. |

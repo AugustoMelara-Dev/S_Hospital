@@ -232,7 +232,7 @@ function Write-HandoffReport(
     }
 
     Set-Content -LiteralPath $path -Value $lines -Encoding ASCII
-    Write-Host "Wrote handoff report: $path"
+    Write-Host "Wrote handoff report: $(Protect-HandoffText $path)"
 }
 
 Assert-ScriptExists $preflightScript
@@ -240,9 +240,9 @@ Assert-ScriptExists $proofInitScript
 Assert-ScriptExists $backupTasksScript
 
 Write-Host "Sistema de Caja Hospitalaria final production handoff"
-Write-Host "ProjectRoot: $ProjectRoot"
+Write-Host "ProjectRoot: $(Protect-HandoffText $ProjectRoot)"
 Write-Host "BaseUrl: $($BaseUrl.TrimEnd('/'))"
-Write-Host "PhpPath: $PhpPath"
+Write-Host "PhpPath: $(Protect-HandoffText $PhpPath)"
 
 Write-Section "Proof files"
 if ($InitializeProofFiles) {
@@ -278,11 +278,11 @@ if (-not $concurrencyProofCompleted) {
 
 Write-Section "Backup automation"
 $backupStatusOutput = @(& powershell.exe -ExecutionPolicy Bypass -File $backupTasksScript -ProjectRoot $ProjectRoot -PhpPath $PhpPath -Status 2>&1 | ForEach-Object { $_.ToString() })
-$backupStatusOutput | ForEach-Object { Write-Host $_ }
+$backupStatusOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 Write-Host "If tasks are missing or stale, run elevated PowerShell:"
-Write-Host "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $PhpPath"
+Write-Host "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $(Protect-HandoffText $PhpPath)"
 Write-Host "Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker"
-Write-Host "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath $PhpPath"
+Write-Host "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath $(Protect-HandoffText $PhpPath)"
 
 if ($SkipPreflight) {
     Write-Section "Preflight skipped"
@@ -303,7 +303,7 @@ if ($SkipPreflight) {
 Write-Section "Production preflight"
 $preflightOutput = @(& powershell.exe -ExecutionPolicy Bypass -File $preflightScript -ProjectRoot $ProjectRoot -BaseUrl $BaseUrl 2>&1 | ForEach-Object { $_.ToString() })
 $preflightExit = $LASTEXITCODE
-$preflightOutput | ForEach-Object { Write-Host $_ }
+$preflightOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
 Write-HandoffReport `
     -path $ReportPath `
