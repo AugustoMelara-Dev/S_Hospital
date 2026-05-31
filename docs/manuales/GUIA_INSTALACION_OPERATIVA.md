@@ -50,6 +50,26 @@ El script `scripts/install_hospital_startup_shortcut.ps1` crea el acceso directo
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_hospital_startup_shortcut.ps1 -InstallStartupTask
 ```
 
+## Respaldos Automaticos
+
+El instalador debe registrar dos tareas de Windows si se ejecuta con permisos de
+administrador:
+
+- `SistemaCajaHospitalaria-BackupWorker`: worker continuo para procesar
+  respaldos solicitados desde la pantalla **Respaldos**.
+- `SistemaCajaHospitalaria-DailyBackup`: respaldo local diario a la hora
+  configurada.
+
+Si el instalador no pudo registrar tareas por permisos, el tecnico puede hacerlo
+despues con:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting
+```
+
+Luego debe crear un respaldo manual desde la UI y confirmar que cambia de
+**Pendiente** a **Protegido**.
+
 ## Validacion Inicial
 
 Despues de instalar:

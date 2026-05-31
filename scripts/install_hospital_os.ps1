@@ -123,6 +123,30 @@ function Update-DotEnv {
     Set-Content $Path -Value $newLines
 }
 
+function Install-BackupAutomation {
+    param (
+        [string]$PhpPath,
+        [string]$DailyBackupTime
+    )
+
+    $backupTasksScript = Join-Path $scriptsDir "install_backup_tasks_windows.ps1"
+    if (-not (Test-Path -LiteralPath $backupTasksScript)) {
+        throw "No se encontro el instalador de tareas de respaldo en scripts\install_backup_tasks_windows.ps1."
+    }
+
+    $output = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $backupTasksScript `
+        -ProjectRoot $workspaceRoot `
+        -PhpPath $PhpPath `
+        -DailyBackupTime $DailyBackupTime `
+        -UpdateExisting 2>&1 | ForEach-Object { $_.ToString() }
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "No se pudieron registrar las tareas de respaldo. Ejecute PowerShell como Administrador y vuelva a intentar. Detalle: $($output -join ' ')"
+    }
+
+    return $output
+}
+
 if ($useGui) {
     # ----------------------------------------------------
     # WPF GUI Wizard Implementation
@@ -224,14 +248,14 @@ if ($useGui) {
 
                 <!-- STEP 4: Scheduler Backups -->
                 <StackPanel Name="PanelStep4" Visibility="Collapsed">
-                    <TextBlock Text="Paso 4: Respaldos Locales Diarios en Windows Task Scheduler" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
-                    <TextBlock Text="El sistema incluye un comando local de backups. Registraremos una tarea programada diaria en Windows para asegurar la información hospitalaria ante fallas de hardware." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
+                    <TextBlock Text="Paso 4: Respaldos Locales y Cola de Trabajos" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
+                    <TextBlock Text="El sistema necesita un worker continuo para procesar respaldos solicitados desde la pantalla Respaldos, y una tarea diaria para crear copia local automática." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
                     
-                    <CheckBox Name="ChkEnableBackup" Content="Registrar Tarea de Copia de Seguridad Diaria Automática" IsChecked="True" FontSize="13" FontWeight="SemiBold" Foreground="#0F172A" Margin="0,0,0,15"/>
+                    <CheckBox Name="ChkEnableBackup" Content="Registrar worker continuo y respaldo diario automático" IsChecked="True" FontSize="13" FontWeight="SemiBold" Foreground="#0F172A" Margin="0,0,0,15"/>
                     
                     <Label Content="Hora de Ejecución Diaria (Ejemplo: 23:00):" Foreground="#334155" Margin="0,0,0,5"/>
                     <TextBox Name="TxtBackupTime" Text="23:00" Padding="8" Width="120" HorizontalAlignment="Left" FontSize="14" BorderBrush="#CBD5E1" BorderThickness="1" Margin="0,0,0,10"/>
-                    <TextBlock Text="Nota: La tarea se ejecutará en segundo plano sin interrumpir a los cajeros en caja." FontSize="11" Foreground="#0D9488"/>
+                    <TextBlock Text="Nota: Las tareas se ejecutan en segundo plano sin interrumpir a los cajeros. Requieren PowerShell como Administrador para registrarse." FontSize="11" Foreground="#0D9488"/>
                 </StackPanel>
 
                 <!-- STEP 5: Firewall & LAN URLs -->
@@ -377,14 +401,7 @@ if ($useGui) {
                 # Task Scheduler Backup setup
                 if ($ChkEnableBackup.IsChecked) {
                     $bTime = $TxtBackupTime.Text
-                    # Create Windows task scheduler daily db backup
-                    $taskName = "SistemaCajaHospitalaria-DailyBackup"
-                    $artisanPath = Join-Path $backendRoot "artisan"
-                    $taskAction = "cmd.exe /c cd /d ""$backendRoot"" && ""$($TxtPhpPath.Text)"" artisan hospital:backup"
-                    
-                    # Unregister if already exists
-                    schtasks /delete /tn $taskName /f 2>$null
-                    schtasks /create /tn $taskName /tr $taskAction /sc daily /st $bTime /f | Out-Null
+                    Install-BackupAutomation -PhpPath $TxtPhpPath.Text -DailyBackupTime $bTime | Out-Null
                 }
 
                 # Firewall port configuration
@@ -600,16 +617,18 @@ function Run-SetupCli {
     }
 
     # Backup Task Scheduler
-    $enableBackup = Read-Host "¿Habilitar copia de seguridad diaria programada? (S/N)"
+    $enableBackup = Read-Host "¿Habilitar worker continuo y respaldo diario programado? (S/N)"
     if ($enableBackup -eq "S" -or $enableBackup -eq "s") {
         $bTime = Read-Host "Hora del respaldo (por defecto 23:00)"
         if ([string]::IsNullOrWhiteSpace($bTime)) { $bTime = "23:00" }
-        
-        $taskName = "SistemaCajaHospitalaria-DailyBackup"
-        $taskAction = "cmd.exe /c cd /d ""$backendRoot"" && ""$php"" artisan hospital:backup"
-        schtasks /delete /tn $taskName /f 2>$null
-        schtasks /create /tn $taskName /tr $taskAction /sc daily /st $bTime /f | Out-Null
-        Write-Host "Copia de seguridad registrada exitosamente en Task Scheduler." -ForegroundColor Green
+
+        try {
+            Install-BackupAutomation -PhpPath $php -DailyBackupTime $bTime | Out-Host
+            Write-Host "Worker de respaldos y respaldo diario registrados exitosamente." -ForegroundColor Green
+        } catch {
+            Write-Host "No se pudieron registrar las tareas de respaldo: $_" -ForegroundColor Red
+            Write-Host "Ejecute PowerShell como Administrador o use scripts\install_backup_tasks_windows.ps1 cuando el tecnico lo autorice." -ForegroundColor Yellow
+        }
     }
 
     # Open Firewall
