@@ -832,3 +832,21 @@ Consecuencia:
 
 - La UI puede consumir un contrato mensual estable sin recalcular dinero en frontend.
 - Las pruebas comparan días activos, métodos y estados para detectar divergencias entre lectura diaria y mensual.
+
+### 2026-05-31 - Instalador registra worker y respaldo diario
+
+Decision:
+
+- El instalador LAN reutiliza `scripts/install_backup_tasks_windows.ps1` para registrar respaldos en Windows.
+- La instalacion de respaldos crea dos tareas: `SistemaCajaHospitalaria-BackupWorker` para procesar respaldos solicitados desde la UI y `SistemaCajaHospitalaria-DailyBackup` para el respaldo automatico diario.
+- El instalador conserva migraciones no destructivas y falla con mensaje claro si no tiene permisos de administrador para registrar tareas.
+
+Motivo:
+
+- La pantalla Respaldos depende de un worker activo; una tarea diaria aislada no garantiza que los respaldos manuales solicitados por administracion se procesen.
+- La instalacion debe ser guiada para personal tecnico local y evitar pasos invisibles que despues parezcan errores de la aplicacion.
+
+Consecuencia:
+
+- La guia operativa indica como verificar tareas y como reinstalarlas con `install_backup_tasks_windows.ps1 -UpdateExisting`.
+- La validacion de entrega debe crear un respaldo manual y confirmar que pase de `Pendiente` a `Protegido`.
