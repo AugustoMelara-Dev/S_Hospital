@@ -109,6 +109,16 @@ esas cuatro evidencias existan y el preflight pase sin omisiones:
 powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000
 ```
 
+Para crear el borrador inicial de la prueba LAN desde la segunda computadora:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+```
+
+Ese script no reemplaza un archivo existente por accidente. Use `-Force` solo
+si el responsable tecnico decide regenerar un borrador incompleto y ya guardo
+la evidencia anterior que corresponda.
+
 ## Soporte
 
 Si el sistema no abre:

@@ -6,10 +6,17 @@ param(
 
     [string] $ClientName = $env:COMPUTERNAME,
     [string] $ResponsiblePerson = "",
-    [string] $UserRole = ""
+    [string] $UserRole = "",
+
+    [switch] $Force
 )
 
 $ErrorActionPreference = "Stop"
+
+trap {
+    Write-Host $_.Exception.Message
+    exit 1
+}
 
 function New-CheckResult([string] $Label, [string] $Url, [int[]] $AllowedStatusCodes = @(200), [string] $ExpectedContentType = "") {
     try {
@@ -59,6 +66,10 @@ if (-not [Uri]::TryCreate($base, [UriKind]::Absolute, [ref] $baseUri) -or $baseU
     throw "BaseUrl must be an absolute http(s) LAN URL, for example http://192.168.1.10"
 }
 
+if ($EvidencePath -ne "" -and (Test-Path -LiteralPath $EvidencePath) -and -not $Force) {
+    throw "EvidencePath already exists: $EvidencePath. Use -Force only when you intentionally want to replace this LAN proof starter."
+}
+
 if ($base -match "localhost|127\.0\.0\.1|::1") {
     Write-Host "[WARN] BaseUrl uses localhost. For production proof, run this from a second LAN client using the server IP or LAN name." -ForegroundColor Yellow
 }
@@ -92,6 +103,11 @@ foreach ($check in $checks) {
 $allPassed = -not ($checks | Where-Object { -not $_.Passed })
 
 if ($EvidencePath -ne "") {
+    $evidenceDir = Split-Path -Parent $EvidencePath
+    if (-not [string]::IsNullOrWhiteSpace($evidenceDir) -and -not (Test-Path -LiteralPath $evidenceDir)) {
+        New-Item -ItemType Directory -Path $evidenceDir -Force | Out-Null
+    }
+
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
     $lines.Add("# LAN client validation proof") | Out-Null
@@ -134,7 +150,8 @@ if ($EvidencePath -ne "") {
     $lines.Add("- Notes:") | Out-Null
 
     Set-Content -LiteralPath $EvidencePath -Value $lines -Encoding ASCII
-    Write-Host "Wrote evidence starter: $EvidencePath"
+    $writeMode = if ($Force) { "replaced" } else { "created" }
+    Write-Host "LAN evidence starter ${writeMode}: $EvidencePath"
 }
 
 if (-not $allPassed) {

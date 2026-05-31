@@ -47,6 +47,39 @@ function Write-Result([bool] $passed, [string] $message) {
     }
 }
 
+function Get-ProofFieldValue([string] $content, [string] $fieldLabel) {
+    $prefix = "- ${fieldLabel}:"
+    foreach ($line in ($content -split "`r?`n")) {
+        $trimmed = $line.Trim()
+        if ($trimmed.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            return $trimmed.Substring($prefix.Length).Trim()
+        }
+    }
+
+    return $null
+}
+
+function Test-ProofReferencedLocalEvidenceExists([string] $content, [string] $fieldLabel) {
+    $value = Get-ProofFieldValue $content $fieldLabel
+    if ($null -eq $value -or $value.Trim() -eq "") {
+        return $true
+    }
+
+    $reference = $value.Trim()
+    $looksLikeLocalPath = $reference -match '^(qa|docs|scripts|frontend|backend)[\\/]' -or [System.IO.Path]::IsPathRooted($reference)
+    if (-not $looksLikeLocalPath) {
+        return $true
+    }
+
+    $candidate = if ([System.IO.Path]::IsPathRooted($reference)) {
+        $reference
+    } else {
+        Join-Path $ProjectRoot $reference
+    }
+
+    return Test-Path -LiteralPath $candidate
+}
+
 function Test-ProofLooksCompleted([string] $path) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         return $false
@@ -58,6 +91,14 @@ function Test-ProofLooksCompleted([string] $path) {
     }
 
     if ($content -match '(?i)\bTODO\b|\bPENDING_[A-Z_]+\b|\bREPLACE\b|\bN/A\b|\bTBD\b|\[ \]|example|template|use this file') {
+        return $false
+    }
+
+    if (-not (Test-ProofReferencedLocalEvidenceExists $content "Evidence/capture reference")) {
+        return $false
+    }
+
+    if (-not (Test-ProofReferencedLocalEvidenceExists $content "Evidence/photo reference")) {
         return $false
     }
 

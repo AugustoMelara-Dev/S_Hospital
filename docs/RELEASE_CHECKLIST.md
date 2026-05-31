@@ -242,6 +242,10 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 `
   -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
 ```
 
+El script no sobrescribe `qa\LAN_CLIENT_VALIDATION_PROOF.md` si ya existe. Use
+`-Force` solamente cuando quiera reemplazar un borrador incompleto de forma
+deliberada, despues de guardar cualquier evidencia real anterior.
+
 Luego completar manualmente en ese mismo archivo login, caja, factura, pago,
 recibo, historial, reportes y backup `pending` -> `success`.
 - Validar concurrencia real con MySQL/MariaDB.
