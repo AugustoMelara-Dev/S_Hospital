@@ -1245,6 +1245,44 @@ class ReportsTest extends TestCase
         $this->assertStringContainsString('Facturas anuladas reportadas fuera de ingresos', $capturedHtml);
     }
 
+    public function test_period_closure_pdf_labels_service_totals_as_billed_not_collected(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $this->createInvoice($cashier, 'Glucosa');
+
+        $capturedHtml = null;
+        Pdf::shouldReceive('loadHTML')
+            ->once()
+            ->with(\Mockery::on(function (string $html) use (&$capturedHtml): bool {
+                $capturedHtml = $html;
+
+                return true;
+            }))
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('output')
+                    ->once()
+                    ->andReturn('%PDF-service-labels');
+            }));
+
+        $date = now()->toDateString();
+        $this->actingAs($this->admin())
+            ->get("/api/reports/pdf?date_from={$date}&date_to={$date}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-service-labels', false);
+
+        $this->assertIsString($capturedHtml);
+        $sectionStart = strpos($capturedHtml, 'Top Servicios Más Vendidos');
+        $sectionEnd = strpos($capturedHtml, 'Resumen de Auditoría Operativa');
+        $this->assertIsInt($sectionStart);
+        $this->assertIsInt($sectionEnd);
+
+        $servicesSection = substr($capturedHtml, $sectionStart, $sectionEnd - $sectionStart);
+        $this->assertStringContainsString('Monto Facturado (LPS)', $servicesSection);
+        $this->assertStringNotContainsString('Total Recaudado (LPS)', $servicesSection);
+    }
+
     public function test_period_closure_pdf_export_includes_payment_reversals_without_technical_ids(): void
     {
         $this->seedBillingBase();
