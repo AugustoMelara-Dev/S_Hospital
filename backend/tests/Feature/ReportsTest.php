@@ -1273,6 +1273,8 @@ class ReportsTest extends TestCase
             ->assertSee('%PDF-financial-reading', false);
 
         $this->assertIsString($capturedHtml);
+        $this->assertStringContainsString('Cierre de Operaciones y Facturacion', $capturedHtml);
+        $this->assertStringNotContainsString('Cierre de Operaciones y Ventas', $capturedHtml);
         $this->assertStringContainsString('Lectura Financiera del Periodo', $capturedHtml);
         $this->assertStringContainsString('Facturado', $capturedHtml);
         $this->assertStringContainsString('L. 57.50', $capturedHtml);

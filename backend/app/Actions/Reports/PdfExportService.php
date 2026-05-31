@@ -388,7 +388,7 @@ class PdfExportService
         </div>
         <div>
             <h1 class='header-title'>REPORTE FINANCIERO CONSOLIDADO</h1>
-            <div class='header-subtitle'>Cierre de Operaciones y Ventas</div>
+            <div class='header-subtitle'>Cierre de Operaciones y Facturacion</div>
         </div>
         <div class='clear'></div>
     </div>

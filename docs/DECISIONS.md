@@ -1069,3 +1069,21 @@ Consecuencia:
 
 - El login conserva identidad institucional sin exponer RTN, CAI, scanner, parciales u otras opciones internas.
 - La matriz de permisos separa consulta historica de operacion financiera.
+
+### 2026-05-31 - PDF consolidado evita ventas como cierre financiero
+
+Decision:
+
+- El subtitulo del PDF consolidado usa "Cierre de Operaciones y Facturacion".
+- El PDF conserva "Recaudacion" solamente en secciones basadas en pagos reales.
+- Las secciones de categoria, area y servicios siguen etiquetadas como facturacion o monto facturado.
+
+Motivo:
+
+- El cierre consolidado mezcla lectura financiera, facturas, cobros, pendientes, anulaciones y auditoria.
+- "Ventas" puede ocultar la diferencia entre facturado y cobrado cuando hay facturas parciales o pendientes.
+
+Consecuencia:
+
+- El PDF exportado queda alineado con el dashboard, Excel premium y reportes en pantalla.
+- La prueba del PDF falla si vuelve el subtitulo ambiguo de ventas.
