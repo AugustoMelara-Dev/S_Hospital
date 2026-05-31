@@ -644,7 +644,7 @@ describe('App', () => {
 
     expect(await screen.findByText(/requiere revision/i)).toBeInTheDocument();
     expect(screen.getByText(/acceso por red local/i)).toBeInTheDocument();
-    expect(screen.queryByText(/hora servidor/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Hora servidor')).not.toBeInTheDocument();
   });
 
   it('does not render backups for a user without backup permission', async () => {

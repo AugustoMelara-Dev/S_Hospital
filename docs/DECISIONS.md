@@ -971,12 +971,14 @@ Decision:
 - La emision de factura y el registro de pago aceptan `Idempotency-Key`; repetir la misma operacion devuelve el mismo recurso y reutilizar la llave con datos distintos devuelve conflicto.
 - `/api/system/status` agrega resumen de severidad para soporte sin cambiar la fuente de verdad contable.
 - `/api/system/status-summary` entrega solo verificaciones comprensibles para usuarios autenticados normales: servidor, base de datos, pantalla web, respaldos, cola, hora, espacio, acceso LAN y version instalada.
+- Las rutas SPA operativas `/support`, `/about` y `/area-services` deben servirse desde Laravel igual que `/dashboard`; abrirlas directo o recargar no debe terminar en 404.
 
 Motivo:
 
 - En LAN local pueden ocurrir doble click, recarga o latencia; caja no debe duplicar facturas o pagos por accidente.
 - Soporte necesita evidencia sanitaria y segura para diagnosticar sin pedir capturas de datos sensibles.
 - El cajero necesita saber si debe continuar, revisar o pedir soporte sin ver rutas, comandos, variables ni detalles de infraestructura.
+- Un usuario no tecnico puede recargar, usar un marcador o escribir una ruta; eso debe volver a la aplicacion, no a una pantalla 404 del servidor.
 
 Consecuencia:
 

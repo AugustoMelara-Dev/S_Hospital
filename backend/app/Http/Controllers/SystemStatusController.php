@@ -285,6 +285,12 @@ class SystemStatusController extends Controller
 
     private function installedVersion(): ?string
     {
+        $configuredVersion = (string) Config::get('hospital.installed_version', '');
+
+        if ($configuredVersion !== '') {
+            return $configuredVersion;
+        }
+
         $packagePath = $this->projectPath('frontend/package.json');
 
         if (! is_file($packagePath)) {

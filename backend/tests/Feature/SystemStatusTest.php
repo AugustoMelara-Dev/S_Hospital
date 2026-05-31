@@ -148,6 +148,7 @@ class SystemStatusTest extends TestCase
         File::put($proofRoot.'/frontend/dist/index.html', '<div id="root"></div>');
         File::put($proofRoot.'/frontend/package.json', '{"version":"0.1.0"}');
         Config::set('hospital.project_root', $proofRoot);
+        $this->beforeApplicationDestroyed(fn () => File::deleteDirectory($proofRoot));
 
         $user = User::factory()->create();
         $user->assignRole('cajero');
