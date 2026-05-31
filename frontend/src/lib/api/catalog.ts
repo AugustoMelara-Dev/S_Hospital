@@ -1,5 +1,5 @@
 import { apiClient } from './base';
-import type { Category, CategoryPayload, Service, ServicePayload, ServiceFilters, PaginatedMeta } from './types';
+import type { Category, CategoryPayload, Service, ServiceArea, ServicePayload, ServiceFilters, PaginatedMeta } from './types';
 
 export const catalog = {
   async getCategories(active?: boolean): Promise<Category[]> {
@@ -19,6 +19,12 @@ export const catalog = {
     return response.data;
   },
 
+  async getServiceAreas(active?: boolean): Promise<ServiceArea[]> {
+    const query = active === undefined ? '' : `?active=${active ? '1' : '0'}`;
+    const response = await apiClient.request<{ data?: ServiceArea[] }>(`/api/service-areas${query}`);
+    return Array.isArray(response.data) ? response.data : [];
+  },
+
   async getServicesPage(filters: ServiceFilters = {}): Promise<{ data: Service[]; meta: PaginatedMeta }> {
     const params = new URLSearchParams();
 
@@ -26,6 +32,9 @@ export const catalog = {
     if (filters.code) params.set('code', filters.code);
     if (filters.active !== undefined) params.set('active', filters.active ? '1' : '0');
     if (filters.categoryId) params.set('category_id', String(filters.categoryId));
+    if (filters.areaId) params.set('area_id', String(filters.areaId));
+    if (filters.visibleInBilling !== undefined) params.set('visible_in_billing', filters.visibleInBilling ? '1' : '0');
+    if (filters.isBillable !== undefined) params.set('is_billable', filters.isBillable ? '1' : '0');
     if (filters.page) params.set('page', String(filters.page));
     if (filters.perPage) params.set('per_page', String(filters.perPage));
 

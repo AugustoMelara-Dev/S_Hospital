@@ -26,6 +26,121 @@ describe('NewInvoiceView', () => {
     queryClient.clear();
   });
 
+  it('filters billable services by administrative area in the POS', async () => {
+    window.history.pushState({}, '', '/billing/new');
+    const requestedServiceUrls: string[] = [];
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Demo',
+              email: 'cajero.demo@hospital-billing.local',
+              username: 'cajero.demo',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({ data: null }),
+        } as Response;
+      }
+
+      if (url.includes('/api/categories')) {
+        return {
+          ok: true,
+          json: async () => ({ data: [{ id: 1, name: 'General', slug: 'general', active: true, sort_order: 1 }] }),
+        } as Response;
+      }
+
+      if (url.includes('/api/service-areas')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 },
+              { id: 2, name: 'Rayos X', slug: 'rayos-x', active: true, sort_order: 2 },
+            ],
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/services')) {
+        requestedServiceUrls.push(url);
+        const isRayos = url.includes('area_id=2');
+        return {
+          ok: true,
+          json: async () => ({
+            data: isRayos
+              ? [{
+                  id: 22,
+                  category_id: 1,
+                  area_id: 2,
+                  name: 'Radiografia de abdomen',
+                  slug: 'radiografia-de-abdomen',
+                  price: '120.00',
+                  scan_code: null,
+                  barcode: null,
+                  qr_code: null,
+                  taxable: true,
+                  active: true,
+                  visible_in_billing: true,
+                  is_billable: true,
+                  special_rule_code: null,
+                  category: { id: 1, name: 'General', slug: 'general', active: true, sort_order: 1 },
+                  area: { id: 2, name: 'Rayos X', slug: 'rayos-x', active: true, sort_order: 2 },
+                }]
+              : [{
+                  id: 11,
+                  category_id: 1,
+                  area_id: 1,
+                  name: 'Glucosa',
+                  slug: 'glucosa',
+                  price: '15.00',
+                  scan_code: null,
+                  barcode: null,
+                  qr_code: null,
+                  taxable: true,
+                  active: true,
+                  visible_in_billing: true,
+                  is_billable: true,
+                  special_rule_code: null,
+                  category: { id: 1, name: 'General', slug: 'general', active: true, sort_order: 1 },
+                  area: { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 1 },
+                }],
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({}) } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /nueva factura/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(requestedServiceUrls.some((url) => url.includes('visible_in_billing=1') && url.includes('is_billable=1'))).toBe(true);
+    });
+
+    fireEvent.click(await screen.findByRole('radio', { name: /rayos x/i }));
+
+    expect(await screen.findByRole('button', { name: /radiografia de abdomen/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /glucosa/i })).not.toBeInTheDocument();
+    expect(requestedServiceUrls.some((url) => url.includes('area_id=2'))).toBe(true);
+  });
+
   it('renders payment form after issuing an invoice without adding reports', async () => {
     window.history.pushState({}, '', '/billing/new');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {

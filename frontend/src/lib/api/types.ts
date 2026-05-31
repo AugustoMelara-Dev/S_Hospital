@@ -48,19 +48,35 @@ export type Category = {
   sort_order: number;
 };
 
+export type ServiceArea = {
+  id: number;
+  name: string;
+  slug: string;
+  active: boolean;
+  sort_order: number;
+};
+
 export type Service = {
   id: number;
   category_id: number;
+  area_id?: number | null;
   name: string;
   slug: string;
   scan_code?: string | null;
   barcode?: string | null;
   qr_code?: string | null;
+  aliases?: string[] | null;
+  description?: string | null;
+  internal_code?: string | null;
   price: string;
   taxable: boolean;
   active: boolean;
+  print_on_receipt?: boolean;
+  visible_in_billing?: boolean;
+  is_billable?: boolean;
   special_rule_code: string | null;
   category?: Category;
+  area?: ServiceArea | null;
 };
 
 export type CategoryPayload = {
@@ -71,14 +87,21 @@ export type CategoryPayload = {
 
 export type ServicePayload = {
   category_id: number;
+  area_id?: number | null;
   name: string;
   price: string;
   scan_code: string | null;
   barcode: string | null;
   qr_code: string | null;
+  aliases?: string[] | null;
+  description?: string | null;
+  internal_code?: string | null;
   taxable: boolean;
   active: boolean;
   special_rule_code: string | null;
+  print_on_receipt?: boolean;
+  visible_in_billing?: boolean;
+  is_billable?: boolean;
 };
 
 export type InvoiceItemPayload = {
@@ -484,6 +507,9 @@ export type ServiceFilters = {
   code?: string;
   active?: boolean;
   categoryId?: number;
+  areaId?: number;
+  visibleInBilling?: boolean;
+  isBillable?: boolean;
   page?: number;
   perPage?: number;
 };

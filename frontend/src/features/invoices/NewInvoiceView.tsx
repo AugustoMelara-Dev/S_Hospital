@@ -27,8 +27,10 @@ interface POSState {
   search: string;
   scanCode: string;
   categories: Category[];
+  serviceAreas: NonNullable<Service['area']>[];
   services: Service[];
   loadedCashSession: CashSession | null;
+  selectedAreaId: number | 'all' | undefined;
   selectedCategoryId: number | 'all' | undefined;
   cartItems: CartItem[];
   issuedInvoice: Invoice | null;
@@ -60,8 +62,10 @@ type POSAction =
   | { type: 'SET_SEARCH'; payload: string }
   | { type: 'SET_SCAN_CODE'; payload: string }
   | { type: 'SET_CATEGORIES'; payload: Category[] }
+  | { type: 'SET_SERVICE_AREAS'; payload: NonNullable<Service['area']>[] }
   | { type: 'SET_SERVICES'; payload: Service[] }
   | { type: 'SET_LOADED_CASH_SESSION'; payload: CashSession | null }
+  | { type: 'SET_SELECTED_AREA_ID'; payload: number | 'all' | undefined }
   | { type: 'SET_SELECTED_CATEGORY_ID'; payload: number | 'all' | undefined }
   | { type: 'SET_CART_ITEMS'; payload: CartItem[] }
   | { type: 'SET_ISSUED_INVOICE'; payload: Invoice | null }
@@ -86,7 +90,7 @@ type POSAction =
   | { type: 'SET_SUBMITTING'; payload: boolean }
   | { type: 'SET_PAYING'; payload: boolean }
   | { type: 'RESET_FORM'; payload: { loadedCashSession: CashSession | null } }
-  | { type: 'LOAD_DATA_SUCCESS'; payload: { loadedCashSession: CashSession | null; categories: Category[]; services: Service[] } }
+  | { type: 'LOAD_DATA_SUCCESS'; payload: { loadedCashSession: CashSession | null; categories: Category[]; serviceAreas: NonNullable<Service['area']>[]; services: Service[] } }
   | { type: 'SEARCH_SERVICES_SUCCESS'; payload: Service[] }
   | { type: 'ADD_TO_CART'; payload: Service }
   | { type: 'UPDATE_QUANTITY'; payload: { index: number; quantity: string } }
@@ -102,8 +106,10 @@ function getInitialState(cashSession: CashSession | null): POSState {
     search: '',
     scanCode: '',
     categories: [],
+    serviceAreas: [],
     services: [],
     loadedCashSession: cashSession,
+    selectedAreaId: undefined,
     selectedCategoryId: undefined,
     cartItems: [],
     issuedInvoice: null,
@@ -142,10 +148,14 @@ function posReducer(state: POSState, action: POSAction): POSState {
       return { ...state, scanCode: action.payload };
     case 'SET_CATEGORIES':
       return { ...state, categories: action.payload };
+    case 'SET_SERVICE_AREAS':
+      return { ...state, serviceAreas: action.payload };
     case 'SET_SERVICES':
       return { ...state, services: action.payload };
     case 'SET_LOADED_CASH_SESSION':
       return { ...state, loadedCashSession: action.payload };
+    case 'SET_SELECTED_AREA_ID':
+      return { ...state, selectedAreaId: action.payload };
     case 'SET_SELECTED_CATEGORY_ID':
       return { ...state, selectedCategoryId: action.payload };
     case 'SET_CART_ITEMS':
@@ -201,6 +211,7 @@ function posReducer(state: POSState, action: POSAction): POSState {
         ...state,
         loadedCashSession: action.payload.loadedCashSession,
         categories: action.payload.categories,
+        serviceAreas: action.payload.serviceAreas,
         services: action.payload.services,
       };
     case 'SEARCH_SERVICES_SUCCESS':
@@ -261,6 +272,7 @@ function posReducer(state: POSState, action: POSAction): POSState {
         successMessage: null,
         search: '',
         scanCode: '',
+        selectedAreaId: undefined,
         selectedCategoryId: undefined,
       };
     case 'CLEAR_SUCCESS_MESSAGE':
@@ -302,8 +314,10 @@ export function NewInvoiceView({
     search,
     scanCode,
     categories,
+    serviceAreas,
     services,
     loadedCashSession,
+    selectedAreaId,
     selectedCategoryId,
     cartItems,
     issuedInvoice,
@@ -358,7 +372,7 @@ export function NewInvoiceView({
     }, 250);
 
     return () => window.clearTimeout(timeoutId);
-  }, [canViewCatalog, search, selectedCategoryId]);
+  }, [canViewCatalog, search, selectedAreaId, selectedCategoryId]);
 
   useEffect(() => {
     if (cashSession) {
@@ -454,16 +468,23 @@ export function NewInvoiceView({
     dispatch({ type: 'SET_LOADING_SERVICES', payload: true });
 
     try {
-      const [currentCashSession, nextCategories, nextServices] = await Promise.all([
+      const [currentCashSession, nextCategories, nextServiceAreas, nextServices] = await Promise.all([
         apiClient.getCurrentCashSession(),
         apiClient.getCategories(true),
-        apiClient.getServices({ active: true, perPage: POS_SERVICE_PAGE_SIZE }),
+        apiClient.getServiceAreas(true),
+        apiClient.getServices({
+          active: true,
+          visibleInBilling: true,
+          isBillable: true,
+          perPage: POS_SERVICE_PAGE_SIZE,
+        }),
       ]);
       dispatch({
         type: 'LOAD_DATA_SUCCESS',
         payload: {
           loadedCashSession: currentCashSession,
           categories: Array.isArray(nextCategories) ? nextCategories : [],
+          serviceAreas: Array.isArray(nextServiceAreas) ? nextServiceAreas : [],
           services: Array.isArray(nextServices) ? nextServices : [],
         },
       });
@@ -482,7 +503,10 @@ export function NewInvoiceView({
       const nextServices = await apiClient.getServices({
         active: true,
         search: search.trim() || undefined,
+        areaId: selectedAreaId && selectedAreaId !== 'all' ? selectedAreaId : undefined,
         categoryId: selectedCategoryId && selectedCategoryId !== 'all' ? selectedCategoryId : undefined,
+        visibleInBilling: true,
+        isBillable: true,
         perPage: POS_SERVICE_PAGE_SIZE,
       });
       dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: Array.isArray(nextServices) ? nextServices : [] });
@@ -887,8 +911,11 @@ export function NewInvoiceView({
             <CardContent className="lg:flex-1 lg:min-h-0 lg:overflow-hidden">
               <ServiceSearch
                 categories={categories}
+                serviceAreas={serviceAreas}
                 services={services}
+                selectedAreaId={selectedAreaId}
                 selectedCategoryId={selectedCategoryId}
+                onAreaChange={(val) => dispatch({ type: 'SET_SELECTED_AREA_ID', payload: val })}
                 onCategoryChange={(val) => dispatch({ type: 'SET_SELECTED_CATEGORY_ID', payload: val })}
                 search={search}
                 onSearchChange={(val) => dispatch({ type: 'SET_SEARCH', payload: val })}

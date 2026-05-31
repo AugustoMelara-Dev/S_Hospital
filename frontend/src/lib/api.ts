@@ -13,6 +13,7 @@ import type {
   FiscalSettings,
   FiscalSequence,
   Category,
+  ServiceArea,
   Service,
   CategoryPayload,
   ServicePayload,
@@ -58,6 +59,7 @@ export type {
   FiscalSettings,
   FiscalSequence,
   Category,
+  ServiceArea,
   Service,
   CategoryPayload,
   ServicePayload,
@@ -116,6 +118,10 @@ export const apiClient = {
 
   async saveCategory(payload: CategoryPayload, id?: number): Promise<Category> {
     return catalog.saveCategory(payload, id);
+  },
+
+  async getServiceAreas(active?: boolean): Promise<ServiceArea[]> {
+    return catalog.getServiceAreas(active);
   },
 
   async getServicesPage(filters: ServiceFilters = {}): Promise<{ data: Service[]; meta: PaginatedMeta }> {
