@@ -16,6 +16,11 @@ abstract class TestCase extends BaseTestCase
         $this->withoutMiddleware(ValidateCsrfToken::class);
         $this->withoutMiddleware(ThrottleRequests::class);
 
+        config([
+            'cache.default' => 'array',
+            'permission.cache.store' => 'array',
+        ]);
+
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $this->beforeApplicationDestroyed(function (): void {

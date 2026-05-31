@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Billing\CreateInvoiceAction;
+use App\Actions\Cash\OpenCashSessionAction;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -479,24 +481,22 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ],
         );
 
-        return $this->actingAs($cashier)
-            ->postJson('/api/invoices', [
+        return app(CreateInvoiceAction::class)
+            ->execute([
                 'patient_name' => $patientName,
                 'items' => [[
                     'service_id' => Service::query()->where('name', $serviceName)->firstOrFail()->id,
                     'quantity' => '1.00',
                 ]],
-            ])
-            ->assertCreated()
-            ->json('data.id');
+            ], $cashier->fresh())
+            ->id;
     }
 
     private function openSession(User $cashier): int
     {
-        return $this->actingAs($cashier)
-            ->postJson('/api/cash-sessions/open', ['opening_amount' => '500.00'])
-            ->assertCreated()
-            ->json('data.id');
+        return app(OpenCashSessionAction::class)
+            ->execute(['opening_amount' => '500.00'], $cashier->fresh())
+            ->id;
     }
 
     private function admin(): User
@@ -504,7 +504,7 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        return $admin;
+        return $admin->refresh()->load('roles.permissions');
     }
 
     private function supervisor(): User
@@ -512,7 +512,7 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         $supervisor = User::factory()->create();
         $supervisor->assignRole('supervisor');
 
-        return $supervisor;
+        return $supervisor->refresh()->load('roles.permissions');
     }
 
     private function cashier(): User
@@ -520,6 +520,6 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         $cashier = User::factory()->create();
         $cashier->assignRole('cajero');
 
-        return $cashier;
+        return $cashier->refresh()->load('roles.permissions');
     }
 }
