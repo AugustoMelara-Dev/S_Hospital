@@ -33,6 +33,7 @@ function Get-InstallerVersion {
 }
 
 $installedVersion = Get-InstallerVersion
+$runSetupCliAfterDefinition = $false
 
 # 1. Detect active LAN IP
 $ips = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { 
@@ -545,7 +546,7 @@ if ($useGui) {
     # ----------------------------------------------------
     # Fail-safe CLI wizard implementation
     # ----------------------------------------------------
-    Run-SetupCli
+    $runSetupCliAfterDefinition = $true
 }
 
 function Run-SetupCli {
@@ -643,4 +644,8 @@ function Run-SetupCli {
     Write-Host " Instalación de servidor del Sistema de Caja Hospitalaria finalizada " -ForegroundColor White -BackgroundColor Green
     Write-Host " Servidor Web LAN disponible en: http://$lanIp:8000" -ForegroundColor Green
     Write-Host "==========================================================" -ForegroundColor Green
+}
+
+if ($runSetupCliAfterDefinition) {
+    Run-SetupCli
 }
