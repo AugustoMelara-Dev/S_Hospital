@@ -528,6 +528,56 @@ class CashPaymentsReceiptTest extends TestCase
         ]);
     }
 
+    public function test_receipt_excludes_voided_payments_after_reversal(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $supervisor = User::factory()->create(['name' => 'Supervisor Caja']);
+        $supervisor->assignRole('supervisor');
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $cashPaymentId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '10.00',
+            ])
+            ->assertCreated()
+            ->json('data.payment.id');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_TRANSFER,
+                'amount' => '7.25',
+                'reference' => 'TRX-REC-1',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID);
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/payments/{$cashPaymentId}/void", [
+                'reason' => 'Correccion de metodo antes de recibo',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_PARTIAL)
+            ->assertJsonPath('data.invoice.paid_amount', '7.25')
+            ->assertJsonPath('data.invoice.balance_due', '10.00');
+
+        $this->actingAs($cashier)
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter")
+            ->assertOk()
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_PARTIAL)
+            ->assertJsonPath('data.invoice.paid_amount', '7.25')
+            ->assertJsonPath('data.invoice.balance_due', '10.00')
+            ->assertJsonCount(1, 'data.payments')
+            ->assertJsonPath('data.payments.0.method', Payment::METHOD_TRANSFER)
+            ->assertJsonPath('data.payments.0.amount', '7.25')
+            ->assertJsonPath('data.payments.0.reference', 'TRX-REC-1');
+    }
+
     public function test_permissions_are_required_for_cash_and_payments(): void
     {
         $this->seedBillingBase();

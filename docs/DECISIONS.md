@@ -869,6 +869,24 @@ Consecuencia:
 - La migracion cambia el indice unico antiguo de `category_id + slug` a `category_id + area_id + slug`.
 - Las pruebas cubren alta y edicion para que request y base de datos mantengan la misma regla.
 
+### 2026-05-31 - Recibos excluyen pagos reversados
+
+Decision:
+
+- Los recibos y reimpresiones muestran solo pagos `posted`.
+- Los pagos reversados (`void`) permanecen en base de datos, movimientos de caja y auditoria, pero no se presentan como cobros vigentes del recibo.
+- El cajero mostrado en el recibo se toma del ultimo pago vigente; si no hay pagos, se conserva el emisor de la factura.
+
+Motivo:
+
+- Un recibo debe reflejar cuanto esta cobrado hoy sin mezclar correcciones contables ya anuladas.
+- Mostrar un pago reversado junto al pago correcto puede hacer parecer que se cobro dos veces o por un metodo equivocado.
+
+Consecuencia:
+
+- Reimprimir una factura parcial despues de reversar un pago conserva totales historicos de factura, pero lista unicamente los pagos vigentes.
+- La trazabilidad del reverso se revisa desde auditoria y movimientos de caja, no desde la seccion de pagos del recibo.
+
 ### 2026-05-31 - Instalador registra worker y respaldo diario
 
 Decision:
