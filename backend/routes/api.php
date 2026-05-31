@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CashSessionController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ClientErrorLogController;
 use App\Http\Controllers\FiscalSequenceController;
 use App\Http\Controllers\FiscalSettingsController;
 use App\Http\Controllers\InvoiceController;
@@ -98,7 +99,10 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
         Route::post('/backups', [BackupController::class, 'store']);
         Route::get('/backups/{backupLog}/download', [BackupController::class, 'download']);
 
+        Route::get('/system/status-summary', [SystemStatusController::class, 'summary']);
         Route::get('/system/status', [SystemStatusController::class, 'show']);
+        Route::post('/system/client-errors', [ClientErrorLogController::class, 'store'])
+            ->middleware('throttle:30,1');
 
         Route::get('/admin/users', [UserController::class, 'index']);
         Route::post('/admin/users', [UserController::class, 'store']);

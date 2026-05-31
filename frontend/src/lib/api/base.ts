@@ -1,3 +1,5 @@
+import { logClientIssue } from '../support/clientIssueLogger';
+
 let sessionExpiredHandler: (() => void) | null = null;
 let requestChain: Promise<unknown> = Promise.resolve();
 
@@ -152,7 +154,9 @@ export const apiClient = {
           },
         });
       } catch {
-        throw networkError();
+        const apiError = networkError();
+        logClientIssue(apiError, { action: method, module: 'api', route: path });
+        throw apiError;
       }
     };
 
@@ -168,6 +172,10 @@ export const apiClient = {
         errors?: Record<string, string[]>;
         message?: string;
       } | null;
+      logClientIssue(
+        new ApiError(error?.message ?? `HTTP ${response.status}`, response.status, error?.errors),
+        { action: method, module: 'api', route: path },
+      );
 
       if (response.status === 401) {
         sessionExpiredHandler?.();

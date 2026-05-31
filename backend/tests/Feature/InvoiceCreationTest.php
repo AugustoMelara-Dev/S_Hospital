@@ -357,6 +357,56 @@ class InvoiceCreationTest extends TestCase
         $this->assertSame(2, Invoice::query()->distinct('invoice_number')->count('invoice_number'));
     }
 
+    public function test_repeated_invoice_submit_with_same_idempotency_key_returns_original_invoice(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $payload = [
+            'patient_name' => 'Maria Lopez',
+            'items' => [$this->invoiceItem('Glucosa')],
+        ];
+
+        $first = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'invoice-key-1'])
+            ->postJson('/api/invoices', $payload)
+            ->assertCreated()
+            ->json('data');
+
+        $second = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'invoice-key-1'])
+            ->postJson('/api/invoices', $payload)
+            ->assertCreated()
+            ->json('data');
+
+        $this->assertSame($first['id'], $second['id']);
+        $this->assertSame('000-001-01-00000001', $second['invoice_number']);
+        $this->assertSame(1, Invoice::query()->count());
+    }
+
+    public function test_reused_invoice_idempotency_key_with_different_payload_returns_conflict(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'invoice-key-conflict'])
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertCreated();
+
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'invoice-key-conflict'])
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Jose Perez',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertConflict();
+
+        $this->assertSame(1, Invoice::query()->count());
+    }
+
     public function test_user_without_invoice_create_permission_cannot_emit_invoice(): void
     {
         $this->seedBillingBase();

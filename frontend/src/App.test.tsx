@@ -23,6 +23,7 @@ describe('App', () => {
         database: {
           connection: 'mysql',
           driver: 'mysql',
+          connected: true,
           is_mysql_family: true,
         },
         backups: {
@@ -63,6 +64,11 @@ describe('App', () => {
             size_bytes: 1024,
             modified_at: '2026-05-19T18:50:00.000000Z',
           },
+          frontend_build: {
+            available: true,
+            modified_at: '2026-05-19T18:45:00.000000Z',
+          },
+          installed_version: '0.1.0',
           latest_migration: '2026_05_17_000018_create_backup_logs_table',
           migration_count: 18,
         },
@@ -151,6 +157,34 @@ describe('App', () => {
             scheduler: 'php artisan schedule:run',
           },
         },
+      },
+    };
+  }
+
+  function mockSystemStatusSummary() {
+    return {
+      data: {
+        summary: {
+          severity: 'warning',
+          problem_count: 2,
+          label: 'Requiere revision',
+          action: 'Revisar los puntos marcados y completar las acciones indicadas.',
+        },
+        checks: [
+          {
+            code: 'BACKEND_ACTIVE',
+            label: 'Servidor activo',
+            status: 'validated',
+            detail: 'El servidor respondio esta solicitud.',
+          },
+          {
+            code: 'LAN_ACCESS',
+            label: 'Acceso por red local',
+            status: 'manual_required',
+            detail: 'Debe probarse desde otra computadora del hospital.',
+          },
+        ],
+        advanced_available: true,
       },
     };
   }
@@ -482,6 +516,13 @@ describe('App', () => {
         } as Response;
       }
 
+      if (url.includes('/api/system/status-summary')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatusSummary(),
+        } as Response;
+      }
+
       if (url.includes('/api/system/status')) {
         return {
           ok: true,
@@ -512,6 +553,98 @@ describe('App', () => {
     expect(screen.getByText(/impresora institucional/i)).toBeInTheDocument();
     expect(screen.queryByText(/production_candidate/i)).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /crear respaldo/i }).some((button) => !button.hasAttribute('disabled'))).toBe(true);
+  });
+
+  it('renders the support center with role checklists and advanced status for support users', async () => {
+    window.history.pushState({}, '', '/support');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 5,
+              name: 'Soporte Tecnico',
+              email: 'soporte@hospital-billing.local',
+              username: 'soporte',
+              active: true,
+              roles: ['soporte_tecnico'],
+              permissions: ['system.status.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status-summary')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatusSummary(),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatus(),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /soporte/i })).toHaveAttribute('href', '/support');
+    expect(screen.getAllByText(/cajero/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/servidor o red local no responde/i)).toBeInTheDocument();
+  });
+
+  it('renders the support center status summary for cashier users without advanced details', async () => {
+    window.history.pushState({}, '', '/support');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 6,
+              name: 'Cajero Turno',
+              email: 'cajero.turno@hospital-billing.local',
+              username: 'cajero.turno',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['cash.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status-summary')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatusSummary(),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status')) {
+        throw new Error('advanced status should not load for cashier users');
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText(/requiere revision/i)).toBeInTheDocument();
+    expect(screen.getByText(/acceso por red local/i)).toBeInTheDocument();
+    expect(screen.queryByText(/hora servidor/i)).not.toBeInTheDocument();
   });
 
   it('does not render backups for a user without backup permission', async () => {
@@ -567,6 +700,13 @@ describe('App', () => {
               must_change_password: false,
             },
           }),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status-summary')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatusSummary(),
         } as Response;
       }
 
@@ -655,6 +795,13 @@ describe('App', () => {
               must_change_password: false,
             },
           }),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status-summary')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatusSummary(),
         } as Response;
       }
 

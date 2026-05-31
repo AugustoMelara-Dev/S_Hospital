@@ -9,6 +9,7 @@ import {
   Settings,
   ShieldCheck,
   User,
+  Wrench,
   WalletCards,
 } from 'lucide-react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
@@ -36,6 +37,7 @@ export const appNavigation: AppNavigationItem[] = [
   { label: 'Respaldos', path: '/backups', permission: 'backups.view', icon: Archive },
   { label: 'Configuracion', path: '/settings/fiscal', permission: 'settings.fiscal.view', icon: Settings },
   { label: 'Usuarios', path: '/admin/users', permission: 'users.view', icon: User },
+  { label: 'Soporte', path: '/support', icon: Wrench },
   { label: 'Ayuda', path: '/help', icon: HelpCircle },
 ];
 

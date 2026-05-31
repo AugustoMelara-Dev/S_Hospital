@@ -21,6 +21,10 @@ const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 const POS_SERVICE_PAGE_SIZE = 24;
 const RECEIPT_PAPER_SIZES: ReceiptData['width'][] = ['half_letter', 'letter', 'a5'];
 
+function createIdempotencyKey(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `op-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 interface POSState {
   patientName: string;
   patientError: string | undefined;
@@ -307,6 +311,8 @@ export function NewInvoiceView({
   onStatus,
 }: NewInvoiceViewProps) {
   const [state, dispatch] = useReducer(posReducer, cashSession, getInitialState);
+  const invoiceIdempotencyKeyRef = useRef<string | null>(null);
+  const paymentIdempotencyKeyRef = useRef<string | null>(null);
   const { data: fiscalSettings } = useFiscalSettings();
   const {
     patientName,
@@ -695,6 +701,7 @@ export function NewInvoiceView({
     dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
 
     try {
+      invoiceIdempotencyKeyRef.current ??= createIdempotencyKey();
       const invoice = await apiClient.createInvoice({
         patient_name: patientName,
         items: cartItems.map((item) => ({
@@ -702,7 +709,8 @@ export function NewInvoiceView({
           quantity: item.quantity,
           dialysis_prescription: item.dialysisPrescription,
         })),
-      });
+      }, { idempotencyKey: invoiceIdempotencyKeyRef.current });
+      invoiceIdempotencyKeyRef.current = null;
 
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: invoice });
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: '0.00' });
@@ -765,12 +773,14 @@ export function NewInvoiceView({
     dispatch({ type: 'SET_SHOW_PAYMENT', payload: false });
 
     try {
+      paymentIdempotencyKeyRef.current ??= createIdempotencyKey();
       const result = await apiClient.registerPayment(invoiceToPay.id, {
         cash_session_id: sessionToUse.id,
         method: paymentMethod,
         amount: appliedAmount,
         reference: paymentReference.trim() || null,
-      });
+      }, { idempotencyKey: paymentIdempotencyKeyRef.current });
+      paymentIdempotencyKeyRef.current = null;
 
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: result.invoice });
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: result.invoice.balance_due });
@@ -811,6 +821,8 @@ export function NewInvoiceView({
   }
 
   function handleNuevaFactura() {
+    invoiceIdempotencyKeyRef.current = null;
+    paymentIdempotencyKeyRef.current = null;
     dispatch({ type: 'RESET_FORM', payload: { loadedCashSession } });
     window.setTimeout(() => patientInputRef.current?.focus(), 0);
   }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\System\BuildOperationalStatusAction;
 use App\Models\BackupLog;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\ExecutableFinder;
+use Throwable;
 
 class SystemStatusController extends Controller
 {
@@ -124,19 +126,19 @@ class SystemStatusController extends Controller
         ],
     ];
 
-    public function show(Request $request): JsonResponse
+    public function show(Request $request, BuildOperationalStatusAction $buildOperationalStatus): JsonResponse
     {
         $request->user()->can('system.status.view') || abort(403);
 
         return response()->json([
-            'data' => [
-                'environment' => $this->environmentStatus(),
-                'database' => $this->databaseStatus(),
-                'backups' => $this->backupStatus(),
-                'runtime' => $this->runtimeStatus(),
-                'readiness' => $this->readinessStatus(),
-                'preflight' => $this->preflightStatus(),
-            ],
+            'data' => $buildOperationalStatus->addSummary($this->baseStatus()),
+        ]);
+    }
+
+    public function summary(BuildOperationalStatusAction $buildOperationalStatus): JsonResponse
+    {
+        return response()->json([
+            'data' => $buildOperationalStatus->publicSummary($this->baseStatus()),
         ]);
     }
 
@@ -184,10 +186,19 @@ class SystemStatusController extends Controller
     {
         $connection = (string) Config::get('database.default');
         $driver = (string) Config::get("database.connections.{$connection}.driver", $connection);
+        $connected = false;
+
+        try {
+            DB::connection($connection)->select('select 1');
+            $connected = true;
+        } catch (Throwable) {
+            $connected = false;
+        }
 
         return [
             'connection' => $connection,
             'driver' => $driver,
+            'connected' => $connected,
             'is_mysql_family' => in_array($driver, ['mysql', 'mariadb'], true),
         ];
     }
@@ -243,9 +254,48 @@ class SystemStatusController extends Controller
             'cache_writable' => is_dir($cachePath) && is_writable($cachePath),
             'laravel_log' => $this->fileStatus(storage_path('logs/laravel.log')),
             'backup_automation_log' => $this->fileStatus(base_path('scripts/backup-automation.log')),
+            'frontend_build' => $this->frontendBuildStatus(),
+            'installed_version' => $this->installedVersion(),
             'latest_migration' => $latestMigration,
             'migration_count' => $migrationCount,
         ];
+    }
+
+    /**
+     * @return array{available: bool, modified_at: string|null}
+     */
+    private function frontendBuildStatus(): array
+    {
+        $indexPath = $this->projectPath('frontend/dist/index.html');
+
+        if (! is_file($indexPath)) {
+            return [
+                'available' => false,
+                'modified_at' => null,
+            ];
+        }
+
+        $modifiedAt = filemtime($indexPath);
+
+        return [
+            'available' => true,
+            'modified_at' => $modifiedAt === false ? null : now()->setTimestamp($modifiedAt)->toJSON(),
+        ];
+    }
+
+    private function installedVersion(): ?string
+    {
+        $packagePath = $this->projectPath('frontend/package.json');
+
+        if (! is_file($packagePath)) {
+            return null;
+        }
+
+        $content = file_get_contents($packagePath);
+        $package = is_string($content) ? json_decode($content, true) : null;
+        $version = is_array($package) ? ($package['version'] ?? null) : null;
+
+        return is_string($version) && $version !== '' ? $version : null;
     }
 
     /**
@@ -609,5 +659,20 @@ class SystemStatusController extends Controller
         $projectRoot = (string) Config::get('hospital.project_root', dirname(base_path()));
 
         return $projectRoot.DIRECTORY_SEPARATOR.str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relativePath);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function baseStatus(): array
+    {
+        return [
+            'environment' => $this->environmentStatus(),
+            'database' => $this->databaseStatus(),
+            'backups' => $this->backupStatus(),
+            'runtime' => $this->runtimeStatus(),
+            'readiness' => $this->readinessStatus(),
+            'preflight' => $this->preflightStatus(),
+        ];
     }
 }

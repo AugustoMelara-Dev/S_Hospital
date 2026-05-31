@@ -112,8 +112,8 @@ export function AuditoriaTab({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {operations.voids.map((voidedInvoice) => (
-                      <TableRow key={voidedInvoice.invoice_id}>
+                    {operations.voids.map((voidedInvoice, index) => (
+                      <TableRow key={`void-${voidedInvoice.invoice_id}-${index}`}>
                         <TableCell className="font-medium">{voidedInvoice.invoice_number}</TableCell>
                         <TableCell>{voidedInvoice.patient_name}</TableCell>
                         <TableCell className="text-right">L. {voidedInvoice.total}</TableCell>
@@ -180,8 +180,8 @@ export function AuditoriaTab({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {auditEvents.map((event) => (
-                      <TableRow key={event.id}>
+                    {auditEvents.map((event, index) => (
+                      <TableRow key={`audit-${event.id}-${index}`}>
                         <TableCell className="font-medium">{auditActionLabel(event.action)}</TableCell>
                         <TableCell>{auditResultLabel(event.result)}</TableCell>
                         <TableCell className="max-w-[220px] truncate">{event.reason ?? '-'}</TableCell>
@@ -215,8 +215,8 @@ export function AuditoriaTab({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {operations.backups.map((backup) => (
-                      <TableRow key={backup.id}>
+                    {operations.backups.map((backup, index) => (
+                      <TableRow key={`backup-${backup.id}-${index}`}>
                         <TableCell className="max-w-[200px] truncate font-medium">{backup.filename}</TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${backup.status === 'success' ? 'bg-green-100 text-green-800' : backup.status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
@@ -254,8 +254,8 @@ export function AuditoriaTab({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {operations.cashiers.map((cashier) => (
-                      <TableRow key={cashier.user_id}>
+                    {operations.cashiers.map((cashier, index) => (
+                      <TableRow key={`cashier-${cashier.user_id}-${index}`}>
                         <TableCell className="font-medium">{cashier.name}</TableCell>
                         <TableCell>{cashier.username}</TableCell>
                         <TableCell className="text-right">{cashier.payment_count}</TableCell>

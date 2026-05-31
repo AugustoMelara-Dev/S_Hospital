@@ -137,6 +137,45 @@ class SystemStatusTest extends TestCase
         }
     }
 
+    public function test_normal_user_can_view_sanitized_operational_status_summary(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $proofRoot = storage_path('framework/testing-public-status-summary');
+
+        File::deleteDirectory($proofRoot);
+        File::ensureDirectoryExists($proofRoot.'/qa');
+        File::ensureDirectoryExists($proofRoot.'/frontend/dist');
+        File::put($proofRoot.'/frontend/dist/index.html', '<div id="root"></div>');
+        File::put($proofRoot.'/frontend/package.json', '{"version":"0.1.0"}');
+        Config::set('hospital.project_root', $proofRoot);
+
+        $user = User::factory()->create();
+        $user->assignRole('cajero');
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/system/status-summary')
+            ->assertOk()
+            ->assertJsonPath('data.summary.label', 'Requiere revision')
+            ->assertJsonPath('data.checks.0.code', 'BACKEND_ACTIVE')
+            ->assertJsonPath('data.checks.0.status', 'validated')
+            ->assertJsonPath('data.checks.1.code', 'DATABASE_CONNECTED')
+            ->assertJsonPath('data.checks.2.code', 'FRONTEND_AVAILABLE')
+            ->assertJsonPath('data.checks.2.status', 'validated')
+            ->assertJsonPath('data.checks.7.code', 'LAN_ACCESS')
+            ->assertJsonPath('data.checks.7.status', 'manual_required')
+            ->assertJsonPath('data.checks.8.code', 'INSTALLED_VERSION')
+            ->assertJsonMissingPath('data.environment')
+            ->assertJsonMissingPath('data.database')
+            ->assertJsonMissingPath('data.backups.queue.worker_command')
+            ->assertJsonMissingPath('data.preflight.commands');
+
+        $json = json_encode($response->json(), JSON_THROW_ON_ERROR);
+
+        foreach (['app_url', 'app_debug', 'php_version', 'worker_command', 'scheduler_command', 'APP_KEY', 'DB_PASSWORD', $proofRoot] as $forbidden) {
+            $this->assertStringNotContainsString($forbidden, $json);
+        }
+    }
+
     public function test_backups_permission_alone_cannot_view_operational_status(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

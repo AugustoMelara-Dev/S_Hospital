@@ -35,6 +35,8 @@ import type {
   CashSessionReport,
   BackupLog,
   SystemStatus,
+  SystemStatusCheck,
+  SystemStatusSummary,
   PaginatedMeta,
   ServiceFilters,
   InvoiceFilters,
@@ -83,6 +85,8 @@ export type {
   CashSessionReport,
   BackupLog,
   SystemStatus,
+  SystemStatusCheck,
+  SystemStatusSummary,
   PaginatedMeta,
   ServiceFilters,
   InvoiceFilters,
@@ -144,8 +148,8 @@ export const apiClient = {
     return catalog.saveService(payload, id);
   },
 
-  async createInvoice(payload: InvoicePayload): Promise<Invoice> {
-    return billing.createInvoice(payload);
+  async createInvoice(payload: InvoicePayload, options: { idempotencyKey?: string } = {}): Promise<Invoice> {
+    return billing.createInvoice(payload, options);
   },
 
   async getInvoices(filters: InvoiceFilters = {}): Promise<{ data: Invoice[]; meta: PaginatedMeta }> {
@@ -159,8 +163,9 @@ export const apiClient = {
   async registerPayment(
     invoiceId: number,
     payload: { cash_session_id: number; method: Payment['method']; amount: string; reference?: string | null },
+    options: { idempotencyKey?: string } = {},
   ): Promise<{ payment: Payment; invoice: Invoice }> {
-    return billing.registerPayment(invoiceId, payload);
+    return billing.registerPayment(invoiceId, payload, options);
   },
 
   async getReceipt(invoiceId: number, width?: ReceiptData['width']): Promise<ReceiptData> {
@@ -252,6 +257,10 @@ export const apiClient = {
 
   async getSystemStatus(): Promise<SystemStatus> {
     return system.getStatus();
+  },
+
+  async getSystemStatusSummary(): Promise<SystemStatusSummary> {
+    return system.getStatusSummary();
   },
 
   async getFiscalSettings(): Promise<FiscalSettings | null> {

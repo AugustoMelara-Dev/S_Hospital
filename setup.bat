@@ -49,14 +49,12 @@ echo.
 if exist "%~dp0frontend\dist\index.html" (
     echo OK: Se encontro una interfaz ya preparada en frontend\dist.
 ) else (
-    docker run --rm -v "%~dp0frontend:/app" -w /app node:22-alpine sh -c "npm install && npm run build"
-    if %errorlevel% neq 0 (
-        echo.
-        echo ERROR: La preparacion de la interfaz ha fallado.
-        echo.
-        pause
-        exit /b 1
-    )
+    echo ERROR: No existe frontend\dist\index.html.
+    echo Produccion offline debe recibir la interfaz ya preparada.
+    echo Prepare el artefacto en una maquina de build y copie frontend\dist antes de instalar.
+    echo.
+    pause
+    exit /b 1
 )
 echo.
 echo OK: Interfaz preparada.
@@ -75,6 +73,7 @@ if %errorlevel% neq 0 (
     echo.
     echo ERROR: No se pudieron levantar los servicios locales.
     echo Revise si los puertos 8000 o 3306 estan ocupados por otro programa.
+    echo Puede ejecutar scripts\repair_hospital_system.ps1 para generar diagnostico seguro.
     echo.
     pause
     exit /b 1
@@ -97,6 +96,7 @@ docker compose exec backend php artisan view:cache
 if %errorlevel% neq 0 (
     echo.
     echo ERROR: Hubo un problema al inicializar el sistema.
+    echo No se borraron datos. Ejecute scripts\repair_hospital_system.ps1 para revisar servicios.
     echo.
     pause
     exit /b 1

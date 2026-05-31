@@ -943,3 +943,43 @@ Consecuencia:
 - Produccion requiere admin real creado con `auth:create-initial-admin`.
 - Los usuarios demo quedan limitados a `local` y `testing`.
 - Restore, impresora y cliente LAN final siguen requiriendo validacion fisica en el equipo del hospital.
+
+### 2026-05-31 - Reparacion segura e instalador no destructivo
+
+Decision:
+
+- El flujo de instalacion y reparacion debe fallar de forma clara si falta el frontend compilado, en vez de descargar dependencias durante una instalacion offline.
+- Se agrega `scripts/repair_hospital_system.ps1` como primer auxilio operativo: revisar Docker, levantar servicios sin borrar volumenes, esperar `/up`, abrir `/login` y guardar diagnostico en `install-logs`.
+- Se agrega `scripts/validate_installer_safety.ps1` como gate para bloquear `migrate:fresh`, `db:wipe`, reset de migraciones, seeders demo y marca tecnica heredada en scripts operativos.
+
+Motivo:
+
+- El hospital necesita recuperarse de reinicios, red local inestable o servicios detenidos sin llamar al desarrollador ni arriesgar datos historicos.
+
+Consecuencia:
+
+- La instalacion de produccion exige artefactos ya preparados.
+- La reparacion segura no sustituye restore, no modifica datos y no inventa evidencia fisica.
+- Cualquier cambio futuro a scripts de instalacion debe pasar el gate de seguridad del instalador.
+
+### 2026-05-31 - Soporte operativo, bitacora cliente e idempotencia
+
+Decision:
+
+- Se agrega un Centro de Soporte visible en `/support` con playbooks de recuperacion, cierre diario, recibos, respaldos y checklist por rol.
+- Los errores operativos del frontend se traducen a mensajes humanos y se registran en `client_error_logs` con contexto permitido, sin request bodies, stack traces, secretos ni nombres de pacientes.
+- La emision de factura y el registro de pago aceptan `Idempotency-Key`; repetir la misma operacion devuelve el mismo recurso y reutilizar la llave con datos distintos devuelve conflicto.
+- `/api/system/status` agrega resumen de severidad para soporte sin cambiar la fuente de verdad contable.
+- `/api/system/status-summary` entrega solo verificaciones comprensibles para usuarios autenticados normales: servidor, base de datos, pantalla web, respaldos, cola, hora, espacio, acceso LAN y version instalada.
+
+Motivo:
+
+- En LAN local pueden ocurrir doble click, recarga o latencia; caja no debe duplicar facturas o pagos por accidente.
+- Soporte necesita evidencia sanitaria y segura para diagnosticar sin pedir capturas de datos sensibles.
+- El cajero necesita saber si debe continuar, revisar o pedir soporte sin ver rutas, comandos, variables ni detalles de infraestructura.
+
+Consecuencia:
+
+- Se agregan migraciones aditivas `client_error_logs` y `operation_idempotency_keys`.
+- La UI sigue mostrando mensajes simples a usuarios normales; diagnostico tecnico permanece condicionado por permiso `system.status.view`.
+- Las pruebas fisicas finales siguen siendo de campo y no se declaran completas desde desarrollo.

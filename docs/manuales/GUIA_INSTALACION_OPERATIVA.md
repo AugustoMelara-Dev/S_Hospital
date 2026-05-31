@@ -18,12 +18,23 @@ No borre carpetas de datos ni base de datos existente.
 ## Instalacion
 
 1. Abra la carpeta del sistema en el servidor.
-2. Ejecute `setup.bat` si administracion tecnica lo autorizo.
-3. Espere a que los servicios levanten.
-4. Verifique que exista el acceso directo **Hospital San Isidro - Caja** o el acceso directo definido para el hospital.
-5. Abra el sistema desde el servidor.
+2. Confirme que ya existe `frontend\dist\index.html`. Produccion offline no debe descargar dependencias al arrancar.
+3. Ejecute `setup.bat` si administracion tecnica lo autorizo.
+4. Si se usa el asistente PowerShell, ejecute `scripts\install_hospital_os.ps1` y seleccione migraciones seguras.
+5. No use herramientas de reset ni bases de demostracion en el servidor real.
+6. Espere a que los servicios levanten.
+7. Verifique que exista el acceso directo **Abrir Sistema de Caja Hospitalaria** o el acceso directo definido para el hospital.
+8. Abra el sistema desde el servidor.
 
 Produccion no debe entregarse con usuarios o datos de demostracion.
+
+Antes de entregar el servidor, administracion tecnica debe ejecutar:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installer_safety.ps1
+```
+
+La revision debe terminar sin hallazgos. Si falla, no continuar la entrega hasta corregir el script indicado.
 
 ## Direccion de acceso
 
@@ -79,6 +90,8 @@ Despues de instalar:
 ## Si algo falla
 
 - No abre en servidor: esperar dos minutos y usar acceso directo otra vez.
+- Si sigue sin abrir: ejecute `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1`.
+- El script de reparacion revisa servicios, levanta contenedores sin borrar datos, espera `/up`, abre `/login` y deja un log en `install-logs`.
 - No abre desde otra PC: revisar IP, cable/red, firewall y que el servidor este encendido.
 - No imprime: revisar impresora predeterminada, papel y permisos de impresion.
 - Respaldos quedan pendientes: revisar que el proceso automatico de respaldos este activo.

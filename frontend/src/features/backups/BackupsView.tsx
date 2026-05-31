@@ -603,8 +603,8 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                     </TableCell>
                   </TableRow>
                 )}
-                {backupsList.map((backup) => (
-                  <TableRow key={backup.id}>
+                {backupsList.map((backup, index) => (
+                  <TableRow key={`backup-log-${backup.id}-${index}`}>
                     <TableCell>{formatDate(backup.completed_at ?? backup.created_at)}</TableCell>
                     <TableCell>{formatBackupType(backup.type)}</TableCell>
                     <TableCell className="text-sm">{backup.filename}</TableCell>

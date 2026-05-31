@@ -57,6 +57,13 @@ Antes de instalar en el hospital:
 13. Levantar worker local de backups como servicio/tarea continua con `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
 14. Validar `/up`, `/login` y `/verify-email`.
 
+Scripts operativos seguros:
+
+- `setup.bat`: levanta servicios locales y ejecuta migraciones no destructivas; falla si falta `frontend/dist` para evitar descargas durante instalacion offline.
+- `scripts/install_hospital_os.ps1`: asistente Windows institucional; usa `migrate --force` y seeders base de permisos/catalogo, no seeders demo.
+- `scripts/repair_hospital_system.ps1`: reparacion segura ante reinicio, red caida o servicios detenidos. No borra datos; revisa Docker, levanta servicios, espera `/up`, abre `/login` y guarda diagnostico en `install-logs`.
+- `scripts/validate_installer_safety.ps1`: gate local para confirmar que los scripts de instalacion/reparacion no contienen `migrate:fresh`, `db:wipe`, seeders demo ni marca tecnica heredada visible.
+
 En publicacion same-origin con Laravel, `/`, `/login` y `/verify-email` sirven el build React desde `frontend/dist/index.html`, y `/assets/*` sirve los assets compilados. Si `frontend/dist` no existe, el servidor responde error operativo y no debe entregarse como listo.
 
 No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`, `supervisor.demo` y `cajero.demo` pertenecen solo a desarrollo/testing.
@@ -161,3 +168,4 @@ No ejecutar `php artisan migrate:fresh --seed` en el servidor real. Ese comando 
 - IP dinamica rompe acceso de clientes.
 - Cortes de energia pueden afectar datos; se recomienda UPS.
 - Sin restore probado, los backups no deben considerarse completos.
+- Si el sistema no abre despues de un reinicio, usar primero `scripts/repair_hospital_system.ps1`; no borrar contenedores, volumenes ni base de datos.

@@ -1,9 +1,10 @@
 # Final production handoff result
 
-- Generated at: 2026-05-19 15:31:47
-- Base URL: http://192.168.1.7:8000
+- Last full physical handoff evidence: 2026-05-19 15:31:47
+- Current ops hardening update: 2026-05-31
+- Base URL in historical evidence: http://192.168.1.7:8000
 - Project root: C:\Projects\S_Hospital
-- Decision: PRODUCTION_READY
+- Current decision: PRODUCTION_CANDIDATE_PENDING_FIELD_REVALIDATION
 - LAN client proof present without obvious placeholders: True
 - Thermal printer proof present without obvious placeholders: True
 - Preflight skipped: False
@@ -11,11 +12,14 @@
 
 ## Result
 
-The preflight passed without bypass flags. Keep this report with the completed physical evidence files.
+The 2026-05-19 preflight passed without bypass flags. The 2026-05-31 operational hardening adds support center, safe repair, client issue logging and idempotency. Re-run physical handoff on the final server before declaring a new `PRODUCTION_READY` result.
 
-## Blocking items
+## Blocking items for a new handoff
 
-- None reported by the handoff script.
+- Re-run LAN client proof on the final server.
+- Re-run printer proof on the final server and configured paper.
+- Re-run restore proof on a disposable database using final backup paths.
+- Re-run final production handoff script after the hardening migrations are applied.
 
 ## Next commands
 

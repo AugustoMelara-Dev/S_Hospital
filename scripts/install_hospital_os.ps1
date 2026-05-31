@@ -1,6 +1,6 @@
 # install_hospital_os.ps1
-# Guided Offline LAN Windows Installation Script for S_Hospital
-# Uses native WPF (Graphical User Interface) with fallback to CLI
+# Guided Offline LAN Windows Installation Script for Hospital San Isidro
+# Uses native WPF with fallback to CLI
 
 [CmdletBinding()]
 param (
@@ -15,6 +15,12 @@ $scriptPath = $MyInvocation.MyCommand.Path
 $scriptsDir = Split-Path $scriptPath -Parent
 $workspaceRoot = Split-Path $scriptsDir -Parent
 $backendRoot = Join-Path $workspaceRoot "backend"
+$ProductName = "Sistema de Caja Hospitalaria"
+$InstitutionName = "Hospital San Isidro"
+$BackupTaskName = "SistemaCajaHospitalaria-DailyBackup"
+$LegacyBackupTaskName = ("S" + "_Hospital_Daily_Backup")
+$FirewallRuleName = "Hospital San Isidro Caja LAN Port 8000"
+$LegacyFirewallRuleName = ("S" + "_Hospital Server LAN Port 8000")
 
 # 1. Detect active LAN IP
 $ips = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { 
@@ -145,7 +151,7 @@ if ($useGui) {
     [xml]$xaml = @"
     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-            Title="S_Hospital - Instalador del Servidor LAN (Offline)" Height="520" Width="620"
+            Title="$InstitutionName - Instalador del Servidor LAN" Height="520" Width="620"
             WindowStartupLocation="CenterScreen" Background="#F8FAFC" ResizeMode="NoResize">
         <Grid>
             <Grid.RowDefinitions>
@@ -162,7 +168,7 @@ if ($useGui) {
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="S_Hospital Server Setup" Foreground="#0D9488" FontSize="18" FontWeight="Bold"/>
+                        <TextBlock Text="$ProductName" Foreground="#0D9488" FontSize="18" FontWeight="Bold"/>
                         <TextBlock Text="Asistente de Configuración para Red Local Offline" Foreground="#94A3B8" FontSize="12"/>
                     </StackPanel>
                     <TextBlock Grid.Column="1" Text="v1.0.0" Foreground="#475569" VerticalAlignment="Center" FontSize="14" FontWeight="Bold"/>
@@ -252,7 +258,7 @@ if ($useGui) {
                 <!-- STEP 5: Firewall & LAN URLs -->
                 <StackPanel Name="PanelStep5" Visibility="Collapsed">
                     <TextBlock Text="Paso 5: Completar Instalación de Red LAN" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
-                    <TextBlock Text="S_Hospital está configurado con éxito. Se puede habilitar la apertura de puerto en el Firewall de Windows para admitir conexiones entrantes en su LAN." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
+                    <TextBlock Text="$ProductName esta configurado. Puede habilitar el puerto local para que las computadoras autorizadas entren por la red LAN." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
                     
                     <CheckBox Name="ChkOpenFirewall" Content="Abrir Puerto 8000 en el Firewall de Windows para clientes LAN" IsChecked="True" FontSize="13" FontWeight="SemiBold" Foreground="#0F172A" Margin="0,0,0,15"/>
                     
@@ -396,22 +402,24 @@ if ($useGui) {
                 if ($ChkEnableBackup.IsChecked) {
                     $bTime = $TxtBackupTime.Text
                     # Create Windows task scheduler daily db backup
-                    $taskName = "S_Hospital_Daily_Backup"
+                    $taskName = $BackupTaskName
                     $artisanPath = Join-Path $backendRoot "artisan"
                     $taskAction = "cmd.exe /c cd /d ""$backendRoot"" && ""$($TxtPhpPath.Text)"" artisan hospital:backup"
                     
                     # Unregister if already exists
+                    schtasks /delete /tn $LegacyBackupTaskName /f 2>$null
                     schtasks /delete /tn $taskName /f 2>$null
                     schtasks /create /tn $taskName /tr $taskAction /sc daily /st $bTime /f | Out-Null
                 }
 
                 # Firewall port configuration
                 if ($ChkOpenFirewall.IsChecked) {
-                    netsh advfirewall firewall delete rule name="S_Hospital Server LAN Port 8000" 2>$null
-                    netsh advfirewall firewall add rule name="S_Hospital Server LAN Port 8000" dir=in action=allow protocol=TCP localport=8000 | Out-Null
+                    netsh advfirewall firewall delete rule name="$LegacyFirewallRuleName" 2>$null
+                    netsh advfirewall firewall delete rule name="$FirewallRuleName" 2>$null
+                    netsh advfirewall firewall add rule name="$FirewallRuleName" dir=in action=allow protocol=TCP localport=8000 | Out-Null
                 }
 
-                [System.Windows.MessageBox]::Show("¡Instalación de S_Hospital finalizada con éxito!`n`nEl servidor local LAN está activo en: http://$($TxtLanIp.Text):8000", "Éxito", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                [System.Windows.MessageBox]::Show("Instalacion de $InstitutionName finalizada con exito.`n`nEl servidor local LAN esta activo en: http://$($TxtLanIp.Text):8000", "Exito", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
                 $window.Close()
             } catch {
                 [System.Windows.MessageBox]::Show("Ocurrió un error al guardar la configuración: $_", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
@@ -547,7 +555,7 @@ if ($useGui) {
 function Run-SetupCli {
     Write-Host ""
     Write-Host "==========================================================" -ForegroundColor Teal
-    Write-Host "  S_Hospital - Instalador del Servidor LAN (Modo Consola) " -ForegroundColor White -BackgroundColor Teal
+    Write-Host "  Hospital San Isidro - Instalador del Servidor LAN  " -ForegroundColor White -BackgroundColor Teal
     Write-Host "==========================================================" -ForegroundColor Teal
     Write-Host ""
     
@@ -618,8 +626,9 @@ function Run-SetupCli {
         $bTime = Read-Host "Hora del respaldo (por defecto 23:00)"
         if ([string]::IsNullOrWhiteSpace($bTime)) { $bTime = "23:00" }
         
-        $taskName = "S_Hospital_Daily_Backup"
+        $taskName = $BackupTaskName
         $taskAction = "cmd.exe /c cd /d ""$backendRoot"" && ""$php"" artisan hospital:backup"
+        schtasks /delete /tn $LegacyBackupTaskName /f 2>$null
         schtasks /delete /tn $taskName /f 2>$null
         schtasks /create /tn $taskName /tr $taskAction /sc daily /st $bTime /f | Out-Null
         Write-Host "Copia de seguridad registrada exitosamente en Task Scheduler." -ForegroundColor Green
@@ -628,13 +637,14 @@ function Run-SetupCli {
     # Open Firewall
     $openFirewall = Read-Host "¿Desea abrir el puerto 8000 en el Firewall de Windows para clientes LAN? (S/N)"
     if ($openFirewall -eq "S" -or $openFirewall -eq "s") {
-        netsh advfirewall firewall delete rule name="S_Hospital Server LAN Port 8000" 2>$null
-        netsh advfirewall firewall add rule name="S_Hospital Server LAN Port 8000" dir=in action=allow protocol=TCP localport=8000 | Out-Null
+        netsh advfirewall firewall delete rule name="$LegacyFirewallRuleName" 2>$null
+        netsh advfirewall firewall delete rule name="$FirewallRuleName" 2>$null
+        netsh advfirewall firewall add rule name="$FirewallRuleName" dir=in action=allow protocol=TCP localport=8000 | Out-Null
         Write-Host "Firewall de Windows configurado." -ForegroundColor Green
     }
 
     Write-Host "`n==========================================================" -ForegroundColor Green
-    Write-Host " ¡Instalación de Servidor S_Hospital Finalizada con Éxito!" -ForegroundColor White -BackgroundColor Green
+    Write-Host " Instalacion del servidor de Hospital San Isidro finalizada con exito " -ForegroundColor White -BackgroundColor Green
     Write-Host " Servidor Web LAN disponible en: http://$lanIp:8000" -ForegroundColor Green
     Write-Host "==========================================================" -ForegroundColor Green
 }

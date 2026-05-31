@@ -13,6 +13,7 @@ import { FiscalSettingsView } from './features/settings/FiscalSettingsView';
 import { UsersView } from './features/admin/UsersView';
 import { AboutView } from './features/about/AboutView';
 import { HelpView } from './features/help/HelpView';
+import { SupportCenterView } from './features/support/SupportCenterView';
 import { type AuthUser, type CashSession } from './lib/api';
 
 type AppRoutesProps = {
@@ -192,6 +193,10 @@ export function AppRoutes({
       <Route
         path="/help"
         element={<HelpView />}
+      />
+      <Route
+        path="/support"
+        element={<SupportCenterView user={user} onStatus={onStatus} />}
       />
       <Route
         path="/about"

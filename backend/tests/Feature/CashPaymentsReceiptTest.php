@@ -334,6 +334,69 @@ class CashPaymentsReceiptTest extends TestCase
         ]);
     }
 
+    public function test_repeated_payment_submit_with_same_idempotency_key_returns_original_payment(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+        $payload = [
+            'cash_session_id' => $sessionId,
+            'method' => Payment::METHOD_CASH,
+            'amount' => '17.25',
+        ];
+
+        $first = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'payment-key-1'])
+            ->postJson("/api/invoices/{$invoiceId}/payments", $payload)
+            ->assertCreated()
+            ->json('data.payment');
+
+        $second = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'payment-key-1'])
+            ->postJson("/api/invoices/{$invoiceId}/payments", $payload)
+            ->assertCreated()
+            ->json('data.payment');
+
+        $this->assertSame($first['id'], $second['id']);
+        $this->assertSame(1, Payment::query()->count());
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'paid_amount' => '17.25',
+            'balance_due' => '0.00',
+            'status' => Invoice::STATUS_PAID,
+        ]);
+    }
+
+    public function test_reused_payment_idempotency_key_with_different_payload_returns_conflict(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'payment-key-conflict'])
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '10.00',
+            ])
+            ->assertCreated();
+
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'payment-key-conflict'])
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '7.25',
+            ])
+            ->assertConflict();
+
+        $this->assertSame(1, Payment::query()->count());
+    }
+
     public function test_cash_session_cannot_close_with_partial_invoice_balance(): void
     {
         $this->seedBillingBase();

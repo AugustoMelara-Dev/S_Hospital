@@ -199,7 +199,10 @@ export type Payment = {
   method: 'cash' | 'transfer' | 'card' | 'other';
   amount: string;
   reference: string | null;
-  status: 'posted';
+  status: 'posted' | 'void';
+  voided_by?: number | null;
+  voided_at?: string | null;
+  void_reason?: string | null;
   paid_at: string;
 };
 
@@ -453,6 +456,11 @@ export type BackupLog = {
 };
 
 export type SystemStatus = {
+  summary?: {
+    severity: 'ok' | 'warning' | 'error';
+    problem_count: number;
+    label: string;
+  };
   environment: {
     app_env: string;
     app_debug: boolean;
@@ -466,6 +474,7 @@ export type SystemStatus = {
   database: {
     connection: string;
     driver: string;
+    connected: boolean;
     is_mysql_family: boolean;
   };
   backups: {
@@ -506,6 +515,11 @@ export type SystemStatus = {
       size_bytes: number | null;
       modified_at: string | null;
     };
+    frontend_build: {
+      available: boolean;
+      modified_at: string | null;
+    };
+    installed_version: string | null;
     latest_migration: string | null;
     migration_count: number | null;
   };
@@ -543,6 +557,24 @@ export type SystemStatus = {
       scheduler: string;
     };
   };
+};
+
+export type SystemStatusCheck = {
+  code: string;
+  label: string;
+  status: 'validated' | 'warning' | 'error' | 'manual_required';
+  detail: string;
+};
+
+export type SystemStatusSummary = {
+  summary: {
+    severity: 'ok' | 'warning' | 'error';
+    problem_count: number;
+    label: string;
+    action: string;
+  };
+  checks: SystemStatusCheck[];
+  advanced_available: boolean;
 };
 
 export type PaginatedMeta = {
