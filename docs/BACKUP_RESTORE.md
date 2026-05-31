@@ -210,6 +210,10 @@ HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_test ba
 ```
 
 El script no restaura sobre la base activa. Requiere cliente `mysql` y una herramienta de dump local (`mariadb-dump` o `mysqldump`). Si falta cualquiera de esas herramientas, el estado sigue `PENDING_ENVIRONMENT_VALIDATION`.
+Cuando genera evidencia con `HOSPITAL_RESTORE_EVIDENCE_PATH`, el archivo de
+backup queda identificado por nombre/ruta relativa bajo backups, SHA256 y
+tamano. No debe escribirse una ruta absoluta del servidor en la evidencia que se
+comparta con soporte.
 
 ## Evidencia Fase 11
 

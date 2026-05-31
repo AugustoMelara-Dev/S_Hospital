@@ -4,6 +4,20 @@ set -euo pipefail
 ROOT_DIR="${HOSPITAL_PROJECT_ROOT:-$(pwd)}"
 BACKEND_DIR="$ROOT_DIR/backend"
 
+safe_path() {
+  local value="${1:-}"
+
+  if [ -n "$value" ] && [ -n "${ROOT_DIR:-}" ]; then
+    value="${value//$ROOT_DIR/%PROJECT_ROOT%}"
+  fi
+
+  if [ -n "$value" ] && [ -n "${HOME:-}" ]; then
+    value="${value//$HOME/%USERPROFILE%}"
+  fi
+
+  printf '%s' "$value"
+}
+
 env_value() {
   local key="$1"
   local fallback="${2:-}"
@@ -134,6 +148,9 @@ if [ ! -f "$BACKUP_ABSOLUTE" ]; then
   exit 1
 fi
 
+BACKUP_FILE_NAME="$(basename "$BACKUP_ABSOLUTE")"
+BACKUP_EVIDENCE_PATH="storage/app/private/backups/${BACKUP_FILE_NAME}"
+
 echo "WARNING: disposable database ${RESTORE_TEST_DATABASE_VALUE} will be dropped and recreated."
 echo "Restoring backup into disposable database ${RESTORE_TEST_DATABASE_VALUE}."
 export MYSQL_PWD="$DB_PASSWORD_VALUE"
@@ -171,10 +188,10 @@ if [ -n "$RESTORE_EVIDENCE_PATH" ]; then
 - Responsible person: Automated validation script
 - Source database: ${DB_DATABASE_VALUE}
 - Disposable restore database: ${RESTORE_TEST_DATABASE_VALUE}
-- Backup file: ${BACKUP_ABSOLUTE}
+- Backup file: ${BACKUP_EVIDENCE_PATH}
 - Backup SHA256: ${BACKUP_SHA256}
 - Backup size bytes: ${BACKUP_BYTES}
-- Evidence/capture reference: ${RESTORE_EVIDENCE_PATH}
+- Evidence/capture reference: $(safe_path "$RESTORE_EVIDENCE_PATH")
 - Final conclusion: Restore validation completed against a disposable database with schema and core table counts verified.
 
 ## Required checks
@@ -193,7 +210,7 @@ if [ -n "$RESTORE_EVIDENCE_PATH" ]; then
   "status": "VALIDATED",
   "source_database": "${DB_DATABASE_VALUE}",
   "restore_database": "${RESTORE_TEST_DATABASE_VALUE}",
-  "backup_file": "${BACKUP_ABSOLUTE}",
+  "backup_file": "${BACKUP_EVIDENCE_PATH}",
   "backup_sha256": "${BACKUP_SHA256}",
   "backup_size_bytes": ${BACKUP_BYTES},
   "counts": {
@@ -207,8 +224,8 @@ if [ -n "$RESTORE_EVIDENCE_PATH" ]; then
 }
 \`\`\`
 EOF
-  echo "Restore evidence written to $RESTORE_EVIDENCE_PATH"
+  echo "Restore evidence written to $(safe_path "$RESTORE_EVIDENCE_PATH")"
 fi
 
-echo "Restore validation completed. Backup: $BACKUP_ABSOLUTE"
+echo "Restore validation completed. Backup file: $BACKUP_FILE_NAME"
 echo "Counts: migrations=$MIGRATION_COUNT users=$USER_COUNT services=$SERVICE_COUNT invoices=$INVOICE_COUNT payments=$PAYMENT_COUNT backup_logs=$BACKUP_LOG_COUNT"

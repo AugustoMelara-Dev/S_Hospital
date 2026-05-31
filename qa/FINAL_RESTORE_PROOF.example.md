@@ -10,7 +10,7 @@ the active hospital database.
 - Responsible person:
 - Source database:
 - Disposable restore database:
-- Backup file:
+- Backup file (relative path or filename only, no absolute server path):
 - Backup SHA256:
 - Backup size bytes:
 - Evidence/capture reference:

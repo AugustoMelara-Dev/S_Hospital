@@ -61,6 +61,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Instalador de tareas Windows de respaldo sanitiza consola/errores, valida PHP antes de registrar tareas, conserva rutas reales solo dentro de la tarea y recuerda no borrar datos para corregir fallos. | Verificado |
 | Esta fase | Scripts de soporte y evidencia sanitizan rutas en consola: arranque manual, paquete de soporte, smoke de worker y validacion LAN. | Verificado |
 | Esta fase | Arranque de respaldos por usuario actual valida PHP, oculta contenido Startup en `-Status` y usa hora/PHP validados al ejecutar `-StartNow`. | Verificado |
+| Esta fase | Validacion de restore descartable deja de escribir rutas absolutas del backup en consola/evidencia y conserva identificacion por nombre, SHA256 y tamano. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -188,6 +189,10 @@ Resultado observado:
 | `vendor\bin\pint --test app\Http\Controllers\SystemStatusController.php tests\Feature\SystemStatusTest.php` | Paso. |
 | `npm.cmd run lint` | Paso despues del diagnostico interfaz/LAN. |
 | `npm.cmd run build` | Paso despues del diagnostico interfaz/LAN, con warning de chunk grande existente. |
+| `Git Bash -n scripts/validate_restore_mysql.sh` | Paso: sintaxis shell valida sin ejecutar restore. |
+| `scripts/validate_restore_mysql.sh` sin `HOSPITAL_VALIDATE_RESTORE_MYSQL=1` | Falla antes de crear backup o tocar base de datos. |
+| `scripts/validate_restore_mysql.sh` con bandera pero sin `RESTORE_TEST_DATABASE` | Falla antes de crear backup o tocar base de datos. |
+| `scripts/validate_restore_mysql.sh` con base descartable pero sin confirmacion exacta | Falla antes de crear backup o tocar base de datos. |
 
 ## Hallazgos Operativos Pendientes
 
