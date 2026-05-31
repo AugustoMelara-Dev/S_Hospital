@@ -1,10 +1,16 @@
 import { apiClient } from './base';
-import type { Category, CategoryPayload, Service, ServicePayload, ServiceFilters, PaginatedMeta } from './types';
+import type { Area, Category, CategoryPayload, Service, ServicePayload, ServiceFilters, PaginatedMeta } from './types';
 
 export const catalog = {
   async getCategories(active?: boolean): Promise<Category[]> {
     const query = active === undefined ? '' : `?active=${active ? '1' : '0'}`;
     const response = await apiClient.request<{ data: Category[] }>(`/api/categories${query}`);
+    return response.data;
+  },
+
+  async getAreas(active?: boolean): Promise<Area[]> {
+    const query = active === undefined ? '' : `?active=${active ? '1' : '0'}`;
+    const response = await apiClient.request<{ data: Area[] }>(`/api/areas${query}`);
     return response.data;
   },
 

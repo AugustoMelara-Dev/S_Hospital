@@ -88,6 +88,14 @@ describe('ReportsView', () => {
           }),
         } as Response;
       }
+      if (url.includes('/api/areas')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [],
+          }),
+        } as Response;
+      }
       return { ok: true, json: async () => ({ data: null }) } as Response;
     });
 
@@ -169,6 +177,10 @@ describe('ReportsView', () => {
         return { ok: true, json: async () => ({ data: [] }) } as Response;
       }
 
+      if (url.includes('/api/areas')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+
       if (url.includes('/api/reports/export')) {
         return {
           ok: true,
@@ -247,6 +259,15 @@ describe('ReportsView', () => {
         return { ok: true, json: async () => ({ data: [] }) } as Response;
       }
 
+      if (url.includes('/api/areas')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [{ id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true }],
+          }),
+        } as Response;
+      }
+
       if (url.includes('/api/reports/income')) {
         return {
           ok: true,
@@ -258,6 +279,13 @@ describe('ReportsView', () => {
         return {
           ok: true,
           json: async () => ({ data: { categories: [{ category: 'Laboratorio', quantity: '1.00', subtotal: '15.00', tax: '2.25', total: '17.25' }] } }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/areas')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { date_from: '2026-05-17', date_to: '2026-05-17', filters: {}, areas: [{ area_id: 1, area: 'Laboratorio', item_count: 1, quantity: '1.00', total: '17.25' }] } }),
         } as Response;
       }
 
@@ -365,7 +393,7 @@ describe('ReportsView', () => {
 
   it('renders report date filters and empty category state after loading range', async () => {
     window.history.pushState({}, '', '/reports');
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
 
       if (url.includes('/api/auth/session')) {
@@ -433,6 +461,22 @@ describe('ReportsView', () => {
         } as Response;
       }
 
+      if (url.includes('/api/areas')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: 4,
+                name: 'Radiologia',
+                slug: 'radiologia',
+                active: true,
+              },
+            ],
+          }),
+        } as Response;
+      }
+
       if (url.includes('/api/reports/income')) {
         return {
           ok: true,
@@ -468,6 +512,20 @@ describe('ReportsView', () => {
               date_from: '2026-05-17',
               date_to: '2026-05-17',
               categories: [],
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/areas')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date_from: '2026-05-17',
+              date_to: '2026-05-17',
+              filters: {},
+              areas: [{ area_id: 4, area: 'Radiologia', item_count: 1, quantity: '1.00', total: '51.75' }],
             },
           }),
         } as Response;
@@ -519,10 +577,17 @@ describe('ReportsView', () => {
     activateTab(/rango/i);
     expect(await screen.findByLabelText(/desde/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^area$/i)).toBeInTheDocument();
     expect(screen.getByText(/puede consultar hasta 31 dias por busqueda/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver rango/i }));
 
     expect(await screen.findByText(/^cobrado$/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /por area/i })).toBeInTheDocument();
+    expect(screen.getByText('Radiologia')).toBeInTheDocument();
+    expect(screen.getByText('L. 51.75')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/reports/areas?'))).toBe(true);
+    });
     activateTab(/servicios/i);
     expect(await screen.findByText(/sin categorias cobradas/i)).toBeInTheDocument();
     expect(await screen.findByText(/sin servicios cobrados/i)).toBeInTheDocument();

@@ -140,6 +140,31 @@ class ServiceCatalogTest extends TestCase
             ->assertJsonPath('data.0.special_rule_code', Service::ERYTHROPOIETIN_RULE);
     }
 
+    public function test_area_options_are_available_to_catalog_and_managerial_report_users(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $catalogViewer = User::factory()->create();
+        $reportViewer = User::factory()->create();
+        $plainUser = User::factory()->create();
+        $catalogViewer->givePermissionTo('catalog.view');
+        $reportViewer->givePermissionTo('reports.managerial.view');
+
+        $this->actingAs($catalogViewer)
+            ->getJson('/api/areas?active=1')
+            ->assertOk()
+            ->assertJsonCount(5, 'data')
+            ->assertJsonPath('data.0.slug', 'hospitalizacion-y-emergencia');
+
+        $this->actingAs($reportViewer)
+            ->getJson('/api/areas?active=1')
+            ->assertOk()
+            ->assertJsonCount(5, 'data');
+
+        $this->actingAs($plainUser)
+            ->getJson('/api/areas')
+            ->assertForbidden();
+    }
+
     public function test_service_search_tolerates_typos_and_accents(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);

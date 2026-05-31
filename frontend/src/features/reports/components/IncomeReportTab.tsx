@@ -13,24 +13,35 @@ import {
 } from '../../../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/data-table';
 import { KPICard } from './KPICard';
-import type { Category, CategoryReport, IncomeReport, ReportFilters } from '../../../lib/api/types';
+import type {
+  Area,
+  AreaIncomeReport,
+  Category,
+  CategoryReport,
+  IncomeReport,
+  ReportFilters,
+} from '../../../lib/api/types';
 
 interface IncomeReportTabProps {
   canExport: boolean;
   dateFrom: string;
   dateTo: string;
   categoryId: string;
+  areaId: string;
   cashSessionId: string;
   cashierId: string;
   method: NonNullable<ReportFilters['method']>;
   status: NonNullable<ReportFilters['status']>;
   categoryOptions: Category[];
+  areaOptions: Area[];
   loading: boolean;
   income: IncomeReport | null;
   categories: CategoryReport | null;
+  areas: AreaIncomeReport | null;
   onDateFromChange: (value: string) => void;
   onDateToChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
+  onAreaChange: (value: string) => void;
   onCashSessionChange: (value: string) => void;
   onCashierChange: (value: string) => void;
   onMethodChange: (value: NonNullable<ReportFilters['method']>) => void;
@@ -45,17 +56,21 @@ export function IncomeReportTab({
   dateFrom,
   dateTo,
   categoryId,
+  areaId,
   cashSessionId,
   cashierId,
   method,
   status,
   categoryOptions,
+  areaOptions,
   loading,
   income,
   categories,
+  areas,
   onDateFromChange,
   onDateToChange,
   onCategoryChange,
+  onAreaChange,
   onCashSessionChange,
   onCashierChange,
   onMethodChange,
@@ -98,6 +113,20 @@ export function IncomeReportTab({
                   <SelectItem value="all">Todas</SelectItem>
                   {categoryOptions.map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-[180px]">
+              <Label>Area</Label>
+              <Select value={areaId || 'all'} onValueChange={(v) => onAreaChange(v === 'all' ? '' : v)}>
+                <SelectTrigger id="income-area" aria-label="Area">
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {areaOptions.map((area) => (
+                    <SelectItem key={area.id} value={String(area.id)}>{area.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -249,6 +278,36 @@ export function IncomeReportTab({
                         <TableCell className="text-right">L. {cat.subtotal}</TableCell>
                         <TableCell className="text-right">L. {cat.tax_amount}</TableCell>
                         <TableCell className="text-right">L. {cat.total}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {areas && areas.areas.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Por Area</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Area</TableHead>
+                      <TableHead className="text-right">Items</TableHead>
+                      <TableHead className="text-right">Cantidad</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {areas.areas.map((area) => (
+                      <TableRow key={`${area.area_id ?? 'none'}-${area.area}`}>
+                        <TableCell className="font-medium">{area.area}</TableCell>
+                        <TableCell className="text-right">{area.item_count}</TableCell>
+                        <TableCell className="text-right">{area.quantity}</TableCell>
+                        <TableCell className="text-right">L. {area.total}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

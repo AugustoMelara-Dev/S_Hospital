@@ -10,7 +10,9 @@ import { AuditoriaTab } from './components/AuditoriaTab';
 import { CashSessionReportTab } from './components/CashSessionReportTab';
 import {
   type Category,
+  type Area,
   type CategoryReport,
+  type AreaIncomeReport,
   type CashSessionReport,
   type DailyReport,
   type IncomeReport,
@@ -43,6 +45,7 @@ export function ReportsView({
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
   const [categoryId, setCategoryId] = useState('');
+  const [areaId, setAreaId] = useState('');
   const [cashSessionId, setCashSessionId] = useState('');
   const [cashierId, setCashierId] = useState('');
   const [method, setMethod] = useState<NonNullable<ReportFilters['method']>>('');
@@ -56,15 +59,18 @@ export function ReportsView({
   const [daily, setDaily] = useState<DailyReport | null>(null);
   const [income, setIncome] = useState<IncomeReport | null>(null);
   const [categories, setCategories] = useState<CategoryReport | null>(null);
+  const [areas, setAreas] = useState<AreaIncomeReport | null>(null);
   const [serviceSales, setServiceSales] = useState<ServiceSalesReport | null>(null);
   const [operations, setOperations] = useState<OperationsReport | null>(null);
   const [cashSession, setCashSession] = useState<CashSessionReport | null>(null);
   const [categoryOptions, setCategoryOptions] = useState<Category[]>([]);
+  const [areaOptions, setAreaOptions] = useState<Area[]>([]);
 
   useEffect(() => {
     if (canViewManagerial) {
       void loadDaily(dailyDate);
       void loadCategories();
+      void loadAreas();
     }
   }, [canViewManagerial]);
 
@@ -99,6 +105,14 @@ export function ReportsView({
     }
   }
 
+  async function loadAreas() {
+    try {
+      setAreaOptions(await apiClient.getAreas(true));
+    } catch {
+      setAreaOptions([]);
+    }
+  }
+
   async function loadRangeReports() {
     // Validar rango de fechas en el frontend
     const d1 = new Date(dateFrom + 'T00:00:00');
@@ -125,14 +139,16 @@ export function ReportsView({
 
     try {
       const filters = reportFilters();
-      const [incomeReport, categoryReport, serviceReport, operationsReport] = await Promise.all([
+      const [incomeReport, categoryReport, areaReport, serviceReport, operationsReport] = await Promise.all([
         apiClient.getIncomeReport(filters),
         apiClient.getCategoryReport(filters),
+        apiClient.getAreaIncomeReport(filters),
         apiClient.getServiceSalesReport(filters),
         apiClient.getOperationsReport(filters),
       ]);
       setIncome(incomeReport);
       setCategories(categoryReport);
+      setAreas(areaReport);
       setServiceSales(serviceReport);
       setOperations(operationsReport);
       onStatus('Reportes por rango cargados.');
@@ -173,6 +189,7 @@ export function ReportsView({
       date_from: dateFrom,
       date_to: dateTo,
       category_id: categoryId || null,
+      area_id: areaId || null,
       user_id: cashierId || null,
       cash_session_id: cashSessionId || null,
       method: method || null,
@@ -295,17 +312,21 @@ export function ReportsView({
                 dateFrom={dateFrom}
                 dateTo={dateTo}
                 categoryId={categoryId}
+                areaId={areaId}
                 cashSessionId={cashSessionId}
                 cashierId={cashierId}
                 method={method}
                 status={status}
                 categoryOptions={categoryOptions}
+                areaOptions={areaOptions}
                 loading={loading}
                 income={income}
                 categories={categories}
+                areas={areas}
                 onDateFromChange={setDateFrom}
                 onDateToChange={setDateTo}
                 onCategoryChange={setCategoryId}
+                onAreaChange={setAreaId}
                 onCashSessionChange={setCashSessionId}
                 onCashierChange={setCashierId}
                 onMethodChange={setMethod}

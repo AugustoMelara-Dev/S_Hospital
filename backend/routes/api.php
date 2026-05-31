@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CashSessionController;
@@ -32,7 +33,6 @@ Route::get('/settings/logo', [LogoController::class, 'show'])
 Route::get('/settings/fiscal', [FiscalSettingsController::class, 'show'])
     ->middleware('web');
 
-
 Route::post('/auth/login', [AuthController::class, 'login'])
     ->middleware(['web', 'throttle:5,1']);
 Route::get('/auth/session', [AuthController::class, 'session'])
@@ -54,6 +54,7 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
         Route::get('/categories', [CategoryController::class, 'index']);
         Route::post('/categories', [CategoryController::class, 'store']);
         Route::patch('/categories/{category}', [CategoryController::class, 'update']);
+        Route::get('/areas', [AreaController::class, 'index']);
 
         Route::get('/services', [ServiceController::class, 'index']);
         Route::post('/services', [ServiceController::class, 'store']);

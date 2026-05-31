@@ -118,6 +118,10 @@ export const apiClient = {
     return catalog.getCategories(active);
   },
 
+  async getAreas(active?: boolean): Promise<Area[]> {
+    return catalog.getAreas(active);
+  },
+
   async saveCategory(payload: CategoryPayload, id?: number): Promise<Category> {
     return catalog.saveCategory(payload, id);
   },
