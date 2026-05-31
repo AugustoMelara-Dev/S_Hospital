@@ -6,10 +6,10 @@
 
 ## Reason
 
-The previous handoff report claimed completed physical thermal-printer evidence,
-but the referenced local photo folder was not present in this repository. Until
-the cashier computer and printer are validated with real field evidence, the
-system must not be described as `PRODUCTION_READY`.
+The previous handoff report claimed completed physical printer evidence, but
+the referenced local photo folder was not present in this repository. Until the
+cashier computer and institutional receipt printer are validated with real field
+evidence, the system must not be described as `PRODUCTION_READY`.
 
 ## Current blockers
 

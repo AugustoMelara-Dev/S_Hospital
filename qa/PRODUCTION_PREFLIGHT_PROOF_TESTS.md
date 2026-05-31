@@ -18,8 +18,8 @@ rechaza evidencia incompleta.
 |---|---|
 | Evidencia de impresora vacia | Falla por archivo demasiado corto. |
 | Evidencia de impresora copiada desde plantilla | Falla por campo obligatorio vacio o check sin resultado. |
-| Evidencia de impresora sin `80mm result:` | Falla con `Complete '80mm result:'`. |
-| Evidencia de impresora sin `58mm result:` | Falla con `Complete '58mm result:'`. |
+| Evidencia de impresora sin `Media carta result:` | Falla con `Complete 'Media carta result:'`. |
+| Evidencia de impresora sin `Carta result:` o `A5 result:` | Falla con el campo faltante. |
 | Evidencia de impresora con `Evidence/photo reference:` apuntando a una ruta local inexistente | Falla con `references missing local evidence`. |
 | Evidencia de impresora con campos minimos y checks llenos | La seccion de proof pasa con `physical thermal printer evidence is present and completed`. |
 | `CORS_ALLOWED_ORIGINS=*` | Falla siempre. |
@@ -39,8 +39,9 @@ El proof real debe usar los mismos nombres que valida el preflight:
 - Browser/version:
 - Cashier computer:
 - Invoice used:
-- 80mm result:
-- 58mm result:
+- Media carta result:
+- Carta result:
+- A5 result:
 - Reprint result:
 - Margins result:
 - Browser headers/footers result:
