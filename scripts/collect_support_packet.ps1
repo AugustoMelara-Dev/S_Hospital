@@ -33,11 +33,12 @@ if ($OutputDir -eq "") {
 }
 
 $rootPath = (Resolve-Path -LiteralPath $ProjectRoot).Path
-$OutputDir = if ([System.IO.Path]::IsPathRooted($OutputDir)) {
+$candidateOutputDir = if ([System.IO.Path]::IsPathRooted($OutputDir)) {
     $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputDir)
 } else {
     Join-Path $rootPath $OutputDir
 }
+$OutputDir = [System.IO.Path]::GetFullPath($candidateOutputDir)
 $rootPrefix = $rootPath.TrimEnd("\") + "\"
 
 if ($OutputDir -eq $rootPath) {

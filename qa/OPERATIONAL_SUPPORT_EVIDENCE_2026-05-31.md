@@ -140,6 +140,7 @@ Resultado observado:
 | `install_hospital_startup_shortcut.ps1 -Url http://127.0.0.1:8000 -WhatIfOnly` | Paso: valida carpeta/script y confirma que no crea acceso directo ni tarea. |
 | Parser PowerShell de `collect_support_packet.ps1` despues de endurecer salida | Paso. |
 | `collect_support_packet.ps1 -OutputDir C:\tmp\support-packet-outside -WhatIfOnly` | Falla antes de crear carpeta, con mensaje humano de usar carpeta dentro del sistema. |
+| `collect_support_packet.ps1 -OutputDir ..\support-packet-outside -WhatIfOnly` | Falla antes de crear carpeta; la ruta relativa se normaliza antes de validar contencion. |
 | `collect_support_packet.ps1 -WhatIfOnly -TailLines 5 -RepairRetries 1 -RepairDelaySeconds 1` | Paso: valida parametros y confirma que no crea carpeta ni copia logs. |
 | Parser PowerShell de `scripts\e2e_gate.ps1` | Paso. |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1` | Paso: 2 specs Playwright. Detecto y se corrigio fuga de `/api/areas?active=1` al backend local durante el flujo Reportes -> Respaldos. |
