@@ -31,6 +31,8 @@ Si un respaldo queda en pendiente mucho tiempo, avise al responsable tecnico.
 La hora del respaldo diario debe escribirse en formato de 24 horas `HH:mm`, por
 ejemplo `02:00` o `23:30`. Si el tecnico actualiza las tareas con una hora
 mal escrita, el instalador debe detenerse antes de reemplazar tareas existentes.
+El loop de automatizacion tambien se detiene al inicio si la hora esta mal
+escrita, dejando el motivo en `backend\storage\logs\backup-automation.log`.
 
 El responsable tecnico puede validar que el worker procesa respaldos sin dejar
 la contrasena escrita en el historial de PowerShell:

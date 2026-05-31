@@ -17,6 +17,14 @@ function Write-AutomationLog([string] $Message) {
     Add-Content -LiteralPath $logFile -Value "[$timestamp] $Message"
 }
 
+function Get-ValidatedDailyBackupTime([string] $value) {
+    try {
+        return [DateTime]::ParseExact($value, "HH:mm", [Globalization.CultureInfo]::InvariantCulture)
+    } catch {
+        return $null
+    }
+}
+
 if (-not (Test-Path -LiteralPath $PhpPath)) {
     $PhpPath = "php"
 }
@@ -27,6 +35,14 @@ if (-not (Test-Path -LiteralPath (Join-Path $backendDir "artisan"))) {
 
 New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+
+$dailyBackupTarget = Get-ValidatedDailyBackupTime $DailyBackupTime
+if ($null -eq $dailyBackupTarget) {
+    $message = "Invalid DailyBackupTime '$DailyBackupTime'. Use 24-hour HH:mm format, for example 02:00 or 23:30. Backup automation loop was not started."
+    Write-AutomationLog $message
+    Write-Host $message
+    exit 1
+}
 
 $createdMutex = $false
 $mutex = New-Object System.Threading.Mutex($true, "Local\SistemaCajaHospitalariaBackupAutomation", [ref] $createdMutex)
@@ -71,8 +87,7 @@ while ($true) {
             $lastHeartbeat = $now
         }
 
-        $target = [DateTime]::ParseExact($DailyBackupTime, "HH:mm", [Globalization.CultureInfo]::InvariantCulture)
-        $targetToday = Get-Date -Hour $target.Hour -Minute $target.Minute -Second 0
+        $targetToday = Get-Date -Hour $dailyBackupTarget.Hour -Minute $dailyBackupTarget.Minute -Second 0
         $lastRunDate = if (Test-Path -LiteralPath $stateFile) {
             (Get-Content -LiteralPath $stateFile -Raw).Trim()
         } else {
