@@ -669,7 +669,9 @@ class ReportsTest extends TestCase
             $sheet = $spreadsheet->getSheetByName('Areas');
 
             $this->assertNotNull($sheet);
-            $this->assertSame('Ingresos por Area Institucional', $sheet->getCell('B2')->getValue());
+            $this->assertSame('Facturación por Área Institucional', $sheet->getCell('B2')->getValue());
+            $this->assertSame('Monto Facturado', $sheet->getCell('E5')->getValue());
+            $this->assertNotSame('Ingresos por Area Institucional', $sheet->getCell('B2')->getValue());
             $this->assertSame('Laboratorio', $sheet->getCell('B6')->getValue());
             $this->assertSame(1, $sheet->getCell('C6')->getValue());
             $this->assertSame(17.25, $sheet->getCell('E6')->getValue());

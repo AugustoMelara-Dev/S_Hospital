@@ -458,12 +458,12 @@ class PremiumExcelExportService
             $sheet2->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // SHEET 3: Ventas por Area
+        // SHEET 3: Facturacion por Area
         $sheetArea = $spreadsheet->createSheet();
         $sheetArea->setTitle('Areas');
         $sheetArea->setShowGridlines(true);
 
-        $sheetArea->setCellValue('B2', 'Ingresos por Area Institucional');
+        $sheetArea->setCellValue('B2', 'Facturación por Área Institucional');
         $sheetArea->getStyle('B2')->applyFromArray($titleStyle);
         $sheetArea->setCellValue('B3', "Rango de fechas: {$from->format('d/m/Y')} al {$to->format('d/m/Y')}");
         $sheetArea->getStyle('B3')->applyFromArray($subtitleStyle);
@@ -471,12 +471,12 @@ class PremiumExcelExportService
         $sheetArea->setCellValue('B5', 'Area');
         $sheetArea->setCellValue('C5', 'Items');
         $sheetArea->setCellValue('D5', 'Cantidad');
-        $sheetArea->setCellValue('E5', 'Total Facturado');
+        $sheetArea->setCellValue('E5', 'Monto Facturado');
         $sheetArea->getStyle('B5:E5')->applyFromArray($headerStyle);
 
         $row = 6;
         if (empty($areas['areas'])) {
-            $sheetArea->setCellValue('B'.$row, 'Sin ingresos por area en el rango');
+            $sheetArea->setCellValue('B'.$row, 'Sin facturación por área en el rango');
             $sheetArea->mergeCells('B'.$row.':E'.$row);
             $row++;
         } else {
