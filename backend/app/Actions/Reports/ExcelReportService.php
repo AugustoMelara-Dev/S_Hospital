@@ -188,7 +188,7 @@ class ExcelReportService
 
         $plotArea1 = new PlotArea($layout1, [$series1]);
         $legend1 = new Legend(Legend::POSITION_RIGHT, null, false);
-        $title1 = new Title('Distribución de Ingresos por Método de Pago');
+        $title1 = new Title('Distribución de Cobros por Método de Pago');
 
         $chart1 = new Chart(
             'payment_methods_chart',

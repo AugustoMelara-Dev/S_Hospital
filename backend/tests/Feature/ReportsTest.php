@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Billing\CreateInvoiceAction;
+use App\Actions\Cash\OpenCashSessionAction;
+use App\Actions\Payments\RegisterPaymentAction;
 use App\Models\Area;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
@@ -13,6 +16,7 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
+use App\Support\InvoiceAccess;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Barryvdh\DomPDF\PDF as DomPdfWrapper;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -367,8 +371,8 @@ class ReportsTest extends TestCase
         $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
         $fingerXray = Service::query()->where('name', 'Dedo')->firstOrFail();
 
-        $invoiceId = $this->actingAs($cashier)
-            ->postJson('/api/invoices', [
+        $invoiceId = app(CreateInvoiceAction::class)
+            ->execute([
                 'patient_name' => 'Maria Lopez',
                 'items' => [
                     [
@@ -380,9 +384,8 @@ class ReportsTest extends TestCase
                         'quantity' => '1.00',
                     ],
                 ],
-            ])
-            ->assertCreated()
-            ->json('data.id');
+            ], $cashier->fresh())
+            ->id;
 
         $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '69.00');
 
@@ -616,9 +619,21 @@ class ReportsTest extends TestCase
         file_put_contents($path, $xlsx);
 
         try {
-            $spreadsheet = IOFactory::load($path);
+            $reader = IOFactory::createReader('Xlsx');
+            $reader->setIncludeCharts(true);
+            $spreadsheet = $reader->load($path);
+            $summarySheet = $spreadsheet->getSheetByName('Resumen General');
             $sheet = $spreadsheet->getSheetByName('Lectura Financiera');
 
+            $this->assertNotNull($summarySheet);
+            $charts = $summarySheet->getChartCollection();
+            $this->assertGreaterThanOrEqual(1, $charts->count());
+            $paymentChart = $charts->offsetGet(0);
+            $this->assertNotNull($paymentChart);
+            $this->assertSame(
+                'Distribución de Cobros por Método de Pago',
+                $paymentChart->getTitle()?->getCaptionText($spreadsheet),
+            );
             $this->assertNotNull($sheet);
             $this->assertSame('Lectura financiera del periodo', $sheet->getCell('B2')->getValue());
             $this->assertSame('Concepto', $sheet->getCell('B5')->getValue());
@@ -1110,30 +1125,22 @@ class ReportsTest extends TestCase
 
     private function createInvoice(User $cashier, string $serviceName): int
     {
-        $this->grantPermissions($cashier, 'invoices.create', 'cash.open', 'cash.view');
+        if (! CashRegisterSession::query()
+            ->where('user_id', $cashier->id)
+            ->where('status', CashRegisterSession::STATUS_OPEN)
+            ->exists()) {
+            $this->openSession($cashier);
+        }
 
-        CashRegisterSession::query()->firstOrCreate(
-            [
-                'user_id' => $cashier->id,
-                'status' => CashRegisterSession::STATUS_OPEN,
-            ],
-            [
-                'open_user_id' => $cashier->id,
-                'opening_amount' => '500.00',
-                'opened_at' => now(),
-            ],
-        );
-
-        return $this->actingAs($cashier->fresh())
-            ->postJson('/api/invoices', [
+        return app(CreateInvoiceAction::class)
+            ->execute([
                 'patient_name' => 'Maria Lopez',
                 'items' => [[
                     'service_id' => Service::query()->where('name', $serviceName)->firstOrFail()->id,
                     'quantity' => '1.00',
                 ]],
-            ])
-            ->assertCreated()
-            ->json('data.id');
+            ], $cashier->fresh())
+            ->id;
     }
 
     private function payInvoice(
@@ -1143,25 +1150,33 @@ class ReportsTest extends TestCase
         string $method,
         string $amount,
     ): void {
-        $this->grantPermissions($cashier, 'payments.create', 'cash.view');
-
-        $this->actingAs($cashier->fresh())
-            ->postJson("/api/invoices/{$invoiceId}/payments", [
-                'cash_session_id' => $sessionId,
-                'method' => $method,
-                'amount' => $amount,
-            ])
-            ->assertCreated();
+        app(RegisterPaymentAction::class)
+            ->execute(
+                Invoice::query()->findOrFail($invoiceId),
+                [
+                    'cash_session_id' => $sessionId,
+                    'method' => $method,
+                    'amount' => $amount,
+                ],
+                $cashier->fresh(),
+                app(InvoiceAccess::class),
+            );
     }
 
     private function openSession(User $cashier): int
     {
-        $this->grantPermissions($cashier, 'cash.open', 'cash.view');
+        $existingSession = CashRegisterSession::query()
+            ->where('user_id', $cashier->id)
+            ->where('status', CashRegisterSession::STATUS_OPEN)
+            ->first();
 
-        return $this->actingAs($cashier->fresh())
-            ->postJson('/api/cash-sessions/open', ['opening_amount' => '500.00'])
-            ->assertCreated()
-            ->json('data.id');
+        if ($existingSession) {
+            return $existingSession->id;
+        }
+
+        return app(OpenCashSessionAction::class)
+            ->execute(['opening_amount' => '500.00'], $cashier->fresh())
+            ->id;
     }
 
     public function test_pdf_export_requires_reports_export_permission(): void
@@ -1492,21 +1507,17 @@ class ReportsTest extends TestCase
      */
     private function grantDirectPermissions(User $user, array $permissionNames): void
     {
-        $permissionIds = Permission::query()
-            ->whereIn('name', array_values(array_unique($permissionNames)))
-            ->pluck('id');
+        $uniquePermissionNames = array_values(array_unique($permissionNames));
+        $permissions = Permission::query()
+            ->whereIn('name', $uniquePermissionNames)
+            ->get();
 
-        DB::table('model_has_permissions')->insertOrIgnore($permissionIds->map(fn (int $permissionId): array => [
-            'permission_id' => $permissionId,
-            'model_type' => User::class,
-            'model_id' => $user->id,
-        ])->all());
+        $this->assertCount(count($uniquePermissionNames), $permissions);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
-        $user->unsetRelation('permissions');
-        $user->unsetRelation('roles');
+        $user->givePermissionTo($permissions);
+        $user->refresh();
         $user->load('permissions', 'roles.permissions');
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
     private function grantPermissions(User $user, mixed ...$permissionNames): void
