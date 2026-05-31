@@ -11,6 +11,8 @@ abstract class TestCase extends BaseTestCase
 {
     protected function setUp(): void
     {
+        $this->forceTestingEnvironment();
+
         parent::setUp();
 
         $this->withoutMiddleware(ValidateCsrfToken::class);
@@ -26,5 +28,22 @@ abstract class TestCase extends BaseTestCase
         $this->beforeApplicationDestroyed(function (): void {
             app(PermissionRegistrar::class)->forgetCachedPermissions();
         });
+    }
+
+    private function forceTestingEnvironment(): void
+    {
+        foreach ([
+            'APP_ENV' => 'testing',
+            'CACHE_STORE' => 'array',
+            'DB_CONNECTION' => 'sqlite',
+            'DB_DATABASE' => ':memory:',
+            'DB_URL' => '',
+            'QUEUE_CONNECTION' => 'sync',
+            'SESSION_DRIVER' => 'array',
+        ] as $key => $value) {
+            putenv("{$key}={$value}");
+            $_ENV[$key] = $value;
+            $_SERVER[$key] = $value;
+        }
     }
 }
