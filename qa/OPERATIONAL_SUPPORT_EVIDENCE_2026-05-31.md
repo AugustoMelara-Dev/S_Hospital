@@ -53,6 +53,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Reparacion segura valida ruta de diagnostico y `-WhatIfOnly` antes de tocar Docker, navegador o archivos. | Verificado |
 | Esta fase | Validacion LAN agrega `-WhatIfOnly` y bloquea evidencia fuera de la carpeta instalada. | Verificado |
 | Esta fase | Inicializador de evidencias finales agrega `-WhatIfOnly`, sanitiza rutas y advierte antes de reemplazar pruebas fisicas. | Verificado |
+| Esta fase | Preflight de produccion sanitiza rutas locales y claves sensibles en consola. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -152,6 +153,7 @@ Resultado observado:
 | `validate_lan_client.ps1 -BaseUrl http://192.168.1.10:8000 -EvidencePath C:\tmp\lan-outside.md -WhatIfOnly` | Falla antes de consultar red o escribir evidencia. |
 | `validate_lan_client.ps1 -BaseUrl http://192.168.1.10:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.tmp.md -WhatIfOnly` | Paso: valida parametros y confirma que no consulta red ni escribe evidencia. |
 | `init_production_proofs.ps1 -WhatIfOnly` | Paso: muestra acciones previstas sin copiar ni reemplazar archivos; consola no expone rutas locales crudas. |
+| `production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:1 -AllowMissingPhysicalProof` | Paso esperado con fallos: consola no expone `C:\Projects\S_Hospital` ni rutas de usuario. |
 | Parser PowerShell de `scripts\e2e_gate.ps1` | Paso. |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1` | Paso: 2 specs Playwright. Detecto y se corrigio fuga de `/api/areas?active=1` al backend local durante el flujo Reportes -> Respaldos. |
 | `php artisan test tests/Feature/SystemStatusTest.php` | Paso: 7 tests, 47 assertions. |

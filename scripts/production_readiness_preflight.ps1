@@ -14,21 +14,43 @@ if ($ProjectRoot -eq "") {
     $ProjectRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
 }
 
+$ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+
 $failures = New-Object System.Collections.Generic.List[string]
 $warnings = New-Object System.Collections.Generic.List[string]
 
+function Protect-PreflightText([string] $value) {
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        return $value
+    }
+
+    $protected = $value
+    $protected = $protected -replace [regex]::Escape($ProjectRoot), "%PROJECT_ROOT%"
+    $protected = $protected -replace [regex]::Escape(($ProjectRoot -replace "\\", "/")), "%PROJECT_ROOT%"
+    if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
+        $protected = $protected -replace [regex]::Escape($env:USERPROFILE), "%USERPROFILE%"
+        $protected = $protected -replace [regex]::Escape(($env:USERPROFILE -replace "\\", "/")), "%USERPROFILE%"
+    }
+    $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
+    $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+
+    return $protected
+}
+
 function Add-Failure([string] $message) {
-    $failures.Add($message) | Out-Null
-    Write-Host "[FAIL] $message" -ForegroundColor Red
+    $safeMessage = Protect-PreflightText $message
+    $failures.Add($safeMessage) | Out-Null
+    Write-Host "[FAIL] $safeMessage" -ForegroundColor Red
 }
 
 function Add-Warning([string] $message) {
-    $warnings.Add($message) | Out-Null
-    Write-Host "[WARN] $message" -ForegroundColor Yellow
+    $safeMessage = Protect-PreflightText $message
+    $warnings.Add($safeMessage) | Out-Null
+    Write-Host "[WARN] $safeMessage" -ForegroundColor Yellow
 }
 
 function Add-Pass([string] $message) {
-    Write-Host "[ OK ] $message" -ForegroundColor Green
+    Write-Host "[ OK ] $(Protect-PreflightText $message)" -ForegroundColor Green
 }
 
 function Add-Strong-Warning([string] $message) {
@@ -305,7 +327,7 @@ $queueConnection = Get-EnvValue $envValues "QUEUE_CONNECTION" ""
 $configuredDumpBinary = Get-EnvValue $envValues "HOSPITAL_DUMP_BINARY" ""
 
 Write-Host "Production readiness preflight for $BaseUrl"
-Write-Host "Project root: $ProjectRoot"
+Write-Host "Project root: $(Protect-PreflightText $ProjectRoot)"
 
 if ($appEnv -eq "production") { Add-Pass "APP_ENV=production" } else { Add-Failure "APP_ENV must be production, current value is '$appEnv'" }
 if ($appDebug -eq "false") { Add-Pass "APP_DEBUG=false" } else { Add-Failure "APP_DEBUG must be false, current value is '$appDebug'" }
