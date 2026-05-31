@@ -505,6 +505,35 @@ html.dark {
     page: receipt-58mm;
   }
 
+  .institutional-receipt.receipt-80mm .receipt-header .hospital-name,
+  .institutional-receipt.receipt-58mm .receipt-header .hospital-name {
+    font-size: 13px;
+    line-height: 1.15;
+  }
+
+  .institutional-receipt.receipt-80mm .receipt-title,
+  .institutional-receipt.receipt-58mm .receipt-title {
+    font-size: 11px;
+  }
+
+  .institutional-receipt.receipt-80mm .receipt-title-row,
+  .institutional-receipt.receipt-58mm .receipt-title-row {
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .institutional-receipt.receipt-80mm .receipt-title-row span,
+  .institutional-receipt.receipt-58mm .receipt-title-row span {
+    font-size: 8px;
+    padding: 2px 4px;
+  }
+
+  .institutional-receipt.receipt-80mm .receipt-signature-line,
+  .institutional-receipt.receipt-58mm .receipt-signature-line {
+    margin-top: 24px;
+    width: 72%;
+  }
+
   .institutional-receipt * {
     box-sizing: border-box;
   }
@@ -774,12 +803,12 @@ html.dark {
   }
 
   @page receipt-80mm {
-    size: 80mm auto;
+    size: 80mm 297mm;
     margin: 3mm;
   }
 
   @page receipt-58mm {
-    size: 58mm auto;
+    size: 58mm 210mm;
     margin: 2mm;
   }
 }

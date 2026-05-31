@@ -1126,3 +1126,21 @@ Consecuencia:
 
 - El PDF exportado queda alineado con el dashboard, Excel premium y reportes en pantalla.
 - La prueba del PDF falla si vuelve el subtitulo ambiguo de ventas.
+
+### 2026-05-31 - Recibos termicos y reimpresion auditada desde historial
+
+Decision:
+
+- Los tamanos institucionales aceptados son `half_letter`, `letter`, `a5`, `80mm` y `58mm`.
+- La vista de recibo desde historial llama a `/api/invoices/{invoice}/reprint` antes de imprimir para registrar auditoria de copia.
+- El CSS de impresion define paginas especificas para 80mm y 58mm y mantiene la impresion aislada con `body[data-printing-receipt="true"]`.
+
+Motivo:
+
+- El hospital requiere impresoras termicas de 80mm y opcion 58mm configurable.
+- Imprimir desde historial equivale operacionalmente a una reimpresion y debe quedar trazado.
+
+Consecuencia:
+
+- La configuracion fiscal, el wizard, la vista de recibo y los contratos API aceptan 80mm/58mm.
+- La validacion final sigue pendiente de impresora fisica y driver real de caja.

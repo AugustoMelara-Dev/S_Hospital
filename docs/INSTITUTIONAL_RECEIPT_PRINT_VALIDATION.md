@@ -1,6 +1,6 @@
 # Validacion de impresion del recibo institucional
 
-Estado actual: PENDING_HARDWARE_VALIDATION hasta probar en impresora fisica media carta/carta/A5.
+Estado actual: PENDING_HARDWARE_VALIDATION hasta probar en impresora fisica media carta/carta/A5 y termica 80mm/58mm.
 
 El CSS de impresion debe permanecer aislado al recibo. Solo se activa cuando
 `body[data-printing-receipt="true"]` esta presente; imprimir otra vista del
@@ -11,7 +11,7 @@ sistema no debe ocultar sidebar/topbar/app completa ni dejar paginas en blanco.
 - PC de caja identificada.
 - Navegador que usara el cajero identificado.
 - Impresora instalada o compartida en la PC de caja.
-- Formatos habilitados en el driver: media carta, carta y A5 segun decision del hospital.
+- Formatos habilitados en el driver: media carta, carta, A5, 80mm o 58mm segun decision del hospital.
 - Impresora correcta seleccionada como predeterminada o elegida manualmente.
 
 ## Configuracion del navegador
@@ -42,6 +42,15 @@ sistema no debe ocultar sidebar/topbar/app completa ni dejar paginas en blanco.
 4. Cambiar formato a A5 si el hospital usara ese tamano.
 5. Imprimir y confirmar que no hay cortes de texto critico.
 
+## Prueba termica 80mm y 58mm
+
+1. Abrir la misma factura o reimpresion.
+2. Cambiar formato a Termico 80mm.
+3. Imprimir y confirmar que el recibo ocupa una columna legible, sin cortes laterales ni escala automatica excesiva.
+4. Cambiar formato a Termico 58mm si el hospital usara ese tamano.
+5. Imprimir y confirmar que paciente, numero, servicios, total, pagos y firma siguen legibles.
+6. Confirmar que el driver de la impresora tiene el mismo ancho seleccionado que la aplicacion.
+
 ## Reimpresion
 
 1. Ir a historial.
@@ -58,6 +67,6 @@ Registrar:
 - Operador.
 - PC de caja.
 - Modelo de impresora.
-- Formato probado: media carta, carta, A5 o combinacion aprobada.
+- Formato probado: media carta, carta, A5, 80mm, 58mm o combinacion aprobada.
 - Resultado: VALIDATED o FAILED.
 - Observaciones de margenes, escala o driver.

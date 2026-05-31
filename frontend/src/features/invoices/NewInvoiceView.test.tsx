@@ -730,6 +730,17 @@ describe('NewInvoiceView', () => {
       expect(receiptEl).toHaveClass('receipt-half_letter');
     });
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole('button', { name: /^imprimir$/i }));
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(2);
+    });
+    const printAuditCall = fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))[1];
+    expect(JSON.parse(String(printAuditCall[1]?.body))).toMatchObject({
+      reason: 'Impresion desde vista de recibo.',
+      width: 'half_letter',
+    });
   });
 
   it('applies received cash as balance due and keeps change visible', () => {
@@ -787,6 +798,10 @@ describe('NewInvoiceView', () => {
     const styles = readFileSync('src/styles.css', 'utf8');
 
     expect(styles).toContain('body[data-printing-receipt="true"] *');
+    expect(styles).toContain('.institutional-receipt.receipt-80mm');
+    expect(styles).toContain('.institutional-receipt.receipt-58mm');
+    expect(styles).toContain('@page receipt-80mm');
+    expect(styles).toContain('@page receipt-58mm');
     expect(styles).not.toContain('body * {\n      visibility: hidden;');
     expect(styles).not.toContain('body * {\r\n      visibility: hidden;');
   });
@@ -918,7 +933,7 @@ describe('NewInvoiceView', () => {
 
   it('renders institutional receipt print structure with fiscal valid until date', async () => {
     const receipt: ReceiptData = {
-      width: 'half_letter',
+      width: '80mm',
       hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
       fiscal: {
         cai: 'VALIDACION-CAI',
@@ -963,16 +978,15 @@ describe('NewInvoiceView', () => {
         },
       ],
     };
-    const printSpy = vi.fn(() => {
-      expect(document.body.dataset.receiptWidth).toBe('half_letter');
-    });
+    const printSpy = vi.fn();
 
     render(<ReceiptPreview receipt={receipt} onWidthChange={vi.fn()} onPrint={printSpy} />);
 
-    expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-half_letter');
+    expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-80mm');
     expect(screen.getByText(/vence/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /imprimir/i }));
-    expect(printSpy).toHaveBeenCalledOnce();
+    await waitFor(() => expect(printSpy).toHaveBeenCalledOnce());
+    await waitFor(() => expect(document.body.dataset.receiptWidth).toBe('80mm'));
     await waitFor(() => expect(document.body.dataset.receiptWidth).toBeUndefined());
   });
 });
