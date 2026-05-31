@@ -1157,9 +1157,10 @@ Motivo:
 
 - El catalogo backend es la fuente de verdad para visibilidad, estado activo e importes facturables.
 - Un fallback local puede facturar un servicio que acaba de desactivarse o que ya no cumple filtros de facturacion.
-- Los montos deben compararse con la misma semantica de centavos usada por el resto del flujo.
+- Los montos deben compararse y presentarse con la misma semantica de centavos usada por el resto del flujo.
 
 Consecuencia:
 
 - Si el backend no confirma un codigo activo y facturable, la factura no agrega el servicio.
 - La prueba de scanner falla si la consulta vuelve a omitir `active=1`.
+- El modal de pago calcula cambio, pago aplicado y saldos parciales sin aritmetica flotante.

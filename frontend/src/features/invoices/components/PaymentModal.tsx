@@ -45,14 +45,18 @@ export function PaymentModal({
   const [error, setError] = useState<string | null>(null);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
 
-  const balance = parseFloat(balanceDue);
-  const payment = parseFloat(paymentAmount);
-  const change = !isNaN(payment) && payment > balance ? payment - balance : null;
-  const remainingBalance = !isNaN(payment) && !isNaN(balance) && payment > 0 && payment < balance
-    ? balance - payment
+  const balanceCents = parseMoneyCents(balanceDue);
+  const paymentCents = parseMoneyCents(paymentAmount);
+  const changeCents = paymentCents !== null && balanceCents !== null && paymentCents > balanceCents
+    ? paymentCents - balanceCents
     : null;
-  const appliedAmount = !isNaN(payment) && !isNaN(balance) && payment >= balance ? balance : payment;
-  const needsAmount = isNaN(payment) || payment <= 0;
+  const remainingBalanceCents = paymentCents !== null && balanceCents !== null && paymentCents > 0 && paymentCents < balanceCents
+    ? balanceCents - paymentCents
+    : null;
+  const appliedAmountCents = paymentCents !== null && balanceCents !== null && paymentCents >= balanceCents
+    ? balanceCents
+    : paymentCents;
+  const needsAmount = paymentCents === null || paymentCents <= 0;
 
   useEffect(() => {
     if (open) {
@@ -63,19 +67,19 @@ export function PaymentModal({
 
   function handleSubmit(e: FormEvent | SyntheticEvent) {
     e.preventDefault();
-    const amount = parseFloat(paymentAmount);
-    if (isNaN(amount) || amount <= 0) {
+    const amountCents = parseMoneyCents(paymentAmount);
+    if (amountCents === null || amountCents <= 0) {
       setError('Ingrese un monto valido');
       amountInputRef.current?.focus();
       return;
     }
-    if (amount < balance && !partialPaymentsEnabled) {
+    if (balanceCents !== null && amountCents < balanceCents && !partialPaymentsEnabled) {
       setError('El monto recibido es menor al total.');
       amountInputRef.current?.focus();
       return;
     }
     setError(null);
-    onConfirm(appliedAmount.toFixed(2));
+    onConfirm(formatMoneyCents(appliedAmountCents ?? amountCents));
   }
 
   return (
@@ -99,32 +103,32 @@ export function PaymentModal({
             <span className="text-muted-foreground">Saldo pendiente:</span>
             <span className="font-bold">L. {balanceDue}</span>
           </div>
-          {change !== null && (
+          {changeCents !== null && (
             <div className="flex justify-between text-emerald-600">
               <span className="text-muted-foreground">Cambio:</span>
-              <span className="font-bold">L. {change.toFixed(2)}</span>
+              <span className="font-bold">L. {formatMoneyCents(changeCents)}</span>
             </div>
           )}
-          {remainingBalance !== null && (
+          {remainingBalanceCents !== null && (
             <div className="flex justify-between text-amber-700">
               <span className="text-muted-foreground">Saldo pendiente:</span>
-              <span className="font-bold">L. {remainingBalance.toFixed(2)}</span>
+              <span className="font-bold">L. {formatMoneyCents(remainingBalanceCents)}</span>
             </div>
           )}
-          {remainingBalance !== null && !partialPaymentsEnabled ? (
+          {remainingBalanceCents !== null && !partialPaymentsEnabled ? (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive" role="alert">
               El monto recibido es menor al total.
             </div>
           ) : null}
-          {remainingBalance !== null && partialPaymentsEnabled ? (
+          {remainingBalanceCents !== null && partialPaymentsEnabled ? (
             <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="alert">
               Este pago quedara como abono parcial y mantendra saldo pendiente.
             </div>
           ) : null}
-          {!isNaN(appliedAmount) && appliedAmount > 0 && (
+          {appliedAmountCents !== null && appliedAmountCents > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Pago aplicado:</span>
-              <span className="font-medium">L. {appliedAmount.toFixed(2)}</span>
+              <span className="font-medium">L. {formatMoneyCents(appliedAmountCents)}</span>
             </div>
           )}
         </div>
@@ -214,4 +218,18 @@ export function PaymentModal({
       </form>
     </Dialog>
   );
+}
+
+function parseMoneyCents(value: string): number | null {
+  const normalized = value.trim();
+  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
+    return null;
+  }
+
+  const [integer, decimal = '00'] = normalized.split('.');
+  return Number(integer) * 100 + Number(decimal.padEnd(2, '0').slice(0, 2));
+}
+
+function formatMoneyCents(cents: number): string {
+  return `${Math.trunc(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
 }

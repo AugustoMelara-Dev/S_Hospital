@@ -865,6 +865,30 @@ describe('NewInvoiceView', () => {
     expect(confirmSpy).toHaveBeenCalledWith('17.25');
   });
 
+  it('calculates cash change and applied amount using cents', () => {
+    const confirmSpy = vi.fn();
+
+    render(
+      <PaymentModal
+        open
+        onOpenChange={vi.fn()}
+        invoiceNumber="000-001-01-00000005"
+        patientName="Maria Lopez"
+        total="0.20"
+        balanceDue="0.20"
+        paymentMethod="cash"
+        paymentAmount="0.30"
+        onPaymentMethodChange={vi.fn()}
+        onPaymentAmountChange={vi.fn()}
+        onConfirm={confirmSpy}
+      />,
+    );
+
+    expect(screen.getByText('L. 0.10')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
+    expect(confirmSpy).toHaveBeenCalledWith('0.20');
+  });
+
   it('allows partial payment and shows the remaining balance clearly', () => {
     const confirmSpy = vi.fn();
 
