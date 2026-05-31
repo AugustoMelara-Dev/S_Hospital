@@ -11,6 +11,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+trap {
+    Write-Host $_.Exception.Message
+    exit 1
+}
+
 $backendDir = Join-Path $ProjectRoot "backend"
 $artisanPath = Join-Path $backendDir "artisan"
 
@@ -53,6 +58,14 @@ function Show-TaskStatus([string] $taskName) {
     Write-Host "${taskName}: state=$($task.State), lastRun=$($info.LastRunTime), lastResult=$($info.LastTaskResult), nextRun=$($info.NextRunTime)"
 }
 
+function Get-ValidatedDailyBackupTime([string] $value) {
+    try {
+        return [DateTime]::ParseExact($value, "HH:mm", [Globalization.CultureInfo]::InvariantCulture)
+    } catch {
+        throw "DailyBackupTime must use 24-hour HH:mm format, for example 02:00 or 23:30. Existing tasks were not changed."
+    }
+}
+
 $workerArgs = '/c "' + $workerScript + '" "' + $PhpPath + '"'
 $backupArgs = '/c "' + $dailyScript + '" "' + $PhpPath + '"'
 
@@ -71,6 +84,8 @@ if ($Status) {
     Write-Host "Confirm UI backups finish by creating a backup and checking it changes from pending to success."
     exit 0
 }
+
+$dailyBackupAt = if ($Uninstall) { $null } else { Get-ValidatedDailyBackupTime $DailyBackupTime }
 
 if ($WhatIfOnly) {
     Write-Host "WhatIfOnly enabled. No tasks were registered."
@@ -127,7 +142,7 @@ Register-ScheduledTask `
     -Description "Sistema de Caja Hospitalaria continuous backup queue worker." | Out-Null
 
 $dailyAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $backupArgs -WorkingDirectory $ProjectRoot
-$dailyTrigger = New-ScheduledTaskTrigger -Daily -At $DailyBackupTime
+$dailyTrigger = New-ScheduledTaskTrigger -Daily -At $dailyBackupAt
 $dailySettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 2)
 
 Register-ScheduledTask `
