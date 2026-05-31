@@ -149,30 +149,17 @@ Una vez validada la base de pruebas:
 
 ---
 
-## 5. ActivaciÃ³n de Licencia Offline
+## 5. Operacion local en red del hospital
 
-Para producciÃ³n multi-usuario LAN, el sistema requiere registrar una licencia comercial offline.
+El sistema debe usarse desde la computadora servidor y las computadoras autorizadas de la red local del hospital.
+Antes de iniciar una jornada real, confirme que el servidor responde, que la caja esta abierta por el cajero responsable y que los respaldos aparecen como protegidos.
 
-### Estructura del Archivo `license.json`
-El archivo de licencia debe ubicarse en la carpeta de almacenamiento de la aplicaciÃ³n:
-`backend/storage/app/license.json`
-
-Este archivo contiene la firma digital de validaciÃ³n que valida que los datos no hayan sido alterados localmente:
-
-```json
-{
-  "licensee": "Clinica y Hospital de Prueba S.A.",
-  "rtn": "08011999123456",
-  "expires_at": "2027-12-31",
-  "signature": "de78fb216cb34ea7205a28b0304859a1122a2bf89ee60731f8b1d8f58b7333a9"
-}
-```
-
-### Reglas de ValidaciÃ³n de Licencia
-1. **Coincidencia de RTN:** El RTN del archivo de licencia debe coincidir exactamente con el RTN configurado en el sistema en **ConfiguraciÃ³n Fiscal**.
-2. **Fecha de ExpiraciÃ³n:** El servidor local compara la fecha del sistema con `expires_at`. Si ha expirado, el sistema restringe ciertas funcionalidades administrativas hasta renovar.
-3. **Firma Digital (HMAC):** La firma digital se genera utilizando el algoritmo SHA256 con el siguiente formato de payload salado:
-   `licensee|rtn|expires_at` firmado con la clave privada interna. Cualquier cambio manual al nombre del hospital o al RTN romperÃ¡ la firma y marcarÃ¡ la licencia como **Firma InvÃ¡lida**.
+### Revision diaria recomendada
+1. Abra el sistema desde una computadora cliente usando la direccion local indicada por administracion.
+2. Ingrese con el usuario asignado; no comparta cuentas entre cajeros.
+3. Verifique que la pantalla de respaldos muestre estado protegido o pendiente de revision.
+4. Realice una impresion de prueba solo cuando administracion lo autorice.
+5. No ejecute reinicios de base de datos, datos de practica ni herramientas de desarrollo en el servidor real del hospital.
 
 ---
 

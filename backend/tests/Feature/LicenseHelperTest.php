@@ -18,7 +18,7 @@ class LicenseHelperTest extends TestCase
         Storage::fake('local');
     }
 
-    public function test_default_demo_license_when_no_file_exists(): void
+    public function test_default_local_operation_status_when_no_file_exists(): void
     {
         FiscalSetting::query()->create([
             'hospital_name' => 'Hospital Central',
@@ -33,10 +33,12 @@ class LicenseHelperTest extends TestCase
         $this->assertEquals('Hospital Central', $status['licensee']);
         $this->assertEquals('08011999123456', $status['rtn']);
         $this->assertNull($status['expires_at']);
-        $this->assertEquals('Demo Local / Desarrollo', $status['type']);
+        $this->assertEquals('Operacion local', $status['type']);
+        $this->assertStringNotContainsString('comercial', strtolower($status['message']));
+        $this->assertStringNotContainsString('demo', strtolower($status['type'].' '.$status['message']));
     }
 
-    public function test_valid_comercial_license_file(): void
+    public function test_valid_lan_registration_file(): void
     {
         FiscalSetting::query()->create([
             'hospital_name' => 'Hospital Central',
@@ -61,7 +63,8 @@ class LicenseHelperTest extends TestCase
 
         $this->assertTrue($status['valid']);
         $this->assertEquals($licensee, $status['licensee']);
-        $this->assertEquals('Licencia Comercial LAN', $status['type']);
+        $this->assertEquals('Registro LAN verificado', $status['type']);
+        $this->assertStringNotContainsString('comercial', strtolower($status['type'].' '.$status['message']));
     }
 
     public function test_invalid_signature_is_blocked(): void
@@ -137,6 +140,7 @@ class LicenseHelperTest extends TestCase
         $status = LicenseHelper::checkLicense();
 
         $this->assertFalse($status['valid']);
-        $this->assertEquals('Licencia Expirada', $status['type']);
+        $this->assertEquals('Registro expirado', $status['type']);
+        $this->assertStringNotContainsString('comercial', strtolower($status['message']));
     }
 }
