@@ -92,9 +92,24 @@ Tambien se incluyen wrappers directos para entornos Windows/XAMPP:
 ```powershell
 scripts\run_scheduled_backup.cmd
 scripts\run_backup_worker.cmd
+scripts\start_backup_automation.cmd
 ```
 
 Por defecto usan `C:\xampp\php\php.exe`. Si PHP esta en otra ruta, definir `HOSPITAL_PHP_PATH` antes de ejecutarlos o al crear la tarea programada.
+Antes de dejarlos activos, soporte puede validarlos sin iniciar workers ni crear
+respaldos:
+
+```powershell
+scripts\run_backup_worker.cmd --check
+scripts\run_scheduled_backup.cmd --check
+scripts\start_backup_automation.cmd --check
+```
+
+Si la validacion falla, el mensaje debe indicar una accion simple: revisar PHP,
+permisos, espacio en disco o instalacion completa. Los detalles tecnicos quedan
+en `backend/storage/logs/backup_worker_task.log`,
+`backend/storage/logs/backup_scheduled_task.log` y
+`backend/storage/logs/backup-automation.log`.
 
 Si el Programador de tareas esta bloqueado por permisos/UAC, existe una alternativa por usuario actual:
 

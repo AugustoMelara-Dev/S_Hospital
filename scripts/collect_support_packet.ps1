@@ -179,7 +179,8 @@ if ($RunRepairDiagnostic) {
 
 Write-SafeTail (Join-Path $ProjectRoot "backend\storage\logs\laravel.log") "laravel-log-tail.md" $manifest
 Write-SafeTail (Join-Path $ProjectRoot "backend\storage\logs\backup_worker_task.log") "backup-worker-log-tail.md" $manifest
-Write-SafeTail (Join-Path $ProjectRoot "scripts\backup-automation.log") "backup-automation-log-tail.md" $manifest
+Write-SafeTail (Join-Path $ProjectRoot "backend\storage\logs\backup_scheduled_task.log") "backup-scheduled-log-tail.md" $manifest
+Write-SafeTail (Join-Path $ProjectRoot "backend\storage\logs\backup-automation.log") "backup-automation-log-tail.md" $manifest
 
 $manifest.Add("") | Out-Null
 $manifest.Add("## Instrucciones para soporte") | Out-Null

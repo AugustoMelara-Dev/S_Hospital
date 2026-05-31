@@ -34,6 +34,19 @@ mal escrita, el instalador debe detenerse antes de reemplazar tareas existentes.
 El loop de automatizacion tambien se detiene al inicio si la hora esta mal
 escrita, dejando el motivo en `backend\storage\logs\backup-automation.log`.
 
+Antes de activar respaldos en una PC instalada, soporte puede ejecutar estas
+verificaciones sin iniciar workers ni crear respaldos:
+
+```powershell
+scripts\run_backup_worker.cmd --check
+scripts\run_scheduled_backup.cmd --check
+scripts\start_backup_automation.cmd --check
+```
+
+Si una verificacion falla, no reintente muchas veces. Revise primero el mensaje:
+PHP no encontrado, instalacion incompleta, permisos insuficientes o falta de
+espacio. Luego genere paquete de soporte.
+
 El responsable tecnico puede validar que el worker procesa respaldos sin dejar
 la contrasena escrita en el historial de PowerShell:
 

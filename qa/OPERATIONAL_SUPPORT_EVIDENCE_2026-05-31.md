@@ -55,6 +55,9 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Inicializador de evidencias finales agrega `-WhatIfOnly`, sanitiza rutas y advierte antes de reemplazar pruebas fisicas. | Verificado |
 | Esta fase | Preflight de produccion sanitiza rutas locales y claves sensibles en consola. | Verificado |
 | Esta fase | Instalador de arranque de backups por usuario valida hora, sanitiza rutas y ofrece `-WhatIfOnly`. | Verificado |
+| Esta fase | Wrappers Windows de respaldo agregan `--check`, validan instalacion/PHP/logs con mensajes humanos y no inician workers ni crean respaldos durante la verificacion. | Verificado |
+| Esta fase | Loop de respaldo automatico agrega `-WhatIfOnly` y deja de escribir rutas locales crudas en `backup-automation.log`. | Verificado |
+| Esta fase | Paquete de soporte recoge los logs reales de respaldo desde `backend\storage\logs`, incluyendo worker, respaldo programado y automatizacion. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -157,6 +160,14 @@ Resultado observado:
 | `production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:1 -AllowMissingPhysicalProof` | Paso esperado con fallos: consola no expone `C:\Projects\S_Hospital` ni rutas de usuario. |
 | `install_backup_startup_current_user.ps1 -WhatIfOnly -DailyBackupTime 99:99` | Falla antes de tocar inicio/registro con mensaje humano de formato HH:mm. |
 | `install_backup_startup_current_user.ps1 -WhatIfOnly -DailyBackupTime 23:30` | Paso: no crea archivo de inicio, no cambia registro y no inicia worker. |
+| Parser PowerShell de `run_backup_scheduler_loop.ps1` despues de `-WhatIfOnly` | Paso. |
+| `run_backup_worker.cmd --check` | Paso: valida backend, PHP y carpeta de logs sin iniciar worker ni tocar datos. |
+| `run_scheduled_backup.cmd --check` | Paso: valida backend, PHP y carpeta de logs sin crear respaldo. |
+| `start_backup_automation.cmd --check` | Paso: valida hora/PHP a traves del loop y confirma que no inicia worker, no ejecuta respaldo y no escribe archivos. |
+| `start_backup_automation.cmd --check` con `HOSPITAL_DAILY_BACKUP_TIME=99:99` | Falla con mensaje humano de formato HH:mm antes de iniciar automatizacion. |
+| `run_backup_scheduler_loop.ps1 -ProjectRoot C:\tmp\does-not-exist-shospital -WhatIfOnly` | Falla con mensaje humano sin traza tecnica ni ruta sensible. |
+| Parser PowerShell de `collect_support_packet.ps1` despues de rutas de logs de backup | Paso. |
+| `collect_support_packet.ps1 -WhatIfOnly -TailLines 5 -RepairRetries 1 -RepairDelaySeconds 1` despues de rutas de logs de backup | Paso: valida parametros y confirma que no crea carpeta ni copia logs. |
 | Parser PowerShell de `scripts\e2e_gate.ps1` | Paso. |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1` | Paso: 2 specs Playwright. Detecto y se corrigio fuga de `/api/areas?active=1` al backend local durante el flujo Reportes -> Respaldos. |
 | `php artisan test tests/Feature/SystemStatusTest.php` | Paso: 7 tests, 47 assertions. |
