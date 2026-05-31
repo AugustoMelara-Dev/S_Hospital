@@ -21,7 +21,7 @@ El sistema ya soporta el modo de caja unica como flujo principal:
 9. El recibo institucional se genera desde snapshots historicos.
 10. Historial y reportes consultan datos persistidos, no precios actuales del catalogo.
 
-El catalogo actual maneja categorias, servicios, precios, estado activo/inactivo, codigos opcionales y regla especial de eritropoyetina. Todavia no existe un concepto formal de area/departamento administrativo asociado al servicio.
+El catalogo maneja categorias, areas administrativas, servicios, precios, estado activo/inactivo, codigos opcionales, alias de busqueda, visibilidad de facturacion y regla especial de eritropoyetina.
 
 ## Flujo recomendado para Hospital San Isidro
 
@@ -43,6 +43,14 @@ Caja factura y cobra. Luego el area correspondiente puede ver una lista de servi
 
 Ejemplo: Laboratorio ve que un paciente pago un examen. La vista del area solo muestra informacion administrativa minima: fecha, paciente, servicio pagado, estado de pago, numero de recibo y observacion administrativa si existe.
 
+Implementado:
+
+- Ruta de usuario de area: `/area-services`.
+- API: `GET /api/area-services/paid`.
+- Permiso: `area_services.view`.
+- Rol semilla: `usuario_area`.
+- Cada usuario de area debe tener `service_area_id` asignado.
+
 ## Areas administrativas
 
 Las areas iniciales recomendadas son:
@@ -55,6 +63,8 @@ Las areas iniciales recomendadas son:
 - Otros
 
 Cada area debe poder activarse o desactivarse. Cada servicio puede pertenecer opcionalmente a un area.
+
+El punto de venta permite filtrar servicios activos, visibles y cobrables por area para que caja encuentre rapido servicios de Laboratorio, Rayos X, Emergencia, Consulta externa, Farmacia u Otros.
 
 ## Reglas de privacidad y permisos
 
@@ -94,6 +104,13 @@ Los reportes administrativos deben separar:
 - Parciales.
 
 Cuando una factura tenga servicios de varias areas, los reportes por area deben calcularse desde `invoice_items` y sus snapshots, no desde el servicio actual del catalogo.
+
+Implementado:
+
+- API: `GET /api/reports/areas`.
+- UI: Reportes > Areas.
+- Filtros compartidos con reportes por rango: fechas, categoria, cajero, caja, metodo y estado.
+- Totales por area: facturas, items, subtotal, ISV, facturado, cobrado y saldo.
 
 ## Criterios de aceptacion del frente operativo
 

@@ -881,3 +881,24 @@ Consecuencia:
 - El auditor consulta informacion sensible sin poder operar caja ni facturar.
 - Soporte tecnico queda limitado a diagnostico.
 - Las anulaciones de factura pagada siguen bloqueadas hasta que los pagos se reviertan con motivo y auditoria.
+
+### 2026-05-31 - Areas administrativas con snapshots operativos
+
+Decision:
+
+- El catalogo usa `service_areas` para separar Laboratorio, Rayos X, Emergencia, Consulta externa, Farmacia y Otros.
+- Los servicios guardan area, alias, descripcion, codigo interno, visibilidad en facturacion y marca de cobrable.
+- Las facturas copian `service_area_id` y `service_area_name` en `invoice_items`.
+- Los usuarios de area consultan `/area-services` con permiso `area_services.view` y `service_area_id` asignado.
+- El reporte administrativo por area se calcula desde snapshots de `invoice_items` mediante `/api/reports/areas`.
+
+Motivo:
+
+- Hospital San Isidro necesita que caja siga cobrando de forma centralizada, mientras cada area ve servicios ya pagados para atender sin acceso a caja completa.
+- Los reportes historicos no deben cambiar si luego se renombra un area o se mueve un servicio de area.
+
+Consecuencia:
+
+- Caja unica sigue siendo el flujo principal.
+- React solo presenta filtros y resultados; el backend decide visibilidad, permisos y agregados.
+- No se introduce expediente clinico ni inventario medico.
