@@ -1,4 +1,4 @@
-import { PERMISSION_DENIED_MESSAGE } from '../support/clientIssueLog';
+import { PERMISSION_DENIED_MESSAGE, logClientIssue } from '../support/clientIssueLog';
 
 let sessionExpiredHandler: (() => void) | null = null;
 let requestChain: Promise<unknown> = Promise.resolve();
@@ -75,8 +75,45 @@ function cookieValue(name: string): string | null {
 
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? '';
 
+export function resolveApiBaseUrl(
+  configuredUrl: string,
+  currentLocation: Pick<Location, 'hostname'> | undefined = typeof window === 'undefined' ? undefined : window.location,
+): string {
+  const normalizedUrl = configuredUrl.trim().replace(/\/$/, '');
+
+  if (!normalizedUrl) {
+    return '';
+  }
+
+  try {
+    const parsedUrl = new URL(normalizedUrl);
+    const loopbackHosts = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+
+    if (
+      currentLocation?.hostname &&
+      loopbackHosts.has(parsedUrl.hostname) &&
+      currentLocation.hostname !== parsedUrl.hostname
+    ) {
+      return '';
+    }
+  } catch {
+    return normalizedUrl;
+  }
+
+  return normalizedUrl;
+}
+
 function networkError(): ApiError {
   return new ApiError('No se pudo conectar con el servidor LAN. Revise que el servidor local este encendido y vuelva a intentar.', 0);
+}
+
+function recordApiIssue(error: ApiError, action: string): never {
+  logClientIssue(error, {
+    action,
+    module: 'api',
+  });
+
+  throw error;
 }
 
 function enqueueRequest<T>(operation: () => Promise<T>): Promise<T> {
@@ -89,7 +126,7 @@ function enqueueRequest<T>(operation: () => Promise<T>): Promise<T> {
 }
 
 export const apiClient = {
-  baseUrl: configuredBaseUrl.replace(/\/$/, ''),
+  baseUrl: resolveApiBaseUrl(configuredBaseUrl),
 
   onSessionExpired(handler: (() => void) | null): void {
     sessionExpiredHandler = handler;
@@ -108,16 +145,19 @@ export const apiClient = {
         credentials: 'include',
       });
     } catch {
-      throw networkError();
+      recordApiIssue(networkError(), 'csrf_network');
     }
 
     if (!response.ok) {
       if (response.status === 401 || response.status === 419) {
         sessionExpiredHandler?.();
-        throw new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status);
+        recordApiIssue(new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status), 'csrf_session');
       }
 
-      throw new ApiError('No se pudo preparar la sesión segura. Revise el servidor local e intente de nuevo.', response.status);
+      recordApiIssue(
+        new ApiError('No se pudo preparar la sesión segura. Revise el servidor local e intente de nuevo.', response.status),
+        'csrf_prepare',
+      );
     }
   },
 
@@ -154,7 +194,7 @@ export const apiClient = {
           },
         });
       } catch {
-        throw networkError();
+        recordApiIssue(networkError(), `${method} ${path}`);
       }
     };
 
@@ -173,16 +213,16 @@ export const apiClient = {
 
       if (response.status === 401) {
         sessionExpiredHandler?.();
-        throw new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status);
+        recordApiIssue(new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status), `${method} ${path}`);
       }
 
       if (response.status === 403) {
-        throw new ApiError(PERMISSION_DENIED_MESSAGE, response.status);
+        recordApiIssue(new ApiError(PERMISSION_DENIED_MESSAGE, response.status), `${method} ${path}`);
       }
 
       if (response.status === 419) {
         sessionExpiredHandler?.();
-        throw new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status);
+        recordApiIssue(new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status), `${method} ${path}`);
       }
 
       if (response.status === 422 && error?.errors) {
@@ -190,7 +230,7 @@ export const apiClient = {
         throw new ApiError(validationMessage || 'Revise los datos del formulario.', response.status, error.errors);
       }
 
-      throw new ApiError(error?.message ?? `HTTP ${response.status}`, response.status);
+      recordApiIssue(new ApiError(error?.message ?? `HTTP ${response.status}`, response.status), `${method} ${path}`);
     }
 
     return (await response.json()) as T;
@@ -207,26 +247,26 @@ export const apiClient = {
         },
       });
     } catch {
-      throw networkError();
+      recordApiIssue(networkError(), `DOWNLOAD ${path}`);
     }
 
     if (!response.ok) {
       if (response.status === 401) {
         sessionExpiredHandler?.();
-        throw new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status);
+        recordApiIssue(new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status), `DOWNLOAD ${path}`);
       }
 
       if (response.status === 403) {
-        throw new ApiError(PERMISSION_DENIED_MESSAGE, response.status);
+        recordApiIssue(new ApiError(PERMISSION_DENIED_MESSAGE, response.status), `DOWNLOAD ${path}`);
       }
 
       if (response.status === 419) {
         sessionExpiredHandler?.();
-        throw new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status);
+        recordApiIssue(new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status), `DOWNLOAD ${path}`);
       }
 
       const error = (await response.json().catch(() => null)) as { message?: string } | null;
-      throw new ApiError(error?.message ?? `HTTP ${response.status}`, response.status);
+      recordApiIssue(new ApiError(error?.message ?? `HTTP ${response.status}`, response.status), `DOWNLOAD ${path}`);
     }
 
     return response.blob();
