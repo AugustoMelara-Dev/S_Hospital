@@ -50,6 +50,13 @@ computadora servidor y los clientes no encontraran el sistema.
 
 El script `scripts/install_hospital_startup_shortcut.ps1` crea el acceso directo. Si el tecnico lo autoriza, puede registrar una tarea al iniciar sesion:
 
+Antes de crear accesos, soporte puede validar la URL y la carpeta instalada sin
+tocar el escritorio ni registrar tareas:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_hospital_startup_shortcut.ps1 -Url http://IP-DEL-SERVIDOR:8000 -WhatIfOnly
+```
+
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_hospital_startup_shortcut.ps1 -InstallStartupTask
 ```

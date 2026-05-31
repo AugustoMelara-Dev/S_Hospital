@@ -1,18 +1,57 @@
 param(
     [string] $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
     [string] $Url = 'http://127.0.0.1:8000',
-    [switch] $InstallStartupTask
+    [switch] $InstallStartupTask,
+    [switch] $WhatIfOnly
 )
 
 $ErrorActionPreference = 'Stop'
+
+trap {
+    Write-Host $_.Exception.Message
+    Write-Host 'No borre datos, respaldos, archivos .env ni volumenes Docker. Revise la URL LAN y la carpeta instalada antes de repetir.'
+    exit 1
+}
+
+function Test-HospitalUrlInput([string] $TargetUrl) {
+    if ([string]::IsNullOrWhiteSpace($TargetUrl)) {
+        throw 'La direccion del sistema esta vacia. Use http://127.0.0.1:8000 en servidor o http://IP-DEL-SERVIDOR:8000 en clientes.'
+    }
+
+    try {
+        $uri = [System.Uri] $TargetUrl
+    } catch {
+        throw 'La direccion del sistema no es valida. Use una direccion como http://IP-DEL-SERVIDOR:8000.'
+    }
+
+    if (-not $uri.IsAbsoluteUri -or $uri.Scheme -notin @('http', 'https') -or [string]::IsNullOrWhiteSpace($uri.Host)) {
+        throw 'La direccion del sistema debe iniciar con http:// o https:// e incluir el servidor.'
+    }
+}
 
 $shortcutName = 'Abrir Sistema de Caja Hospitalaria.lnk'
 $desktop = [Environment]::GetFolderPath('Desktop')
 $shortcutPath = Join-Path $desktop $shortcutName
 $openScript = Join-Path $ProjectRoot 'scripts\open_hospital_system.ps1'
 
-if (-not (Test-Path $openScript)) {
-    throw "No existe $openScript"
+Test-HospitalUrlInput $Url
+
+if (-not (Test-Path -LiteralPath $ProjectRoot -PathType Container)) {
+    throw 'No se encontro la carpeta instalada del sistema. Ejecute este script desde la carpeta de S_Hospital.'
+}
+
+if (-not (Test-Path -LiteralPath $openScript -PathType Leaf)) {
+    throw 'No se encontro el script para abrir el sistema. Verifique que la instalacion este completa antes de crear el acceso directo.'
+}
+
+if ([string]::IsNullOrWhiteSpace($desktop) -or -not (Test-Path -LiteralPath $desktop -PathType Container)) {
+    throw 'No se encontro el escritorio de Windows para crear el acceso directo.'
+}
+
+if ($WhatIfOnly) {
+    Write-Host 'Validacion del acceso directo completada.'
+    Write-Host 'Modo WhatIf: no se creo acceso directo ni tarea de inicio.'
+    exit 0
 }
 
 $shell = New-Object -ComObject WScript.Shell
@@ -23,7 +62,7 @@ $shortcut.WorkingDirectory = $ProjectRoot
 $shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,220"
 $shortcut.Save()
 
-Write-Host "Acceso directo creado: $shortcutPath"
+Write-Host 'Acceso directo creado en el escritorio: Abrir Sistema de Caja Hospitalaria'
 
 if ($InstallStartupTask) {
     $taskName = 'SistemaCajaHospitalaria-AbrirSistema'

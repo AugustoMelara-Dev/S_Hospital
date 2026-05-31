@@ -47,6 +47,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Arranque manual de servicios valida carpeta/Compose y falla con mensaje humano sin tocar datos. | Verificado |
 | Esta fase | Instalador LAN difiere el modo consola hasta que `Run-SetupCli` este definido, evitando fallo en equipos sin GUI/WPF. | Verificado |
 | Esta fase | Instalador LAN usa texto visible ASCII para evitar mojibake en consola/WPF durante soporte offline. | Verificado |
+| Esta fase | Instalador de acceso directo valida URL/carpeta antes de tocar escritorio o tareas y ofrece `-WhatIfOnly` para soporte. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -133,6 +134,9 @@ Resultado observado:
 | Parser PowerShell de `install_hospital_os.ps1` | Paso. |
 | AST de `install_hospital_os.ps1` para `Run-SetupCli` | Paso: existe una sola llamada y ocurre despues de la definicion de la funcion. |
 | ASCII check de `scripts\install_hospital_os.ps1` | Paso: no quedan caracteres no ASCII en el instalador visible. |
+| Parser PowerShell de `install_hospital_startup_shortcut.ps1` | Paso. |
+| `install_hospital_startup_shortcut.ps1 -Url ftp://invalid.local -WhatIfOnly` | Falla antes de crear acceso directo o tarea, con mensaje humano sobre usar `http://` o `https://`. |
+| `install_hospital_startup_shortcut.ps1 -Url http://127.0.0.1:8000 -WhatIfOnly` | Paso: valida carpeta/script y confirma que no crea acceso directo ni tarea. |
 | Parser PowerShell de `scripts\e2e_gate.ps1` | Paso. |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1` | Paso: 2 specs Playwright. Detecto y se corrigio fuga de `/api/areas?active=1` al backend local durante el flujo Reportes -> Respaldos. |
 | `php artisan test tests/Feature/SystemStatusTest.php` | Paso: 7 tests, 47 assertions. |
