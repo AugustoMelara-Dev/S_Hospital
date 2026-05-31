@@ -1,6 +1,7 @@
 import { apiClient } from './base';
 import type {
   DailyReport,
+  MonthlyReport,
   IncomeReport,
   CategoryReport,
   ServiceSalesReport,
@@ -31,6 +32,12 @@ export const reports = {
   async getDailyReport(date?: string): Promise<DailyReport> {
     const query = date ? `?date=${encodeURIComponent(date)}` : '';
     const response = await apiClient.request<{ data: DailyReport }>(`/api/reports/daily${query}`);
+    return response.data;
+  },
+
+  async getMonthlyReport(month?: string): Promise<MonthlyReport> {
+    const query = month ? `?month=${encodeURIComponent(month)}` : '';
+    const response = await apiClient.request<{ data: MonthlyReport }>(`/api/reports/monthly${query}`);
     return response.data;
   },
 

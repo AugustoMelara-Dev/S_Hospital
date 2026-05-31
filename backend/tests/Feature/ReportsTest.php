@@ -42,6 +42,10 @@ class ReportsTest extends TestCase
             ->assertForbidden();
 
         $this->actingAs($cashier)
+            ->getJson('/api/reports/monthly?month='.now()->format('Y-m'))
+            ->assertForbidden();
+
+        $this->actingAs($cashier)
             ->getJson("/api/reports/income?date_from={$date}&date_to={$date}")
             ->assertForbidden();
 
@@ -71,6 +75,11 @@ class ReportsTest extends TestCase
             ->getJson('/api/reports/income?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
             ->assertOk()
             ->assertJsonPath('data.total_collected', '0.00');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/monthly?month='.now()->format('Y-m'))
+            ->assertOk()
+            ->assertJsonPath('data.month', now()->format('Y-m'));
     }
 
     public function test_daily_report_calculates_collected_totals_methods_and_statuses_without_void_income(): void
@@ -107,6 +116,73 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.invoices_by_status.paid.count', 1)
             ->assertJsonPath('data.invoices_by_status.partial.count', 1)
             ->assertJsonPath('data.invoices_by_status.void.count', 1);
+    }
+
+    public function test_monthly_report_summarizes_financial_facts_by_day_without_void_income(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $dateOne = now()->startOfMonth()->addDays(2);
+        $dateTwo = $dateOne->copy()->addDay();
+        $paidInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $partialInvoice = $this->createInvoice($cashier, 'Hemograma Completo');
+        $issuedInvoice = $this->createInvoice($cashier, 'Eritropoyetina');
+        $voidInvoice = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $paidInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($cashier, $partialInvoice, $sessionId, Payment::METHOD_TRANSFER, '5.00');
+        $this->payInvoice($cashier, $voidInvoice, $sessionId, Payment::METHOD_CARD, '17.25');
+
+        Invoice::query()->whereKey($paidInvoice)->update(['issued_at' => $dateOne->copy()->hour(9)]);
+        Payment::query()->where('invoice_id', $paidInvoice)->update(['paid_at' => $dateOne->copy()->hour(10)]);
+
+        Invoice::query()->whereKey($partialInvoice)->update(['issued_at' => $dateTwo->copy()->hour(8)]);
+        Payment::query()->where('invoice_id', $partialInvoice)->update(['paid_at' => $dateTwo->copy()->hour(11)]);
+
+        Invoice::query()->whereKey($issuedInvoice)->update(['issued_at' => $dateTwo->copy()->hour(12)]);
+
+        Invoice::query()->whereKey($voidInvoice)->update([
+            'status' => Invoice::STATUS_VOID,
+            'issued_at' => $dateTwo->copy()->hour(13),
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => $dateTwo->copy()->hour(14),
+            'void_reason' => 'No debe inflar el mensual',
+        ]);
+        Payment::query()->where('invoice_id', $voidInvoice)->update(['paid_at' => $dateTwo->copy()->hour(13)]);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/monthly?month='.$dateOne->format('Y-m'))
+            ->assertOk()
+            ->assertJsonPath('data.month', $dateOne->format('Y-m'))
+            ->assertJsonPath('data.total_billed', '57.50')
+            ->assertJsonPath('data.total_collected', '22.25')
+            ->assertJsonPath('data.total_pending', '35.25')
+            ->assertJsonPath('data.total_partial', '11.50')
+            ->assertJsonPath('data.total_voided', '17.25')
+            ->assertJsonPath('data.payment_count', 2)
+            ->assertJsonPath('data.invoice_count', 4)
+            ->assertJsonPath('data.payments_by_method.cash', '17.25')
+            ->assertJsonPath('data.payments_by_method.transfer', '5.00')
+            ->assertJsonPath('data.payments_by_method.card', '0.00')
+            ->assertJsonPath('data.invoices_by_status.paid.count', 1)
+            ->assertJsonPath('data.invoices_by_status.partial.count', 1)
+            ->assertJsonPath('data.invoices_by_status.issued.count', 1)
+            ->assertJsonPath('data.invoices_by_status.void.count', 1)
+            ->assertJsonPath('data.daily_totals.0.date', $dateOne->toDateString())
+            ->assertJsonPath('data.daily_totals.0.total_billed', '17.25')
+            ->assertJsonPath('data.daily_totals.0.total_collected', '17.25')
+            ->assertJsonPath('data.daily_totals.1.date', $dateTwo->toDateString())
+            ->assertJsonPath('data.daily_totals.1.total_billed', '40.25')
+            ->assertJsonPath('data.daily_totals.1.total_collected', '5.00')
+            ->assertJsonPath('data.daily_totals.1.total_pending', '35.25')
+            ->assertJsonPath('data.daily_totals.1.total_voided', '17.25');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/monthly?month=2026-13')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('month');
     }
 
     public function test_income_report_respects_date_range_and_invalid_ranges_return_422(): void

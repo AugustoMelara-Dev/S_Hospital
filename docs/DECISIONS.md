@@ -814,3 +814,21 @@ Consecuencia:
 - Los reportes existentes, que ya filtran pagos `posted`, excluyen reversos automáticamente.
 - El detalle de movimientos de caja puede mostrar `payment_void` para explicar por qué el efectivo esperado bajó.
 - La UI puede consumir el nuevo endpoint de reversión sin crear una fuente secundaria de verdad para estados de pago.
+
+### 2026-05-31 - Reporte mensual administrativo desde hechos financieros
+
+Decision:
+
+- El reporte mensual administrativo se expone como contrato backend en `/api/reports/monthly`.
+- Sus totales salen de `FinancialFactsService`, la misma fuente de verdad usada por reportes diarios y de rango.
+- La evolución por fecha se limita a días con actividad financiera para evitar llenar la respuesta con filas vacías sin contexto operativo.
+
+Motivo:
+
+- Administración necesita lectura mensual de facturado, cobrado, pendiente, parcial, anulado y métodos de pago sin sumar manualmente reportes diarios.
+- El mensual debe excluir cobros de facturas anuladas y mantener la misma semántica que los reportes existentes.
+
+Consecuencia:
+
+- La UI puede consumir un contrato mensual estable sin recalcular dinero en frontend.
+- Las pruebas comparan días activos, métodos y estados para detectar divergencias entre lectura diaria y mensual.

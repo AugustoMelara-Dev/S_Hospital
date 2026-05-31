@@ -78,6 +78,7 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
 
         Route::get('/reports/dashboard', [ReportController::class, 'dashboard']);
         Route::get('/reports/daily', [ReportController::class, 'daily']);
+        Route::get('/reports/monthly', [ReportController::class, 'monthly']);
         Route::get('/reports/income', [ReportController::class, 'income']);
         Route::get('/reports/categories', [ReportController::class, 'categories']);
         Route::get('/reports/areas', [ReportController::class, 'areas']);

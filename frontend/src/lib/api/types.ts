@@ -269,6 +269,31 @@ export type DailyReport = {
   invoices_by_status: Record<'issued' | 'partial' | 'paid' | 'void', { count: number; total: string }>;
 };
 
+export type MonthlyReport = {
+  month: string;
+  date_from: string;
+  date_to: string;
+  total_billed: string;
+  total_collected: string;
+  total_pending: string;
+  total_partial: string;
+  total_voided: string;
+  invoice_count: number;
+  payment_count: number;
+  payments_by_method: MoneyByMethod;
+  invoices_by_status: Record<'issued' | 'partial' | 'paid' | 'void', { count: number; total: string }>;
+  daily_totals: Array<{
+    date: string;
+    total_billed: string;
+    total_collected: string;
+    total_pending: string;
+    total_partial: string;
+    total_voided: string;
+    invoice_count: number;
+    payment_count: number;
+  }>;
+};
+
 export type IncomeReport = {
   date_from: string;
   date_to: string;

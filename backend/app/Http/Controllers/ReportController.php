@@ -8,6 +8,7 @@ use App\Actions\Reports\CategoryReportService;
 use App\Actions\Reports\DailyReportService;
 use App\Actions\Reports\DashboardReportService;
 use App\Actions\Reports\IncomeReportService;
+use App\Actions\Reports\MonthlyReportService;
 use App\Actions\Reports\OperationsReportService;
 use App\Actions\Reports\PdfExportService;
 use App\Actions\Reports\PremiumExcelExportService;
@@ -15,6 +16,7 @@ use App\Actions\Reports\ServiceSalesReportService;
 use App\Http\Requests\Reports\DailyReportRequest;
 use App\Http\Requests\Reports\DashboardReportRequest;
 use App\Http\Requests\Reports\DateRangeReportRequest;
+use App\Http\Requests\Reports\MonthlyReportRequest;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
@@ -39,6 +41,13 @@ class ReportController extends Controller
     {
         return response()->json([
             'data' => $reports->report($request->reportDate()),
+        ]);
+    }
+
+    public function monthly(MonthlyReportRequest $request, MonthlyReportService $reports): JsonResponse
+    {
+        return response()->json([
+            'data' => $reports->report($request->reportMonth()),
         ]);
     }
 
