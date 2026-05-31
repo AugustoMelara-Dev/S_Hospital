@@ -1327,3 +1327,21 @@ Consecuencia:
 
 - El estado actual sigue `PRODUCTION_CANDIDATE` hasta regenerar el paquete offline y actualizar su manifiesto al commit de entrega.
 - Los paquetes con pruebas locales o datos operativos quedan bloqueados antes del handoff.
+
+### 2026-05-31 - Fuentes versionadas para release Docker offline
+
+Decision:
+
+- `backend/Dockerfile.prod`, `nginx/default.conf`, `.dockerignore`, `scripts/load_offline_images.ps1` y `scripts/make_offline_release.ps1` viven en Git.
+- El generador de release falla si faltan esos artefactos, si el arbol esta sucio sin `-AllowDirty`, o si el guard final no pasa.
+- `.dockerignore` excluye secretos, logs, respaldos, `node_modules`, `vendor`, `qa` y worklogs del contexto de build.
+
+Motivo:
+
+- `docker-compose.prod.yml` no era reproducible desde Git porque referenciaba archivos que solo existian dentro de `offline-release`, una carpeta ignorada.
+- Un release offline debe poder reconstruirse desde un commit limpio, no desde artefactos manuales previos.
+
+Consecuencia:
+
+- La ruta Docker offline queda versionada y auditable.
+- La generacion final todavia requiere Docker y puede requerir internet en la maquina de build para descargar bases de imagenes si no estan cacheadas.

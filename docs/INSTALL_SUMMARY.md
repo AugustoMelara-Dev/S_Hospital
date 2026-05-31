@@ -19,7 +19,7 @@ No ejecutar `migrate:fresh` en el servidor real.
 12. Preparar archivos de evidencia con `scripts\init_production_proofs.ps1`.
 13. Desde una segunda PC cliente, ejecutar `scripts\validate_lan_client.ps1 -BaseUrl http://IP_DEL_SERVIDOR -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md` y completar los checks manuales de login, caja, factura, pago, reportes y backup.
 14. Completar `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con la impresora fisica media carta/carta/A5.
-15. Ejecutar `scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit` sobre el paquete regenerado.
+15. Regenerar el paquete con `scripts\make_offline_release.ps1 -Force` y ejecutar `scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit`.
 16. Ejecutar `scripts\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR` sin `-AllowMissingPhysicalProof` solo cuando ya existan pruebas de segunda PC LAN e impresora.
 
 Si el preflight falla por evidencia fisica pendiente, el servidor puede seguir en `PRODUCTION_CANDIDATE`, pero no se debe vender como `PRODUCTION_READY`.

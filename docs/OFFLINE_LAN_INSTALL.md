@@ -61,6 +61,7 @@ Antes de instalar en el hospital:
 Antes de entregar un paquete offline regenerado, ejecutar el guard de artefacto:
 
 ```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1 -Force
 powershell.exe -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit
 ```
 
