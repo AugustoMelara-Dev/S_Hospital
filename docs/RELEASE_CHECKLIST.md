@@ -134,6 +134,7 @@ HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_test HO
 ```
 
 Este script es destructivo sobre `RESTORE_TEST_DATABASE`: hace `DROP DATABASE` y restaura el backup en esa base descartable. Nunca usarlo contra la base activa ni contra nombres sensibles. El nombre debe contener `test`, `restore`, `validation` o `disposable`.
+Si genera evidencia con `HOSPITAL_RESTORE_EVIDENCE_PATH`, use solo un archivo `.md` bajo `qa/`, por ejemplo `qa/FINAL_RESTORE_PROOF.md`; el script rechaza rutas absolutas, rutas con `..` o rutas con backslashes antes de crear backup o tocar la base descartable.
 
 Evidencia Fase 11: ejecutado en MariaDB XAMPP local contra `hospital_restore_validation_test` con backup `hospital-backup-20260517-204322-lcsexyiz.sql`, SHA256 `5975701b3c288ae4b9cd4e75d1881a38173e2bc3c3e799bc4b77ab7ac3630362`. Repetir en servidor final si cambia el entorno.
 

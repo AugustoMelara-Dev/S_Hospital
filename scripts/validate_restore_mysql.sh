@@ -18,6 +18,27 @@ safe_path() {
   printf '%s' "$value"
 }
 
+validate_restore_evidence_path() {
+  if [ -z "$RESTORE_EVIDENCE_PATH" ]; then
+    return
+  fi
+
+  case "$RESTORE_EVIDENCE_PATH" in
+    qa/*.md) ;;
+    *)
+      echo "Abort: HOSPITAL_RESTORE_EVIDENCE_PATH must be a Markdown file under qa/."
+      exit 1
+      ;;
+  esac
+
+  case "$RESTORE_EVIDENCE_PATH" in
+    *..*|*\\*)
+      echo "Abort: HOSPITAL_RESTORE_EVIDENCE_PATH must not contain traversal or backslashes."
+      exit 1
+      ;;
+  esac
+}
+
 env_value() {
   local key="$1"
   local fallback="${2:-}"
@@ -111,6 +132,8 @@ if [ "$APP_ENV_VALUE" = "production" ] && [ "${HOSPITAL_ALLOW_PRODUCTION_VALIDAT
   echo "Abort: refusing to run restore validation against APP_ENV=production without HOSPITAL_ALLOW_PRODUCTION_VALIDATION=1."
   exit 1
 fi
+
+validate_restore_evidence_path
 
 if ! command -v mysql >/dev/null 2>&1; then
   echo "Abort: mysql client is required for restore validation."

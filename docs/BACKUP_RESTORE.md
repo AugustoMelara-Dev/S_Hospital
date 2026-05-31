@@ -213,7 +213,10 @@ El script no restaura sobre la base activa. Requiere cliente `mysql` y una herra
 Cuando genera evidencia con `HOSPITAL_RESTORE_EVIDENCE_PATH`, el archivo de
 backup queda identificado por nombre/ruta relativa bajo backups, SHA256 y
 tamano. No debe escribirse una ruta absoluta del servidor en la evidencia que se
-comparta con soporte.
+comparta con soporte. La ruta de evidencia debe ser un archivo `.md` bajo `qa/`,
+por ejemplo `qa/FINAL_RESTORE_PROOF.md`; el script falla antes de crear backup o
+tocar la base descartable si recibe una ruta absoluta, con `..` o con
+backslashes.
 
 ## Evidencia Fase 11
 

@@ -65,6 +65,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Validacion de concurrencia descartable evalua banderas y destino antes de pedir credenciales, rechaza credenciales dentro de la URL y redacta errores HTTP antes de mostrarlos a soporte. | Verificado |
 | Esta fase | Dashboard usa mensajes seguros para errores tecnicos del backend y evita mostrar SQL, trazas o rutas de logs al operador. | Verificado |
 | Esta fase | Evidencia generada por validacion de concurrencia queda restringida a archivos Markdown dentro de `qa/`, evitando escrituras fuera de la carpeta instalada por variables mal copiadas. | Verificado |
+| Esta fase | Evidencia generada por validacion de restore queda restringida a `qa/*.md` y se valida antes de crear backup o tocar la base descartable. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -196,6 +197,8 @@ Resultado observado:
 | `scripts/validate_restore_mysql.sh` sin `HOSPITAL_VALIDATE_RESTORE_MYSQL=1` | Falla antes de crear backup o tocar base de datos. |
 | `scripts/validate_restore_mysql.sh` con bandera pero sin `RESTORE_TEST_DATABASE` | Falla antes de crear backup o tocar base de datos. |
 | `scripts/validate_restore_mysql.sh` con base descartable pero sin confirmacion exacta | Falla antes de crear backup o tocar base de datos. |
+| `scripts/validate_restore_mysql.sh` con evidencia fuera de `qa/` | Falla antes de crear backup o tocar base de datos. |
+| `scripts/validate_restore_mysql.sh` con evidencia sin extension `.md` | Falla antes de crear backup o tocar base de datos. |
 | `node --check scripts\validate_mysql_concurrency.mjs` | Paso. |
 | `node scripts\validate_mysql_concurrency.mjs` sin `HOSPITAL_VALIDATE_REAL_MYSQL=1` | Falla antes de red, login o mutaciones. |
 | `validate_mysql_concurrency.mjs` con bandera pero sin `HOSPITAL_CONCURRENCY_BASE_URL` | Falla antes de red, login o mutaciones. |
