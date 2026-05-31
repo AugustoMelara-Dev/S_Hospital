@@ -42,6 +42,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Handoff final trata como incompleta una prueba que referencia capturas/fotos locales inexistentes. | Verificado |
 | Esta fase | Instalador de tareas de backup valida `DailyBackupTime` antes de reemplazar tareas existentes. | Verificado |
 | Esta fase | Reparacion segura aplica redaccion generica de rutas locales y valores sensibles en el diagnostico. | Verificado |
+| Esta fase | Reparacion segura usa el mismo detalle sanitizado en consola y en archivo de diagnostico. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -120,6 +121,7 @@ Resultado observado:
 | `install_backup_tasks_windows.ps1 -WhatIfOnly -DailyBackupTime 23:30` | Paso: muestra comandos y confirma que no registra tareas en modo WhatIf. |
 | Parser PowerShell de `repair_hospital_system.ps1` despues de redaccion extra | Paso. |
 | `repair_hospital_system.ps1` smoke sanitizado | Paso: genero diagnostico temporal sin `C:\Projects\S_Hospital`, rutas de usuario ni valores crudos tipo `APP_KEY`, `DB_PASSWORD`, `TOKEN` o `SECRET`; evidencia temporal eliminada. |
+| Consola de `repair_hospital_system.ps1` | Paso: los mensajes `ERROR` y `REVISION` usan el mismo detalle sanitizado que el archivo de diagnostico. |
 | Parser PowerShell de `scripts\e2e_gate.ps1` | Paso. |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1` | Paso: 2 specs Playwright. Detecto y se corrigio fuga de `/api/areas?active=1` al backend local durante el flujo Reportes -> Respaldos. |
 | `php artisan test tests/Feature/SystemStatusTest.php` | Paso: 7 tests, 47 assertions. |

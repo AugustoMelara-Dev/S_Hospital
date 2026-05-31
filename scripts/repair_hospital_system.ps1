@@ -60,13 +60,13 @@ function Add-Result([string] $status, [string] $label, [string] $detail = "") {
 
     if ($status -eq "ERROR") {
         $script:hadError = $true
-        Add-Console "[ERROR] $label - $detail" "Red"
+        Add-Console "[ERROR] $label - $safeDetail" "Red"
         return
     }
 
     if ($status -eq "REVISION") {
         $script:hadWarning = $true
-        Add-Console "[REVISION] $label - $detail" "Yellow"
+        Add-Console "[REVISION] $label - $safeDetail" "Yellow"
         return
     }
 
