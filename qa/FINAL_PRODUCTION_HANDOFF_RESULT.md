@@ -13,10 +13,15 @@ evidence, the system must not be described as `PRODUCTION_READY`.
 
 ## Current blockers
 
+- Regenerate `offline-release` from the current commit and pass
+  `scripts/assert_offline_release_clean.ps1 -RequireCurrentCommit`.
+- Complete `qa/LAN_CLIENT_VALIDATION_PROOF.md` from a real second LAN client.
 - Complete `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` from the real cashier computer and real printer.
+- Complete `qa/FINAL_RESTORE_PROOF.md` from a disposable restore database on the final server.
+- Complete `qa/FINAL_CONCURRENCY_PROOF.md` from a disposable or explicitly approved final target.
 - Run `scripts/production_readiness_preflight.ps1` without `-AllowMissingPhysicalProof`.
 - Regenerate this handoff report only after the preflight passes with real LAN,
-  printer, restore and concurrency evidence.
+  printer, restore, concurrency and offline artifact evidence.
 
 ## Required command
 

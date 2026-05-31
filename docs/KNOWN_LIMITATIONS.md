@@ -8,12 +8,14 @@
 - La concurrencia real MySQL/MariaDB quedo `VALIDATED` en Fase 11 contra Laravel/MySQL local con `RUN_ID=concurrency-validation-20260517T20435`. El script crea datos auditables y requiere snapshot previo; repetir en servidor/base final descartable antes de operar.
 - La validacion LAN desde computadora cliente queda `PENDING_LAN_CLIENT_VALIDATION` hasta probar por IP fija/nombre local del servidor desde otra PC.
 - La configuracion final `APP_ENV=production`, `APP_DEBUG=false`, admin real y worker continuo de backups queda `PENDING_ENVIRONMENT_VALIDATION` hasta preparar el servidor final.
+- El paquete `offline-release` actual queda `PENDING_RELEASE_REGENERATION` hasta regenerar imagenes desde el commit de entrega y pasar `scripts/assert_offline_release_clean.ps1 -RequireCurrentCommit`.
 
 ## Estado Fase 12
 
 - DEMO_READY: si.
 - PRODUCTION_CANDIDATE: si, con Fase 12 UX/POS/catalogo/reportes/QA cerrada, E2E local, smoke real no destructivo, rutas LAN, restore real local y concurrencia real local validados.
 - PRODUCTION_READY: no, hasta cerrar LAN fisica desde cliente, impresora fisica y configuracion final de produccion.
+- RELEASE_READY: no, hasta que el guard de artefacto offline pase sin manifiesto stale, logs, `.env`, backups ni evidencia QA local dentro del paquete.
 
 ## Alcance de producto
 
