@@ -89,7 +89,12 @@ try {
             'docs/KNOWN_LIMITATIONS.md',
             'docs/RELEASE_CHECKLIST.md',
             'docs/TRAINING_ADMIN.md',
-            'docs/manuales'
+            'docs/manuales',
+            'qa'
+        ) `
+        -AllowedLinePatterns @(
+            'qa\\visual-smoke\\field-qa-current-screenshots\.mjs:\d+:\s*\[''hospitalDemo'',\s*/Hospital Demo/i\]',
+            'qa\\visual-smoke\\field-qa-current-screenshots\.mjs:\d+:\s*\[''demoCai'',\s*/DEMO-CAI/i\]'
         )
 
     Write-Host 'Revision de branding completada sin hallazgos.'

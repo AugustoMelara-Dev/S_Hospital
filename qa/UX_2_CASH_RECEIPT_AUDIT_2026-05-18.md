@@ -2,7 +2,7 @@
 
 Decision: **UX-2 APROBADA** para flujo local/browser de caja y recibo.
 
-Estado de release recomendado: **DEMO_READY / PRODUCTION_CANDIDATE**. No declarar `PRODUCTION_READY` hasta validar impresora termica fisica 80mm/58mm, segundo cliente LAN real y configuracion final del servidor.
+Estado de release recomendado: **PRODUCTION_CANDIDATE**. No declarar `PRODUCTION_READY` hasta validar impresora institucional fisica, segundo cliente LAN real y configuracion final del servidor.
 
 ## Alcance
 
@@ -14,7 +14,7 @@ No se tocaron migraciones, reglas fiscales, CORS/Sanctum, permisos backend, repo
 
 URL: `http://127.0.0.1:8000`.
 
-Usuario usado: `admin.demo` / admin.
+Usuario usado: `admin.validacion` / admin.
 
 Estado antes: caja admin #1 abierta con apertura L.500.00, 58 pagos, total pagos L.2794.50 y efectivo esperado L.3294.50.
 
@@ -73,7 +73,7 @@ Decision antes: **REQUIERE CAMBIOS**.
 
 ## Medicion despues
 
-Usuario usado: `admin.demo` / admin.
+Usuario usado: `admin.validacion` / admin.
 
 Estado antes de la pasada posterior: sin caja abierta del admin.
 
@@ -82,7 +82,7 @@ Caja usada durante medicion posterior:
 - Caja #6: apertura L.0.00, cierre L.0.00.
 - Caja #7: apertura L.100.00, factura/cobro y cierre igual.
 - Caja #8: apertura L.50.00, cierre L.40.00 con nota por diferencia.
-- Visual smoke final dejo caja #9 abierta para `admin.demo` con apertura L.500.00.
+- Visual smoke final dejo caja #9 abierta para `admin.validacion` con apertura L.500.00.
 
 Factura usada:
 
