@@ -1051,3 +1051,21 @@ Consecuencia:
 
 - La suite backend vuelve a ser una senal confiable para cambios de seguridad, pagos y caja.
 - Los cambios quedan limitados a pruebas y no alteran autorizacion de produccion.
+
+### 2026-05-31 - Fiscal completo requiere sesion y permiso
+
+Decision:
+
+- `/api/settings/fiscal` queda dentro del grupo autenticado y protegido por permisos del request existente.
+- Login y pantallas publicas usan `/api/settings/branding`, que solo expone nombre, color, lema y lineas institucionales visibles.
+- Las operaciones elevadas sobre facturas usan el permiso explicito `invoices.operate_any`; ver reportes o reimprimir historico no concede cobro/anulacion operativa.
+
+Motivo:
+
+- La configuracion fiscal completa incluye campos operativos que no deben estar disponibles para visitantes.
+- `reports.managerial.view` y permisos de recibos sirven para consulta/auditoria, no para operar facturas de otra caja.
+
+Consecuencia:
+
+- El login conserva identidad institucional sin exponer RTN, CAI, scanner, parciales u otras opciones internas.
+- La matriz de permisos separa consulta historica de operacion financiera.

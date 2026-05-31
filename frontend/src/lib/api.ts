@@ -11,6 +11,7 @@ import { users, type UserPayload } from './api/users';
 import type {
   AuthUser,
   FiscalSettings,
+  PublicBranding,
   FiscalSequence,
   Category,
   Area,
@@ -59,6 +60,7 @@ export {
 export type {
   AuthUser,
   FiscalSettings,
+  PublicBranding,
   FiscalSequence,
   Category,
   Area,
@@ -256,6 +258,10 @@ export const apiClient = {
 
   async getFiscalSettings(): Promise<FiscalSettings | null> {
     return fiscal.getFiscalSettings();
+  },
+
+  async getPublicBranding(): Promise<PublicBranding | null> {
+    return fiscal.getPublicBranding();
   },
 
   async updateFiscalSettings(payload: FiscalSettings): Promise<FiscalSettings> {

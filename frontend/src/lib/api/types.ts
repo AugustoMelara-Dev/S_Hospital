@@ -28,6 +28,11 @@ export type FiscalSettings = {
   receipt_footer_text?: string | null;
 };
 
+export type PublicBranding = Pick<
+  FiscalSettings,
+  'hospital_name' | 'primary_color' | 'slogan' | 'government_line' | 'secretariat_line' | 'receipt_location'
+>;
+
 export type FiscalSequence = {
   id?: number;
   document_type: 'invoice';

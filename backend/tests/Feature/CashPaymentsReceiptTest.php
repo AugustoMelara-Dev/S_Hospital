@@ -318,6 +318,30 @@ class CashPaymentsReceiptTest extends TestCase
         ]);
     }
 
+    public function test_report_permission_does_not_grant_invoice_payment_operation_scope(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $reportingUser = User::factory()->create();
+        $reportingUser->givePermissionTo(['payments.create', 'reports.managerial.view']);
+
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->actingAs($reportingUser)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('payments', [
+            'invoice_id' => $invoiceId,
+            'user_id' => $reportingUser->id,
+        ]);
+    }
+
     public function test_register_payment_creates_cash_movement_and_updates_partial_then_paid_invoice(): void
     {
         $this->seedBillingBase();

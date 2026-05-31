@@ -67,6 +67,25 @@ class FiscalSettingsTest extends TestCase
         ]);
     }
 
+    public function test_guest_cannot_view_full_fiscal_settings_but_can_view_public_branding(): void
+    {
+        FiscalSetting::query()->create([
+            ...$this->validPayload(),
+            'scanner_enabled' => true,
+            'partial_payments_enabled' => true,
+        ]);
+
+        $this->getJson('/api/settings/fiscal')
+            ->assertUnauthorized();
+
+        $this->getJson('/api/settings/branding')
+            ->assertOk()
+            ->assertJsonPath('data.hospital_name', 'Hospital San Miguel')
+            ->assertJsonMissingPath('data.rtn')
+            ->assertJsonMissingPath('data.scanner_enabled')
+            ->assertJsonMissingPath('data.partial_payments_enabled');
+    }
+
     public function test_supervisor_can_view_but_not_update_fiscal_settings(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

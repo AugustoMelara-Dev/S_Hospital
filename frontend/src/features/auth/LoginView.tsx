@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { useFiscalSettings } from '../../hooks/useFiscalSettings';
+import { usePublicBranding } from '../../hooks/useFiscalSettings';
 import { displayHospitalName } from '../../lib/hospital-name';
 
 type LoginViewProps = {
@@ -27,7 +27,7 @@ export function LoginView({
   status,
   logoUrl,
 }: LoginViewProps) {
-  const { data: fiscal } = useFiscalSettings();
+  const { data: fiscal } = usePublicBranding();
   const [showPassword, setShowPassword] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const hospitalName = displayHospitalName(fiscal?.hospital_name);

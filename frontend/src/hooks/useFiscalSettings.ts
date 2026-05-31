@@ -9,6 +9,13 @@ export function useFiscalSettings() {
   });
 }
 
+export function usePublicBranding() {
+  return useQuery({
+    queryKey: ['settings', 'branding'],
+    queryFn: () => apiClient.getPublicBranding(),
+  });
+}
+
 export function useUpdateFiscalSettings() {
   const queryClient = useQueryClient();
 

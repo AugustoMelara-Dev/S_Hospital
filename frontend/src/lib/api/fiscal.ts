@@ -1,7 +1,12 @@
 import { apiClient } from './base';
-import type { FiscalSettings, FiscalSequence } from './types';
+import type { FiscalSettings, FiscalSequence, PublicBranding } from './types';
 
 export const fiscal = {
+  async getPublicBranding(): Promise<PublicBranding | null> {
+    const response = await apiClient.request<{ data: PublicBranding | null }>('/api/settings/branding');
+    return response?.data ?? null;
+  },
+
   async getFiscalSettings(): Promise<FiscalSettings | null> {
     const response = await apiClient.request<{ data: FiscalSettings | null }>('/api/settings/fiscal');
     return response?.data ?? null;

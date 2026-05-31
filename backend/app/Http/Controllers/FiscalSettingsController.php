@@ -6,7 +6,6 @@ use App\Http\Requests\Fiscal\UpdateFiscalSettingsRequest;
 use App\Models\AuditLog;
 use App\Models\FiscalSetting;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class FiscalSettingsController extends Controller
@@ -18,10 +17,26 @@ class FiscalSettingsController extends Controller
         ]);
     }
 
+    public function publicBranding(): JsonResponse
+    {
+        $setting = FiscalSetting::query()->first();
+
+        return response()->json([
+            'data' => $setting ? [
+                'hospital_name' => $setting->hospital_name,
+                'primary_color' => $setting->primary_color,
+                'slogan' => $setting->slogan,
+                'government_line' => $setting->government_line,
+                'secretariat_line' => $setting->secretariat_line,
+                'receipt_location' => $setting->receipt_location,
+            ] : null,
+        ]);
+    }
+
     public function update(UpdateFiscalSettingsRequest $request): JsonResponse
     {
         $setting = DB::transaction(function () use ($request): FiscalSetting {
-            $setting = FiscalSetting::query()->first() ?? new FiscalSetting();
+            $setting = FiscalSetting::query()->first() ?? new FiscalSetting;
             $fieldsToTrack = [
                 'hospital_name',
                 'rtn',
