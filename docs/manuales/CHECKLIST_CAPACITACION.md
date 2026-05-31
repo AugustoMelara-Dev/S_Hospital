@@ -17,6 +17,8 @@ Use esta lista para capacitar a personal de caja, supervision y administracion.
 - [ ] Imprime recibo institucional.
 - [ ] Reimprime desde historial si tiene permiso.
 - [ ] Cierra caja y revisa diferencia.
+- [ ] Usa **Ayuda > Preparar resumen** para reportar un error sin compartir secretos.
+- [ ] Sabe no repetir facturas ni cobros despues de un error o reinicio.
 
 ## Supervisor
 
@@ -26,6 +28,7 @@ Use esta lista para capacitar a personal de caja, supervision y administracion.
 - [ ] Sabe que hacer si cae la red local.
 - [ ] Sabe que hacer si la impresora no responde.
 - [ ] Sabe recopilar evidencia local para soporte.
+- [ ] Sabe pedir al cajero el resumen seguro de **Ayuda**.
 - [ ] Autoriza reimpresiones solo con motivo.
 - [ ] Revisa factura, pago y motivo antes de una anulacion.
 - [ ] Revisa facturas pendientes antes de cierre.
@@ -44,6 +47,7 @@ Use esta lista para capacitar a personal de caja, supervision y administracion.
 - [ ] Crea respaldo manual.
 - [ ] Verifica ultimo respaldo.
 - [ ] Conoce la guia de soporte de primer nivel.
+- [ ] Revisa un resumen seguro antes de escalar un incidente tecnico.
 - [ ] Sabe a quien llamar ante error tecnico.
 
 ## Prueba Final De Flujo

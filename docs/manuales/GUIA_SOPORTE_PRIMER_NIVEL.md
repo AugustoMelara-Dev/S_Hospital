@@ -52,12 +52,15 @@ Si puede iniciar sesion:
 
 1. Abra **Ayuda**.
 2. Busque **Evidencia local para soporte**.
-3. Presione **Ver evidencia**.
-4. Copie el mensaje seguro o tome captura.
-5. Abra **Respaldos** si tiene permiso y revise si dice **Todo bien**,
+3. Presione **Preparar resumen**.
+4. Si el navegador lo permite, pegue el resumen en el mensaje de soporte. Si no,
+   muestre esa pantalla o tome captura.
+5. Presione **Ver evidencia** solo si soporte necesita ver los ultimos incidentes.
+6. Abra **Respaldos** si tiene permiso y revise si dice **Todo bien**,
    **Requiere revision** o **Error**.
 
 No copie datos de pacientes fuera de los canales autorizados.
+No copie `.env`, passwords, tokens, rutas de Windows ni mensajes tecnicos crudos.
 
 ## Que Hacer Segun El Problema
 
@@ -104,7 +107,8 @@ No copie datos de pacientes fuera de los canales autorizados.
 Envie al responsable tecnico:
 
 - `qa\LOCAL_REPAIR_DIAGNOSTIC.md` si existe.
-- Captura de la pantalla de Ayuda con evidencia local segura.
+- Resumen seguro preparado desde **Ayuda**.
+- Captura de la pantalla de Ayuda con evidencia local segura si el resumen no se puede copiar.
 - Captura de Respaldos con el estado operativo.
 - Hora del incidente.
 - Usuario y rol afectado.

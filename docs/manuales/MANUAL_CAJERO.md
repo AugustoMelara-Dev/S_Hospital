@@ -74,5 +74,10 @@ Si hay diferencia, avise al supervisor.
 
 - Si no imprime: revise impresora, papel y conexion.
 - Si no abre el sistema: avise al responsable tecnico.
+- Si aparece un error en pantalla: abra **Ayuda**, presione **Preparar resumen**
+  y entregue ese texto al supervisor o responsable de soporte.
 - Si el total no coincide: no cobre; revise servicios y carrito.
 - Si cobro mal: avise al supervisor. No borre facturas.
+
+No comparta contrasenas ni datos de pacientes por mensajes no autorizados.
+No repita una factura o cobro para "probar" si no sabe si quedo registrado.
