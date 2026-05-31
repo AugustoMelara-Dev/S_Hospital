@@ -119,6 +119,10 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps
 Para crear el borrador inicial de la prueba LAN desde la segunda computadora:
 
 ```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md -WhatIfOnly
+```
+
+```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
 ```
 

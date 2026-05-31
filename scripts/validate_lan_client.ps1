@@ -2,21 +2,32 @@ param(
     [Parameter(Mandatory = $true)]
     [string] $BaseUrl,
 
+    [string] $ProjectRoot = "",
+
     [string] $EvidencePath = "",
 
     [string] $ClientName = $env:COMPUTERNAME,
     [string] $ResponsiblePerson = "",
     [string] $UserRole = "",
 
-    [switch] $Force
+    [switch] $Force,
+    [switch] $WhatIfOnly
 )
 
 $ErrorActionPreference = "Stop"
 
 trap {
     Write-Host $_.Exception.Message
+    Write-Host "No reemplace evidencia LAN existente sin -Force y sin autorizacion del responsable tecnico."
     exit 1
 }
+
+if ($ProjectRoot -eq "") {
+    $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+    $ProjectRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
+}
+
+$ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
 
 function New-CheckResult([string] $Label, [string] $Url, [int[]] $AllowedStatusCodes = @(200), [string] $ExpectedContentType = "") {
     try {
@@ -63,11 +74,32 @@ function Get-FirstAssetPath([string] $BaseUrl) {
 $base = $BaseUrl.TrimEnd("/")
 $baseUri = $null
 if (-not [Uri]::TryCreate($base, [UriKind]::Absolute, [ref] $baseUri) -or $baseUri.Scheme -notin @("http", "https")) {
-    throw "BaseUrl must be an absolute http(s) LAN URL, for example http://192.168.1.10"
+    throw "BaseUrl debe ser una direccion LAN absoluta http(s), por ejemplo http://192.168.1.10:8000"
 }
 
-if ($EvidencePath -ne "" -and (Test-Path -LiteralPath $EvidencePath) -and -not $Force) {
-    throw "EvidencePath already exists: $EvidencePath. Use -Force only when you intentionally want to replace this LAN proof starter."
+$resolvedEvidencePath = $EvidencePath
+if ($EvidencePath -ne "") {
+    $candidateEvidencePath = if ([System.IO.Path]::IsPathRooted($EvidencePath)) {
+        $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($EvidencePath)
+    } else {
+        Join-Path $ProjectRoot $EvidencePath
+    }
+    $resolvedEvidencePath = [System.IO.Path]::GetFullPath($candidateEvidencePath)
+    $rootPrefix = $ProjectRoot.TrimEnd("\") + "\"
+
+    if ($resolvedEvidencePath -eq $ProjectRoot -or -not $resolvedEvidencePath.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "La evidencia LAN debe guardarse dentro de la carpeta instalada del sistema."
+    }
+
+    if ((Test-Path -LiteralPath $resolvedEvidencePath) -and -not $Force) {
+        throw "La evidencia LAN ya existe. Use -Force solo si el responsable tecnico autorizo reemplazarla."
+    }
+}
+
+if ($WhatIfOnly) {
+    Write-Host "Validacion LAN preparada."
+    Write-Host "Modo WhatIf: no se consulto la red y no se escribio evidencia."
+    exit 0
 }
 
 if ($base -match "localhost|127\.0\.0\.1|::1") {
@@ -103,6 +135,7 @@ foreach ($check in $checks) {
 $allPassed = -not ($checks | Where-Object { -not $_.Passed })
 
 if ($EvidencePath -ne "") {
+    $EvidencePath = $resolvedEvidencePath
     $evidenceDir = Split-Path -Parent $EvidencePath
     if (-not [string]::IsNullOrWhiteSpace($evidenceDir) -and -not (Test-Path -LiteralPath $evidenceDir)) {
         New-Item -ItemType Directory -Path $evidenceDir -Force | Out-Null
