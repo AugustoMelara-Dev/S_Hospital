@@ -23,6 +23,10 @@ No borre carpetas de datos ni volumenes de base de datos.
 4. Revise que el acceso directo **Abrir Sistema de Caja Hospitalaria** exista en el escritorio.
 
 El instalador no debe cargar datos temporales en produccion.
+El instalador debe aplicar migraciones seguras sin borrar datos, sin ejecutar
+`migrate:fresh` y sin correr seeders de demostracion. Tambien debe dejar
+`APP_VERSION` configurado para que el diagnostico identifique la version
+instalada.
 
 ## Abrir El Sistema
 
