@@ -69,6 +69,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Evidencia del smoke de worker de respaldos queda restringida a archivos Markdown dentro de `qa/` y se valida antes de pedir contrasena, abrir red o crear respaldo. | Verificado |
 | Esta fase | Reporte final de handoff queda restringido a archivos Markdown dentro de `qa/` y se valida antes de preflight o escritura. | Verificado |
 | Esta fase | Preflight y handoff rechazan pruebas finales que referencian capturas/fotos con rutas absolutas locales; la evidencia compartible debe usar rutas relativas del repositorio o referencias no locales. | Verificado |
+| Esta fase | Preflight y handoff solo aceptan capturas/fotos locales bajo `qa/` y rechazan referencias a `backend/`, `docs/`, `scripts/`, `frontend/` o rutas con traversal. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -144,6 +145,7 @@ Resultado observado:
 | `final_production_handoff.ps1 -ReportPath C:\tmp\handoff.md -SkipPreflight` | Falla antes de preflight o escritura. |
 | `final_production_handoff.ps1 -ReportPath qa\handoff.txt -SkipPreflight` | Falla antes de preflight o escritura. |
 | Parser PowerShell de `production_readiness_preflight.ps1` y `final_production_handoff.ps1` tras endurecer referencias de evidencia | Paso. |
+| Reglas de referencia local en proofs finales | Endurecidas para aceptar archivos bajo `qa/` y rechazar rutas absolutas, traversal o archivos internos del sistema. |
 | Parser PowerShell de `validate_lan_client.ps1` | Paso. |
 | `validate_lan_client.ps1` con evidencia existente sin `-Force` | Falla antes de tocar red, conserva el archivo existente y muestra instruccion para usar `-Force` solo si se reemplaza intencionalmente. |
 | `validate_lan_client.ps1` con `-Force` sobre archivo temporal | Regenera borrador temporal, marca rutas fallidas y mantiene `PRODUCTION_READY` bloqueado. |

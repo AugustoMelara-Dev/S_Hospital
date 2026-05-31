@@ -22,6 +22,7 @@ rechaza evidencia incompleta.
 | Evidencia de impresora sin `Carta result:` o `A5 result:` | Falla con el campo faltante. |
 | Evidencia de impresora con `Evidence/photo reference:` apuntando a una ruta local inexistente | Falla con `references missing local evidence`. |
 | Evidencia de impresora con `Evidence/photo reference:` apuntando a una ruta absoluta local | Falla porque la evidencia final debe usar ruta relativa o referencia no local. |
+| Evidencia de impresora con `Evidence/photo reference:` apuntando a `backend/`, `docs/`, `scripts/`, `frontend/` o una ruta con `..` | Falla porque capturas/fotos locales deben vivir bajo `qa/` sin traversal. |
 | Evidencia de impresora con campos minimos y checks llenos | La seccion de proof pasa con `physical institutional printer evidence is present and completed`. |
 | `CORS_ALLOWED_ORIGINS=*` | Falla siempre. |
 | `CORS_ALLOWED_ORIGIN_PATTERNS` no vacio | Falla siempre. |

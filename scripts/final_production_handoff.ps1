@@ -101,9 +101,13 @@ function Test-ProofReferencedLocalEvidenceExists([string] $content, [string] $fi
         return $false
     }
 
-    $looksLikeLocalPath = $reference -match '^(qa|docs|scripts|frontend|backend)[\\/]'
-    if (-not $looksLikeLocalPath) {
+    $looksLikeRepoPath = $reference -match '^(qa|docs|scripts|frontend|backend)[\\/]'
+    if (-not $looksLikeRepoPath) {
         return $true
+    }
+
+    if ($reference -notmatch '^qa[\\/]' -or $reference -match '(^|[\\/])\.\.([\\/]|$)') {
+        return $false
     }
 
     $candidate = Join-Path $ProjectRoot $reference

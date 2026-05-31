@@ -186,8 +186,13 @@ function Test-ProofReferencedLocalEvidence([string] $path, [string] $proofName, 
         return
     }
 
-    $looksLikeLocalPath = $reference -match '^(qa|docs|scripts|frontend|backend)[\\/]'
-    if (-not $looksLikeLocalPath) {
+    $looksLikeRepoPath = $reference -match '^(qa|docs|scripts|frontend|backend)[\\/]'
+    if (-not $looksLikeRepoPath) {
+        return
+    }
+
+    if ($reference -notmatch '^qa[\\/]' -or $reference -match '(^|[\\/])\.\.([\\/]|$)') {
+        Add-Failure "$proofName evidence must reference files under qa/ without traversal, or use a non-local physical/support reference, in $path."
         return
     }
 
