@@ -126,14 +126,21 @@ Si el sistema no abre:
 1. Espere dos minutos.
 2. Use el acceso directo nuevamente. El acceso directo intentara abrir el
    sistema y, si no responde, ejecutara la reparacion segura automaticamente.
-3. Si soporte necesita repetir la reparacion manualmente, ejecute:
+3. Si soporte necesita levantar servicios manualmente desde la carpeta del
+   sistema, ejecute:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\start_hospital_services.ps1
+```
+
+4. Si soporte necesita repetir la reparacion manualmente, ejecute:
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -BaseUrl http://127.0.0.1:8000
 ```
 
-4. Si sigue fallando, envie `qa\LOCAL_REPAIR_DIAGNOSTIC.md` al responsable tecnico.
-5. No borre carpetas, volumenes Docker, archivos `.env` ni archivos de base de datos.
+5. Si sigue fallando, envie `qa\LOCAL_REPAIR_DIAGNOSTIC.md` al responsable tecnico.
+6. No borre carpetas, volumenes Docker, archivos `.env` ni archivos de base de datos.
 
 La reparacion segura solo revisa servicios, levanta contenedores, espera el backend,
 abre el navegador si responde y genera diagnostico. No reinicia datos, no ejecuta

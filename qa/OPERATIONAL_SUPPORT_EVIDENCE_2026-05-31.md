@@ -44,6 +44,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Reparacion segura aplica redaccion generica de rutas locales y valores sensibles en el diagnostico. | Verificado |
 | Esta fase | Reparacion segura usa el mismo detalle sanitizado en consola y en archivo de diagnostico. | Verificado |
 | Esta fase | Loop de automatizacion de backups valida `DailyBackupTime` antes de iniciar worker o ciclo diario. | Verificado |
+| Esta fase | Arranque manual de servicios valida carpeta/Compose y falla con mensaje humano sin tocar datos. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -125,6 +126,8 @@ Resultado observado:
 | Consola de `repair_hospital_system.ps1` | Paso: los mensajes `ERROR` y `REVISION` usan el mismo detalle sanitizado que el archivo de diagnostico. |
 | Parser PowerShell de `run_backup_scheduler_loop.ps1` | Paso. |
 | `run_backup_scheduler_loop.ps1 -DailyBackupTime 99:99` | Falla al inicio con mensaje y log humano; no inicia worker ni ciclo diario. |
+| Parser PowerShell de `start_hospital_services.ps1` | Paso. |
+| `start_hospital_services.ps1` con carpeta sin Compose | Falla antes de llamar Docker, muestra mensaje humano y recuerda no borrar datos, volumenes, respaldos ni `.env`. |
 | Parser PowerShell de `scripts\e2e_gate.ps1` | Paso. |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1` | Paso: 2 specs Playwright. Detecto y se corrigio fuga de `/api/areas?active=1` al backend local durante el flujo Reportes -> Respaldos. |
 | `php artisan test tests/Feature/SystemStatusTest.php` | Paso: 7 tests, 47 assertions. |
