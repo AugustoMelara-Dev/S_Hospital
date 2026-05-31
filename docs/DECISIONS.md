@@ -959,6 +959,24 @@ Consecuencia:
 - El resumen operativo puede reconciliar "que se anulo" contra "que cobro se reverso".
 - Los exports e impresiones de auditoria no revelan IDs tecnicos para estos eventos; usan etiquetas humanas de metodo y usuarios.
 
+### 2026-05-31 - PDF consolidado incluye lectura financiera con fuentes
+
+Decision:
+
+- El PDF consolidado del periodo incluye una seccion "Lectura Financiera del Periodo".
+- La seccion muestra Facturado, Cobrado, Pendiente, Parcial y Anulado con fuente humana para cada monto.
+- Los montos salen del contrato de reportes del backend; el PDF no recalcula totales desde filas visuales.
+
+Motivo:
+
+- Administracion debe poder imprimir o archivar el cierre con las mismas definiciones financieras que ve en pantalla y Excel.
+- Separar pendiente, parcial y anulado evita que el PDF se lea como "facturado menos cobrado" sin contexto.
+
+Consecuencia:
+
+- El PDF de rango deja de ser solo un resumen visual y pasa a ser evidencia de rendicion de cuentas.
+- Las pruebas capturan el HTML enviado a DomPDF para validar texto, montos y fuentes antes de generar el binario.
+
 ### 2026-05-31 - Diagnostico operativo de interfaz y LAN
 
 Decision:
