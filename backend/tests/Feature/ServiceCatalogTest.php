@@ -530,6 +530,21 @@ class ServiceCatalogTest extends TestCase
         ]);
     }
 
+    public function test_invalid_price_update_returns_validation_error_before_price_reason_check(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", ['price' => 'precio-malo'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('price')
+            ->assertJsonMissingValidationErrors('price_change_reason');
+
+        $this->assertSame('25.00', $service->refresh()->price);
+    }
+
     public function test_billing_filter_excludes_hidden_and_non_billable_services(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);

@@ -76,7 +76,12 @@ class UpdateServiceRequest extends FormRequest
                     }
                 }
 
-                if ($this->filled('price') && $this->priceChanged($service) && ! $this->filled('price_change_reason')) {
+                if (
+                    ! $validator->errors()->has('price')
+                    && $this->filled('price')
+                    && $this->priceChanged($service)
+                    && ! $this->filled('price_change_reason')
+                ) {
                     $validator->errors()->add('price_change_reason', 'Indique el motivo del cambio de precio.');
                 }
 
