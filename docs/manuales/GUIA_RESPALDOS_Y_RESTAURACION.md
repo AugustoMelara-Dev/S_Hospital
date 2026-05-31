@@ -28,6 +28,19 @@ El sistema puede programar respaldos:
 
 Si un respaldo queda en pendiente mucho tiempo, avise al responsable tecnico.
 
+El responsable tecnico puede validar que el worker procesa respaldos sin dejar
+la contrasena escrita en el historial de PowerShell:
+
+```powershell
+$env:HOSPITAL_SMOKE_BASE_URL = "http://IP-DEL-SERVIDOR:8000"
+$env:HOSPITAL_SMOKE_LOGIN = "usuario.soporte"
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_backup_worker_smoke.ps1
+```
+
+El script pedira la contrasena en pantalla segura si no se define
+`HOSPITAL_SMOKE_PASSWORD`. Use una cuenta temporal autorizada y elimine las
+variables de entorno de la sesion cuando termine.
+
 ## Restauracion
 
 Restaurar cambia la informacion disponible en el sistema. Debe hacerse solo con autorizacion.

@@ -1,12 +1,9 @@
 param(
-    [Parameter(Mandatory = $true)]
-    [string] $BaseUrl,
+    [string] $BaseUrl = $env:HOSPITAL_SMOKE_BASE_URL,
 
-    [Parameter(Mandatory = $true)]
-    [string] $Login,
+    [string] $Login = $env:HOSPITAL_SMOKE_LOGIN,
 
-    [Parameter(Mandatory = $true)]
-    [string] $Password,
+    [string] $Password = $env:HOSPITAL_SMOKE_PASSWORD,
 
     [string] $EvidencePath = "qa\BACKUP_WORKER_SMOKE_PROOF.md",
 
@@ -14,6 +11,29 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
+    throw "BaseUrl is required. Pass -BaseUrl or set HOSPITAL_SMOKE_BASE_URL."
+}
+
+if ([string]::IsNullOrWhiteSpace($Login)) {
+    throw "Login is required. Pass -Login or set HOSPITAL_SMOKE_LOGIN."
+}
+
+if ([string]::IsNullOrWhiteSpace($Password)) {
+    $securePassword = Read-Host "Password for backup worker smoke user" -AsSecureString
+    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
+    try {
+        $Password = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+    } finally {
+        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+    }
+}
+
+if ([string]::IsNullOrWhiteSpace($Password)) {
+    throw "Password is required. Pass -Password, set HOSPITAL_SMOKE_PASSWORD, or enter it at the prompt."
+}
+
 $base = $BaseUrl.TrimEnd("/")
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 
@@ -55,7 +75,12 @@ function Invoke-Json($method, $path, $body = $null) {
     return $response.Content | ConvertFrom-Json
 }
 
-Invoke-WebRequest -Uri "$base/sanctum/csrf-cookie" -WebSession $session -UseBasicParsing -TimeoutSec 30 | Out-Null
+try {
+    Invoke-WebRequest -Uri "$base/sanctum/csrf-cookie" -WebSession $session -UseBasicParsing -TimeoutSec 30 | Out-Null
+} catch {
+    throw "Backup worker smoke could not reach $base. Confirm the server is running, APP_URL/BaseUrl is correct, and the LAN connection is available before creating a backup."
+}
+
 Invoke-Json "POST" "/api/auth/login" @{ login = $Login; password = $Password } | Out-Null
 
 $created = Invoke-Json "POST" "/api/backups" @{}

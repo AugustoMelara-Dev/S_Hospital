@@ -35,6 +35,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Gate E2E acepta `-UseExistingServer -BaseUrl` para validar instalacion local/LAN sin iniciar Vite; mock E2E cubre reporte mensual y areas para evitar fugas al backend real. | Verificado |
 | Esta fase | Diagnostico operativo agrega interfaz instalada y direccion LAN configurada sin exponer rutas absolutas ni secretos. | Verificado |
 | Esta fase | Reparacion segura advierte si `APP_URL` usa `localhost`/`127.0.0.1` y orienta a usar IP o nombre LAN para clientes. | Verificado |
+| Esta fase | Smoke de worker de backups acepta URL/usuario por entorno, pide contrasena segura si no se pasa en linea de comando y falla con mensaje claro si el servidor no responde. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -95,6 +96,9 @@ Resultado observado:
 | Parser PowerShell de `repair_hospital_system.ps1` y `collect_support_packet.ps1` | Paso. |
 | `repair_hospital_system.ps1` smoke con `APP_URL` LAN real | Paso con **Direccion APP_URL para LAN** en OK; conserva warnings esperados de `APP_VERSION`/tareas en este entorno. |
 | `repair_hospital_system.ps1` smoke temporal con `APP_URL=http://127.0.0.1:8000` | Paso de la nueva regla: reporta **REVISION** y recomienda usar IP/nombre LAN para clientes. |
+| Parser PowerShell de `validate_backup_worker_smoke.ps1` | Paso. |
+| `validate_backup_worker_smoke.ps1` sin parametros | Falla antes de red con instruccion clara para `-BaseUrl` o `HOSPITAL_SMOKE_BASE_URL`. |
+| `validate_backup_worker_smoke.ps1` con variables de entorno y servidor cerrado | Falla antes de crear respaldo con mensaje humano sobre servidor/BaseUrl/LAN. |
 | Parser PowerShell de `scripts\e2e_gate.ps1` | Paso. |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1` | Paso: 2 specs Playwright. Detecto y se corrigio fuga de `/api/areas?active=1` al backend local durante el flujo Reportes -> Respaldos. |
 | `php artisan test tests/Feature/SystemStatusTest.php` | Paso: 7 tests, 47 assertions. |
