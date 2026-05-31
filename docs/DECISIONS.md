@@ -740,6 +740,25 @@ Consecuencia:
 - Produccion sigue sin ejecutar seeders de validacion fuera de `local` o `testing`.
 - El branding check falla si reaparecen nombres de hospital temporales, usuarios con sufijo de demostracion, `hospital-billing.local`, CAI temporal o el seeder anterior en codigo, e2e, tests o manuales clave.
 
+### 2026-05-31 - Build LAN con API relativa
+
+Decision:
+
+- El frontend compilado para ser servido por Laravel usa rutas relativas (`/api` y `/sanctum`) en vez de hornear `http://localhost:8000`.
+- Docker Compose deja `VITE_API_BASE_URL` vacio y usa `VITE_DEV_API_PROXY_TARGET=http://backend:8000` solo para el servidor Vite de desarrollo.
+- La CSP conserva `connect-src 'self'`, de modo que un build LAN debe hablar con el mismo origen que sirve la SPA.
+- El cliente tambien descarta en runtime un `VITE_API_BASE_URL` de loopback cuando la aplicacion se abre por otro host/IP, para proteger builds locales contaminados.
+
+Motivo:
+
+- La validacion visual en `http://127.0.0.1:8000` mostro que el build intentaba llamar a `http://localhost:8000`, y la CSP lo bloqueo. En una computadora cliente LAN el mismo error impediria iniciar sesion por IP del servidor.
+
+Consecuencia:
+
+- Los clientes LAN pueden acceder por `http://IP_DEL_SERVIDOR` sin depender de `localhost` del cliente.
+- Si se sirve el frontend separado en desarrollo, Vite proxy resuelve el backend por el servicio Docker `backend` y mantiene las llamadas del navegador como relativas.
+- Un build accidental con `http://localhost:8000` ya no rompe login cuando se abre por `127.0.0.1` o por IP LAN.
+
 ### 2026-05-31 - Areas institucionales con snapshot financiero
 
 Decision:

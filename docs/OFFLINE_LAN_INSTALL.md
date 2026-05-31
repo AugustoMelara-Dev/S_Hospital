@@ -23,7 +23,8 @@ docker compose up -d
 
 Servicios:
 
-- `backend`: Laravel en `http://localhost:8000`.
+- `backend`: Laravel en `http://localhost:8000` durante desarrollo local.
+- El frontend compilado debe llamar a `/api` y `/sanctum` en el mismo host que sirve la aplicacion. No compilar el build LAN con `VITE_API_BASE_URL=http://localhost:8000`, porque los clientes entran por IP o nombre local del servidor.
 - `frontend`: Vite React en `http://localhost:5173`.
 - `mysql`: MariaDB local para desarrollo.
 
