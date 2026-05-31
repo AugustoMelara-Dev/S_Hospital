@@ -263,7 +263,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       setBackups((current) => [backup, ...current]);
       onStatus(
         backup.status === 'success'
-          ? 'Respaldo local creado.'
+          ? 'Respaldo protegido.'
           : 'Respaldo registrado. Revise su estado en la lista.',
       );
     } catch (error) {
@@ -363,10 +363,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                     </p>
                     {systemStatus.backups.last_success_at ? (
                       <p className="text-xs text-muted-foreground">
-                        Último completado: {formatRelativeTime(systemStatus.backups.last_success_at)}
+                        Último protegido: {formatRelativeTime(systemStatus.backups.last_success_at)}
                       </p>
                     ) : (
-                      <p className="text-xs text-amber-700">Sin respaldo completado registrado.</p>
+                      <p className="text-xs text-amber-700">Sin respaldo protegido registrado.</p>
                     )}
                   </div>
                 </div>
@@ -474,7 +474,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Si aparece un número mayor a cero, revise el último respaldo fallido.
+                      Si aparece un número mayor a cero, revise el último respaldo con error.
                     </p>
                   </div>
                   <div className="rounded-md border border-border p-3">
@@ -583,10 +583,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                     <p className="text-sm font-medium">
                       {lastSuccessBackup
                         ? `Último: ${formatRelativeTime(lastSuccessBackup.completed_at ?? lastSuccessBackup.created_at)}`
-                        : 'Sin respaldos'}
+                        : 'Sin respaldo protegido'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {successCount > 0 ? `${successCount} completados en esta página` : 'Sin respaldos completados en esta página'}
+                      {successCount > 0 ? `${successCount} protegidos en esta página` : 'Sin respaldos protegidos en esta página'}
                     </p>
                   </div>
                 </div>
@@ -607,7 +607,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {failedCount > 0
-                        ? `${failedCount} fallidos - revise el detalle y cree un nuevo respaldo`
+                        ? `${failedCount} con error - revise el detalle y cree un nuevo respaldo`
                         : 'Sin fallos en esta página'}
                     </p>
                   </div>
@@ -633,7 +633,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                   }}
                   className="h-8"
                 >
-                  {filter === 'all' ? 'Todos' : filter === 'pending' ? 'Pendientes' : filter === 'success' ? 'Exitosos' : 'Fallidos'}
+                  {filter === 'all' ? 'Todos' : filter === 'pending' ? 'Pendientes' : filter === 'success' ? 'Protegidos' : 'Error'}
                 </Button>
               ))}
             </div>
@@ -716,7 +716,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         open={confirmCreateOpen}
         title="¿Crear respaldo local?"
       >
-        Se creará una copia de seguridad local. Confirme que aparezca como completada antes de cerrar esta pantalla.
+        Se creará una copia de seguridad local. Confirme que aparezca como protegida antes de cerrar esta pantalla.
       </ConfirmDialog>
       <ConfirmDialog
         confirmLabel="Descargar"

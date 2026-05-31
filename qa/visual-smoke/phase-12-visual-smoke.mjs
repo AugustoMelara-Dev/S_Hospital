@@ -456,10 +456,10 @@ async function main() {
     }
 
     await navigate(page, routeScreens.backups, 'backups');
-    await page.getByText(/no hay backups|pendiente|completado|fallido/i).waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+    await page.getByText(/respaldos|pendiente|protegido|error/i).waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
     await screenshot(page, 'backups');
     const backupsText = await page.locator('body').innerText();
-    if (!/no hay backups|backup|pendiente|completado|fallido/i.test(backupsText)) {
+    if (!/respaldos|pendiente|protegido|error/i.test(backupsText)) {
       findings.push('backups: el estado vacio o pendiente no se entiende visualmente.');
     }
 

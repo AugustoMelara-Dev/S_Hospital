@@ -14,7 +14,7 @@ export function BackupExplanationCard() {
             <h3 className="mb-1 font-semibold">Respaldos del hospital</h3>
             <p className="text-sm text-muted-foreground">
               Los respaldos protegen la información de facturación, caja y reportes.
-              Cree uno antes de cambios importantes y confirme que quede completado.
+              Cree uno antes de cambios importantes y confirme que quede protegido.
             </p>
           </div>
         </div>
