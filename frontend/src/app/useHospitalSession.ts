@@ -36,6 +36,7 @@ export function useHospitalSession() {
     canViewCashSessionReports;
   const canViewBackups = permissions.has('backups.view');
   const canViewUsers = permissions.has('users.view');
+  const canViewAreaServices = permissions.has('area_services.view');
   const needsBillingCashBootstrap = false;
 
   useEffect(() => {
@@ -161,6 +162,7 @@ export function useHospitalSession() {
     canViewReports,
     canViewBackups,
     canViewUsers,
+    canViewAreaServices,
     hasAnyOperationalPermission:
       canViewFiscalSettings ||
       canViewCatalog ||
@@ -169,8 +171,9 @@ export function useHospitalSession() {
       canViewInvoices ||
       canViewReports ||
       canViewBackups ||
-      canViewUsers,
-    defaultAuthenticatedRoute: '/dashboard',
+      canViewUsers ||
+      canViewAreaServices,
+    defaultAuthenticatedRoute: canViewAreaServices && !canViewCatalog && !canCreateInvoices ? '/area-services' : '/dashboard',
     sessionExpired,
     handleLogin,
     handleLogout,

@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { PermissionGate } from './components/PermissionGate';
 import { EmptyState } from './components/ui/states';
 import { BackupsView } from './features/backups/BackupsView';
+import { AreaPaidServicesView } from './features/areas/AreaPaidServicesView';
 import { CashBoxView } from './features/cash/CashBoxView';
 import { CatalogView } from './features/catalog/CatalogView';
 import { DashboardView } from './features/dashboard/DashboardView';
@@ -31,6 +32,7 @@ type AppRoutesProps = {
   canViewCashSessionReports: boolean;
   canExportReports: boolean;
   canViewUsers: boolean;
+  canViewAreaServices: boolean;
   cashSession: CashSession | null;
   defaultAuthenticatedRoute: string;
   onQuickCash: () => void;
@@ -57,6 +59,7 @@ export function AppRoutes({
   canViewCashSessionReports,
   canExportReports,
   canViewUsers,
+  canViewAreaServices,
   cashSession,
   defaultAuthenticatedRoute,
   onQuickCash,
@@ -135,6 +138,14 @@ export function AppRoutes({
         element={
           <PermissionGate allowed={canViewInvoices} reason="Requiere permiso para consultar historial de facturas y recibos.">
             <InvoiceHistoryView user={user} onStatus={onStatus} />
+          </PermissionGate>
+        }
+      />
+      <Route
+        path="/area-services"
+        element={
+          <PermissionGate allowed={canViewAreaServices} reason="Requiere permiso para consultar servicios pagados por area.">
+            <AreaPaidServicesView onStatus={onStatus} />
           </PermissionGate>
         }
       />

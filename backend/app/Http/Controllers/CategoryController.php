@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Catalog\StoreCategoryRequest;
 use App\Http\Requests\Catalog\UpdateCategoryRequest;
-use App\Models\AuditLog;
 use App\Models\Category;
+use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -88,13 +88,13 @@ class CategoryController extends Controller
      */
     private function audit(Request $request, string $action, Category $category, ?array $oldValues): void
     {
-        AuditLog::query()->create([
-            'user_id' => $request->user()->id,
-            'action' => $action,
-            'entity_type' => Category::class,
-            'entity_id' => $category->id,
-            'old_values' => $oldValues,
-            'new_values' => $this->auditPayload($category),
-        ]);
+        app(AuditLogger::class)->log(
+            action: $action,
+            entity: $category,
+            user: $request->user(),
+            request: $request,
+            oldValues: $oldValues,
+            newValues: $this->auditPayload($category),
+        );
     }
 }

@@ -1,5 +1,14 @@
 import { apiClient } from './base';
-import type { Category, CategoryPayload, Service, ServiceArea, ServicePayload, ServiceFilters, PaginatedMeta } from './types';
+import type {
+  AreaPaidService,
+  Category,
+  CategoryPayload,
+  Service,
+  ServiceArea,
+  ServicePayload,
+  ServiceFilters,
+  PaginatedMeta,
+} from './types';
 
 export const catalog = {
   async getCategories(active?: boolean): Promise<Category[]> {
@@ -22,6 +31,11 @@ export const catalog = {
   async getServiceAreas(active?: boolean): Promise<ServiceArea[]> {
     const query = active === undefined ? '' : `?active=${active ? '1' : '0'}`;
     const response = await apiClient.request<{ data?: ServiceArea[] }>(`/api/service-areas${query}`);
+    return Array.isArray(response.data) ? response.data : [];
+  },
+
+  async getAreaPaidServices(): Promise<AreaPaidService[]> {
+    const response = await apiClient.request<{ data?: AreaPaidService[] }>('/api/area-services/paid');
     return Array.isArray(response.data) ? response.data : [];
   },
 

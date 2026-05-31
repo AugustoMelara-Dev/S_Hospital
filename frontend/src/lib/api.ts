@@ -13,6 +13,7 @@ import type {
   FiscalSettings,
   FiscalSequence,
   Category,
+  AreaPaidService,
   ServiceArea,
   Service,
   CategoryPayload,
@@ -59,6 +60,7 @@ export type {
   FiscalSettings,
   FiscalSequence,
   Category,
+  AreaPaidService,
   ServiceArea,
   Service,
   CategoryPayload,
@@ -122,6 +124,10 @@ export const apiClient = {
 
   async getServiceAreas(active?: boolean): Promise<ServiceArea[]> {
     return catalog.getServiceAreas(active);
+  },
+
+  async getAreaPaidServices(): Promise<AreaPaidService[]> {
+    return catalog.getAreaPaidServices();
   },
 
   async getServicesPage(filters: ServiceFilters = {}): Promise<{ data: Service[]; meta: PaginatedMeta }> {

@@ -129,6 +129,8 @@ function getBreadcrumbs(pathname: string) {
       crumbs.push({ label: 'Ayuda', path: '/help' });
     } else if (segment === 'services' || segment === 'catalog') {
       crumbs.push({ label: 'Catalogo', path: '/catalog' });
+    } else if (segment === 'area-services') {
+      crumbs.push({ label: 'Servicios pagados', path: '/area-services' });
     } else if (segment === 'cashbox') {
       crumbs.push({ label: 'Caja', path: '/cashbox' });
     } else if (segment === 'reports') {

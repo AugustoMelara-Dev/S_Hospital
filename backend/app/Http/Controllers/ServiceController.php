@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Catalog\IndexServiceRequest;
 use App\Http\Requests\Catalog\StoreServiceRequest;
 use App\Http\Requests\Catalog\UpdateServiceRequest;
-use App\Models\AuditLog;
 use App\Models\Service;
+use App\Support\AuditLogger;
 use App\Support\ServiceSearch;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -182,13 +182,13 @@ class ServiceController extends Controller
      */
     private function audit(Request $request, string $action, Service $service, ?array $oldValues): void
     {
-        AuditLog::query()->create([
-            'user_id' => $request->user()->id,
-            'action' => $action,
-            'entity_type' => Service::class,
-            'entity_id' => $service->id,
-            'old_values' => $oldValues,
-            'new_values' => $this->auditPayload($service),
-        ]);
+        app(AuditLogger::class)->log(
+            action: $action,
+            entity: $service,
+            user: $request->user(),
+            request: $request,
+            oldValues: $oldValues,
+            newValues: $this->auditPayload($service),
+        );
     }
 }

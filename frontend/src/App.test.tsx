@@ -395,6 +395,70 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: /nueva categoria/i })).not.toBeInTheDocument();
   });
 
+  it('renders paid services for a user assigned to a service area', async () => {
+    window.history.pushState({}, '', '/area-services');
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 9,
+              name: 'Laboratorio',
+              email: 'laboratorio@hospital-billing.local',
+              username: 'laboratorio',
+              active: true,
+              roles: ['usuario_area'],
+              permissions: ['area_services.view'],
+              service_area_id: 1,
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/area-services/paid')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: 1,
+                invoice_id: 12,
+                invoice_number: '000-001-01-00000012',
+                patient_name: 'Maria Lopez',
+                service_name: 'Glucosa',
+                service_area_name: 'Laboratorio',
+                quantity: '1.00',
+                line_total: '15.00',
+                invoice_status: 'paid',
+                issued_at: '2026-05-31T08:30:00-06:00',
+                paid_at: '2026-05-31T08:40:00-06:00',
+              },
+            ],
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /servicios pagados/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /servicios pagados/i })).toHaveAttribute('href', '/area-services');
+    expect(await screen.findByText('Glucosa')).toBeInTheDocument();
+    expect(screen.getByText('Maria Lopez')).toBeInTheDocument();
+    expect(screen.getByText('000-001-01-00000012')).toBeInTheDocument();
+    expect(screen.getAllByText('L. 15.00').length).toBeGreaterThan(0);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/area-services/paid'),
+      expect.objectContaining({ credentials: 'include' }),
+    );
+  });
+
   it('renders backups view actions for an admin', async () => {
     window.history.pushState({}, '', '/backups');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
