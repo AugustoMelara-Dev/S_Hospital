@@ -181,7 +181,7 @@ export function DashboardView({
             icon={<TrendingUp className="size-4 text-primary" />}
             label="Facturado"
             value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : money(dashboardData?.current_month.total_billed)}
-            helper={dashboardData ? `${dashboardData.current_month.invoice_count} facturas este mes` : 'Ventas del mes'}
+            helper={dashboardData ? `${dashboardData.current_month.invoice_count} facturas este mes` : 'Facturacion del mes'}
           />
 
           <MetricCard
@@ -205,7 +205,7 @@ export function DashboardView({
             <Card>
               <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <CardTitle className="text-base font-bold">Ventas y cobros</CardTitle>
+                  <CardTitle className="text-base font-bold">Facturacion y cobros</CardTitle>
                   <CardDescription>Ultimos 7 dias.</CardDescription>
                 </div>
                 {canViewManagerialReports && (

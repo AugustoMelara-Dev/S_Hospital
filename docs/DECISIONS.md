@@ -1015,3 +1015,39 @@ Consecuencia:
 
 - La señal ayuda al diagnostico local, pero no sustituye la prueba fisica desde una segunda PC LAN.
 - `PRODUCTION_READY` sigue bloqueado hasta completar evidencia LAN, impresora, restore y concurrencia final.
+
+### 2026-05-31 - Dashboard diferencia facturacion y cobros
+
+Decision:
+
+- El dashboard usa "Facturacion" para montos emitidos desde facturas y "Cobros" para pagos recibidos.
+- Se evita "Ventas" como etiqueta de resumen financiero porque puede leerse como ingreso cobrado.
+- Los estados vacios de metodos y servicios mencionan cobros registrados o servicios facturados segun la fuente de datos.
+
+Motivo:
+
+- `total_billed` viene de facturas no anuladas y `total_collected` viene de pagos registrados.
+- Administracion necesita leer el inicio sin mezclar facturado, cobrado y flujo de efectivo.
+
+Consecuencia:
+
+- La UI del inicio queda alineada con el contrato de reportes y exports.
+- Una prueba frontend falla si vuelve a aparecer lenguaje ambiguo en estos indicadores.
+
+### 2026-05-31 - Aislamiento de permisos en pruebas backend
+
+Decision:
+
+- La base de pruebas limpia el `PermissionRegistrar` de Spatie al preparar y destruir cada caso.
+- La configuracion de pruebas fuerza cache de aplicacion y cache de permisos a `array`.
+- Los helpers de pruebas que asignan roles devuelven una instancia refrescada del usuario antes de usar `actingAs`.
+
+Motivo:
+
+- `CashPaymentsReceiptTest` pasaba cuando se ejecutaban casos aislados, pero fallaba al correr la clase completa con 403 en apertura de caja.
+- El fallo provenia de instancias de usuario con relaciones/permisos obsoletos despues de `assignRole`, no de una regresion del flujo real de caja.
+
+Consecuencia:
+
+- La suite backend vuelve a ser una senal confiable para cambios de seguridad, pagos y caja.
+- Los cambios quedan limitados a pruebas y no alteran autorizacion de produccion.

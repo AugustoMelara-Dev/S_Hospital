@@ -15,7 +15,7 @@ export function TopServicesChart({ services }: TopServicesChartProps) {
   if (services.length === 0) {
     return (
       <div className="flex h-[300px] items-center justify-center rounded-md border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
-        Sin ventas registradas este mes
+        Sin servicios facturados este mes
       </div>
     );
   }

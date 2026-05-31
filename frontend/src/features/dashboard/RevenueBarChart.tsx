@@ -99,7 +99,7 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
             iconSize={8}
             formatter={(value) => (
               <span className="text-xs font-medium text-foreground">
-                {value === 'Billed' ? 'Facturado (Ventas)' : 'Cobrado (Flujo)'}
+                {value === 'Billed' ? 'Facturado (emision)' : 'Cobrado (pagos)'}
               </span>
             )}
           />

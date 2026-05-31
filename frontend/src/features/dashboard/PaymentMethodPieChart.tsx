@@ -35,7 +35,7 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
   if (total === 0) {
     return (
       <div className="flex h-[240px] items-center justify-center rounded-md border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
-        Sin ingresos cobrados hoy
+        Sin cobros registrados hoy
       </div>
     );
   }
