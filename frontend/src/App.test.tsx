@@ -26,6 +26,19 @@ describe('App', () => {
           driver: 'mysql',
           is_mysql_family: true,
         },
+        frontend: {
+          dist_index_exists: true,
+          assets_present: true,
+          assets_count: 4,
+          entry_label: 'frontend/dist/index.html',
+        },
+        network: {
+          configured_host: '192.168.1.10',
+          host_type: 'lan',
+          lan_ready: true,
+          client_url: 'http://192.168.1.10:8000',
+          guidance: 'Clientes deben entrar por esta direccion LAN.',
+        },
         backups: {
           pending_count: 0,
           last_success_at: null,
@@ -446,6 +459,9 @@ describe('App', () => {
     expect(await screen.findByText(/requiere revisi/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver detalle avanzado/i }));
     expect(await screen.findByText(/checklist operativo/i)).toBeInTheDocument();
+    expect(screen.getByText(/interfaz y red local/i)).toBeInTheDocument();
+    expect(screen.getByText(/acceso cliente/i)).toBeInTheDocument();
+    expect(screen.getByText(/192\.168\.1\.10:8000/i)).toBeInTheDocument();
     expect(screen.getByText(/versi[oó]n instalada/i)).toBeInTheDocument();
     expect(screen.getByText(/modo de operaci[oó]n final/i)).toBeInTheDocument();
     expect(screen.getByText(/pantalla de ingreso abre/i)).toBeInTheDocument();

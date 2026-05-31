@@ -868,3 +868,21 @@ Consecuencia:
 
 - La guia operativa indica como verificar tareas y como reinstalarlas con `install_backup_tasks_windows.ps1 -UpdateExisting`.
 - La validacion de entrega debe crear un respaldo manual y confirmar que pase de `Pendiente` a `Protegido`.
+
+### 2026-05-31 - Diagnostico operativo de interfaz y LAN
+
+Decision:
+
+- `/api/system/status` expone un resumen no secreto de la interfaz instalada y la direccion LAN configurada.
+- El backend solo devuelve estados booleanos, conteo de assets, etiqueta relativa `frontend/dist/index.html`, host configurado y una recomendacion humana.
+- La vista de Respaldos muestra esa informacion en detalle avanzado para administracion/soporte.
+
+Motivo:
+
+- Soporte necesita distinguir entre "backend vivo" y "interfaz no compilada" sin ver rutas absolutas ni variables crudas.
+- Un cliente usando `localhost` sigue siendo uno de los fallos LAN mas probables; el sistema debe indicarlo antes de la entrega final.
+
+Consecuencia:
+
+- La señal ayuda al diagnostico local, pero no sustituye la prueba fisica desde una segunda PC LAN.
+- `PRODUCTION_READY` sigue bloqueado hasta completar evidencia LAN, impresora, restore y concurrencia final.

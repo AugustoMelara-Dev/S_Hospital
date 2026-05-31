@@ -398,6 +398,19 @@ async function installApiMocks(page: Page) {
         driver: 'mysql',
         is_mysql_family: true,
       },
+      frontend: {
+        dist_index_exists: true,
+        assets_present: true,
+        assets_count: 4,
+        entry_label: 'frontend/dist/index.html',
+      },
+      network: {
+        configured_host: '192.168.1.10',
+        host_type: 'lan',
+        lan_ready: true,
+        client_url: 'http://192.168.1.10:8000',
+        guidance: 'Clientes deben entrar por esta direccion LAN.',
+      },
       backups: {
         pending_count: backupLogs.filter((backup) => backup.status === 'pending').length,
         last_success_at: null,

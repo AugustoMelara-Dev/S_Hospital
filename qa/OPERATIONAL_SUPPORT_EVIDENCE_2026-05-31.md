@@ -33,6 +33,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | `4a0b161` | Instalador registra worker continuo y respaldo diario en tareas Windows. | Implementado |
 | `a16ffef` | Manual de usuario se rehizo con lenguaje institucional no tecnico. | Implementado |
 | Esta fase | Gate E2E acepta `-UseExistingServer -BaseUrl` para validar instalacion local/LAN sin iniciar Vite; mock E2E cubre reporte mensual y areas para evitar fugas al backend real. | Verificado |
+| Esta fase | Diagnostico operativo agrega interfaz instalada y direccion LAN configurada sin exponer rutas absolutas ni secretos. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -92,6 +93,11 @@ Resultado observado:
 | Parser PowerShell de `repair_hospital_system.ps1` y `collect_support_packet.ps1` | Paso. |
 | Parser PowerShell de `scripts\e2e_gate.ps1` | Paso. |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1` | Paso: 2 specs Playwright. Detecto y se corrigio fuga de `/api/areas?active=1` al backend local durante el flujo Reportes -> Respaldos. |
+| `php artisan test tests/Feature/SystemStatusTest.php` | Paso: 7 tests, 47 assertions. |
+| `npm.cmd test -- App.test.tsx` | Paso: 11 tests. |
+| `vendor\bin\pint --test app\Http\Controllers\SystemStatusController.php tests\Feature\SystemStatusTest.php` | Paso. |
+| `npm.cmd run lint` | Paso despues del diagnostico interfaz/LAN. |
+| `npm.cmd run build` | Paso despues del diagnostico interfaz/LAN, con warning de chunk grande existente. |
 
 ## Hallazgos Operativos Pendientes
 

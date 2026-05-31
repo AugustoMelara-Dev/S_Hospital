@@ -117,6 +117,8 @@ function friendlyProductionDetail(code: string, fallback: string): string {
 
 function operationalSummary(status: SystemStatus): { level: OperationalStatus; label: string; description: string; className: string } {
   const hasError =
+    !status.frontend.dist_index_exists ||
+    !status.frontend.assets_present ||
     !status.backups.storage.writable ||
     !status.backups.dump_binary.available ||
     !status.runtime.logs_writable ||
@@ -134,6 +136,7 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
   }
 
   const needsReview =
+    !status.network.lan_ready ||
     status.backups.pending_count > 0 ||
     status.readiness.blockers.some((blocker) => blocker.status !== 'validated') ||
     status.preflight.production_checks.some((check) => check.status !== 'validated') ||
@@ -346,7 +349,29 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         ) : null}
 
         {systemStatus && showAdvancedStatus ? (
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+            <Card className={systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && systemStatus.network.lan_ready ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}>
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-lg bg-white/80 p-2.5">
+                    <Server className="h-5 w-5 text-slate-700" />
+                  </div>
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-sm font-semibold">Interfaz y red local</p>
+                    <p className="text-xs text-muted-foreground">
+                      Interfaz: {systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present ? 'lista' : 'requiere build'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Acceso cliente: {systemStatus.network.lan_ready ? systemStatus.network.client_url : 'configurar IP LAN'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {systemStatus.network.guidance}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className={systemStatus.backups.dump_binary.available && systemStatus.backups.storage.writable ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}>
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">

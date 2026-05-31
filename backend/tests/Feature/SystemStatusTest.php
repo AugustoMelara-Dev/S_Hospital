@@ -19,7 +19,11 @@ class SystemStatusTest extends TestCase
         $proofRoot = storage_path('framework/testing-production-proofs-empty');
         File::deleteDirectory($proofRoot);
         File::ensureDirectoryExists($proofRoot.'/qa');
+        File::ensureDirectoryExists($proofRoot.'/frontend/dist/assets');
+        File::put($proofRoot.'/frontend/dist/index.html', '<div id="root"></div>');
+        File::put($proofRoot.'/frontend/dist/assets/index-test.js', 'console.log("ok");');
         Config::set('hospital.project_root', $proofRoot);
+        Config::set('app.url', 'http://192.168.1.10:8000');
 
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
@@ -55,6 +59,12 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.backups.queue.worker_command', 'php artisan queue:work --queue=backups --tries=1 --timeout=600')
             ->assertJsonPath('data.runtime.logs_writable', true)
             ->assertJsonPath('data.runtime.cache_writable', true)
+            ->assertJsonPath('data.frontend.dist_index_exists', true)
+            ->assertJsonPath('data.frontend.assets_present', true)
+            ->assertJsonPath('data.frontend.entry_label', 'frontend/dist/index.html')
+            ->assertJsonPath('data.network.host_type', 'lan')
+            ->assertJsonPath('data.network.lan_ready', true)
+            ->assertJsonPath('data.network.client_url', 'http://192.168.1.10:8000')
             ->assertJsonPath('data.environment.app_version', 'local')
             ->assertJsonPath('data.preflight.public_routes.0.path', '/up')
             ->assertJsonPath('data.preflight.public_routes.1.path', '/login')
@@ -66,6 +76,7 @@ class SystemStatusTest extends TestCase
             ->assertJsonMissingPath('data.database.password');
 
         $this->assertStringNotContainsString('password', json_encode($response->json(), JSON_THROW_ON_ERROR));
+        $this->assertStringNotContainsString($proofRoot, json_encode($response->json(), JSON_THROW_ON_ERROR));
     }
 
     public function test_status_marks_environment_partial_only_when_production_debug_is_off(): void

@@ -133,6 +133,8 @@ class SystemStatusController extends Controller
             'data' => [
                 'environment' => $this->environmentStatus(),
                 'database' => $this->databaseStatus(),
+                'frontend' => $this->frontendStatus(),
+                'network' => $this->networkStatus(),
                 'backups' => $this->backupStatus(),
                 'runtime' => $this->runtimeStatus(),
                 'readiness' => $this->readinessStatus(),
@@ -191,6 +193,51 @@ class SystemStatusController extends Controller
             'connection' => $connection,
             'driver' => $driver,
             'is_mysql_family' => in_array($driver, ['mysql', 'mariadb'], true),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function frontendStatus(): array
+    {
+        $indexPath = $this->projectPath('frontend/dist/index.html');
+        $assetsPath = $this->projectPath('frontend/dist/assets');
+        $assetsCount = is_dir($assetsPath)
+            ? count(glob($assetsPath.DIRECTORY_SEPARATOR.'*') ?: [])
+            : 0;
+
+        return [
+            'dist_index_exists' => is_file($indexPath),
+            'assets_present' => $assetsCount > 0,
+            'assets_count' => $assetsCount,
+            'entry_label' => 'frontend/dist/index.html',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function networkStatus(): array
+    {
+        $appUrl = (string) Config::get('app.url');
+        $parts = parse_url($appUrl) ?: [];
+        $host = isset($parts['host']) ? (string) $parts['host'] : null;
+        $scheme = isset($parts['scheme']) ? (string) $parts['scheme'] : 'http';
+        $port = isset($parts['port']) ? ':'.(string) $parts['port'] : '';
+        $loopbackHosts = ['localhost', '127.0.0.1', '::1'];
+        $hostType = $host === null || $host === ''
+            ? 'unknown'
+            : (in_array($host, $loopbackHosts, true) ? 'loopback' : 'lan');
+
+        return [
+            'configured_host' => $host,
+            'host_type' => $hostType,
+            'lan_ready' => $hostType === 'lan',
+            'client_url' => $hostType === 'lan' ? "{$scheme}://{$host}{$port}" : null,
+            'guidance' => $hostType === 'lan'
+                ? 'Clientes deben entrar por esta direccion LAN.'
+                : 'Configure APP_URL con la IP o nombre LAN del servidor antes de validar clientes.',
         ];
     }
 
@@ -395,6 +442,8 @@ class SystemStatusController extends Controller
     {
         $environment = $this->environmentStatus();
         $database = $this->databaseStatus();
+        $frontend = $this->frontendStatus();
+        $network = $this->networkStatus();
         $backups = $this->backupStatus();
         $physicalProofs = $this->physicalProofStatuses();
 
@@ -433,6 +482,20 @@ class SystemStatusController extends Controller
                     'label' => 'Carpeta local de backups escribible',
                     'status' => $backups['storage']['writable'] ? 'validated' : 'pending',
                     'detail' => $backups['storage']['writable'] ? 'Disponible' : 'No escribible',
+                ],
+                [
+                    'code' => 'FRONTEND_BUILD_PRESENT',
+                    'label' => 'Interfaz web compilada',
+                    'status' => $frontend['dist_index_exists'] && $frontend['assets_present'] ? 'validated' : 'pending',
+                    'detail' => $frontend['dist_index_exists'] && $frontend['assets_present']
+                        ? 'Interfaz lista para abrir en navegador'
+                        : 'Falta ejecutar build de frontend antes de instalar',
+                ],
+                [
+                    'code' => 'LAN_APP_URL_CONFIGURED',
+                    'label' => 'Direccion LAN configurada',
+                    'status' => $network['lan_ready'] ? 'validated' : 'manual_required',
+                    'detail' => $network['guidance'],
                 ],
                 [
                     'code' => 'BACKUP_WORKER_CONTINUOUS',

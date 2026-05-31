@@ -467,6 +467,19 @@ export type SystemStatus = {
     driver: string;
     is_mysql_family: boolean;
   };
+  frontend: {
+    dist_index_exists: boolean;
+    assets_present: boolean;
+    assets_count: number;
+    entry_label: string;
+  };
+  network: {
+    configured_host: string | null;
+    host_type: 'unknown' | 'loopback' | 'lan';
+    lan_ready: boolean;
+    client_url: string | null;
+    guidance: string;
+  };
   backups: {
     pending_count: number;
     last_success_at: string | null;
