@@ -776,3 +776,21 @@ Consecuencia:
 
 - Las migraciones son aditivas y permiten servicios o facturas antiguas sin area hasta su normalizacion.
 - Los filtros financieros aceptan `area_id` y las pruebas cubren que una factura emitida antes de cambiar el servicio de area sigue reportando contra el area original.
+
+### 2026-05-31 - Snapshot de conciliacion al cerrar caja
+
+Decision:
+
+- El cierre de caja guarda un snapshot de conciliacion con cantidad de pagos, total cobrado, totales por metodo, facturas pendientes y saldo pendiente.
+- Los reportes de una caja cerrada usan ese snapshot como fuente auditada en lugar de recalcular el resumen desde pagos o facturas que pueden cambiar despues.
+- Las cajas antiguas sin snapshot mantienen fallback al calculo actual para no romper datos existentes.
+
+Motivo:
+
+- Administracion debe poder revisar un cierre despues sin depender de memoria humana ni de que pagos/facturas posteriores sigan iguales.
+- Una correccion posterior, como una anulacion, no debe reescribir silenciosamente lo que se conto y audito al momento del cierre.
+
+Consecuencia:
+
+- La migracion es aditiva y nullable para preservar instalaciones existentes.
+- El detalle vivo de pagos puede seguir reflejando el estado actual, pero los totales principales del cierre cerrado permanecen historicos.

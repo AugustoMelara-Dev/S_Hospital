@@ -720,6 +720,46 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.cash_session.id', $sessionId);
     }
 
+    public function test_closed_cash_session_report_uses_close_snapshot_after_later_payment_correction(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $cashInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $cardInvoice = $this->createInvoice($cashier, 'Hemograma Completo');
+
+        $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($cashier, $cardInvoice, $sessionId, Payment::METHOD_CARD, '11.50');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", [
+                'closing_amount' => '517.25',
+            ])
+            ->assertOk();
+
+        Invoice::query()->whereKey($cardInvoice)->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => now()->addMinute(),
+            'void_reason' => 'Correccion posterior al cierre',
+        ]);
+
+        $cashier->givePermissionTo(Permission::findByName('reports.cash_session.view', 'web'));
+
+        $this->actingAs($cashier)
+            ->getJson("/api/reports/cash-sessions/{$sessionId}")
+            ->assertOk()
+            ->assertJsonPath('data.total_cash', '17.25')
+            ->assertJsonPath('data.total_card', '11.50')
+            ->assertJsonPath('data.payments_count', 2)
+            ->assertJsonPath('data.payments_total', '28.75')
+            ->assertJsonPath('data.expected_cash_amount', '517.25')
+            ->assertJsonPath('data.pending_invoice_count', 0)
+            ->assertJsonPath('data.pending_amount', '0.00')
+            ->assertJsonCount(2, 'data.payments')
+            ->assertJsonPath('data.payments.1.invoice.status', Invoice::STATUS_VOID);
+    }
+
     public function test_open_cash_session_report_exposes_pending_without_counting_it_as_collected(): void
     {
         $this->seedBillingBase();
