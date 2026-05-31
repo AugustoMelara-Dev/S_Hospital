@@ -20,7 +20,7 @@ $proofs = @(
     @{
         Source = Join-Path $qaDir "THERMAL_PRINTER_PROOF.example.md"
         Target = Join-Path $qaDir "THERMAL_PRINTER_PROOF.md"
-        Name = "thermal printer proof"
+        Name = "institutional printer proof"
     },
     @{
         Source = Join-Path $qaDir "FINAL_RESTORE_PROOF.example.md"
@@ -52,7 +52,7 @@ foreach ($proof in $proofs) {
 Write-Host ""
 Write-Host "Next steps:"
 Write-Host "1. Fill qa\LAN_CLIENT_VALIDATION_PROOF.md from a real second LAN client."
-Write-Host "2. Fill qa\THERMAL_PRINTER_PROOF.md from the real cashier printer."
+Write-Host "2. Fill qa\THERMAL_PRINTER_PROOF.md from the real cashier printer using media carta/carta/A5 samples."
 Write-Host "3. Run restore validation into a disposable DB and fill qa\FINAL_RESTORE_PROOF.md."
 Write-Host "4. Run concurrency validation against a disposable target and fill qa\FINAL_CONCURRENCY_PROOF.md."
 Write-Host "5. Run scripts\production_readiness_preflight.ps1 without -AllowMissingPhysicalProof."

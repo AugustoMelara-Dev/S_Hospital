@@ -89,10 +89,10 @@ No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`,
 
 - Instalar la impresora media carta, carta o A5 en la computadora que imprimira.
 - Validar una impresion de prueba desde el navegador usado en caja.
-- Configurar el tamano de papel del driver para evitar salida tipo carta.
+- Configurar el tamano de papel del driver segun el formato que usara caja: media carta, carta o A5.
 - Si la impresora se comparte en red, probar desde cada cliente autorizado antes de operar.
 - Marcar escala 100%, margenes minimos o ninguno, encabezados/pies del navegador desactivados si el navegador lo permite.
-- Ejecutar una prueba 80mm y una prueba 58mm con una factura pagada y una reimpresion desde historial.
+- Ejecutar pruebas en media carta, carta y A5 con una factura pagada y una reimpresion desde historial.
 
 ## Backups
 

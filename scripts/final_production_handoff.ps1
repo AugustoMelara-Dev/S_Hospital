@@ -92,7 +92,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Project root: $ProjectRoot"
     Add-ReportLine $lines "- Decision: $decision"
     Add-ReportLine $lines "- LAN client proof present without obvious placeholders: $lanProofCompleted"
-    Add-ReportLine $lines "- Thermal printer proof present without obvious placeholders: $printerProofCompleted"
+    Add-ReportLine $lines "- Institutional printer proof present without obvious placeholders: $printerProofCompleted"
     Add-ReportLine $lines "- Preflight skipped: $preflightSkipped"
     Add-ReportLine $lines "- Preflight exit code: $preflightExit"
     Add-ReportLine $lines ""
@@ -112,7 +112,7 @@ function Write-HandoffReport(
         Add-ReportLine $lines "- Missing or incomplete qa/LAN_CLIENT_VALIDATION_PROOF.md from a real second LAN client."
     }
     if (-not $printerProofCompleted) {
-        Add-ReportLine $lines "- Missing or incomplete qa/THERMAL_PRINTER_PROOF.md from the real thermal printer."
+        Add-ReportLine $lines "- Missing or incomplete qa/THERMAL_PRINTER_PROOF.md from the real institutional printer."
     }
     if ($preflightSkipped) {
         Add-ReportLine $lines "- Preflight was skipped in this handoff run."

@@ -91,7 +91,7 @@ class SystemStatusTest extends TestCase
         Config::set('hospital.project_root', $proofRoot);
 
         File::put($proofRoot.'/qa/LAN_CLIENT_VALIDATION_PROOF.md', $this->completedLanProof());
-        File::put($proofRoot.'/qa/THERMAL_PRINTER_PROOF.md', $this->completedThermalProof());
+        File::put($proofRoot.'/qa/THERMAL_PRINTER_PROOF.md', $this->completedInstitutionalPrinterProof());
 
         $this->actingAs($this->admin())
             ->getJson('/api/system/status')
@@ -223,7 +223,7 @@ class SystemStatusTest extends TestCase
 - [x] Cashbox opens. Result/evidence: caja abierta con monto inicial registrado.
 - [x] Invoice is created with patient name. Result/evidence: factura generada para Paciente LAN.
 - [x] Payment is registered. Result/evidence: pago en efectivo aparece en recibo.
-- [x] Receipt preview opens. Result/evidence: vista de recibo 80mm visible.
+- [x] Receipt preview opens. Result/evidence: vista de recibo institucional visible.
 - [x] Invoice history and reprint work. Result/evidence: historial muestra factura y reimpresion abre recibo historico.
 - [x] Reports load. Result/evidence: reporte diario carga metricas.
 - [x] Backup request from UI changes from `pending` to `success`. Result/evidence: backup manual completo con checksum visible.
@@ -235,7 +235,7 @@ class SystemStatusTest extends TestCase
 MARKDOWN;
     }
 
-    private function completedThermalProof(): string
+    private function completedInstitutionalPrinterProof(): string
     {
         return <<<'MARKDOWN'
 # Institutional printer proof
