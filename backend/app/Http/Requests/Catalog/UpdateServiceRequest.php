@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Catalog;
 
 use App\Models\Service;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -48,20 +49,28 @@ class UpdateServiceRequest extends FormRequest
                     return;
                 }
 
-                if ($this->filled('category_id') || $this->filled('name')) {
+                if ($this->filled('category_id') || $this->filled('name') || $this->has('area_id')) {
                     $categoryId = $this->filled('category_id')
                         ? $this->integer('category_id')
                         : $service->category_id;
+                    $areaId = $this->has('area_id')
+                        ? ($this->input('area_id') === null ? null : $this->integer('area_id'))
+                        : $service->area_id;
                     $name = $this->filled('name') ? $this->string('name')->toString() : $service->name;
 
                     $exists = Service::query()
                         ->where('category_id', $categoryId)
+                        ->where(function (Builder $query) use ($areaId): void {
+                            $areaId === null
+                                ? $query->whereNull('area_id')
+                                : $query->where('area_id', $areaId);
+                        })
                         ->where('slug', Str::slug($name))
                         ->whereKeyNot($service->id)
                         ->exists();
 
                     if ($exists) {
-                        $validator->errors()->add('name', 'Ya existe un servicio con un nombre equivalente en esta categoria.');
+                        $validator->errors()->add('name', 'Ya existe un servicio con un nombre equivalente en esta categoria y area.');
                     }
                 }
 

@@ -12,11 +12,19 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class ServiceCatalogTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
 
     public function test_service_catalog_seeder_loads_expected_categories_services_and_special_rule(): void
     {
@@ -320,6 +328,7 @@ class ServiceCatalogTest extends TestCase
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
         $laboratory = Category::query()->where('slug', 'laboratorio')->firstOrFail();
+        $laboratoryArea = Area::query()->where('slug', 'laboratorio')->firstOrFail();
 
         $this->actingAs($admin)
             ->postJson('/api/categories', [
@@ -331,8 +340,40 @@ class ServiceCatalogTest extends TestCase
         $this->actingAs($admin)
             ->postJson('/api/services', [
                 'category_id' => $laboratory->id,
+                'area_id' => $laboratoryArea->id,
                 'name' => 'Ultrasonido',
                 'price' => '80.00',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('name');
+    }
+
+    public function test_duplicate_service_names_are_scoped_by_category_and_area(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $laboratory = Category::query()->where('slug', 'laboratorio')->firstOrFail();
+        $laboratoryArea = Area::query()->where('slug', 'laboratorio')->firstOrFail();
+        $externalArea = Area::query()->create([
+            'name' => 'Laboratorio externo',
+            'slug' => 'laboratorio-externo',
+            'active' => true,
+        ]);
+
+        $externalServiceId = $this->actingAs($admin)
+            ->postJson('/api/services', [
+                'category_id' => $laboratory->id,
+                'area_id' => $externalArea->id,
+                'name' => 'Ultrasonido',
+                'price' => '80.00',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.area_id', $externalArea->id)
+            ->json('data.id');
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$externalServiceId}", [
+                'area_id' => $laboratoryArea->id,
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('name');

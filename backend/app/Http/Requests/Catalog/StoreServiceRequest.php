@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Catalog;
 
 use App\Models\Service;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -42,13 +43,21 @@ class StoreServiceRequest extends FormRequest
         return [
             function (Validator $validator): void {
                 if ($this->filled('category_id') && $this->filled('name')) {
+                    $areaId = $this->has('area_id') && $this->input('area_id') !== null
+                        ? $this->integer('area_id')
+                        : null;
                     $exists = Service::query()
                         ->where('category_id', $this->integer('category_id'))
+                        ->where(function (Builder $query) use ($areaId): void {
+                            $areaId === null
+                                ? $query->whereNull('area_id')
+                                : $query->where('area_id', $areaId);
+                        })
                         ->where('slug', Str::slug($this->string('name')))
                         ->exists();
 
                     if ($exists) {
-                        $validator->errors()->add('name', 'Ya existe un servicio con un nombre equivalente en esta categoria.');
+                        $validator->errors()->add('name', 'Ya existe un servicio con un nombre equivalente en esta categoria y area.');
                     }
                 }
 
