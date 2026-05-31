@@ -261,7 +261,7 @@ describe('App', () => {
               hospital_name: 'Hospital Demo',
               rtn: '08011999123456',
               default_tax_rate: '15.00',
-              receipt_width: '80mm',
+              receipt_paper_size: 'half_letter',
             },
           }),
         } as Response;

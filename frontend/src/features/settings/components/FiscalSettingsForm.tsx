@@ -10,10 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { FiscalSettings, FiscalSequence } from '@/lib/api';
 
+type InstitutionalReceiptPaperSize = 'half_letter' | 'letter' | 'a5';
+
+function institutionalPaperSize(value: FiscalSettings['receipt_paper_size']): InstitutionalReceiptPaperSize {
+  return value === 'letter' || value === 'a5' ? value : 'half_letter';
+}
+
 const settingsFormSchema = z.object({
   hospital_name: z.string().min(1, 'El nombre del hospital es requerido'),
   rtn: z.string(),
-  receipt_width: z.enum(['80mm', '58mm']),
+  receipt_paper_size: z.enum(['half_letter', 'letter', 'a5']),
   primary_color: z.enum(['teal', 'blue', 'indigo', 'green', 'rose']),
   address: z.string().optional(),
   slogan: z.string().optional(),
@@ -59,7 +65,7 @@ export function FiscalSettingsForm({
     defaultValues: {
       hospital_name: settings?.hospital_name ?? '',
       rtn: settings?.rtn ?? '',
-      receipt_width: settings?.receipt_width ?? '80mm',
+      receipt_paper_size: institutionalPaperSize(settings?.receipt_paper_size),
       primary_color: settings?.primary_color ?? 'indigo',
       address: settings?.address ?? '',
       slogan: settings?.slogan ?? '',
@@ -149,17 +155,18 @@ export function FiscalSettingsForm({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
               <div className="w-full">
-                <Label htmlFor="receipt_width">Recibo institucional</Label>
+                <Label htmlFor="receipt_paper_size">Recibo institucional</Label>
                 <Select
-                  value={watchSettings('receipt_width')}
-                  onValueChange={(v: string) => setValueSettings('receipt_width', v as '80mm' | '58mm')}
+                  value={watchSettings('receipt_paper_size')}
+                  onValueChange={(v: string) => setValueSettings('receipt_paper_size', v as InstitutionalReceiptPaperSize)}
                 >
-                  <SelectTrigger id="receipt_width">
+                  <SelectTrigger id="receipt_paper_size">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="80mm">Formato legado 80mm</SelectItem>
-                    <SelectItem value="58mm">Formato legado 58mm</SelectItem>
+                    <SelectItem value="half_letter">Media carta</SelectItem>
+                    <SelectItem value="letter">Carta</SelectItem>
+                    <SelectItem value="a5">A5</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

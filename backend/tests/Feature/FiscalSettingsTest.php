@@ -35,7 +35,7 @@ class FiscalSettingsTest extends TestCase
             ->putJson('/api/settings/fiscal', $this->validPayload())
             ->assertOk()
             ->assertJsonPath('data.hospital_name', 'Hospital San Miguel')
-            ->assertJsonPath('data.receipt_width', '80mm');
+            ->assertJsonPath('data.receipt_paper_size', 'half_letter');
 
         $this->assertDatabaseHas('fiscal_settings', [
             'hospital_name' => 'Hospital San Miguel',
@@ -94,7 +94,7 @@ class FiscalSettingsTest extends TestCase
             'hospital_name' => 'Hospital San Miguel',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_width' => '80mm',
+            'receipt_paper_size' => 'half_letter',
             'primary_color' => 'indigo',
             'address' => 'Barrio El Centro',
             'slogan' => 'Tu salud es nuestra prioridad',

@@ -25,16 +25,17 @@ type FiscalSettingsViewProps = {
   onStatus: (message: string) => void;
 };
 
+type InstitutionalReceiptPaperSize = 'half_letter' | 'letter' | 'a5';
+
 type SettingsFormData = {
   hospital_name: string;
   rtn: string;
-  receipt_width: '80mm' | '58mm';
   primary_color: 'teal' | 'blue' | 'indigo' | 'green' | 'rose';
   address: string;
   slogan: string;
   scanner_enabled: boolean;
   partial_payments_enabled: boolean;
-  receipt_paper_size: 'letter' | 'half_letter' | 'a5' | '80mm' | '58mm';
+  receipt_paper_size: InstitutionalReceiptPaperSize;
   government_line: string;
   secretariat_line: string;
   receipt_location: string;
@@ -57,6 +58,10 @@ function isDemoCai(value: string | null | undefined): boolean {
   return /^demo-cai$/i.test(value?.trim() ?? '');
 }
 
+function institutionalPaperSize(value: FiscalSettings['receipt_paper_size']): InstitutionalReceiptPaperSize {
+  return value === 'letter' || value === 'a5' ? value : 'half_letter';
+}
+
 export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProps) {
   const { colorTheme, setColorTheme } = useTheme();
   const [settings, setSettings] = useState<FiscalSettings | null>(null);
@@ -71,7 +76,6 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
   const [hospitalForm, setHospitalForm] = useState<SettingsFormData>({
     hospital_name: '',
     rtn: '',
-    receipt_width: '80mm',
     primary_color: 'teal',
     address: '',
     slogan: '',
@@ -142,13 +146,12 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         setHospitalForm({
           hospital_name: hospitalName ?? '',
           rtn: settingsData.rtn ?? '',
-          receipt_width: (settingsData.receipt_width as '80mm' | '58mm') ?? '80mm',
           primary_color: settingsData.primary_color ?? 'indigo',
           address: settingsData.address ?? '',
           slogan: settingsData.slogan ?? '',
           scanner_enabled: settingsData.scanner_enabled === true,
           partial_payments_enabled: settingsData.partial_payments_enabled === true,
-          receipt_paper_size: settingsData.receipt_paper_size ?? 'half_letter',
+          receipt_paper_size: institutionalPaperSize(settingsData.receipt_paper_size),
           government_line: settingsData.government_line ?? 'Gobierno de Honduras',
           secretariat_line: settingsData.secretariat_line ?? 'Secretaria de Salud Publica',
           receipt_location: settingsData.receipt_location ?? settingsData.address ?? 'Tocoa, Colon',
@@ -190,7 +193,6 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       const updated = await apiClient.updateFiscalSettings({
         hospital_name: hospitalForm.hospital_name,
         rtn: hospitalForm.rtn,
-        receipt_width: hospitalForm.receipt_width,
         primary_color: hospitalForm.primary_color,
         address: hospitalForm.address,
         slogan: hospitalForm.slogan,
@@ -226,7 +228,6 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       const updated = await apiClient.updateFiscalSettings({
         hospital_name: hospitalForm.hospital_name || settings.hospital_name,
         rtn: hospitalForm.rtn || settings.rtn,
-        receipt_width: hospitalForm.receipt_width || settings.receipt_width,
         primary_color: newColor,
         address: hospitalForm.address || settings.address,
         slogan: hospitalForm.slogan || settings.slogan,

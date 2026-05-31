@@ -23,6 +23,12 @@ type SetupWizardDialogProps = {
   onComplete: () => void;
 };
 
+type InstitutionalReceiptPaperSize = 'half_letter' | 'letter' | 'a5';
+
+function institutionalPaperSize(value: unknown): InstitutionalReceiptPaperSize {
+  return value === 'letter' || value === 'a5' ? value : 'half_letter';
+}
+
 export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizardDialogProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -33,8 +39,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
     hospital_name: '',
     rtn: '',
     default_tax_rate: '15.00',
-    receipt_width: '80mm' as '80mm' | '58mm',
-    receipt_paper_size: 'half_letter' as 'half_letter' | 'letter' | 'a5',
+    receipt_paper_size: 'half_letter' as InstitutionalReceiptPaperSize,
     primary_color: 'indigo' as 'teal' | 'blue' | 'indigo' | 'green' | 'rose',
     address: '',
     slogan: '',
@@ -74,8 +79,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
           hospital_name: settings.hospital_name || '',
           rtn: settings.rtn || '',
           default_tax_rate: settings.default_tax_rate || '15.00',
-          receipt_width: (settings.receipt_width as '80mm' | '58mm') || '80mm',
-          receipt_paper_size: (settings.receipt_paper_size as 'half_letter' | 'letter' | 'a5') || 'half_letter',
+          receipt_paper_size: institutionalPaperSize(settings.receipt_paper_size),
           primary_color: settings.primary_color || 'indigo',
           address: settings.address || '',
           slogan: settings.slogan || '',
@@ -110,7 +114,6 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         hospital_name: hospitalForm.hospital_name,
         rtn: hospitalForm.rtn,
         default_tax_rate: hospitalForm.default_tax_rate,
-        receipt_width: hospitalForm.receipt_width,
         receipt_paper_size: hospitalForm.receipt_paper_size,
         primary_color: hospitalForm.primary_color,
         address: hospitalForm.address,
@@ -330,7 +333,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                 <Label htmlFor="wiz-hosp-width">Tamano del recibo institucional</Label>
                 <Select
                   value={hospitalForm.receipt_paper_size}
-                  onValueChange={(val: 'half_letter' | 'letter' | 'a5') => setHospitalForm({ ...hospitalForm, receipt_paper_size: val })}
+                  onValueChange={(val: string) => setHospitalForm({ ...hospitalForm, receipt_paper_size: val as InstitutionalReceiptPaperSize })}
                 >
                   <SelectTrigger id="wiz-hosp-width">
                     <SelectValue />

@@ -14,8 +14,8 @@ export type FiscalSettings = {
   hospital_name: string;
   rtn: string;
   default_tax_rate: string;
-  receipt_width: '80mm' | '58mm';
-  receipt_paper_size?: ReceiptPaperSize;
+  receipt_width?: LegacyReceiptWidth;
+  receipt_paper_size?: InstitutionalReceiptPaperSize;
   primary_color: 'teal' | 'blue' | 'indigo' | 'green' | 'rose';
   address?: string;
   slogan?: string;
@@ -163,7 +163,9 @@ export type Payment = {
   paid_at: string;
 };
 
-export type ReceiptPaperSize = 'letter' | 'half_letter' | 'a5' | '80mm' | '58mm';
+export type InstitutionalReceiptPaperSize = 'letter' | 'half_letter' | 'a5';
+export type LegacyReceiptWidth = '80mm' | '58mm';
+export type ReceiptPaperSize = InstitutionalReceiptPaperSize | LegacyReceiptWidth;
 
 export type ReceiptData = {
   width: ReceiptPaperSize;
@@ -236,6 +238,9 @@ export type DailyReport = {
   date: string;
   total_billed: string;
   total_collected: string;
+  total_pending: string;
+  total_partial: string;
+  total_voided: string;
   invoice_count: number;
   payment_count: number;
   payments_by_method: MoneyByMethod;
@@ -248,7 +253,11 @@ export type IncomeReport = {
   cash_session_id: number | null;
   user_id: number | null;
   filters: ReportFilters;
+  total_billed: string;
   total_collected: string;
+  total_pending: string;
+  total_partial: string;
+  total_voided: string;
   payments_by_method: MoneyByMethod;
   payment_count: number;
   invoice_count: number;
@@ -511,12 +520,18 @@ export type DashboardReport = {
     date: string;
     total_billed: string;
     total_collected: string;
+    total_pending?: string;
+    total_partial?: string;
+    total_voided?: string;
     invoice_count: number;
     payment_count: number;
   }>;
   current_month: {
     total_billed: string;
     total_collected: string;
+    total_pending?: string;
+    total_partial?: string;
+    total_voided?: string;
     invoice_count: number;
     payment_count: number;
   };
