@@ -1,0 +1,299 @@
+param(
+    [string] $ProjectRoot = "",
+    [string] $BaseUrl = $env:HOSPITAL_SYSTEM_URL,
+    [string] $ReportPath = "",
+    [int] $Retries = 30,
+    [int] $DelaySeconds = 2,
+    [switch] $SkipDockerStart,
+    [switch] $NoBrowser
+)
+
+$ErrorActionPreference = "Stop"
+
+if ($ProjectRoot -eq "") {
+    $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+    $ProjectRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
+}
+
+if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
+    $BaseUrl = "http://127.0.0.1:8000"
+}
+
+if ($ReportPath -eq "") {
+    $ReportPath = Join-Path $ProjectRoot "qa\LOCAL_REPAIR_DIAGNOSTIC.md"
+}
+
+$reportLines = New-Object System.Collections.Generic.List[string]
+$hadError = $false
+$hadWarning = $false
+
+function Add-Line([string] $line = "") {
+    $reportLines.Add($line) | Out-Null
+}
+
+function Add-Console([string] $message, [string] $color = "Gray") {
+    Write-Host $message -ForegroundColor $color
+}
+
+function Protect-ReportText([string] $value) {
+    $protected = $value
+
+    if (-not [string]::IsNullOrWhiteSpace($ProjectRoot)) {
+        $protected = $protected -replace [regex]::Escape($ProjectRoot), "%PROJECT_ROOT%"
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
+        $protected = $protected -replace [regex]::Escape($env:USERPROFILE), "%USERPROFILE%"
+    }
+
+    return $protected
+}
+
+function Add-Result([string] $status, [string] $label, [string] $detail = "") {
+    $safeDetail = Protect-ReportText ($detail -replace "\|", "/")
+    Add-Line "| $status | $label | $safeDetail |"
+
+    if ($status -eq "ERROR") {
+        $script:hadError = $true
+        Add-Console "[ERROR] $label - $detail" "Red"
+        return
+    }
+
+    if ($status -eq "REVISION") {
+        $script:hadWarning = $true
+        Add-Console "[REVISION] $label - $detail" "Yellow"
+        return
+    }
+
+    Add-Console "[OK] $label" "Green"
+}
+
+function Invoke-CommandForReport([string] $label, [string] $command, [string[]] $arguments) {
+    try {
+        $output = & $command @arguments 2>&1 | ForEach-Object { $_.ToString() }
+        $exitCode = $LASTEXITCODE
+
+        if ($exitCode -eq 0) {
+            Add-Result "OK" $label "Comando ejecutado correctamente."
+        } else {
+            Add-Result "REVISION" $label "El comando termino con codigo $exitCode."
+        }
+
+        if ($output.Count -gt 0) {
+            Add-Line ""
+            Add-Line "<details><summary>$label - salida tecnica para soporte</summary>"
+            Add-Line ""
+            Add-Line '```text'
+            foreach ($line in $output) {
+                Add-Line (Protect-ReportText ($line -replace "\|", "/"))
+            }
+            Add-Line '```'
+            Add-Line ""
+            Add-Line "</details>"
+        }
+
+        return $exitCode -eq 0
+    } catch {
+        Add-Result "ERROR" $label $_.Exception.Message
+        return $false
+    }
+}
+
+function Wait-ForUrl([string] $url, [int] $minCode = 200, [int] $maxCode = 399) {
+    for ($i = 1; $i -le $Retries; $i++) {
+        try {
+            $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 4
+            if ($response.StatusCode -ge $minCode -and $response.StatusCode -le $maxCode) {
+                return @{ Ok = $true; StatusCode = $response.StatusCode; Attempts = $i }
+            }
+        } catch {
+            if ($i -eq 1) {
+                Add-Console "Esperando respuesta de $url ..." "Yellow"
+            }
+        }
+
+        Start-Sleep -Seconds $DelaySeconds
+    }
+
+    return @{ Ok = $false; StatusCode = ""; Attempts = $Retries }
+}
+
+function Read-SafeEnvSummary([string] $envPath) {
+    if (-not (Test-Path -LiteralPath $envPath)) {
+        Add-Result "REVISION" "Archivo de entorno" "No existe backend\.env. El instalador debe crearlo antes de operar."
+        return
+    }
+
+    $allowedKeys = @(
+        "APP_ENV",
+        "APP_DEBUG",
+        "APP_URL",
+        "DB_CONNECTION",
+        "QUEUE_CONNECTION",
+        "HOSPITAL_DAILY_BACKUP_TIME"
+    )
+
+    $values = @{}
+    Get-Content -LiteralPath $envPath | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -eq "" -or $line.StartsWith("#") -or -not $line.Contains("=")) {
+            return
+        }
+
+        $key, $value = $line.Split("=", 2)
+        $key = $key.Trim()
+        if ($allowedKeys -contains $key) {
+            $values[$key] = $value.Trim().Trim('"').Trim("'")
+        }
+    }
+
+    foreach ($key in $allowedKeys) {
+        if ($values.ContainsKey($key)) {
+            Add-Result "OK" "Configuracion $key" $values[$key]
+        }
+    }
+
+    $blockedKeys = Get-Content -LiteralPath $envPath | Where-Object {
+        $_ -match "^(DB_PASSWORD|APP_KEY|MAIL_PASSWORD|.*SECRET.*|.*TOKEN.*)="
+    }
+
+    if ($blockedKeys.Count -gt 0) {
+        Add-Result "OK" "Secretos protegidos" "El diagnostico omitio claves, tokens y passwords."
+    }
+}
+
+$reportDir = Split-Path -Parent $ReportPath
+if (-not (Test-Path -LiteralPath $reportDir)) {
+    New-Item -ItemType Directory -Force -Path $reportDir | Out-Null
+}
+
+Set-Location $ProjectRoot
+
+Add-Console "Reparacion segura del Sistema de Caja Hospitalaria" "Cyan"
+Add-Console "No se borran datos, no se reinicia la base y no se ejecutan seeders." "Cyan"
+
+Add-Line "# Diagnostico de reparacion segura"
+Add-Line ""
+Add-Line "- Fecha: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")"
+Add-Line "- Sistema: Sistema de Caja Hospitalaria"
+Add-Line "- Accion: revisar servicios, levantar contenedores si aplica, esperar backend y abrir navegador"
+Add-Line "- Seguridad: no borra datos, no elimina volumenes, no ejecuta `migrate:fresh`, no muestra secretos"
+Add-Line ""
+Add-Line "## Resumen"
+Add-Line ""
+Add-Line "| Estado | Revision | Detalle |"
+Add-Line "| --- | --- | --- |"
+
+if (Test-Path -LiteralPath $ProjectRoot) {
+    Add-Result "OK" "Carpeta del sistema" "Proyecto localizado."
+} else {
+    Add-Result "ERROR" "Carpeta del sistema" "No se encontro la carpeta indicada."
+}
+
+$envPath = Join-Path $ProjectRoot "backend\.env"
+Read-SafeEnvSummary $envPath
+
+$distPath = Join-Path $ProjectRoot "frontend\dist\index.html"
+if (Test-Path -LiteralPath $distPath) {
+    Add-Result "OK" "Interfaz preparada" "Existe frontend\dist\index.html."
+} else {
+    Add-Result "REVISION" "Interfaz preparada" "No existe frontend\dist\index.html. Ejecute el build antes de validar LAN final."
+}
+
+$dockerCommand = Get-Command docker -ErrorAction SilentlyContinue
+if ($null -eq $dockerCommand) {
+    Add-Result "ERROR" "Docker" "Docker no esta disponible en PATH."
+} else {
+    Add-Result "OK" "Docker" "Docker esta instalado."
+    $dockerReady = Invoke-CommandForReport "Docker activo" "docker" @("info", "--format", "{{.ServerVersion}}")
+
+    if ($dockerReady -and -not $SkipDockerStart) {
+        Invoke-CommandForReport "Levantar servicios locales" "docker" @("compose", "up", "-d", "backend", "frontend", "mysql") | Out-Null
+    } elseif ($SkipDockerStart) {
+        Add-Result "REVISION" "Levantar servicios locales" "Omitido por parametro -SkipDockerStart."
+    }
+
+    Invoke-CommandForReport "Estado de contenedores" "docker" @("compose", "ps") | Out-Null
+}
+
+$upUrl = ($BaseUrl.TrimEnd("/")) + "/up"
+$healthUrl = ($BaseUrl.TrimEnd("/")) + "/api/health"
+$loginUrl = ($BaseUrl.TrimEnd("/")) + "/login"
+
+$up = Wait-ForUrl $upUrl
+if ($up.Ok) {
+    Add-Result "OK" "Backend activo" "$upUrl respondio HTTP $($up.StatusCode) tras $($up.Attempts) intento(s)."
+} else {
+    Add-Result "ERROR" "Backend activo" "$upUrl no respondio despues de $Retries intentos."
+}
+
+$health = Wait-ForUrl $healthUrl
+if ($health.Ok) {
+    Add-Result "OK" "API disponible" "$healthUrl respondio HTTP $($health.StatusCode)."
+} else {
+    Add-Result "REVISION" "API disponible" "$healthUrl no respondio. Revise logs del backend."
+}
+
+$login = Wait-ForUrl $loginUrl
+if ($login.Ok) {
+    Add-Result "OK" "Pantalla de ingreso" "$loginUrl respondio HTTP $($login.StatusCode)."
+} else {
+    Add-Result "REVISION" "Pantalla de ingreso" "$loginUrl no respondio. Puede faltar build o backend."
+}
+
+try {
+    $driveName = (Get-Item -LiteralPath $ProjectRoot).PSDrive.Name
+    $drive = Get-PSDrive -Name $driveName
+    $freeGb = [math]::Round($drive.Free / 1GB, 2)
+    if ($freeGb -lt 5) {
+        Add-Result "REVISION" "Espacio en disco" "Quedan $freeGb GB libres en la unidad $driveName."
+    } else {
+        Add-Result "OK" "Espacio en disco" "Quedan $freeGb GB libres en la unidad $driveName."
+    }
+} catch {
+    Add-Result "REVISION" "Espacio en disco" "No se pudo leer el espacio libre."
+}
+
+if ($null -ne (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue)) {
+    foreach ($taskName in @("SistemaCajaHospitalaria-BackupWorker", "SistemaCajaHospitalaria-DailyBackup")) {
+        $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+        if ($null -eq $task) {
+            Add-Result "REVISION" "Tarea $taskName" "No esta registrada en el Programador de tareas."
+        } else {
+            Add-Result "OK" "Tarea $taskName" "Estado: $($task.State)."
+        }
+    }
+}
+
+Add-Line ""
+Add-Line "## Acciones recomendadas"
+Add-Line ""
+
+if ($hadError) {
+    Add-Line "- No continue facturando desde computadoras cliente hasta que soporte revise los errores."
+    Add-Line "- Envie este archivo de diagnostico al responsable tecnico."
+    Add-Line "- No borre carpetas, volumenes Docker ni archivos `.env`."
+} elseif ($hadWarning) {
+    Add-Line "- El sistema puede requerir revision antes de operar todo el turno."
+    Add-Line "- Revise respaldos, tareas programadas, build frontend y acceso LAN desde otra computadora."
+} else {
+    Add-Line "- El sistema respondio correctamente. Abra caja y haga una prueba corta si estaba recuperando un arranque."
+}
+
+Set-Content -LiteralPath $ReportPath -Value $reportLines -Encoding ASCII
+Add-Console "Diagnostico guardado en: $ReportPath" "Cyan"
+
+if (-not $NoBrowser -and $login.Ok) {
+    Start-Process $loginUrl -WindowStyle Hidden
+    Add-Console "Navegador solicitado en $loginUrl" "Green"
+}
+
+if ($hadError) {
+    exit 1
+}
+
+if ($hadWarning) {
+    exit 2
+}
+
+exit 0
