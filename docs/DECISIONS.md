@@ -794,3 +794,21 @@ Consecuencia:
 
 - La migracion es aditiva y nullable para preservar instalaciones existentes.
 - El detalle vivo de pagos puede seguir reflejando el estado actual, pero los totales principales del cierre cerrado permanecen historicos.
+
+### 2026-05-31 - Reversion auditable de pagos
+
+Decision:
+
+- Los pagos se corrigen mediante reversion auditable (`status=void`) y no se borran.
+- Cada reversion exige permiso `payments.void`, motivo de servidor, usuario, fecha y auditoria.
+- La factura se recalcula dentro de la misma transaccion desde pagos `posted`, dejando `paid_amount`, `balance_due` y `status` consistentes.
+
+Motivo:
+
+- Caja y reportes deben excluir pagos reversados sin perder la evidencia de que el pago existio.
+- Una correccion de metodo o monto no debe depender de edicion manual ni de memoria humana.
+
+Consecuencia:
+
+- Los reportes existentes, que ya filtran pagos `posted`, excluyen reversos automaticamente.
+- La UI puede consumir el nuevo endpoint de reversion sin crear una fuente secundaria de verdad para estados de pago.

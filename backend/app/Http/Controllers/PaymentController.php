@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Payments\RegisterPaymentAction;
+use App\Actions\Payments\VoidPaymentAction;
 use App\Http\Requests\Payments\StorePaymentRequest;
+use App\Http\Requests\Payments\VoidPaymentRequest;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Support\InvoiceAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,5 +41,22 @@ class PaymentController extends Controller
                 'invoice' => $invoice->fresh()->load('items', 'payments', 'issuer:id,name,username'),
             ],
         ], 201);
+    }
+
+    public function void(
+        VoidPaymentRequest $request,
+        Invoice $invoice,
+        Payment $payment,
+        VoidPaymentAction $voidPayment,
+        InvoiceAccess $invoiceAccess,
+    ): JsonResponse {
+        $voidedPayment = $voidPayment->execute($invoice, $payment, $request->validated(), $request->user(), $invoiceAccess);
+
+        return response()->json([
+            'data' => [
+                'payment' => $voidedPayment,
+                'invoice' => $invoice->fresh()->load('items', 'payments', 'issuer:id,name,username'),
+            ],
+        ]);
     }
 }

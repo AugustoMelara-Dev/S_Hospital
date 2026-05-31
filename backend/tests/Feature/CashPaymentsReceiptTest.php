@@ -425,6 +425,92 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonValidationErrors('invoice');
     }
 
+    public function test_voiding_payment_recalculates_invoice_and_excludes_payment_from_cash_and_reports(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $supervisor = User::factory()->create();
+        $supervisor->assignRole('supervisor');
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $cashPaymentId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '10.00',
+            ])
+            ->assertCreated()
+            ->json('data.payment.id');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_TRANSFER,
+                'amount' => '7.25',
+                'reference' => 'TRX-VOID-1',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments/{$cashPaymentId}/void", [
+                'reason' => 'Intento sin permiso',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/payments/{$cashPaymentId}/void", [
+                'reason' => 'Pago registrado con metodo incorrecto',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.payment.status', Payment::STATUS_VOID)
+            ->assertJsonPath('data.payment.voided_by.id', $supervisor->id)
+            ->assertJsonPath('data.payment.void_reason', 'Pago registrado con metodo incorrecto')
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_PARTIAL)
+            ->assertJsonPath('data.invoice.paid_amount', '7.25')
+            ->assertJsonPath('data.invoice.balance_due', '10.00');
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/payments/{$cashPaymentId}/void", [
+                'reason' => 'Segundo intento',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('payment');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/cash-sessions/current')
+            ->assertOk()
+            ->assertJsonPath('data.payments_count', 1)
+            ->assertJsonPath('data.payments_total', '7.25')
+            ->assertJsonPath('data.payments_by_method.cash', '0.00')
+            ->assertJsonPath('data.payments_by_method.transfer', '7.25')
+            ->assertJsonPath('data.expected_cash_amount', '500.00')
+            ->assertJsonPath('data.pending_invoice_count', 1)
+            ->assertJsonPath('data.pending_amount', '10.00');
+
+        $this->actingAs($supervisor)
+            ->getJson('/api/reports/daily?date='.now()->toDateString())
+            ->assertOk()
+            ->assertJsonPath('data.total_collected', '7.25')
+            ->assertJsonPath('data.payments_by_method.cash', '0.00')
+            ->assertJsonPath('data.payments_by_method.transfer', '7.25');
+
+        $this->assertDatabaseHas('payments', [
+            'id' => $cashPaymentId,
+            'status' => Payment::STATUS_VOID,
+            'voided_by' => $supervisor->id,
+            'void_reason' => 'Pago registrado con metodo incorrecto',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $supervisor->id,
+            'action' => 'payment.voided',
+            'entity_type' => Payment::class,
+            'entity_id' => $cashPaymentId,
+        ]);
+    }
+
     public function test_permissions_are_required_for_cash_and_payments(): void
     {
         $this->seedBillingBase();
@@ -446,6 +532,27 @@ class CashPaymentsReceiptTest extends TestCase
                 'cash_session_id' => $sessionId,
                 'method' => Payment::METHOD_CASH,
                 'amount' => '1.00',
+            ])
+            ->assertForbidden();
+
+        $paymentId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->json('data.payment.id');
+
+        $this->actingAs($user)
+            ->postJson("/api/invoices/{$invoiceId}/payments/{$paymentId}/void", [
+                'reason' => 'Sin permiso para reversar',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments/{$paymentId}/void", [
+                'reason' => 'Cajero sin permiso de reverso',
             ])
             ->assertForbidden();
     }

@@ -47,6 +47,21 @@ export const billing = {
     return response.data;
   },
 
+  async voidPayment(
+    invoiceId: number,
+    paymentId: number,
+    payload: { reason: string },
+  ): Promise<{ payment: Payment; invoice: Invoice }> {
+    const response = await apiClient.request<{ data: { payment: Payment; invoice: Invoice } }>(
+      `/api/invoices/${invoiceId}/payments/${paymentId}/void`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+    );
+    return response.data;
+  },
+
   async getReceipt(invoiceId: number, width?: ReceiptData['width']): Promise<ReceiptData> {
     const query = width ? `?width=${width}` : '';
     const response = await apiClient.request<{ data: ReceiptData }>(

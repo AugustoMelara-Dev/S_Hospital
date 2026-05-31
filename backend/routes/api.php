@@ -72,6 +72,7 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
 
         Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store']);
         Route::get('/invoices/{invoice}/payments', [PaymentController::class, 'index']);
+        Route::post('/invoices/{invoice}/payments/{payment}/void', [PaymentController::class, 'void']);
         Route::get('/invoices/{invoice}/receipt', [ReceiptController::class, 'show']);
         Route::post('/invoices/{invoice}/reprint', [ReceiptController::class, 'reprint']);
 

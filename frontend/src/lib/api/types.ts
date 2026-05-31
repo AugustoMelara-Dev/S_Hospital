@@ -179,7 +179,10 @@ export type Payment = {
   method: 'cash' | 'transfer' | 'card' | 'other';
   amount: string;
   reference: string | null;
-  status: 'posted';
+  status: 'posted' | 'void';
+  voided_by?: number | Pick<AuthUser, 'id' | 'name' | 'username'> | null;
+  voided_at?: string | null;
+  void_reason?: string | null;
   paid_at: string;
 };
 
