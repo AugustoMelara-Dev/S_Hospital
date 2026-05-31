@@ -1,64 +1,101 @@
 # Hospital San Isidro - Ops hardening gate 2026-05-31
 
-## Estado
+## Decision
 
-VALIDADO LOCALMENTE CON PENDIENTES FISICOS DE CAMPO.
+LOCAL OPS HARDENING VALIDATED. PRODUCTION_READY: NO.
 
-Este gate corresponde al frente de soporte operativo, instalador seguro, bitacora de problemas e idempotencia de factura/pago. No sustituye pruebas fisicas de impresora, segunda PC LAN, UPS ni restore en el servidor final.
+This gate covers the operational support hardening front: safe installer/repair, support center, sanitized diagnostics, client issue logging, idempotent invoice/payment submits, local backup/restore validation and browser smoke evidence.
 
-## Alcance validado por codigo
+It does not replace final hospital-server proof. A new production handoff still requires the real server PC, real LAN client, real printer, Windows scheduled tasks and final environment variables.
 
-- Instalador y reparacion no destructivos:
-  - `scripts/validate_installer_safety.ps1`
-  - `scripts/repair_hospital_system.ps1`
-- Diagnostico operativo:
-  - `/api/system/status`
-  - resumen `ok/warning/error` sin secretos.
-- Centro de soporte:
-  - `/support`
-  - playbooks de caja, red, recibos, respaldos y cierre diario.
-- Bitacora de problemas cliente:
-  - `client_error_logs`
-  - `/api/system/client-errors`
-  - mensajes sanitizados y contexto permitido.
-- Idempotencia transaccional:
-  - `operation_idempotency_keys`
-  - header `Idempotency-Key` en emision de factura y registro de pago.
+## Current evidence
 
-## Pruebas locales esperadas
+- Current commit reviewed: `abd475e`.
+- Working tree after the committed gate was clean before the next unrelated catalog edit appeared.
+- Running stack: Docker backend, frontend and MariaDB active; MariaDB healthy.
+- Direct SPA route proof: `http://127.0.0.1:8000/support` returned 200; `http://127.0.0.1:8000/about` returned 200.
+- Support screenshot: `qa/screenshots/ops-hardening-audit-2026-05-31/support-center-after-status-summary.png`.
+- Support console log: `qa/screenshots/ops-hardening-audit-2026-05-31/support-center-after-status-summary-console.json` with `[]`.
+- Visual smoke report: `qa/screenshots/phase-12-visual-smoke/visual-smoke-report.json`, `consoleIssueCount: 0`, `blockerCount: 0`.
+- Local restore proof: `qa/ops-hardening-restore-validation-2026-05-31.md`.
 
-- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_installer_safety.ps1`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/repair_hospital_system.ps1 -WhatIf`
-- `php artisan test --filter=SystemStatusTest`
-- `php artisan test --filter=ClientErrorLogTest`
-- `php artisan test --filter=InvoiceCreationTest`
-- `php artisan test --filter=CashPaymentsReceiptTest`
-- `npm.cmd run test -- App.test.tsx`
-- `npm.cmd run test -- errorCatalog`
-- `npm.cmd run typecheck`
-- `npm.cmd run build`
+## Automated gates
 
-## Resultado local 2026-05-31
+| Gate | Result | Evidence |
+|---|---:|---|
+| `docker compose exec backend composer validate --no-check-publish` | PASS | `composer.json is valid` |
+| `docker compose exec backend vendor/bin/pint --test` | PASS | 180 files |
+| `docker compose exec backend php artisan test --colors=never` | PASS | 178 tests, 1104 assertions |
+| `npm.cmd run check:branding` | PASS | no branding findings |
+| `npm.cmd run typecheck` | PASS | `tsc --noEmit` |
+| `npm.cmd run lint` | PASS | ESLint completed |
+| `npm.cmd test` | PASS | 6 files, 41 tests |
+| `npm.cmd run build` | PASS with warning | Vite chunk warning for main bundle over 500 kB |
+| `npm.cmd run e2e` | PASS | 2 Playwright tests |
+| `scripts/validate_installer_safety.ps1` | PASS | no destructive installer findings |
+| `scripts/repair_hospital_system.ps1 -WhatIf` | PASS | non-destructive repair path prints intended actions |
+| Local restore into disposable DB | PASS | `hospital_restore_validation_ops_test`, backup SHA256 recorded |
 
-- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_installer_safety.ps1`: PASS.
-- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/repair_hospital_system.ps1 -WhatIf`: PASS.
-- `docker compose ps`: backend/frontend/MariaDB activos; MariaDB healthy.
-- `docker compose exec backend php artisan hospital:backup`: PASS, `hospital-backup-20260531-001342-2d95fnsn.sql`.
-- `docker compose exec backend php artisan migrate --force`: PASS, nada pendiente por migrar.
-- `docker compose exec backend php artisan test --colors=never`: PASS, 177 tests, 1073 assertions.
-- `docker compose exec backend composer validate`: PASS despues de sincronizar hash de `composer.lock`.
-- `docker compose exec backend vendor/bin/pint --test`: PASS, 179 files.
-- `docker compose exec backend vendor/bin/phpstan analyse`: NO DISPONIBLE, PHPStan no esta instalado en este backend.
-- `npm.cmd run check:branding`: PASS.
-- `npm.cmd run typecheck`: PASS.
-- `npm.cmd run lint`: PASS.
-- `npm.cmd run test`: PASS, 6 files, 40 tests.
-- `npm.cmd run build`: PASS con advertencia Vite de chunk mayor a 500 kB.
-- `npm.cmd run e2e`: PASS, 2 tests.
+## Production preflight result
 
-## Pendientes fisicos honestos
+Command:
 
-- Validar segunda PC real en LAN final.
-- Validar impresora institucional fisica en papel configurado.
-- Validar reinicio Windows y apertura por acceso directo en servidor final.
-- Validar restore en base descartable del servidor final despues de configurar rutas reales.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000 -AllowMissingPhysicalProof
+```
+
+Result: FAIL as expected for this workstation.
+
+Blocking issues reported:
+
+- `APP_ENV` is `local`, not `production`.
+- `APP_DEBUG` is `true`, not `false`.
+- `APP_URL` is configured for `http://192.168.1.3:8000`, not the tested URL.
+- The tested URL is localhost, not a final LAN IP or local domain.
+- Windows scheduled task `SistemaCajaHospitalaria-BackupWorker` is not installed here.
+- Windows scheduled task `SistemaCajaHospitalaria-DailyBackup` is not installed here.
+- Physical LAN/printer proof was bypassed with `-AllowMissingPhysicalProof`.
+
+Positive checks in the same preflight:
+
+- DB connection is MySQL/MariaDB.
+- Queue connection is `database`.
+- Frontend build and assets exist.
+- PHP, MySQL client and dump tool are available.
+- Backup directory is writable.
+- `/up`, `/login` and `/verify-email` responded 200.
+
+## Requirement matrix
+
+| Requirement | Current status | Evidence |
+|---|---|---|
+| Support/help section for staff | Implemented | `/support`, support screenshot, E2E support smoke |
+| Normal-user readable status | Implemented | `/api/system/status-summary`, App tests, screenshot |
+| Advanced diagnostics restricted | Implemented | `/api/system/status`, permission tests |
+| No secrets/raw env in normal diagnostics | Implemented | `SystemStatusTest`, client log tests |
+| Human error messages and support logging | Implemented | `errorCatalog`, `client_error_logs`, `ClientErrorLogTest` |
+| Safe installer/no destructive setup | Implemented | installer safety script PASS |
+| Safe repair script | Implemented | repair WhatIf PASS |
+| No duplicate invoice/payment on retry | Implemented | idempotency tests in invoice/payment suites |
+| Training by role | Implemented at product/docs level | Support role checklists, manuals and training docs |
+| Local backup creation | Verified | `hospital:backup` and restore proof |
+| Restore validation | Verified locally only | disposable DB proof |
+| Browser smoke | Verified locally | Playwright E2E and visual smoke report |
+| Final LAN client proof | Pending physical field validation | Must rerun on hospital LAN |
+| Final printer proof | Pending physical field validation | Must rerun with real printer/paper |
+| Final Windows startup/backup tasks | Pending field validation | Missing on this workstation |
+| Production environment settings | Pending final server | preflight blockers above |
+
+## Risks carried forward
+
+- This machine is not the final hospital server, so production readiness remains unproven.
+- The local restore proof confirms recovery mechanics, but final restore must be repeated with final backup paths and final server configuration.
+- Physical printer behavior cannot be inferred from screenshots or PDFs.
+- The main frontend bundle still emits a Vite size warning; not a blocker for LAN use, but worth monitoring if more modules are added.
+- A separate catalog edit in `frontend/src/features/catalog/components/ServiceSheet.tsx` exists outside this gate and should be reviewed independently before release.
+
+## Decision
+
+Approved for local operational hardening progress.
+
+Do not call the system `PRODUCTION_READY` until final physical handoff passes without bypass flags on the installed Hospital San Isidro server.
