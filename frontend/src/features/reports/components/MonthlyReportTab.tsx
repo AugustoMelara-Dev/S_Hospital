@@ -113,18 +113,18 @@ export function MonthlyReportTab({
               <CardTitle>Cobros por método</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
+              <Table className="w-full text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Método</TableHead>
-                    <TableHead className="text-right">Monto</TableHead>
+                    <TableHead className="px-4 py-3 text-left">Método</TableHead>
+                    <TableHead className="px-4 py-3 text-right">Monto</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {Object.entries(paymentsByMethod).map(([method, amount]) => (
                     <TableRow key={method}>
-                      <TableCell className="font-medium">{methodLabel(method)}</TableCell>
-                      <TableCell className="text-right">L. {amount}</TableCell>
+                      <TableCell className="px-4 py-2 font-medium">{methodLabel(method)}</TableCell>
+                      <TableCell className="px-4 py-2 text-right">L. {amount}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -137,20 +137,20 @@ export function MonthlyReportTab({
               <CardTitle>Estados de factura</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
+              <Table className="w-full text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Cantidad</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="px-4 py-3 text-left">Estado</TableHead>
+                    <TableHead className="px-4 py-3 text-right">Cantidad</TableHead>
+                    <TableHead className="px-4 py-3 text-right">Total</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {Object.entries(invoicesByStatus).map(([status, data]) => (
                     <TableRow key={status}>
-                      <TableCell className="font-medium">{statusLabel(status)}</TableCell>
-                      <TableCell className="text-right">{data.count}</TableCell>
-                      <TableCell className="text-right">L. {data.total}</TableCell>
+                      <TableCell className="px-4 py-2 font-medium">{statusLabel(status)}</TableCell>
+                      <TableCell className="px-4 py-2 text-right">{data.count}</TableCell>
+                      <TableCell className="px-4 py-2 text-right">L. {data.total}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -175,24 +175,24 @@ export function MonthlyReportTab({
                       <Bar dataKey="pendiente" fill="var(--color-accent-foreground)" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
-                  <Table>
+                  <Table className="w-full text-sm">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Fecha</TableHead>
-                        <TableHead className="text-right">Facturado</TableHead>
-                        <TableHead className="text-right">Cobrado</TableHead>
-                        <TableHead className="text-right">Pendiente</TableHead>
-                        <TableHead className="text-right">Anulado</TableHead>
+                        <TableHead className="px-4 py-3 text-left">Fecha</TableHead>
+                        <TableHead className="px-4 py-3 text-right">Facturado</TableHead>
+                        <TableHead className="px-4 py-3 text-right">Cobrado</TableHead>
+                        <TableHead className="px-4 py-3 text-right">Pendiente</TableHead>
+                        <TableHead className="px-4 py-3 text-right">Anulado</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {monthly.daily_totals.map((day) => (
                         <TableRow key={day.date}>
-                          <TableCell className="font-medium">{day.date}</TableCell>
-                          <TableCell className="text-right">L. {day.total_billed}</TableCell>
-                          <TableCell className="text-right">L. {day.total_collected}</TableCell>
-                          <TableCell className="text-right">L. {day.total_pending}</TableCell>
-                          <TableCell className="text-right">L. {day.total_voided}</TableCell>
+                          <TableCell className="px-4 py-2 font-medium">{day.date}</TableCell>
+                          <TableCell className="px-4 py-2 text-right">L. {day.total_billed}</TableCell>
+                          <TableCell className="px-4 py-2 text-right">L. {day.total_collected}</TableCell>
+                          <TableCell className="px-4 py-2 text-right">L. {day.total_pending}</TableCell>
+                          <TableCell className="px-4 py-2 text-right">L. {day.total_voided}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
