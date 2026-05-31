@@ -449,6 +449,8 @@ describe('ReportsView', () => {
     activateTab(/servicios/i);
     fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
     expect(await screen.findByText(/glucosa/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /servicios m.s facturados/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/monto facturado/i).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: /exportar excel/i })).not.toBeInTheDocument();
     expect(screen.getByText(/permiso de exportaci[oó]n de reportes/i)).toBeInTheDocument();
 
@@ -718,8 +720,10 @@ describe('ReportsView', () => {
       expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/reports/areas?'))).toBe(true);
     });
     activateTab(/servicios/i);
-    expect(await screen.findByText(/sin categorias cobradas/i)).toBeInTheDocument();
-    expect(await screen.findByText(/sin servicios cobrados/i)).toBeInTheDocument();
+    expect(await screen.findByText(/sin categor.as facturadas/i)).toBeInTheDocument();
+    expect(await screen.findByText(/sin servicios facturados/i)).toBeInTheDocument();
+    expect(screen.queryByText(/sin categorias cobradas/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/sin servicios cobrados/i)).not.toBeInTheDocument();
     activateTab(/auditor.a/i);
     expect((await screen.findAllByText(/sin eventos operativos/i)).length).toBeGreaterThan(0);
   });

@@ -66,7 +66,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
             <KPICard
               title="Total Servicios"
               value={serviceSales.services.length}
-              description="servicios cobrados"
+              description="servicios facturados"
               icon={<TrendingUp className="h-4 w-4" />}
             />
             <KPICard
@@ -74,7 +74,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
               value={serviceSales.services.reduce((acc, s) => acc + Number.parseInt(s.quantity), 0)}
             />
             <KPICard
-              title="Monto Total"
+              title="Monto Facturado"
               value={`L. ${serviceSales.services.reduce((acc, s) => acc + Number.parseFloat(s.total), 0).toFixed(2)}`}
             />
           </div>
@@ -95,7 +95,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                   <TableHead className="text-right">Unidades</TableHead>
                   <TableHead className="text-right">Subtotal</TableHead>
                   <TableHead className="text-right">ISV</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Monto Facturado</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -117,8 +117,8 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
 
       {categories && categories.categories.length === 0 && (
         <EmptyState
-          title="Sin categorias cobradas"
-          description="No hay ingresos agrupados por categoria para el rango y filtros seleccionados."
+          title="Sin categorias facturadas"
+          description="No hay facturacion agrupada por categoria para el rango y filtros seleccionados."
         />
       )}
 
@@ -126,7 +126,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Servicios Más Vendidos</CardTitle>
+              <CardTitle>Servicios Más Facturados</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -135,7 +135,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                     <TableHead>Servicio</TableHead>
                     <TableHead>Categoría</TableHead>
                     <TableHead className="text-right">Cantidad</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">Monto Facturado</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -155,7 +155,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
           {chartData.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Top 10 Servicios</CardTitle>
+                <CardTitle>Top 10 Servicios por Monto Facturado</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={260}>
@@ -163,7 +163,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="service" tickLine={false} interval={0} height={70} angle={-20} textAnchor="end" />
                     <YAxis tickLine={false} width={64} />
-                    <Tooltip formatter={(value) => [`L. ${value}`, 'Total']} />
+                    <Tooltip formatter={(value) => [`L. ${value}`, 'Monto facturado']} />
                     <Bar dataKey="total" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -192,7 +192,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
 
       {serviceSales && serviceSales.services.length === 0 && (
         <EmptyState
-          title="Sin servicios cobrados"
+          title="Sin servicios facturados"
           description="No hay servicios facturados para el rango y filtros seleccionados."
         />
       )}
