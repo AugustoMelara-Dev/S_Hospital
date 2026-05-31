@@ -53,6 +53,7 @@ const adminUser = {
     'backups.view',
     'backups.create',
     'backups.download',
+    'system.status.view',
   ],
   must_change_password: false,
 };
@@ -127,6 +128,7 @@ async function installApiMocks(page: Page) {
 
   await page.route('**/api/settings/logo', (route) => json(route, { logo_url: null }));
   await page.route('**/api/health', (route) => json(route, { status: 'ok' }));
+  await page.route('**/api/system/client-errors', (route) => json(route, { data: { accepted: true } }, 202));
 
   await page.route('**/api/auth/login', async (route) => {
     let payload: { login?: string } = {};
@@ -151,6 +153,7 @@ async function installApiMocks(page: Page) {
       { id: 2, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 2 },
     ],
   }));
+  await page.route('**/api/service-areas**', (route) => json(route, { data: [] }));
   await page.route('**/api/services**', (route) => json(route, { data: services, meta: { total: services.length } }));
   await page.route('**/api/cash-sessions/current', (route) => json(route, { data: currentCashSession }));
   await page.route('**/api/cash-sessions/open', async (route) => {
@@ -485,6 +488,29 @@ async function installApiMocks(page: Page) {
       },
     },
   }));
+  await page.route('**/api/system/status-summary', (route) => json(route, {
+    data: {
+      summary: {
+        severity: 'warning',
+        label: 'Sistema operativo con revisiones pendientes',
+        action: 'Puede facturar. Revise las pruebas manuales antes del cierre del dia.',
+      },
+      checks: [
+        {
+          code: 'LAN_ACCESS',
+          label: 'Acceso por red local',
+          status: 'manual_required',
+          detail: 'Validar desde una segunda computadora en la red del hospital.',
+        },
+        {
+          code: 'BACKUP_RECENT',
+          label: 'Respaldo reciente',
+          status: 'warning',
+          detail: 'No hay respaldo exitoso registrado en esta prueba.',
+        },
+      ],
+    },
+  }));
 }
 
 function receiptFor(invoice: Record<string, unknown>, width: string) {
@@ -580,6 +606,9 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
         || url.includes('/api/health')
         || url.includes('/api/settings/logo')
         || url.includes('/api/cash-sessions/current')
+        || url.includes('/api/categories')
+        || url.includes('/api/service-areas')
+        || url.includes('/api/services')
       )
       && failure?.errorText === 'net::ERR_ABORTED'
     ) {
@@ -661,6 +690,12 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('link', { name: /reportes/i }).click();
   await expect(page.getByRole('heading', { name: /^reportes$/i })).toBeVisible();
   await expect(page.getByRole('heading', { name: /cobrado/i })).toBeVisible();
+
+  await page.goto('/support');
+  await expect(page.getByRole('heading', { name: /^soporte$/i })).toBeVisible();
+  await expect(page.getByText(/estado operativo/i)).toBeVisible();
+  await expect(page.getByText(/acceso por red local/i)).toBeVisible();
+  await expect(page.getByText(/hora servidor/i)).toBeVisible();
 
   await page.getByRole('link', { name: /respaldos/i }).click();
   await expect(page.getByRole('heading', { name: /^respaldos$/i })).toBeVisible();
