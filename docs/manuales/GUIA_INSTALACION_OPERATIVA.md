@@ -171,6 +171,9 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -Ba
 Ese script no reemplaza un archivo existente por accidente. Use `-Force` solo
 si el responsable tecnico decide regenerar un borrador incompleto y ya guardo
 la evidencia anterior que corresponda.
+La ruta de `-EvidencePath` debe ser un archivo `.md` dentro de `qa\`; el script
+rechaza rutas fuera de esa carpeta antes de consultar la red o escribir el
+borrador.
 
 ## Soporte
 

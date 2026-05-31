@@ -38,8 +38,13 @@ function Protect-LanText([string] $value) {
 }
 
 trap {
-    Write-Host (Protect-LanText $_.Exception.Message)
-    Write-Host "No reemplace evidencia LAN existente sin -Force y sin autorizacion del responsable tecnico."
+    $safeMessage = Protect-LanText $_.Exception.Message
+    Write-Host $safeMessage
+    if ($safeMessage -match "ya existe") {
+        Write-Host "No reemplace evidencia LAN existente sin -Force y sin autorizacion del responsable tecnico."
+    } else {
+        Write-Host "No se consulto la red ni se escribio evidencia LAN."
+    }
     exit 1
 }
 
@@ -49,6 +54,32 @@ if ($ProjectRoot -eq "") {
 }
 
 $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+
+function Resolve-LanEvidencePath([string] $path) {
+    if ([string]::IsNullOrWhiteSpace($path)) {
+        return ""
+    }
+
+    if ([System.IO.Path]::GetExtension($path) -ne ".md") {
+        throw "La evidencia LAN debe ser un archivo Markdown (.md) dentro de qa."
+    }
+
+    $candidate = if ([System.IO.Path]::IsPathRooted($path)) {
+        $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($path)
+    } else {
+        Join-Path $ProjectRoot $path
+    }
+
+    $fullPath = [System.IO.Path]::GetFullPath($candidate)
+    $qaRoot = [System.IO.Path]::GetFullPath((Join-Path $ProjectRoot "qa"))
+    $qaPrefix = $qaRoot.TrimEnd("\") + "\"
+
+    if ($fullPath -eq $qaRoot -or -not $fullPath.StartsWith($qaPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "La evidencia LAN debe guardarse como archivo .md dentro de la carpeta qa del sistema."
+    }
+
+    return $fullPath
+}
 
 function New-CheckResult([string] $Label, [string] $Url, [int[]] $AllowedStatusCodes = @(200), [string] $ExpectedContentType = "") {
     try {
@@ -100,17 +131,7 @@ if (-not [Uri]::TryCreate($base, [UriKind]::Absolute, [ref] $baseUri) -or $baseU
 
 $resolvedEvidencePath = $EvidencePath
 if ($EvidencePath -ne "") {
-    $candidateEvidencePath = if ([System.IO.Path]::IsPathRooted($EvidencePath)) {
-        $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($EvidencePath)
-    } else {
-        Join-Path $ProjectRoot $EvidencePath
-    }
-    $resolvedEvidencePath = [System.IO.Path]::GetFullPath($candidateEvidencePath)
-    $rootPrefix = $ProjectRoot.TrimEnd("\") + "\"
-
-    if ($resolvedEvidencePath -eq $ProjectRoot -or -not $resolvedEvidencePath.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "La evidencia LAN debe guardarse dentro de la carpeta instalada del sistema."
-    }
+    $resolvedEvidencePath = Resolve-LanEvidencePath $EvidencePath
 
     if ((Test-Path -LiteralPath $resolvedEvidencePath) -and -not $Force) {
         throw "La evidencia LAN ya existe. Use -Force solo si el responsable tecnico autorizo reemplazarla."

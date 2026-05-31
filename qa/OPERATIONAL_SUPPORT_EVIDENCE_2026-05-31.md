@@ -70,6 +70,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Reporte final de handoff queda restringido a archivos Markdown dentro de `qa/` y se valida antes de preflight o escritura. | Verificado |
 | Esta fase | Preflight y handoff rechazan pruebas finales que referencian capturas/fotos con rutas absolutas locales; la evidencia compartible debe usar rutas relativas del repositorio o referencias no locales. | Verificado |
 | Esta fase | Preflight y handoff solo aceptan capturas/fotos locales bajo `qa/` y rechazan referencias a `backend/`, `docs/`, `scripts/`, `frontend/` o rutas con traversal. | Verificado |
+| Esta fase | Validacion LAN restringe `-EvidencePath` a archivos Markdown dentro de `qa/` antes de consultar red o escribir borradores. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -149,6 +150,8 @@ Resultado observado:
 | Parser PowerShell de `validate_lan_client.ps1` | Paso. |
 | `validate_lan_client.ps1` con evidencia existente sin `-Force` | Falla antes de tocar red, conserva el archivo existente y muestra instruccion para usar `-Force` solo si se reemplaza intencionalmente. |
 | `validate_lan_client.ps1` con `-Force` sobre archivo temporal | Regenera borrador temporal, marca rutas fallidas y mantiene `PRODUCTION_READY` bloqueado. |
+| `validate_lan_client.ps1 -EvidencePath C:\tmp\lan.md -WhatIfOnly` | Falla antes de consultar red o escribir evidencia. |
+| `validate_lan_client.ps1 -EvidencePath qa\lan.txt -WhatIfOnly` | Falla antes de consultar red o escribir evidencia. |
 | `final_production_handoff.ps1` con referencias de evidencia inexistentes | Paso: marco LAN, impresora, restore y concurrencia como `MISS`, genero `PRODUCTION_CANDIDATE` y mantuvo rutas sanitizadas en el reporte. |
 | Parser PowerShell de `install_backup_tasks_windows.ps1` | Paso. |
 | `install_backup_tasks_windows.ps1 -WhatIfOnly -DailyBackupTime 99:99` | Falla con mensaje humano antes de registrar, actualizar o remover tareas; no imprime rutas locales crudas. |

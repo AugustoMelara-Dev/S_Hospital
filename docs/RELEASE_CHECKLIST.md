@@ -249,6 +249,9 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 `
 El script no sobrescribe `qa\LAN_CLIENT_VALIDATION_PROOF.md` si ya existe. Use
 `-Force` solamente cuando quiera reemplazar un borrador incompleto de forma
 deliberada, despues de guardar cualquier evidencia real anterior.
+`-EvidencePath` debe apuntar a un archivo `.md` dentro de `qa\`; rutas fuera de
+esa carpeta o sin extension Markdown fallan antes de consultar la red o escribir
+evidencia.
 
 Luego completar manualmente en ese mismo archivo login, caja, factura, pago,
 recibo, historial, reportes y backup `pending` -> `success`.
