@@ -6,8 +6,10 @@ use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -79,6 +81,36 @@ class CreateInvoiceAction
 
             foreach ($totals['items'] as $item) {
                 $invoice->items()->create($item);
+            }
+
+            if ($isZeroTotal) {
+                $payment = Payment::query()->create([
+                    'invoice_id' => $invoice->id,
+                    'cash_session_id' => $cashSession->id,
+                    'user_id' => $issuer->id,
+                    'method' => Payment::METHOD_OTHER,
+                    'amount' => '0.00',
+                    'reference' => 'Factura sin cobro por regla autorizada',
+                    'status' => Payment::STATUS_POSTED,
+                    'paid_at' => now(),
+                ]);
+
+                AuditLog::query()->create([
+                    'user_id' => $issuer->id,
+                    'action' => 'payment.registered',
+                    'entity_type' => Payment::class,
+                    'entity_id' => $payment->id,
+                    'new_values' => [
+                        'invoice_id' => $invoice->id,
+                        'invoice_number' => $invoice->invoice_number,
+                        'cash_session_id' => $cashSession->id,
+                        'method' => $payment->method,
+                        'amount' => $payment->amount,
+                        'reference' => $payment->reference,
+                        'invoice_status' => $invoice->status,
+                        'balance_due' => $invoice->balance_due,
+                    ],
+                ]);
             }
 
             AuditLog::query()->create([
@@ -157,6 +189,6 @@ class CreateInvoiceAction
 
     private function isZeroAmount(string $amount): bool
     {
-        return (float) $amount === 0.0;
+        return Money::parseCents($amount, 'total') === 0;
     }
 }

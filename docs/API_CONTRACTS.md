@@ -102,6 +102,7 @@ Reglas minimas:
 
 | Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
 |---|---|---|---|---|---|
+| GET | `/api/settings/branding` | Publico | N/A | Nombre institucional, color y lineas publicas | Para login/branding. No expone RTN, CAI, scanner, pagos ni configuracion operativa. |
 | GET | `/api/settings/fiscal` | `settings.fiscal.view` | N/A | Config fiscal actual | Admin/supervisor lectura. |
 | PUT | `/api/settings/fiscal` | `settings.fiscal.update` | Hospital, RTN, impuesto, recibo, secuencia fiscal | Config actualizada | Solo admin. Auditar. |
 | GET | `/api/fiscal-sequences` | `settings.fiscal.view` | N/A | Secuencias | Para factura/recibo. |

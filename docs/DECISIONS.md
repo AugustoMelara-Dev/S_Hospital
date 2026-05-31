@@ -1052,6 +1052,45 @@ Consecuencia:
 - La suite backend vuelve a ser una senal confiable para cambios de seguridad, pagos y caja.
 - Los cambios quedan limitados a pruebas y no alteran autorizacion de produccion.
 
+### 2026-05-31 - Alcance operativo explicito para facturas
+
+Decision:
+
+- La capacidad de operar cualquier factura para cobro/reversion usa `invoices.operate_any`.
+- Permisos de lectura gerencial, reimpresion historica o anulacion no conceden por si solos alcance operativo de pago.
+- El endpoint completo `/api/settings/fiscal` queda autenticado y protegido por `settings.fiscal.view`.
+- El login consume `/api/settings/branding`, que solo expone datos publicos de marca institucional.
+
+Motivo:
+
+- Reportes y reimpresiones necesitan ver historia, pero eso no debe permitir cobrar una factura ajena si se combinan permisos en un rol futuro.
+- La pantalla de login necesita el nombre institucional, no la configuracion fiscal completa ni banderas operativas.
+
+Consecuencia:
+
+- Roles `admin` y `supervisor` reciben `invoices.operate_any` de forma explicita.
+- Roles personalizados deben pedir ese permiso si van a cobrar o revertir facturas fuera de su alcance propio del dia.
+- La exposicion publica de configuracion queda reducida a branding no sensible.
+
+### 2026-05-31 - Facturas sin cobro quedan auditadas como pago cero
+
+Decision:
+
+- Las facturas cuyo total calculado es L.0.00 siguen quedando `paid`.
+- Al emitirlas se crea un registro `payments` por L.0.00, metodo `other`, referencia `Factura sin cobro por regla autorizada`, caja abierta, cajero y fecha.
+- No se crea movimiento de efectivo para el pago cero.
+
+Motivo:
+
+- La regla de eritropoyetina con receta de dialisis puede producir una factura valida sin cobro.
+- Aun sin dinero recibido, la factura pagada debe quedar trazable a caja, cajero, metodo y fecha.
+
+Consecuencia:
+
+- Recibos muestran un pago L.0.00 para explicar el cierre de la factura.
+- Reportes monetarios no aumentan recaudacion porque el monto es cero.
+- Arqueo de caja no aumenta efectivo esperado por facturas sin cobro.
+
 ### 2026-05-31 - Fiscal completo requiere sesion y permiso
 
 Decision:

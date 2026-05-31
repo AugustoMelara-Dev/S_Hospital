@@ -693,7 +693,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertUnprocessable();
     }
 
-    public function test_zero_total_dialysis_prescription_invoice_is_paid_and_receiptable_without_payment(): void
+    public function test_zero_total_dialysis_prescription_invoice_is_paid_and_receiptable_with_zero_amount_audit_payment(): void
     {
         $this->seedBillingBase();
         $cashier = $this->cashier();
@@ -721,7 +721,26 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.invoice.total', '0.00')
             ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID)
             ->assertJsonPath('data.items.0.special_rule_applied', true)
-            ->assertJsonCount(0, 'data.payments');
+            ->assertJsonCount(1, 'data.payments')
+            ->assertJsonPath('data.payments.0.method', Payment::METHOD_OTHER)
+            ->assertJsonPath('data.payments.0.amount', '0.00')
+            ->assertJsonPath('data.payments.0.reference', 'Factura sin cobro por regla autorizada');
+
+        $this->assertDatabaseHas('payments', [
+            'invoice_id' => $invoiceId,
+            'method' => Payment::METHOD_OTHER,
+            'amount' => '0.00',
+            'reference' => 'Factura sin cobro por regla autorizada',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'payment.registered',
+            'entity_type' => Payment::class,
+        ]);
+        $this->assertDatabaseMissing('cash_movements', [
+            'type' => CashMovement::TYPE_PAYMENT,
+            'method' => Payment::METHOD_OTHER,
+            'amount' => '0.00',
+        ]);
     }
 
     public function test_cash_session_can_open_with_zero_initial_cash(): void
