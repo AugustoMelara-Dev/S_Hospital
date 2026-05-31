@@ -63,7 +63,7 @@ function Read-EnvFile([string] $path) {
     $values = @{}
 
     if (-not (Test-Path -LiteralPath $path)) {
-        Add-Failure "Missing backend .env at $path"
+        Add-Failure "Missing environment file at $path"
         return $values
     }
 
@@ -122,6 +122,35 @@ function Find-FirstExecutableCandidate([string[]] $candidates) {
 
 function Test-IsWindowsHost {
     return $env:OS -eq "Windows_NT" -or $PSVersionTable.Platform -eq "Win32NT" -or $null -ne (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue)
+}
+
+function Test-DockerComposeConfig([string] $composePath, [string] $envFilePath) {
+    if (-not (Test-CommandExists "docker")) {
+        Add-Failure "docker is not available for Docker production package validation"
+        return
+    }
+
+    $configCommand = 'docker compose -f "' + $composePath + '" --env-file "' + $envFilePath + '" config --quiet >nul 2>nul'
+    & cmd.exe /c $configCommand
+    if ($LASTEXITCODE -eq 0) {
+        Add-Pass "docker-compose.prod.yml validates with production .env"
+    } else {
+        Add-Failure "docker-compose.prod.yml or root .env is invalid for Docker production package"
+    }
+}
+
+function Test-BackupWrapperCheck([string] $scriptPath, [string] $label) {
+    if (-not (Test-Path -LiteralPath $scriptPath)) {
+        Add-Failure "Missing backup wrapper $label at $scriptPath"
+        return
+    }
+
+    & cmd.exe /c "`"$scriptPath`" --check" *> $null
+    if ($LASTEXITCODE -eq 0) {
+        Add-Pass "$label wrapper --check passed"
+    } else {
+        Add-Failure "$label wrapper --check failed"
+    }
 }
 
 function Test-BackupScheduledTask([string] $taskName, [string[]] $AllowedStates) {
@@ -310,7 +339,11 @@ function Invoke-RouteCheck([string] $url, [string] $label, [int[]] $AllowedStatu
 
 $backendDir = Join-Path $ProjectRoot "backend"
 $frontendDist = Join-Path $ProjectRoot "frontend\dist"
-$envPath = Join-Path $backendDir ".env"
+$backendEnvPath = Join-Path $backendDir ".env"
+$rootEnvPath = Join-Path $ProjectRoot ".env"
+$composeProdPath = Join-Path $ProjectRoot "docker-compose.prod.yml"
+$isDockerProductionPackage = (Test-Path -LiteralPath $composeProdPath) -and (Test-Path -LiteralPath $rootEnvPath) -and (-not (Test-Path -LiteralPath (Join-Path $backendDir "artisan")))
+$envPath = if ($isDockerProductionPackage) { $rootEnvPath } else { $backendEnvPath }
 $envValues = Read-EnvFile $envPath
 
 $baseUri = $null
@@ -334,6 +367,10 @@ $configuredDumpBinary = Get-EnvValue $envValues "HOSPITAL_DUMP_BINARY" ""
 
 Write-Host "Production readiness preflight for $BaseUrl"
 Write-Host "Project root: $(Protect-PreflightText $ProjectRoot)"
+if ($isDockerProductionPackage) {
+    Add-Pass "Docker production package layout detected"
+    Test-DockerComposeConfig $composeProdPath $envPath
+}
 
 if ($appEnv -eq "production") { Add-Pass "APP_ENV=production" } else { Add-Failure "APP_ENV must be production, current value is '$appEnv'" }
 if ($appDebug -eq "false") { Add-Pass "APP_DEBUG=false" } else { Add-Failure "APP_DEBUG must be false, current value is '$appDebug'" }
@@ -382,65 +419,84 @@ if (Test-IsWindowsHost) {
     Add-Warning "Non-Windows host detected. Validate an equivalent continuous backup worker/service before production handoff."
 }
 
-if (Test-Path -LiteralPath (Join-Path $frontendDist "index.html")) {
+if ($isDockerProductionPackage) {
+    Add-Pass "Docker package serves compiled frontend from backend/shared_public image flow"
+} elseif (Test-Path -LiteralPath (Join-Path $frontendDist "index.html")) {
     Add-Pass "frontend/dist/index.html exists"
 } else {
     Add-Failure "Missing frontend build. Run npm.cmd run build in frontend/"
 }
 
 $assetDir = Join-Path $frontendDist "assets"
-if (Test-Path -LiteralPath $assetDir) {
+if ($isDockerProductionPackage) {
+    Add-Pass "Frontend asset verification deferred to /login route check for Docker package"
+} elseif (Test-Path -LiteralPath $assetDir) {
     $assetCount = (Get-ChildItem -LiteralPath $assetDir -File | Measure-Object).Count
     if ($assetCount -gt 0) { Add-Pass "frontend/dist/assets contains $assetCount files" } else { Add-Failure "frontend/dist/assets is empty" }
 } else {
     Add-Failure "Missing frontend/dist/assets"
 }
 
-if (Test-CommandExists "php") { Add-Pass "php is available in PATH" } else { Add-Failure "php is not available in PATH" }
-
-$mysqlClient = Find-FirstExecutableCandidate @(
-    "mysql",
-    "mariadb",
-    "C:\xampp\mysql\bin\mysql.exe",
-    "C:\xampp\mysql\bin\mariadb.exe",
-    "C:\laragon\bin\mysql\mysql-8.0\bin\mysql.exe",
-    "/usr/bin/mysql",
-    "/usr/bin/mariadb",
-    "/usr/local/bin/mysql",
-    "/usr/local/bin/mariadb"
-)
-if ($null -ne $mysqlClient) { Add-Pass "mysql client is available: $mysqlClient" } else { Add-Failure "mysql or mariadb client is not available" }
-
-$dumpTool = Find-FirstExecutableCandidate @(
-    $configuredDumpBinary,
-    "mariadb-dump",
-    "mysqldump",
-    "C:\xampp\mysql\bin\mariadb-dump.exe",
-    "C:\xampp\mysql\bin\mysqldump.exe",
-    "C:\laragon\bin\mysql\mysql-8.0\bin\mysqldump.exe",
-    "/usr/bin/mariadb-dump",
-    "/usr/bin/mysqldump",
-    "/usr/local/bin/mariadb-dump",
-    "/usr/local/bin/mysqldump"
-)
-if ($null -ne $dumpTool) {
-    Add-Pass "database dump tool is available: $dumpTool"
+if ($isDockerProductionPackage) {
+    Add-Pass "Host PHP is not required for Docker production package"
+} elseif (Test-CommandExists "php") {
+    Add-Pass "php is available in PATH"
 } else {
-    Add-Failure "mariadb-dump or mysqldump must be available for backups"
+    Add-Failure "php is not available in PATH"
 }
 
-$backupDir = Join-Path $backendDir "storage\app\private\backups"
-if (-not (Test-Path -LiteralPath $backupDir)) {
-    New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+if ($isDockerProductionPackage) {
+    Add-Pass "MySQL client and dump tool are validated inside Docker image/runtime"
+} else {
+    $mysqlClient = Find-FirstExecutableCandidate @(
+        "mysql",
+        "mariadb",
+        "C:\xampp\mysql\bin\mysql.exe",
+        "C:\xampp\mysql\bin\mariadb.exe",
+        "C:\laragon\bin\mysql\mysql-8.0\bin\mysql.exe",
+        "/usr/bin/mysql",
+        "/usr/bin/mariadb",
+        "/usr/local/bin/mysql",
+        "/usr/local/bin/mariadb"
+    )
+    if ($null -ne $mysqlClient) { Add-Pass "mysql client is available: $mysqlClient" } else { Add-Failure "mysql or mariadb client is not available" }
+
+    $dumpTool = Find-FirstExecutableCandidate @(
+        $configuredDumpBinary,
+        "mariadb-dump",
+        "mysqldump",
+        "C:\xampp\mysql\bin\mariadb-dump.exe",
+        "C:\xampp\mysql\bin\mysqldump.exe",
+        "C:\laragon\bin\mysql\mysql-8.0\bin\mysqldump.exe",
+        "/usr/bin/mariadb-dump",
+        "/usr/bin/mysqldump",
+        "/usr/local/bin/mariadb-dump",
+        "/usr/local/bin/mysqldump"
+    )
+    if ($null -ne $dumpTool) {
+        Add-Pass "database dump tool is available: $dumpTool"
+    } else {
+        Add-Failure "mariadb-dump or mysqldump must be available for backups"
+    }
 }
 
-$probePath = Join-Path $backupDir ".write-test"
-try {
-    Set-Content -LiteralPath $probePath -Value "ok" -NoNewline
-    Remove-Item -LiteralPath $probePath -Force
-    Add-Pass "backup directory is writable"
-} catch {
-    Add-Failure "backup directory is not writable: $($_.Exception.Message)"
+if ($isDockerProductionPackage) {
+    Test-BackupWrapperCheck (Join-Path $ProjectRoot "scripts\run_backup_worker.cmd") "Backup worker"
+    Test-BackupWrapperCheck (Join-Path $ProjectRoot "scripts\run_scheduled_backup.cmd") "Scheduled backup"
+} else {
+    $backupDir = Join-Path $backendDir "storage\app\private\backups"
+    if (-not (Test-Path -LiteralPath $backupDir)) {
+        New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+    }
+
+    $probePath = Join-Path $backupDir ".write-test"
+    try {
+        Set-Content -LiteralPath $probePath -Value "ok" -NoNewline
+        Remove-Item -LiteralPath $probePath -Force
+        Add-Pass "backup directory is writable"
+    } catch {
+        Add-Failure "backup directory is not writable: $($_.Exception.Message)"
+    }
 }
 
 Invoke-RouteCheck "$($BaseUrl.TrimEnd('/'))/up" "/up"

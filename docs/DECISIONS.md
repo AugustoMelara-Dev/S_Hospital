@@ -1290,3 +1290,21 @@ Consecuencia:
 - El paquete offline falla temprano si falta `.env`, Docker o compose valido.
 - La UI puede seguir usando el servicio `queue-worker` para convertir backups manuales de `pending` a `success`.
 - La validacion final de restore y scheduler despues de reinicio sigue pendiente del servidor fisico final.
+
+### 2026-05-31 - Preflight distingue bare-metal y paquete Docker offline
+
+Decision:
+
+- `production_readiness_preflight.ps1` usa `backend\.env` para instalaciones PHP/bare-metal y `.env` raiz cuando detecta paquete Docker productivo sin `backend\artisan`.
+- En modo Docker valida `docker-compose.prod.yml` con el `.env` productivo y ejecuta `--check` de los wrappers de backups.
+- En modo Docker no exige PHP, cliente MySQL, dump tool ni `frontend/dist` en el host, porque esos artefactos viven dentro de las imagenes y se verifican por compose/rutas HTTP.
+
+Motivo:
+
+- El preflight anterior podia bloquear un release Docker correcto por buscar archivos y binarios host de una instalacion bare-metal.
+- A la vez, el paquete Docker necesita probar compose, `.env` y wrappers de backup antes del handoff.
+
+Consecuencia:
+
+- El mismo preflight sirve para ambos caminos de instalacion.
+- Las pruebas de campo siguen siendo obligatorias para LAN, impresora, restore y concurrencia final.
