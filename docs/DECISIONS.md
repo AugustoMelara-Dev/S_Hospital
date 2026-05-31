@@ -474,6 +474,24 @@ Consecuencia:
 
 - El cierre de produccion queda mas guiado: primero se generan archivos, luego se validan rutas desde cliente, despues se completan los flujos fisicos y finalmente se ejecuta `production_readiness_preflight.ps1` sin excepciones.
 
+### 2026-05-31 - Evidencia LAN solo bajo qa
+
+Decision:
+
+- `scripts\validate_lan_client.ps1` solo acepta `-EvidencePath` como archivo Markdown dentro de `qa\`.
+- Rutas absolutas, rutas fuera de `qa\` y rutas sin extension `.md` fallan antes de consultar red o escribir evidencia.
+- Los errores de ruta informan al operador que no se consulto la red ni se escribio evidencia.
+
+Motivo:
+
+- La evidencia de campo debe quedar compartible dentro del paquete de validacion, no en carpetas personales ni rutas tecnicas locales.
+- Un error al copiar comandos no debe crear archivos fuera del sistema ni iniciar validaciones LAN innecesarias.
+
+Consecuencia:
+
+- El responsable tecnico debe usar rutas como `qa\LAN_CLIENT_VALIDATION_PROOF.md`.
+- Las capturas/fotos reales siguen siendo fisicas/manuales; el script solo genera el borrador seguro de evidencia LAN.
+
 ### 2026-05-19 - Handoff final de produccion sin evidencia falsa
 
 Decision:
