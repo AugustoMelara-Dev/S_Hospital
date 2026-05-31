@@ -1,6 +1,6 @@
-# Institutional printer proof
+# Institutional receipt print proof
 
-Copy this file to `qa/THERMAL_PRINTER_PROOF.md` on the final cashier computer,
+Copy this file to `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` on the final cashier computer,
 delete this instruction block, and fill every required field below. Do not mark
 `PRODUCTION_READY` until media carta, carta and A5 output are validated on the
 physical printer or exact printer configuration used by the hospital.
@@ -49,6 +49,7 @@ exact labels.
 - [ ] Carta receipt prints at 100 percent scale. Result/evidence:
 - [ ] A5 receipt prints at 100 percent scale. Result/evidence:
 - [ ] Institutional receipt includes hospital name, RTN/CAI when configured, invoice number, patient, cashier, services and totals. Result/evidence:
+- [ ] Institutional receipt has white background and no QR, barcode, internal codes or technical fields. Result/evidence:
 - [ ] Reprint from invoice history prints with historical snapshots. Result/evidence:
 - [ ] Margins are minimal and no browser headers/footers appear. Result/evidence:
 

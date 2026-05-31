@@ -50,9 +50,9 @@ class SystemStatusController extends Controller
                 'Backup',
             ],
         ],
-        'THERMAL_PRINTER_PROOF' => [
+        'INSTITUTIONAL_RECEIPT_PRINT_PROOF' => [
             'label' => 'Impresora institucional media carta/carta/A5',
-            'required_file' => 'qa/THERMAL_PRINTER_PROOF.md',
+            'required_file' => 'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
             'fields' => [
                 'Date/time',
                 'Responsible person',
@@ -76,6 +76,7 @@ class SystemStatusController extends Controller
                 'media carta',
                 'carta',
                 'A5',
+                'white background',
                 'Reprint',
                 'headers/footers',
                 'historical',
@@ -557,6 +558,16 @@ class SystemStatusController extends Controller
             ];
         }
 
+        foreach (['Evidence/photo reference', 'Evidence/capture reference'] as $field) {
+            $missingReference = $this->missingReferencedLocalEvidence($content, $field);
+            if ($missingReference !== null) {
+                return [
+                    'status' => 'partial',
+                    'detail' => "La evidencia local referenciada no existe: {$missingReference}",
+                ];
+            }
+        }
+
         return [
             'status' => 'validated',
             'detail' => 'Evidencia completada; el preflight final debe confirmarla sin bypass.',
@@ -602,6 +613,29 @@ class SystemStatusController extends Controller
 
         return $trimmed === ''
             || preg_match('/^(TODO|PENDING|PENDING_[A-Z_]+|REPLACE|N\/A|NA|NONE|TBD|-|\[ \])$/i', $trimmed) === 1;
+    }
+
+    private function missingReferencedLocalEvidence(string $content, string $fieldLabel): ?string
+    {
+        $reference = $this->proofFieldValue($content, $fieldLabel);
+        if ($this->proofValueIsIncomplete($reference)) {
+            return null;
+        }
+
+        $reference = trim((string) $reference);
+        $isRootedPath = preg_match('/^[A-Za-z]:[\/\\\\]/', $reference) === 1
+            || str_starts_with($reference, '/')
+            || str_starts_with($reference, '\\');
+        $looksLikeLocalPath = preg_match('/^(qa|docs|scripts|frontend|backend)[\/\\\\]/i', $reference) === 1
+            || $isRootedPath;
+
+        if (! $looksLikeLocalPath) {
+            return null;
+        }
+
+        $candidate = $isRootedPath ? $reference : $this->projectPath($reference);
+
+        return file_exists($candidate) ? null : $reference;
     }
 
     private function projectPath(string $relativePath): string

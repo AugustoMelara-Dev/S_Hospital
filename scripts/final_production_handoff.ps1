@@ -26,7 +26,7 @@ $preflightScript = Join-Path $scriptsDir "production_readiness_preflight.ps1"
 $proofInitScript = Join-Path $scriptsDir "init_production_proofs.ps1"
 $backupTasksScript = Join-Path $scriptsDir "install_backup_tasks_windows.ps1"
 $lanProofPath = Join-Path $qaDir "LAN_CLIENT_VALIDATION_PROOF.md"
-$printerProofPath = Join-Path $qaDir "THERMAL_PRINTER_PROOF.md"
+$printerProofPath = Join-Path $qaDir "INSTITUTIONAL_RECEIPT_PRINT_PROOF.md"
 
 if ($ReportPath -eq "") {
     $ReportPath = Join-Path $qaDir "FINAL_PRODUCTION_HANDOFF_RESULT.md"
@@ -92,7 +92,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Project root: $ProjectRoot"
     Add-ReportLine $lines "- Decision: $decision"
     Add-ReportLine $lines "- LAN client proof present without obvious placeholders: $lanProofCompleted"
-    Add-ReportLine $lines "- Thermal printer proof present without obvious placeholders: $printerProofCompleted"
+    Add-ReportLine $lines "- Institutional receipt print proof present without obvious placeholders: $printerProofCompleted"
     Add-ReportLine $lines "- Preflight skipped: $preflightSkipped"
     Add-ReportLine $lines "- Preflight exit code: $preflightExit"
     Add-ReportLine $lines ""
@@ -112,7 +112,7 @@ function Write-HandoffReport(
         Add-ReportLine $lines "- Missing or incomplete qa/LAN_CLIENT_VALIDATION_PROOF.md from a real second LAN client."
     }
     if (-not $printerProofCompleted) {
-        Add-ReportLine $lines "- Missing or incomplete qa/THERMAL_PRINTER_PROOF.md from the real thermal printer."
+        Add-ReportLine $lines "- Missing or incomplete qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md from the real cashier printer."
     }
     if ($preflightSkipped) {
         Add-ReportLine $lines "- Preflight was skipped in this handoff run."
@@ -185,7 +185,7 @@ if (-not $lanProofCompleted) {
 }
 
 if (-not $printerProofCompleted) {
-    Write-Host "Print real media carta/carta/A5 samples, then complete qa\THERMAL_PRINTER_PROOF.md with physical evidence."
+    Write-Host "Print real media carta/carta/A5 samples, then complete qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md with physical evidence."
 }
 
 Write-Section "Backup automation"

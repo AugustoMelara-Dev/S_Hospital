@@ -22,7 +22,7 @@
 - [x] Cashbox opens. Result/evidence: caja abierta con monto inicial registrado.
 - [x] Invoice is created with patient name. Result/evidence: factura generada para Paciente LAN.
 - [x] Payment is registered. Result/evidence: pago en efectivo aparece en recibo.
-- [x] Receipt preview opens. Result/evidence: vista de recibo 80mm visible.
+- [x] Receipt preview opens. Result/evidence: vista de recibo institucional media carta visible.
 - [x] Invoice history and reprint work. Result/evidence: historial muestra factura y reimpresion abre recibo historico.
 - [x] Reports load. Result/evidence: reporte diario carga metricas.
 - [x] Backup request from UI changes from `pending` to `success`. Result/evidence: backup manual completo con checksum visible.

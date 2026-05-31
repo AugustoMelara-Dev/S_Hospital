@@ -88,10 +88,12 @@ class SystemStatusTest extends TestCase
 
         File::deleteDirectory($proofRoot);
         File::ensureDirectoryExists($proofRoot.'/qa');
+        File::ensureDirectoryExists($proofRoot.'/qa/evidence/lan-client-2026-05-19');
+        File::ensureDirectoryExists($proofRoot.'/qa/evidence/printer-2026-05-19');
         Config::set('hospital.project_root', $proofRoot);
 
         File::put($proofRoot.'/qa/LAN_CLIENT_VALIDATION_PROOF.md', $this->completedLanProof());
-        File::put($proofRoot.'/qa/THERMAL_PRINTER_PROOF.md', $this->completedThermalProof());
+        File::put($proofRoot.'/qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md', $this->completedReceiptPrintProof());
 
         $this->actingAs($this->admin())
             ->getJson('/api/system/status')
@@ -102,6 +104,24 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.preflight.physical_proofs.0.status', 'validated')
             ->assertJsonPath('data.preflight.physical_proofs.0.detail', 'Evidencia completada; el preflight final debe confirmarla sin bypass.')
             ->assertJsonPath('data.preflight.physical_proofs.1.status', 'validated');
+    }
+
+    public function test_status_rejects_completed_physical_proof_when_local_evidence_reference_is_missing(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $proofRoot = storage_path('framework/testing-production-proofs-missing-evidence');
+
+        File::deleteDirectory($proofRoot);
+        File::ensureDirectoryExists($proofRoot.'/qa');
+        Config::set('hospital.project_root', $proofRoot);
+
+        File::put($proofRoot.'/qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md', $this->completedReceiptPrintProof());
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath('data.preflight.physical_proofs.1.status', 'partial')
+            ->assertJsonPath('data.preflight.physical_proofs.1.detail', 'La evidencia local referenciada no existe: qa/evidence/printer-2026-05-19');
     }
 
     public function test_status_marks_template_physical_proof_files_as_partial(): void
@@ -183,7 +203,7 @@ class SystemStatusTest extends TestCase
 - [x] Cashbox opens. Result/evidence: caja abierta con monto inicial registrado.
 - [x] Invoice is created with patient name. Result/evidence: factura generada para Paciente LAN.
 - [x] Payment is registered. Result/evidence: pago en efectivo aparece en recibo.
-- [x] Receipt preview opens. Result/evidence: vista de recibo 80mm visible.
+- [x] Receipt preview opens. Result/evidence: vista de recibo institucional media carta visible.
 - [x] Invoice history and reprint work. Result/evidence: historial muestra factura y reimpresion abre recibo historico.
 - [x] Reports load. Result/evidence: reporte diario carga metricas.
 - [x] Backup request from UI changes from `pending` to `success`. Result/evidence: backup manual completo con checksum visible.
@@ -195,7 +215,7 @@ class SystemStatusTest extends TestCase
 MARKDOWN;
     }
 
-    private function completedThermalProof(): string
+    private function completedReceiptPrintProof(): string
     {
         return <<<'MARKDOWN'
 # Institutional printer proof
@@ -241,6 +261,7 @@ MARKDOWN;
 - [x] Carta receipt prints at 100 percent scale. Result/evidence: muestra fisica carta-01.
 - [x] A5 receipt prints at 100 percent scale. Result/evidence: muestra fisica a5-01.
 - [x] Institutional receipt includes hospital name, RTN/CAI when configured, invoice number, patient, cashier, services and totals. Result/evidence: campos visibles en foto institucional-02.
+- [x] Institutional receipt has white background and no QR, barcode, internal codes or technical fields. Result/evidence: muestra sin codigos internos ni fondo oscuro.
 - [x] Reprint from invoice history prints with historical snapshots. Result/evidence: muestra reprint-01.
 - [x] Margins are minimal and no browser headers/footers appear. Result/evidence: revision visual de muestra impresa.
 

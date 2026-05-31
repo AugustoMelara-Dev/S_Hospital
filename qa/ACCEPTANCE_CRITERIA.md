@@ -31,14 +31,15 @@
 - Restore manual esta documentado y validado primero en entorno de prueba, sin endpoint destructivo.
 
 ## Impresión
-- Recibo 80mm por defecto.
-- Opción 58mm.
-- PDF/impresión no sale como hoja carta principal.
+- Recibo institucional media carta por defecto.
+- Opciones carta y A5 configurables.
+- Se imprime una factura por vez con fondo blanco.
+- No imprime QR, codigo de barras, codigos internos ni datos tecnicos.
 
 ## Production readiness
 - `/up`, `/login` y `/verify-email` responden desde servidor LAN.
 - Playwright E2E local pasa con `npm.cmd run e2e`.
 - Restore real MySQL/MariaDB validado en base descartable antes de `PRODUCTION_READY`.
 - Concurrencia real MySQL/MariaDB validada contra servidor de prueba antes de `PRODUCTION_READY`.
-- Validacion fisica 80mm/58mm documentada en `docs/THERMAL_PRINTER_VALIDATION.md`.
+- Validacion fisica media carta/carta/A5 documentada en `docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md`.
 - Ninguna validacion pendiente se marca como completada sin evidencia.

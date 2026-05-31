@@ -64,7 +64,7 @@ Respuesta `me` minima:
 {
   "data": {
     "id": 1,
-    "name": "Cajero Demo",
+    "name": "Cajero Principal",
     "username": "cajero",
     "roles": ["cajero"],
     "permissions": ["invoices.create", "payments.create"],
@@ -75,11 +75,10 @@ Respuesta `me` minima:
 
 ### Credenciales iniciales
 
-Credenciales demo solo estan permitidas en desarrollo. Produccion no debe entregarse con usuarios demo activos.
+Las credenciales iniciales de produccion deben crearse localmente y exigir cambio de contrasena antes de operar.
 
 Reglas minimas:
 
-- Seeder de desarrollo puede crear `admin.demo`, `supervisor.demo` y `cajero.demo`.
 - Seeder/instalacion de produccion debe crear un admin inicial con password temporal o documentar un procedimiento local equivalente antes del primer uso real.
 - El admin inicial de produccion debe tener `must_change_password=true` hasta que cambie su password.
 - Mientras `must_change_password=true`, el backend solo debe permitir `GET /api/auth/me`, cambio de password y logout.
@@ -113,17 +112,17 @@ Payload fiscal minimo:
 
 ```json
 {
-  "hospital_name": "Hospital Demo",
-  "rtn": "08011999123456",
+  "hospital_name": "Hospital San Isidro",
+  "rtn": "RTN_AUTORIZADO",
   "default_tax_rate": "15.00",
-  "receipt_width": "80mm",
+  "receipt_paper_size": "half_letter",
   "invoice_sequence": {
     "document_type": "invoice",
     "prefix": "000-001-01",
     "current_number": 0,
     "min_number": 1,
     "max_number": 99999999,
-    "cai": "DEMO-CAI",
+    "cai": "CAI_AUTORIZADO",
     "valid_until": "2026-12-31",
     "active": true
   }
@@ -241,10 +240,10 @@ Payload pago:
 
 | Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
 |---|---|---|---|---|---|
-| GET | `/api/invoices/{invoice}/receipt` | `receipts.view` | Query: `width=80mm|58mm` | Datos renderizables de recibo | Usa snapshots. |
-| POST | `/api/invoices/{invoice}/reprint` | `receipts.reprint` | `{ "width": "80mm", "reason": "customer_copy" }` | Datos recibo + audit log | Auditar reimpresion. |
+| GET | `/api/invoices/{invoice}/receipt` | `receipts.view` | Query: `width=half_letter|letter|a5` | Datos renderizables de recibo | Usa snapshots. |
+| POST | `/api/invoices/{invoice}/reprint` | `receipts.reprint` | `{ "width": "half_letter", "reason": "copia solicitada por paciente" }` | Datos recibo + audit log | Auditar reimpresion. |
 
-El recibo debe incluir paciente, factura, fecha, cajero, items, subtotal, impuesto, total, pagos y datos fiscales configurados.
+El recibo debe incluir Gobierno, Secretaria, Hospital San Isidro, numero/serie, fecha, paciente o enterante, conceptos, total, pagado, saldo, cajero, metodo de pago, firma, sello y original/copia. No debe imprimir QR, codigo de barras, codigos internos ni datos tecnicos.
 
 ## Reports
 

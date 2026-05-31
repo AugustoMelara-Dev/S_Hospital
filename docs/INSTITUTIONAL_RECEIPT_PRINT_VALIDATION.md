@@ -1,4 +1,4 @@
-﻿# Thermal printer validation checklist
+# Validacion de impresion del recibo institucional
 
 Estado actual: PENDING_HARDWARE_VALIDATION hasta probar en impresora fisica media carta/carta/A5.
 
@@ -10,8 +10,8 @@ sistema no debe ocultar sidebar/topbar/app completa ni dejar paginas en blanco.
 
 - PC de caja identificada.
 - Navegador que usara el cajero identificado.
-- Impresora 80mm instalada o compartida.
-- Impresora 58mm instalada o compartida, si aplica.
+- Impresora instalada o compartida en la PC de caja.
+- Formatos habilitados en el driver: media carta, carta y A5 segun decision del hospital.
 - Impresora correcta seleccionada como predeterminada o elegida manualmente.
 
 ## Configuracion del navegador
@@ -19,27 +19,28 @@ sistema no debe ocultar sidebar/topbar/app completa ni dejar paginas en blanco.
 - Escala 100%.
 - Margenes minimos o ninguno.
 - Encabezados y pies desactivados cuando el navegador lo permita.
-- Tamano de papel del driver configurado como media carta, carta o A5, no carta.
+- Tamano de papel del driver configurado como media carta, carta o A5.
 - Prueba realizada desde la PC real de caja, no solo desde desarrollo.
 
-## Prueba 80mm
+## Prueba media carta
 
 1. Iniciar sesion como cajero.
 2. Abrir caja.
 3. Crear factura con paciente y al menos un servicio.
 4. Cobrar factura.
-5. Abrir recibo 80mm.
+5. Abrir recibo institucional en media carta.
 6. Imprimir.
-7. Confirmar que no sale en formato carta.
-8. Confirmar que muestra hospital, RTN, CAI, rango, fecha limite, paciente, cajero, items, pagos y total.
+7. Confirmar fondo blanco, lectura clara y una sola factura por impresion.
+8. Confirmar que muestra Gobierno, Secretaria, Hospital San Isidro, numero/serie, fecha, paciente, cajero, servicios, metodo de pago, total, pagado, saldo, firma y sello.
+9. Confirmar que no imprime QR, codigo de barras, codigos internos ni datos tecnicos.
 
-## Prueba 58mm
+## Prueba carta y A5
 
 1. Abrir la misma factura o reimpresion.
-2. Cambiar ancho a 58mm.
-3. Imprimir.
-4. Confirmar que no hay cortes de texto critico.
-5. Confirmar que paciente, numero fiscal, CAI y total son legibles.
+2. Cambiar formato a carta.
+3. Imprimir y confirmar margenes, escala 100% y legibilidad.
+4. Cambiar formato a A5 si el hospital usara ese tamano.
+5. Imprimir y confirmar que no hay cortes de texto critico.
 
 ## Reimpresion
 
@@ -47,7 +48,7 @@ sistema no debe ocultar sidebar/topbar/app completa ni dejar paginas en blanco.
 2. Buscar factura pagada.
 3. Reimprimir con motivo.
 4. Confirmar auditoria en backend.
-5. Confirmar que los datos fiscales historicos coinciden con la factura original.
+5. Confirmar que los datos historicos coinciden con la factura original.
 
 ## Resultado
 
@@ -57,6 +58,6 @@ Registrar:
 - Operador.
 - PC de caja.
 - Modelo de impresora.
-- Ancho probado: 80mm, 58mm o ambos.
+- Formato probado: media carta, carta, A5 o combinacion aprobada.
 - Resultado: VALIDATED o FAILED.
 - Observaciones de margenes, escala o driver.

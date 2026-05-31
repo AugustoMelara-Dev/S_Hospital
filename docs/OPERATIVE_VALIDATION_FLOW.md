@@ -1,32 +1,26 @@
-﻿# Demo Flow - Sistema de Caja Hospitalaria
+# Flujo de validacion operativa - Sistema de Caja Hospitalaria
 
 ## Objetivo
 
-Demostrar un flujo vendible temprano sin internet: cajero inicia sesion, abre caja, crea factura, aplica reglas de servicios, cobra, imprime recibo institucional, reimprime y revisa reporte diario.
+Validar que el sistema puede operar sin internet en red local: el cajero inicia sesion, abre caja, crea factura, aplica reglas de servicios, cobra, imprime recibo institucional, reimprime y revisa el reporte diario segun permisos.
 
-## Datos demo sugeridos
+## Datos de validacion sugeridos
 
-- Usuario cajero:
-  - username: `cajero.demo`
-  - password: definida por seeder/dev docs.
-- Usuario supervisor:
-  - username: `supervisor.demo`
-- Paciente:
-  - `Maria Lopez`
-- Caja inicial:
-  - `500.00`
+- Usuario cajero: cuenta temporal creada por el administrador para pruebas controladas.
+- Usuario supervisor: cuenta temporal con permisos de supervision.
+- Paciente: `Maria Lopez`.
+- Caja inicial: `500.00`.
 - Servicios:
-  - `Glucosa`
-  - `Hemograma Completo`
-  - `Eritropoyetina`
-- Configuracion fiscal demo:
-  - Hospital: `Hospital Demo`
-  - RTN: `08011999123456`
-  - CAI: `DEMO-CAI`
-  - Rango: `000-001-01-00000001` a `000-001-01-99999999`
-- Recibo: `80mm`
+  - `Glucosa`.
+  - `Hemograma Completo`.
+  - `Eritropoyetina`.
+- Configuracion fiscal de validacion:
+  - Hospital: `Hospital San Isidro`.
+  - RTN: el RTN definido por administracion.
+  - CAI y rango: los datos fiscales autorizados o valores temporales marcados como pendientes mientras no se opere en produccion.
+- Recibo: media carta como base, con opciones carta y A5.
 
-Estas credenciales demo solo pueden existir en desarrollo. Produccion no debe entregarse con usuarios demo activos. Antes de uso real debe existir un admin inicial con password temporal y cambio obligatorio en primer login, o un procedimiento local documentado equivalente.
+Las cuentas usadas para validar no deben quedar activas con contrasenas conocidas. Antes de uso real debe existir un administrador inicial con password temporal y cambio obligatorio en primer login, o un procedimiento local documentado equivalente.
 
 ## Guion operativo
 
@@ -35,12 +29,12 @@ Estas credenciales demo solo pueden existir en desarrollo. Produccion no debe en
 Accion:
 
 - Entrar a `/login`.
-- Iniciar sesion con `cajero.demo`.
+- Iniciar sesion con una cuenta de cajero autorizada.
 
 Resultado esperado:
 
 - El panel muestra estado de caja.
-- No aparecen opciones de usuarios, backups ni configuracion fiscal.
+- No aparecen opciones de usuarios, respaldos ni configuracion fiscal si el cajero no tiene esos permisos.
 
 Nota:
 
@@ -82,7 +76,7 @@ Accion:
 Resultado esperado:
 
 - El buscador filtra servicios activos.
-- Cada servicio muestra categoria y precio.
+- Cada servicio muestra area/categoria y precio.
 - El cajero no puede editar precio.
 
 ### 5. Seleccionar servicios
@@ -120,7 +114,7 @@ Resultado esperado:
 
 - Precio aplicado: `0.00`.
 - Item registra `special_rule_applied`.
-- Recibo muestra nota/regla aplicada.
+- Recibo muestra la regla aplicada sin exponer codigos internos.
 
 ### 8. Emitir factura
 
@@ -131,8 +125,8 @@ Accion:
 Resultado esperado:
 
 - Se genera numero fiscal atomico.
-- Se valida CAI activo, fecha limite y rango.
-- Factura queda Emitida con saldo pendiente.
+- Se valida CAI activo, fecha limite y rango cuando aplique.
+- Factura queda emitida con saldo pendiente.
 - Items guardan snapshots de nombre, categoria, precio, impuesto y total.
 
 ### 9. Cobrar
@@ -147,20 +141,21 @@ Resultado esperado:
 
 - Pago queda asociado a factura, caja, cajero, metodo y fecha.
 - Se crea movimiento de caja.
-- Factura queda Pagada con saldo L.0.00.
+- Factura queda pagada con saldo L.0.00.
 
 ### 10. Imprimir recibo institucional
 
 Accion:
 
-- Abrir preview de recibo.
-- Seleccionar ancho `80mm`.
-- Imprimir.
+- Abrir vista previa de recibo.
+- Seleccionar media carta, carta o A5.
+- Imprimir una factura a la vez.
 
 Resultado esperado:
 
-- Recibo muestra hospital, RTN, CAI/rango si estan configurados, numero de factura, fecha, cajero, paciente, items, subtotal, impuesto, total y pagos.
-- Formato no sale como hoja carta principal.
+- Recibo muestra Gobierno, Secretaria, Hospital San Isidro, numero/serie, fecha, paciente o enterante, concepto, total, pagado, saldo, cajero, metodo de pago, firma y sello.
+- El recibo usa fondo blanco, aun cuando la aplicacion este en modo oscuro.
+- No imprime QR, codigo de barras, codigos internos ni datos tecnicos.
 
 ### 11. Reimprimir factura
 
@@ -169,6 +164,7 @@ Accion:
 - Ir a historial.
 - Buscar la factura por paciente o numero.
 - Presionar reimprimir.
+- Registrar motivo.
 
 Resultado esperado:
 
@@ -179,16 +175,16 @@ Resultado esperado:
 
 Accion:
 
-- Entrar con supervisor o admin.
+- Entrar con supervisor o administrador.
 - Ir a Reportes.
 - Abrir reporte diario.
 
 Resultado esperado:
 
-- Reporte muestra total cobrado del dia.
+- Reporte separa facturado, cobrado, saldo, parciales, anuladas y metodos de pago.
 - Totales coinciden con pagos y caja.
 - Cajero no puede ver reporte gerencial si no tiene permiso.
 
-## Criterio de exito demo
+## Criterio de exito
 
-La demo es aceptable cuando el flujo completo se puede ejecutar en navegador local sin internet y sin intervencion tecnica: login, caja, factura, regla de eritropoyetina, pago, recibo, reimpresion y reporte diario.
+El flujo es aceptable cuando se puede ejecutar en navegador local sin internet y sin intervencion tecnica: login, caja, factura, regla de eritropoyetina, pago, recibo institucional, reimpresion y reporte diario.

@@ -1,4 +1,4 @@
-# Thermal printer proof
+# Institutional receipt print proof
 
 Estado actual: PENDING_HARDWARE_VALIDATION.
 
@@ -7,9 +7,9 @@ institucional debe completarse en la computadora de caja real, con la impresora
 real del Hospital San Isidro y una factura de prueba autorizada. No se debe
 llenar con datos supuestos, fotos inexistentes ni referencias copiadas.
 
-Para completar la validacion, use `qa/THERMAL_PRINTER_PROOF.example.md` como
-plantilla y reemplace este archivo solo despues de imprimir y revisar la salida
-fisica.
+Para completar la validacion, use `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md`
+como plantilla y reemplace este archivo solo despues de imprimir y revisar la
+salida fisica.
 
 ## Bloqueantes actuales
 

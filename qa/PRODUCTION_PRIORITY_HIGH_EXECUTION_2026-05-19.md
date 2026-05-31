@@ -54,7 +54,7 @@ Result: `PRODUCTION_READY: NO (2 blocking issue(s))`.
 Blocking failures:
 
 - Missing `qa/LAN_CLIENT_VALIDATION_PROOF.md` with real second-client LAN evidence.
-- Missing `qa/THERMAL_PRINTER_PROOF.md` with real physical thermal printer evidence.
+- Missing `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` with real physical institutional printer evidence.
 
 These cannot be closed from the server machine alone. They require a real second client computer and the real thermal printer or exact printer configuration used by the hospital.
 
@@ -74,7 +74,7 @@ These cannot be closed from the server machine alone. They require a real second
 ## Remaining mandatory actions
 
 1. From a second computer on the final LAN, fill `qa/LAN_CLIENT_VALIDATION_PROOF.md` using `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
-2. On the cashier/printer computer, fill `qa/THERMAL_PRINTER_PROOF.md` using `qa/THERMAL_PRINTER_PROOF.example.md`.
+2. On the cashier/printer computer, fill `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` using `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md`.
 3. Re-run `scripts/production_readiness_preflight.ps1` without `-AllowMissingPhysicalProof`.
 4. In an elevated PowerShell session, re-register backup scheduled tasks:
 
@@ -125,7 +125,7 @@ Result: `PRODUCTION_READY: NO (2 blocking issue(s))`.
 Remaining blockers:
 
 - Missing `qa/LAN_CLIENT_VALIDATION_PROOF.md` with real second-client LAN evidence.
-- Missing `qa/THERMAL_PRINTER_PROOF.md` with real physical thermal printer evidence.
+- Missing `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` with real physical institutional printer evidence.
 
 During the handoff dry run, Windows scheduled tasks named
 `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup` were not

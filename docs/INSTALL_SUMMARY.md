@@ -18,7 +18,7 @@ No ejecutar `migrate:fresh` en el servidor real.
 11. Crear un backup manual y confirmar que cambia de `pending` a `success`.
 12. Preparar archivos de evidencia con `scripts\init_production_proofs.ps1`.
 13. Desde una segunda PC cliente, ejecutar `scripts\validate_lan_client.ps1 -BaseUrl http://IP_DEL_SERVIDOR -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md` y completar los checks manuales de login, caja, factura, pago, reportes y backup.
-14. Completar `qa\THERMAL_PRINTER_PROOF.md` con la impresora fisica media carta/carta/A5.
+14. Completar `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con la impresora fisica media carta/carta/A5.
 15. Ejecutar `scripts\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR` sin `-AllowMissingPhysicalProof` solo cuando ya existan pruebas de segunda PC LAN e impresora.
 
 Si el preflight falla por evidencia fisica pendiente, el servidor puede seguir en `PRODUCTION_CANDIDATE`, pero no se debe vender como `PRODUCTION_READY`.
@@ -32,10 +32,10 @@ Si el preflight falla por evidencia fisica pendiente, el servidor puede seguir e
 5. Configurar obligatoriamente `APP_ENV=production` y `APP_DEBUG=false`.
 6. Generar `APP_KEY` si no existe.
 7. Ejecutar migraciones aprobadas sin `migrate:fresh`.
-8. Crear admin real con `php artisan auth:create-initial-admin`; no ejecutar seeders demo en servidor real.
+8. Crear admin real con `php artisan auth:create-initial-admin`; no ejecutar seeders de desarrollo en servidor real.
 9. Ejecutar `php artisan config:cache`.
 
-No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`, `supervisor.demo` y `cajero.demo` son exclusivamente para desarrollo/testing.
+No entregar un servidor LAN real con `APP_ENV=local`. Produccion debe operar con cuentas reales creadas por administracion y cambio obligatorio de contrasena cuando aplique.
 
 ## Servidor LAN
 

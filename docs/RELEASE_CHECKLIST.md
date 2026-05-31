@@ -1,6 +1,6 @@
-# Release checklist - demo vendible y produccion real
+# Release checklist - validacion operativa y produccion real
 
-Estado actual documentado: `DEMO_READY` y `PRODUCTION_CANDIDATE`. No declarar
+Estado actual documentado: `PRODUCTION_CANDIDATE`. No declarar
 `PRODUCTION_READY` hasta cerrar validacion fisica de cliente LAN, hardware de
 impresora institucional y configuracion final del servidor real.
 
@@ -37,13 +37,13 @@ El E2E local usa ambiente seguro y API mockeada para cubrir login, caja, factura
 
 ## Reset dev/testing con base descartable
 
-`php artisan migrate:fresh --seed` solo puede usarse para validar migraciones y seeders en una base descartable de desarrollo, testing o demo. No ejecutar `migrate:fresh` en el servidor real del hospital.
+`php artisan migrate:fresh --seed` solo puede usarse para validar migraciones y seeders en una base descartable de desarrollo o testing. No ejecutar `migrate:fresh` en el servidor real del hospital.
 
 Usar el script destructivo solo si se cumplen todas las condiciones:
 
 - `APP_ENV` es `local` o `testing`.
 - `HOSPITAL_ALLOW_DESTRUCTIVE_RESET=1`.
-- `DB_DATABASE` contiene `test`, `demo` o `local`, o se usa `DB_CONNECTION=sqlite` en `testing`.
+- `DB_DATABASE` contiene `test` o `local`, o se usa `DB_CONNECTION=sqlite` en `testing`.
 
 ```bash
 HOSPITAL_ALLOW_DESTRUCTIVE_RESET=1 bash scripts/quality_gate_destructive.sh
@@ -58,7 +58,7 @@ En produccion offline LAN no se borra la base. La validacion segura usa:
 - `APP_DEBUG=false`.
 - `APP_URL` con la IP fija o dominio LAN final, por ejemplo `http://192.168.1.10`.
 - `SANCTUM_STATEFUL_DOMAINS` y CORS/Sanctum alineados al host LAN real y a cualquier dominio local permitido.
-- Admin real creado con `php artisan auth:create-initial-admin`; no usar seeders demo.
+- Admin real creado con `php artisan auth:create-initial-admin`; no usar seeders de desarrollo.
 - `composer validate`
 - `php artisan test --colors=never` si el servidor tiene entorno de testing aislado.
 - `php artisan config:cache --no-ansi`
@@ -91,7 +91,7 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps
 Este helper no aprueba produccion por si solo: crea o muestra archivos de
 evidencia pendientes, muestra el estado de tareas de backup y ejecuta el
 preflight sin `-AllowMissingPhysicalProof`. Si faltan `qa/LAN_CLIENT_VALIDATION_PROOF.md`
-o `qa/THERMAL_PRINTER_PROOF.md` completos, el resultado correcto sigue siendo
+o `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` completos, el resultado correcto sigue siendo
 `PRODUCTION_CANDIDATE`. Tambien deja un resumen operativo en
 `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` con la decision, bloqueantes y comandos
 siguientes.
@@ -124,10 +124,10 @@ Evidencia Fase 11: ejecutado en MariaDB XAMPP local contra `hospital_restore_val
 Concurrencia MySQL/MariaDB por HTTP contra servidor de validacion:
 
 ```bash
-HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=local HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://127.0.0.1:8000 HOSPITAL_ALLOW_DEMO_VALIDATION=1 bash scripts/validate_mysql_concurrency.sh
+HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=local HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_LOGIN=usuario.validacion HOSPITAL_CONCURRENCY_PASSWORD=password-temporal bash scripts/validate_mysql_concurrency.sh
 ```
 
-Este script es mutante: abre caja, crea facturas y registra pagos con un `RUN_ID`. No borra facturas porque son registros auditables; requiere snapshot/base descartable antes de ejecutarlo.
+Este script es mutante: abre caja, crea facturas y registra pagos con un `RUN_ID`. No borra facturas porque son registros auditables; requiere snapshot/base descartable antes de ejecutarlo y credenciales temporales explicitas, nunca defaults demo.
 
 Evidencia Fase 11: ejecutado contra `http://192.168.1.7:8000` con `HOSPITAL_CONCURRENCY_TARGET_ENV=local` y `RUN_ID=concurrency-validation-20260517T20435`; valido doble apertura de caja, doble emision de factura y doble pago. Repetir en servidor/base final descartable antes de declarar produccion.
 
@@ -205,9 +205,9 @@ Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_b
 
 - Probar restore real en una base descartable del servidor final y guardar checksum/conteos.
 - Probar desde una segunda PC en LAN usando la IP fija o dominio LAN, nunca `localhost`.
-- Probar impresora fisica termica media carta/carta/A5 desde la PC o cliente que imprimira.
+- Probar impresora fisica media carta/carta/A5 desde la PC o cliente que imprimira.
 - Crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
-- Crear `qa/THERMAL_PRINTER_PROOF.md` usando `qa/THERMAL_PRINTER_PROOF.example.md`.
+- Crear `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` usando `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md`.
 - Crear `qa/FINAL_RESTORE_PROOF.md` usando `qa/FINAL_RESTORE_PROOF.example.md`.
 - Crear `qa/FINAL_CONCURRENCY_PROOF.md` usando `qa/FINAL_CONCURRENCY_PROOF.example.md`.
 - Para preparar ambos archivos sin escribir evidencia falsa:

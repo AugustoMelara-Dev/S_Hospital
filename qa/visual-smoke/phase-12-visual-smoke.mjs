@@ -472,7 +472,7 @@ async function main() {
       user,
       role: 'admin',
       environment: 'local-real',
-      mutationMode: process.env.VISUAL_SMOKE_ALLOW_MUTATIONS === '1' ? 'explicit' : 'local-admin-demo-default',
+      mutationMode: process.env.VISUAL_SMOKE_ALLOW_MUTATIONS === '1' ? 'explicit-authorized' : 'blocked',
       screenshots: Object.keys(routeScreens).map((name) => ({
         name,
         route: routeScreens[name],

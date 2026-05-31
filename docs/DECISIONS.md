@@ -267,11 +267,11 @@ Consecuencia:
 
 Decision:
 
-- Fase 10 separa el estado `DEMO_READY`, `PRODUCTION_CANDIDATE` y `PRODUCTION_READY`.
+- Fase 10 separa el estado `PRODUCTION_CANDIDATE` y `PRODUCTION_READY` sin presentar validaciones parciales como entrega final.
 - Playwright E2E queda como gate separado en `scripts/e2e_gate.sh`, no mezclado dentro del quality gate seguro.
 - Restore MySQL/MariaDB real y concurrencia MySQL/MariaDB real quedan como scripts verificables (`scripts/validate_restore_mysql.sh` y `scripts/validate_mysql_concurrency.sh`) que requieren banderas explicitas antes de tocar entornos reales.
 - Produccion same-origin desde Laravel sirve `/`, `/login`, `/verify-email` y `/assets/*` desde `frontend/dist` para que los clientes LAN puedan entrar por IP o nombre del servidor.
-- impresora institucional fisica no se marca validada sin hardware; queda checklist operativo en `docs/THERMAL_PRINTER_VALIDATION.md`.
+- impresora institucional fisica no se marca validada sin hardware; queda checklist operativo en `docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md`.
 
 Motivo:
 
@@ -455,7 +455,7 @@ Consecuencia:
 
 - Cajeros y supervisores siguen sin acceso a estado operativo de backups/servidor.
 - La UI ayuda a instalar y operar, pero no reemplaza `scripts/production_readiness_preflight.ps1` ni la evidencia fisica requerida.
-- `PRODUCTION_READY` requiere que el preflight final pase sin `-AllowMissingPhysicalProof` y que existan `qa/LAN_CLIENT_VALIDATION_PROOF.md` y `qa/THERMAL_PRINTER_PROOF.md` completados en el servidor/campo real.
+- `PRODUCTION_READY` requiere que el preflight final pase sin `-AllowMissingPhysicalProof` y que existan `qa/LAN_CLIENT_VALIDATION_PROOF.md` y `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` completados en el servidor/campo real.
 
 ### 2026-05-19 - Helpers de evidencia de campo
 
@@ -498,7 +498,7 @@ Consecuencia:
 
 Decision:
 
-- `/api/system/status` ahora evalua `qa\LAN_CLIENT_VALIDATION_PROOF.md` y `qa\THERMAL_PRINTER_PROOF.md` en vez de reportarlos siempre como pendientes.
+- `/api/system/status` ahora evalua `qa\LAN_CLIENT_VALIDATION_PROOF.md` y `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` en vez de reportarlos siempre como pendientes.
 - La evaluacion marca `pending` si falta el archivo, `partial` si quedan campos/checks/placeholders incompletos y `validated` si el archivo cumple la estructura minima de evidencia.
 - Aunque ambas evidencias aparezcan `validated`, el endpoint mantiene `PRODUCTION_READY=false`; la aprobacion final sigue dependiendo de `scripts\production_readiness_preflight.ps1` ejecutado sin bypass en el servidor final.
 - La pantalla de Backups muestra el detalle de cada evidencia para que el operador sepa si falta crear el archivo, completar campos o correr el preflight final.
@@ -632,7 +632,7 @@ Motivo:
 
 Consecuencia:
 
-- `admin.demo` puede iniciar sesion por HTTP en `127.0.0.1:8000` y en la IP LAN activa.
+- Un administrador local de validacion puede iniciar sesion por HTTP en `127.0.0.1:8000` y en la IP LAN activa.
 - El instalador debe evitar volver a publicar una URL muerta despues de cambios de red o DHCP.
 
 ### 2026-05-21 - Headers de seguridad y exportacion PDF protegida
@@ -699,3 +699,24 @@ Consecuencia:
 - La evidencia visual actual queda versionable y auditable por modulo.
 - `npm.cmd run test`, `npm.cmd run typecheck`, `npm.cmd run lint`, `npm.cmd run build`, `php artisan test --colors=never --filter=BackupWorkflowTest`, `php artisan test --colors=never --filter=ReportsTest` y `php artisan test --colors=never --filter=ProductionSpaRouteTest` pasan.
 - El build conserva una advertencia no bloqueante de Vite por un chunk apenas mayor a 500 kB; debe tratarse como optimizacion posterior, no como bloqueo funcional.
+
+### 2026-05-31 - Contrato de hechos financieros antes de refactors
+
+Decision:
+
+- El frente de informacion financiera se ejecutara por fases pequenas, empezando por evidencia y un contrato backend explicito de hechos financieros.
+- Los reportes deben exponer campos con significado estable: facturado, cobrado, pendiente, parcial, anulado, pagos por metodo y efectivo esperado.
+- El frontend no sera fuente de verdad para dinero ni estados; solo presentara campos calculados y validados por backend.
+- La evidencia de auditoria inicial vive en `qa/financial-data-audit/` y el plan de ejecucion vive en `docs/superpowers/plans/2026-05-31-financial-data-integrity.md`.
+
+Motivo:
+
+- La auditoria inicial detecto riesgos de contrato y entorno: una pantalla de reportes puede mostrar `Saldo pendiente: L. undefined`, el catalogo puede quedarse en estado de carga aunque la API tenga servicios, y la base MariaDB actual tiene esquema pero no datos operativos.
+- Administracion necesita totales auditables y trazables, no cifras derivadas por memoria humana o sumas duplicadas en UI.
+- Los comandos de prueba y validacion no deben poner en riesgo la base local de trabajo; antes de migraciones o restauraciones se requiere evidencia y backup.
+
+Consecuencia:
+
+- Phase 0 documenta el baseline sin cambiar comportamiento funcional.
+- Phase 1 debe introducir pruebas de facturas pagadas, parciales, emitidas y anuladas, con efectivo, tarjeta, transferencia y otros metodos.
+- No se considera completo el frente hasta que las capturas, reportes, consultas, migraciones aditivas, pruebas backend/frontend, build, E2E, branding check y smoke de caja/reportes prueben la consistencia end-to-end.

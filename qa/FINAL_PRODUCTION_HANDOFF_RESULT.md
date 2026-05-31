@@ -13,7 +13,7 @@ evidence, the system must not be described as `PRODUCTION_READY`.
 
 ## Current blockers
 
-- Complete `qa/THERMAL_PRINTER_PROOF.md` from the real cashier computer and real printer.
+- Complete `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` from the real cashier computer and real printer.
 - Run `scripts/production_readiness_preflight.ps1` without `-AllowMissingPhysicalProof`.
 - Regenerate this handoff report only after the preflight passes with real LAN,
   printer, restore and concurrency evidence.

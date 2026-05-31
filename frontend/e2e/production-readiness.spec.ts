@@ -462,9 +462,9 @@ async function installApiMocks(page: Page) {
             status: 'pending',
           },
           {
-            code: 'THERMAL_PRINTER_PROOF',
+            code: 'INSTITUTIONAL_RECEIPT_PRINT_PROOF',
             label: 'Impresora institucional media carta/carta/A5',
-            required_file: 'qa/THERMAL_PRINTER_PROOF.md',
+            required_file: 'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
             status: 'pending',
           },
         ],

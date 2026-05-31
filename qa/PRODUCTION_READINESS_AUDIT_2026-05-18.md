@@ -31,7 +31,7 @@ las pruebas fisicas y operativas.
    - Impresora real 80mm/58mm.
    - Driver, navegador, factura usada y resultado por ancho.
    - Reimpresion desde historial.
-   - Guardar evidencia completa en `qa/THERMAL_PRINTER_PROOF.md`.
+   - Guardar evidencia completa en `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`.
 
 4. Herramientas y backups:
    - `mysql` disponible en PATH.
@@ -64,7 +64,7 @@ correctas, como:
 - ausencia de `mysql`.
 - ausencia de `mysqldump` o `mariadb-dump`.
 - ausencia de `qa/LAN_CLIENT_VALIDATION_PROOF.md`.
-- ausencia de `qa/THERMAL_PRINTER_PROOF.md`.
+- ausencia de `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`.
 - evidencia incompleta o con placeholders.
 - `CORS_ALLOWED_ORIGINS=*`.
 

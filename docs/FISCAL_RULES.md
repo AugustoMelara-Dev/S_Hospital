@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Modelar desde fases tempranas la configuracion fiscal hondurena necesaria para emitir facturas con correlativo, CAI, RTN, rango autorizado y fecha limite. La demo puede usar datos de prueba, pero esos datos deben estar configurados en la secuencia fiscal igual que los datos reales.
+Modelar desde fases tempranas la configuracion fiscal hondurena necesaria para emitir facturas con correlativo, CAI, RTN, rango autorizado y fecha limite. Una validacion local puede usar datos temporales, pero esos datos deben estar configurados en la secuencia fiscal igual que los datos reales y no deben confundirse con autorizacion fiscal final.
 
 ## Datos fiscales configurables
 
@@ -14,7 +14,7 @@ Configuracion de hospital:
 - Telefono opcional.
 - Mensaje de recibo.
 - Tasa de impuesto por defecto.
-- Ancho de recibo por defecto: `80mm` o `58mm`.
+- Formato de recibo por defecto: media carta, carta o A5.
 
 Secuencia fiscal:
 
@@ -29,7 +29,7 @@ Secuencia fiscal:
 
 ## Reglas de emision
 
-- No emitir factura real ni demo si no existe secuencia fiscal activa y valida para `invoice`.
+- No emitir factura real ni de validacion si no existe secuencia fiscal activa y valida para `invoice`.
 - No emitir factura si el CAI esta vacio.
 - No emitir factura si la secuencia esta inactiva.
 - No emitir factura si `valid_until` esta vencida.
@@ -39,7 +39,7 @@ Secuencia fiscal:
 - No permitir bajar `current_number` por debajo de un numero ya emitido.
 - No permitir borrar una factura con items. `invoice_items.invoice_id` debe usar
   `restrictOnDelete()` para que una eliminacion manual no borre detalle historico fiscal.
-- Si la demo usa CAI de prueba, ese CAI de prueba debe estar guardado en la configuracion fiscal antes de emitir.
+- Si una validacion local usa CAI temporal, ese CAI debe estar guardado en la configuracion fiscal antes de emitir y debe quedar marcado como pendiente de autorizacion real.
 
 ## Correlativo atomico
 
@@ -87,7 +87,7 @@ Factura/recibo debe mostrar si estan configurados:
 - Cajero.
 - Nombre del paciente.
 
-Si la demo usa datos fiscales de prueba, deben existir en configuracion fiscal y no quedar hardcoded en el recibo.
+Si una validacion local usa datos fiscales temporales, deben existir en configuracion fiscal y no quedar hardcoded en el recibo.
 
 ## Auditoria
 

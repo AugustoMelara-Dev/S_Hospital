@@ -84,5 +84,5 @@ Modules covered:
 ## Remaining Field Validation
 
 - Physical LAN client access from a second device still needs to be tested on the final server IP.
-- Physical thermal printer 80mm/58mm still needs real hardware evidence before claiming `PRODUCTION_READY`.
+- Physical institutional printer 80mm/58mm still needs real hardware evidence before claiming `PRODUCTION_READY`.
 - Windows Task Scheduler management requires an elevated PowerShell session on this machine. Because the non-elevated session cannot reliably create/start/query scheduled tasks, the current-user Startup automation is active as the local fallback.

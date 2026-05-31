@@ -19,7 +19,7 @@ La revision con seis roles queda en estado **BLOQUEADO**. No se debe declarar Fa
 - POS ya evita lista completa de 122 servicios, pero el flujo emitir/cobrar sigue partido y sin confirmacion critica.
 - Caja permite cierre directo sin dialogo de arqueo/confirmacion reforzada.
 - Reportes todavia no cubren anulaciones, reimpresiones, backups, filtros completos ni exportacion autorizada.
-- QA E2E esta basado en mocks para demo; falta gate real separado contra Laravel/API y consola limpia.
+- QA E2E esta basado en mocks para validacion controlada; falta gate real separado contra Laravel/API y consola limpia.
 - Seguridad encontro un bloqueo: pagos pueden operar sobre facturas ajenas por ID si el usuario conoce el identificador.
 
 ## Suposiciones explicitas
@@ -58,8 +58,8 @@ Mientras no se decida, el supuesto seguro es: **el camino principal del POS exig
   - `Toast/InlineAlert`
   - `SegmentedControl` o tabs
   - `TableState` para loading/empty/error
-- Reducir CSS global a tokens, layout general y print thermal. Las pantallas deben usar componentes, no clases artesanales por modulo.
-- Mantener reglas de impresion termica como excepcion tecnica en CSS.
+- Reducir CSS global a tokens, layout general y estilos de impresion institucional. Las pantallas deben usar componentes, no clases artesanales por modulo.
+- Mantener reglas de impresion para media carta, carta y A5 como excepcion tecnica en CSS.
 
 ### Backend
 
@@ -298,19 +298,19 @@ Riesgos:
 
 Criterios de aceptacion:
 
-- Reportes sirven para administracion real, no demo basica.
+- Reportes sirven para administracion real, no validacion basica.
 - No hay totales financieros autoritativos calculados solo en frontend.
 
 Commit sugerido:
 
 - `feat(reports): add managerial analytics and exports`
 
-### 12E QA visual, consola limpia y entrega premium
+### 12E QA visual, consola limpia y entrega institucional
 
 Alcance:
 
 - Separar gates:
-  - E2E mockeado de demo.
+  - E2E mockeado de validacion controlada.
   - Smoke real contra Laravel/API.
 - Browser smoke con consola limpia.
 - Validar rutas: dashboard, POS, caja, catalogo, historial, reportes, backups, fiscal.
@@ -323,7 +323,7 @@ Archivos esperados:
 - `frontend/playwright.config.ts`
 - `qa/FINAL_UX_ACCEPTANCE_CHECKLIST.md`
 - `qa/RELEASE_READINESS.md`
-- `docs/DEMO_SCRIPT.md`
+- `docs/LOCAL_VALIDATION_SCRIPT.md`
 - `worklogs/*`
 
 Migraciones:

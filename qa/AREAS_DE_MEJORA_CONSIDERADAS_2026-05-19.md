@@ -9,7 +9,7 @@ El sistema esta en estado `PRODUCTION_CANDIDATE`: puede presentarse como demo ve
 
 Actualizacion de cierre repo-local:
 
-- El panel operativo ya no muestra la evidencia fisica como pendiente fija: `/api/system/status` evalua `qa/LAN_CLIENT_VALIDATION_PROOF.md` y `qa/THERMAL_PRINTER_PROOF.md` como `pending`, `partial` o `validated`.
+- El panel operativo ya no muestra la evidencia fisica como pendiente fija: `/api/system/status` evalua `qa/LAN_CLIENT_VALIDATION_PROOF.md` y `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` como `pending`, `partial` o `validated`.
 - Aun con ambas evidencias `validated`, el sistema mantiene `PRODUCTION_READY=false` hasta que el preflight final pase sin bypass.
 - En Windows, `scripts/production_readiness_preflight.ps1` ahora bloquea si faltan `SistemaCajaHospitalaria-BackupWorker` o `SistemaCajaHospitalaria-DailyBackup`, o si el worker continuo no esta `Running`.
 - Restore y concurrencia final ya tienen plantillas de evidencia (`qa/FINAL_RESTORE_PROOF.example.md`, `qa/FINAL_CONCURRENCY_PROOF.example.md`) y el preflight las exige sin bypass.
@@ -71,15 +71,15 @@ Prioridad: P0 para `PRODUCTION_READY`.
 Estado actual:
 
 - La UI y los tests cubren recibo 80mm/58mm.
-- Existe `docs/THERMAL_PRINTER_VALIDATION.md`.
-- Existe plantilla `qa/THERMAL_PRINTER_PROOF.example.md`.
+- Existe `docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md`.
+- Existe plantilla `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md`.
 - No hay evidencia de impresion fisica real.
 
 Mejora considerada:
 
 - Probar recibo 80mm y 58mm con la impresora final o la configuracion exacta de caja.
 - Validar escala 100%, margenes minimos, corte, ancho, legibilidad, CAI/RTN/rango, items y reimpresion desde historial.
-- Registrar evidencia en `qa/THERMAL_PRINTER_PROOF.md`.
+- Registrar evidencia en `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`.
 
 Criterio de aceptacion:
 
@@ -331,7 +331,7 @@ Riesgo si no se documenta:
 ### P0 - Cierre para poder declarar `PRODUCTION_READY`
 
 1. Completar `qa/LAN_CLIENT_VALIDATION_PROOF.md` desde segunda PC real.
-2. Completar `qa/THERMAL_PRINTER_PROOF.md` con impresora fisica real.
+2. Completar `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con impresora fisica real.
 3. Ejecutar preflight final sin `-AllowMissingPhysicalProof`.
 4. Confirmar entorno production final, admin real, CORS/Sanctum LAN y config cache.
 
@@ -361,7 +361,7 @@ El reporte no cambia el estado actual: `PRODUCTION_CANDIDATE`.
 El sistema solo debe pasar a `PRODUCTION_READY` cuando existan estas evidencias:
 
 - `qa/LAN_CLIENT_VALIDATION_PROOF.md` completo, sin placeholders, desde segunda PC real.
-- `qa/THERMAL_PRINTER_PROOF.md` completo, sin placeholders, con impresora fisica 80mm/58mm.
+- `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` completo, sin placeholders, con impresora fisica 80mm/58mm.
 - `scripts/production_readiness_preflight.ps1` ejecutado sin bypass y con salida aprobada.
 - Backup worker continuo activo y backup manual validado desde UI.
 - Entorno final con `APP_ENV=production`, `APP_DEBUG=false`, admin real, `config:cache`, CORS/Sanctum LAN final y sin seeders demo.

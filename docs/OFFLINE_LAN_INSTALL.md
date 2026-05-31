@@ -51,7 +51,7 @@ Antes de instalar en el hospital:
 7. Configurar `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` y CORS con la IP fija o dominio LAN final, por ejemplo `192.168.1.10`.
 8. Generar `APP_KEY` en el servidor.
 9. Ejecutar migraciones aprobadas sin `migrate:fresh`.
-10. Crear admin real con `php artisan auth:create-initial-admin`; no ejecutar seeders demo.
+10. Crear admin real con `php artisan auth:create-initial-admin`; no ejecutar seeders de desarrollo.
 11. Ejecutar `php artisan config:cache`.
 12. Publicar por IP fija LAN o nombre local.
 13. Levantar worker local de backups como servicio/tarea continua con `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
@@ -59,7 +59,7 @@ Antes de instalar en el hospital:
 
 En publicacion same-origin con Laravel, `/`, `/login` y `/verify-email` sirven el build React desde `frontend/dist/index.html`, y `/assets/*` sirve los assets compilados. Si `frontend/dist` no existe, el servidor responde error operativo y no debe entregarse como listo.
 
-No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`, `supervisor.demo` y `cajero.demo` pertenecen solo a desarrollo/testing.
+No entregar un servidor LAN real con `APP_ENV=local`. Produccion debe operar con cuentas reales creadas por administracion y cambio obligatorio de contrasena cuando aplique.
 
 ## Red local
 
@@ -78,14 +78,14 @@ No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`,
 - Si MySQL/MariaDB debe aceptar conexiones solo del backend local, mantenerlo escuchando en `127.0.0.1`.
 - Si se usa un servidor web local, validar que `/up`, `/login` y `/verify-email` respondan desde otra computadora LAN.
 
-## impresora institucional
+## Impresora institucional
 
 - Instalar la impresora media carta, carta o A5 en la computadora que imprimira.
 - Validar una impresion de prueba desde el navegador usado en caja.
-- Configurar el tamano de papel del driver para evitar salida tipo carta.
+- Configurar el tamano de papel del driver segun el formato aprobado: media carta, carta o A5.
 - Si la impresora se comparte en red, probar desde cada cliente autorizado antes de operar.
 - Marcar escala 100%, margenes minimos o ninguno, encabezados/pies del navegador desactivados si el navegador lo permite.
-- Ejecutar una prueba 80mm y una prueba 58mm con una factura pagada y una reimpresion desde historial.
+- Ejecutar una prueba con factura pagada y una reimpresion desde historial. Confirmar fondo blanco, firma/sello y ausencia de QR, codigo de barras o codigos internos.
 
 ## Backups
 

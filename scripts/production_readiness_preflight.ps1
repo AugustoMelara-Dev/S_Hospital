@@ -453,7 +453,7 @@ if ($AllowMissingPhysicalProof) {
         )
 
     Test-ProofFile `
-        -path (Join-Path $ProjectRoot "qa\THERMAL_PRINTER_PROOF.md") `
+        -path (Join-Path $ProjectRoot "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md") `
         -proofName "physical institutional printer" `
         -requiredFields @(
             "Date/time",
@@ -478,6 +478,7 @@ if ($AllowMissingPhysicalProof) {
             "media carta",
             "carta",
             "A5",
+            "white background",
             "Reprint",
             "headers/footers",
             "historical"
