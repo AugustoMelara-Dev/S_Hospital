@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import {
   Archive,
   Banknote,
@@ -13,6 +14,8 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { PageHeader } from '../../components/ui/page-header';
+import { Button } from '../../components/ui/button';
+import { getClientIssues } from '../../lib/support/clientIssueLog';
 
 const guides = [
   {
@@ -115,6 +118,49 @@ const roleGuides = [
     answer: 'Gestiona usuarios, catalogo, configuracion fiscal, respaldos y restauraciones. No use la base de produccion para practicas.',
   },
 ];
+
+function SupportEvidenceCard() {
+  const [showDetails, setShowDetails] = useState(false);
+  const issues = useMemo(() => getClientIssues(), []);
+  const latestIssues = issues.slice(0, 3);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Evidencia local para soporte</CardTitle>
+        <CardDescription>Mensajes seguros guardados en este navegador cuando una pantalla o conexion falla.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <p className="text-sm leading-6 text-muted-foreground">
+            Incidentes guardados: <span className="font-semibold text-foreground">{issues.length}</span>. No incluye contrasenas, tokens ni claves.
+          </p>
+          <Button type="button" variant="outline" size="sm" onClick={() => setShowDetails((current) => !current)}>
+            {showDetails ? 'Ocultar evidencia' : 'Ver evidencia'}
+          </Button>
+        </div>
+
+        {showDetails ? (
+          latestIssues.length > 0 ? (
+            <ul className="space-y-2">
+              {latestIssues.map((issue) => (
+                <li key={`${issue.occurred_at}-${issue.action ?? 'accion'}`} className="rounded-md border border-border bg-muted/30 p-3">
+                  <p className="text-sm font-semibold text-foreground">{issue.module ?? 'sistema'} - {issue.action ?? 'accion no indicada'}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{issue.safe_message}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{issue.route} - {new Date(issue.occurred_at).toLocaleString()}</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+              No hay incidentes guardados en este navegador.
+            </p>
+          )
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
 
 export function HelpView() {
   return (
@@ -219,6 +265,8 @@ export function HelpView() {
           </div>
         </CardContent>
       </Card>
+
+      <SupportEvidenceCard />
     </section>
   );
 }

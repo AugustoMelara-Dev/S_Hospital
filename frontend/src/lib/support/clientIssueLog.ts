@@ -4,7 +4,7 @@ type ClientIssueContext = {
   route?: string;
 };
 
-type StoredClientIssue = {
+export type StoredClientIssue = {
   action?: string;
   module?: string;
   route: string;
@@ -42,5 +42,19 @@ export function logClientIssue(error: unknown, context: ClientIssueContext = {})
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify([issue, ...existing].slice(0, MAX_ISSUES)));
   } catch {
     // Support logging must never block the cashier workflow.
+  }
+}
+
+export function getClientIssues(): StoredClientIssue[] {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const issues = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '[]') as StoredClientIssue[];
+
+    return Array.isArray(issues) ? issues.slice(0, MAX_ISSUES) : [];
+  } catch {
+    return [];
   }
 }
