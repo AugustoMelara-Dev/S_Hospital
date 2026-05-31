@@ -102,4 +102,69 @@ describe('DashboardView financial labels', () => {
     expect(document.body.textContent).not.toMatch(/SQLSTATE|stack trace|storage\/logs/i);
     expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/servidor lan/i));
   });
+
+  it('renders malformed financial amounts as zero instead of NaN', async () => {
+    vi.spyOn(apiClient, 'getDashboardReport').mockResolvedValue({
+      current_month: {
+        total_billed: 'monto-danado',
+        total_collected: '',
+        invoice_count: 1,
+        payment_count: 1,
+      },
+      last_7_days: [
+        {
+          date: '2026-05-30',
+          total_billed: 'monto-danado',
+          total_collected: 'no-numero',
+          invoice_count: 1,
+          payment_count: 1,
+        },
+      ],
+      payments_by_method: {
+        cash: 'monto-danado',
+        transfer: '',
+        card: 'NaN',
+        other: '0.00',
+      },
+      top_services: [
+        {
+          service_name: 'Servicio con dato danado',
+          category_name: 'Laboratorio',
+          quantity: 'cantidad-danada',
+          total: 'monto-danado',
+        },
+      ],
+      cashiers_summary: [
+        {
+          user_id: 5,
+          name: 'Cajero Validacion',
+          username: 'cajero.validacion',
+          payment_count: 1,
+          total_collected: 'monto-danado',
+        },
+      ],
+    });
+
+    render(
+      <DashboardView
+        canCreateInvoices
+        canViewBackups
+        canViewCash
+        canViewCatalog
+        canViewFiscalSettings
+        canViewInvoices
+        canViewManagerialReports
+        canViewReports
+        cashSession={null}
+        onQuickCash={vi.fn()}
+        onQuickInvoice={vi.fn()}
+        onStatus={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByText(/servicio con dato danado/i)).toBeInTheDocument();
+    expect(screen.getByText(/0 unds/i)).toBeInTheDocument();
+    expect(screen.getAllByText('L. 0.00').length).toBeGreaterThanOrEqual(3);
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|cantidad-danada|no-numero/);
+  });
 });

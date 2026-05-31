@@ -18,6 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { PageHeader } from '../../components/ui/page-header';
 import { Skeleton } from '../../components/ui/states';
 import { type CashSession, type DashboardReport, apiClient, userSafeErrorMessage } from '../../lib/api';
+import { formatLempiras } from '../../lib/money';
 import { CashierList } from './CashierList';
 import { PaymentMethodPieChart } from './PaymentMethodPieChart';
 import { RevenueBarChart } from './RevenueBarChart';
@@ -180,14 +181,14 @@ export function DashboardView({
           <MetricCard
             icon={<TrendingUp className="size-4 text-primary" />}
             label="Facturado"
-            value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : money(dashboardData?.current_month.total_billed)}
+            value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : formatLempiras(dashboardData?.current_month.total_billed)}
             helper={dashboardData ? `${dashboardData.current_month.invoice_count} facturas este mes` : 'Facturacion del mes'}
           />
 
           <MetricCard
             icon={<CreditCard className="size-4 text-emerald-600" />}
             label="Cobrado"
-            value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : money(dashboardData?.current_month.total_collected)}
+            value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : formatLempiras(dashboardData?.current_month.total_collected)}
             helper={dashboardData ? `${dashboardData.current_month.payment_count} pagos recibidos` : 'Cobros del mes'}
           />
 
@@ -445,6 +446,3 @@ function EmptyPanel({ message, compact = false }: { message: string; compact?: b
   );
 }
 
-function money(value: string | undefined) {
-  return `L. ${Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}

@@ -8,6 +8,7 @@ import {
   ComposedChart,
   Area,
 } from 'recharts';
+import { finiteNumber, formatLempiras } from '../../lib/money';
 import { useElementWidth } from './useElementWidth';
 
 type DailyTrendData = {
@@ -31,8 +32,8 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
 
     return {
       name: formattedDate,
-      Billed: parseFloat(d.total_billed),
-      Collected: parseFloat(d.total_collected),
+      Billed: finiteNumber(d.total_billed),
+      Collected: finiteNumber(d.total_collected),
       invoices: d.invoice_count,
       payments: d.payment_count,
     };
@@ -87,7 +88,7 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
             }}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             formatter={(value: any, name: any) => [
-              `L. ${Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+              formatLempiras(value),
               name === 'Billed' ? 'Facturado' : 'Cobrado',
             ]}
             labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}

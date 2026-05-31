@@ -1,5 +1,6 @@
 import { Cell, Legend, Pie, PieChart, Tooltip } from 'recharts';
 import { type MoneyByMethod } from '../../lib/api';
+import { finiteNumber, formatLempiras } from '../../lib/money';
 import { useElementWidth } from './useElementWidth';
 
 type PaymentMethodPieChartProps = {
@@ -25,7 +26,7 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
   const chartData = Object.entries(data)
     .map(([method, amountStr]) => ({
       name: LABELS[method as keyof typeof LABELS] || method,
-      value: parseFloat(amountStr) || 0,
+      value: finiteNumber(amountStr),
       key: method,
     }))
     .filter((d) => d.value > 0);
@@ -71,7 +72,7 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
             }}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             formatter={(value: any) => [
-              `L. ${Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${((Number(value ?? 0) / total) * 100).toFixed(1)}%)`,
+              `${formatLempiras(value)} (${((finiteNumber(value) / total) * 100).toFixed(1)}%)`,
               'Total',
             ]}
           />
