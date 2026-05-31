@@ -152,6 +152,29 @@ function Get-ProofFieldValue([string] $content, [string] $fieldLabel) {
     return $match.Groups["value"].Value.Trim()
 }
 
+function Test-ProofReferencedLocalEvidence([string] $path, [string] $proofName, [string] $content, [string] $fieldLabel) {
+    $value = Get-ProofFieldValue $content $fieldLabel
+    if (Test-ProofValueIsIncomplete $value) {
+        return
+    }
+
+    $reference = $value.Trim()
+    $looksLikeLocalPath = $reference -match '^(qa|docs|scripts|frontend|backend)[\\/]' -or [System.IO.Path]::IsPathRooted($reference)
+    if (-not $looksLikeLocalPath) {
+        return
+    }
+
+    $candidate = if ([System.IO.Path]::IsPathRooted($reference)) {
+        $reference
+    } else {
+        Join-Path $ProjectRoot $reference
+    }
+
+    if (-not (Test-Path -LiteralPath $candidate)) {
+        Add-Failure "$proofName evidence references missing local evidence '$reference' in $path."
+    }
+}
+
 function Test-ProofHasCompletedField([string] $content, [string] $fieldLabel) {
     $value = Get-ProofFieldValue $content $fieldLabel
     return -not (Test-ProofValueIsIncomplete $value)
@@ -220,6 +243,13 @@ function Test-ProofFile([string] $path, [string] $proofName, [string[]] $require
             Add-Failure "$($placeholder.Message) in $path."
             return
         }
+    }
+
+    $failureCountBeforeEvidence = $failures.Count
+    Test-ProofReferencedLocalEvidence $path $proofName $content "Evidence/photo reference"
+    Test-ProofReferencedLocalEvidence $path $proofName $content "Evidence/capture reference"
+    if ($failures.Count -gt $failureCountBeforeEvidence) {
+        return
     }
 
     Add-Pass "$proofName evidence is present and completed."

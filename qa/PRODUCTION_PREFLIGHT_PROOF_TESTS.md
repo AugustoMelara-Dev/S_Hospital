@@ -20,6 +20,7 @@ rechaza evidencia incompleta.
 | Evidencia de impresora copiada desde plantilla | Falla por campo obligatorio vacio o check sin resultado. |
 | Evidencia de impresora sin `80mm result:` | Falla con `Complete '80mm result:'`. |
 | Evidencia de impresora sin `58mm result:` | Falla con `Complete '58mm result:'`. |
+| Evidencia de impresora con `Evidence/photo reference:` apuntando a una ruta local inexistente | Falla con `references missing local evidence`. |
 | Evidencia de impresora con campos minimos y checks llenos | La seccion de proof pasa con `physical thermal printer evidence is present and completed`. |
 | `CORS_ALLOWED_ORIGINS=*` | Falla siempre. |
 | `CORS_ALLOWED_ORIGIN_PATTERNS` no vacio | Falla siempre. |
