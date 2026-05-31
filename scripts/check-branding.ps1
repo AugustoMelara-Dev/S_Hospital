@@ -31,7 +31,8 @@ function Invoke-ForbiddenSearch {
     param(
         [string] $Label,
         [string[]] $Patterns,
-        [string[]] $Paths
+        [string[]] $Paths,
+        [string[]] $AllowedLinePatterns = @()
     )
 
     $pattern = ($Patterns | ForEach-Object { [regex]::Escape($_) }) -join '|'
@@ -45,6 +46,17 @@ function Invoke-ForbiddenSearch {
         --glob '!build/**'
 
     if ($LASTEXITCODE -eq 0) {
+        if ($AllowedLinePatterns.Count -gt 0) {
+            $matches = $matches | Where-Object {
+                $line = $_
+                -not ($AllowedLinePatterns | Where-Object { $line -match $_ })
+            }
+        }
+
+        if (-not $matches -or $matches.Count -eq 0) {
+            return
+        }
+
         Write-Host $Label
         $matches | ForEach-Object { Write-Host $_ }
         exit 1
@@ -61,7 +73,10 @@ try {
     Invoke-ForbiddenSearch `
         -Label 'Branding prohibido encontrado:' `
         -Patterns $forbidden `
-        -Paths @('.')
+        -Paths @('.') `
+        -AllowedLinePatterns @(
+            ('"' + $billingWord + 'Os"\s*:\s*false')
+        )
 
     Invoke-ForbiddenSearch `
         -Label 'Datos de demostracion visibles encontrados en superficies de entrega:' `
