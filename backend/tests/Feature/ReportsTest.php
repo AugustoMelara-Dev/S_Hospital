@@ -1296,6 +1296,46 @@ class ReportsTest extends TestCase
         $this->assertStringNotContainsString('Total Recaudado (LPS)', $servicesSection);
     }
 
+    public function test_period_closure_pdf_labels_area_totals_as_billed_not_generic_income(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $this->createInvoice($cashier, 'Glucosa');
+
+        $capturedHtml = null;
+        Pdf::shouldReceive('loadHTML')
+            ->once()
+            ->with(\Mockery::on(function (string $html) use (&$capturedHtml): bool {
+                $capturedHtml = $html;
+
+                return true;
+            }))
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('output')
+                    ->once()
+                    ->andReturn('%PDF-area-labels');
+            }));
+
+        $date = now()->toDateString();
+        $this->actingAs($admin)
+            ->get("/api/reports/pdf?date_from={$date}&date_to={$date}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-area-labels', false);
+
+        $this->assertIsString($capturedHtml);
+        $sectionStart = strpos($capturedHtml, 'Facturación por Área Institucional');
+        $sectionEnd = strpos($capturedHtml, 'Recaudación por Método de Pago');
+        $this->assertIsInt($sectionStart);
+        $this->assertIsInt($sectionEnd);
+
+        $areaSection = substr($capturedHtml, $sectionStart, $sectionEnd - $sectionStart);
+        $this->assertStringContainsString('Monto Facturado (LPS)', $areaSection);
+        $this->assertStringNotContainsString('Ingresos por Area Institucional', $areaSection);
+        $this->assertStringNotContainsString('<th class=\'text-right\'>Total (LPS)</th>', $areaSection);
+    }
+
     public function test_period_closure_pdf_export_includes_payment_reversals_without_technical_ids(): void
     {
         $this->seedBillingBase();

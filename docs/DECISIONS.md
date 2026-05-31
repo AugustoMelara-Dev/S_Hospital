@@ -982,12 +982,13 @@ Consecuencia:
 Decision:
 
 - Las tablas de servicios en reportes exportables etiquetan sus totales como monto facturado.
-- El PDF consolidado y el Top 5 del Excel premium evitan llamar "recaudado" a totales que provienen de `invoice_items`.
+- El PDF consolidado y el Top 5 del Excel premium evitan llamar "recaudado" o "ingreso" generico a totales que provienen de `invoice_items`.
+- Las secciones por area usan "Facturacion por Area" y "Monto Facturado" mientras no exista una asignacion cobrada explicita.
 
 Motivo:
 
 - Los reportes de servicios usan snapshots de factura y pueden incluir facturas pendientes o parciales.
-- Llamar recaudado a ese total mezcla cobro con facturacion y puede hacer que administracion presente ingresos cobrados incorrectos.
+- Llamar recaudado o ingreso generico a ese total mezcla cobro con facturacion y puede hacer que administracion presente ingresos cobrados incorrectos.
 
 Consecuencia:
 

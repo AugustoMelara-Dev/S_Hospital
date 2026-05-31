@@ -475,14 +475,14 @@ class PdfExportService
         </tbody>
     </table>
 
-    <div class='section-title'>Ingresos por Area Institucional</div>
+    <div class='section-title'>Facturación por Área Institucional</div>
     <table>
         <thead>
             <tr>
                 <th>Area</th>
                 <th class='text-center'>Items</th>
                 <th class='text-center'>Cantidad</th>
-                <th class='text-right'>Total (LPS)</th>
+                <th class='text-right'>Monto Facturado (LPS)</th>
             </tr>
         </thead>
         <tbody>";
