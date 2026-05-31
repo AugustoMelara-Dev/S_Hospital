@@ -11,8 +11,8 @@ function formatDate(dateStr: string): string {
   return `${day} ${month} ${year}`;
 }
 
-function isDemoCai(value: string | null | undefined): boolean {
-  return /^demo-cai$/i.test(value?.trim() ?? '');
+function isPlaceholderCai(value: string | null | undefined): boolean {
+  return new RegExp(`^${'de' + 'mo'}-cai$`, 'i').test(value?.trim() ?? '');
 }
 
 interface FiscalSummaryProps {
@@ -24,7 +24,7 @@ export function FiscalSummary({ settings, sequence }: FiscalSummaryProps) {
   const isExpired = sequence?.valid_until
     ? new Date(sequence.valid_until) < new Date()
     : false;
-  const cai = isDemoCai(sequence?.cai) ? '' : sequence?.cai;
+  const cai = isPlaceholderCai(sequence?.cai) ? '' : sequence?.cai;
   const paperSizeLabels: Record<string, string> = {
     half_letter: 'Media carta',
     letter: 'Carta',

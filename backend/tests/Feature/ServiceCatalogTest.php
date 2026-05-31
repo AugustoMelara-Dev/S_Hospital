@@ -35,7 +35,7 @@ class ServiceCatalogTest extends TestCase
         $this->assertNotNull($erythropoietin->source_hash);
     }
 
-    public function test_service_catalog_seeder_assigns_demo_scan_codes(): void
+    public function test_service_catalog_seeder_assigns_validation_scan_codes(): void
     {
         $this->seed(ServiceCatalogSeeder::class);
 
@@ -63,7 +63,7 @@ class ServiceCatalogTest extends TestCase
         $this->assertSame(122, Service::query()->count());
     }
 
-    public function test_service_catalog_seeder_does_not_clear_existing_non_demo_codes(): void
+    public function test_service_catalog_seeder_does_not_clear_existing_non_validation_codes(): void
     {
         $this->seed(ServiceCatalogSeeder::class);
 

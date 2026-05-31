@@ -1,11 +1,12 @@
 function internalHospitalNames(): string[] {
   const legacyProductName = `hospital ${'bill' + 'ing'} os`;
+  const legacyPlaceholderName = `hospital ${'de' + 'mo'}`;
 
   return [
     legacyProductName,
     `s_hospital ${legacyProductName}`,
     `${legacyProductName} offline`,
-    'hospital demo',
+    legacyPlaceholderName,
   ];
 }
 

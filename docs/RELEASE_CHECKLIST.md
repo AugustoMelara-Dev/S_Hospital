@@ -127,7 +127,7 @@ Concurrencia MySQL/MariaDB por HTTP contra servidor de validacion:
 HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=local HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_LOGIN=usuario.validacion HOSPITAL_CONCURRENCY_PASSWORD=password-temporal bash scripts/validate_mysql_concurrency.sh
 ```
 
-Este script es mutante: abre caja, crea facturas y registra pagos con un `RUN_ID`. No borra facturas porque son registros auditables; requiere snapshot/base descartable antes de ejecutarlo y credenciales temporales explicitas, nunca defaults demo.
+Este script es mutante: abre caja, crea facturas y registra pagos con un `RUN_ID`. No borra facturas porque son registros auditables; requiere snapshot/base descartable antes de ejecutarlo y credenciales temporales explicitas, nunca credenciales de validacion local.
 
 Evidencia Fase 11: ejecutado contra `http://192.168.1.7:8000` con `HOSPITAL_CONCURRENCY_TARGET_ENV=local` y `RUN_ID=concurrency-validation-20260517T20435`; valido doble apertura de caja, doble emision de factura y doble pago. Repetir en servidor/base final descartable antes de declarar produccion.
 
@@ -151,7 +151,7 @@ LAN fisica:
 - Verificar que usuario inactivo no puede operar aunque exista sesion.
 - Confirmar que no hay secretos reales en frontend ni repositorio.
 
-## Demo operativa
+## Validacion operativa
 
 - Login local.
 - Abrir caja.
@@ -172,7 +172,7 @@ LAN fisica:
 - Confirmar que produccion usa MySQL/MariaDB local.
 - Confirmar que frontend compilado y backend se sirven desde la PC servidor por IP LAN.
 - Confirmar `APP_ENV=production`, `APP_DEBUG=false` y `php artisan config:cache` antes de entregar servidor real.
-- Confirmar que no se ejecutaron seeders demo en el servidor real.
+- Confirmar que no se ejecutaron seeders de validacion local en el servidor real.
 - Confirmar que `.env` production queda fuera de Git y no reemplaza secretos durante actualizaciones.
 - Confirmar dominios/IP LAN explicitos para `APP_URL`, CORS y `SANCTUM_STATEFUL_DOMAINS`.
 - Confirmar worker local de backups:
@@ -230,7 +230,7 @@ Luego completar manualmente en ese mismo archivo login, caja, factura, pago,
 recibo, historial, reportes y backup `pending` -> `success`.
 - Validar concurrencia real con MySQL/MariaDB.
 - Crear admin inicial real con password temporal y cambio obligatorio.
-- Remover o no ejecutar seeders demo fuera de `local`/`testing`.
+- Remover o no ejecutar seeders de validacion local fuera de `local`/`testing`.
 - Ejecutar gates finales: `composer validate`, `php artisan test --colors=never`,
   `vendor/bin/pint --test`, `php artisan config:cache --no-ansi`,
   `php artisan config:clear --no-ansi`, `npm.cmd run typecheck`,

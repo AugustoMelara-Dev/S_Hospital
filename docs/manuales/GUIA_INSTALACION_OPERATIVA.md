@@ -1,4 +1,4 @@
-﻿# Guia De Instalacion Operativa
+# Guia De Instalacion Operativa
 
 Esta guia ayuda a dejar el sistema listo en una computadora servidor Windows.
 
@@ -22,7 +22,7 @@ No borre carpetas de datos ni volumenes de base de datos.
 3. Espere a que los servicios levanten.
 4. Revise que el acceso directo **Abrir Sistema de Caja Hospitalaria** exista en el escritorio.
 
-El instalador no debe cargar datos demo en produccion.
+El instalador no debe cargar datos temporales en produccion.
 
 ## Abrir El Sistema
 

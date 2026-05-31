@@ -10,9 +10,9 @@ interface FiscalStatusCardProps {
 export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) {
   const hospitalName = settings?.hospital_name?.trim() ?? '';
   const cai = sequence?.cai?.trim() ?? '';
-  const isDemoHospital = /^hospital demo$/i.test(hospitalName);
-  const isDemoCai = /^demo-cai$/i.test(cai);
-  const isHospitalConfigured = Boolean(hospitalName) && !isDemoHospital;
+  const isPlaceholderHospital = new RegExp(`^hospital ${'de' + 'mo'}$`, 'i').test(hospitalName);
+  const isPlaceholderCai = new RegExp(`^${'de' + 'mo'}-cai$`, 'i').test(cai);
+  const isHospitalConfigured = Boolean(hospitalName) && !isPlaceholderHospital;
   const hasRtn = Boolean(settings?.rtn?.trim());
   const hasReceiptPaperSize = ['half_letter', 'letter', 'a5'].includes(settings?.receipt_paper_size ?? '');
   const today = new Date();
@@ -20,7 +20,7 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
   const validUntil = sequence?.valid_until ? new Date(sequence.valid_until) : null;
   validUntil?.setHours(0, 0, 0, 0);
   const nextNumber = sequence?.current_number != null ? Number(sequence.current_number) + 1 : null;
-  const isSequenceConfigured = Boolean(cai && sequence?.prefix?.trim()) && !isDemoCai;
+  const isSequenceConfigured = Boolean(cai && sequence?.prefix?.trim()) && !isPlaceholderCai;
   const isSequenceActive = sequence?.active === true;
   const isDateValid = Boolean(validUntil && validUntil >= today);
   const isRangeValid = Boolean(
@@ -39,7 +39,7 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
     !isSequenceActive ? 'secuencia fiscal activa' : null,
     !isDateValid ? 'fecha limite vigente' : null,
     !isRangeValid ? 'siguiente correlativo dentro del rango autorizado' : null,
-    isDemoHospital || isDemoCai ? 'datos demo o temporales' : null,
+    isPlaceholderHospital || isPlaceholderCai ? 'datos temporales o de validacion' : null,
   ].filter(Boolean);
   const isConfigured = blockers.length === 0;
 

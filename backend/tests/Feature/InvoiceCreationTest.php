@@ -386,10 +386,10 @@ class InvoiceCreationTest extends TestCase
     private function createFiscalSettings(): void
     {
         FiscalSetting::query()->create([
-            'hospital_name' => 'Hospital Demo',
+            'hospital_name' => 'Hospital San Isidro',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_width' => '80mm',
+            'receipt_paper_size' => 'half_letter',
         ]);
     }
 

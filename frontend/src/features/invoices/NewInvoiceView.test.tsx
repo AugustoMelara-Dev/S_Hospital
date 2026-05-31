@@ -37,9 +37,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
@@ -200,9 +200,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
@@ -272,13 +272,13 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               width: 'half_letter',
-              hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+              hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
               fiscal: {
-                cai: 'DEMO-CAI',
+                cai: 'VALIDACION-CAI',
                 authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
                 valid_until: '2027-05-17',
               },
-              invoice: { ...paidInvoice, cashier: 'Cajero Demo' },
+              invoice: { ...paidInvoice, cashier: 'Cajero Validacion' },
               items: [
                 {
                   service_name: 'Glucosa',
@@ -299,7 +299,7 @@ describe('NewInvoiceView', () => {
                   amount: '17.25',
                   reference: null,
                   paid_at: '2026-05-17T08:03:00-06:00',
-                  cashier: 'Cajero Demo',
+                  cashier: 'Cajero Validacion',
                 },
               ],
             },
@@ -334,7 +334,7 @@ describe('NewInvoiceView', () => {
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
     expect((await screen.findAllByLabelText(/vista previa del recibo/i)).length).toBeGreaterThan(0);
-    expect(await screen.findByText(/hospital demo/i)).toBeInTheDocument();
+    expect(await screen.findByText(/hospital san isidro/i)).toBeInTheDocument();
     expect(screen.getByText('Media carta')).toBeInTheDocument();
   });
 
@@ -356,9 +356,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
@@ -485,9 +485,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
@@ -553,9 +553,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 3,
-              name: 'Supervisor Demo',
-              email: 'supervisor.demo@hospital-billing.local',
-              username: 'supervisor.demo',
+              name: 'Supervisor Validacion',
+              email: 'supervisor.validacion@hospital-san-isidro.local',
+              username: 'supervisor.validacion',
               active: true,
               roles: ['supervisor'],
               permissions: ['invoices.view', 'receipts.reprint', 'receipts.reprint_any'],
@@ -583,7 +583,7 @@ describe('NewInvoiceView', () => {
                 status: 'paid',
                 issued_at: '2026-05-17T08:00:00-06:00',
                 items: [],
-                issuer: { id: 2, name: 'Cajero Demo', username: 'cajero.demo' },
+                issuer: { id: 2, name: 'Cajero Validacion', username: 'cajero.validacion' },
               },
             ],
             meta: { current_page: 1, per_page: 10, total: 1 },
@@ -639,7 +639,7 @@ describe('NewInvoiceView', () => {
             data: {
               receipt: {
                 width: 'half_letter',
-                hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+                hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
                 fiscal: {
                   cai: 'TEST-CAI',
                   authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
@@ -649,7 +649,7 @@ describe('NewInvoiceView', () => {
                   id: 100,
                   invoice_number: '000-001-01-00000001',
                   issued_at: '2026-05-17T08:00:00-06:00',
-                  cashier: 'Cajero Demo',
+                  cashier: 'Cajero Validacion',
                   patient_name: 'Maria Lopez',
                   subtotal: '15.00',
                   tax_amount: '2.25',
@@ -674,7 +674,7 @@ describe('NewInvoiceView', () => {
             data: {
               receipt: {
                 width: 'half_letter',
-                hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+                hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
                 fiscal: {
                   cai: 'TEST-CAI',
                   authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
@@ -684,7 +684,7 @@ describe('NewInvoiceView', () => {
                   id: 100,
                   invoice_number: '000-001-01-00000001',
                   issued_at: '2026-05-17T08:00:00-06:00',
-                  cashier: 'Cajero Demo',
+                  cashier: 'Cajero Validacion',
                   patient_name: 'Maria Lopez',
                   subtotal: '15.00',
                   tax_amount: '2.25',
@@ -806,9 +806,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['invoices.view', 'invoices.void', 'receipts.reprint', 'receipts.reprint_any'],
@@ -836,7 +836,7 @@ describe('NewInvoiceView', () => {
                 status: 'issued',
                 issued_at: '2026-05-17T09:00:00-06:00',
                 items: [],
-                issuer: { id: 2, name: 'Cajero Demo', username: 'cajero.demo' },
+                issuer: { id: 2, name: 'Cajero Validacion', username: 'cajero.validacion' },
               },
             ],
             meta: { current_page: 1, per_page: 10, total: 1 },
@@ -919,9 +919,9 @@ describe('NewInvoiceView', () => {
   it('renders institutional receipt print structure with fiscal valid until date', async () => {
     const receipt: ReceiptData = {
       width: 'half_letter',
-      hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+      hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
       fiscal: {
-        cai: 'DEMO-CAI',
+        cai: 'VALIDACION-CAI',
         authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
         valid_until: '2027-05-17',
       },
@@ -929,7 +929,7 @@ describe('NewInvoiceView', () => {
         id: 100,
         invoice_number: '000-001-01-00000001',
         issued_at: '2026-05-17T08:00:00-06:00',
-        cashier: 'Cajero Demo',
+        cashier: 'Cajero Validacion',
         patient_name: 'Maria Lopez',
         subtotal: '15.00',
         tax_amount: '2.25',
@@ -959,7 +959,7 @@ describe('NewInvoiceView', () => {
           amount: '17.25',
           reference: null,
           paid_at: '2026-05-17T08:03:00-06:00',
-          cashier: 'Cajero Demo',
+          cashier: 'Cajero Validacion',
         },
       ],
     };

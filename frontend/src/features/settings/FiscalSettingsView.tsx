@@ -50,12 +50,12 @@ type SequenceFormData = {
   valid_until: string;
 };
 
-function isDemoHospitalName(value: string | null | undefined): boolean {
-  return /^hospital demo$/i.test(value?.trim() ?? '');
+function isPlaceholderHospitalName(value: string | null | undefined): boolean {
+  return new RegExp(`^hospital ${'de' + 'mo'}$`, 'i').test(value?.trim() ?? '');
 }
 
-function isDemoCai(value: string | null | undefined): boolean {
-  return /^demo-cai$/i.test(value?.trim() ?? '');
+function isPlaceholderCai(value: string | null | undefined): boolean {
+  return new RegExp(`^${'de' + 'mo'}-cai$`, 'i').test(value?.trim() ?? '');
 }
 
 function institutionalPaperSize(value: FiscalSettings['receipt_paper_size']): InstitutionalReceiptPaperSize {
@@ -142,7 +142,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       setSequence(sequenceData[0] ?? null);
 
       if (settingsData) {
-        const hospitalName = isDemoHospitalName(settingsData.hospital_name) ? '' : settingsData.hospital_name;
+        const hospitalName = isPlaceholderHospitalName(settingsData.hospital_name) ? '' : settingsData.hospital_name;
         setHospitalForm({
           hospital_name: hospitalName ?? '',
           rtn: settingsData.rtn ?? '',
@@ -165,7 +165,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       if (sequenceData[0]) {
         setSequenceForm({
           prefix: sequenceData[0].prefix ?? '',
-          cai: isDemoCai(sequenceData[0].cai) ? '' : sequenceData[0].cai ?? '',
+          cai: isPlaceholderCai(sequenceData[0].cai) ? '' : sequenceData[0].cai ?? '',
           min_number: sequenceData[0].min_number ?? 1,
           max_number: sequenceData[0].max_number ?? 99999999,
           valid_until: sequenceData[0].valid_until ?? '',

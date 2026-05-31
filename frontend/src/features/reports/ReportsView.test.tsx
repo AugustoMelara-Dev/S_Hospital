@@ -40,9 +40,9 @@ describe('ReportsView', () => {
           json: async () => ({
             data: {
               id: 3,
-              name: 'Supervisor Demo',
-              email: 'supervisor.demo@hospital-billing.local',
-              username: 'supervisor.demo',
+              name: 'Supervisor Validacion',
+              email: 'supervisor.validacion@hospital-san-isidro.local',
+              username: 'supervisor.validacion',
               active: true,
               roles: ['supervisor'],
               permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
@@ -128,9 +128,9 @@ describe('ReportsView', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
@@ -206,9 +206,9 @@ describe('ReportsView', () => {
           json: async () => ({
             data: {
               id: 3,
-              name: 'Supervisor Demo',
-              email: 'supervisor.demo@hospital-billing.local',
-              username: 'supervisor.demo',
+              name: 'Supervisor Validacion',
+              email: 'supervisor.validacion@hospital-san-isidro.local',
+              username: 'supervisor.validacion',
               active: true,
               roles: ['supervisor'],
               permissions: ['reports.view', 'reports.managerial.view'],
@@ -277,7 +277,7 @@ describe('ReportsView', () => {
               voids: [],
               reprints: [],
               backups: [],
-              cashiers: [{ user: 'Cajero Demo', cash_session_count: 1, invoice_count: 1, total_collected: '17.25' }],
+              cashiers: [{ user: 'Cajero Validacion', cash_session_count: 1, invoice_count: 1, total_collected: '17.25' }],
             },
           }),
         } as Response;
@@ -310,9 +310,9 @@ describe('ReportsView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['cash.view'],
@@ -341,9 +341,9 @@ describe('ReportsView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['reports.cash_session.view'],
@@ -374,9 +374,9 @@ describe('ReportsView', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],

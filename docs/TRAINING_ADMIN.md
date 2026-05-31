@@ -30,7 +30,7 @@ Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 1. Editar servicios solo desde **Catalogo**.
 2. No cambiar precios para corregir facturas historicas; las facturas usan snapshots.
 3. Configurar CAI/rango fiscal antes de operar con datos reales.
-4. No ejecutar seeders demo en servidor real.
+4. No ejecutar seeders de validacion local en servidor real.
 
 ## Validacion final
 

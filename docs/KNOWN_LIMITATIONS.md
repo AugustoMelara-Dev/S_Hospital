@@ -1,4 +1,4 @@
-﻿# Known limitations
+# Known limitations
 
 ## Pendientes de entorno
 
@@ -29,4 +29,4 @@
 - Backup manual desde UI requiere worker local de cola `backups`.
 - Backup real MySQL/MariaDB requiere `mariadb-dump` o `mysqldump` instalado en el servidor.
 - Produccion offline debe crear `.env` real fuera del repositorio y no copiar credenciales de desarrollo.
-- Los usuarios demo solo se crean en `local` o `testing`.
+- Los usuarios de validacion local solo se crean en `local` o `testing`.

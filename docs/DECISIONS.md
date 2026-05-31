@@ -720,3 +720,22 @@ Consecuencia:
 - Phase 0 documenta el baseline sin cambiar comportamiento funcional.
 - Phase 1 debe introducir pruebas de facturas pagadas, parciales, emitidas y anuladas, con efectivo, tarjeta, transferencia y otros metodos.
 - No se considera completo el frente hasta que las capturas, reportes, consultas, migraciones aditivas, pruebas backend/frontend, build, E2E, branding check y smoke de caja/reportes prueben la consistencia end-to-end.
+
+### 2026-05-31 - Datos locales de validacion sin lenguaje demo
+
+Decision:
+
+- El seeder local/testing pasa de datos "demo" a datos de validacion institucional (`DevelopmentValidationSeeder`).
+- Las cuentas temporales usan usuarios `*.validacion` y dominio local `hospital-san-isidro.local`, sin exponer lenguaje comercial ni nombres demo en evidencias.
+- El `check-branding.ps1` conserva el bloqueo global de nombres internos y ahora revisa superficies de entrega para nombres/cuentas demo concretas.
+- Las funciones de saneamiento siguen ocultando nombres heredados de instalaciones previas, pero esos literales se construyen fuera de texto visible para no reaparecer en capturas, mocks ni manuales.
+
+Motivo:
+
+- El objetivo de RC exige que capturas, e2e, seeders locales y manuales no presenten el sistema como una demostracion tecnica.
+- Se necesitan datos locales para pruebas y capacitacion, pero deben leerse como validacion operativa temporal, no como producto demo.
+
+Consecuencia:
+
+- Produccion sigue sin ejecutar seeders de validacion fuera de `local` o `testing`.
+- El branding check falla si reaparecen nombres de hospital temporales, usuarios con sufijo de demostracion, `hospital-billing.local`, CAI temporal o el seeder anterior en codigo, e2e, tests o manuales clave.

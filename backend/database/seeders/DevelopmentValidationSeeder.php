@@ -9,7 +9,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
-class DevelopmentDemoSeeder extends Seeder
+class DevelopmentValidationSeeder extends Seeder
 {
     public function run(): void
     {
@@ -20,10 +20,10 @@ class DevelopmentDemoSeeder extends Seeder
         $password = Hash::make('Password123!');
 
         $admin = User::updateOrCreate(
-            ['username' => 'admin.demo'],
+            ['username' => 'admin.validacion'],
             [
-                'name' => 'Admin Demo',
-                'email' => 'admin.demo@hospital-billing.local',
+                'name' => 'Administrador Validacion',
+                'email' => 'admin.validacion@hospital-san-isidro.local',
                 'password' => $password,
                 'active' => true,
                 'must_change_password' => false,
@@ -32,10 +32,10 @@ class DevelopmentDemoSeeder extends Seeder
         $admin->syncRoles(['admin']);
 
         $supervisor = User::updateOrCreate(
-            ['username' => 'supervisor.demo'],
+            ['username' => 'supervisor.validacion'],
             [
-                'name' => 'Supervisor Demo',
-                'email' => 'supervisor.demo@hospital-billing.local',
+                'name' => 'Supervisor Validacion',
+                'email' => 'supervisor.validacion@hospital-san-isidro.local',
                 'password' => $password,
                 'active' => true,
                 'must_change_password' => false,
@@ -44,10 +44,10 @@ class DevelopmentDemoSeeder extends Seeder
         $supervisor->syncRoles(['supervisor']);
 
         $cashier = User::updateOrCreate(
-            ['username' => 'cajero.demo'],
+            ['username' => 'cajero.validacion'],
             [
-                'name' => 'Cajero Demo',
-                'email' => 'cajero.demo@hospital-billing.local',
+                'name' => 'Cajero Validacion',
+                'email' => 'cajero.validacion@hospital-san-isidro.local',
                 'password' => $password,
                 'active' => true,
                 'must_change_password' => false,
@@ -58,10 +58,9 @@ class DevelopmentDemoSeeder extends Seeder
         FiscalSetting::query()->updateOrCreate(
             ['id' => 1],
             [
-                'hospital_name' => 'Hospital Demo',
+                'hospital_name' => 'Hospital San Isidro',
                 'rtn' => '08011999123456',
                 'default_tax_rate' => '15.00',
-                'receipt_width' => '80mm',
                 'receipt_paper_size' => 'half_letter',
                 'receipt_template_mode' => 'institutional',
                 'government_line' => 'Gobierno de Honduras',
@@ -79,7 +78,7 @@ class DevelopmentDemoSeeder extends Seeder
             [
                 'document_type' => 'invoice',
                 'prefix' => '000-001-01',
-                'cai' => 'DEMO-CAI',
+                'cai' => 'VALIDACION-CAI',
             ],
         );
 

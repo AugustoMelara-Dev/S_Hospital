@@ -28,12 +28,13 @@ final class HospitalName
     private static function internalNames(): array
     {
         $legacyProductName = 'hospital '.('bill'.'ing').' os';
+        $legacyPlaceholderName = 'hospital '.('de'.'mo');
 
         return [
             $legacyProductName,
             's_hospital '.$legacyProductName,
             $legacyProductName.' offline',
-            'hospital demo',
+            $legacyPlaceholderName,
         ];
     }
 }

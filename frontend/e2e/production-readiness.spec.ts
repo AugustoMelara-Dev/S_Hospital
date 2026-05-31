@@ -2,9 +2,9 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 
 const cashierUser = {
   id: 2,
-  name: 'Cajero Demo',
-  email: 'cajero.demo@hospital-billing.local',
-  username: 'cajero.demo',
+  name: 'Cajero Validacion',
+  email: 'cajero.validacion@hospital-san-isidro.local',
+  username: 'cajero.validacion',
   active: true,
   roles: ['cajero'],
   permissions: [
@@ -24,9 +24,9 @@ const cashierUser = {
 
 const adminUser = {
   id: 1,
-  name: 'Admin Demo',
-  email: 'admin.demo@hospital-billing.local',
-  username: 'admin.demo',
+  name: 'Administrador Validacion',
+  email: 'admin.validacion@hospital-san-isidro.local',
+  username: 'admin.validacion',
   active: true,
   roles: ['admin'],
   permissions: [
@@ -109,16 +109,17 @@ async function installApiMocks(page: Page) {
   const invoices: Record<number, Record<string, unknown>> = {};
   const backupLogs: Record<string, unknown>[] = [];
 
+  await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204 }));
   await page.route('**/sanctum/csrf-cookie', (route) => route.fulfill({ status: 204 }));
 
   await page.route('**/api/settings/fiscal', (route) => json(route, {
     data: {
       primary_color: 'indigo',
-      name: 'Hospital Demo',
+      name: 'Hospital San Isidro',
       rtn: '08011999123456',
-      address: 'Direccion Demo',
+      address: 'Tocoa, Colon',
       phone: '2222-2222',
-      email: 'contacto@hospital-demo.local',
+      email: 'contacto@hospital-san-isidro.local',
       scanner_enabled: false,
       partial_payments_enabled: false,
       receipt_paper_size: 'half_letter',
@@ -127,6 +128,7 @@ async function installApiMocks(page: Page) {
 
   await page.route('**/api/settings/logo', (route) => json(route, { logo_url: null }));
   await page.route('**/api/health', (route) => json(route, { status: 'ok' }));
+  await page.route('**/api/system/client-errors', (route) => route.fulfill({ status: 204 }));
 
   await page.route('**/api/auth/login', async (route) => {
     let payload: { login?: string } = {};
@@ -135,7 +137,7 @@ async function installApiMocks(page: Page) {
     } catch {
       payload = {};
     }
-    currentUser = payload.login === 'admin.demo' ? adminUser : cashierUser;
+    currentUser = payload.login === 'admin.validacion' ? adminUser : cashierUser;
     return json(route, { data: currentUser });
   });
 
@@ -151,6 +153,7 @@ async function installApiMocks(page: Page) {
       { id: 2, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 2 },
     ],
   }));
+  await page.route('**/api/service-areas**', (route) => json(route, { data: [] }));
   await page.route('**/api/services**', (route) => json(route, { data: services, meta: { total: services.length } }));
   await page.route('**/api/cash-sessions/current', (route) => json(route, { data: currentCashSession }));
   await page.route('**/api/cash-sessions/open', async (route) => {
@@ -481,9 +484,9 @@ async function installApiMocks(page: Page) {
 function receiptFor(invoice: Record<string, unknown>, width: string) {
   return {
     width,
-    hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+    hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
     fiscal: {
-      cai: 'DEMO-CAI',
+      cai: 'VALIDACION-CAI',
       authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
       valid_until: '2027-05-17',
     },
@@ -491,7 +494,7 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
       id: invoice.id,
       invoice_number: invoice.invoice_number,
       issued_at: invoice.issued_at,
-      cashier: 'Cajero Demo',
+      cashier: 'Cajero Validacion',
       patient_name: invoice.patient_name,
       subtotal: invoice.subtotal,
       tax_amount: invoice.tax_amount,
@@ -508,7 +511,7 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
       amount: invoice.total,
       reference: null,
       paid_at: operationalPaidAt,
-      cashier: 'Cajero Demo',
+      cashier: 'Cajero Validacion',
     }],
   };
 }
@@ -556,7 +559,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
 
   page.on('console', (message) => {
     if (message.type() === 'error') {
-      consoleIssues.push(`console.error: ${message.text()}`);
+      const location = message.location().url;
+      consoleIssues.push(`console.error: ${message.text()}${location ? ` (${location})` : ''}`);
     }
   });
   page.on('pageerror', (error) => {
@@ -565,7 +569,16 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   page.on('requestfailed', (request) => {
     const failure = request.failure();
     const url = request.url();
-    if ((url.includes('/sanctum/csrf-cookie') || url.includes('/api/health') || url.includes('/api/settings/logo')) && failure?.errorText === 'net::ERR_ABORTED') {
+    if (
+      (
+        url.includes('/sanctum/csrf-cookie') ||
+        url.includes('/api/health') ||
+        url.includes('/api/settings/logo') ||
+        url.includes('/api/system/client-errors') ||
+        url.includes('/api/cash-sessions/current')
+      ) &&
+      failure?.errorText === 'net::ERR_ABORTED'
+    ) {
       return;
     }
 
@@ -573,7 +586,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   });
 
   await installApiMocks(page);
-  await loginAs(page, 'cajero.demo');
+  await loginAs(page, 'cajero.validacion');
   await page.goto('/cashbox');
 
   await expect(page.getByRole('heading', { name: /^caja$/i })).toBeVisible();
@@ -632,7 +645,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /cerrar modal/i }).click();
   await page.getByRole('button', { name: /abrir menu de usuario/i }).click();
   await page.getByText(/cerrar sesi.n/i).click();
-  await page.getByLabel(/usuario o (correo|email)/i).fill('admin.demo');
+  await page.getByLabel(/usuario o (correo|email)/i).fill('admin.validacion');
   await page.getByLabel(/^contraseña$|^contrasena$/i).fill('Password123!');
   await Promise.all([
     page.waitForResponse('**/api/auth/login'),
@@ -661,7 +674,8 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
 
   page.on('console', (message) => {
     if (message.type() === 'error') {
-      consoleIssues.push(`console.error: ${message.text()}`);
+      const location = message.location().url;
+      consoleIssues.push(`console.error: ${message.text()}${location ? ` (${location})` : ''}`);
     }
   });
   page.on('pageerror', (error) => {
@@ -669,7 +683,7 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
   });
 
   await installApiMocks(page);
-  await loginAs(page, 'cajero.demo');
+  await loginAs(page, 'cajero.validacion');
 
   for (const viewport of viewports) {
     await page.setViewportSize(viewport);

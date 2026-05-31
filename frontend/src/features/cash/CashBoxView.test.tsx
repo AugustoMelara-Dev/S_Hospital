@@ -47,9 +47,9 @@ describe('CashBoxView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['cash.view', 'cash.open', 'cash.close'],
@@ -113,9 +113,9 @@ describe('CashBoxView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['cash.view', 'cash.close'],
@@ -183,9 +183,9 @@ describe('CashBoxView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['cash.view', 'cash.close'],

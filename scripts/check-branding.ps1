@@ -5,6 +5,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $billingWord = 'bill' + 'ing'
+$demoWord = 'de' + 'mo'
 $forbidden = @(
     ('Hospital ' + $billingWord + ' OS'),
     ($billingWord + ' OS'),
@@ -12,11 +13,29 @@ $forbidden = @(
     ($billingWord + 'os')
 )
 
-$pattern = ($forbidden | ForEach-Object { [regex]::Escape($_) }) -join '|'
+$scopedForbidden = @(
+    ('Hospital ' + $demoWord),
+    ('Admin ' + $demoWord),
+    ('Administrador ' + $demoWord),
+    ('Supervisor ' + $demoWord),
+    ('Cajero ' + $demoWord),
+    ('admin.' + $demoWord),
+    ('supervisor.' + $demoWord),
+    ('cajero.' + $demoWord),
+    ('hospital-' + $billingWord + '.local'),
+    (($demoWord).ToUpperInvariant() + '-CAI'),
+    ('Development' + $demoWord.Substring(0, 1).ToUpperInvariant() + $demoWord.Substring(1) + 'Seeder')
+)
 
-Push-Location $Root
-try {
-    $matches = rg -n -i $pattern . `
+function Invoke-ForbiddenSearch {
+    param(
+        [string] $Label,
+        [string[]] $Patterns,
+        [string[]] $Paths
+    )
+
+    $pattern = ($Patterns | ForEach-Object { [regex]::Escape($_) }) -join '|'
+    $matches = rg -n -i $pattern @Paths `
         --glob '!.git/**' `
         --glob '!node_modules/**' `
         --glob '!vendor/**' `
@@ -26,7 +45,7 @@ try {
         --glob '!build/**'
 
     if ($LASTEXITCODE -eq 0) {
-        Write-Host 'Branding prohibido encontrado:'
+        Write-Host $Label
         $matches | ForEach-Object { Write-Host $_ }
         exit 1
     }
@@ -35,6 +54,28 @@ try {
         Write-Error 'No se pudo completar la revision de branding.'
         exit $LASTEXITCODE
     }
+}
+
+Push-Location $Root
+try {
+    Invoke-ForbiddenSearch `
+        -Label 'Branding prohibido encontrado:' `
+        -Patterns $forbidden `
+        -Paths @('.')
+
+    Invoke-ForbiddenSearch `
+        -Label 'Datos de demostracion visibles encontrados en superficies de entrega:' `
+        -Patterns $scopedForbidden `
+        -Paths @(
+            'backend/database',
+            'backend/tests',
+            'frontend/src',
+            'frontend/e2e',
+            'docs/KNOWN_LIMITATIONS.md',
+            'docs/RELEASE_CHECKLIST.md',
+            'docs/TRAINING_ADMIN.md',
+            'docs/manuales'
+        )
 
     Write-Host 'Revision de branding completada sin hallazgos.'
 } finally {

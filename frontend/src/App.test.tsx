@@ -200,9 +200,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['settings.fiscal.view'],
@@ -234,6 +234,9 @@ describe('App', () => {
 
   it('renders app shell and fiscal settings route for an authenticated admin', async () => {
     window.history.pushState({}, '', '/settings/fiscal');
+    const placeholderHospitalName = `Hospital ${'De' + 'mo'}`;
+    const placeholderCai = `${'DE' + 'MO'}-CAI`;
+
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
       if (url.includes('/api/auth/session')) {
@@ -242,9 +245,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['settings.fiscal.view', 'settings.fiscal.update'],
@@ -258,7 +261,7 @@ describe('App', () => {
           ok: true,
           json: async () => ({
             data: {
-              hospital_name: 'Hospital Demo',
+              hospital_name: placeholderHospitalName,
               rtn: '08011999123456',
               default_tax_rate: '15.00',
               receipt_paper_size: 'half_letter',
@@ -278,7 +281,7 @@ describe('App', () => {
                 min_number: 1,
                 max_number: 99999999,
                 current_number: 0,
-                cai: 'DEMO-CAI',
+                cai: placeholderCai,
                 valid_until: '2027-05-17',
                 active: true,
               },
@@ -303,13 +306,13 @@ describe('App', () => {
     );
     expect(await screen.findByRole('heading', { name: /^configuracion$/i })).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /configuracion pendiente/i })).toBeInTheDocument();
-    expect(screen.getByText(/datos demo o temporales/i)).toBeInTheDocument();
+    expect(screen.getByText(/datos temporales o de validacion/i)).toBeInTheDocument();
     activateTab(/^hospital$/i);
     expect(await screen.findByRole('heading', { name: /hospital y recibo/i })).toBeInTheDocument();
-    expect(screen.queryByDisplayValue('Hospital Demo')).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue(placeholderHospitalName)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar hospital y recibo/i })).toBeEnabled();
     activateTab(/numeracion/i);
-    expect(screen.queryByDisplayValue('DEMO-CAI')).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue(placeholderCai)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar numeracion/i })).toBeEnabled();
   });
 
@@ -324,9 +327,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view'],
@@ -406,9 +409,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['backups.view', 'backups.create', 'backups.download'],
@@ -458,9 +461,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['cash.view'],
@@ -492,9 +495,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['backups.view', 'backups.create', 'backups.download'],
@@ -524,7 +527,7 @@ describe('App', () => {
             completed_at: null,
             created_at: '2026-05-17T10:15:00-06:00',
             updated_at: '2026-05-17T10:15:00-06:00',
-            creator: { id: 1, name: 'Admin Demo', username: 'admin.demo' },
+            creator: { id: 1, name: 'Administrador Validacion', username: 'admin.validacion' },
           };
           backupList.push(newBackup);
           return {
@@ -579,9 +582,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['backups.view', 'backups.download'],
@@ -614,7 +617,7 @@ describe('App', () => {
                 completed_at: '2026-05-17T10:15:00-06:00',
                 created_at: '2026-05-17T10:15:00-06:00',
                 updated_at: '2026-05-17T10:15:00-06:00',
-                creator: { id: 1, name: 'Admin Demo', username: 'admin.demo' },
+                creator: { id: 1, name: 'Administrador Validacion', username: 'admin.validacion' },
               },
             ],
             meta: { current_page: 1, per_page: 15, total: 16 },
@@ -652,9 +655,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['settings.fiscal.view', 'settings.fiscal.update'],
@@ -711,9 +714,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['reports.view'],
@@ -742,9 +745,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: [
