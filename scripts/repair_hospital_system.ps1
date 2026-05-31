@@ -40,11 +40,16 @@ function Protect-ReportText([string] $value) {
 
     if (-not [string]::IsNullOrWhiteSpace($ProjectRoot)) {
         $protected = $protected -replace [regex]::Escape($ProjectRoot), "%PROJECT_ROOT%"
+        $protected = $protected -replace [regex]::Escape(($ProjectRoot -replace "\\", "/")), "%PROJECT_ROOT%"
     }
 
     if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
         $protected = $protected -replace [regex]::Escape($env:USERPROFILE), "%USERPROFILE%"
+        $protected = $protected -replace [regex]::Escape(($env:USERPROFILE -replace "\\", "/")), "%USERPROFILE%"
     }
+
+    $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
+    $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
 
     return $protected
 }

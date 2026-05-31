@@ -45,7 +45,9 @@ qa\LOCAL_REPAIR_DIAGNOSTIC.md
 ```
 
 Ese archivo se puede enviar a soporte. No debe contener passwords, tokens ni
-claves.
+claves. Las rutas locales y valores con nombres sensibles se reemplazan por
+marcadores como `%PROJECT_ROOT%`, `%USERPROFILE%`, `[ruta-local]` o
+`[redacted]`.
 
 Si soporte pide un paquete mas completo, genere uno con:
 
