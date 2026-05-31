@@ -6,6 +6,7 @@ Sistema-Caja-Hospitalaria-RC*.zip
 
 backend/.env
 backend/storage/app/private/backups/
+backend/storage/framework/testing-production-proofs-empty/
 backend/storage/framework/testing-production-proofs/
 backend/storage/framework/testing-production-proofs-missing-evidence/
 backend/storage/logs/
