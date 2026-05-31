@@ -143,6 +143,12 @@ class ServiceCatalogTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.name', 'Eritropoyetina')
             ->assertJsonPath('data.0.special_rule_code', Service::ERYTHROPOIETIN_RULE);
+
+        $this->actingAs($cashier)
+            ->getJson('/api/service-areas?active=1')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Laboratorio'])
+            ->assertJsonFragment(['name' => 'Rayos X']);
     }
 
     public function test_service_search_tolerates_typos_and_accents(): void
@@ -282,6 +288,74 @@ class ServiceCatalogTest extends TestCase
             'is_billable' => true,
             'print_on_receipt' => true,
         ]);
+    }
+
+    public function test_admin_can_manage_service_areas(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        $areaId = $this->actingAs($admin)
+            ->postJson('/api/service-areas', [
+                'name' => 'Rehabilitacion',
+                'active' => true,
+                'sort_order' => 8,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.name', 'Rehabilitacion')
+            ->assertJsonPath('data.slug', 'rehabilitacion')
+            ->json('data.id');
+
+        $this->actingAs($admin)
+            ->patchJson("/api/service-areas/{$areaId}", [
+                'name' => 'Terapia fisica',
+                'active' => false,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Terapia fisica')
+            ->assertJsonPath('data.active', false);
+
+        $this->actingAs($this->cashier())
+            ->postJson('/api/service-areas', ['name' => 'No autorizado'])
+            ->assertForbidden();
+    }
+
+    public function test_service_search_uses_area_aliases_and_internal_code_filters(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $laboratory = ServiceArea::query()->where('slug', 'laboratorio')->firstOrFail();
+        $rayos = ServiceArea::query()->where('slug', 'rayos-x')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$glucose->id}", [
+                'aliases' => ['azucar en sangre', 'glicemia'],
+                'internal_code' => 'LAB-GLU',
+                'area_id' => $laboratory->id,
+            ])
+            ->assertOk();
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?search=glicemia')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Glucosa']);
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?search=LAB-GLU')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Glucosa']);
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?search=laboratorio')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Glucosa']);
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?area_id='.$rayos->id)
+            ->assertOk()
+            ->assertJsonMissing(['name' => 'Glucosa']);
     }
 
     public function test_cashier_cannot_create_or_edit_services(): void

@@ -37,7 +37,10 @@ class ServiceController extends Controller
                 });
             })
             ->when($request->filled('category_id'), fn ($query) => $query->where('category_id', $request->integer('category_id')))
+            ->when($request->filled('area_id'), fn ($query) => $query->where('area_id', $request->integer('area_id')))
             ->when($request->has('active'), fn ($query) => $query->where('active', $request->boolean('active')))
+            ->when($request->has('visible_in_billing'), fn ($query) => $query->where('visible_in_billing', $request->boolean('visible_in_billing')))
+            ->when($request->has('is_billable'), fn ($query) => $query->where('is_billable', $request->boolean('is_billable')))
             ->orderBy('name');
 
         $services = $request->filled('search')
