@@ -887,6 +887,24 @@ Consecuencia:
 - Reimprimir una factura parcial despues de reversar un pago conserva totales historicos de factura, pero lista unicamente los pagos vigentes.
 - La trazabilidad del reverso se revisa desde auditoria y movimientos de caja, no desde la seccion de pagos del recibo.
 
+### 2026-05-31 - Anulacion usa pagos vigentes, no trazas reversadas
+
+Decision:
+
+- La anulacion de factura bloquea si existen pagos `posted` o estado financiero activo (`paid_amount`, `partial`, `paid`, saldo distinto al total).
+- Los pagos `void` no bloquean por si solos una anulacion posterior; permanecen como evidencia historica.
+- La validacion se ejecuta dentro de la transaccion de anulacion con bloqueo de la factura.
+
+Motivo:
+
+- Una factura emitida por error puede necesitar anularse despues de corregir todos sus cobros mediante reversos auditados.
+- Contar pagos reversados como cobros vigentes deja facturas en un estado imposible de cerrar administrativamente.
+
+Consecuencia:
+
+- Supervisor/admin pueden anular una factura solo cuando ya no queda dinero vigente asociado a ella.
+- La auditoria conserva tanto el reverso del pago como la anulacion de factura, sin borrar evidencia.
+
 ### 2026-05-31 - Instalador registra worker y respaldo diario
 
 Decision:

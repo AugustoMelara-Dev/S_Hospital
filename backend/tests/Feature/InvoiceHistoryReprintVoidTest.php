@@ -367,6 +367,49 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         ]);
     }
 
+    public function test_void_invoice_is_allowed_after_all_payments_are_reversed(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $supervisor = $this->supervisor();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
+
+        $paymentId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->json('data.payment.id');
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/payments/{$paymentId}/void", [
+                'reason' => 'Pago reversado antes de anular factura',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_ISSUED)
+            ->assertJsonPath('data.invoice.paid_amount', '0.00')
+            ->assertJsonPath('data.invoice.balance_due', '17.25');
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/void", [
+                'reason' => 'Factura emitida por error y sin cobros vigentes',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', Invoice::STATUS_VOID)
+            ->assertJsonPath('data.void_reason', 'Factura emitida por error y sin cobros vigentes')
+            ->assertJsonPath('data.payments.0.status', Payment::STATUS_VOID);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $supervisor->id,
+            'action' => 'invoice.voided',
+            'entity_type' => Invoice::class,
+            'entity_id' => $invoiceId,
+        ]);
+    }
+
     public function test_void_revalidates_payment_state_inside_transaction_before_marking_void(): void
     {
         $this->seedBillingBase();
