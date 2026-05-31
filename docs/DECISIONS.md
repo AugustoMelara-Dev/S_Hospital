@@ -977,6 +977,23 @@ Consecuencia:
 - El PDF de rango deja de ser solo un resumen visual y pasa a ser evidencia de rendicion de cuentas.
 - Las pruebas capturan el HTML enviado a DomPDF para validar texto, montos y fuentes antes de generar el binario.
 
+### 2026-05-31 - Servicios reportan monto facturado, no recaudado
+
+Decision:
+
+- Las tablas de servicios en reportes exportables etiquetan sus totales como monto facturado.
+- El PDF consolidado y el Top 5 del Excel premium evitan llamar "recaudado" a totales que provienen de `invoice_items`.
+
+Motivo:
+
+- Los reportes de servicios usan snapshots de factura y pueden incluir facturas pendientes o parciales.
+- Llamar recaudado a ese total mezcla cobro con facturacion y puede hacer que administracion presente ingresos cobrados incorrectos.
+
+Consecuencia:
+
+- La recaudacion por metodo sigue usando pagos reales.
+- Los ingresos por servicio/area/categoria quedan entendidos como facturacion salvo que un reporte futuro implemente asignacion cobrada explicita.
+
 ### 2026-05-31 - Diagnostico operativo de interfaz y LAN
 
 Decision:

@@ -21,11 +21,19 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class ReportsTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
 
     public function test_reports_view_permission_is_required(): void
     {
@@ -464,7 +472,7 @@ class ReportsTest extends TestCase
     {
         $this->seedBillingBase();
         $viewer = $this->cashier();
-        $viewer->givePermissionTo('reports.view', 'reports.managerial.view', 'reports.export');
+        $this->grantPermissions($viewer, 'reports.view', 'reports.managerial.view', 'reports.export');
         $otherCashier = $this->cashier();
         $viewerSessionId = $this->openSession($viewer);
         $otherSessionId = $this->openSession($otherCashier);
@@ -554,7 +562,7 @@ class ReportsTest extends TestCase
         $this->seedBillingBase();
         $cashier = $this->cashier();
         $viewer = User::factory()->create();
-        $viewer->givePermissionTo('reports.view', 'reports.managerial.view');
+        $this->grantPermissions($viewer, 'reports.view', 'reports.managerial.view');
         $sessionId = $this->openSession($cashier);
         $invoiceId = $this->createInvoice($cashier, 'Glucosa');
 
@@ -687,7 +695,7 @@ class ReportsTest extends TestCase
     {
         $this->seedBillingBase();
         $viewer = User::factory()->create();
-        $viewer->givePermissionTo('reports.view', 'reports.managerial.view', 'reports.export');
+        $this->grantPermissions($viewer, 'reports.view', 'reports.managerial.view', 'reports.export');
 
         BackupLog::query()->create([
             'filename' => 'hospital-backup-sensitive.sql',
@@ -888,7 +896,7 @@ class ReportsTest extends TestCase
             ])
             ->assertOk();
 
-        $cashier->givePermissionTo(Permission::findByName('reports.cash_session.view', 'web'));
+        $this->grantPermissions($cashier, 'reports.cash_session.view');
 
         $this->actingAs($cashier)
             ->getJson('/api/reports/daily?date='.now()->toDateString())
@@ -947,7 +955,7 @@ class ReportsTest extends TestCase
             'void_reason' => 'Correccion posterior al cierre',
         ]);
 
-        $cashier->givePermissionTo(Permission::findByName('reports.cash_session.view', 'web'));
+        $this->grantPermissions($cashier, 'reports.cash_session.view');
 
         $this->actingAs($cashier)
             ->getJson("/api/reports/cash-sessions/{$sessionId}")
@@ -975,7 +983,7 @@ class ReportsTest extends TestCase
         $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
         $this->payInvoice($cashier, $partialInvoice, $sessionId, Payment::METHOD_CARD, '5.00');
 
-        $cashier->givePermissionTo(Permission::findByName('reports.cash_session.view', 'web'));
+        $this->grantPermissions($cashier, 'reports.cash_session.view');
 
         $this->actingAs($cashier)
             ->getJson("/api/reports/cash-sessions/{$sessionId}")
@@ -1003,9 +1011,9 @@ class ReportsTest extends TestCase
         $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
         $this->payInvoice($otherCashier, $otherInvoiceId, $otherSessionId, Payment::METHOD_CARD, '28.75');
 
-        $cashier->givePermissionTo(
-            Permission::findByName('reports.cash_session.view', 'web'),
-            Permission::findByName('reports.export', 'web'),
+        $this->grantPermissions($cashier,
+            'reports.cash_session.view',
+            'reports.export',
         );
 
         $query = 'date_from='.now()->toDateString().'&date_to='.now()->toDateString();
@@ -1065,7 +1073,10 @@ class ReportsTest extends TestCase
 
     private function seedBillingBase(): void
     {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         FiscalSetting::query()->create([
             'hospital_name' => 'Hospital San Isidro',
             'rtn' => '08011999123456',
@@ -1139,7 +1150,7 @@ class ReportsTest extends TestCase
         $this->seedBillingBase();
         $user = User::factory()->create();
         $reportViewer = User::factory()->create();
-        $reportViewer->givePermissionTo('reports.view', 'reports.managerial.view');
+        $this->grantPermissions($reportViewer, 'reports.view', 'reports.managerial.view');
         $date = now()->toDateString();
 
         $this->getJson("/api/reports/pdf?date={$date}")
@@ -1186,6 +1197,7 @@ class ReportsTest extends TestCase
     public function test_period_closure_pdf_export_includes_financial_reading_with_sources(): void
     {
         $this->seedBillingBase();
+        $admin = $this->admin();
         FiscalSetting::query()->update(['partial_payments_enabled' => true]);
         $cashier = $this->cashier();
         $sessionId = $this->openSession($cashier);
@@ -1220,7 +1232,7 @@ class ReportsTest extends TestCase
             }));
 
         $date = now()->toDateString();
-        $this->actingAs($this->admin())
+        $this->actingAs($admin)
             ->get("/api/reports/pdf?date_from={$date}&date_to={$date}")
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf')
@@ -1248,6 +1260,7 @@ class ReportsTest extends TestCase
     public function test_period_closure_pdf_labels_service_totals_as_billed_not_collected(): void
     {
         $this->seedBillingBase();
+        $admin = $this->admin();
         $cashier = $this->cashier();
         $this->createInvoice($cashier, 'Glucosa');
 
@@ -1266,7 +1279,7 @@ class ReportsTest extends TestCase
             }));
 
         $date = now()->toDateString();
-        $this->actingAs($this->admin())
+        $this->actingAs($admin)
             ->get("/api/reports/pdf?date_from={$date}&date_to={$date}")
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf')
@@ -1286,6 +1299,7 @@ class ReportsTest extends TestCase
     public function test_period_closure_pdf_export_includes_payment_reversals_without_technical_ids(): void
     {
         $this->seedBillingBase();
+        $admin = $this->admin();
         $cashier = $this->cashier();
         $supervisor = $this->supervisor();
         $sessionId = $this->openSession($cashier);
@@ -1321,7 +1335,7 @@ class ReportsTest extends TestCase
             }));
 
         $date = now()->toDateString();
-        $this->actingAs($this->admin())
+        $this->actingAs($admin)
             ->get("/api/reports/pdf?date_from={$date}&date_to={$date}")
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf')
@@ -1344,6 +1358,7 @@ class ReportsTest extends TestCase
     {
         $admin = User::factory()->create();
         $admin->assignRole('admin');
+        $this->grantDirectPermissions($admin, RolesAndPermissionsSeeder::PERMISSIONS);
 
         return $admin;
     }
@@ -1352,6 +1367,29 @@ class ReportsTest extends TestCase
     {
         $supervisor = User::factory()->create();
         $supervisor->assignRole('supervisor');
+        $this->grantDirectPermissions($supervisor, [
+            'settings.fiscal.view',
+            'catalog.view',
+            'catalog.manage',
+            'invoices.view',
+            'invoices.create',
+            'invoices.void',
+            'cash.view',
+            'cash.open',
+            'cash.close',
+            'cash.close_any',
+            'payments.create',
+            'payments.view',
+            'payments.void',
+            'receipts.view',
+            'receipts.reprint',
+            'receipts.reprint_any',
+            'reports.view',
+            'reports.managerial.view',
+            'reports.cash_session.view',
+            'reports.export',
+            'audit.view',
+        ]);
 
         return $supervisor;
     }
@@ -1360,7 +1398,52 @@ class ReportsTest extends TestCase
     {
         $cashier = User::factory()->create();
         $cashier->assignRole('cajero');
+        $this->grantDirectPermissions($cashier, [
+            'catalog.view',
+            'invoices.view',
+            'invoices.create',
+            'cash.view',
+            'cash.open',
+            'cash.close',
+            'payments.create',
+            'payments.view',
+            'receipts.view',
+            'receipts.reprint',
+        ]);
 
         return $cashier;
+    }
+
+    /**
+     * Keep report tests isolated from Spatie's process-level permission cache
+     * when SQLite transactions roll back seeded permission IDs between tests.
+     *
+     * @param  array<int, string>  $permissionNames
+     */
+    private function grantDirectPermissions(User $user, array $permissionNames): void
+    {
+        $permissionIds = Permission::query()
+            ->whereIn('name', array_values(array_unique($permissionNames)))
+            ->pluck('id');
+
+        DB::table('model_has_permissions')->insert($permissionIds->map(fn (int $permissionId): array => [
+            'permission_id' => $permissionId,
+            'model_type' => User::class,
+            'model_id' => $user->id,
+        ])->all());
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $user->unsetRelation('permissions');
+        $user->unsetRelation('roles');
+        $user->load('permissions', 'roles.permissions');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
+
+    private function grantPermissions(User $user, mixed ...$permissionNames): void
+    {
+        $this->grantDirectPermissions($user, collect($permissionNames)
+            ->flatten()
+            ->map(fn (mixed $permissionName): string => (string) $permissionName)
+            ->all());
     }
 }

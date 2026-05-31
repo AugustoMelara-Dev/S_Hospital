@@ -564,7 +564,7 @@ class PremiumExcelExportService
         if ($topCount > 0) {
             // Write top 5 to a dedicated calculation block to the side
             $sheet3->setCellValue('G10', 'Top 5 Servicios');
-            $sheet3->setCellValue('H10', 'Ventas');
+            $sheet3->setCellValue('H10', 'Monto Facturado');
             $sheet3->getStyle('G10:H10')->applyFromArray($headerStyle);
             $sheet3->getStyle('G10:H10')->getFill()->setStartColor(new Color('0D9488'));
 
@@ -599,7 +599,7 @@ class PremiumExcelExportService
 
             $plotArea3 = new PlotArea(null, [$series3]);
             $legend3 = new Legend(Legend::POSITION_RIGHT, null, false);
-            $title3 = new Title('Top 5 Servicios con Mayor Recaudación (L.)');
+            $title3 = new Title('Top 5 Servicios por Monto Facturado (L.)');
 
             $chart3 = new Chart(
                 'top_services_chart',

@@ -544,7 +544,7 @@ class PdfExportService
             <tr>
                 <th>Nombre del Servicio</th>
                 <th class='text-center'>Cantidad Vendida</th>
-                <th class='text-right'>Total Recaudado (LPS)</th>
+                <th class='text-right'>Monto Facturado (LPS)</th>
             </tr>
         </thead>
         <tbody>";
