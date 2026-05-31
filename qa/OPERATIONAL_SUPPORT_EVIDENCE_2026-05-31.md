@@ -54,6 +54,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Validacion LAN agrega `-WhatIfOnly` y bloquea evidencia fuera de la carpeta instalada. | Verificado |
 | Esta fase | Inicializador de evidencias finales agrega `-WhatIfOnly`, sanitiza rutas y advierte antes de reemplazar pruebas fisicas. | Verificado |
 | Esta fase | Preflight de produccion sanitiza rutas locales y claves sensibles en consola. | Verificado |
+| Esta fase | Instalador de arranque de backups por usuario valida hora, sanitiza rutas y ofrece `-WhatIfOnly`. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -154,6 +155,8 @@ Resultado observado:
 | `validate_lan_client.ps1 -BaseUrl http://192.168.1.10:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.tmp.md -WhatIfOnly` | Paso: valida parametros y confirma que no consulta red ni escribe evidencia. |
 | `init_production_proofs.ps1 -WhatIfOnly` | Paso: muestra acciones previstas sin copiar ni reemplazar archivos; consola no expone rutas locales crudas. |
 | `production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:1 -AllowMissingPhysicalProof` | Paso esperado con fallos: consola no expone `C:\Projects\S_Hospital` ni rutas de usuario. |
+| `install_backup_startup_current_user.ps1 -WhatIfOnly -DailyBackupTime 99:99` | Falla antes de tocar inicio/registro con mensaje humano de formato HH:mm. |
+| `install_backup_startup_current_user.ps1 -WhatIfOnly -DailyBackupTime 23:30` | Paso: no crea archivo de inicio, no cambia registro y no inicia worker. |
 | Parser PowerShell de `scripts\e2e_gate.ps1` | Paso. |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1` | Paso: 2 specs Playwright. Detecto y se corrigio fuga de `/api/areas?active=1` al backend local durante el flujo Reportes -> Respaldos. |
 | `php artisan test tests/Feature/SystemStatusTest.php` | Paso: 7 tests, 47 assertions. |

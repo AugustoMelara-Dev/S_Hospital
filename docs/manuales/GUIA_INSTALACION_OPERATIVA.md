@@ -78,6 +78,13 @@ despues con:
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting
 ```
 
+Si no hay permisos de administrador, soporte puede validar el arranque de
+backups para el usuario actual sin cambiar el registro ni iniciar procesos:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -WhatIfOnly
+```
+
 Luego debe crear un respaldo manual desde la UI y confirmar que cambia de
 **Pendiente** a **Protegido**.
 
