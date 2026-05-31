@@ -34,6 +34,37 @@ if ($ReportPath -eq "") {
     $ReportPath = Join-Path $qaDir "FINAL_PRODUCTION_HANDOFF_RESULT.md"
 }
 
+function Resolve-HandoffReportPath([string] $path) {
+    if ([string]::IsNullOrWhiteSpace($path)) {
+        Write-Host "ReportPath es obligatorio."
+        exit 1
+    }
+
+    if ([System.IO.Path]::GetExtension($path) -ne ".md") {
+        Write-Host "ReportPath debe ser un archivo Markdown (.md) dentro de qa."
+        exit 1
+    }
+
+    $candidate = if ([System.IO.Path]::IsPathRooted($path)) {
+        $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($path)
+    } else {
+        Join-Path $ProjectRoot $path
+    }
+
+    $fullPath = [System.IO.Path]::GetFullPath($candidate)
+    $qaRoot = [System.IO.Path]::GetFullPath($qaDir)
+    $qaPrefix = $qaRoot.TrimEnd("\") + "\"
+
+    if ($fullPath -eq $qaRoot -or -not $fullPath.StartsWith($qaPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        Write-Host "ReportPath debe quedarse dentro de la carpeta qa del sistema."
+        exit 1
+    }
+
+    return $fullPath
+}
+
+$ReportPath = Resolve-HandoffReportPath $ReportPath
+
 function Write-Section([string] $title) {
     Write-Host ""
     Write-Host "== $title ==" -ForegroundColor Cyan

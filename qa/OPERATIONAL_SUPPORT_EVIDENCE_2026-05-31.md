@@ -67,6 +67,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Evidencia generada por validacion de concurrencia queda restringida a archivos Markdown dentro de `qa/`, evitando escrituras fuera de la carpeta instalada por variables mal copiadas. | Verificado |
 | Esta fase | Evidencia generada por validacion de restore queda restringida a `qa/*.md` y se valida antes de crear backup o tocar la base descartable. | Verificado |
 | Esta fase | Evidencia del smoke de worker de respaldos queda restringida a archivos Markdown dentro de `qa/` y se valida antes de pedir contrasena, abrir red o crear respaldo. | Verificado |
+| Esta fase | Reporte final de handoff queda restringido a archivos Markdown dentro de `qa/` y se valida antes de preflight o escritura. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -139,6 +140,8 @@ Resultado observado:
 | `open_hospital_system.ps1` con servidor cerrado y reparacion segura `-SkipDockerStart -NoBrowser` | Ejecuta `repair_hospital_system.ps1`, genera diagnostico en ruta indicada y termina sin borrar datos ni abrir navegador. |
 | Parser PowerShell de `final_production_handoff.ps1` | Paso. |
 | `final_production_handoff.ps1 -SkipPreflight` | Paso: genero reporte `PRODUCTION_CANDIDATE`, mostro LAN/impresora/restore/concurrencia, bloqueo por evidencia fisica de impresora incompleta y sanitizo `%PROJECT_ROOT%`. |
+| `final_production_handoff.ps1 -ReportPath C:\tmp\handoff.md -SkipPreflight` | Falla antes de preflight o escritura. |
+| `final_production_handoff.ps1 -ReportPath qa\handoff.txt -SkipPreflight` | Falla antes de preflight o escritura. |
 | Parser PowerShell de `validate_lan_client.ps1` | Paso. |
 | `validate_lan_client.ps1` con evidencia existente sin `-Force` | Falla antes de tocar red, conserva el archivo existente y muestra instruccion para usar `-Force` solo si se reemplaza intencionalmente. |
 | `validate_lan_client.ps1` con `-Force` sobre archivo temporal | Regenera borrador temporal, marca rutas fallidas y mantiene `PRODUCTION_READY` bloqueado. |

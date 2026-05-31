@@ -110,7 +110,9 @@ preflight sin `-AllowMissingPhysicalProof`. Si faltan `qa/LAN_CLIENT_VALIDATION_
 o `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` completos, el resultado correcto sigue siendo
 `PRODUCTION_CANDIDATE`. Tambien deja un resumen operativo en
 `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` con la decision, bloqueantes y comandos
-siguientes.
+siguientes. Si usa `-ReportPath`, debe ser un archivo `.md` dentro de `qa/`;
+el helper rechaza rutas fuera de la carpeta de evidencia antes de ejecutar
+preflight o escribir el reporte.
 
 Este preflight falla si el servidor no usa `APP_ENV=production`, si `APP_DEBUG`
 no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o
