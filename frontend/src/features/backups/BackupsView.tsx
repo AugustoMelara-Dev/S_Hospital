@@ -17,6 +17,7 @@ type BackupsViewProps = {
 };
 
 type StatusFilter = 'all' | 'pending' | 'success' | 'failed';
+type OperationalStatus = 'ok' | 'review' | 'error';
 
 function formatBytes(size: number | null): string {
   if (size === null) return '—';
@@ -114,6 +115,48 @@ function friendlyProductionDetail(code: string, fallback: string): string {
   return sanitizeTechnicalText(fallback);
 }
 
+function operationalSummary(status: SystemStatus): { level: OperationalStatus; label: string; description: string; className: string } {
+  const hasError =
+    !status.backups.storage.writable ||
+    !status.backups.dump_binary.available ||
+    !status.runtime.logs_writable ||
+    !status.runtime.cache_writable ||
+    (status.backups.queue.failed_jobs_count ?? 0) > 0 ||
+    status.backups.last_failure_at !== null;
+
+  if (hasError) {
+    return {
+      level: 'error',
+      label: 'Error',
+      description: 'Hay un problema operativo que puede afectar respaldos, soporte o continuidad. Revise el detalle avanzado o pida soporte.',
+      className: 'border-red-200 bg-red-50 text-red-900',
+    };
+  }
+
+  const needsReview =
+    status.backups.pending_count > 0 ||
+    status.readiness.blockers.some((blocker) => blocker.status !== 'validated') ||
+    status.preflight.production_checks.some((check) => check.status !== 'validated') ||
+    status.preflight.public_routes.some((route) => route.status !== 'validated') ||
+    status.preflight.physical_proofs.some((proof) => proof.status !== 'validated');
+
+  if (needsReview) {
+    return {
+      level: 'review',
+      label: 'Requiere revisión',
+      description: 'El sistema puede seguir en validacion controlada, pero faltan pruebas de campo, configuracion final o respaldo reciente.',
+      className: 'border-amber-200 bg-amber-50 text-amber-900',
+    };
+  }
+
+  return {
+    level: 'ok',
+    label: 'Todo bien',
+    description: 'Los chequeos operativos disponibles no reportan pendientes. Mantenga el cierre diario y los respaldos al dia.',
+    className: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+  };
+}
+
 function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -134,6 +177,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const [error, setError] = useState('');
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [systemStatusError, setSystemStatusError] = useState('');
+  const [showAdvancedStatus, setShowAdvancedStatus] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [confirmCreateOpen, setConfirmCreateOpen] = useState(false);
   const [downloadTarget, setDownloadTarget] = useState<BackupLog | null>(null);
@@ -148,6 +192,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
   const lastSuccessBackup = backupsList.find(b => b.status === 'success');
   const lastFailedBackup = backupsList.find(b => b.status === 'failed');
+  const operationalStatus = systemStatus ? operationalSummary(systemStatus) : null;
 
   useEffect(() => {
     void loadBackups(page);
@@ -280,7 +325,27 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           </Alert>
         ) : null}
 
-        {systemStatus ? (
+        {operationalStatus ? (
+          <Card className={operationalStatus.className}>
+            <CardContent className="flex flex-col gap-3 pt-6 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-normal">Estado operativo</p>
+                <h3 className="mt-1 text-xl font-semibold">{operationalStatus.label}</h3>
+                <p className="mt-1 max-w-3xl text-sm leading-6">{operationalStatus.description}</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAdvancedStatus((current) => !current)}
+              >
+                {showAdvancedStatus ? 'Ocultar detalle avanzado' : 'Ver detalle avanzado'}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {systemStatus && showAdvancedStatus ? (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
             <Card className={systemStatus.backups.dump_binary.available && systemStatus.backups.storage.writable ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}>
               <CardContent className="pt-6">
@@ -360,7 +425,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           </Alert>
         ) : null}
 
-        {systemStatus ? (
+        {systemStatus && showAdvancedStatus ? (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
             <Card>
               <CardContent className="pt-6">
