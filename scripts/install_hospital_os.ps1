@@ -173,7 +173,7 @@ if ($useGui) {
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
                         <TextBlock Text="Sistema de Caja Hospitalaria" Foreground="#0D9488" FontSize="18" FontWeight="Bold"/>
-                        <TextBlock Text="Asistente de Configuración para Red Local Offline" Foreground="#94A3B8" FontSize="12"/>
+                        <TextBlock Text="Asistente de Configuracion para Red Local Offline" Foreground="#94A3B8" FontSize="12"/>
                     </StackPanel>
                     <TextBlock Grid.Column="1" Text="$installedVersion" Foreground="#475569" VerticalAlignment="Center" FontSize="14" FontWeight="Bold"/>
                 </Grid>
@@ -185,26 +185,26 @@ if ($useGui) {
                 <!-- STEP 1: Welcome & LAN -->
                 <StackPanel Name="PanelStep1" Visibility="Visible">
                     <TextBlock Text="Paso 1: Detectar y Confirmar IP LAN de Red Local" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
-                    <TextBlock Text="Este script configura el servidor web y la base de datos MySQL local para ejecutarse sin internet en su red de área local (LAN)." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
+                    <TextBlock Text="Este script configura el servidor web y la base de datos MySQL local para ejecutarse sin internet en su red de area local (LAN)." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
                     
                     <Label Content="IP Activa Detectada en la Computadora Servidor:" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,5"/>
                     <TextBox Name="TxtLanIp" Text="$detectedIp" Padding="8" FontSize="14" BorderBrush="#CBD5E1" BorderThickness="1" Margin="0,0,0,15"/>
                     
                     <Border Background="#F0FDFA" BorderBrush="#CCFBF1" BorderThickness="1" Padding="12" CornerRadius="6">
-                        <TextBlock Text="Nota: Las computadoras cliente (recepción, consultorios, caja) accederán al sistema usando esta dirección IP. Asegúrese de que este servidor tenga configurada una dirección IP estática en su router LAN para evitar que cambie al reiniciar." FontSize="11" Foreground="#0F766E" TextWrapping="Wrap"/>
+                        <TextBlock Text="Nota: Las computadoras cliente (recepcion, consultorios, caja) accederan al sistema usando esta direccion IP. Asegurese de que este servidor tenga configurada una direccion IP estatica en su router LAN para evitar que cambie al reiniciar." FontSize="11" Foreground="#0F766E" TextWrapping="Wrap"/>
                     </Border>
                 </StackPanel>
 
                 <!-- STEP 2: PHP Environment -->
                 <StackPanel Name="PanelStep2" Visibility="Collapsed">
                     <TextBlock Text="Paso 2: Localizar Entorno PHP de Servidor" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
-                    <TextBlock Text="El sistema requiere un motor de PHP 8.2+ para procesar caja, facturación y reportes." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
+                    <TextBlock Text="El sistema requiere un motor de PHP 8.2+ para procesar caja, facturacion y reportes." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
                     
                     <Label Content="Ruta al Ejecutable de PHP (php.exe):" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,5"/>
                     <TextBox Name="TxtPhpPath" Text="$phpPath" Padding="8" FontSize="13" BorderBrush="#CBD5E1" BorderThickness="1" Margin="0,0,0,10"/>
                     
                     <Button Name="BtnTestPhp" Content="Validar php.exe local" Padding="10,6" Background="#E2E8F0" Foreground="#0F172A" FontWeight="Bold" BorderThickness="0" HorizontalAlignment="Left" Margin="0,0,0,10"/>
-                    <TextBlock Name="TxtPhpResult" Text="Pendiente de verificación" FontSize="11" FontWeight="Bold" Foreground="#64748B" TextWrapping="Wrap"/>
+                    <TextBlock Name="TxtPhpResult" Text="Pendiente de verificacion" FontSize="11" FontWeight="Bold" Foreground="#64748B" TextWrapping="Wrap"/>
                 </StackPanel>
 
                 <!-- STEP 3: MySQL Setup -->
@@ -236,39 +236,39 @@ if ($useGui) {
                         <Label Grid.Row="3" Grid.Column="0" Content="Usuario MySQL:" VerticalAlignment="Center" Foreground="#334155"/>
                         <TextBox Grid.Row="3" Grid.Column="1" Name="TxtDbUser" Text="root" Padding="4" VerticalAlignment="Center"/>
 
-                        <Label Grid.Row="4" Grid.Column="0" Content="Contraseña:" VerticalAlignment="Center" Foreground="#334155"/>
+                        <Label Grid.Row="4" Grid.Column="0" Content="Contrasena:" VerticalAlignment="Center" Foreground="#334155"/>
                         <PasswordBox Grid.Row="4" Grid.Column="1" Name="TxtDbPass" Padding="4" VerticalAlignment="Center"/>
                     </Grid>
                     
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                        <Button Name="BtnTestDb" Content="Probar Conexión" Padding="10,5" Background="#E2E8F0" Foreground="#0F172A" FontWeight="Bold" BorderThickness="0" Margin="0,0,10,0"/>
+                        <Button Name="BtnTestDb" Content="Probar Conexion" Padding="10,5" Background="#E2E8F0" Foreground="#0F172A" FontWeight="Bold" BorderThickness="0" Margin="0,0,10,0"/>
                         <Button Name="BtnMigrateDb" Content="Ejecutar migraciones seguras" Padding="12,5" Background="#0D9488" Foreground="White" FontWeight="Bold" BorderThickness="0"/>
                     </StackPanel>
-                    <TextBlock Name="TxtDbResult" Text="Pendiente de conexión" FontSize="11" FontWeight="Bold" Foreground="#64748B" TextWrapping="Wrap"/>
+                    <TextBlock Name="TxtDbResult" Text="Pendiente de conexion" FontSize="11" FontWeight="Bold" Foreground="#64748B" TextWrapping="Wrap"/>
                 </StackPanel>
 
                 <!-- STEP 4: Scheduler Backups -->
                 <StackPanel Name="PanelStep4" Visibility="Collapsed">
                     <TextBlock Text="Paso 4: Respaldos Locales y Cola de Trabajos" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
-                    <TextBlock Text="El sistema necesita un worker continuo para procesar respaldos solicitados desde la pantalla Respaldos, y una tarea diaria para crear copia local automática." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
+                    <TextBlock Text="El sistema necesita un worker continuo para procesar respaldos solicitados desde la pantalla Respaldos, y una tarea diaria para crear copia local automatica." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
                     
-                    <CheckBox Name="ChkEnableBackup" Content="Registrar worker continuo y respaldo diario automático" IsChecked="True" FontSize="13" FontWeight="SemiBold" Foreground="#0F172A" Margin="0,0,0,15"/>
+                    <CheckBox Name="ChkEnableBackup" Content="Registrar worker continuo y respaldo diario automatico" IsChecked="True" FontSize="13" FontWeight="SemiBold" Foreground="#0F172A" Margin="0,0,0,15"/>
                     
-                    <Label Content="Hora de Ejecución Diaria (Ejemplo: 23:00):" Foreground="#334155" Margin="0,0,0,5"/>
+                    <Label Content="Hora de Ejecucion Diaria (Ejemplo: 23:00):" Foreground="#334155" Margin="0,0,0,5"/>
                     <TextBox Name="TxtBackupTime" Text="23:00" Padding="8" Width="120" HorizontalAlignment="Left" FontSize="14" BorderBrush="#CBD5E1" BorderThickness="1" Margin="0,0,0,10"/>
                     <TextBlock Text="Nota: Las tareas se ejecutan en segundo plano sin interrumpir a los cajeros. Requieren PowerShell como Administrador para registrarse." FontSize="11" Foreground="#0D9488"/>
                 </StackPanel>
 
                 <!-- STEP 5: Firewall & LAN URLs -->
                 <StackPanel Name="PanelStep5" Visibility="Collapsed">
-                    <TextBlock Text="Paso 5: Completar Instalación de Red LAN" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
-                    <TextBlock Text="El Sistema de Caja Hospitalaria está configurado. Se puede habilitar la apertura de puerto en el Firewall de Windows para admitir conexiones entrantes en su LAN." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
+                    <TextBlock Text="Paso 5: Completar Instalacion de Red LAN" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
+                    <TextBlock Text="El Sistema de Caja Hospitalaria esta configurado. Se puede habilitar la apertura de puerto en el Firewall de Windows para admitir conexiones entrantes en su LAN." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
                     
                     <CheckBox Name="ChkOpenFirewall" Content="Abrir Puerto 8000 en el Firewall de Windows para clientes LAN" IsChecked="True" FontSize="13" FontWeight="SemiBold" Foreground="#0F172A" Margin="0,0,0,15"/>
                     
                     <Border Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1" Padding="15" CornerRadius="8">
                         <StackPanel>
-                            <TextBlock Text="Dirección Web LAN para Clientes:" FontWeight="Bold" Foreground="#0F172A" FontSize="12"/>
+                            <TextBlock Text="Direccion Web LAN para Clientes:" FontWeight="Bold" Foreground="#0F172A" FontSize="12"/>
                             <TextBlock Name="TxtLanUrl" Text="http://192.168.1.15:8000" FontSize="16" FontWeight="Bold" Foreground="#0D9488" Margin="0,6,0,0"/>
                             <TextBlock Text="Copie y guarde este enlace. Desde cualquier tablet, PC o laptop en la misma red local LAN, ingrese esta URL en Chrome/Edge para facturar." FontSize="11" Foreground="#64748B" TextWrapping="Wrap" Margin="0,8,0,0"/>
                         </StackPanel>
@@ -279,7 +279,7 @@ if ($useGui) {
             <!-- Bottom Navigation Bar -->
             <Border Grid.Row="2" Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0" Padding="20,10">
                 <Grid>
-                    <Button Name="BtnBack" Content="&lt; Atrás" HorizontalAlignment="Left" Width="100" IsEnabled="False" Padding="6" Background="#E2E8F0" BorderThickness="0" FontWeight="Bold"/>
+                    <Button Name="BtnBack" Content="&lt; Atras" HorizontalAlignment="Left" Width="100" IsEnabled="False" Padding="6" Background="#E2E8F0" BorderThickness="0" FontWeight="Bold"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Name="BtnNext" Content="Siguiente &gt;" Width="110" Padding="6" Margin="0,0,10,0" Background="#0F172A" Foreground="White" BorderThickness="0" FontWeight="Bold"/>
                         <Button Name="BtnCancel" Content="Cancelar" Width="100" Padding="6" Background="#E2E8F0" BorderThickness="0" FontWeight="Bold"/>
@@ -370,7 +370,7 @@ if ($useGui) {
         if ($currentStep -lt 5) {
             # Basic validation
             if ($currentStep -eq 1 -and [string]::IsNullOrWhiteSpace($TxtLanIp.Text)) {
-                [System.Windows.MessageBox]::Show("Ingrese una dirección IP LAN válida.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+                [System.Windows.MessageBox]::Show("Ingrese una direccion IP LAN valida.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
                 return
             }
             if ($currentStep -eq 2 -and [string]::IsNullOrWhiteSpace($TxtPhpPath.Text)) {
@@ -411,10 +411,10 @@ if ($useGui) {
                     netsh advfirewall firewall add rule name="Sistema de Caja Hospitalaria LAN Port 8000" dir=in action=allow protocol=TCP localport=8000 | Out-Null
                 }
 
-                [System.Windows.MessageBox]::Show("Instalación del Sistema de Caja Hospitalaria finalizada.`n`nEl servidor local LAN está activo en: http://$($TxtLanIp.Text):8000", "Éxito", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                [System.Windows.MessageBox]::Show("Instalacion del Sistema de Caja Hospitalaria finalizada.`n`nEl servidor local LAN esta activo en: http://$($TxtLanIp.Text):8000", "Exito", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
                 $window.Close()
             } catch {
-                [System.Windows.MessageBox]::Show("Ocurrió un error al guardar la configuración: $_", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+                [System.Windows.MessageBox]::Show("Ocurrio un error al guardar la configuracion: $_", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
             }
         }
     })
@@ -431,7 +431,7 @@ if ($useGui) {
         try {
             $ver = & $path -v
             $firstLine = ($ver -split "`n")[0]
-            $TxtPhpResult.Text = "Éxito: $firstLine"
+            $TxtPhpResult.Text = "Exito: $firstLine"
             $TxtPhpResult.Foreground = [System.Windows.Media.Brushes]::Green
         } catch {
             $TxtPhpResult.Text = "Error al intentar ejecutar: $_"
@@ -449,12 +449,12 @@ if ($useGui) {
         $php = $TxtPhpPath.Text
 
         if (-not (Test-Path $php)) {
-            $TxtDbResult.Text = "Error: Primero debe configurar una ruta PHP válida en el Paso 2."
+            $TxtDbResult.Text = "Error: Primero debe configurar una ruta PHP valida en el Paso 2."
             $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Red
             return
         }
 
-        $TxtDbResult.Text = "Probando conexión a MySQL..."
+        $TxtDbResult.Text = "Probando conexion a MySQL..."
         $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::DarkGoldenrod
         $window.UpdateLayout()
 
@@ -463,14 +463,14 @@ if ($useGui) {
         try {
             $res = & $php -r $code
             if ($res -eq "OK") {
-                $TxtDbResult.Text = "¡Conexión exitosa al servidor MySQL!"
+                $TxtDbResult.Text = "Conexion exitosa al servidor MySQL!"
                 $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Green
             } else {
-                $TxtDbResult.Text = "Fallo de conexión: $res"
+                $TxtDbResult.Text = "Fallo de conexion: $res"
                 $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Red
             }
         } catch {
-            $TxtDbResult.Text = "Error al probar conexión: $_"
+            $TxtDbResult.Text = "Error al probar conexion: $_"
             $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Red
         }
     })
@@ -485,12 +485,12 @@ if ($useGui) {
         $php = $TxtPhpPath.Text
 
         if (-not (Test-Path $php)) {
-            $TxtDbResult.Text = "Error: Primero debe configurar una ruta PHP válida en el Paso 2."
+            $TxtDbResult.Text = "Error: Primero debe configurar una ruta PHP valida en el Paso 2."
             $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Red
             return
         }
 
-        $TxtDbResult.Text = "Guardando configuración temporal y corriendo migraciones seguras..."
+        $TxtDbResult.Text = "Guardando configuracion temporal y corriendo migraciones seguras..."
         $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::DarkGoldenrod
         
         # Guardar en .env para que artisan use los datos reales
@@ -527,7 +527,7 @@ if ($useGui) {
             $migrateOutput = & $php artisan migrate --force 2>&1
             Set-Location $currentDir
 
-            $TxtDbResult.Text = "Migraciones aplicadas sin borrar datos. Cree usuarios y catálogos iniciales con el procedimiento aprobado."
+            $TxtDbResult.Text = "Migraciones aplicadas sin borrar datos. Cree usuarios y catalogos iniciales con el procedimiento aprobado."
             $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Green
         } catch {
             $TxtDbResult.Text = "Error al ejecutar migraciones: $_"
@@ -556,7 +556,7 @@ function Run-SetupCli {
     Write-Host "==========================================================" -ForegroundColor Teal
     Write-Host ""
     
-    $lanIp = Read-Host "Dirección IP LAN del Servidor (por defecto $detectedIp)"
+    $lanIp = Read-Host "Direccion IP LAN del Servidor (por defecto $detectedIp)"
     if ([string]::IsNullOrWhiteSpace($lanIp)) { $lanIp = $detectedIp }
 
     $php = Read-Host "Ruta al ejecutable php.exe (por defecto $phpPath)"
@@ -569,7 +569,7 @@ function Run-SetupCli {
         Write-Host "Advertencia: php.exe no encontrado en $php" -ForegroundColor Yellow
     }
 
-    Write-Host "`n--- Configuración de Base de Datos MySQL ---"
+    Write-Host "`n--- Configuracion de Base de Datos MySQL ---"
     $dbHost = Read-Host "Host MySQL (por defecto 127.0.0.1)"
     if ([string]::IsNullOrWhiteSpace($dbHost)) { $dbHost = "127.0.0.1" }
 
@@ -582,10 +582,10 @@ function Run-SetupCli {
     $dbUser = Read-Host "Usuario MySQL (por defecto root)"
     if ([string]::IsNullOrWhiteSpace($dbUser)) { $dbUser = "root" }
 
-    $dbPass = Read-Host "Contraseña MySQL"
+    $dbPass = Read-Host "Contrasena MySQL"
 
     # Save to env
-    Write-Host "`nGuardando variables en archivo de configuración .env..." -ForegroundColor DarkCyan
+    Write-Host "`nGuardando variables en archivo de configuracion .env..." -ForegroundColor DarkCyan
     $vars = @{
         "APP_VERSION" = $installedVersion
         "APP_URL" = "http://$lanIp:8000"
@@ -612,13 +612,13 @@ function Run-SetupCli {
         & $php artisan config:clear | Out-Null
         $migrateRes = & $php artisan migrate --force 2>&1
         Set-Location $currentDir
-        Write-Host "Migraciones aplicadas sin borrar datos. Cree usuarios y catálogos iniciales con el procedimiento aprobado." -ForegroundColor Green
+        Write-Host "Migraciones aplicadas sin borrar datos. Cree usuarios y catalogos iniciales con el procedimiento aprobado." -ForegroundColor Green
     } else {
         Write-Host "No se pudo crear base de datos: $dbStatus" -ForegroundColor Red
     }
 
     # Backup Task Scheduler
-    $enableBackup = Read-Host "¿Habilitar worker continuo y respaldo diario programado? (S/N)"
+    $enableBackup = Read-Host "Habilitar worker continuo y respaldo diario programado? (S/N)"
     if ($enableBackup -eq "S" -or $enableBackup -eq "s") {
         $bTime = Read-Host "Hora del respaldo (por defecto 23:00)"
         if ([string]::IsNullOrWhiteSpace($bTime)) { $bTime = "23:00" }
@@ -633,7 +633,7 @@ function Run-SetupCli {
     }
 
     # Open Firewall
-    $openFirewall = Read-Host "¿Desea abrir el puerto 8000 en el Firewall de Windows para clientes LAN? (S/N)"
+    $openFirewall = Read-Host "Desea abrir el puerto 8000 en el Firewall de Windows para clientes LAN? (S/N)"
     if ($openFirewall -eq "S" -or $openFirewall -eq "s") {
         netsh advfirewall firewall delete rule name="Sistema de Caja Hospitalaria LAN Port 8000" 2>$null
         netsh advfirewall firewall add rule name="Sistema de Caja Hospitalaria LAN Port 8000" dir=in action=allow protocol=TCP localport=8000 | Out-Null
@@ -641,7 +641,7 @@ function Run-SetupCli {
     }
 
     Write-Host "`n==========================================================" -ForegroundColor Green
-    Write-Host " Instalación de servidor del Sistema de Caja Hospitalaria finalizada " -ForegroundColor White -BackgroundColor Green
+    Write-Host " Instalacion de servidor del Sistema de Caja Hospitalaria finalizada " -ForegroundColor White -BackgroundColor Green
     Write-Host " Servidor Web LAN disponible en: http://$lanIp:8000" -ForegroundColor Green
     Write-Host "==========================================================" -ForegroundColor Green
 }
