@@ -3,6 +3,7 @@ import {
   Banknote,
   ClipboardCheck,
   HelpCircle,
+  LifeBuoy,
   Printer,
   ReceiptText,
   RefreshCw,
@@ -54,6 +55,11 @@ const guides = [
     icon: ClipboardCheck,
     steps: ['Revise pagos por metodo', 'Compare efectivo esperado y contado', 'Registre diferencias con motivo', 'Cierre caja solo al final del turno'],
   },
+  {
+    title: 'Pedir soporte',
+    icon: LifeBuoy,
+    steps: ['Anote que pantalla estaba usando', 'No repita facturas ni cobros', 'Abra Respaldos si es administrador', 'Comparta el diagnostico o el mensaje visible'],
+  },
 ];
 
 const incidentGuides = [
@@ -68,6 +74,14 @@ const incidentGuides = [
   {
     title: 'Falla la red',
     answer: 'Detenga nuevas facturas desde computadoras cliente. Use solo la computadora servidor si administracion lo autoriza.',
+  },
+  {
+    title: 'Se fue la luz o reinicio la PC',
+    answer: 'Abra el sistema nuevamente y revise Caja e Historial antes de repetir facturas o pagos. Si la caja quedo abierta, cierre con conteo real y nota.',
+  },
+  {
+    title: 'Caja quedo abierta',
+    answer: 'No abra otra caja para ocultarlo. Revise pagos pendientes, efectivo contado y solicite al supervisor cerrar con observacion.',
   },
   {
     title: 'Diferencia de caja',
