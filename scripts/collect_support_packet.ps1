@@ -6,10 +6,17 @@ param(
     [int] $RepairRetries = 30,
     [int] $RepairDelaySeconds = 2,
     [switch] $RunRepairDiagnostic,
-    [switch] $SkipDockerStart
+    [switch] $SkipDockerStart,
+    [switch] $WhatIfOnly
 )
 
 $ErrorActionPreference = "Stop"
+
+trap {
+    Write-Host $_.Exception.Message
+    Write-Host "No agregue archivos .env, respaldos SQL, passwords, tokens ni carpetas completas de datos al paquete de soporte."
+    exit 1
+}
 
 if ($ProjectRoot -eq "") {
     $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
@@ -25,12 +32,39 @@ if ($OutputDir -eq "") {
     $OutputDir = Join-Path $ProjectRoot "qa\support-packets\$stamp"
 }
 
-$OutputDir = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputDir)
 $rootPath = (Resolve-Path -LiteralPath $ProjectRoot).Path
+$OutputDir = if ([System.IO.Path]::IsPathRooted($OutputDir)) {
+    $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputDir)
+} else {
+    Join-Path $rootPath $OutputDir
+}
 $rootPrefix = $rootPath.TrimEnd("\") + "\"
 
-if ($OutputDir -ne $rootPath -and -not $OutputDir.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-    throw "OutputDir must stay inside the project folder."
+if ($OutputDir -eq $rootPath) {
+    throw "La carpeta del paquete no puede ser la raiz del sistema. Use una subcarpeta dentro de qa\support-packets."
+}
+
+if (-not $OutputDir.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "La carpeta del paquete debe estar dentro de la carpeta instalada del sistema."
+}
+
+if ($TailLines -lt 1 -or $TailLines -gt 500) {
+    throw "TailLines debe estar entre 1 y 500 para evitar paquetes demasiado grandes."
+}
+
+if ($RepairRetries -lt 1 -or $RepairRetries -gt 120) {
+    throw "RepairRetries debe estar entre 1 y 120."
+}
+
+if ($RepairDelaySeconds -lt 1 -or $RepairDelaySeconds -gt 30) {
+    throw "RepairDelaySeconds debe estar entre 1 y 30."
+}
+
+if ($WhatIfOnly) {
+    Write-Host "Validacion del paquete de soporte completada."
+    Write-Host "Modo WhatIf: no se creo carpeta ni se copiaron logs."
+    Write-Host "Carpeta prevista validada dentro del sistema instalado."
+    exit 0
 }
 
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null

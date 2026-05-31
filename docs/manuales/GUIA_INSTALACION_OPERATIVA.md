@@ -159,6 +159,12 @@ configuracion impide validar clientes LAN.
 
 Cuando el responsable tecnico necesite mas evidencia, genere un paquete seguro:
 
+Para validar primero sin crear carpeta ni copiar logs:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\collect_support_packet.ps1 -WhatIfOnly
+```
+
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\collect_support_packet.ps1 -RunRepairDiagnostic -SkipDockerStart
 ```
