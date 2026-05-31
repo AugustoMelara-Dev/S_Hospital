@@ -1164,3 +1164,20 @@ Consecuencia:
 - Si el backend no confirma un codigo activo y facturable, la factura no agrega el servicio.
 - La prueba de scanner falla si la consulta vuelve a omitir `active=1`.
 - El modal de pago calcula cambio, pago aplicado y saldos parciales sin aritmetica flotante.
+
+### 2026-05-31 - Reporte operativo respeta filtro por area
+
+Decision:
+
+- `/api/reports/operations` aplica `area_id` a anulaciones, reimpresiones, reversos de pago y resumen por cajero.
+- Cuando una factura tiene items de varias areas, el total cobrado por cajero se asigna proporcionalmente usando snapshots de `invoice_items`.
+
+Motivo:
+
+- Los reportes administrativos deben cuadrar cuando administracion filtra por area institucional.
+- Sin este filtro, el resumen operativo podia mostrar cajeros y montos de areas no seleccionadas.
+
+Consecuencia:
+
+- El reporte operativo, el reporte de ingresos y el reporte por areas usan el mismo criterio de snapshots para filtros de area.
+- La prueba de reportes falla si `area_id` vuelve a omitirse del resumen operativo.

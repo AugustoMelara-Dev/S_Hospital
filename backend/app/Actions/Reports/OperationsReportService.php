@@ -13,7 +13,7 @@ class OperationsReportService
     use Concerns\FormatsReportMoney;
 
     /**
-     * @param  array{date_from: string, date_to: string, cash_session_id?: int, user_id?: int, category_id?: int, method?: string, status?: string}  $filters
+     * @param  array{date_from: string, date_to: string, cash_session_id?: int, user_id?: int, category_id?: int, area_id?: int, method?: string, status?: string}  $filters
      */
     public function report(array $filters, bool $includeBackups = true): array
     {
@@ -40,6 +40,15 @@ class OperationsReportService
                         ->from('invoice_items')
                         ->whereColumn('invoice_items.invoice_id', 'invoices.id')
                         ->where('invoice_items.category_id', $filters['category_id']);
+                });
+            })
+            ->when(! empty($filters['area_id']), function ($query) use ($filters): void {
+                $query->whereExists(function ($subquery) use ($filters): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('invoice_items')
+                        ->whereColumn('invoice_items.invoice_id', 'invoices.id')
+                        ->where('invoice_items.area_id', $filters['area_id']);
                 });
             })
             ->when(! empty($filters['method']), function ($query) use ($filters, $start, $end): void {
@@ -100,6 +109,15 @@ class OperationsReportService
                                     ->where('invoice_items.category_id', $filters['category_id']);
                             });
                         })
+                        ->when(! empty($filters['area_id']), function ($invoiceQuery) use ($filters): void {
+                            $invoiceQuery->whereExists(function ($itemQuery) use ($filters): void {
+                                $itemQuery
+                                    ->selectRaw('1')
+                                    ->from('invoice_items')
+                                    ->whereColumn('invoice_items.invoice_id', 'invoices.id')
+                                    ->where('invoice_items.area_id', $filters['area_id']);
+                            });
+                        })
                         ->when(! empty($filters['method']), function ($invoiceQuery) use ($filters, $start, $end): void {
                             $invoiceQuery->whereExists(function ($paymentQuery) use ($filters, $start, $end): void {
                                 $paymentQuery
@@ -156,6 +174,11 @@ class OperationsReportService
                         ->when(! empty($filters['category_id']), function ($query) use ($filters): void {
                             $query->whereHas('items', function ($itemQuery) use ($filters): void {
                                 $itemQuery->where('category_id', $filters['category_id']);
+                            });
+                        })
+                        ->when(! empty($filters['area_id']), function ($query) use ($filters): void {
+                            $query->whereHas('items', function ($itemQuery) use ($filters): void {
+                                $itemQuery->where('area_id', $filters['area_id']);
                             });
                         });
                 });
@@ -241,6 +264,15 @@ class OperationsReportService
                         ->where('invoice_items.category_id', $filters['category_id']);
                 });
             })
+            ->when(! empty($filters['area_id']), function ($query) use ($filters): void {
+                $query->whereExists(function ($subquery) use ($filters): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('invoice_items')
+                        ->whereColumn('invoice_items.invoice_id', 'invoices.id')
+                        ->where('invoice_items.area_id', $filters['area_id']);
+                });
+            })
             ->select('payments.*')
             ->with(['user', 'invoice.items'])
             ->get();
@@ -265,18 +297,23 @@ class OperationsReportService
             $grouped[$userId]['invoices'][] = $payment->invoice_id;
 
             $paymentAmountCents = (int) round(((float) $payment->amount) * 100);
-            if (! empty($filters['category_id'])) {
-                $categoryTotal = 0.0;
+            if (! empty($filters['category_id']) || ! empty($filters['area_id'])) {
+                $filteredTotal = 0.0;
                 $invoice = $payment->invoice;
                 if ($invoice) {
                     foreach ($invoice->items as $item) {
-                        if ((int) $item->category_id === (int) $filters['category_id']) {
-                            $categoryTotal += (float) $item->line_total;
+                        $matchesCategory = empty($filters['category_id'])
+                            || (int) $item->category_id === (int) $filters['category_id'];
+                        $matchesArea = empty($filters['area_id'])
+                            || (int) $item->area_id === (int) $filters['area_id'];
+
+                        if ($matchesCategory && $matchesArea) {
+                            $filteredTotal += (float) $item->line_total;
                         }
                     }
                     $invoiceTotal = (float) $invoice->total;
                     if ($invoiceTotal > 0) {
-                        $collectedCents = (int) round($paymentAmountCents * ($categoryTotal / $invoiceTotal));
+                        $collectedCents = (int) round($paymentAmountCents * ($filteredTotal / $invoiceTotal));
                     } else {
                         $collectedCents = 0;
                     }
@@ -319,6 +356,7 @@ class OperationsReportService
                 'cash_session_id' => $filters['cash_session_id'] ?? null,
                 'user_id' => $filters['user_id'] ?? null,
                 'category_id' => $filters['category_id'] ?? null,
+                'area_id' => $filters['area_id'] ?? null,
                 'method' => $filters['method'] ?? null,
                 'status' => $filters['status'] ?? null,
             ],
@@ -339,12 +377,13 @@ class OperationsReportService
     }
 
     /**
-     * @param  array{cash_session_id?: int, category_id?: int, method?: string, status?: string}  $filters
+     * @param  array{cash_session_id?: int, category_id?: int, area_id?: int, method?: string, status?: string}  $filters
      */
     private function hasInvoiceFilters(array $filters): bool
     {
         return ! empty($filters['cash_session_id'])
             || ! empty($filters['category_id'])
+            || ! empty($filters['area_id'])
             || ! empty($filters['method'])
             || ! empty($filters['status']);
     }

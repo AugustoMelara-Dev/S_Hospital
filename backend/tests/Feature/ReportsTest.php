@@ -407,6 +407,48 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.payments_by_method.cash', '51.75');
     }
 
+    public function test_operations_report_area_filter_prorates_cashier_totals_from_invoice_item_snapshots(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $fingerXray = Service::query()->where('name', 'Dedo')->firstOrFail();
+
+        $invoiceId = app(CreateInvoiceAction::class)
+            ->execute([
+                'patient_name' => 'Maria Lopez',
+                'items' => [
+                    [
+                        'service_id' => $glucose->id,
+                        'quantity' => '1.00',
+                    ],
+                    [
+                        'service_id' => $fingerXray->id,
+                        'quantity' => '1.00',
+                    ],
+                ],
+            ], $cashier->fresh())
+            ->id;
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '69.00');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/operations?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&area_id='.$glucose->area_id)
+            ->assertOk()
+            ->assertJsonPath('data.filters.area_id', (string) $glucose->area_id)
+            ->assertJsonPath('data.summary.cashier_count', 1)
+            ->assertJsonPath('data.cashiers.0.user_id', $cashier->id)
+            ->assertJsonPath('data.cashiers.0.total_collected', '17.25');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/operations?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&area_id='.$fingerXray->area_id)
+            ->assertOk()
+            ->assertJsonPath('data.filters.area_id', (string) $fingerXray->area_id)
+            ->assertJsonPath('data.summary.cashier_count', 1)
+            ->assertJsonPath('data.cashiers.0.total_collected', '51.75');
+    }
+
     public function test_range_filters_apply_to_category_services_and_cashier_reports(): void
     {
         $this->seedBillingBase();
