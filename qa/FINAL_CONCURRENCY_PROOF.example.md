@@ -3,6 +3,7 @@
 Copy this file to `qa/FINAL_CONCURRENCY_PROOF.md` only after running the
 mutating concurrency validation against a disposable server/database snapshot.
 Do not run this against live production data.
+Use a temporary validation account and do not include credentials in this file.
 
 ## Environment
 

@@ -62,6 +62,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Scripts de soporte y evidencia sanitizan rutas en consola: arranque manual, paquete de soporte, smoke de worker y validacion LAN. | Verificado |
 | Esta fase | Arranque de respaldos por usuario actual valida PHP, oculta contenido Startup en `-Status` y usa hora/PHP validados al ejecutar `-StartNow`. | Verificado |
 | Esta fase | Validacion de restore descartable deja de escribir rutas absolutas del backup en consola/evidencia y conserva identificacion por nombre, SHA256 y tamano. | Verificado |
+| Esta fase | Validacion de concurrencia descartable evalua banderas y destino antes de pedir credenciales, rechaza credenciales dentro de la URL y redacta errores HTTP antes de mostrarlos a soporte. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -193,6 +194,14 @@ Resultado observado:
 | `scripts/validate_restore_mysql.sh` sin `HOSPITAL_VALIDATE_RESTORE_MYSQL=1` | Falla antes de crear backup o tocar base de datos. |
 | `scripts/validate_restore_mysql.sh` con bandera pero sin `RESTORE_TEST_DATABASE` | Falla antes de crear backup o tocar base de datos. |
 | `scripts/validate_restore_mysql.sh` con base descartable pero sin confirmacion exacta | Falla antes de crear backup o tocar base de datos. |
+| `node --check scripts\validate_mysql_concurrency.mjs` | Paso. |
+| `node scripts\validate_mysql_concurrency.mjs` sin `HOSPITAL_VALIDATE_REAL_MYSQL=1` | Falla antes de red, login o mutaciones. |
+| `validate_mysql_concurrency.mjs` con bandera pero sin `HOSPITAL_CONCURRENCY_BASE_URL` | Falla antes de red, login o mutaciones. |
+| `validate_mysql_concurrency.mjs` con URL no HTTP(S) | Falla antes de red, login o mutaciones. |
+| `validate_mysql_concurrency.mjs` con credenciales dentro de la URL | Falla antes de red, login o mutaciones. |
+| `validate_mysql_concurrency.mjs` con destino confirmado pero sin cuenta temporal | Falla antes de red y pide cuenta descartable. |
+| `Git Bash -n scripts/validate_mysql_concurrency.sh` | Paso: sintaxis shell valida sin ejecutar concurrencia. |
+| `scripts/validate_mysql_concurrency.sh` sin `HOSPITAL_VALIDATE_REAL_MYSQL=1` | Falla antes de red, login o mutaciones. |
 
 ## Hallazgos Operativos Pendientes
 

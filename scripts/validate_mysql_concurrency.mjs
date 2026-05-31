@@ -5,8 +5,6 @@ import { dirname } from 'node:path';
 
 const baseUrl = (process.env.HOSPITAL_CONCURRENCY_BASE_URL ?? '').replace(/\/$/, '');
 const targetEnv = process.env.HOSPITAL_CONCURRENCY_TARGET_ENV ?? process.env.TARGET_ENV ?? process.env.APP_ENV ?? '';
-const login = requiredEnv('HOSPITAL_CONCURRENCY_LOGIN');
-const password = requiredEnv('HOSPITAL_CONCURRENCY_PASSWORD');
 const evidencePath = process.env.HOSPITAL_CONCURRENCY_EVIDENCE_PATH ?? '';
 const runId = `concurrency-validation-${new Date().toISOString().replace(/[^0-9A-Za-z]/g, '').slice(0, 14)}`;
 
@@ -29,6 +27,24 @@ if (!baseUrl) {
   process.exit(1);
 }
 
+let baseUri;
+try {
+  baseUri = new URL(baseUrl);
+} catch {
+  console.error('Abort: HOSPITAL_CONCURRENCY_BASE_URL must be an absolute http(s) URL for a disposable validation server.');
+  process.exit(1);
+}
+
+if (!['http:', 'https:'].includes(baseUri.protocol)) {
+  console.error('Abort: HOSPITAL_CONCURRENCY_BASE_URL must start with http:// or https://.');
+  process.exit(1);
+}
+
+if (baseUri.username || baseUri.password) {
+  console.error('Abort: do not put credentials inside HOSPITAL_CONCURRENCY_BASE_URL. Use the dedicated validation account variables.');
+  process.exit(1);
+}
+
 if (process.env.HOSPITAL_CONFIRM_CONCURRENCY_TARGET !== baseUrl) {
   console.error(`Abort: set HOSPITAL_CONFIRM_CONCURRENCY_TARGET=${baseUrl} to confirm the disposable concurrency target.`);
   process.exit(1);
@@ -43,6 +59,9 @@ if (!/(test|local|validation|disposable)/i.test(`${baseUrl} ${targetEnv}`)) {
   console.error('Abort: target URL or HOSPITAL_CONCURRENCY_TARGET_ENV must contain test, local, validation, or disposable.');
   process.exit(1);
 }
+
+const login = requiredEnv('HOSPITAL_CONCURRENCY_LOGIN');
+const password = requiredEnv('HOSPITAL_CONCURRENCY_PASSWORD');
 
 // This script creates cash-session, invoice, and payment records through the
 // public HTTP API. It must run only after taking a disposable DB snapshot; it
@@ -99,12 +118,39 @@ class Session {
 
 function assertStatus(result, expected, label) {
   if (!expected.includes(result.status)) {
-    throw new Error(`${label} returned HTTP ${result.status}: ${JSON.stringify(result.body)}`);
+    throw new Error(`${label} returned HTTP ${result.status}: ${safeJson(result.body)}`);
   }
 }
 
+function protectText(value) {
+  let protectedValue = String(value ?? '');
+  const replacements = [
+    [process.cwd(), '%PROJECT_ROOT%'],
+    [process.cwd().replace(/\\/g, '/'), '%PROJECT_ROOT%'],
+    [process.env.USERPROFILE, '%USERPROFILE%'],
+    [process.env.HOME, '%USERPROFILE%'],
+  ].filter(([from]) => from);
+
+  for (const [from, to] of replacements) {
+    protectedValue = protectedValue.split(from).join(to);
+  }
+
+  return protectedValue
+    .replace(/(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+/gi, '$1=[redacted]')
+    .replace(/[A-Z]:\\[^\s`"']+/gi, '[ruta-local]');
+}
+
+function safeJson(value) {
+  const text = JSON.stringify(value ?? null);
+  return protectText(text.length > 800 ? `${text.slice(0, 800)}...` : text);
+}
+
+function safeEvidenceReference(path) {
+  return protectText(path || 'not requested');
+}
+
 async function main() {
-  console.error(`Running mutating concurrency validation against ${baseUrl} with RUN_ID=${runId}. Use only on disposable data.`);
+  console.error(protectText(`Running mutating concurrency validation against ${baseUrl} with RUN_ID=${runId}. Use only on disposable data.`));
   const session = new Session();
   await session.login();
 
@@ -192,7 +238,7 @@ async function writeEvidence(path, result) {
 - Server LAN URL: ${result.baseUrl}
 - Target environment: ${result.target_env}
 - Run ID: ${result.run_id}
-- Evidence/capture reference: ${path}
+- Evidence/capture reference: ${safeEvidenceReference(path)}
 - Final conclusion: Concurrency validation completed against a disposable target. Audit records were intentionally kept in the disposable database.
 
 ## Required checks
@@ -209,6 +255,6 @@ ${JSON.stringify(result, null, 2)}
 }
 
 main().catch((error) => {
-  console.error(error.message);
+  console.error(protectText(error.message));
   process.exit(1);
 });

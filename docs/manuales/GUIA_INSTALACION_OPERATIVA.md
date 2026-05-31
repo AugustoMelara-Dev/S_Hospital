@@ -133,6 +133,11 @@ evidencias reales:
 - `qa\FINAL_CONCURRENCY_PROOF.md`: las pruebas de doble accion contra entorno
   descartable no duplican caja, factura ni pago.
 
+La prueba de concurrencia es intencionalmente mutante: crea caja, facturas y
+pagos de validacion. Solo debe ejecutarse contra una base descartable o snapshot
+preparado por soporte. Use una cuenta temporal, no escriba credenciales dentro
+de la URL y conserve el archivo `qa\FINAL_CONCURRENCY_PROOF.md` como evidencia.
+
 Para revisar si las plantillas de evidencia estan disponibles sin reemplazar
 archivos existentes:
 
