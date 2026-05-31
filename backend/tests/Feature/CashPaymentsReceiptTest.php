@@ -640,7 +640,7 @@ class CashPaymentsReceiptTest extends TestCase
             ])
             ->assertCreated();
 
-        $this->actingAs($cashier)
+        $receipt = $this->actingAs($cashier)
             ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter")
             ->assertOk()
             ->assertJsonPath('data.width', 'half_letter')
@@ -653,6 +653,11 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.items.0.unit_price', '15.00')
             ->assertJsonPath('data.invoice.balance_due', '0.00')
             ->assertJsonCount(1, 'data.payments');
+
+        $receiptItem = $receipt->json('data.items.0');
+        foreach (['service_id', 'scan_code', 'barcode', 'qr_code'] as $technicalField) {
+            $this->assertArrayNotHasKey($technicalField, $receiptItem);
+        }
 
         $this->actingAs($cashier)
             ->getJson("/api/invoices/{$invoiceId}/receipt?width=a5")
