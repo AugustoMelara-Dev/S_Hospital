@@ -1308,3 +1308,22 @@ Consecuencia:
 
 - El mismo preflight sirve para ambos caminos de instalacion.
 - Las pruebas de campo siguen siendo obligatorias para LAN, impresora, restore y concurrencia final.
+
+### 2026-05-31 - Guard obligatorio para artefacto offline
+
+Decision:
+
+- Se agrega `scripts/assert_offline_release_clean.ps1` para validar el paquete `offline-release`.
+- El guard bloquea paquetes con `.env` real, logs, respaldos SQL/dumps, bases locales, `node_modules`, evidencia QA local o checksums incompletos.
+- Con `-RequireCurrentCommit`, el manifiesto debe referenciar el commit Git actual y no puede conservar texto de RC/stale como "deben regenerarse".
+- `final_production_handoff.ps1` ejecuta este guard y no puede decidir `PRODUCTION_READY` si el artefacto offline falla.
+
+Motivo:
+
+- Un sistema offline puede tener codigo correcto y aun asi fallar produccion si el paquete instalado contiene imagenes viejas, secretos o artefactos de prueba.
+- La validacion debe ser repetible por soporte antes de copiar el paquete a la PC servidor.
+
+Consecuencia:
+
+- El estado actual sigue `PRODUCTION_CANDIDATE` hasta regenerar el paquete offline y actualizar su manifiesto al commit de entrega.
+- Los paquetes con pruebas locales o datos operativos quedan bloqueados antes del handoff.

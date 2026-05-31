@@ -99,6 +99,8 @@ El script destructivo aborta salvo `APP_ENV=local/testing`, variable explicita y
 
 En servidor real del hospital:
 
+- Regenerar `offline-release` desde el commit que se entregara.
+- Ejecutar `scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit` y guardar la salida en evidencia de soporte.
 - No ejecutar `php artisan migrate:fresh --seed`.
 - No ejecutar seeders demo ni entregar usuarios demo activos.
 - Mantener `.env` production fuera de Git.
@@ -114,6 +116,10 @@ En servidor real del hospital:
 - Ejecutar pruebas solo contra entorno de testing aislado.
 - Validar manualmente `/up`, `/login`, `/verify-email`, caja, factura, cobro, impresion y backup sin borrar datos.
 - Si se sirve same-origin desde Laravel, ejecutar `npm.cmd run build` antes de publicar y confirmar que `/login` y `/verify-email` devuelven el build React.
+
+El guard de release debe fallar si el paquete contiene `.env`, logs,
+respaldos SQL, `node_modules`, evidencia QA local o un manifiesto que indique
+que las imagenes deben regenerarse.
 
 ## Analisis estatico
 

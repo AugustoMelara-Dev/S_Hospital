@@ -58,6 +58,16 @@ Antes de instalar en el hospital:
 13. Levantar worker local de backups: en Docker offline queda como servicio `queue-worker`; en bare-metal queda como tarea/servicio PHP con `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
 14. Validar `/up`, `/login` y `/verify-email`.
 
+Antes de entregar un paquete offline regenerado, ejecutar el guard de artefacto:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit
+```
+
+El guard falla si `offline-release` incluye `.env` real, logs, respaldos SQL,
+`node_modules`, evidencia QA local, checksums incompletos o un `MANIFEST.txt`
+que no referencia el commit actual.
+
 En publicacion same-origin con Laravel, `/`, `/login` y `/verify-email` sirven el build React desde `frontend/dist/index.html`, y `/assets/*` sirve los assets compilados. Si `frontend/dist` no existe, el servidor responde error operativo y no debe entregarse como listo.
 
 No entregar un servidor LAN real con `APP_ENV=local`. Produccion debe operar con cuentas reales creadas por administracion y cambio obligatorio de contrasena cuando aplique.

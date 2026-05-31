@@ -25,6 +25,7 @@ $qaDir = Join-Path $ProjectRoot "qa"
 $preflightScript = Join-Path $scriptsDir "production_readiness_preflight.ps1"
 $proofInitScript = Join-Path $scriptsDir "init_production_proofs.ps1"
 $backupTasksScript = Join-Path $scriptsDir "install_backup_tasks_windows.ps1"
+$releaseGuardScript = Join-Path $scriptsDir "assert_offline_release_clean.ps1"
 $lanProofPath = Join-Path $qaDir "LAN_CLIENT_VALIDATION_PROOF.md"
 $printerProofPath = Join-Path $qaDir "INSTITUTIONAL_RECEIPT_PRINT_PROOF.md"
 $restoreProofPath = Join-Path $qaDir "FINAL_RESTORE_PROOF.md"
@@ -176,6 +177,8 @@ function Write-HandoffReport(
     [bool] $restoreProofCompleted,
     [bool] $concurrencyProofCompleted,
     [string[]] $backupStatusOutput,
+    [string[]] $releaseGuardOutput,
+    [int] $releaseGuardExit,
     [string[]] $preflightOutput,
     [int] $preflightExit,
     [bool] $preflightSkipped
@@ -183,7 +186,7 @@ function Write-HandoffReport(
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
     $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted
-    $decision = if ($allProofsCompleted -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
+    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
 
     Add-ReportLine $lines "# Final production handoff result"
     Add-ReportLine $lines ""
@@ -195,6 +198,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Institutional receipt print proof present without obvious placeholders: $printerProofCompleted"
     Add-ReportLine $lines "- Final restore proof present without obvious placeholders: $restoreProofCompleted"
     Add-ReportLine $lines "- Final concurrency proof present without obvious placeholders: $concurrencyProofCompleted"
+    Add-ReportLine $lines "- Offline release artifact guard exit code: $releaseGuardExit"
     Add-ReportLine $lines "- Preflight skipped: $preflightSkipped"
     Add-ReportLine $lines "- Preflight exit code: $preflightExit"
     Add-ReportLine $lines ""
@@ -227,7 +231,10 @@ function Write-HandoffReport(
     } elseif ($preflightExit -ne 0) {
         Add-ReportLine $lines "- Production preflight returned exit code $preflightExit."
     }
-    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and -not $preflightSkipped -and $preflightExit -eq 0) {
+    if ($releaseGuardExit -ne 0) {
+        Add-ReportLine $lines "- Offline release artifact is missing, stale, or contains forbidden files."
+    }
+    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
         Add-ReportLine $lines "- None reported by the handoff script."
     }
     Add-ReportLine $lines ""
@@ -254,6 +261,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
+    Add-ReportLine $lines "## Offline release artifact guard output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $releaseGuardOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
     Add-ReportLine $lines "## Preflight output"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
@@ -274,6 +290,7 @@ function Write-HandoffReport(
 Assert-ScriptExists $preflightScript
 Assert-ScriptExists $proofInitScript
 Assert-ScriptExists $backupTasksScript
+Assert-ScriptExists $releaseGuardScript
 
 Write-Host "Sistema de Caja Hospitalaria final production handoff"
 Write-Host "ProjectRoot: $(Protect-HandoffText $ProjectRoot)"
@@ -320,6 +337,11 @@ Write-Host "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_
 Write-Host "Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker"
 Write-Host "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath $(Protect-HandoffText $PhpPath)"
 
+Write-Section "Offline release artifact"
+$releaseGuardOutput = @(& powershell.exe -ExecutionPolicy Bypass -File $releaseGuardScript -ProjectRoot $ProjectRoot -RequireCurrentCommit 2>&1 | ForEach-Object { $_.ToString() })
+$releaseGuardExit = $LASTEXITCODE
+$releaseGuardOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
 if ($SkipPreflight) {
     Write-Section "Preflight skipped"
     Write-Host "SkipPreflight was used. This run cannot approve PRODUCTION_READY."
@@ -330,6 +352,8 @@ if ($SkipPreflight) {
         -restoreProofCompleted $restoreProofCompleted `
         -concurrencyProofCompleted $concurrencyProofCompleted `
         -backupStatusOutput $backupStatusOutput `
+        -releaseGuardOutput $releaseGuardOutput `
+        -releaseGuardExit $releaseGuardExit `
         -preflightOutput @("Preflight skipped by -SkipPreflight.") `
         -preflightExit 2 `
         -preflightSkipped $true
@@ -348,11 +372,13 @@ Write-HandoffReport `
     -restoreProofCompleted $restoreProofCompleted `
     -concurrencyProofCompleted $concurrencyProofCompleted `
     -backupStatusOutput $backupStatusOutput `
+    -releaseGuardOutput $releaseGuardOutput `
+    -releaseGuardExit $releaseGuardExit `
     -preflightOutput $preflightOutput `
     -preflightExit $preflightExit `
     -preflightSkipped $false
 
-if ($preflightExit -eq 0 -and $allHandoffProofsCompleted) {
+if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $allHandoffProofsCompleted) {
     Write-Host ""
     Write-Host "PRODUCTION_READY evidence gate passed." -ForegroundColor Green
     exit 0
