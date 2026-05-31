@@ -88,6 +88,7 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
         Route::get('/reports/income', [ReportController::class, 'income']);
         Route::get('/reports/categories', [ReportController::class, 'categories']);
         Route::get('/reports/services', [ReportController::class, 'services']);
+        Route::get('/reports/areas', [ReportController::class, 'areas']);
         Route::get('/reports/operations', [ReportController::class, 'operations']);
         Route::get('/reports/export', [ReportController::class, 'export'])
             ->middleware('throttle:30,1');

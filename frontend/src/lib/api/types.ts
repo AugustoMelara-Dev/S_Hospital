@@ -312,6 +312,24 @@ export type CategoryReport = {
   }>;
 };
 
+export type AreaReport = {
+  date_from: string;
+  date_to: string;
+  filters: ReportFilters;
+  areas: Array<{
+    area_id: number | null;
+    area: string;
+    item_count: number;
+    invoice_count: number;
+    quantity: string;
+    subtotal: string;
+    tax_amount: string;
+    total: string;
+    collected: string;
+    balance_due: string;
+  }>;
+};
+
 export type ServiceSalesReport = {
   date_from: string;
   date_to: string;
@@ -563,6 +581,7 @@ export type ReportFilters = {
   cash_session_id?: string | number | null;
   user_id?: string | number | null;
   category_id?: string | number | null;
+  area_id?: string | number | null;
   method?: Payment['method'] | '' | null;
   status?: Invoice['status'] | '' | null;
 };

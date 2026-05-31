@@ -5,11 +5,13 @@ import { PageHeader } from '../../components/ui/page-header';
 import { EmptyState } from '../../components/ui/states';
 import { DailyReportTab } from './components/DailyReportTab';
 import { IncomeReportTab } from './components/IncomeReportTab';
+import { AreaReportTab } from './components/AreaReportTab';
 import { ServiceSalesTab } from './components/ServiceSalesTab';
 import { AuditoriaTab } from './components/AuditoriaTab';
 import { CashSessionReportTab } from './components/CashSessionReportTab';
 import {
   type Category,
+  type AreaReport,
   type CategoryReport,
   type CashSessionReport,
   type DailyReport,
@@ -28,7 +30,7 @@ type ReportsViewProps = {
   onStatus: (message: string) => void;
 };
 
-type ReportTab = 'diario' | 'rango' | 'servicios' | 'auditoria' | 'caja';
+type ReportTab = 'diario' | 'rango' | 'areas' | 'servicios' | 'auditoria' | 'caja';
 
 const today = localDateString(new Date());
 
@@ -55,6 +57,7 @@ export function ReportsView({
 
   const [daily, setDaily] = useState<DailyReport | null>(null);
   const [income, setIncome] = useState<IncomeReport | null>(null);
+  const [areaReport, setAreaReport] = useState<AreaReport | null>(null);
   const [categories, setCategories] = useState<CategoryReport | null>(null);
   const [serviceSales, setServiceSales] = useState<ServiceSalesReport | null>(null);
   const [operations, setOperations] = useState<OperationsReport | null>(null);
@@ -125,14 +128,16 @@ export function ReportsView({
 
     try {
       const filters = reportFilters();
-      const [incomeReport, categoryReport, serviceReport, operationsReport] = await Promise.all([
+      const [incomeReport, categoryReport, areaReportData, serviceReport, operationsReport] = await Promise.all([
         apiClient.getIncomeReport(filters),
         apiClient.getCategoryReport(filters),
+        apiClient.getAreaReport(filters),
         apiClient.getServiceSalesReport(filters),
         apiClient.getOperationsReport(filters),
       ]);
       setIncome(incomeReport);
       setCategories(categoryReport);
+      setAreaReport(areaReportData);
       setServiceSales(serviceReport);
       setOperations(operationsReport);
       onStatus('Reportes por rango cargados.');
@@ -252,6 +257,7 @@ export function ReportsView({
             <>
               <TabsTrigger value="diario">Diario</TabsTrigger>
               <TabsTrigger value="rango">Por Rango</TabsTrigger>
+              <TabsTrigger value="areas">Areas</TabsTrigger>
               <TabsTrigger value="servicios">Servicios</TabsTrigger>
               <TabsTrigger value="auditoria">Auditoría</TabsTrigger>
             </>
@@ -315,6 +321,22 @@ export function ReportsView({
                 onSubmit={loadRangeReports}
               />
             </div>
+          ) : (
+            <EmptyState
+              title="Reportes gerenciales no disponibles"
+              description="Este usuario no tiene permisos gerenciales."
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="areas" className="mt-0">
+          {canViewManagerial ? (
+            <AreaReportTab
+              areaReport={areaReport}
+              canExport={canExport}
+              onExport={() => downloadBackendExport(reportFilters())}
+              onExportPdf={() => downloadBackendPdf(reportFilters())}
+            />
           ) : (
             <EmptyState
               title="Reportes gerenciales no disponibles"

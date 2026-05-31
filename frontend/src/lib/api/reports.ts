@@ -3,6 +3,7 @@ import type {
   DailyReport,
   IncomeReport,
   CategoryReport,
+  AreaReport,
   ServiceSalesReport,
   OperationsReport,
   CashSessionReport,
@@ -45,6 +46,14 @@ export const reports = {
     const params = buildReportParams(filters);
     const response = await apiClient.request<{ data: CategoryReport }>(
       `/api/reports/categories?${params.toString()}`,
+    );
+    return response.data;
+  },
+
+  async getAreaReport(filters: ReportFilters): Promise<AreaReport> {
+    const params = buildReportParams(filters);
+    const response = await apiClient.request<{ data: AreaReport }>(
+      `/api/reports/areas?${params.toString()}`,
     );
     return response.data;
   },

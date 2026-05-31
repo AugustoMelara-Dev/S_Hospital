@@ -29,6 +29,7 @@ import type {
   DailyReport,
   IncomeReport,
   CategoryReport,
+  AreaReport,
   ServiceSalesReport,
   OperationsReport,
   CashSessionReport,
@@ -76,6 +77,7 @@ export type {
   DailyReport,
   IncomeReport,
   CategoryReport,
+  AreaReport,
   ServiceSalesReport,
   OperationsReport,
   CashSessionReport,
@@ -202,6 +204,10 @@ export const apiClient = {
 
   async getCategoryReport(filters: ReportFilters): Promise<CategoryReport> {
     return reports.getCategoryReport(filters);
+  },
+
+  async getAreaReport(filters: ReportFilters): Promise<AreaReport> {
+    return reports.getAreaReport(filters);
   },
 
   async getServiceSalesReport(filters: ReportFilters): Promise<ServiceSalesReport> {

@@ -103,6 +103,156 @@ describe('ReportsView', () => {
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
   });
 
+  it('loads and renders area reports from backend aggregates', async () => {
+    window.history.pushState({}, '', '/reports');
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Admin Demo',
+              email: 'admin.demo@hospital-billing.local',
+              username: 'admin.demo',
+              active: true,
+              roles: ['admin'],
+              permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/daily')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date: '2026-05-31',
+              total_billed: '0.00',
+              total_collected: '0.00',
+              total_balance_due: '0.00',
+              invoice_count: 0,
+              payment_count: 0,
+              payments_by_method: { cash: '0.00', transfer: '0.00', card: '0.00', other: '0.00' },
+              invoices_by_status: {
+                issued: { count: 0, total: '0.00' },
+                partial: { count: 0, total: '0.00' },
+                paid: { count: 0, total: '0.00' },
+                void: { count: 0, total: '0.00' },
+              },
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+
+      if (url.includes('/api/reports/income')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date_from: '2026-05-31',
+              date_to: '2026-05-31',
+              filters: {},
+              total_billed: '46.00',
+              total_collected: '46.00',
+              total_balance_due: '0.00',
+              payments_by_method: { cash: '17.25', transfer: '0.00', card: '28.75', other: '0.00' },
+              invoices_by_status: {
+                issued: { count: 0, total: '0.00' },
+                partial: { count: 0, total: '0.00' },
+                paid: { count: 2, total: '46.00' },
+                void: { count: 0, total: '0.00' },
+              },
+              payment_count: 2,
+              invoice_count: 2,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/categories')) {
+        return { ok: true, json: async () => ({ data: { date_from: '2026-05-31', date_to: '2026-05-31', filters: {}, categories: [] } }) } as Response;
+      }
+
+      if (url.includes('/api/reports/services')) {
+        return { ok: true, json: async () => ({ data: { date_from: '2026-05-31', date_to: '2026-05-31', filters: {}, services: [] } }) } as Response;
+      }
+
+      if (url.includes('/api/reports/operations')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date_from: '2026-05-31',
+              date_to: '2026-05-31',
+              filters: {},
+              summary: { void_count: 0, reprint_count: 0, audit_event_count: 0, backup_count: 0, failed_backup_count: 0, cashier_count: 0 },
+              voids: [],
+              reprints: [],
+              audit_events: [],
+              backups: [],
+              cashiers: [],
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/areas')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date_from: '2026-05-31',
+              date_to: '2026-05-31',
+              filters: {},
+              areas: [
+                {
+                  area_id: 1,
+                  area: 'Laboratorio',
+                  item_count: 1,
+                  invoice_count: 1,
+                  quantity: '1.00',
+                  subtotal: '15.00',
+                  tax_amount: '2.25',
+                  total: '17.25',
+                  collected: '17.25',
+                  balance_due: '0.00',
+                },
+              ],
+            },
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    render(<App />);
+
+    expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
+    activateTab(/por rango/i);
+    fireEvent.click(await screen.findByRole('button', { name: /ver rango/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/reports/areas?'),
+        expect.objectContaining({ credentials: 'include' }),
+      );
+    });
+
+    activateTab(/[aá]reas/i);
+    expect(await screen.findByText('Laboratorio')).toBeInTheDocument();
+    expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
+  });
+
   it('exports reports through the protected backend Excel endpoint', async () => {
     window.history.pushState({}, '', '/reports');
     Object.defineProperty(URL, 'createObjectURL', {

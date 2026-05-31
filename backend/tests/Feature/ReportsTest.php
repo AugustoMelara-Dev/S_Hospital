@@ -11,6 +11,7 @@ use App\Models\FiscalSetting;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
+use App\Models\ServiceArea;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
@@ -245,6 +246,52 @@ class ReportsTest extends TestCase
             ->assertJsonMissing(['service' => 'Eritropoyetina']);
 
         $this->assertNotSame($glucoseInvoice, $hemogramInvoice);
+    }
+
+    public function test_area_report_uses_invoice_item_area_snapshots_and_collected_totals(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $glucoseInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $erythropoietinInvoice = $this->createInvoice($cashier, 'Eritropoyetina');
+
+        $this->payInvoice($cashier, $glucoseInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($cashier, $erythropoietinInvoice, $sessionId, Payment::METHOD_CARD, '28.75');
+
+        ServiceArea::query()->where('slug', 'laboratorio')->update(['name' => 'Laboratorio Cambiado']);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/areas?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertJsonCount(2, 'data.areas')
+            ->assertJsonFragment([
+                'area' => 'Laboratorio',
+                'item_count' => 1,
+                'invoice_count' => 1,
+                'total' => '17.25',
+                'collected' => '17.25',
+                'balance_due' => '0.00',
+            ])
+            ->assertJsonFragment([
+                'area' => 'Farmacia',
+                'item_count' => 1,
+                'total' => '28.75',
+                'collected' => '28.75',
+            ]);
+
+        $laboratoryAreaId = Service::query()->where('name', 'Glucosa')->firstOrFail()->area_id;
+        $filters = http_build_query([
+            'date_from' => now()->toDateString(),
+            'date_to' => now()->toDateString(),
+            'area_id' => $laboratoryAreaId,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/areas?{$filters}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.areas')
+            ->assertJsonPath('data.areas.0.area', 'Laboratorio');
     }
 
     public function test_range_filters_apply_to_category_services_and_cashier_reports(): void
@@ -829,7 +876,7 @@ class ReportsTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        return $admin;
+        return $admin->refresh();
     }
 
     private function supervisor(): User
@@ -837,7 +884,7 @@ class ReportsTest extends TestCase
         $supervisor = User::factory()->create();
         $supervisor->assignRole('supervisor');
 
-        return $supervisor;
+        return $supervisor->refresh();
     }
 
     private function cashier(): User
@@ -845,6 +892,6 @@ class ReportsTest extends TestCase
         $cashier = User::factory()->create();
         $cashier->assignRole('cajero');
 
-        return $cashier;
+        return $cashier->refresh();
     }
 }

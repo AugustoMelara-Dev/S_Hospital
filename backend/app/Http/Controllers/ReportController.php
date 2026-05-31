@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Reports\CashSessionReportService;
+use App\Actions\Reports\AreaReportService;
 use App\Actions\Reports\CategoryReportService;
 use App\Actions\Reports\DailyReportService;
 use App\Actions\Reports\DashboardReportService;
@@ -53,6 +54,13 @@ class ReportController extends Controller
     }
 
     public function services(DateRangeReportRequest $request, ServiceSalesReportService $reports): JsonResponse
+    {
+        return response()->json([
+            'data' => $reports->report($this->scopedFilters($request)),
+        ]);
+    }
+
+    public function areas(DateRangeReportRequest $request, AreaReportService $reports): JsonResponse
     {
         return response()->json([
             'data' => $reports->report($this->scopedFilters($request)),
