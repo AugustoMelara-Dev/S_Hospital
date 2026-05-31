@@ -8,6 +8,8 @@ use Illuminate\Validation\Rule;
 
 class ShowReceiptRequest extends FormRequest
 {
+    private const WIDTHS = ['letter', 'half_letter', 'a5', '80mm', '58mm'];
+
     public function authorize(): bool
     {
         $user = $this->user();
@@ -28,7 +30,7 @@ class ShowReceiptRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'width' => ['sometimes', Rule::in(['letter', 'half_letter', 'a5'])],
+            'width' => ['sometimes', Rule::in(self::WIDTHS)],
         ];
     }
 
@@ -41,7 +43,7 @@ class ShowReceiptRequest extends FormRequest
         $invoice = $this->route('invoice');
         $paperSize = $invoice instanceof Invoice ? (string) ($invoice->receipt_paper_size ?? '') : '';
 
-        return in_array($paperSize, ['letter', 'half_letter', 'a5'], true)
+        return in_array($paperSize, self::WIDTHS, true)
             ? $paperSize
             : 'half_letter';
     }

@@ -15,7 +15,7 @@ import { type ReceiptData } from '../../lib/api';
 type ReceiptPreviewProps = {
   autoPrint?: boolean;
   onNewInvoice?: () => void;
-  onPrint?: () => void;
+  onPrint?: () => void | Promise<void>;
   receipt: ReceiptData;
   onWidthChange: (width: ReceiptData['width']) => void;
 };
@@ -28,12 +28,13 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
     contentRef: receiptRef,
   });
 
-  function handlePrintClick() {
+  async function handlePrintClick() {
+    await onPrint?.();
+
     printReceiptDocument(receipt.width, () => {
       if (!navigator.userAgent.toLowerCase().includes('jsdom')) {
         handlePrint();
       }
-      onPrint?.();
     });
   }
 
@@ -43,7 +44,9 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
     }
 
     autoPrintedReceiptRef.current = receipt.invoice.invoice_number;
-    window.setTimeout(handlePrintClick, 150);
+    window.setTimeout(() => {
+      void handlePrintClick();
+    }, 150);
   }, [autoPrint, receipt.invoice.invoice_number]);
 
   const location = receipt.institutional?.location ?? receipt.hospital.address;
@@ -58,6 +61,8 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="half_letter">Media carta</SelectItem>
+            <SelectItem value="80mm">Termico 80mm</SelectItem>
+            <SelectItem value="58mm">Termico 58mm</SelectItem>
             <SelectItem value="letter">Carta</SelectItem>
             <SelectItem value="a5">A5</SelectItem>
           </SelectContent>

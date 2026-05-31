@@ -690,7 +690,13 @@ class CashPaymentsReceiptTest extends TestCase
 
         $this->actingAs($cashier)
             ->getJson("/api/invoices/{$invoiceId}/receipt?width=80mm")
-            ->assertUnprocessable();
+            ->assertOk()
+            ->assertJsonPath('data.width', '80mm');
+
+        $this->actingAs($cashier)
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=58mm")
+            ->assertOk()
+            ->assertJsonPath('data.width', '58mm');
     }
 
     public function test_zero_total_dialysis_prescription_invoice_is_paid_and_receiptable_with_zero_amount_audit_payment(): void

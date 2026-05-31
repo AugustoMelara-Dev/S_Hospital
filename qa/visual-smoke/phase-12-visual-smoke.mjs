@@ -285,6 +285,7 @@ async function main() {
       url.includes('/@vite') ||
       url.includes('favicon') ||
       url.includes('/sanctum/csrf-cookie') ||
+      (url.includes('/api/cash-sessions/current') && failure?.errorText === 'net::ERR_ABORTED') ||
       (url.includes('/api/reports/cash-sessions/') && failure?.errorText === 'net::ERR_ABORTED')
     ) {
       return;
@@ -328,6 +329,7 @@ async function main() {
     const searchInput = page.getByLabel(/buscar por nombre/i);
     await searchInput.fill(serviceQuery);
     await waitSettled(page);
+    await waitServicesReady(page);
 
     const serviceButton = page.getByRole('button', { name: new RegExp(serviceName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }).first();
     if (await serviceButton.isVisible().catch(() => false)) {

@@ -139,6 +139,18 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     }
   }
 
+  async function auditReceiptPrint() {
+    if (!selectedInvoice || !receipt) {
+      return;
+    }
+
+    const auditedReceipt = await apiClient.reprintInvoice(selectedInvoice.id, {
+      width: receipt.width,
+      reason: 'Impresion desde vista de recibo.',
+    });
+    setReceipt(auditedReceipt);
+  }
+
   async function changePage(page: number) {
     const nextFilters = { ...filters, page };
     setFilters(nextFilters);
@@ -436,6 +448,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                   className="w-[140px]"
                 >
                   <option value="half_letter">Media carta</option>
+                  <option value="80mm">Termico 80mm</option>
+                  <option value="58mm">Termico 58mm</option>
                   <option value="letter">Carta</option>
                   <option value="a5">A5</option>
                 </NativeSelect>
@@ -449,7 +463,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                 setReceipt({ ...receipt, width });
                 setReceiptWidth(width);
               }}
-              onPrint={() => {
+              onPrint={async () => {
+                await auditReceiptPrint();
                 onStatus(`Recibo ${selectedInvoice.invoice_number} enviado a impresión.`);
               }}
             />

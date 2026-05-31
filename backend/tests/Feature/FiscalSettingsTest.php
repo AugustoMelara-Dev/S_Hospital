@@ -67,6 +67,28 @@ class FiscalSettingsTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_save_thermal_receipt_paper_sizes(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        foreach (['80mm', '58mm'] as $paperSize) {
+            $this->actingAs($admin)
+                ->putJson('/api/settings/fiscal', [
+                    ...$this->validPayload(),
+                    'receipt_paper_size' => $paperSize,
+                ])
+                ->assertOk()
+                ->assertJsonPath('data.receipt_paper_size', $paperSize);
+
+            $this->assertDatabaseHas('fiscal_settings', [
+                'receipt_paper_size' => $paperSize,
+            ]);
+        }
+    }
+
     public function test_guest_cannot_view_full_fiscal_settings_but_can_view_public_branding(): void
     {
         FiscalSetting::query()->create([

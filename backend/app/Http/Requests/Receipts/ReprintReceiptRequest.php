@@ -8,6 +8,8 @@ use Illuminate\Validation\Rule;
 
 class ReprintReceiptRequest extends FormRequest
 {
+    private const WIDTHS = ['letter', 'half_letter', 'a5', '80mm', '58mm'];
+
     public function authorize(): bool
     {
         $user = $this->user();
@@ -31,7 +33,7 @@ class ReprintReceiptRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'width' => ['required', Rule::in(['letter', 'half_letter', 'a5'])],
+            'width' => ['required', Rule::in(self::WIDTHS)],
             'reason' => ['nullable', 'string', 'max:500'],
         ];
     }

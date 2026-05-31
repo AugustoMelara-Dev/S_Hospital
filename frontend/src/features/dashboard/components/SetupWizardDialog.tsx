@@ -23,10 +23,10 @@ type SetupWizardDialogProps = {
   onComplete: () => void;
 };
 
-type InstitutionalReceiptPaperSize = 'half_letter' | 'letter' | 'a5';
+type InstitutionalReceiptPaperSize = 'half_letter' | 'letter' | 'a5' | '80mm' | '58mm';
 
 function institutionalPaperSize(value: unknown): InstitutionalReceiptPaperSize {
-  return value === 'letter' || value === 'a5' ? value : 'half_letter';
+  return value === 'letter' || value === 'a5' || value === '80mm' || value === '58mm' ? value : 'half_letter';
 }
 
 export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizardDialogProps) {
@@ -340,6 +340,8 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="half_letter">Media carta</SelectItem>
+                    <SelectItem value="80mm">Termico 80mm</SelectItem>
+                    <SelectItem value="58mm">Termico 58mm</SelectItem>
                     <SelectItem value="letter">Carta</SelectItem>
                     <SelectItem value="a5">A5</SelectItem>
                   </SelectContent>

@@ -10,16 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { FiscalSettings, FiscalSequence } from '@/lib/api';
 
-type InstitutionalReceiptPaperSize = 'half_letter' | 'letter' | 'a5';
+type InstitutionalReceiptPaperSize = 'half_letter' | 'letter' | 'a5' | '80mm' | '58mm';
 
 function institutionalPaperSize(value: FiscalSettings['receipt_paper_size']): InstitutionalReceiptPaperSize {
-  return value === 'letter' || value === 'a5' ? value : 'half_letter';
+  return value === 'letter' || value === 'a5' || value === '80mm' || value === '58mm' ? value : 'half_letter';
 }
 
 const settingsFormSchema = z.object({
   hospital_name: z.string().min(1, 'El nombre del hospital es requerido'),
   rtn: z.string(),
-  receipt_paper_size: z.enum(['half_letter', 'letter', 'a5']),
+  receipt_paper_size: z.enum(['half_letter', 'letter', 'a5', '80mm', '58mm']),
   primary_color: z.enum(['teal', 'blue', 'indigo', 'green', 'rose']),
   address: z.string().optional(),
   slogan: z.string().optional(),
@@ -165,6 +165,8 @@ export function FiscalSettingsForm({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="half_letter">Media carta</SelectItem>
+                    <SelectItem value="80mm">Termico 80mm</SelectItem>
+                    <SelectItem value="58mm">Termico 58mm</SelectItem>
                     <SelectItem value="letter">Carta</SelectItem>
                     <SelectItem value="a5">A5</SelectItem>
                   </SelectContent>

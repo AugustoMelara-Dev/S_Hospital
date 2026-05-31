@@ -27,6 +27,8 @@ export function FiscalSummary({ settings, sequence }: FiscalSummaryProps) {
   const cai = isPlaceholderCai(sequence?.cai) ? '' : sequence?.cai;
   const paperSizeLabels: Record<string, string> = {
     half_letter: 'Media carta',
+    '80mm': 'Termico 80mm',
+    '58mm': 'Termico 58mm',
     letter: 'Carta',
     a5: 'A5',
   };

@@ -14,7 +14,7 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
   const isPlaceholderCai = new RegExp(`^${'de' + 'mo'}-cai$`, 'i').test(cai);
   const isHospitalConfigured = Boolean(hospitalName) && !isPlaceholderHospital;
   const hasRtn = Boolean(settings?.rtn?.trim());
-  const hasReceiptPaperSize = ['half_letter', 'letter', 'a5'].includes(settings?.receipt_paper_size ?? '');
+  const hasReceiptPaperSize = ['half_letter', 'letter', 'a5', '80mm', '58mm'].includes(settings?.receipt_paper_size ?? '');
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const validUntil = sequence?.valid_until ? new Date(sequence.valid_until) : null;

@@ -21,7 +21,7 @@ const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 const POS_SERVICE_PAGE_SIZE = 24;
 
 function institutionalReceiptWidth(width: ReceiptData['width'] | undefined): ReceiptData['width'] {
-  return width === 'letter' || width === 'a5' ? width : 'half_letter';
+  return width === 'letter' || width === 'a5' || width === '80mm' || width === '58mm' ? width : 'half_letter';
 }
 
 interface POSState {
