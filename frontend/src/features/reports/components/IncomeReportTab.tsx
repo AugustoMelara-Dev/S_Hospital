@@ -1,5 +1,5 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { DollarSign, TrendingUp, Calendar, Download } from 'lucide-react';
+import { DollarSign, TrendingUp, Calendar, Download, CircleSlash } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Input } from '../../../components/ui/input';
@@ -172,11 +172,21 @@ export function IncomeReportTab({
 
       {income && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
             <KPICard
-              title="Total Ingresos"
+              title="Facturado"
+              value={`L. ${income.total_billed}`}
+              icon={<DollarSign className="h-4 w-4" />}
+            />
+            <KPICard
+              title="Cobrado"
               value={`L. ${income.total_collected}`}
               icon={<DollarSign className="h-4 w-4" />}
+            />
+            <KPICard
+              title="Pendiente"
+              value={`L. ${income.total_pending}`}
+              icon={<TrendingUp className="h-4 w-4" />}
             />
             <KPICard
               title="Dias en rango"
@@ -184,9 +194,10 @@ export function IncomeReportTab({
               icon={<Calendar className="h-4 w-4" />}
             />
             <KPICard
-              title="Promedio diario"
-              value={`L. ${averagePerDay}`}
-              icon={<TrendingUp className="h-4 w-4" />}
+              title="Anulado"
+              value={`L. ${income.total_voided}`}
+              description={`Parcial: L. ${income.total_partial}; promedio cobrado: L. ${averagePerDay}`}
+              icon={<CircleSlash className="h-4 w-4" />}
             />
           </div>
 

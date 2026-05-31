@@ -12,26 +12,14 @@ class DailyReportService
 {
     use FormatsReportMoney;
 
+    public function __construct(private readonly FinancialFactsService $financialFacts) {}
+
     public function report(string $date): array
     {
         $day = Carbon::createFromFormat('Y-m-d', $date);
         $start = $day->copy()->startOfDay();
         $end = $day->copy()->endOfDay();
-
-        $invoiceSummary = Invoice::query()
-            ->whereBetween('issued_at', [$start, $end])
-            ->selectRaw('COUNT(*) as invoice_count')
-            ->selectRaw('COALESCE(SUM(CASE WHEN status != ? THEN ROUND(total * 100) ELSE 0 END), 0) as billed_cents', [Invoice::STATUS_VOID])
-            ->first();
-
-        $paymentSummary = Payment::query()
-            ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
-            ->where('payments.status', Payment::STATUS_POSTED)
-            ->where('invoices.status', '!=', Invoice::STATUS_VOID)
-            ->whereBetween('payments.paid_at', [$start, $end])
-            ->selectRaw('COUNT(*) as payment_count')
-            ->selectRaw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as collected_cents')
-            ->first();
+        $facts = $this->financialFacts->forRange($start, $end);
 
         $methods = $this->zeroMethodTotals();
         Payment::query()
@@ -71,10 +59,13 @@ class DailyReportService
 
         return [
             'date' => $date,
-            'total_billed' => $this->centsToMoney($invoiceSummary?->billed_cents),
-            'total_collected' => $this->centsToMoney($paymentSummary?->collected_cents),
-            'invoice_count' => (int) ($invoiceSummary?->invoice_count ?? 0),
-            'payment_count' => (int) ($paymentSummary?->payment_count ?? 0),
+            'total_billed' => $facts['total_billed'],
+            'total_collected' => $facts['total_collected'],
+            'total_pending' => $facts['total_pending'],
+            'total_partial' => $facts['total_partial'],
+            'total_voided' => $facts['total_voided'],
+            'invoice_count' => $facts['invoice_count'],
+            'payment_count' => $facts['payment_count'],
             'payments_by_method' => $methods,
             'invoices_by_status' => $statuses,
         ];

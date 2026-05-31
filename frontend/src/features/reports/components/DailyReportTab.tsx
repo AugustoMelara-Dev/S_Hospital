@@ -1,6 +1,6 @@
 import { type FormEvent } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Banknote, DollarSign, FileText, CreditCard, Download } from 'lucide-react';
+import { Banknote, DollarSign, FileText, Download, CircleSlash } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Input } from '../../../components/ui/input';
@@ -69,7 +69,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
 
       {daily && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
             <KPICard
               title="Facturado"
               value={`L. ${daily.total_billed}`}
@@ -81,17 +81,54 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
               icon={<Banknote className="h-4 w-4" />}
             />
             <KPICard
+              title="Pendiente"
+              value={`L. ${daily.total_pending}`}
+              description="Facturas emitidas o parciales"
+              icon={<DollarSign className="h-4 w-4" />}
+            />
+            <KPICard
               title="Facturas"
               value={daily.invoice_count}
-              description={`${(invoicesByStatus.paid?.count ?? 0) + (invoicesByStatus.partial?.count ?? 0)} pagadas`}
+              description={`${invoicesByStatus.paid?.count ?? 0} pagadas, ${invoicesByStatus.partial?.count ?? 0} parciales`}
               icon={<FileText className="h-4 w-4" />}
             />
             <KPICard
-              title="Pagos"
-              value={daily.payment_count}
-              icon={<CreditCard className="h-4 w-4" />}
+              title="Anulado"
+              value={`L. ${daily.total_voided}`}
+              description={`${invoicesByStatus.void?.count ?? 0} facturas anuladas`}
+              icon={<CircleSlash className="h-4 w-4" />}
             />
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Lectura financiera</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Concepto</TableHead>
+                    <TableHead className="text-right">Monto</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="font-medium">Pagos registrados</TableCell>
+                    <TableCell className="text-right">{daily.payment_count}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Facturas parciales</TableCell>
+                    <TableCell className="text-right">L. {daily.total_partial}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Saldo pendiente</TableCell>
+                    <TableCell className="text-right">L. {daily.total_pending}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

@@ -12,10 +12,13 @@ class IncomeReportService
 {
     use FormatsReportMoney;
 
+    public function __construct(private readonly FinancialFactsService $financialFacts) {}
+
     public function report(array $filters): array
     {
         $start = Carbon::createFromFormat('Y-m-d', $filters['date_from'])->startOfDay();
         $end = Carbon::createFromFormat('Y-m-d', $filters['date_to'])->endOfDay();
+        $facts = $this->financialFacts->forRange($start, $end, $filters);
 
         $base = Payment::query()
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
@@ -99,18 +102,6 @@ class IncomeReportService
 
         $invoiceCount = count(array_unique($invoiceIds));
 
-        $billedCents = Invoice::query()
-            ->where('status', '!=', Invoice::STATUS_VOID)
-            ->whereBetween('issued_at', [$start, $end])
-            ->when(! empty($filters['user_id']), function (Builder $query) use ($filters): void {
-                $query->where('issued_by', $filters['user_id']);
-            })
-            ->when(! empty($filters['cash_session_id']), function (Builder $query) use ($filters): void {
-                $query->where('cash_session_id', $filters['cash_session_id']);
-            })
-            ->selectRaw('COALESCE(SUM(ROUND(total * 100)), 0) as billed_cents')
-            ->value('billed_cents');
-
         return [
             'date_from' => $filters['date_from'],
             'date_to' => $filters['date_to'],
@@ -123,8 +114,11 @@ class IncomeReportService
                 'method' => $filters['method'] ?? null,
                 'status' => $filters['status'] ?? null,
             ],
-            'total_billed' => $this->centsToMoney($billedCents),
+            'total_billed' => $facts['total_billed'],
             'total_collected' => $this->centsToMoney($totalCents),
+            'total_pending' => $facts['total_pending'],
+            'total_partial' => $facts['total_partial'],
+            'total_voided' => $facts['total_voided'],
             'payments_by_method' => $methods,
             'payment_count' => (int) ($paymentCount ?? 0),
             'invoice_count' => (int) ($invoiceCount ?? 0),
