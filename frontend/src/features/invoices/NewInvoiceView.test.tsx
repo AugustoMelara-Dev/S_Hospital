@@ -462,9 +462,106 @@ describe('NewInvoiceView', () => {
     expect(
       fetchMock.mock.calls.some(([url]) => {
         const value = String(url);
-        return value.includes('/api/services') && value.includes('code=INACTIVE-001') && !value.includes('active=1');
+        return value.includes('/api/services') && value.includes('code=INACTIVE-001') && value.includes('active=1');
       }),
     ).toBe(true);
+  });
+
+  it('does not add a cached service when scanner lookup has no backend match', async () => {
+    window.history.pushState({}, '', '/billing/new');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/settings/fiscal')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { scanner_enabled: true, partial_payments_enabled: false, receipt_paper_size: 'half_letter' } }),
+        } as Response;
+      }
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 7,
+              user_id: 2,
+              opening_amount: '500.00',
+              closing_amount: null,
+              expected_amount: null,
+              difference_amount: null,
+              status: 'open',
+              opening_notes: null,
+              closing_notes: null,
+              opened_at: '2026-05-17T08:00:00-06:00',
+              closed_at: null,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+
+      if (url.includes('/api/services') && url.includes('code=CACHED-001')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+
+      if (url.includes('/api/services')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: 21,
+                category_id: 1,
+                name: 'Servicio en cache local',
+                slug: 'servicio-en-cache-local',
+                price: '12.00',
+                scan_code: 'CACHED-001',
+                barcode: null,
+                qr_code: null,
+                taxable: true,
+                active: true,
+                special_rule_code: null,
+                category: null,
+              },
+            ],
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({}) } as Response;
+    });
+
+    render(<App />);
+
+    fireEvent.change(await screen.findByLabelText(/scanner usb o codigo manual/i), {
+      target: { value: 'CACHED-001' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
+
+    expect((await screen.findAllByText(/no se encontro servicio activo para este codigo/i)).length).toBeGreaterThan(0);
+    expect(screen.getByText(/no hay servicios agregados/i)).toBeInTheDocument();
   });
 
   it('shows a clear scanner error when the code does not exist', async () => {

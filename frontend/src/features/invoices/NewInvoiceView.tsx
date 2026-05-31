@@ -512,29 +512,9 @@ export function NewInvoiceView({
     }
 
     try {
-      const [service] = await apiClient.getServices({ code, billing: true, perPage: 1 });
+      const [service] = await apiClient.getServices({ code, active: true, billing: true, perPage: 1 });
 
       if (!service) {
-        const localMatch = services.find((s) =>
-          [s.scan_code, s.barcode, s.qr_code].some((v) => v === code),
-        );
-
-        if (localMatch) {
-          if (!localMatch.active) {
-            const message = 'El servicio esta inactivo y no puede facturarse.';
-            dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-            onStatus(message);
-            refocusScanner();
-            return;
-          }
-          addToCart(localMatch);
-          dispatch({ type: 'SET_SCAN_CODE', payload: '' });
-          dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
-          onStatus(`Servicio agregado por codigo: ${localMatch.name}.`);
-          refocusScanner();
-          return;
-        }
-
         const message = 'No se encontro servicio activo para este codigo.';
         dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
         onStatus(message);
@@ -556,26 +536,6 @@ export function NewInvoiceView({
       onStatus(`Servicio agregado por codigo: ${service.name}.`);
       refocusScanner();
     } catch (error) {
-      const localMatch = services.find((s) =>
-        [s.scan_code, s.barcode, s.qr_code].some((v) => v === code),
-      );
-
-      if (localMatch) {
-        if (!localMatch.active) {
-          const message = 'El servicio esta inactivo y no puede facturarse.';
-          dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
-          onStatus(message);
-          refocusScanner();
-          return;
-        }
-        addToCart(localMatch);
-        dispatch({ type: 'SET_SCAN_CODE', payload: '' });
-        dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
-        onStatus(`Servicio agregado por codigo: ${localMatch.name}.`);
-        refocusScanner();
-        return;
-      }
-
       const message = userSafeErrorMessage(error, 'No se pudo buscar el codigo escaneado.');
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
       onStatus(message);
@@ -680,7 +640,7 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: false });
       dispatch({ type: 'SET_CART_ITEMS', payload: [] });
       dispatch({ type: 'SET_PATIENT_NAME', payload: '' });
-      if (loadedCashSession && Number(invoice.balance_due) > 0) {
+      if (loadedCashSession && parseCents(invoice.balance_due) > 0) {
         dispatch({ type: 'SET_SHOW_SUCCESS', payload: false });
         dispatch({ type: 'SET_SHOW_PAYMENT', payload: true });
         onStatus(`Factura emitida ${invoice.invoice_number}. Cobro abierto.`);
@@ -1024,7 +984,7 @@ function calculatePreview(items: CartItem[]) {
 }
 
 function isZeroMoney(value: string): boolean {
-  return Number(value) === 0;
+  return parseCents(value) === 0;
 }
 
 function parseCents(value: string): number {

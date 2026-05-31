@@ -1144,3 +1144,22 @@ Consecuencia:
 
 - La configuracion fiscal, el wizard, la vista de recibo y los contratos API aceptan 80mm/58mm.
 - La validacion final sigue pendiente de impresora fisica y driver real de caja.
+
+### 2026-05-31 - Escaner factura solo servicios activos desde backend
+
+Decision:
+
+- La busqueda por codigo del escaner en nueva factura consulta `/api/services` con `active=1` y `billing=1`.
+- Se elimina el fallback local contra la lista ya cargada cuando el backend no devuelve coincidencia o falla.
+- Las comparaciones de saldo cero en la vista usan centavos parseados, no `Number(...)` directo.
+
+Motivo:
+
+- El catalogo backend es la fuente de verdad para visibilidad, estado activo e importes facturables.
+- Un fallback local puede facturar un servicio que acaba de desactivarse o que ya no cumple filtros de facturacion.
+- Los montos deben compararse con la misma semantica de centavos usada por el resto del flujo.
+
+Consecuencia:
+
+- Si el backend no confirma un codigo activo y facturable, la factura no agrega el servicio.
+- La prueba de scanner falla si la consulta vuelve a omitir `active=1`.
