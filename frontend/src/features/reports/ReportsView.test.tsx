@@ -114,6 +114,135 @@ describe('ReportsView', () => {
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
   });
 
+  it('renders the monthly financial summary from backend facts', async () => {
+    window.history.pushState({}, '', '/reports');
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Administracion Validacion',
+              email: 'administracion.validacion@hospital-san-isidro.local',
+              username: 'administracion.validacion',
+              active: true,
+              roles: ['admin'],
+              permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/reports/daily')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date: '2026-05-17',
+              total_billed: '0.00',
+              total_collected: '0.00',
+              total_pending: '0.00',
+              total_partial: '0.00',
+              total_voided: '0.00',
+              invoice_count: 0,
+              payment_count: 0,
+              payments_by_method: { cash: '0.00', transfer: '0.00', card: '0.00', other: '0.00' },
+              invoices_by_status: {
+                issued: { count: 0, total: '0.00' },
+                partial: { count: 0, total: '0.00' },
+                paid: { count: 0, total: '0.00' },
+                void: { count: 0, total: '0.00' },
+              },
+            },
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+      if (url.includes('/api/areas')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+      if (url.includes('/api/reports/monthly')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              month: '2026-05',
+              date_from: '2026-05-01',
+              date_to: '2026-05-31',
+              total_billed: '57.50',
+              total_collected: '22.25',
+              total_pending: '35.25',
+              total_partial: '11.50',
+              total_voided: '17.25',
+              invoice_count: 4,
+              payment_count: 2,
+              payments_by_method: { cash: '17.25', transfer: '5.00', card: '0.00', other: '0.00' },
+              invoices_by_status: {
+                issued: { count: 1, total: '28.75' },
+                partial: { count: 1, total: '11.50' },
+                paid: { count: 1, total: '17.25' },
+                void: { count: 1, total: '17.25' },
+              },
+              daily_totals: [
+                {
+                  date: '2026-05-03',
+                  total_billed: '17.25',
+                  total_collected: '17.25',
+                  total_pending: '0.00',
+                  total_partial: '0.00',
+                  total_voided: '0.00',
+                  invoice_count: 1,
+                  payment_count: 1,
+                },
+                {
+                  date: '2026-05-04',
+                  total_billed: '40.25',
+                  total_collected: '5.00',
+                  total_pending: '35.25',
+                  total_partial: '11.50',
+                  total_voided: '17.25',
+                  invoice_count: 3,
+                  payment_count: 1,
+                },
+              ],
+            },
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    render(<App />);
+
+    expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
+    activateTab(/mensual/i);
+    expect(await screen.findByRole('heading', { name: /^resumen mensual$/i })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/^mes$/i), { target: { value: '2026-05' } });
+    fireEvent.click(screen.getByRole('button', { name: /ver mes/i }));
+
+    expect((await screen.findAllByText(/^facturado$/i)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('L. 57.50').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^cobrado$/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('L. 22.25').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^pendiente$/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('L. 35.25').length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: /cobros por m.todo/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /estados de factura/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /evoluci.n por fecha/i })).toBeInTheDocument();
+    expect(screen.getByText('2026-05-04')).toBeInTheDocument();
+    expect(screen.getByText('Transferencia')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/undefined|\bNaN\b/);
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/reports/monthly?month=2026-05'))).toBe(true);
+    });
+  });
+
   it('exports reports through the protected backend Excel endpoint', async () => {
     window.history.pushState({}, '', '/reports');
     Object.defineProperty(URL, 'createObjectURL', {

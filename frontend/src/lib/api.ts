@@ -26,6 +26,7 @@ import type {
   ReceiptData,
   MoneyByMethod,
   DailyReport,
+  MonthlyReport,
   IncomeReport,
   CategoryReport,
   AreaIncomeReport,
@@ -73,6 +74,7 @@ export type {
   ReceiptData,
   MoneyByMethod,
   DailyReport,
+  MonthlyReport,
   IncomeReport,
   CategoryReport,
   AreaIncomeReport,
@@ -190,6 +192,10 @@ export const apiClient = {
 
   async getDailyReport(date?: string): Promise<DailyReport> {
     return reports.getDailyReport(date);
+  },
+
+  async getMonthlyReport(month?: string): Promise<MonthlyReport> {
+    return reports.getMonthlyReport(month);
   },
 
   async getIncomeReport(filters: ReportFilters): Promise<IncomeReport> {
