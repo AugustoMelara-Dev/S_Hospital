@@ -12,8 +12,32 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Protect-SupportText([string] $value) {
+    $protected = $value
+
+    if (-not [string]::IsNullOrWhiteSpace($script:rootPath)) {
+        $protected = $protected -replace [regex]::Escape($script:rootPath), "%PROJECT_ROOT%"
+        $protected = $protected -replace [regex]::Escape(($script:rootPath -replace "\\", "/")), "%PROJECT_ROOT%"
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
+        $protected = $protected -replace [regex]::Escape($env:USERPROFILE), "%USERPROFILE%"
+        $protected = $protected -replace [regex]::Escape(($env:USERPROFILE -replace "\\", "/")), "%USERPROFILE%"
+    }
+
+    $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
+    $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "\|", "/"
+
+    if ($protected.Length -gt 1200) {
+        return $protected.Substring(0, 1200) + " ...[recortado]"
+    }
+
+    return $protected
+}
+
 trap {
-    Write-Host $_.Exception.Message
+    Write-Host (Protect-SupportText $_.Exception.Message)
     Write-Host "No agregue archivos .env, respaldos SQL, passwords, tokens ni carpetas completas de datos al paquete de soporte."
     exit 1
 }
@@ -69,30 +93,6 @@ if ($WhatIfOnly) {
 }
 
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
-
-function Protect-SupportText([string] $value) {
-    $protected = $value
-
-    if (-not [string]::IsNullOrWhiteSpace($rootPath)) {
-        $protected = $protected -replace [regex]::Escape($rootPath), "%PROJECT_ROOT%"
-        $protected = $protected -replace [regex]::Escape(($rootPath -replace "\\", "/")), "%PROJECT_ROOT%"
-    }
-
-    if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
-        $protected = $protected -replace [regex]::Escape($env:USERPROFILE), "%USERPROFILE%"
-        $protected = $protected -replace [regex]::Escape(($env:USERPROFILE -replace "\\", "/")), "%USERPROFILE%"
-    }
-
-    $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
-    $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
-    $protected = $protected -replace "\|", "/"
-
-    if ($protected.Length -gt 1200) {
-        return $protected.Substring(0, 1200) + " ...[recortado]"
-    }
-
-    return $protected
-}
 
 function Write-SafeTail([string] $SourcePath, [string] $TargetName, [System.Collections.Generic.List[string]] $manifestLines) {
     if (-not (Test-Path -LiteralPath $SourcePath)) {
@@ -193,5 +193,5 @@ $manifest.Add("- No agregar `.env`, respaldos `.sql`, passwords, tokens ni carpe
 $manifestPath = Join-Path $OutputDir "MANIFIESTO.md"
 Set-Content -LiteralPath $manifestPath -Value $manifest -Encoding ASCII
 
-Write-Host "Paquete seguro para soporte creado en: $OutputDir"
-Write-Host "Archivo principal: $manifestPath"
+Write-Host "Paquete seguro para soporte creado en: $(Protect-SupportText $OutputDir)"
+Write-Host "Archivo principal: $(Protect-SupportText $manifestPath)"

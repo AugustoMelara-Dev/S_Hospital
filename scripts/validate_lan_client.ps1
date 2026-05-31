@@ -16,8 +16,29 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Protect-LanText([string] $value) {
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        return $value
+    }
+
+    $protected = $value
+    if (-not [string]::IsNullOrWhiteSpace($script:ProjectRoot)) {
+        $protected = $protected -replace [regex]::Escape($script:ProjectRoot), "%PROJECT_ROOT%"
+        $protected = $protected -replace [regex]::Escape(($script:ProjectRoot -replace "\\", "/")), "%PROJECT_ROOT%"
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
+        $protected = $protected -replace [regex]::Escape($env:USERPROFILE), "%USERPROFILE%"
+        $protected = $protected -replace [regex]::Escape(($env:USERPROFILE -replace "\\", "/")), "%USERPROFILE%"
+    }
+
+    $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+
+    return $protected
+}
+
 trap {
-    Write-Host $_.Exception.Message
+    Write-Host (Protect-LanText $_.Exception.Message)
     Write-Host "No reemplace evidencia LAN existente sin -Force y sin autorizacion del responsable tecnico."
     exit 1
 }
@@ -184,7 +205,7 @@ if ($EvidencePath -ne "") {
 
     Set-Content -LiteralPath $EvidencePath -Value $lines -Encoding ASCII
     $writeMode = if ($Force) { "replaced" } else { "created" }
-    Write-Host "LAN evidence starter ${writeMode}: $EvidencePath"
+    Write-Host "LAN evidence starter ${writeMode}: $(Protect-LanText $EvidencePath)"
 }
 
 if (-not $allPassed) {

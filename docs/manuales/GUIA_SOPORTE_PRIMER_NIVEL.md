@@ -48,6 +48,9 @@ Ese archivo se puede enviar a soporte. No debe contener passwords, tokens ni
 claves. Las rutas locales y valores con nombres sensibles se reemplazan por
 marcadores como `%PROJECT_ROOT%`, `%USERPROFILE%`, `[ruta-local]` o
 `[redacted]`.
+Las salidas en consola de los scripts de soporte usan los mismos marcadores
+cuando muestran carpetas generadas o errores de rutas. No envie capturas donde
+aparezcan rutas reales, `.env`, passwords o tokens.
 
 Si soporte pide un paquete mas completo, genere uno con:
 

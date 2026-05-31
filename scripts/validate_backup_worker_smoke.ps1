@@ -12,21 +12,45 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$safeRoot = (Get-Location).Path
+
+function Protect-SmokeText([string] $value) {
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        return $value
+    }
+
+    $protected = $value
+    if (-not [string]::IsNullOrWhiteSpace($script:safeRoot)) {
+        $protected = $protected -replace [regex]::Escape($script:safeRoot), "%PROJECT_ROOT%"
+        $protected = $protected -replace [regex]::Escape(($script:safeRoot -replace "\\", "/")), "%PROJECT_ROOT%"
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
+        $protected = $protected -replace [regex]::Escape($env:USERPROFILE), "%USERPROFILE%"
+        $protected = $protected -replace [regex]::Escape(($env:USERPROFILE -replace "\\", "/")), "%USERPROFILE%"
+    }
+
+    $protected = $protected -replace "(?i)(PASSWORD|TOKEN|SECRET|APP_KEY|DB_PASSWORD)=\S+", '$1=[oculto]'
+    $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+
+    return $protected
+}
+
 trap {
-    Write-Host $_.Exception.Message
+    Write-Host (Protect-SmokeText $_.Exception.Message)
     exit 1
 }
 
 if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
-    throw "BaseUrl is required. Pass -BaseUrl or set HOSPITAL_SMOKE_BASE_URL."
+    throw "BaseUrl es obligatorio. Use -BaseUrl o defina HOSPITAL_SMOKE_BASE_URL."
 }
 
 if ([string]::IsNullOrWhiteSpace($Login)) {
-    throw "Login is required. Pass -Login or set HOSPITAL_SMOKE_LOGIN."
+    throw "Login es obligatorio. Use -Login o defina HOSPITAL_SMOKE_LOGIN."
 }
 
 if ([string]::IsNullOrWhiteSpace($Password)) {
-    $securePassword = Read-Host "Password for backup worker smoke user" -AsSecureString
+    $securePassword = Read-Host "Contrasena del usuario autorizado para validar respaldos" -AsSecureString
     $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
     try {
         $Password = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
@@ -36,7 +60,7 @@ if ([string]::IsNullOrWhiteSpace($Password)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($Password)) {
-    throw "Password is required. Pass -Password, set HOSPITAL_SMOKE_PASSWORD, or enter it at the prompt."
+    throw "La contrasena es obligatoria. Use -Password, defina HOSPITAL_SMOKE_PASSWORD o escribala cuando el sistema la solicite."
 }
 
 $base = $BaseUrl.TrimEnd("/")
@@ -78,28 +102,28 @@ function Get-HttpStatusCode($errorRecord) {
 
 function New-BackupSmokeFailureMessage($purpose, $statusCode) {
     if ($null -eq $statusCode) {
-        return "Backup worker smoke could not communicate with the server while trying to $purpose. Confirm the server is running, the LAN connection is available, and the BaseUrl is correct."
+        return "No se pudo comunicar con el servidor al intentar $purpose. Confirme que el servidor este encendido, la red LAN funcione y BaseUrl sea correcto."
     }
 
     switch ($statusCode) {
         401 {
-            return "Backup worker smoke could not $purpose because the session was rejected. Confirm the support user and password are correct, then sign in again."
+            return "No se pudo $purpose porque la sesion fue rechazada. Confirme usuario y contrasena de soporte."
         }
         403 {
-            return "Backup worker smoke could not $purpose because the support user does not have permission. Ask an administrator to grant backup access or use an authorized account."
+            return "No se pudo $purpose porque el usuario de soporte no tiene permiso. Pida a un administrador habilitar acceso a respaldos o use una cuenta autorizada."
         }
         419 {
-            return "Backup worker smoke could not $purpose because the session token expired or was not accepted. Run the script again after confirming the server clock and APP_URL/BaseUrl."
+            return "No se pudo $purpose porque la sesion vencio o no fue aceptada. Revise la hora del servidor y APP_URL/BaseUrl antes de reintentar."
         }
         422 {
-            return "Backup worker smoke could not $purpose because the server rejected the request data. Confirm the support user credentials and try again."
+            return "No se pudo $purpose porque el servidor rechazo los datos enviados. Confirme las credenciales de soporte."
         }
         default {
             if ($statusCode -ge 500) {
-                return "Backup worker smoke could not $purpose because the server reported an internal error. Do not retry repeatedly; collect the support packet and review Laravel logs with support."
+                return "No se pudo $purpose porque el servidor reporto un error interno. No reintente muchas veces; genere el paquete de soporte y revise logs autorizados."
             }
 
-            return "Backup worker smoke could not $purpose. HTTP status $statusCode was returned; confirm the BaseUrl, permissions, and current system status."
+            return "No se pudo $purpose. El servidor devolvio HTTP $statusCode; confirme BaseUrl, permisos y estado del sistema."
         }
     }
 }
@@ -138,28 +162,28 @@ function Invoke-Json($method, $path, $body = $null, $purpose = "call the backup 
     try {
         return $response.Content | ConvertFrom-Json
     } catch {
-        throw "Backup worker smoke could not $purpose because the server response was not valid JSON. Confirm the route returns the API response, then collect the support packet."
+        throw "No se pudo $purpose porque la respuesta del servidor no fue JSON valido. Genere paquete de soporte y revise la ruta API."
     }
 }
 
 try {
     Invoke-WebRequest -Uri "$base/sanctum/csrf-cookie" -WebSession $session -UseBasicParsing -TimeoutSec 30 | Out-Null
 } catch {
-    throw "Backup worker smoke could not reach $base. Confirm the server is running, APP_URL/BaseUrl is correct, and the LAN connection is available before creating a backup."
+    throw "No se pudo contactar el sistema para validar respaldos. Confirme que el servidor este encendido, que APP_URL/BaseUrl sea correcto y que la red LAN funcione antes de crear un respaldo."
 }
 
-Invoke-Json "POST" "/api/auth/login" @{ login = $Login; password = $Password } "sign in to the backup system" | Out-Null
+Invoke-Json "POST" "/api/auth/login" @{ login = $Login; password = $Password } "iniciar sesion en respaldos" | Out-Null
 
-$created = Invoke-Json "POST" "/api/backups" @{} "create a manual backup"
+$created = Invoke-Json "POST" "/api/backups" @{} "crear un respaldo manual"
 $backupId = $created.data.id
 if ($null -eq $backupId) {
-    throw "Backup worker smoke could not confirm the new backup id. Confirm the backup API response and collect the support packet."
+    throw "No se pudo confirmar el identificador del respaldo nuevo. Genere paquete de soporte y revise la respuesta del API."
 }
 $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 $current = $created.data
 
 while ((Get-Date) -lt $deadline) {
-    $list = Invoke-Json "GET" "/api/backups?status=all&per_page=25" $null "read the backup list"
+    $list = Invoke-Json "GET" "/api/backups?status=all&per_page=25" $null "leer la lista de respaldos"
     $match = @($list.data | Where-Object { $_.id -eq $backupId }) | Select-Object -First 1
     if ($null -ne $match) {
         $current = $match
@@ -172,15 +196,15 @@ while ((Get-Date) -lt $deadline) {
 }
 
 if ($current.status -ne "success") {
-    throw "Backup worker smoke failed. Backup $backupId ended as '$($current.status)' after ${TimeoutSeconds}s."
+    throw "La validacion de respaldos fallo. El respaldo $backupId termino como '$($current.status)' despues de ${TimeoutSeconds}s."
 }
 
 if (-not $current.checksum_sha256 -or $current.checksum_sha256.Length -ne 64) {
-    throw "Backup worker smoke failed. Backup $backupId has no SHA256 checksum."
+    throw "La validacion de respaldos fallo. El respaldo $backupId no tiene checksum SHA256."
 }
 
 if (($current.size_bytes -as [int64]) -le 0) {
-    throw "Backup worker smoke failed. Backup $backupId has invalid size_bytes."
+    throw "La validacion de respaldos fallo. El respaldo $backupId tiene tamano invalido."
 }
 
 $evidenceFullPath = if ([System.IO.Path]::IsPathRooted($EvidencePath)) {
@@ -214,5 +238,5 @@ $lines = @(
 )
 
 Set-Content -LiteralPath $evidenceFullPath -Value $lines -Encoding ASCII
-Write-Host "Backup worker smoke validated: backup $backupId"
-Write-Host "Evidence written to $evidenceFullPath"
+Write-Host "Validacion de respaldos completada: respaldo $backupId"
+Write-Host "Evidencia escrita en: $(Protect-SmokeText $evidenceFullPath)"

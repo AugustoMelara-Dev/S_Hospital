@@ -59,6 +59,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Loop de respaldo automatico agrega `-WhatIfOnly` y deja de escribir rutas locales crudas en `backup-automation.log`. | Verificado |
 | Esta fase | Paquete de soporte recoge los logs reales de respaldo desde `backend\storage\logs`, incluyendo worker, respaldo programado y automatizacion. | Verificado |
 | Esta fase | Instalador de tareas Windows de respaldo sanitiza consola/errores, valida PHP antes de registrar tareas, conserva rutas reales solo dentro de la tarea y recuerda no borrar datos para corregir fallos. | Verificado |
+| Esta fase | Scripts de soporte y evidencia sanitizan rutas en consola: arranque manual, paquete de soporte, smoke de worker y validacion LAN. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -123,6 +124,7 @@ Resultado observado:
 | `validate_backup_worker_smoke.ps1` sin parametros | Falla antes de red con instruccion clara para `-BaseUrl` o `HOSPITAL_SMOKE_BASE_URL`, sin traza tecnica de PowerShell. |
 | `validate_backup_worker_smoke.ps1` con variables de entorno y servidor cerrado | Falla antes de crear respaldo con mensaje humano sobre servidor/BaseUrl/LAN, sin traza tecnica de PowerShell. |
 | `validate_backup_worker_smoke.ps1` manejo de errores API | Endurecido para login, permisos, token vencido, respuesta no JSON y error interno sin mostrar contrasenas ni trazas tecnicas de PowerShell al operador. |
+| Consola de `validate_backup_worker_smoke.ps1` | Paso: mensajes principales en espanol y ruta de evidencia protegida con `%PROJECT_ROOT%` o `[ruta-local]`. |
 | Parser PowerShell de `open_hospital_system.ps1` | Paso. |
 | `open_hospital_system.ps1` con servidor cerrado y `-SkipRepair` | Falla con mensaje humano y recomienda ejecutar reparacion segura desde el servidor. |
 | `open_hospital_system.ps1` con servidor cerrado y reparacion segura `-SkipDockerStart -NoBrowser` | Ejecuta `repair_hospital_system.ps1`, genera diagnostico en ruta indicada y termina sin borrar datos ni abrir navegador. |
@@ -145,6 +147,7 @@ Resultado observado:
 | `run_backup_scheduler_loop.ps1 -DailyBackupTime 99:99` | Falla al inicio con mensaje y log humano; no inicia worker ni ciclo diario. |
 | Parser PowerShell de `start_hospital_services.ps1` | Paso. |
 | `start_hospital_services.ps1` con carpeta sin Compose | Falla antes de llamar Docker, muestra mensaje humano y recuerda no borrar datos, volumenes, respaldos ni `.env`. |
+| `start_hospital_services.ps1 -ProjectRoot C:\tmp\does-not-exist-shospital` | Falla antes de llamar Docker y muestra `%PROJECT_ROOT%` en lugar de ruta local cruda. |
 | Parser PowerShell de `install_hospital_os.ps1` | Paso. |
 | AST de `install_hospital_os.ps1` para `Run-SetupCli` | Paso: existe una sola llamada y ocurre despues de la definicion de la funcion. |
 | ASCII check de `scripts\install_hospital_os.ps1` | Paso: no quedan caracteres no ASCII en el instalador visible. |
@@ -155,11 +158,13 @@ Resultado observado:
 | `collect_support_packet.ps1 -OutputDir C:\tmp\support-packet-outside -WhatIfOnly` | Falla antes de crear carpeta, con mensaje humano de usar carpeta dentro del sistema. |
 | `collect_support_packet.ps1 -OutputDir ..\support-packet-outside -WhatIfOnly` | Falla antes de crear carpeta; la ruta relativa se normaliza antes de validar contencion. |
 | `collect_support_packet.ps1 -WhatIfOnly -TailLines 5 -RepairRetries 1 -RepairDelaySeconds 1` | Paso: valida parametros y confirma que no crea carpeta ni copia logs. |
+| `collect_support_packet.ps1 -OutputDir qa\support-packets\console-sanitize-smoke -TailLines 1` | Paso: crea paquete temporal y consola muestra `%PROJECT_ROOT%\qa\support-packets\...`; evidencia temporal eliminada. |
 | `final_production_handoff.ps1 -SkipPreflight` con `-PhpPath C:\tmp\php.exe` | Paso: consola y reporte usan `%PROJECT_ROOT%` o `[ruta-local]`, sin rutas locales crudas. |
 | `repair_hospital_system.ps1 -ReportPath C:\tmp\repair-outside.md -WhatIfOnly` | Falla antes de escribir diagnostico, levantar Docker o abrir navegador. |
 | `repair_hospital_system.ps1 -ReportPath qa\diagnostics\repair-whatif.md -WhatIfOnly -Retries 1 -DelaySeconds 1` | Paso: valida parametros y confirma que no escribe diagnostico. |
 | `validate_lan_client.ps1 -BaseUrl http://192.168.1.10:8000 -EvidencePath C:\tmp\lan-outside.md -WhatIfOnly` | Falla antes de consultar red o escribir evidencia. |
 | `validate_lan_client.ps1 -BaseUrl http://192.168.1.10:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.tmp.md -WhatIfOnly` | Paso: valida parametros y confirma que no consulta red ni escribe evidencia. |
+| Consola de `validate_lan_client.ps1` | Paso: errores y ruta de evidencia se protegen antes de mostrarse a soporte. |
 | `init_production_proofs.ps1 -WhatIfOnly` | Paso: muestra acciones previstas sin copiar ni reemplazar archivos; consola no expone rutas locales crudas. |
 | `production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:1 -AllowMissingPhysicalProof` | Paso esperado con fallos: consola no expone `C:\Projects\S_Hospital` ni rutas de usuario. |
 | `install_backup_startup_current_user.ps1 -WhatIfOnly -DailyBackupTime 99:99` | Falla antes de tocar inicio/registro con mensaje humano de formato HH:mm. |
