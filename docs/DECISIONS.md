@@ -2,6 +2,27 @@
 
 ## Registro de decisiones
 
+### 2026-05-31 - Frente de flujo operativo hospitalario y areas
+
+Decision:
+
+- El nuevo frente operativo se implementara como extension administrativa de facturacion, no como expediente clinico.
+- Caja unica permanece como flujo principal del MVP: caja registra paciente, selecciona servicios, cobra e imprime.
+- Las areas administrativas se modelaran para clasificar servicios y permitir consulta posterior de servicios pagados por area.
+- Los reportes por area usaran snapshots en `invoice_items`, no la relacion actual del servicio, para proteger facturas historicas.
+- Los usuarios de area solo podran consultar servicios pagados de su area; no podran cobrar, editar catalogo, anular ni ver caja completa.
+
+Motivo:
+
+- Hospital San Isidro necesita ordenar como caja, recepcion y areas consultan servicios cobrados sin convertir el sistema en modulo medico.
+- El sistema ya tiene caja, facturacion, pagos, recibos, reportes y backups; el frente nuevo debe ampliar organizacion operativa sin romper ese flujo.
+
+Consecuencia:
+
+- Las migraciones deben ser aditivas.
+- Cualquier vista nueva de area debe evitar diagnosticos, resultados, expediente clinico e inventario.
+- Catalogo, factura y reportes deben tratar el area como dato administrativo y auditable.
+
 ### 2026-05-29 - Hospital San Isidro RC y recibo institucional en papel
 
 Decision:
