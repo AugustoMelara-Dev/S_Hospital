@@ -61,35 +61,22 @@
       "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\phase-12-visual-smoke\\fiscal-settings.png"
     }
   ],
-  "lastInvoiceNumber": "",
+  "lastInvoiceNumber": "000-001-01-00000002",
   "consoleByScreen": {
     "login": [],
     "dashboard": [],
-    "cashbox": [
-      "http.500: GET http://127.0.0.1:8000/api/cash-sessions/current",
-      "console.error: Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
-      "http.500: GET http://127.0.0.1:8000/api/cash-sessions/current",
-      "console.error: Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
-      "http.401: GET http://127.0.0.1:8000/api/cash-sessions/current",
-      "console.error: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
-      "http.401: POST http://127.0.0.1:8000/api/cash-sessions/open",
-      "console.error: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
-      "http.401: GET http://127.0.0.1:8000/api/cash-sessions/current",
-      "console.error: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
-      "http.401: GET http://127.0.0.1:8000/api/cash-sessions/current",
-      "console.error: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
-      "http.401: GET http://127.0.0.1:8000/api/cash-sessions/current",
-      "console.error: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
-      "http.401: GET http://127.0.0.1:8000/api/cash-sessions/current",
-      "console.error: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
-      "http.401: GET http://127.0.0.1:8000/api/cash-sessions/current",
-      "console.error: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
-    ],
-    "billing-new-empty": []
+    "cashbox": [],
+    "billing-new-empty": [],
+    "billing-new-with-services": [],
+    "billing-confirm-modal": [],
+    "receipt-preview": [],
+    "invoices-history": [],
+    "catalog": [],
+    "reports": [],
+    "backups": [],
+    "fiscal-settings": []
   },
-  "consoleIssueCount": 18,
-  "findings": [
-    "cashbox: no se pudo confirmar caja abierta para el usuario actual."
-  ],
-  "blockerCount": 19
+  "consoleIssueCount": 0,
+  "findings": [],
+  "blockerCount": 0
 }
