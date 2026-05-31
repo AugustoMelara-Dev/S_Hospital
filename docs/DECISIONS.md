@@ -528,6 +528,23 @@ Consecuencia:
 - Cada poda borra solo archivos seguros bajo `backups/`, elimina el registro podado y deja auditoria `backup.pruned`.
 - Los operadores siguen viendo fallos recientes para diagnostico, mientras los exitos antiguos no crecen sin limite.
 
+### 2026-05-31 - Setup raiz queda marcado como local
+
+Decision:
+
+- `setup.bat` en la raiz queda etiquetado como setup local/de validacion, no instalador de produccion final.
+- El script muestra una confirmacion antes de ejecutar Docker Compose de desarrollo y dirige produccion a `offline-release\setup.bat`.
+
+Motivo:
+
+- El setup raiz puede construir frontend con npm y usar entorno local, por lo que no cumple el contrato offline final.
+- Produccion debe salir de un paquete offline regenerado, con assets e imagenes bloqueadas.
+
+Consecuencia:
+
+- Se reduce el riesgo de instalar el entorno dev en el servidor del hospital por error.
+- La release final sigue pendiente de regenerar artefactos y validar en hardware real.
+
 ### 2026-05-19 - Handoff final de produccion sin evidencia falsa
 
 Decision:

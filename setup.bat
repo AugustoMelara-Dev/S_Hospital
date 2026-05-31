@@ -1,18 +1,30 @@
 @echo off
-REM Sistema de Caja Hospitalaria - Script de despliegue LAN
-REM Diseniado para Windows con compatibilidad amplia.
+REM Sistema de Caja Hospitalaria - Script local de desarrollo/validacion.
+REM Para produccion final use offline-release\setup.bat desde un paquete regenerado.
 
 cd /d "%~dp0"
-title "Sistema de Caja Hospitalaria - Instalador LAN"
+title "Sistema de Caja Hospitalaria - Setup Local"
 cls
 
 echo ======================================================================
-echo       SISTEMA DE CAJA HOSPITALARIA - INSTALADOR Y DESPLIEGUE LAN
+echo       SISTEMA DE CAJA HOSPITALARIA - SETUP LOCAL / VALIDACION
 echo ======================================================================
 echo.
-echo Este asistente configurara el sistema en red local.
+echo Este asistente usa docker-compose de desarrollo para validar el sistema.
+echo Puede construir frontend con npm dentro de Docker y usar APP_ENV local.
+echo.
+echo PRODUCCION FINAL:
+echo - Use offline-release\setup.bat desde un paquete offline regenerado.
+echo - No use este setup raiz para entregar el servidor del hospital.
+echo.
 echo No borra datos ni elimina volumenes.
 echo.
+
+choice /c SN /m "Desea continuar con setup local de desarrollo"
+if errorlevel 2 (
+    echo Operacion cancelada. Para produccion use offline-release\setup.bat.
+    exit /b 0
+)
 
 echo [1/5] Verificando requisitos de infraestructura...
 where docker >nul 2>nul
