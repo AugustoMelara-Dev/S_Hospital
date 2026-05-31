@@ -144,7 +144,7 @@ HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:80
 ```
 
 Este script es mutante: abre caja, crea facturas y registra pagos con un `RUN_ID`. No borra facturas porque son registros auditables; requiere snapshot/base descartable antes de ejecutarlo y credenciales temporales explicitas, nunca credenciales reales de produccion.
-No ponga usuario o contrasena dentro de `HOSPITAL_CONCURRENCY_BASE_URL`; use siempre las variables de cuenta temporal. Para guardar evidencia sin editarla a mano, agregue `HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md` y luego revise que la conclusion corresponda al entorno descartable usado.
+No ponga usuario o contrasena dentro de `HOSPITAL_CONCURRENCY_BASE_URL`; use siempre las variables de cuenta temporal. Para guardar evidencia sin editarla a mano, agregue `HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md` y luego revise que la conclusion corresponda al entorno descartable usado. Esa ruta debe ser un archivo `.md` dentro de `qa/`; el script no escribe evidencia fuera de la carpeta instalada.
 
 Evidencia Fase 11: ejecutado contra `http://192.168.1.7:8000` con `HOSPITAL_CONCURRENCY_TARGET_ENV=local` y `RUN_ID=concurrency-validation-20260517T20435`; valido doble apertura de caja, doble emision de factura y doble pago. Repetir en servidor/base final descartable antes de declarar produccion.
 

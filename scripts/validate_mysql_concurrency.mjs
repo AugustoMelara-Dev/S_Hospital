@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { dirname, isAbsolute, relative, resolve } from 'node:path';
 
 const baseUrl = (process.env.HOSPITAL_CONCURRENCY_BASE_URL ?? '').replace(/\/$/, '');
 const targetEnv = process.env.HOSPITAL_CONCURRENCY_TARGET_ENV ?? process.env.TARGET_ENV ?? process.env.APP_ENV ?? '';
-const evidencePath = process.env.HOSPITAL_CONCURRENCY_EVIDENCE_PATH ?? '';
+const evidencePathInput = process.env.HOSPITAL_CONCURRENCY_EVIDENCE_PATH ?? '';
 const runId = `concurrency-validation-${new Date().toISOString().replace(/[^0-9A-Za-z]/g, '').slice(0, 14)}`;
 
 function requiredEnv(name) {
@@ -60,6 +60,7 @@ if (!/(test|local|validation|disposable)/i.test(`${baseUrl} ${targetEnv}`)) {
   process.exit(1);
 }
 
+const evidencePath = validateEvidencePath(evidencePathInput);
 const login = requiredEnv('HOSPITAL_CONCURRENCY_LOGIN');
 const password = requiredEnv('HOSPITAL_CONCURRENCY_PASSWORD');
 
@@ -147,6 +148,30 @@ function safeJson(value) {
 
 function safeEvidenceReference(path) {
   return protectText(path || 'not requested');
+}
+
+function validateEvidencePath(value) {
+  const rawPath = value.trim();
+  if (!rawPath) {
+    return '';
+  }
+
+  if (!/\.md$/i.test(rawPath)) {
+    console.error('Abort: HOSPITAL_CONCURRENCY_EVIDENCE_PATH must be a Markdown file under qa/.');
+    process.exit(1);
+  }
+
+  const projectRoot = process.cwd();
+  const qaRoot = resolve(projectRoot, 'qa');
+  const resolvedPath = resolve(projectRoot, rawPath);
+  const relativeToQa = relative(qaRoot, resolvedPath);
+
+  if (relativeToQa === '' || relativeToQa.startsWith('..') || isAbsolute(relativeToQa)) {
+    console.error('Abort: HOSPITAL_CONCURRENCY_EVIDENCE_PATH must stay inside the qa/ evidence folder.');
+    process.exit(1);
+  }
+
+  return resolvedPath;
 }
 
 async function main() {

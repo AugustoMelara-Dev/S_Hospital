@@ -64,6 +64,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Validacion de restore descartable deja de escribir rutas absolutas del backup en consola/evidencia y conserva identificacion por nombre, SHA256 y tamano. | Verificado |
 | Esta fase | Validacion de concurrencia descartable evalua banderas y destino antes de pedir credenciales, rechaza credenciales dentro de la URL y redacta errores HTTP antes de mostrarlos a soporte. | Verificado |
 | Esta fase | Dashboard usa mensajes seguros para errores tecnicos del backend y evita mostrar SQL, trazas o rutas de logs al operador. | Verificado |
+| Esta fase | Evidencia generada por validacion de concurrencia queda restringida a archivos Markdown dentro de `qa/`, evitando escrituras fuera de la carpeta instalada por variables mal copiadas. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -201,6 +202,8 @@ Resultado observado:
 | `validate_mysql_concurrency.mjs` con URL no HTTP(S) | Falla antes de red, login o mutaciones. |
 | `validate_mysql_concurrency.mjs` con credenciales dentro de la URL | Falla antes de red, login o mutaciones. |
 | `validate_mysql_concurrency.mjs` con destino confirmado pero sin cuenta temporal | Falla antes de red y pide cuenta descartable. |
+| `validate_mysql_concurrency.mjs` con evidencia fuera de `qa/` | Falla antes de red, login o mutaciones. |
+| `validate_mysql_concurrency.mjs` con evidencia sin extension `.md` | Falla antes de red, login o mutaciones. |
 | `Git Bash -n scripts/validate_mysql_concurrency.sh` | Paso: sintaxis shell valida sin ejecutar concurrencia. |
 | `scripts/validate_mysql_concurrency.sh` sin `HOSPITAL_VALIDATE_REAL_MYSQL=1` | Falla antes de red, login o mutaciones. |
 | `npm.cmd test -- DashboardView.test.tsx` | Paso: 2 tests; verifica etiquetas financieras y que errores tecnicos del dashboard se traduzcan a mensaje seguro. |
