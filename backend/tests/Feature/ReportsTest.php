@@ -574,6 +574,68 @@ class ReportsTest extends TestCase
         $this->assertStringStartsWith("PK\x03\x04", $xlsx);
     }
 
+    public function test_report_export_includes_financial_reading_sheet_with_sources(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $paidInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $partialInvoice = $this->createInvoice($cashier, 'Hemograma Completo');
+        $this->createInvoice($cashier, 'Eritropoyetina');
+        $voidInvoice = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $paidInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($cashier, $partialInvoice, $sessionId, Payment::METHOD_TRANSFER, '5.00');
+        $this->payInvoice($cashier, $voidInvoice, $sessionId, Payment::METHOD_CARD, '17.25');
+
+        Invoice::query()->whereKey($voidInvoice)->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => now(),
+            'void_reason' => 'No debe inflar export',
+        ]);
+
+        $xlsx = $this->actingAs($this->admin())
+            ->get('/api/reports/export?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->streamedContent();
+
+        $path = tempnam(sys_get_temp_dir(), 'financial-reading-');
+        file_put_contents($path, $xlsx);
+
+        try {
+            $spreadsheet = IOFactory::load($path);
+            $sheet = $spreadsheet->getSheetByName('Lectura Financiera');
+
+            $this->assertNotNull($sheet);
+            $this->assertSame('Lectura financiera del periodo', $sheet->getCell('B2')->getValue());
+            $this->assertSame('Concepto', $sheet->getCell('B5')->getValue());
+            $this->assertSame('Monto', $sheet->getCell('C5')->getValue());
+            $this->assertSame('Fuente', $sheet->getCell('D5')->getValue());
+            $this->assertSame('Facturado', $sheet->getCell('B6')->getValue());
+            $this->assertSame(57.50, $sheet->getCell('C6')->getValue());
+            $this->assertSame('Facturas no anuladas emitidas en el rango', $sheet->getCell('D6')->getValue());
+            $this->assertSame('Cobrado', $sheet->getCell('B7')->getValue());
+            $this->assertSame(22.25, $sheet->getCell('C7')->getValue());
+            $this->assertSame('Pagos publicados no anulados en el rango', $sheet->getCell('D7')->getValue());
+            $this->assertSame('Pendiente', $sheet->getCell('B8')->getValue());
+            $this->assertSame(35.25, $sheet->getCell('C8')->getValue());
+            $this->assertSame('Saldo actual de facturas emitidas o parciales', $sheet->getCell('D8')->getValue());
+            $this->assertSame('Parcial', $sheet->getCell('B9')->getValue());
+            $this->assertSame(11.50, $sheet->getCell('C9')->getValue());
+            $this->assertSame('Facturas con pago parcial separadas de pagadas', $sheet->getCell('D9')->getValue());
+            $this->assertSame('Anulado', $sheet->getCell('B10')->getValue());
+            $this->assertSame(17.25, $sheet->getCell('C10')->getValue());
+            $this->assertSame('Facturas anuladas reportadas fuera de ingresos', $sheet->getCell('D10')->getValue());
+        } finally {
+            if ($path !== false && file_exists($path)) {
+                unlink($path);
+            }
+        }
+    }
+
     public function test_report_export_includes_area_income_sheet(): void
     {
         $this->seedBillingBase();

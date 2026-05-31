@@ -332,6 +332,46 @@ class PremiumExcelExportService
             $sheet1->getColumnDimension($col)->setAutoSize(true);
         }
 
+        $financialSheet = $spreadsheet->createSheet();
+        $financialSheet->setTitle('Lectura Financiera');
+        $financialSheet->setShowGridlines(true);
+
+        $financialSheet->mergeCells('B2:D2');
+        $financialSheet->setCellValue('B2', 'Lectura financiera del periodo');
+        $financialSheet->getStyle('B2:D2')->applyFromArray($titleStyle);
+        $financialSheet->setCellValue('B3', "Rango de fechas: {$from->format('d/m/Y')} al {$to->format('d/m/Y')}");
+        $financialSheet->getStyle('B3')->applyFromArray($subtitleStyle);
+
+        $financialSheet->setCellValue('B5', 'Concepto');
+        $financialSheet->setCellValue('C5', 'Monto');
+        $financialSheet->setCellValue('D5', 'Fuente');
+        $financialSheet->getStyle('B5:D5')->applyFromArray($headerStyle);
+
+        $financialRows = [
+            ['Facturado', (float) ($income['total_billed'] ?? 0), 'Facturas no anuladas emitidas en el rango'],
+            ['Cobrado', (float) ($income['total_collected'] ?? 0), 'Pagos publicados no anulados en el rango'],
+            ['Pendiente', (float) ($income['total_pending'] ?? 0), 'Saldo actual de facturas emitidas o parciales'],
+            ['Parcial', (float) ($income['total_partial'] ?? 0), 'Facturas con pago parcial separadas de pagadas'],
+            ['Anulado', (float) ($income['total_voided'] ?? 0), 'Facturas anuladas reportadas fuera de ingresos'],
+        ];
+
+        $row = 6;
+        foreach ($financialRows as [$label, $amount, $source]) {
+            $financialSheet->setCellValue('B'.$row, $label);
+            $financialSheet->setCellValue('C'.$row, $amount);
+            $financialSheet->setCellValue('D'.$row, $source);
+            $financialSheet->getStyle('C'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+            $row++;
+        }
+
+        $financialSheet->getStyle('B6:D'.($row - 1))->applyFromArray($borderStyle);
+        $financialSheet->getStyle('B6:B'.($row - 1))->applyFromArray($boldRowStyle);
+        $financialSheet->freezePane('A6');
+
+        foreach (['B', 'C', 'D'] as $col) {
+            $financialSheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
         // SHEET 2: Ventas por Categoría
         $sheet2 = $spreadsheet->createSheet();
         $sheet2->setTitle('Categorías');

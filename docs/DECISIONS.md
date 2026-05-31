@@ -833,6 +833,24 @@ Consecuencia:
 - La UI puede consumir un contrato mensual estable sin recalcular dinero en frontend.
 - Las pruebas comparan días activos, métodos y estados para detectar divergencias entre lectura diaria y mensual.
 
+### 2026-05-31 - Export financiero con fuente explicita
+
+Decision:
+
+- El Excel consolidado incluye una hoja `Lectura Financiera`.
+- La hoja separa `Facturado`, `Cobrado`, `Pendiente`, `Parcial` y `Anulado`.
+- Cada monto incluye una columna `Fuente` con la semantica humana del dato.
+
+Motivo:
+
+- Administracion debe poder presentar un reporte fuera del sistema sin interpretar campos tecnicos ni memorizar reglas.
+- Una factura parcial no debe confundirse con pagada y una anulada no debe inflar ingresos.
+
+Consecuencia:
+
+- Los exports usan los mismos hechos financieros backend que alimentan las pantallas.
+- Las pruebas abren el XLSX real y verifican montos y fuentes, no solo que el archivo descargue.
+
 ### 2026-05-31 - Instalador registra worker y respaldo diario
 
 Decision:
