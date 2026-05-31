@@ -107,8 +107,8 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
     const payload = {
       ...data,
       scan_code: optionalCode(data.scan_code),
-      barcode: optionalCode(data.barcode),
-      qr_code: optionalCode(data.qr_code),
+      barcode: service?.barcode ?? null,
+      qr_code: service?.qr_code ?? null,
       special_rule_code: optionalCode(data.special_rule_code),
     };
     try {
@@ -185,46 +185,18 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
         </div>
 
         {scannerEnabled && (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="scan_code">Código de Scanner</Label>
-              <Input
-                id="scan_code"
-                placeholder="LAB-GLU-001"
-                {...register('scan_code')}
-                aria-invalid={Boolean(errors.scan_code)}
-                aria-describedby={errors.scan_code ? 'service-scan-code-error' : undefined}
-                className={cn(errors.scan_code && 'border-destructive')}
-              />
-              {errors.scan_code && <p id="service-scan-code-error" role="alert" className="text-sm text-destructive">{errors.scan_code.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="barcode">Código de Barra</Label>
-              <Input
-                id="barcode"
-                placeholder="Código de barra opcional"
-                {...register('barcode')}
-                aria-invalid={Boolean(errors.barcode)}
-                aria-describedby={errors.barcode ? 'service-barcode-error' : undefined}
-                className={cn(errors.barcode && 'border-destructive')}
-              />
-              {errors.barcode && <p id="service-barcode-error" role="alert" className="text-sm text-destructive">{errors.barcode.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="qr_code">Código QR</Label>
-              <Input
-                id="qr_code"
-                placeholder="Código QR opcional"
-                {...register('qr_code')}
-                aria-invalid={Boolean(errors.qr_code)}
-                aria-describedby={errors.qr_code ? 'service-qr-code-error' : undefined}
-                className={cn(errors.qr_code && 'border-destructive')}
-              />
-              {errors.qr_code && <p id="service-qr-code-error" role="alert" className="text-sm text-destructive">{errors.qr_code.message}</p>}
-            </div>
-          </>
+          <div className="space-y-2">
+            <Label htmlFor="scan_code">Codigo de busqueda para lector</Label>
+            <Input
+              id="scan_code"
+              placeholder="LAB-GLU-001"
+              {...register('scan_code')}
+              aria-invalid={Boolean(errors.scan_code)}
+              aria-describedby={errors.scan_code ? 'service-scan-code-error' : undefined}
+              className={cn(errors.scan_code && 'border-destructive')}
+            />
+            {errors.scan_code && <p id="service-scan-code-error" role="alert" className="text-sm text-destructive">{errors.scan_code.message}</p>}
+          </div>
         )}
 
         <div className="space-y-2">
@@ -281,7 +253,7 @@ function applyBackendErrors(
   validationErrors: Record<string, string[]>,
   setError: ReturnType<typeof useForm<ServiceFormData>>['setError'],
 ) {
-  (['category_id', 'name', 'price', 'scan_code', 'barcode', 'qr_code'] as const).forEach((field) => {
+  (['category_id', 'name', 'price', 'scan_code'] as const).forEach((field) => {
     const message = validationErrors[field]?.[0];
     if (message) {
       setError(field, { type: 'server', message });
@@ -293,7 +265,7 @@ function focusFirstServiceError(
   validationErrors: Record<string, string[]>,
   setFocus: ReturnType<typeof useForm<ServiceFormData>>['setFocus'],
 ) {
-  const firstFocusable = (['name', 'price', 'scan_code', 'barcode', 'qr_code'] as const).find((field) => validationErrors[field]?.[0]);
+  const firstFocusable = (['name', 'price', 'scan_code'] as const).find((field) => validationErrors[field]?.[0]);
   if (firstFocusable) {
     window.setTimeout(() => setFocus(firstFocusable), 0);
   }

@@ -276,7 +276,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                     <TableHead>Nombre</TableHead>
                     <TableHead>Categoría</TableHead>
                     <TableHead>Precio</TableHead>
-                    {scannerEnabled && <TableHead>Código</TableHead>}
+                    {scannerEnabled && <TableHead>Lector</TableHead>}
                     <TableHead>Estado</TableHead>
                     {canManageCatalog && <TableHead className="text-right">Acciones</TableHead>}
                   </TableRow>
@@ -358,7 +358,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                     <TableHead>Nombre</TableHead>
                     <TableHead>Categoría</TableHead>
                     <TableHead>Precio</TableHead>
-                    {scannerEnabled && <TableHead>Código</TableHead>}
+                    {scannerEnabled && <TableHead>Lector</TableHead>}
                     <TableHead>Estado</TableHead>
                     {canManageCatalog && (
                       <TableHead className="text-right">Acciones</TableHead>
@@ -380,18 +380,13 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                       {scannerEnabled && (
                         <TableCell className="px-4 py-3 text-sm text-muted-foreground">
                           <div className="flex flex-col gap-1">
-                            {([
-                              ['Escaner', service.scan_code],
-                              ['Barra', service.barcode],
-                              ['QR', service.qr_code],
-                            ] as const)
-                              .filter(([, code]) => Boolean(code))
-                              .map(([label, code]) => (
-                                <span key={`${service.id}-${label}`} className="text-xs">
-                                  {label}: {code}
-                                </span>
-                              ))}
-                            {!service.scan_code && !service.barcode && !service.qr_code && <span>-</span>}
+                            {service.scan_code ? (
+                              <span className="text-xs">Codigo de busqueda configurado</span>
+                            ) : service.barcode || service.qr_code ? (
+                              <span className="text-xs">Compatible con lector</span>
+                            ) : (
+                              <span>-</span>
+                            )}
                           </div>
                         </TableCell>
                       )}

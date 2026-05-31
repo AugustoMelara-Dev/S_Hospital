@@ -120,7 +120,7 @@ export function ServiceSearch({
               <div className="relative w-36">
                 <Input
                   ref={scannerInputRef}
-                  aria-label="Scanner USB o codigo manual"
+                  aria-label="Lector USB o codigo manual"
                   placeholder="Codigo"
                   value={scanCode}
                   onChange={(e) => onScanCodeChange(e.target.value)}
@@ -214,7 +214,7 @@ export function ServiceSearch({
           <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-muted-foreground">
             <span className="font-medium text-foreground">Busque o elija una categoria</span>
             <span className="max-w-sm text-sm">
-              Escriba el nombre del servicio, escanee un codigo o toque una categoria para ver opciones facturables.
+              Escriba el nombre del servicio, use el lector o toque una categoria para ver opciones facturables.
             </span>
           </div>
         ) : filteredServices.length === 0 ? (
@@ -244,7 +244,7 @@ export function ServiceSearch({
                       </span>
                       {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) && (
                         <span className="text-[10px] text-muted-foreground">
-                          {service.scan_code ?? service.barcode ?? service.qr_code}
+                          Disponible para lector
                         </span>
                       )}
                     </div>

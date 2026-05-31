@@ -251,7 +251,7 @@ describe('NewInvoiceView', () => {
     expect(await screen.findByRole('heading', { name: /nueva factura/i })).toBeInTheDocument();
     expect(await screen.findByLabelText(/nombre del paciente/i)).toBeInTheDocument();
     expect(await screen.findByLabelText(/buscar por nombre, categoria o codigo/i)).toBeInTheDocument();
-    expect(screen.queryByLabelText(/scanner usb o codigo manual/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/lector usb o codigo manual/i)).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/buscar por nombre, categoria o codigo/i), {
       target: { value: 'eritropoyetina' },
     });
@@ -567,7 +567,7 @@ describe('NewInvoiceView', () => {
 
     render(<App />);
 
-    fireEvent.change(await screen.findByLabelText(/scanner usb o codigo manual/i), {
+    fireEvent.change(await screen.findByLabelText(/lector usb o codigo manual/i), {
       target: { value: 'INACTIVE-001' },
     });
     fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
@@ -647,14 +647,14 @@ describe('NewInvoiceView', () => {
 
     render(<App />);
 
-    fireEvent.change(await screen.findByLabelText(/scanner usb o codigo manual/i), {
+    fireEvent.change(await screen.findByLabelText(/lector usb o codigo manual/i), {
       target: { value: 'MISSING-001' },
     });
     fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
 
     expect((await screen.findAllByText(/no se encontro servicio activo para este codigo/i)).length).toBeGreaterThan(0);
     await waitFor(() => {
-      expect(screen.getByLabelText(/scanner usb o codigo manual/i)).toHaveFocus();
+      expect(screen.getByLabelText(/lector usb o codigo manual/i)).toHaveFocus();
     });
   });
 

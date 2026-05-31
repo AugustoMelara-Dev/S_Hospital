@@ -437,8 +437,8 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     disabled={!canEdit}
                   />
                   <span>
-                    <span className="block font-medium">Habilitar scanner/codigos en caja</span>
-                    <span className="text-muted-foreground">Si esta apagado, la pantalla de nueva factura oculta controles de scanner y codigos internos.</span>
+                    <span className="block font-medium">Habilitar lector en caja</span>
+                    <span className="text-muted-foreground">Si esta apagado, la pantalla de nueva factura queda enfocada solo en busqueda por nombre y area.</span>
                   </span>
                 </label>
                 <label className="flex items-start gap-3 text-sm">
