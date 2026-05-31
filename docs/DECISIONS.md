@@ -1188,7 +1188,7 @@ Consecuencia:
 Decision:
 
 - `/api/reports/operations` aplica `area_id` a anulaciones, reimpresiones, reversos de pago y resumen por cajero.
-- Cuando una factura tiene items de varias areas, el total cobrado por cajero se asigna proporcionalmente usando snapshots de `invoice_items`.
+- Cuando una factura tiene items de varias areas, el total cobrado por cajero se asigna proporcionalmente en centavos usando snapshots de `invoice_items`.
 
 Motivo:
 
@@ -1198,4 +1198,5 @@ Motivo:
 Consecuencia:
 
 - El reporte operativo, el reporte de ingresos y el reporte por areas usan el mismo criterio de snapshots para filtros de area.
+- El prorrateo operativo evita floats y mantiene el formato final desde centavos.
 - La prueba de reportes falla si `area_id` vuelve a omitirse del resumen operativo.

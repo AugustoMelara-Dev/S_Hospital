@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\BackupLog;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Support\Money;
 use Illuminate\Support\Carbon;
 
 class OperationsReportService
@@ -296,9 +297,9 @@ class OperationsReportService
             $grouped[$userId]['cash_sessions'][] = $payment->cash_session_id;
             $grouped[$userId]['invoices'][] = $payment->invoice_id;
 
-            $paymentAmountCents = (int) round(((float) $payment->amount) * 100);
+            $paymentAmountCents = Money::parseCents((string) $payment->amount, 'payment_amount');
             if (! empty($filters['category_id']) || ! empty($filters['area_id'])) {
-                $filteredTotal = 0.0;
+                $filteredTotalCents = 0;
                 $invoice = $payment->invoice;
                 if ($invoice) {
                     foreach ($invoice->items as $item) {
@@ -308,12 +309,12 @@ class OperationsReportService
                             || (int) $item->area_id === (int) $filters['area_id'];
 
                         if ($matchesCategory && $matchesArea) {
-                            $filteredTotal += (float) $item->line_total;
+                            $filteredTotalCents += Money::parseCents((string) $item->line_total, 'line_total');
                         }
                     }
-                    $invoiceTotal = (float) $invoice->total;
-                    if ($invoiceTotal > 0) {
-                        $collectedCents = (int) round($paymentAmountCents * ($filteredTotal / $invoiceTotal));
+                    $invoiceTotalCents = Money::parseCents((string) $invoice->total, 'invoice_total');
+                    if ($invoiceTotalCents > 0) {
+                        $collectedCents = $this->prorateCents($paymentAmountCents, $filteredTotalCents, $invoiceTotalCents);
                     } else {
                         $collectedCents = 0;
                     }
@@ -386,5 +387,14 @@ class OperationsReportService
             || ! empty($filters['area_id'])
             || ! empty($filters['method'])
             || ! empty($filters['status']);
+    }
+
+    private function prorateCents(int $paymentCents, int $filteredTotalCents, int $invoiceTotalCents): int
+    {
+        if ($paymentCents <= 0 || $filteredTotalCents <= 0 || $invoiceTotalCents <= 0) {
+            return 0;
+        }
+
+        return intdiv(($paymentCents * $filteredTotalCents) + intdiv($invoiceTotalCents, 2), $invoiceTotalCents);
     }
 }
