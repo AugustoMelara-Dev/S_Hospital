@@ -49,9 +49,13 @@ try {
 
 $backendDir = Join-Path $ProjectRoot "backend"
 $artisanPath = Join-Path $backendDir "artisan"
+$composeFile = Join-Path $ProjectRoot "docker-compose.prod.yml"
+$envFile = Join-Path $ProjectRoot ".env"
+$isPhpMode = Test-Path -LiteralPath $artisanPath
+$isDockerMode = (-not $isPhpMode) -and (Test-Path -LiteralPath $composeFile)
 
-if (-not (Test-Path -LiteralPath $artisanPath)) {
-    throw "No se encontro la aplicacion del sistema. Revise que esta carpeta sea la instalacion completa."
+if (-not $isPhpMode -and -not $isDockerMode) {
+    throw "No se encontro backend\artisan ni docker-compose.prod.yml. Revise que esta carpeta sea una instalacion completa."
 }
 
 $workerTaskName = "$TaskPrefix-BackupWorker"
@@ -114,12 +118,33 @@ function Get-ValidatedPhpSource([string] $value) {
     return "PATH del sistema"
 }
 
+function Get-ValidatedDockerSource {
+    if (-not (Test-Path -LiteralPath $envFile)) {
+        throw "No se encontro .env productivo. Ejecute setup.bat antes de registrar tareas de respaldo Docker."
+    }
+
+    $docker = Get-Command "docker" -ErrorAction SilentlyContinue
+    if ($null -eq $docker) {
+        throw "No se encontro Docker. El paquete offline productivo requiere Docker Desktop o Docker Engine."
+    }
+
+    $configCommand = 'docker compose -f "' + $composeFile + '" --env-file "' + $envFile + '" config --quiet >nul 2>nul'
+    & cmd.exe /c $configCommand
+    if ($LASTEXITCODE -ne 0) {
+        throw "docker-compose.prod.yml o .env no son validos para respaldos."
+    }
+
+    return "Docker Compose"
+}
+
 $workerArgs = '/c "' + $workerScript + '" "' + $PhpPath + '"'
 $backupArgs = '/c "' + $dailyScript + '" "' + $PhpPath + '"'
 $safeWorkerArgs = '/c "%PROJECT_ROOT%\scripts\run_backup_worker.cmd" "[php-configurado]"'
 $safeBackupArgs = '/c "%PROJECT_ROOT%\scripts\run_scheduled_backup.cmd" "[php-configurado]"'
-$phpSource = if ($Status -or $Uninstall) {
+$runtimeSource = if ($Status -or $Uninstall) {
     "no requerido para esta accion"
+} elseif ($isDockerMode) {
+    Get-ValidatedDockerSource
 } else {
     Get-ValidatedPhpSource $PhpPath
 }
@@ -132,7 +157,7 @@ if (-not $Uninstall -and -not $Status) {
 
 Write-Host "Preparando tareas programadas de respaldos para Sistema de Caja Hospitalaria."
 Write-Host "Instalacion: %PROJECT_ROOT%"
-Write-Host "PHP: $phpSource"
+Write-Host "Modo: $runtimeSource"
 Write-Host "Worker: %PROJECT_ROOT%\scripts\run_backup_worker.cmd"
 Write-Host "Respaldo diario: %PROJECT_ROOT%\scripts\run_scheduled_backup.cmd"
 Write-Host "Tarea worker: $workerTaskName"

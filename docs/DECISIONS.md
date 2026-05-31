@@ -1270,3 +1270,23 @@ Consecuencia:
 
 - La UI falla cerrada ante montos malformados y conserva etiquetas humanas.
 - La prueba de dashboard falla si vuelven a renderizarse `NaN` o importes crudos invalidos.
+
+### 2026-05-31 - Backups offline usan Docker Compose cuando no existe artisan host
+
+Decision:
+
+- Los wrappers `run_backup_worker.cmd`, `run_scheduled_backup.cmd` y `start_backup_automation.cmd` detectan dos modos: PHP local con `backend\artisan`, o Docker offline con `docker-compose.prod.yml`.
+- En modo Docker offline, el worker se asegura con `docker compose up -d queue-worker` y el respaldo diario corre dentro del contenedor backend con `php artisan hospital:backup --type=scheduled`.
+- El instalador de tareas de Windows acepta ambos modos y exige `.env`, Docker y compose validos antes de registrar tareas Docker.
+- El instalador LAN registra tareas de backup tambien en la ruta Docker, no solo en bare-metal.
+
+Motivo:
+
+- El paquete `offline-release` no incluye una aplicacion PHP host completa bajo `backend\artisan`; contiene imagenes/compose productivos.
+- Una tarea programada que depende de PHP local en ese paquete puede quedar instalada pero nunca respaldar datos reales.
+
+Consecuencia:
+
+- El paquete offline falla temprano si falta `.env`, Docker o compose valido.
+- La UI puede seguir usando el servicio `queue-worker` para convertir backups manuales de `pending` a `success`.
+- La validacion final de restore y scheduler despues de reinicio sigue pendiente del servidor fisico final.

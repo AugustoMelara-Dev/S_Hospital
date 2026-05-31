@@ -35,7 +35,8 @@ El loop de automatizacion tambien se detiene al inicio si la hora esta mal
 escrita, dejando el motivo en `backend\storage\logs\backup-automation.log`.
 
 Antes de activar respaldos en una PC instalada, soporte puede ejecutar estas
-verificaciones sin iniciar workers ni crear respaldos:
+verificaciones sin iniciar workers ni crear respaldos. Funcionan tanto en
+instalacion PHP local como en paquete Docker offline:
 
 ```powershell
 scripts\run_backup_worker.cmd --check
@@ -65,6 +66,9 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_curr
 
 La salida de estado no debe mostrar rutas locales crudas ni el contenido del
 archivo Startup.
+
+En paquete Docker offline, estas verificaciones requieren que `setup.bat` ya
+haya creado `.env`. Si `.env` falta, deben detenerse antes de tocar datos.
 
 El responsable tecnico puede validar que el worker procesa respaldos sin dejar
 la contrasena escrita en el historial de PowerShell:

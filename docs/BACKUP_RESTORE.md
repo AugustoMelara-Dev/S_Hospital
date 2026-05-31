@@ -15,18 +15,32 @@ Desde el panel:
 5. Confirmar que el worker local lo cambie a `success`.
 6. Descargar el archivo y copiarlo a una carpeta local protegida o USB.
 
-El servidor debe tener un worker de cola local activo:
+El servidor debe tener un worker de cola local activo. En instalacion
+bare-metal/XAMPP:
 
 ```powershell
 cd C:\HospitalBilling\backend
 php artisan queue:work --queue=backups --tries=1 --timeout=600
 ```
 
-Desde consola del servidor:
+En paquete offline con Docker, el servicio `queue-worker` de
+`docker-compose.prod.yml` debe estar activo:
+
+```powershell
+docker compose -f docker-compose.prod.yml --env-file .env up -d queue-worker
+```
+
+Desde consola del servidor bare-metal:
 
 ```powershell
 cd C:\HospitalBilling\backend
 php artisan hospital:backup --type=scheduled
+```
+
+Desde paquete offline con Docker:
+
+```powershell
+docker compose -f docker-compose.prod.yml --env-file .env exec -T backend php artisan hospital:backup --type=scheduled
 ```
 
 El comando crea y ejecuta el backup en el mismo proceso; se recomienda para tareas programadas fuera del horario de caja. La UI registra el backup y lo deja a la cola `backups` para evitar que el navegador espere el dump completo.
@@ -61,7 +75,13 @@ php artisan schedule:run
 
 Por defecto corre `hospital:backup --type=scheduled` a las `02:00`. La hora se puede ajustar con `HOSPITAL_DAILY_BACKUP_TIME=HH:MM` en `.env` antes de ejecutar `php artisan config:cache`.
 
-En Windows de produccion se recomienda usar el Programador de tareas para llamar `php artisan schedule:run` cada minuto, o usar el helper de abajo si se prefiere registrar directamente la tarea diaria `hospital:backup --type=scheduled`. El backup automatico queda registrado como usuario `Sistema` en la UI porque no depende de un usuario web. La creacion y descarga manual desde navegador siguen permitidas solo para usuarios con permisos `backups.create` y `backups.download`.
+En Windows de produccion se recomienda usar el helper de abajo. El helper detecta
+si la instalacion tiene `backend\artisan` y registra tareas PHP local; si el
+paquete es offline Docker y no trae `backend\artisan`, registra wrappers que
+llaman `docker compose` contra `docker-compose.prod.yml`. El backup automatico
+queda registrado como usuario `Sistema` en la UI porque no depende de un usuario
+web. La creacion y descarga manual desde navegador siguen permitidas solo para
+usuarios con permisos `backups.create` y `backups.download`.
 
 ## Programar backup diario en Windows
 
@@ -80,7 +100,7 @@ Crear otra tarea o servicio local para el worker:
 - Iniciar en: `C:\HospitalBilling\backend`
 - Frecuencia: al iniciar Windows o como servicio supervisado.
 
-Tambien existe un helper para registrar las tareas de Windows:
+Helper para registrar las tareas de Windows:
 
 ```powershell
 cd C:\Projects\S_Hospital
@@ -91,19 +111,22 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_window
 
 El helper crea una tarea de worker al iniciar Windows y una tarea diaria de
 backup programado. Primero ejecutar `-WhatIfOnly` para confirmar rutas y el
-binario real de PHP.
+runtime real: `PHP local` o `Docker Compose`.
 La salida de `-WhatIfOnly` oculta rutas locales como `%PROJECT_ROOT%` y
 `[php-configurado]`; esto es intencional para que la captura se pueda enviar a
 soporte sin exponer carpetas del servidor. Las tareas reales conservan las rutas
 necesarias internamente para poder ejecutarse.
-Si `-PhpPath` apunta a una ruta inexistente, el helper se detiene antes de
-registrar tareas para evitar respaldos automaticos rotos.
+Si `-PhpPath` apunta a una ruta inexistente en modo PHP local, el helper se
+detiene antes de registrar tareas para evitar respaldos automaticos rotos. En
+modo Docker, el helper exige `docker`, `docker compose`, `.env` y compose
+productivo validos antes de registrar tareas.
 Si las tareas ya existen, el helper falla sin sobrescribirlas; usar
 `-UpdateExisting` para reemplazarlas explicitamente. Para desinstalarlas, usar
 `-Uninstall`. La instalacion, actualizacion y desinstalacion requieren abrir
 PowerShell como administrador.
 
-Tambien se incluyen wrappers directos para entornos Windows/XAMPP:
+Tambien se incluyen wrappers directos. Detectan automaticamente modo PHP local o
+modo Docker offline:
 
 ```powershell
 scripts\run_scheduled_backup.cmd
@@ -111,7 +134,10 @@ scripts\run_backup_worker.cmd
 scripts\start_backup_automation.cmd
 ```
 
-Por defecto usan `C:\xampp\php\php.exe`. Si PHP esta en otra ruta, definir `HOSPITAL_PHP_PATH` antes de ejecutarlos o al crear la tarea programada.
+En modo PHP local, por defecto usan `C:\xampp\php\php.exe`. Si PHP esta en otra
+ruta, definir `HOSPITAL_PHP_PATH` antes de ejecutarlos o al crear la tarea
+programada. En modo Docker offline no requieren PHP host; usan
+`docker-compose.prod.yml` y `.env`.
 Antes de dejarlos activos, soporte puede validarlos sin iniciar workers ni crear
 respaldos:
 
@@ -121,11 +147,12 @@ scripts\run_scheduled_backup.cmd --check
 scripts\start_backup_automation.cmd --check
 ```
 
-Si la validacion falla, el mensaje debe indicar una accion simple: revisar PHP,
-permisos, espacio en disco o instalacion completa. Los detalles tecnicos quedan
-en `backend/storage/logs/backup_worker_task.log`,
-`backend/storage/logs/backup_scheduled_task.log` y
-`backend/storage/logs/backup-automation.log`.
+Si la validacion falla, el mensaje debe indicar una accion simple: revisar PHP o
+Docker segun el modo, permisos, espacio en disco, `.env` o instalacion completa.
+Los detalles tecnicos quedan en `backend/storage/logs/*` para modo PHP local o
+en `install-logs\backup_worker_task.log`,
+`install-logs\backup_scheduled_task.log` y
+`install-logs\backup-automation.log` para modo Docker offline.
 
 Si el Programador de tareas esta bloqueado por permisos/UAC, existe una alternativa por usuario actual:
 
