@@ -449,6 +449,75 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.cashiers.0.total_collected', '51.75');
     }
 
+    public function test_operations_report_area_filter_prorates_partial_payments_with_integer_cents(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $category = Category::query()->firstOrFail();
+        $firstArea = Area::query()->create([
+            'name' => 'Prorrateo uno',
+            'slug' => 'prorrateo-uno',
+            'active' => true,
+        ]);
+        $secondArea = Area::query()->create([
+            'name' => 'Prorrateo dos',
+            'slug' => 'prorrateo-dos',
+            'active' => true,
+        ]);
+        $oneCentService = Service::query()->create([
+            'category_id' => $category->id,
+            'area_id' => $firstArea->id,
+            'name' => 'Prorrateo un centavo',
+            'slug' => 'prorrateo-un-centavo',
+            'price' => '0.01',
+            'taxable' => false,
+            'active' => true,
+            'visible_in_billing' => true,
+            'is_billable' => true,
+        ]);
+        $twoCentService = Service::query()->create([
+            'category_id' => $category->id,
+            'area_id' => $secondArea->id,
+            'name' => 'Prorrateo dos centavos',
+            'slug' => 'prorrateo-dos-centavos',
+            'price' => '0.02',
+            'taxable' => false,
+            'active' => true,
+            'visible_in_billing' => true,
+            'is_billable' => true,
+        ]);
+
+        $invoiceId = app(CreateInvoiceAction::class)
+            ->execute([
+                'patient_name' => 'Maria Lopez',
+                'items' => [
+                    [
+                        'service_id' => $oneCentService->id,
+                        'quantity' => '1.00',
+                    ],
+                    [
+                        'service_id' => $twoCentService->id,
+                        'quantity' => '1.00',
+                    ],
+                ],
+            ], $cashier->fresh())
+            ->id;
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '0.01');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/operations?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&area_id='.$firstArea->id)
+            ->assertOk()
+            ->assertJsonPath('data.cashiers.0.total_collected', '0.00');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/operations?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&area_id='.$secondArea->id)
+            ->assertOk()
+            ->assertJsonPath('data.cashiers.0.total_collected', '0.01');
+    }
+
     public function test_range_filters_apply_to_category_services_and_cashier_reports(): void
     {
         $this->seedBillingBase();
