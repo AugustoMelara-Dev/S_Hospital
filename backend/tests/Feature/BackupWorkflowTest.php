@@ -228,7 +228,7 @@ class BackupWorkflowTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
         $connection = Config::get('database.default');
-        
+
         $originalDb = Config::get("database.connections.{$connection}.database");
         $originalPassword = Config::get("database.connections.{$connection}.password");
 
