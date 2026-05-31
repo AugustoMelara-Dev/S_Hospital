@@ -82,6 +82,12 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_window
 El helper crea una tarea de worker al iniciar Windows y una tarea diaria de
 backup programado. Primero ejecutar `-WhatIfOnly` para confirmar rutas y el
 binario real de PHP.
+La salida de `-WhatIfOnly` oculta rutas locales como `%PROJECT_ROOT%` y
+`[php-configurado]`; esto es intencional para que la captura se pueda enviar a
+soporte sin exponer carpetas del servidor. Las tareas reales conservan las rutas
+necesarias internamente para poder ejecutarse.
+Si `-PhpPath` apunta a una ruta inexistente, el helper se detiene antes de
+registrar tareas para evitar respaldos automaticos rotos.
 Si las tareas ya existen, el helper falla sin sobrescribirlas; usar
 `-UpdateExisting` para reemplazarlas explicitamente. Para desinstalarlas, usar
 `-Uninstall`. La instalacion, actualizacion y desinstalacion requieren abrir

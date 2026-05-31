@@ -75,8 +75,18 @@ Si el instalador no pudo registrar tareas por permisos, el tecnico puede hacerlo
 despues con:
 
 ```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
+```
+
+```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting
 ```
+
+El modo `-WhatIfOnly` no registra ni elimina tareas. Su salida usa nombres
+seguros como `%PROJECT_ROOT%` y `[php-configurado]` para poder compartir la
+captura con soporte sin exponer rutas locales del servidor.
+Tambien valida que PHP exista antes de dejar una tarea programada que podria
+fallar fuera del horario de caja.
 
 Si no hay permisos de administrador, soporte puede validar el arranque de
 backups para el usuario actual sin cambiar el registro ni iniciar procesos:

@@ -58,6 +58,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Wrappers Windows de respaldo agregan `--check`, validan instalacion/PHP/logs con mensajes humanos y no inician workers ni crean respaldos durante la verificacion. | Verificado |
 | Esta fase | Loop de respaldo automatico agrega `-WhatIfOnly` y deja de escribir rutas locales crudas en `backup-automation.log`. | Verificado |
 | Esta fase | Paquete de soporte recoge los logs reales de respaldo desde `backend\storage\logs`, incluyendo worker, respaldo programado y automatizacion. | Verificado |
+| Esta fase | Instalador de tareas Windows de respaldo sanitiza consola/errores, valida PHP antes de registrar tareas, conserva rutas reales solo dentro de la tarea y recuerda no borrar datos para corregir fallos. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -132,8 +133,11 @@ Resultado observado:
 | `validate_lan_client.ps1` con `-Force` sobre archivo temporal | Regenera borrador temporal, marca rutas fallidas y mantiene `PRODUCTION_READY` bloqueado. |
 | `final_production_handoff.ps1` con referencias de evidencia inexistentes | Paso: marco LAN, impresora, restore y concurrencia como `MISS`, genero `PRODUCTION_CANDIDATE` y mantuvo rutas sanitizadas en el reporte. |
 | Parser PowerShell de `install_backup_tasks_windows.ps1` | Paso. |
-| `install_backup_tasks_windows.ps1 -WhatIfOnly -DailyBackupTime 99:99` | Falla con mensaje humano antes de registrar, actualizar o remover tareas. |
-| `install_backup_tasks_windows.ps1 -WhatIfOnly -DailyBackupTime 23:30` | Paso: muestra comandos y confirma que no registra tareas en modo WhatIf. |
+| `install_backup_tasks_windows.ps1 -WhatIfOnly -DailyBackupTime 99:99` | Falla con mensaje humano antes de registrar, actualizar o remover tareas; no imprime rutas locales crudas. |
+| `install_backup_tasks_windows.ps1 -WhatIfOnly -DailyBackupTime 23:30` | Paso: muestra comandos sanitizados y confirma que no registra tareas en modo WhatIf. |
+| `install_backup_tasks_windows.ps1 -ProjectRoot C:\tmp\does-not-exist-shospital -WhatIfOnly` | Falla con mensaje humano de carpeta del sistema, sin traza tecnica ni ruta sensible. |
+| `install_backup_tasks_windows.ps1 -WhatIfOnly -PhpPath C:\tmp\does-not-exist-php.exe` | Falla antes de registrar tareas con mensaje humano de PHP faltante, sin imprimir la ruta local cruda. |
+| `install_backup_tasks_windows.ps1 -Status -DailyBackupTime 99:99` | Paso: permite revisar estado sin validar hora irrelevante ni imprimir ruta local. |
 | Parser PowerShell de `repair_hospital_system.ps1` despues de redaccion extra | Paso. |
 | `repair_hospital_system.ps1` smoke sanitizado | Paso: genero diagnostico temporal sin `C:\Projects\S_Hospital`, rutas de usuario ni valores crudos tipo `APP_KEY`, `DB_PASSWORD`, `TOKEN` o `SECRET`; evidencia temporal eliminada. |
 | Consola de `repair_hospital_system.ps1` | Paso: los mensajes `ERROR` y `REVISION` usan el mismo detalle sanitizado que el archivo de diagnostico. |
