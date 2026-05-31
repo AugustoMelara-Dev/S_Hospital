@@ -3,6 +3,7 @@ import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Alert } from './ui/alert';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { logClientIssue } from '../lib/support/clientIssueLog';
 
 type AppErrorBoundaryProps = {
   children: ReactNode;
@@ -22,7 +23,15 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('App render failure', error, errorInfo.componentStack);
+    logClientIssue(error, {
+      action: 'render',
+      module: 'ui',
+      route: window.location.pathname,
+    });
+
+    if (import.meta.env.DEV) {
+      console.error('App render failure', error, errorInfo.componentStack);
+    }
   }
 
   render() {
@@ -48,7 +57,7 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <Alert variant="destructive" title="Error controlado">
-              Recargue la pantalla. Si vuelve a ocurrir, capture esta pantalla y revise la consola del navegador.
+              Recargue la pantalla. Si vuelve a ocurrir, avise a supervisor o soporte e indique que pantalla estaba usando. El detalle tecnico quedo guardado en este navegador para soporte.
             </Alert>
             <Button type="button" onClick={() => window.location.reload()}>
               <RefreshCw data-icon="inline-start" aria-hidden="true" />

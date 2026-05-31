@@ -1,3 +1,5 @@
+import { PERMISSION_DENIED_MESSAGE } from '../support/clientIssueLog';
+
 let sessionExpiredHandler: (() => void) | null = null;
 let requestChain: Promise<unknown> = Promise.resolve();
 
@@ -27,7 +29,7 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
   }
 
   if (error instanceof ApiError && error.status === 403) {
-    return 'No tiene permiso para esta accion.';
+    return PERMISSION_DENIED_MESSAGE;
   }
 
   if (error instanceof ApiError && error.status === 422) {
@@ -175,7 +177,7 @@ export const apiClient = {
       }
 
       if (response.status === 403) {
-        throw new ApiError('No tiene permiso para esta accion.', response.status);
+        throw new ApiError(PERMISSION_DENIED_MESSAGE, response.status);
       }
 
       if (response.status === 419) {
@@ -215,7 +217,7 @@ export const apiClient = {
       }
 
       if (response.status === 403) {
-        throw new ApiError('No tiene permiso para esta accion.', response.status);
+        throw new ApiError(PERMISSION_DENIED_MESSAGE, response.status);
       }
 
       if (response.status === 419) {
