@@ -1,6 +1,6 @@
 ﻿# Checklist De Capacitacion
 
-Use esta lista para capacitar a personal de caja y administracion.
+Use esta lista para capacitar a personal de caja, supervision y administracion.
 
 ## Cajero
 
@@ -18,7 +18,20 @@ Use esta lista para capacitar a personal de caja y administracion.
 - [ ] Reimprime desde historial si tiene permiso.
 - [ ] Cierra caja y revisa diferencia.
 
-## Supervisor O Administrador
+## Supervisor
+
+- [ ] Revisa estado operativo al inicio del turno.
+- [ ] Confirma que cada cajero usa su propia cuenta.
+- [ ] Sabe que hacer si el servidor no abre.
+- [ ] Sabe que hacer si cae la red local.
+- [ ] Sabe que hacer si la impresora no responde.
+- [ ] Autoriza reimpresiones solo con motivo.
+- [ ] Revisa factura, pago y motivo antes de una anulacion.
+- [ ] Revisa facturas pendientes antes de cierre.
+- [ ] Documenta diferencias de caja.
+- [ ] No restaura backups ni borra datos por cuenta propia.
+
+## Administrador
 
 - [ ] Configura datos del hospital.
 - [ ] Configura serie/numeracion autorizada.
