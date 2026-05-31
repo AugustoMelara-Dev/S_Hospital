@@ -88,6 +88,27 @@ Despues de instalar:
 8. Cree respaldo.
 9. Cierre caja.
 
+## Cierre Final Antes De Operar
+
+No declare la instalacion lista para produccion hasta completar cuatro
+evidencias reales:
+
+- `qa\LAN_CLIENT_VALIDATION_PROOF.md`: una segunda computadora abre el sistema
+  por IP o nombre LAN.
+- `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`: la impresora institucional imprime
+  muestras fisicas media carta, carta, A5 y reimpresion.
+- `qa\FINAL_RESTORE_PROOF.md`: un respaldo restaura correctamente en una base
+  descartable, nunca sobre la base activa.
+- `qa\FINAL_CONCURRENCY_PROOF.md`: las pruebas de doble accion contra entorno
+  descartable no duplican caja, factura ni pago.
+
+El comando de cierre debe seguir reportando `PRODUCTION_CANDIDATE` hasta que
+esas cuatro evidencias existan y el preflight pase sin omisiones:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000
+```
+
 ## Soporte
 
 Si el sistema no abre:
