@@ -194,6 +194,57 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->assertJsonPath('data.receipt.fiscal.valid_until', now()->addYear()->toDateString());
     }
 
+    public function test_reprint_excludes_voided_payments_after_reversal(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $supervisor = $this->supervisor();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
+
+        $cashPaymentId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '10.00',
+            ])
+            ->assertCreated()
+            ->json('data.payment.id');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_TRANSFER,
+                'amount' => '7.25',
+                'reference' => 'TRX-REPRINT-1',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID);
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/payments/{$cashPaymentId}/void", [
+                'reason' => 'Correccion antes de reimpresion',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_PARTIAL);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/reprint", [
+                'width' => 'half_letter',
+                'reason' => 'Copia con pago corregido',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.audit.action', 'invoice.reprinted')
+            ->assertJsonPath('data.receipt.invoice.status', Invoice::STATUS_PARTIAL)
+            ->assertJsonPath('data.receipt.invoice.paid_amount', '7.25')
+            ->assertJsonPath('data.receipt.invoice.balance_due', '10.00')
+            ->assertJsonCount(1, 'data.receipt.payments')
+            ->assertJsonPath('data.receipt.payments.0.method', Payment::METHOD_TRANSFER)
+            ->assertJsonPath('data.receipt.payments.0.amount', '7.25')
+            ->assertJsonPath('data.receipt.payments.0.reference', 'TRX-REPRINT-1');
+    }
+
     public function test_cashier_cannot_reprint_other_or_old_invoice_without_reprint_any(): void
     {
         $this->seedBillingBase();
