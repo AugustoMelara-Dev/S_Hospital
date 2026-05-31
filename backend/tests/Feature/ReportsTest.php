@@ -17,6 +17,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -495,6 +496,40 @@ class ReportsTest extends TestCase
         $xlsx = $response->streamedContent();
 
         $this->assertStringStartsWith("PK\x03\x04", $xlsx);
+    }
+
+    public function test_report_export_includes_area_income_sheet(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        $xlsx = $this->actingAs($this->admin())
+            ->get('/api/reports/export?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->streamedContent();
+
+        $path = tempnam(sys_get_temp_dir(), 'area-report-');
+        file_put_contents($path, $xlsx);
+
+        try {
+            $spreadsheet = IOFactory::load($path);
+            $sheet = $spreadsheet->getSheetByName('Areas');
+
+            $this->assertNotNull($sheet);
+            $this->assertSame('Ingresos por Area Institucional', $sheet->getCell('B2')->getValue());
+            $this->assertSame('Laboratorio', $sheet->getCell('B6')->getValue());
+            $this->assertSame(1, $sheet->getCell('C6')->getValue());
+            $this->assertSame(17.25, $sheet->getCell('E6')->getValue());
+        } finally {
+            if ($path !== false && file_exists($path)) {
+                unlink($path);
+            }
+        }
     }
 
     public function test_report_export_guest_receives_json_unauthenticated_for_download_accept_header(): void

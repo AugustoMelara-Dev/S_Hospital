@@ -5,6 +5,7 @@ namespace App\Actions\Reports;
 use App\Models\FiscalSetting;
 use App\Support\HospitalName;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Chart\Chart;
 use PhpOffice\PhpSpreadsheet\Chart\DataSeries;
 use PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues;
@@ -17,7 +18,6 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 
 class PremiumExcelExportService
@@ -25,6 +25,7 @@ class PremiumExcelExportService
     public function generate(
         array $income,
         array $categories,
+        array $areas,
         array $services,
         array $operations,
         Carbon $from,
@@ -134,7 +135,7 @@ class PremiumExcelExportService
         // Filters Content
         $sheet0->setCellValue('B7', 'Fecha Inicial (Desde)');
         $sheet0->setCellValue('C7', $from->format('d/m/Y'));
-        
+
         $sheet0->setCellValue('B8', 'Fecha Final (Hasta)');
         $sheet0->setCellValue('C8', $to->format('d/m/Y'));
 
@@ -180,7 +181,7 @@ class PremiumExcelExportService
             ]);
 
             try {
-                $drawing = new Drawing();
+                $drawing = new Drawing;
                 $drawing->setName('Logo del Hospital');
                 $drawing->setDescription('Logo oficial de la institucion');
                 $drawing->setPath($logoPath);
@@ -288,10 +289,10 @@ class PremiumExcelExportService
                 new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Resumen General'!\$C\$10", null, 1),
             ];
             $xAxisTickValues1 = [
-                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Resumen General'!\$B\$11:\$B\$" . $lastMethodRow, null, $methodCount),
+                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Resumen General'!\$B\$11:\$B\$".$lastMethodRow, null, $methodCount),
             ];
             $dataSeriesValues1 = [
-                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Resumen General'!\$C\$11:\$C\$" . $lastMethodRow, null, $methodCount),
+                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Resumen General'!\$C\$11:\$C\$".$lastMethodRow, null, $methodCount),
             ];
 
             $series1 = new DataSeries(
@@ -369,7 +370,7 @@ class PremiumExcelExportService
 
         // Freeze pane & auto-filter
         $sheet2->freezePane('A6');
-        $sheet2->setAutoFilter('B5:D'.($row-1));
+        $sheet2->setAutoFilter('B5:D'.($row - 1));
 
         // Dynamic Interactive Excel Column Chart for Service Categories
         $categoryCount = count($categories['categories']);
@@ -417,7 +418,62 @@ class PremiumExcelExportService
             $sheet2->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // SHEET 3: Ventas por Servicio
+        // SHEET 3: Ventas por Area
+        $sheetArea = $spreadsheet->createSheet();
+        $sheetArea->setTitle('Areas');
+        $sheetArea->setShowGridlines(true);
+
+        $sheetArea->setCellValue('B2', 'Ingresos por Area Institucional');
+        $sheetArea->getStyle('B2')->applyFromArray($titleStyle);
+        $sheetArea->setCellValue('B3', "Rango de fechas: {$from->format('d/m/Y')} al {$to->format('d/m/Y')}");
+        $sheetArea->getStyle('B3')->applyFromArray($subtitleStyle);
+
+        $sheetArea->setCellValue('B5', 'Area');
+        $sheetArea->setCellValue('C5', 'Items');
+        $sheetArea->setCellValue('D5', 'Cantidad');
+        $sheetArea->setCellValue('E5', 'Total Facturado');
+        $sheetArea->getStyle('B5:E5')->applyFromArray($headerStyle);
+
+        $row = 6;
+        if (empty($areas['areas'])) {
+            $sheetArea->setCellValue('B'.$row, 'Sin ingresos por area en el rango');
+            $sheetArea->mergeCells('B'.$row.':E'.$row);
+            $row++;
+        } else {
+            foreach ($areas['areas'] as $area) {
+                $sheetArea->setCellValue('B'.$row, $area['area']);
+                $sheetArea->setCellValue('C'.$row, (int) $area['item_count']);
+                $sheetArea->setCellValue('D'.$row, (float) $area['quantity']);
+                $sheetArea->setCellValue('E'.$row, (float) $area['total']);
+
+                $sheetArea->getStyle('C'.$row)->getNumberFormat()->setFormatCode('#,##0');
+                $sheetArea->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0.00');
+                $sheetArea->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+                $row++;
+            }
+        }
+
+        $lastAreaRow = $row - 1;
+        $sheetArea->setCellValue('B'.$row, 'Total');
+        $sheetArea->setCellValue('C'.$row, empty($areas['areas']) ? 0 : '=SUM(C6:C'.($row - 1).')');
+        $sheetArea->setCellValue('D'.$row, empty($areas['areas']) ? 0 : '=SUM(D6:D'.($row - 1).')');
+        $sheetArea->setCellValue('E'.$row, empty($areas['areas']) ? 0 : '=SUM(E6:E'.($row - 1).')');
+
+        $sheetArea->getStyle('C'.$row)->getNumberFormat()->setFormatCode('#,##0');
+        $sheetArea->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheetArea->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+        $sheetArea->getStyle('B'.$row.':E'.$row)->applyFromArray($boldRowStyle);
+        $sheetArea->getStyle('B'.$row.':E'.$row)->getBorders()->getTop()->setBorderStyle(Border::BORDER_DOUBLE);
+        $sheetArea->freezePane('A6');
+        if ($lastAreaRow >= 6) {
+            $sheetArea->setAutoFilter('B5:E'.$lastAreaRow);
+        }
+
+        foreach (['B', 'C', 'D', 'E'] as $col) {
+            $sheetArea->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // SHEET 4: Ventas por Servicio
         $sheet3 = $spreadsheet->createSheet();
         $sheet3->setTitle('Servicios');
         $sheet3->setShowGridlines(true);
@@ -564,7 +620,7 @@ class PremiumExcelExportService
 
         // Freeze pane & auto-filter
         $sheet4->freezePane('A6');
-        $sheet4->setAutoFilter('B5:E'.($row-1));
+        $sheet4->setAutoFilter('B5:E'.($row - 1));
 
         // Add Bar Chart for Cashiers (only if there are more than 1 cashier)
         $cashierCount = count($operations['cashiers']);

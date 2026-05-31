@@ -81,6 +81,7 @@ class ReportController extends Controller
         DateRangeReportRequest $request,
         IncomeReportService $incomeReports,
         CategoryReportService $categoryReports,
+        AreaIncomeReportService $areaReports,
         ServiceSalesReportService $serviceReports,
         OperationsReportService $operationReports,
     ): StreamedResponse {
@@ -90,6 +91,7 @@ class ReportController extends Controller
         $filters = $this->scopedFilters($request);
         $income = $incomeReports->report($filters);
         $categories = $categoryReports->report($filters);
+        $areas = $areaReports->report($filters);
         $services = $serviceReports->report($filters);
         $operations = $operationReports->report($filters, $request->user()->can('backups.view'));
 
@@ -97,6 +99,7 @@ class ReportController extends Controller
         $spreadsheet = $excelService->generate(
             $income,
             $categories,
+            $areas,
             $services,
             $operations,
             Carbon::parse($request->dateFrom()),
@@ -124,6 +127,7 @@ class ReportController extends Controller
         DailyReportService $dailyReports,
         IncomeReportService $incomeReports,
         CategoryReportService $categoryReports,
+        AreaIncomeReportService $areaReports,
         ServiceSalesReportService $servicesReports,
         OperationsReportService $operationsReports,
         PdfExportService $pdfService
@@ -201,12 +205,14 @@ class ReportController extends Controller
 
         $income = $incomeReports->report($filters);
         $categories = $categoryReports->report($filters);
+        $areas = $areaReports->report($filters);
         $services = $servicesReports->report($filters);
         $operations = $operationsReports->report($filters, $request->user()->can('backups.view'));
 
         $pdf = $pdfService->generateRangeClosurePdf([
             'income' => $income,
             'categories' => $categories,
+            'areas' => $areas,
             'services' => $services,
             'operations' => $operations,
             'date_from' => $filters['date_from'],
