@@ -5,8 +5,8 @@ import path from 'node:path';
 const { chromium } = playwright;
 
 const baseUrl = process.env.UX_AUDIT_BASE_URL ?? 'http://127.0.0.1:8000';
-const user = process.env.UX_AUDIT_USER ?? 'admin.demo';
-const password = process.env.UX_AUDIT_PASSWORD ?? 'Password123!';
+const user = requiredEnv('UX_AUDIT_USER');
+const password = requiredEnv('UX_AUDIT_PASSWORD');
 const outputDir = path.resolve(import.meta.dirname, '..', 'screenshots', 'ux-cleanup-2026-05-21');
 
 const modules = [
@@ -35,6 +35,14 @@ const technicalTerms = [
   /debug/i,
   /worker/i,
 ];
+
+function requiredEnv(name) {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`Missing ${name}. Use an authorized local test account; do not rely on preconfigured credentials.`);
+  }
+  return value;
+}
 
 async function waitSettled(page) {
   await page.waitForLoadState('domcontentloaded');

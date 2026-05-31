@@ -221,7 +221,7 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: /caja institucional rápida y clara/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/usuario o correo/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/usuario o correo/i)).toHaveValue('');
   });
 
   it('recovers an authenticated session after a hard refresh on login', async () => {
