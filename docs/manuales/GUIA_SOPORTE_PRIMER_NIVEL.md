@@ -83,6 +83,9 @@ No copie `.env`, passwords, tokens, rutas de Windows ni mensajes tecnicos crudos
 ### Red Local Caida
 
 - Pruebe desde la computadora servidor.
+- Revise en el diagnostico la fila **Direccion APP_URL para LAN**.
+- Si indica `localhost` o `127.0.0.1`, el servidor puede abrir localmente pero
+  las computadoras cliente deben usar la IP o nombre LAN del servidor.
 - No facture desde clientes hasta que vuelva la conexion.
 - Anote que computadoras fallaron y cuales siguieron funcionando.
 

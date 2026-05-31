@@ -136,10 +136,28 @@ function Get-LanIPv4Addresses {
     return @()
 }
 
+function Get-AppUrlHostType([string] $url) {
+    if ([string]::IsNullOrWhiteSpace($url)) {
+        return "missing"
+    }
+
+    try {
+        $uri = [System.Uri] $url
+        $urlHost = (($uri.Host -replace "^\[", "") -replace "\]$", "").ToLowerInvariant()
+        if ($urlHost -in @("localhost", "127.0.0.1", "::1")) {
+            return "loopback"
+        }
+
+        return "lan"
+    } catch {
+        return "invalid"
+    }
+}
+
 function Read-SafeEnvSummary([string] $envPath) {
     if (-not (Test-Path -LiteralPath $envPath)) {
         Add-Result "REVISION" "Archivo de entorno" "No existe backend\.env. El instalador debe crearlo antes de operar."
-        return
+        return @{}
     }
 
     $allowedKeys = @(
@@ -183,6 +201,8 @@ function Read-SafeEnvSummary([string] $envPath) {
     if ($blockedKeys.Count -gt 0) {
         Add-Result "OK" "Secretos protegidos" "El diagnostico omitio claves, tokens y passwords."
     }
+
+    return $values
 }
 
 $reportDir = Split-Path -Parent $ReportPath
@@ -214,7 +234,7 @@ if (Test-Path -LiteralPath $ProjectRoot) {
 }
 
 $envPath = Join-Path $ProjectRoot "backend\.env"
-Read-SafeEnvSummary $envPath
+$envSummary = Read-SafeEnvSummary $envPath
 
 $distPath = Join-Path $ProjectRoot "frontend\dist\index.html"
 if (Test-Path -LiteralPath $distPath) {
@@ -277,6 +297,20 @@ if ($lanIps.Count -gt 0) {
     Add-Result "OK" "Acceso LAN probable" "IP local detectada: $($lanIps -join ', '). Clientes deben entrar por http://IP_DEL_SERVIDOR:8000."
 } else {
     Add-Result "REVISION" "Acceso LAN probable" "No se detecto una IP LAN activa. Revise red, cable o Wi-Fi del servidor."
+}
+
+if ($envSummary.ContainsKey("APP_URL")) {
+    $appUrlType = Get-AppUrlHostType $envSummary["APP_URL"]
+    if ($appUrlType -eq "lan") {
+        Add-Result "OK" "Direccion APP_URL para LAN" "APP_URL apunta a una direccion que no es localhost."
+    } elseif ($appUrlType -eq "loopback") {
+        $suggestedUrl = if ($lanIps.Count -gt 0) { "http://$($lanIps[0]):8000" } else { "http://IP_DEL_SERVIDOR:8000" }
+        Add-Result "REVISION" "Direccion APP_URL para LAN" "APP_URL usa localhost o 127.0.0.1. En clientes use una IP o nombre LAN, por ejemplo $suggestedUrl."
+    } elseif ($appUrlType -eq "invalid") {
+        Add-Result "REVISION" "Direccion APP_URL para LAN" "APP_URL no parece una URL valida. Configure http://IP_DEL_SERVIDOR:8000 antes de validar clientes."
+    }
+} else {
+    Add-Result "REVISION" "Direccion APP_URL para LAN" "APP_URL no esta definida. Configure http://IP_DEL_SERVIDOR:8000 antes de validar clientes."
 }
 
 try {

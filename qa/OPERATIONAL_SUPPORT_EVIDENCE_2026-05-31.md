@@ -34,6 +34,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | `a16ffef` | Manual de usuario se rehizo con lenguaje institucional no tecnico. | Implementado |
 | Esta fase | Gate E2E acepta `-UseExistingServer -BaseUrl` para validar instalacion local/LAN sin iniciar Vite; mock E2E cubre reporte mensual y areas para evitar fugas al backend real. | Verificado |
 | Esta fase | Diagnostico operativo agrega interfaz instalada y direccion LAN configurada sin exponer rutas absolutas ni secretos. | Verificado |
+| Esta fase | Reparacion segura advierte si `APP_URL` usa `localhost`/`127.0.0.1` y orienta a usar IP o nombre LAN para clientes. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -62,6 +63,7 @@ Resultado observado en esta linea de trabajo:
 - Genera diagnostico sanitizado.
 - Revisa `/up`, `/api/health`, `/login`, `/verify-email`, Docker, build
   frontend, espacio en disco, IP LAN probable y tareas de backup.
+- Advierte cuando `APP_URL` no esta preparada para clientes LAN.
 
 ### Paquete Seguro Para Soporte
 

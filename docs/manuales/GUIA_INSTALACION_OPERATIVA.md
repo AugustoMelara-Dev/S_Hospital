@@ -42,6 +42,10 @@ Clientes de red:
 http://IP-DEL-SERVIDOR:8000
 ```
 
+Antes de validar desde clientes, confirme que `APP_URL` usa la IP o nombre LAN
+del servidor. Si queda en `localhost` o `127.0.0.1`, solo funcionara en la
+computadora servidor y los clientes no encontraran el sistema.
+
 ## Arranque Automatico
 
 El script `scripts/install_hospital_startup_shortcut.ps1` crea el acceso directo. Si el tecnico lo autoriza, puede registrar una tarea al iniciar sesion:
@@ -102,6 +106,8 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 
 La reparacion segura solo revisa servicios, levanta contenedores, espera el backend,
 abre el navegador si responde y genera diagnostico. No reinicia datos, no ejecuta
 seeders y no restaura backups automaticamente.
+Tambien advierte si `APP_URL` sigue en `localhost` o `127.0.0.1`, porque esa
+configuracion impide validar clientes LAN.
 
 ## Paquete Seguro Para Soporte
 
