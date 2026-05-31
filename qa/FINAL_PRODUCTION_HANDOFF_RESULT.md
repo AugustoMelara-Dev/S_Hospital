@@ -2,7 +2,7 @@
 
 - Current update: 2026-05-31
 - Project root: `C:\Projects\S_Hospital`
-- Current commit reviewed for ops gate: `abd475e`
+- Current commit reviewed for ops gate: `1483d3d`
 - Current decision: `PRODUCTION_CANDIDATE_PENDING_FIELD_REVALIDATION`
 - Push status: not pushed by this agent
 
@@ -21,6 +21,7 @@ This file supersedes older handoff text that referenced a historical 2026-05-19 
 - `/about` direct route returned 200.
 - Support center screenshot captured with sanitized status summary.
 - Browser console for support center captured as empty `[]`.
+- Safe training guidance captured in `/support` with console/network evidence showing only 200 status endpoint responses.
 - Local backend tests passed: 178 tests, 1104 assertions.
 - Local frontend tests passed: 6 files, 41 tests.
 - E2E passed: 2 Playwright tests.
