@@ -109,6 +109,13 @@ evidencias reales:
 - `qa\FINAL_CONCURRENCY_PROOF.md`: las pruebas de doble accion contra entorno
   descartable no duplican caja, factura ni pago.
 
+Para revisar si las plantillas de evidencia estan disponibles sin reemplazar
+archivos existentes:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1 -WhatIfOnly
+```
+
 El comando de cierre debe seguir reportando `PRODUCTION_CANDIDATE` hasta que
 esas cuatro evidencias existan y el preflight pase sin omisiones:
 

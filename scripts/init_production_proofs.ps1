@@ -1,13 +1,33 @@
 param(
     [string] $ProjectRoot = "",
-    [switch] $Force
+    [switch] $Force,
+    [switch] $WhatIfOnly
 )
 
 $ErrorActionPreference = "Stop"
 
+trap {
+    Write-Host $_.Exception.Message
+    Write-Host "No reemplace evidencia fisica real sin autorizacion del responsable tecnico."
+    exit 1
+}
+
 if ($ProjectRoot -eq "") {
     $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
     $ProjectRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
+}
+
+$ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+
+function Protect-ProofText([string] $value) {
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        return $value
+    }
+
+    $protected = $value -replace [regex]::Escape($ProjectRoot), "%PROJECT_ROOT%"
+    $protected = $protected -replace [regex]::Escape(($ProjectRoot -replace "\\", "/")), "%PROJECT_ROOT%"
+    $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+    return $protected
 }
 
 $qaDir = Join-Path $ProjectRoot "qa"
@@ -36,17 +56,27 @@ $proofs = @(
 
 foreach ($proof in $proofs) {
     if (-not (Test-Path -LiteralPath $proof.Source -PathType Leaf)) {
-        throw "Missing template: $($proof.Source)"
+        throw "No se encontro la plantilla requerida: $(Protect-ProofText $proof.Source)"
+    }
+
+    if ($WhatIfOnly) {
+        $action = if (Test-Path -LiteralPath $proof.Target -PathType Leaf) {
+            if ($Force) { "reemplazaria" } else { "conservaria existente" }
+        } else {
+            "crearia"
+        }
+        Write-Host "Modo WhatIf: $action $($proof.Name) en $(Protect-ProofText $proof.Target)"
+        continue
     }
 
     if ((Test-Path -LiteralPath $proof.Target -PathType Leaf) -and -not $Force) {
-        Write-Host "$($proof.Name) already exists: $($proof.Target)"
-        Write-Host "Use -Force only if you intentionally want to replace the unfinished proof file."
+        Write-Host "$($proof.Name) ya existe: $(Protect-ProofText $proof.Target)"
+        Write-Host "Use -Force solo si el responsable tecnico autorizo reemplazar un borrador incompleto."
         continue
     }
 
     Copy-Item -LiteralPath $proof.Source -Destination $proof.Target -Force:$Force
-    Write-Host "Created $($proof.Name): $($proof.Target)"
+    Write-Host "Creado $($proof.Name): $(Protect-ProofText $proof.Target)"
 }
 
 Write-Host ""
