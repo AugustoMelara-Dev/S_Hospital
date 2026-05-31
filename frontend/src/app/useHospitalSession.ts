@@ -51,7 +51,11 @@ export function useHospitalSession() {
       .then((currentUser) => {
         setUser(currentUser);
         if (currentUser) {
-          setStatus('Sesión activa.');
+          setStatus(
+            currentUser.must_change_password
+              ? 'Actualice su contraseña para continuar.'
+              : 'Sesión activa.',
+          );
           setSessionExpired(false);
         }
         if (currentUser?.permissions.includes('cash.view') && import.meta.env.MODE !== 'test') {

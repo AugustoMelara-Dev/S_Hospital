@@ -724,6 +724,61 @@ describe('App', () => {
     });
   });
 
+  it('shows password change errors on the required password screen', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
+              active: true,
+              roles: ['admin'],
+              permissions: ['settings.fiscal.view'],
+              must_change_password: true,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/auth/change-password')) {
+        return {
+          ok: false,
+          status: 422,
+          json: async () => ({
+            errors: {
+              current_password: ['La contrasena actual no es correcta.'],
+            },
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({}) } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText(/cambio obligatorio de contrase/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/actual/i), {
+      target: { value: 'wrong-password' },
+    });
+    fireEvent.change(screen.getByLabelText(/^nueva/i), {
+      target: { value: 'NewPassword123' },
+    });
+    fireEvent.change(screen.getByLabelText(/confirmar/i), {
+      target: { value: 'NewPassword123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/contrasena actual no es correcta/i);
+  });
+
   it('renders not found for an unknown authenticated route', async () => {
     window.history.pushState({}, '', '/ruta-inexistente');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {

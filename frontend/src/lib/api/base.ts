@@ -162,6 +162,12 @@ export const apiClient = {
   },
 
   async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+    const method = options.method?.toUpperCase() ?? 'GET';
+
+    if (method === 'GET' || method === 'HEAD') {
+      return this.sendRequest<T>(path, options);
+    }
+
     return enqueueRequest(() => this.sendRequest<T>(path, options));
   },
 

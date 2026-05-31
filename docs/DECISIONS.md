@@ -492,6 +492,24 @@ Consecuencia:
 - El responsable tecnico debe usar rutas como `qa\LAN_CLIENT_VALIDATION_PROOF.md`.
 - Las capturas/fotos reales siguen siendo fisicas/manuales; el script solo genera el borrador seguro de evidencia LAN.
 
+### 2026-05-31 - GET concurrente y errores visibles en cambio de contraseña
+
+Decision:
+
+- La cola global del cliente API queda limitada a mutaciones; `GET` y `HEAD` se ejecutan en paralelo.
+- Las mutaciones siguen pasando por la preparacion CSRF y conservan orden serializado.
+- La pantalla de cambio obligatorio muestra el estado/error inline dentro del formulario.
+
+Motivo:
+
+- Dashboard y reportes hacen varias lecturas independientes que no deben bloquearse entre si.
+- Los usuarios con contraseña temporal necesitan ver errores de validacion sin depender solo de la barra de estado del shell.
+
+Consecuencia:
+
+- La carga de vistas con varias consultas mejora sin relajar seguridad de mutaciones.
+- Errores 422 de cambio de contraseña se muestran en la pantalla activa.
+
 ### 2026-05-19 - Handoff final de produccion sin evidencia falsa
 
 Decision:
@@ -1200,3 +1218,20 @@ Consecuencia:
 - El reporte operativo, el reporte de ingresos y el reporte por areas usan el mismo criterio de snapshots para filtros de area.
 - El prorrateo operativo evita floats y mantiene el formato final desde centavos.
 - La prueba de reportes falla si `area_id` vuelve a omitirse del resumen operativo.
+
+### 2026-05-31 - Dashboard financiero no muestra NaN
+
+Decision:
+
+- El dashboard usa formateadores seguros para montos y cantidades recibidos desde API.
+- Los valores no numericos se presentan como `L. 0.00` o `0` unidades, nunca como `NaN` ni como texto tecnico recibido.
+
+Motivo:
+
+- El dashboard es una pantalla de decision rapida para caja y administracion.
+- Mostrar `NaN` o cadenas danadas debilita la confianza en los datos financieros.
+
+Consecuencia:
+
+- La UI falla cerrada ante montos malformados y conserva etiquetas humanas.
+- La prueba de dashboard falla si vuelven a renderizarse `NaN` o importes crudos invalidos.

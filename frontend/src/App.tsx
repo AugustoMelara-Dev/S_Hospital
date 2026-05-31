@@ -72,6 +72,7 @@ function HospitalApp() {
         form={session.passwordForm}
         onChange={session.setPasswordForm}
         onSubmit={session.handlePasswordSubmit}
+        status={session.status}
       />
     );
   }

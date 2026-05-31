@@ -445,4 +445,3 @@ function EmptyPanel({ message, compact = false }: { message: string; compact?: b
     </div>
   );
 }
-

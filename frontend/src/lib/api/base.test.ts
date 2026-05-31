@@ -47,4 +47,75 @@ describe('resolveApiBaseUrl', () => {
     expect(stored[0].safe_message).toMatch(/servidor LAN/i);
     expect(stored[0].safe_message).not.toMatch(/DB_PASSWORD|secret/i);
   });
+
+  it('allows GET requests to run concurrently', async () => {
+    let resolveSlow: ((response: Response) => void) | undefined;
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/slow')) {
+        return new Promise<Response>((resolve) => {
+          resolveSlow = resolve;
+        });
+      }
+
+      return {
+        ok: true,
+        json: async () => ({ data: url }),
+      } as Response;
+    });
+
+    const slow = apiClient.request('/api/slow');
+    await Promise.resolve();
+    const fast = apiClient.request('/api/fast');
+    await Promise.resolve();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await expect(fast).resolves.toEqual({ data: '/api/fast' });
+
+    resolveSlow?.({
+      ok: true,
+      json: async () => ({ data: 'slow' }),
+    } as Response);
+    await expect(slow).resolves.toEqual({ data: 'slow' });
+  });
+
+  it('keeps mutating requests serialized for csrf safety', async () => {
+    document.cookie = 'XSRF-TOKEN=test-token';
+    let resolveFirstPost: ((response: Response) => void) | undefined;
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/sanctum/csrf-cookie')) {
+        return { ok: true, json: async () => ({}) } as Response;
+      }
+
+      if (url.includes('/api/first')) {
+        return new Promise<Response>((resolve) => {
+          resolveFirstPost = resolve;
+        });
+      }
+
+      return {
+        ok: true,
+        json: async () => ({ data: url }),
+      } as Response;
+    });
+
+    const first = apiClient.request('/api/first', { method: 'POST', body: JSON.stringify({ a: 1 }) });
+    await Promise.resolve();
+    await Promise.resolve();
+    const second = apiClient.request('/api/second', { method: 'POST', body: JSON.stringify({ b: 2 }) });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(fetchMock.mock.calls.map(([url]) => String(url)).filter((url) => url.includes('/api/second'))).toHaveLength(0);
+
+    resolveFirstPost?.({
+      ok: true,
+      json: async () => ({ data: 'first' }),
+    } as Response);
+    await expect(first).resolves.toEqual({ data: 'first' });
+    await expect(second).resolves.toEqual({ data: '/api/second' });
+  });
 });
