@@ -905,6 +905,24 @@ Consecuencia:
 - Supervisor/admin pueden anular una factura solo cuando ya no queda dinero vigente asociado a ella.
 - La auditoria conserva tanto el reverso del pago como la anulacion de factura, sin borrar evidencia.
 
+### 2026-05-31 - Motivo obligatorio para cambios de precio
+
+Decision:
+
+- Todo cambio de precio de un servicio exige `price_change_reason` validado en servidor.
+- El motivo queda guardado en `service_price_histories.reason` y en `audit_logs.new_values.price_change_reason`.
+- La interfaz de catalogo solicita el motivo cuando detecta que el precio editado difiere del precio actual.
+
+Motivo:
+
+- El catalogo es base institucional de ingresos; administracion debe saber no solo quien cambio un precio, sino por que.
+- Sin motivo, un cambio de tarifa queda contablemente trazable pero administrativamente debil.
+
+Consecuencia:
+
+- Activar, desactivar o corregir datos no financieros de un servicio no exige motivo de precio.
+- Un cambio de precio sin motivo falla con validacion 422 antes de tocar el registro.
+
 ### 2026-05-31 - Instalador registra worker y respaldo diario
 
 Decision:

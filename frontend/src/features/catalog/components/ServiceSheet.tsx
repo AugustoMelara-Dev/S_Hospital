@@ -16,6 +16,7 @@ const serviceSchema = z.object({
   category_id: z.number().min(1, 'Seleccione una categoría'),
   name: z.string().min(1, 'El nombre es requerido'),
   price: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Precio debe ser un número válido'),
+  price_change_reason: z.string().max(500, 'Motivo maximo 500 caracteres').nullable().optional(),
   scan_code: z.string().nullable().optional(),
   barcode: z.string().nullable().optional(),
   qr_code: z.string().nullable().optional(),
@@ -50,6 +51,7 @@ const defaultValues: ServiceFormData = {
   category_id: 0,
   name: '',
   price: '0.00',
+  price_change_reason: null,
   scan_code: null,
   barcode: null,
   qr_code: null,
@@ -76,7 +78,9 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
     defaultValues,
   });
   const categoryId = watch('category_id');
+  const price = watch('price');
   const specialRuleCode = watch('special_rule_code');
+  const requiresPriceChangeReason = Boolean(isEditing && service && priceValuesDiffer(service.price, price));
 
   useEffect(() => {
     if (open) {
@@ -85,6 +89,7 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
           category_id: service.category_id,
           name: service.name,
           price: service.price,
+          price_change_reason: null,
           scan_code: service.scan_code,
           barcode: service.barcode,
           qr_code: service.qr_code,
@@ -104,8 +109,16 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
       const trimmed = value?.trim() ?? '';
       return trimmed === '' ? null : trimmed;
     };
+    if (requiresPriceChangeReason && optionalCode(data.price_change_reason) === null) {
+      setError('price_change_reason', { type: 'manual', message: 'Indique el motivo del cambio de precio.' });
+      setFocus('price_change_reason');
+
+      return;
+    }
+
     const payload = {
       ...data,
+      price_change_reason: optionalCode(data.price_change_reason),
       scan_code: optionalCode(data.scan_code),
       barcode: optionalCode(data.barcode),
       qr_code: optionalCode(data.qr_code),
@@ -183,6 +196,24 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
           />
           {errors.price && <p id="service-price-error" role="alert" className="text-sm text-destructive">{errors.price.message}</p>}
         </div>
+
+        {requiresPriceChangeReason && (
+          <div className="space-y-2">
+            <Label htmlFor="price_change_reason">Motivo del cambio de precio *</Label>
+            <Input
+              id="price_change_reason"
+              {...register('price_change_reason')}
+              aria-invalid={Boolean(errors.price_change_reason)}
+              aria-describedby={errors.price_change_reason ? 'service-price-reason-error' : undefined}
+              className={cn(errors.price_change_reason && 'border-destructive')}
+            />
+            {errors.price_change_reason && (
+              <p id="service-price-reason-error" role="alert" className="text-sm text-destructive">
+                {errors.price_change_reason.message}
+              </p>
+            )}
+          </div>
+        )}
 
         {scannerEnabled && (
           <>
@@ -281,7 +312,7 @@ function applyBackendErrors(
   validationErrors: Record<string, string[]>,
   setError: ReturnType<typeof useForm<ServiceFormData>>['setError'],
 ) {
-  (['category_id', 'name', 'price', 'scan_code', 'barcode', 'qr_code'] as const).forEach((field) => {
+  (['category_id', 'name', 'price', 'price_change_reason', 'scan_code', 'barcode', 'qr_code'] as const).forEach((field) => {
     const message = validationErrors[field]?.[0];
     if (message) {
       setError(field, { type: 'server', message });
@@ -293,8 +324,25 @@ function focusFirstServiceError(
   validationErrors: Record<string, string[]>,
   setFocus: ReturnType<typeof useForm<ServiceFormData>>['setFocus'],
 ) {
-  const firstFocusable = (['name', 'price', 'scan_code', 'barcode', 'qr_code'] as const).find((field) => validationErrors[field]?.[0]);
+  const firstFocusable = (['name', 'price', 'price_change_reason', 'scan_code', 'barcode', 'qr_code'] as const).find((field) => validationErrors[field]?.[0]);
   if (firstFocusable) {
     window.setTimeout(() => setFocus(firstFocusable), 0);
   }
+}
+
+function priceValuesDiffer(current: string, next: string): boolean {
+  const currentCents = priceCents(current);
+  const nextCents = priceCents(next);
+
+  return currentCents !== null && nextCents !== null && currentCents !== nextCents;
+}
+
+function priceCents(value: string): number | null {
+  const match = value.trim().match(/^(\d+)(?:\.(\d{1,2}))?$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'));
 }

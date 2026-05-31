@@ -276,6 +276,7 @@ class ServiceCatalogTest extends TestCase
         $this->actingAs($admin)
             ->patchJson("/api/services/{$serviceId}", [
                 'price' => '125.00',
+                'price_change_reason' => 'Ajuste de tarifa autorizado',
                 'barcode' => '7700000000011',
             ])
             ->assertOk()
@@ -475,7 +476,10 @@ class ServiceCatalogTest extends TestCase
         $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
 
         $this->actingAs($admin)
-            ->patchJson("/api/services/{$service->id}", ['price' => '30.00'])
+            ->patchJson("/api/services/{$service->id}", [
+                'price' => '30.00',
+                'price_change_reason' => 'Actualizacion aprobada por administracion',
+            ])
             ->assertOk();
 
         $this->actingAs($admin)
@@ -504,6 +508,26 @@ class ServiceCatalogTest extends TestCase
         $this->assertSame('25.00', $priceHistory->old_price);
         $this->assertSame('30.00', $priceHistory->new_price);
         $this->assertSame($admin->id, $priceHistory->changed_by);
+        $this->assertSame('Actualizacion aprobada por administracion', $priceHistory->reason);
+        $this->assertSame('Actualizacion aprobada por administracion', $priceAudit->new_values['price_change_reason']);
+    }
+
+    public function test_price_change_requires_a_server_side_reason(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", ['price' => '30.00'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('price_change_reason');
+
+        $this->assertSame('25.00', $service->refresh()->price);
+        $this->assertDatabaseMissing('service_price_histories', [
+            'service_id' => $service->id,
+            'new_price' => '30.00',
+        ]);
     }
 
     public function test_billing_filter_excludes_hidden_and_non_billable_services(): void
@@ -584,7 +608,10 @@ class ServiceCatalogTest extends TestCase
 
         try {
             $this->actingAs($admin)
-                ->patchJson("/api/services/{$service->id}", ['price' => '30.00'])
+                ->patchJson("/api/services/{$service->id}", [
+                    'price' => '30.00',
+                    'price_change_reason' => 'Prueba de rollback de auditoria',
+                ])
                 ->assertStatus(500);
         } finally {
             Event::forget('eloquent.creating: '.AuditLog::class);

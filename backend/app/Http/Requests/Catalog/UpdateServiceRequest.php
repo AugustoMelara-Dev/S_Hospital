@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Catalog;
 
 use App\Models\Service;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
@@ -27,6 +28,7 @@ class UpdateServiceRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:160'],
             'aliases' => ['nullable', 'string', 'max:1000'],
             'price' => ['sometimes', 'required', 'decimal:0,2', 'min:0'],
+            'price_change_reason' => ['nullable', 'string', 'max:500'],
             'scan_code' => ['nullable', 'string', 'max:120', Rule::unique('services', 'scan_code')->ignore($this->route('service'))],
             'barcode' => ['nullable', 'string', 'max:120', Rule::unique('services', 'barcode')->ignore($this->route('service'))],
             'qr_code' => ['nullable', 'string', 'max:120', Rule::unique('services', 'qr_code')->ignore($this->route('service'))],
@@ -74,9 +76,19 @@ class UpdateServiceRequest extends FormRequest
                     }
                 }
 
+                if ($this->filled('price') && $this->priceChanged($service) && ! $this->filled('price_change_reason')) {
+                    $validator->errors()->add('price_change_reason', 'Indique el motivo del cambio de precio.');
+                }
+
                 $this->validateGlobalCodes($validator, $service);
             },
         ];
+    }
+
+    private function priceChanged(Service $service): bool
+    {
+        return Money::parseCents($this->string('price')->toString(), 'price')
+            !== Money::parseCents((string) $service->price, 'current_price');
     }
 
     private function validateGlobalCodes(Validator $validator, Service $service): void

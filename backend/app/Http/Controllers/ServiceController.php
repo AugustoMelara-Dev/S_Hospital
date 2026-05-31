@@ -105,6 +105,10 @@ class ServiceController extends Controller
         $service = DB::transaction(function () use ($request, $service): Service {
             $oldValues = $this->auditPayload($service);
             $data = $request->validated();
+            $priceChangeReason = array_key_exists('price_change_reason', $data)
+                ? trim((string) $data['price_change_reason'])
+                : null;
+            unset($data['price_change_reason']);
 
             if (array_key_exists('name', $data)) {
                 $data['slug'] = Str::slug($data['name']);
@@ -118,7 +122,13 @@ class ServiceController extends Controller
             $service->refresh();
 
             foreach ($this->serviceActions($oldValues, $service) as $action) {
-                $this->audit($request, $action, $service, $oldValues);
+                $this->audit(
+                    $request,
+                    $action,
+                    $service,
+                    $oldValues,
+                    $action === 'service.price_updated' ? ['price_change_reason' => $priceChangeReason] : [],
+                );
             }
 
             if ((string) $oldValues['price'] !== (string) $service->price) {
@@ -128,6 +138,7 @@ class ServiceController extends Controller
                     'new_price' => $service->price,
                     'changed_by' => $request->user()->id,
                     'changed_at' => now(),
+                    'reason' => $priceChangeReason,
                 ]);
             }
 
@@ -190,16 +201,25 @@ class ServiceController extends Controller
 
     /**
      * @param  array<string, mixed>|null  $oldValues
+     * @param  array<string, mixed>  $extraNewValues
      */
-    private function audit(Request $request, string $action, Service $service, ?array $oldValues): void
-    {
+    private function audit(
+        Request $request,
+        string $action,
+        Service $service,
+        ?array $oldValues,
+        array $extraNewValues = [],
+    ): void {
         AuditLog::query()->create([
             'user_id' => $request->user()->id,
             'action' => $action,
             'entity_type' => Service::class,
             'entity_id' => $service->id,
             'old_values' => $oldValues,
-            'new_values' => $this->auditPayload($service),
+            'new_values' => [
+                ...$this->auditPayload($service),
+                ...array_filter($extraNewValues, fn ($value): bool => $value !== null && $value !== ''),
+            ],
         ]);
     }
 }
