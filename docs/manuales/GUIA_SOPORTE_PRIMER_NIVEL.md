@@ -46,6 +46,16 @@ qa\LOCAL_REPAIR_DIAGNOSTIC.md
 Ese archivo se puede enviar a soporte. No debe contener passwords, tokens ni
 claves.
 
+Si soporte pide un paquete mas completo, genere uno con:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\collect_support_packet.ps1 -RunRepairDiagnostic -SkipDockerStart
+```
+
+El script crea una carpeta en `qa\support-packets\`. Incluye diagnostico y
+extractos de logs recortados. No copia `.env`, respaldos `.sql`, passwords,
+tokens ni carpetas completas de datos.
+
 ## Evidencia Dentro Del Sistema
 
 Si puede iniciar sesion:
@@ -107,6 +117,7 @@ No copie `.env`, passwords, tokens, rutas de Windows ni mensajes tecnicos crudos
 Envie al responsable tecnico:
 
 - `qa\LOCAL_REPAIR_DIAGNOSTIC.md` si existe.
+- Carpeta generada por `scripts\collect_support_packet.ps1` si soporte la pidio.
 - Resumen seguro preparado desde **Ayuda**.
 - Captura de la pantalla de Ayuda con evidencia local segura si el resumen no se puede copiar.
 - Captura de Respaldos con el estado operativo.

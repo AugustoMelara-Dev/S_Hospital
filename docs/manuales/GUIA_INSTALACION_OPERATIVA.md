@@ -78,3 +78,16 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 
 La reparacion segura solo revisa servicios, levanta contenedores, espera el backend,
 abre el navegador si responde y genera diagnostico. No reinicia datos, no ejecuta
 seeders y no restaura backups automaticamente.
+
+## Paquete Seguro Para Soporte
+
+Cuando el responsable tecnico necesite mas evidencia, genere un paquete seguro:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\collect_support_packet.ps1 -RunRepairDiagnostic -SkipDockerStart
+```
+
+El paquete queda en `qa\support-packets\`. Incluye manifiesto, diagnostico y
+extractos recortados de logs. No agrega `.env`, respaldos SQL, passwords, tokens
+ni carpetas completas de datos. Si el navegador abre, agregue tambien el resumen
+seguro desde **Ayuda > Preparar resumen**.
