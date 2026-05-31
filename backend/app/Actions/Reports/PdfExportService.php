@@ -445,15 +445,15 @@ class PdfExportService
         </tbody>
     </table>
 
-    <div class='section-title'>Ventas por Categoría de Servicio</div>
+    <div class='section-title'>Facturación por Categoría de Servicio</div>
     <table>
         <thead>
             <tr>
                 <th>Categoría</th>
-                <th class='text-center'>Servicios Vendidos</th>
+                <th class='text-center'>Items Facturados</th>
                 <th class='text-right'>Subtotal (LPS)</th>
                 <th class='text-right'>Impuesto ISV (LPS)</th>
-                <th class='text-right'>Total (LPS)</th>
+                <th class='text-right'>Monto Facturado (LPS)</th>
             </tr>
         </thead>
         <tbody>";
@@ -487,7 +487,7 @@ class PdfExportService
         </thead>
         <tbody>";
         if (empty($areas)) {
-            $html .= "<tr><td colspan='4' class='text-center'>No hay ingresos por area en este rango.</td></tr>";
+            $html .= "<tr><td colspan='4' class='text-center'>No hay facturación por área en este rango.</td></tr>";
         } else {
             foreach ($areas as $area) {
                 $html .= '
@@ -538,12 +538,12 @@ class PdfExportService
         <div class='clear'></div>
     </div>
 
-    <div class='section-title'>Top Servicios Más Vendidos</div>
+    <div class='section-title'>Servicios Más Facturados</div>
     <table>
         <thead>
             <tr>
                 <th>Nombre del Servicio</th>
-                <th class='text-center'>Cantidad Vendida</th>
+                <th class='text-center'>Cantidad Facturada</th>
                 <th class='text-right'>Monto Facturado (LPS)</th>
             </tr>
         </thead>

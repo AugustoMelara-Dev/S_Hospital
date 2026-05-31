@@ -1288,13 +1288,24 @@ class ReportsTest extends TestCase
             ->assertSee('%PDF-service-labels', false);
 
         $this->assertIsString($capturedHtml);
-        $sectionStart = strpos($capturedHtml, 'Top Servicios Más Vendidos');
+        $categoryStart = strpos($capturedHtml, 'Facturación por Categoría de Servicio');
+        $categoryEnd = strpos($capturedHtml, 'Facturación por Área Institucional');
+        $this->assertIsInt($categoryStart);
+        $this->assertIsInt($categoryEnd);
+
+        $categorySection = substr($capturedHtml, $categoryStart, $categoryEnd - $categoryStart);
+        $this->assertStringContainsString('Monto Facturado (LPS)', $categorySection);
+        $this->assertStringNotContainsString('Ventas por Categoría de Servicio', $categorySection);
+        $this->assertStringNotContainsString('<th class=\'text-right\'>Total (LPS)</th>', $categorySection);
+
+        $sectionStart = strpos($capturedHtml, 'Servicios Más Facturados');
         $sectionEnd = strpos($capturedHtml, 'Resumen de Auditoría Operativa');
         $this->assertIsInt($sectionStart);
         $this->assertIsInt($sectionEnd);
 
         $servicesSection = substr($capturedHtml, $sectionStart, $sectionEnd - $sectionStart);
         $this->assertStringContainsString('Monto Facturado (LPS)', $servicesSection);
+        $this->assertStringNotContainsString('Top Servicios Más Vendidos', $servicesSection);
         $this->assertStringNotContainsString('Total Recaudado (LPS)', $servicesSection);
     }
 
