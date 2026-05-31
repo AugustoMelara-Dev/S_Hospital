@@ -16,6 +16,7 @@ describe('App', () => {
           app_url: 'http://127.0.0.1:8000',
           queue_connection: 'database',
           filesystem_disk: 'local',
+          app_version: 'local',
           php_version: '8.3.0',
           server_time: '2026-05-19T19:00:00.000000Z',
           timezone: 'America/Tegucigalpa',
@@ -445,6 +446,7 @@ describe('App', () => {
     expect(await screen.findByText(/requiere revisi/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver detalle avanzado/i }));
     expect(await screen.findByText(/checklist operativo/i)).toBeInTheDocument();
+    expect(screen.getByText(/versi[oó]n instalada/i)).toBeInTheDocument();
     expect(screen.getByText(/modo de operaci[oó]n final/i)).toBeInTheDocument();
     expect(screen.getByText(/pantalla de ingreso abre/i)).toBeInTheDocument();
     expect(screen.getByText(/segunda pc en lan/i)).toBeInTheDocument();

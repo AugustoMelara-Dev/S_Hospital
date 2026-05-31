@@ -55,6 +55,7 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.backups.queue.worker_command', 'php artisan queue:work --queue=backups --tries=1 --timeout=600')
             ->assertJsonPath('data.runtime.logs_writable', true)
             ->assertJsonPath('data.runtime.cache_writable', true)
+            ->assertJsonPath('data.environment.app_version', 'local')
             ->assertJsonPath('data.preflight.public_routes.0.path', '/up')
             ->assertJsonPath('data.preflight.public_routes.1.path', '/login')
             ->assertJsonPath('data.preflight.public_routes.2.path', '/verify-email')

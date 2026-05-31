@@ -429,6 +429,7 @@ export type SystemStatus = {
     app_url: string;
     queue_connection: string;
     filesystem_disk: string;
+    app_version: string;
     php_version: string;
     server_time: string;
     timezone: string;

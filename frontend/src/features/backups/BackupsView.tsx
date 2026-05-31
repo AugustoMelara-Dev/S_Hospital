@@ -407,6 +407,9 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                       Hora del servidor: {formatDate(systemStatus.environment.server_time)}
                     </p>
                     <p className="text-xs text-muted-foreground">
+                      Versión instalada: {systemStatus.environment.app_version}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
                       Zona horaria: {systemStatus.environment.timezone}
                     </p>
                     <p className="text-xs text-sky-800">

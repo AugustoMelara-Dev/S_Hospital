@@ -172,6 +172,7 @@ class SystemStatusController extends Controller
             'app_url' => (string) Config::get('app.url'),
             'queue_connection' => (string) Config::get('queue.default'),
             'filesystem_disk' => (string) Config::get('filesystems.default'),
+            'app_version' => (string) Config::get('app.version', 'local'),
             'php_version' => PHP_VERSION,
             'server_time' => now()->toJSON(),
             'timezone' => (string) Config::get('app.timezone'),
