@@ -36,6 +36,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Diagnostico operativo agrega interfaz instalada y direccion LAN configurada sin exponer rutas absolutas ni secretos. | Verificado |
 | Esta fase | Reparacion segura advierte si `APP_URL` usa `localhost`/`127.0.0.1` y orienta a usar IP o nombre LAN para clientes. | Verificado |
 | Esta fase | Smoke de worker de backups acepta URL/usuario por entorno, pide contrasena segura si no se pasa en linea de comando y falla con mensaje claro si el servidor no responde. | Verificado |
+| Esta fase | Acceso directo `open_hospital_system.ps1` intenta abrir el sistema y, si no responde, ejecuta reparacion segura sin borrar datos y deja diagnostico para soporte. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -100,6 +101,9 @@ Resultado observado:
 | `validate_backup_worker_smoke.ps1` sin parametros | Falla antes de red con instruccion clara para `-BaseUrl` o `HOSPITAL_SMOKE_BASE_URL`, sin traza tecnica de PowerShell. |
 | `validate_backup_worker_smoke.ps1` con variables de entorno y servidor cerrado | Falla antes de crear respaldo con mensaje humano sobre servidor/BaseUrl/LAN, sin traza tecnica de PowerShell. |
 | `validate_backup_worker_smoke.ps1` manejo de errores API | Endurecido para login, permisos, token vencido, respuesta no JSON y error interno sin mostrar contrasenas ni trazas tecnicas de PowerShell al operador. |
+| Parser PowerShell de `open_hospital_system.ps1` | Paso. |
+| `open_hospital_system.ps1` con servidor cerrado y `-SkipRepair` | Falla con mensaje humano y recomienda ejecutar reparacion segura desde el servidor. |
+| `open_hospital_system.ps1` con servidor cerrado y reparacion segura `-SkipDockerStart -NoBrowser` | Ejecuta `repair_hospital_system.ps1`, genera diagnostico en ruta indicada y termina sin borrar datos ni abrir navegador. |
 | Parser PowerShell de `scripts\e2e_gate.ps1` | Paso. |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1` | Paso: 2 specs Playwright. Detecto y se corrigio fuga de `/api/areas?active=1` al backend local durante el flujo Reportes -> Respaldos. |
 | `php artisan test tests/Feature/SystemStatusTest.php` | Paso: 7 tests, 47 assertions. |

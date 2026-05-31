@@ -30,8 +30,9 @@ Si hay duda, detenga nuevas facturas desde clientes y recopile evidencia.
 1. Confirme que la computadora servidor esta encendida.
 2. Confirme que el cliente usa la direccion LAN del servidor, no `localhost`.
 3. Abra el sistema desde el acceso directo.
-4. Si no abre, espere dos minutos y vuelva a intentar.
-5. Si sigue fallando, ejecute la reparacion segura.
+4. Si no abre, espere dos minutos y vuelva a intentar. El acceso directo
+   ejecutara reparacion segura automaticamente si el servidor no responde.
+5. Si soporte necesita repetir la revision de forma manual, ejecute:
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -BaseUrl http://127.0.0.1:8000

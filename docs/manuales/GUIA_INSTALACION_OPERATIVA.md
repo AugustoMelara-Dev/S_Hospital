@@ -93,8 +93,9 @@ Despues de instalar:
 Si el sistema no abre:
 
 1. Espere dos minutos.
-2. Use el acceso directo nuevamente.
-3. Ejecute la reparacion segura:
+2. Use el acceso directo nuevamente. El acceso directo intentara abrir el
+   sistema y, si no responde, ejecutara la reparacion segura automaticamente.
+3. Si soporte necesita repetir la reparacion manualmente, ejecute:
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -BaseUrl http://127.0.0.1:8000
