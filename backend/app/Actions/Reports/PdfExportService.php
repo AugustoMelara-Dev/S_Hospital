@@ -541,6 +541,12 @@ class PdfExportService
                 <td style='font-weight: bold; background-color: #f8fafc;'>Respaldos:</td>
                 <td>".($operations['summary']['backup_count'] ?? 0).'</td>
             </tr>
+            <tr>
+                <td style="font-weight: bold; background-color: #f8fafc;">Reversos de Pago:</td>
+                <td>'.($operations['summary']['payment_void_count'] ?? 0)."</td>
+                <td style='font-weight: bold; background-color: #f8fafc;'>Respaldos Fallidos:</td>
+                <td>".($operations['summary']['failed_backup_count'] ?? 0).'</td>
+            </tr>
         </table>
     </div>';
 
@@ -558,12 +564,41 @@ class PdfExportService
                 </thead>
                 <tbody>";
             foreach (array_slice($operations['voids'], 0, 5) as $void) {
-                $html .= "
+                $html .= '
                     <tr>
-                        <td>{$void['invoice_number']}</td>
-                        <td>{$void['voided_at']}</td>
-                        <td>".htmlspecialchars($void['voided_by_name'] ?? 'N/A').'</td>
-                        <td>'.htmlspecialchars($void['void_reason'] ?? 'Sin motivo').'</td>
+                        <td>'.htmlspecialchars((string) ($void['invoice_number'] ?? 'N/A')).'</td>
+                        <td>'.htmlspecialchars((string) ($void['voided_at'] ?? 'N/A')).'</td>
+                        <td>'.htmlspecialchars((string) ($void['user'] ?? $void['voided_by_name'] ?? 'N/A')).'</td>
+                        <td>'.htmlspecialchars((string) ($void['reason'] ?? $void['void_reason'] ?? 'Sin motivo')).'</td>
+                    </tr>';
+            }
+            $html .= '
+                </tbody>
+            </table>';
+        }
+
+        if (! empty($operations['payment_voids'])) {
+            $html .= "
+            <div class='section-title'>Detalle de Reversos de Pago</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Factura</th>
+                        <th>Método</th>
+                        <th class='text-right'>Monto</th>
+                        <th>Motivo</th>
+                        <th>Reversado por</th>
+                    </tr>
+                </thead>
+                <tbody>";
+            foreach (array_slice($operations['payment_voids'], 0, 5) as $paymentVoid) {
+                $html .= '
+                    <tr>
+                        <td>'.htmlspecialchars((string) ($paymentVoid['invoice_number'] ?? 'N/A')).'</td>
+                        <td>'.htmlspecialchars($this->translateMethod((string) ($paymentVoid['method'] ?? '')))."</td>
+                        <td class='text-right'>L. ".number_format((float) ($paymentVoid['amount'] ?? 0), 2).'</td>
+                        <td>'.htmlspecialchars((string) ($paymentVoid['reason'] ?? 'Sin motivo')).'</td>
+                        <td>'.htmlspecialchars((string) ($paymentVoid['voided_by'] ?? 'N/A')).'</td>
                     </tr>';
             }
             $html .= '

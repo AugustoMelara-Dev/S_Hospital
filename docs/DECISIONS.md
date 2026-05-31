@@ -946,7 +946,7 @@ Consecuencia:
 Decision:
 
 - El reporte operativo expone `payment_void_count` y `payment_voids` como eventos propios, separados de anulaciones de factura y reimpresiones.
-- La UI de Auditoria y el export XLSX muestran factura, paciente, metodo, monto, motivo, usuario que reverso y fecha del reverso.
+- La UI de Auditoria, el export XLSX y el PDF consolidado muestran factura, paciente, metodo, monto, motivo, usuario que reverso y fecha del reverso cuando el formato lo permite.
 - Los reversos se filtran por fecha de `voided_at`, metodo, caja, usuario que reverso y filtros de factura cuando aplican.
 
 Motivo:
@@ -957,7 +957,7 @@ Motivo:
 Consecuencia:
 
 - El resumen operativo puede reconciliar "que se anulo" contra "que cobro se reverso".
-- Los exports de auditoria no revelan IDs tecnicos para estos eventos; usan etiquetas humanas de metodo y usuarios.
+- Los exports e impresiones de auditoria no revelan IDs tecnicos para estos eventos; usan etiquetas humanas de metodo y usuarios.
 
 ### 2026-05-31 - Diagnostico operativo de interfaz y LAN
 

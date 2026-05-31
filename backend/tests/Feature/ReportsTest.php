@@ -13,6 +13,8 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\DomPDF\PDF as DomPdfWrapper;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -1179,6 +1181,63 @@ class ReportsTest extends TestCase
             ->assertHeader('Content-Type', 'application/pdf');
 
         $this->assertStringStartsWith('%PDF', $response->getContent());
+    }
+
+    public function test_period_closure_pdf_export_includes_payment_reversals_without_technical_ids(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $supervisor = $this->supervisor();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $paymentId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->json('data.payment.id');
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/payments/{$paymentId}/void", [
+                'reason' => 'Cobro registrado por error',
+            ])
+            ->assertOk();
+
+        $capturedHtml = null;
+        Pdf::shouldReceive('loadHTML')
+            ->once()
+            ->with(\Mockery::on(function (string $html) use (&$capturedHtml): bool {
+                $capturedHtml = $html;
+
+                return true;
+            }))
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('output')
+                    ->once()
+                    ->andReturn('%PDF-payment-voids');
+            }));
+
+        $date = now()->toDateString();
+        $this->actingAs($this->admin())
+            ->get("/api/reports/pdf?date_from={$date}&date_to={$date}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-payment-voids', false);
+
+        $this->assertIsString($capturedHtml);
+        $this->assertStringContainsString('Reversos de Pago', $capturedHtml);
+        $this->assertStringContainsString('Reversos de Pago:</td>', $capturedHtml);
+        $this->assertStringContainsString('<td>1</td>', $capturedHtml);
+        $this->assertStringContainsString('000-001-01-00000001', $capturedHtml);
+        $this->assertStringContainsString('Efectivo', $capturedHtml);
+        $this->assertStringContainsString('L. 17.25', $capturedHtml);
+        $this->assertStringContainsString('Cobro registrado por error', $capturedHtml);
+        $this->assertStringContainsString($supervisor->name, $capturedHtml);
+        $this->assertStringNotContainsString('payment_id', $capturedHtml);
+        $this->assertStringNotContainsString('ID de Pago', $capturedHtml);
     }
 
     private function admin(): User
