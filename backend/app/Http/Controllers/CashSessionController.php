@@ -2,20 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Cash\BuildCashReconciliationAction;
 use App\Actions\Cash\CloseCashSessionAction;
 use App\Actions\Cash\OpenCashSessionAction;
 use App\Http\Requests\Cash\CloseCashSessionRequest;
 use App\Http\Requests\Cash\IndexCashSessionRequest;
 use App\Http\Requests\Cash\OpenCashSessionRequest;
 use App\Models\CashRegisterSession;
-use App\Models\Payment;
-use App\Support\Money;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CashSessionController extends Controller
 {
-    public function current(Request $request): JsonResponse
+    public function current(Request $request, BuildCashReconciliationAction $buildCashReconciliation): JsonResponse
     {
         $request->user()->can('cash.view') || abort(403);
 
@@ -27,7 +26,7 @@ class CashSessionController extends Controller
             ->first();
 
         return response()->json([
-            'data' => $session ? $this->openSessionPayload($session) : null,
+            'data' => $session ? $this->openSessionPayload($session, $buildCashReconciliation) : null,
         ]);
     }
 
@@ -79,35 +78,10 @@ class CashSessionController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function openSessionPayload(CashRegisterSession $session): array
-    {
-        $payments = Payment::query()
-            ->where('cash_session_id', $session->id)
-            ->where('status', Payment::STATUS_POSTED)
-            ->get();
-        $paymentsByMethod = [
-            Payment::METHOD_CASH => '0.00',
-            Payment::METHOD_TRANSFER => '0.00',
-            Payment::METHOD_CARD => '0.00',
-            Payment::METHOD_OTHER => '0.00',
-        ];
-
-        foreach ($payments->groupBy('method') as $method => $methodPayments) {
-            $paymentsByMethod[$method] = Money::formatCents(
-                $methodPayments->sum(fn (Payment $payment): int => Money::parseCents((string) $payment->amount, 'payments')),
-            );
-        }
-
-        $openingCents = Money::parseCents((string) $session->opening_amount, 'opening_amount');
-        $cashCents = Money::parseCents($paymentsByMethod[Payment::METHOD_CASH], 'cash_payments');
-
-        return array_merge($session->toArray(), [
-            'payments_count' => $payments->count(),
-            'payments_total' => Money::formatCents(
-                $payments->sum(fn (Payment $payment): int => Money::parseCents((string) $payment->amount, 'payments')),
-            ),
-            'payments_by_method' => $paymentsByMethod,
-            'expected_cash_amount' => Money::formatCents($openingCents + $cashCents),
-        ]);
+    private function openSessionPayload(
+        CashRegisterSession $session,
+        BuildCashReconciliationAction $buildCashReconciliation,
+    ): array {
+        return array_merge($session->toArray(), $buildCashReconciliation->execute($session));
     }
 }

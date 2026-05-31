@@ -171,6 +171,58 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.difference_amount', '0.00');
     }
 
+    public function test_current_cash_session_exposes_reconciliation_without_counting_pending_as_cash(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+        $cashInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $transferInvoice = $this->createInvoice($cashier, 'Hemograma Completo');
+        $partialInvoice = $this->createInvoice($cashier, 'Eritropoyetina');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$cashInvoice}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated();
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$transferInvoice}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_TRANSFER,
+                'amount' => '11.50',
+            ])
+            ->assertCreated();
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$partialInvoice}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CARD,
+                'amount' => '5.00',
+            ])
+            ->assertCreated();
+
+        $this->actingAs($cashier)
+            ->getJson('/api/cash-sessions/current')
+            ->assertOk()
+            ->assertJsonPath('data.payments_count', 3)
+            ->assertJsonPath('data.payments_total', '33.75')
+            ->assertJsonPath('data.payments_by_method.cash', '17.25')
+            ->assertJsonPath('data.payments_by_method.transfer', '11.50')
+            ->assertJsonPath('data.payments_by_method.card', '5.00')
+            ->assertJsonPath('data.expected_cash_amount', '517.25')
+            ->assertJsonPath('data.pending_invoice_count', 1)
+            ->assertJsonPath('data.pending_amount', '23.75');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '517.25'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('cash_session');
+    }
+
     public function test_payment_requires_an_open_own_cash_session(): void
     {
         $this->seedBillingBase();
@@ -398,7 +450,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_receipt_uses_invoice_item_snapshots_and_supports_80mm_and_58mm(): void
+    public function test_receipt_uses_invoice_item_snapshots_and_supports_institutional_paper_sizes(): void
     {
         $this->seedBillingBase();
         $cashier = $this->cashier();
@@ -415,10 +467,10 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertCreated();
 
         $this->actingAs($cashier)
-            ->getJson("/api/invoices/{$invoiceId}/receipt?width=80mm")
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter")
             ->assertOk()
-            ->assertJsonPath('data.width', '80mm')
-            ->assertJsonPath('data.hospital.name', 'Caja hospitalaria')
+            ->assertJsonPath('data.width', 'half_letter')
+            ->assertJsonPath('data.hospital.name', 'Hospital San Isidro')
             ->assertJsonPath('data.hospital.rtn', '08011999123456')
             ->assertJsonPath('data.fiscal.cai', 'TEST-CAI')
             ->assertJsonPath('data.fiscal.authorized_range', '000-001-01-00000001 a 000-001-01-99999999')
@@ -429,9 +481,13 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonCount(1, 'data.payments');
 
         $this->actingAs($cashier)
-            ->getJson("/api/invoices/{$invoiceId}/receipt?width=58mm")
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=a5")
             ->assertOk()
-            ->assertJsonPath('data.width', '58mm');
+            ->assertJsonPath('data.width', 'a5');
+
+        $this->actingAs($cashier)
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=80mm")
+            ->assertUnprocessable();
     }
 
     public function test_zero_total_dialysis_prescription_invoice_is_paid_and_receiptable_without_payment(): void
@@ -457,7 +513,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->json('data.id');
 
         $this->actingAs($cashier)
-            ->getJson("/api/invoices/{$invoiceId}/receipt?width=80mm")
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter")
             ->assertOk()
             ->assertJsonPath('data.invoice.total', '0.00')
             ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID)
@@ -507,10 +563,10 @@ class CashPaymentsReceiptTest extends TestCase
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         FiscalSetting::query()->create([
-            'hospital_name' => 'Hospital Demo',
+            'hospital_name' => 'Hospital San Isidro',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_width' => '80mm',
+            'receipt_paper_size' => 'half_letter',
         ]);
         FiscalSequence::query()->create([
             'document_type' => 'invoice',

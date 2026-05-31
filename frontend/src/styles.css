@@ -462,8 +462,7 @@ html.dark {
   }
 
   /* Institutional receipt styles */
-  .institutional-receipt,
-  .thermal-receipt {
+  .institutional-receipt {
     width: 5.5in;
     min-height: 8.5in;
     padding: 28px;
@@ -488,18 +487,7 @@ html.dark {
     page: receipt-a5;
   }
 
-  .institutional-receipt.receipt-80mm,
-  .institutional-receipt.receipt-58mm,
-  .thermal-receipt.receipt-58mm {
-    width: 5.5in;
-    min-height: 8.5in;
-    font-size: 12px;
-    padding: 28px;
-    page: receipt-half-letter;
-  }
-
-  .institutional-receipt *,
-  .thermal-receipt * {
+  .institutional-receipt * {
     box-sizing: border-box;
   }
 
@@ -700,14 +688,11 @@ html.dark {
   }
 
   body[data-printing-receipt="true"] .institutional-receipt,
-  body[data-printing-receipt="true"] .institutional-receipt *,
-  body[data-printing-receipt="true"] .thermal-receipt,
-  body[data-printing-receipt="true"] .thermal-receipt * {
+  body[data-printing-receipt="true"] .institutional-receipt * {
     visibility: visible;
   }
 
-  body[data-printing-receipt="true"] .institutional-receipt,
-  body[data-printing-receipt="true"] .thermal-receipt {
+  body[data-printing-receipt="true"] .institutional-receipt {
     position: absolute;
     left: 0;
     top: 0;
@@ -726,14 +711,6 @@ html.dark {
   body[data-printing-receipt="true"] .institutional-receipt.receipt-a5 {
     width: 148mm;
     min-height: 210mm;
-  }
-
-  body[data-printing-receipt="true"] .institutional-receipt.receipt-80mm,
-  body[data-printing-receipt="true"] .institutional-receipt.receipt-58mm,
-  body[data-printing-receipt="true"] .thermal-receipt.receipt-58mm {
-    width: 5.5in;
-    min-height: 8.5in;
-    padding: 28px;
   }
 
   body[data-printing-receipt="true"] .receipt-preview-container {

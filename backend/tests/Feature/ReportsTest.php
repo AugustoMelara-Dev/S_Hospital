@@ -508,7 +508,7 @@ class ReportsTest extends TestCase
             'entity_id' => $invoiceId,
             'new_values' => [
                 'invoice_number' => '000-001-01-00000001',
-                'width' => '80mm',
+                'width' => 'half_letter',
                 'reason' => 'Paciente solicita copia',
             ],
             'created_at' => now(),
@@ -588,6 +588,11 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.total_cash', '17.25')
             ->assertJsonPath('data.total_card', '11.50')
             ->assertJsonPath('data.total_other', '0.00')
+            ->assertJsonPath('data.payments_count', 2)
+            ->assertJsonPath('data.payments_total', '28.75')
+            ->assertJsonPath('data.expected_cash_amount', '517.25')
+            ->assertJsonPath('data.pending_invoice_count', 0)
+            ->assertJsonPath('data.pending_amount', '0.00')
             ->assertJsonCount(2, 'data.payments')
             ->assertJsonCount(5, 'data.movements');
 
@@ -595,6 +600,33 @@ class ReportsTest extends TestCase
             ->getJson("/api/reports/cash-sessions/{$sessionId}")
             ->assertOk()
             ->assertJsonPath('data.cash_session.id', $sessionId);
+    }
+
+    public function test_open_cash_session_report_exposes_pending_without_counting_it_as_collected(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $cashInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $partialInvoice = $this->createInvoice($cashier, 'Eritropoyetina');
+
+        $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($cashier, $partialInvoice, $sessionId, Payment::METHOD_CARD, '5.00');
+
+        $cashier->givePermissionTo(Permission::findByName('reports.cash_session.view', 'web'));
+
+        $this->actingAs($cashier)
+            ->getJson("/api/reports/cash-sessions/{$sessionId}")
+            ->assertOk()
+            ->assertJsonPath('data.total_cash', '17.25')
+            ->assertJsonPath('data.total_card', '5.00')
+            ->assertJsonPath('data.payments_total', '22.25')
+            ->assertJsonPath('data.expected_cash_amount', '517.25')
+            ->assertJsonPath('data.pending_invoice_count', 1)
+            ->assertJsonPath('data.pending_amount', '23.75')
+            ->assertJsonPath('data.payments.1.invoice.status', Invoice::STATUS_PARTIAL)
+            ->assertJsonPath('data.payments.1.invoice.balance_due', '23.75');
     }
 
     public function test_cash_session_export_allows_cashier_scoped_permission_only_for_own_session(): void
@@ -674,10 +706,10 @@ class ReportsTest extends TestCase
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         FiscalSetting::query()->create([
-            'hospital_name' => 'Hospital Demo',
+            'hospital_name' => 'Hospital San Isidro',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_width' => '80mm',
+            'receipt_paper_size' => 'half_letter',
         ]);
         FiscalSequence::query()->create([
             'document_type' => 'invoice',
@@ -772,7 +804,7 @@ class ReportsTest extends TestCase
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf');
 
-        $this->assertStringStartsWith("%PDF", $response->getContent());
+        $this->assertStringStartsWith('%PDF', $response->getContent());
     }
 
     public function test_period_closure_pdf_export_succeeds(): void
@@ -787,7 +819,7 @@ class ReportsTest extends TestCase
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf');
 
-        $this->assertStringStartsWith("%PDF", $response->getContent());
+        $this->assertStringStartsWith('%PDF', $response->getContent());
     }
 
     private function admin(): User

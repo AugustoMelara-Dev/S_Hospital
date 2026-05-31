@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Receipts;
 
-use App\Models\FiscalSetting;
 use App\Models\Invoice;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -29,7 +28,7 @@ class ShowReceiptRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'width' => ['sometimes', Rule::in(['letter', 'half_letter', 'a5', '80mm', '58mm'])],
+            'width' => ['sometimes', Rule::in(['letter', 'half_letter', 'a5'])],
         ];
     }
 
@@ -39,8 +38,11 @@ class ShowReceiptRequest extends FormRequest
             return (string) $this->input('width');
         }
 
-        return FiscalSetting::query()->latest('id')->value('receipt_paper_size')
-            ?? FiscalSetting::query()->latest('id')->value('receipt_width')
-            ?? 'half_letter';
+        $invoice = $this->route('invoice');
+        $paperSize = $invoice instanceof Invoice ? (string) ($invoice->receipt_paper_size ?? '') : '';
+
+        return in_array($paperSize, ['letter', 'half_letter', 'a5'], true)
+            ? $paperSize
+            : 'half_letter';
     }
 }

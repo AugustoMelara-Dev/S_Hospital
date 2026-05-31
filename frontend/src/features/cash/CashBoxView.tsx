@@ -115,6 +115,9 @@ export function CashBoxView({
   const difference = hasValidClosingAmount ? formatCents(parseCents(closingAmount) - parseCents(expectedCashAmount)) : null;
   const hasCashDifference = difference !== null && difference !== 0;
   const isOpen = activeSession?.status === 'open';
+  const pendingInvoiceCount = activeSession?.pending_invoice_count ?? 0;
+  const pendingAmount = activeSession?.pending_amount ?? '0.00';
+  const hasPendingBalance = pendingInvoiceCount > 0 || parseCents(pendingAmount) > 0;
 
   useEffect(() => {
     if (isOpen) {
@@ -132,6 +135,10 @@ export function CashBoxView({
     if (!activeSession) return;
     if (!canCloseCash) {
       setFormAlert('Este usuario no tiene permiso para cerrar caja.');
+      return;
+    }
+    if (hasPendingBalance) {
+      setFormAlert(`No se puede cerrar caja con ${pendingInvoiceCount} factura(s) pendientes o parciales por L. ${pendingAmount}.`);
       return;
     }
     if (closingAmount.trim() === '') {
@@ -251,6 +258,10 @@ export function CashBoxView({
                       <span className="text-sm text-muted-foreground">Pagos registrados</span>
                       <span className="text-xl font-bold">{activeSession.payments_count ?? 0}</span>
                     </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-muted-foreground">Saldo pendiente</span>
+                      <span className="text-xl font-bold">L. {activeSession.pending_amount ?? '0.00'}</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -302,6 +313,16 @@ export function CashBoxView({
                     </Alert>
                   )}
 
+                  {hasPendingBalance && (
+                    <Alert variant="warning">
+                      <AlertTriangle className="h-4 w-4" />
+                      <div>
+                        Hay <strong>{pendingInvoiceCount}</strong> factura(s) pendientes o parciales por{' '}
+                        <strong>L. {pendingAmount}</strong>. Revise los cobros antes de cerrar.
+                      </div>
+                    </Alert>
+                  )}
+
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-semibold" htmlFor="closing_notes">
                       Nota de Cierre
@@ -318,7 +339,7 @@ export function CashBoxView({
                   <Button
                     type="submit"
                     variant="default"
-                    disabled={closeSessionMutation.isPending || !canCloseCash}
+                    disabled={closeSessionMutation.isPending || !canCloseCash || hasPendingBalance}
                   >
                     {closeSessionMutation.isPending ? 'Cerrando...' : 'Cerrar Caja'}
                   </Button>
@@ -353,6 +374,9 @@ export function CashBoxView({
         session={{
           opening_amount: activeSession?.opening_amount ?? '0',
           expected_cash_amount: activeSession?.expected_cash_amount ?? activeSession?.expected_amount ?? undefined,
+          payments_by_method: activeSession?.payments_by_method,
+          pending_invoice_count: activeSession?.pending_invoice_count,
+          pending_amount: activeSession?.pending_amount,
         }}
         closingAmount={closingAmount}
         closingNotes={closingNotes}

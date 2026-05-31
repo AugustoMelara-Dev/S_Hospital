@@ -2,34 +2,20 @@
 
 namespace App\Actions\Reports;
 
-use App\Actions\Reports\Concerns\FormatsReportMoney;
+use App\Actions\Cash\BuildCashReconciliationAction;
 use App\Models\CashRegisterSession;
 use App\Models\Invoice;
 use App\Models\Payment;
-use Illuminate\Support\Facades\DB;
 
 class CashSessionReportService
 {
-    use FormatsReportMoney;
+    public function __construct(private readonly BuildCashReconciliationAction $buildCashReconciliation) {}
 
     public function report(CashRegisterSession $session): array
     {
         $session->load('user:id,name,username');
-
-        $methods = $this->zeroMethodTotals();
-        Payment::query()
-            ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
-            ->where('payments.cash_session_id', $session->id)
-            ->where('payments.status', Payment::STATUS_POSTED)
-            ->where('invoices.status', '!=', Invoice::STATUS_VOID)
-            ->groupBy('payments.method')
-            ->select('payments.method', DB::raw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as total_cents'))
-            ->get()
-            ->each(function (object $row) use (&$methods): void {
-                if (array_key_exists($row->method, $methods)) {
-                    $methods[$row->method] = $this->centsToMoney($row->total_cents);
-                }
-            });
+        $reconciliation = $this->buildCashReconciliation->execute($session);
+        $methods = $reconciliation['payments_by_method'];
 
         $payments = Payment::query()
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
@@ -66,6 +52,11 @@ class CashSessionReportService
             'total_transfer' => $methods[Payment::METHOD_TRANSFER],
             'total_card' => $methods[Payment::METHOD_CARD],
             'total_other' => $methods[Payment::METHOD_OTHER],
+            'payments_count' => $reconciliation['payments_count'],
+            'payments_total' => $reconciliation['payments_total'],
+            'expected_cash_amount' => $reconciliation['expected_cash_amount'],
+            'pending_invoice_count' => $reconciliation['pending_invoice_count'],
+            'pending_amount' => $reconciliation['pending_amount'],
             'payments' => $payments,
             'movements' => $movements,
         ];

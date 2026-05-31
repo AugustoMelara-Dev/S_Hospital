@@ -14,7 +14,7 @@ export type FiscalSettings = {
   hospital_name: string;
   rtn: string;
   default_tax_rate: string;
-  receipt_width?: LegacyReceiptWidth;
+  receipt_width?: string;
   receipt_paper_size?: InstitutionalReceiptPaperSize;
   primary_color: 'teal' | 'blue' | 'indigo' | 'green' | 'rose';
   address?: string;
@@ -149,6 +149,8 @@ export type CashSession = {
   payments_total?: string;
   payments_by_method?: MoneyByMethod;
   expected_cash_amount?: string;
+  pending_invoice_count?: number;
+  pending_amount?: string;
 };
 
 export type Payment = {
@@ -164,8 +166,7 @@ export type Payment = {
 };
 
 export type InstitutionalReceiptPaperSize = 'letter' | 'half_letter' | 'a5';
-export type LegacyReceiptWidth = '80mm' | '58mm';
-export type ReceiptPaperSize = InstitutionalReceiptPaperSize | LegacyReceiptWidth;
+export type ReceiptPaperSize = InstitutionalReceiptPaperSize;
 
 export type ReceiptData = {
   width: ReceiptPaperSize;
@@ -349,6 +350,11 @@ export type CashSessionReport = {
   total_transfer: string;
   total_card: string;
   total_other: string;
+  payments_count: number;
+  payments_total: string;
+  expected_cash_amount: string;
+  pending_invoice_count: number;
+  pending_amount: string;
   payments: Array<Payment & {
     invoice?: Pick<
       Invoice,

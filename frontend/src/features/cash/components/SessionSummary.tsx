@@ -17,10 +17,12 @@ export function SessionSummary({
   const expectedAmount = parseFloat(session.expected_cash_amount ?? session.expected_amount ?? '0');
   const openingAmount = parseFloat(session.opening_amount ?? '0');
   const cashPayments = parseFloat(session.payments_by_method?.cash ?? '0');
+  const pendingAmount = parseFloat(session.pending_amount ?? '0');
+  const pendingCount = session.pending_invoice_count ?? 0;
   const hasCountedAmount = closingAmount !== null;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
       <Card>
         <CardContent className="pt-6">
           <Label className="text-muted-foreground">Monto Apertura</Label>
@@ -65,6 +67,18 @@ export function SessionSummary({
               : difference === null || difference === 0
               ? 'L. 0.00'
               : `L. ${difference > 0 ? '+' : ''}${difference.toFixed(2)}`}
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className={cn(pendingAmount > 0 ? 'border-amber-200 bg-amber-50 dark:bg-amber-950/20' : '')}>
+        <CardContent className="pt-6">
+          <Label className="text-muted-foreground">Saldo pendiente</Label>
+          <p className="text-2xl font-bold">L. {pendingAmount.toFixed(2)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {pendingCount === 0
+              ? 'Sin facturas pendientes en esta caja.'
+              : `${pendingCount} factura(s) emitidas o parciales.`}
           </p>
         </CardContent>
       </Card>

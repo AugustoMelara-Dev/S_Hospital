@@ -149,11 +149,11 @@ class InvoiceHistoryReprintVoidTest extends TestCase
 
         $this->actingAs($cashier)
             ->postJson("/api/invoices/{$invoiceId}/reprint", [
-                'width' => '58mm',
+                'width' => 'half_letter',
                 'reason' => 'Copia para paciente',
             ])
             ->assertOk()
-            ->assertJsonPath('data.receipt.width', '58mm')
+            ->assertJsonPath('data.receipt.width', 'half_letter')
             ->assertJsonPath('data.receipt.items.0.service_name', 'Glucosa')
             ->assertJsonPath('data.receipt.items.0.unit_price', '15.00')
             ->assertJsonPath('data.audit.action', 'invoice.reprinted');
@@ -185,9 +185,9 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         ]);
 
         $this->actingAs($cashier)
-            ->postJson("/api/invoices/{$invoiceId}/reprint", ['width' => '80mm'])
+            ->postJson("/api/invoices/{$invoiceId}/reprint", ['width' => 'letter'])
             ->assertOk()
-            ->assertJsonPath('data.receipt.hospital.name', 'Caja hospitalaria')
+            ->assertJsonPath('data.receipt.hospital.name', 'Hospital San Isidro')
             ->assertJsonPath('data.receipt.hospital.rtn', '08011999123456')
             ->assertJsonPath('data.receipt.fiscal.cai', 'TEST-CAI')
             ->assertJsonPath('data.receipt.fiscal.authorized_range', '000-001-01-00000001 a 000-001-01-99999999')
@@ -204,11 +204,11 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         Invoice::query()->whereKey($ownOldId)->update(['issued_at' => now()->subDay()]);
 
         $this->actingAs($cashier)
-            ->postJson("/api/invoices/{$otherId}/reprint", ['width' => '80mm'])
+            ->postJson("/api/invoices/{$otherId}/reprint", ['width' => 'letter'])
             ->assertForbidden();
 
         $this->actingAs($cashier)
-            ->postJson("/api/invoices/{$ownOldId}/reprint", ['width' => '80mm'])
+            ->postJson("/api/invoices/{$ownOldId}/reprint", ['width' => 'letter'])
             ->assertForbidden();
     }
 
@@ -220,12 +220,16 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         Invoice::query()->whereKey($oldId)->update(['issued_at' => now()->subDays(2)]);
 
         $this->actingAs($this->supervisor())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => '80mm'])
+            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => 'letter'])
             ->assertOk();
 
         $this->actingAs($this->admin())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => '58mm'])
+            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => 'a5'])
             ->assertOk();
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => '80mm'])
+            ->assertUnprocessable();
     }
 
     public function test_void_requires_permission_and_reason(): void
@@ -350,10 +354,10 @@ class InvoiceHistoryReprintVoidTest extends TestCase
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         FiscalSetting::query()->create([
-            'hospital_name' => 'Hospital Demo',
+            'hospital_name' => 'Hospital San Isidro',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_width' => '80mm',
+            'receipt_paper_size' => 'half_letter',
         ]);
         FiscalSequence::query()->create([
             'document_type' => 'invoice',

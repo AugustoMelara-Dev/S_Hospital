@@ -171,4 +171,73 @@ describe('CashBoxView', () => {
     expect(await screen.findByText(/falta ingresar el monto contado/i)).toBeInTheDocument();
     expect(document.activeElement).toHaveAttribute('id', 'closing_amount');
   });
+
+  it('shows pending balance and prevents client-side close while invoices are partial', async () => {
+    window.history.pushState({}, '', '/cashbox');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Demo',
+              email: 'cajero.demo@hospital-billing.local',
+              username: 'cajero.demo',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['cash.view', 'cash.close'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 10,
+              user_id: 2,
+              opening_amount: '500.00',
+              closing_amount: null,
+              expected_amount: null,
+              expected_cash_amount: '517.25',
+              difference_amount: null,
+              payments_count: 3,
+              payments_total: '33.75',
+              payments_by_method: {
+                cash: '17.25',
+                transfer: '11.50',
+                card: '5.00',
+                other: '0.00',
+              },
+              pending_invoice_count: 1,
+              pending_amount: '23.75',
+              status: 'open',
+              opening_notes: null,
+              closing_notes: null,
+              opened_at: '2026-05-17T08:00:00-06:00',
+              closed_at: null,
+            },
+          }),
+        } as Response;
+      }
+
+      return {
+        ok: true,
+        json: async () => ({ data: [] }),
+      } as Response;
+    });
+
+    render(<App />);
+
+    expect((await screen.findAllByText(/saldo pendiente/i)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/L\. 23\.75/i).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/revise los cobros antes de cerrar/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^cerrar caja$/i })).toBeDisabled();
+  });
 });

@@ -8,8 +8,6 @@ use App\Models\AuditLog;
 use App\Models\BackupLog;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
-use App\Models\Invoice;
-use App\Models\Payment;
 use App\Models\User;
 use App\Support\Money;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -19,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 class CloseCashSessionAction
 {
+    public function __construct(private readonly BuildCashReconciliationAction $buildCashReconciliation) {}
+
     /**
      * @param  array{closing_amount: string, notes?: ?string}  $payload
      *
@@ -42,25 +42,16 @@ class CloseCashSessionAction
                 ]);
             }
 
-            $pendingInvoiceCount = Invoice::query()
-                ->where('cash_session_id', $lockedSession->id)
-                ->whereIn('status', [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIAL])
-                ->count();
+            $reconciliation = $this->buildCashReconciliation->execute($lockedSession);
+            $pendingInvoiceCount = $reconciliation['pending_invoice_count'];
 
             if ($pendingInvoiceCount > 0) {
                 throw ValidationException::withMessages([
-                    'cash_session' => 'No se puede cerrar la caja con facturas pendientes o parciales. Revise los cobros antes de cerrar.',
+                    'cash_session' => "No se puede cerrar la caja con {$pendingInvoiceCount} factura(s) pendientes o parciales por L. {$reconciliation['pending_amount']}. Revise los cobros antes de cerrar.",
                 ]);
             }
 
-            $openingCents = Money::parseCents((string) $lockedSession->opening_amount, 'opening_amount');
-            $cashPaymentCents = Payment::query()
-                ->where('cash_session_id', $lockedSession->id)
-                ->where('method', Payment::METHOD_CASH)
-                ->where('status', Payment::STATUS_POSTED)
-                ->get()
-                ->sum(fn (Payment $payment): int => Money::parseCents((string) $payment->amount, 'payments'));
-            $expectedCents = $openingCents + $cashPaymentCents;
+            $expectedCents = Money::parseCents($reconciliation['expected_cash_amount'], 'expected_cash_amount');
             $closingCents = Money::parseCents($payload['closing_amount'], 'closing_amount');
             $differenceCents = $closingCents - $expectedCents;
             $notes = trim((string) ($payload['notes'] ?? ''));
@@ -100,6 +91,10 @@ class CloseCashSessionAction
                     'closing_amount' => $lockedSession->closing_amount,
                     'expected_amount' => $lockedSession->expected_amount,
                     'difference_amount' => $lockedSession->difference_amount,
+                    'payments_by_method' => $reconciliation['payments_by_method'],
+                    'payments_total' => $reconciliation['payments_total'],
+                    'pending_invoice_count' => $pendingInvoiceCount,
+                    'pending_amount' => $reconciliation['pending_amount'],
                 ],
             ]);
 
