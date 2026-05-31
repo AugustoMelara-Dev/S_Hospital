@@ -35,6 +35,8 @@ Use esta lista en papel durante capacitacion y entrega.
 
 ## Prueba final del flujo
 
+- [ ] Confirmar que la practica se hara fuera de datos reales.
+- [ ] Confirmar respaldo antes de cualquier simulacro supervisado.
 - [ ] Login.
 - [ ] Caja cerrada bloquea facturacion.
 - [ ] Abrir caja.
@@ -61,3 +63,11 @@ Use esta lista en papel durante capacitacion y entrega.
 - [ ] Restore probado en base descartable.
 - [ ] Copia externa/USB definida.
 - [ ] Responsable local asignado: __________________
+
+## Practica segura
+
+- [ ] No usar nombres de pacientes reales durante capacitacion.
+- [ ] No emitir facturas de practica en la base real de produccion.
+- [ ] Usar entorno local/demo o base descartable autorizada por soporte.
+- [ ] No ejecutar `migrate:fresh`, `db:wipe` ni scripts de reset en el servidor real.
+- [ ] Si se necesita practicar en el servidor final, crear respaldo antes y usar datos claramente marcados como prueba solo con autorizacion del administrador.

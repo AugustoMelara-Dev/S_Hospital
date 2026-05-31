@@ -1,4 +1,4 @@
-import { Archive, Banknote, ClipboardCheck, Printer, ReceiptText, RefreshCw, WifiOff } from 'lucide-react';
+import { Archive, Banknote, ClipboardCheck, GraduationCap, Printer, ReceiptText, RefreshCw, WifiOff } from 'lucide-react';
 
 export const roleChecklists = {
   cajero: [
@@ -57,5 +57,10 @@ export const supportPlaybooks = [
     title: 'Reimpresion',
     icon: RefreshCw,
     steps: ['Buscar factura en historial', 'Confirmar paciente y total', 'Registrar motivo de reimpresion', 'Entregar copia marcada como corresponde'],
+  },
+  {
+    title: 'Capacitacion segura',
+    icon: GraduationCap,
+    steps: ['No practicar con pacientes reales', 'Usar entorno local o base descartable autorizada', 'No ejecutar reset en servidor real', 'Crear respaldo antes de cualquier simulacro'],
   },
 ];

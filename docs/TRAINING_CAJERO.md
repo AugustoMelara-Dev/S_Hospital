@@ -40,3 +40,10 @@
 - Si un backup queda pendiente, avisar al admin; el cajero no debe tocar scripts del servidor.
 - Si se cobro mal, avisar al supervisor; el cajero no debe borrar facturas ni intentar compensar con otra factura.
 - Si hay diferencia de caja, cerrar con una nota clara y avisar al supervisor.
+
+## Practica sin tocar datos reales
+
+1. Practicar solo en entorno local/demo o base descartable autorizada.
+2. No usar nombres de pacientes reales en ejercicios.
+3. No emitir facturas de entrenamiento en la base real de produccion.
+4. Si el supervisor autoriza un simulacro en el servidor final, debe existir respaldo previo y los datos deben quedar marcados como prueba.
