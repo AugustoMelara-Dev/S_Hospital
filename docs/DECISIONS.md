@@ -984,6 +984,7 @@ Decision:
 - Las tablas de servicios en reportes exportables etiquetan sus totales como monto facturado.
 - El PDF consolidado, el Excel premium y el Top 5 evitan llamar "ventas", "vendido", "recaudado" o "ingreso" generico a totales que provienen de `invoice_items`.
 - Las secciones por area usan "Facturacion por Area" y "Monto Facturado" mientras no exista una asignacion cobrada explicita.
+- El Excel premium usa "Facturacion" y "Monto Facturado" en hojas de categoria, area y servicio para mantener el mismo vocabulario que el PDF y la UI.
 - La pestaña frontend de servicios usa "facturado" para sus KPI, tablas, graficas y estados vacios cuando consume reportes de servicios/categorias.
 
 Motivo:

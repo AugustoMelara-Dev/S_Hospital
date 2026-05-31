@@ -666,8 +666,15 @@ class ReportsTest extends TestCase
 
         try {
             $spreadsheet = IOFactory::load($path);
+            $categorySheet = $spreadsheet->getSheetByName('Categorías');
             $sheet = $spreadsheet->getSheetByName('Areas');
+            $serviceSheet = $spreadsheet->getSheetByName('Servicios');
 
+            $this->assertNotNull($categorySheet);
+            $this->assertSame('Facturación por Categoría de Servicio', $categorySheet->getCell('B2')->getValue());
+            $this->assertSame('Cantidad Facturada', $categorySheet->getCell('C5')->getValue());
+            $this->assertSame('Monto Facturado', $categorySheet->getCell('D5')->getValue());
+            $this->assertNotSame('Ventas por Categoría de Servicio', $categorySheet->getCell('B2')->getValue());
             $this->assertNotNull($sheet);
             $this->assertSame('Facturación por Área Institucional', $sheet->getCell('B2')->getValue());
             $this->assertSame('Monto Facturado', $sheet->getCell('E5')->getValue());
@@ -675,6 +682,10 @@ class ReportsTest extends TestCase
             $this->assertSame('Laboratorio', $sheet->getCell('B6')->getValue());
             $this->assertSame(1, $sheet->getCell('C6')->getValue());
             $this->assertSame(17.25, $sheet->getCell('E6')->getValue());
+            $this->assertNotNull($serviceSheet);
+            $this->assertSame('Facturación Detallada por Servicio', $serviceSheet->getCell('B2')->getValue());
+            $this->assertSame('Monto Facturado', $serviceSheet->getCell('E5')->getValue());
+            $this->assertNotSame('Ventas Detalladas por Servicio', $serviceSheet->getCell('B2')->getValue());
         } finally {
             if ($path !== false && file_exists($path)) {
                 unlink($path);
@@ -1099,6 +1110,8 @@ class ReportsTest extends TestCase
 
     private function createInvoice(User $cashier, string $serviceName): int
     {
+        $this->grantPermissions($cashier, 'invoices.create', 'cash.open', 'cash.view');
+
         CashRegisterSession::query()->firstOrCreate(
             [
                 'user_id' => $cashier->id,
@@ -1111,7 +1124,7 @@ class ReportsTest extends TestCase
             ],
         );
 
-        return $this->actingAs($cashier)
+        return $this->actingAs($cashier->fresh())
             ->postJson('/api/invoices', [
                 'patient_name' => 'Maria Lopez',
                 'items' => [[
@@ -1130,7 +1143,9 @@ class ReportsTest extends TestCase
         string $method,
         string $amount,
     ): void {
-        $this->actingAs($cashier)
+        $this->grantPermissions($cashier, 'payments.create', 'cash.view');
+
+        $this->actingAs($cashier->fresh())
             ->postJson("/api/invoices/{$invoiceId}/payments", [
                 'cash_session_id' => $sessionId,
                 'method' => $method,
@@ -1141,7 +1156,9 @@ class ReportsTest extends TestCase
 
     private function openSession(User $cashier): int
     {
-        return $this->actingAs($cashier)
+        $this->grantPermissions($cashier, 'cash.open', 'cash.view');
+
+        return $this->actingAs($cashier->fresh())
             ->postJson('/api/cash-sessions/open', ['opening_amount' => '500.00'])
             ->assertCreated()
             ->json('data.id');
@@ -1479,7 +1496,7 @@ class ReportsTest extends TestCase
             ->whereIn('name', array_values(array_unique($permissionNames)))
             ->pluck('id');
 
-        DB::table('model_has_permissions')->insert($permissionIds->map(fn (int $permissionId): array => [
+        DB::table('model_has_permissions')->insertOrIgnore($permissionIds->map(fn (int $permissionId): array => [
             'permission_id' => $permissionId,
             'model_type' => User::class,
             'model_id' => $user->id,

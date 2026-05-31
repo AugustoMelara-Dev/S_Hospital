@@ -372,19 +372,19 @@ class PremiumExcelExportService
             $financialSheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // SHEET 2: Ventas por Categoría
+        // SHEET 2: Facturacion por Categoria
         $sheet2 = $spreadsheet->createSheet();
         $sheet2->setTitle('Categorías');
         $sheet2->setShowGridlines(true);
 
-        $sheet2->setCellValue('B2', 'Ventas por Categoría de Servicio');
+        $sheet2->setCellValue('B2', 'Facturación por Categoría de Servicio');
         $sheet2->getStyle('B2')->applyFromArray($titleStyle);
         $sheet2->setCellValue('B3', "Rango de fechas: {$from->format('d/m/Y')} al {$to->format('d/m/Y')}");
         $sheet2->getStyle('B3')->applyFromArray($subtitleStyle);
 
         $sheet2->setCellValue('B5', 'Categoría');
-        $sheet2->setCellValue('C5', 'Cantidad Vendida');
-        $sheet2->setCellValue('D5', 'Total Facturado');
+        $sheet2->setCellValue('C5', 'Cantidad Facturada');
+        $sheet2->setCellValue('D5', 'Monto Facturado');
         $sheet2->getStyle('B5:D5')->applyFromArray($headerStyle);
 
         $row = 6;
@@ -437,7 +437,7 @@ class PremiumExcelExportService
 
             $plotArea2 = new PlotArea(null, [$series2]);
             $legend2 = new Legend(Legend::POSITION_RIGHT, null, false);
-            $title2 = new Title('Ventas Totales por Categoría de Servicio (L.)');
+            $title2 = new Title('Facturación por Categoría de Servicio (L.)');
 
             $chart2 = new Chart(
                 'categories_chart',
@@ -513,12 +513,12 @@ class PremiumExcelExportService
             $sheetArea->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // SHEET 4: Ventas por Servicio
+        // SHEET 4: Facturacion por Servicio
         $sheet3 = $spreadsheet->createSheet();
         $sheet3->setTitle('Servicios');
         $sheet3->setShowGridlines(true);
 
-        $sheet3->setCellValue('B2', 'Ventas Detalladas por Servicio');
+        $sheet3->setCellValue('B2', 'Facturación Detallada por Servicio');
         $sheet3->getStyle('B2')->applyFromArray($titleStyle);
         $sheet3->setCellValue('B3', "Rango de fechas: {$from->format('d/m/Y')} al {$to->format('d/m/Y')}");
         $sheet3->getStyle('B3')->applyFromArray($subtitleStyle);
