@@ -25,6 +25,7 @@ Use esta lista para capacitar a personal de caja, supervision y administracion.
 - [ ] Sabe que hacer si el servidor no abre.
 - [ ] Sabe que hacer si cae la red local.
 - [ ] Sabe que hacer si la impresora no responde.
+- [ ] Sabe recopilar evidencia local para soporte.
 - [ ] Autoriza reimpresiones solo con motivo.
 - [ ] Revisa factura, pago y motivo antes de una anulacion.
 - [ ] Revisa facturas pendientes antes de cierre.
@@ -42,6 +43,7 @@ Use esta lista para capacitar a personal de caja, supervision y administracion.
 - [ ] Autoriza anulaciones con motivo.
 - [ ] Crea respaldo manual.
 - [ ] Verifica ultimo respaldo.
+- [ ] Conoce la guia de soporte de primer nivel.
 - [ ] Sabe a quien llamar ante error tecnico.
 
 ## Prueba Final De Flujo
