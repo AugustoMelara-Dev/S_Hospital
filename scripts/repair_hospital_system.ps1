@@ -118,6 +118,24 @@ function Wait-ForUrl([string] $url, [int] $minCode = 200, [int] $maxCode = 399) 
     return @{ Ok = $false; StatusCode = ""; Attempts = $Retries }
 }
 
+function Get-LanIPv4Addresses {
+    try {
+        if ($null -ne (Get-Command Get-NetIPAddress -ErrorAction SilentlyContinue)) {
+            return @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction Stop |
+                Where-Object {
+                    $_.IPAddress -notlike "127.*" -and
+                    $_.IPAddress -notlike "169.254.*" -and
+                    $_.IPAddress -notlike "0.*"
+                } |
+                Select-Object -ExpandProperty IPAddress)
+        }
+    } catch {
+        return @()
+    }
+
+    return @()
+}
+
 function Read-SafeEnvSummary([string] $envPath) {
     if (-not (Test-Path -LiteralPath $envPath)) {
         Add-Result "REVISION" "Archivo de entorno" "No existe backend\.env. El instalador debe crearlo antes de operar."
@@ -128,6 +146,7 @@ function Read-SafeEnvSummary([string] $envPath) {
         "APP_ENV",
         "APP_DEBUG",
         "APP_URL",
+        "APP_VERSION",
         "DB_CONNECTION",
         "QUEUE_CONNECTION",
         "HOSPITAL_DAILY_BACKUP_TIME"
@@ -151,6 +170,10 @@ function Read-SafeEnvSummary([string] $envPath) {
         if ($values.ContainsKey($key)) {
             Add-Result "OK" "Configuracion $key" $values[$key]
         }
+    }
+
+    if (-not $values.ContainsKey("APP_VERSION")) {
+        Add-Result "REVISION" "Configuracion APP_VERSION" "No definida; use APP_VERSION en backend\.env para identificar la version instalada."
     }
 
     $blockedKeys = Get-Content -LiteralPath $envPath | Where-Object {
@@ -219,6 +242,7 @@ if ($null -eq $dockerCommand) {
 $upUrl = ($BaseUrl.TrimEnd("/")) + "/up"
 $healthUrl = ($BaseUrl.TrimEnd("/")) + "/api/health"
 $loginUrl = ($BaseUrl.TrimEnd("/")) + "/login"
+$verifyEmailUrl = ($BaseUrl.TrimEnd("/")) + "/verify-email"
 
 $up = Wait-ForUrl $upUrl
 if ($up.Ok) {
@@ -239,6 +263,20 @@ if ($login.Ok) {
     Add-Result "OK" "Pantalla de ingreso" "$loginUrl respondio HTTP $($login.StatusCode)."
 } else {
     Add-Result "REVISION" "Pantalla de ingreso" "$loginUrl no respondio. Puede faltar build o backend."
+}
+
+$verifyEmail = Wait-ForUrl $verifyEmailUrl
+if ($verifyEmail.Ok) {
+    Add-Result "OK" "Pantalla de verificacion" "$verifyEmailUrl respondio HTTP $($verifyEmail.StatusCode)."
+} else {
+    Add-Result "REVISION" "Pantalla de verificacion" "$verifyEmailUrl no respondio. Revise rutas publicas del frontend."
+}
+
+$lanIps = Get-LanIPv4Addresses
+if ($lanIps.Count -gt 0) {
+    Add-Result "OK" "Acceso LAN probable" "IP local detectada: $($lanIps -join ', '). Clientes deben entrar por http://IP_DEL_SERVIDOR:8000."
+} else {
+    Add-Result "REVISION" "Acceso LAN probable" "No se detecto una IP LAN activa. Revise red, cable o Wi-Fi del servidor."
 }
 
 try {
