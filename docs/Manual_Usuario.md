@@ -14,7 +14,7 @@ Este manual resume la operacion diaria del Sistema de Caja Hospitalaria del Hosp
 
 1. Abra caja con el monto inicial.
 2. En **Nueva factura**, escriba primero el nombre del paciente.
-3. Busque servicios por nombre, categoria o codigo si administracion habilito escaner.
+3. Busque servicios por nombre, categoria o codigo si administracion habilito lector.
 4. Revise el carrito, total, monto recibido, cambio y saldo pendiente.
 5. Confirme la factura solo una vez y espere la respuesta del sistema.
 6. Registre pago completo o parcial segun la configuracion autorizada.

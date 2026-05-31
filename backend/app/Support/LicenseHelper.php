@@ -28,16 +28,15 @@ class LicenseHelper
         $hospitalName = HospitalName::display($settings?->hospital_name);
         $rtn = $settings?->rtn ?? 'N/A';
 
-        // Check if manual offline license file exists
+        // Check if manual offline registration file exists
         if (! Storage::disk('local')->exists('license.json')) {
-            // Default Demo Offline License
             return [
                 'valid' => true,
                 'licensee' => $hospitalName,
                 'rtn' => $rtn,
                 'expires_at' => null,
-                'type' => 'Demo Local / Desarrollo',
-                'message' => 'Sistema funcionando en modo desarrollo local. Para producción multi-dispositivo LAN, active su licencia comercial.',
+                'type' => 'Operacion local',
+                'message' => 'Sistema funcionando en modo local para la red del hospital.',
             ];
         }
 
@@ -51,7 +50,7 @@ class LicenseHelper
                     'rtn' => $rtn,
                     'expires_at' => null,
                     'type' => 'Invalida',
-                    'message' => 'Archivo de licencia corrupto o incompleto.',
+                    'message' => 'Archivo de registro corrupto o incompleto.',
                 ];
             }
 
@@ -63,7 +62,7 @@ class LicenseHelper
                     'rtn' => $licenseData['rtn'],
                     'expires_at' => $licenseData['expires_at'],
                     'type' => 'RTN Incompatible',
-                    'message' => "La licencia registrada para {$licenseData['licensee']} (RTN: {$licenseData['rtn']}) no coincide con el RTN del hospital actual ({$rtn}).",
+                    'message' => "El registro local para {$licenseData['licensee']} (RTN: {$licenseData['rtn']}) no coincide con el RTN del hospital actual ({$rtn}).",
                 ];
             }
 
@@ -75,8 +74,8 @@ class LicenseHelper
                     'licensee' => $licenseData['licensee'],
                     'rtn' => $licenseData['rtn'],
                     'expires_at' => $licenseData['expires_at'],
-                    'type' => 'Licencia Expirada',
-                    'message' => "La licencia comercial offline expiró el {$expiresAt->format('d/m/Y')}.",
+                    'type' => 'Registro expirado',
+                    'message' => "El registro local expiro el {$expiresAt->format('d/m/Y')}.",
                 ];
             }
 
@@ -89,7 +88,7 @@ class LicenseHelper
                     'rtn' => $licenseData['rtn'],
                     'expires_at' => $licenseData['expires_at'],
                     'type' => 'Firma Invalida',
-                    'message' => 'La firma digital de la licencia no se pudo verificar. Firma alterada.',
+                    'message' => 'La firma digital del registro no se pudo verificar. Firma alterada.',
                 ];
             }
 
@@ -98,8 +97,8 @@ class LicenseHelper
                 'licensee' => $licenseData['licensee'],
                 'rtn' => $licenseData['rtn'],
                 'expires_at' => $licenseData['expires_at'],
-                'type' => 'Licencia Comercial LAN',
-                'message' => "Licencia comercial offline totalmente válida y registrada a nombre de {$licenseData['licensee']}.",
+                'type' => 'Registro LAN verificado',
+                'message' => "Registro local verificado a nombre de {$licenseData['licensee']}.",
             ];
 
         } catch (\Exception $e) {
@@ -109,7 +108,7 @@ class LicenseHelper
                 'rtn' => $rtn,
                 'expires_at' => null,
                 'type' => 'Error de Lectura',
-                'message' => 'Ocurrió un error al validar el archivo de licencia offline.',
+                'message' => 'Ocurrio un error al validar el archivo de registro local.',
             ];
         }
     }

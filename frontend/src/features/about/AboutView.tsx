@@ -67,11 +67,11 @@ export function AboutView({ onStatus }: AboutViewProps) {
             </p>
 
             <div className="rounded-lg border border-border bg-muted/30 p-4">
-              <h3 className="mb-2 text-sm font-semibold text-foreground">Licencia de operación</h3>
+              <h3 className="mb-2 text-sm font-semibold text-foreground">Operacion local</h3>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-semibold text-foreground">Licencia local activa</p>
-                  <p className="text-xs text-muted-foreground">Uso dentro de la red del hospital.</p>
+                  <p className="font-semibold text-foreground">Sistema disponible en la red del hospital</p>
+                  <p className="text-xs text-muted-foreground">Uso local para caja, facturacion, reportes y respaldos.</p>
                 </div>
                 <div className="inline-flex items-center gap-1.5 rounded-full border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-bold text-success">
                   <ShieldCheck className="h-4 w-4" />

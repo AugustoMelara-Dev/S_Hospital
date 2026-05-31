@@ -352,24 +352,21 @@
 
         <div class="page-break"></div>
 
-        <section id="licensing">
-            <h2>5. Activación de Licencia Offline</h2>
-            <p>S_Hospital corre localmente en modo desarrollo/demo por defecto. Para su despliegue comercial en red LAN multi-usuario, requiere cargar un archivo de licencia comercial offline emitido por su proveedor.</p>
-            
-            <h3>Configuración del Archivo de Licencia</h3>
-            <p>El sistema busca la licencia offline en la ruta local del backend: <code>backend/storage/app/license.json</code>.</p>
-            
-            <h3>Formato del Archivo license.json:</h3>
-            <pre>{
-  "licensee": "Nombre de la Clinica o Hospital",
-  "rtn": "RTN_AUTORIZADO",
-  "expires_at": "2027-12-31",
-  "signature": "de78fb216cb34ea7205a28b0304859a1122a2bf89ee60731f8b1d8f58b7333a9"
-}</pre>
+        <section id="local-operation">
+            <h2>5. Operacion Local en Red del Hospital</h2>
+            <p>El sistema debe usarse desde la computadora servidor y las computadoras autorizadas de la red local del hospital. Antes de iniciar una jornada real, confirme que el servidor responde, que la caja esta abierta por el cajero responsable y que los respaldos aparecen como protegidos.</p>
+
+            <h3>Revision diaria recomendada</h3>
+            <ul>
+                <li>Abra el sistema desde una computadora cliente usando la direccion local indicada por administracion.</li>
+                <li>Ingrese con el usuario asignado; no comparta cuentas entre cajeros.</li>
+                <li>Verifique que la pantalla de respaldos muestre estado protegido o pendiente de revision.</li>
+                <li>Realice una impresion de prueba solo cuando administracion lo autorice.</li>
+            </ul>
 
             <div class="callout callout-note">
-                <div class="callout-title">Integridad de la Firma</div>
-                El valor <code>signature</code> es una firma criptográfica HMAC-SHA256 del payload <code>licensee|rtn|expires_at</code> calculada con la clave privada interna. Si se edita de forma manual el nombre del hospital o el RTN en este archivo, el sistema detectará firma alterada y denegará los accesos.
+                <div class="callout-title">Importante</div>
+                No ejecute reinicios de base de datos, datos de practica ni herramientas de desarrollo en el servidor real del hospital. Si hay duda, detenga el flujo y contacte al responsable del sistema.
             </div>
         </section>
 
