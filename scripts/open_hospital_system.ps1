@@ -7,7 +7,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrWhiteSpace($Url)) {
-    $Url = 'http://127.0.0.1:5173'
+    $Url = 'http://127.0.0.1:8000'
 }
 
 Write-Host "Abriendo Sistema de Caja Hospitalaria en $Url"

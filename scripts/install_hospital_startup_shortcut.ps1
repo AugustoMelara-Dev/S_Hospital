@@ -1,6 +1,6 @@
 param(
     [string] $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
-    [string] $Url = 'http://127.0.0.1:5173',
+    [string] $Url = 'http://127.0.0.1:8000',
     [switch] $InstallStartupTask
 )
 

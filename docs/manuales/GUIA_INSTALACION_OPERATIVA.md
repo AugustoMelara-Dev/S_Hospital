@@ -29,13 +29,13 @@ El instalador no debe cargar datos temporales en produccion.
 Servidor:
 
 ```text
-http://127.0.0.1:5173
+http://127.0.0.1:8000
 ```
 
 Clientes de red:
 
 ```text
-http://IP-DEL-SERVIDOR:5173
+http://IP-DEL-SERVIDOR:8000
 ```
 
 ## Arranque Automatico
