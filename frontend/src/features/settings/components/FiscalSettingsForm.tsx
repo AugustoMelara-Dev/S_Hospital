@@ -12,7 +12,6 @@ import type { FiscalSettings, FiscalSequence } from '@/lib/api';
 const settingsFormSchema = z.object({
   hospital_name: z.string().min(1, 'El nombre del hospital es requerido'),
   rtn: z.string(),
-  receipt_width: z.enum(['80mm', '58mm']),
   primary_color: z.enum(['teal', 'blue', 'indigo', 'green', 'rose']),
   address: z.string().optional(),
   slogan: z.string().optional(),
@@ -58,7 +57,6 @@ export function FiscalSettingsForm({
     defaultValues: {
       hospital_name: settings?.hospital_name ?? '',
       rtn: settings?.rtn ?? '',
-      receipt_width: settings?.receipt_width ?? '80mm',
       primary_color: settings?.primary_color ?? 'indigo',
       address: settings?.address ?? '',
       slogan: settings?.slogan ?? '',

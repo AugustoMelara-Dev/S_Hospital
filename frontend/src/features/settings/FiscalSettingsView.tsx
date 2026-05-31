@@ -28,7 +28,6 @@ type FiscalSettingsViewProps = {
 type SettingsFormData = {
   hospital_name: string;
   rtn: string;
-  receipt_width: '80mm' | '58mm';
   primary_color: 'teal' | 'blue' | 'indigo' | 'green' | 'rose';
   address: string;
   slogan: string;
@@ -72,7 +71,6 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
   const [hospitalForm, setHospitalForm] = useState<SettingsFormData>({
     hospital_name: '',
     rtn: '',
-    receipt_width: '80mm',
     primary_color: 'teal',
     address: '',
     slogan: '',
@@ -143,7 +141,6 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         setHospitalForm({
           hospital_name: hospitalName ?? '',
           rtn: settingsData.rtn ?? '',
-          receipt_width: (settingsData.receipt_width as '80mm' | '58mm') ?? '80mm',
           primary_color: settingsData.primary_color ?? 'indigo',
           address: settingsData.address ?? '',
           slogan: settingsData.slogan ?? '',
@@ -191,7 +188,6 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       const updated = await apiClient.updateFiscalSettings({
         hospital_name: hospitalForm.hospital_name,
         rtn: hospitalForm.rtn,
-        receipt_width: hospitalForm.receipt_width,
         primary_color: hospitalForm.primary_color,
         address: hospitalForm.address,
         slogan: hospitalForm.slogan,
@@ -227,7 +223,6 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       const updated = await apiClient.updateFiscalSettings({
         hospital_name: hospitalForm.hospital_name || settings.hospital_name,
         rtn: hospitalForm.rtn || settings.rtn,
-        receipt_width: hospitalForm.receipt_width || settings.receipt_width,
         primary_color: newColor,
         address: hospitalForm.address || settings.address,
         slogan: hospitalForm.slogan || settings.slogan,
