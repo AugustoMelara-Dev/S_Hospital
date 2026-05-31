@@ -1,12 +1,14 @@
 import {
   Archive,
   Banknote,
+  ClipboardCheck,
   HelpCircle,
   Printer,
   ReceiptText,
   RefreshCw,
   Search,
   WalletCards,
+  WifiOff,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { PageHeader } from '../../components/ui/page-header';
@@ -15,60 +17,88 @@ const guides = [
   {
     title: 'Abrir caja',
     icon: WalletCards,
-    steps: ['Entre a Caja', 'Registre el efectivo inicial', 'Confirme la apertura', 'Revise que la caja quede activa'],
+    steps: ['Entre a Caja', 'Revise el cajero responsable', 'Registre el efectivo inicial', 'Confirme que la caja quede abierta'],
   },
   {
-    title: 'Crear factura',
+    title: 'Nueva factura',
     icon: ReceiptText,
-    steps: ['Entre a Nueva Factura', 'Escriba el nombre del paciente', 'Busque por nombre, categoría o código si está habilitado', 'Revise el carrito antes de emitir'],
+    steps: ['Escriba primero el nombre del paciente', 'Busque servicios por nombre o area', 'Revise el carrito y total', 'Emita solo cuando todo este correcto'],
   },
   {
     title: 'Cobrar',
     icon: Banknote,
-    steps: ['Seleccione método de pago', 'Digite monto y referencia si aplica', 'Confirme el cobro', 'Revise que el saldo quede correcto'],
+    steps: ['Seleccione el metodo de pago', 'Digite monto recibido y referencia si aplica', 'Revise cambio o saldo pendiente', 'Confirme una sola vez'],
   },
   {
-    title: 'Imprimir',
+    title: 'Imprimir recibo',
     icon: Printer,
-    steps: ['Abra la vista de recibo', 'Elija media carta, carta o A5', 'Revise paciente y total', 'Imprima el recibo institucional'],
+    steps: ['Abra la vista de recibo', 'Revise paciente, numero, total y cajero', 'Use papel media carta, carta o A5', 'Entregue original y conserve copia si corresponde'],
   },
   {
     title: 'Reimprimir',
     icon: RefreshCw,
-    steps: ['Entre a Historial', 'Filtre por paciente o número', 'Abra la factura', 'Use Reimprimir con motivo si se solicita'],
+    steps: ['Entre a Historial', 'Busque por paciente, fecha o numero', 'Abra la factura correcta', 'Registre motivo de reimpresion'],
   },
   {
     title: 'Reportes',
     icon: Search,
-    steps: ['Entre a Reportes', 'Seleccione el reporte requerido', 'Aplique filtros autorizados', 'Exporte solo si su rol lo permite'],
+    steps: ['Entre a Reportes', 'Seleccione rango y area si aplica', 'Revise facturado, cobrado y saldos', 'Exporte solo si su rol lo permite'],
   },
   {
     title: 'Respaldos',
     icon: Archive,
-    steps: ['Entre a Respaldos', 'Revise el último respaldo completado', 'Cree un respaldo antes de cambios grandes', 'Confirme la restauración cuando aplique'],
+    steps: ['Entre a Respaldos', 'Revise si dice Protegido, Pendiente o Error', 'Cree respaldo antes de cambios grandes', 'Avise si aparece Error'],
+  },
+  {
+    title: 'Cierre de turno',
+    icon: ClipboardCheck,
+    steps: ['Revise pagos por metodo', 'Compare efectivo esperado y contado', 'Registre diferencias con motivo', 'Cierre caja solo al final del turno'],
   },
 ];
 
-const faqs = [
+const incidentGuides = [
   {
-    question: '¿Qué hago si el sistema dice que no hay caja abierta?',
-    answer: 'Abra una caja desde Caja. No se debe cobrar sin caja activa.',
+    title: 'Servidor no disponible',
+    answer: 'Revise que la computadora servidor este encendida y que el cliente use la direccion local correcta. Si persiste, avise al responsable del sistema.',
   },
   {
-    question: '¿Por qué Eritropoyetina puede salir gratis?',
-    answer: 'Solo aplica si se marca receta de diálisis. En pacientes normales el medicamento se cobra.',
+    title: 'Impresora no responde',
+    answer: 'No repita la factura ni el cobro. Abra el recibo desde Historial, verifique la impresora y reimprima con motivo cuando el supervisor lo autorice.',
   },
   {
-    question: '¿Puedo cambiar el precio de una factura antigua?',
-    answer: 'No. Las facturas guardan nombre, precio e impuesto tal como se emitieron.',
+    title: 'Falla la red',
+    answer: 'Detenga nuevas facturas desde computadoras cliente. Use solo la computadora servidor si administracion lo autoriza.',
   },
   {
-    question: '¿Quién puede anular facturas?',
-    answer: 'Solo usuarios autorizados. La anulación exige motivo y queda registrada.',
+    title: 'Diferencia de caja',
+    answer: 'No cierre sin revisar pagos, anulaciones, movimientos y efectivo contado. Registre la diferencia y solicite revision.',
   },
   {
-    question: '¿Qué pasa si no hay internet?',
-    answer: 'El sistema opera dentro de la red local del hospital.',
+    title: 'Respaldo fallido',
+    answer: 'No borre archivos ni repita restauraciones. Pida al administrador revisar espacio, cola de trabajos y ultimo error.',
+  },
+  {
+    title: 'Sesion vencida',
+    answer: 'Ingrese de nuevo. Si estaba cobrando, revise Historial antes de intentar otra vez.',
+  },
+  {
+    title: 'Sin permiso',
+    answer: 'No use la cuenta de otra persona. Pida al supervisor revisar su rol y permisos.',
+  },
+];
+
+const roleGuides = [
+  {
+    title: 'Cajero',
+    answer: 'Abre caja, crea facturas, registra pagos, imprime recibos y reporta diferencias antes de cerrar turno.',
+  },
+  {
+    title: 'Supervisor',
+    answer: 'Revisa anulaciones, reimpresiones, diferencias de caja y autorizaciones especiales durante el turno.',
+  },
+  {
+    title: 'Administrador',
+    answer: 'Gestiona usuarios, catalogo, configuracion fiscal, respaldos y restauraciones. No use la base de produccion para practicas.',
   },
 ];
 
@@ -76,17 +106,17 @@ export function HelpView() {
   return (
     <section className="space-y-6" aria-labelledby="help-title">
       <PageHeader
-        title="Ayuda"
-        description="Guía operativa para caja hospitalaria, recibos, reportes y respaldos."
+        title="Ayuda institucional"
+        description="Guia rapida para operar caja, facturacion, recibos, reportes y respaldos."
         actions={
           <div className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground">
             <HelpCircle aria-hidden="true" className="size-4" />
-            Manual interno
+            Manual operativo
           </div>
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {guides.map((guide) => {
           const Icon = guide.icon;
 
@@ -122,16 +152,57 @@ export function HelpView() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Preguntas frecuentes</CardTitle>
-          <CardDescription>Respuestas cortas para dudas comunes durante el turno.</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <WifiOff aria-hidden="true" className="size-5 text-secondary" />
+            Incidentes durante el turno
+          </CardTitle>
+          <CardDescription>Acciones seguras antes de continuar facturando.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2">
-          {faqs.map((faq) => (
-            <div key={faq.question} className="rounded-md border border-border bg-muted/30 p-4">
-              <h3 className="text-sm font-semibold text-foreground">{faq.question}</h3>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">{faq.answer}</p>
+          {incidentGuides.map((item) => (
+            <div key={item.title} className="rounded-md border border-border bg-muted/30 p-4">
+              <h3 className="text-sm font-semibold text-foreground">{item.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.answer}</p>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Responsabilidades por rol</CardTitle>
+          <CardDescription>Referencia corta para saber quien debe actuar en cada caso.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-3">
+          {roleGuides.map((item) => (
+            <div key={item.title} className="rounded-md border border-border bg-muted/30 p-4">
+              <h3 className="text-sm font-semibold text-foreground">{item.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.answer}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Capacitacion segura</CardTitle>
+          <CardDescription>Practique sin afectar facturas, caja ni respaldos reales.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-2">
+          <div className="rounded-md border border-border bg-muted/30 p-4">
+            <h3 className="text-sm font-semibold text-foreground">Checklist diario</h3>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Cajero: abrir caja, facturar, cobrar, imprimir y cerrar. Supervisor: revisar diferencias y anulaciones.
+              Administrador: revisar usuarios, respaldos, espacio y pruebas de restauracion.
+            </p>
+          </div>
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
+            <h3 className="text-sm font-semibold text-amber-900">Modo practica</h3>
+            <p className="mt-2 text-sm leading-6 text-amber-900">
+              Si no existe un entorno de practica aislado, capacite en una instalacion separada o una base descartable.
+              No use la base de produccion para ensayar anulaciones, restauraciones o cobros ficticios.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </section>
