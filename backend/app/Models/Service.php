@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Service extends Model
 {
@@ -15,6 +16,7 @@ class Service extends Model
     protected $fillable = [
         'category_id',
         'name',
+        'aliases',
         'slug',
         'source_key',
         'source_hash',
@@ -24,6 +26,8 @@ class Service extends Model
         'price',
         'taxable',
         'active',
+        'visible_in_billing',
+        'is_billable',
         'special_rule_code',
         'created_by',
         'updated_by',
@@ -35,11 +39,18 @@ class Service extends Model
             'price' => 'decimal:2',
             'taxable' => 'boolean',
             'active' => 'boolean',
+            'visible_in_billing' => 'boolean',
+            'is_billable' => 'boolean',
         ];
     }
 
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function priceHistories(): HasMany
+    {
+        return $this->hasMany(ServicePriceHistory::class);
     }
 }

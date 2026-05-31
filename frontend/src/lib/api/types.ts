@@ -52,6 +52,7 @@ export type Service = {
   id: number;
   category_id: number;
   name: string;
+  aliases?: string | null;
   slug: string;
   scan_code?: string | null;
   barcode?: string | null;
@@ -59,6 +60,8 @@ export type Service = {
   price: string;
   taxable: boolean;
   active: boolean;
+  visible_in_billing?: boolean;
+  is_billable?: boolean;
   special_rule_code: string | null;
   category?: Category;
 };
@@ -72,12 +75,15 @@ export type CategoryPayload = {
 export type ServicePayload = {
   category_id: number;
   name: string;
+  aliases?: string | null;
   price: string;
   scan_code: string | null;
   barcode: string | null;
   qr_code: string | null;
   taxable: boolean;
   active: boolean;
+  visible_in_billing?: boolean;
+  is_billable?: boolean;
   special_rule_code: string | null;
 };
 
@@ -494,6 +500,7 @@ export type ServiceFilters = {
   search?: string;
   code?: string;
   active?: boolean;
+  billing?: boolean;
   categoryId?: number;
   page?: number;
   perPage?: number;

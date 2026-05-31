@@ -23,12 +23,15 @@ class StoreServiceRequest extends FormRequest
         return [
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'name' => ['required', 'string', 'max:160'],
+            'aliases' => ['nullable', 'string', 'max:1000'],
             'price' => ['required', 'decimal:0,2', 'min:0'],
             'scan_code' => ['nullable', 'string', 'max:120', 'unique:services,scan_code'],
             'barcode' => ['nullable', 'string', 'max:120', 'unique:services,barcode'],
             'qr_code' => ['nullable', 'string', 'max:120', 'unique:services,qr_code'],
             'taxable' => ['sometimes', 'boolean'],
             'active' => ['sometimes', 'boolean'],
+            'visible_in_billing' => ['sometimes', 'boolean'],
+            'is_billable' => ['sometimes', 'boolean'],
             'special_rule_code' => ['nullable', 'string', Rule::in([Service::ERYTHROPOIETIN_RULE])],
         ];
     }

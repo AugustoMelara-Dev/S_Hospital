@@ -21,6 +21,7 @@ class IndexServiceRequest extends FormRequest
             'code' => ['sometimes', 'string', 'max:120'],
             'category_id' => ['sometimes', 'integer', 'exists:categories,id'],
             'active' => ['sometimes', 'boolean'],
+            'billing' => ['sometimes', 'boolean'],
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:150'],
         ];

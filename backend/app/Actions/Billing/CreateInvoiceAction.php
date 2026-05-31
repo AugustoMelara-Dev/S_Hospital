@@ -132,6 +132,18 @@ class CreateInvoiceAction
                 ]);
             }
 
+            if (! $service->visible_in_billing) {
+                throw ValidationException::withMessages([
+                    $field => 'El servicio seleccionado no esta visible para facturacion.',
+                ]);
+            }
+
+            if (! $service->is_billable) {
+                throw ValidationException::withMessages([
+                    $field => 'El servicio seleccionado no es facturable.',
+                ]);
+            }
+
             $prepared[] = [
                 'service' => $service,
                 'quantity' => $item['quantity'],

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Service;
+use App\Models\ServicePriceHistory;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
@@ -160,6 +161,26 @@ class ServiceCatalogTest extends TestCase
             ->getJson('/api/services?search=acido urico')
             ->assertOk()
             ->assertJsonFragment(['name' => 'Ácido úrico especial']);
+    }
+
+    public function test_service_aliases_are_searchable(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'aliases' => 'epo, eritro, medicamento dialisis',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.aliases', 'epo, eritro, medicamento dialisis');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?search=epo')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Eritropoyetina']);
     }
 
     public function test_services_can_be_requested_with_capped_per_page_to_return_full_initial_catalog(): void
@@ -409,6 +430,59 @@ class ServiceCatalogTest extends TestCase
 
         $this->assertSame('25.00', $priceAudit->old_values['price']);
         $this->assertSame('30.00', $priceAudit->new_values['price']);
+
+        $priceHistory = ServicePriceHistory::query()->where('service_id', $service->id)->firstOrFail();
+        $this->assertSame('25.00', $priceHistory->old_price);
+        $this->assertSame('30.00', $priceHistory->new_price);
+        $this->assertSame($admin->id, $priceHistory->changed_by);
+    }
+
+    public function test_billing_filter_excludes_hidden_and_non_billable_services(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $hemogram = Service::query()->where('name', 'Hemograma Completo')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$glucose->id}", ['visible_in_billing' => false])
+            ->assertOk();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$hemogram->id}", [
+                'is_billable' => false,
+                'scan_code' => 'NO-BILL-HEMO',
+            ])
+            ->assertOk();
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?active=1&billing=1&search=Glucosa')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?active=1&billing=1&code=NO-BILL-HEMO')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?active=1&search=Glucosa')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Glucosa']);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'service.visibility_updated',
+            'entity_type' => Service::class,
+            'entity_id' => $glucose->id,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'service.billability_updated',
+            'entity_type' => Service::class,
+            'entity_id' => $hemogram->id,
+        ]);
     }
 
     public function test_services_can_be_filtered_by_inactive_status(): void

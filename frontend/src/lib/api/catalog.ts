@@ -25,6 +25,7 @@ export const catalog = {
     if (filters.search) params.set('search', filters.search);
     if (filters.code) params.set('code', filters.code);
     if (filters.active !== undefined) params.set('active', filters.active ? '1' : '0');
+    if (filters.billing !== undefined) params.set('billing', filters.billing ? '1' : '0');
     if (filters.categoryId) params.set('category_id', String(filters.categoryId));
     if (filters.page) params.set('page', String(filters.page));
     if (filters.perPage) params.set('per_page', String(filters.perPage));

@@ -23,12 +23,15 @@ class UpdateServiceRequest extends FormRequest
         return [
             'category_id' => ['sometimes', 'required', 'integer', 'exists:categories,id'],
             'name' => ['sometimes', 'required', 'string', 'max:160'],
+            'aliases' => ['nullable', 'string', 'max:1000'],
             'price' => ['sometimes', 'required', 'decimal:0,2', 'min:0'],
             'scan_code' => ['nullable', 'string', 'max:120', Rule::unique('services', 'scan_code')->ignore($this->route('service'))],
             'barcode' => ['nullable', 'string', 'max:120', Rule::unique('services', 'barcode')->ignore($this->route('service'))],
             'qr_code' => ['nullable', 'string', 'max:120', Rule::unique('services', 'qr_code')->ignore($this->route('service'))],
             'taxable' => ['sometimes', 'boolean'],
             'active' => ['sometimes', 'boolean'],
+            'visible_in_billing' => ['sometimes', 'boolean'],
+            'is_billable' => ['sometimes', 'boolean'],
             'special_rule_code' => ['nullable', 'string', Rule::in([Service::ERYTHROPOIETIN_RULE])],
         ];
     }

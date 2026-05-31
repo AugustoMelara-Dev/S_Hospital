@@ -450,7 +450,7 @@ export function NewInvoiceView({
       const [currentCashSession, nextCategories, nextServices] = await Promise.all([
         apiClient.getCurrentCashSession(),
         apiClient.getCategories(true),
-        apiClient.getServices({ active: true, perPage: POS_SERVICE_PAGE_SIZE }),
+        apiClient.getServices({ active: true, billing: true, perPage: POS_SERVICE_PAGE_SIZE }),
       ]);
       dispatch({
         type: 'LOAD_DATA_SUCCESS',
@@ -474,6 +474,7 @@ export function NewInvoiceView({
     try {
       const nextServices = await apiClient.getServices({
         active: true,
+        billing: true,
         search: search.trim() || undefined,
         categoryId: selectedCategoryId && selectedCategoryId !== 'all' ? selectedCategoryId : undefined,
         perPage: POS_SERVICE_PAGE_SIZE,
@@ -511,7 +512,7 @@ export function NewInvoiceView({
     }
 
     try {
-      const [service] = await apiClient.getServices({ code, perPage: 1 });
+      const [service] = await apiClient.getServices({ code, billing: true, perPage: 1 });
 
       if (!service) {
         const localMatch = services.find((s) =>

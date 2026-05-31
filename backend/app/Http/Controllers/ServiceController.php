@@ -7,6 +7,7 @@ use App\Http\Requests\Catalog\StoreServiceRequest;
 use App\Http\Requests\Catalog\UpdateServiceRequest;
 use App\Models\AuditLog;
 use App\Models\Service;
+use App\Models\ServicePriceHistory;
 use App\Support\ServiceSearch;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -35,6 +36,10 @@ class ServiceController extends Controller
             })
             ->when($request->filled('category_id'), fn ($query) => $query->where('category_id', $request->integer('category_id')))
             ->when($request->has('active'), fn ($query) => $query->where('active', $request->boolean('active')))
+            ->when($request->boolean('billing'), fn ($query) => $query
+                ->where('active', true)
+                ->where('visible_in_billing', true)
+                ->where('is_billable', true))
             ->orderBy('name');
 
         $services = $request->filled('search')
@@ -78,6 +83,8 @@ class ServiceController extends Controller
                 'slug' => Str::slug($request->string('name')),
                 'taxable' => $request->boolean('taxable', true),
                 'active' => $request->boolean('active', true),
+                'visible_in_billing' => $request->boolean('visible_in_billing', true),
+                'is_billable' => $request->boolean('is_billable', true),
                 'created_by' => $request->user()->id,
                 'updated_by' => $request->user()->id,
             ]);
@@ -113,6 +120,16 @@ class ServiceController extends Controller
                 $this->audit($request, $action, $service, $oldValues);
             }
 
+            if ((string) $oldValues['price'] !== (string) $service->price) {
+                ServicePriceHistory::query()->create([
+                    'service_id' => $service->id,
+                    'old_price' => $oldValues['price'],
+                    'new_price' => $service->price,
+                    'changed_by' => $request->user()->id,
+                    'changed_at' => now(),
+                ]);
+            }
+
             return $service;
         });
 
@@ -129,6 +146,7 @@ class ServiceController extends Controller
         return $service->only([
             'category_id',
             'name',
+            'aliases',
             'slug',
             'scan_code',
             'barcode',
@@ -136,6 +154,8 @@ class ServiceController extends Controller
             'price',
             'taxable',
             'active',
+            'visible_in_billing',
+            'is_billable',
             'special_rule_code',
         ]);
     }
@@ -153,6 +173,14 @@ class ServiceController extends Controller
 
         if ((bool) $oldValues['active'] !== (bool) $service->active) {
             $actions[] = 'service.active_updated';
+        }
+
+        if ((bool) $oldValues['visible_in_billing'] !== (bool) $service->visible_in_billing) {
+            $actions[] = 'service.visibility_updated';
+        }
+
+        if ((bool) $oldValues['is_billable'] !== (bool) $service->is_billable) {
+            $actions[] = 'service.billability_updated';
         }
 
         return $actions ?: ['service.updated'];

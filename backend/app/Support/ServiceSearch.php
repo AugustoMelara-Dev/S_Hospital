@@ -17,6 +17,7 @@ class ServiceSearch
 
         $haystack = self::normalize(implode(' ', array_filter([
             $service->name,
+            $service->aliases,
             $service->scan_code,
             $service->barcode,
             $service->qr_code,
