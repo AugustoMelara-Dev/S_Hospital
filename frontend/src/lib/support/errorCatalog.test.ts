@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '../api/base';
-import { describeClientIssue, sanitizeClientMessage } from './errorCatalog';
+import { PERMISSION_DENIED_MESSAGE, describeClientIssue, sanitizeClientMessage } from './errorCatalog';
 
 describe('errorCatalog', () => {
   it('maps common operational errors to human messages', () => {
     expect(describeClientIssue(new ApiError('Forbidden', 403))).toMatchObject({
       severity: 'warning',
       technicalCode: 'HTTP_403',
-      message: 'No tiene permiso para esta accion.',
+      message: PERMISSION_DENIED_MESSAGE,
     });
 
     expect(describeClientIssue(new ApiError('Server exploded', 500))).toMatchObject({

@@ -4,6 +4,9 @@ export type ClientIssueDescriptor = {
   message: string;
 };
 
+export const PERMISSION_DENIED_MESSAGE =
+  'Su usuario no tiene permiso para esta accion. Solicite a un supervisor que revise su rol; no repita la operacion varias veces.';
+
 export function describeClientIssue(error: unknown): ClientIssueDescriptor {
   const status = error instanceof Error && 'status' in error && typeof error.status === 'number' ? error.status : null;
   const message = error instanceof Error ? error.message : '';
@@ -29,7 +32,7 @@ export function describeClientIssue(error: unknown): ClientIssueDescriptor {
       return {
         severity: 'warning',
         technicalCode: 'HTTP_403',
-        message: 'No tiene permiso para esta accion.',
+        message: PERMISSION_DENIED_MESSAGE,
       };
     }
 
