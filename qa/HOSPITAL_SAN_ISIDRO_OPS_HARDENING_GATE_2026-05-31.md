@@ -10,14 +10,15 @@ It does not replace final hospital-server proof. A new production handoff still 
 
 ## Current evidence
 
-- Current commit reviewed: `1483d3d`.
-- Working tree after the committed gate contains unrelated local edits in catalog/invoice/settings files that were not staged by this agent.
+- Current commit reviewed: `90f0525`.
+- Working tree was clean before this evidence refresh.
 - Running stack: Docker backend, frontend and MariaDB active; MariaDB healthy.
 - Direct SPA route proof: `http://127.0.0.1:8000/support` returned 200; `http://127.0.0.1:8000/about` returned 200.
 - Support screenshot: `qa/screenshots/ops-hardening-audit-2026-05-31/support-center-after-status-summary.png`.
 - Support console log: `qa/screenshots/ops-hardening-audit-2026-05-31/support-center-after-status-summary-console.json` with `[]`.
 - Safe training screenshot: `qa/screenshots/ops-hardening-audit-2026-05-31/support-center-training-safe-after.png`.
 - Safe training console/network evidence: `qa/screenshots/ops-hardening-audit-2026-05-31/support-center-training-safe-console.json` with only 200 responses for setup/status endpoints and no browser console errors.
+- Catalog/invoice scanner cleanup: `90f0525 fix(catalog): hide technical scanner codes` reduced user-facing technical code exposure when scanner workflows are not enabled.
 - Visual smoke report: `qa/screenshots/phase-12-visual-smoke/visual-smoke-report.json`, `consoleIssueCount: 0`, `blockerCount: 0`.
 - Local restore proof: `qa/ops-hardening-restore-validation-2026-05-31.md`.
 
@@ -81,6 +82,7 @@ Positive checks in the same preflight:
 | No duplicate invoice/payment on retry | Implemented | idempotency tests in invoice/payment suites |
 | Training by role | Implemented at product/docs level | Support role checklists, manuals and training docs |
 | Safe practice guidance | Implemented | `/support` playbook, training manuals and checklist require demo/disposable data or backup before supervised simulation |
+| Scanner technical codes hidden from normal catalog flow | Implemented | `90f0525` removes scanner-code-first wording from catalog/invoice UI when scanner use is not part of the operator flow |
 | Local backup creation | Verified | `hospital:backup` and restore proof |
 | Restore validation | Verified locally only | disposable DB proof |
 | Browser smoke | Verified locally | Playwright E2E and visual smoke report |
@@ -95,7 +97,7 @@ Positive checks in the same preflight:
 - The local restore proof confirms recovery mechanics, but final restore must be repeated with final backup paths and final server configuration.
 - Physical printer behavior cannot be inferred from screenshots or PDFs.
 - The main frontend bundle still emits a Vite size warning; not a blocker for LAN use, but worth monitoring if more modules are added.
-- A separate catalog edit in `frontend/src/features/catalog/components/ServiceSheet.tsx` exists outside this gate and should be reviewed independently before release.
+- The latest scanner-code cleanup is included in this gate; rerun the final visual smoke on the hospital server after field configuration is set.
 
 ## Decision
 
