@@ -71,6 +71,10 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\validate_backup_worker_smok
 El script pedira la contrasena en pantalla segura si no se define
 `HOSPITAL_SMOKE_PASSWORD`. Use una cuenta temporal autorizada y elimine las
 variables de entorno de la sesion cuando termine.
+La evidencia se escribe por defecto en `qa\BACKUP_WORKER_SMOKE_PROOF.md`.
+Si usa `-EvidencePath`, debe ser un archivo `.md` dentro de `qa\`; el script
+rechaza rutas fuera de esa carpeta antes de pedir contrasena, abrir red o crear
+un respaldo.
 
 ```powershell
 Remove-Item Env:\HOSPITAL_SMOKE_BASE_URL -ErrorAction SilentlyContinue

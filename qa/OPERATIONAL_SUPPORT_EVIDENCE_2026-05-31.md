@@ -66,6 +66,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Dashboard usa mensajes seguros para errores tecnicos del backend y evita mostrar SQL, trazas o rutas de logs al operador. | Verificado |
 | Esta fase | Evidencia generada por validacion de concurrencia queda restringida a archivos Markdown dentro de `qa/`, evitando escrituras fuera de la carpeta instalada por variables mal copiadas. | Verificado |
 | Esta fase | Evidencia generada por validacion de restore queda restringida a `qa/*.md` y se valida antes de crear backup o tocar la base descartable. | Verificado |
+| Esta fase | Evidencia del smoke de worker de respaldos queda restringida a archivos Markdown dentro de `qa/` y se valida antes de pedir contrasena, abrir red o crear respaldo. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -128,6 +129,8 @@ Resultado observado:
 | `repair_hospital_system.ps1` smoke temporal con `APP_URL=http://127.0.0.1:8000` | Paso de la nueva regla: reporta **REVISION** y recomienda usar IP/nombre LAN para clientes. |
 | Parser PowerShell de `validate_backup_worker_smoke.ps1` | Paso. |
 | `validate_backup_worker_smoke.ps1` sin parametros | Falla antes de red con instruccion clara para `-BaseUrl` o `HOSPITAL_SMOKE_BASE_URL`, sin traza tecnica de PowerShell. |
+| `validate_backup_worker_smoke.ps1 -EvidencePath C:\tmp\backup-worker.md` | Falla antes de pedir contrasena, abrir red o crear respaldo. |
+| `validate_backup_worker_smoke.ps1 -EvidencePath qa\backup-worker.txt` | Falla antes de pedir contrasena, abrir red o crear respaldo. |
 | `validate_backup_worker_smoke.ps1` con variables de entorno y servidor cerrado | Falla antes de crear respaldo con mensaje humano sobre servidor/BaseUrl/LAN, sin traza tecnica de PowerShell. |
 | `validate_backup_worker_smoke.ps1` manejo de errores API | Endurecido para login, permisos, token vencido, respuesta no JSON y error interno sin mostrar contrasenas ni trazas tecnicas de PowerShell al operador. |
 | Consola de `validate_backup_worker_smoke.ps1` | Paso: mensajes principales en espanol y ruta de evidencia protegida con `%PROJECT_ROOT%` o `[ruta-local]`. |

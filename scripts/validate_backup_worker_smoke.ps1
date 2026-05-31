@@ -13,6 +13,33 @@ param(
 $ErrorActionPreference = "Stop"
 
 $safeRoot = (Get-Location).Path
+$evidenceFullPath = ""
+
+function Resolve-SmokeEvidencePath([string] $path) {
+    if ([string]::IsNullOrWhiteSpace($path)) {
+        throw "EvidencePath es obligatorio y debe apuntar a un archivo .md dentro de qa."
+    }
+
+    if ([System.IO.Path]::GetExtension($path) -ne ".md") {
+        throw "EvidencePath debe ser un archivo Markdown (.md) dentro de qa."
+    }
+
+    $candidate = if ([System.IO.Path]::IsPathRooted($path)) {
+        $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($path)
+    } else {
+        Join-Path $script:safeRoot $path
+    }
+
+    $fullPath = [System.IO.Path]::GetFullPath($candidate)
+    $qaRoot = [System.IO.Path]::GetFullPath((Join-Path $script:safeRoot "qa"))
+    $qaPrefix = $qaRoot.TrimEnd("\") + "\"
+
+    if ($fullPath -eq $qaRoot -or -not $fullPath.StartsWith($qaPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "EvidencePath debe quedarse dentro de la carpeta qa del sistema."
+    }
+
+    return $fullPath
+}
 
 function Protect-SmokeText([string] $value) {
     if ([string]::IsNullOrWhiteSpace($value)) {
@@ -40,6 +67,8 @@ trap {
     Write-Host (Protect-SmokeText $_.Exception.Message)
     exit 1
 }
+
+$evidenceFullPath = Resolve-SmokeEvidencePath $EvidencePath
 
 if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
     throw "BaseUrl es obligatorio. Use -BaseUrl o defina HOSPITAL_SMOKE_BASE_URL."
@@ -207,11 +236,6 @@ if (($current.size_bytes -as [int64]) -le 0) {
     throw "La validacion de respaldos fallo. El respaldo $backupId tiene tamano invalido."
 }
 
-$evidenceFullPath = if ([System.IO.Path]::IsPathRooted($EvidencePath)) {
-    $EvidencePath
-} else {
-    Join-Path (Get-Location) $EvidencePath
-}
 $evidenceDir = Split-Path -Parent $evidenceFullPath
 if (-not (Test-Path -LiteralPath $evidenceDir)) {
     New-Item -ItemType Directory -Path $evidenceDir -Force | Out-Null

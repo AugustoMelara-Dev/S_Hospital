@@ -487,6 +487,24 @@ html.dark {
     page: receipt-a5;
   }
 
+  .institutional-receipt.receipt-80mm {
+    width: 80mm;
+    min-height: auto;
+    padding: 10px;
+    font-size: 10px;
+    line-height: 1.25;
+    page: receipt-80mm;
+  }
+
+  .institutional-receipt.receipt-58mm {
+    width: 58mm;
+    min-height: auto;
+    padding: 8px;
+    font-size: 9px;
+    line-height: 1.2;
+    page: receipt-58mm;
+  }
+
   .institutional-receipt * {
     box-sizing: border-box;
   }
@@ -713,6 +731,18 @@ html.dark {
     min-height: 210mm;
   }
 
+  body[data-printing-receipt="true"] .institutional-receipt.receipt-80mm {
+    width: 80mm;
+    min-height: auto;
+    padding: 10px;
+  }
+
+  body[data-printing-receipt="true"] .institutional-receipt.receipt-58mm {
+    width: 58mm;
+    min-height: auto;
+    padding: 8px;
+  }
+
   body[data-printing-receipt="true"] .receipt-preview-container {
     background: none !important;
     padding: 0 !important;
@@ -741,5 +771,15 @@ html.dark {
   @page receipt-a5 {
     size: A5;
     margin: 10mm;
+  }
+
+  @page receipt-80mm {
+    size: 80mm auto;
+    margin: 3mm;
+  }
+
+  @page receipt-58mm {
+    size: 58mm auto;
+    margin: 2mm;
   }
 }
