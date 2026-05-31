@@ -12,6 +12,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+trap {
+    Write-Host $_.Exception.Message
+    exit 1
+}
+
 if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
     throw "BaseUrl is required. Pass -BaseUrl or set HOSPITAL_SMOKE_BASE_URL."
 }
@@ -47,7 +52,59 @@ function Get-XsrfToken {
     return ""
 }
 
-function Invoke-Json($method, $path, $body = $null) {
+function Get-HttpStatusCode($errorRecord) {
+    try {
+        if ($null -ne $errorRecord.Exception.Response -and $null -ne $errorRecord.Exception.Response.StatusCode) {
+            $statusCode = $errorRecord.Exception.Response.StatusCode
+            if ($statusCode -is [int]) {
+                return $statusCode
+            }
+            if ($null -ne $statusCode.value__) {
+                return [int] $statusCode.value__
+            }
+            return [int] $statusCode
+        }
+    } catch {
+        # Some PowerShell versions expose HTTP failures only in the message.
+    }
+
+    $message = [string] $errorRecord.Exception.Message
+    if ($message -match "\b(401|403|419|422|5\d\d)\b") {
+        return [int] $Matches[1]
+    }
+
+    return $null
+}
+
+function New-BackupSmokeFailureMessage($purpose, $statusCode) {
+    if ($null -eq $statusCode) {
+        return "Backup worker smoke could not communicate with the server while trying to $purpose. Confirm the server is running, the LAN connection is available, and the BaseUrl is correct."
+    }
+
+    switch ($statusCode) {
+        401 {
+            return "Backup worker smoke could not $purpose because the session was rejected. Confirm the support user and password are correct, then sign in again."
+        }
+        403 {
+            return "Backup worker smoke could not $purpose because the support user does not have permission. Ask an administrator to grant backup access or use an authorized account."
+        }
+        419 {
+            return "Backup worker smoke could not $purpose because the session token expired or was not accepted. Run the script again after confirming the server clock and APP_URL/BaseUrl."
+        }
+        422 {
+            return "Backup worker smoke could not $purpose because the server rejected the request data. Confirm the support user credentials and try again."
+        }
+        default {
+            if ($statusCode -ge 500) {
+                return "Backup worker smoke could not $purpose because the server reported an internal error. Do not retry repeatedly; collect the support packet and review Laravel logs with support."
+            }
+
+            return "Backup worker smoke could not $purpose. HTTP status $statusCode was returned; confirm the BaseUrl, permissions, and current system status."
+        }
+    }
+}
+
+function Invoke-Json($method, $path, $body = $null, $purpose = "call the backup API") {
     $headers = @{
         Accept = "application/json"
         Referer = "$base/login"
@@ -71,8 +128,18 @@ function Invoke-Json($method, $path, $body = $null) {
         $params["Body"] = ($body | ConvertTo-Json -Depth 10)
     }
 
-    $response = Invoke-WebRequest @params
-    return $response.Content | ConvertFrom-Json
+    try {
+        $response = Invoke-WebRequest @params
+    } catch {
+        $statusCode = Get-HttpStatusCode $_
+        throw (New-BackupSmokeFailureMessage $purpose $statusCode)
+    }
+
+    try {
+        return $response.Content | ConvertFrom-Json
+    } catch {
+        throw "Backup worker smoke could not $purpose because the server response was not valid JSON. Confirm the route returns the API response, then collect the support packet."
+    }
 }
 
 try {
@@ -81,15 +148,18 @@ try {
     throw "Backup worker smoke could not reach $base. Confirm the server is running, APP_URL/BaseUrl is correct, and the LAN connection is available before creating a backup."
 }
 
-Invoke-Json "POST" "/api/auth/login" @{ login = $Login; password = $Password } | Out-Null
+Invoke-Json "POST" "/api/auth/login" @{ login = $Login; password = $Password } "sign in to the backup system" | Out-Null
 
-$created = Invoke-Json "POST" "/api/backups" @{}
+$created = Invoke-Json "POST" "/api/backups" @{} "create a manual backup"
 $backupId = $created.data.id
+if ($null -eq $backupId) {
+    throw "Backup worker smoke could not confirm the new backup id. Confirm the backup API response and collect the support packet."
+}
 $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 $current = $created.data
 
 while ((Get-Date) -lt $deadline) {
-    $list = Invoke-Json "GET" "/api/backups?status=all&per_page=25"
+    $list = Invoke-Json "GET" "/api/backups?status=all&per_page=25" $null "read the backup list"
     $match = @($list.data | Where-Object { $_.id -eq $backupId }) | Select-Object -First 1
     if ($null -ne $match) {
         $current = $match

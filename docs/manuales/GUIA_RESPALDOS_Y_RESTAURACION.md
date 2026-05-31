@@ -41,6 +41,22 @@ El script pedira la contrasena en pantalla segura si no se define
 `HOSPITAL_SMOKE_PASSWORD`. Use una cuenta temporal autorizada y elimine las
 variables de entorno de la sesion cuando termine.
 
+```powershell
+Remove-Item Env:\HOSPITAL_SMOKE_BASE_URL -ErrorAction SilentlyContinue
+Remove-Item Env:\HOSPITAL_SMOKE_LOGIN -ErrorAction SilentlyContinue
+Remove-Item Env:\HOSPITAL_SMOKE_PASSWORD -ErrorAction SilentlyContinue
+```
+
+Si la validacion falla, lea el mensaje principal antes de reintentar:
+
+- Servidor o red: confirme que el sistema abre desde el navegador del servidor
+  y que la direccion `BaseUrl` usa la IP o nombre LAN correcto.
+- Sesion o contrasena: use una cuenta autorizada y vuelva a ejecutar el script.
+- Permisos: pida a un administrador que habilite acceso a respaldos para la
+  cuenta de soporte.
+- Error interno: no repita muchas veces; genere el paquete de soporte y revise
+  los logs con el responsable tecnico.
+
 ## Restauracion
 
 Restaurar cambia la informacion disponible en el sistema. Debe hacerse solo con autorizacion.

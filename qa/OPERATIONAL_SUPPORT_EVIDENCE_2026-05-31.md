@@ -97,8 +97,9 @@ Resultado observado:
 | `repair_hospital_system.ps1` smoke con `APP_URL` LAN real | Paso con **Direccion APP_URL para LAN** en OK; conserva warnings esperados de `APP_VERSION`/tareas en este entorno. |
 | `repair_hospital_system.ps1` smoke temporal con `APP_URL=http://127.0.0.1:8000` | Paso de la nueva regla: reporta **REVISION** y recomienda usar IP/nombre LAN para clientes. |
 | Parser PowerShell de `validate_backup_worker_smoke.ps1` | Paso. |
-| `validate_backup_worker_smoke.ps1` sin parametros | Falla antes de red con instruccion clara para `-BaseUrl` o `HOSPITAL_SMOKE_BASE_URL`. |
-| `validate_backup_worker_smoke.ps1` con variables de entorno y servidor cerrado | Falla antes de crear respaldo con mensaje humano sobre servidor/BaseUrl/LAN. |
+| `validate_backup_worker_smoke.ps1` sin parametros | Falla antes de red con instruccion clara para `-BaseUrl` o `HOSPITAL_SMOKE_BASE_URL`, sin traza tecnica de PowerShell. |
+| `validate_backup_worker_smoke.ps1` con variables de entorno y servidor cerrado | Falla antes de crear respaldo con mensaje humano sobre servidor/BaseUrl/LAN, sin traza tecnica de PowerShell. |
+| `validate_backup_worker_smoke.ps1` manejo de errores API | Endurecido para login, permisos, token vencido, respuesta no JSON y error interno sin mostrar contrasenas ni trazas tecnicas de PowerShell al operador. |
 | Parser PowerShell de `scripts\e2e_gate.ps1` | Paso. |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1` | Paso: 2 specs Playwright. Detecto y se corrigio fuga de `/api/areas?active=1` al backend local durante el flujo Reportes -> Respaldos. |
 | `php artisan test tests/Feature/SystemStatusTest.php` | Paso: 7 tests, 47 assertions. |
