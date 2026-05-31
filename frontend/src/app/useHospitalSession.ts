@@ -5,7 +5,7 @@ import { type PasswordChangeForm } from '../features/auth/PasswordChangeView';
 export function useHospitalSession() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [cashSession, setCashSession] = useState<CashSession | null>(null);
-  const [login, setLogin] = useState(import.meta.env.DEV ? 'admin.demo' : '');
+  const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [passwordForm, setPasswordForm] = useState<PasswordChangeForm>({
     current_password: '',

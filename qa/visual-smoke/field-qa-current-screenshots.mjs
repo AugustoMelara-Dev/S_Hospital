@@ -5,8 +5,8 @@ import path from 'node:path';
 const { chromium } = playwright;
 
 const baseUrl = process.env.FIELD_QA_BASE_URL ?? 'http://127.0.0.1:8000';
-const user = process.env.FIELD_QA_USER ?? 'admin.demo';
-const password = process.env.FIELD_QA_PASSWORD ?? 'Password123!';
+const user = requiredEnv('FIELD_QA_USER');
+const password = requiredEnv('FIELD_QA_PASSWORD');
 const outputDir = path.resolve(import.meta.dirname, '..', 'screenshots', 'field-qa-2026-05-29-fixed');
 
 const screens = [
@@ -44,6 +44,14 @@ const operationalBlockers = [
   ['qr', /\bQR\b|codigo QR|código QR/i],
   ['pos', /\bPOS\b/i],
 ];
+
+function requiredEnv(name) {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`Missing ${name}. Use an authorized local test account; do not rely on preconfigured credentials.`);
+  }
+  return value;
+}
 
 async function waitSettled(page) {
   await page.waitForLoadState('domcontentloaded');

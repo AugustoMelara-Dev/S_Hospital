@@ -5,10 +5,19 @@ import { dirname } from 'node:path';
 
 const baseUrl = (process.env.HOSPITAL_CONCURRENCY_BASE_URL ?? '').replace(/\/$/, '');
 const targetEnv = process.env.HOSPITAL_CONCURRENCY_TARGET_ENV ?? process.env.TARGET_ENV ?? process.env.APP_ENV ?? '';
-const login = process.env.HOSPITAL_CONCURRENCY_LOGIN ?? 'cajero.demo';
-const password = process.env.HOSPITAL_CONCURRENCY_PASSWORD ?? 'Password123!';
+const login = requiredEnv('HOSPITAL_CONCURRENCY_LOGIN');
+const password = requiredEnv('HOSPITAL_CONCURRENCY_PASSWORD');
 const evidencePath = process.env.HOSPITAL_CONCURRENCY_EVIDENCE_PATH ?? '';
 const runId = `concurrency-validation-${new Date().toISOString().replace(/[^0-9A-Za-z]/g, '').slice(0, 14)}`;
+
+function requiredEnv(name) {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    console.error(`Abort: set ${name} to an authorized disposable validation account.`);
+    process.exit(1);
+  }
+  return value;
+}
 
 if (process.env.HOSPITAL_VALIDATE_REAL_MYSQL !== '1') {
   console.error('Abort: set HOSPITAL_VALIDATE_REAL_MYSQL=1 to run real HTTP concurrency validation.');
@@ -32,11 +41,6 @@ if (/(production|prod|staging|preprod)/i.test(targetEnv)) {
 
 if (!/(test|local|validation|disposable)/i.test(`${baseUrl} ${targetEnv}`)) {
   console.error('Abort: target URL or HOSPITAL_CONCURRENCY_TARGET_ENV must contain test, local, validation, or disposable.');
-  process.exit(1);
-}
-
-if ((login === 'cajero.demo' || password === 'Password123!') && process.env.HOSPITAL_ALLOW_DEMO_VALIDATION !== '1') {
-  console.error('Abort: demo credentials require HOSPITAL_ALLOW_DEMO_VALIDATION=1 and a disposable target.');
   process.exit(1);
 }
 

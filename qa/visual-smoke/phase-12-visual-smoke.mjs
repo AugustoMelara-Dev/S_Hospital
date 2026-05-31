@@ -7,13 +7,12 @@ const { chromium } = playwright;
 const root = path.resolve(import.meta.dirname, '..');
 const screenshotDir = path.join(root, 'screenshots', 'phase-12-visual-smoke');
 const baseUrl = process.env.VISUAL_SMOKE_BASE_URL ?? 'http://127.0.0.1:5173';
-const user = process.env.VISUAL_SMOKE_USER ?? 'admin.demo';
-const password = process.env.VISUAL_SMOKE_PASSWORD ?? 'Password123!';
-const isLocalDemoTarget = baseUrl === 'http://127.0.0.1:8000' && user === 'admin.demo';
-const allowMutations = process.env.VISUAL_SMOKE_ALLOW_MUTATIONS === '1' || isLocalDemoTarget;
+const user = requiredEnv('VISUAL_SMOKE_USER');
+const password = requiredEnv('VISUAL_SMOKE_PASSWORD');
+const allowMutations = process.env.VISUAL_SMOKE_ALLOW_MUTATIONS === '1';
 
 if (!allowMutations) {
-  throw new Error('Visual smoke creates invoices/payments. Set VISUAL_SMOKE_ALLOW_MUTATIONS=1 or use the local admin.demo target.');
+  throw new Error('Visual smoke creates invoices/payments. Set VISUAL_SMOKE_ALLOW_MUTATIONS=1 for an authorized disposable target.');
 }
 
 const routeScreens = {
@@ -43,6 +42,14 @@ const routeLabels = {
 
 const consoleByScreen = {};
 const findings = [];
+
+function requiredEnv(name) {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`Missing ${name}. Use an authorized local test account; do not rely on preconfigured credentials.`);
+  }
+  return value;
+}
 let activeScreen = 'bootstrap';
 let lastInvoiceNumber = '';
 
