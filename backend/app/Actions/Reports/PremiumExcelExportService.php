@@ -5,6 +5,7 @@ namespace App\Actions\Reports;
 use App\Models\FiscalSetting;
 use App\Support\HospitalName;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Chart\Chart;
 use PhpOffice\PhpSpreadsheet\Chart\DataSeries;
 use PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues;
@@ -17,7 +18,6 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 
 class PremiumExcelExportService
@@ -134,7 +134,7 @@ class PremiumExcelExportService
         // Filters Content
         $sheet0->setCellValue('B7', 'Fecha Inicial (Desde)');
         $sheet0->setCellValue('C7', $from->format('d/m/Y'));
-        
+
         $sheet0->setCellValue('B8', 'Fecha Final (Hasta)');
         $sheet0->setCellValue('C8', $to->format('d/m/Y'));
 
@@ -180,7 +180,7 @@ class PremiumExcelExportService
             ]);
 
             try {
-                $drawing = new Drawing();
+                $drawing = new Drawing;
                 $drawing->setName('Logo del Hospital');
                 $drawing->setDescription('Logo oficial de la institucion');
                 $drawing->setPath($logoPath);
@@ -288,10 +288,10 @@ class PremiumExcelExportService
                 new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Resumen General'!\$C\$10", null, 1),
             ];
             $xAxisTickValues1 = [
-                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Resumen General'!\$B\$11:\$B\$" . $lastMethodRow, null, $methodCount),
+                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_STRING, "'Resumen General'!\$B\$11:\$B\$".$lastMethodRow, null, $methodCount),
             ];
             $dataSeriesValues1 = [
-                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Resumen General'!\$C\$11:\$C\$" . $lastMethodRow, null, $methodCount),
+                new DataSeriesValues(DataSeriesValues::DATASERIES_TYPE_NUMBER, "'Resumen General'!\$C\$11:\$C\$".$lastMethodRow, null, $methodCount),
             ];
 
             $series1 = new DataSeries(
@@ -369,7 +369,7 @@ class PremiumExcelExportService
 
         // Freeze pane & auto-filter
         $sheet2->freezePane('A6');
-        $sheet2->setAutoFilter('B5:D'.($row-1));
+        $sheet2->setAutoFilter('B5:D'.($row - 1));
 
         // Dynamic Interactive Excel Column Chart for Service Categories
         $categoryCount = count($categories['categories']);
@@ -564,7 +564,7 @@ class PremiumExcelExportService
 
         // Freeze pane & auto-filter
         $sheet4->freezePane('A6');
-        $sheet4->setAutoFilter('B5:E'.($row-1));
+        $sheet4->setAutoFilter('B5:E'.($row - 1));
 
         // Add Bar Chart for Cashiers (only if there are more than 1 cashier)
         $cashierCount = count($operations['cashiers']);

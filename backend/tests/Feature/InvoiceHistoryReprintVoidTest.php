@@ -406,7 +406,7 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        return $admin;
+        return $admin->refresh();
     }
 
     private function supervisor(): User
@@ -414,7 +414,7 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         $supervisor = User::factory()->create();
         $supervisor->assignRole('supervisor');
 
-        return $supervisor;
+        return $supervisor->refresh();
     }
 
     private function cashier(): User
@@ -422,6 +422,6 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         $cashier = User::factory()->create();
         $cashier->assignRole('cajero');
 
-        return $cashier;
+        return $cashier->refresh();
     }
 }

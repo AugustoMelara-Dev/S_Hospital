@@ -165,12 +165,12 @@ class PdfExportService
     <div class='summary-cards'>
         <div class='summary-card'>
             <div class='summary-card-title'>Total Facturado</div>
-            <div class='summary-card-value'>L. " . number_format((float)$data['total_billed'], 2) . "</div>
+            <div class='summary-card-value'>L. ".number_format((float) $data['total_billed'], 2)."</div>
             <div style='font-size: 10px; color: #64748b; margin-top: 4px;'>Facturas Emitidas: {$data['invoice_count']}</div>
         </div>
         <div class='summary-card summary-card-right'>
             <div class='summary-card-title'>Total Recaudado</div>
-            <div class='summary-card-value' style='color: #0d9488;'>L. " . number_format((float)$data['total_collected'], 2) . "</div>
+            <div class='summary-card-value' style='color: #0d9488;'>L. ".number_format((float) $data['total_collected'], 2)."</div>
             <div style='font-size: 10px; color: #64748b; margin-top: 4px;'>Pagos Procesados: {$data['payment_count']}</div>
         </div>
         <div class='clear'></div>
@@ -190,8 +190,8 @@ class PdfExportService
             $html .= "
             <tr>
                 <td><strong>{$methodName}</strong></td>
-                <td class='text-right'>L. " . number_format((float)$total, 2) . "</td>
-            </tr>";
+                <td class='text-right'>L. ".number_format((float) $total, 2).'</td>
+            </tr>';
         }
         $html .= "
         </tbody>
@@ -215,8 +215,8 @@ class PdfExportService
             <tr>
                 <td><strong>{$statusName}</strong></td>
                 <td class='text-center'>{$count}</td>
-                <td class='text-right'>L. " . number_format((float)$total, 2) . "</td>
-            </tr>";
+                <td class='text-right'>L. ".number_format((float) $total, 2).'</td>
+            </tr>';
         }
         $html .= "
         </tbody>
@@ -233,14 +233,15 @@ class PdfExportService
     </div>
 
     <div class='footer'>
-        Reporte generado automáticamente por el sistema hospitalario local - " . now()->format('Y-m-d H:i:s') . "
+        Reporte generado automáticamente por el sistema hospitalario local - ".now()->format('Y-m-d H:i:s').'
     </div>
 
 </body>
 </html>
-";
+';
 
         $pdf = Pdf::loadHTML($html);
+
         return $pdf->output();
     }
 
@@ -394,12 +395,12 @@ class PdfExportService
     <div class='summary-cards'>
         <div class='summary-card'>
             <div class='summary-card-title'>Total Facturado</div>
-            <div class='summary-card-value'>L. " . number_format((float)$income['total_billed'], 2) . "</div>
+            <div class='summary-card-value'>L. ".number_format((float) $income['total_billed'], 2)."</div>
             <div style='font-size: 9px; color: #64748b; margin-top: 3px;'>Facturas Emitidas: {$income['invoice_count']}</div>
         </div>
         <div class='summary-card summary-card-right'>
             <div class='summary-card-title'>Total Recaudado</div>
-            <div class='summary-card-value' style='color: #0d9488;'>L. " . number_format((float)$income['total_collected'], 2) . "</div>
+            <div class='summary-card-value' style='color: #0d9488;'>L. ".number_format((float) $income['total_collected'], 2)."</div>
             <div style='font-size: 9px; color: #64748b; margin-top: 3px;'>Pagos Procesados: {$income['payment_count']}</div>
         </div>
         <div class='clear'></div>
@@ -421,14 +422,14 @@ class PdfExportService
             $html .= "<tr><td colspan='5' class='text-center'>No hay datos disponibles en este rango.</td></tr>";
         } else {
             foreach ($categories as $cat) {
-                $html .= "
+                $html .= '
                 <tr>
-                    <td><strong>" . htmlspecialchars($cat['category']) . "</strong></td>
+                    <td><strong>'.htmlspecialchars($cat['category'])."</strong></td>
                     <td class='text-center'>{$cat['item_count']}</td>
-                    <td class='text-right'>L. " . number_format((float)$cat['subtotal'], 2) . "</td>
-                    <td class='text-right'>L. " . number_format((float)$cat['tax_amount'], 2) . "</td>
-                    <td class='text-right'><strong>L. " . number_format((float)$cat['total'], 2) . "</strong></td>
-                </tr>";
+                    <td class='text-right'>L. ".number_format((float) $cat['subtotal'], 2)."</td>
+                    <td class='text-right'>L. ".number_format((float) $cat['tax_amount'], 2)."</td>
+                    <td class='text-right'><strong>L. ".number_format((float) $cat['total'], 2).'</strong></td>
+                </tr>';
             }
         }
         $html .= "
@@ -449,8 +450,8 @@ class PdfExportService
             $html .= "
             <tr>
                 <td><strong>{$methodName}</strong></td>
-                <td class='text-right'>L. " . number_format((float)$total, 2) . "</td>
-            </tr>";
+                <td class='text-right'>L. ".number_format((float) $total, 2).'</td>
+            </tr>';
         }
         $html .= "
         </tbody>
@@ -484,12 +485,12 @@ class PdfExportService
             $html .= "<tr><td colspan='3' class='text-center'>No hay datos de servicios en este rango.</td></tr>";
         } else {
             foreach (array_slice($services, 0, 10) as $srv) {
-                $html .= "
+                $html .= '
                 <tr>
-                    <td>" . htmlspecialchars($srv['service']) . "</td>
+                    <td>'.htmlspecialchars($srv['service'])."</td>
                     <td class='text-center'>{$srv['item_count']}</td>
-                    <td class='text-right'>L. " . number_format((float)$srv['total'], 2) . "</td>
-                </tr>";
+                    <td class='text-right'>L. ".number_format((float) $srv['total'], 2).'</td>
+                </tr>';
             }
         }
         $html .= "
@@ -509,12 +510,12 @@ class PdfExportService
                 <td style='font-weight: bold; background-color: #f8fafc;'>Cajeros Activos:</td>
                 <td>{$operations['summary']['cashier_count']}</td>
                 <td style='font-weight: bold; background-color: #f8fafc;'>Respaldos:</td>
-                <td>" . ($operations['summary']['backup_count'] ?? 0) . "</td>
+                <td>".($operations['summary']['backup_count'] ?? 0).'</td>
             </tr>
         </table>
-    </div>";
+    </div>';
 
-        if (!empty($operations['voids'])) {
+        if (! empty($operations['voids'])) {
             $html .= "
             <div class='section-title'>Detalle de Anulaciones</div>
             <table>
@@ -532,25 +533,26 @@ class PdfExportService
                     <tr>
                         <td>{$void['invoice_number']}</td>
                         <td>{$void['voided_at']}</td>
-                        <td>" . htmlspecialchars($void['voided_by_name'] ?? 'N/A') . "</td>
-                        <td>" . htmlspecialchars($void['void_reason'] ?? 'Sin motivo') . "</td>
-                    </tr>";
+                        <td>".htmlspecialchars($void['voided_by_name'] ?? 'N/A').'</td>
+                        <td>'.htmlspecialchars($void['void_reason'] ?? 'Sin motivo').'</td>
+                    </tr>';
             }
-            $html .= "
+            $html .= '
                 </tbody>
-            </table>";
+            </table>';
         }
 
         $html .= "
     <div class='footer'>
-        Reporte consolidado generado automáticamente por el sistema hospitalario local - " . now()->format('Y-m-d H:i:s') . "
+        Reporte consolidado generado automáticamente por el sistema hospitalario local - ".now()->format('Y-m-d H:i:s').'
     </div>
 
 </body>
 </html>
-";
+';
 
         $pdf = Pdf::loadHTML($html);
+
         return $pdf->output();
     }
 

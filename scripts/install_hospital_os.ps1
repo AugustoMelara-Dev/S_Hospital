@@ -105,6 +105,39 @@ function Update-DotEnv {
     Set-Content $Path -Value $newLines
 }
 
+function Invoke-ProductionDatabaseSetup {
+    param (
+        [string]$PhpPath,
+        [string]$BackendRoot
+    )
+
+    $currentDir = Get-Location
+    try {
+        Set-Location $BackendRoot
+
+        & $PhpPath artisan config:clear | Out-Null
+
+        $commands = @(
+            @("migrate", "--force", "--no-interaction"),
+            @("db:seed", "--class=RolesAndPermissionsSeeder", "--force", "--no-interaction"),
+            @("db:seed", "--class=ServiceCatalogSeeder", "--force", "--no-interaction")
+        )
+
+        $allOutput = @()
+        foreach ($artisanArgs in $commands) {
+            $output = & $PhpPath artisan @artisanArgs 2>&1
+            $allOutput += $output
+            if ($LASTEXITCODE -ne 0) {
+                throw "Fallo comando: php artisan $($artisanArgs -join ' '). $($output -join [Environment]::NewLine)"
+            }
+        }
+
+        return ($allOutput -join [Environment]::NewLine)
+    } finally {
+        Set-Location $currentDir
+    }
+}
+
 if ($useGui) {
     # ----------------------------------------------------
     # WPF GUI Wizard Implementation
@@ -342,6 +375,10 @@ if ($useGui) {
                 $dbPassVal = $TxtDbPass.Password
                 # Update backend/.env file
                 $vars = @{
+                    "APP_NAME" = "Hospital San Isidro"
+                    "APP_ENV" = "production"
+                    "APP_DEBUG" = "false"
+                    "APP_TIMEZONE" = "America/Tegucigalpa"
                     "APP_URL" = "http://$($TxtLanIp.Text):8000"
                     "SANCTUM_STATEFUL_DOMAINS" = "localhost,localhost:3000,localhost:5173,127.0.0.1,127.0.0.1:8000,127.0.0.1:5173,$($TxtLanIp.Text),$($TxtLanIp.Text):8000,$($TxtLanIp.Text):5173,::1"
                     "CORS_ALLOWED_ORIGINS" = "http://localhost:5173,http://127.0.0.1:5173,http://$($TxtLanIp.Text):5173,http://$($TxtLanIp.Text):8000"
@@ -453,11 +490,15 @@ if ($useGui) {
             return
         }
 
-        $TxtDbResult.Text = "Guardando configuración temporal y corriendo migraciones y semillas..."
+        $TxtDbResult.Text = "Guardando configuracion y corriendo migraciones seguras..."
         $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::DarkGoldenrod
         
         # Guardar en .env para que artisan use los datos reales
         $vars = @{
+            "APP_NAME" = "Hospital San Isidro"
+            "APP_ENV" = "production"
+            "APP_DEBUG" = "false"
+            "APP_TIMEZONE" = "America/Tegucigalpa"
             "DB_HOST" = $host
             "DB_PORT" = $port
             "DB_DATABASE" = $db
@@ -477,19 +518,11 @@ if ($useGui) {
             return
         }
 
-        # Ejecutar artisan migrate --seed
+        # Ejecutar migraciones seguras y seeders base. No crear usuarios demo en produccion.
         try {
-            $currentDir = Get-Location
-            Set-Location $backendRoot
-            
-            # Limpiar cache de configuracion anterior
-            & $php artisan config:clear | Out-Null
-            
-            # Ejecutar migracion
-            $migrateOutput = & $php artisan migrate:fresh --seed --force 2>&1
-            Set-Location $currentDir
+            $migrateOutput = Invoke-ProductionDatabaseSetup -PhpPath $php -BackendRoot $backendRoot
 
-            $TxtDbResult.Text = "¡Tablas de base de datos creadas y catálogos inicializados con éxito!"
+            $TxtDbResult.Text = "Base de datos actualizada sin borrar datos. Roles y catalogo base listos. Cree el admin real con auth:create-initial-admin."
             $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Green
         } catch {
             $TxtDbResult.Text = "Error al ejecutar migraciones: $_"
@@ -549,6 +582,10 @@ function Run-SetupCli {
     # Save to env
     Write-Host "`nGuardando variables en archivo de configuración .env..." -ForegroundColor DarkCyan
     $vars = @{
+        "APP_NAME" = "Hospital San Isidro"
+        "APP_ENV" = "production"
+        "APP_DEBUG" = "false"
+        "APP_TIMEZONE" = "America/Tegucigalpa"
         "APP_URL" = "http://$lanIp:8000"
         "SANCTUM_STATEFUL_DOMAINS" = "localhost,localhost:3000,localhost:5173,127.0.0.1,127.0.0.1:8000,127.0.0.1:5173,$lanIp,$lanIp:8000,$lanIp:5173,::1"
         "CORS_ALLOWED_ORIGINS" = "http://localhost:5173,http://127.0.0.1:5173,http://$lanIp:5173,http://$lanIp:8000"
@@ -568,12 +605,9 @@ function Run-SetupCli {
     $dbStatus = & $php -r $createDbCode
 
     if ($dbStatus -eq "CREATED") {
-        $currentDir = Get-Location
-        Set-Location $backendRoot
-        & $php artisan config:clear | Out-Null
-        $migrateRes = & $php artisan migrate:fresh --seed --force 2>&1
-        Set-Location $currentDir
-        Write-Host "Base de datos y catálogos creados con éxito." -ForegroundColor Green
+        $migrateRes = Invoke-ProductionDatabaseSetup -PhpPath $php -BackendRoot $backendRoot
+        Write-Host "Base de datos actualizada sin borrar datos. Roles y catalogo base listos." -ForegroundColor Green
+        Write-Host "Cree el admin real con: php artisan auth:create-initial-admin --username=admin --email=admin@hospital.local --password=PasswordTemporal123" -ForegroundColor Yellow
     } else {
         Write-Host "No se pudo crear base de datos: $dbStatus" -ForegroundColor Red
     }

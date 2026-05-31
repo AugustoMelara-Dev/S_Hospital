@@ -12,8 +12,8 @@ use App\Http\Controllers\LogoController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\ServiceAreaController;
+use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SystemStatusController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -33,7 +33,6 @@ Route::get('/settings/logo', [LogoController::class, 'show'])
 
 Route::get('/settings/fiscal', [FiscalSettingsController::class, 'show'])
     ->middleware('web');
-
 
 Route::post('/auth/login', [AuthController::class, 'login'])
     ->middleware(['web', 'throttle:5,1']);

@@ -7,11 +7,19 @@ const { chromium } = playwright;
 const baseUrl = process.env.FIELD_QA_BASE_URL ?? 'http://127.0.0.1:8000';
 const user = process.env.FIELD_QA_USER ?? 'admin.demo';
 const password = process.env.FIELD_QA_PASSWORD ?? 'Password123!';
-const outputDir = path.resolve(import.meta.dirname, '..', 'screenshots', 'field-qa-2026-05-29-fixed');
+const outputDir = path.resolve(import.meta.dirname, '..', 'screenshots', 'hardening-field-visual-matrix');
+
+const profiles = [
+  { id: 'desktop-light', theme: 'light', viewport: { width: 1440, height: 1000 } },
+  { id: 'desktop-dark', theme: 'dark', viewport: { width: 1440, height: 1000 } },
+  { id: 'medium-light', theme: 'light', viewport: { width: 1024, height: 768 } },
+  { id: 'medium-dark', theme: 'dark', viewport: { width: 1024, height: 768 } },
+];
 
 const screens = [
   ['login', '/', /caja institucional|hospital san isidro/i],
   ['dashboard', '/dashboard', /inicio|dashboard/i],
+  ['help', '/help', /ayuda|manual/i],
   ['fiscal-settings', '/settings/fiscal', /configuracion|hospital y recibo/i],
   ['backups', '/backups', /respaldos/i],
   ['catalog', '/catalog', /catalogo/i],
@@ -79,75 +87,92 @@ async function login(page) {
     return;
   }
 
-  await page.evaluate(() => {
-    localStorage.setItem('hospital-billing-theme', 'light');
-    localStorage.setItem('hospital-billing-color-theme', 'teal');
-  });
   await page.getByLabel(/usuario|correo|email/i).fill(user);
   await page.getByRole('textbox', { name: /contrase/i }).fill(password);
   await page.getByRole('button', { name: /entrar|iniciar/i }).click();
-  await page.waitForURL(/dashboard|billing|cashbox|catalog|invoices|reports|backups|settings|admin/, { timeout: 15000 });
+  const loginState = await Promise.race([
+    page.waitForURL(/dashboard|billing|cashbox|catalog|invoices|reports|backups|settings|admin/, { timeout: 15000 }).then(() => 'navigated'),
+    page.getByRole('link', { name: /inicio|nueva factura|caja/i }).first().waitFor({ state: 'visible', timeout: 15000 }).then(() => 'session'),
+  ]).catch(() => 'timeout');
   await waitSettled(page);
+
+  if (loginState === 'timeout') {
+    const text = await page.locator('body').innerText().catch(() => '');
+    throw new Error(`No se pudo iniciar sesion para capturas de campo. Texto visible: ${text.slice(0, 400)}`);
+  }
 }
 
 await mkdir(outputDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
-const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
-const page = await context.newPage();
 const report = [];
 
-await page.goto(`${baseUrl}/`);
-await waitSettled(page);
-await page.screenshot({ path: path.join(outputDir, '01-login.png'), fullPage: false });
-report.push({
-  screen: 'login',
-  route: '/',
-  screenshot: path.join(outputDir, '01-login.png'),
-  flags: collectFlags(await visibleTextAndValues(page), '/'),
-});
+for (const profile of profiles) {
+  const context = await browser.newContext({ viewport: profile.viewport, deviceScaleFactor: 1 });
+  await context.addInitScript((theme) => {
+    localStorage.setItem('hospital-billing-theme', theme);
+    localStorage.setItem('hospital-billing-color-theme', 'teal');
+  }, profile.theme);
+  const page = await context.newPage();
 
-await login(page);
-
-let index = 2;
-for (const [name, route, expected] of screens.slice(1)) {
-  await page.goto(`${baseUrl}${route}`);
+  await page.goto(`${baseUrl}/`);
   await waitSettled(page);
-  await page.getByRole('heading', { name: expected }).first().waitFor({ timeout: 12000 }).catch(() => {});
-  await page.waitForTimeout(300);
+  const loginScreenshot = path.join(outputDir, `${profile.id}-01-login.png`);
+  await page.screenshot({ path: loginScreenshot, fullPage: false });
+  report.push({
+    profile,
+    screen: 'login',
+    route: '/',
+    screenshot: loginScreenshot,
+    flags: collectFlags(await visibleTextAndValues(page), '/'),
+  });
 
-  const fileName = `${String(index).padStart(2, '0')}-${name}.png`;
-  const screenshot = path.join(outputDir, fileName);
-  await page.screenshot({ path: screenshot, fullPage: false });
-  const text = await visibleTextAndValues(page);
-  report.push({ screen: name, route, screenshot, flags: collectFlags(text, route) });
-  index += 1;
-}
+  await login(page);
 
-await page.goto(`${baseUrl}/invoices`);
-await waitSettled(page);
-const viewReceiptButtons = page.getByText(/ver recibo/i);
-if (await viewReceiptButtons.count() > 0) {
-  await viewReceiptButtons.first().click();
+  let index = 2;
+  for (const [name, route, expected] of screens.slice(1)) {
+    await page.goto(`${baseUrl}${route}`);
+    await waitSettled(page);
+    await page.getByRole('heading', { name: expected }).first().waitFor({ timeout: 12000 }).catch(() => {});
+    await page.waitForTimeout(300);
+
+    const fileName = `${profile.id}-${String(index).padStart(2, '0')}-${name}.png`;
+    const screenshot = path.join(outputDir, fileName);
+    await page.screenshot({ path: screenshot, fullPage: false });
+    const text = await visibleTextAndValues(page);
+    report.push({ profile, screen: name, route, screenshot, flags: collectFlags(text, route) });
+    index += 1;
+  }
+
+  await page.goto(`${baseUrl}/invoices`);
   await waitSettled(page);
-  await page.getByLabel(/recibo institucional/i).waitFor({ timeout: 12000 }).catch(() => {});
-  await page.waitForTimeout(500);
-  const screenshot = path.join(outputDir, `${String(index).padStart(2, '0')}-receipt-preview.png`);
-  await page.screenshot({ path: screenshot, fullPage: false });
-  report.push({
-    screen: 'receipt-preview',
-    route: '/invoices',
-    screenshot,
-    flags: collectFlags(await visibleTextAndValues(page), '/invoices', true),
-  });
-} else {
-  report.push({
-    screen: 'receipt-preview',
-    route: '/invoices',
-    screenshot: null,
-    skipped: 'No se encontro un boton visible de Ver recibo en la base local actual.',
-    flags: {},
-  });
+  const viewReceiptButtons = page.getByText(/ver recibo/i);
+  if (await viewReceiptButtons.count() > 0) {
+    await viewReceiptButtons.first().click();
+    await waitSettled(page);
+    await page.getByLabel(/recibo institucional/i).waitFor({ timeout: 12000 }).catch(() => {});
+    await page.waitForTimeout(500);
+    const screenshot = path.join(outputDir, `${profile.id}-${String(index).padStart(2, '0')}-receipt-preview.png`);
+    await page.screenshot({ path: screenshot, fullPage: false });
+    report.push({
+      profile,
+      screen: 'receipt-preview',
+      route: '/invoices',
+      screenshot,
+      flags: collectFlags(await visibleTextAndValues(page), '/invoices', true),
+    });
+  } else {
+    report.push({
+      profile,
+      screen: 'receipt-preview',
+      route: '/invoices',
+      screenshot: null,
+      skipped: 'No se encontro un boton visible de Ver recibo en la base local actual.',
+      flags: {},
+    });
+  }
+
+  await context.close();
 }
 
 const failing = report.flatMap((entry) =>

@@ -153,7 +153,7 @@ class SystemStatusTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        return $admin;
+        return $admin->refresh();
     }
 
     private function completedLanProof(): string

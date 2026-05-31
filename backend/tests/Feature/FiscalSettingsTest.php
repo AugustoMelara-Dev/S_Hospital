@@ -18,6 +18,7 @@ class FiscalSettingsTest extends TestCase
 
         $cashier = User::factory()->create();
         $cashier->assignRole('cajero');
+        $cashier = $cashier->refresh();
 
         $this->actingAs($cashier)
             ->putJson('/api/settings/fiscal', $this->validPayload())
@@ -30,6 +31,7 @@ class FiscalSettingsTest extends TestCase
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
+        $admin = $admin->refresh();
 
         $this->actingAs($admin)
             ->putJson('/api/settings/fiscal', $this->validPayload())
@@ -75,6 +77,7 @@ class FiscalSettingsTest extends TestCase
 
         $supervisor = User::factory()->create();
         $supervisor->assignRole('supervisor');
+        $supervisor = $supervisor->refresh();
 
         $this->actingAs($supervisor)
             ->getJson('/api/settings/fiscal')

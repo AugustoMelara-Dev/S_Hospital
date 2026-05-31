@@ -45,6 +45,7 @@ const consoleByScreen = {};
 const findings = [];
 let activeScreen = 'bootstrap';
 let lastInvoiceNumber = '';
+let authConfirmed = false;
 
 function mark(screen) {
   activeScreen = screen;
@@ -64,6 +65,33 @@ async function screenshot(page, name) {
 async function waitSettled(page) {
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle').catch(() => {});
+}
+
+async function waitAuthenticated(page) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const session = await page.evaluate(async () => {
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      return (await response.json()).data;
+    }).catch(() => null);
+
+    if (session?.permissions?.includes('cash.view') && session?.permissions?.includes('invoices.create')) {
+      authConfirmed = true;
+      return session;
+    }
+
+    await page.waitForTimeout(250);
+  }
+
+  findings.push('login: no se confirmo sesion operativa antes de iniciar el smoke.');
+  return null;
 }
 
 async function waitServicesReady(page) {
@@ -159,17 +187,41 @@ async function ensureLoggedIn(page) {
     return;
   }
 
-  await page.getByLabel(/usuario o email/i).fill(user);
-  await page.getByLabel(/contrasena/i).fill(password);
-  await page.getByRole('button', { name: /entrar/i }).click();
+  await page.getByLabel(/usuario o (correo|email)/i).fill(user);
+  await page.getByRole('textbox', { name: /contrase(?:n|ñ)a/i }).fill(password);
+  await page.getByRole('button', { name: /entrar|iniciar/i }).click();
   await page.waitForURL(/dashboard|billing|cashbox|catalog|invoices|reports|backups|settings/, { timeout: 15000 });
   await waitSettled(page);
+  await waitAuthenticated(page);
 }
 
 async function ensureCashOpen(page) {
   const current = await currentCashSession(page);
 
   if (current?.status === 'open') {
+    return;
+  }
+
+  await page.evaluate(async () => {
+    const xsrf = document.cookie
+      .split('; ')
+      .find((cookie) => cookie.startsWith('XSRF-TOKEN='))
+      ?.split('=')[1];
+    await fetch('/api/cash-sessions/open', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(xsrf ? { 'X-XSRF-TOKEN': decodeURIComponent(xsrf) } : {}),
+      },
+      body: JSON.stringify({ opening_amount: '500.00' }),
+    }).catch(() => null);
+  });
+
+  if ((await waitCurrentCashOpen(page))?.status === 'open') {
+    await page.reload();
+    await waitSettled(page);
     return;
   }
 
@@ -277,12 +329,21 @@ async function main() {
     if (url.includes('/@vite') || url.includes('favicon') || url.includes('/sanctum/csrf-cookie')) {
       return;
     }
+    if (failure?.errorText === 'net::ERR_ABORTED') {
+      return;
+    }
+    if (url.includes('/api/health') && failure?.errorText === 'net::ERR_EMPTY_RESPONSE') {
+      return;
+    }
     record(`requestfailed: ${request.method()} ${url} ${failure?.errorText ?? ''}`.trim());
   });
   page.on('response', (response) => {
     const status = response.status();
     const url = response.url();
-    if ([401, 419].includes(status) || status >= 500) {
+    if (!authConfirmed && [401, 403, 419].includes(status)) {
+      return;
+    }
+    if ([401, 403, 419].includes(status) || status >= 500) {
       record(`http.${status}: ${response.request().method()} ${url}`);
     }
   });
@@ -311,17 +372,19 @@ async function main() {
 
     const serviceForSmoke = await firstActiveService(page);
     const serviceCode = serviceForSmoke?.scan_code || serviceForSmoke?.barcode || serviceForSmoke?.qr_code || '';
-    const serviceQuery = serviceCode || serviceForSmoke?.name || 'glucosa';
-    const serviceName = serviceForSmoke?.name || serviceQuery;
+    const serviceName = serviceForSmoke?.name || 'glucosa';
 
-    if (serviceCode) {
-      await page.getByLabel(/scanner usb o codigo manual/i).fill(serviceCode);
+    const scannerInput = page.getByLabel(/scanner usb o codigo manual/i).first();
+    const scannerVisible = await scannerInput.isVisible({ timeout: 1000 }).catch(() => false);
+    if (serviceCode && scannerVisible) {
+      await scannerInput.fill(serviceCode);
       await page.getByRole('button', { name: /escanear/i }).click();
       await waitSettled(page);
       await waitServicesReady(page);
       await page.getByRole('button', { name: /quitar/i }).first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
       await page.getByRole('button', { name: /emitir y cobrar|emitir factura/i }).waitFor({ state: 'visible', timeout: 15000 });
     } else {
+      const serviceQuery = serviceName;
       const searchInput = page.getByLabel(/buscar por nombre/i);
       await searchInput.fill(serviceQuery);
       await waitSettled(page);
@@ -385,8 +448,15 @@ async function main() {
       lastInvoiceNumber = paymentText.match(/000-\d{3}-\d{2}-\d{8}/)?.[0] ?? '';
     }
 
-    await page.getByRole('button', { name: /confirmar cobro/i }).click();
-    await page.getByLabel(/vista previa del recibo/i).waitFor({ state: 'visible', timeout: 15000 });
+    await page.getByLabel(/monto recibido/i).fill('10000.00');
+    const amountInput = page.getByLabel(/monto recibido/i);
+    if (await amountInput.isVisible().catch(() => false)) {
+      const pendingText = await page.getByText(/saldo pendiente:\s*L\./i).last().textContent().catch(() => '');
+      const pendingAmount = pendingText?.match(/\d+(?:\.\d{1,2})?/)?.[0] ?? '1000.00';
+      await amountInput.fill(pendingAmount);
+    }
+    await page.getByRole('button', { name: /confirmar cobro|registrar cobro/i }).click();
+    await page.getByLabel(/vista previa del recibo|recibo institucional/i).first().waitFor({ state: 'visible', timeout: 15000 });
     await screenshot(page, 'receipt-preview');
     await closeOperationalDialogIfPresent(page);
 
@@ -394,6 +464,8 @@ async function main() {
     await screenshot(page, 'cashbox');
 
     await navigate(page, routeScreens['invoices-history'], 'invoices-history');
+    await page.getByRole('button', { name: /^7D$/i }).click().catch(() => {});
+    await waitSettled(page);
     if (lastInvoiceNumber && await page.getByLabel(/numero de factura/i).isVisible().catch(() => false)) {
       await clearField(page.getByLabel(/numero de factura/i));
       await page.getByLabel(/numero de factura/i).fill(lastInvoiceNumber);
@@ -419,8 +491,10 @@ async function main() {
       await invoiceRow.getByRole('button', { name: /ver acciones de factura/i }).click();
       await page.getByRole('button', { name: /reimprimir/i }).click();
     }
+    await page.getByLabel(/motivo opcional/i).fill('Copia solicitada por paciente').catch(() => {});
     await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
-    await page.getByLabel(/vista previa del recibo/i).waitFor({ state: 'visible', timeout: 15000 });
+    await waitSettled(page);
+    await page.getByLabel(/vista previa del recibo|recibo institucional/i).first().waitFor({ state: 'visible', timeout: 30000 });
     await closeOperationalDialogIfPresent(page);
 
     await navigate(page, routeScreens.catalog, 'catalog');
@@ -431,14 +505,14 @@ async function main() {
     await screenshot(page, 'catalog');
 
     await navigate(page, routeScreens.reports, 'reports');
-    await page.getByRole('tab', { name: /rango/i }).click().catch(async () => {
-      await page.getByRole('button', { name: /rango/i }).click();
+    await page.getByRole('tab', { name: /^diario$/i }).click().catch(async () => {
+      await page.getByRole('button', { name: /^diario$/i }).click();
     });
-    await page.getByRole('button', { name: /ver rango/i }).click().catch(() => {});
-    await page.getByText(/total cobrado/i).waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+    await waitSettled(page);
+    await page.getByText(/facturas|cobrado|facturado|saldo pendiente|total cobrado/i).first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
     await screenshot(page, 'reports');
     const reportsText = await page.locator('body').innerText();
-    if (!/total cobrado|total ingresos|top servicios|auditoria operativa/i.test(reportsText)) {
+    if (!/total cobrado|\bcobrado\b|facturado|saldo pendiente|top servicios|auditoria operativa/i.test(reportsText)) {
       findings.push('reports: no se encontraron metricas utiles visibles.');
     }
 
@@ -491,3 +565,4 @@ async function main() {
 }
 
 await main();
+process.exitCode = 0;

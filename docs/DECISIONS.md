@@ -2,6 +2,26 @@
 
 ## Registro de decisiones
 
+### 2026-05-31 - Zona horaria operativa y aislamiento de pruebas
+
+Decision:
+
+- La aplicacion usa `America/Tegucigalpa` como zona horaria operativa por defecto.
+- Los filtros diarios de facturas, caja y reportes deben interpretarse con la fecha local del hospital, no con UTC.
+- Las pruebas automatizadas que usen `RefreshDatabase` no deben ejecutarse contra la base MySQL/MariaDB activa de desarrollo u operacion.
+- El comando de pruebas de backend debe confirmar aislamiento real antes de correr suite completa; si no hay aislamiento, usar una base descartable o SQLite en memoria verificado.
+
+Motivo:
+
+- Durante smoke real, las facturas emitidas localmente no aparecian en historial cuando el backend filtraba con dia UTC y la UI mostraba fecha de Honduras.
+- La suite Laravel completa en Docker puede resetear la base activa si la configuracion de testing no queda efectivamente aislada, aunque se pasen variables de entorno inline.
+
+Consecuencia:
+
+- `.env.example` y `.env.docker.example` documentan `APP_TIMEZONE=America/Tegucigalpa`.
+- La verificacion RC debe incluir `migrate:status` en MariaDB y smoke de navegador despues de cualquier prueba destructiva o migracion.
+- No se debe tratar una suite que resetea datos locales como evidencia de produccion; primero debe apuntar a una base descartable.
+
 ### 2026-05-31 - Frente de flujo operativo hospitalario y areas
 
 Decision:
@@ -902,3 +922,24 @@ Consecuencia:
 - Caja unica sigue siendo el flujo principal.
 - React solo presenta filtros y resultados; el backend decide visibilidad, permisos y agregados.
 - No se introduce expediente clinico ni inventario medico.
+
+### 2026-05-31 - Hardening de instalacion y QA de campo
+
+Decision:
+
+- El instalador Windows no debe ejecutar `migrate:fresh`, `db:wipe` ni seeders demo en la ruta de produccion.
+- La instalacion de servidor LAN debe configurar `APP_ENV=production`, `APP_DEBUG=false`, zona horaria local y migraciones no destructivas.
+- Los seeders de permisos limpian la cache de Spatie al inicio y al final para evitar permisos obsoletos despues de reseed local o pruebas.
+- La evidencia de campo se guarda como matriz visual light/dark y smoke operacional con factura, pago, recibo, historial, reportes, backups y fiscal.
+
+Motivo:
+
+- Un instalador que borra datos no es aceptable para un hospital publico.
+- El personal necesita evidencia visual y operativa repetible antes de instalar o presentar el sistema.
+- La cache de permisos puede sobrevivir a cambios de seed en entornos largos; limpiar la clave real evita 403 falsos.
+
+Consecuencia:
+
+- Produccion requiere admin real creado con `auth:create-initial-admin`.
+- Los usuarios demo quedan limitados a `local` y `testing`.
+- Restore, impresora y cliente LAN final siguen requiriendo validacion fisica en el equipo del hospital.

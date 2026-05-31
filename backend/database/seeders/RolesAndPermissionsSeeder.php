@@ -46,6 +46,7 @@ class RolesAndPermissionsSeeder extends Seeder
     public function run(): void
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        cache()->forget(config('permission.cache.key'));
 
         $permissions = collect(self::PERMISSIONS)
             ->map(fn (string $permission) => Permission::query()->firstOrCreate([
@@ -117,5 +118,6 @@ class RolesAndPermissionsSeeder extends Seeder
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         app(PermissionRegistrar::class)->clearPermissionsCollection();
+        cache()->forget(config('permission.cache.key'));
     }
 }

@@ -445,6 +445,6 @@ class InvoiceCreationTest extends TestCase
             'opened_at' => now(),
         ]);
 
-        return $cashier;
+        return $cashier->refresh();
     }
 }

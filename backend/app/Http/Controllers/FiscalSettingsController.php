@@ -20,7 +20,7 @@ class FiscalSettingsController extends Controller
     public function update(UpdateFiscalSettingsRequest $request, AuditLogger $auditLogger): JsonResponse
     {
         $setting = DB::transaction(function () use ($request, $auditLogger): FiscalSetting {
-            $setting = FiscalSetting::query()->first() ?? new FiscalSetting();
+            $setting = FiscalSetting::query()->first() ?? new FiscalSetting;
             $fieldsToTrack = [
                 'hospital_name',
                 'rtn',

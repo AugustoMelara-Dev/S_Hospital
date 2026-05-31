@@ -9,6 +9,7 @@ use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
@@ -122,7 +123,7 @@ class UserController extends Controller
         $request->user()->can('users.update') || abort(403);
 
         $validated = $request->validate([
-            'password' => ['required', 'string', \Illuminate\Validation\Rules\Password::min(10)->letters()->numbers()],
+            'password' => ['required', 'string', Password::min(10)->letters()->numbers()],
         ]);
         $oldValues = ['must_change_password' => $user->must_change_password];
 

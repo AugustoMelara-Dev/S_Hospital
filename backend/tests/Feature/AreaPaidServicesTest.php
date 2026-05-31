@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
@@ -81,7 +80,7 @@ class AreaPaidServicesTest extends TestCase
         $cashier = User::factory()->create();
         $cashier->assignRole('cajero');
 
-        return $cashier;
+        return $cashier->refresh();
     }
 
     private function openSession(User $cashier): int

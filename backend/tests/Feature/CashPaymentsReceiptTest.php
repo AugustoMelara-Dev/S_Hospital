@@ -608,7 +608,7 @@ class CashPaymentsReceiptTest extends TestCase
         $cashier = User::factory()->create();
         $cashier->assignRole('cajero');
 
-        return $cashier;
+        return $cashier->refresh();
     }
 
     private function openSession(User $cashier, string $openingAmount): int

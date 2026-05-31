@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manual de Usuario - S_Hospital OS</title>
+    <title>Manual de Usuario - Hospital San Isidro</title>
     <style>
         :root {
             --primary: #0f172a;
@@ -233,7 +233,7 @@
                 <h1 class="header-title">Manual de Usuario</h1>
                 <span class="header-tag">Servidor Local LAN - Offline</span>
             </div>
-            <p class="header-subtitle">Guía de Operaciones, Protocolos de Caja, Respaldos y Activación del Sistema S_Hospital OS</p>
+            <p class="header-subtitle">Guía de operaciones, caja, recibos, respaldos y recuperación del Sistema de Caja Hospitalaria</p>
         </header>
 
         <section id="shortcuts">
@@ -331,7 +331,7 @@
 
             <div class="callout callout-caution">
                 <div class="callout-title">Peligro de Pérdida de Datos</div>
-                Nunca intente restaurar base de datos en producción directamente sin haber verificado primero la integridad del archivo y haberlo probado en una base limpia de pruebas.
+                Nunca restaure directamente sobre la base activa del hospital sin prueba previa en una base descartable, respaldo final reciente y aprobación administrativa.
             </div>
 
             <h4>Paso A: Comprobación de Hash del Archivo</h4>
@@ -362,7 +362,7 @@
             <h3>Formato del Archivo license.json:</h3>
             <pre>{
   "licensee": "Nombre de la Clinica o Hospital",
-  "rtn": "08011999123456",
+  "rtn": "RTN_AUTORIZADO",
   "expires_at": "2027-12-31",
   "signature": "de78fb216cb34ea7205a28b0304859a1122a2bf89ee60731f8b1d8f58b7333a9"
 }</pre>
