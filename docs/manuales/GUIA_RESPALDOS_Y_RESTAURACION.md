@@ -43,6 +43,13 @@ scripts\run_scheduled_backup.cmd --check
 scripts\start_backup_automation.cmd --check
 ```
 
+## Retencion de respaldos
+
+El sistema conserva por defecto los 30 respaldos exitosos mas recientes. Ajuste
+`HOSPITAL_BACKUP_KEEP_SUCCESSFUL=30` en `.env` solo si el responsable tecnico
+aprueba otra politica. Los respaldos fallidos o pendientes no se podan, porque
+sirven como evidencia de operacion y diagnostico.
+
 Si una verificacion falla, no reintente muchas veces. Revise primero el mensaje:
 PHP no encontrado, instalacion incompleta, permisos insuficientes o falta de
 espacio. Luego genere paquete de soporte.

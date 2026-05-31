@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Actions\Backups\CreateBackupAction;
+use App\Actions\Backups\PruneBackupsAction;
 use App\Models\BackupLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -165,6 +166,63 @@ class BackupWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_backup_prune_keeps_latest_successful_backups_and_never_prunes_failed_or_pending(): void
+    {
+        $oldest = $this->successfulBackupLog(filename: 'oldest.sql', path: 'backups/oldest.sql');
+        $middle = $this->successfulBackupLog(filename: 'middle.sql', path: 'backups/middle.sql');
+        $newest = $this->successfulBackupLog(filename: 'newest.sql', path: 'backups/newest.sql');
+        $failed = BackupLog::query()->create([
+            'filename' => 'failed.sql',
+            'path' => 'backups/failed.sql',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_FAILED,
+            'type' => BackupLog::TYPE_SCHEDULED,
+            'completed_at' => now()->subDays(4),
+        ]);
+        $pending = BackupLog::query()->create([
+            'filename' => 'pending.sql',
+            'path' => 'backups/pending.sql',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_PENDING,
+            'type' => BackupLog::TYPE_SCHEDULED,
+        ]);
+
+        $oldest->forceFill(['completed_at' => now()->subDays(3)])->save();
+        $middle->forceFill(['completed_at' => now()->subDays(2)])->save();
+        $newest->forceFill(['completed_at' => now()->subDay()])->save();
+
+        $pruned = app(PruneBackupsAction::class)->execute(2);
+
+        $this->assertSame(1, $pruned);
+        $this->assertDatabaseMissing('backup_logs', ['id' => $oldest->id]);
+        $this->assertDatabaseHas('backup_logs', ['id' => $middle->id]);
+        $this->assertDatabaseHas('backup_logs', ['id' => $newest->id]);
+        $this->assertDatabaseHas('backup_logs', ['id' => $failed->id]);
+        $this->assertDatabaseHas('backup_logs', ['id' => $pending->id]);
+        $this->assertFalse(Storage::disk('local')->exists('backups/oldest.sql'));
+        $this->assertTrue(Storage::disk('local')->exists('backups/middle.sql'));
+        $this->assertTrue(Storage::disk('local')->exists('backups/newest.sql'));
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'backup.pruned',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $oldest->id,
+        ]);
+    }
+
+    public function test_successful_backup_runs_configured_retention_after_creation(): void
+    {
+        Config::set('backups.retention.successful_count', 1);
+        $oldBackup = $this->successfulBackupLog(filename: 'old.sql', path: 'backups/old.sql');
+        $oldBackup->forceFill(['completed_at' => now()->subDay()])->save();
+
+        $created = app(CreateBackupAction::class)->execute(type: BackupLog::TYPE_SCHEDULED);
+
+        $this->assertSame(BackupLog::STATUS_SUCCESS, $created->status);
+        $this->assertDatabaseMissing('backup_logs', ['id' => $oldBackup->id]);
+        $this->assertFalse(Storage::disk('local')->exists('backups/old.sql'));
+        $this->assertDatabaseHas('backup_logs', ['id' => $created->id]);
+    }
+
     public function test_failed_backup_is_recorded_without_leaking_database_password(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -279,13 +337,13 @@ class BackupWorkflowTest extends TestCase
             ->assertNotFound();
     }
 
-    private function successfulBackupLog(?User $creator = null): BackupLog
+    private function successfulBackupLog(?User $creator = null, string $filename = 'test-backup.sql', string $path = 'backups/test-backup.sql'): BackupLog
     {
-        Storage::disk('local')->put('backups/test-backup.sql', 'select 1;');
+        Storage::disk('local')->put($path, 'select 1;');
 
         return BackupLog::query()->create([
-            'filename' => 'test-backup.sql',
-            'path' => 'backups/test-backup.sql',
+            'filename' => $filename,
+            'path' => $path,
             'disk' => 'local',
             'status' => BackupLog::STATUS_SUCCESS,
             'type' => BackupLog::TYPE_MANUAL,

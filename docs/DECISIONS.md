@@ -510,6 +510,24 @@ Consecuencia:
 - La carga de vistas con varias consultas mejora sin relajar seguridad de mutaciones.
 - Errores 422 de cambio de contraseña se muestran en la pantalla activa.
 
+### 2026-05-31 - Retencion conservadora de backups exitosos
+
+Decision:
+
+- Despues de un backup exitoso se podan solo backups `success` mas antiguos que `HOSPITAL_BACKUP_KEEP_SUCCESSFUL`.
+- El valor por defecto conserva 30 backups exitosos y nunca baja de 1.
+- Backups `pending` o `failed` no se podan automaticamente.
+
+Motivo:
+
+- La PC servidor local tiene almacenamiento finito, pero no se debe borrar la unica recuperacion valida ni evidencia de fallos.
+- La retencion debe ser configurable antes de ejecutar `config:cache` en produccion offline.
+
+Consecuencia:
+
+- Cada poda borra solo archivos seguros bajo `backups/`, elimina el registro podado y deja auditoria `backup.pruned`.
+- Los operadores siguen viendo fallos recientes para diagnostico, mientras los exitos antiguos no crecen sin limite.
+
 ### 2026-05-19 - Handoff final de produccion sin evidencia falsa
 
 Decision:

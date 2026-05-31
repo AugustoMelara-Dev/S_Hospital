@@ -33,6 +33,16 @@ El comando crea y ejecuta el backup en el mismo proceso; se recomienda para tare
 
 Los archivos quedan bajo `storage/app/private/backups`. El API solo descarga archivos registrados en `backup_logs`, existentes y dentro de esa carpeta.
 
+## Retencion local
+
+Por defecto el sistema conserva los 30 backups exitosos mas recientes y poda los exitosos mas antiguos despues de crear un backup nuevo. Se puede ajustar con:
+
+```env
+HOSPITAL_BACKUP_KEEP_SUCCESSFUL=30
+```
+
+La retencion nunca elimina backups `pending` o `failed`; esos registros quedan como evidencia operativa. La poda solo borra archivos locales con ruta segura bajo `backups/` y registra auditoria `backup.pruned`.
+
 El backend busca `mariadb-dump` o `mysqldump` en el `PATH` y en rutas locales comunes como `C:\xampp\mysql\bin\mysqldump.exe`. Si el servidor usa otra ruta, definir:
 
 ```powershell

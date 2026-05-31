@@ -14,6 +14,7 @@ class CreateBackupAction
 {
     public function __construct(
         private readonly DatabaseDumpWriter $databaseDumpWriter,
+        private readonly PruneBackupsAction $pruneBackups,
     ) {}
 
     public function execute(?User $user = null, string $type = BackupLog::TYPE_MANUAL): BackupLog
@@ -85,6 +86,12 @@ class CreateBackupAction
                 'completed_at' => now(),
                 'error_message' => null,
             ])->save();
+
+            try {
+                $this->pruneBackups->execute();
+            } catch (\Throwable $pruneException) {
+                report($pruneException);
+            }
         } catch (\Throwable $exception) {
             $this->removePartialFile((string) $backupLog->path);
             $this->removePartialFile((string) $backupLog->path.'.tmp');
