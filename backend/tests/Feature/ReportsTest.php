@@ -1213,6 +1213,69 @@ class ReportsTest extends TestCase
         $this->assertStringStartsWith('%PDF', $response->getContent());
     }
 
+    public function test_daily_closure_pdf_export_includes_financial_reading_with_sources(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $paidInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $partialInvoice = $this->createInvoice($cashier, 'Hemograma Completo');
+        $this->createInvoice($cashier, 'Eritropoyetina');
+        $voidInvoice = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $paidInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($cashier, $partialInvoice, $sessionId, Payment::METHOD_TRANSFER, '5.00');
+        $this->payInvoice($cashier, $voidInvoice, $sessionId, Payment::METHOD_CARD, '17.25');
+
+        Invoice::query()->whereKey($voidInvoice)->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $this->supervisor()->id,
+            'voided_at' => now(),
+            'void_reason' => 'No debe inflar PDF diario',
+        ]);
+
+        $capturedHtml = null;
+        Pdf::shouldReceive('loadHTML')
+            ->once()
+            ->with(\Mockery::on(function (string $html) use (&$capturedHtml): bool {
+                $capturedHtml = $html;
+
+                return true;
+            }))
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('output')
+                    ->once()
+                    ->andReturn('%PDF-daily-financial-reading');
+            }));
+
+        $date = now()->toDateString();
+        $this->actingAs($admin)
+            ->get("/api/reports/pdf?date={$date}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-daily-financial-reading', false);
+
+        $this->assertIsString($capturedHtml);
+        $this->assertStringContainsString('Lectura Financiera del Dia', $capturedHtml);
+        $this->assertStringContainsString('Facturado', $capturedHtml);
+        $this->assertStringContainsString('L. 57.50', $capturedHtml);
+        $this->assertStringContainsString('Facturas no anuladas emitidas en el dia', $capturedHtml);
+        $this->assertStringContainsString('Cobrado', $capturedHtml);
+        $this->assertStringContainsString('L. 22.25', $capturedHtml);
+        $this->assertStringContainsString('Pagos publicados no anulados en el dia', $capturedHtml);
+        $this->assertStringContainsString('Pendiente', $capturedHtml);
+        $this->assertStringContainsString('L. 35.25', $capturedHtml);
+        $this->assertStringContainsString('Saldo actual de facturas emitidas o parciales del dia', $capturedHtml);
+        $this->assertStringContainsString('Parcial', $capturedHtml);
+        $this->assertStringContainsString('L. 11.50', $capturedHtml);
+        $this->assertStringContainsString('Facturas con pago parcial separadas de pagadas', $capturedHtml);
+        $this->assertStringContainsString('Anulado', $capturedHtml);
+        $this->assertStringContainsString('L. 17.25', $capturedHtml);
+        $this->assertStringContainsString('Facturas anuladas reportadas fuera de ingresos', $capturedHtml);
+    }
+
     public function test_period_closure_pdf_export_succeeds(): void
     {
         $this->seedBillingBase();

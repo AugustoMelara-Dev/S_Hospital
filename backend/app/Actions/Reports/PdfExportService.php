@@ -176,6 +176,44 @@ class PdfExportService
         <div class='clear'></div>
     </div>
 
+    <div class='section-title'>Lectura Financiera del Dia</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Concepto</th>
+                <th class='text-right'>Monto (LPS)</th>
+                <th>Fuente</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Facturado</strong></td>
+                <td class='text-right'>L. ".number_format((float) ($data['total_billed'] ?? 0), 2)."</td>
+                <td>Facturas no anuladas emitidas en el dia</td>
+            </tr>
+            <tr>
+                <td><strong>Cobrado</strong></td>
+                <td class='text-right'>L. ".number_format((float) ($data['total_collected'] ?? 0), 2)."</td>
+                <td>Pagos publicados no anulados en el dia</td>
+            </tr>
+            <tr>
+                <td><strong>Pendiente</strong></td>
+                <td class='text-right'>L. ".number_format((float) ($data['total_pending'] ?? 0), 2)."</td>
+                <td>Saldo actual de facturas emitidas o parciales del dia</td>
+            </tr>
+            <tr>
+                <td><strong>Parcial</strong></td>
+                <td class='text-right'>L. ".number_format((float) ($data['total_partial'] ?? 0), 2)."</td>
+                <td>Facturas con pago parcial separadas de pagadas</td>
+            </tr>
+            <tr>
+                <td><strong>Anulado</strong></td>
+                <td class='text-right'>L. ".number_format((float) ($data['total_voided'] ?? 0), 2)."</td>
+                <td>Facturas anuladas reportadas fuera de ingresos</td>
+            </tr>
+        </tbody>
+    </table>
+
     <div class='section-title'>Recaudación por Método de Pago</div>
     <table>
         <thead>
