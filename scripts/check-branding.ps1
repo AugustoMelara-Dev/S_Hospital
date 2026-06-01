@@ -27,6 +27,16 @@ $scopedForbidden = @(
     ('Development' + $demoWord.Substring(0, 1).ToUpperInvariant() + $demoWord.Substring(1) + 'Seeder')
 )
 
+$legacyReceiptPaperForbidden = @(
+    'recibo termico',
+    'ticket termico',
+    'termico 80mm',
+    'termico 58mm',
+    '80mm/58mm',
+    'receipt-80mm',
+    'receipt-58mm'
+)
+
 function Invoke-ForbiddenSearch {
     param(
         [string] $Label,
@@ -95,6 +105,29 @@ try {
         -AllowedLinePatterns @(
             'qa\\visual-smoke\\field-qa-current-screenshots\.mjs:\d+:\s*\[''hospitalDemo'',\s*/Hospital Demo/i\]',
             'qa\\visual-smoke\\field-qa-current-screenshots\.mjs:\d+:\s*\[''demoCai'',\s*/DEMO-CAI/i\]'
+        )
+
+    Invoke-ForbiddenSearch `
+        -Label 'Opciones heredadas de recibo termico encontradas en superficies de entrega:' `
+        -Patterns $legacyReceiptPaperForbidden `
+        -Paths @(
+            'frontend/src/features',
+            'frontend/src/components',
+            'frontend/src/layout',
+            'frontend/src/lib/institutionalReceiptPaper.ts',
+            'docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md',
+            'docs/LOCAL_VALIDATION_SCRIPT.md',
+            'docs/OFFLINE_LAN_INSTALL.md',
+            'docs/RELEASE_CHECKLIST.md',
+            'docs/TRAINING_ADMIN.md',
+            'docs/TRAINING_CAJERO.md',
+            'docs/manuales',
+            'qa/ACCEPTANCE_CRITERIA.md',
+            'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
+            'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md'
+        ) `
+        -AllowedLinePatterns @(
+            'frontend/src/features\\invoices\\NewInvoiceView\.test\.tsx:\d+:\s*expect\(styles\)\.toContain'
         )
 
     Write-Host 'Revision de branding completada sin hallazgos.'

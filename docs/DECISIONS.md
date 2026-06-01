@@ -1414,3 +1414,20 @@ Consecuencia:
 
 - Las opciones 80mm/58mm quedan tratadas como valores heredados y se convierten a media carta en frontend.
 - La validacion fisica de impresora sigue pendiente del hardware real, pero el contrato visual/frontend queda uniforme y probado.
+
+### 2026-05-31 - Branding check bloquea formatos termicos heredados
+
+Decision:
+
+- `scripts/check-branding.ps1` revisa superficies de entrega para impedir que vuelvan textos visibles de recibo termico, 80mm/58mm o clases heredadas de rollo fuera de compatibilidad probada.
+- `docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md` valida solo media carta, carta y A5.
+
+Motivo:
+
+- El recibo final debe sentirse como talonario institucional del hospital, no como ticket termico.
+- Una guia de validacion fisica no debe pedir pruebas de formatos que ya no son opciones visibles.
+
+Consecuencia:
+
+- El gate de branding falla si UI, manuales o evidencia clave vuelven a promover recibo termico.
+- La compatibilidad CSS heredada queda tolerada solo en pruebas enfocadas hasta retirarla con una fase especifica.
