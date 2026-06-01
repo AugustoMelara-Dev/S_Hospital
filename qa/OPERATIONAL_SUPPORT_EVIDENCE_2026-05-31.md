@@ -74,7 +74,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Reporte operativo prorratea pagos filtrados por area/categoria usando centavos enteros y prueba pagos parciales de centavos impares. | Verificado |
 | Esta fase | Menu de instalacion previa ya no ofrece "instalacion limpia" ni comandos Docker que borren volumenes; solo reparar, actualizar conservando datos o cancelar. | Verificado |
 | Esta fase | Tabla de movimientos de caja usa formateador financiero seguro para no mostrar `NaN` ni montos crudos si la API devuelve un importe malformado. | Verificado |
-| Esta fase | Tamanos de recibo institucional quedan centralizados para configuracion, wizard, recibo nuevo e historial; media carta, 80mm, 58mm, carta y A5 quedan visibles y valores invalidos vuelven a media carta. | Verificado |
+| Esta fase | Tamanos de recibo institucional quedan centralizados para configuracion, wizard, recibo nuevo e historial; solo media carta/carta/A5 quedan visibles y valores invalidos vuelven a media carta. | Verificado |
 
 ## Evidencia Visual Disponible
 

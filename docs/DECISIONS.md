@@ -1402,15 +1402,15 @@ Consecuencia:
 Decision:
 
 - Los tamanos de recibo institucional se definen en `frontend/src/lib/institutionalReceiptPaper.ts`.
-- Configuracion fiscal, wizard inicial, recibo nuevo e historial usan la misma lista: media carta, 80mm, 58mm, carta y A5.
+- Configuracion fiscal, wizard inicial, recibo nuevo e historial usan la misma lista: media carta, carta y A5.
 - Valores malformados de API o UI se normalizan a media carta antes de pedir, reimprimir o renderizar recibos.
 
 Motivo:
 
 - La caja no debe depender de listas duplicadas para decidir el papel de impresion.
-- Un valor invalido de configuracion no debe romper el recibo ni ocultar las opciones termicas requeridas por el hospital.
+- Un valor invalido de configuracion no debe romper el recibo ni reactivar opciones termicas en la experiencia visible.
 
 Consecuencia:
 
-- La opcion 80mm/58mm queda como camino de primera clase en configuracion, preview y reimpresion.
+- Las opciones 80mm/58mm quedan tratadas como valores heredados y se convierten a media carta en frontend.
 - La validacion fisica de impresora sigue pendiente del hardware real, pero el contrato visual/frontend queda uniforme y probado.

@@ -1105,8 +1105,8 @@ describe('NewInvoiceView', () => {
 
     render(<ReceiptPreview receipt={receipt} onWidthChange={vi.fn()} onPrint={printSpy} />);
 
-    expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-80mm');
-    expect(screen.getByText(/termico 80mm/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-half_letter');
+    expect(screen.queryByText(/termico|80mm|58mm/i)).not.toBeInTheDocument();
     expect(screen.getByText(/vence/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /imprimir/i }));
     await waitFor(() => expect(printSpy).toHaveBeenCalledOnce());

@@ -8,9 +8,9 @@ import {
 
 describe('institutional receipt paper helpers', () => {
   it('keeps paper receipt sizes as the only visible institutional options', () => {
-    expect(institutionalReceiptPaperSize('80mm')).toBe('80mm');
-    expect(institutionalReceiptPaperSize('58mm')).toBe('58mm');
-    expect(INSTITUTIONAL_RECEIPT_PAPER_VALUES).toEqual(['half_letter', '80mm', '58mm', 'letter', 'a5']);
+    expect(institutionalReceiptPaperSize('80mm')).toBe('half_letter');
+    expect(institutionalReceiptPaperSize('58mm')).toBe('half_letter');
+    expect(INSTITUTIONAL_RECEIPT_PAPER_VALUES).toEqual(['half_letter', 'letter', 'a5']);
     expect(INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.map((option) => option.value)).toEqual([
       ...INSTITUTIONAL_RECEIPT_PAPER_VALUES,
     ]);
