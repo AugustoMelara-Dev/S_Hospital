@@ -6,7 +6,9 @@ type ConfirmDialogProps = {
   cancelLabel?: string;
   children: ReactNode;
   confirmLabel: string;
+  confirmDisabled?: boolean;
   danger?: boolean;
+  cancelDisabled?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
   open: boolean;
@@ -15,7 +17,9 @@ type ConfirmDialogProps = {
 
 export function ConfirmDialog({
   cancelLabel = 'Cancelar',
+  cancelDisabled = false,
   children,
+  confirmDisabled = false,
   confirmLabel,
   danger = false,
   onCancel,
@@ -27,7 +31,7 @@ export function ConfirmDialog({
     <AlertDialogPrimitive.Root
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!nextOpen) {
+        if (!nextOpen && !cancelDisabled) {
           onCancel();
         }
       }}
@@ -49,15 +53,13 @@ export function ConfirmDialog({
 
             <div className="flex flex-wrap justify-end gap-2">
               <AlertDialogPrimitive.Cancel asChild>
-                <Button type="button" variant="secondary" onClick={onCancel}>
+                <Button type="button" variant="secondary" onClick={onCancel} disabled={cancelDisabled}>
                   {cancelLabel}
                 </Button>
               </AlertDialogPrimitive.Cancel>
-              <AlertDialogPrimitive.Action asChild>
-                <Button type="button" variant={danger ? 'danger' : 'default'} onClick={onConfirm}>
-                  {confirmLabel}
-                </Button>
-              </AlertDialogPrimitive.Action>
+              <Button type="button" variant={danger ? 'danger' : 'default'} onClick={onConfirm} disabled={confirmDisabled}>
+                {confirmLabel}
+              </Button>
             </div>
           </div>
         </AlertDialogPrimitive.Content>

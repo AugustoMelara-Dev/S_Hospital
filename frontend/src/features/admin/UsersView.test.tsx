@@ -59,6 +59,42 @@ describe('UsersView', () => {
     })));
   });
 
+  it('prevents duplicated create user submissions while the request is pending', async () => {
+    let resolveCreate!: (user: AuthUser) => void;
+    const createUser = vi.spyOn(apiClient, 'createUser').mockReturnValue(new Promise<AuthUser>((resolve) => {
+      resolveCreate = resolve;
+    }));
+
+    render(<UsersView onStatus={vi.fn()} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
+    const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
+
+    fireEvent.change(within(dialog).getByLabelText(/nombre completo/i), { target: { value: 'Caja Principal' } });
+    fireEvent.change(within(dialog).getByLabelText(/correo electr/i), { target: { value: 'caja@hospital.test' } });
+    fireEvent.change(within(dialog).getByLabelText(/nombre de usuario/i), { target: { value: 'caja' } });
+    fireEvent.change(within(dialog).getByLabelText(/contrase/i), { target: { value: 'Password123' } });
+
+    const submit = within(dialog).getByRole('button', { name: /crear usuario/i });
+    fireEvent.click(submit);
+    fireEvent.click(submit);
+
+    expect(createUser).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: /guardando/i })).toBeDisabled());
+
+    resolveCreate({
+      ...adminUser,
+      id: 2,
+      name: 'Caja Principal',
+      email: 'caja@hospital.test',
+      username: 'caja',
+      roles: ['cajero'],
+      must_change_password: true,
+    });
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /crear usuario/i })).not.toBeInTheDocument());
+  });
+
   it('validates reset passwords with the same policy as Laravel', async () => {
     const resetPassword = vi.spyOn(apiClient, 'resetUserPassword').mockResolvedValue({
       ...adminUser,
@@ -80,5 +116,32 @@ describe('UsersView', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: /restablecer clave/i }));
 
     await waitFor(() => expect(resetPassword).toHaveBeenCalledWith(adminUser.id, 'Password123'));
+  });
+
+  it('keeps the status confirmation locked while the request is pending', async () => {
+    let resolveToggle!: (user: AuthUser) => void;
+    const toggleUser = vi.spyOn(apiClient, 'toggleUserActive').mockReturnValue(new Promise<AuthUser>((resolve) => {
+      resolveToggle = resolve;
+    }));
+
+    render(<UsersView onStatus={vi.fn()} />);
+
+    fireEvent.click(await screen.findByTitle('Desactivar usuario'));
+    const dialog = screen.getByRole('alertdialog', { name: /desactivar usuario/i });
+    const confirm = within(dialog).getByRole('button', { name: /desactivar/i });
+
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+
+    expect(toggleUser).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: /cambiando/i })).toBeDisabled());
+    expect(within(dialog).getByRole('button', { name: /cancelar/i })).toBeDisabled();
+
+    resolveToggle({
+      ...adminUser,
+      active: false,
+    });
+
+    await waitFor(() => expect(screen.queryByRole('alertdialog', { name: /desactivar usuario/i })).not.toBeInTheDocument());
   });
 });
