@@ -518,7 +518,7 @@ async function installApiMocks(page: Page) {
           },
           {
             code: 'PENDING_HARDWARE_VALIDATION',
-            label: 'Impresora institucional fisica media carta/carta/A5',
+            label: 'Impresora institucional fisica media carta/carta/A5/80mm/58mm',
             status: 'pending',
           },
         ],
@@ -570,7 +570,7 @@ async function installApiMocks(page: Page) {
           },
           {
             code: 'INSTITUTIONAL_RECEIPT_PRINT_PROOF',
-            label: 'Impresora institucional media carta/carta/A5',
+            label: 'Impresora institucional media carta/carta/A5/80mm/58mm',
             required_file: 'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
             status: 'pending',
           },
