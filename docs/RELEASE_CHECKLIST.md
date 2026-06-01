@@ -180,7 +180,7 @@ LAN fisica:
 - Eritropoyetina normal L.25.
 - Eritropoyetina con receta de dialisis L.0.
 - Cobrar factura.
-- Ver recibo media carta, carta y A5.
+- Ver recibo media carta, carta, A5, 80mm y 58mm.
 - Reimprimir desde historial.
 - Anular factura sin pagos con motivo.
 - Ver reportes.

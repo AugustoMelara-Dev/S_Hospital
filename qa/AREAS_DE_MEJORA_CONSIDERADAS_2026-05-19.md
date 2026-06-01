@@ -20,7 +20,7 @@ Actualizacion de cierre repo-local:
 
 Las mejoras consideradas se agrupan en tres niveles:
 
-1. Bloqueantes de produccion real: segunda PC en LAN, impresora termica fisica, entorno production final y worker continuo de backups.
+1. Bloqueantes de produccion real: segunda PC en LAN, impresora institucional fisica media carta/carta/A5/80mm/58mm, entorno production final y worker continuo de backups.
 2. Mejoras de robustez operativa: automatizacion de respaldo, repeticion de restore/concurrencia en servidor final, smoke real, diagnostico visible y hardening de permisos.
 3. Mejoras futuras no bloqueantes: analisis estatico adicional, accesibilidad avanzada, exportaciones mas completas, manuales de entrenamiento y observabilidad local mas profunda.
 
@@ -32,7 +32,7 @@ No se recomienda abrir modulos clinicos, inventario, cloud sync, restore UI dest
 |---|---|---|
 | Demo local | `DEMO_READY` | El flujo vendible local esta cubierto: login, caja, factura, eritropoyetina, cobro, recibo, historial, reimpresion, reportes y backup local. |
 | Candidato a produccion | `PRODUCTION_CANDIDATE` | Codigo, gates, scripts y runbooks estan listos para instalar y validar en servidor final. |
-| Produccion real | `NO PRODUCTION_READY` | Falta evidencia de segunda PC LAN, impresora fisica 80mm/58mm y cierre completo del entorno production final. |
+| Produccion real | `NO PRODUCTION_READY` | Falta evidencia de segunda PC LAN, impresora fisica media carta/carta/A5/80mm/58mm y cierre completo del entorno production final. |
 | Worktree | Limpio al momento del reporte | `git status --short` no mostro cambios antes de crear este documento. |
 | Ultimo historial visible | Reciente trabajo de handoff y preflight | Commits recientes incluyen helpers de handoff, diagnostico production readiness y smoke LAN. |
 
@@ -64,13 +64,13 @@ Riesgo si no se cierra:
 
 - El sistema puede verse correcto en el servidor pero fallar en cajas reales por firewall, host, CORS/Sanctum, cache, assets o red local.
 
-### 2. Validacion fisica de impresora termica
+### 2. Validacion fisica de impresora institucional
 
 Prioridad: P0 para `PRODUCTION_READY`.
 
 Estado actual:
 
-- La UI y los tests cubren recibo 80mm/58mm.
+- La UI y los tests cubren recibo media carta/carta/A5/80mm/58mm.
 - Existe `docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md`.
 - Existe plantilla `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md`.
 - No hay evidencia de impresion fisica real.
@@ -323,7 +323,7 @@ Riesgo si no se documenta:
 | Inventario/farmacia | No incluir | Aumenta alcance y datos sin ser necesario para vender el core actual. |
 | Cloud sync/SaaS | No incluir | La operacion debe funcionar offline LAN. |
 | Restore UI destructivo | No incluir | Restaurar base desde UI es demasiado riesgoso; debe ser procedimiento controlado. |
-| PDF avanzado | No incluir como bloqueante | Recibo termico 80mm/58mm es el flujo critico de caja. |
+| PDF avanzado | No incluir como bloqueante | Recibo institucional media carta/carta/A5/80mm/58mm es el flujo critico de caja. |
 | Dashboard complejo | No incluir | Reportes gerenciales y KPIs deben mantenerse sobrios y operativos. |
 
 ## Priorizacion sugerida
@@ -361,7 +361,7 @@ El reporte no cambia el estado actual: `PRODUCTION_CANDIDATE`.
 El sistema solo debe pasar a `PRODUCTION_READY` cuando existan estas evidencias:
 
 - `qa/LAN_CLIENT_VALIDATION_PROOF.md` completo, sin placeholders, desde segunda PC real.
-- `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` completo, sin placeholders, con impresora fisica 80mm/58mm.
+- `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` completo, sin placeholders, con impresora fisica media carta/carta/A5/80mm/58mm.
 - `scripts/production_readiness_preflight.ps1` ejecutado sin bypass y con salida aprobada.
 - Backup worker continuo activo y backup manual validado desde UI.
 - Entorno final con `APP_ENV=production`, `APP_DEBUG=false`, admin real, `config:cache`, CORS/Sanctum LAN final y sin seeders demo.

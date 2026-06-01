@@ -156,7 +156,7 @@ Capturas regeneradas:
 - UX-3: historial, catalogo, backups y fiscal a profundidad.
 - UX-4: reportes/admin/permisos a profundidad.
 - UX-5: cierre final de todos los gates como frente completo.
-- Validacion fisica: impresora termica 80mm/58mm y cliente LAN real.
+- Validacion fisica: impresora institucional media carta/carta/A5/80mm/58mm y cliente LAN real.
 
 ## Commit sugerido
 

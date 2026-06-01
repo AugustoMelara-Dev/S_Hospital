@@ -38,7 +38,7 @@
 - Agregar servicio al carrito.
 - Escanear o escribir codigo.
 - Confirmar pago.
-- Ver recibo termico.
+- Ver recibo institucional media carta/carta/A5/80mm/58mm.
 
 ## Smoke reportes
 

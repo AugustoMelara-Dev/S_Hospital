@@ -5,7 +5,7 @@
 `BLOQUEADO PARA PRODUCTION_READY`
 
 Sistema de Caja Hospitalaria no puede declararse `PRODUCTION_READY` hasta tener evidencia
-real de entorno final, cliente LAN fisico, impresora termica fisica, herramientas
+real de entorno final, cliente LAN fisico, impresora institucional fisica media carta/carta/A5/80mm/58mm, herramientas
 MySQL/dump, worker persistente y backup/restore validado.
 
 Este documento acompana el frente `production-readiness-preflight`. No declara
@@ -27,9 +27,9 @@ las pruebas fisicas y operativas.
    - `/up`, `/login`, `/verify-email`, assets, login, caja, factura, pago, recibo, historial, reportes y backup.
    - Guardar evidencia completa en `qa/LAN_CLIENT_VALIDATION_PROOF.md`.
 
-3. Evidencia impresora termica fisica:
-   - Impresora real 80mm/58mm.
-   - Driver, navegador, factura usada y resultado por ancho.
+3. Evidencia impresora institucional fisica:
+   - Impresora real o configuracion exacta para media carta, carta, A5, 80mm y 58mm.
+   - Driver, navegador, factura usada y resultado por formato.
    - Reimpresion desde historial.
    - Guardar evidencia completa en `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`.
 

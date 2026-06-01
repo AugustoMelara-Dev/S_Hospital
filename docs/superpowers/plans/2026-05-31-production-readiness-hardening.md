@@ -52,6 +52,11 @@ Recent phase commits on `codex/production-readiness-hardening`:
 - `4f6e1e4 refactor(settings): validate logo upload request` - moved fiscal logo upload authorization/validation into a Form Request and added file/permission coverage.
 - `a7dcdc4 refactor(reports): validate pdf export request` - moved PDF export authorization/range validation into `PdfExportRequest` and removed the last inline `request->validate()` from controllers.
 
+Current local verification notes:
+
+- Phase 13C scanner authority and frontend money handling were rechecked on 2026-06-01: scanner lookup calls the backend with `code`, does not add a cached local service after lookup failure, `PaymentModal` calculates cashier-facing payment/change values in cents, and `npm.cmd run test -- --run src/features/invoices/NewInvoiceView.test.tsx` passed 13 tests.
+- Receipt proof language must always list media carta, carta, A5, 80mm and 58mm together. Instructions that mention only page formats or only thermal widths are considered stale until corrected.
+
 ## Plan Review Orchestrator Result
 
 Decision: **APPROVED WITH REQUIRED CHANGES** for implementation.
@@ -234,7 +239,7 @@ Implement true 80mm/58mm receipt sizing in the frontend and prevent unaudited re
 
 **Acceptance criteria**
 
-- Thermal receipt requirement is visible and test-covered.
+- Institutional receipt requirement is visible and test-covered for media carta, carta, A5, 80mm and 58mm.
 - Historical print action is audited.
 - Physical printer validation remains an external final-server criterion.
 
@@ -279,6 +284,12 @@ Ensure scanner/code lookup does not rely on stale frontend service data after ba
 
 - Scanned service additions are backend-authoritative.
 - UI money display no longer depends on casual `parseFloat`/`toFixed` paths for cashier decisions.
+
+**2026-06-01 local verification**
+
+- `frontend/src/features/invoices/NewInvoiceView.tsx` scanner flow uses backend `getServices({ code, active: true, billing: true, perPage: 1 })` and does not add a service on lookup failure.
+- `frontend/src/features/invoices/components/PaymentModal.tsx` uses cents helpers for received/change/applied payment display.
+- `npm.cmd run test -- --run src/features/invoices/NewInvoiceView.test.tsx`: passed, 13 tests.
 
 **Commit**
 

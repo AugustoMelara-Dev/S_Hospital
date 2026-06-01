@@ -9,7 +9,7 @@ Entorno: Windows local en `C:\Projects\S_Hospital`, Laravel servido en `http://1
 - PRODUCTION_CANDIDATE: si.
 - PRODUCTION_READY: no.
 
-Fase 11 valida partes reales del entorno, pero no declara produccion final porque falta completar validacion fisica desde cliente LAN independiente, impresora termica real 80mm/58mm y configuracion final `APP_ENV=production` / `APP_DEBUG=false` con admin real.
+Fase 11 valida partes reales del entorno, pero no declara produccion final porque falta completar validacion fisica desde cliente LAN independiente, impresora institucional real media carta/carta/A5/80mm/58mm y configuracion final `APP_ENV=production` / `APP_DEBUG=false` con admin real.
 
 ## Entorno detectado
 
@@ -145,7 +145,7 @@ El helper solo automatiza `/up`, `/login`, `/verify-email` y asset JS. El
 operador debe completar en navegador real login, caja, factura, pago, recibo,
 historial, reportes y backup `pending` -> `success`.
 
-## Impresora termica
+## Impresora institucional
 
 Estado: PENDING_HARDWARE_VALIDATION.
 
@@ -204,4 +204,4 @@ Fase 11 eleva la evidencia tecnica de campo, pero el sistema queda:
 - PRODUCTION_CANDIDATE: si.
 - PRODUCTION_READY: no.
 
-Bloqueantes restantes para `PRODUCTION_READY`: cliente LAN fisico completo, impresora termica fisica 80mm/58mm y configuracion final de produccion con admin real.
+Bloqueantes restantes para `PRODUCTION_READY`: cliente LAN fisico completo, impresora institucional fisica media carta/carta/A5/80mm/58mm y configuracion final de produccion con admin real.
