@@ -7,6 +7,7 @@ import { EmptyState } from '../../../components/ui/states';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/data-table';
+import { finiteNumber, formatLempiras } from '../../../lib/money';
 import { KPICard } from './KPICard';
 import type { MonthlyReport } from '../../../lib/api/types';
 
@@ -35,8 +36,8 @@ export function MonthlyReportTab({
 }: MonthlyReportTabProps) {
   const chartData = monthly?.daily_totals.map((day) => ({
     date: day.date.slice(5),
-    cobrado: Number.parseFloat(day.total_collected) || 0,
-    pendiente: Number.parseFloat(day.total_pending) || 0,
+    cobrado: finiteNumber(day.total_collected),
+    pendiente: finiteNumber(day.total_pending),
   })) ?? [];
 
   const paymentsByMethod = monthly?.payments_by_method ?? {
@@ -86,11 +87,11 @@ export function MonthlyReportTab({
       {monthly ? (
         <>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-            <KPICard title="Facturado" value={`L. ${monthly.total_billed}`} icon={<FileText className="h-4 w-4" />} />
-            <KPICard title="Cobrado" value={`L. ${monthly.total_collected}`} icon={<Banknote className="h-4 w-4" />} />
+            <KPICard title="Facturado" value={formatLempiras(monthly.total_billed)} icon={<FileText className="h-4 w-4" />} />
+            <KPICard title="Cobrado" value={formatLempiras(monthly.total_collected)} icon={<Banknote className="h-4 w-4" />} />
             <KPICard
               title="Pendiente"
-              value={`L. ${monthly.total_pending}`}
+              value={formatLempiras(monthly.total_pending)}
               description="Facturas emitidas o parciales"
               icon={<TrendingUp className="h-4 w-4" />}
             />
@@ -102,8 +103,8 @@ export function MonthlyReportTab({
             />
             <KPICard
               title="Anulado"
-              value={`L. ${monthly.total_voided}`}
-              description={`Parcial: L. ${monthly.total_partial}`}
+              value={formatLempiras(monthly.total_voided)}
+              description={`Parcial: ${formatLempiras(monthly.total_partial)}`}
               icon={<CircleSlash className="h-4 w-4" />}
             />
           </div>
@@ -124,7 +125,7 @@ export function MonthlyReportTab({
                   {Object.entries(paymentsByMethod).map(([method, amount]) => (
                     <TableRow key={method}>
                       <TableCell className="px-4 py-2 font-medium">{methodLabel(method)}</TableCell>
-                      <TableCell className="px-4 py-2 text-right">L. {amount}</TableCell>
+                      <TableCell className="px-4 py-2 text-right">{formatLempiras(amount)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -150,7 +151,7 @@ export function MonthlyReportTab({
                     <TableRow key={status}>
                       <TableCell className="px-4 py-2 font-medium">{statusLabel(status)}</TableCell>
                       <TableCell className="px-4 py-2 text-right">{data.count}</TableCell>
-                      <TableCell className="px-4 py-2 text-right">L. {data.total}</TableCell>
+                      <TableCell className="px-4 py-2 text-right">{formatLempiras(data.total)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -170,7 +171,7 @@ export function MonthlyReportTab({
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="date" tickLine={false} />
                       <YAxis tickLine={false} width={64} />
-                      <Tooltip formatter={(value) => [`L. ${value}`, 'Monto']} />
+                      <Tooltip formatter={(value) => [formatLempiras(value as number), 'Monto']} />
                       <Bar dataKey="cobrado" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
                       <Bar dataKey="pendiente" fill="var(--color-accent-foreground)" radius={[6, 6, 0, 0]} />
                     </BarChart>
@@ -189,10 +190,10 @@ export function MonthlyReportTab({
                       {monthly.daily_totals.map((day) => (
                         <TableRow key={day.date}>
                           <TableCell className="px-4 py-2 font-medium">{day.date}</TableCell>
-                          <TableCell className="px-4 py-2 text-right">L. {day.total_billed}</TableCell>
-                          <TableCell className="px-4 py-2 text-right">L. {day.total_collected}</TableCell>
-                          <TableCell className="px-4 py-2 text-right">L. {day.total_pending}</TableCell>
-                          <TableCell className="px-4 py-2 text-right">L. {day.total_voided}</TableCell>
+                          <TableCell className="px-4 py-2 text-right">{formatLempiras(day.total_billed)}</TableCell>
+                          <TableCell className="px-4 py-2 text-right">{formatLempiras(day.total_collected)}</TableCell>
+                          <TableCell className="px-4 py-2 text-right">{formatLempiras(day.total_pending)}</TableCell>
+                          <TableCell className="px-4 py-2 text-right">{formatLempiras(day.total_voided)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

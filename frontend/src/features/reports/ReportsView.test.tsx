@@ -245,6 +245,117 @@ describe('ReportsView', () => {
     });
   });
 
+  it('renders malformed daily and monthly report amounts as zero instead of raw values', async () => {
+    window.history.pushState({}, '', '/reports');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Administracion Validacion',
+              email: 'administracion.validacion@hospital-san-isidro.local',
+              username: 'administracion.validacion',
+              active: true,
+              roles: ['admin'],
+              permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/reports/daily')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date: '2026-05-17',
+              total_billed: 'monto-danado',
+              total_collected: 'NaN',
+              total_pending: 'no-numero',
+              total_partial: '',
+              total_voided: 'monto-danado',
+              invoice_count: 1,
+              payment_count: 1,
+              payments_by_method: { cash: 'monto-danado', transfer: '', card: 'NaN', other: 'no-numero' },
+              invoices_by_status: {
+                issued: { count: 1, total: 'monto-danado' },
+                partial: { count: 0, total: 'NaN' },
+                paid: { count: 0, total: '' },
+                void: { count: 0, total: 'no-numero' },
+              },
+            },
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/reports/monthly')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              month: '2026-05',
+              date_from: '2026-05-01',
+              date_to: '2026-05-31',
+              total_billed: 'monto-danado',
+              total_collected: 'NaN',
+              total_pending: 'no-numero',
+              total_partial: '',
+              total_voided: 'monto-danado',
+              invoice_count: 1,
+              payment_count: 1,
+              payments_by_method: { cash: 'monto-danado', transfer: '', card: 'NaN', other: 'no-numero' },
+              invoices_by_status: {
+                issued: { count: 1, total: 'monto-danado' },
+                partial: { count: 0, total: 'NaN' },
+                paid: { count: 0, total: '' },
+                void: { count: 0, total: 'no-numero' },
+              },
+              daily_totals: [
+                {
+                  date: '2026-05-04',
+                  total_billed: 'monto-danado',
+                  total_collected: 'NaN',
+                  total_pending: 'no-numero',
+                  total_partial: '',
+                  total_voided: 'monto-danado',
+                  invoice_count: 1,
+                  payment_count: 1,
+                },
+              ],
+            },
+          }),
+        } as Response;
+      }
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+      if (url.includes('/api/areas')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    render(<App />);
+
+    expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(screen.getAllByText('L. 0.00').length).toBeGreaterThanOrEqual(5);
+    });
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero/);
+
+    activateTab(/mensual/i);
+    fireEvent.change(screen.getByLabelText(/^mes$/i), { target: { value: '2026-05' } });
+    fireEvent.click(screen.getByRole('button', { name: /ver mes/i }));
+
+    expect(await screen.findByText('2026-05-04')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getAllByText('L. 0.00').length).toBeGreaterThanOrEqual(10);
+    });
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero/);
+  });
+
   it('exports reports through the protected backend Excel endpoint', async () => {
     window.history.pushState({}, '', '/reports');
     Object.defineProperty(URL, 'createObjectURL', {
