@@ -921,10 +921,10 @@ describe('NewInvoiceView', () => {
     expect(styles).toContain('body[data-printing-receipt="true"] *');
     expect(styles).toContain('.institutional-receipt.receipt-letter');
     expect(styles).toContain('.institutional-receipt.receipt-a5');
-    expect(styles).not.toContain('.institutional-receipt.receipt-80mm');
-    expect(styles).not.toContain('.institutional-receipt.receipt-58mm');
-    expect(styles).not.toContain('@page receipt-80mm');
-    expect(styles).not.toContain('@page receipt-58mm');
+    expect(styles).toContain('.institutional-receipt.receipt-80mm');
+    expect(styles).toContain('.institutional-receipt.receipt-58mm');
+    expect(styles).toContain('@page receipt-80mm');
+    expect(styles).toContain('@page receipt-58mm');
     expect(styles).not.toContain('body * {\n      visibility: hidden;');
     expect(styles).not.toContain('body * {\r\n      visibility: hidden;');
   });
@@ -1056,7 +1056,7 @@ describe('NewInvoiceView', () => {
 
   it('renders institutional receipt print structure with fiscal valid until date', async () => {
     const receipt: ReceiptData = {
-      width: '80mm' as unknown as ReceiptData['width'],
+      width: '80mm',
       hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
       fiscal: {
         cai: 'VALIDACION-CAI',
@@ -1105,11 +1105,12 @@ describe('NewInvoiceView', () => {
 
     render(<ReceiptPreview receipt={receipt} onWidthChange={vi.fn()} onPrint={printSpy} />);
 
-    expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-half_letter');
-    expect(screen.queryByText(/termico|80mm|58mm/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-80mm');
+    expect(screen.getByText(/termico 80mm/i)).toBeInTheDocument();
     expect(screen.getByText(/vence/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /imprimir/i }));
     await waitFor(() => expect(printSpy).toHaveBeenCalledOnce());
+    await waitFor(() => expect(document.body.dataset.receiptWidth).toBe('80mm'));
     await waitFor(() => expect(document.body.dataset.receiptWidth).toBeUndefined());
   });
 });

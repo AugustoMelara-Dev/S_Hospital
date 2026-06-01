@@ -1380,6 +1380,24 @@ Consecuencia:
 - El cierre de caja mantiene etiquetas humanas aun ante datos de API danados.
 - La prueba de caja falla si vuelve a mostrarse `NaN` o un monto crudo invalido.
 
+### 2026-06-01 - Capturas RC mockeadas son evidencia visual, no validacion fisica
+
+Decision:
+
+- El E2E de production readiness puede generar capturas con `E2E_CAPTURE_RC_SCREENSHOTS=1`.
+- Las capturas se guardan por defecto bajo `qa/screenshots/rc-e2e-mocked-2026-06-01` junto con un JSON de rutas, tema visual y errores de consola.
+- El reporte declara explicitamente que la API esta mockeada y que no sustituye validacion LAN, MySQL/MariaDB ni impresora fisica.
+
+Motivo:
+
+- El frente financiero necesita evidencia repetible de caja, factura, recibo, reportes y respaldos sin depender de datos reales.
+- La evidencia mockeada ayuda a detectar roturas visuales y de flujo, pero no prueba infraestructura offline ni hardware.
+
+Consecuencia:
+
+- Se puede capturar evidencia UI bajo demanda sin ensuciar cada corrida de E2E.
+- La validacion final sigue requiriendo capturas y pruebas contra entorno local real y dispositivos fisicos.
+
 ### 2026-05-31 - Estados de respaldo visibles sin lenguaje tecnico
 
 Decision:

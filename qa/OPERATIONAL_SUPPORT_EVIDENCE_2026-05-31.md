@@ -166,7 +166,11 @@ Resultado observado:
 | `rg -n "down -v|docker volume rm|BORRA TODO|Instalacion Limpia|BORRAR" scripts\lib\docker_diagnostics.ps1` | Paso: sin coincidencias. |
 | `npm.cmd test -- CashBoxView.test.tsx` | Paso: 1 file, 4 tests. |
 | `npm.cmd test -- institutionalReceiptPaper.test.ts NewInvoiceView.test.tsx` | Paso: 2 files, 15 tests. |
+| `npm.cmd test -- institutionalReceiptPaper.test.ts money.test.ts NewInvoiceView.test.tsx ReportsView.test.tsx` | Paso: 4 files, 25 tests. |
 | `npm.cmd run typecheck` | Paso. |
+| `npm.cmd run lint` | Paso. |
+| `npm.cmd run build` | Paso; Vite mantiene advertencia conocida de chunk mayor a 500 kB. |
+| `npm.cmd run e2e -- production-readiness.spec.ts` | Paso: 2 tests Playwright. |
 | `final_production_handoff.ps1` con referencias de evidencia inexistentes | Paso: marco LAN, impresora, restore y concurrencia como `MISS`, genero `PRODUCTION_CANDIDATE` y mantuvo rutas sanitizadas en el reporte. |
 | Parser PowerShell de `install_backup_tasks_windows.ps1` | Paso. |
 | `install_backup_tasks_windows.ps1 -WhatIfOnly -DailyBackupTime 99:99` | Falla con mensaje humano antes de registrar, actualizar o remover tareas; no imprime rutas locales crudas. |
