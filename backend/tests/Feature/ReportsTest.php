@@ -1347,6 +1347,18 @@ class ReportsTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_cash_session_report_user_cannot_export_managerial_daily_pdf(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $this->grantPermissions($cashier, 'reports.cash_session.view', 'reports.export');
+        $date = now()->toDateString();
+
+        $this->actingAs($cashier)
+            ->getJson("/api/reports/pdf?date={$date}")
+            ->assertForbidden();
+    }
+
     public function test_daily_closure_pdf_export_succeeds(): void
     {
         $this->seedBillingBase();

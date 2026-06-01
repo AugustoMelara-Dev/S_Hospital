@@ -1538,6 +1538,23 @@ Consecuencia:
 - Las pruebas de reportes fallan si vuelven `invoice_id`, `user_id`, `id` de backup o checksum al contrato publico de auditoria.
 - Los filtros internos por usuario, caja, categoria y area siguen siendo validados por backend, pero no se usan como identificadores visibles en la tabla.
 
+### 2026-06-01 - PDF diario reservado a gerencia
+
+Decision:
+
+- `/api/reports/pdf?date=...` queda reservado a usuarios con `reports.managerial.view` ademas de `reports.export`.
+- Usuarios con solo `reports.cash_session.view` no pueden descargar el cierre diario gerencial; deben usar reportes acotados a su caja cuando el flujo lo permita.
+
+Motivo:
+
+- El PDF diario resume cifras de administracion: facturado, cobrado, pendiente, anulaciones y metodos del dia completo.
+- Un cajero debe ver su operacion de caja, no el cierre gerencial completo de otros cajeros o areas.
+
+Consecuencia:
+
+- La prueba de reportes falla si un usuario de caja con permiso de exportacion vuelve a recibir 200 en el PDF diario.
+- Los PDFs de rango mantienen el camino existente de scoping por `cash_session_id` para usuarios no gerenciales.
+
 ### 2026-06-01 - E2E mockeado cubre branding publico
 
 Decision:

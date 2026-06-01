@@ -150,6 +150,8 @@ class ReportController extends Controller
         ]);
 
         if ($request->filled('date') || (! $request->filled('date_from') && ! $request->filled('date_to'))) {
+            $request->user()->can('reports.managerial.view') || abort(403);
+
             $date = $request->input('date', now()->toDateString());
             $data = $dailyReports->report($date);
 
