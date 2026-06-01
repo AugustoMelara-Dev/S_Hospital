@@ -92,9 +92,9 @@ No entregar un servidor LAN real con `APP_ENV=local`. Produccion debe operar con
 
 ## Impresora institucional
 
-- Instalar la impresora media carta, carta o A5 en la computadora que imprimira.
+- Instalar la impresora media carta, carta, A5, 80mm o 58mm en la computadora que imprimira.
 - Validar una impresion de prueba desde el navegador usado en caja.
-- Configurar el tamano de papel del driver segun el formato aprobado: media carta, carta o A5.
+- Configurar el tamano de papel del driver segun el formato aprobado: media carta, carta, A5, 80mm o 58mm.
 - Si la impresora se comparte en red, probar desde cada cliente autorizado antes de operar.
 - Marcar escala 100%, margenes minimos o ninguno, encabezados/pies del navegador desactivados si el navegador lo permite.
 - Ejecutar una prueba con factura pagada y una reimpresion desde historial. Confirmar fondo blanco, firma/sello y ausencia de QR, codigo de barras o codigos internos.
@@ -150,7 +150,7 @@ No entregar un servidor LAN real con `APP_ENV=local`. Produccion debe operar con
 - Concurrencia real fue validada contra `http://192.168.1.7:8000` con `RUN_ID=concurrency-validation-20260517T20435`.
 - Rutas por IP desde servidor respondieron para `/up`, `/login`, `/verify-email` y assets.
 - No se declara LAN fisica completa hasta repetir el checklist desde otra computadora cliente.
-- No se declara impresora fisica validada hasta imprimir media carta/carta/A5 y termica 80mm/58mm en hardware real.
+- No se declara impresora fisica validada hasta imprimir media carta/carta/A5/80mm/58mm en hardware real.
 
 ## Scripts de validacion real
 

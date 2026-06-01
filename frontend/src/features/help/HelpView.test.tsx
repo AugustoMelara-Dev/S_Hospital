@@ -29,6 +29,7 @@ describe('HelpView', () => {
     expect(screen.getByRole('heading', { name: /ayuda institucional/i })).toBeInTheDocument();
     expect(screen.getByText(/servidor no disponible/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /impresora no responde/i })).toBeInTheDocument();
+    expect(screen.getByText(/media carta, carta, A5, 80mm o 58mm/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /pedir soporte/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /se fue la luz o reinició la pc/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /caja quedó abierta/i })).toBeInTheDocument();

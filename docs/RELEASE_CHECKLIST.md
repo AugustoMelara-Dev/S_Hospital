@@ -225,7 +225,7 @@ Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_b
 
 - Probar restore real en una base descartable del servidor final y guardar checksum/conteos.
 - Probar desde una segunda PC en LAN usando la IP fija o dominio LAN, nunca `localhost`.
-- Probar impresora fisica media carta/carta/A5 y termica 80mm/58mm desde la PC o cliente que imprimira.
+- Probar impresora fisica media carta/carta/A5/80mm/58mm desde la PC o cliente que imprimira.
 - Crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
 - Crear `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` usando `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md`.
 - Crear `qa/FINAL_RESTORE_PROOF.md` usando `qa/FINAL_RESTORE_PROOF.example.md`.

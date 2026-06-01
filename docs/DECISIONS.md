@@ -185,7 +185,7 @@ Decision:
 - La unicidad real de caja abierta se defiende tambien en base de datos con `open_user_id` nullable y unico: solo las cajas abiertas llenan ese campo, y las cajas cerradas lo dejan `NULL` para permitir historico.
 - Registro de pago guarda `payments`, `cash_movements` y actualiza `invoices.paid_amount`, `invoices.balance_due` y `invoices.status` dentro de una sola transaccion.
 - `expected_amount` de cierre representa efectivo esperado: monto inicial mas pagos en efectivo registrados en la caja.
-- El recibo MVP devuelve datos renderizables para media carta/carta/A5 y usa exclusivamente snapshots de `invoice_items` junto con datos fiscales persistidos.
+- El recibo MVP devuelve datos renderizables para media carta/carta/A5/80mm/58mm y usa exclusivamente snapshots de `invoice_items` junto con datos fiscales persistidos.
 
 Motivo:
 
@@ -290,7 +290,7 @@ Decision:
 - Restore MySQL/MariaDB real se valida solo contra una base descartable confirmada.
 - Concurrencia HTTP/Laravel/MySQL se valida solo contra entorno local/descartable confirmado y deja `RUN_ID` visible en datos auditables.
 - LAN desde servidor por IP puede quedar validada, pero LAN fisica completa requiere otra computadora cliente.
-- impresora institucional media carta/carta/A5 solo se marca validada con hardware real.
+- impresora institucional media carta/carta/A5/80mm/58mm solo se marca validada con hardware real.
 
 Motivo:
 
@@ -1587,3 +1587,20 @@ Consecuencia:
 
 - Las pruebas de catalogo fallan si la API permite crear servicios sin area.
 - Los snapshots historicos de facturas conservan el area emitida y no se recalculan por cambios futuros de catalogo.
+
+### 2026-06-01 - Evidencia fisica de recibos incluye todos los formatos
+
+Decision:
+
+- Las guias operativas, plantilla de evidencia, ayuda en la app y mensajes de handoff deben pedir validacion fisica de media carta, carta, A5, 80mm y 58mm.
+- La plantilla `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md` incluye campos obligatorios `80mm result` y `58mm result`, coherentes con el preflight y `/api/system/status`.
+
+Motivo:
+
+- El sistema soporta 80mm/58mm y no debe dejar instrucciones antiguas que omitan esos dos formatos.
+- El preflight final debe recibir evidencia completa en el mismo contrato que usa la UI y la configuracion fiscal.
+
+Consecuencia:
+
+- El handoff no puede cerrar impresora fisica si faltan muestras reales de 80mm y 58mm.
+- La pantalla de Ayuda tambien indica los cinco formatos para evitar que soporte y caja trabajen con una lista incompleta.

@@ -148,7 +148,7 @@ Resultado esperado:
 Accion:
 
 - Abrir vista previa de recibo.
-- Seleccionar media carta, carta o A5.
+- Seleccionar media carta, carta, A5, 80mm o 58mm.
 - Imprimir una factura a la vez.
 
 Resultado esperado:
