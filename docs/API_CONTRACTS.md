@@ -254,7 +254,8 @@ El recibo debe incluir Gobierno, Secretaria, Hospital San Isidro, numero/serie, 
 | GET | `/api/reports/income` | `reports.view` | Query: `date_from`, `date_to`, `cash_session_id`, `user_id` | Ingresos agregados | Sumar en backend. |
 | GET | `/api/reports/categories` | `reports.view` | Query: `date_from`, `date_to` | Totales por categoria | No traer todo al frontend. |
 | GET | `/api/reports/cash-sessions/{id}` | `reports.view` | N/A | Resumen de caja | Esperado vs contado. |
-| GET | `/api/reports/pdf` | `reports.view` | Query: `date` o (`date_from`, `date_to`) | Archivo PDF de cierre | Cierre de caja diario o consolidado mensual en formato PDF listo para imprimir. |
+| GET | `/api/reports/operations` | `reports.view` | Query: `date_from`, `date_to`, filtros operativos | Anulaciones, reimpresiones, reversos, respaldos y cajeros | Vista normal no expone IDs internos, checksum de backup ni rutas locales; soporte tecnico debe usar fuentes administrativas protegidas. |
+| GET | `/api/reports/pdf` | `reports.export` | Query: `date` o (`date_from`, `date_to`) | Archivo PDF de cierre | PDF diario requiere `reports.managerial.view`; PDF por rango permite scoping por caja para usuarios con `reports.cash_session.view`. |
 
 ## Backups
 

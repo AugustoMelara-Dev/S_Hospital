@@ -2,9 +2,11 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../App';
+import { AuditoriaTab } from './components/AuditoriaTab';
 import { apiClient } from '../../lib/api';
 import { queryClient } from '../../lib/query-client';
 import { resetRequestChain } from '../../lib/api/base';
+import type { OperationsReport } from '../../lib/api/types';
 
 describe('ReportsView', () => {
   function activateTab(name: RegExp) {
@@ -601,6 +603,82 @@ describe('ReportsView', () => {
     expect((await screen.findAllByRole('heading', { name: /^caja$/i })).length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: /^reportes$/i })).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/^fecha$/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps operational audit details readable without rendering internal ids or backup checksums', () => {
+    const operations = {
+      date_from: '2026-06-01',
+      date_to: '2026-06-01',
+      filters: {},
+      summary: {
+        void_count: 1,
+        reprint_count: 1,
+        payment_void_count: 0,
+        backup_count: 1,
+        failed_backup_count: 0,
+        cashier_count: 1,
+      },
+      voids: [{
+        invoice_id: 918273,
+        invoice_number: '000-001-01-00000001',
+        patient_name: 'Maria Lopez',
+        total: '17.25',
+        reason: 'Error de captura',
+        voided_at: '2026-06-01T08:00:00.000Z',
+        user: 'Supervisor Caja',
+      }],
+      reprints: [{
+        invoice_id: 928374,
+        invoice_number: '000-001-01-00000002',
+        width: '80mm',
+        reason: 'Copia para paciente',
+        created_at: '2026-06-01T08:10:00.000Z',
+        user: 'Cajero Validacion',
+      }],
+      payment_voids: [],
+      backups: [{
+        id: 938475,
+        filename: 'hospital-backup-2026-06-01.sql',
+        status: 'success',
+        type: 'manual',
+        size_bytes: 2048,
+        checksum_sha256: 'checksum-no-visible-1234567890',
+        created_at: '2026-06-01T08:15:00.000Z',
+        completed_at: '2026-06-01T08:16:00.000Z',
+        creator: 'Admin Hospital',
+      }],
+      cashiers: [{
+        user_id: 948576,
+        name: 'Cajero Validacion',
+        username: 'cajero.validacion',
+        payment_count: 2,
+        cash_session_count: 1,
+        invoice_count: 2,
+        total_collected: '34.50',
+      }],
+    } as unknown as OperationsReport;
+
+    render(
+      <AuditoriaTab
+        canExport={false}
+        operations={operations}
+        dateFrom="2026-06-01"
+        dateTo="2026-06-01"
+        onDateFromChange={() => undefined}
+        onDateToChange={() => undefined}
+        onExport={() => undefined}
+        onExportPdf={() => undefined}
+        onSubmit={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText('000-001-01-00000001')).toBeInTheDocument();
+    expect(screen.getByText('hospital-backup-2026-06-01.sql')).toBeInTheDocument();
+    expect(screen.getByText('cajero.validacion')).toBeInTheDocument();
+    expect(screen.queryByText('918273')).not.toBeInTheDocument();
+    expect(screen.queryByText('938475')).not.toBeInTheDocument();
+    expect(screen.queryByText('948576')).not.toBeInTheDocument();
+    expect(screen.queryByText('checksum-no-visible-1234567890')).not.toBeInTheDocument();
   });
 
   it('allows cash-session-only report users to open the cash report tab without managerial reports', async () => {
