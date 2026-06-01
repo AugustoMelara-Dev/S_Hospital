@@ -1604,3 +1604,20 @@ Consecuencia:
 
 - El handoff no puede cerrar impresora fisica si faltan muestras reales de 80mm y 58mm.
 - La pantalla de Ayuda tambien indica los cinco formatos para evitar que soporte y caja trabajen con una lista incompleta.
+
+### 2026-06-01 - Politica de contrasenas alineada entre UI y API
+
+Decision:
+
+- La pantalla de usuarios valida contrasenas temporales con la misma regla publica que Laravel: minimo 10 caracteres, con letras y numeros.
+- La regla aplica tanto al alta de usuarios como al restablecimiento administrativo de clave.
+
+Motivo:
+
+- El backend ya rechaza claves que no cumplen `Password::min(10)->letters()->numbers()`.
+- La UI no debe prometer "minimo 6 caracteres", porque eso genera errores tardios y confusos para administracion.
+
+Consecuencia:
+
+- Las pruebas de `UsersView` fallan si el frontend vuelve a aceptar contrasenas sin numero o con menos de 10 caracteres.
+- Laravel sigue siendo la fuente final de seguridad; el frontend solo anticipa el rechazo con un mensaje claro.

@@ -39,6 +39,13 @@ type UsersViewProps = {
   onStatus: (message: string) => void;
 };
 
+const PASSWORD_POLICY_HINT = 'Mínimo 10 caracteres, con letras y números';
+const PASSWORD_POLICY_ERROR = 'La contraseña debe tener al menos 10 caracteres e incluir letras y números.';
+
+function isPasswordPolicyCompliant(password: string) {
+  return password.length >= 10 && /\p{L}/u.test(password) && /\p{N}/u.test(password);
+}
+
 export function UsersView({ onStatus }: UsersViewProps) {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,8 +117,8 @@ export function UsersView({ onStatus }: UsersViewProps) {
 
     if (!editingUser && !userForm.password) {
       errors.password = 'La contraseña es obligatoria para nuevos usuarios.';
-    } else if (!editingUser && userForm.password.length < 6) {
-      errors.password = 'La contraseña debe tener al menos 6 caracteres.';
+    } else if (!editingUser && !isPasswordPolicyCompliant(userForm.password)) {
+      errors.password = PASSWORD_POLICY_ERROR;
     }
 
     setFormErrors(errors);
@@ -215,8 +222,8 @@ export function UsersView({ onStatus }: UsersViewProps) {
   const handleConfirmReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!targetResetUser) return;
-    if (newPassword.length < 6) {
-      setResetError('La contraseña debe tener al menos 6 caracteres.');
+    if (!isPasswordPolicyCompliant(newPassword)) {
+      setResetError(PASSWORD_POLICY_ERROR);
       return;
     }
 
@@ -441,7 +448,7 @@ export function UsersView({ onStatus }: UsersViewProps) {
                   id="password"
                   type="password"
                   className="pl-9"
-                  placeholder="****** (mínimo 6 caracteres)"
+                  placeholder={PASSWORD_POLICY_HINT}
                   value={userForm.password}
                   onChange={(e) => setUserForm((prev) => ({ ...prev, password: e.target.value }))}
                 />
@@ -501,7 +508,7 @@ export function UsersView({ onStatus }: UsersViewProps) {
                 id="new-password"
                 type="password"
                 className="pl-9"
-                placeholder="****** (mínimo 6 caracteres)"
+                placeholder={PASSWORD_POLICY_HINT}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
