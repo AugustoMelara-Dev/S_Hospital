@@ -28,9 +28,26 @@ The system already has substantial backend domain code, frontend modules, tests,
 - `docker compose exec -T backend php artisan test --colors=never --filter test_payment_requires_an_open_own_cash_session`: passed in isolation.
 - Existing unstaged changes were present before this audit in `qa/screenshots`, `qa/visual-smoke/phase-12-visual-smoke.mjs`, backup scripts, and `backend/tests/Feature/ReportsTest.php`. Do not revert them.
 
-## Current Gate Failure
+## Current Gate Status
 
-The backend class `backend/tests/Feature/CashPaymentsReceiptTest.php` has order-dependent failures. Individual tests pass, but the full class returns 403/500 during `openSession()` calls. This points to test isolation around Spatie permission/cache state and/or a prior expected database exception leaving framework state dirty. Fix this before claiming backend gate health.
+2026-06-01 update: the previously noted order-dependent backend failure was rechecked from the current worktree and no longer reproduces.
+
+- `php artisan test --filter=CashPaymentsReceiptTest`: passed, 20 tests / 229 assertions.
+- `php artisan test --filter=BackupWorkflowTest`: passed, 16 tests / 73 assertions after moving backup list authorization/validation into a Form Request.
+- Frontend focused gates for admin user management passed after aligning password policy and duplicate-submit handling.
+
+This does not declare full backend gate health or `PRODUCTION_READY`; it only removes the stale `CashPaymentsReceiptTest` blocker from the active plan.
+
+## 2026-06-01 Implementation Progress
+
+Recent phase commits on `codex/production-readiness-hardening`:
+
+- `78375e5 docs(ops): require thermal printer proof` - aligned docs/help/proof templates so receipt validation includes media carta, carta, A5, 80mm and 58mm.
+- `004167e fix(admin): align password policy hints` - aligned frontend admin password validation with Laravel `Password::min(10)->letters()->numbers()`.
+- `69ef1dd fix(ops): enforce thermal printer proof` - made production preflight require 80mm and 58mm fields/checks.
+- `18df1ac refactor(admin): move password reset validation` - moved admin password reset validation/authorization into a Form Request and added Feature coverage.
+- `b7ed50d refactor(backups): move list validation to request` - moved backup list authorization/status validation into a Form Request while preserving pagination clamp behavior.
+- `ddb2ce3 fix(admin): prevent duplicate user actions` - disabled/locked admin user create/reset/toggle actions while requests are pending and covered duplicate-submit cases.
 
 ## Plan Review Orchestrator Result
 
