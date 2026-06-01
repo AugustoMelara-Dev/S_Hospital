@@ -56,7 +56,7 @@ Current local verification notes:
 
 - Phase 13C scanner authority and frontend money handling were rechecked on 2026-06-01: scanner lookup calls the backend with `code`, does not add a cached local service after lookup failure, `PaymentModal` calculates cashier-facing payment/change values in cents, and `npm.cmd run test -- --run src/features/invoices/NewInvoiceView.test.tsx` passed 13 tests.
 - Receipt proof language must always list media carta, carta, A5, 80mm and 58mm together. Instructions that mention only page formats or only thermal widths are considered stale until corrected.
-- Phase 13F backup retention was hardened on 2026-06-01: unsafe old `success` backup records are no longer deleted by retention; they remain for support review and are audited as `backup.prune_skipped`. `php artisan test --filter=BackupWorkflowTest` passed 17 tests / 80 assertions.
+- Phase 13F backup retention was hardened on 2026-06-01: unsafe old `success` backup records are no longer deleted by retention; they remain for support review and are audited as `backup.prune_skipped`. `php artisan test --filter=BackupWorkflowTest` passed 17 tests / 80 assertions. Non-invasive wrapper checks also passed: `scripts\run_backup_worker.cmd --check`, `scripts\run_scheduled_backup.cmd --check`, `scripts\start_backup_automation.cmd --check`, and `scripts\install_backup_tasks_windows.ps1 -WhatIfOnly -DailyBackupTime 23:30`.
 
 ## Plan Review Orchestrator Result
 
@@ -392,6 +392,7 @@ Make backups production-safe: scheduled, retained, verifiable, restorable, and r
 
 - Docker/PHP backup wrappers, Windows scheduled task installer, preflight task checks and operator docs already exist.
 - Retention now preserves unsafe or non-local backup records for support review instead of deleting database evidence while refusing to touch the unsafe file path.
+- Local scheduler wrappers passed in check/WhatIf mode without creating backups, starting workers or registering tasks.
 
 **Expected files**
 
