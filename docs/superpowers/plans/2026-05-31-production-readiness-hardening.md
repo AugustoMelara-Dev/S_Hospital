@@ -60,12 +60,13 @@ Current local verification notes:
 - Phase 13G release guard was hardened on 2026-06-01: it now recalculates Docker image tar SHA256 values, compares sidecars and `checksums.sha256`, and blocks secret `.env` variants such as `.env.production`. Contract checks passed with temporary local release fixtures for valid, bad-checksum and forbidden-env cases.
 - Phase 13H QA evidence cleanup continued on 2026-06-01: release readiness, known limitations, gap report, role/module audit and handoff evidence now list the full `PRODUCTION_READY` blockers consistently, including LAN, five-format institutional printer proof, final restore/concurrency, backup worker, offline artifact and production configuration.
 - Broad local gates passed on 2026-06-01 after the latest 13H docs cleanup: `php artisan test --stop-on-failure` passed 201 tests / 1506 assertions, `npm.cmd run typecheck` passed, `npm.cmd run lint` passed, `npm.cmd run test` passed 14 files / 65 tests, and `npm.cmd run build` passed with the known Vite chunk-size warning.
+- 2026-06-01 correction after user clarification: active UI/docs now treat the physical receipt proof as media carta/carta/A5/80mm/58mm, not one group instead of the other. Focused gates passed: `npm.cmd run test -- App.test.tsx`, `npm.cmd run typecheck`, `npm.cmd run lint`, `git diff --check`, and a stale-copy search excluding generated screenshots/storage fixtures.
 
 ## Plan Review Orchestrator Result
 
 Decision: **APPROVED WITH REQUIRED CHANGES** for implementation.
 
-Production readiness decision: **BLOCKED** until field validation is complete on the final server, LAN client, MariaDB restore target, and physical 80mm/58mm printer.
+Production readiness decision: **BLOCKED** until field validation is complete on the final server, LAN client, MariaDB restore target, and physical institutional receipt outputs for media carta/carta/A5/80mm/58mm.
 
 | Reviewer | Severity | Finding | Recommendation |
 | --- | --- | --- | --- |
@@ -527,7 +528,7 @@ Clean stale/contradictory QA evidence and produce final-server validation artifa
 - Final server `.env`: `APP_ENV=production`, `APP_DEBUG=false`, real `APP_URL`, CORS/Sanctum stateful domains for LAN.
 - Final server: `/up`, `/login`, `/verify-email` respond correctly.
 - Physical LAN client can log in by server IP/name.
-- Physical 80mm and 58mm printer validation completed.
+- Physical institutional receipt validation completed for media carta, carta, A5, 80mm and 58mm.
 - Restore validation completed against disposable DB on final or equivalent hardware.
 - Backup worker and scheduled backup proven after reboot/login as applicable.
 

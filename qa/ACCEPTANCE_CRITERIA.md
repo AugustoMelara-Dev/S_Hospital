@@ -32,7 +32,7 @@
 
 ## Impresión
 - Recibo institucional media carta por defecto.
-- Opciones carta y A5 configurables.
+- Opciones carta, A5, 80mm y 58mm configurables.
 - Se imprime una factura por vez con fondo blanco.
 - No imprime QR, codigo de barras, codigos internos ni datos tecnicos.
 

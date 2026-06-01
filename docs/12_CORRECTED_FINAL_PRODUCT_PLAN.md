@@ -59,7 +59,7 @@ Mientras no se decida, el supuesto seguro es: **el camino principal del POS exig
   - `SegmentedControl` o tabs
   - `TableState` para loading/empty/error
 - Reducir CSS global a tokens, layout general y estilos de impresion institucional. Las pantallas deben usar componentes, no clases artesanales por modulo.
-- Mantener reglas de impresion para media carta, carta y A5 como excepcion tecnica en CSS.
+- Mantener reglas de impresion para media carta, carta, A5, 80mm y 58mm como excepcion tecnica en CSS.
 
 ### Backend
 

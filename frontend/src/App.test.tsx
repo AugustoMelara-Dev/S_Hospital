@@ -94,6 +94,11 @@ describe('App', () => {
               label: 'Validacion desde segunda PC LAN',
               status: 'pending',
             },
+            {
+              code: 'PENDING_HARDWARE_VALIDATION',
+              label: 'Validacion fisica media carta/carta/A5/80mm/58mm',
+              status: 'pending',
+            },
           ],
         },
         preflight: {
@@ -463,6 +468,7 @@ describe('App', () => {
     expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
     expect((await screen.findAllByText(/^pendiente$/i)).length).toBeGreaterThan(0);
     expect(await screen.findByText(/completar modo de operaci[oÃ³]n final/i)).toBeInTheDocument();
+    expect(await screen.findByText(/validar recibo fisico media carta\/carta\/A5\/80mm\/58mm/i)).toBeInTheDocument();
     expect(screen.queryByText(/APP_ENV=production/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/requiere revisi/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver detalle avanzado/i }));
