@@ -5,7 +5,7 @@ Alcance: preparacion local del producto institucional, con evidencia de QA real 
 
 ## Estado
 
-Estado general: PRODUCTION_CANDIDATE; NO PRODUCTION_READY hasta cerrar validacion completa desde cliente LAN fisico, impresora institucional fisica y configuracion final de produccion con admin real.
+Estado general: PRODUCTION_CANDIDATE; NO PRODUCTION_READY hasta cerrar validacion completa desde cliente LAN fisico, impresora institucional fisica, restore/concurrencia final, worker continuo de backups, artefacto offline regenerado y configuracion final de produccion con admin real.
 
 La preparacion local cubre login, caja, factura, regla de eritropoyetina, scanner/codigos, cobro, recibo institucional, historial, reimpresion, anulacion sin pagos, reportes avanzados y backup local. El cierre conserva evidencia de restore, concurrencia y rutas LAN. Los pendientes de hardware/entorno quedan documentados como limitaciones y no se presentan como validados.
 
@@ -13,7 +13,7 @@ La preparacion local cubre login, caja, factura, regla de eritropoyetina, scanne
 
 - LOCAL_VALIDATION_READY: flujo operativo validado en ambiente local/controlado.
 - PRODUCTION_CANDIDATE: codigo, gates seguros, E2E local y runbooks/scripts de validacion real estan listos, pero faltan pruebas en servidor/hardware final.
-- PRODUCTION_READY: restore real, concurrencia real MySQL/MariaDB, LAN desde cliente fisico e impresora institucional real fueron ejecutados y documentados.
+- PRODUCTION_READY: restore real, concurrencia real MySQL/MariaDB, LAN desde cliente fisico, impresora institucional real media carta/carta/A5/80mm/58mm, worker continuo de backups, artefacto offline limpio y configuracion production final fueron ejecutados y documentados.
 
 ## Evidencia QA ejecutada
 
@@ -159,7 +159,7 @@ que las imagenes deben regenerarse.
 - Concurrencia real MySQL/MariaDB: VALIDATED en entorno local mutante con snapshot/backup previo. Repetir en servidor final o base descartable final antes de entregar produccion.
 - Impresora fisica institucional: `PENDING_HARDWARE_VALIDATION` hasta probar media carta/carta/A5/80mm/58mm en la PC de caja.
 - LAN fisica: `PENDING_LAN_CLIENT_VALIDATION` hasta validar checklist completo desde otra computadora cliente por IP fija/nombre servidor.
-- Produccion final: `PENDING_ENVIRONMENT_VALIDATION` hasta configurar `APP_ENV=production`, `APP_DEBUG=false`, admin real, sin seeders de validacion local y `config:cache` en servidor final.
+- Produccion final: `PENDING_ENVIRONMENT_VALIDATION` hasta configurar `APP_ENV=production`, `APP_DEBUG=false`, admin real, worker continuo de backups, artefacto offline limpio, sin seeders de validacion local y `config:cache` en servidor final.
 
 ## Evidencia Fase 10
 

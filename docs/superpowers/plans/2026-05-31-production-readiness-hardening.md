@@ -42,9 +42,9 @@ This does not declare full backend gate health or `PRODUCTION_READY`; it only re
 
 Recent phase commits on `codex/production-readiness-hardening`:
 
-- `78375e5 docs(ops): require thermal printer proof` - aligned docs/help/proof templates so receipt validation includes media carta, carta, A5, 80mm and 58mm.
+- `78375e5 docs(ops): require thermal printer proof` - aligned docs/help/proof templates so institutional receipt validation includes media carta, carta, A5, 80mm and 58mm.
 - `004167e fix(admin): align password policy hints` - aligned frontend admin password validation with Laravel `Password::min(10)->letters()->numbers()`.
-- `69ef1dd fix(ops): enforce thermal printer proof` - made production preflight require 80mm and 58mm fields/checks.
+- `69ef1dd fix(ops): enforce thermal printer proof` - made production preflight require the 80mm and 58mm institutional receipt fields/checks.
 - `18df1ac refactor(admin): move password reset validation` - moved admin password reset validation/authorization into a Form Request and added Feature coverage.
 - `b7ed50d refactor(backups): move list validation to request` - moved backup list authorization/status validation into a Form Request while preserving pagination clamp behavior.
 - `ddb2ce3 fix(admin): prevent duplicate user actions` - disabled/locked admin user create/reset/toggle actions while requests are pending and covered duplicate-submit cases.
@@ -58,6 +58,7 @@ Current local verification notes:
 - Receipt proof language must always list media carta, carta, A5, 80mm and 58mm together. Instructions that mention only page formats or only thermal widths are considered stale until corrected.
 - Phase 13F backup retention was hardened on 2026-06-01: unsafe old `success` backup records are no longer deleted by retention; they remain for support review and are audited as `backup.prune_skipped`. `php artisan test --filter=BackupWorkflowTest` passed 17 tests / 80 assertions. Non-invasive wrapper checks also passed: `scripts\run_backup_worker.cmd --check`, `scripts\run_scheduled_backup.cmd --check`, `scripts\start_backup_automation.cmd --check`, and `scripts\install_backup_tasks_windows.ps1 -WhatIfOnly -DailyBackupTime 23:30`.
 - Phase 13G release guard was hardened on 2026-06-01: it now recalculates Docker image tar SHA256 values, compares sidecars and `checksums.sha256`, and blocks secret `.env` variants such as `.env.production`. Contract checks passed with temporary local release fixtures for valid, bad-checksum and forbidden-env cases.
+- Phase 13H QA evidence cleanup continued on 2026-06-01: release readiness, known limitations, gap report, role/module audit and handoff evidence now list the full `PRODUCTION_READY` blockers consistently, including LAN, five-format institutional printer proof, final restore/concurrency, backup worker, offline artifact and production configuration.
 
 ## Plan Review Orchestrator Result
 
@@ -499,6 +500,11 @@ Separate dev setup from production install, regenerate offline release artifacts
 **Scope**
 
 Clean stale/contradictory QA evidence and produce final-server validation artifacts.
+
+**2026-06-01 local status**
+
+- Proof placeholders for LAN, institutional printer, restore and concurrency remain explicitly `PENDING_*`.
+- QA status documents now keep `PRODUCTION_CANDIDATE` separate from `PRODUCTION_READY` and include the full remaining blocker set.
 
 **Expected files**
 

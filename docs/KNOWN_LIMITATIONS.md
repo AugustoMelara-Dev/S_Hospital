@@ -14,7 +14,7 @@
 
 - LOCAL_VALIDATION_READY: si.
 - PRODUCTION_CANDIDATE: si, con Fase 12 UX/POS/catalogo/reportes/QA cerrada, E2E local, smoke real no destructivo, rutas LAN, restore real local y concurrencia real local validados.
-- PRODUCTION_READY: no, hasta cerrar LAN fisica desde cliente, impresora fisica y configuracion final de produccion.
+- PRODUCTION_READY: no, hasta cerrar LAN fisica desde cliente, impresora fisica media carta/carta/A5/80mm/58mm, restore/concurrencia final, worker continuo de backups, artefacto offline regenerado y configuracion final de produccion.
 - RELEASE_READY: no, hasta que el guard de artefacto offline pase sin manifiesto stale, logs, `.env`, backups ni evidencia QA local dentro del paquete.
 
 ## Alcance de producto

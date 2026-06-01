@@ -52,7 +52,7 @@ No declarar `PRODUCTION_READY` hasta cerrar todos los bloqueantes de entorno y h
 11. Validar impresora fisica media carta/carta/A5/80mm/58mm.
 12. Ejecutar `scripts/production_readiness_preflight.ps1` sin `-AllowMissingPhysicalProof`.
 
-Sin LAN fisica desde segunda PC, impresora fisica, `.env` production, MySQL tools, worker persistente y backup/restore real, produccion sigue bloqueada.
+Sin LAN fisica desde segunda PC, impresora fisica media carta/carta/A5/80mm/58mm, `.env` production, MySQL tools, worker persistente, artefacto offline limpio, restore final y concurrencia final, produccion sigue bloqueada.
 
 ## Estado de alcance
 

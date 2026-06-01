@@ -4,7 +4,7 @@
 
 Current state: `PRODUCTION_CANDIDATE`.
 
-Do not declare `PRODUCTION_READY` yet. The server-side production checks passed, but real second-client LAN proof and physical thermal-printer proof are still missing.
+Do not declare `PRODUCTION_READY` yet. The server-side production checks passed, but real second-client LAN proof and physical institutional receipt proof for media carta/carta/A5/80mm/58mm are still missing.
 
 ## Server production environment
 
@@ -56,7 +56,7 @@ Blocking failures:
 - Missing `qa/LAN_CLIENT_VALIDATION_PROOF.md` with real second-client LAN evidence.
 - Missing `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` with real physical institutional printer evidence.
 
-These cannot be closed from the server machine alone. They require a real second client computer and the real thermal printer or exact printer configuration used by the hospital.
+These cannot be closed from the server machine alone. They require a real second client computer and the real institutional printer or exact printer configuration used by the hospital.
 
 ## Quality gates
 
