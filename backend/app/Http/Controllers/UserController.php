@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Admin\ResetUserPasswordRequest;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
@@ -85,13 +85,9 @@ class UserController extends Controller
         ]);
     }
 
-    public function resetPassword(Request $request, User $user): JsonResponse
+    public function resetPassword(ResetUserPasswordRequest $request, User $user): JsonResponse
     {
-        $request->user()->can('users.update') || abort(403);
-
-        $validated = $request->validate([
-            'password' => ['required', 'string', Password::min(10)->letters()->numbers()],
-        ]);
+        $validated = $request->validated();
 
         $user->forceFill([
             'password' => Hash::make($validated['password']),
