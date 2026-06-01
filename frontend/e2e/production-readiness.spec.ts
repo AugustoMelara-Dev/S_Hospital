@@ -1,4 +1,15 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+
+const captureRcScreenshots = process.env.E2E_CAPTURE_RC_SCREENSHOTS === '1';
+const captureDirName = 'rc-e2e-mocked-2026-06-01';
+const captureOutputDir =
+  process.env.E2E_CAPTURE_RC_OUTPUT_DIR ?? path.resolve('..', 'qa', 'screenshots', captureDirName);
+const captureReportDir = (
+  process.env.E2E_CAPTURE_RC_REPORT_DIR ?? path.posix.join('qa', 'screenshots', captureDirName)
+).replaceAll('\\', '/');
+const capturedScreens: Array<{ name: string; path: string; route: string; theme: 'light' | 'dark' }> = [];
 
 const cashierUser = {
   id: 2,
@@ -100,6 +111,43 @@ function json(route: Route, body: unknown, status = 200) {
     contentType: 'application/json',
     body: JSON.stringify(body),
   });
+}
+
+async function captureScreen(page: Page, name: string, theme: 'light' | 'dark' = 'light') {
+  if (!captureRcScreenshots) {
+    return;
+  }
+
+  await mkdir(captureOutputDir, { recursive: true });
+  const fileName = `${name}.png`;
+  const file = path.join(captureOutputDir, fileName);
+  await page.screenshot({ path: file, fullPage: true });
+  capturedScreens.push({ name, path: path.posix.join(captureReportDir, fileName), route: new URL(page.url()).pathname, theme });
+}
+
+async function setVisualTheme(page: Page, theme: 'light' | 'dark') {
+  await page.evaluate((nextTheme) => {
+    localStorage.setItem('hospital-billing-theme', nextTheme);
+    document.documentElement.classList.toggle('dark', nextTheme === 'dark');
+  }, theme);
+}
+
+async function writeCaptureReport(consoleIssues: string[] = []) {
+  if (!captureRcScreenshots) {
+    return;
+  }
+
+  await mkdir(captureOutputDir, { recursive: true });
+  await writeFile(
+    path.join(captureOutputDir, 'rc-e2e-mocked-report.json'),
+    `${JSON.stringify({
+      generated_at: new Date().toISOString(),
+      mode: 'mocked-e2e',
+      note: 'Capturas con API mockeada; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.',
+      screenshots: capturedScreens,
+      console_issues: consoleIssues,
+    }, null, 2)}\n`,
+  );
 }
 
 async function installApiMocks(page: Page) {
@@ -627,9 +675,21 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
     const failure = request.failure();
     const url = request.url();
     if (
+      failure?.errorText === 'net::ERR_ABORTED' &&
+      (
+        url.includes('/src/') ||
+        url.includes('/node_modules/') ||
+        url.includes('/@vite/')
+      )
+    ) {
+      return;
+    }
+
+    if (
       (
         url.includes('/sanctum/csrf-cookie') ||
         url.includes('/api/health') ||
+        url.includes('/api/auth/session') ||
         url.includes('/api/settings/logo') ||
         url.includes('/api/system/client-errors') ||
         url.includes('/api/cash-sessions/current')
@@ -644,6 +704,14 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
 
   await installApiMocks(page);
   await loginAs(page, 'cajero.validacion');
+  await setVisualTheme(page, 'light');
+  await page.goto('/dashboard');
+  await expect(page.getByRole('heading', { name: /inicio|dashboard/i })).toBeVisible();
+  await captureScreen(page, 'dashboard-light', 'light');
+  await setVisualTheme(page, 'dark');
+  await captureScreen(page, 'dashboard-dark', 'dark');
+  await setVisualTheme(page, 'light');
+
   await page.goto('/cashbox');
 
   await expect(page.getByRole('heading', { name: /^caja$/i })).toBeVisible();
@@ -652,11 +720,14 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
     await page.getByRole('button', { name: /cerrar modal/i }).click();
   }
+  await captureScreen(page, 'cashbox-open-light', 'light');
 
   await page.getByLabel('Navegacion principal').getByRole('link', { name: /nueva factura/i }).click();
+  await captureScreen(page, 'billing-new-empty-light', 'light');
   await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
   await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
+  await captureScreen(page, 'billing-new-cart-light', 'light');
   await expect(page.getByText(/Total:\s*L\.\s*28\.75/)).toBeVisible();
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
@@ -667,6 +738,14 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
   await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
   await expect(page.getByText('Media carta')).toBeVisible();
+  await captureScreen(page, 'receipt-preview-light', 'light');
+  await setVisualTheme(page, 'dark');
+  await captureScreen(page, 'receipt-preview-dark', 'dark');
+  await setVisualTheme(page, 'light');
+  await page.locator('[aria-label="Tamano del recibo"]').click();
+  await page.getByRole('option', { name: 'A5', exact: true }).click();
+  await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
+  await captureScreen(page, 'receipt-preview-a5-light', 'light');
   await page.locator('[aria-label="Tamano del recibo"]').click();
   await page.getByRole('option', { name: 'Carta', exact: true }).click();
   await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-letter/);
@@ -696,6 +775,9 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
   await expect(page.getByRole('heading', { name: /recibo - 000-001-01-00000001/i })).toBeVisible();
   await page.locator('[aria-label="Tamano del recibo"]').click();
+  await page.getByRole('option', { name: 'A5', exact: true }).click();
+  await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
+  await page.locator('[aria-label="Tamano del recibo"]').click();
   await page.getByRole('option', { name: 'Carta', exact: true }).click();
   await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-letter/);
 
@@ -712,12 +794,15 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('link', { name: /reportes/i }).click();
   await expect(page.getByRole('heading', { name: /^reportes$/i })).toBeVisible();
   await expect(page.getByRole('heading', { name: /cobrado/i })).toBeVisible();
+  await captureScreen(page, 'reports-admin-light', 'light');
 
   await page.getByRole('link', { name: /respaldos/i }).click();
   await expect(page.getByRole('heading', { name: /^respaldos$/i })).toBeVisible();
   await page.getByRole('button', { name: /crear respaldo/i }).first().click();
   await page.getByRole('button', { name: /^crear respaldo$/i }).click();
   await expect(page.getByRole('table').getByText('Pendiente', { exact: true })).toBeVisible();
+  await captureScreen(page, 'backups-pending-light', 'light');
+  await writeCaptureReport(consoleIssues);
   expect(consoleIssues).toEqual([]);
 });
 
