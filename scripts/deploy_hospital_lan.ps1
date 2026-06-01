@@ -249,14 +249,17 @@ if ($SelfTest) {
     if (-not (Test-Path $tempDir)) { New-Item -ItemType Directory -Force -Path $tempDir | Out-Null }
     $tempEnv = Join-Path $tempDir ".env.selftest.tmp"
     try {
-        # Create test .env
-        Set-Content -Path $tempEnv -Value @("APP_KEY=secret123", "DB_PASSWORD=original", "CUSTOM=value")
+        # Create test .env with explicit placeholders, never real-looking secrets.
+        $dummyAppKey = "selftest-app-key-placeholder"
+        $dummyOriginalDbPassword = "selftest-original-db-password"
+        $dummyUpdatedDbPassword = "selftest-updated-db-password"
+        Set-Content -Path $tempEnv -Value @("APP_KEY=$dummyAppKey", "DB_PASSWORD=$dummyOriginalDbPassword", "CUSTOM=value")
         $before = Read-EnvFile $tempEnv
         # Update some vars
-        Update-DotEnv -Path $tempEnv -Variables @{ "DB_PASSWORD" = "updated"; "NEW_VAR" = "new" }
+        Update-DotEnv -Path $tempEnv -Variables @{ "DB_PASSWORD" = $dummyUpdatedDbPassword; "NEW_VAR" = "new" }
         $after = Read-EnvFile $tempEnv
-        Assert-Test ".env preserva APP_KEY existente" ($after["APP_KEY"] -eq "secret123")
-        Assert-Test ".env actualiza DB_PASSWORD" ($after["DB_PASSWORD"] -eq "updated")
+        Assert-Test ".env preserva APP_KEY existente" ($after["APP_KEY"] -eq $dummyAppKey)
+        Assert-Test ".env actualiza DB_PASSWORD" ($after["DB_PASSWORD"] -eq $dummyUpdatedDbPassword)
         Assert-Test ".env preserva CUSTOM" ($after["CUSTOM"] -eq "value")
         Assert-Test ".env agrega NEW_VAR" ($after["NEW_VAR"] -eq "new")
     }
@@ -1292,19 +1295,45 @@ try {
         }
 
         $adminPassword = ""
-        while ($adminPassword.Length -lt 8) {
-            $adminPassword = Read-Host "Contrasena Temporal (minimo 8 caracteres)"
+        while ($adminPassword.Length -lt 10) {
+            $adminPasswordSecure = Read-Host "Contrasena Temporal (minimo 10 caracteres)" -AsSecureString
+            $adminPasswordBstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($adminPasswordSecure)
+            try {
+                $adminPassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($adminPasswordBstr)
+            }
+            finally {
+                if ($adminPasswordBstr -ne [IntPtr]::Zero) {
+                    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($adminPasswordBstr)
+                }
+            }
+            if ($adminPassword.Length -lt 10 -or $adminPassword -notmatch "[A-Za-z]" -or $adminPassword -notmatch "\d") {
+                Write-Host "[WARN] La contrasena temporal debe tener al menos 10 caracteres, con letras y numeros." -ForegroundColor Yellow
+                $adminPassword = ""
+            }
         }
 
         Write-Host "[*] Registrando administrador..." -ForegroundColor Yellow
-        if ($installChoice -eq "1") {
-            $composeProdPath = Join-Path $projectRoot "docker-compose.prod.yml"
-            & docker compose -f $composeProdPath exec -T backend php artisan auth:create-initial-admin --username="$adminUsername" --email="$adminEmail" --password="$adminPassword" --name="Administrador de Hospital"
+        $previousInitialAdminPassword = $env:HOSPITAL_INITIAL_ADMIN_PASSWORD
+        $env:HOSPITAL_INITIAL_ADMIN_PASSWORD = $adminPassword
+        try {
+            if ($installChoice -eq "1") {
+                $composeProdPath = Join-Path $projectRoot "docker-compose.prod.yml"
+                & docker compose -f $composeProdPath exec -T -e HOSPITAL_INITIAL_ADMIN_PASSWORD backend php artisan auth:create-initial-admin --username="$adminUsername" --email="$adminEmail" --name="Administrador de Hospital"
+            }
+            else {
+                Push-Location (Join-Path $projectRoot "backend")
+                & $phpPath artisan auth:create-initial-admin --username="$adminUsername" --email="$adminEmail" --name="Administrador de Hospital"
+                Pop-Location
+            }
         }
-        else {
-            Push-Location (Join-Path $projectRoot "backend")
-            & $phpPath artisan auth:create-initial-admin --username="$adminUsername" --email="$adminEmail" --password="$adminPassword" --name="Administrador de Hospital"
-            Pop-Location
+        finally {
+            if ([string]::IsNullOrEmpty($previousInitialAdminPassword)) {
+                Remove-Item Env:\HOSPITAL_INITIAL_ADMIN_PASSWORD -ErrorAction SilentlyContinue
+            }
+            else {
+                $env:HOSPITAL_INITIAL_ADMIN_PASSWORD = $previousInitialAdminPassword
+            }
+            $adminPassword = ""
         }
 
         # ==============================================================

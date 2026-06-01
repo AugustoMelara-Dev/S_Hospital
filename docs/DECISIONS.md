@@ -1655,3 +1655,23 @@ Consecuencia:
 
 - El handoff de release falla si un `.tar` cambia sin regenerar checksums.
 - La validacion de 13G cubre caso positivo, checksum roto y `.env.production` con artefactos temporales locales.
+
+### 2026-06-01 - Contrasena inicial de admin no viaja por argumentos CLI
+
+Decision:
+
+- El comando `auth:create-initial-admin` acepta la contrasena temporal desde `HOSPITAL_INITIAL_ADMIN_PASSWORD`.
+- El instalador LAN captura la contrasena con entrada oculta, la pasa por entorno temporal al comando y limpia la variable al terminar.
+- La contrasena temporal inicial debe cumplir el minimo institucional: 10 caracteres, con letras y numeros.
+- `--password` queda disponible solo como compatibilidad tecnica, pero el instalador no lo usa.
+
+Motivo:
+
+- Pasar la contrasena por argumento puede exponerla en historial, logs o listas de procesos durante una instalacion real.
+- La credencial inicial es sensible aunque obligue cambio al primer ingreso.
+
+Consecuencia:
+
+- `InitialAdminCommandTest` falla si el comando deja de aceptar la variable de entorno o permite crear admin sin una fuente de contrasena.
+- `InitialAdminCommandTest` tambien falla si el comando vuelve a aceptar una contrasena temporal debil.
+- El self-test del instalador usa placeholders explicitos y no cadenas que parezcan secretos reales.

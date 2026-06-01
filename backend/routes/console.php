@@ -23,10 +23,16 @@ Artisan::command('auth:create-initial-admin
 
     $username = trim((string) $this->option('username'));
     $email = trim((string) $this->option('email'));
-    $password = (string) $this->option('password');
+    $password = (string) ($this->option('password') ?: getenv('HOSPITAL_INITIAL_ADMIN_PASSWORD') ?: '');
 
     if ($username === '' || $email === '' || $password === '') {
-        $this->error('Debe enviar --username, --email y --password.');
+        $this->error('Debe enviar --username, --email y una contrasena por HOSPITAL_INITIAL_ADMIN_PASSWORD o --password.');
+
+        return 1;
+    }
+
+    if (strlen($password) < 10 || ! preg_match('/[A-Za-z]/', $password) || ! preg_match('/\d/', $password)) {
+        $this->error('La contrasena temporal debe tener al menos 10 caracteres, con letras y numeros.');
 
         return 1;
     }
