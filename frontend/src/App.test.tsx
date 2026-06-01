@@ -85,6 +85,11 @@ describe('App', () => {
           production_ready: false,
           blockers: [
             {
+              code: 'APP_ENV_PRODUCTION',
+              label: 'APP_ENV=production',
+              status: 'pending',
+            },
+            {
               code: 'PENDING_LAN_CLIENT_VALIDATION',
               label: 'Validacion desde segunda PC LAN',
               status: 'pending',
@@ -457,6 +462,8 @@ describe('App', () => {
     expect(await screen.findByText(/respaldos del hospital/i)).toBeInTheDocument();
     expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
     expect((await screen.findAllByText(/^pendiente$/i)).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/completar modo de operaci[oÃ³]n final/i)).toBeInTheDocument();
+    expect(screen.queryByText(/APP_ENV=production/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/requiere revisi/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver detalle avanzado/i }));
     expect(await screen.findByText(/checklist operativo/i)).toBeInTheDocument();
@@ -464,7 +471,7 @@ describe('App', () => {
     expect(screen.getByText(/acceso cliente/i)).toBeInTheDocument();
     expect(screen.getByText(/192\.168\.1\.10:8000/i)).toBeInTheDocument();
     expect(screen.getByText(/versi[oó]n instalada/i)).toBeInTheDocument();
-    expect(screen.getByText(/modo de operaci[oó]n final/i)).toBeInTheDocument();
+    expect(screen.getByText(/^modo de operaci[oó]n final$/i)).toBeInTheDocument();
     expect(screen.getByText(/pantalla de ingreso abre/i)).toBeInTheDocument();
     expect(screen.getByText(/segunda pc en lan/i)).toBeInTheDocument();
     expect(screen.getByText(/impresora institucional/i)).toBeInTheDocument();

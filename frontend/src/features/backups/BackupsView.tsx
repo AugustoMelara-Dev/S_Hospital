@@ -115,6 +115,21 @@ function friendlyProductionDetail(code: string, fallback: string): string {
   return sanitizeTechnicalText(fallback);
 }
 
+function friendlyReadinessBlocker(code: string, fallback: string): string {
+  const labels: Record<string, string> = {
+    APP_ENV_PRODUCTION: 'Completar modo de operacion final',
+    APP_DEBUG_OFF: 'Ocultar mensajes internos',
+    APP_DEBUG_FALSE: 'Ocultar mensajes internos',
+    PENDING_LAN_CLIENT_VALIDATION: 'Validar acceso desde una segunda computadora',
+    PENDING_HARDWARE_VALIDATION: 'Validar impresora fisica del hospital',
+    PENDING_RESTORE_VALIDATION: 'Validar restauracion segura',
+    PENDING_CONCURRENCY_VALIDATION: 'Validar concurrencia de caja',
+    PENDING_ENVIRONMENT_VALIDATION: 'Revisar configuracion final del servidor',
+  };
+
+  return labels[code] ?? sanitizeTechnicalText(fallback);
+}
+
 function operationalSummary(status: SystemStatus): { level: OperationalStatus; label: string; description: string; className: string } {
   const hasError =
     !status.frontend.dist_index_exists ||
@@ -449,7 +464,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
         {systemStatus?.readiness.blockers.length ? (
           <Alert title="Pendientes antes de operar">
-            {systemStatus.readiness.blockers.map((blocker) => blocker.label).join(' · ')}
+            {systemStatus.readiness.blockers.map((blocker) => friendlyReadinessBlocker(blocker.code, blocker.label)).join(' - ')}
           </Alert>
         ) : null}
 
