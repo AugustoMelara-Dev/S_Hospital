@@ -1379,3 +1379,20 @@ Consecuencia:
 
 - El cierre de caja mantiene etiquetas humanas aun ante datos de API danados.
 - La prueba de caja falla si vuelve a mostrarse `NaN` o un monto crudo invalido.
+
+### 2026-05-31 - Estados de respaldo visibles sin lenguaje tecnico
+
+Decision:
+
+- El resumen normal de respaldos usa solo estados humanos: `Protegido`, `Pendiente` o `Error`.
+- Los detalles operativos conservan informacion de soporte, pero la primera lectura evita etiquetas de candidato, demo o revision tecnica.
+
+Motivo:
+
+- El personal no tecnico necesita saber si el hospital esta protegido, si falta algo o si debe pedir soporte.
+- La pantalla de respaldos no debe sonar como un preflight de desarrollo durante una operacion real de caja.
+
+Consecuencia:
+
+- La prueba de respaldos falla si vuelve a mostrarse `requiere revision` en la superficie normal.
+- El detalle avanzado sigue disponible para administracion o soporte.

@@ -130,7 +130,7 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
     return {
       level: 'error',
       label: 'Error',
-      description: 'Hay un problema operativo que puede afectar respaldos, soporte o continuidad. Revise el detalle avanzado o pida soporte.',
+      description: 'Hay un problema que puede afectar respaldos o continuidad. Pida soporte si no puede resolverlo.',
       className: 'border-red-200 bg-red-50 text-red-900',
     };
   }
@@ -146,16 +146,16 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
   if (needsReview) {
     return {
       level: 'review',
-      label: 'Requiere revisión',
-      description: 'El sistema puede seguir en validacion controlada, pero faltan pruebas de campo, configuracion final o respaldo reciente.',
+      label: 'Pendiente',
+      description: 'Falta completar respaldo reciente, validacion de red/impresora o configuracion final antes de operar sin supervision.',
       className: 'border-amber-200 bg-amber-50 text-amber-900',
     };
   }
 
   return {
     level: 'ok',
-    label: 'Todo bien',
-    description: 'Los chequeos operativos disponibles no reportan pendientes. Mantenga el cierre diario y los respaldos al dia.',
+    label: 'Protegido',
+    description: 'Respaldos y chequeos basicos estan al dia. Mantenga el cierre diario y los respaldos protegidos.',
     className: 'border-emerald-200 bg-emerald-50 text-emerald-900',
   };
 }
@@ -381,10 +381,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                   <div className="min-w-0 space-y-1">
                     <p className="text-sm font-semibold">Preparación de respaldos</p>
                     <p className="text-xs text-muted-foreground">
-                      Creación de archivos: {systemStatus.backups.dump_binary.available ? 'lista' : 'requiere revisión'}
+                      Creación de archivos: {systemStatus.backups.dump_binary.available ? 'lista' : 'pendiente'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Carpeta de respaldo: {systemStatus.backups.storage.writable ? 'lista' : 'requiere revisión'} · libre {formatBytes(systemStatus.backups.storage.free_bytes)}
+                      Carpeta de respaldo: {systemStatus.backups.storage.writable ? 'lista' : 'pendiente'} · libre {formatBytes(systemStatus.backups.storage.free_bytes)}
                     </p>
                     {systemStatus.backups.last_success_at ? (
                       <p className="text-xs text-muted-foreground">

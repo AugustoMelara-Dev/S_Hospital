@@ -456,7 +456,8 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: /^respaldos$/i })).toBeInTheDocument();
     expect(await screen.findByText(/respaldos del hospital/i)).toBeInTheDocument();
     expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
-    expect(await screen.findByText(/requiere revisi/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/^pendiente$/i)).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/requiere revisi/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver detalle avanzado/i }));
     expect(await screen.findByText(/checklist operativo/i)).toBeInTheDocument();
     expect(screen.getByText(/interfaz y red local/i)).toBeInTheDocument();
