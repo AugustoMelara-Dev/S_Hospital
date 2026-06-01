@@ -72,6 +72,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Preflight y handoff solo aceptan capturas/fotos locales bajo `qa/` y rechazan referencias a `backend/`, `docs/`, `scripts/`, `frontend/` o rutas con traversal. | Verificado |
 | Esta fase | Validacion LAN restringe `-EvidencePath` a archivos Markdown dentro de `qa/` antes de consultar red o escribir borradores. | Verificado |
 | Esta fase | Reporte operativo prorratea pagos filtrados por area/categoria usando centavos enteros y prueba pagos parciales de centavos impares. | Verificado |
+| Esta fase | Menu de instalacion previa ya no ofrece "instalacion limpia" ni comandos Docker que borren volumenes; solo reparar, actualizar conservando datos o cancelar. | Verificado |
 
 ## Evidencia Visual Disponible
 
@@ -155,6 +156,8 @@ Resultado observado:
 | `validate_lan_client.ps1 -EvidencePath qa\lan.txt -WhatIfOnly` | Falla antes de consultar red o escribir evidencia. |
 | `docker compose exec backend php artisan test tests/Feature/ReportsTest.php --filter=operations_report_area_filter` | Paso: 2 tests, 19 assertions. |
 | `docker compose exec backend ./vendor/bin/pint --test app/Actions/Reports/OperationsReportService.php tests/Feature/ReportsTest.php` | Paso: 2 files. |
+| Parser PowerShell de `scripts\lib\docker_diagnostics.ps1` | Paso. |
+| `rg -n "down -v|docker volume rm|BORRA TODO|Instalacion Limpia|BORRAR" scripts\lib\docker_diagnostics.ps1` | Paso: sin coincidencias. |
 | `final_production_handoff.ps1` con referencias de evidencia inexistentes | Paso: marco LAN, impresora, restore y concurrencia como `MISS`, genero `PRODUCTION_CANDIDATE` y mantuvo rutas sanitizadas en el reporte. |
 | Parser PowerShell de `install_backup_tasks_windows.ps1` | Paso. |
 | `install_backup_tasks_windows.ps1 -WhatIfOnly -DailyBackupTime 99:99` | Falla con mensaje humano antes de registrar, actualizar o remover tareas; no imprime rutas locales crudas. |

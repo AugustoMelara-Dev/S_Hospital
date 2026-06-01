@@ -15,6 +15,11 @@ Confirme:
 
 No borre carpetas de datos ni volumenes de base de datos.
 
+Si el instalador detecta una instalacion previa, use solamente reparar,
+actualizar conservando base de datos o cancelar para pedir soporte. El instalador
+no debe ofrecer una opcion de "instalacion limpia" que borre volumenes o datos
+del hospital.
+
 ## Instalar
 
 1. Abra PowerShell o Explorador en la carpeta del sistema.

@@ -317,7 +317,8 @@ function Invoke-DockerCheck {
     }
 }
 
-# Menu de instalacion previa para prevenir sobreescribir datos accidentalmente
+# Menu de instalacion previa para prevenir sobreescribir datos accidentalmente.
+# Este instalador no ofrece borrado de volumenes ni reinicio destructivo.
 function Show-PreviousInstallMenu {
     param(
         [string]$ComposeFile
@@ -344,13 +345,12 @@ function Show-PreviousInstallMenu {
     Write-Host "Seleccione una opcion para proceder:" -ForegroundColor White
     Write-Host "  [1] Re-iniciar / Reparar (Reinicia contenedores sin tocar los datos)" -ForegroundColor Green
     Write-Host "  [2] Conservar Base de Datos (Actualiza la app pero mantiene su informacion)" -ForegroundColor Green
-    Write-Host "  [3] Instalacion Limpia (BORRA TODO y empieza de cero) - CUIDADO" -ForegroundColor Red
-    Write-Host "  [4] Cancelar y volver al menu" -ForegroundColor White
+    Write-Host "  [3] Cancelar y pedir soporte antes de tocar datos" -ForegroundColor White
     Write-Host ""
     
     $choice = ""
-    while ($choice -notin @("1", "2", "3", "4")) {
-        $choice = Read-Host "Ingrese una opcion [1-4]"
+    while ($choice -notin @("1", "2", "3")) {
+        $choice = Read-Host "Ingrese una opcion [1-3]"
     }
     
     if ($choice -eq "1") {
@@ -367,30 +367,6 @@ function Show-PreviousInstallMenu {
         } catch {}
         return "keep-db"
     }
-    elseif ($choice -eq "3") {
-        Write-Host ""
-        Write-Host "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" -ForegroundColor Red -BackgroundColor DarkRed
-        Write-Host " ADVERTENCIA: ESTA ACCION BORRARA TODA LA INFORMACION DEL HOSPITAL" -ForegroundColor Red
-        Write-Host " Esto incluye facturas, historiales, caja y toda la base de datos MySQL." -ForegroundColor Red
-        Write-Host "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" -ForegroundColor Red
-        Write-Host ""
-        $confirm = Read-Host "Para confirmar que desea BORRAR TODO, escriba la palabra 'BORRAR'"
-        if ($confirm -eq "BORRAR") {
-            Write-Host "[*] Eliminando instalacion anterior por completo..." -ForegroundColor Yellow
-            try {
-                & docker compose -f $ComposeFile down -v --remove-orphans 2>&1 | Out-Null
-                foreach ($vol in $volumes) {
-                    & docker volume rm $vol -f 2>&1 | Out-Null
-                }
-            } catch {}
-            return "clean"
-        } else {
-            Write-Host "[INFO] Confirmacion incorrecta. Operacion cancelada." -ForegroundColor Yellow
-            return "cancel"
-        }
-    }
-    else {
-        return "cancel"
-    }
+    Write-Host "[INFO] Operacion cancelada. No se borraron datos ni volumenes." -ForegroundColor Yellow
+    return "cancel"
 }
-
