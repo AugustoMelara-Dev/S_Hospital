@@ -13,10 +13,11 @@ type PasswordChangeViewProps = {
   form: PasswordChangeForm;
   onChange: (form: PasswordChangeForm) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  submitting?: boolean;
   status?: string;
 };
 
-export function PasswordChangeView({ form, onChange, onSubmit, status }: PasswordChangeViewProps) {
+export function PasswordChangeView({ form, onChange, onSubmit, submitting = false, status }: PasswordChangeViewProps) {
   const showStatus = Boolean(status?.trim());
 
   return (
@@ -39,6 +40,7 @@ export function PasswordChangeView({ form, onChange, onSubmit, status }: Passwor
                 type="password"
                 value={form.current_password}
                 autoComplete="current-password"
+                disabled={submitting}
                 onChange={(event) => onChange({ ...form, current_password: event.target.value })}
               />
             </label>
@@ -48,6 +50,7 @@ export function PasswordChangeView({ form, onChange, onSubmit, status }: Passwor
                 type="password"
                 value={form.password}
                 autoComplete="new-password"
+                disabled={submitting}
                 onChange={(event) => onChange({ ...form, password: event.target.value })}
               />
             </label>
@@ -57,10 +60,13 @@ export function PasswordChangeView({ form, onChange, onSubmit, status }: Passwor
                 type="password"
                 value={form.password_confirmation}
                 autoComplete="new-password"
+                disabled={submitting}
                 onChange={(event) => onChange({ ...form, password_confirmation: event.target.value })}
               />
             </label>
-            <Button type="submit">Actualizar contraseña</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Actualizando...' : 'Actualizar contraseña'}
+            </Button>
           </form>
         </CardContent>
       </Card>

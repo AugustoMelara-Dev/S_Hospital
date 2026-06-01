@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { type AuthUser, type CashSession, apiClient, userSafeErrorMessage } from '../lib/api';
 import { type PasswordChangeForm } from '../features/auth/PasswordChangeView';
 
@@ -15,6 +15,8 @@ export function useHospitalSession() {
   const [status, setStatus] = useState('Listo para iniciar sesión local.');
   const [loading, setLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false);
+  const passwordSubmitInFlightRef = useRef(false);
 
   const permissions = useMemo(() => new Set(user?.permissions ?? []), [user?.permissions]);
   const canViewFiscalSettings = permissions.has('settings.fiscal.view');
@@ -118,6 +120,10 @@ export function useHospitalSession() {
 
   async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (passwordSubmitInFlightRef.current) return;
+
+    passwordSubmitInFlightRef.current = true;
+    setPasswordSubmitting(true);
     setStatus('Actualizando contraseña...');
 
     try {
@@ -131,6 +137,9 @@ export function useHospitalSession() {
       setStatus('Contraseña actualizada.');
     } catch (error) {
       setStatus(userSafeErrorMessage(error, 'No se pudo actualizar la contraseña.'));
+    } finally {
+      passwordSubmitInFlightRef.current = false;
+      setPasswordSubmitting(false);
     }
   }
 
@@ -147,6 +156,7 @@ export function useHospitalSession() {
     status,
     setStatus,
     loading,
+    passwordSubmitting,
     needsBillingCashBootstrap,
     cashBootstrapLoading: false,
     canViewFiscalSettings,

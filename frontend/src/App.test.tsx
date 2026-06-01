@@ -787,6 +787,73 @@ describe('App', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/contrasena actual no es correcta/i);
   });
 
+  it('prevents duplicated required password change submissions while pending', async () => {
+    let resolveChange!: (response: Response) => void;
+    const sessionUser = {
+      id: 1,
+      name: 'Administrador Validacion',
+      email: 'admin.validacion@hospital-san-isidro.local',
+      username: 'admin.validacion',
+      active: true,
+      roles: ['admin'],
+      permissions: ['settings.fiscal.view'],
+      must_change_password: true,
+    };
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({ data: sessionUser }),
+        } as Response;
+      }
+
+      if (url.includes('/api/auth/change-password')) {
+        return new Promise<Response>((resolve) => {
+          resolveChange = resolve;
+        });
+      }
+
+      return { ok: true, json: async () => ({}) } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText(/cambio obligatorio de contrase/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/actual/i), {
+      target: { value: 'Password123!' },
+    });
+    fireEvent.change(screen.getByLabelText(/^nueva/i), {
+      target: { value: 'NewPassword123' },
+    });
+    fireEvent.change(screen.getByLabelText(/confirmar/i), {
+      target: { value: 'NewPassword123' },
+    });
+
+    const submit = screen.getByRole('button', { name: /actualizar/i });
+    fireEvent.click(submit);
+    fireEvent.click(submit);
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/auth/change-password'))).toHaveLength(1);
+    });
+    await waitFor(() => expect(screen.getByRole('button', { name: /actualizando/i })).toBeDisabled());
+
+    resolveChange({
+      ok: true,
+      json: async () => ({
+        data: {
+          ...sessionUser,
+          must_change_password: false,
+        },
+      }),
+    } as Response);
+
+    await waitFor(() => expect(screen.queryByText(/cambio obligatorio de contrase/i)).not.toBeInTheDocument());
+  });
+
   it('renders not found for an unknown authenticated route', async () => {
     window.history.pushState({}, '', '/ruta-inexistente');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
