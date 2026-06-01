@@ -6,6 +6,8 @@ use App\Models\FiscalSetting;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class FiscalSettingsTest extends TestCase
@@ -149,6 +151,54 @@ class FiscalSettingsTest extends TestCase
         $this->actingAs($supervisor)
             ->putJson('/api/settings/fiscal', $this->validPayload())
             ->assertForbidden();
+    }
+
+    public function test_admin_can_upload_logo_and_public_endpoint_returns_cache_busted_url(): void
+    {
+        Storage::fake('public');
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->postJson('/api/settings/logo', [
+                'logo' => UploadedFile::fake()->image('hospital.png', 320, 160),
+            ])
+            ->assertOk()
+            ->assertJsonPath('message', 'Logo actualizado con exito.')
+            ->assertJsonPath('logo_url', fn (string $url): bool => str_contains($url, '/storage/branding/logo.png?t='));
+
+        Storage::disk('public')->assertExists('branding/logo.png');
+
+        $this->getJson('/api/settings/logo')
+            ->assertOk()
+            ->assertJsonPath('logo_url', fn (?string $url): bool => is_string($url) && str_contains($url, '/storage/branding/logo.png?t='));
+    }
+
+    public function test_logo_upload_requires_fiscal_update_permission_and_image_file(): void
+    {
+        Storage::fake('public');
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $cashier = User::factory()->create();
+        $cashier->assignRole('cajero');
+
+        $this->actingAs($cashier)
+            ->postJson('/api/settings/logo', [
+                'logo' => UploadedFile::fake()->image('hospital.png'),
+            ])
+            ->assertForbidden();
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->postJson('/api/settings/logo', [
+                'logo' => UploadedFile::fake()->create('hospital.txt', 1, 'text/plain'),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('logo');
     }
 
     /**
