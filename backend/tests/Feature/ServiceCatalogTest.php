@@ -240,6 +240,11 @@ class ServiceCatalogTest extends TestCase
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
+        $area = Area::query()->create([
+            'name' => 'Consulta externa',
+            'slug' => 'consulta-externa',
+            'active' => true,
+        ]);
 
         $categoryId = $this->actingAs($admin)
             ->postJson('/api/categories', [
@@ -254,6 +259,7 @@ class ServiceCatalogTest extends TestCase
         $serviceId = $this->actingAs($admin)
             ->postJson('/api/services', [
                 'category_id' => $categoryId,
+                'area_id' => $area->id,
                 'name' => 'Consulta general',
                 'price' => '100.00',
                 'scan_code' => 'CONS-GEN-001',
@@ -265,6 +271,15 @@ class ServiceCatalogTest extends TestCase
             ->assertJsonPath('data.price', '100.00')
             ->assertJsonPath('data.scan_code', 'CONS-GEN-001')
             ->json('data.id');
+
+        $this->actingAs($admin)
+            ->postJson('/api/services', [
+                'category_id' => $categoryId,
+                'name' => 'Consulta sin area',
+                'price' => '100.00',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('area_id');
 
         $this->actingAs($admin)
             ->patchJson("/api/categories/{$categoryId}", [
@@ -413,6 +428,7 @@ class ServiceCatalogTest extends TestCase
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
         $category = Category::query()->firstOrFail();
+        $area = Area::query()->firstOrFail();
         $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
 
         $this->actingAs($admin)
@@ -422,6 +438,7 @@ class ServiceCatalogTest extends TestCase
         $this->actingAs($admin)
             ->postJson('/api/services', [
                 'category_id' => $category->id,
+                'area_id' => $area->id,
                 'name' => 'Servicio duplicado scanner',
                 'price' => '10.00',
                 'scan_code' => 'DUP-001',
@@ -435,6 +452,7 @@ class ServiceCatalogTest extends TestCase
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
         $category = Category::query()->firstOrFail();
+        $area = Area::query()->firstOrFail();
         $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
 
         $this->actingAs($admin)
@@ -444,6 +462,7 @@ class ServiceCatalogTest extends TestCase
         $this->actingAs($admin)
             ->postJson('/api/services', [
                 'category_id' => $category->id,
+                'area_id' => $area->id,
                 'name' => 'Servicio duplicado barcode',
                 'price' => '10.00',
                 'barcode' => 'GLOBAL-CODE-001',

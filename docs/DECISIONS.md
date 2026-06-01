@@ -1570,3 +1570,20 @@ Consecuencia:
 
 - `npm.cmd run e2e` vuelve a pasar sin errores de consola por branding.
 - La validacion fisica y smoke contra servidor real siguen pendientes y separados de este gate mockeado.
+
+### 2026-06-01 - Servicios nuevos siempre vinculados a area
+
+Decision:
+
+- Todo servicio creado desde la API debe declarar `area_id` para que los reportes por area no acumulen ingresos sin fuente institucional.
+- El formulario de catalogo muestra y envia area; el asistente inicial de catalogo valida areas existentes antes de importar servicios.
+
+Motivo:
+
+- Administracion necesita ingresos por area confiables. Un servicio nuevo sin area puede terminar como ingreso "sin area" aunque la factura y el cobro sean correctos.
+- La fuente de verdad debe estar en validacion de servidor y no depender de memoria humana al cargar catalogo.
+
+Consecuencia:
+
+- Las pruebas de catalogo fallan si la API permite crear servicios sin area.
+- Los snapshots historicos de facturas conservan el area emitida y no se recalculan por cambios futuros de catalogo.

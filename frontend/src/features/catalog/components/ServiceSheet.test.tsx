@@ -16,6 +16,7 @@ describe('ServiceSheet', () => {
     const saveService = vi.spyOn(apiClient, 'saveService').mockResolvedValue({
       id: 1,
       category_id: 1,
+      area_id: 1,
       name: 'Glucosa',
       slug: 'glucosa',
       price: '20.00',
@@ -35,6 +36,7 @@ describe('ServiceSheet', () => {
         service={{
           id: 1,
           category_id: 1,
+          area_id: 1,
           name: 'Glucosa',
           price: '15.00',
           scan_code: null,
@@ -45,6 +47,7 @@ describe('ServiceSheet', () => {
           special_rule_code: null,
         }}
         categories={[{ id: 1, name: 'Laboratorio' }]}
+        areas={[{ id: 1, name: 'Laboratorio' }]}
         onSuccess={onSuccess}
       />,
     );
@@ -68,6 +71,7 @@ describe('ServiceSheet', () => {
       expect(saveService).toHaveBeenCalledWith(
         expect.objectContaining({
           price: '20.00',
+          area_id: 1,
           price_change_reason: 'Ajuste aprobado por administracion',
         }),
         1,

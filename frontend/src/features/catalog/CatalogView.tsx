@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { type AuthUser, type Category, type Service, apiClient, userSafeErrorMessage } from '../../lib/api';
+import { type Area, type AuthUser, type Category, type Service, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { Plus, Search, MoreHorizontal, Boxes } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Alert } from '../../components/ui/alert';
@@ -47,6 +47,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const [perPage, setPerPage] = useState(15);
   const [servicesData, setServicesData] = useState<Awaited<ReturnType<typeof apiClient.getServicesPage>> | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
   const [scannerEnabled, setScannerEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -79,8 +80,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     setIsLoading(true);
     setLoadError('');
     try {
-      const [nextCategories, nextServices, fiscalSettings] = await Promise.all([
+      const [nextCategories, nextAreas, nextServices, fiscalSettings] = await Promise.all([
         apiClient.getCategories(),
+        apiClient.getAreas(true),
         apiClient.getServicesPage({
           search: debouncedSearch,
           categoryId: categoryFilter !== 'all' ? Number(categoryFilter) : undefined,
@@ -91,6 +93,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         apiClient.getFiscalSettings().catch(() => null),
       ]);
       setCategories(nextCategories);
+      setAreas(nextAreas);
       setServicesData(nextServices);
       setScannerEnabled(fiscalSettings?.scanner_enabled === true);
     } catch (error) {
@@ -98,6 +101,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       setLoadError(message);
       onStatus(message);
       setCategories([]);
+      setAreas([]);
       setServicesData(null);
     } finally {
       setIsLoading(false);
@@ -161,6 +165,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       await apiClient.saveService(
         {
           category_id: service.category_id,
+          area_id: service.area_id ?? undefined,
           name: service.name,
           price: service.price,
           scan_code: service.scan_code ?? null,
@@ -275,6 +280,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                   <TableRow>
                     <TableHead>Nombre</TableHead>
                     <TableHead>Categoría</TableHead>
+                    <TableHead>Área</TableHead>
                     <TableHead>Precio</TableHead>
                     {scannerEnabled && <TableHead>Código</TableHead>}
                     <TableHead>Estado</TableHead>
@@ -285,13 +291,6 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                   <TableRow>
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    {scannerEnabled && <TableCell><Skeleton className="h-5 w-20" /></TableCell>}
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    {canManageCatalog && <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>}
-                  </TableRow>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                     {scannerEnabled && <TableCell><Skeleton className="h-5 w-20" /></TableCell>}
@@ -301,13 +300,6 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                   <TableRow>
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    {scannerEnabled && <TableCell><Skeleton className="h-5 w-20" /></TableCell>}
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    {canManageCatalog && <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>}
-                  </TableRow>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                     {scannerEnabled && <TableCell><Skeleton className="h-5 w-20" /></TableCell>}
@@ -316,6 +308,25 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                   </TableRow>
                   <TableRow>
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    {scannerEnabled && <TableCell><Skeleton className="h-5 w-20" /></TableCell>}
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    {canManageCatalog && <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>}
+                  </TableRow>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    {scannerEnabled && <TableCell><Skeleton className="h-5 w-20" /></TableCell>}
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    {canManageCatalog && <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>}
+                  </TableRow>
+                  <TableRow>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                     {scannerEnabled && <TableCell><Skeleton className="h-5 w-20" /></TableCell>}
@@ -357,6 +368,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                   <TableRow>
                     <TableHead>Nombre</TableHead>
                     <TableHead>Categoría</TableHead>
+                    <TableHead>Área</TableHead>
                     <TableHead>Precio</TableHead>
                     {scannerEnabled && <TableHead>Código</TableHead>}
                     <TableHead>Estado</TableHead>
@@ -373,7 +385,8 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                           <span className="font-medium">{service.name}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-sm">{service.category?.name ?? 'Sin categoría'}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm">{service.category?.name ?? 'Sin categoria'}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm">{service.area?.name ?? 'Sin area'}</TableCell>
                       <TableCell className="px-4 py-3">
                         <span className="font-semibold">L. {service.price}</span>
                       </TableCell>
@@ -464,6 +477,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             onOpenChange={setServiceSheetOpen}
             service={editingService ? normalizeServiceForSheet(editingService) : null}
             categories={categories}
+            areas={areas}
             scannerEnabled={scannerEnabled}
             onSuccess={handleServiceSuccess}
           />

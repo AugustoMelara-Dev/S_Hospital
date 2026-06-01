@@ -13,9 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 
 const serviceSchema = z.object({
-  category_id: z.number().min(1, 'Seleccione una categoría'),
+  category_id: z.number().min(1, 'Seleccione una categoria'),
+  area_id: z.number().min(1, 'Seleccione un area'),
   name: z.string().min(1, 'El nombre es requerido'),
-  price: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Precio debe ser un número válido'),
+  price: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Precio debe ser un numero valido'),
   price_change_reason: z.string().max(500, 'Motivo maximo 500 caracteres').nullable().optional(),
   scan_code: z.string().nullable().optional(),
   barcode: z.string().nullable().optional(),
@@ -33,6 +34,7 @@ type ServiceSheetProps = {
   service?: {
     id: number;
     category_id: number;
+    area_id?: number | null;
     name: string;
     price: string;
     scan_code?: string | null;
@@ -43,12 +45,14 @@ type ServiceSheetProps = {
     special_rule_code?: string | null;
   } | null;
   categories: Array<{ id: number; name: string }>;
+  areas: Array<{ id: number; name: string }>;
   scannerEnabled?: boolean;
   onSuccess: () => void;
 };
 
 const defaultValues: ServiceFormData = {
   category_id: 0,
+  area_id: 0,
   name: '',
   price: '0.00',
   price_change_reason: null,
@@ -60,7 +64,15 @@ const defaultValues: ServiceFormData = {
   special_rule_code: null,
 };
 
-export function ServiceSheet({ open, onOpenChange, service, categories, scannerEnabled = false, onSuccess }: ServiceSheetProps) {
+export function ServiceSheet({
+  open,
+  onOpenChange,
+  service,
+  categories,
+  areas,
+  scannerEnabled = false,
+  onSuccess,
+}: ServiceSheetProps) {
   const isEditing = !!service;
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -77,31 +89,42 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
     resolver: zodResolver(serviceSchema),
     defaultValues,
   });
+
   const categoryId = watch('category_id');
+  const areaId = watch('area_id');
   const price = watch('price');
   const specialRuleCode = watch('special_rule_code');
   const requiresPriceChangeReason = Boolean(isEditing && service && priceValuesDiffer(service.price, price));
 
   useEffect(() => {
-    if (open) {
-      if (service) {
-        reset({
-          category_id: service.category_id,
-          name: service.name,
-          price: service.price,
-          price_change_reason: null,
-          scan_code: service.scan_code,
-          barcode: service.barcode,
-          qr_code: service.qr_code,
-          taxable: service.taxable,
-          active: service.active,
-          special_rule_code: service.special_rule_code,
-        });
-      } else {
-        reset({ ...defaultValues, category_id: categories[0]?.id || 0 });
-      }
+    if (!open) {
+      return;
     }
-  }, [open, service, categories, reset]);
+
+    if (service) {
+      reset({
+        category_id: service.category_id,
+        area_id: service.area_id ?? 0,
+        name: service.name,
+        price: service.price,
+        price_change_reason: null,
+        scan_code: service.scan_code,
+        barcode: service.barcode,
+        qr_code: service.qr_code,
+        taxable: service.taxable,
+        active: service.active,
+        special_rule_code: service.special_rule_code,
+      });
+
+      return;
+    }
+
+    reset({
+      ...defaultValues,
+      category_id: categories[0]?.id || 0,
+      area_id: areas[0]?.id || 0,
+    });
+  }, [open, service, categories, areas, reset]);
 
   async function onSubmit(data: ServiceFormData) {
     setSubmitError(null);
@@ -109,6 +132,7 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
       const trimmed = value?.trim() ?? '';
       return trimmed === '' ? null : trimmed;
     };
+
     if (requiresPriceChangeReason && optionalCode(data.price_change_reason) === null) {
       setError('price_change_reason', { type: 'manual', message: 'Indique el motivo del cambio de precio.' });
       setFocus('price_change_reason');
@@ -124,6 +148,7 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
       qr_code: optionalCode(data.qr_code),
       special_rule_code: optionalCode(data.special_rule_code),
     };
+
     try {
       await apiClient.saveService(payload, service?.id);
       onSuccess();
@@ -134,6 +159,7 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
         applyBackendErrors(error.validationErrors, setError);
         focusFirstServiceError(error.validationErrors, setFocus);
       }
+
       setSubmitError(userSafeErrorMessage(error, 'Error al guardar el servicio.'));
     }
   }
@@ -142,12 +168,12 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
     <Sheet
       open={open}
       onOpenChange={onOpenChange}
-      title={isEditing ? 'Editar Servicio' : 'Nuevo Servicio'}
-      description={isEditing ? 'Modifique los datos del servicio.' : 'Agregue un nuevo servicio al catálogo.'}
+      title={isEditing ? 'Editar servicio' : 'Nuevo servicio'}
+      description={isEditing ? 'Modifique los datos del servicio.' : 'Agregue un nuevo servicio al catalogo.'}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="category_id">Categoría *</Label>
+          <Label htmlFor="category_id">Categoria *</Label>
           <Select
             value={String(categoryId)}
             onValueChange={(val) => setValue('category_id', Number(val))}
@@ -158,7 +184,7 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
               aria-describedby={errors.category_id ? 'service-category-error' : undefined}
               className={cn(errors.category_id && 'border-destructive')}
             >
-              <SelectValue placeholder="Seleccione una categoría" />
+              <SelectValue placeholder="Seleccione una categoria" />
             </SelectTrigger>
             <SelectContent>
               {categories.map((cat) => (
@@ -168,7 +194,40 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
               ))}
             </SelectContent>
           </Select>
-          {errors.category_id && <p id="service-category-error" role="alert" className="text-sm text-destructive">{errors.category_id.message}</p>}
+          {errors.category_id && (
+            <p id="service-category-error" role="alert" className="text-sm text-destructive">
+              {errors.category_id.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="area_id">Area *</Label>
+          <Select
+            value={String(areaId)}
+            onValueChange={(val) => setValue('area_id', Number(val))}
+          >
+            <SelectTrigger
+              id="area_id"
+              aria-invalid={Boolean(errors.area_id)}
+              aria-describedby={errors.area_id ? 'service-area-error' : undefined}
+              className={cn(errors.area_id && 'border-destructive')}
+            >
+              <SelectValue placeholder="Seleccione un area" />
+            </SelectTrigger>
+            <SelectContent>
+              {areas.map((area) => (
+                <SelectItem key={area.id} value={String(area.id)}>
+                  {area.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.area_id && (
+            <p id="service-area-error" role="alert" className="text-sm text-destructive">
+              {errors.area_id.message}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -180,7 +239,11 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
             aria-describedby={errors.name ? 'service-name-error' : undefined}
             className={cn(errors.name && 'border-destructive')}
           />
-          {errors.name && <p id="service-name-error" role="alert" className="text-sm text-destructive">{errors.name.message}</p>}
+          {errors.name && (
+            <p id="service-name-error" role="alert" className="text-sm text-destructive">
+              {errors.name.message}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -194,7 +257,11 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
             aria-describedby={errors.price ? 'service-price-error' : undefined}
             className={cn(errors.price && 'border-destructive')}
           />
-          {errors.price && <p id="service-price-error" role="alert" className="text-sm text-destructive">{errors.price.message}</p>}
+          {errors.price && (
+            <p id="service-price-error" role="alert" className="text-sm text-destructive">
+              {errors.price.message}
+            </p>
+          )}
         </div>
 
         {requiresPriceChangeReason && (
@@ -218,7 +285,7 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
         {scannerEnabled && (
           <>
             <div className="space-y-2">
-              <Label htmlFor="scan_code">Código de Scanner</Label>
+              <Label htmlFor="scan_code">Codigo de scanner</Label>
               <Input
                 id="scan_code"
                 placeholder="LAB-GLU-001"
@@ -227,39 +294,51 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
                 aria-describedby={errors.scan_code ? 'service-scan-code-error' : undefined}
                 className={cn(errors.scan_code && 'border-destructive')}
               />
-              {errors.scan_code && <p id="service-scan-code-error" role="alert" className="text-sm text-destructive">{errors.scan_code.message}</p>}
+              {errors.scan_code && (
+                <p id="service-scan-code-error" role="alert" className="text-sm text-destructive">
+                  {errors.scan_code.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="barcode">Código de Barra</Label>
+              <Label htmlFor="barcode">Codigo de barra</Label>
               <Input
                 id="barcode"
-                placeholder="Código de barra opcional"
+                placeholder="Codigo de barra opcional"
                 {...register('barcode')}
                 aria-invalid={Boolean(errors.barcode)}
                 aria-describedby={errors.barcode ? 'service-barcode-error' : undefined}
                 className={cn(errors.barcode && 'border-destructive')}
               />
-              {errors.barcode && <p id="service-barcode-error" role="alert" className="text-sm text-destructive">{errors.barcode.message}</p>}
+              {errors.barcode && (
+                <p id="service-barcode-error" role="alert" className="text-sm text-destructive">
+                  {errors.barcode.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="qr_code">Código QR</Label>
+              <Label htmlFor="qr_code">Codigo QR</Label>
               <Input
                 id="qr_code"
-                placeholder="Código QR opcional"
+                placeholder="Codigo QR opcional"
                 {...register('qr_code')}
                 aria-invalid={Boolean(errors.qr_code)}
                 aria-describedby={errors.qr_code ? 'service-qr-code-error' : undefined}
                 className={cn(errors.qr_code && 'border-destructive')}
               />
-              {errors.qr_code && <p id="service-qr-code-error" role="alert" className="text-sm text-destructive">{errors.qr_code.message}</p>}
+              {errors.qr_code && (
+                <p id="service-qr-code-error" role="alert" className="text-sm text-destructive">
+                  {errors.qr_code.message}
+                </p>
+              )}
             </div>
           </>
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="special_rule_code">Regla Especial</Label>
+          <Label htmlFor="special_rule_code">Regla especial</Label>
           <Select value={specialRuleCode ?? 'none'} onValueChange={(val) => setValue('special_rule_code', val === 'none' ? null : val)}>
             <SelectTrigger id="special_rule_code">
               <SelectValue placeholder="Sin regla" />
@@ -267,7 +346,7 @@ export function ServiceSheet({ open, onOpenChange, service, categories, scannerE
             <SelectContent>
               <SelectItem value="none">Sin regla</SelectItem>
               <SelectItem value="ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION">
-                Eritropoyetina con receta de diálisis
+                Eritropoyetina con receta de dialisis
               </SelectItem>
             </SelectContent>
           </Select>
@@ -312,7 +391,7 @@ function applyBackendErrors(
   validationErrors: Record<string, string[]>,
   setError: ReturnType<typeof useForm<ServiceFormData>>['setError'],
 ) {
-  (['category_id', 'name', 'price', 'price_change_reason', 'scan_code', 'barcode', 'qr_code'] as const).forEach((field) => {
+  (['category_id', 'area_id', 'name', 'price', 'price_change_reason', 'scan_code', 'barcode', 'qr_code'] as const).forEach((field) => {
     const message = validationErrors[field]?.[0];
     if (message) {
       setError(field, { type: 'server', message });

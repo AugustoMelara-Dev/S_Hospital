@@ -155,10 +155,10 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
     }
   }
 
-  // Parses CSV lines: Category, Service, Price, Taxable
-  function parseCSV(text: string): Array<{ category: string; service: string; price: string; taxable: boolean }> {
+  // Parses CSV lines: Category, Area, Service, Price, Taxable. Old four-column CSVs use category as area.
+  function parseCSV(text: string): Array<{ category: string; area: string; service: string; price: string; taxable: boolean }> {
     const lines = text.split('\n');
-    const result: Array<{ category: string; service: string; price: string; taxable: boolean }> = [];
+    const result: Array<{ category: string; area: string; service: string; price: string; taxable: boolean }> = [];
     
     // Skip header line if it looks like one
     const startIdx = lines[0].toLowerCase().includes('categor') ? 1 : 0;
@@ -170,14 +170,17 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
       const parts = line.split(',').map((p) => p.trim());
       if (parts.length < 3) continue;
 
+      const hasAreaColumn = parts.length >= 5;
       const category = parts[0];
-      const service = parts[1];
-      const price = parts[2];
-      const taxableChar = parts[3] ? parts[3].toUpperCase() : 'S';
+      const area = hasAreaColumn ? parts[1] : parts[0];
+      const service = hasAreaColumn ? parts[2] : parts[1];
+      const price = hasAreaColumn ? parts[3] : parts[2];
+      const taxableInput = hasAreaColumn ? parts[4] : parts[3];
+      const taxableChar = taxableInput ? taxableInput.toUpperCase() : 'S';
       const taxable = taxableChar === 'S' || taxableChar === 'SI' || taxableChar === 'Y' || taxableChar === 'YES' || taxableChar === '1';
 
-      if (category && service && !isNaN(parseFloat(price))) {
-        result.push({ category, service, price, taxable });
+      if (category && area && service && !isNaN(parseFloat(price))) {
+        result.push({ category, area, service, price, taxable });
       }
     }
     return result;
@@ -196,13 +199,22 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
     setImportProgress({ current: 0, total: parsed.length });
 
     try {
-      // First, get existing categories or make a set of categories to create
-      const existingCats = await apiClient.getCategories();
+      // First, get existing categories and active areas for accountable reporting.
+      const [existingCats, existingAreas] = await Promise.all([
+        apiClient.getCategories(),
+        apiClient.getAreas(true),
+      ]);
       const catMap = new Map(existingCats.map((c) => [c.name.toLowerCase(), c.id]));
+      const areaMap = new Map(existingAreas.map((area) => [normalizeCatalogName(area.name), area.id]));
 
       for (let i = 0; i < parsed.length; i++) {
         const item = parsed[i];
         setImportProgress({ current: i + 1, total: parsed.length });
+        const areaId = findCatalogAreaId(areaMap, item.area);
+
+        if (!areaId) {
+          throw new Error(`No existe el area "${item.area}". Revise el catalogo base antes de importar servicios.`);
+        }
 
         // Ensure category exists
         let categoryId = catMap.get(item.category.toLowerCase());
@@ -219,6 +231,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         // Create service
         await apiClient.saveService({
           category_id: categoryId,
+          area_id: areaId,
           name: item.service,
           price: item.price,
           taxable: item.taxable,
@@ -538,4 +551,37 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
       </div>
     </Dialog>
   );
+}
+
+function normalizeCatalogName(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function findCatalogAreaId(areaMap: Map<string, number>, areaName: string): number | undefined {
+  const normalized = normalizeCatalogName(areaName);
+  const direct = areaMap.get(normalized);
+
+  if (direct) {
+    return direct;
+  }
+
+  for (const [area, id] of areaMap) {
+    if (area.includes(normalized) || normalized.includes(area)) {
+      return id;
+    }
+  }
+
+  const aliases: Record<string, string> = {
+    consulta: 'consulta externa',
+    imagenologia: 'radiologia',
+    hospitalizacion: 'hospitalizacion y emergencia',
+  };
+  const alias = aliases[normalized];
+
+  return alias ? areaMap.get(alias) : undefined;
 }

@@ -23,7 +23,7 @@ class StoreServiceRequest extends FormRequest
     {
         return [
             'category_id' => ['required', 'integer', 'exists:categories,id'],
-            'area_id' => ['nullable', 'integer', 'exists:areas,id'],
+            'area_id' => ['required', 'integer', 'exists:areas,id'],
             'name' => ['required', 'string', 'max:160'],
             'aliases' => ['nullable', 'string', 'max:1000'],
             'price' => ['required', 'decimal:0,2', 'min:0'],
