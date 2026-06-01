@@ -37,6 +37,19 @@ $legacyReceiptPaperForbidden = @(
     'receipt-58mm'
 )
 
+$deliveryReleaseForbidden = @(
+    ($demoWord + '_READY'),
+    ($demoWord + ' vendible'),
+    ($demoWord + ' credentials'),
+    ($demoWord + ' users'),
+    ('seeders ' + $demoWord),
+    ('usuarios ' + $demoWord),
+    'producto vendible',
+    'vendible',
+    'impresora termica',
+    'recibo termico'
+)
+
 function Invoke-ForbiddenSearch {
     param(
         [string] $Label,
@@ -124,10 +137,23 @@ try {
             'docs/manuales',
             'qa/ACCEPTANCE_CRITERIA.md',
             'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
-            'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md'
+            'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md',
+            'qa/RELEASE_READINESS.md'
         ) `
         -AllowedLinePatterns @(
             'frontend/src/features\\invoices\\NewInvoiceView\.test\.tsx:\d+:\s*expect\(styles\)\.toContain'
+        )
+
+    Invoke-ForbiddenSearch `
+        -Label 'Lenguaje de entrega no institucional encontrado:' `
+        -Patterns $deliveryReleaseForbidden `
+        -Paths @(
+            'docs/KNOWN_LIMITATIONS.md',
+            'docs/RELEASE_CHECKLIST.md',
+            'docs/TRAINING_ADMIN.md',
+            'docs/TRAINING_CAJERO.md',
+            'docs/manuales',
+            'qa/RELEASE_READINESS.md'
         )
 
     Write-Host 'Revision de branding completada sin hallazgos.'

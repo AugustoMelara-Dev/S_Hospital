@@ -10,9 +10,9 @@
 - La configuracion final `APP_ENV=production`, `APP_DEBUG=false`, admin real y worker continuo de backups queda `PENDING_ENVIRONMENT_VALIDATION` hasta preparar el servidor final.
 - El paquete `offline-release` actual queda `PENDING_RELEASE_REGENERATION` hasta regenerar imagenes desde el commit de entrega y pasar `scripts/assert_offline_release_clean.ps1 -RequireCurrentCommit`.
 
-## Estado Fase 12
+## Estado RC
 
-- DEMO_READY: si.
+- LOCAL_VALIDATION_READY: si.
 - PRODUCTION_CANDIDATE: si, con Fase 12 UX/POS/catalogo/reportes/QA cerrada, E2E local, smoke real no destructivo, rutas LAN, restore real local y concurrencia real local validados.
 - PRODUCTION_READY: no, hasta cerrar LAN fisica desde cliente, impresora fisica y configuracion final de produccion.
 - RELEASE_READY: no, hasta que el guard de artefacto offline pase sin manifiesto stale, logs, `.env`, backups ni evidencia QA local dentro del paquete.

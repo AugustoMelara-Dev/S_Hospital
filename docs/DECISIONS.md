@@ -1431,3 +1431,20 @@ Consecuencia:
 
 - El gate de branding falla si UI, manuales o evidencia clave vuelven a promover recibo termico.
 - La compatibilidad CSS heredada queda tolerada solo en pruebas enfocadas hasta retirarla con una fase especifica.
+
+### 2026-05-31 - Documentos de entrega sin lenguaje de demostracion
+
+Decision:
+
+- `qa/RELEASE_READINESS.md` y `docs/KNOWN_LIMITATIONS.md` usan lenguaje de RC institucional, no de demo comercial.
+- `scripts/check-branding.ps1` bloquea en documentos de entrega terminos como estado demo, producto vendible, credenciales demo, usuarios demo y recibo termico.
+
+Motivo:
+
+- La entrega al hospital debe sonar a sistema operativo serio, aun cuando conserve pendientes honestos de hardware y entorno.
+- Los documentos de entrega pueden compartirse con administracion o soporte; no deben reforzar la percepcion de prototipo o venta.
+
+Consecuencia:
+
+- Se conserva `PRODUCTION_CANDIDATE` como estado honesto hasta cerrar LAN, impresora, restore y concurrencia finales.
+- Los documentos de entrega describen credenciales y seeders como validacion local temporal, no como datos demo.
