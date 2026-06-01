@@ -10,14 +10,15 @@ Antes de codificar, redacta un plan de implementación por fases. No escribas c�
 
 ## Documentos que debes leer primero
 - AGENTS.md
-- docs/00_Flujo_Agentic_Codex_Hospital_Billing_OS.docx si está disponible
+- docs/IMPLEMENTATION_PLAN.md
+- docs/DECISIONS.md
 - SYSTEM_REQUIREMENTS.md
 - database/database_schema_critico.sql
 - references/software_architecture.md
 - references/database_integrity_mysql.md
 - references/offline_lan_deployment.md
 - references/security_privacy_hospital_billing.md
-- references/thermal_printing_80mm.md
+- docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md
 
 ## Salida obligatoria
 Entrega un plan con esta estructura:
@@ -42,7 +43,7 @@ Entrega un plan con esta estructura:
 - No recalcules facturas históricas desde precios actuales.
 - No avances si el diseño permite duplicar números de factura.
 - No avances si caja/pagos/anulación no tienen auditoría.
-- No avances si la impresión es solo hoja carta; debe existir recibo térmico 80mm y 58mm configurable.
+- No avances si el recibo parece ticket de rollo o expone QR, barcode, codigos internos o datos tecnicos; debe existir recibo institucional imprimible en media carta, carta o A5.
 
 ## Estilo del plan
 Debe ser implementable por Codex fase por fase. Cada fase debe ser pequeña, revisable y commiteable.

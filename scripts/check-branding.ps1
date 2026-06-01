@@ -128,6 +128,7 @@ try {
             'frontend/src/components',
             'frontend/src/layout',
             'frontend/src/lib/institutionalReceiptPaper.ts',
+            'prompts',
             'docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md',
             'docs/LOCAL_VALIDATION_SCRIPT.md',
             'docs/OFFLINE_LAN_INSTALL.md',
@@ -153,6 +154,7 @@ try {
             'docs/TRAINING_ADMIN.md',
             'docs/TRAINING_CAJERO.md',
             'docs/manuales',
+            'prompts',
             'qa/RELEASE_READINESS.md'
         )
 

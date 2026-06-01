@@ -76,6 +76,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Tabla de movimientos de caja usa formateador financiero seguro para no mostrar `NaN` ni montos crudos si la API devuelve un importe malformado. | Verificado |
 | Esta fase | Tamanos de recibo institucional quedan centralizados para configuracion, wizard, recibo nuevo e historial; solo media carta/carta/A5 quedan visibles y valores invalidos vuelven a media carta. | Verificado |
 | Esta fase | Branding check bloquea que UI, manuales o evidencia clave vuelvan a promover formatos heredados de rollo o ticket. | Verificado |
+| Esta fase | Prompts agenticos de plan, review, POS y readiness quedan alineados al recibo institucional media carta/carta/A5 y entran al branding check. | Verificado |
 
 ## Evidencia Visual Disponible
 

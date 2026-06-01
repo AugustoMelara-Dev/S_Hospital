@@ -1448,3 +1448,21 @@ Consecuencia:
 
 - Se conserva `PRODUCTION_CANDIDATE` como estado honesto hasta cerrar LAN, impresora, restore y concurrencia finales.
 - Los documentos de entrega describen credenciales y seeders como validacion local temporal, no como datos demo.
+
+### 2026-06-01 - Prompts agenticos alineados a recibo institucional
+
+Decision:
+
+- Los prompts de planificacion, revision, ejecucion POS, review de commit y readiness revisan recibo institucional media carta/carta/A5.
+- `scripts/check-branding.ps1` incluye `prompts/` en las reglas que bloquean lenguaje de recibo heredado y entrega no institucional.
+- El prompt maestro deja de apuntar a documentos con nombre heredado y a referencias de impresion de rollo.
+
+Motivo:
+
+- El flujo agentic obligatorio no debe volver a introducir requisitos incompatibles con el objetivo actual del Hospital San Isidro.
+- Los prompts son parte del producto operativo del repo: guian futuras fases, revisiones y criterios de aprobacion.
+
+Consecuencia:
+
+- Futuras fases quedan orientadas al recibo tipo talonario institucional, sin QR, barcode, codigos internos ni datos tecnicos.
+- El branding check falla si prompts de entrega vuelven a usar lenguaje de ticket heredado o demo comercial.
