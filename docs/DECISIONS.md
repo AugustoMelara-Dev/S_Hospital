@@ -1471,7 +1471,7 @@ Consecuencia:
 
 Decision:
 
-- Los prompts de planificacion, revision, ejecucion POS, review de commit y readiness revisan recibo institucional media carta/carta/A5.
+- Los prompts de planificacion, revision, ejecucion POS, review de commit y readiness revisan recibo institucional media carta/carta/A5/80mm/58mm.
 - `scripts/check-branding.ps1` incluye `prompts/` en las reglas que bloquean lenguaje de recibo heredado y entrega no institucional.
 - El prompt maestro deja de apuntar a documentos con nombre heredado y a referencias de impresion de rollo.
 
@@ -1482,27 +1482,44 @@ Motivo:
 
 Consecuencia:
 
-- Futuras fases quedan orientadas al recibo tipo talonario institucional, sin QR, barcode, codigos internos ni datos tecnicos.
+- Futuras fases quedan orientadas al recibo institucional, sin QR, barcode, codigos internos ni datos tecnicos.
 - El branding check falla si prompts de entrega vuelven a usar lenguaje de ticket heredado o demo comercial.
 
-### 2026-06-01 - API de recibos limitada a formatos institucionales
+### 2026-06-01 - API de recibos acepta formatos institucionales configurables
 
 Decision:
 
-- Backend valida recibos y reimpresiones solo con `half_letter`, `letter` y `a5`.
-- Configuracion fiscal rechaza `receipt_width` heredado y `receipt_paper_size` fuera de media carta/carta/A5.
-- Snapshots antiguos con valores de rollo se normalizan a media carta al generar recibo o reporte.
+- Backend valida recibos y reimpresiones con `half_letter`, `letter`, `a5`, `80mm` y `58mm`.
+- Configuracion fiscal rechaza `receipt_width` heredado y `receipt_paper_size` fuera de media carta/carta/A5/80mm/58mm.
+- Snapshots antiguos con valores desconocidos se normalizan a media carta al generar recibo o reporte.
 - `FiscalSetting` deja de exponer `receipt_width` en respuestas JSON normales.
 
 Motivo:
 
 - La UI ya no promueve ticket de rollo; el contrato Laravel debe sostener los tamanos configurables vigentes para evitar regresiones por API, tests o integraciones locales.
-- Los recibos historicos deben seguir imprimibles sin recalcular facturas, pero no deben reactivar formatos no institucionales.
+- Los recibos historicos deben seguir imprimibles sin recalcular facturas, pero no deben reactivar valores desconocidos.
 
 Consecuencia:
 
 - Reimpresion y vista de recibo devuelven error de validacion si se pide un ancho desconocido.
 - Facturas antiguas con snapshot desconocido siguen abriendo como media carta institucional.
+
+### 2026-06-01 - Exportes administrativos sin marca tecnica
+
+Decision:
+
+- El Excel premium de reportes usa `Logo Institucional` como placeholder cuando no hay logo cargado o el archivo de logo falla.
+- `scripts/check-branding.ps1` bloquea `HOSPITAL OS` en superficies de producto y entrega.
+
+Motivo:
+
+- Los reportes exportados pueden presentarse a administracion y auditoria; no deben incluir marca tecnica, nombres internos ni placeholders ajenos al hospital.
+- El encabezado del reporte ya muestra el nombre institucional y RTN configurados, por lo que el bloque visual debe ser neutral cuando no existe logo.
+
+Consecuencia:
+
+- La prueba de reportes abre el XLSX generado y falla si vuelve a aparecer `HOSPITAL OS`.
+- Los exports siguen funcionando sin depender de que el hospital haya cargado un logo.
 
 ### 2026-06-01 - E2E mockeado cubre branding publico
 

@@ -819,6 +819,38 @@ class ReportsTest extends TestCase
         }
     }
 
+    public function test_report_export_uses_institutional_logo_placeholder_without_technical_branding(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        $xlsx = $this->actingAs($this->admin())
+            ->get('/api/reports/export?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->streamedContent();
+
+        $path = tempnam(sys_get_temp_dir(), 'branding-report-');
+        file_put_contents($path, $xlsx);
+
+        try {
+            $spreadsheet = IOFactory::load($path);
+            $summarySheet = $spreadsheet->getSheetByName('Resumen General');
+
+            $this->assertNotNull($summarySheet);
+            $this->assertStringNotContainsString('HOSPITAL OS', (string) $summarySheet->getCell('B2')->getValue());
+            $this->assertSame("Logo\nInstitucional", $summarySheet->getCell('B2')->getValue());
+        } finally {
+            if ($path !== false && file_exists($path)) {
+                unlink($path);
+            }
+        }
+    }
+
     public function test_report_export_guest_receives_json_unauthenticated_for_download_accept_header(): void
     {
         $date = now()->toDateString();

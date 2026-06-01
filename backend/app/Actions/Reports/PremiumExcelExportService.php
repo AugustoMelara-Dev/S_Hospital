@@ -191,14 +191,14 @@ class PremiumExcelExportService
                 $drawing->setOffsetY(5);
                 $drawing->setWorksheet($sheet1);
             } catch (\Exception $e) {
-                // Fail-safe default placeholder if image loading fails
-                $sheet1->setCellValue('B2', "✚\nHOSPITAL OS");
+                // Fail-safe default placeholder if image loading fails.
+                $sheet1->setCellValue('B2', "Logo\nInstitucional");
                 $sheet1->getStyle('B2:C4')->getFont()->getColor()->setRGB('FFFFFF');
             }
         } else {
             // Default Medical Placeholder if no custom logo is uploaded
             $sheet1->mergeCells('B2:C4');
-            $sheet1->setCellValue('B2', "✚\nHOSPITAL OS");
+            $sheet1->setCellValue('B2', "Logo\nInstitucional");
             $sheet1->getStyle('B2:C4')->applyFromArray([
                 'font' => [
                     'bold' => true,

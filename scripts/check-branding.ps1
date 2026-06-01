@@ -45,6 +45,10 @@ $deliveryReleaseForbidden = @(
     'ticket de rollo'
 )
 
+$technicalProductBrandForbidden = @(
+    'HOSPITAL OS'
+)
+
 function Invoke-ForbiddenSearch {
     param(
         [string] $Label,
@@ -144,6 +148,21 @@ try {
         -Label 'Lenguaje de entrega no institucional encontrado:' `
         -Patterns $deliveryReleaseForbidden `
         -Paths @(
+            'docs/KNOWN_LIMITATIONS.md',
+            'docs/RELEASE_CHECKLIST.md',
+            'docs/TRAINING_ADMIN.md',
+            'docs/TRAINING_CAJERO.md',
+            'docs/manuales',
+            'prompts',
+            'qa/RELEASE_READINESS.md'
+        )
+
+    Invoke-ForbiddenSearch `
+        -Label 'Marca tecnica visible encontrada en superficies de producto:' `
+        -Patterns $technicalProductBrandForbidden `
+        -Paths @(
+            'backend/app',
+            'frontend/src',
             'docs/KNOWN_LIMITATIONS.md',
             'docs/RELEASE_CHECKLIST.md',
             'docs/TRAINING_ADMIN.md',
