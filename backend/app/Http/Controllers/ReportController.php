@@ -17,14 +17,12 @@ use App\Http\Requests\Reports\DailyReportRequest;
 use App\Http\Requests\Reports\DashboardReportRequest;
 use App\Http\Requests\Reports\DateRangeReportRequest;
 use App\Http\Requests\Reports\MonthlyReportRequest;
+use App\Http\Requests\Reports\PdfExportRequest;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
-use App\Models\Invoice;
-use App\Models\Payment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Validation\Rule;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -132,7 +130,7 @@ class ReportController extends Controller
     }
 
     public function pdfExport(
-        Request $request,
+        PdfExportRequest $request,
         DailyReportService $dailyReports,
         IncomeReportService $incomeReports,
         CategoryReportService $categoryReports,
@@ -141,18 +139,15 @@ class ReportController extends Controller
         OperationsReportService $operationsReports,
         PdfExportService $pdfService
     ) {
-        $request->user()->can('reports.export') || abort(403);
-        ($request->user()->can('reports.managerial.view') || $request->user()->can('reports.cash_session.view')) || abort(403);
-
         $fiscal = FiscalSetting::first() ?? new FiscalSetting([
             'hospital_name' => 'Hospital Local',
             'rtn' => 'N/A',
         ]);
 
-        if ($request->filled('date') || (! $request->filled('date_from') && ! $request->filled('date_to'))) {
+        if ($request->isDailyClosure()) {
             $request->user()->can('reports.managerial.view') || abort(403);
 
-            $date = $request->input('date', now()->toDateString());
+            $date = $request->reportDate();
             $data = $dailyReports->report($date);
 
             $pdf = $pdfService->generateDailyClosurePdf($data, $fiscal->toArray());
@@ -163,41 +158,7 @@ class ReportController extends Controller
             ]);
         }
 
-        $dateFromForLimit = is_string($request->input('date_from')) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $request->input('date_from'))
-            ? Carbon::parse((string) $request->input('date_from'))->addDays(DateRangeReportRequest::MAX_RANGE_DAYS - 1)->toDateString()
-            : '9999-12-31';
-
-        $request->validate([
-            'date_from' => ['required', 'date_format:Y-m-d'],
-            'date_to' => [
-                'required',
-                'date_format:Y-m-d',
-                'after_or_equal:date_from',
-                'before_or_equal:'.$dateFromForLimit,
-            ],
-            'cash_session_id' => ['sometimes', 'integer', 'exists:cash_register_sessions,id'],
-            'user_id' => ['sometimes', 'integer', 'exists:users,id'],
-            'category_id' => ['sometimes', 'integer', 'exists:categories,id'],
-            'area_id' => ['sometimes', 'integer', 'exists:areas,id'],
-            'method' => ['sometimes', Rule::in(Payment::METHODS)],
-            'status' => ['sometimes', Rule::in([
-                Invoice::STATUS_ISSUED,
-                Invoice::STATUS_PARTIAL,
-                Invoice::STATUS_PAID,
-                Invoice::STATUS_VOID,
-            ])],
-        ]);
-
-        $filters = [
-            'date_from' => $request->input('date_from'),
-            'date_to' => $request->input('date_to'),
-            'cash_session_id' => $request->input('cash_session_id'),
-            'user_id' => $request->input('user_id'),
-            'category_id' => $request->input('category_id'),
-            'area_id' => $request->input('area_id'),
-            'method' => $request->input('method'),
-            'status' => $request->input('status'),
-        ];
+        $filters = $request->reportFilters();
 
         if (! $request->user()->can('reports.managerial.view')) {
             abort_if(empty($filters['cash_session_id']), 403);

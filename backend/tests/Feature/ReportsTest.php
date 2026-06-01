@@ -1357,6 +1357,10 @@ class ReportsTest extends TestCase
         $this->actingAs($cashier)
             ->getJson("/api/reports/pdf?date={$date}")
             ->assertForbidden();
+
+        $this->actingAs($cashier)
+            ->getJson('/api/reports/pdf?date=fecha-mala')
+            ->assertForbidden();
     }
 
     public function test_daily_closure_pdf_export_succeeds(): void
@@ -1449,6 +1453,29 @@ class ReportsTest extends TestCase
             ->assertHeader('Content-Type', 'application/pdf');
 
         $this->assertStringStartsWith('%PDF', $response->getContent());
+    }
+
+    public function test_period_closure_pdf_export_validates_range_filters(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $dateFrom = now()->subDays(40)->toDateString();
+        $dateTo = now()->toDateString();
+
+        $this->actingAs($admin)
+            ->getJson("/api/reports/pdf?date_from={$dateFrom}&date_to={$dateTo}")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('date_to');
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/pdf?date_from=fecha-mala&date_to='.now()->toDateString())
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('date_from');
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/pdf?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&method=cheque')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('method');
     }
 
     public function test_period_closure_pdf_export_includes_financial_reading_with_sources(): void
