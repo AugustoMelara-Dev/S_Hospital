@@ -1,6 +1,7 @@
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import type { FiscalSequence, FiscalSettings } from '@/lib/api';
+import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS } from '@/lib/institutionalReceiptPaper';
 
 interface FiscalStatusCardProps {
   settings: FiscalSettings | null;
@@ -14,7 +15,7 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
   const isPlaceholderCai = new RegExp(`^${'de' + 'mo'}-cai$`, 'i').test(cai);
   const isHospitalConfigured = Boolean(hospitalName) && !isPlaceholderHospital;
   const hasRtn = Boolean(settings?.rtn?.trim());
-  const hasReceiptPaperSize = ['half_letter', 'letter', 'a5', '80mm', '58mm'].includes(settings?.receipt_paper_size ?? '');
+  const hasReceiptPaperSize = INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.some((option) => option.value === settings?.receipt_paper_size);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const validUntil = sequence?.valid_until ? new Date(sequence.valid_until) : null;

@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import type { FiscalSequence, FiscalSettings } from '@/lib/api';
 import { displayHospitalName } from '@/lib/hospital-name';
+import { receiptPaperSizeLabel } from '@/lib/institutionalReceiptPaper';
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -25,14 +26,7 @@ export function FiscalSummary({ settings, sequence }: FiscalSummaryProps) {
     ? new Date(sequence.valid_until) < new Date()
     : false;
   const cai = isPlaceholderCai(sequence?.cai) ? '' : sequence?.cai;
-  const paperSizeLabels: Record<string, string> = {
-    half_letter: 'Media carta',
-    '80mm': 'Termico 80mm',
-    '58mm': 'Termico 58mm',
-    letter: 'Carta',
-    a5: 'A5',
-  };
-  const receiptPaperSize = settings?.receipt_paper_size ? paperSizeLabels[settings.receipt_paper_size] : null;
+  const receiptPaperSize = settings?.receipt_paper_size ? receiptPaperSizeLabel(settings.receipt_paper_size) : null;
 
   return (
     <Card>

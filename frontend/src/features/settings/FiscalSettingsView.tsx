@@ -18,6 +18,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { FiscalStatusCard } from './components/FiscalStatusCard';
 import { FiscalSummary } from './components/FiscalSummary';
 import { useTheme, COLOR_THEMES, type ColorTheme } from '@/hooks/useTheme';
+import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, type InstitutionalReceiptPaperOption, institutionalReceiptPaperSize } from '@/lib/institutionalReceiptPaper';
 import { Palette, UploadCloud, Check, Sparkles, Building2 } from 'lucide-react';
 
 type FiscalSettingsViewProps = {
@@ -25,7 +26,7 @@ type FiscalSettingsViewProps = {
   onStatus: (message: string) => void;
 };
 
-type InstitutionalReceiptPaperSize = 'half_letter' | 'letter' | 'a5' | '80mm' | '58mm';
+type InstitutionalReceiptPaperSize = InstitutionalReceiptPaperOption;
 
 type SettingsFormData = {
   hospital_name: string;
@@ -59,7 +60,7 @@ function isPlaceholderCai(value: string | null | undefined): boolean {
 }
 
 function institutionalPaperSize(value: FiscalSettings['receipt_paper_size']): InstitutionalReceiptPaperSize {
-  return value === 'letter' || value === 'a5' || value === '80mm' || value === '58mm' ? value : 'half_letter';
+  return institutionalReceiptPaperSize(value);
 }
 
 export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProps) {
@@ -383,11 +384,9 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="half_letter">Media carta</SelectItem>
-                    <SelectItem value="80mm">Termico 80mm</SelectItem>
-                    <SelectItem value="58mm">Termico 58mm</SelectItem>
-                    <SelectItem value="letter">Carta</SelectItem>
-                    <SelectItem value="a5">A5</SelectItem>
+                    {INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

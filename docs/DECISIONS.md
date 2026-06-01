@@ -1396,3 +1396,21 @@ Consecuencia:
 
 - La prueba de respaldos falla si vuelve a mostrarse `requiere revision` en la superficie normal.
 - El detalle avanzado sigue disponible para administracion o soporte.
+
+### 2026-05-31 - Tamanos de recibo institucional centralizados
+
+Decision:
+
+- Los tamanos de recibo institucional se definen en `frontend/src/lib/institutionalReceiptPaper.ts`.
+- Configuracion fiscal, wizard inicial, recibo nuevo e historial usan la misma lista: media carta, 80mm, 58mm, carta y A5.
+- Valores malformados de API o UI se normalizan a media carta antes de pedir, reimprimir o renderizar recibos.
+
+Motivo:
+
+- La caja no debe depender de listas duplicadas para decidir el papel de impresion.
+- Un valor invalido de configuracion no debe romper el recibo ni ocultar las opciones termicas requeridas por el hospital.
+
+Consecuencia:
+
+- La opcion 80mm/58mm queda como camino de primera clase en configuracion, preview y reimpresion.
+- La validacion fisica de impresora sigue pendiente del hardware real, pero el contrato visual/frontend queda uniforme y probado.

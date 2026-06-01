@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert } from '@/components/ui/alert';
 import { apiClient, userSafeErrorMessage } from '@/lib/api';
+import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, type InstitutionalReceiptPaperOption, institutionalReceiptPaperSize } from '@/lib/institutionalReceiptPaper';
 import {
   Building2,
   FileCheck,
@@ -23,10 +24,10 @@ type SetupWizardDialogProps = {
   onComplete: () => void;
 };
 
-type InstitutionalReceiptPaperSize = 'half_letter' | 'letter' | 'a5' | '80mm' | '58mm';
+type InstitutionalReceiptPaperSize = InstitutionalReceiptPaperOption;
 
 function institutionalPaperSize(value: unknown): InstitutionalReceiptPaperSize {
-  return value === 'letter' || value === 'a5' || value === '80mm' || value === '58mm' ? value : 'half_letter';
+  return institutionalReceiptPaperSize(typeof value === 'string' ? value : undefined);
 }
 
 export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizardDialogProps) {
@@ -339,11 +340,9 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="half_letter">Media carta</SelectItem>
-                    <SelectItem value="80mm">Termico 80mm</SelectItem>
-                    <SelectItem value="58mm">Termico 58mm</SelectItem>
-                    <SelectItem value="letter">Carta</SelectItem>
-                    <SelectItem value="a5">A5</SelectItem>
+                    {INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

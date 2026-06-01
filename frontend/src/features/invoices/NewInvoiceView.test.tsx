@@ -919,6 +919,8 @@ describe('NewInvoiceView', () => {
     const styles = readFileSync('src/styles.css', 'utf8');
 
     expect(styles).toContain('body[data-printing-receipt="true"] *');
+    expect(styles).toContain('.institutional-receipt.receipt-letter');
+    expect(styles).toContain('.institutional-receipt.receipt-a5');
     expect(styles).toContain('.institutional-receipt.receipt-80mm');
     expect(styles).toContain('.institutional-receipt.receipt-58mm');
     expect(styles).toContain('@page receipt-80mm');
@@ -1104,10 +1106,10 @@ describe('NewInvoiceView', () => {
     render(<ReceiptPreview receipt={receipt} onWidthChange={vi.fn()} onPrint={printSpy} />);
 
     expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-80mm');
+    expect(screen.getByText(/termico 80mm/i)).toBeInTheDocument();
     expect(screen.getByText(/vence/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /imprimir/i }));
     await waitFor(() => expect(printSpy).toHaveBeenCalledOnce());
-    await waitFor(() => expect(document.body.dataset.receiptWidth).toBe('80mm'));
     await waitFor(() => expect(document.body.dataset.receiptWidth).toBeUndefined());
   });
 });

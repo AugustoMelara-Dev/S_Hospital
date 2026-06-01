@@ -14,15 +14,12 @@ import { InvoiceConfirmation } from './components/InvoiceConfirmation';
 import { PaymentModal } from './components/PaymentModal';
 import { InvoiceSuccess } from './components/InvoiceSuccess';
 import { type Category, type CashSession, type Invoice, type Payment, type ReceiptData, type Service, apiClient, userSafeErrorMessage } from '../../lib/api';
+import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { invoiceSchema } from '../../schemas/invoice.schema';
 import { useFiscalSettings } from '../../hooks/useFiscalSettings';
 
 const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 const POS_SERVICE_PAGE_SIZE = 24;
-
-function institutionalReceiptWidth(width: ReceiptData['width'] | undefined): ReceiptData['width'] {
-  return width === 'letter' || width === 'a5' || width === '80mm' || width === '58mm' ? width : 'half_letter';
-}
 
 interface POSState {
   patientName: string;
@@ -368,7 +365,7 @@ export function NewInvoiceView({
     dispatch({ type: 'SET_PARTIAL_PAYMENTS_ENABLED', payload: fiscalSettings.partial_payments_enabled === true });
     dispatch({
       type: 'SET_RECEIPT_WIDTH',
-      payload: institutionalReceiptWidth(fiscalSettings.receipt_paper_size),
+      payload: institutionalReceiptPaperSize(fiscalSettings.receipt_paper_size),
     });
   }, [fiscalSettings]);
 

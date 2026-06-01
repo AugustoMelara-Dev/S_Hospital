@@ -32,6 +32,7 @@ import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { Textarea } from '../../components/ui/textarea';
 import { DateRangePicker } from '../../components/ui/date-range-picker';
 import { FilterBar } from '../../components/ui/filter-bar';
+import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import {
   FileClock,
   MoreHorizontal,
@@ -131,8 +132,11 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     try {
       const invoice = await apiClient.getInvoice(invoiceId);
       setSelectedInvoice(invoice);
-      const receiptData = await apiClient.getReceipt(invoiceId, receiptWidth);
-      setReceipt(receiptData);
+      const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
+      const receiptData = await apiClient.getReceipt(invoiceId, requestedWidth);
+      const normalizedWidth = institutionalReceiptPaperSize(receiptData.width);
+      setReceiptWidth(normalizedWidth);
+      setReceipt({ ...receiptData, width: normalizedWidth });
       setReceiptModalOpen(true);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo cargar recibo.'));
@@ -145,10 +149,12 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     }
 
     const auditedReceipt = await apiClient.reprintInvoice(selectedInvoice.id, {
-      width: receipt.width,
+      width: institutionalReceiptPaperSize(receipt.width),
       reason: 'Impresion desde vista de recibo.',
     });
-    setReceipt(auditedReceipt);
+    const normalizedWidth = institutionalReceiptPaperSize(auditedReceipt.width);
+    setReceiptWidth(normalizedWidth);
+    setReceipt({ ...auditedReceipt, width: normalizedWidth });
   }
 
   async function changePage(page: number) {
@@ -186,11 +192,14 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     try {
       const invoice = await apiClient.getInvoice(reprintTarget.id);
       setSelectedInvoice(invoice);
+      const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
       const nextReceipt = await apiClient.reprintInvoice(reprintTarget.id, {
-        width: receiptWidth,
+        width: requestedWidth,
         reason: reprintReason.trim() || 'Reimpresión solicitada desde historial.',
       });
-      setReceipt(nextReceipt);
+      const normalizedWidth = institutionalReceiptPaperSize(nextReceipt.width);
+      setReceiptWidth(normalizedWidth);
+      setReceipt({ ...nextReceipt, width: normalizedWidth });
       setReceiptModalOpen(true);
       onStatus(`Recibo ${invoice.invoice_number} listo para imprimir.`);
     } catch (error) {
@@ -441,17 +450,15 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                   aria-label="Tamano de vista previa"
                   value={receiptWidth}
                   onChange={(event) => {
-                    const newWidth = event.target.value as ReceiptData['width'];
+                    const newWidth = institutionalReceiptPaperSize(event.target.value);
                     setReceiptWidth(newWidth);
                     setReceipt({ ...receipt, width: newWidth });
                   }}
                   className="w-[140px]"
                 >
-                  <option value="half_letter">Media carta</option>
-                  <option value="80mm">Termico 80mm</option>
-                  <option value="58mm">Termico 58mm</option>
-                  <option value="letter">Carta</option>
-                  <option value="a5">A5</option>
+                  {INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </NativeSelect>
               </div>
 
@@ -460,8 +467,9 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             <ReceiptPreview
               receipt={receipt}
               onWidthChange={(width) => {
-                setReceipt({ ...receipt, width });
-                setReceiptWidth(width);
+                const newWidth = institutionalReceiptPaperSize(width);
+                setReceipt({ ...receipt, width: newWidth });
+                setReceiptWidth(newWidth);
               }}
               onPrint={async () => {
                 await auditReceiptPrint();

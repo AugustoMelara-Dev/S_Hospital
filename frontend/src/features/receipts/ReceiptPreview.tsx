@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '../../components/ui/select';
 import { type ReceiptData } from '../../lib/api';
+import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 
 type ReceiptPreviewProps = {
   autoPrint?: boolean;
@@ -23,6 +24,7 @@ type ReceiptPreviewProps = {
 export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, receipt, onWidthChange }: ReceiptPreviewProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
   const autoPrintedReceiptRef = useRef<string | null>(null);
+  const receiptWidth = institutionalReceiptPaperSize(receipt.width);
 
   const handlePrint = useReactToPrint({
     contentRef: receiptRef,
@@ -31,7 +33,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
   async function handlePrintClick() {
     await onPrint?.();
 
-    printReceiptDocument(receipt.width, () => {
+    printReceiptDocument(receiptWidth, () => {
       if (!navigator.userAgent.toLowerCase().includes('jsdom')) {
         handlePrint();
       }
@@ -55,16 +57,14 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
   return (
     <div className="receipt-preview-panel" aria-label="Vista previa del recibo">
       <div className="receipt-preview-controls no-print">
-        <Select value={receipt.width} onValueChange={(v) => onWidthChange(v as ReceiptData['width'])}>
+        <Select value={receiptWidth} onValueChange={(v) => onWidthChange(institutionalReceiptPaperSize(v))}>
           <SelectTrigger aria-label="Tamano del recibo" className="w-[170px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="half_letter">Media carta</SelectItem>
-            <SelectItem value="80mm">Termico 80mm</SelectItem>
-            <SelectItem value="58mm">Termico 58mm</SelectItem>
-            <SelectItem value="letter">Carta</SelectItem>
-            <SelectItem value="a5">A5</SelectItem>
+            {INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Button type="button" onClick={handlePrintClick}>
@@ -78,7 +78,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
       </div>
 
       <div className="receipt-preview-container">
-        <div ref={receiptRef} className={`institutional-receipt receipt-${receipt.width}`} aria-label="Recibo institucional">
+        <div ref={receiptRef} className={`institutional-receipt receipt-${receiptWidth}`} aria-label="Recibo institucional">
           <header className="receipt-header">
             <span>{receipt.institutional?.government_line ?? 'Gobierno de Honduras'}</span>
             <span>{receipt.institutional?.secretariat_line ?? 'Secretaria de Salud Publica'}</span>
