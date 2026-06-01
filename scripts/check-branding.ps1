@@ -28,13 +28,8 @@ $scopedForbidden = @(
 )
 
 $legacyReceiptPaperForbidden = @(
-    'recibo termico',
     'ticket termico',
-    'termico 80mm',
-    'termico 58mm',
-    '80mm/58mm',
-    'receipt-80mm',
-    'receipt-58mm'
+    'ticket de rollo'
 )
 
 $deliveryReleaseForbidden = @(
@@ -46,8 +41,8 @@ $deliveryReleaseForbidden = @(
     ('usuarios ' + $demoWord),
     'producto vendible',
     'vendible',
-    'impresora termica',
-    'recibo termico'
+    'ticket termico',
+    'ticket de rollo'
 )
 
 function Invoke-ForbiddenSearch {
@@ -121,7 +116,7 @@ try {
         )
 
     Invoke-ForbiddenSearch `
-        -Label 'Opciones heredadas de recibo termico encontradas en superficies de entrega:' `
+        -Label 'Lenguaje heredado de ticket encontrado en superficies de entrega:' `
         -Patterns $legacyReceiptPaperForbidden `
         -Paths @(
             'frontend/src/features',

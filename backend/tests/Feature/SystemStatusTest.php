@@ -243,7 +243,7 @@ MARKDOWN;
 - Cashier computer: CAJA-01
 - Invoice used: FAC-000123
 - Evidence/photo reference: qa/evidence/printer-2026-05-19
-- Final conclusion: Impresion fisica aprobada para recibos media carta, carta y A5 con reimpresion historica.
+- Final conclusion: Impresion fisica aprobada para recibos media carta, carta, A5, 80mm y 58mm con reimpresion historica.
 
 ## Media carta physical print result
 
@@ -259,6 +259,12 @@ MARKDOWN;
 - A5 result: Legible a escala 100 por ciento.
 - A5 evidence/reference: foto-a5-01.jpg y muestra firmada.
 - A5 observations: Conceptos y sello visibles.
+- 80mm result: Legible a escala 100 por ciento.
+- 80mm evidence/reference: foto-80mm-01.jpg y muestra firmada.
+- 80mm observations: Totales y paciente visibles.
+- 58mm result: Legible a escala 100 por ciento.
+- 58mm evidence/reference: foto-58mm-01.jpg y muestra firmada.
+- 58mm observations: Conceptos y sello visibles.
 
 ## Reprint and browser print settings
 
@@ -272,6 +278,8 @@ MARKDOWN;
 - [x] Media carta receipt prints at 100 percent scale. Result/evidence: muestra fisica media-carta-01.
 - [x] Carta receipt prints at 100 percent scale. Result/evidence: muestra fisica carta-01.
 - [x] A5 receipt prints at 100 percent scale. Result/evidence: muestra fisica a5-01.
+- [x] 80mm receipt prints at 100 percent scale. Result/evidence: muestra fisica 80mm-01.
+- [x] 58mm receipt prints at 100 percent scale. Result/evidence: muestra fisica 58mm-01.
 - [x] Institutional receipt includes hospital name, RTN/CAI when configured, invoice number, patient, cashier, services and totals. Result/evidence: campos visibles en foto institucional-02.
 - [x] Institutional receipt has white background and no QR, barcode, internal codes or technical fields. Result/evidence: muestra sin codigos internos ni fondo oscuro.
 - [x] Reprint from invoice history prints with historical snapshots. Result/evidence: muestra reprint-01.

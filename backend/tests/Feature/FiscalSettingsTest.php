@@ -68,14 +68,14 @@ class FiscalSettingsTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_save_only_institutional_receipt_paper_sizes(): void
+    public function test_admin_can_save_institutional_and_thermal_receipt_paper_sizes(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        foreach (['half_letter', 'letter', 'a5'] as $paperSize) {
+        foreach (['half_letter', 'letter', 'a5', '80mm', '58mm'] as $paperSize) {
             $this->actingAs($admin)
                 ->putJson('/api/settings/fiscal', [
                     ...$this->validPayload(),
@@ -89,15 +89,13 @@ class FiscalSettingsTest extends TestCase
             ]);
         }
 
-        foreach (['80mm', '58mm'] as $paperSize) {
-            $this->actingAs($admin)
-                ->putJson('/api/settings/fiscal', [
-                    ...$this->validPayload(),
-                    'receipt_paper_size' => $paperSize,
-                ])
-                ->assertUnprocessable()
-                ->assertJsonValidationErrors('receipt_paper_size');
-        }
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                ...$this->validPayload(),
+                'receipt_paper_size' => 'ticket-roll',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('receipt_paper_size');
     }
 
     public function test_legacy_receipt_width_field_is_not_updateable(): void

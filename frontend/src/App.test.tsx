@@ -139,7 +139,7 @@ describe('App', () => {
             },
             {
               code: 'INSTITUTIONAL_RECEIPT_PRINT_PROOF',
-              label: 'Impresora institucional media carta/carta/A5',
+              label: 'Impresora institucional media carta/carta/A5/80mm/58mm',
               required_file: 'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
               status: 'pending',
               detail: 'Archivo de evidencia no existe todavia.',

@@ -1420,42 +1420,42 @@ Consecuencia:
 Decision:
 
 - Los tamanos de recibo institucional se definen en `frontend/src/lib/institutionalReceiptPaper.ts`.
-- Configuracion fiscal, wizard inicial, recibo nuevo e historial usan la misma lista: media carta, carta y A5.
+- Configuracion fiscal, wizard inicial, recibo nuevo e historial usan la misma lista: media carta, carta, A5, 80mm y 58mm.
 - Valores malformados de API o UI se normalizan a media carta antes de pedir, reimprimir o renderizar recibos.
 
 Motivo:
 
 - La caja no debe depender de listas duplicadas para decidir el papel de impresion.
-- Un valor invalido de configuracion no debe romper el recibo ni reactivar opciones termicas en la experiencia visible.
+- Un valor invalido de configuracion no debe romper el recibo ni reactivar lenguaje de ticket informal en la experiencia visible.
 
 Consecuencia:
 
-- Las opciones 80mm/58mm quedan tratadas como valores heredados y se convierten a media carta en frontend.
+- Las opciones 80mm/58mm quedan tratadas como tamanos institucionales soportados para impresoras termicas.
 - La validacion fisica de impresora sigue pendiente del hardware real, pero el contrato visual/frontend queda uniforme y probado.
 
-### 2026-05-31 - Branding check bloquea formatos termicos heredados
+### 2026-05-31 - Branding check bloquea lenguaje de ticket heredado
 
 Decision:
 
-- `scripts/check-branding.ps1` revisa superficies de entrega para impedir que vuelvan textos visibles de recibo termico, 80mm/58mm o clases heredadas de rollo fuera de compatibilidad probada.
-- `docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md` valida solo media carta, carta y A5.
+- `scripts/check-branding.ps1` revisa superficies de entrega para impedir que vuelva lenguaje visible de ticket o rollo informal.
+- `docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md` valida media carta, carta, A5, 80mm y 58mm.
 
 Motivo:
 
-- El recibo final debe sentirse como talonario institucional del hospital, no como ticket termico.
-- Una guia de validacion fisica no debe pedir pruebas de formatos que ya no son opciones visibles.
+- El recibo final debe sentirse como comprobante institucional del hospital, tambien cuando se imprime en 80mm o 58mm.
+- Una guia de validacion fisica debe probar todos los tamanos visibles sin promover lenguaje informal.
 
 Consecuencia:
 
-- El gate de branding falla si UI, manuales o evidencia clave vuelven a promover recibo termico.
-- La compatibilidad CSS heredada queda tolerada solo en pruebas enfocadas hasta retirarla con una fase especifica.
+- El gate de branding falla si UI, manuales o evidencia clave vuelven a promover tickets de rollo.
+- La compatibilidad CSS de 80mm/58mm queda cubierta como soporte institucional vigente.
 
 ### 2026-05-31 - Documentos de entrega sin lenguaje de demostracion
 
 Decision:
 
 - `qa/RELEASE_READINESS.md` y `docs/KNOWN_LIMITATIONS.md` usan lenguaje de RC institucional, no de demo comercial.
-- `scripts/check-branding.ps1` bloquea en documentos de entrega terminos como estado demo, producto vendible, credenciales demo, usuarios demo y recibo termico.
+- `scripts/check-branding.ps1` bloquea en documentos de entrega terminos como estado demo, producto vendible, credenciales demo, usuarios demo y ticket informal.
 
 Motivo:
 
@@ -1471,7 +1471,7 @@ Consecuencia:
 
 Decision:
 
-- Los prompts de planificacion, revision, ejecucion POS, review de commit y readiness revisan recibo institucional media carta/carta/A5.
+- Los prompts de planificacion, revision, ejecucion POS, review de commit y readiness revisan recibo institucional media carta/carta/A5/80mm/58mm.
 - `scripts/check-branding.ps1` incluye `prompts/` en las reglas que bloquean lenguaje de recibo heredado y entrega no institucional.
 - El prompt maestro deja de apuntar a documentos con nombre heredado y a referencias de impresion de rollo.
 
@@ -1482,27 +1482,27 @@ Motivo:
 
 Consecuencia:
 
-- Futuras fases quedan orientadas al recibo tipo talonario institucional, sin QR, barcode, codigos internos ni datos tecnicos.
+- Futuras fases quedan orientadas al recibo institucional, sin QR, barcode, codigos internos ni datos tecnicos.
 - El branding check falla si prompts de entrega vuelven a usar lenguaje de ticket heredado o demo comercial.
 
-### 2026-06-01 - API de recibos limitada a formatos institucionales
+### 2026-06-01 - API de recibos acepta formatos institucionales configurables
 
 Decision:
 
-- Backend valida recibos y reimpresiones solo con `half_letter`, `letter` y `a5`.
-- Configuracion fiscal rechaza `receipt_width` heredado y `receipt_paper_size` fuera de media carta/carta/A5.
-- Snapshots antiguos con valores de rollo se normalizan a media carta al generar recibo o reporte.
+- Backend valida recibos y reimpresiones con `half_letter`, `letter`, `a5`, `80mm` y `58mm`.
+- Configuracion fiscal rechaza `receipt_width` heredado y `receipt_paper_size` fuera de media carta/carta/A5/80mm/58mm.
+- Snapshots antiguos con valores desconocidos se normalizan a media carta al generar recibo o reporte.
 - `FiscalSetting` deja de exponer `receipt_width` en respuestas JSON normales.
 
 Motivo:
 
-- La UI ya no promueve ticket de rollo; el contrato Laravel debe sostener la misma regla para evitar regresiones por API, tests o integraciones locales.
+- La UI ya no promueve ticket de rollo; el contrato Laravel debe sostener los tamanos configurables vigentes para evitar regresiones por API, tests o integraciones locales.
 - Los recibos historicos deben seguir imprimibles sin recalcular facturas, pero no deben reactivar formatos no institucionales.
 
 Consecuencia:
 
-- Reimpresion y vista de recibo devuelven error de validacion si se pide un ancho heredado.
-- Facturas antiguas con snapshot heredado siguen abriendo como media carta institucional.
+- Reimpresion y vista de recibo devuelven error de validacion si se pide un ancho desconocido.
+- Facturas antiguas con snapshot desconocido siguen abriendo como media carta institucional.
 
 ### 2026-06-01 - E2E mockeado cubre branding publico
 

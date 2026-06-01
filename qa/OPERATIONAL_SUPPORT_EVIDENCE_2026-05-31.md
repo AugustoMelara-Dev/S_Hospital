@@ -74,10 +74,10 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Reporte operativo prorratea pagos filtrados por area/categoria usando centavos enteros y prueba pagos parciales de centavos impares. | Verificado |
 | Esta fase | Menu de instalacion previa ya no ofrece "instalacion limpia" ni comandos Docker que borren volumenes; solo reparar, actualizar conservando datos o cancelar. | Verificado |
 | Esta fase | Tabla de movimientos de caja usa formateador financiero seguro para no mostrar `NaN` ni montos crudos si la API devuelve un importe malformado. | Verificado |
-| Esta fase | Tamanos de recibo institucional quedan centralizados para configuracion, wizard, recibo nuevo e historial; solo media carta/carta/A5 quedan visibles y valores invalidos vuelven a media carta. | Verificado |
-| Esta fase | Branding check bloquea que UI, manuales o evidencia clave vuelvan a promover formatos heredados de rollo o ticket. | Verificado |
-| Esta fase | Prompts agenticos de plan, review, POS y readiness quedan alineados al recibo institucional media carta/carta/A5 y entran al branding check. | Verificado |
-| Esta fase | API de recibos/configuracion fiscal limita formatos a media carta/carta/A5; snapshots heredados se normalizan a media carta y `receipt_width` ya no se expone. | Verificado |
+| Esta fase | Tamanos de recibo institucional quedan centralizados para configuracion, wizard, recibo nuevo e historial; media carta/carta/A5/80mm/58mm quedan visibles y valores invalidos vuelven a media carta. | Verificado |
+| Esta fase | Branding check bloquea que UI, manuales o evidencia clave vuelvan a promover lenguaje heredado de ticket o rollo informal. | Verificado |
+| Esta fase | Prompts agenticos de plan, review, POS y readiness quedan alineados al recibo institucional media carta/carta/A5/80mm/58mm y entran al branding check. | Verificado |
+| Esta fase | API de recibos/configuracion fiscal acepta media carta/carta/A5/80mm/58mm; valores desconocidos se normalizan a media carta y `receipt_width` ya no se expone. | Verificado |
 | Esta fase | E2E mockeado cubre `/api/settings/branding` para validar arranque y flujo principal sin errores de consola ni backend real. | Verificado |
 
 ## Evidencia Visual Disponible

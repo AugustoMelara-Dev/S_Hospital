@@ -43,7 +43,7 @@ Entrega un plan con esta estructura:
 - No recalcules facturas históricas desde precios actuales.
 - No avances si el diseño permite duplicar números de factura.
 - No avances si caja/pagos/anulación no tienen auditoría.
-- No avances si el recibo parece ticket de rollo o expone QR, barcode, codigos internos o datos tecnicos; debe existir recibo institucional imprimible en media carta, carta o A5.
+- No avances si el recibo parece un comprobante informal o expone QR, barcode, codigos internos o datos tecnicos; debe existir recibo institucional imprimible en media carta, carta, A5, 80mm y 58mm.
 
 ## Estilo del plan
 Debe ser implementable por Codex fase por fase. Cada fase debe ser pequeña, revisable y commiteable.
