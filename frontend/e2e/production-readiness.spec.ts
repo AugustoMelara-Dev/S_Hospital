@@ -4,10 +4,9 @@ import path from 'node:path';
 
 const captureRcScreenshots = process.env.E2E_CAPTURE_RC_SCREENSHOTS === '1';
 const captureDirName = 'rc-e2e-mocked-2026-06-01';
-const captureOutputDir =
-  process.env.E2E_CAPTURE_RC_OUTPUT_DIR ?? path.resolve('..', 'qa', 'screenshots', captureDirName);
+const captureOutputDir = process.env.E2E_CAPTURE_RC_OUTPUT_DIR ?? path.join('test-results', captureDirName);
 const captureReportDir = (
-  process.env.E2E_CAPTURE_RC_REPORT_DIR ?? path.posix.join('qa', 'screenshots', captureDirName)
+  process.env.E2E_CAPTURE_RC_REPORT_DIR ?? path.posix.join('frontend', 'test-results', captureDirName)
 ).replaceAll('\\', '/');
 const capturedScreens: Array<{ name: string; path: string; route: string; theme: 'light' | 'dark' }> = [];
 
