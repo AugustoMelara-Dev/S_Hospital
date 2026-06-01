@@ -5,7 +5,7 @@ export function finiteNumber(value: number | string | null | undefined): number 
 }
 
 export function formatLempiras(value: number | string | null | undefined, fractionDigits = 2): string {
-  return `L. ${finiteNumber(value).toLocaleString(undefined, {
+  return `L. ${finiteNumber(value).toLocaleString('en-US', {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   })}`;
