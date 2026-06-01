@@ -188,7 +188,7 @@ describe('CashBoxView', () => {
               username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
-              permissions: ['cash.view', 'cash.close'],
+              permissions: ['cash.view', 'cash.close', 'reports.cash_session.view'],
               must_change_password: false,
             },
           }),
@@ -222,6 +222,29 @@ describe('CashBoxView', () => {
               closing_notes: null,
               opened_at: '2026-05-17T08:00:00-06:00',
               closed_at: null,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/cash-sessions/11')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              movements: [
+                {
+                  id: 1,
+                  cash_session_id: 11,
+                  payment_id: null,
+                  user_id: 2,
+                  type: 'income',
+                  method: 'cash',
+                  amount: 'monto-danado',
+                  notes: null,
+                  occurred_at: '2026-05-17T09:30:00-06:00',
+                },
+              ],
             },
           }),
         } as Response;

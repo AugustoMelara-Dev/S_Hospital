@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
+import { formatLempiras } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
 export type CashMovement = {
@@ -56,7 +57,7 @@ export function CashMovementsTable({ movements }: CashMovementsTableProps) {
                       m.type === 'income' ? 'text-emerald-600' : 'text-slate-600',
                     )}
                   >
-                    {m.type === 'income' ? '+' : '-'} L. {parseFloat(m.amount).toFixed(2)}
+                    {m.type === 'income' ? '+' : '-'} {formatLempiras(m.amount)}
                   </TableCell>
                 </TableRow>
               ))
