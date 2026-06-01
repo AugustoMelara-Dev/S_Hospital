@@ -56,6 +56,7 @@ Current local verification notes:
 
 - Phase 13C scanner authority and frontend money handling were rechecked on 2026-06-01: scanner lookup calls the backend with `code`, does not add a cached local service after lookup failure, `PaymentModal` calculates cashier-facing payment/change values in cents, and `npm.cmd run test -- --run src/features/invoices/NewInvoiceView.test.tsx` passed 13 tests.
 - Receipt proof language must always list media carta, carta, A5, 80mm and 58mm together. Instructions that mention only page formats or only thermal widths are considered stale until corrected.
+- Phase 13F backup retention was hardened on 2026-06-01: unsafe old `success` backup records are no longer deleted by retention; they remain for support review and are audited as `backup.prune_skipped`. `php artisan test --filter=BackupWorkflowTest` passed 17 tests / 80 assertions.
 
 ## Plan Review Orchestrator Result
 
@@ -386,6 +387,11 @@ Allow read-only API calls to run concurrently and show mandatory password-change
 **Scope**
 
 Make backups production-safe: scheduled, retained, verifiable, restorable, and runnable from the offline package.
+
+**2026-06-01 local status**
+
+- Docker/PHP backup wrappers, Windows scheduled task installer, preflight task checks and operator docs already exist.
+- Retention now preserves unsafe or non-local backup records for support review instead of deleting database evidence while refusing to touch the unsafe file path.
 
 **Expected files**
 

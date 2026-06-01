@@ -1621,3 +1621,20 @@ Consecuencia:
 
 - Las pruebas de `UsersView` fallan si el frontend vuelve a aceptar contrasenas sin numero o con menos de 10 caracteres.
 - Laravel sigue siendo la fuente final de seguridad; el frontend solo anticipa el rechazo con un mensaje claro.
+
+### 2026-06-01 - Retencion de backups conserva registros inseguros
+
+Decision:
+
+- La poda automatica solo elimina registros `success` antiguos cuando la ruta registrada es local y segura bajo `backups/`.
+- Si un registro antiguo apunta fuera de `backups/`, usa `..` o no pertenece al disco local, el registro no se elimina; queda auditado como `backup.prune_skipped`.
+
+Motivo:
+
+- Un registro de backup con ruta insegura puede indicar corrupcion manual, importacion incorrecta o manipulacion; borrarlo durante retencion ocultaria evidencia operativa.
+- La retencion debe liberar archivos seguros y antiguos sin perder trazabilidad de casos anormales.
+
+Consecuencia:
+
+- `BackupWorkflowTest` falla si la poda vuelve a borrar registros sospechosos.
+- Soporte puede investigar registros omitidos sin que el proceso automatico toque rutas fuera del contenedor seguro de backups.

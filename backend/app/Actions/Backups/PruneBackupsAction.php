@@ -23,8 +23,13 @@ class PruneBackupsAction
         $pruned = 0;
 
         foreach ($prunableBackups as $backupLog) {
-            $this->deleteFileIfSafe($backupLog);
-            $this->audit($backupLog);
+            if (! $this->deleteFileIfSafe($backupLog)) {
+                $this->audit($backupLog, 'backup.prune_skipped');
+
+                continue;
+            }
+
+            $this->audit($backupLog, 'backup.pruned');
             $backupLog->delete();
             $pruned++;
         }
@@ -32,7 +37,7 @@ class PruneBackupsAction
         return $pruned;
     }
 
-    private function deleteFileIfSafe(BackupLog $backupLog): void
+    private function deleteFileIfSafe(BackupLog $backupLog): bool
     {
         $path = (string) $backupLog->path;
 
@@ -41,19 +46,21 @@ class PruneBackupsAction
             ! str_starts_with($path, 'backups/') ||
             str_contains($path, '..')
         ) {
-            return;
+            return false;
         }
 
-        if (Storage::disk('local')->exists($path)) {
-            Storage::disk('local')->delete($path);
+        if (Storage::disk('local')->exists($path) && ! Storage::disk('local')->delete($path)) {
+            return false;
         }
+
+        return true;
     }
 
-    private function audit(BackupLog $backupLog): void
+    private function audit(BackupLog $backupLog, string $action): void
     {
         AuditLog::query()->create([
             'user_id' => null,
-            'action' => 'backup.pruned',
+            'action' => $action,
             'entity_type' => BackupLog::class,
             'entity_id' => $backupLog->id,
             'old_values' => null,

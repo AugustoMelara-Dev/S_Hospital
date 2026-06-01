@@ -209,6 +209,43 @@ class BackupWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_backup_prune_preserves_unsafe_successful_records_for_review(): void
+    {
+        $newest = $this->successfulBackupLog(filename: 'newest.sql', path: 'backups/newest.sql');
+        $safeOld = $this->successfulBackupLog(filename: 'safe-old.sql', path: 'backups/safe-old.sql');
+        $unsafeOld = BackupLog::query()->create([
+            'filename' => 'unsafe-old.sql',
+            'path' => 'backups/../unsafe-old.sql',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_SUCCESS,
+            'type' => BackupLog::TYPE_SCHEDULED,
+            'size_bytes' => 9,
+            'checksum_sha256' => hash('sha256', 'select 1;'),
+            'completed_at' => now()->subDays(3),
+        ]);
+
+        $newest->forceFill(['completed_at' => now()->subDay()])->save();
+        $safeOld->forceFill(['completed_at' => now()->subDays(2)])->save();
+
+        $pruned = app(PruneBackupsAction::class)->execute(1);
+
+        $this->assertSame(1, $pruned);
+        $this->assertDatabaseHas('backup_logs', ['id' => $newest->id]);
+        $this->assertDatabaseMissing('backup_logs', ['id' => $safeOld->id]);
+        $this->assertDatabaseHas('backup_logs', ['id' => $unsafeOld->id]);
+        $this->assertFalse(Storage::disk('local')->exists('backups/safe-old.sql'));
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'backup.pruned',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $safeOld->id,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'backup.prune_skipped',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $unsafeOld->id,
+        ]);
+    }
+
     public function test_successful_backup_runs_configured_retention_after_creation(): void
     {
         Config::set('backups.retention.successful_count', 1);
