@@ -1521,6 +1521,23 @@ Consecuencia:
 - La prueba de reportes abre el XLSX generado y falla si vuelve a aparecer `HOSPITAL OS`.
 - Los exports siguen funcionando sin depender de que el hospital haya cargado un logo.
 
+### 2026-06-01 - Auditoria operativa sin ids tecnicos
+
+Decision:
+
+- `/api/reports/operations` ya no expone `invoice_id` en anulaciones/reimpresiones, `user_id` en cajeros, ni `id`/`checksum_sha256` en respaldos.
+- React usa claves de render derivadas de factura, usuario, archivo y fecha humana en lugar de ids internos.
+
+Motivo:
+
+- La auditoria operativa debe servir para administracion y rendicion de cuentas, no para exponer claves internas que no ayudan a entender el movimiento.
+- Exportes y pantallas deben presentar fuentes humanas: factura, paciente, cajero, motivo, fecha, estado y monto.
+
+Consecuencia:
+
+- Las pruebas de reportes fallan si vuelven `invoice_id`, `user_id`, `id` de backup o checksum al contrato publico de auditoria.
+- Los filtros internos por usuario, caja, categoria y area siguen siendo validados por backend, pero no se usan como identificadores visibles en la tabla.
+
 ### 2026-06-01 - E2E mockeado cubre branding publico
 
 Decision:

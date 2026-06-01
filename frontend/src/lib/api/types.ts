@@ -368,7 +368,6 @@ export type OperationsReport = {
     cashier_count: number;
   };
   voids: Array<{
-    invoice_id: number;
     invoice_number: string;
     patient_name: string;
     total: string;
@@ -377,7 +376,6 @@ export type OperationsReport = {
     user: string | null;
   }>;
   reprints: Array<{
-    invoice_id: number | null;
     invoice_number: string | null;
     width: string | null;
     reason: string | null;
@@ -395,18 +393,15 @@ export type OperationsReport = {
     cashier: string | null;
   }>;
   backups: Array<{
-    id: number;
     filename: string;
     status: string;
     type: string;
     size_bytes: number | null;
-    checksum_sha256: string | null;
     created_at: string | null;
     completed_at: string | null;
     creator: string | null;
   }>;
   cashiers: Array<{
-    user_id: number;
     name: string;
     username: string;
     payment_count: number;

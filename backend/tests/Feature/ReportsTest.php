@@ -438,7 +438,7 @@ class ReportsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.filters.area_id', (string) $glucose->area_id)
             ->assertJsonPath('data.summary.cashier_count', 1)
-            ->assertJsonPath('data.cashiers.0.user_id', $cashier->id)
+            ->assertJsonPath('data.cashiers.0.username', $cashier->username)
             ->assertJsonPath('data.cashiers.0.total_collected', '17.25');
 
         $this->actingAs($this->admin())
@@ -573,7 +573,7 @@ class ReportsTest extends TestCase
             ->getJson("/api/reports/operations?{$filters}")
             ->assertOk()
             ->assertJsonPath('data.summary.cashier_count', 1)
-            ->assertJsonPath('data.cashiers.0.user_id', $cashier->id)
+            ->assertJsonPath('data.cashiers.0.username', $cashier->username)
             ->assertJsonPath('data.cashiers.0.total_collected', '17.25');
 
         $this->actingAs($this->admin())
@@ -616,7 +616,7 @@ class ReportsTest extends TestCase
             ->getJson("/api/reports/operations?{$query}")
             ->assertOk()
             ->assertJsonPath('data.summary.cashier_count', 1)
-            ->assertJsonPath('data.cashiers.0.user_id', $viewer->id)
+            ->assertJsonPath('data.cashiers.0.username', $viewer->username)
             ->assertJsonPath('data.cashiers.0.total_collected', '17.25');
 
         $this->actingAs($viewer)
@@ -972,7 +972,12 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.summary.cashier_count', 0)
             ->assertJsonPath('data.voids.0.reason', 'Error de captura')
             ->assertJsonPath('data.reprints.0.reason', 'Paciente solicita copia')
-            ->assertJsonPath('data.backups.0.filename', 'hospital-backup-test.sql');
+            ->assertJsonPath('data.backups.0.filename', 'hospital-backup-test.sql')
+            ->assertJsonMissingPath('data.voids.0.invoice_id')
+            ->assertJsonMissingPath('data.reprints.0.invoice_id')
+            ->assertJsonMissingPath('data.backups.0.id')
+            ->assertJsonMissingPath('data.backups.0.checksum_sha256')
+            ->assertJsonMissingPath('data.cashiers.0.user_id');
     }
 
     public function test_operations_report_lists_payment_reversals(): void

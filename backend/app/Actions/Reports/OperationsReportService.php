@@ -70,7 +70,6 @@ class OperationsReportService
             ->limit(25)
             ->get()
             ->map(fn (Invoice $invoice): array => [
-                'invoice_id' => $invoice->id,
                 'invoice_number' => $invoice->invoice_number,
                 'patient_name' => $invoice->patient_name,
                 'total' => (string) $invoice->total,
@@ -142,7 +141,6 @@ class OperationsReportService
                 $values = $audit->new_values ?? [];
 
                 return [
-                    'invoice_id' => $audit->entity_id,
                     'invoice_number' => $values['invoice_number'] ?? null,
                     'width' => $values['width'] ?? null,
                     'reason' => $values['reason'] ?? null,
@@ -222,12 +220,10 @@ class OperationsReportService
                 ->limit(25)
                 ->get()
                 ->map(fn (BackupLog $backup): array => [
-                    'id' => $backup->id,
                     'filename' => $backup->filename,
                     'status' => $backup->status,
                     'type' => $backup->type,
                     'size_bytes' => $backup->size_bytes,
-                    'checksum_sha256' => $backup->checksum_sha256,
                     'created_at' => $backup->created_at?->toISOString(),
                     'completed_at' => $backup->completed_at?->toISOString(),
                     'creator' => $backup->creator?->name,
@@ -331,7 +327,6 @@ class OperationsReportService
         $cashiers = [];
         foreach ($grouped as $userId => $data) {
             $cashiers[] = [
-                'user_id' => (int) $userId,
                 'name' => $data['name'],
                 'username' => $data['username'],
                 'payment_count' => $data['payment_count'],
