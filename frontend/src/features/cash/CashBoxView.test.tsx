@@ -240,4 +240,72 @@ describe('CashBoxView', () => {
     expect(await screen.findByText(/revise los cobros antes de cerrar/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^cerrar caja$/i })).toBeDisabled();
   });
+
+  it('renders malformed cash reconciliation amounts as zero instead of NaN', async () => {
+    window.history.pushState({}, '', '/cashbox');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['cash.view', 'cash.close'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 11,
+              user_id: 2,
+              opening_amount: 'monto-danado',
+              closing_amount: null,
+              expected_amount: null,
+              expected_cash_amount: 'no-numero',
+              difference_amount: null,
+              payments_count: 3,
+              payments_total: 'monto-danado',
+              payments_by_method: {
+                cash: 'monto-danado',
+                transfer: '',
+                card: 'NaN',
+                other: 'no-numero',
+              },
+              pending_invoice_count: 0,
+              pending_amount: 'monto-danado',
+              status: 'open',
+              opening_notes: null,
+              closing_notes: null,
+              opened_at: '2026-05-17T08:00:00-06:00',
+              closed_at: null,
+            },
+          }),
+        } as Response;
+      }
+
+      return {
+        ok: true,
+        json: async () => ({ data: [] }),
+      } as Response;
+    });
+
+    render(<App />);
+
+    expect((await screen.findAllByText(/efectivo esperado/i)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('L. 0.00').length).toBeGreaterThanOrEqual(5);
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero/);
+  });
 });

@@ -3,6 +3,7 @@ import { AlertTriangle } from 'lucide-react';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { finiteNumber, formatLempiras } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
 interface AlertDialogContentProps {
@@ -129,9 +130,9 @@ export function CloseSessionDialog({
   onConfirm,
 }: CloseSessionDialogProps) {
   const closingNotesRef = useRef<HTMLTextAreaElement | null>(null);
-  const openingAmount = parseFloat(session.opening_amount || '0');
-  const expectedAmount = parseFloat(session.expected_cash_amount ?? session.expected_amount ?? '0');
-  const pendingAmount = parseFloat(session.pending_amount ?? '0');
+  const openingAmount = finiteNumber(session.opening_amount);
+  const expectedAmount = finiteNumber(session.expected_cash_amount ?? session.expected_amount);
+  const pendingAmount = finiteNumber(session.pending_amount);
   const pendingInvoiceCount = session.pending_invoice_count ?? 0;
   const isDifference = difference !== 0;
   const methods = session.payments_by_method ?? {
@@ -156,33 +157,33 @@ export function CloseSessionDialog({
             <div className="mt-2 space-y-2">
               <div className="flex justify-between">
                 <span>Monto apertura:</span>
-                <strong>L. {openingAmount.toFixed(2)}</strong>
+                <strong>{formatLempiras(openingAmount)}</strong>
               </div>
               <div className="flex justify-between">
                 <span>Efectivo esperado:</span>
-                <strong>L. {expectedAmount.toFixed(2)}</strong>
+                <strong>{formatLempiras(expectedAmount)}</strong>
               </div>
               <div className="grid grid-cols-2 gap-2 rounded-md border border-border p-3 text-xs">
                 <div className="flex justify-between gap-2">
                   <span>Efectivo</span>
-                  <strong>L. {methods.cash}</strong>
+                  <strong>{formatLempiras(methods.cash)}</strong>
                 </div>
                 <div className="flex justify-between gap-2">
                   <span>Transferencia</span>
-                  <strong>L. {methods.transfer}</strong>
+                  <strong>{formatLempiras(methods.transfer)}</strong>
                 </div>
                 <div className="flex justify-between gap-2">
                   <span>Tarjeta</span>
-                  <strong>L. {methods.card}</strong>
+                  <strong>{formatLempiras(methods.card)}</strong>
                 </div>
                 <div className="flex justify-between gap-2">
                   <span>Otros</span>
-                  <strong>L. {methods.other}</strong>
+                  <strong>{formatLempiras(methods.other)}</strong>
                 </div>
               </div>
               <div className="flex justify-between">
                 <span>Saldo pendiente:</span>
-                <strong>L. {pendingAmount.toFixed(2)}</strong>
+                <strong>{formatLempiras(pendingAmount)}</strong>
               </div>
               {pendingInvoiceCount > 0 && (
                 <div className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/20 dark:text-amber-100">
@@ -191,12 +192,12 @@ export function CloseSessionDialog({
               )}
               <div className="flex justify-between">
                 <span>Contado:</span>
-                <strong>L. {closingAmount || '0.00'}</strong>
+                <strong>{formatLempiras(closingAmount || '0.00')}</strong>
               </div>
               <div className="flex justify-between">
                 <span>Diferencia:</span>
                 <strong className={cn(isDifference ? 'text-destructive' : 'text-emerald-600')}>
-                  L. {difference.toFixed(2)}
+                  {formatLempiras(difference)}
                 </strong>
               </div>
             </div>

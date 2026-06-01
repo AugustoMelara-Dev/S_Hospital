@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
+import { formatLempiras } from '@/lib/money';
 import { SessionStatusCard } from './components/SessionStatusCard';
 import { OpenSessionForm } from './components/OpenSessionForm';
 import { SessionSummary } from './components/SessionSummary';
@@ -138,7 +139,7 @@ export function CashBoxView({
       return;
     }
     if (hasPendingBalance) {
-      setFormAlert(`No se puede cerrar caja con ${pendingInvoiceCount} factura(s) pendientes o parciales por L. ${pendingAmount}.`);
+      setFormAlert(`No se puede cerrar caja con ${pendingInvoiceCount} factura(s) pendientes o parciales por ${formatLempiras(pendingAmount)}.`);
       return;
     }
     if (closingAmount.trim() === '') {
@@ -240,19 +241,19 @@ export function CashBoxView({
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Efectivo</span>
-                      <span className="text-xl font-bold">L. {activeSession.payments_by_method.cash ?? '0.00'}</span>
+                      <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.cash)}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Transferencia</span>
-                      <span className="text-xl font-bold">L. {activeSession.payments_by_method.transfer ?? '0.00'}</span>
+                      <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.transfer)}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Tarjeta</span>
-                      <span className="text-xl font-bold">L. {activeSession.payments_by_method.card ?? '0.00'}</span>
+                      <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.card)}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Otros</span>
-                      <span className="text-xl font-bold">L. {activeSession.payments_by_method.other ?? '0.00'}</span>
+                      <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.other)}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Pagos registrados</span>
@@ -260,7 +261,7 @@ export function CashBoxView({
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Saldo pendiente</span>
-                      <span className="text-xl font-bold">L. {activeSession.pending_amount ?? '0.00'}</span>
+                      <span className="text-xl font-bold">{formatLempiras(activeSession.pending_amount)}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -308,7 +309,7 @@ export function CashBoxView({
                     <Alert variant="warning">
                       <AlertTriangle className="h-4 w-4" />
                       <div>
-                        Hay una diferencia de <strong>L. {difference.toFixed(2)}</strong>. Se requerirá una nota explicativa al cerrar.
+                        Hay una diferencia de <strong>{formatLempiras(difference)}</strong>. Se requerirá una nota explicativa al cerrar.
                       </div>
                     </Alert>
                   )}
@@ -318,7 +319,7 @@ export function CashBoxView({
                       <AlertTriangle className="h-4 w-4" />
                       <div>
                         Hay <strong>{pendingInvoiceCount}</strong> factura(s) pendientes o parciales por{' '}
-                        <strong>L. {pendingAmount}</strong>. Revise los cobros antes de cerrar.
+                        <strong>{formatLempiras(pendingAmount)}</strong>. Revise los cobros antes de cerrar.
                       </div>
                     </Alert>
                   )}
