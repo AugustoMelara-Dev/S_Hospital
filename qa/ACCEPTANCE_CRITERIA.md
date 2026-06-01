@@ -41,5 +41,5 @@
 - Playwright E2E local pasa con `npm.cmd run e2e`.
 - Restore real MySQL/MariaDB validado en base descartable antes de `PRODUCTION_READY`.
 - Concurrencia real MySQL/MariaDB validada contra servidor de prueba antes de `PRODUCTION_READY`.
-- Validacion fisica media carta/carta/A5 documentada en `docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md`.
+- Validacion fisica media carta/carta/A5/80mm/58mm documentada en `docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md`.
 - Ninguna validacion pendiente se marca como completada sin evidencia.

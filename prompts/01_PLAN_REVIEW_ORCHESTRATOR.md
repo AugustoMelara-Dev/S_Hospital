@@ -37,7 +37,7 @@ Revisar test plan, unit/feature/e2e, fixtures, casos borde, quality gates, crite
 
 ### 8. Dominio hospitalario y facturación fiscal
 Referencia: references/hospital_billing_domain.md
-Revisar reglas del cliente: paciente solo nombre, servicios enviados, eritropoyetina, caja, pagos, factura con nombre y recibo institucional media carta/carta/A5 sin QR, barcode, codigos internos ni datos tecnicos.
+Revisar reglas del cliente: paciente solo nombre, servicios enviados, eritropoyetina, caja, pagos, factura con nombre y recibo institucional media carta/carta/A5/80mm/58mm sin QR, barcode, codigos internos ni datos tecnicos.
 
 ## Salida obligatoria
 Devuelve:

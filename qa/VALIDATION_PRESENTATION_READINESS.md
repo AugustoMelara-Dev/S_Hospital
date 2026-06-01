@@ -31,7 +31,7 @@ No declarar **PRODUCTION_READY** hasta cerrar con evidencia real: cliente LAN fi
 6. Buscar codigo de validacion en scanner: `LAB-ACIDO-URICO`.
 7. Agregar servicios y emitir factura.
 8. Cobrar con efectivo y mostrar cambio si aplica.
-9. Mostrar recibo institucional en media carta/carta/A5. No prometer impresora fisica validada si no hay prueba real.
+9. Mostrar recibo institucional en media carta/carta/A5/80mm/58mm. No prometer impresora fisica validada si no hay prueba real.
 10. Historial: buscar la factura emitida, abrir detalle y reimprimir con motivo.
 11. Catalogo: mostrar categorias, areas, estado activo/inactivo y codigos.
 12. Reportes: mostrar diario, mensual, rango, areas, servicios, caja y auditoria.

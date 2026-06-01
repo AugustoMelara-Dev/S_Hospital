@@ -31,7 +31,7 @@ Resultado Fase 12:
 Cobertura Fase 12 cerrada:
 
 - AppShell profesional con sidebar, topbar, caja, usuario, hora local y estado LAN.
-- POS con categorias, busqueda, scanner/codigo, carrito lateral, confirmacion, caja obligatoria y recibo institucional media carta/carta/A5.
+- POS con categorias, busqueda, scanner/codigo, carrito lateral, confirmacion, caja obligatoria y recibo institucional media carta/carta/A5/80mm/58mm.
 - Catalogo con tabla compartida, filtros, estado activo/inactivo y `scan_code`, `barcode`, `qr_code`.
 - Reportes gerenciales con KPIs, filtros, servicios mas vendidos, auditoria operativa, backups y exportacion autorizada.
 - QA separado entre E2E mockeado, smoke real no destructivo y smoke mutacional opt-in.
@@ -112,7 +112,7 @@ En servidor real del hospital:
 - Levantar worker de backups como servicio/tarea continua y validar backup manual `pending` -> `success`.
 - Probar restore real en base descartable, no en la base activa.
 - Probar desde segunda PC en LAN.
-- Probar impresora institucional fisica con media carta/carta/A5.
+- Probar impresora institucional fisica con media carta/carta/A5 y termica 80mm/58mm.
 - Ejecutar pruebas solo contra entorno de testing aislado.
 - Validar manualmente `/up`, `/login`, `/verify-email`, caja, factura, cobro, impresion y backup sin borrar datos.
 - Si se sirve same-origin desde Laravel, ejecutar `npm.cmd run build` antes de publicar y confirmar que `/login` y `/verify-email` devuelven el build React.
@@ -157,7 +157,7 @@ que las imagenes deben regenerarse.
 
 - Restore real: VALIDATED en entorno local con MariaDB XAMPP y base descartable. Repetir en servidor final antes de entregar produccion si el hardware/rutas cambian.
 - Concurrencia real MySQL/MariaDB: VALIDATED en entorno local mutante con snapshot/backup previo. Repetir en servidor final o base descartable final antes de entregar produccion.
-- Impresora fisica institucional: `PENDING_HARDWARE_VALIDATION` hasta probar media carta/carta/A5 en la PC de caja.
+- Impresora fisica institucional: `PENDING_HARDWARE_VALIDATION` hasta probar media carta/carta/A5 y termica 80mm/58mm en la PC de caja.
 - LAN fisica: `PENDING_LAN_CLIENT_VALIDATION` hasta validar checklist completo desde otra computadora cliente por IP fija/nombre servidor.
 - Produccion final: `PENDING_ENVIRONMENT_VALIDATION` hasta configurar `APP_ENV=production`, `APP_DEBUG=false`, admin real, sin seeders de validacion local y `config:cache` en servidor final.
 

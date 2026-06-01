@@ -129,7 +129,7 @@ Configuracion institucional:
 ## Pendientes que no se deben presentar como cerrados
 
 - Restore real: pendiente hasta probar con MySQL/MariaDB real o Docker descartable.
-- Impresion fisica: pendiente hasta validar impresora media carta/carta/A5.
+- Impresion fisica: pendiente hasta validar impresora media carta/carta/A5 y termica 80mm/58mm.
 - Concurrencia real MySQL/MariaDB: validar antes de produccion final.
 - LAN fisica desde cliente: validar por IP fija/nombre servidor antes de produccion final.
 - E2E Playwright local: disponible con `npm.cmd run e2e`; no reemplaza restore/concurrencia/hardware real.

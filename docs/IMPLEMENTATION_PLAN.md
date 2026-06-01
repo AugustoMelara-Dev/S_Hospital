@@ -12,7 +12,7 @@ La implementacion usara:
 - Desarrollo: Docker Compose reproducible.
 - Produccion: instalacion offline LAN en una computadora servidor, documentada tambien para Windows servidor.
 
-La prioridad de producto es una validacion operativa temprana: login, abrir caja, crear factura con nombre de paciente, buscar servicios, aplicar regla de eritropoyetina, cobrar, imprimir recibo institucional media carta/carta/A5, reimprimir y ver reporte diario. El diseno debe permitir completar el sistema sin rehacer la arquitectura.
+La prioridad de producto es una validacion operativa temprana: login, abrir caja, crear factura con nombre de paciente, buscar servicios, aplicar regla de eritropoyetina, cobrar, imprimir recibo institucional media carta/carta/A5/80mm/58mm, reimprimir y ver reporte diario. El diseno debe permitir completar el sistema sin rehacer la arquitectura.
 
 ## 2. Principios obligatorios
 
@@ -342,7 +342,7 @@ Alcance:
 - Crear movimiento de caja.
 - Actualizar `paid_amount`, `balance_due` y estado de factura dentro de transaccion.
 - Cerrar caja con esperado vs contado.
-- Agregar preview/print MVP de recibo media carta/carta/A5.
+- Agregar preview/print MVP de recibo media carta/carta/A5/80mm/58mm.
 
 Archivos probables:
 
@@ -483,7 +483,7 @@ Alcance:
 - Rutas LAN finales para `/login`, `/verify-email`, `/up` y assets del frontend compilado.
 - Script verificable de restore real MySQL/MariaDB.
 - Script verificable de concurrencia real MySQL/MariaDB.
-- Checklist fisico de impresora institucional media carta/carta/A5.
+- Checklist fisico de impresora institucional media carta/carta/A5/80mm/58mm.
 - Documentacion de estados `PRODUCTION_CANDIDATE` y `PRODUCTION_READY`, sin presentar evidencia fisica pendiente como completada.
 
 Archivos probables:

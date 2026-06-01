@@ -150,7 +150,7 @@ No entregar un servidor LAN real con `APP_ENV=local`. Produccion debe operar con
 - Concurrencia real fue validada contra `http://192.168.1.7:8000` con `RUN_ID=concurrency-validation-20260517T20435`.
 - Rutas por IP desde servidor respondieron para `/up`, `/login`, `/verify-email` y assets.
 - No se declara LAN fisica completa hasta repetir el checklist desde otra computadora cliente.
-- No se declara impresora fisica validada hasta imprimir media carta/carta/A5 en hardware real.
+- No se declara impresora fisica validada hasta imprimir media carta/carta/A5 y termica 80mm/58mm en hardware real.
 
 ## Scripts de validacion real
 

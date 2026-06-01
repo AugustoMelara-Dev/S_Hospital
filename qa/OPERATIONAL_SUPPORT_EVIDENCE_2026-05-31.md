@@ -76,7 +76,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Tabla de movimientos de caja usa formateador financiero seguro para no mostrar `NaN` ni montos crudos si la API devuelve un importe malformado. | Verificado |
 | Esta fase | Tamanos de recibo institucional quedan centralizados para configuracion, wizard, recibo nuevo e historial; media carta/carta/A5/80mm/58mm quedan visibles y valores invalidos vuelven a media carta. | Verificado |
 | Esta fase | Branding check bloquea que UI, manuales o evidencia clave vuelvan a promover lenguaje heredado de ticket o rollo informal. | Verificado |
-| Esta fase | Prompts agenticos de plan, review, POS y readiness quedan alineados al recibo institucional media carta/carta/A5/80mm/58mm y entran al branding check. | Verificado |
+| Esta fase | Prompts agenticos de plan, review, POS y readiness quedan alineados al recibo institucional media carta/carta/A5 y entran al branding check. | Verificado |
 | Esta fase | API de recibos/configuracion fiscal acepta media carta/carta/A5/80mm/58mm; valores desconocidos se normalizan a media carta y `receipt_width` ya no se expone. | Verificado |
 | Esta fase | E2E mockeado cubre `/api/settings/branding` para validar arranque y flujo principal sin errores de consola ni backend real. | Verificado |
 
@@ -252,7 +252,7 @@ Resultado observado:
   `Running` y que `SistemaCajaHospitalaria-DailyBackup` queda registrado con la
   hora institucional acordada.
 - Falta validar desde una segunda computadora LAN usando IP fija o nombre local.
-- Falta prueba fisica de impresora institucional media carta/carta/A5.
+- Falta prueba fisica de impresora institucional media carta/carta/A5/80mm/58mm.
 - Falta repetir restore MySQL/MariaDB en el servidor final si cambia equipo,
   rutas de dump o base real.
 - Falta full gate final despues de estabilizar cambios concurrentes:

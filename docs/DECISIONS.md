@@ -1471,7 +1471,7 @@ Consecuencia:
 
 Decision:
 
-- Los prompts de planificacion, revision, ejecucion POS, review de commit y readiness revisan recibo institucional media carta/carta/A5/80mm/58mm.
+- Los prompts de planificacion, revision, ejecucion POS, review de commit y readiness revisan recibo institucional media carta/carta/A5.
 - `scripts/check-branding.ps1` incluye `prompts/` en las reglas que bloquean lenguaje de recibo heredado y entrega no institucional.
 - El prompt maestro deja de apuntar a documentos con nombre heredado y a referencias de impresion de rollo.
 
@@ -1482,16 +1482,16 @@ Motivo:
 
 Consecuencia:
 
-- Futuras fases quedan orientadas al recibo institucional, sin QR, barcode, codigos internos ni datos tecnicos.
+- Futuras fases quedan orientadas al recibo tipo talonario institucional, sin QR, barcode, codigos internos ni datos tecnicos.
 - El branding check falla si prompts de entrega vuelven a usar lenguaje de ticket heredado o demo comercial.
 
-### 2026-06-01 - API de recibos acepta formatos institucionales configurables
+### 2026-06-01 - API de recibos limitada a formatos institucionales
 
 Decision:
 
-- Backend valida recibos y reimpresiones con `half_letter`, `letter`, `a5`, `80mm` y `58mm`.
-- Configuracion fiscal rechaza `receipt_width` heredado y `receipt_paper_size` fuera de media carta/carta/A5/80mm/58mm.
-- Snapshots antiguos con valores desconocidos se normalizan a media carta al generar recibo o reporte.
+- Backend valida recibos y reimpresiones solo con `half_letter`, `letter` y `a5`.
+- Configuracion fiscal rechaza `receipt_width` heredado y `receipt_paper_size` fuera de media carta/carta/A5.
+- Snapshots antiguos con valores de rollo se normalizan a media carta al generar recibo o reporte.
 - `FiscalSetting` deja de exponer `receipt_width` en respuestas JSON normales.
 
 Motivo:

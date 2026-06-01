@@ -8,7 +8,7 @@ Revisa si S_Hospital Offline esta listo para entrega RC institucional al hospita
 - Eritropoyetina con regla de receta de diálisis.
 - Caja, pagos, cierre, reportes básicos.
 - Usuarios y permisos.
-- Recibo institucional media carta/carta/A5, sin QR, barcode, codigos internos ni datos tecnicos.
+- Recibo institucional media carta/carta/A5/80mm/58mm, sin QR, barcode, codigos internos ni datos tecnicos.
 - Reimpresión y anulación auditada.
 - Offline LAN sin servicios cloud.
 - Backups y restauración documentados.
