@@ -81,6 +81,14 @@ function Get-RelativeReleasePath([System.IO.FileSystemInfo] $item) {
     return $item.FullName -replace "\\", "/"
 }
 
+function Test-IsForbiddenEnvFile([string] $name) {
+    if ($name -notmatch '(?i)^\.env(\.|$)') {
+        return $false
+    }
+
+    return $name -notmatch '(?i)(^\.env\.example$|^\.env\..*\.example$|^\.env\.sample$|^\.env\.dist$)'
+}
+
 try {
     $ReleaseRoot = (Resolve-Path -LiteralPath $ReleaseRoot).Path
 } catch {
@@ -117,7 +125,7 @@ $forbiddenItems = Get-ChildItem -LiteralPath $ReleaseRoot -Recurse -Force | Wher
             $relative -match '(^|/)storage/(app/private/backups|logs)(/|$)'
     }
 
-    return $name -in @(".env", ".env.local", ".env.docker") -or
+    return (Test-IsForbiddenEnvFile $name) -or
         $relative -match '(^|/)(install-logs|qa|test-results|playwright-report)/' -or
         $relative -match '(^|/)storage/(app/private/backups|logs)/' -or
         $relative -match '\.(sql|sql\.gz|dump|bak|log|sqlite|sqlite3|db)$'
@@ -169,12 +177,20 @@ if (Test-Path -LiteralPath $imagesDir -PathType Container) {
     foreach ($image in $imageFiles) {
         $relative = "offline-images/$($image.Name)"
         $sidecar = "$($image.FullName).sha256"
+        $actualHash = (Get-FileHash -LiteralPath $image.FullName -Algorithm SHA256).Hash
+
         if (-not (Test-Path -LiteralPath $sidecar -PathType Leaf)) {
             Add-Failure "Missing checksum sidecar for $relative"
+        } else {
+            $sidecarHash = (Get-Content -LiteralPath $sidecar -Raw).Trim().Split(" ", [System.StringSplitOptions]::RemoveEmptyEntries)[0]
+            if ($sidecarHash -ne $actualHash) {
+                Add-Failure "Checksum sidecar does not match $relative"
+            }
         }
 
-        if ($checksumContent -notmatch [regex]::Escape($relative)) {
-            Add-Failure "checksums.sha256 does not list $relative"
+        $checksumPattern = "(?im)^\s*$([regex]::Escape($actualHash))\s+$([regex]::Escape($relative))\s*$"
+        if ($checksumContent -notmatch $checksumPattern) {
+            Add-Failure "checksums.sha256 does not match $relative"
         }
     }
 }

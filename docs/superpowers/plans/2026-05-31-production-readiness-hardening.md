@@ -57,6 +57,7 @@ Current local verification notes:
 - Phase 13C scanner authority and frontend money handling were rechecked on 2026-06-01: scanner lookup calls the backend with `code`, does not add a cached local service after lookup failure, `PaymentModal` calculates cashier-facing payment/change values in cents, and `npm.cmd run test -- --run src/features/invoices/NewInvoiceView.test.tsx` passed 13 tests.
 - Receipt proof language must always list media carta, carta, A5, 80mm and 58mm together. Instructions that mention only page formats or only thermal widths are considered stale until corrected.
 - Phase 13F backup retention was hardened on 2026-06-01: unsafe old `success` backup records are no longer deleted by retention; they remain for support review and are audited as `backup.prune_skipped`. `php artisan test --filter=BackupWorkflowTest` passed 17 tests / 80 assertions. Non-invasive wrapper checks also passed: `scripts\run_backup_worker.cmd --check`, `scripts\run_scheduled_backup.cmd --check`, `scripts\start_backup_automation.cmd --check`, and `scripts\install_backup_tasks_windows.ps1 -WhatIfOnly -DailyBackupTime 23:30`.
+- Phase 13G release guard was hardened on 2026-06-01: it now recalculates Docker image tar SHA256 values, compares sidecars and `checksums.sha256`, and blocks secret `.env` variants such as `.env.production`. Contract checks passed with temporary local release fixtures for valid, bad-checksum and forbidden-env cases.
 
 ## Plan Review Orchestrator Result
 
@@ -446,6 +447,12 @@ Make backups production-safe: scheduled, retained, verifiable, restorable, and r
 **Scope**
 
 Separate dev setup from production install, regenerate offline release artifacts from the current commit, and ensure archives do not include `.env`, logs, backups, or stale evidence.
+
+**2026-06-01 local status**
+
+- Release guard now validates checksum contents, not only checksum file presence.
+- Release guard blocks `.env` variants that could contain secrets while still allowing example/sample env files.
+- Temporary local release fixtures validated success, checksum mismatch failure and `.env.production` failure.
 
 **Expected files**
 

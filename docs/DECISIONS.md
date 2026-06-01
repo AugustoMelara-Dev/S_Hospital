@@ -1638,3 +1638,20 @@ Consecuencia:
 
 - `BackupWorkflowTest` falla si la poda vuelve a borrar registros sospechosos.
 - Soporte puede investigar registros omitidos sin que el proceso automatico toque rutas fuera del contenedor seguro de backups.
+
+### 2026-06-01 - Guard de release verifica checksums reales
+
+Decision:
+
+- `scripts/assert_offline_release_clean.ps1` recalcula el SHA256 de cada imagen `.tar` y exige que coincida con su sidecar `.sha256` y con `checksums.sha256`.
+- El guard bloquea archivos `.env` de produccion o variantes secretas, permitiendo solo ejemplos como `.env.example`, `.env.*.example`, `.env.sample` o `.env.dist`.
+
+Motivo:
+
+- Un artefacto offline puede tener archivos de imagen cambiados despues de generar el manifest; revisar solo nombres no prueba integridad.
+- El paquete de produccion no debe incluir secretos aunque el nombre no sea exactamente `.env`.
+
+Consecuencia:
+
+- El handoff de release falla si un `.tar` cambia sin regenerar checksums.
+- La validacion de 13G cubre caso positivo, checksum roto y `.env.production` con artefactos temporales locales.
