@@ -78,6 +78,7 @@ soporte, diagnostico local, instalacion y capacitacion guiada. No declara
 | Esta fase | Branding check bloquea que UI, manuales o evidencia clave vuelvan a promover formatos heredados de rollo o ticket. | Verificado |
 | Esta fase | Prompts agenticos de plan, review, POS y readiness quedan alineados al recibo institucional media carta/carta/A5 y entran al branding check. | Verificado |
 | Esta fase | API de recibos/configuracion fiscal limita formatos a media carta/carta/A5; snapshots heredados se normalizan a media carta y `receipt_width` ya no se expone. | Verificado |
+| Esta fase | E2E mockeado cubre `/api/settings/branding` para validar arranque y flujo principal sin errores de consola ni backend real. | Verificado |
 
 ## Evidencia Visual Disponible
 

@@ -1485,3 +1485,19 @@ Consecuencia:
 
 - Reimpresion y vista de recibo devuelven error de validacion si se pide un ancho heredado.
 - Facturas antiguas con snapshot heredado siguen abriendo como media carta institucional.
+
+### 2026-06-01 - E2E mockeado cubre branding publico
+
+Decision:
+
+- El flujo E2E mockeado intercepta `/api/settings/branding` con datos institucionales de Hospital San Isidro.
+
+Motivo:
+
+- La app consulta branding publico durante el arranque; sin ese mock, Playwright registraba un 500 de consola aunque el flujo principal estuviera cubierto.
+- El gate E2E debe validar la experiencia offline sin depender de backend real ni modificar datos.
+
+Consecuencia:
+
+- `npm.cmd run e2e` vuelve a pasar sin errores de consola por branding.
+- La validacion fisica y smoke contra servidor real siguen pendientes y separados de este gate mockeado.

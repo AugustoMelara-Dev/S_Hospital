@@ -125,6 +125,16 @@ async function installApiMocks(page: Page) {
       receipt_paper_size: 'half_letter',
     }
   }));
+  await page.route('**/api/settings/branding', (route) => json(route, {
+    data: {
+      hospital_name: 'Hospital San Isidro',
+      primary_color: 'indigo',
+      slogan: 'Sistema de Caja Hospitalaria',
+      government_line: 'Gobierno de Honduras',
+      secretariat_line: 'Secretaria de Salud Publica',
+      receipt_location: 'Tocoa, Colon',
+    },
+  }));
 
   await page.route('**/api/settings/logo', (route) => json(route, { logo_url: null }));
   await page.route('**/api/health', (route) => json(route, { status: 'ok' }));
