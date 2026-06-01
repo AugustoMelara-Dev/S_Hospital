@@ -48,6 +48,9 @@ Recent phase commits on `codex/production-readiness-hardening`:
 - `18df1ac refactor(admin): move password reset validation` - moved admin password reset validation/authorization into a Form Request and added Feature coverage.
 - `b7ed50d refactor(backups): move list validation to request` - moved backup list authorization/status validation into a Form Request while preserving pagination clamp behavior.
 - `ddb2ce3 fix(admin): prevent duplicate user actions` - disabled/locked admin user create/reset/toggle actions while requests are pending and covered duplicate-submit cases.
+- `af6bc6b fix(auth): prevent duplicate password updates` - completed the local 13E password-change UX work by disabling the mandatory password form while the API request is pending.
+- `4f6e1e4 refactor(settings): validate logo upload request` - moved fiscal logo upload authorization/validation into a Form Request and added file/permission coverage.
+- `a7dcdc4 refactor(reports): validate pdf export request` - moved PDF export authorization/range validation into `PdfExportRequest` and removed the last inline `request->validate()` from controllers.
 
 ## Plan Review Orchestrator Result
 
