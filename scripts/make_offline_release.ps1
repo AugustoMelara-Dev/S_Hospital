@@ -24,6 +24,7 @@ $ReleaseRoot = [System.IO.Path]::GetFullPath($ReleaseRoot)
 $imagesDir = Join-Path $ReleaseRoot "offline-images"
 $composePath = Join-Path $ProjectRoot "docker-compose.prod.yml"
 $guardScript = Join-Path $ProjectRoot "scripts\assert_offline_release_clean.ps1"
+$dockerSourcesGuard = Join-Path $ProjectRoot "scripts\assert_production_docker_sources.ps1"
 
 function Write-Step([string] $message) {
     Write-Host "[*] $message" -ForegroundColor Yellow
@@ -80,6 +81,16 @@ if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot "backend\Dockerfile.pro
 
 if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot "nginx\default.conf") -PathType Leaf)) {
     Write-Fail "Falta nginx\default.conf versionado."
+}
+
+if (-not (Test-Path -LiteralPath $dockerSourcesGuard -PathType Leaf)) {
+    Write-Fail "Falta scripts\assert_production_docker_sources.ps1 versionado."
+}
+
+Write-Step "Validando fuentes Docker productivas."
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $dockerSourcesGuard -ProjectRoot $ProjectRoot
+if ($LASTEXITCODE -ne 0) {
+    Write-Fail "Las fuentes Docker productivas no son reproducibles."
 }
 
 $gitStatus = Get-GitValue @("status", "--porcelain") ""

@@ -1333,7 +1333,7 @@ Consecuencia:
 Decision:
 
 - `backend/Dockerfile.prod`, `nginx/default.conf`, `.dockerignore`, `scripts/load_offline_images.ps1` y `scripts/make_offline_release.ps1` viven en Git.
-- El generador de release falla si faltan esos artefactos, si el arbol esta sucio sin `-AllowDirty`, o si el guard final no pasa.
+- El generador de release falla si faltan esos artefactos, si `scripts/assert_production_docker_sources.ps1` detecta `COPY` locales rotos, si el arbol esta sucio sin `-AllowDirty`, o si el guard final no pasa.
 - `.dockerignore` excluye secretos, logs, respaldos, `node_modules`, `vendor`, `qa` y worklogs del contexto de build.
 
 Motivo:
@@ -1345,3 +1345,37 @@ Consecuencia:
 
 - La ruta Docker offline queda versionada y auditable.
 - La generacion final todavia requiere Docker y puede requerir internet en la maquina de build para descargar bases de imagenes si no estan cacheadas.
+
+### 2026-05-31 - Instalador sin opcion destructiva de limpieza
+
+Decision:
+
+- El menu de instalacion previa para Docker ya no ofrece "instalacion limpia" ni confirma borrado de volumenes.
+- Ante una instalacion existente, las opciones son reparar contenedores, actualizar conservando base de datos o cancelar para pedir soporte.
+
+Motivo:
+
+- En el hospital, una respuesta de emergencia no debe depender de que una persona no tecnica entienda el alcance de `down -v` o eliminacion manual de volumenes.
+- La recuperacion segura debe proteger facturas, pagos, caja, auditoria y respaldos aun cuando el sistema no arranque.
+
+Consecuencia:
+
+- Cualquier operacion destructiva queda fuera del instalador operativo y requeriria un procedimiento tecnico separado, con backup verificado y aprobacion explicita.
+- El soporte de primer nivel tiene un camino claro: reparar, actualizar sin borrar o detenerse.
+
+### 2026-05-31 - Caja no renderiza montos invalidos como NaN
+
+Decision:
+
+- Las vistas de caja usan el formateador financiero seguro para apertura, efectivo esperado, metodos de pago, saldo pendiente, contado y diferencia.
+- Si una respuesta de caja trae un monto no numerico, la UI lo presenta como `L. 0.00` y no como `NaN` ni como texto tecnico.
+
+Motivo:
+
+- Caja es una pantalla de conciliacion y cierre; un monto malformado visible puede provocar decisiones incorrectas.
+- La precision visual debe fallar cerrada mientras backend y tests siguen siendo la fuente de verdad de la conciliacion.
+
+Consecuencia:
+
+- El cierre de caja mantiene etiquetas humanas aun ante datos de API danados.
+- La prueba de caja falla si vuelve a mostrarse `NaN` o un monto crudo invalido.

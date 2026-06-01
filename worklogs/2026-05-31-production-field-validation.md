@@ -10,11 +10,16 @@ Estado: PRODUCTION_CANDIDATE.
 - Backups tienen retencion, wrappers PHP/Docker y preflight de paquete Docker.
 - Release handoff ahora bloquea paquetes offline con secretos, logs, backups,
   evidencia QA local o manifiesto stale.
+- Las fuentes Docker productivas (`docker-compose.prod.yml`, `backend/Dockerfile.prod`,
+  `nginx/default.conf` y `COPY` locales) validan sin requerir daemon Docker.
 
 ## Bloqueantes externos
 
 - PENDING_RELEASE_REGENERATION: regenerar `offline-release` desde el commit de
   entrega y pasar `scripts/assert_offline_release_clean.ps1 -RequireCurrentCommit`.
+- PENDING_DOCKER_DAEMON: en esta estacion Docker Desktop no estaba corriendo
+  (`dockerDesktopLinuxEngine` no disponible), por lo que no se pudieron construir
+  ni exportar imagenes reales en este turno.
 - PENDING_LAN_CLIENT_VALIDATION: validar desde una segunda PC fisica por IP fija
   o nombre LAN final.
 - PENDING_HARDWARE_VALIDATION: imprimir y revisar recibos 80mm y 58mm en la
