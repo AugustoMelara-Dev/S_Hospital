@@ -142,7 +142,7 @@ try {
             'qa/RELEASE_READINESS.md'
         ) `
         -AllowedLinePatterns @(
-            'frontend/src/features\\invoices\\NewInvoiceView\.test\.tsx:\d+:\s*expect\(styles\)\.toContain'
+            'frontend/src/features\\invoices\\NewInvoiceView\.test\.tsx:\d+:\s*expect\(styles\)\.not\.toContain'
         )
 
     Invoke-ForbiddenSearch `

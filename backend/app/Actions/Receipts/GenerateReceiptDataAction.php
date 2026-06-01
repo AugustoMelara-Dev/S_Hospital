@@ -5,11 +5,14 @@ namespace App\Actions\Receipts;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Support\HospitalName;
+use App\Support\ReceiptPaperSize;
 
 class GenerateReceiptDataAction
 {
     public function execute(Invoice $invoice, string $width): array
     {
+        $paperSize = ReceiptPaperSize::normalize($width);
+
         $invoice->loadMissing([
             'items',
             'payments.user:id,name,username',
@@ -23,7 +26,7 @@ class GenerateReceiptDataAction
             ->first()?->user?->name ?? $invoice->issuer?->name;
 
         return [
-            'width' => $width,
+            'width' => $paperSize,
             'hospital' => [
                 'name' => HospitalName::display($invoice->hospital_name),
                 'rtn' => $invoice->hospital_rtn,
@@ -32,7 +35,7 @@ class GenerateReceiptDataAction
             ],
             'institutional' => [
                 'template_mode' => $invoice->receipt_template_mode ?? 'institutional',
-                'paper_size' => $invoice->receipt_paper_size ?? $width,
+                'paper_size' => ReceiptPaperSize::normalize($invoice->receipt_paper_size ?? $paperSize),
                 'government_line' => $invoice->receipt_government_line ?? 'Gobierno de Honduras',
                 'secretariat_line' => $invoice->receipt_secretariat_line ?? 'Secretaria de Salud Publica',
                 'location' => $invoice->receipt_location,

@@ -14,7 +14,6 @@ export type FiscalSettings = {
   hospital_name: string;
   rtn: string;
   default_tax_rate: string;
-  receipt_width?: string;
   receipt_paper_size?: InstitutionalReceiptPaperSize;
   primary_color: 'teal' | 'blue' | 'indigo' | 'green' | 'rose';
   address?: string;
@@ -192,7 +191,7 @@ export type Payment = {
   paid_at: string;
 };
 
-export type InstitutionalReceiptPaperSize = 'letter' | 'half_letter' | 'a5' | '80mm' | '58mm';
+export type InstitutionalReceiptPaperSize = 'letter' | 'half_letter' | 'a5';
 export type ReceiptPaperSize = InstitutionalReceiptPaperSize;
 
 export type ReceiptData = {

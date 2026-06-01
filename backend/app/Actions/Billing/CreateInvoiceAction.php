@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
 use App\Support\Money;
+use App\Support\ReceiptPaperSize;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -59,7 +60,7 @@ class CreateInvoiceAction
                 'hospital_address' => $settings?->address,
                 'hospital_slogan' => $settings?->slogan,
                 'receipt_template_mode' => $settings?->receipt_template_mode ?? 'institutional',
-                'receipt_paper_size' => $settings?->receipt_paper_size ?? 'half_letter',
+                'receipt_paper_size' => ReceiptPaperSize::normalize($settings?->receipt_paper_size),
                 'receipt_government_line' => $settings?->government_line ?? 'Gobierno de Honduras',
                 'receipt_secretariat_line' => $settings?->secretariat_line ?? 'Secretaria de Salud Publica',
                 'receipt_location' => $settings?->receipt_location ?? $settings?->address,

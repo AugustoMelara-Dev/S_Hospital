@@ -41,7 +41,6 @@ class FiscalSettingsController extends Controller
                 'hospital_name',
                 'rtn',
                 'default_tax_rate',
-                'receipt_width',
                 'primary_color',
                 'address',
                 'slogan',

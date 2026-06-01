@@ -35,7 +35,8 @@ class FiscalSettingsTest extends TestCase
             ->putJson('/api/settings/fiscal', $this->validPayload())
             ->assertOk()
             ->assertJsonPath('data.hospital_name', 'Hospital San Miguel')
-            ->assertJsonPath('data.receipt_paper_size', 'half_letter');
+            ->assertJsonPath('data.receipt_paper_size', 'half_letter')
+            ->assertJsonMissingPath('data.receipt_width');
 
         $this->assertDatabaseHas('fiscal_settings', [
             'hospital_name' => 'Hospital San Miguel',
@@ -67,14 +68,14 @@ class FiscalSettingsTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_save_thermal_receipt_paper_sizes(): void
+    public function test_admin_can_save_only_institutional_receipt_paper_sizes(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        foreach (['80mm', '58mm'] as $paperSize) {
+        foreach (['half_letter', 'letter', 'a5'] as $paperSize) {
             $this->actingAs($admin)
                 ->putJson('/api/settings/fiscal', [
                     ...$this->validPayload(),
@@ -87,6 +88,32 @@ class FiscalSettingsTest extends TestCase
                 'receipt_paper_size' => $paperSize,
             ]);
         }
+
+        foreach (['80mm', '58mm'] as $paperSize) {
+            $this->actingAs($admin)
+                ->putJson('/api/settings/fiscal', [
+                    ...$this->validPayload(),
+                    'receipt_paper_size' => $paperSize,
+                ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors('receipt_paper_size');
+        }
+    }
+
+    public function test_legacy_receipt_width_field_is_not_updateable(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                ...$this->validPayload(),
+                'receipt_width' => '80mm',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('receipt_width');
     }
 
     public function test_guest_cannot_view_full_fiscal_settings_but_can_view_public_branding(): void

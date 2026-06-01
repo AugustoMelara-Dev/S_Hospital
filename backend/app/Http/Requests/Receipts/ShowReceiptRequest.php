@@ -3,13 +3,12 @@
 namespace App\Http\Requests\Receipts;
 
 use App\Models\Invoice;
+use App\Support\ReceiptPaperSize;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class ShowReceiptRequest extends FormRequest
 {
-    private const WIDTHS = ['letter', 'half_letter', 'a5', '80mm', '58mm'];
-
     public function authorize(): bool
     {
         $user = $this->user();
@@ -30,21 +29,19 @@ class ShowReceiptRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'width' => ['sometimes', Rule::in(self::WIDTHS)],
+            'width' => ['sometimes', Rule::in(ReceiptPaperSize::values())],
         ];
     }
 
     public function width(): string
     {
         if ($this->filled('width')) {
-            return (string) $this->input('width');
+            return ReceiptPaperSize::normalize((string) $this->input('width'));
         }
 
         $invoice = $this->route('invoice');
         $paperSize = $invoice instanceof Invoice ? (string) ($invoice->receipt_paper_size ?? '') : '';
 
-        return in_array($paperSize, self::WIDTHS, true)
-            ? $paperSize
-            : 'half_letter';
+        return ReceiptPaperSize::normalize($paperSize);
     }
 }

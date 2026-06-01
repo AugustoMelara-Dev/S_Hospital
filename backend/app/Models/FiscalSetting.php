@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class FiscalSetting extends Model
 {
+    protected $hidden = [
+        'receipt_width',
+    ];
+
     protected $fillable = [
         'hospital_name',
         'rtn',

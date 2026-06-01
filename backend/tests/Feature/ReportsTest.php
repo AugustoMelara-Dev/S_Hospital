@@ -1610,7 +1610,7 @@ class ReportsTest extends TestCase
         $this->assertStringContainsString('Efectivo', $capturedHtml);
         $this->assertStringContainsString('L. 17.25', $capturedHtml);
         $this->assertStringContainsString('Cobro registrado por error', $capturedHtml);
-        $this->assertStringContainsString($supervisor->name, $capturedHtml);
+        $this->assertStringContainsString(e($supervisor->name), $capturedHtml);
         $this->assertStringNotContainsString('payment_id', $capturedHtml);
         $this->assertStringNotContainsString('ID de Pago', $capturedHtml);
     }

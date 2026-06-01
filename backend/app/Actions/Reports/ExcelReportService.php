@@ -487,10 +487,10 @@ class ExcelReportService
     private function receiptWidthLabel(?string $width): string
     {
         return [
-            '58' => '58mm',
-            '80' => '80mm',
-            '58mm' => '58mm',
-            '80mm' => '80mm',
+            '58' => 'Media carta',
+            '80' => 'Media carta',
+            '58mm' => 'Media carta',
+            '80mm' => 'Media carta',
             'a5' => 'A5',
             'half_letter' => 'Media carta',
             'letter' => 'Carta',

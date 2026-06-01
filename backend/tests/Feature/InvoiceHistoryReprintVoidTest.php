@@ -282,13 +282,13 @@ class InvoiceHistoryReprintVoidTest extends TestCase
 
         $this->actingAs($this->admin())
             ->postJson("/api/invoices/{$oldId}/reprint", ['width' => '80mm'])
-            ->assertOk()
-            ->assertJsonPath('data.receipt.width', '80mm');
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('width');
 
         $this->actingAs($this->admin())
             ->postJson("/api/invoices/{$oldId}/reprint", ['width' => '58mm'])
-            ->assertOk()
-            ->assertJsonPath('data.receipt.width', '58mm');
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('width');
     }
 
     public function test_void_requires_permission_and_reason(): void

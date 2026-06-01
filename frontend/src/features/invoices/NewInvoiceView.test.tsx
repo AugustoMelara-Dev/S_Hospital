@@ -921,10 +921,10 @@ describe('NewInvoiceView', () => {
     expect(styles).toContain('body[data-printing-receipt="true"] *');
     expect(styles).toContain('.institutional-receipt.receipt-letter');
     expect(styles).toContain('.institutional-receipt.receipt-a5');
-    expect(styles).toContain('.institutional-receipt.receipt-80mm');
-    expect(styles).toContain('.institutional-receipt.receipt-58mm');
-    expect(styles).toContain('@page receipt-80mm');
-    expect(styles).toContain('@page receipt-58mm');
+    expect(styles).not.toContain('.institutional-receipt.receipt-80mm');
+    expect(styles).not.toContain('.institutional-receipt.receipt-58mm');
+    expect(styles).not.toContain('@page receipt-80mm');
+    expect(styles).not.toContain('@page receipt-58mm');
     expect(styles).not.toContain('body * {\n      visibility: hidden;');
     expect(styles).not.toContain('body * {\r\n      visibility: hidden;');
   });
@@ -1056,7 +1056,7 @@ describe('NewInvoiceView', () => {
 
   it('renders institutional receipt print structure with fiscal valid until date', async () => {
     const receipt: ReceiptData = {
-      width: '80mm',
+      width: '80mm' as unknown as ReceiptData['width'],
       hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
       fiscal: {
         cai: 'VALIDACION-CAI',

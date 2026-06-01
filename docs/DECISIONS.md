@@ -1466,3 +1466,22 @@ Consecuencia:
 
 - Futuras fases quedan orientadas al recibo tipo talonario institucional, sin QR, barcode, codigos internos ni datos tecnicos.
 - El branding check falla si prompts de entrega vuelven a usar lenguaje de ticket heredado o demo comercial.
+
+### 2026-06-01 - API de recibos limitada a formatos institucionales
+
+Decision:
+
+- Backend valida recibos y reimpresiones solo con `half_letter`, `letter` y `a5`.
+- Configuracion fiscal rechaza `receipt_width` heredado y `receipt_paper_size` fuera de media carta/carta/A5.
+- Snapshots antiguos con valores de rollo se normalizan a media carta al generar recibo o reporte.
+- `FiscalSetting` deja de exponer `receipt_width` en respuestas JSON normales.
+
+Motivo:
+
+- La UI ya no promueve ticket de rollo; el contrato Laravel debe sostener la misma regla para evitar regresiones por API, tests o integraciones locales.
+- Los recibos historicos deben seguir imprimibles sin recalcular facturas, pero no deben reactivar formatos no institucionales.
+
+Consecuencia:
+
+- Reimpresion y vista de recibo devuelven error de validacion si se pide un ancho heredado.
+- Facturas antiguas con snapshot heredado siguen abriendo como media carta institucional.
