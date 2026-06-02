@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Actions\Backups\CreateBackupAction;
+use App\Actions\Backups\DatabaseDumpWriter;
 use App\Actions\Backups\PruneBackupsAction;
 use App\Models\BackupLog;
 use App\Models\User;
@@ -10,6 +11,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Tests\TestCase;
 
 class BackupWorkflowTest extends TestCase
@@ -314,6 +316,30 @@ class BackupWorkflowTest extends TestCase
             Config::set("database.connections.{$connection}.database", $originalDb);
             Config::set("database.connections.{$connection}.password", $originalPassword);
         }
+    }
+
+    public function test_failed_backup_persists_operator_safe_support_message(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        $writer = new class extends DatabaseDumpWriter
+        {
+            public function dumpTo(string $absolutePath): void
+            {
+                throw new RuntimeException('SQLSTATE[HY000] DB_PASSWORD=secret-db-password failed at C:\Projects\S_Hospital\backend\.env');
+            }
+        };
+
+        $backup = (new CreateBackupAction($writer, app(PruneBackupsAction::class)))
+            ->execute($admin, BackupLog::TYPE_MANUAL);
+
+        $this->assertSame(BackupLog::STATUS_FAILED, $backup->status);
+        $this->assertSame('Error tecnico registrado. Revise el paquete de soporte.', $backup->error_message);
+        $this->assertStringNotContainsString('secret-db-password', (string) $backup->error_message);
+        $this->assertStringNotContainsString('SQLSTATE', (string) $backup->error_message);
+        $this->assertStringNotContainsString('C:\Projects\S_Hospital', (string) $backup->error_message);
+        $this->assertFalse(Storage::disk('local')->exists((string) $backup->path));
     }
 
     public function test_download_only_serves_registered_existing_backup_files_and_audits_downloads(): void

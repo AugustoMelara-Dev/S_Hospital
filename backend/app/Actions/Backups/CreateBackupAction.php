@@ -5,6 +5,7 @@ namespace App\Actions\Backups;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use App\Models\User;
+use App\Support\OperationalMessageSanitizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -140,7 +141,8 @@ class CreateBackupAction
             $message = $message->replace($password, '[redacted]');
         }
 
-        return $message->limit(500)->toString();
+        return OperationalMessageSanitizer::message($message->toString())
+            ?? 'Error tecnico registrado. Revise el paquete de soporte.';
     }
 
     private function audit(BackupLog $backupLog, ?int $userId, string $action): void
