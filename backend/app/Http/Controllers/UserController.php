@@ -2,21 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Admin\IndexUserRequest;
 use App\Http\Requests\Admin\ResetUserPasswordRequest;
 use App\Http\Requests\Admin\StoreUserRequest;
+use App\Http\Requests\Admin\ToggleUserActiveRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(IndexUserRequest $request): JsonResponse
     {
-        $request->user()->can('users.view') || abort(403);
-
         $users = User::query()
             ->with('roles')
             ->orderBy('name')
@@ -65,17 +63,8 @@ class UserController extends Controller
         ]);
     }
 
-    public function toggleActive(Request $request, User $user): JsonResponse
+    public function toggleActive(ToggleUserActiveRequest $request, User $user): JsonResponse
     {
-        $request->user()->can('users.disable') || abort(403);
-
-        // Prevent disabling yourself
-        if ($user->id === $request->user()->id) {
-            throw ValidationException::withMessages([
-                'active' => ['No puedes desactivar tu propio usuario.'],
-            ]);
-        }
-
         $user->update([
             'active' => ! $user->active,
         ]);

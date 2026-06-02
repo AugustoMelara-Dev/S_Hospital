@@ -2015,3 +2015,21 @@ Consecuencia:
 
 - `BackupController` conserva las defensas de path traversal y auditoria de descarga.
 - Usuarios sin permisos siguen recibiendo 403 en listado, creacion y descarga.
+
+### 2026-06-02 - Gestion de usuarios usa Form Requests tambien para listar y desactivar
+
+Decision:
+
+- `GET /api/admin/users` usa `IndexUserRequest`.
+- `POST /api/admin/users/{user}/toggle-active` usa `ToggleUserActiveRequest`.
+- La regla que impide desactivar el propio usuario queda en validacion del request.
+
+Motivo:
+
+- Listar usuarios y cambiar estado activo son operaciones administrativas sensibles.
+- Mantener permisos y reglas de borde en Form Requests deja el controlador mas delgado y consistente con crear, editar y resetear contrasena.
+
+Consecuencia:
+
+- Cajeros siguen recibiendo 403 al listar o desactivar usuarios.
+- Admin puede desactivar otro usuario, pero recibe 422 si intenta desactivarse a si mismo.
