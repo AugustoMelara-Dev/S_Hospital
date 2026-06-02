@@ -48,7 +48,13 @@ class AddSecurityHeaders
             ? "'self' 'nonce-{$nonce}'"
             : "'self' 'nonce-{$nonce}' 'unsafe-eval'";
 
-        $styleSources = "'self' 'unsafe-inline'";
+        // In production we now require the same nonce on inline styles
+        // that the cashier SPA emits via the Vite csp-nonce plugin.
+        // Tailwind 4 compiled CSS is loaded from a hashed file (no
+        // inline needed), so this is safe.
+        $styleSources = $production
+            ? "'self' 'nonce-{$nonce}'"
+            : "'self' 'nonce-{$nonce}' 'unsafe-inline'";
 
         $connectSources = "'self' ws: wss:";
 
