@@ -22,6 +22,9 @@
 
 param(
     [Parameter(Mandatory=$false)]
+    [switch]$SelfTest,
+
+    [Parameter(Mandatory=$false)]
     [string]$BackupFile = "",
 
     [Parameter(Mandatory=$false)]
@@ -33,6 +36,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 $script:ExitCode = 0
+$projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$backendEnvPath = Join-Path $projectRoot "backend\.env"
 
 function Write-Step {
     param([string]$Message)
@@ -76,30 +81,144 @@ function Get-MySqlClient {
         }
     }
 
+    $pathClient = Get-Command mysql.exe -ErrorAction SilentlyContinue
+    if ($pathClient) {
+        return $pathClient.Source
+    }
+
     return $null
 }
 
-function Get-DatabaseConfig {
-    $envPath = "C:\Projects\S_Hospital\backend\.env"
+function Get-ConfigValue {
+    param(
+        [hashtable]$Config,
+        [string]$Key,
+        [string]$Default
+    )
 
-    if (-not (Test-Path $envPath)) {
+    if ($Config.ContainsKey($Key) -and $null -ne $Config[$Key] -and [string]$Config[$Key] -ne "") {
+        return [string]$Config[$Key]
+    }
+
+    return $Default
+}
+
+function Get-DatabaseConfig {
+    param([string]$EnvPath = $backendEnvPath)
+
+    if (-not (Test-Path $EnvPath)) {
         return $null
     }
 
     $config = @{}
-    Get-Content $envPath | ForEach-Object {
+    Get-Content $EnvPath | ForEach-Object {
         if ($_ -match '^([^=]+)=(.*)$') {
             $config[$Matches[1].Trim()] = $Matches[2].Trim().Trim('"').Trim("'")
         }
     }
 
     return @{
-        Host = $config['DB_HOST'] ?? '127.0.0.1'
-        Port = $config['DB_PORT'] ?? '3306'
-        Database = $config['DB_DATABASE'] ?? 'hospital_billing'
-        Username = $config['DB_USERNAME'] ?? 'hospital'
-        Password = $config['DB_PASSWORD'] ?? ''
+        Host = Get-ConfigValue $config 'DB_HOST' '127.0.0.1'
+        Port = Get-ConfigValue $config 'DB_PORT' '3306'
+        Database = Get-ConfigValue $config 'DB_DATABASE' 'hospital_billing'
+        Username = Get-ConfigValue $config 'DB_USERNAME' 'hospital'
+        Password = Get-ConfigValue $config 'DB_PASSWORD' ''
     }
+}
+
+function Test-DisposableDatabaseName {
+    param([string]$Database)
+
+    if ($Database -notmatch '^[A-Za-z0-9_]+$') {
+        return $false
+    }
+
+    $lower = $Database.ToLowerInvariant()
+    if ($lower -in @('hospital_billing', 'hospital_billing_production', 'mysql', 'information_schema', 'performance_schema', 'sys')) {
+        return $false
+    }
+
+    return $lower -match '(test|validation|restore|disposable|proof)'
+}
+
+function Test-SafeMysqlArgument {
+    param([string]$Value)
+
+    return $Value -match '^[A-Za-z0-9_.:-]+$'
+}
+
+function Assert-SafeConnectionConfig {
+    param([hashtable]$Config)
+
+    if (-not (Test-SafeMysqlArgument ([string]$Config.Host))) {
+        Write-Error "Host de base de datos contiene caracteres no permitidos."
+        exit 1
+    }
+
+    if ([string]$Config.Port -notmatch '^\d{1,5}$') {
+        Write-Error "Puerto de base de datos invalido."
+        exit 1
+    }
+
+    if (-not (Test-SafeMysqlArgument ([string]$Config.Username))) {
+        Write-Error "Usuario de base de datos contiene caracteres no permitidos."
+        exit 1
+    }
+
+    if (-not (Test-DisposableDatabaseName ([string]$Config.Database))) {
+        Write-Error "La base de datos '$($Config.Database)' no parece ser de prueba."
+        Write-Error "Use un nombre como 'hospital_billing_test' o 'hospital_restore_validation'."
+        exit 1
+    }
+}
+
+function Invoke-SelfTest {
+    Write-Step "Ejecutando self-test de restore seguro"
+
+    $tempEnv = Join-Path $env:TEMP "hospital-restore-selftest.env"
+    Set-Content -Path $tempEnv -Value @(
+        "DB_HOST=192.168.1.10",
+        "DB_PORT=3307",
+        "DB_DATABASE=hospital_billing",
+        "DB_USERNAME=hospital_user",
+        "DB_PASSWORD=secret-value"
+    )
+
+    $config = Get-DatabaseConfig -EnvPath $tempEnv
+    Remove-Item $tempEnv -Force -ErrorAction SilentlyContinue
+
+    if ($config.Host -ne "192.168.1.10" -or $config.Port -ne "3307" -or $config.Username -ne "hospital_user" -or $config.Password -ne "secret-value") {
+        Write-Error "Self-test fallo: parseo .env incorrecto."
+        exit 1
+    }
+
+    if (-not (Test-DisposableDatabaseName "hospital_restore_validation")) {
+        Write-Error "Self-test fallo: base descartable valida fue rechazada."
+        exit 1
+    }
+
+    foreach ($db in @("hospital_billing", "hospital_billing_production", "mysql", "hospital-prod", "hospital")) {
+        if (Test-DisposableDatabaseName $db) {
+            Write-Error "Self-test fallo: base insegura aceptada: $db"
+            exit 1
+        }
+    }
+
+    $safeConfig = @{
+        Host = "127.0.0.1"
+        Port = "3306"
+        Database = "hospital_restore_validation"
+        Username = "hospital_user"
+        Password = "ignored"
+    }
+    Assert-SafeConnectionConfig $safeConfig
+
+    Write-Success "Self-test completado. No se tocaron bases ni backups."
+    exit 0
+}
+
+if ($SelfTest) {
+    Invoke-SelfTest
 }
 
 Write-Host ""
@@ -113,9 +232,9 @@ Write-Warning "ADVERTENCIA: Este proceso sobreescribe datos."
 Write-Warning "Usar SOLO en base de datos de prueba o desarrollo."
 Write-Host ""
 
-if ($TargetDatabase -eq "hospital_billing" -or $TargetDatabase -eq "hospital_billing_production") {
-    Write-Error "No se puede restaurar a la base de datos de produccion '$TargetDatabase'."
-    Write-Error "Use un nombre diferente como 'hospital_billing_test'."
+if (-not (Test-DisposableDatabaseName $TargetDatabase)) {
+    Write-Error "No se puede restaurar a '$TargetDatabase'."
+    Write-Error "Use una base descartable con nombre como 'hospital_billing_test' o 'hospital_restore_validation'."
     exit 1
 }
 
@@ -124,9 +243,17 @@ if (-not $UseExistingEnv -and -not $BackupFile) {
     $BackupFile = Read-Host "Ruta del backup"
 }
 
-if ($BackupFile -and -not (Test-Path $BackupFile)) {
-    Write-Error "Archivo de backup no encontrado: $BackupFile"
-    exit 1
+if ($BackupFile) {
+    $BackupFile = [System.IO.Path]::GetFullPath($BackupFile)
+    if (-not (Test-Path $BackupFile)) {
+        Write-Error "Archivo de backup no encontrado: $BackupFile"
+        exit 1
+    }
+
+    if ($BackupFile -notmatch '\.(sql|tar\.gz)$') {
+        Write-Error "Formato de backup no permitido. Use .sql o .tar.gz."
+        exit 1
+    }
 }
 
 Write-Step "Buscando cliente MySQL/MariaDB..."
@@ -146,6 +273,7 @@ if ($UseExistingEnv) {
         Write-Error "No se pudo leer backend\.env"
         exit 1
     }
+    $dbConfig.Database = $TargetDatabase
     Write-Success "Configuracion leida"
 } else {
     Write-Step "Ingrese configuracion de base de datos:"
@@ -160,7 +288,11 @@ if ($UseExistingEnv) {
     $dbConfig.Port = if ($dbConfig.Port) { $dbConfig.Port } else { "3306" }
     $dbConfig.Username = if ($dbConfig.Username) { $dbConfig.Username } else { "root" }
     $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($dbConfig.Password)
-    $dbConfig.Password = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+    try {
+        $dbConfig.Password = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+    } finally {
+        [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+    }
     $dbConfig.Database = $TargetDatabase
 }
 
@@ -186,11 +318,7 @@ if ($BackupFile -and $BackupFile -match '\.tar\.gz$') {
 }
 
 Write-Step "Verificando que '$($dbConfig.Database)' sea base de prueba..."
-if ($dbConfig.Database -notmatch 'test|validation|restore|disposable|proof?') {
-    Write-Error "La base de datos '$($dbConfig.Database)' no parece ser de prueba."
-    Write-Error "Use un nombre como 'hospital_billing_test' o 'hospital_restore_validation'."
-    exit 1
-}
+Assert-SafeConnectionConfig $dbConfig
 
 Write-Step "Creando base de datos '$($dbConfig.Database)' si no existe..."
 $createDbCmd = "CREATE DATABASE IF NOT EXISTS ``$($dbConfig.Database)`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
@@ -206,7 +334,8 @@ if ($BackupFile) {
     Write-Step "Restaurando backup desde: $BackupFile"
     Write-Host "Esto puede tomar varios minutos..." -ForegroundColor Yellow
 
-    & cmd /c "$mysqlExe --host=$($dbConfig.Host) --port=$($dbConfig.Port) --user=$($dbConfig.Username) --default-character-set=utf8mb4 ""$($dbConfig.Database)"" < ""$BackupFile"" 2>&1"
+    $restoreCommand = """$mysqlExe"" --host=$($dbConfig.Host) --port=$($dbConfig.Port) --user=$($dbConfig.Username) --default-character-set=utf8mb4 ""$($dbConfig.Database)"" < ""$BackupFile"" 2>&1"
+    & cmd /c $restoreCommand
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Error al restaurar backup"
         exit 1

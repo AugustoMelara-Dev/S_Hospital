@@ -1422,7 +1422,7 @@ Consecuencia:
 Decision:
 
 - Los tamanos de recibo institucional se definen en `frontend/src/lib/institutionalReceiptPaper.ts`.
-- Configuracion fiscal, wizard inicial, recibo nuevo e historial usan la misma lista: media carta, carta, A5, 80mm y 58mm.
+- Configuracion fiscal, wizard inicial, recibo nuevo e historial usan la misma lista: A5, carta, media carta, 80mm y 58mm.
 - Valores malformados de API o UI se normalizan a media carta antes de pedir, reimprimir o renderizar recibos.
 
 Motivo:
@@ -1440,7 +1440,7 @@ Consecuencia:
 Decision:
 
 - `scripts/check-branding.ps1` revisa superficies de entrega para impedir que vuelva lenguaje visible de ticket o rollo informal.
-- `docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md` valida media carta, carta, A5, 80mm y 58mm.
+- `docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md` valida A5, carta, media carta, 80mm y 58mm.
 
 Motivo:
 
@@ -1594,7 +1594,7 @@ Consecuencia:
 
 Decision:
 
-- Las guias operativas, plantilla de evidencia, ayuda en la app y mensajes de handoff deben pedir validacion fisica de media carta, carta, A5, 80mm y 58mm.
+- Las guias operativas, plantilla de evidencia, ayuda en la app y mensajes de handoff deben pedir validacion fisica de A5, carta, media carta, 80mm y 58mm.
 - La plantilla `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md` incluye campos obligatorios `80mm result` y `58mm result`, coherentes con el preflight y `/api/system/status`.
 
 Motivo:
@@ -1789,7 +1789,7 @@ Consecuencia:
 
 Decision:
 
-- Las instrucciones y selectores deben presentar los formatos como media carta, carta, A5, 80mm y 58mm.
+- Las instrucciones y selectores deben presentar los formatos como A5, carta, media carta, 80mm y 58mm.
 - Los formatos termicos 80mm/58mm siguen soportados, pero no reemplazan ni preceden los formatos de pagina en el flujo operativo.
 - Los textos que solo mencionan media carta/carta/A5 se consideran incompletos hasta agregar 80mm/58mm.
 
@@ -1801,7 +1801,25 @@ Motivo:
 Consecuencia:
 
 - Las pruebas del helper de papel fallan si el selector vuelve a ordenar termico antes de carta/A5.
-- Las guias operativas deben listar siempre media carta, carta, A5, 80mm y 58mm cuando hablen de prueba o seleccion de recibo.
+- Las guias operativas deben listar siempre A5, carta, media carta, 80mm y 58mm cuando hablen de prueba o seleccion de recibo.
+
+### 2026-06-02 - Orden operativo invertido para recibo institucional
+
+Decision:
+
+- El selector y las pruebas de evidencia fisica empiezan por A5, siguen con carta y despues media carta.
+- 80mm y 58mm permanecen al final como formatos termicos soportados, no como primera opcion operativa.
+- El valor por defecto sigue siendo media carta para mantener compatibilidad con configuraciones existentes.
+
+Motivo:
+
+- La aclaracion operativa indica que el orden anterior estaba al reves.
+- Cambiar solo el orden evita migraciones y no altera recibos historicos ni validacion de backend.
+
+Consecuencia:
+
+- Los operadores ven primero A5/carta/media carta al seleccionar o probar recibos.
+- La prueba unitaria del helper falla si el orden vuelve a media carta/carta/A5.
 
 ### 2026-06-02 - Crear usuarios se muestra solo con permiso explicito
 
@@ -1856,3 +1874,21 @@ Consecuencia:
 
 - `NewInvoiceView.test.tsx` falla si el flujo de cobro deja de mostrar el total estimado con ISV antes de emitir.
 - Cualquier diferencia final sigue resolviendose con la respuesta del backend emitida.
+
+### 2026-06-02 - Restore Windows compatible con PowerShell 5.1
+
+Decision:
+
+- `scripts/restore_hospital_windows.ps1` no usa operadores exclusivos de PowerShell 7 y resuelve `backend\.env` relativo al repositorio.
+- `-UseExistingEnv` toma credenciales del `.env`, pero restaura en `-TargetDatabase`, no en la base activa del `.env`.
+- El script agrega `-SelfTest` no destructivo y valida que el destino sea una base descartable con nombre seguro.
+
+Motivo:
+
+- Un servidor Windows hospitalario puede ejecutar Windows PowerShell 5.1, donde `??` no existe.
+- Restore es destructivo sobre el destino; el helper debe impedir nombres productivos, bases de sistema y formatos no esperados antes de buscar cliente MySQL.
+
+Consecuencia:
+
+- Soporte puede ejecutar `restore_hospital_windows.ps1 -SelfTest` sin tocar datos.
+- Restore real sigue pendiente hasta ejecutarse contra una base descartable y documentarse en `qa/FINAL_RESTORE_PROOF.md`.

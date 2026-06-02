@@ -176,6 +176,25 @@ DespuÃ©s de cada backup diario, copiar el archivo mÃ¡s reciente a una unidad
 
 Restore debe probarse en una base limpia de prueba, nunca directo en producciÃ³n sin parada controlada.
 
+En Windows puede usarse el helper seguro incluido en el repositorio. Primero
+ejecute el self-test; no toca bases ni backups:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 -SelfTest
+```
+
+Para restaurar un backup en una base descartable usando las credenciales de
+`backend\.env` pero sin usar la base activa:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 -UseExistingEnv -TargetDatabase hospital_restore_validation -BackupFile C:\backups\hospital-backup.sql
+```
+
+El nombre de `-TargetDatabase` debe contener `test`, `restore`, `validation`,
+`disposable` o `proof`, y solo puede usar letras, numeros y `_`. El script
+rechaza `hospital_billing`, `hospital_billing_production`, bases del sistema y
+formatos de backup que no sean `.sql` o `.tar.gz`.
+
 Pasos para MySQL/MariaDB:
 
 1. Confirmar que el archivo de backup viene de `backup_logs` con estado `success`.
