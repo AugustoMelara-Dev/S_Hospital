@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Dialog } from '../../../components/ui/dialog';
-import { parseCents } from '../../../lib/moneyCents';
+import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
 type CartItem = {
   service: import('../../../lib/api').Service;
@@ -73,10 +73,10 @@ export function InvoiceConfirmation({
                   {item.quantity} x {item.service.name}
                 </span>
                 {item.dialysisPrescription && item.service.special_rule_code === 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION' ? (
-                    <span className="text-emerald-600 font-medium">GRATIS</span>
-                  ) : (
-                    <span className="text-muted-foreground">L. {item.service.price}</span>
-                  )}
+                  <span className="text-emerald-600 font-medium">GRATIS</span>
+                ) : (
+                  <span className="text-muted-foreground">{moneyLabel(item.service.price)}</span>
+                )}
               </li>
             ))}
           </ul>
@@ -85,17 +85,17 @@ export function InvoiceConfirmation({
         <div className="space-y-1.5 text-sm border-t border-border pt-3">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Subtotal:</span>
-            <span>L. {preview.subtotal}</span>
+            <span>{moneyLabel(preview.subtotal)}</span>
           </div>
           {taxRate && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">ISV ({taxRate}%):</span>
-              <span>L. {preview.tax}</span>
+              <span>{moneyLabel(preview.tax)}</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-base">
             <span>Total estimado:</span>
-            <span>L. {preview.total}</span>
+            <span>{moneyLabel(preview.total)}</span>
           </div>
         </div>
 
@@ -131,4 +131,8 @@ export function InvoiceConfirmation({
       </div>
     </Dialog>
   );
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
 }
