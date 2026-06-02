@@ -132,6 +132,7 @@ function friendlyReadinessBlocker(code: string, fallback: string): string {
 
 function operationalSummary(status: SystemStatus): { level: OperationalStatus; label: string; description: string; className: string } {
   const hasError =
+    !status.database.connected ||
     !status.frontend.dist_index_exists ||
     !status.frontend.assets_present ||
     !status.backups.storage.writable ||
@@ -365,14 +366,17 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
         {systemStatus && showAdvancedStatus ? (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-            <Card className={systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && systemStatus.network.lan_ready ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}>
+            <Card className={systemStatus.database.connected && systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && systemStatus.network.lan_ready ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}>
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
                   <div className="rounded-lg bg-white/80 p-2.5">
                     <Server className="h-5 w-5 text-slate-700" />
                   </div>
                   <div className="min-w-0 space-y-1">
-                    <p className="text-sm font-semibold">Interfaz y red local</p>
+                    <p className="text-sm font-semibold">Servidor, datos y red local</p>
+                    <p className="text-xs text-muted-foreground">
+                      Base de datos: {systemStatus.database.connected ? 'conectada' : 'pendiente'}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       Interfaz: {systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present ? 'lista' : 'requiere build'}
                     </p>

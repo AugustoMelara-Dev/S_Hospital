@@ -477,6 +477,7 @@ export type SystemStatus = {
     connection: string;
     driver: string;
     is_mysql_family: boolean;
+    connected: boolean;
   };
   frontend: {
     dist_index_exists: boolean;

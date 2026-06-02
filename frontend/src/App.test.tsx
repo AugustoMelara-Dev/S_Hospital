@@ -25,6 +25,7 @@ describe('App', () => {
           connection: 'mysql',
           driver: 'mysql',
           is_mysql_family: true,
+          connected: true,
         },
         frontend: {
           dist_index_exists: true,
@@ -473,7 +474,8 @@ describe('App', () => {
     expect(screen.queryByText(/requiere revisi/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver detalle avanzado/i }));
     expect(await screen.findByText(/checklist operativo/i)).toBeInTheDocument();
-    expect(screen.getByText(/interfaz y red local/i)).toBeInTheDocument();
+    expect(screen.getByText(/servidor, datos y red local/i)).toBeInTheDocument();
+    expect(screen.getByText(/base de datos:\s*conectada/i)).toBeInTheDocument();
     expect(screen.getByText(/acceso cliente/i)).toBeInTheDocument();
     expect(screen.getByText(/192\.168\.1\.10:8000/i)).toBeInTheDocument();
     expect(screen.getByText(/versi[oó]n instalada/i)).toBeInTheDocument();

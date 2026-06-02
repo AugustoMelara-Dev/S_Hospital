@@ -192,11 +192,19 @@ class SystemStatusController extends Controller
     {
         $connection = (string) Config::get('database.default');
         $driver = (string) Config::get("database.connections.{$connection}.driver", $connection);
+        $connected = true;
+
+        try {
+            DB::connection($connection)->getPdo();
+        } catch (\Throwable) {
+            $connected = false;
+        }
 
         return [
             'connection' => $connection,
             'driver' => $driver,
             'is_mysql_family' => in_array($driver, ['mysql', 'mariadb'], true),
+            'connected' => $connected,
         ];
     }
 

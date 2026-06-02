@@ -65,6 +65,7 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.network.host_type', 'lan')
             ->assertJsonPath('data.network.lan_ready', true)
             ->assertJsonPath('data.network.client_url', 'http://192.168.1.10:8000')
+            ->assertJsonPath('data.database.connected', true)
             ->assertJsonPath('data.environment.app_version', 'local')
             ->assertJsonPath('data.preflight.public_routes.0.path', '/up')
             ->assertJsonPath('data.preflight.public_routes.1.path', '/login')
@@ -76,6 +77,7 @@ class SystemStatusTest extends TestCase
             ->assertJsonMissingPath('data.database.password');
 
         $this->assertStringNotContainsString('password', json_encode($response->json(), JSON_THROW_ON_ERROR));
+        $this->assertStringNotContainsString('SQLSTATE', json_encode($response->json(), JSON_THROW_ON_ERROR));
         $this->assertStringNotContainsString($proofRoot, json_encode($response->json(), JSON_THROW_ON_ERROR));
     }
 
