@@ -7,6 +7,7 @@ import { Label } from '../../../components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/data-table';
 import { KPICard } from './KPICard';
 import type { CashSessionReport } from '../../../lib/api/types';
+import { parseCents } from '../../../lib/moneyCents';
 
 interface CashSessionReportTabProps {
   canExport: boolean;
@@ -78,7 +79,7 @@ export function CashSessionReportTab({
             />
           </div>
 
-          {cashSession.cash_session.difference_amount && Number.parseFloat(cashSession.cash_session.difference_amount) !== 0 && (
+          {cashSession.cash_session.difference_amount && (parseCents(cashSession.cash_session.difference_amount) ?? 0) !== 0 && (
             <Card className="border-destructive">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-destructive">

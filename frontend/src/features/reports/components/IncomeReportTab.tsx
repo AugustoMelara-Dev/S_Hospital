@@ -21,6 +21,7 @@ import type {
   IncomeReport,
   ReportFilters,
 } from '../../../lib/api/types';
+import { formatCents, parseCents } from '../../../lib/moneyCents';
 
 interface IncomeReportTabProps {
   canExport: boolean;
@@ -81,12 +82,14 @@ export function IncomeReportTab({
 }: IncomeReportTabProps) {
 
   const daysInRange = Math.max(1, Math.ceil((new Date(dateTo).getTime() - new Date(dateFrom).getTime()) / (1000 * 60 * 60 * 24)) + 1);
-  const averagePerDay = income ? (Number.parseFloat(income.total_collected) / daysInRange).toFixed(2) : '0.00';
+  const averagePerDay = income
+    ? formatCents(((parseCents(income.total_collected) ?? 0) / daysInRange))
+    : '0.00';
 
   const chartData = income
     ? Object.entries(income.payments_by_method).map(([method, amount]) => ({
         method: methodLabel(method),
-        amount: Number.parseFloat(amount),
+        amount: (parseCents(amount) ?? 0) / 100,
       }))
     : [];
 

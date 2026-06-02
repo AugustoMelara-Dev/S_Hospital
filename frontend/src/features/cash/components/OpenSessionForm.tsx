@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { parseCents } from '@/lib/moneyCents';
 
 const openSessionSchema = z.object({
   opening_amount: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Debe ser un número válido')
-    .refine(val => parseFloat(val) >= 0, 'El monto no puede ser negativo'),
+    .refine(val => (parseCents(val) ?? 0) >= 0, 'El monto no puede ser negativo'),
 });
 
 type OpenSessionFormData = z.infer<typeof openSessionSchema>;

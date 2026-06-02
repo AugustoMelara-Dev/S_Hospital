@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert } from '@/components/ui/alert';
 import { apiClient, userSafeErrorMessage } from '@/lib/api';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, type InstitutionalReceiptPaperOption, institutionalReceiptPaperSize } from '@/lib/institutionalReceiptPaper';
+import { parseCents } from '@/lib/moneyCents';
 import {
   Building2,
   FileCheck,
@@ -179,7 +180,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
       const taxableChar = taxableInput ? taxableInput.toUpperCase() : 'S';
       const taxable = taxableChar === 'S' || taxableChar === 'SI' || taxableChar === 'Y' || taxableChar === 'YES' || taxableChar === '1';
 
-      if (category && area && service && !isNaN(parseFloat(price))) {
+      if (category && area && service && parseCents(price) !== null) {
         result.push({ category, area, service, price, taxable });
       }
     }

@@ -12,6 +12,7 @@ import {
 } from '../../components/ui/select';
 import { type ReceiptData } from '../../lib/api';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
+import { parseCents } from '../../lib/moneyCents';
 
 type ReceiptPreviewProps = {
   autoPrint?: boolean;
@@ -132,10 +133,10 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
             <Row label="Subtotal" value={`L. ${receipt.invoice.subtotal}`} />
             <Row label={taxLabel} value={`L. ${receipt.invoice.tax_amount}`} />
             <Row label="TOTAL" value={`L. ${receipt.invoice.total}`} strong />
-            {Number(receipt.invoice.paid_amount) > 0 ? (
+            {(parseCents(receipt.invoice.paid_amount) ?? 0) > 0 ? (
               <Row label="Pagado" value={`L. ${receipt.invoice.paid_amount}`} />
             ) : null}
-            {Number(receipt.invoice.balance_due) > 0 ? (
+            {(parseCents(receipt.invoice.balance_due) ?? 0) > 0 ? (
               <Row label="Saldo" value={`L. ${receipt.invoice.balance_due}`} />
             ) : null}
           </div>

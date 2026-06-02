@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { EmptyState } from '../../../components/ui/states';
 import { KPICard } from './KPICard';
 import type { ServiceSalesReport, CategoryReport } from '../../../lib/api/types';
+import { formatCents, parseCents } from '../../../lib/moneyCents';
 
 interface ServiceSalesTabProps {
   canExport: boolean;
@@ -28,7 +29,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
   const chartData = serviceSales
     ? serviceSales.services.slice(0, 10).map((s) => ({
         service: s.service.length > 18 ? `${s.service.slice(0, 18)}...` : s.service,
-        total: Number.parseFloat(s.total),
+        total: (parseCents(s.total) ?? 0) / 100,
       }))
     : [];
 
@@ -75,7 +76,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
             />
             <KPICard
               title="Monto Facturado"
-              value={`L. ${serviceSales.services.reduce((acc, s) => acc + Number.parseFloat(s.total), 0).toFixed(2)}`}
+              value={`L. ${formatCents(serviceSales.services.reduce((acc, s) => acc + (parseCents(s.total) ?? 0), 0))}`}
             />
           </div>
         </>

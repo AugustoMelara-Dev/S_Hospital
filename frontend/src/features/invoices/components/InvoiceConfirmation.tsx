@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Dialog } from '../../../components/ui/dialog';
+import { parseCents } from '../../../lib/moneyCents';
 
 type CartItem = {
   service: import('../../../lib/api').Service;
@@ -32,7 +33,7 @@ export function InvoiceConfirmation({
   submitting,
 }: InvoiceConfirmationProps) {
   const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
-  const willOpenPayment = Boolean(cashSessionId) && Number(preview.total) > 0;
+  const willOpenPayment = Boolean(cashSessionId) && (parseCents(preview.total) ?? 0) > 0;
 
   useEffect(() => {
     if (open) {
