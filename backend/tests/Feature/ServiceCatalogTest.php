@@ -180,17 +180,24 @@ class ServiceCatalogTest extends TestCase
         $plainUser = User::factory()->create();
         $catalogViewer->givePermissionTo('catalog.view');
         $reportViewer->givePermissionTo('reports.managerial.view');
+        $inactiveArea = Area::query()->firstOrFail();
+        $inactiveArea->forceFill(['active' => false])->save();
 
         $this->actingAs($catalogViewer)
             ->getJson('/api/areas?active=1')
             ->assertOk()
-            ->assertJsonCount(5, 'data')
-            ->assertJsonPath('data.0.slug', 'hospitalizacion-y-emergencia');
+            ->assertJsonCount(4, 'data');
 
         $this->actingAs($reportViewer)
-            ->getJson('/api/areas?active=1')
+            ->getJson('/api/areas?active=0')
             ->assertOk()
-            ->assertJsonCount(5, 'data');
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $inactiveArea->id);
+
+        $this->actingAs($catalogViewer)
+            ->getJson('/api/areas?active=not-bool')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('active');
 
         $this->actingAs($plainUser)
             ->getJson('/api/areas')

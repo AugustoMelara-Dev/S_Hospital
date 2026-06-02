@@ -2052,3 +2052,22 @@ Consecuencia:
 - Usuarios sin `catalog.view` reciben 403 al listar categorias.
 - `active=0` sigue permitiendo consultar categorias inactivas a usuarios autorizados.
 - Valores no booleanos para `active` devuelven 422.
+
+### 2026-06-02 - Lectura de areas valida filtros con Form Request
+
+Decision:
+
+- `GET /api/areas` usa `IndexAreaRequest`.
+- La autorizacion permite `catalog.view` o `reports.managerial.view`.
+- El filtro `active` se valida como booleano antes de consultar.
+
+Motivo:
+
+- Las areas alimentan tanto catalogo como reportes gerenciales; ambos permisos son validos, pero deben declararse fuera del controlador.
+- Rechazar filtros no booleanos evita consultas ambiguas en un endpoint compartido por caja, catalogo y reportes.
+
+Consecuencia:
+
+- Usuarios sin permisos de catalogo ni reportes siguen recibiendo 403.
+- Usuarios autorizados pueden consultar areas activas o inactivas con filtros booleanos.
+- Valores invalidos de `active` devuelven 422.
