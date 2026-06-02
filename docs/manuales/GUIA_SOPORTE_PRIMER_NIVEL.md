@@ -62,6 +62,17 @@ El script crea una carpeta en `qa\support-packets\`. Incluye diagnostico y
 extractos de logs recortados. No copia `.env`, respaldos `.sql`, passwords,
 tokens ni carpetas completas de datos.
 
+Antes de entregar o actualizar el paquete offline, soporte tecnico puede validar
+que esa proteccion sigue funcionando sin tocar datos reales:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1
+```
+
+El validador crea un fixture temporal, genera un paquete de soporte y falla si
+aparecen secretos, `.env` o rutas locales reales. No levanta Docker, no migra y
+no consulta la base de datos del hospital.
+
 ## Evidencia Dentro Del Sistema
 
 Si puede iniciar sesion:
