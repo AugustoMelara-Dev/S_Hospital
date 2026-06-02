@@ -105,8 +105,8 @@ class FinancialFactsService
     {
         $hasItemFilter = $this->hasItemFilter($filters);
         $amountExpression = $hasItemFilter
-            ? 'ROUND(payments.amount * 100 * filtered_items.item_total_cents / NULLIF(ROUND(invoices.total * 100), 0))'
-            : 'ROUND(payments.amount * 100)';
+            ? 'ROUND(payments.amount_cents * filtered_items.item_total_cents / NULLIF(ROUND(invoices.total * 100), 0))'
+            : 'payments.amount_cents';
 
         $base = Payment::query()
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')

@@ -234,6 +234,25 @@ class ReportsTest extends TestCase
             ->assertJsonValidationErrors('date_from');
     }
 
+    public function test_income_report_uses_payment_amount_cents_as_financial_source(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+        Payment::query()
+            ->where('invoice_id', $invoiceId)
+            ->update(['amount' => '99.99']);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/income?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertJsonPath('data.total_collected', '17.25')
+            ->assertJsonPath('data.payments_by_method.cash', '17.25');
+    }
+
     public function test_category_report_uses_invoice_item_snapshots_and_ignores_current_catalog_changes(): void
     {
         $this->seedBillingBase();

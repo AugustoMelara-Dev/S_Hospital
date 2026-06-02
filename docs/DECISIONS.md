@@ -1746,3 +1746,22 @@ Consecuencia:
 
 - Las pruebas fallan si `reports.managerial.view` o `receipts.reprint_any` vuelven a permitir pagos o anulaciones de facturas fuera del alcance operativo.
 - Usuarios con `invoices.void` tambien necesitan operar su factura propia del dia o tener `invoices.operate_any` para anular facturas ajenas/antiguas.
+
+### 2026-06-01 - Ingresos usan hechos financieros en centavos
+
+Decision:
+
+- `IncomeReportService` usa `FinancialFactsService` como fuente de verdad para facturado, cobrado, pendiente, parcial, anulado, cantidad de pagos y metodos de pago.
+- `invoice_count` en ingresos conserva su contrato historico: cuenta facturas con pagos publicados en el periodo/filtro, no todas las facturas emitidas.
+- `FinancialFactsService` calcula cobros desde `payments.amount_cents`, incluyendo prorrateo por categoria o area.
+- El decimal `payments.amount` queda como representacion humana/persistida, no como fuente aritmetica de reportes.
+
+Motivo:
+
+- Los reportes administrativos no deben mezclar agregacion SQL en centavos con bucles PHP basados en floats.
+- `amount_cents` evita deriva de redondeo y hace verificable el prorrateo por snapshots de items.
+
+Consecuencia:
+
+- `ReportsTest` falla si el reporte de ingresos vuelve a tomar el decimal `payments.amount` como fuente de cobro.
+- Los reportes diarios, mensuales e ingresos comparten la misma semantica financiera.

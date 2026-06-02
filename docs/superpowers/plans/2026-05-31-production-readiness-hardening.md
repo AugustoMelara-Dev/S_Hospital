@@ -68,6 +68,7 @@ Current local verification notes:
 - Fiscal settings exposure was hardened on 2026-06-01: `GET /api/settings/fiscal` now enforces `settings.fiscal.view`, while `/api/settings/branding` remains public and narrow for login/branding. Focused backend coverage was added for the cajero 403 case.
 - Invoice operation scope was hardened on 2026-06-01: payment and invoice void flows require operational access through own-day invoice or `invoices.operate_any`; report/reprint permissions alone are covered as negative cases.
 - Receipt print audit was rechecked on 2026-06-01: history print uses the reprint endpoint before print, and `ReceiptPreview` now has focused coverage that printing waits for the audit callback and does not print if the callback fails.
+- Income reports were aligned with cent-based financial facts on 2026-06-01: `IncomeReportService` now uses `FinancialFactsService`, and report collection totals come from `payments.amount_cents` including category/area allocation.
 
 ## Plan Review Orchestrator Result
 
