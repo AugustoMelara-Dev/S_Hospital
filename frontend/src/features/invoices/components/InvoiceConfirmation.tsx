@@ -14,6 +14,7 @@ type InvoiceConfirmationProps = {
   patientName: string;
   items: CartItem[];
   preview: { subtotal: string; tax: string; total: string };
+  taxRate?: string;
   cashSessionId?: number;
   onConfirm: () => void;
   submitting?: boolean;
@@ -25,6 +26,7 @@ export function InvoiceConfirmation({
   patientName,
   items,
   preview,
+  taxRate,
   cashSessionId,
   onConfirm,
   submitting,
@@ -84,12 +86,14 @@ export function InvoiceConfirmation({
             <span className="text-muted-foreground">Subtotal:</span>
             <span>L. {preview.subtotal}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">ISV (15%):</span>
-            <span>L. {preview.tax}</span>
-          </div>
+          {taxRate && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">ISV ({taxRate}%):</span>
+              <span>L. {preview.tax}</span>
+            </div>
+          )}
           <div className="flex justify-between font-bold text-base">
-            <span>Total:</span>
+            <span>Total estimado:</span>
             <span>L. {preview.total}</span>
           </div>
         </div>

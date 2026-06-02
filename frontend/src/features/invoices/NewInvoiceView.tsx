@@ -18,7 +18,6 @@ import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPap
 import { invoiceSchema } from '../../schemas/invoice.schema';
 import { useFiscalSettings } from '../../hooks/useFiscalSettings';
 
-const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 const POS_SERVICE_PAGE_SIZE = 24;
 
 interface POSState {
@@ -432,7 +431,7 @@ export function NewInvoiceView({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [canEmit, cartItems.length, handleClearCart, patientName, scanCode, search, showClearConfirm, showConfirmation, showPayment, showReceipt, showSuccess]);
 
-  const preview = useMemo(() => calculatePreview(cartItems), [cartItems]);
+  const preview = useMemo(() => computeSimpleEstimate(cartItems), [cartItems]);
 
   async function loadPointOfSaleData() {
     if (!canViewCatalog) {
@@ -859,6 +858,7 @@ export function NewInvoiceView({
             <InvoiceCart
               items={cartItems}
               preview={preview}
+              taxRate={fiscalSettings?.default_tax_rate}
               onUpdateQuantity={updateQuantity}
               onUpdateDialysisPrescription={updateDialysisPrescription}
               onRemoveItem={removeItem}
@@ -879,6 +879,7 @@ export function NewInvoiceView({
         patientName={patientName}
         items={cartItems}
         preview={preview}
+        taxRate={fiscalSettings?.default_tax_rate}
         cashSessionId={loadedCashSession?.id}
         onConfirm={() => void submitInvoice()}
         submitting={submitting}
@@ -954,29 +955,14 @@ export function NewInvoiceView({
   );
 }
 
-function calculatePreview(items: CartItem[]) {
-  const subtotal = items.reduce((total, item) => {
-    const unitPrice = item.dialysisPrescription && item.service.special_rule_code === ERYTHROPOIETIN_RULE
-      ? 0
-      : parseCents(item.service.price);
-    const quantity = parseQuantityUnits(item.quantity);
-    return total + Math.trunc((unitPrice * quantity + 50) / 100);
+function computeSimpleEstimate(items: CartItem[]) {
+  const total = items.reduce((sum, item) => {
+    return sum + parseCents(item.service.price) * parseQuantityUnits(item.quantity);
   }, 0);
-
-  const tax = items.reduce((total, item) => {
-    if (!item.service.taxable) return total;
-    const unitPrice = item.dialysisPrescription && item.service.special_rule_code === ERYTHROPOIETIN_RULE
-      ? 0
-      : parseCents(item.service.price);
-    const quantity = parseQuantityUnits(item.quantity);
-    const lineSubtotal = Math.trunc((unitPrice * quantity + 50) / 100);
-    return total + Math.trunc((lineSubtotal * 1500 + 5000) / 10000);
-  }, 0);
-
   return {
-    subtotal: formatCents(subtotal),
-    tax: formatCents(tax),
-    total: formatCents(subtotal + tax),
+    subtotal: formatCents(Math.trunc((total + 50) / 100)),
+    tax: '0.00',
+    total: formatCents(Math.trunc((total + 50) / 100)),
   };
 }
 

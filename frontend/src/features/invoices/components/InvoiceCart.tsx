@@ -13,6 +13,7 @@ export type CartItem = {
 type InvoiceCartProps = {
   items: CartItem[];
   preview: { subtotal: string; tax: string; total: string };
+  taxRate?: string;
   onUpdateQuantity: (index: number, quantity: string) => void;
   onUpdateDialysisPrescription: (index: number, checked: boolean) => void;
   onRemoveItem: (index: number) => void;
@@ -29,6 +30,7 @@ const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 export function InvoiceCart({
   items,
   preview,
+  taxRate,
   onUpdateQuantity,
   onUpdateDialysisPrescription,
   onRemoveItem,
@@ -158,12 +160,14 @@ export function InvoiceCart({
             <span className="text-muted-foreground">Subtotal:</span>
             <span>L. {preview.subtotal}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">ISV (15%):</span>
-            <span>L. {preview.tax}</span>
-          </div>
+          {taxRate && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">ISV ({taxRate}%):</span>
+              <span>L. {preview.tax}</span>
+            </div>
+          )}
           <div className="flex justify-between font-bold text-xl border-t border-border pt-2">
-            <span>Total:</span>
+            <span>Total estimado:</span>
             <span className="text-primary">L. {preview.total}</span>
           </div>
         </div>
