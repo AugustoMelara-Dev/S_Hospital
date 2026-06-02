@@ -463,8 +463,8 @@ html.dark {
 
   /* Institutional receipt styles */
   .institutional-receipt {
-    width: 5.5in;
-    min-height: 8.5in;
+    width: 8.5in;
+    min-height: 5.5in;
     padding: 28px;
     background: white;
     font-family: Arial, Helvetica, sans-serif;
@@ -743,8 +743,8 @@ html.dark {
     position: absolute;
     left: 0;
     top: 0;
-    width: 5.5in;
-    min-height: 8.5in;
+    width: 8.5in;
+    min-height: 5.5in;
     padding: 28px;
     background: white;
     color: black;
@@ -788,7 +788,7 @@ html.dark {
   }
 
   @page receipt-half-letter {
-    size: 5.5in 8.5in;
+    size: 8.5in 5.5in;
     margin: 0.35in;
   }
 

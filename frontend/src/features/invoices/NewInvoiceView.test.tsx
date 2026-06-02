@@ -928,6 +928,8 @@ describe('NewInvoiceView', () => {
     const styles = readFileSync('src/styles.css', 'utf8');
 
     expect(styles).toContain('body[data-printing-receipt="true"] *');
+    expect(styles).toContain('@page receipt-half-letter');
+    expect(styles).toContain('size: 8.5in 5.5in;');
     expect(styles).toContain('.institutional-receipt.receipt-letter');
     expect(styles).toContain('.institutional-receipt.receipt-a5');
     expect(styles).toContain('.institutional-receipt.receipt-80mm');

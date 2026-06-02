@@ -2497,3 +2497,20 @@ Consecuencia:
 
 - Usuarios con acceso historico mantienen alcance amplio.
 - Cajeros sin acceso historico solo pueden ver facturas propias emitidas hoy.
+
+### 2026-06-02 - Media carta de recibo se imprime horizontal
+
+Decision:
+
+- El recibo institucional `half_letter` usa `8.5in x 5.5in` en preview, print y `@page`.
+- Los formatos carta, A5, 80mm y 58mm conservan sus dimensiones existentes.
+
+Motivo:
+
+- Media carta operativa corresponde a media hoja carta horizontal; `5.5in x 8.5in` invertia la orientacion esperada.
+- La prueba frontend fija la regla para evitar regresiones.
+
+Consecuencia:
+
+- La vista previa de media carta queda mas ancha y baja, acorde al papel fisico.
+- La validacion fisica de impresora debe repetir media carta con esta orientacion.
