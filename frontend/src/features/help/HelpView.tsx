@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   HelpCircle,
+  Keyboard,
   LifeBuoy,
   Printer,
   ReceiptText,
@@ -18,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { PageHeader } from '../../components/ui/page-header';
 import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
+import { type ShortcutScope, shortcutLabel, shortcutsByScope } from '../../lib/shortcuts';
 import { buildClientIssueSupportSummary, getClientIssues } from '../../lib/support/clientIssueLog';
 
 const guides = [
@@ -171,6 +173,24 @@ const delicateActions = [
   },
 ];
 
+const shortcutSections: Array<{ title: string; scope: ShortcutScope; helper: string }> = [
+  {
+    title: 'Caja y facturacion',
+    scope: 'pos',
+    helper: 'Use estos atajos durante el trabajo de alto volumen. No activan acciones mientras escribe en campos de texto.',
+  },
+  {
+    title: 'Caja',
+    scope: 'cash',
+    helper: 'Accesos rapidos para abrir o revisar caja cuando el turno esta activo.',
+  },
+  {
+    title: 'Historial y reportes',
+    scope: 'history',
+    helper: 'Ayudan a navegar sin perder el contexto de la factura o turno.',
+  },
+];
+
 function SupportEvidenceCard() {
   const [showDetails, setShowDetails] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -302,6 +322,34 @@ export function HelpView() {
           );
         })}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Keyboard aria-hidden="true" className="size-5 text-secondary" />
+            Atajos de teclado
+          </CardTitle>
+          <CardDescription>Referencia para operar con teclado sin memorizar comandos externos.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-3">
+          {shortcutSections.map((section) => (
+            <div key={section.scope} className="rounded-md border border-border bg-muted/30 p-4">
+              <h3 className="text-sm font-semibold text-foreground">{section.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{section.helper}</p>
+              <dl className="mt-4 space-y-3">
+                {shortcutsByScope(section.scope).map((shortcut) => (
+                  <div key={`${section.scope}-${shortcut.scope}-${shortcutLabel(shortcut)}`} className="flex items-start justify-between gap-3">
+                    <dt className="shrink-0 rounded-md border border-border bg-card px-2 py-1 font-mono text-xs font-semibold text-foreground">
+                      {shortcutLabel(shortcut)}
+                    </dt>
+                    <dd className="text-right text-sm leading-5 text-muted-foreground">{shortcut.description}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
