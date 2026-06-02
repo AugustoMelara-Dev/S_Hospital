@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Reports;
 
+use App\Models\CashRegisterSession;
 use App\Models\Invoice;
 use App\Models\Payment;
 use Illuminate\Foundation\Http\FormRequest;
@@ -62,6 +63,32 @@ class DateRangeReportRequest extends FormRequest
     public function dateTo(): string
     {
         return (string) $this->date('date_to')->toDateString();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function authorizedFilters(): array
+    {
+        $filters = $this->validated();
+
+        if ($this->user()?->can('cash.close_any') === true) {
+            return $filters;
+        }
+
+        if (
+            ! empty($filters['cash_session_id'])
+            && CashRegisterSession::query()
+                ->whereKey($filters['cash_session_id'])
+                ->where('user_id', $this->user()?->id)
+                ->doesntExist()
+        ) {
+            abort(403);
+        }
+
+        $filters['user_id'] = $this->user()?->id;
+
+        return $filters;
     }
 
     private function maxDateTo(): string

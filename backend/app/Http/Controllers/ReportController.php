@@ -53,35 +53,35 @@ class ReportController extends Controller
     public function income(DateRangeReportRequest $request, IncomeReportService $reports): JsonResponse
     {
         return response()->json([
-            'data' => $reports->report($this->scopedFilters($request)),
+            'data' => $reports->report($request->authorizedFilters()),
         ]);
     }
 
     public function categories(DateRangeReportRequest $request, CategoryReportService $reports): JsonResponse
     {
         return response()->json([
-            'data' => $reports->report($this->scopedFilters($request)),
+            'data' => $reports->report($request->authorizedFilters()),
         ]);
     }
 
     public function areas(DateRangeReportRequest $request, AreaIncomeReportService $reports): JsonResponse
     {
         return response()->json([
-            'data' => $reports->report($this->scopedFilters($request)),
+            'data' => $reports->report($request->authorizedFilters()),
         ]);
     }
 
     public function services(DateRangeReportRequest $request, ServiceSalesReportService $reports): JsonResponse
     {
         return response()->json([
-            'data' => $reports->report($this->scopedFilters($request)),
+            'data' => $reports->report($request->authorizedFilters()),
         ]);
     }
 
     public function operations(DateRangeReportRequest $request, OperationsReportService $reports): JsonResponse
     {
         return response()->json([
-            'data' => $reports->report($this->scopedFilters($request), $request->user()->can('backups.view')),
+            'data' => $reports->report($request->authorizedFilters(), $request->user()->can('backups.view')),
         ]);
     }
 
@@ -93,7 +93,7 @@ class ReportController extends Controller
         ServiceSalesReportService $serviceReports,
         OperationsReportService $operationReports,
     ): StreamedResponse {
-        $filters = $this->scopedFilters($request);
+        $filters = $request->authorizedFilters();
         $income = $incomeReports->report($filters);
         $categories = $categoryReports->report($filters);
         $areas = $areaReports->report($filters);
@@ -186,31 +186,5 @@ class ReportController extends Controller
         return response()->json([
             'data' => $reports->report($cashSession),
         ]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function scopedFilters(DateRangeReportRequest $request): array
-    {
-        $filters = $request->validated();
-
-        if ($request->user()->can('cash.close_any')) {
-            return $filters;
-        }
-
-        if (
-            ! empty($filters['cash_session_id'])
-            && CashRegisterSession::query()
-                ->whereKey($filters['cash_session_id'])
-                ->where('user_id', $request->user()->id)
-                ->doesntExist()
-        ) {
-            abort(403);
-        }
-
-        $filters['user_id'] = $request->user()->id;
-
-        return $filters;
     }
 }

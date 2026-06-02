@@ -2463,3 +2463,20 @@ Consecuencia:
 
 - Usuarios sin permiso de reporte reciben 403.
 - Cajeros con permiso limitado solo pueden ver su propia caja; usuarios con `cash.close_any` conservan alcance amplio.
+
+### 2026-06-02 - Reportes de rango resuelven filtros autorizados en request
+
+Decision:
+
+- `DateRangeReportRequest` expone `authorizedFilters()` para income, categorias, areas, servicios, operaciones y exportacion Excel.
+- `ReportController` deja de mantener `scopedFilters()` privado.
+
+Motivo:
+
+- El alcance por caja o por usuario es parte de la autorizacion del request de reportes.
+- Unificar la regla evita divergencias entre vistas y exportaciones.
+
+Consecuencia:
+
+- Usuarios con `cash.close_any` conservan filtros amplios.
+- Usuarios sin ese permiso quedan limitados a su usuario y no pueden consultar cajas ajenas.
