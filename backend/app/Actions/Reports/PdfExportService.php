@@ -7,18 +7,30 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class PdfExportService
 {
-    public function generateDailyClosurePdf(array $data, array $fiscal): string
+    public function e(mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    }
+
+    public function buildDailyClosureHtml(array $data, array $fiscal): string
     {
         $hospitalName = HospitalName::display($fiscal['hospital_name'] ?? null);
         $rtn = $fiscal['rtn'] ?? 'N/A';
         $date = $data['date'];
+        $hospitalNameEsc = $this->e($hospitalName);
+        $rtnEsc = $this->e($rtn);
+        $dateEsc = $this->e($date);
 
         $html = "
 <!DOCTYPE html>
 <html lang='es'>
 <head>
     <meta charset='UTF-8'>
-    <title>Cierre Diario - {$date}</title>
+    <title>Cierre Diario - {$dateEsc}</title>
     <style>
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -151,9 +163,9 @@ class PdfExportService
 
     <div class='header'>
         <div class='hospital-info'>
-            <strong>{$hospitalName}</strong><br>
-            RTN: {$rtn}<br>
-            Fecha de Reporte: {$date}
+            <strong>{$hospitalNameEsc}</strong><br>
+            RTN: {$rtnEsc}<br>
+            Fecha de Reporte: {$dateEsc}
         </div>
         <div>
             <h1 class='header-title'>CIERRE DE CAJA DIARIO</h1>
@@ -166,12 +178,12 @@ class PdfExportService
         <div class='summary-card'>
             <div class='summary-card-title'>Total Facturado</div>
             <div class='summary-card-value'>L. ".number_format((float) $data['total_billed'], 2)."</div>
-            <div style='font-size: 10px; color: #64748b; margin-top: 4px;'>Facturas Emitidas: {$data['invoice_count']}</div>
+            <div style='font-size: 10px; color: #64748b; margin-top: 4px;'>Facturas Emitidas: ".$this->e($data['invoice_count'] ?? 0)."</div>
         </div>
         <div class='summary-card summary-card-right'>
             <div class='summary-card-title'>Total Recaudado</div>
             <div class='summary-card-value' style='color: #0d9488;'>L. ".number_format((float) $data['total_collected'], 2)."</div>
-            <div style='font-size: 10px; color: #64748b; margin-top: 4px;'>Pagos Procesados: {$data['payment_count']}</div>
+            <div style='font-size: 10px; color: #64748b; margin-top: 4px;'>Pagos Procesados: ".$this->e($data['payment_count'] ?? 0)."</div>
         </div>
         <div class='clear'></div>
     </div>
@@ -225,9 +237,9 @@ class PdfExportService
         <tbody>";
         foreach ($data['payments_by_method'] as $method => $total) {
             $methodName = $this->translateMethod($method);
-            $html .= "
+            $html .= '
             <tr>
-                <td><strong>{$methodName}</strong></td>
+                <td><strong>'.$this->e($methodName)."</strong></td>
                 <td class='text-right'>L. ".number_format((float) $total, 2).'</td>
             </tr>';
         }
@@ -249,10 +261,10 @@ class PdfExportService
             $statusName = $this->translateStatus($status);
             $count = $statusData['count'] ?? 0;
             $total = $statusData['total'] ?? 0.00;
-            $html .= "
+            $html .= '
             <tr>
-                <td><strong>{$statusName}</strong></td>
-                <td class='text-center'>{$count}</td>
+                <td><strong>'.$this->e($statusName)."</strong></td>
+                <td class='text-center'>".$this->e($count)."</td>
                 <td class='text-right'>L. ".number_format((float) $total, 2).'</td>
             </tr>';
         }
@@ -278,12 +290,15 @@ class PdfExportService
 </html>
 ';
 
-        $pdf = Pdf::loadHTML($html);
-
-        return $pdf->output();
+        return $html;
     }
 
-    public function generateRangeClosurePdf(array $data, array $fiscal): string
+    public function generateDailyClosurePdf(array $data, array $fiscal): string
+    {
+        return Pdf::loadHTML($this->buildDailyClosureHtml($data, $fiscal))->output();
+    }
+
+    public function buildRangeClosureHtml(array $data, array $fiscal): string
     {
         $hospitalName = HospitalName::display($fiscal['hospital_name'] ?? null);
         $rtn = $fiscal['rtn'] ?? 'N/A';
@@ -294,13 +309,17 @@ class PdfExportService
         $areas = $data['areas']['areas'] ?? [];
         $services = $data['services']['services'] ?? [];
         $operations = $data['operations'];
+        $hospitalNameEsc = $this->e($hospitalName);
+        $rtnEsc = $this->e($rtn);
+        $dateFromEsc = $this->e($dateFrom);
+        $dateToEsc = $this->e($dateTo);
 
         $html = "
 <!DOCTYPE html>
 <html lang='es'>
 <head>
     <meta charset='UTF-8'>
-    <title>Cierre Consolidado - {$dateFrom} a {$dateTo}</title>
+    <title>Cierre Consolidado - {$dateFromEsc} a {$dateToEsc}</title>
     <style>
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -420,9 +439,9 @@ class PdfExportService
 
     <div class='header'>
         <div class='hospital-info'>
-            <strong>{$hospitalName}</strong><br>
-            RTN: {$rtn}<br>
-            Período: {$dateFrom} al {$dateTo}
+            <strong>{$hospitalNameEsc}</strong><br>
+            RTN: {$rtnEsc}<br>
+            Período: {$dateFromEsc} al {$dateToEsc}
         </div>
         <div>
             <h1 class='header-title'>REPORTE FINANCIERO CONSOLIDADO</h1>
@@ -435,15 +454,16 @@ class PdfExportService
         <div class='summary-card'>
             <div class='summary-card-title'>Total Facturado</div>
             <div class='summary-card-value'>L. ".number_format((float) $income['total_billed'], 2)."</div>
-            <div style='font-size: 9px; color: #64748b; margin-top: 3px;'>Facturas Emitidas: {$income['invoice_count']}</div>
+            <div style='font-size: 9px; color: #64748b; margin-top: 3px;'>Facturas Emitidas: ".$this->e($income['invoice_count'] ?? 0)."</div>
         </div>
         <div class='summary-card summary-card-right'>
             <div class='summary-card-title'>Total Recaudado</div>
             <div class='summary-card-value' style='color: #0d9488;'>L. ".number_format((float) $income['total_collected'], 2)."</div>
-            <div style='font-size: 9px; color: #64748b; margin-top: 3px;'>Pagos Procesados: {$income['payment_count']}</div>
+            <div style='font-size: 9px; color: #64748b; margin-top: 3px;'>Pagos Procesados: ".$this->e($income['payment_count'] ?? 0)."</div>
         </div>
         <div class='clear'></div>
     </div>
+
 
     <div class='section-title'>Lectura Financiera del Periodo</div>
     <table>
@@ -499,16 +519,29 @@ class PdfExportService
             $html .= "<tr><td colspan='5' class='text-center'>No hay datos disponibles en este rango.</td></tr>";
         } else {
             foreach ($categories as $cat) {
-                $html .= '
+                $categoryName = $this->e($cat['category'] ?? 'Sin categoria');
+                $itemCount = $this->e($cat['item_count'] ?? 0);
+                $subtotal = number_format((float) ($cat['subtotal'] ?? 0), 2);
+                $taxAmount = number_format((float) ($cat['tax_amount'] ?? 0), 2);
+                $total = number_format((float) ($cat['total'] ?? 0), 2);
+                $html .= "
                 <tr>
-                    <td><strong>'.htmlspecialchars($cat['category'])."</strong></td>
-                    <td class='text-center'>{$cat['item_count']}</td>
-                    <td class='text-right'>L. ".number_format((float) $cat['subtotal'], 2)."</td>
-                    <td class='text-right'>L. ".number_format((float) $cat['tax_amount'], 2)."</td>
-                    <td class='text-right'><strong>L. ".number_format((float) $cat['total'], 2).'</strong></td>
-                </tr>';
+                    <td><strong>{$categoryName}</strong></td>
+                    <td class='text-center'>{$itemCount}</td>
+                    <td class='text-right'>L. {$subtotal}</td>
+                    <td class='text-right'>L. {$taxAmount}</td>
+                    <td class='text-right'><strong>L. {$total}</strong></td>
+                </tr>";
             }
         }
+        $summary = $operations['summary'] ?? [];
+        $voidCount = $this->e($summary['void_count'] ?? 0);
+        $reprintCount = $this->e($summary['reprint_count'] ?? 0);
+        $cashierCount = $this->e($summary['cashier_count'] ?? 0);
+        $backupCount = $this->e($summary['backup_count'] ?? 0);
+        $paymentVoidCount = $this->e($summary['payment_void_count'] ?? 0);
+        $failedBackupCount = $this->e($summary['failed_backup_count'] ?? 0);
+
         $html .= "
         </tbody>
     </table>
@@ -528,13 +561,17 @@ class PdfExportService
             $html .= "<tr><td colspan='4' class='text-center'>No hay facturación por área en este rango.</td></tr>";
         } else {
             foreach ($areas as $area) {
-                $html .= '
+                $areaName = $this->e($area['area'] ?? 'Sin area');
+                $itemCount = $this->e($area['item_count'] ?? 0);
+                $quantity = number_format((float) ($area['quantity'] ?? 0), 2);
+                $total = number_format((float) ($area['total'] ?? 0), 2);
+                $html .= "
                 <tr>
-                    <td><strong>'.htmlspecialchars($area['area'])."</strong></td>
-                    <td class='text-center'>{$area['item_count']}</td>
-                    <td class='text-center'>".number_format((float) $area['quantity'], 2)."</td>
-                    <td class='text-right'><strong>L. ".number_format((float) $area['total'], 2).'</strong></td>
-                </tr>';
+                    <td><strong>{$areaName}</strong></td>
+                    <td class='text-center'>{$itemCount}</td>
+                    <td class='text-center'>{$quantity}</td>
+                    <td class='text-right'><strong>L. {$total}</strong></td>
+                </tr>";
             }
         }
         $html .= "
@@ -552,9 +589,9 @@ class PdfExportService
         <tbody>";
         foreach ($income['payments_by_method'] as $method => $total) {
             $methodName = $this->translateMethod($method);
-            $html .= "
+            $html .= '
             <tr>
-                <td><strong>{$methodName}</strong></td>
+                <td><strong>'.$this->e($methodName)."</strong></td>
                 <td class='text-right'>L. ".number_format((float) $total, 2).'</td>
             </tr>';
         }
@@ -566,8 +603,8 @@ class PdfExportService
 
     <div class='header'>
         <div class='hospital-info'>
-            <strong>{$hospitalName}</strong><br>
-            Período: {$dateFrom} al {$dateTo}
+            <strong>{$hospitalNameEsc}</strong><br>
+            Período: {$dateFromEsc} al {$dateToEsc}
         </div>
         <div>
             <h1 class='header-title'>DETALLE OPERATIVO Y SERVICIOS</h1>
@@ -590,12 +627,15 @@ class PdfExportService
             $html .= "<tr><td colspan='3' class='text-center'>No hay datos de servicios en este rango.</td></tr>";
         } else {
             foreach (array_slice($services, 0, 10) as $srv) {
-                $html .= '
+                $serviceName = $this->e($srv['service'] ?? 'Servicio sin nombre');
+                $itemCount = $this->e($srv['item_count'] ?? 0);
+                $total = number_format((float) ($srv['total'] ?? 0), 2);
+                $html .= "
                 <tr>
-                    <td>'.htmlspecialchars($srv['service'])."</td>
-                    <td class='text-center'>{$srv['item_count']}</td>
-                    <td class='text-right'>L. ".number_format((float) $srv['total'], 2).'</td>
-                </tr>';
+                    <td>{$serviceName}</td>
+                    <td class='text-center'>{$itemCount}</td>
+                    <td class='text-right'>L. {$total}</td>
+                </tr>";
             }
         }
         $html .= "
@@ -607,24 +647,24 @@ class PdfExportService
         <table style='width: 100%; border: 1px solid #e2e8f0;'>
             <tr>
                 <td style='width: 25%; font-weight: bold; background-color: #f8fafc;'>Facturas Anuladas:</td>
-                <td style='width: 25%;'>{$operations['summary']['void_count']}</td>
+                <td style='width: 25%;'>{$voidCount}</td>
                 <td style='width: 25%; font-weight: bold; background-color: #f8fafc;'>Reimpresiones de Recibo:</td>
-                <td style='width: 25%;'>{$operations['summary']['reprint_count']}</td>
+                <td style='width: 25%;'>{$reprintCount}</td>
             </tr>
             <tr>
                 <td style='font-weight: bold; background-color: #f8fafc;'>Cajeros Activos:</td>
-                <td>{$operations['summary']['cashier_count']}</td>
+                <td>{$cashierCount}</td>
                 <td style='font-weight: bold; background-color: #f8fafc;'>Respaldos:</td>
-                <td>".($operations['summary']['backup_count'] ?? 0).'</td>
+                <td>{$backupCount}</td>
             </tr>
             <tr>
-                <td style="font-weight: bold; background-color: #f8fafc;">Reversos de Pago:</td>
-                <td>'.($operations['summary']['payment_void_count'] ?? 0)."</td>
+                <td style='font-weight: bold; background-color: #f8fafc;'>Reversos de Pago:</td>
+                <td>{$paymentVoidCount}</td>
                 <td style='font-weight: bold; background-color: #f8fafc;'>Respaldos Fallidos:</td>
-                <td>".($operations['summary']['failed_backup_count'] ?? 0).'</td>
+                <td>{$failedBackupCount}</td>
             </tr>
         </table>
-    </div>';
+    </div>";
 
         if (! empty($operations['voids'])) {
             $html .= "
@@ -642,10 +682,10 @@ class PdfExportService
             foreach (array_slice($operations['voids'], 0, 5) as $void) {
                 $html .= '
                     <tr>
-                        <td>'.htmlspecialchars((string) ($void['invoice_number'] ?? 'N/A')).'</td>
-                        <td>'.htmlspecialchars((string) ($void['voided_at'] ?? 'N/A')).'</td>
-                        <td>'.htmlspecialchars((string) ($void['user'] ?? $void['voided_by_name'] ?? 'N/A')).'</td>
-                        <td>'.htmlspecialchars((string) ($void['reason'] ?? $void['void_reason'] ?? 'Sin motivo')).'</td>
+                        <td>'.$this->e($void['invoice_number'] ?? 'N/A').'</td>
+                        <td>'.$this->e($void['voided_at'] ?? 'N/A').'</td>
+                        <td>'.$this->e($void['user'] ?? $void['voided_by_name'] ?? 'N/A').'</td>
+                        <td>'.$this->e($void['reason'] ?? $void['void_reason'] ?? 'Sin motivo').'</td>
                     </tr>';
             }
             $html .= '
@@ -670,11 +710,11 @@ class PdfExportService
             foreach (array_slice($operations['payment_voids'], 0, 5) as $paymentVoid) {
                 $html .= '
                     <tr>
-                        <td>'.htmlspecialchars((string) ($paymentVoid['invoice_number'] ?? 'N/A')).'</td>
-                        <td>'.htmlspecialchars($this->translateMethod((string) ($paymentVoid['method'] ?? '')))."</td>
+                        <td>'.$this->e($paymentVoid['invoice_number'] ?? 'N/A').'</td>
+                        <td>'.$this->e($this->translateMethod((string) ($paymentVoid['method'] ?? '')))."</td>
                         <td class='text-right'>L. ".number_format((float) ($paymentVoid['amount'] ?? 0), 2).'</td>
-                        <td>'.htmlspecialchars((string) ($paymentVoid['reason'] ?? 'Sin motivo')).'</td>
-                        <td>'.htmlspecialchars((string) ($paymentVoid['voided_by'] ?? 'N/A')).'</td>
+                        <td>'.$this->e($paymentVoid['reason'] ?? 'Sin motivo').'</td>
+                        <td>'.$this->e($paymentVoid['voided_by'] ?? 'N/A').'</td>
                     </tr>';
             }
             $html .= '
@@ -691,9 +731,12 @@ class PdfExportService
 </html>
 ';
 
-        $pdf = Pdf::loadHTML($html);
+        return $html;
+    }
 
-        return $pdf->output();
+    public function generateRangeClosurePdf(array $data, array $fiscal): string
+    {
+        return Pdf::loadHTML($this->buildRangeClosureHtml($data, $fiscal))->output();
     }
 
     private function translateMethod(string $method): string

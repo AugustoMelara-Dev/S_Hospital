@@ -1634,6 +1634,71 @@ class ReportsTest extends TestCase
         $this->assertStringContainsString('Facturas anuladas reportadas fuera de ingresos', $capturedHtml);
     }
 
+    public function test_period_closure_pdf_escapes_institutional_catalog_and_audit_text(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $supervisor = $this->supervisor();
+
+        FiscalSetting::query()->update([
+            'hospital_name' => 'Hospital <script>alert(1)</script>',
+            'rtn' => '0801"><script>alert(2)</script>',
+        ]);
+
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        Category::query()
+            ->whereKey($service->category_id)
+            ->update(['name' => 'Categoria <script>alert(3)</script>']);
+        Area::query()
+            ->whereKey($service->area_id)
+            ->update(['name' => 'Area <script>alert(4)</script>']);
+        $service->update(['name' => 'Servicio <img src=x onerror=alert(5)>']);
+
+        $invoiceId = $this->createInvoice($cashier, 'Servicio <img src=x onerror=alert(5)>');
+        $voidInvoiceId = $this->createInvoice($cashier, 'Servicio <img src=x onerror=alert(5)>');
+
+        Invoice::query()->whereKey($voidInvoiceId)->update([
+            'status' => Invoice::STATUS_VOID,
+            'voided_by' => $supervisor->id,
+            'voided_at' => now(),
+            'void_reason' => 'Motivo <script>alert(6)</script>',
+        ]);
+
+        $this->assertNotSame($invoiceId, $voidInvoiceId);
+
+        $capturedHtml = null;
+        Pdf::shouldReceive('loadHTML')
+            ->once()
+            ->with(\Mockery::on(function (string $html) use (&$capturedHtml): bool {
+                $capturedHtml = $html;
+
+                return true;
+            }))
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('output')
+                    ->once()
+                    ->andReturn('%PDF-escaped-report');
+            }));
+
+        $date = now()->toDateString();
+        $this->actingAs($admin)
+            ->get("/api/reports/pdf?date_from={$date}&date_to={$date}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-escaped-report', false);
+
+        $this->assertIsString($capturedHtml);
+        $this->assertStringContainsString('Hospital &lt;script&gt;alert(1)&lt;/script&gt;', $capturedHtml);
+        $this->assertStringContainsString('0801&quot;&gt;&lt;script&gt;alert(2)&lt;/script&gt;', $capturedHtml);
+        $this->assertStringContainsString('Categoria &lt;script&gt;alert(3)&lt;/script&gt;', $capturedHtml);
+        $this->assertStringContainsString('Area &lt;script&gt;alert(4)&lt;/script&gt;', $capturedHtml);
+        $this->assertStringContainsString('Servicio &lt;img src=x onerror=alert(5)&gt;', $capturedHtml);
+        $this->assertStringContainsString('Motivo &lt;script&gt;alert(6)&lt;/script&gt;', $capturedHtml);
+        $this->assertStringNotContainsString('<script>', $capturedHtml);
+        $this->assertStringNotContainsString('<img src=x', $capturedHtml);
+    }
+
     public function test_period_closure_pdf_labels_service_totals_as_billed_not_collected(): void
     {
         $this->seedBillingBase();
