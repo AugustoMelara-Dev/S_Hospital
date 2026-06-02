@@ -1784,3 +1784,21 @@ Consecuencia:
 
 - El paquete de produccion sigue dependiendo de evidencias reales para declararse listo, pero el compose entrega una senal operativa adicional para backups.
 - Futuras variantes de entorno con secretos deben permanecer ignoradas salvo archivos ejemplo o sample aprobados.
+
+### 2026-06-02 - Orden operativo de formatos de recibo institucional
+
+Decision:
+
+- Las instrucciones y selectores deben presentar los formatos como media carta, carta, A5, 80mm y 58mm.
+- Los formatos termicos 80mm/58mm siguen soportados, pero no reemplazan ni preceden los formatos de pagina en el flujo operativo.
+- Los textos que solo mencionan media carta/carta/A5 se consideran incompletos hasta agregar 80mm/58mm.
+
+Motivo:
+
+- La validacion fisica pendiente debe cubrir los cinco formatos, y el orden debe coincidir con la instruccion operativa esperada por el hospital.
+- Presentar 80mm/58mm antes de carta/A5 invierte la prioridad de uso y confunde el alcance de validacion.
+
+Consecuencia:
+
+- Las pruebas del helper de papel fallan si el selector vuelve a ordenar termico antes de carta/A5.
+- Las guias operativas deben listar siempre media carta, carta, A5, 80mm y 58mm cuando hablen de prueba o seleccion de recibo.

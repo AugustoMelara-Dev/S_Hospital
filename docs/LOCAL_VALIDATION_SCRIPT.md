@@ -31,7 +31,7 @@ Configuracion institucional:
 
 - Hospital: Hospital San Isidro.
 - RTN, CAI y secuencia: usar los datos autorizados por administracion o marcar la configuracion como pendiente mientras no se opere en produccion.
-- Recibo por defecto: media carta, con opciones carta y A5.
+- Recibo por defecto: media carta, con opciones carta, A5, 80mm y 58mm.
 
 ## Guion principal
 
@@ -71,7 +71,7 @@ Configuracion institucional:
 
 6. Ver recibo institucional
    - Confirmar vista previa institucional en media carta.
-   - Cambiar a carta y A5 para validar margenes.
+   - Cambiar a carta, A5, 80mm y 58mm para validar margenes y ancho termico.
    - Usar Imprimir solo en entorno con impresora o impresora virtual autorizada.
    - Confirmar que el recibo no contiene QR, codigo de barras, codigos internos ni datos tecnicos.
 

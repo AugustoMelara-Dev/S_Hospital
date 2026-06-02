@@ -70,6 +70,7 @@ Current local verification notes:
 - Receipt print audit was rechecked on 2026-06-01: history print uses the reprint endpoint before print, and `ReceiptPreview` now has focused coverage that printing waits for the audit callback and does not print if the callback fails.
 - Income reports were aligned with cent-based financial facts on 2026-06-01: `IncomeReportService` now uses `FinancialFactsService`, and report collection totals come from `payments.amount_cents` including category/area allocation.
 - Production infrastructure guardrails were tightened on 2026-06-01: `.env` variants are ignored, install docs name `php artisan key:generate`, and the Docker production queue worker exposes a DB-backed healthcheck. This remains local config evidence, not final worker proof.
+- 2026-06-02 user correction: receipt instructions/selectors must be ordered as media carta, carta, A5, 80mm and 58mm. The stale guide lines that only named media carta/carta/A5 were corrected; this is the inverse of removing thermal support.
 
 ## Plan Review Orchestrator Result
 
