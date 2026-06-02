@@ -37,6 +37,7 @@ import {
 
 type UsersViewProps = {
   onStatus: (message: string) => void;
+  canCreateUsers: boolean;
 };
 
 const PASSWORD_POLICY_HINT = 'Mínimo 10 caracteres, con letras y números';
@@ -46,7 +47,7 @@ function isPasswordPolicyCompliant(password: string) {
   return password.length >= 10 && /\p{L}/u.test(password) && /\p{N}/u.test(password);
 }
 
-export function UsersView({ onStatus }: UsersViewProps) {
+export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -284,10 +285,12 @@ export function UsersView({ onStatus }: UsersViewProps) {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button onClick={handleOpenCreateModal} className="w-full md:w-auto">
-          <UserPlus className="mr-2 h-4 w-4" />
-          Crear usuario
-        </Button>
+        {canCreateUsers && (
+          <Button onClick={handleOpenCreateModal} className="w-full md:w-auto">
+            <UserPlus className="mr-2 h-4 w-4" />
+            Crear usuario
+          </Button>
+        )}
       </div>
 
       <Card className="border border-border">

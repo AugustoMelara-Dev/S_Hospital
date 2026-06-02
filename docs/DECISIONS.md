@@ -1802,3 +1802,21 @@ Consecuencia:
 
 - Las pruebas del helper de papel fallan si el selector vuelve a ordenar termico antes de carta/A5.
 - Las guias operativas deben listar siempre media carta, carta, A5, 80mm y 58mm cuando hablen de prueba o seleccion de recibo.
+
+### 2026-06-02 - Crear usuarios se muestra solo con permiso explicito
+
+Decision:
+
+- La vista de administracion de usuarios recibe `canCreateUsers` desde la sesion y oculta la accion "Crear usuario" cuando falta `users.create`.
+- `users.view` permite entrar a la lista, pero no debe sugerir una accion de creacion que el backend rechazara.
+- El backend sigue siendo la defensa real; este cambio solo alinea la UX con permisos de menor privilegio.
+
+Motivo:
+
+- Operadores con permiso de lectura de usuarios necesitan consultar la lista sin ver acciones que no pueden ejecutar.
+- Ocultar botones reduce errores operativos y no debe sustituir las validaciones del API.
+
+Consecuencia:
+
+- `UsersView.test.tsx` falla si el boton de crear vuelve a mostrarse sin `users.create`.
+- Cualquier nueva accion administrativa debe recibir un permiso UI explicito, separado del permiso de lectura.

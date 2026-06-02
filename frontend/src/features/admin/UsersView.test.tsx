@@ -26,6 +26,13 @@ describe('UsersView', () => {
     vi.restoreAllMocks();
   });
 
+  it('hides the create action when the user lacks users.create', async () => {
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={false} />);
+
+    expect(await screen.findByText('Admin Hospital')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /crear usuario/i })).not.toBeInTheDocument();
+  });
+
   it('validates new user passwords with the same policy as Laravel', async () => {
     const createUser = vi.spyOn(apiClient, 'createUser').mockResolvedValue({
       ...adminUser,
@@ -37,7 +44,7 @@ describe('UsersView', () => {
       must_change_password: true,
     });
 
-    render(<UsersView onStatus={vi.fn()} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} />);
 
     fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
@@ -65,7 +72,7 @@ describe('UsersView', () => {
       resolveCreate = resolve;
     }));
 
-    render(<UsersView onStatus={vi.fn()} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} />);
 
     fireEvent.click(await screen.findByRole('button', { name: /crear usuario/i }));
     const dialog = screen.getByRole('dialog', { name: /crear usuario/i });
@@ -101,7 +108,7 @@ describe('UsersView', () => {
       must_change_password: true,
     });
 
-    render(<UsersView onStatus={vi.fn()} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} />);
 
     fireEvent.click(await screen.findByTitle('Restablecer clave'));
     const dialog = screen.getByRole('dialog', { name: /restablecer clave/i });
@@ -124,7 +131,7 @@ describe('UsersView', () => {
       resolveToggle = resolve;
     }));
 
-    render(<UsersView onStatus={vi.fn()} />);
+    render(<UsersView onStatus={vi.fn()} canCreateUsers={true} />);
 
     fireEvent.click(await screen.findByTitle('Desactivar usuario'));
     const dialog = screen.getByRole('alertdialog', { name: /desactivar usuario/i });

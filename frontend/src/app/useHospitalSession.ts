@@ -38,6 +38,7 @@ export function useHospitalSession() {
     canViewCashSessionReports;
   const canViewBackups = permissions.has('backups.view');
   const canViewUsers = permissions.has('users.view');
+  const canCreateUsers = permissions.has('users.create');
   const needsBillingCashBootstrap = false;
 
   useEffect(() => {
@@ -175,6 +176,7 @@ export function useHospitalSession() {
     canViewReports,
     canViewBackups,
     canViewUsers,
+    canCreateUsers,
     hasAnyOperationalPermission:
       canViewFiscalSettings ||
       canViewCatalog ||

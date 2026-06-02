@@ -111,6 +111,7 @@ function HospitalApp() {
           canViewCashSessionReports={session.canViewCashSessionReports}
           canExportReports={session.canExportReports}
           canViewUsers={session.canViewUsers}
+          canCreateUsers={session.canCreateUsers}
           cashSession={session.cashSession}
           defaultAuthenticatedRoute={session.defaultAuthenticatedRoute}
           onQuickCash={() => setQuickCashOpen(true)}

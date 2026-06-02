@@ -31,6 +31,7 @@ type AppRoutesProps = {
   canViewCashSessionReports: boolean;
   canExportReports: boolean;
   canViewUsers: boolean;
+  canCreateUsers: boolean;
   cashSession: CashSession | null;
   defaultAuthenticatedRoute: string;
   onQuickCash: () => void;
@@ -57,6 +58,7 @@ export function AppRoutes({
   canViewCashSessionReports,
   canExportReports,
   canViewUsers,
+  canCreateUsers,
   cashSession,
   defaultAuthenticatedRoute,
   onQuickCash,
@@ -174,7 +176,7 @@ export function AppRoutes({
         path="/admin/users"
         element={
           <PermissionGate allowed={canViewUsers} reason="Requiere permiso para gestionar usuarios.">
-            <UsersView onStatus={onStatus} />
+            <UsersView onStatus={onStatus} canCreateUsers={canCreateUsers} />
           </PermissionGate>
         }
       />
