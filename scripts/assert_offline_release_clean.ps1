@@ -138,6 +138,14 @@ Test-RequiredPath "scripts\run_scheduled_backup.cmd" "file"
 Test-ReleaseFileMatchesSource "docker-compose.prod.yml"
 Test-ReleaseFileMatchesSource "backend\Dockerfile.prod"
 Test-ReleaseFileMatchesSource "nginx\default.conf"
+Test-ReleaseFileMatchesSource "scripts\collect_support_packet.ps1"
+Test-ReleaseFileMatchesSource "scripts\deploy_hospital_lan.ps1"
+Test-ReleaseFileMatchesSource "scripts\install_backup_tasks_windows.ps1"
+Test-ReleaseFileMatchesSource "scripts\open_hospital_system.ps1"
+Test-ReleaseFileMatchesSource "scripts\repair_hospital_system.ps1"
+Test-ReleaseFileMatchesSource "scripts\start_hospital_services.ps1"
+Test-ReleaseFileMatchesSource "scripts\run_backup_worker.cmd"
+Test-ReleaseFileMatchesSource "scripts\run_scheduled_backup.cmd"
 
 $forbiddenItems = Get-ChildItem -LiteralPath $ReleaseRoot -Recurse -Force | Where-Object {
     $relative = Get-RelativeReleasePath $_

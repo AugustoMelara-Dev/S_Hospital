@@ -2297,3 +2297,24 @@ Consecuencia:
 - Operadores pueden detectar caidas via docker compose ps (muestra healthy/unhealthy).
 - Si en el futuro se sube el limite PHP, hay que acordarse de subir client_max_body_size tambien (comentado en default.conf).
 - offline-release/MANIFEST.txt (no commiteado, regenerado por pipeline) registra la nueva configuracion.
+
+### 2026-06-02 - Reparacion segura detecta paquete offline Docker
+
+Decision:
+
+- `scripts/repair_hospital_system.ps1` y `scripts/start_hospital_services.ps1` detectan si corren en desarrollo Docker o en paquete offline productivo.
+- En desarrollo solicitan `backend`, `frontend` y `mysql`; en paquete offline productivo solicitan `backend`, `nginx`, `mysql` y `queue-worker` usando `docker-compose.prod.yml` y `.env` raiz si existe.
+- Ambos scripts tienen modo `-WhatIfOnly` para validar modo, URL y servicios sin levantar Docker ni modificar contenedores.
+- `scripts/assert_offline_release_clean.ps1` compara scripts operativos criticos de soporte, arranque, diagnostico y backups dentro de `offline-release/scripts`.
+
+Motivo:
+
+- El paquete offline no tiene servicio `frontend`; la interfaz compilada la sirve `nginx`. Una reparacion que intente levantar `frontend` falla justo cuando el operador necesita recuperar caja.
+- Soporte de primer nivel necesita un chequeo no invasivo antes de tocar servicios del servidor.
+- Si cambia el script de reparacion segura o arranque manual, instalar una copia vieja deja al hospital sin recuperacion confiable cuando el sistema no abre.
+
+Consecuencia:
+
+- La reparacion segura sigue sin borrar datos, sin eliminar volumenes, sin ejecutar seeders y sin restaurar backups automaticamente.
+- Las guias operativas indican validar `start_hospital_services.ps1 -WhatIfOnly` antes de levantar servicios manualmente.
+- El release queda bloqueado si los scripts de soporte del paquete offline no coinciden con Git.

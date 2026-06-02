@@ -18,10 +18,6 @@ if ($ProjectRoot -eq "") {
 
 $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
 
-if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
-    $BaseUrl = "http://127.0.0.1:8000"
-}
-
 if ($ReportPath -eq "") {
     $ReportPath = Join-Path $ProjectRoot "qa\LOCAL_REPAIR_DIAGNOSTIC.md"
 }
@@ -46,10 +42,85 @@ if ($DelaySeconds -lt 1 -or $DelaySeconds -gt 30) {
     throw "DelaySeconds debe estar entre 1 y 30."
 }
 
+function Read-DotEnvFile([string] $envPath) {
+    $values = @{}
+    if (-not (Test-Path -LiteralPath $envPath -PathType Leaf)) {
+        return $values
+    }
+
+    foreach ($rawLine in (Get-Content -LiteralPath $envPath)) {
+        $line = $rawLine.Trim()
+        if ($line -ne "" -and -not $line.StartsWith("#") -and $line.Contains("=")) {
+            $key, $value = $line.Split("=", 2)
+            $values[$key.Trim()] = $value.Trim().Trim('"').Trim("'")
+        }
+    }
+
+    return $values
+}
+
+function Resolve-DockerRuntime {
+    $prodCompose = Join-Path $ProjectRoot "docker-compose.prod.yml"
+    $devCompose = Join-Path $ProjectRoot "docker-compose.yml"
+    $rootEnv = Join-Path $ProjectRoot ".env"
+    $backendEnv = Join-Path $ProjectRoot "backend\.env"
+    $offlineImages = Join-Path $ProjectRoot "offline-images"
+    $releaseSetup = Join-Path $ProjectRoot "setup.bat"
+
+    $isOfflinePackage = (Test-Path -LiteralPath $offlineImages -PathType Container) -or
+        ((Test-Path -LiteralPath $releaseSetup -PathType Leaf) -and -not (Test-Path -LiteralPath $devCompose -PathType Leaf))
+
+    if ((Test-Path -LiteralPath $prodCompose -PathType Leaf) -and ($isOfflinePackage -or -not (Test-Path -LiteralPath $devCompose -PathType Leaf))) {
+        $composeArgs = @("compose")
+        if (Test-Path -LiteralPath $rootEnv -PathType Leaf) {
+            $composeArgs += @("--env-file", $rootEnv)
+        }
+        $composeArgs += @("-f", $prodCompose)
+
+        return @{
+            Mode = "offline-docker"
+            ComposeArgs = $composeArgs
+            Services = @("backend", "nginx", "mysql", "queue-worker")
+            EnvPath = $rootEnv
+            EnvValues = Read-DotEnvFile $rootEnv
+            DefaultPort = "8000"
+        }
+    }
+
+    return @{
+        Mode = "development-docker"
+        ComposeArgs = @("compose")
+        Services = @("backend", "frontend", "mysql")
+        EnvPath = $backendEnv
+        EnvValues = Read-DotEnvFile $backendEnv
+        DefaultPort = "8000"
+    }
+}
+
+$dockerRuntime = Resolve-DockerRuntime
+
+if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
+    if ($dockerRuntime.Mode -eq "offline-docker" -and $dockerRuntime.EnvValues.ContainsKey("SERVER_IP")) {
+        $port = $dockerRuntime.DefaultPort
+        if ($dockerRuntime.EnvValues.ContainsKey("APP_PORT") -and -not [string]::IsNullOrWhiteSpace($dockerRuntime.EnvValues["APP_PORT"])) {
+            $port = $dockerRuntime.EnvValues["APP_PORT"]
+        }
+
+        $BaseUrl = "http://$($dockerRuntime.EnvValues["SERVER_IP"]):$port"
+    } elseif ($dockerRuntime.EnvValues.ContainsKey("APP_URL") -and -not [string]::IsNullOrWhiteSpace($dockerRuntime.EnvValues["APP_URL"])) {
+        $BaseUrl = $dockerRuntime.EnvValues["APP_URL"]
+    } else {
+        $BaseUrl = "http://127.0.0.1:8000"
+    }
+}
+
 if ($WhatIfOnly) {
     Write-Host "Validacion de reparacion segura completada."
     Write-Host "Modo WhatIf: no se levanta Docker, no se abre navegador y no se escribe diagnostico."
     Write-Host "Ruta de diagnostico validada dentro del sistema instalado."
+    Write-Host "Modo Docker detectado: $($dockerRuntime.Mode)."
+    Write-Host "Servicios que se solicitarian: $($dockerRuntime.Services -join ', ')."
+    Write-Host "URL que se revisaria: $BaseUrl."
     exit 0
 }
 
@@ -191,7 +262,7 @@ function Get-AppUrlHostType([string] $url) {
 
 function Read-SafeEnvSummary([string] $envPath) {
     if (-not (Test-Path -LiteralPath $envPath)) {
-        Add-Result "REVISION" "Archivo de entorno" "No existe backend\.env. El instalador debe crearlo antes de operar."
+        Add-Result "REVISION" "Archivo de entorno" "No existe archivo de entorno esperado para este modo. El instalador debe crearlo antes de operar."
         return @{}
     }
 
@@ -201,21 +272,22 @@ function Read-SafeEnvSummary([string] $envPath) {
         "APP_URL",
         "APP_VERSION",
         "DB_CONNECTION",
+        "DB_DATABASE",
         "QUEUE_CONNECTION",
-        "HOSPITAL_DAILY_BACKUP_TIME"
+        "HOSPITAL_DAILY_BACKUP_TIME",
+        "SERVER_IP",
+        "APP_PORT"
     )
 
     $values = @{}
-    Get-Content -LiteralPath $envPath | ForEach-Object {
-        $line = $_.Trim()
-        if ($line -eq "" -or $line.StartsWith("#") -or -not $line.Contains("=")) {
-            return
-        }
-
-        $key, $value = $line.Split("=", 2)
-        $key = $key.Trim()
-        if ($allowedKeys -contains $key) {
-            $values[$key] = $value.Trim().Trim('"').Trim("'")
+    foreach ($rawLine in (Get-Content -LiteralPath $envPath)) {
+        $line = $rawLine.Trim()
+        if ($line -ne "" -and -not $line.StartsWith("#") -and $line.Contains("=")) {
+            $key, $value = $line.Split("=", 2)
+            $key = $key.Trim()
+            if ($allowedKeys -contains $key) {
+                $values[$key] = $value.Trim().Trim('"').Trim("'")
+            }
         }
     }
 
@@ -268,7 +340,8 @@ if (Test-Path -LiteralPath $ProjectRoot) {
     Add-Result "ERROR" "Carpeta del sistema" "No se encontro la carpeta indicada."
 }
 
-$envPath = Join-Path $ProjectRoot "backend\.env"
+$envPath = $dockerRuntime.EnvPath
+Add-Result "OK" "Modo de arranque" "Detectado $($dockerRuntime.Mode); servicios: $($dockerRuntime.Services -join ', ')."
 $envSummary = Read-SafeEnvSummary $envPath
 
 $distPath = Join-Path $ProjectRoot "frontend\dist\index.html"
@@ -286,12 +359,14 @@ if ($null -eq $dockerCommand) {
     $dockerReady = Invoke-CommandForReport "Docker activo" "docker" @("info", "--format", "{{.ServerVersion}}")
 
     if ($dockerReady -and -not $SkipDockerStart) {
-        Invoke-CommandForReport "Levantar servicios locales" "docker" @("compose", "up", "-d", "backend", "frontend", "mysql") | Out-Null
+        $upArgs = @($dockerRuntime.ComposeArgs + @("up", "-d") + $dockerRuntime.Services)
+        Invoke-CommandForReport "Levantar servicios locales" "docker" $upArgs | Out-Null
     } elseif ($SkipDockerStart) {
         Add-Result "REVISION" "Levantar servicios locales" "Omitido por parametro -SkipDockerStart."
     }
 
-    Invoke-CommandForReport "Estado de contenedores" "docker" @("compose", "ps") | Out-Null
+    $psArgs = @($dockerRuntime.ComposeArgs + @("ps"))
+    Invoke-CommandForReport "Estado de contenedores" "docker" $psArgs | Out-Null
 }
 
 $upUrl = ($BaseUrl.TrimEnd("/")) + "/up"
