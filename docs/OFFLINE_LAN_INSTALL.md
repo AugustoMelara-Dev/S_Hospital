@@ -82,7 +82,37 @@ No entregar un servidor LAN real con `APP_ENV=local`. Produccion debe operar con
 
 ## Red local
 
-- Configurar IP fija en el servidor.
+- Configurar IP fija en el servidor usando uno de estos metodos:
+
+**Metodo 1: Panel de control de Windows (grafico)**
+1. Abrir Panel de control > Centro de redes y recursos compartidos > Cambiar configuracion del adaptador
+2. Doble clic en la conexion de red (Ethernet o Wi-Fi) > Propiedades
+3. Seleccionar "Protocolo de Internet version 4 (TCP/IPv4)" > Propiedades
+4. Seleccionar "Usar la siguiente direccion IP" e ingresar:
+   - Direccion IP: `192.168.1.10` (ejemplo, ajustar segun red local)
+   - Mascara de subred: `255.255.255.0`
+   - Puerta de enlace predeterminada: `192.168.1.1` (router)
+   - Servidor DNS preferido: `8.8.8.8` (u otro DNS local)
+5. Aceptar y guardar
+
+**Metodo 2: PowerShell (sin reinicio)**
+```powershell
+New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress "192.168.1.10" -PrefixLength 24 -DefaultGateway "192.168.1.1"
+Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddresses "8.8.8.8","8.8.4.4"
+```
+
+**Metodo 3: Reservar IP en el router (recomendado para DHCP)**
+1. Acceder al router en `192.168.1.1` (o la puerta de enlace)
+2. Buscar "DHCP Reservation" o "Static IP Assignment"
+3. Agregar la direccion MAC del servidor y asignar una IP fija (ej: `192.168.1.10`)
+4. Guardar y reiniciar el router si es necesario
+
+**Validar la configuracion:**
+```powershell
+ipconfig /all
+ping 192.168.1.1
+```
+
 - Permitir HTTP/HTTPS en firewall local.
 - No abrir el sistema a internet salvo decision explicita posterior.
 - Si se configura HTTPS local, instalar certificado confiable para los clientes.

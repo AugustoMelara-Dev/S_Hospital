@@ -199,8 +199,11 @@ export const apiClient = {
             ...options.headers,
           },
         });
-      } catch {
-        recordApiIssue(networkError(), `${method} ${path}`);
+      } catch (err) {
+        const error = err instanceof Error
+          ? new ApiError(err.message, 0)
+          : new ApiError(String(err), 0);
+        recordApiIssue(error, `${method} ${path}`);
       }
     };
 
