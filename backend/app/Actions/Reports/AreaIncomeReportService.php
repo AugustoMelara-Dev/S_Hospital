@@ -54,7 +54,9 @@ class AreaIncomeReportService
             ->when(($filters['status'] ?? null) === Invoice::STATUS_VOID, function ($query): void {
                 $query->whereRaw('1 = 0');
             })
-            ->whereBetween('invoices.issued_at', [$start, $end])
+            ->when(! $usesPaymentScope, function ($query) use ($start, $end): void {
+                $query->whereBetween('invoices.issued_at', [$start, $end]);
+            })
             ->when(! empty($filters['category_id']), function ($query) use ($filters): void {
                 $query->where('invoice_items.category_id', $filters['category_id']);
             })

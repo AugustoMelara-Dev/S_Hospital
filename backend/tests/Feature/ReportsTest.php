@@ -601,6 +601,56 @@ class ReportsTest extends TestCase
             ->assertJsonValidationErrors('method');
     }
 
+    public function test_payment_scoped_breakdowns_use_payment_date_not_invoice_issue_date(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        Invoice::query()
+            ->whereKey($invoiceId)
+            ->update(['issued_at' => now()->subDay()->setTime(9, 0)]);
+        Payment::query()
+            ->where('invoice_id', $invoiceId)
+            ->update(['paid_at' => now()->setTime(10, 0)]);
+
+        $filters = http_build_query([
+            'date_from' => now()->toDateString(),
+            'date_to' => now()->toDateString(),
+            'method' => Payment::METHOD_CASH,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/income?{$filters}")
+            ->assertOk()
+            ->assertJsonPath('data.total_collected', '17.25')
+            ->assertJsonPath('data.total_billed', '0.00');
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/categories?{$filters}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.categories')
+            ->assertJsonPath('data.categories.0.category', 'Laboratorio')
+            ->assertJsonPath('data.categories.0.total', '17.25');
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/areas?{$filters}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.areas')
+            ->assertJsonPath('data.areas.0.area', 'Laboratorio')
+            ->assertJsonPath('data.areas.0.total', '17.25');
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/services?{$filters}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.services')
+            ->assertJsonPath('data.services.0.service', 'Glucosa')
+            ->assertJsonPath('data.services.0.total', '17.25');
+    }
+
     public function test_managerial_reports_without_close_any_are_scoped_to_own_activity(): void
     {
         $this->seedBillingBase();

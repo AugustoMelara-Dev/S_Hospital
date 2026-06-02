@@ -2088,3 +2088,20 @@ Consecuencia:
 
 - Supervisores/admin con permiso fiscal de lectura pueden listar secuencias.
 - Cajeros sin permiso fiscal reciben 403.
+
+### 2026-06-02 - Desgloses con alcance de cobro usan fecha de pago
+
+Decision:
+
+- Reportes por categoria, area y servicio mantienen fecha de emision cuando muestran facturacion.
+- Cuando el filtro usa metodo, caja o cajero, el desglose usa el rango de pagos y asigna el cobro proporcionalmente por snapshots de `invoice_items`.
+
+Motivo:
+
+- Un cobro de hoy sobre una factura emitida antes del rango debe aparecer en el resumen cobrado de hoy y tambien en el desglose que explica de que area/servicio vino ese cobro.
+- Mezclar fecha de pago en el resumen y fecha de emision en el desglose deja cifras correctas pero inexplicables para administracion.
+
+Consecuencia:
+
+- Las pruebas de reportes fallan si un cobro en rango desaparece de categoria, area o servicio por haber sido facturado fuera del rango.
+- Los reportes puramente facturados siguen usando fecha de emision y no cambian su lectura historica.
