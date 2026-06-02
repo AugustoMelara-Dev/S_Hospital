@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { EmptyState } from '../../../components/ui/states';
 import { KPICard } from './KPICard';
 import type { ServiceSalesReport, CategoryReport } from '../../../lib/api/types';
-import { formatCents, parseCents } from '../../../lib/moneyCents';
+import { formatCents, formatLempirasFromCents, formatQuantity, parseCents, parseQuantityUnits } from '../../../lib/moneyCents';
 
 interface ServiceSalesTabProps {
   canExport: boolean;
@@ -26,6 +26,8 @@ interface ServiceSalesTabProps {
 export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, serviceSales, onDateFromChange, onDateToChange,
   onExport, onExportPdf, onSubmit }: ServiceSalesTabProps) {
 
+  const totalQuantity = serviceSales?.services.reduce((acc, service) => acc + (parseQuantityUnits(service.quantity) ?? 0), 0) ?? 0;
+  const totalBilledCents = serviceSales?.services.reduce((acc, service) => acc + (parseCents(service.total) ?? 0), 0) ?? 0;
   const chartData = serviceSales
     ? serviceSales.services.slice(0, 10).map((s) => ({
         service: s.service.length > 18 ? `${s.service.slice(0, 18)}...` : s.service,
@@ -72,11 +74,11 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
             />
             <KPICard
               title="Unidades Totales"
-              value={serviceSales.services.reduce((acc, s) => acc + Number.parseInt(s.quantity), 0)}
+              value={formatQuantity(totalQuantity)}
             />
             <KPICard
               title="Monto Facturado"
-              value={`L. ${formatCents(serviceSales.services.reduce((acc, s) => acc + (parseCents(s.total) ?? 0), 0))}`}
+              value={`L. ${formatCents(totalBilledCents)}`}
             />
           </div>
         </>
@@ -104,10 +106,10 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                   <TableRow key={cat.category}>
                     <TableCell className="font-medium">{cat.category}</TableCell>
                     <TableCell className="text-right">{cat.item_count}</TableCell>
-                    <TableCell className="text-right">{cat.quantity}</TableCell>
-                    <TableCell className="text-right">L. {cat.subtotal}</TableCell>
-                    <TableCell className="text-right">L. {cat.tax_amount}</TableCell>
-                    <TableCell className="text-right">L. {cat.total}</TableCell>
+                    <TableCell className="text-right">{quantityLabel(cat.quantity)}</TableCell>
+                    <TableCell className="text-right">{moneyLabel(cat.subtotal)}</TableCell>
+                    <TableCell className="text-right">{moneyLabel(cat.tax_amount)}</TableCell>
+                    <TableCell className="text-right">{moneyLabel(cat.total)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -144,8 +146,8 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                     <TableRow key={`${s.service}-${s.category}-${i}`}>
                       <TableCell className="font-medium">{s.service}</TableCell>
                       <TableCell>{s.category}</TableCell>
-                      <TableCell className="text-right">{s.quantity}</TableCell>
-                      <TableCell className="text-right">L. {s.total}</TableCell>
+                      <TableCell className="text-right">{quantityLabel(s.quantity)}</TableCell>
+                      <TableCell className="text-right">{moneyLabel(s.total)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -164,7 +166,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="service" tickLine={false} interval={0} height={70} angle={-20} textAnchor="end" />
                     <YAxis tickLine={false} width={64} />
-                    <Tooltip formatter={(value) => [`L. ${value}`, 'Monto facturado']} />
+                    <Tooltip formatter={(value) => [moneyLabel(value as number), 'Monto facturado']} />
                     <Bar dataKey="total" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -199,4 +201,12 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
       )}
     </div>
   );
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
+}
+
+function quantityLabel(value: string | number | null | undefined): string {
+  return formatQuantity(parseQuantityUnits(value) ?? 0);
 }
