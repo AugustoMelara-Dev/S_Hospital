@@ -291,10 +291,17 @@ class SystemStatusController extends Controller
         $cachePath = base_path('bootstrap/cache');
         $latestMigration = null;
         $migrationCount = null;
+        $pendingMigrations = [];
 
         if (Schema::hasTable('migrations')) {
-            $latestMigration = DB::table('migrations')->max('migration');
-            $migrationCount = DB::table('migrations')->count();
+            $ranMigrations = DB::table('migrations')
+                ->pluck('migration')
+                ->map(fn ($migration): string => (string) $migration)
+                ->all();
+
+            $latestMigration = $ranMigrations === [] ? null : max($ranMigrations);
+            $migrationCount = count($ranMigrations);
+            $pendingMigrations = array_values(array_diff($this->migrationFileNames(), $ranMigrations));
         }
 
         return [
@@ -304,7 +311,24 @@ class SystemStatusController extends Controller
             'backup_automation_log' => $this->fileStatus(base_path('scripts/backup-automation.log')),
             'latest_migration' => $latestMigration,
             'migration_count' => $migrationCount,
+            'pending_migration_count' => count($pendingMigrations),
+            'pending_migrations' => array_slice($pendingMigrations, 0, 5),
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function migrationFileNames(): array
+    {
+        $files = glob(database_path('migrations/*.php')) ?: [];
+        $migrations = array_map(
+            fn (string $file): string => pathinfo($file, PATHINFO_FILENAME),
+            $files,
+        );
+        sort($migrations);
+
+        return array_values($migrations);
     }
 
     /**
@@ -416,32 +440,43 @@ class SystemStatusController extends Controller
     {
         $appEnv = (string) Config::get('app.env');
         $appDebug = (bool) Config::get('app.debug');
+        $runtime = $this->runtimeStatus();
         $proofs = $this->physicalProofStatuses();
         $lanProof = $proofs[0];
         $printerProof = $proofs[1];
 
+        $blockers = [
+            [
+                'code' => 'PENDING_LAN_CLIENT_VALIDATION',
+                'label' => 'Validacion desde segunda PC LAN',
+                'status' => $lanProof['status'] === 'validated' ? 'validated' : 'pending',
+            ],
+            [
+                'code' => 'PENDING_HARDWARE_VALIDATION',
+                'label' => 'Impresora institucional fisica media carta/carta/A5/80mm/58mm',
+                'status' => $printerProof['status'] === 'validated' ? 'validated' : 'pending',
+            ],
+            [
+                'code' => 'PENDING_ENVIRONMENT_VALIDATION',
+                'label' => $appEnv === 'production' && ! $appDebug
+                    ? 'Entorno production configurado; falta evidencia fisica final'
+                    : 'Servidor final pendiente de configuracion operativa',
+                'status' => $appEnv === 'production' && ! $appDebug ? 'partial' : 'pending',
+            ],
+        ];
+
+        if (($runtime['pending_migration_count'] ?? 0) > 0) {
+            $blockers[] = [
+                'code' => 'PENDING_DATABASE_MIGRATIONS',
+                'label' => 'Base de datos requiere actualizacion segura',
+                'status' => 'pending',
+            ];
+        }
+
         return [
             'state' => 'PRODUCTION_CANDIDATE',
             'production_ready' => false,
-            'blockers' => [
-                [
-                    'code' => 'PENDING_LAN_CLIENT_VALIDATION',
-                    'label' => 'Validacion desde segunda PC LAN',
-                    'status' => $lanProof['status'] === 'validated' ? 'validated' : 'pending',
-                ],
-                [
-                    'code' => 'PENDING_HARDWARE_VALIDATION',
-                    'label' => 'Impresora institucional fisica media carta/carta/A5/80mm/58mm',
-                    'status' => $printerProof['status'] === 'validated' ? 'validated' : 'pending',
-                ],
-                [
-                    'code' => 'PENDING_ENVIRONMENT_VALIDATION',
-                    'label' => $appEnv === 'production' && ! $appDebug
-                        ? 'Entorno production configurado; falta evidencia fisica final'
-                        : 'Servidor final pendiente de configuracion operativa',
-                    'status' => $appEnv === 'production' && ! $appDebug ? 'partial' : 'pending',
-                ],
-            ],
+            'blockers' => $blockers,
         ];
     }
 
@@ -455,6 +490,7 @@ class SystemStatusController extends Controller
         $frontend = $this->frontendStatus();
         $network = $this->networkStatus();
         $backups = $this->backupStatus();
+        $runtime = $this->runtimeStatus();
         $physicalProofs = $this->physicalProofStatuses();
 
         return [
@@ -508,6 +544,14 @@ class SystemStatusController extends Controller
                     'detail' => $network['guidance'],
                 ],
                 [
+                    'code' => 'DATABASE_MIGRATIONS_CURRENT',
+                    'label' => 'Base de datos actualizada',
+                    'status' => ($runtime['pending_migration_count'] ?? 0) === 0 ? 'validated' : 'pending',
+                    'detail' => ($runtime['pending_migration_count'] ?? 0) === 0
+                        ? 'No hay actualizaciones pendientes de base de datos'
+                        : 'Requiere respaldo y actualizacion segura antes de operar reportes',
+                ],
+                [
                     'code' => 'BACKUP_WORKER_CONTINUOUS',
                     'label' => 'Worker de backups como tarea/servicio',
                     'status' => 'manual_required',
@@ -516,14 +560,14 @@ class SystemStatusController extends Controller
                 [
                     'code' => 'SERVER_LOGS_WRITABLE',
                     'label' => 'Logs locales escribibles',
-                    'status' => $this->runtimeStatus()['logs_writable'] ? 'validated' : 'pending',
-                    'detail' => $this->runtimeStatus()['logs_writable'] ? 'storage/logs disponible' : 'storage/logs no escribible',
+                    'status' => $runtime['logs_writable'] ? 'validated' : 'pending',
+                    'detail' => $runtime['logs_writable'] ? 'storage/logs disponible' : 'storage/logs no escribible',
                 ],
                 [
                     'code' => 'APP_CACHE_WRITABLE',
                     'label' => 'Cache de Laravel escribible',
-                    'status' => $this->runtimeStatus()['cache_writable'] ? 'validated' : 'pending',
-                    'detail' => $this->runtimeStatus()['cache_writable'] ? 'bootstrap/cache disponible' : 'bootstrap/cache no escribible',
+                    'status' => $runtime['cache_writable'] ? 'validated' : 'pending',
+                    'detail' => $runtime['cache_writable'] ? 'bootstrap/cache disponible' : 'bootstrap/cache no escribible',
                 ],
             ],
             'public_routes' => [

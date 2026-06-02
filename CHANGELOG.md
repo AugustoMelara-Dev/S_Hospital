@@ -92,6 +92,21 @@
   `vendor/bin/phpunit -c phpunit.coverage.xml --coverage-text` to
   produce clover / html / text reports under `build/logs/`.
 
+### Phase 13 - Accessibility (axe-core) wired into the cashier suite
+
+- `axe-core` and `vitest-axe` are added as dev dependencies. The
+  shared `frontend/src/test/setup.ts` registers the `toHaveNoViolations`
+  matcher and stubs `matchMedia` so Radix-based dialogs do not crash
+  jsdom.
+- `frontend/src/features/auth/LoginView.a11y.test.tsx` is the first
+  view to go through the gate: it asserts no axe-core violations on
+  the default render, and that the username / password inputs and
+  the submit button are reachable by label and role.
+- 127/127 Vitest tests pass (33 new cases). The next audit pass
+  should port the same pattern to CashBoxView, NewInvoiceView,
+  InvoiceHistoryView, ReportsView, BackupsView, FiscalSettingsView
+  and UsersView.
+
 ### Audit
 
 - `docs/AUDIT_2026_06_02.md` records the full audit and the 20-phase
