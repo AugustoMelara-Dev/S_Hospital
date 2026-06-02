@@ -97,6 +97,32 @@ describe('ReceiptPreview', () => {
     expect(document.body.dataset.printingReceipt).toBeUndefined();
     vi.useRealTimers();
   });
+
+  it('renders malformed historical receipt amounts as safe financial values', () => {
+    const receipt = receiptFixture();
+    receipt.invoice.subtotal = 'monto-danado';
+    receipt.invoice.tax_amount = 'NaN';
+    receipt.invoice.total = 'no-numero';
+    receipt.invoice.paid_amount = '1.00';
+    receipt.invoice.balance_due = '2.00';
+    receipt.items[0].line_total = 'monto-danado';
+    receipt.payments[0].amount = 'NaN';
+
+    render(
+      <ReceiptPreview
+        receipt={receipt}
+        onPrint={vi.fn()}
+        onWidthChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Glucosa')).toBeInTheDocument();
+    expect(screen.getByText('Maria Lopez')).toBeInTheDocument();
+    expect(document.body.textContent).toContain('L. 0.00');
+    expect(document.body.textContent).toContain('L. 1.00');
+    expect(document.body.textContent).toContain('L. 2.00');
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
+  });
 });
 
 function receiptFixture(): ReceiptData {

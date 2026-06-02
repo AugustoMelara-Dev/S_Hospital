@@ -12,7 +12,7 @@ import {
 } from '../../components/ui/select';
 import { type ReceiptData } from '../../lib/api';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
-import { parseCents } from '../../lib/moneyCents';
+import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
 
 type ReceiptPreviewProps = {
   autoPrint?: boolean;
@@ -130,14 +130,14 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
           <div className="receipt-rule" aria-hidden="true" />
 
           <div className="receipt-totals">
-            <Row label="Subtotal" value={`L. ${receipt.invoice.subtotal}`} />
-            <Row label={taxLabel} value={`L. ${receipt.invoice.tax_amount}`} />
-            <Row label="TOTAL" value={`L. ${receipt.invoice.total}`} strong />
+            <Row label="Subtotal" value={moneyLabel(receipt.invoice.subtotal)} />
+            <Row label={taxLabel} value={moneyLabel(receipt.invoice.tax_amount)} />
+            <Row label="TOTAL" value={moneyLabel(receipt.invoice.total)} strong />
             {(parseCents(receipt.invoice.paid_amount) ?? 0) > 0 ? (
-              <Row label="Pagado" value={`L. ${receipt.invoice.paid_amount}`} />
+              <Row label="Pagado" value={moneyLabel(receipt.invoice.paid_amount)} />
             ) : null}
             {(parseCents(receipt.invoice.balance_due) ?? 0) > 0 ? (
-              <Row label="Saldo" value={`L. ${receipt.invoice.balance_due}`} />
+              <Row label="Saldo" value={moneyLabel(receipt.invoice.balance_due)} />
             ) : null}
           </div>
 
@@ -153,7 +153,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
                       {payment.reference ? ` / Ref: ${payment.reference}` : ''}
                       {payment.cashier ? ` / ${payment.cashier}` : ''}
                     </span>
-                    <strong>L. {payment.amount}</strong>
+                    <strong>{moneyLabel(payment.amount)}</strong>
                   </Row>
                 ))}
               </div>
@@ -209,7 +209,11 @@ function ItemName({ item }: { item: ReceiptData['items'][number] }) {
 }
 
 function ItemPrice({ item }: { item: ReceiptData['items'][number] }) {
-  return <strong className="item-price">L. {item.line_total}</strong>;
+  return <strong className="item-price">{moneyLabel(item.line_total)}</strong>;
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
 }
 
 function formatDate(value: string): string {
