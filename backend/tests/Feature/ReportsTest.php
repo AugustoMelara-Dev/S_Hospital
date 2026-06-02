@@ -96,6 +96,25 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.month', now()->format('Y-m'));
     }
 
+    public function test_dashboard_report_returns_cashier_summary_without_sql_errors(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.payments_by_method.cash', '17.25')
+            ->assertJsonPath('data.payments_by_method.transfer', '0.00')
+            ->assertJsonPath('data.cashiers_summary.0.username', $cashier->username)
+            ->assertJsonPath('data.cashiers_summary.0.payment_count', 1)
+            ->assertJsonPath('data.cashiers_summary.0.total_collected', '17.25');
+    }
+
     public function test_daily_report_calculates_collected_totals_methods_and_statuses_without_void_income(): void
     {
         $this->seedBillingBase();

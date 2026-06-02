@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Models\CashRegisterSession;
+use App\Models\FiscalSequence;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Support\InvoiceAccess;
@@ -89,8 +90,8 @@ class InvoiceAccessTest extends TestCase
     private function cajero(): User
     {
         $user = User::factory()->create([
-            'username' => 'cajero-access-' . uniqid(),
-            'email' => 'cajero-' . uniqid() . '@hospital.local',
+            'username' => 'cajero-access-'.uniqid(),
+            'email' => 'cajero-'.uniqid().'@hospital.local',
             'must_change_password' => false,
             'active' => true,
         ]);
@@ -102,8 +103,8 @@ class InvoiceAccessTest extends TestCase
     private function admin(): User
     {
         $user = User::factory()->create([
-            'username' => 'admin-access-' . uniqid(),
-            'email' => 'admin-' . uniqid() . '@hospital.local',
+            'username' => 'admin-access-'.uniqid(),
+            'email' => 'admin-'.uniqid().'@hospital.local',
             'must_change_password' => false,
             'active' => true,
         ]);
@@ -115,8 +116,8 @@ class InvoiceAccessTest extends TestCase
     private function supervisor(): User
     {
         $user = User::factory()->create([
-            'username' => 'supervisor-access-' . uniqid(),
-            'email' => 'supervisor-' . uniqid() . '@hospital.local',
+            'username' => 'supervisor-access-'.uniqid(),
+            'email' => 'supervisor-'.uniqid().'@hospital.local',
             'must_change_password' => false,
             'active' => true,
         ]);
@@ -136,7 +137,7 @@ class InvoiceAccessTest extends TestCase
             'opened_at' => now(),
         ]);
 
-        $sequence = \App\Models\FiscalSequence::query()->create([
+        $sequence = FiscalSequence::query()->create([
             'document_type' => 'invoice',
             'prefix' => '000-001-01',
             'min_number' => 1,
@@ -148,7 +149,7 @@ class InvoiceAccessTest extends TestCase
         ]);
 
         return Invoice::query()->create([
-            'invoice_number' => '000-001-01-' . str_pad((string) random_int(1, 99999999), 8, '0', STR_PAD_LEFT),
+            'invoice_number' => '000-001-01-'.str_pad((string) random_int(1, 99999999), 8, '0', STR_PAD_LEFT),
             'fiscal_sequence_id' => $sequence->id,
             'patient_name' => 'Paciente de prueba',
             'subtotal' => '10.00',
