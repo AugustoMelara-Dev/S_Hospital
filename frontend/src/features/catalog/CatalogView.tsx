@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
 
 type CatalogViewProps = {
   user: AuthUser;
@@ -388,7 +389,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                       <TableCell className="px-4 py-3 text-sm">{service.category?.name ?? 'Sin categoria'}</TableCell>
                       <TableCell className="px-4 py-3 text-sm">{service.area?.name ?? 'Sin area'}</TableCell>
                       <TableCell className="px-4 py-3">
-                        <span className="font-semibold">L. {service.price}</span>
+                        <span className="font-semibold">{moneyLabel(service.price)}</span>
                       </TableCell>
                       {scannerEnabled && (
                         <TableCell className="px-4 py-3 text-sm text-muted-foreground">
@@ -492,4 +493,8 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       )}
     </section>
   );
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
 }

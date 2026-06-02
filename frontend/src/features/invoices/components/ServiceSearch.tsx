@@ -5,6 +5,7 @@ import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import type { Category, Service } from '../../../lib/api';
 import { cn } from '../../../lib/utils';
+import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
 const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 const SERVICE_RESULT_LIMIT = 24;
@@ -196,7 +197,7 @@ export function ServiceSearch({
                   key={service.id}
                   type="button"
                   variant="outline"
-                  aria-label={`Agregar ${service.name} por L. ${service.price}`}
+                  aria-label={`Agregar ${service.name} por ${moneyLabel(service.price)}`}
                   className="group relative h-auto min-h-24 items-center justify-start gap-3 p-3 text-left font-normal transition-transform hover:border-primary/40 hover:bg-accent/40 hover:shadow-sm active:scale-[0.99]"
                   onClick={() => handleAddService(service)}
                 >
@@ -215,7 +216,7 @@ export function ServiceSearch({
                   </div>
                   <div className="absolute right-3 top-3">
                     <span className="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-1 text-sm font-semibold text-emerald-700">
-                      L. {service.price}
+                      {moneyLabel(service.price)}
                     </span>
                   </div>
                   {isErythropoietin && (
@@ -239,6 +240,10 @@ export function ServiceSearch({
       </div>
     </div>
   );
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
 }
 
 function CategoryButton({
