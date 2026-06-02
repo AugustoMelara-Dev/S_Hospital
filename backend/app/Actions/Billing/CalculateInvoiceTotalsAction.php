@@ -23,7 +23,10 @@ class CalculateInvoiceTotalsAction
             $quantityUnits = $this->parseDecimalUnits($item['quantity'], 'items.quantity');
             $specialRuleApplied = $this->appliesErythropoietinRule($service, $item['dialysis_prescription']);
             $unitPriceCents = $specialRuleApplied ? 0 : $this->parseMoneyCents((string) $service->price);
+            // Round half-up: add half of divisor (50) before integer division by 100 (cents)
+            // Example: (1250 * 2 + 50) / 100 = 26.00 when unit price is 12.50 and qty is 2
             $lineSubtotalCents = intdiv(($unitPriceCents * $quantityUnits) + 50, 100);
+            // Tax rounding: add 5000 (half of 10000 basis points = 0.5%) for round-half-up
             $lineTaxCents = $service->taxable
                 ? intdiv(($lineSubtotalCents * $taxRateBasisPoints) + 5000, 10000)
                 : 0;
