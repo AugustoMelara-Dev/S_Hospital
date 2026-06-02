@@ -3104,3 +3104,11 @@ Contexto: `vendor/bin/phpstan analyse` fallaba antes de analizar codigo porque `
 Decision: actualizar el include a `vendor/larastan/larastan/extension.neon`. El analisis focal de `OpenApiExporter` queda limpio con `--memory-limit=512M`.
 
 Estado restante: el analisis completo del backend ahora ejecuta y revela deuda existente de modelos Eloquent sin propiedades PHPDoc/casts tipados (`property.notFound`, 291 errores). No se corrige en esta subfase para no mezclar el contrato de reportes con una refactorizacion amplia de modelos.
+
+## 2026-06-02 - Comandos agentic usan el servicio Docker real
+
+Contexto: el compose de desarrollo define los servicios `backend`, `frontend` y `mysql`, pero `AGENTS.md` indicaba comandos con `docker compose exec app`. En una validacion real ese servicio no existia y las pruebas no arrancaban, lo que podia bloquear a soporte o a un agente durante un diagnostico local.
+
+Decision: los comandos base de backend en `AGENTS.md` ahora usan `docker compose exec backend ...`, alineados con `docker-compose.yml` y `docker-compose.prod.yml`. No se cambia la topologia Docker ni se agrega un alias de servicio para evitar ambiguedad.
+
+Criterio de verificacion: `docker compose ps` muestra `backend` como servicio activo y `docker compose exec backend php artisan test --filter=OpenApiExporterTest` pasa.
