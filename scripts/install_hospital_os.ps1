@@ -57,12 +57,16 @@ $installedVersion = Get-InstallerVersion
 $runSetupCliAfterDefinition = $false
 
 # 1. Detect active LAN IP
-$ips = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { 
-    $_.IPAddress -notlike "127.*" -and 
-    $_.IPAddress -notlike "169.254.*" 
+$ips = Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
+    $_.IPAddress -notlike "127.*" -and
+    $_.IPAddress -notlike "169.254.*"
 } | Select-Object -ExpandProperty IPAddress
 
-$detectedIp = "192.168.1.100"
+# Use an empty placeholder so the operator MUST select a real IP
+# from the candidates or enter one manually. A 192.168.1.100
+# placeholder used to leak here and would silently become the
+# install target if no candidate was found.
+$detectedIp = ""
 if ($ips.Count -gt 0) {
     $detectedIp = $ips[0]
 }
