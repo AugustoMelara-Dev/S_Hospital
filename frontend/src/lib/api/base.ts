@@ -23,6 +23,24 @@ export function isSessionExpiredError(error: unknown): boolean {
   return error instanceof ApiError && (error.status === 401 || error.status === 419);
 }
 
+function conflictSafeMessage(message: string): string {
+  const normalized = message.toLowerCase();
+
+  if (/caja|cash[_\s-]?session/.test(normalized)) {
+    return 'La caja esta cerrada o cambio de estado. Revise Caja e Historial antes de repetir facturas o cobros.';
+  }
+
+  if (/factura|invoice|pago|payment|duplic|already|ya registrada|ya registrado/.test(normalized)) {
+    return 'La factura o el pago ya cambio de estado. Revise Historial antes de repetir la operacion.';
+  }
+
+  if (/respaldo|backup|restore|restaur/.test(normalized)) {
+    return 'El respaldo cambio de estado. Actualice Respaldos y pida soporte antes de restaurar o repetir.';
+  }
+
+  return 'La accion no se pudo completar porque el estado actual cambio. Actualice la pantalla e intente de nuevo.';
+}
+
 export function userSafeErrorMessage(error: unknown, fallback: string): string {
   if (isSessionExpiredError(error)) {
     return 'Sesión vencida. Vuelva a iniciar sesión para continuar.';
@@ -41,7 +59,7 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
   }
 
   if (error instanceof ApiError && error.status === 409) {
-    return 'La accion no se pudo completar porque el estado actual cambio. Actualice la pantalla e intente de nuevo.';
+    return conflictSafeMessage(error.message);
   }
 
   if (error instanceof ApiError && error.status >= 500) {

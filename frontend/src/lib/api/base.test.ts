@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { apiClient, resetRequestChain, resolveApiBaseUrl } from './base';
+import { ApiError, apiClient, resetRequestChain, resolveApiBaseUrl, userSafeErrorMessage } from './base';
 
 function locationFor(hostname: string): Pick<Location, 'hostname'> {
   return { hostname };
@@ -27,6 +27,39 @@ describe('resolveApiBaseUrl', () => {
 
   it('keeps a non-loopback remote API URL when explicitly configured', () => {
     expect(resolveApiBaseUrl('http://192.168.1.10:8000/', locationFor('192.168.1.20'))).toBe('http://192.168.1.10:8000');
+  });
+
+  it('shows operational instructions for cashbox conflicts without exposing fields', () => {
+    const message = userSafeErrorMessage(
+      new ApiError('cash_session_id: La caja seleccionada esta cerrada.', 409),
+      'No se pudo registrar el pago.',
+    );
+
+    expect(message).toMatch(/caja esta cerrada o cambio de estado/i);
+    expect(message).toMatch(/revise caja e historial/i);
+    expect(message).not.toMatch(/cash_session_id/i);
+  });
+
+  it('warns users to check history before repeating duplicated billing operations', () => {
+    const message = userSafeErrorMessage(
+      new ApiError('duplicate payment already registered', 409),
+      'No se pudo registrar el pago.',
+    );
+
+    expect(message).toMatch(/factura o el pago ya cambio de estado/i);
+    expect(message).toMatch(/revise historial antes de repetir/i);
+    expect(message).not.toMatch(/duplicate|already/i);
+  });
+
+  it('keeps backup restore conflicts non-technical', () => {
+    const message = userSafeErrorMessage(
+      new ApiError('backup restore lock conflict', 409),
+      'No se pudo restaurar el respaldo.',
+    );
+
+    expect(message).toMatch(/respaldo cambio de estado/i);
+    expect(message).toMatch(/pida soporte antes de restaurar/i);
+    expect(message).not.toMatch(/lock|conflict/i);
   });
 
   it('stores safe local support evidence when the LAN server is unavailable', async () => {
