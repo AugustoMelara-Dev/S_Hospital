@@ -64,16 +64,19 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
         Route::get('/invoices', [InvoiceController::class, 'index']);
         Route::post('/invoices', [InvoiceController::class, 'store']);
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
-        Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'void']);
+        Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'void'])
+            ->middleware('throttle:30,1');
 
         Route::get('/cash-sessions/current', [CashSessionController::class, 'current']);
         Route::post('/cash-sessions/open', [CashSessionController::class, 'open']);
         Route::post('/cash-sessions/{cashSession}/close', [CashSessionController::class, 'close']);
         Route::get('/cash-sessions', [CashSessionController::class, 'index']);
 
-        Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store']);
+        Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store'])
+            ->middleware('throttle:60,1');
         Route::get('/invoices/{invoice}/payments', [PaymentController::class, 'index']);
-        Route::post('/invoices/{invoice}/payments/{payment}/void', [PaymentController::class, 'void']);
+        Route::post('/invoices/{invoice}/payments/{payment}/void', [PaymentController::class, 'void'])
+            ->middleware('throttle:30,1');
         Route::get('/invoices/{invoice}/receipt', [ReceiptController::class, 'show']);
         Route::post('/invoices/{invoice}/reprint', [ReceiptController::class, 'reprint']);
 

@@ -1927,3 +1927,21 @@ Consecuencia:
 
 - El chunk principal baja de 532.88 kB a 361.82 kB minificado y desaparece la advertencia de Vite.
 - Las pruebas de rutas deben esperar la carga lazy cuando validan una pantalla secundaria.
+
+### 2026-06-02 - Validacion temprana y throttling en mutaciones financieras
+
+Decision:
+
+- `StoreInvoiceRequest` valida que `service_id` exista antes de entrar al servicio de emision.
+- La cantidad de factura conserva formato decimal de hasta dos posiciones y minimo `0.01`.
+- Pago, anulacion de pago y anulacion de factura tienen throttling especifico ademas del throttle autenticado general.
+
+Motivo:
+
+- Facturacion y caja son superficies mutantes de alto impacto y deben fallar temprano con errores de validacion claros.
+- Reintentos excesivos sobre pago/anulacion pueden generar presion operativa o abuso aun cuando las transacciones de dominio sean seguras.
+
+Consecuencia:
+
+- Cantidades `0` o negativas siguen rechazadas por Form Request.
+- Operaciones financieras sensibles tienen limites de frecuencia mas estrictos sin cambiar permisos ni transacciones.
