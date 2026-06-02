@@ -60,6 +60,38 @@
   raise it to 4 once the cashier-facing Actions get explicit return
   type hints.
 
+### Phase 10 - Concurrent fiscal correlative race harness
+
+- `tests/Feature/Concurrent/FiscalNumberRaceTest.php` plus
+  `tests/Concurrent/fiscal_race_worker.php` form a Symfony-Process
+  harness that spawns two PHP workers in parallel against a real
+  MySQL/MariaDB instance, both calling `CreateInvoiceAction`.
+- The test is gated by `HOSPITAL_RUN_CONCURRENT_TESTS=1` plus the
+  `DB_*` env variables so the regular SQLite suite is not affected
+  on developer machines.
+- Manual run:
+
+  ```bash
+  HOSPITAL_RUN_CONCURRENT_TESTS=1 \
+  DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 \
+  DB_DATABASE=hospital_concurrent DB_USERNAME=hospital \
+  DB_PASSWORD=hospital_dev \
+    vendor/bin/phpunit --group=concurrent --filter FiscalNumberRaceTest
+  ```
+
+### Phase 12 - Coverage gate for critical Actions (opt-in)
+
+- `tests/Coverage/CriticalModulesCoverageTest.php` enforces a 70 percent
+  coverage threshold on `app/Actions/Billing`, `app/Actions/Cash`,
+  `app/Actions/Payments`, `app/Actions/Backups` and `app/Actions/Receipts`.
+- The test detects pcov / xdebug / the global CodeCoverage singleton and
+  skips itself with a clear instruction when no driver is available;
+  the regular suite stays green on machines that have not enabled one.
+- `phpunit.coverage.xml` is a new opt-in profile that adds the
+  `<coverage>` section. Run with
+  `vendor/bin/phpunit -c phpunit.coverage.xml --coverage-text` to
+  produce clover / html / text reports under `build/logs/`.
+
 ### Audit
 
 - `docs/AUDIT_2026_06_02.md` records the full audit and the 20-phase
