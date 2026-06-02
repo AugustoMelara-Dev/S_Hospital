@@ -2071,3 +2071,20 @@ Consecuencia:
 - Usuarios sin permisos de catalogo ni reportes siguen recibiendo 403.
 - Usuarios autorizados pueden consultar areas activas o inactivas con filtros booleanos.
 - Valores invalidos de `active` devuelven 422.
+
+### 2026-06-02 - Listado de secuencias fiscales usa Form Request
+
+Decision:
+
+- `GET /api/fiscal-sequences` usa `IndexFiscalSequenceRequest`.
+- La autorizacion `settings.fiscal.view` queda fuera del controlador.
+
+Motivo:
+
+- Las secuencias fiscales contienen CAI, rango autorizado y correlativo; su lectura debe tratarse como operacion fiscal sensible.
+- Create/update ya usaban Form Requests, y el listado queda alineado con el mismo limite de permisos.
+
+Consecuencia:
+
+- Supervisores/admin con permiso fiscal de lectura pueden listar secuencias.
+- Cajeros sin permiso fiscal reciben 403.

@@ -2,20 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Fiscal\IndexFiscalSequenceRequest;
 use App\Http\Requests\Fiscal\StoreFiscalSequenceRequest;
 use App\Http\Requests\Fiscal\UpdateFiscalSequenceRequest;
 use App\Models\AuditLog;
 use App\Models\FiscalSequence;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class FiscalSequenceController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(IndexFiscalSequenceRequest $request): JsonResponse
     {
-        $request->user()->can('settings.fiscal.view') || abort(403);
-
         return response()->json([
             'data' => FiscalSequence::query()
                 ->orderByDesc('active')
