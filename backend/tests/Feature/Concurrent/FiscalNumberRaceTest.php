@@ -49,11 +49,11 @@ class FiscalNumberRaceTest extends TestCase
 
         $numbers = $this->parseInvoiceNumbers($output['stdout']);
 
-        $this->assertCount(2, $numbers, "Each process must emit exactly one invoice number. Got: ".implode(',', $numbers));
+        $this->assertCount(2, $numbers, 'Each process must emit exactly one invoice number. Got: '.implode(',', $numbers));
         $this->assertCount(
             2,
             array_unique($numbers),
-            "Concurrent emissions must yield distinct correlatives. Got: ".implode(',', $numbers),
+            'Concurrent emissions must yield distinct correlatives. Got: '.implode(',', $numbers),
         );
     }
 

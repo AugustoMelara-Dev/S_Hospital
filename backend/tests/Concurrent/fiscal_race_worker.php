@@ -16,9 +16,8 @@ use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
 use App\Models\Service;
 use App\Models\User;
-use Database\Seeders\RolesAndPermissionsSeeder;
-use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Foundation\Application;
 
 require __DIR__.'/../../vendor/autoload.php';
 
@@ -48,10 +47,10 @@ echo json_encode([
     'total' => $invoice->total,
 ]).PHP_EOL;
 
-function ensureBaseline(\Illuminate\Foundation\Application $app): void
+function ensureBaseline(Application $app): void
 {
     if (! app()->environment('testing')) {
-        fwrite(STDERR, "Worker expects APP_ENV=testing.".PHP_EOL);
+        fwrite(STDERR, 'Worker expects APP_ENV=testing.'.PHP_EOL);
         exit(1);
     }
 

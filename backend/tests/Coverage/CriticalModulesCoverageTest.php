@@ -48,6 +48,7 @@ class CriticalModulesCoverageTest extends TestCase
             $this->markTestSkipped(
                 'Coverage driver is not enabled (install pcov or xdebug in php.ini to enforce the threshold).',
             );
+
             return;
         }
 

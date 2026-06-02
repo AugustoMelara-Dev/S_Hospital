@@ -15,6 +15,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SystemStatusController;
 use App\Http\Controllers\UserController;
+use App\Http\Middleware\LoginLockout;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -34,7 +35,7 @@ Route::get('/settings/branding', [FiscalSettingsController::class, 'publicBrandi
     ->middleware('web');
 
 Route::post('/auth/login', [AuthController::class, 'login'])
-    ->middleware(['web', \App\Http\Middleware\LoginLockout::class, 'throttle:5,1']);
+    ->middleware(['web', LoginLockout::class, 'throttle:5,1']);
 Route::get('/auth/session', [AuthController::class, 'session'])
     ->middleware('web');
 
