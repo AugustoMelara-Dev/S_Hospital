@@ -13,12 +13,14 @@ ampliadas y puertas de calidad nuevas.
 
 ### Métricas de calidad al cierre de la auditoría
 
-- 273/273 tests PHPUnit backend (1809 assertions, 4 skipped
+- 283/283 tests PHPUnit backend (1847 assertions, 4 skipped
   legítimamente: race test concurrente que requiere MySQL real)
-- 157/157 tests Vitest frontend (33 nuevos durante la auditoría)
+- 191/191 tests Vitest frontend (97 nuevos durante la auditoría)
 - 0 errores de typecheck
 - 0 errores de ESLint
-- 0 errores de phpstan nivel 3 sobre 110 archivos en app/
+- 0 errores de phpstan nivel 4 sobre 110 archivos en app/
+  (con baseline generada a nivel 6 cubriendo 240 hallazgos
+  preexistentes)
 - Bundle gzipped más grande: charts 116.73 kB (objetivo < 250 kB)
 - Build de producción sin warnings bloqueantes
 
@@ -32,11 +34,13 @@ ampliadas y puertas de calidad nuevas.
   completa, helper `isPermissionDeniedError`, mensaje 423 Locked
 - **Phase 10** Test de concurrencia fiscal con Symfony Process
   (harness opt-in con flag `HOSPITAL_RUN_CONCURRENT_TESTS=1`)
-- **Phase 11** phpstan (larastan) nivel 3 instalado y en quality gate
+- **Phase 11** phpstan (larastan) nivel 4 instalado y en quality gate
+  con baseline de level 6
 - **Phase 12** Coverage gate opt-in con `phpunit.coverage.xml` y
-  umbral 70% en módulos críticos
-- **Phase 13** axe-core wired en test suite; primera vista (Login)
-  pasa 0 violaciones
+  umbral 70% en módulos críticos; tests unitarios para
+  GenerateFiscalNumberAction (5 casos)
+- **Phase 13** axe-core wired en test suite; LoginView, Button,
+  Dialog, OpenSessionForm y ReceiptPreview pasan 0 violaciones
 - **Phase 14** Catálogo central de atajos de teclado
   (KEYBOARD_SHORTCUTS, shortcutsByScope, shortcutLabel) con 6 tests
 - **Phase 15** Bundle size y lazy-loading gate (revisión source de
@@ -45,11 +49,25 @@ ampliadas y puertas de calidad nuevas.
 - **Phase 16** Helpers de formato es-HN (formatLempiras,
   formatDate, formatDateLong) y diccionario i18n es-HN con t()
 - **Phase 17** Login lockout (5 fails / 15 min) con tabla
-  `login_attempts`, middleware `LoginLockout` y 3 tests
+  `login_attempts`, middleware `LoginLockout`, tests para
+  identifier lockout, IP lockout, 423 safe message
 - **Phase 18** CSP endurecida con report-only channel,
-  Cross-Origin-Opener-Policy y endpoint `/api/system/csp-report`
+  Cross-Origin-Opener-Policy, endpoint `/api/system/csp-report`
+  y Vite plugin `cspNoncePlugin` para preparar la eliminación
+  de `unsafe-inline`
 - **Phase 19** Endpoint público `/api/system/health` con métricas
-  operativas y heartbeat del backup worker
+  operativas, heartbeat del backup worker, hook
+  `useBackupWorkerHealth` en el frontend
+
+### Mejoras adicionales durante la auditoría
+
+- Script `auto_evidence.ps1` que pre-rellena las 5 plantillas
+  `qa/*.md` con datos del `.env` para FASE 1-6
+- `RELEASE_NOTES_v1.0.0-rc.3.md` con métricas delta y comandos
+  útiles
+- Tests adicionales de cobertura (storage, recent_errors en
+  health; fiscal correlative edge cases; lockout IP y safe
+  message)
 
 ### Fases pendientes (requieren hardware real)
 
@@ -69,16 +87,17 @@ y `docs/OFFLINE_LAN_INSTALL.md`.
 
 ### Cómo retomar
 
-1. Cerrar las 6 fases físicas con `final_production_handoff.ps1`
-2. Si phpstan alcanza 0 errores, subir el nivel a 4 en
-   `backend/phpstan.neon`
+1. Cerrar las 6 fases físicas con `auto_evidence.ps1 -Force` para
+   pre-rellenar las plantillas y luego `final_production_handoff.ps1`
+2. Si phpstan se mantiene limpio al corregir la baseline, subir
+   el nivel a 5
 3. Aplicar el patrón `LoginView.a11y.test.tsx` a las demás vistas
    (CashBox, NewInvoice, InvoiceHistory, Reports, Backups,
    FiscalSettings, Users)
-4. Implementar un Vite plugin para inyectar nonces en el entry
-   script y así poder quitar `'unsafe-inline'` de la CSP
-5. Conectar `useBackups` al endpoint `/api/system/health` para
-   que el panel de backups pinte el estado del worker
+4. Activar el Vite plugin `cspNoncePlugin` en producción y quitar
+   `'unsafe-inline'` de la CSP
+5. Pintar el estado del backup worker en el panel de Backups
+   usando el hook `useBackupWorkerHealth`
 
 ## Unreleased - v1.0.0 Audit Plan (2026-06-02)
 
