@@ -2,7 +2,37 @@
 
 ## Unreleased - v1.0.0 Audit Plan (2026-06-02)
 
-### Phase 9 - apiClient hardening (partial, declared in `docs/AUDIT_2026_06_02.md`)
+### Phase 7 - NewInvoiceView refactor (partial, behaviour-preserving)
+
+- The 1020-line `NewInvoiceView.tsx` is split into dedicated modules so
+  the cashier workflow can be unit-tested in isolation and the math
+  (decimal handling, erythropoietin rule, tax estimate) stops being
+  copy-pasted between the cart preview, the confirmation dialog and the
+  success summary.
+- `frontend/src/features/invoices/state/types.ts` exports `NewInvoiceState`,
+  `NewInvoiceAction`, and `getInitialNewInvoiceState`.
+- `frontend/src/features/invoices/state/reducer.ts` exports the pure
+  `newInvoiceReducer` with a focused `addServiceToCart` helper.
+- `frontend/src/features/invoices/state/posMath.ts` exports
+  `parseQuantityUnits`, `parseLocalCents`, `formatCents`, `isZeroMoney`,
+  `incrementQuantityFromString`, `parseTaxRateBasisPoints`,
+  `effectiveUnitPriceCents`, and `computeSimpleEstimate`.
+- Two new vitest suites cover the reducer (9 cases) and the POS math
+  (10 cases), including the erythropoietin zero-amount path.
+- `NewInvoiceView.tsx` drops to ~733 lines and now re-uses the same
+  helpers the rest of the views will get in phase 8.
+
+### Phase 8 - moneyCents wire across cashier UI
+
+- `OpenSessionForm`, `ReceiptPreview`, `InvoiceConfirmation`,
+  `CashSessionReportTab`, `IncomeReportTab`, `ServiceSalesTab`, and the
+  catalog CSV importer of `SetupWizardDialog` now route money through
+  `parseCents` / `formatCents` from `frontend/src/lib/moneyCents.ts`
+  instead of `Number.parseFloat` / `Number(...)`.
+- The cashier dashboard totals, reports, and the setup wizard CSV
+  preview agree with the backend rounding rules.
+
+### Phase 9 - apiClient hardening
 
 - `frontend/src/lib/api/base.ts` now caches the `/sanctum/csrf-cookie`
   response for 30 minutes to avoid an extra round-trip on every mutating

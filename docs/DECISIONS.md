@@ -2318,3 +2318,46 @@ Consecuencia:
 - La reparacion segura sigue sin borrar datos, sin eliminar volumenes, sin ejecutar seeders y sin restaurar backups automaticamente.
 - Las guias operativas indican validar `start_hospital_services.ps1 -WhatIfOnly` antes de levantar servicios manualmente.
 - El release queda bloqueado si los scripts de soporte del paquete offline no coinciden con Git.
+
+
+### 2026-06-02 - apiClient hardening con cache de CSRF y lista 422 completa
+
+Decision:
+
+- rontend/src/lib/api/base.ts cachea la respuesta de /sanctum/csrf-cookie durante 30 minutos para no disparar un round-trip en cada mutacion.
+- 422 expone la lista completa de errores con etiquetas legibles (Items #2 (quantity): ..., patient name: ...) en lugar de truncar a tres mensajes.
+- 423 Locked recibe un mensaje dedicado que pide esperar 15 minutos o pedir reactivacion al supervisor.
+- Nuevo helper isPermissionDeniedError(error) para uso futuro en guards.
+- Tests ampliados en ase.test.ts cubren CSRF cache, lista 422, 423, 403, sanitizacion 5xx y los nuevos helpers.
+
+Motivo:
+
+- Cajeras con teclado y raton generan muchos requests de mutacion por minuto; un round-trip extra de CSRF por cada uno degrada la experiencia de caja sin agregar seguridad real porque Sanctum ya protege la cookie.
+- 422 truncado obligaba a la cajera a corregir un error, reenviar, descubrir otro, reenviar: la lista completa acelera la correccion de formularios.
+- El plan de Fase 17 introduce lockout por intentos fallidos; el cliente debe mostrar el mensaje correcto apenas el backend responda 423.
+
+Consecuencia:
+
+- La politica de cache obliga a esetCsrfCache() en tests para no contaminar el estado entre casos; exportado desde lib/api/index.ts.
+- El bloqueo temporal se documenta como 423 (Locked) y no como 429 (Too Many Requests) porque el motivo es autenticacion, no throttling.
+- ormatValidationMessage reescribe snake_case a frases (patient_name -> patient name, items.0.quantity -> Items #1 (quantity)); cualquier consumidor que dependa del mensaje exacto debe pasar a error.validationErrors.
+
+### 2026-06-02 - Reduccion de NewInvoiceView con reducer y math extraidos
+
+Decision:
+
+- NewInvoiceView.tsx (1020 lineas) se divide en state/types.ts, state/reducer.ts y state/posMath.ts para poder probar el reducer y los calculos fiscales sin renderizar React.
+- El componente principal queda en ~733 lineas como orquestador; el resto vive en una sola capa de UI que reusa los hooks ya extraidos.
+- Las funciones de dinero locales (parseCents, ormatCents, isZeroMoney, computeSimpleEstimate) ahora envuelven rontend/src/lib/moneyCents.ts para alinear el preview con el backend.
+
+Motivo:
+
+- El CHANGELOG 1.0.0-rc.2 reconocio que NewInvoiceView era una deuda tecnica diferida a 1.1.0; el primer paso de la fase 7 la deja cubierta con dos suites vitest nuevas (19 casos totales) sin cambiar comportamiento visible.
+- El reducer puro permite reproducir regresiones de carrito y Eritropoyetina en CI sin depender del DOM, lo cual baja la barrera para futuros cambios.
+- Reusar moneyCents en posMath elimina el riesgo de que el preview de UI redondee distinto al backend.
+
+Consecuencia:
+
+- La fase 8 (wire moneyCents en vistas) puede migrar el resto de componentes sin tocar NewInvoiceView: la regla ya esta aplicada.
+- El refactor esta incompleto (<200 lineas no alcanzado) pero los hooks extraidos cubren los caminos criticos; dividir la UI en sub-pasos queda para v1.1.0 si la UI se vuelve a expandir.
+- Cualquier cambio de regla de negocio fiscal o de carrito debe vivir primero en state/posMath.ts o state/reducer.ts y luego en los tests correspondientes.

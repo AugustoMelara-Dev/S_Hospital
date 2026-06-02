@@ -83,7 +83,7 @@ export function IncomeReportTab({
 
   const daysInRange = Math.max(1, Math.ceil((new Date(dateTo).getTime() - new Date(dateFrom).getTime()) / (1000 * 60 * 60 * 24)) + 1);
   const averagePerDay = income
-    ? formatCents(((parseCents(income.total_collected) ?? 0) / daysInRange))
+    ? formatCents(Math.round((parseCents(income.total_collected) ?? 0) / daysInRange))
     : '0.00';
 
   const chartData = income
