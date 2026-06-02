@@ -50,7 +50,7 @@ Antes de instalar en el hospital:
 5. Instalar MySQL/MariaDB local en el servidor.
 6. Configurar `.env` real fuera del repositorio con secretos locales, `APP_ENV=production` y `APP_DEBUG=false`.
 7. Configurar `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` y CORS con la IP fija o dominio LAN final, por ejemplo `192.168.1.10`.
-8. Generar `APP_KEY` en el servidor.
+8. Generar `APP_KEY` en el servidor con `php artisan key:generate`.
 9. Ejecutar migraciones aprobadas sin `migrate:fresh`.
 10. Crear admin real con el instalador o con `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no ejecutar seeders de desarrollo.
 11. Ejecutar `php artisan config:cache`.

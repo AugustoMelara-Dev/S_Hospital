@@ -1765,3 +1765,22 @@ Consecuencia:
 
 - `ReportsTest` falla si el reporte de ingresos vuelve a tomar el decimal `payments.amount` como fuente de cobro.
 - Los reportes diarios, mensuales e ingresos comparten la misma semantica financiera.
+
+### 2026-06-01 - Produccion protege env variants y healthcheck de worker
+
+Decision:
+
+- `.gitignore` bloquea variantes locales/production de `.env` para reducir riesgo de secretos en Git.
+- `docker-compose.prod.yml` agrega healthcheck al servicio `queue-worker` para validar que Laravel pueda abrir conexion de base de datos.
+- Las guias de instalacion nombran `php artisan key:generate` como comando explicito para crear `APP_KEY`.
+
+Motivo:
+
+- En produccion offline las credenciales reales se escriben en archivos `.env` fuera del repositorio; variantes como `.env.production` son igual de sensibles que `.env`.
+- El worker continuo de backups es un bloqueante de `PRODUCTION_READY`; Docker debe exponer una senal basica de salud del proceso conectado a DB.
+- Un runbook no tecnico debe decir el comando exacto para generar la llave, no solo la intencion.
+
+Consecuencia:
+
+- El paquete de produccion sigue dependiendo de evidencias reales para declararse listo, pero el compose entrega una senal operativa adicional para backups.
+- Futuras variantes de entorno con secretos deben permanecer ignoradas salvo archivos ejemplo o sample aprobados.

@@ -31,7 +31,7 @@ Si el preflight falla por evidencia fisica pendiente, el servidor puede seguir e
 3. Instalar PHP, extensiones necesarias y MySQL/MariaDB local.
 4. Crear `.env` real en el servidor, fuera de Git, con secretos locales.
 5. Configurar obligatoriamente `APP_ENV=production` y `APP_DEBUG=false`.
-6. Generar `APP_KEY` si no existe.
+6. Generar `APP_KEY` si no existe con `php artisan key:generate`.
 7. Ejecutar migraciones aprobadas sin `migrate:fresh`.
 8. Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no ejecutar seeders de desarrollo en servidor real.
 9. Ejecutar `php artisan config:cache`.
