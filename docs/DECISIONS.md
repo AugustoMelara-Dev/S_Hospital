@@ -2187,7 +2187,7 @@ Motivo:
 
 Consecuencia:
 
-- Tests phpunit con RefreshDatabase siguen pasando porque phpunit.xml fuerza DB_CONNECTION=sqlite con orce="true".
+- Tests phpunit con RefreshDatabase siguen pasando porque phpunit.xml fuerza DB_CONNECTION=sqlite con force="true".
 - Tests phpunit siguen ejecutando jobs sincronamente porque phpunit.xml fuerza QUEUE_CONNECTION=sync.
 - Operadores deben exportar DB_CONNECTION en .env antes de la primera corrida.
 - CloseCashSessionAction mantiene su DB::afterCommit explicito; con el flag global, la llamada se vuelve redundante pero no rompe.
@@ -2197,7 +2197,7 @@ Consecuencia:
 Decision:
 
 - PdfExportService introduce un helper e(mixed): string publico que aplica htmlspecialchars(, ENT_QUOTES | ENT_HTML5, 'UTF-8'). Toda cadena controlada por el usuario (nombre del hospital, RTN, fechas, metodo, estado, contadores) se envuelve con e() antes de interpolarse en el HTML del PDF.
-- Las funciones publicas generateDailyClosurePdf y generateRangeClosurePdf delegan en uildDailyClosureHtml y uildRangeClosureHtml para que el HTML sea testeable sin decodificar el binario del PDF.
+- Las funciones publicas generateDailyClosurePdf y generateRangeClosurePdf delegan en buildDailyClosureHtml y buildRangeClosureHtml para que el HTML sea testeable sin decodificar el binario del PDF.
 
 Motivo:
 
@@ -2230,7 +2230,7 @@ Consecuencia:
 
 Decision:
 
-- Se elimina el directorio ackend/app/Policies/ con sus 5 clases (InvoicePolicy, PaymentPolicy, CashRegisterSessionPolicy, FiscalSettingPolicy, BackupPolicy). Nunca fueron registradas con Gate::policy() ni invocadas via $user->can('action', ).
+- Se elimina el directorio backend/app/Policies/ con sus 5 clases (InvoicePolicy, PaymentPolicy, CashRegisterSessionPolicy, FiscalSettingPolicy, BackupPolicy). Nunca fueron registradas con Gate::policy() ni invocadas via $user->can('action', ).
 - La autorizacion se queda como esta: Form Request::authorize() y string permissions en los actions y controllers.
 
 Motivo:
@@ -2248,7 +2248,7 @@ Consecuencia:
 
 Decision:
 
-- 2026_06_01_000001_add_amount_cents_to_payments_table.php se envuelve en Schema::hasColumn para re-entry safety, y la logica CAST(amount * 100 AS SIGNED) se restringe a drivers mysql|mariadb. En otros drivers (sqlite de tests) se hace backfill en PHP con ound((float) * 100) y chunkById(500).
+- 2026_06_01_000001_add_amount_cents_to_payments_table.php se envuelve en Schema::hasColumn para re-entry safety, y la logica CAST(amount * 100 AS SIGNED) se restringe a drivers mysql|mariadb. En otros drivers (sqlite de tests) se hace backfill en PHP con round((float) * 100) y chunkById(500).
 
 Motivo:
 
@@ -2266,11 +2266,11 @@ Consecuencia:
 
 Decision:
 
-- Nuevo rontend/src/lib/moneyCents.ts con parseCents, parsePositiveCents, ormatCents, ormatLempirasFromCents, parseQuantityUnits, ormatQuantity. 8 vitest cases.
+- Nuevo frontend/src/lib/moneyCents.ts con parseCents, parsePositiveCents, formatCents, formatLempirasFromCents, parseQuantityUnits, formatQuantity. 8 vitest cases.
 
 Motivo:
 
-- parseCents, ormatCents, parseQuantityUnits estaban duplicados en NewInvoiceView, InvoiceCart, PaymentModal, CashBoxView, OpenSessionForm. Cada copia tenia pequeñas variaciones de regex/precision, lo que hacia que el redondeo de UI difiriera entre vistas.
+- parseCents, formatCents, parseQuantityUnits estaban duplicados en NewInvoiceView, InvoiceCart, PaymentModal, CashBoxView, OpenSessionForm. Cada copia tenia pequeñas variaciones de regex/precision, lo que hacia que el redondeo de UI difiriera entre vistas.
 - Money en el backend (PHP) ya define la politica de redondeo (HALF_AWAY_FROM_ZERO). Los helpers del frontend reflejan esa misma politica.
 
 Consecuencia:
@@ -2283,9 +2283,8 @@ Consecuencia:
 Decision:
 
 - docker-compose.prod.yml añade healthcheck al backend (DB::connection()->getPdo() via tinker) y a nginx (wget http://localhost/up).
--
-ginx cambia de depender de ackend: service_started a ackend: service_healthy, garantizando que el paso cp /var/www/html/public del entrypoint haya terminado antes de que nginx intente servir.
-- client_max_body_size de nginx baja de 100M a 32M para coincidir con upload_max_filesize=32M y post_max_size=32M de ackend/Dockerfile.prod.
+- nginx cambia de depender de backend: service_started a backend: service_healthy, garantizando que el paso cp /var/www/html/public del entrypoint haya terminado antes de que nginx intente servir.
+- client_max_body_size de nginx baja de 100M a 32M para coincidir con upload_max_filesize=32M y post_max_size=32M de backend/Dockerfile.prod.
 
 Motivo:
 
@@ -2324,11 +2323,11 @@ Consecuencia:
 
 Decision:
 
-- rontend/src/lib/api/base.ts cachea la respuesta de /sanctum/csrf-cookie durante 30 minutos para no disparar un round-trip en cada mutacion.
+- frontend/src/lib/api/base.ts cachea la respuesta de /sanctum/csrf-cookie durante 30 minutos para no disparar un round-trip en cada mutacion.
 - 422 expone la lista completa de errores con etiquetas legibles (Items #2 (quantity): ..., patient name: ...) en lugar de truncar a tres mensajes.
 - 423 Locked recibe un mensaje dedicado que pide esperar 15 minutos o pedir reactivacion al supervisor.
 - Nuevo helper isPermissionDeniedError(error) para uso futuro en guards.
-- Tests ampliados en ase.test.ts cubren CSRF cache, lista 422, 423, 403, sanitizacion 5xx y los nuevos helpers.
+- Tests ampliados en base.test.ts cubren CSRF cache, lista 422, 423, 403, sanitizacion 5xx y los nuevos helpers.
 
 Motivo:
 
@@ -2338,9 +2337,9 @@ Motivo:
 
 Consecuencia:
 
-- La politica de cache obliga a esetCsrfCache() en tests para no contaminar el estado entre casos; exportado desde lib/api/index.ts.
+- La politica de cache obliga a resetCsrfCache() en tests para no contaminar el estado entre casos; exportado desde lib/api/index.ts.
 - El bloqueo temporal se documenta como 423 (Locked) y no como 429 (Too Many Requests) porque el motivo es autenticacion, no throttling.
-- ormatValidationMessage reescribe snake_case a frases (patient_name -> patient name, items.0.quantity -> Items #1 (quantity)); cualquier consumidor que dependa del mensaje exacto debe pasar a error.validationErrors.
+- formatValidationMessage reescribe snake_case a frases (patient_name -> patient name, items.0.quantity -> Items #1 (quantity)); cualquier consumidor que dependa del mensaje exacto debe pasar a error.validationErrors.
 
 ### 2026-06-02 - Reduccion de NewInvoiceView con reducer y math extraidos
 
@@ -2348,7 +2347,7 @@ Decision:
 
 - NewInvoiceView.tsx (1020 lineas) se divide en state/types.ts, state/reducer.ts y state/posMath.ts para poder probar el reducer y los calculos fiscales sin renderizar React.
 - El componente principal queda en ~733 lineas como orquestador; el resto vive en una sola capa de UI que reusa los hooks ya extraidos.
-- Las funciones de dinero locales (parseCents, ormatCents, isZeroMoney, computeSimpleEstimate) ahora envuelven rontend/src/lib/moneyCents.ts para alinear el preview con el backend.
+- Las funciones de dinero locales (parseCents, formatCents, isZeroMoney, computeSimpleEstimate) ahora envuelven frontend/src/lib/moneyCents.ts para alinear el preview con el backend.
 
 Motivo:
 
