@@ -138,6 +138,25 @@
   no two entries collide inside the same scope, POS bindings are
   present, and labels render in Ctrl+Key form (6 cases).
 
+### Phase 16 - Locale and formatting helpers (es-HN)
+
+- `frontend/src/lib/format/formatCurrency.ts` exposes
+  `formatLempiras`, `formatPlainDecimal` and `parseAmount`. Lempiras
+  render as `L. 1,500.00`, with a thousands separator and two
+  decimals, matching the cashier receipt format.
+- `frontend/src/lib/format/formatDate.ts` exposes `formatDate`,
+  `formatDateLong`, `formatTime`, `formatDateTime` and
+  `formatMonthYear`. The default format is DD/MM/YYYY per es-HN
+  convention; the long form reads "2 de junio de 2026".
+- `frontend/src/lib/i18n/es-HN.ts` ships the first slice of an es-HN
+  string dictionary (app identity, navigation, login, POS, cashbox,
+  invoices, common errors, units). A `t()` helper exposes the
+  dictionary so new screens can adopt the dictionary without
+  pulling in a heavy i18n runtime.
+- 19 new vitest cases cover formatting edge cases and dictionary
+  completeness (every top-level navigation key, POS message
+  templates, cashbox pending format).
+
 ### Audit
 
 - `docs/AUDIT_2026_06_02.md` records the full audit and the 20-phase
