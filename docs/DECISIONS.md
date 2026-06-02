@@ -2480,3 +2480,20 @@ Consecuencia:
 
 - Usuarios con `cash.close_any` conservan filtros amplios.
 - Usuarios sin ese permiso quedan limitados a su usuario y no pueden consultar cajas ajenas.
+
+### 2026-06-02 - Detalle de factura valida alcance historico en request
+
+Decision:
+
+- `ShowInvoiceRequest` valida permiso `invoices.view` y alcance sobre la factura ligada por ruta.
+- `InvoiceController@show` deja de ejecutar `abort_unless` para factura propia del dia.
+
+Motivo:
+
+- El detalle de factura expone pagos, caja, emisor y datos fiscales; su alcance debe resolverse en el Form Request.
+- Reusar `InvoiceAccess` evita duplicar reglas entre listado y detalle.
+
+Consecuencia:
+
+- Usuarios con acceso historico mantienen alcance amplio.
+- Cajeros sin acceso historico solo pueden ver facturas propias emitidas hoy.

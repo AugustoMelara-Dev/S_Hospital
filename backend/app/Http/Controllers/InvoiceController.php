@@ -91,8 +91,6 @@ class InvoiceController extends Controller
 
     public function show(ShowInvoiceRequest $request, Invoice $invoice): JsonResponse
     {
-        $this->authorizeInvoiceAccess($request->user(), $invoice);
-
         return response()->json([
             'data' => $invoice->load([
                 'items',
@@ -113,18 +111,6 @@ class InvoiceController extends Controller
         return response()->json([
             'data' => $voidInvoice->execute($invoice, $request->user(), $request->reason()),
         ]);
-    }
-
-    private function authorizeInvoiceAccess(User $user, Invoice $invoice): void
-    {
-        if ($this->invoiceAccess->canAccessAnyInvoice($user)) {
-            return;
-        }
-
-        abort_unless(
-            $invoice->issued_by === $user->id && $invoice->issued_at?->isToday() === true,
-            403,
-        );
     }
 
     private function canAccessHistoricalInvoices(User $user): bool
