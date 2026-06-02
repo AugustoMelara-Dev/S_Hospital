@@ -67,6 +67,28 @@ describe('ReceiptPreview', () => {
 
     await waitFor(() => expect(onPrint).toHaveBeenCalledTimes(1));
     expect(printSpy).not.toHaveBeenCalled();
+    expect(screen.getByText(/no se pudo preparar la impresion/i)).toBeInTheDocument();
+    expect(screen.getByText(/no repita la factura ni el cobro/i)).toBeInTheDocument();
+  });
+
+  it('shows a human recovery message when the print dialog cannot open', async () => {
+    printSpy.mockImplementation(() => {
+      throw new Error('Printer dialog failed');
+    });
+
+    render(
+      <ReceiptPreview
+        receipt={receiptFixture()}
+        onPrint={vi.fn()}
+        onWidthChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Imprimir' }));
+
+    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(1));
+    expect(screen.getByText(/no se pudo abrir la ventana de impresion/i)).toBeInTheDocument();
+    expect(screen.getByText(/reimprima desde historial con motivo/i)).toBeInTheDocument();
   });
 
   it('sets and clears the active print paper width', async () => {

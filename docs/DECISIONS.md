@@ -2823,3 +2823,25 @@ Validacion:
 - `npm run typecheck`
 - `npm run lint`
 - `npm run build`
+
+### 2026-06-02 - Fallas de impresion muestran recuperacion segura
+
+Decision:
+
+- `ReceiptPreview` muestra una alerta humana cuando no se puede auditar o abrir la impresion del recibo.
+- El cajero no ve errores tecnicos ni stack traces; ve que no debe repetir la factura ni el cobro y que debe revisar Historial o pedir soporte.
+- La alerta esta marcada como `no-print` para no contaminar el recibo institucional.
+
+Motivo:
+
+- Una impresora que no responde es un fallo operativo comun y no debe inducir a duplicar pagos o facturas.
+- El detalle tecnico debe quedar para soporte, no para la pantalla de caja.
+
+Validacion:
+
+- `npm run test -- ReceiptPreview.test.tsx ReceiptPreview.a11y.test.tsx --run`
+- `npm run typecheck`
+- `npm run lint`
+- `npm run build`
+- `scripts/check-branding.ps1`
+- Smoke Playwright contra `frontend/dist` con API mockeada y captura en `qa/screenshots/receipt-print-failure-2026-06-02/receipt-print-failure.png`

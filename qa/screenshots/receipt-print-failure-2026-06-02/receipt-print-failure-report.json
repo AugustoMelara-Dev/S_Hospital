@@ -1,0 +1,13 @@
+{
+  "generated_at": "2026-06-02T20:57:35.179Z",
+  "route": "/invoices",
+  "base_url": "http://127.0.0.1:4181",
+  "mode": "mocked-api-built-dist",
+  "assertions": [
+    "Historial visible",
+    "Receipt modal visible",
+    "Print audit failure surfaced as human message",
+    "Message tells cashier not to repeat invoice or payment"
+  ],
+  "console_issues": []
+}

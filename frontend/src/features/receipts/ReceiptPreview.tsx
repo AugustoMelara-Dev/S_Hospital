@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type React from 'react';
 import { useReactToPrint } from 'react-to-print';
+import { Alert } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import {
@@ -25,6 +26,7 @@ type ReceiptPreviewProps = {
 export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, receipt, onWidthChange }: ReceiptPreviewProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
   const autoPrintedReceiptRef = useRef<string | null>(null);
+  const [printError, setPrintError] = useState('');
   const receiptWidth = institutionalReceiptPaperSize(receipt.width);
 
   const handlePrint = useReactToPrint({
@@ -32,17 +34,28 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
   });
 
   async function handlePrintClick() {
+    setPrintError('');
+
     try {
       await onPrint?.();
     } catch {
+      setPrintError(
+        'No se pudo preparar la impresion del recibo. No repita la factura ni el cobro; revise Historial y pida soporte si la impresora no responde.',
+      );
       return;
     }
 
-    printReceiptDocument(receiptWidth, () => {
-      if (!navigator.userAgent.toLowerCase().includes('jsdom')) {
-        handlePrint();
-      }
-    });
+    try {
+      printReceiptDocument(receiptWidth, () => {
+        if (!navigator.userAgent.toLowerCase().includes('jsdom')) {
+          handlePrint();
+        }
+      });
+    } catch {
+      setPrintError(
+        'No se pudo abrir la ventana de impresion. Verifique la impresora y reimprima desde Historial con motivo cuando el supervisor lo autorice.',
+      );
+    }
   }
 
   useEffect(() => {
@@ -81,6 +94,14 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
           </Button>
         ) : null}
       </div>
+
+      {printError ? (
+        <div className="no-print mb-3">
+          <Alert variant="warning" title="Impresion no completada">
+            {printError}
+          </Alert>
+        </div>
+      ) : null}
 
       <div className="receipt-preview-container">
         <div ref={receiptRef} className={`institutional-receipt receipt-${receiptWidth}`} aria-label="Recibo institucional">
