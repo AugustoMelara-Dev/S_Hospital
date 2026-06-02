@@ -8,17 +8,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AddSecurityHeaders
 {
-    /**
-     * Default CSP used outside of production. Production builds rely
-     * on the same directives plus a per-request nonce once the Vite
-     * pipeline is configured to inject the nonce into the entry
-     * script and the inline styles emitted by Tailwind. Until then
-     * the cashier app needs `unsafe-inline` for the entry script.
-     */
-    private const FALLBACK_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+    public const NONCE_ATTRIBUTE = 's_hospital.csp_nonce';
 
     public function handle(Request $request, Closure $next): Response
     {
+        $nonce = $this->generateNonce();
+        $request->attributes->set(self::NONCE_ATTRIBUTE, $nonce);
+
         /** @var Response $response */
         $response = $next($request);
 
@@ -29,7 +25,7 @@ class AddSecurityHeaders
         $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
 
         if (! $response->headers->has('Content-Security-Policy')) {
-            $response->headers->set('Content-Security-Policy', $this->cspFor($request));
+            $response->headers->set('Content-Security-Policy', $this->cspFor($request, $nonce));
         }
 
         if (! $response->headers->has('Content-Security-Policy-Report-Only')) {
@@ -39,20 +35,29 @@ class AddSecurityHeaders
         return $response;
     }
 
-    private function cspFor(Request $request): string
+    private function generateNonce(): string
+    {
+        return bin2hex(random_bytes(16));
+    }
+
+    private function cspFor(Request $request, string $nonce): string
     {
         $production = app()->environment('production');
 
         $scriptSources = $production
-            ? "'self' 'unsafe-inline'"
-            : "'self' 'unsafe-inline' 'unsafe-eval'";
+            ? "'self' 'nonce-{$nonce}'"
+            : "'self' 'nonce-{$nonce}' 'unsafe-eval'";
+
+        $styleSources = "'self' 'nonce-{$nonce}'";
+        $styleAttributeSources = "'unsafe-inline'";
 
         $connectSources = "'self' ws: wss:";
 
         return implode('; ', [
             "default-src 'self'",
             "script-src {$scriptSources}",
-            "style-src 'self' 'unsafe-inline'",
+            "style-src {$styleSources}",
+            "style-src-attr {$styleAttributeSources}",
             "img-src 'self' data: blob:",
             "font-src 'self' data:",
             "connect-src {$connectSources}",

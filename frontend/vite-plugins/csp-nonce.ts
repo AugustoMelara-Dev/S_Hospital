@@ -2,17 +2,13 @@ import type { Plugin, ResolvedConfig } from 'vite';
 import { createHash, randomBytes } from 'node:crypto';
 
 /**
- * Vite plugin that injects a per-build CSP nonce into the entry
- * script and the inline styles emitted by Tailwind.
- *
- * The nonce is rendered as a `<meta name="csp-nonce" content="...">`
- * tag inside the served `index.html` so the Laravel backend can
- * read it on the first request and use the same value to seed the
- * `Content-Security-Policy` header. The same nonce is then attached
- * to every script and style emitted by the Vite transform so
- * `unsafe-inline` can finally be removed from `script-src` and
- * `style-src` in the production CSP.
+ * Build-time placeholder that the Laravel backend substitutes with
+ * a per-request nonce before serving the SPA. Keeping the placeholder
+ * stable means the production CSP can require the nonce without
+ * having to re-bundle the frontend on every cold start.
  */
+export const CSP_NONCE_PLACEHOLDER = '__S_HOSPITAL_CSP_NONCE__';
+
 export function cspNoncePlugin(options: { nonce?: string; meta?: boolean } = {}): Plugin {
   const buildNonce = options.nonce ?? randomBytes(16).toString('base64');
   const injectMeta = options.meta ?? true;
@@ -21,29 +17,54 @@ export function cspNoncePlugin(options: { nonce?: string; meta?: boolean } = {})
 
   return {
     name: 's-hospital-csp-nonce',
-    enforce: 'post',
+    enforce: 'pre',
 
     configResolved(resolved) {
       config = resolved;
     },
 
     transformIndexHtml: {
-      order: 'pre',
+      order: 'post',
       handler(html) {
         if (config?.command === 'build') {
-          return html;
+          const placeholderScript = html.replace(
+            /<script\b/g,
+            `<script nonce="${CSP_NONCE_PLACEHOLDER}"`,
+          );
+          const placeholderStyle = placeholderScript.replace(
+            /<style\b/g,
+            `<style nonce="${CSP_NONCE_PLACEHOLDER}"`,
+          );
+
+          if (! injectMeta) {
+            return placeholderStyle;
+          }
+
+          return {
+            html: placeholderStyle,
+            tags: [
+              {
+                tag: 'meta',
+                attrs: { name: 'csp-nonce', content: CSP_NONCE_PLACEHOLDER },
+                injectTo: 'head-prepend',
+              },
+            ],
+          };
         }
 
-        const nonce = buildNonce;
-        const tags: string[] = [];
-
-        if (injectMeta) {
-          tags.push(`<meta name="csp-nonce" content="${nonce}">`);
+        if (! injectMeta) {
+          return html;
         }
 
         return {
           html,
-          tags,
+          tags: [
+            {
+              tag: 'meta',
+              attrs: { name: 'csp-nonce', content: buildNonce },
+              injectTo: 'head-prepend',
+            },
+          ],
         };
       },
     },

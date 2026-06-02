@@ -51,4 +51,25 @@ class SecurityHeadersTest extends TestCase
 
         $this->assertStringContainsString('report-uri /api/system/csp-report', $reportOnly);
     }
+
+    public function test_csp_emits_a_per_request_nonce_for_scripts_and_styles(): void
+    {
+        $first = $this->get('/up');
+        $second = $this->get('/up');
+
+        $firstCsp = (string) $first->headers->get('Content-Security-Policy');
+        $secondCsp = (string) $second->headers->get('Content-Security-Policy');
+
+        $this->assertMatchesRegularExpression("/script-src 'self' 'nonce-[A-Fa-f0-9]{32}'/", $firstCsp);
+        $this->assertMatchesRegularExpression("/style-src 'self' 'nonce-[A-Fa-f0-9]{32}'/", $firstCsp);
+        $this->assertStringContainsString("style-src-attr 'unsafe-inline'", $firstCsp);
+        $this->assertStringNotContainsString("script-src 'self' 'unsafe-inline'", $firstCsp);
+
+        preg_match("/'nonce-([A-Fa-f0-9]{32})'/", $firstCsp, $firstMatch);
+        preg_match("/'nonce-([A-Fa-f0-9]{32})'/", $secondCsp, $secondMatch);
+
+        $this->assertNotEmpty($firstMatch[1] ?? '');
+        $this->assertNotEmpty($secondMatch[1] ?? '');
+        $this->assertNotSame($firstMatch[1], $secondMatch[1], 'Nonce must rotate between requests.');
+    }
 }
