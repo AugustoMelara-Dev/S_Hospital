@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\CspReportController;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -56,5 +57,70 @@ class CspReportControllerTest extends TestCase
         );
 
         $response->assertNoContent();
+    }
+
+    public function test_csp_report_endpoint_rejects_oversized_payloads(): void
+    {
+        $payload = str_repeat('a', 5000);
+
+        $response = $this->call(
+            'POST',
+            '/api/system/csp-report',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/csp-report'],
+            $payload,
+        );
+
+        $response->assertStatus(413);
+    }
+
+    public function test_csp_report_endpoint_rejects_unexpected_content_types(): void
+    {
+        $response = $this->call(
+            'POST',
+            '/api/system/csp-report',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'text/plain'],
+            'hello world',
+        );
+
+        $response->assertStatus(415);
+    }
+
+    public function test_csp_report_endpoint_scrubs_secrets_and_urls(): void
+    {
+        $controller = new CspReportController;
+        $reflection = new \ReflectionMethod($controller, 'scrub');
+        $reflection->setAccessible(true);
+
+        $scrubbed = $reflection->invoke(
+            $controller,
+            'PASSWORD=MyPassword123 https://hospital.local/login?token=SECRET123',
+        );
+
+        $this->assertStringContainsString('PASSWORD=[redacted]', $scrubbed);
+        $this->assertStringNotContainsString('MyPassword123', $scrubbed);
+        $this->assertStringContainsString('[url-redacted]', $scrubbed);
+        $this->assertStringNotContainsString('SECRET123', $scrubbed);
+    }
+
+    public function test_csp_report_endpoint_is_rate_limited(): void
+    {
+        $routes = app('router')->getRoutes();
+        $route = null;
+
+        foreach ($routes as $candidate) {
+            if ($candidate->uri() === 'api/system/csp-report') {
+                $route = $candidate;
+                break;
+            }
+        }
+
+        $this->assertNotNull($route, 'api/system/csp-report route must exist');
+        $this->assertContains('throttle:30,1', $route->middleware(), 'csp-report must be rate limited');
     }
 }

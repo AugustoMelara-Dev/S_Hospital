@@ -1,12 +1,15 @@
 <?php
 
+use App\Actions\Reports\OpenApiExporter;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CashSessionController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CspReportController;
 use App\Http\Controllers\FiscalSequenceController;
 use App\Http\Controllers\FiscalSettingsController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LogoController;
 use App\Http\Controllers\PaymentController;
@@ -25,13 +28,15 @@ Route::get('/health', function () {
     ]);
 })->middleware('throttle:10,1');
 
-Route::any('/system/csp-report', [\App\Http\Controllers\CspReportController::class, 'store']);
+Route::any('/system/csp-report', [CspReportController::class, 'store'])
+    ->middleware('throttle:30,1');
 
-Route::get('/system/health', [\App\Http\Controllers\HealthController::class, 'show'])
+Route::get('/system/health', [HealthController::class, 'show'])
     ->middleware('throttle:10,1');
 
 Route::get('/system/openapi', function () {
-    $document = app(\App\Actions\Reports\OpenApiExporter::class)->document(app('router'));
+    $document = app(OpenApiExporter::class)->document(app('router'));
+
     return response()->json($document);
 });
 
