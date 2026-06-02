@@ -45,7 +45,37 @@ describe('resolveApiBaseUrl', () => {
       module: 'api',
     });
     expect(stored[0].safe_message).toMatch(/servidor LAN/i);
+    expect(stored[0].safe_message).toMatch(/failed to fetch/i);
     expect(stored[0].safe_message).not.toMatch(/DB_PASSWORD|secret/i);
+  });
+
+  it('records sanitized browser network details for mutating requests', async () => {
+    document.cookie = 'XSRF-TOKEN=test-token';
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/sanctum/csrf-cookie')) {
+        return { ok: true, json: async () => ({}) } as Response;
+      }
+
+      throw new Error('LAN apagada token=hidden');
+    });
+
+    await expect(apiClient.request('/api/payments', { method: 'POST', body: JSON.stringify({ amount: '1.00' }) }))
+      .rejects.toThrow(/servidor LAN/i);
+
+    const stored = JSON.parse(window.localStorage.getItem('hospital_client_issue_log') ?? '[]') as Array<{
+      action: string;
+      module: string;
+      safe_message: string;
+    }>;
+
+    expect(stored[0]).toMatchObject({
+      action: 'POST /api/payments',
+      module: 'api',
+    });
+    expect(stored[0].safe_message).toMatch(/LAN apagada/i);
+    expect(stored[0].safe_message).not.toMatch(/token|hidden/i);
   });
 
   it('allows GET requests to run concurrently', async () => {

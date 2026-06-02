@@ -1,4 +1,4 @@
-import { PERMISSION_DENIED_MESSAGE, logClientIssue } from '../support/clientIssueLog';
+import { PERMISSION_DENIED_MESSAGE, logClientIssue, safeClientMessage } from '../support/clientIssueLog';
 
 let sessionExpiredHandler: (() => void) | null = null;
 let requestChain: Promise<unknown> = Promise.resolve();
@@ -103,8 +103,13 @@ export function resolveApiBaseUrl(
   return normalizedUrl;
 }
 
-function networkError(): ApiError {
-  return new ApiError('No se pudo conectar con el servidor LAN. Revise que el servidor local este encendido y vuelva a intentar.', 0);
+function networkError(error?: unknown): ApiError {
+  const baseMessage = 'No se pudo conectar con el servidor LAN. Revise que el servidor local este encendido y vuelva a intentar.';
+  const rawDetail = error instanceof Error ? error.message : error === undefined ? '' : String(error);
+  const safeDetail = safeClientMessage(rawDetail);
+  const message = safeDetail ? `${baseMessage} Detalle seguro del navegador: ${safeDetail}` : baseMessage;
+
+  return new ApiError(message, 0);
 }
 
 function recordApiIssue(error: ApiError, action: string): never {
@@ -144,8 +149,8 @@ export const apiClient = {
       response = await fetch(this.url('/sanctum/csrf-cookie'), {
         credentials: 'include',
       });
-    } catch {
-      recordApiIssue(networkError(), 'csrf_network');
+    } catch (err) {
+      recordApiIssue(networkError(err), 'csrf_network');
     }
 
     if (!response.ok) {
@@ -200,10 +205,7 @@ export const apiClient = {
           },
         });
       } catch (err) {
-        const error = err instanceof Error
-          ? new ApiError(err.message, 0)
-          : new ApiError(String(err), 0);
-        recordApiIssue(error, `${method} ${path}`);
+        recordApiIssue(networkError(err), `${method} ${path}`);
       }
     };
 
@@ -255,8 +257,8 @@ export const apiClient = {
           Accept: 'application/json, application/octet-stream, text/csv',
         },
       });
-    } catch {
-      recordApiIssue(networkError(), `DOWNLOAD ${path}`);
+    } catch (err) {
+      recordApiIssue(networkError(err), `DOWNLOAD ${path}`);
     }
 
     if (!response.ok) {

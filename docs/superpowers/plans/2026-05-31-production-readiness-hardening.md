@@ -71,6 +71,7 @@ Current local verification notes:
 - Income reports were aligned with cent-based financial facts on 2026-06-01: `IncomeReportService` now uses `FinancialFactsService`, and report collection totals come from `payments.amount_cents` including category/area allocation.
 - Production infrastructure guardrails were tightened on 2026-06-01: `.env` variants are ignored, install docs name `php artisan key:generate`, and the Docker production queue worker exposes a DB-backed healthcheck. This remains local config evidence, not final worker proof.
 - 2026-06-02 user correction: receipt instructions/selectors must be ordered as media carta, carta, A5, 80mm and 58mm. The stale guide lines that only named media carta/carta/A5 were corrected; this is the inverse of removing thermal support.
+- 2026-06-02 frontend least-privilege/API UX follow-up: user creation is hidden without `users.create`, and API network failures preserve sanitized browser detail while keeping operator-safe LAN messages.
 
 ## Plan Review Orchestrator Result
 

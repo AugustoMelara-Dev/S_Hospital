@@ -1820,3 +1820,21 @@ Consecuencia:
 
 - `UsersView.test.tsx` falla si el boton de crear vuelve a mostrarse sin `users.create`.
 - Cualquier nueva accion administrativa debe recibir un permiso UI explicito, separado del permiso de lectura.
+
+### 2026-06-02 - Errores de red API guardan detalle sanitizado
+
+Decision:
+
+- Los errores de red del cliente API usan el mensaje operador de servidor LAN no disponible y agregan solo detalle sanitizado del navegador.
+- La sanitizacion reutiliza `safeClientMessage` para remover secretos, tokens, rutas locales y credenciales antes de guardar evidencia local.
+- La misma semantica aplica a CSRF, requests normales y descargas.
+
+Motivo:
+
+- Soporte necesita distinguir fallas como navegador sin conexion, servidor apagado o proxy caido, pero el cajero no debe ver ni almacenar datos sensibles crudos.
+- El cambio previo de propagar `err.message` directamente podia filtrar texto tecnico o secretos en `userSafeErrorMessage`.
+
+Consecuencia:
+
+- `base.test.ts` falla si un error de red vuelve a guardar `DB_PASSWORD`, `token` o secretos similares.
+- Los mensajes de red siguen siendo accionables para el operador y utiles para soporte local.
