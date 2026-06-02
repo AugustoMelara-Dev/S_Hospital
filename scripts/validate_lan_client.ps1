@@ -16,6 +16,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+. (Join-Path $scriptRoot "lib\operational_url_safety.ps1")
+
 function Protect-LanText([string] $value) {
     if ([string]::IsNullOrWhiteSpace($value)) {
         return $value
@@ -49,7 +52,6 @@ trap {
 }
 
 if ($ProjectRoot -eq "") {
-    $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
     $ProjectRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
 }
 
@@ -123,11 +125,8 @@ function Get-FirstAssetPath([string] $BaseUrl) {
     return $null
 }
 
-$base = $BaseUrl.TrimEnd("/")
-$baseUri = $null
-if (-not [Uri]::TryCreate($base, [UriKind]::Absolute, [ref] $baseUri) -or $baseUri.Scheme -notin @("http", "https")) {
-    throw "BaseUrl debe ser una direccion LAN absoluta http(s), por ejemplo http://192.168.1.10:8000"
-}
+$base = Test-HospitalOperationalUrlInput $BaseUrl
+$baseUri = [Uri] $base
 
 $resolvedEvidencePath = $EvidencePath
 if ($EvidencePath -ne "") {

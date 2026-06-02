@@ -9,12 +9,21 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+. (Join-Path $scriptRoot "lib\operational_url_safety.ps1")
+
+trap {
+    Write-Host (Protect-HospitalOperationalText $_.Exception.Message $ProjectRoot)
+    Write-Host "No se ejecuto el preflight. Revise que BaseUrl use solo http://IP-DEL-SERVIDOR:8000 y no incluya usuario, contrasena ni token."
+    exit 1
+}
+
 if ($ProjectRoot -eq "") {
-    $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
     $ProjectRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
 }
 
 $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+$BaseUrl = Test-HospitalOperationalUrlInput $BaseUrl
 
 $failures = New-Object System.Collections.Generic.List[string]
 $warnings = New-Object System.Collections.Generic.List[string]
@@ -346,11 +355,7 @@ $isDockerProductionPackage = (Test-Path -LiteralPath $composeProdPath) -and (Tes
 $envPath = if ($isDockerProductionPackage) { $rootEnvPath } else { $backendEnvPath }
 $envValues = Read-EnvFile $envPath
 
-$baseUri = $null
-if (-not [Uri]::TryCreate($BaseUrl.TrimEnd("/"), [UriKind]::Absolute, [ref] $baseUri) -or $baseUri.Scheme -notin @("http", "https")) {
-    Add-Failure "BaseUrl must be an absolute http(s) LAN URL, for example http://192.168.1.10"
-    $baseUri = [Uri] "http://invalid.local"
-}
+$baseUri = [Uri] $BaseUrl
 
 $baseHostWithPort = if ($baseUri.IsDefaultPort) { $baseUri.Host } else { "$($baseUri.Host):$($baseUri.Port)" }
 $appEnv = Get-EnvValue $envValues "APP_ENV" "local"

@@ -7,10 +7,18 @@ $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
 $frontend = Join-Path $root 'frontend'
+. (Join-Path $PSScriptRoot 'lib\operational_url_safety.ps1')
+
+trap {
+    Write-Host (Protect-HospitalOperationalText $_.Exception.Message $root)
+    Write-Host 'No se ejecuto E2E. Revise que BaseUrl use solo http://127.0.0.1:5173 o http://IP-DEL-SERVIDOR:8000 sin usuario, contrasena ni token.'
+    exit 1
+}
+
 $resolvedBaseUrl = if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
     'http://127.0.0.1:5173'
 } else {
-    $BaseUrl.TrimEnd('/')
+    Test-HospitalOperationalUrlInput $BaseUrl
 }
 $url = "$resolvedBaseUrl/login"
 $server = $null

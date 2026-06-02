@@ -14,6 +14,7 @@ $ErrorActionPreference = "Stop"
 
 $safeRoot = (Get-Location).Path
 $evidenceFullPath = ""
+. (Join-Path $PSScriptRoot "lib\operational_url_safety.ps1")
 
 function Resolve-SmokeEvidencePath([string] $path) {
     if ([string]::IsNullOrWhiteSpace($path)) {
@@ -74,6 +75,8 @@ if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
     throw "BaseUrl es obligatorio. Use -BaseUrl o defina HOSPITAL_SMOKE_BASE_URL."
 }
 
+$BaseUrl = Test-HospitalOperationalUrlInput $BaseUrl
+
 if ([string]::IsNullOrWhiteSpace($Login)) {
     throw "Login es obligatorio. Use -Login o defina HOSPITAL_SMOKE_LOGIN."
 }
@@ -92,7 +95,7 @@ if ([string]::IsNullOrWhiteSpace($Password)) {
     throw "La contrasena es obligatoria. Use -Password, defina HOSPITAL_SMOKE_PASSWORD o escribala cuando el sistema la solicite."
 }
 
-$base = $BaseUrl.TrimEnd("/")
+$base = $BaseUrl
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 
 function Get-XsrfToken {

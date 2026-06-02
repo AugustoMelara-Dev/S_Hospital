@@ -15,10 +15,20 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+. (Join-Path $scriptRoot "lib\operational_url_safety.ps1")
+
+trap {
+    Write-Host (Protect-HospitalOperationalText $_.Exception.Message $ProjectRoot)
+    Write-Host "No se genero handoff final. Revise que BaseUrl use solo http://IP-DEL-SERVIDOR:8000 y no incluya usuario, contrasena ni token."
+    exit 1
+}
+
 if ($ProjectRoot -eq "") {
-    $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
     $ProjectRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
 }
+
+$BaseUrl = Test-HospitalOperationalUrlInput $BaseUrl
 
 $scriptsDir = Join-Path $ProjectRoot "scripts"
 $qaDir = Join-Path $ProjectRoot "qa"
