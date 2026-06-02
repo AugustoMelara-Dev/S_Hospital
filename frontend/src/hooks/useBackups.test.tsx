@@ -3,18 +3,20 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 
-import { useBackups, useCreateBackup } from './useBackups';
+import { useBackups, useBackupWorkerHealth, useCreateBackup } from './useBackups';
 import { apiClient } from '@/lib/api';
 
 vi.mock('@/lib/api', () => ({
   apiClient: {
     getBackups: vi.fn(),
     createBackup: vi.fn(),
+    getSystemHealth: vi.fn(),
   },
 }));
 
 const mockedGetBackups = vi.mocked(apiClient.getBackups);
 const mockedCreateBackup = vi.mocked(apiClient.createBackup);
+const mockedGetSystemHealth = vi.mocked(apiClient.getSystemHealth);
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -33,6 +35,7 @@ describe('useBackups', () => {
   beforeEach(() => {
     mockedGetBackups.mockReset();
     mockedCreateBackup.mockReset();
+    mockedGetSystemHealth.mockReset();
   });
 
   afterEach(() => {
@@ -141,5 +144,69 @@ describe('useCreateBackup', () => {
     await result.current.create.mutateAsync();
 
     expect(mockedCreateBackup).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useBackupWorkerHealth', () => {
+  it('maps the operational health snapshot onto the worker shape', async () => {
+    mockedGetSystemHealth.mockResolvedValue({
+      generated_at: '2026-06-02T08:00:00Z',
+      database: { driver: 'mysql', connected: true },
+      queue: { connection: 'database', pending: 0, failed: 0 },
+      backups: {
+        worker_recently_active: true,
+        pending: 0,
+        success_last_24h: 3,
+        failed_last_24h: 1,
+      },
+      storage: { backup_files: 12, backup_bytes: 123_456 },
+      recent_errors: [],
+    });
+
+    const { result } = renderHook(() => useBackupWorkerHealth(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data).toEqual({
+      recent: true,
+      pending: 0,
+      successLast24h: 3,
+      failedLast24h: 1,
+    });
+  });
+
+  it('falls back to zero counters when the backend returns no backups section', async () => {
+    mockedGetSystemHealth.mockResolvedValue({
+      generated_at: '2026-06-02T08:00:00Z',
+      database: { driver: 'sqlite', connected: true },
+      queue: { connection: 'sync', pending: 0, failed: 0 },
+      backups: {
+        worker_recently_active: false,
+        pending: 0,
+        success_last_24h: 0,
+        failed_last_24h: 0,
+      },
+      storage: { backup_files: 0, backup_bytes: 0 },
+      recent_errors: [],
+    });
+
+    const { result } = renderHook(() => useBackupWorkerHealth(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data).toEqual({
+      recent: false,
+      pending: 0,
+      successLast24h: 0,
+      failedLast24h: 0,
+    });
   });
 });

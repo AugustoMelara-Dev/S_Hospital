@@ -36,6 +36,7 @@ import type {
   CashSessionReport,
   BackupLog,
   SystemStatus,
+  OperationalHealth,
   PaginatedMeta,
   ServiceFilters,
   InvoiceFilters,
@@ -86,6 +87,7 @@ export type {
   CashSessionReport,
   BackupLog,
   SystemStatus,
+  OperationalHealth,
   PaginatedMeta,
   ServiceFilters,
   InvoiceFilters,
@@ -264,6 +266,10 @@ export const apiClient = {
 
   async getSystemStatus(): Promise<SystemStatus> {
     return system.getStatus();
+  },
+
+  async getSystemHealth(): Promise<OperationalHealth> {
+    return system.getHealth();
   },
 
   async getFiscalSettings(): Promise<FiscalSettings | null> {

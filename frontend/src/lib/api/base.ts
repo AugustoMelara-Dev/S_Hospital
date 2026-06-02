@@ -229,6 +229,10 @@ export const apiClient = {
     return `${this.baseUrl}${normalizedPath}`;
   },
 
+  async systemHealth(): Promise<{ data: import('./types').OperationalHealth }> {
+    return this.request<{ data: import('./types').OperationalHealth }>('/api/system/health');
+  },
+
   async csrf(): Promise<void> {
     const now = Date.now();
 

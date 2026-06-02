@@ -40,7 +40,7 @@ describe('useServerStatus', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ data: healthySnapshot({ database: { connected: false } }) }), {
+        new Response(JSON.stringify({ data: healthySnapshot({ database: { connected: false, driver: 'sqlite' } }) }), {
           headers: { 'Content-Type': 'application/json' },
           status: 200,
         }),

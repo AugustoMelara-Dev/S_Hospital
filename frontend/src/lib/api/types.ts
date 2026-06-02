@@ -647,3 +647,37 @@ export type DashboardReport = {
     total_collected: string;
   }>;
 };
+
+
+export type OperationalHealth = {
+  generated_at: string;
+  database: {
+    driver: string;
+    connected: boolean;
+    error?: string;
+  };
+  queue: {
+    connection: string;
+    pending: number;
+    failed: number;
+    error?: string;
+  };
+  backups: {
+    worker_recently_active: boolean;
+    pending: number;
+    success_last_24h: number;
+    failed_last_24h: number;
+    error?: string;
+  };
+  storage: {
+    backup_files: number;
+    backup_bytes: number;
+    error?: string;
+  };
+  recent_errors: Array<{
+    id: number;
+    action: string;
+    entity_type: string;
+    created_at: string;
+  }>;
+};

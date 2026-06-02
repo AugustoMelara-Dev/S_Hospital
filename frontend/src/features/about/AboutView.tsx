@@ -15,7 +15,7 @@ type AboutViewProps = {
 
 export function AboutView({ onStatus }: AboutViewProps) {
   const { data: fiscal } = useFiscalSettings();
-  const { isOnline, lastCheck } = useServerStatus();
+  const { checking, isOnline, lastCheck, summary } = useServerStatus();
   const [backupCount, setBackupCount] = useState<number | string>('...');
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
 
@@ -33,17 +33,17 @@ export function AboutView({ onStatus }: AboutViewProps) {
   }, []);
 
   const triggerDiagnosticTest = () => {
-    onStatus('Revisando conexión local...');
+    onStatus('Revisando conexion local...');
     window.setTimeout(() => {
-      onStatus(isOnline ? 'Conexión local estable.' : 'No se pudo confirmar conexión con el servidor local.');
+      onStatus(checking ? 'Revision local en curso.' : `${summary.label}: ${summary.description}`);
     }, 1000);
   };
 
   return (
     <section id="about" className="flex flex-col gap-6" aria-labelledby="about-title">
       <PageHeader
-        title="Información del sistema"
-        description="Estado general de operación local, respaldos y soporte."
+        title="Informacion del sistema"
+        description="Estado general de operacion local, respaldos y soporte."
       />
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -57,18 +57,18 @@ export function AboutView({ onStatus }: AboutViewProps) {
                 <CardTitle className="text-xl font-bold">{hospitalName}</CardTitle>
                 <Badge variant="success">Activo</Badge>
               </div>
-              <CardDescription>Sistema de caja y facturación hospitalaria local.</CardDescription>
+              <CardDescription>Sistema de caja y facturacion hospitalaria local.</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
             <p>
-              Diseñado para operar dentro del hospital con facturación, caja, reportes,
+              Disenado para operar dentro del hospital con facturacion, caja, reportes,
               recibos institucionales y respaldos locales.
             </p>
 
             <div className="rounded-lg border border-border bg-muted/30 p-4">
               <h3 className="mb-2 text-sm font-semibold text-foreground">Operacion local</h3>
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="font-semibold text-foreground">Sistema disponible en la red del hospital</p>
                   <p className="text-xs text-muted-foreground">Uso local para caja, facturacion, reportes y respaldos.</p>
@@ -78,10 +78,18 @@ export function AboutView({ onStatus }: AboutViewProps) {
                   Activa
                 </div>
               </div>
+
+              <div className="mt-4 border-t border-border pt-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">Resumen operativo</p>
+                  <Badge variant={summaryBadgeVariant(summary.level)}>{summary.label}</Badge>
+                </div>
+                <p className="mt-2 text-sm text-foreground">{summary.description}</p>
+              </div>
             </div>
 
             <Button type="button" onClick={triggerDiagnosticTest} variant="secondary" size="sm">
-              Revisar conexión local
+              Revisar conexion local
             </Button>
           </CardContent>
         </Card>
@@ -89,7 +97,7 @@ export function AboutView({ onStatus }: AboutViewProps) {
         <Card>
           <CardHeader>
             <CardTitle className="text-base font-bold">Estado local</CardTitle>
-            <CardDescription>Señales útiles para soporte del hospital.</CardDescription>
+            <CardDescription>Senales utiles para soporte del hospital.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between border-b border-border py-1.5">
@@ -100,6 +108,11 @@ export function AboutView({ onStatus }: AboutViewProps) {
             </div>
 
             <div className="flex items-center justify-between border-b border-border py-1.5">
+              <span className="text-xs font-semibold text-muted-foreground">Diagnostico</span>
+              <Badge variant={summaryBadgeVariant(summary.level)}>{summary.label}</Badge>
+            </div>
+
+            <div className="flex items-center justify-between border-b border-border py-1.5">
               <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                 <HardDrive className="h-3.5 w-3.5" /> Respaldos
               </span>
@@ -107,7 +120,7 @@ export function AboutView({ onStatus }: AboutViewProps) {
             </div>
 
             <div className="pt-2 text-center text-[11px] text-muted-foreground">
-              Última revisión: {lastCheck ? lastCheck.toLocaleTimeString() : 'pendiente'}
+              Ultima revision: {lastCheck ? lastCheck.toLocaleTimeString() : 'pendiente'}
             </div>
           </CardContent>
         </Card>
@@ -118,7 +131,7 @@ export function AboutView({ onStatus }: AboutViewProps) {
           <CardTitle className="flex items-center gap-2 text-base font-bold">
             <HeartHandshake className="h-5 w-5 text-secondary" /> Soporte
           </CardTitle>
-          <CardDescription>Información para continuidad operativa.</CardDescription>
+          <CardDescription>Informacion para continuidad operativa.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 text-sm text-muted-foreground sm:grid-cols-2">
           <div className="space-y-1">
@@ -133,4 +146,16 @@ export function AboutView({ onStatus }: AboutViewProps) {
       </Card>
     </section>
   );
+}
+
+function summaryBadgeVariant(level: 'ok' | 'review' | 'error'): 'success' | 'warning' | 'destructive' {
+  if (level === 'ok') {
+    return 'success';
+  }
+
+  if (level === 'review') {
+    return 'warning';
+  }
+
+  return 'destructive';
 }
