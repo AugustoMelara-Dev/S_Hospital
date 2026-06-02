@@ -24,7 +24,7 @@ class SystemStatusTest extends TestCase
         File::put($proofRoot.'/frontend/dist/index.html', '<div id="root"></div>');
         File::put($proofRoot.'/frontend/dist/assets/index-test.js', 'console.log("ok");');
         Config::set('hospital.project_root', $proofRoot);
-        Config::set('app.url', 'http://192.168.1.10:8000');
+        Config::set('app.url', 'http://soporte:supersecret@192.168.1.10:8000');
 
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
@@ -48,6 +48,16 @@ class SystemStatusTest extends TestCase
             'type' => BackupLog::TYPE_MANUAL,
             'created_by' => $admin->id,
         ]);
+        BackupLog::query()->create([
+            'filename' => 'hospital-backup-failed.sql',
+            'path' => 'backups/hospital-backup-failed.sql',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_FAILED,
+            'type' => BackupLog::TYPE_MANUAL,
+            'created_by' => $admin->id,
+            'error_message' => 'SQLSTATE[HY000] DB_PASSWORD=supersecret failed at C:\Projects\S_Hospital\backend\.env',
+            'completed_at' => now(),
+        ]);
 
         $response = $this->actingAs($admin)
             ->getJson('/api/system/status')
@@ -56,6 +66,7 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.readiness.production_ready', false)
             ->assertJsonPath('data.backups.pending_count', 1)
             ->assertJsonPath('data.backups.last_success_filename', 'hospital-backup-ok.sql')
+            ->assertJsonPath('data.backups.last_failure_message', 'Error tecnico registrado. Revise el paquete de soporte.')
             ->assertJsonPath('data.backups.queue.jobs_table_available', true)
             ->assertJsonPath('data.backups.queue.worker_command', 'php artisan queue:work --queue=backups --tries=1 --timeout=600')
             ->assertJsonPath('data.runtime.logs_writable', true)
@@ -69,6 +80,7 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.network.lan_ready', true)
             ->assertJsonPath('data.network.client_url', 'http://192.168.1.10:8000')
             ->assertJsonPath('data.database.connected', true)
+            ->assertJsonPath('data.environment.app_url', 'http://192.168.1.10:8000')
             ->assertJsonPath('data.environment.app_version', 'local')
             ->assertJsonPath('data.preflight.public_routes.0.path', '/up')
             ->assertJsonPath('data.preflight.public_routes.1.path', '/login')
@@ -80,6 +92,8 @@ class SystemStatusTest extends TestCase
             ->assertJsonMissingPath('data.database.password');
 
         $this->assertStringNotContainsString('password', json_encode($response->json(), JSON_THROW_ON_ERROR));
+        $this->assertStringNotContainsString('supersecret', json_encode($response->json(), JSON_THROW_ON_ERROR));
+        $this->assertStringNotContainsString('soporte:supersecret', json_encode($response->json(), JSON_THROW_ON_ERROR));
         $this->assertStringNotContainsString('SQLSTATE', json_encode($response->json(), JSON_THROW_ON_ERROR));
         $this->assertStringNotContainsString($proofRoot, json_encode($response->json(), JSON_THROW_ON_ERROR));
     }
