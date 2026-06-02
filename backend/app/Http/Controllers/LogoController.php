@@ -4,13 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Fiscal\UploadLogoRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class LogoController extends Controller
 {
-    public function show(Request $request): JsonResponse
+    public function show(): JsonResponse
     {
         $exists = Storage::disk('public')->exists('branding/logo.png');
         $url = null;
