@@ -1,4 +1,5 @@
 @echo off
+setlocal EnableExtensions EnableDelayedExpansion
 REM Sistema de Caja Hospitalaria - Script local de desarrollo/validacion.
 REM Para produccion final use offline-release\setup.bat desde un paquete regenerado.
 
@@ -94,9 +95,25 @@ if %errorlevel% neq 0 (
 echo OK: Servicios levantados en segundo plano.
 echo.
 
-echo [4/5] Esperando base de datos local...
-timeout /t 10 /nobreak >nul
-echo OK: Base de datos lista.
+echo [4/5] Esperando base de datos local (healthcheck)...
+set /a ATTEMPTS=0
+set /a MAX_ATTEMPTS=60
+:WAIT_DB
+docker compose exec -T mysql healthcheck.sh --connect --innodb_initialized >nul 2>&1
+if %errorlevel% neq 0 (
+    set /a ATTEMPTS+=1
+    if !ATTEMPTS! geq %MAX_ATTEMPTS% (
+        echo.
+        echo ERROR: MariaDB no respondio al healthcheck despues de %MAX_ATTEMPTS% intentos.
+        echo Revise los logs con: docker compose logs mysql
+        echo.
+        pause
+        exit /b 1
+    )
+    timeout /t 2 /nobreak >nul
+    goto WAIT_DB
+)
+echo OK: Base de datos lista tras %ATTEMPTS% intento(s).
 echo.
 
 echo [5/5] Inicializando base de datos y optimizando cache...

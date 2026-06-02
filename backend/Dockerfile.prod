@@ -71,5 +71,9 @@ RUN mkdir -p storage/framework/views storage/framework/cache storage/framework/s
 # Adjust directory permissions so php-fpm (www-data) can write to storage & bootstrap
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
+COPY backend/docker/entrypoint.sh /usr/local/bin/s-hospital-entrypoint.sh
+RUN chmod +x /usr/local/bin/s-hospital-entrypoint.sh
+
 EXPOSE 9000
+ENTRYPOINT ["/usr/local/bin/s-hospital-entrypoint.sh"]
 CMD ["php-fpm"]
