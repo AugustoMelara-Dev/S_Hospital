@@ -509,6 +509,25 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.cashiers.0.total_collected', '51.75');
     }
 
+    public function test_operations_report_uses_payment_amount_cents_as_financial_source(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+        Payment::query()
+            ->where('invoice_id', $invoiceId)
+            ->update(['amount' => '99.99']);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/reports/operations?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertJsonPath('data.cashiers.0.username', $cashier->username)
+            ->assertJsonPath('data.cashiers.0.total_collected', '17.25');
+    }
+
     public function test_operations_report_area_filter_prorates_partial_payments_with_integer_cents(): void
     {
         $this->seedBillingBase();

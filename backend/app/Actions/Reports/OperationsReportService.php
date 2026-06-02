@@ -192,7 +192,7 @@ class OperationsReportService
                 'invoice_number' => $payment->invoice?->invoice_number,
                 'patient_name' => $payment->invoice?->patient_name,
                 'method' => $payment->method,
-                'amount' => (string) $payment->amount,
+                'amount' => $this->centsToMoney((int) $payment->amount_cents),
                 'reason' => $payment->void_reason,
                 'voided_at' => $payment->voided_at?->toISOString(),
                 'voided_by' => $payment->voidedBy?->name,
@@ -293,7 +293,7 @@ class OperationsReportService
             $grouped[$userId]['cash_sessions'][] = $payment->cash_session_id;
             $grouped[$userId]['invoices'][] = $payment->invoice_id;
 
-            $paymentAmountCents = Money::parseCents((string) $payment->amount, 'payment_amount');
+            $paymentAmountCents = (int) $payment->amount_cents;
             if (! empty($filters['category_id']) || ! empty($filters['area_id'])) {
                 $filteredTotalCents = 0;
                 $invoice = $payment->invoice;
