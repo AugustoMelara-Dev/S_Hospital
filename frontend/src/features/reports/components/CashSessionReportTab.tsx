@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { KPICard } from './KPICard';
 import type { CashSessionReport } from '../../../lib/api/types';
 import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
+import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
 
 interface CashSessionReportTabProps {
   canExport: boolean;
@@ -278,5 +279,5 @@ function humanizeEnum(value: string): string {
 }
 
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat('es-HN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+  return formatLocalizedDateTime(value);
 }

@@ -10,6 +10,7 @@ import { Card, CardContent } from '../../components/ui/card';
 import { BackupStatusBadge, getStatusDescription } from './components/BackupStatusBadge';
 import { BackupExplanationCard, BackupEmptyState } from './components/BackupExplanationCard';
 import { type AuthUser, type BackupLog, type PaginatedMeta, type SystemStatus, apiClient, userSafeErrorMessage } from '../../lib/api';
+import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 
 type BackupsViewProps = {
   user: AuthUser;
@@ -27,10 +28,7 @@ function formatBytes(size: number | null): string {
 }
 
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat('es-HN', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value));
+  return formatLocalizedDateTime(value);
 }
 
 function formatRelativeTime(value: string): string {

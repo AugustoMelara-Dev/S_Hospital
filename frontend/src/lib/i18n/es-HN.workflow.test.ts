@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { STRINGS } from './es-HN';
-import { formatLempiras } from '../format/formatCurrency';
+import { formatLempiras } from '../money';
 import { formatDate, formatDateTime } from '../format/formatDate';
 
 describe('i18n surface for the cashier workflow', () => {

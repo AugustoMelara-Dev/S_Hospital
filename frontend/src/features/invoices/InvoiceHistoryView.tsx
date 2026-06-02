@@ -35,6 +35,7 @@ import { DateRangePicker } from '../../components/ui/date-range-picker';
 import { FilterBar } from '../../components/ui/filter-bar';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
+import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import {
   FileClock,
   MoreHorizontal,
@@ -579,10 +580,7 @@ function StatusBadge({ status }: { status: Invoice['status'] }) {
 }
 
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat('es-HN', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value));
+  return formatLocalizedDateTime(value);
 }
 
 function moneyLabel(value: string | number | null | undefined): string {

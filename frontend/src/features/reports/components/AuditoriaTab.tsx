@@ -9,6 +9,7 @@ import { EmptyState } from '../../../components/ui/states';
 import { KPICard } from './KPICard';
 import type { OperationsReport } from '../../../lib/api/types';
 import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
+import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
 
 interface AuditoriaTabProps {
   canExport: boolean;
@@ -341,7 +342,7 @@ export function AuditoriaTab({
 
 function formatDate(value: string | null): string {
   if (!value) return '-';
-  return new Intl.DateTimeFormat('es-HN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+  return formatLocalizedDateTime(value);
 }
 
 function backupStatusLabel(status: string): string {
