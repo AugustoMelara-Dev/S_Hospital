@@ -19,10 +19,10 @@ use App\Http\Requests\Reports\DateRangeReportRequest;
 use App\Http\Requests\Reports\ExportReportRequest;
 use App\Http\Requests\Reports\MonthlyReportRequest;
 use App\Http\Requests\Reports\PdfExportRequest;
+use App\Http\Requests\Reports\ShowCashSessionReportRequest;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -179,18 +179,10 @@ class ReportController extends Controller
     }
 
     public function cashSession(
-        Request $request,
+        ShowCashSessionReportRequest $request,
         CashRegisterSession $cashSession,
         CashSessionReportService $reports,
     ): JsonResponse {
-        ($request->user()->can('reports.cash_session.view')
-            || $request->user()->can('reports.managerial.view')) || abort(403);
-
-        abort_unless(
-            $request->user()->can('cash.close_any') || $cashSession->user_id === $request->user()->id,
-            403,
-        );
-
         return response()->json([
             'data' => $reports->report($cashSession),
         ]);

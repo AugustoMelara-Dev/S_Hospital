@@ -2446,3 +2446,20 @@ Consecuencia:
 
 - Cierre diario PDF sigue limitado a usuarios gerenciales por `PdfExportRequest::authorize`.
 - Usuarios de caja solo pueden exportar periodos con su propia `cash_session_id`.
+
+### 2026-06-02 - Reporte de caja usa request de autorizacion dedicado
+
+Decision:
+
+- `GET /api/reports/cash-sessions/{cashSession}` usa `ShowCashSessionReportRequest`.
+- La autorizacion combina permiso de reporte y propiedad de caja o permiso `cash.close_any`.
+
+Motivo:
+
+- La verificacion dependia del modelo de ruta y estaba repetida dentro del controlador.
+- Centralizarla facilita auditar permisos de reportes financieros.
+
+Consecuencia:
+
+- Usuarios sin permiso de reporte reciben 403.
+- Cajeros con permiso limitado solo pueden ver su propia caja; usuarios con `cash.close_any` conservan alcance amplio.
