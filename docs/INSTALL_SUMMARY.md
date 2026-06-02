@@ -18,7 +18,7 @@ No ejecutar `migrate:fresh` en el servidor real.
 11. Crear un backup manual y confirmar que cambia de `pending` a `success`.
 12. Preparar archivos de evidencia con `scripts\init_production_proofs.ps1`.
 13. Desde una segunda PC cliente, ejecutar `scripts\validate_lan_client.ps1 -BaseUrl http://IP_DEL_SERVIDOR -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md` y completar los checks manuales de login, caja, factura, pago, reportes y backup.
-14. Completar `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con la impresora fisica media carta/carta/A5/80mm/58mm.
+14. Completar `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con la impresora fisica A5/carta/media carta/80mm/58mm.
 15. Regenerar el paquete con `scripts\make_offline_release.ps1 -Force` y ejecutar `scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit`.
 16. Ejecutar `scripts\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR` sin `-AllowMissingPhysicalProof` solo cuando ya existan pruebas de segunda PC LAN e impresora.
 
@@ -86,4 +86,4 @@ scripts\run_backup_worker.cmd --check
 - Ejecutar `scripts/e2e_gate.sh` en la maquina de build.
 - Ejecutar `scripts/validate_restore_mysql.sh` en entorno MySQL/MariaDB con herramienta dump.
 - Ejecutar `scripts/validate_mysql_concurrency.sh` contra servidor Laravel conectado a MySQL/MariaDB.
-- Completar checklist de impresora institucional media carta/carta/A5/80mm/58mm en la PC de caja.
+- Completar checklist de impresora institucional A5/carta/media carta/80mm/58mm en la PC de caja.

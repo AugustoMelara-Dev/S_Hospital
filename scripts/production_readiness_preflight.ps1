@@ -548,9 +548,9 @@ if ($AllowMissingPhysicalProof) {
             "Browser/version",
             "Cashier computer",
             "Invoice used",
-            "Media carta result",
-            "Carta result",
             "A5 result",
+            "Carta result",
+            "Media carta result",
             "80mm result",
             "58mm result",
             "Reprint result",
@@ -561,9 +561,9 @@ if ($AllowMissingPhysicalProof) {
             "Final conclusion"
         ) `
         -requiredChecks @(
-            "media carta",
-            "carta",
             "A5",
+            "carta",
+            "media carta",
             "80mm",
             "58mm",
             "white background",

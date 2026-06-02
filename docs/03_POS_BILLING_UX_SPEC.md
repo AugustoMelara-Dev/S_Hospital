@@ -21,7 +21,7 @@ La pantalla de Nueva factura debe sentirse como POS/caja profesional: rapida, cl
 7. Revisa subtotal, ISV/descuentos/reglas especiales y total.
 8. Selecciona metodo de pago.
 9. Confirma emision/cobro.
-10. Imprime recibo institucional media carta, carta, A5, 80mm o 58mm segun configuracion.
+10. Imprime recibo institucional A5, carta, media carta, 80mm o 58mm segun configuracion.
 
 ## Busqueda rapida
 
