@@ -20,6 +20,7 @@ No declarar `PRODUCTION_READY` hasta cerrar todos los bloqueantes de entorno y h
 | Worker continuo de backups | PENDING_ENVIRONMENT_VALIDATION | Worker `--once` proceso job; restore con PATH de XAMPP genero backup success | Crear tarea/servicio Windows con PATH correcto para `mysqldump`/`mariadb-dump` |
 | CORS/Sanctum LAN final | PENDING_ENVIRONMENT_VALIDATION | Validado localmente con host de desarrollo; falta IP/dominio final | Configurar `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` y CORS con IP fija/dominio LAN real |
 | Preflight final ejecutable | READY_TO_RUN | `scripts/production_readiness_preflight.ps1` verifica env production, build, rutas, herramientas de dump, backup writable y pruebas fisicas documentadas obligatorias por defecto | Ejecutarlo en el servidor final sin override de evidencia fisica |
+| Artefacto offline limpio | VALIDATED_LOCAL | `scripts\make_offline_release.ps1 -Force` regenero el paquete local y `scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit` paso con `OFFLINE_RELEASE_CLEAN: YES` | Repetir regeneracion y guard si existe cualquier commit posterior antes de entregar |
 
 ## Gaps cerrados en Fase 11
 
@@ -52,7 +53,7 @@ No declarar `PRODUCTION_READY` hasta cerrar todos los bloqueantes de entorno y h
 11. Validar impresora fisica A5/carta/media carta/80mm/58mm.
 12. Ejecutar `scripts/production_readiness_preflight.ps1` sin `-AllowMissingPhysicalProof`.
 
-Sin LAN fisica desde segunda PC, impresora fisica A5/carta/media carta/80mm/58mm, `.env` production, MySQL tools, worker persistente, artefacto offline limpio, restore final y concurrencia final, produccion sigue bloqueada.
+Sin LAN fisica desde segunda PC, impresora fisica A5/carta/media carta/80mm/58mm, `.env` production, MySQL tools, worker persistente, restore final y concurrencia final, produccion sigue bloqueada. El artefacto offline ya tiene validacion local, pero debe volver a generarse si cambia el commit de entrega.
 
 ## Estado de alcance
 

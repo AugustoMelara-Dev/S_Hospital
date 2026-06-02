@@ -77,6 +77,8 @@ Current local verification notes:
 - 2026-06-02 Docker production CORS follow-up: `docker-compose.prod.yml` now requires `SERVER_IP` consistently and limits CORS to the effective LAN `APP_PORT` instead of also allowing stale `:8000` when a custom port is published.
 - 2026-06-02 frontend production build follow-up: secondary route screens now lazy-load through `AppRoutes`, reducing the main Vite chunk from 532.88 kB to 361.82 kB and removing the >500 kB warning while keeping cashbox and new invoice available for quick modals.
 - 2026-06-02 backend financial mutation follow-up: invoice creation now validates existing services and positive decimal quantities at the Form Request boundary, while payment/void endpoints have narrower route throttles on top of authenticated throttling.
+- 2026-06-02 offline release artifact follow-up: `scripts\make_offline_release.ps1 -Force` regenerated `offline-release`, exported four Docker image tar files, and the release guard passed with `OFFLINE_RELEASE_CLEAN: YES`. This evidence remains tied to the generated HEAD; regenerate after later commits.
+- 2026-06-02 dependency audit follow-up: Composer lock was aligned with `composer.json`, Symfony/Guzzle patch updates were applied, and `composer audit` returned no advisories.
 
 ## Plan Review Orchestrator Result
 

@@ -8,14 +8,14 @@
 - La concurrencia real MySQL/MariaDB quedo `VALIDATED` en Fase 11 contra Laravel/MySQL local con `RUN_ID=concurrency-validation-20260517T20435`. El script crea datos auditables y requiere snapshot previo; repetir en servidor/base final descartable antes de operar.
 - La validacion LAN desde computadora cliente queda `PENDING_LAN_CLIENT_VALIDATION` hasta probar por IP fija/nombre local del servidor desde otra PC.
 - La configuracion final `APP_ENV=production`, `APP_DEBUG=false`, admin real y worker continuo de backups queda `PENDING_ENVIRONMENT_VALIDATION` hasta preparar el servidor final.
-- El paquete `offline-release` actual queda `PENDING_RELEASE_REGENERATION` hasta regenerar imagenes desde el commit de entrega y pasar `scripts/assert_offline_release_clean.ps1 -RequireCurrentCommit`.
+- El paquete `offline-release` fue regenerado localmente y el guard `scripts/assert_offline_release_clean.ps1 -RequireCurrentCommit` paso sin logs, `.env`, backups, evidencia QA local ni manifiesto stale. Si se crea un commit nuevo despues de esa regeneracion, debe regenerarse otra vez antes de entregar.
 
 ## Estado RC
 
 - LOCAL_VALIDATION_READY: si.
 - PRODUCTION_CANDIDATE: si, con Fase 12 UX/POS/catalogo/reportes/QA cerrada, E2E local, smoke real no destructivo, rutas LAN, restore real local y concurrencia real local validados.
-- PRODUCTION_READY: no, hasta cerrar LAN fisica desde cliente, impresora fisica A5/carta/media carta/80mm/58mm, restore/concurrencia final, worker continuo de backups, artefacto offline regenerado y configuracion final de produccion.
-- RELEASE_READY: no, hasta que el guard de artefacto offline pase sin manifiesto stale, logs, `.env`, backups ni evidencia QA local dentro del paquete.
+- PRODUCTION_READY: no, hasta cerrar LAN fisica desde cliente, impresora fisica A5/carta/media carta/80mm/58mm, restore/concurrencia final, worker continuo de backups y configuracion final de produccion.
+- RELEASE_READY: condicionado; el guard de artefacto offline paso localmente, pero debe repetirse desde el commit final de entrega si hay nuevos commits.
 
 ## Alcance de producto
 
