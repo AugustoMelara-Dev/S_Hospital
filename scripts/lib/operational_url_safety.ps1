@@ -42,5 +42,9 @@ function Test-HospitalOperationalUrlInput([string] $TargetUrl) {
         throw "La direccion del sistema no debe incluir usuario ni contrasena. Use solo http://IP-DEL-SERVIDOR:8000."
     }
 
+    if (-not [string]::IsNullOrWhiteSpace($uri.Query) -or -not [string]::IsNullOrWhiteSpace($uri.Fragment)) {
+        throw "La direccion del sistema no debe incluir parametros ni fragmentos. Use solo http://IP-DEL-SERVIDOR:8000."
+    }
+
     return $cleanUrl.TrimEnd("/")
 }
