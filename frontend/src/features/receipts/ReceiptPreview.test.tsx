@@ -89,6 +89,8 @@ describe('ReceiptPreview', () => {
     await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(1));
     expect(screen.getByText(/no se pudo abrir la ventana de impresion/i)).toBeInTheDocument();
     expect(screen.getByText(/reimprima desde historial con motivo/i)).toBeInTheDocument();
+    expect(document.body.dataset.receiptWidth).toBeUndefined();
+    expect(document.body.dataset.printingReceipt).toBeUndefined();
   });
 
   it('sets and clears the active print paper width', async () => {

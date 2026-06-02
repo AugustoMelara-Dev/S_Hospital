@@ -238,11 +238,11 @@ function moneyLabel(value: string | number | null | undefined): string {
 }
 
 function formatDate(value: string): string {
-  const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00` : value;
-  return new Intl.DateTimeFormat('es-HN', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(normalizedValue));
+  // The receipt sometimes shows calendar dates as YYYY-MM-DD (no time).
+  // The shared helper would render them as midnight, so we lift them
+  // back to local-noon to avoid the day rolling back in some timezones.
+  const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value;
+  return formatLocalizedDateTime(normalizedValue);
 }
 
 function paymentLabel(method?: ReceiptData['payments'][number]['method']): string {
@@ -267,11 +267,8 @@ function statusLabel(status: ReceiptData['invoice']['status']): string {
 function printReceiptDocument(width: ReceiptData['width'], print: () => void) {
   const previousWidth = document.body.dataset.receiptWidth;
   const previousPrinting = document.body.dataset.printingReceipt;
-  document.body.dataset.receiptWidth = width;
-  document.body.dataset.printingReceipt = 'true';
-  print();
 
-  window.setTimeout(() => {
+  function restorePrintState() {
     if (previousWidth) {
       document.body.dataset.receiptWidth = previousWidth;
     } else {
@@ -283,5 +280,17 @@ function printReceiptDocument(width: ReceiptData['width'], print: () => void) {
     } else {
       delete document.body.dataset.printingReceipt;
     }
-  }, 1000);
+  }
+
+  document.body.dataset.receiptWidth = width;
+  document.body.dataset.printingReceipt = 'true';
+
+  try {
+    print();
+  } catch (error) {
+    restorePrintState();
+    throw error;
+  }
+
+  window.setTimeout(restorePrintState, 1000);
 }
