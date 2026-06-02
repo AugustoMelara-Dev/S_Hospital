@@ -233,6 +233,15 @@ describe('NewInvoiceView', () => {
         } as Response;
       }
 
+      if (url.includes('/api/settings/fiscal')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: { scanner_enabled: true, partial_payments_enabled: false, receipt_paper_size: 'half_letter', default_tax_rate: '15.00' },
+          }),
+        } as Response;
+      }
+
       if (url.includes('/api/categories')) {
         return {
           ok: true,

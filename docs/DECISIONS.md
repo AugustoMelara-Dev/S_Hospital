@@ -1838,3 +1838,21 @@ Consecuencia:
 
 - `base.test.ts` falla si un error de red vuelve a guardar `DB_PASSWORD`, `token` o secretos similares.
 - Los mensajes de red siguen siendo accionables para el operador y utiles para soporte local.
+
+### 2026-06-02 - Previsualizacion de factura calcula ISV en centavos
+
+Decision:
+
+- La previsualizacion local de nueva factura calcula subtotal, ISV y total estimado en centavos usando `default_tax_rate` y la bandera `taxable` de cada servicio.
+- La regla visual de eritropoyetina gratis por receta de dialisis aplica precio cero tambien en el estimado.
+- El backend sigue siendo la unica fuente de verdad al emitir; la UI solo anticipa el total para el cajero.
+
+Motivo:
+
+- El carrito mostraba un total estimado sin ISV para servicios gravados, aunque el backend devolvia una factura con impuesto.
+- Una caja hospitalaria necesita que el cajero vea un estimado coherente antes de emitir/cobrar, sin depender de floats.
+
+Consecuencia:
+
+- `NewInvoiceView.test.tsx` falla si el flujo de cobro deja de mostrar el total estimado con ISV antes de emitir.
+- Cualquier diferencia final sigue resolviendose con la respuesta del backend emitida.

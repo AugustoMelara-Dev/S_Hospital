@@ -431,7 +431,10 @@ export function NewInvoiceView({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [canEmit, cartItems.length, handleClearCart, patientName, scanCode, search, showClearConfirm, showConfirmation, showPayment, showReceipt, showSuccess]);
 
-  const preview = useMemo(() => computeSimpleEstimate(cartItems), [cartItems]);
+  const preview = useMemo(
+    () => computeSimpleEstimate(cartItems, fiscalSettings?.default_tax_rate),
+    [cartItems, fiscalSettings?.default_tax_rate],
+  );
 
   async function loadPointOfSaleData() {
     if (!canViewCatalog) {
@@ -955,15 +958,40 @@ export function NewInvoiceView({
   );
 }
 
-function computeSimpleEstimate(items: CartItem[]) {
-  const total = items.reduce((sum, item) => {
-    return sum + parseCents(item.service.price) * parseQuantityUnits(item.quantity);
+function computeSimpleEstimate(items: CartItem[], taxRate?: string) {
+  const rateBasisPoints = parseTaxRateBasisPoints(taxRate);
+  const subtotal = items.reduce((sum, item) => {
+    return sum + Math.trunc((effectiveUnitPriceCents(item) * parseQuantityUnits(item.quantity)) / 100);
   }, 0);
+  const tax = items.reduce((sum, item) => {
+    if (!item.service.taxable || rateBasisPoints <= 0) return sum;
+
+    const lineSubtotal = Math.trunc((effectiveUnitPriceCents(item) * parseQuantityUnits(item.quantity)) / 100);
+    return sum + Math.round((lineSubtotal * rateBasisPoints) / 10_000);
+  }, 0);
+
   return {
-    subtotal: formatCents(Math.trunc((total + 50) / 100)),
-    tax: '0.00',
-    total: formatCents(Math.trunc((total + 50) / 100)),
+    subtotal: formatCents(subtotal),
+    tax: formatCents(tax),
+    total: formatCents(subtotal + tax),
   };
+}
+
+function parseTaxRateBasisPoints(taxRate?: string): number {
+  const parsed = Number(taxRate ?? 0);
+
+  return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed * 100) : 0;
+}
+
+function effectiveUnitPriceCents(item: CartItem): number {
+  if (
+    item.dialysisPrescription &&
+    item.service.special_rule_code === 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION'
+  ) {
+    return 0;
+  }
+
+  return parseCents(item.service.price);
 }
 
 function isZeroMoney(value: string): boolean {
