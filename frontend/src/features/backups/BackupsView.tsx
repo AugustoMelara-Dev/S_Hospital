@@ -705,15 +705,15 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               ))}
             </div>
 
-            <Table>
+            <Table className="min-w-[960px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-40 whitespace-nowrap">Fecha</TableHead>
-                  <TableHead className="min-w-64">Nombre</TableHead>
-                  <TableHead className="w-24 whitespace-nowrap">Tamaño</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="w-44 whitespace-nowrap">Usuario</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead className="w-40 whitespace-nowrap px-4 py-3">Fecha</TableHead>
+                  <TableHead className="min-w-72 px-4 py-3">Nombre</TableHead>
+                  <TableHead className="w-24 whitespace-nowrap px-4 py-3">Tamaño</TableHead>
+                  <TableHead className="px-4 py-3">Estado</TableHead>
+                  <TableHead className="w-44 whitespace-nowrap px-4 py-3">Usuario</TableHead>
+                  <TableHead className="px-4 py-3 text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -726,10 +726,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 )}
                 {backupsList.map((backup) => (
                   <TableRow key={backup.id}>
-                    <TableCell className="whitespace-nowrap">{formatDate(backup.completed_at ?? backup.created_at)}</TableCell>
-                    <TableCell className="min-w-64 break-all text-sm">{backup.filename}</TableCell>
-                    <TableCell className="whitespace-nowrap">{formatBytes(backup.size_bytes)}</TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap px-4 py-3">{formatDate(backup.completed_at ?? backup.created_at)}</TableCell>
+                    <TableCell className="min-w-72 break-words px-4 py-3 text-sm">{backup.filename}</TableCell>
+                    <TableCell className="whitespace-nowrap px-4 py-3">{formatBytes(backup.size_bytes)}</TableCell>
+                    <TableCell className="px-4 py-3">
                       <div className="flex flex-col gap-1">
                         <BackupStatusBadge status={backup.status as 'pending' | 'success' | 'failed'} />
                         <span className="text-xs text-muted-foreground">
@@ -742,8 +742,8 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="whitespace-nowrap">{backup.creator?.name ?? 'Sistema'}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="whitespace-nowrap px-4 py-3">{backup.creator?.name ?? 'Sistema'}</TableCell>
+                    <TableCell className="px-4 py-3 text-right">
                       {canDownload && backup.status === 'success' ? (
                         <Button
                           type="button"
