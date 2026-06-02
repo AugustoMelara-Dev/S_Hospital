@@ -3,6 +3,7 @@ services:
     build:
       context: ./backend
     environment:
+      APP_NAME: Sistema de Caja Hospitalaria
       APP_ENV: local
       APP_DEBUG: "true"
       APP_URL: http://localhost:${APP_PORT:-8000}
