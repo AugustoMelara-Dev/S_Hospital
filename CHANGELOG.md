@@ -1,5 +1,28 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## Unreleased - v1.0.0 Audit Plan (2026-06-02)
+
+### Phase 9 - apiClient hardening (partial, declared in `docs/AUDIT_2026_06_02.md`)
+
+- `frontend/src/lib/api/base.ts` now caches the `/sanctum/csrf-cookie`
+  response for 30 minutes to avoid an extra round-trip on every mutating
+  request.
+- 422 validation errors expose the full field list (was truncated to the
+  first three messages) with human-readable labels like
+  `Items #2 (quantity): ...` and `patient name: ...`.
+- New `isPermissionDeniedError(error)` helper alongside the existing
+  `isSessionExpiredError(error)`.
+- 423 Locked responses from the future lockout middleware get a dedicated
+  safe message asking the operator to wait or request a supervisor
+  reactivation.
+- Tests in `frontend/src/lib/api/base.test.ts` cover CSRF caching, full
+  422 list, 423, 403, 5xx sanitization, and the new helpers.
+
+### Audit
+
+- `docs/AUDIT_2026_06_02.md` records the full audit and the 20-phase
+  plan to reach `PRODUCTION_READY`.
+
 ## v1.0.0-rc.2 - Production Audit Hardening (2026-06-01)
 
 ### What's New

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, apiClient, resetRequestChain, resolveApiBaseUrl, userSafeErrorMessage } from './base';
+import { ApiError, apiClient, isPermissionDeniedError, isSessionExpiredError, resetCsrfCache, resetRequestChain, resolveApiBaseUrl, userSafeErrorMessage } from './base';
 
 function locationFor(hostname: string): Pick<Location, 'hostname'> {
   return { hostname };
@@ -10,6 +10,7 @@ describe('resolveApiBaseUrl', () => {
     vi.restoreAllMocks();
     window.localStorage.clear();
     resetRequestChain();
+    resetCsrfCache();
   });
 
   it('uses same-origin API routes by default', () => {
@@ -60,6 +61,55 @@ describe('resolveApiBaseUrl', () => {
     expect(message).toMatch(/respaldo cambio de estado/i);
     expect(message).toMatch(/pida soporte antes de restaurar/i);
     expect(message).not.toMatch(/lock|conflict/i);
+  });
+
+  it('lists every validation error from a 422 response with human-readable field labels', () => {
+    const error = new ApiError('Fallo de validacion.', 422, {
+      patient_name: ['Ingrese el nombre del paciente.'],
+      'items.0.quantity': ['La cantidad debe ser mayor a cero.'],
+      'items.1.service_id': ['El servicio no existe.', 'No es facturable.'],
+    });
+
+    const message = userSafeErrorMessage(error, 'No se pudo emitir la factura.');
+
+    expect(message).toMatch(/patient name: Ingrese el nombre del paciente\./i);
+    expect(message).toMatch(/items #1 \(quantity\): La cantidad debe ser mayor a cero\./i);
+    expect(message).toMatch(/items #2 \(service id\): El servicio no existe\., No es facturable\./i);
+    expect(message).not.toMatch(/patient_name/);
+    expect(message).not.toMatch(/items\.0\.quantity/);
+  });
+
+  it('falls back to a generic message when a 422 has no validation payload', () => {
+    const message = userSafeErrorMessage(new ApiError('No se pudo guardar.', 422), 'fallback');
+
+    expect(message).toBe('No se pudo guardar.');
+  });
+
+  it('shows the lockout guidance when the backend responds 423', () => {
+    const message = userSafeErrorMessage(new ApiError('', 423), 'fallback');
+
+    expect(message).toMatch(/cuenta bloqueada por intentos fallidos/i);
+    expect(message).toMatch(/15 minutos/i);
+  });
+
+  it('keeps the permission denied message stable for 403 responses', () => {
+    const error = new ApiError('Forbidden', 403);
+    const message = userSafeErrorMessage(error, 'fallback');
+
+    expect(message).toMatch(/no tiene permiso para esta acci/i);
+    expect(isPermissionDeniedError(error)).toBe(true);
+    expect(isPermissionDeniedError(new ApiError('teapot', 418))).toBe(false);
+    expect(isSessionExpiredError(new ApiError('teapot', 401))).toBe(true);
+  });
+
+  it('still treats 5xx errors as server-side without leaking stack traces', () => {
+    const message = userSafeErrorMessage(
+      new ApiError('SQLSTATE[HY000]: General error: 7 (SQL) at /var/www/html/app/Http/Controllers/X.php:42', 500),
+      'fallback',
+    );
+
+    expect(message).toMatch(/el servidor LAN no pudo completar la operacion/i);
+    expect(message).not.toMatch(/SQLSTATE/);
   });
 
   it('stores safe local support evidence when the LAN server is unavailable', async () => {
@@ -180,5 +230,65 @@ describe('resolveApiBaseUrl', () => {
     } as Response);
     await expect(first).resolves.toEqual({ data: 'first' });
     await expect(second).resolves.toEqual({ data: '/api/second' });
+  });
+
+  it('caches the CSRF cookie request for the second mutating call', async () => {
+    document.cookie = 'XSRF-TOKEN=test-token';
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/sanctum/csrf-cookie')) {
+        return { ok: true, json: async () => ({}) } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: 'ok' }) } as Response;
+    });
+
+    await apiClient.request('/api/first', { method: 'POST', body: JSON.stringify({ a: 1 }) });
+    await apiClient.request('/api/second', { method: 'POST', body: JSON.stringify({ b: 2 }) });
+
+    const csrfCalls = fetchMock.mock.calls
+      .map(([url]) => String(url))
+      .filter((url) => url.includes('/sanctum/csrf-cookie'));
+
+    expect(csrfCalls).toHaveLength(1);
+  });
+
+  it('logs validation issues in the local support log without leaking raw field names', async () => {
+    document.cookie = 'XSRF-TOKEN=test-token';
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/sanctum/csrf-cookie')) {
+        return { ok: true, json: async () => ({}) } as Response;
+      }
+
+      return {
+        ok: false,
+        status: 422,
+        statusText: 'Unprocessable',
+        json: async () => ({
+          message: 'The given data was invalid.',
+          errors: {
+            patient_name: ['Ingrese el nombre del paciente.'],
+            'items.0.quantity': ['La cantidad debe ser mayor a cero.'],
+          },
+        }),
+      } as Response;
+    });
+
+    await expect(apiClient.request('/api/invoices', { method: 'POST', body: JSON.stringify({}) })).rejects.toBeInstanceOf(ApiError);
+
+    const stored = JSON.parse(window.localStorage.getItem('hospital_client_issue_log') ?? '[]') as Array<{
+      action: string;
+      module: string;
+      safe_message: string;
+    }>;
+
+    expect(stored[0]).toMatchObject({
+      action: 'POST /api/invoices',
+      module: 'api',
+    });
+    expect(stored[0].safe_message).toMatch(/Revise los datos del formulario\./i);
   });
 });

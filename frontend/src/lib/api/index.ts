@@ -1,4 +1,13 @@
-export { apiClient, ApiError, isSessionExpiredError, userSafeErrorMessage } from './base';
+export {
+  apiClient,
+  ApiError,
+  isPermissionDeniedError,
+  isSessionExpiredError,
+  resetCsrfCache,
+  resetRequestChain,
+  resolveApiBaseUrl,
+  userSafeErrorMessage,
+} from './base';
 export { auth } from './auth';
 export { billing } from './billing';
 export { catalog } from './catalog';

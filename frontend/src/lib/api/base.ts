@@ -3,8 +3,15 @@ import { PERMISSION_DENIED_MESSAGE, logClientIssue, safeClientMessage } from '..
 let sessionExpiredHandler: (() => void) | null = null;
 let requestChain: Promise<unknown> = Promise.resolve();
 
+const CSRF_CACHE_TTL_MS = 30 * 60 * 1000;
+let csrfCache: { fetchedAt: number; promise: Promise<void> } | null = null;
+
 export function resetRequestChain() {
   requestChain = Promise.resolve();
+}
+
+export function resetCsrfCache() {
+  csrfCache = null;
 }
 
 export class ApiError extends Error {
@@ -21,6 +28,10 @@ export class ApiError extends Error {
 
 export function isSessionExpiredError(error: unknown): boolean {
   return error instanceof ApiError && (error.status === 401 || error.status === 419);
+}
+
+export function isPermissionDeniedError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 403;
 }
 
 function conflictSafeMessage(message: string): string {
@@ -46,12 +57,16 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
     return 'Sesión vencida. Vuelva a iniciar sesión para continuar.';
   }
 
+  if (error instanceof ApiError && error.status === 423) {
+    return 'Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.';
+  }
+
   if (error instanceof ApiError && error.status === 403) {
     return PERMISSION_DENIED_MESSAGE;
   }
 
   if (error instanceof ApiError && error.status === 422) {
-    return error.message;
+    return formatValidationMessage(error);
   }
 
   if (error instanceof ApiError && error.status === 429) {
@@ -75,6 +90,54 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
   }
 
   return fallback;
+}
+
+function formatValidationMessage(error: ApiError): string {
+  if (!error.validationErrors || Object.keys(error.validationErrors).length === 0) {
+    return error.message || 'Revise los datos del formulario.';
+  }
+
+  const entries: string[] = [];
+
+  for (const [field, messages] of Object.entries(error.validationErrors)) {
+    const cleanMessages = (messages ?? []).filter((m): m is string => Boolean(m && m.trim()));
+    if (cleanMessages.length === 0) {
+      continue;
+    }
+    const label = fieldLabel(field);
+    entries.push(label ? `${label}: ${cleanMessages.join(', ')}` : cleanMessages.join(', '));
+  }
+
+  if (entries.length === 0) {
+    return error.message || 'Revise los datos del formulario.';
+  }
+
+  return entries.join('\n');
+}
+
+function fieldLabel(field: string): string {
+  if (!field.includes('.')) {
+    return humanizeFieldName(field);
+  }
+
+  const [parent, child] = field.split('.', 2);
+
+  if (child === undefined) {
+    return humanizeFieldName(parent ?? field);
+  }
+
+  if (/^\d+$/.test(child)) {
+    return `${humanizeFieldName(parent ?? field)} #${Number(child) + 1}`;
+  }
+
+  return `${humanizeFieldName(parent ?? field)} (${humanizeFieldName(child)})`;
+}
+
+function humanizeFieldName(name: string): string {
+  return name
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function cookieValue(name: string): string | null {
@@ -161,6 +224,24 @@ export const apiClient = {
   },
 
   async csrf(): Promise<void> {
+    const now = Date.now();
+
+    if (csrfCache && now - csrfCache.fetchedAt < CSRF_CACHE_TTL_MS) {
+      return csrfCache.promise;
+    }
+
+    const pending = this.fetchCsrfCookie();
+    csrfCache = { fetchedAt: now, promise: pending };
+
+    try {
+      await pending;
+    } catch (error) {
+      csrfCache = null;
+      throw error;
+    }
+  },
+
+  async fetchCsrfCookie(): Promise<void> {
     let response: Response;
 
     try {
@@ -255,8 +336,23 @@ export const apiClient = {
       }
 
       if (response.status === 422 && error?.errors) {
-        const validationMessage = Object.values(error.errors).flat().filter(Boolean).slice(0, 3).join(' ');
-        throw new ApiError(validationMessage || 'Revise los datos del formulario.', response.status, error.errors);
+        const apiError = new ApiError(
+          'Revise los datos del formulario.',
+          response.status,
+          error.errors,
+        );
+        logClientIssue(apiError, {
+          action: `${method} ${path}`,
+          module: 'api',
+        });
+        throw apiError;
+      }
+
+      if (response.status === 423) {
+        recordApiIssue(
+          new ApiError('Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.', response.status),
+          `${method} ${path}`,
+        );
       }
 
       recordApiIssue(new ApiError(error?.message ?? `HTTP ${response.status}`, response.status), `${method} ${path}`);
@@ -292,6 +388,13 @@ export const apiClient = {
       if (response.status === 419) {
         sessionExpiredHandler?.();
         recordApiIssue(new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status), `DOWNLOAD ${path}`);
+      }
+
+      if (response.status === 423) {
+        recordApiIssue(
+          new ApiError('Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.', response.status),
+          `DOWNLOAD ${path}`,
+        );
       }
 
       const error = (await response.json().catch(() => null)) as { message?: string } | null;
