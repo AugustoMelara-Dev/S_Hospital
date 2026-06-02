@@ -1,5 +1,5 @@
 import { type FormEvent } from 'react';
-import { AlertTriangle, Database, Download, Printer, RotateCcw, Users } from 'lucide-react';
+import { AlertTriangle, ClipboardList, Database, Download, Printer, RotateCcw, Users } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Input } from '../../../components/ui/input';
@@ -42,6 +42,7 @@ export function AuditoriaTab({
     ? operations.voids.length > 0 ||
       operations.reprints.length > 0 ||
       (operations.payment_voids?.length ?? 0) > 0 ||
+      (operations.catalog_changes?.length ?? 0) > 0 ||
       operations.backups.length > 0 ||
       operations.cashiers.length > 0
     : false;
@@ -83,10 +84,11 @@ export function AuditoriaTab({
 
       {operations && (
         <>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4 xl:grid-cols-7">
             <KPICard title="Anulaciones" value={operations.summary.void_count} icon={<AlertTriangle className="h-4 w-4" />} />
             <KPICard title="Reimpresiones" value={operations.summary.reprint_count} icon={<Printer className="h-4 w-4" />} />
             <KPICard title="Reversos" value={operations.summary.payment_void_count ?? 0} icon={<RotateCcw className="h-4 w-4" />} />
+            <KPICard title="Catalogo" value={operations.summary.service_change_count ?? 0} icon={<ClipboardList className="h-4 w-4" />} />
             <KPICard title="Respaldos" value={operations.summary.backup_count} icon={<Database className="h-4 w-4" />} />
             <KPICard title="Fallidos" value={operations.summary.failed_backup_count} />
             <KPICard title="Cajeros activos" value={operations.summary.cashier_count} icon={<Users className="h-4 w-4" />} />
@@ -197,6 +199,43 @@ export function AuditoriaTab({
             </Card>
           )}
 
+          {(operations.catalog_changes?.length ?? 0) > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Cambios de catalogo</CardTitle>
+                <CardDescription>Servicios modificados en el rango consultado</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Servicio</TableHead>
+                      <TableHead>Cambio</TableHead>
+                      <TableHead>Antes</TableHead>
+                      <TableHead>Despues</TableHead>
+                      <TableHead>Motivo</TableHead>
+                      <TableHead>Usuario</TableHead>
+                      <TableHead>Fecha</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {operations.catalog_changes?.map((change, index) => (
+                      <TableRow key={`catalog-${change.service}-${change.created_at ?? index}`}>
+                        <TableCell className="max-w-[180px] break-words font-medium">{change.service}</TableCell>
+                        <TableCell>{catalogActionLabel(change.action)}</TableCell>
+                        <TableCell>{catalogValuesList(change.old_values)}</TableCell>
+                        <TableCell>{catalogValuesList(change.new_values)}</TableCell>
+                        <TableCell className="max-w-[220px] break-words">{catalogReason(change.new_values)}</TableCell>
+                        <TableCell>{change.user ?? 'Sin usuario'}</TableCell>
+                        <TableCell>{formatDate(change.created_at)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
           {operations.backups.length > 0 && (
             <Card>
               <CardHeader>
@@ -274,7 +313,7 @@ export function AuditoriaTab({
           {!hasOperationalEvents && (
             <EmptyState
               title="Sin eventos operativos"
-              description="No hay anulaciones, reversos, reimpresiones, respaldos ni actividad de cajeros para el rango seleccionado."
+              description="No hay anulaciones, reversos, reimpresiones, cambios de catalogo, respaldos ni actividad de cajeros para el rango seleccionado."
             />
           )}
 
@@ -324,4 +363,83 @@ function moneyLabel(value: string | number | null | undefined): string {
 function formatBytes(size: number | null): string {
   if (size === null) return '-';
   return size < 1024 ? `${size} B` : `${(size / 1024).toFixed(1)} KB`;
+}
+
+const CATALOG_VALUE_LABELS: Record<string, string> = {
+  name: 'Nombre',
+  aliases: 'Alias',
+  price: 'Precio',
+  taxable: 'Con impuesto',
+  active: 'Activo',
+  visible_in_billing: 'Visible en caja',
+  is_billable: 'Facturable',
+  special_rule_code: 'Regla especial',
+  category: 'Categoria',
+  area: 'Area',
+};
+
+function catalogActionLabel(action: string): string {
+  return {
+    'service.created': 'Servicio creado',
+    'service.updated': 'Servicio actualizado',
+    'service.price_updated': 'Precio actualizado',
+    'service.active_updated': 'Estado actualizado',
+    'service.visibility_updated': 'Visibilidad actualizada',
+    'service.billability_updated': 'Facturacion actualizada',
+  }[action] ?? 'Cambio de servicio';
+}
+
+function catalogValuesList(values: Record<string, unknown>) {
+  const entries = Object.entries(values)
+    .filter(([key]) => key !== 'price_change_reason' && key in CATALOG_VALUE_LABELS)
+    .map(([key, value]) => ({
+      key,
+      label: CATALOG_VALUE_LABELS[key],
+      value: catalogValueLabel(key, value),
+    }));
+
+  if (entries.length === 0) {
+    return <span className="text-muted-foreground">-</span>;
+  }
+
+  return (
+    <ul className="max-w-[260px] space-y-1 text-sm">
+      {entries.map((entry) => (
+        <li key={entry.key} className="break-words">
+          <span className="font-medium">{entry.label}:</span> {entry.value}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function catalogValueLabel(field: string, value: unknown): string {
+  if (value === null || value === undefined || value === '') {
+    return 'Sin dato';
+  }
+
+  if (field === 'price') {
+    return moneyLabel(String(value));
+  }
+
+  if (field === 'special_rule_code') {
+    return String(value) === 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION'
+      ? 'Eritropoyetina con receta de dialisis'
+      : 'Configuracion especial';
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 'Si' : 'No';
+  }
+
+  if (Array.isArray(value)) {
+    return value.length > 0 ? value.map(String).join(', ') : 'Sin dato';
+  }
+
+  return String(value);
+}
+
+function catalogReason(values: Record<string, unknown>): string {
+  const reason = values.price_change_reason;
+  return typeof reason === 'string' && reason.trim() !== '' ? reason : 'No aplica';
 }

@@ -2563,3 +2563,21 @@ Validacion:
 
 - `php artisan test --filter=ReportsTest`
 - `php vendor/bin/pint --test app/Actions/Reports/OperationsReportService.php tests/Feature/ReportsTest.php`
+
+### 2026-06-02 - Auditoria UI muestra catalogo sin campos tecnicos
+
+Decision:
+
+- La pestaña de Auditoria muestra `catalog_changes` con etiquetas humanas: servicio, tipo de cambio, antes, despues, motivo, usuario y fecha.
+- La UI traduce acciones como `service.price_updated` a texto administrativo y no renderiza `category_id`, codigos internos ni valores crudos de reglas especiales.
+
+Motivo:
+
+- Soporte y administracion deben poder explicar un cambio de precio o visibilidad sin revisar logs tecnicos ni pedir ayuda del desarrollador.
+- Los detalles tecnicos siguen disponibles en auditoria interna, pero el reporte normal debe ser comprensible para personal no tecnico.
+
+Validacion:
+
+- `npm.cmd run test -- AuditoriaTab.test.tsx ReportsView.test.tsx`
+- `npm.cmd run lint`
+- `npm.cmd run build`

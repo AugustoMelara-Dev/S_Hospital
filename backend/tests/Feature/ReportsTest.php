@@ -1863,6 +1863,7 @@ class ReportsTest extends TestCase
         $admin = $this->admin();
         $cashier = $this->cashier();
         $supervisor = $this->supervisor();
+        $supervisor->forceFill(['name' => 'Supervisor Hospital'])->save();
         $sessionId = $this->openSession($cashier);
         $invoiceId = $this->createInvoice($cashier, 'Glucosa');
 

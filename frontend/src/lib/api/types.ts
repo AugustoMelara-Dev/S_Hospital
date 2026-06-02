@@ -362,6 +362,7 @@ export type OperationsReport = {
   summary: {
     void_count: number;
     reprint_count: number;
+    service_change_count?: number;
     payment_void_count?: number;
     backup_count: number;
     failed_backup_count: number;
@@ -391,6 +392,14 @@ export type OperationsReport = {
     voided_at: string | null;
     voided_by: string | null;
     cashier: string | null;
+  }>;
+  catalog_changes?: Array<{
+    action: string;
+    service: string;
+    old_values: Record<string, string | number | boolean | null | string[]>;
+    new_values: Record<string, string | number | boolean | null | string[]>;
+    created_at: string | null;
+    user: string | null;
   }>;
   backups: Array<{
     filename: string;
