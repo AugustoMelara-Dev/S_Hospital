@@ -66,3 +66,17 @@ Schedule::command('hospital:backup --type=scheduled')
     ->onOneServer()
     ->runInBackground()
     ->description('Respaldo automatico operativo del Sistema de Caja Hospitalaria');
+
+Schedule::command('hospital:prune-audit-logs --days='.(int) env('HOSPITAL_AUDIT_RETENTION_DAYS', 365))
+    ->dailyAt('03:15')
+    ->onOneServer()
+    ->withoutOverlapping(60)
+    ->runInBackground()
+    ->description('Podar audit_logs anteriores a la retencion configurada');
+
+Schedule::command('hospital:prune-failed-jobs --days='.(int) env('HOSPITAL_FAILED_JOBS_RETENTION_DAYS', 30))
+    ->dailyAt('03:30')
+    ->onOneServer()
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->description('Podar failed_jobs anteriores a la retencion configurada');
