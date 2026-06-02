@@ -15,7 +15,7 @@ No declarar `PRODUCTION_READY` hasta cerrar todos los bloqueantes de entorno y h
 | Gap | Estado | Evidencia actual | Accion obligatoria |
 |---|---|---|---|
 | Cliente LAN fisico | PENDING_LAN_CLIENT_VALIDATION | Rutas por IP validadas desde servidor; operador mostro login cargando por IP, pero falta checklist completo desde otra PC | Probar desde cliente real `/up`, `/login`, `/verify-email`, assets, login, caja, factura, pago, recibo, historial, reportes y backup pending |
-| Impresora institucional fisica | PENDING_HARDWARE_VALIDATION | UI/recibo A5/carta/media carta/80mm/58mm y E2E local existen; no hay impresion fisica documentada | Probar A5, carta, media carta, 80mm y 58mm con escala 100%, margenes minimos y reimpresion desde historial |
+| Impresora institucional fisica | PENDING_HARDWARE_VALIDATION | UI/recibo media carta/carta/A5/80mm/58mm y E2E local existen; no hay impresion fisica documentada | Probar media carta, carta, A5, 80mm y 58mm con escala 100%, margenes minimos y reimpresion desde historial |
 | Configuracion production real | PENDING_ENVIRONMENT_VALIDATION | `.env` actual es local/debug para validacion | Cambiar en servidor final a `APP_ENV=production`, `APP_DEBUG=false`, admin real, sin seeders demo, `config:cache` |
 | Worker continuo de backups | PENDING_ENVIRONMENT_VALIDATION | Worker `--once` proceso job; restore con PATH de XAMPP genero backup success | Crear tarea/servicio Windows con PATH correcto para `mysqldump`/`mariadb-dump` |
 | CORS/Sanctum LAN final | PENDING_ENVIRONMENT_VALIDATION | Validado localmente con host de desarrollo; falta IP/dominio final | Configurar `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` y CORS con IP fija/dominio LAN real |
@@ -50,10 +50,10 @@ No declarar `PRODUCTION_READY` hasta cerrar todos los bloqueantes de entorno y h
 8. Validar restore en base descartable del servidor final y guardar checksum/conteos.
 9. Validar concurrencia en base descartable/snapshot del servidor final.
 10. Validar desde otra computadora cliente en LAN.
-11. Validar impresora fisica A5/carta/media carta/80mm/58mm.
+11. Validar impresora fisica media carta/carta/A5/80mm/58mm.
 12. Ejecutar `scripts/production_readiness_preflight.ps1` sin `-AllowMissingPhysicalProof`.
 
-Sin LAN fisica desde segunda PC, impresora fisica A5/carta/media carta/80mm/58mm, `.env` production, MySQL tools, worker persistente, restore final y concurrencia final, produccion sigue bloqueada. El artefacto offline ya tiene validacion local, pero debe volver a generarse si cambia el commit de entrega.
+Sin LAN fisica desde segunda PC, impresora fisica media carta/carta/A5/80mm/58mm, `.env` production, MySQL tools, worker persistente, restore final y concurrencia final, produccion sigue bloqueada. El artefacto offline ya tiene validacion local, pero debe volver a generarse si cambia el commit de entrega.
 
 ## Estado de alcance
 

@@ -6,7 +6,7 @@ Estado de release recomendado: **PRODUCTION_CANDIDATE**. No declarar `PRODUCTION
 
 ## Alcance
 
-Frente validado: caja, apertura, cierre, resumen por metodo, efectivo esperado, recibo institucional A5/carta/media carta/80mm/58mm, preview, impresion explicita y reimpresion explicita desde historial.
+Frente validado: caja, apertura, cierre, resumen por metodo, efectivo esperado, recibo institucional media carta/carta/A5/80mm/58mm, preview, impresion explicita y reimpresion explicita desde historial.
 
 No se tocaron migraciones, reglas fiscales, CORS/Sanctum, permisos backend, reportes/admin/backups/fiscal fuera de navegacion minima de smoke, ni UX-3/UX-4/UX-5.
 
@@ -35,7 +35,7 @@ Hallazgos antes:
 - Habia dos entradas de monto contado en la misma pantalla: una en el resumen y otra en el formulario de cierre.
 - El error por monto contado vacio aparecia, pero el estado visual ya insinuaba una diferencia.
 - El resumen por metodo no mostraba `Otros` y explicaba poco que tarjeta/transferencia no entran al efectivo esperado.
-- El recibo A5/carta/media carta/80mm/58mm, preview y reimpresion auditada funcionaban.
+- El recibo media carta/carta/A5/80mm/58mm, preview y reimpresion auditada funcionaban.
 - Cambiar preview 80mm/58mm desde historial no llamaba `/reprint`; solo el boton `Reimprimir` lo hacia.
 - Print CSS estaba condicionado por `body[data-printing-receipt="true"]`.
 - Consola/red: sin 401/419/CORS/500. Hubo un 422 esperado en el intento deliberado de caja duplicada y warnings de descripcion accesible en dialogos de recibo/historial.
@@ -123,7 +123,7 @@ Recibo manual posterior:
 - Cambio de preview desde historial: 0 llamadas a `/reprint`.
 - Reimpresion explicita: 1 llamada a `/reprint`.
 
-Impresora fisica: **PENDIENTE_HARDWARE_VALIDATION**. No habia impresora fisica A5/carta/media carta/80mm/58mm disponible en esta pasada.
+Impresora fisica: **PENDIENTE_HARDWARE_VALIDATION**. No habia impresora fisica media carta/carta/A5/80mm/58mm disponible en esta pasada.
 
 ## Gates
 
@@ -152,7 +152,7 @@ Resultado final: **UX-2 APROBADA** para caja/recibo en entorno local de navegado
 
 Pendientes fuera de UX-2:
 
-- Validacion fisica de impresora institucional A5/carta/media carta/80mm/58mm.
+- Validacion fisica de impresora institucional media carta/carta/A5/80mm/58mm.
 - Validacion desde segundo cliente LAN real.
 - UX-3/UX-4/UX-5.
 

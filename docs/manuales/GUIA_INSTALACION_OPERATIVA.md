@@ -132,7 +132,7 @@ evidencias reales:
 - `qa\LAN_CLIENT_VALIDATION_PROOF.md`: una segunda computadora abre el sistema
   por IP o nombre LAN.
 - `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`: la impresora institucional imprime
-  muestras fisicas A5, carta, media carta, 80mm, 58mm y reimpresion.
+  muestras fisicas media carta, carta, A5, 80mm, 58mm y reimpresion.
 - `qa\FINAL_RESTORE_PROOF.md`: un respaldo restaura correctamente en una base
   descartable, nunca sobre la base activa.
 - `qa\FINAL_CONCURRENCY_PROOF.md`: las pruebas de doble accion contra entorno

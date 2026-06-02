@@ -35,7 +35,7 @@ Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 ## Validacion final
 
 1. Completar pruebas LAN desde segunda PC.
-2. Completar prueba fisica de impresora A5/carta/media carta/80mm/58mm.
+2. Completar prueba fisica de impresora media carta/carta/A5/80mm/58mm.
 3. Ejecutar restore en base descartable.
 4. Ejecutar concurrencia en entorno descartable.
 5. Correr preflight sin bypass:

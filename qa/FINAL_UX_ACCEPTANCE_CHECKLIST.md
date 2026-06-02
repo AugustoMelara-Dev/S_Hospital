@@ -2,7 +2,7 @@
 
 Estado: **APROBADO PARA DEMO / PRODUCTION_CANDIDATE** al 2026-05-18.
 
-Los bloqueos UX de `docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md` quedaron cerrados por las fases 12A0-12E. Este checklist no declara `PRODUCTION_READY`: siguen pendientes la validacion desde cliente LAN fisico, impresora institucional fisica A5/carta/media carta/80mm/58mm y configuracion final de produccion.
+Los bloqueos UX de `docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md` quedaron cerrados por las fases 12A0-12E. Este checklist no declara `PRODUCTION_READY`: siguen pendientes la validacion desde cliente LAN fisico, impresora institucional fisica media carta/carta/A5/80mm/58mm y configuracion final de produccion.
 
 ## App shell
 - [x] Sidebar visible.
@@ -75,5 +75,5 @@ Los bloqueos UX de `docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md` quedaron cerrados p
 ## Limites que siguen fuera del cierre UX
 
 - `PENDING_LAN_CLIENT_VALIDATION`: prueba completa desde otra computadora cliente en la LAN final.
-- `PENDING_HARDWARE_VALIDATION`: impresion real A5/carta/media carta/80mm/58mm en la impresora fisica.
+- `PENDING_HARDWARE_VALIDATION`: impresion real media carta/carta/A5/80mm/58mm en la impresora fisica.
 - `PENDING_ENVIRONMENT_VALIDATION`: `.env` final con `APP_ENV=production`, `APP_DEBUG=false`, admin real, worker continuo de backups y `config:cache` en servidor.

@@ -13,7 +13,7 @@ La preparacion local cubre login, caja, factura, regla de eritropoyetina, scanne
 
 - LOCAL_VALIDATION_READY: flujo operativo validado en ambiente local/controlado.
 - PRODUCTION_CANDIDATE: codigo, gates seguros, E2E local y runbooks/scripts de validacion real estan listos, pero faltan pruebas en servidor/hardware final.
-- PRODUCTION_READY: restore real, concurrencia real MySQL/MariaDB, LAN desde cliente fisico, impresora institucional real A5/carta/media carta/80mm/58mm, worker continuo de backups, paquete offline limpio del commit final y configuracion production final fueron ejecutados y documentados.
+- PRODUCTION_READY: restore real, concurrencia real MySQL/MariaDB, LAN desde cliente fisico, impresora institucional real media carta/carta/A5/80mm/58mm, worker continuo de backups, paquete offline limpio del commit final y configuracion production final fueron ejecutados y documentados.
 
 ## Evidencia QA ejecutada
 
@@ -31,7 +31,7 @@ Resultado Fase 12:
 Cobertura Fase 12 cerrada:
 
 - AppShell profesional con sidebar, topbar, caja, usuario, hora local y estado LAN.
-- POS con categorias, busqueda, scanner/codigo, carrito lateral, confirmacion, caja obligatoria y recibo institucional A5/carta/media carta/80mm/58mm.
+- POS con categorias, busqueda, scanner/codigo, carrito lateral, confirmacion, caja obligatoria y recibo institucional media carta/carta/A5/80mm/58mm.
 - Catalogo con tabla compartida, filtros, estado activo/inactivo y `scan_code`, `barcode`, `qr_code`.
 - Reportes gerenciales con KPIs, filtros, servicios mas vendidos, auditoria operativa, backups y exportacion autorizada.
 - QA separado entre E2E mockeado, smoke real no destructivo y smoke mutacional opt-in.
@@ -113,7 +113,7 @@ En servidor real del hospital:
 - Levantar worker de backups como servicio/tarea continua y validar backup manual `pending` -> `success`.
 - Probar restore real en base descartable, no en la base activa.
 - Probar desde segunda PC en LAN.
-- Probar impresora institucional fisica con A5/carta/media carta/80mm/58mm.
+- Probar impresora institucional fisica con media carta/carta/A5/80mm/58mm.
 - Ejecutar pruebas solo contra entorno de testing aislado.
 - Validar manualmente `/up`, `/login`, `/verify-email`, caja, factura, cobro, impresion y backup sin borrar datos.
 - Si se sirve same-origin desde Laravel, ejecutar `npm.cmd run build` antes de publicar y confirmar que `/login` y `/verify-email` devuelven el build React.
@@ -164,7 +164,7 @@ Esta evidencia solo es vigente para el HEAD usado al generar el paquete. Si se c
 
 - Restore real: VALIDATED en entorno local con MariaDB XAMPP y base descartable. Repetir en servidor final antes de entregar produccion si el hardware/rutas cambian.
 - Concurrencia real MySQL/MariaDB: VALIDATED en entorno local mutante con snapshot/backup previo. Repetir en servidor final o base descartable final antes de entregar produccion.
-- Impresora fisica institucional: `PENDING_HARDWARE_VALIDATION` hasta probar A5/carta/media carta/80mm/58mm en la PC de caja.
+- Impresora fisica institucional: `PENDING_HARDWARE_VALIDATION` hasta probar media carta/carta/A5/80mm/58mm en la PC de caja.
 - LAN fisica: `PENDING_LAN_CLIENT_VALIDATION` hasta validar checklist completo desde otra computadora cliente por IP fija/nombre servidor.
 - Produccion final: `PENDING_ENVIRONMENT_VALIDATION` hasta configurar `APP_ENV=production`, `APP_DEBUG=false`, admin real, worker continuo de backups, sin seeders de validacion local y `config:cache` en servidor final. El artefacto offline debe estar regenerado desde el commit final y con guard limpio al momento de entrega.
 

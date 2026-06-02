@@ -1,4 +1,4 @@
-﻿# API Contracts - Sistema de Caja Hospitalaria
+# API Contracts - Sistema de Caja Hospitalaria
 
 ## Convenciones generales
 
@@ -242,7 +242,7 @@ Payload pago:
 | Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
 |---|---|---|---|---|---|
 | GET | `/api/invoices/{invoice}/receipt` | `receipts.view` | Query: `width=half_letter|letter|a5|80mm|58mm` | Datos renderizables de recibo | Usa snapshots. |
-| POST | `/api/invoices/{invoice}/reprint` | `receipts.reprint` | `{ "width": "half_letter", "reason": "copia solicitada por paciente" }` | Datos recibo + audit log | Auditar reimpresion. Acepta A5, carta, media carta, 80mm y 58mm. |
+| POST | `/api/invoices/{invoice}/reprint` | `receipts.reprint` | `{ "width": "half_letter", "reason": "copia solicitada por paciente" }` | Datos recibo + audit log | Auditar reimpresion. Acepta media carta, carta, A5, 80mm y 58mm. |
 
 El recibo debe incluir Gobierno, Secretaria, Hospital San Isidro, numero/serie, fecha, paciente o enterante, conceptos, total, pagado, saldo, cajero, metodo de pago, firma, sello y original/copia. No debe imprimir QR, codigo de barras, codigos internos ni datos tecnicos.
 

@@ -39,7 +39,7 @@ const guides = [
   {
     title: 'Imprimir recibo',
     icon: Printer,
-    steps: ['Abra la vista de recibo', 'Revise paciente, número, total y cajero', 'Use papel A5, carta, media carta, 80mm o 58mm', 'Entregue original y conserve copia si corresponde'],
+    steps: ['Abra la vista de recibo', 'Revise paciente, número, total y cajero', 'Use papel media carta, carta, A5, 80mm o 58mm', 'Entregue original y conserve copia si corresponde'],
   },
   {
     title: 'Reimprimir',

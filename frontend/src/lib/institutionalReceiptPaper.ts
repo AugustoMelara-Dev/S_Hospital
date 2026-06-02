@@ -1,9 +1,9 @@
 import type { ReceiptData } from './api';
 
 export const INSTITUTIONAL_RECEIPT_PAPER_VALUES = [
-  'a5',
-  'letter',
   'half_letter',
+  'letter',
+  'a5',
   '80mm',
   '58mm',
 ] as const satisfies readonly ReceiptData['width'][];
@@ -14,9 +14,9 @@ export const INSTITUTIONAL_RECEIPT_PAPER_OPTIONS: Array<{
   value: InstitutionalReceiptPaperOption;
   label: string;
 }> = [
-  { value: 'a5', label: 'A5' },
-  { value: 'letter', label: 'Carta' },
   { value: 'half_letter', label: 'Media carta' },
+  { value: 'letter', label: 'Carta' },
+  { value: 'a5', label: 'A5' },
   { value: '80mm', label: 'Termico 80mm' },
   { value: '58mm', label: 'Termico 58mm' },
 ];
