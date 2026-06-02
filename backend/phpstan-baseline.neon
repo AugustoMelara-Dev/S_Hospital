@@ -79,12 +79,6 @@ parameters:
 			path: app/Actions/Cash/BuildCashReconciliationAction.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$total_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Cash/BuildCashReconciliationAction.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$payments_count\.$#'
 			identifier: property.notFound
 			count: 1
@@ -121,8 +115,32 @@ parameters:
 			path: app/Actions/Cash/OpenCashSessionAction.php
 
 		-
+			message: '#^Strict comparison using \!\=\= between int and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 2
+			path: app/Actions/Payments/RegisterPaymentAction.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 2
+			path: app/Actions/Payments/RegisterPaymentAction.php
+
+		-
 			message: '#^Offset ''reason'' on array\{reason\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Actions/Payments/VoidPaymentAction.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between int and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Actions/Payments/VoidPaymentAction.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
 			count: 1
 			path: app/Actions/Payments/VoidPaymentAction.php
 
@@ -235,12 +253,6 @@ parameters:
 			path: app/Actions/Receipts/GenerateReceiptDataAction.php
 
 		-
-			message: '#^Method App\\Actions\\Receipts\\GenerateReceiptDataAction\:\:execute\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Receipts/GenerateReceiptDataAction.php
-
-		-
 			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
 			identifier: argument.unresolvableType
 			count: 2
@@ -250,12 +262,6 @@ parameters:
 			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:filter\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: bool\)\|null, Closure\(App\\Models\\Payment\)\: bool given\.$#'
 			identifier: argument.type
 			count: 1
-			path: app/Actions/Receipts/GenerateReceiptDataAction.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 2
 			path: app/Actions/Receipts/GenerateReceiptDataAction.php
 
 		-
@@ -271,46 +277,10 @@ parameters:
 			path: app/Actions/Receipts/GenerateReceiptDataAction.php
 
 		-
-			message: '#^Method App\\Actions\\Receipts\\ReprintReceiptAction\:\:execute\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Receipts/ReprintReceiptAction.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\AreaIncomeReportService\:\:report\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/AreaIncomeReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\AreaIncomeReportService\:\:zeroMethodTotals\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/AreaIncomeReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\CashSessionReportService\:\:report\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/CashSessionReportService.php
-
-		-
 			message: '#^Parameter \#1 \$array of function array_intersect_key expects array, string given\.$#'
 			identifier: argument.type
 			count: 1
 			path: app/Actions/Reports/CashSessionReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\CategoryReportService\:\:report\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/CategoryReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\CategoryReportService\:\:zeroMethodTotals\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/CategoryReportService.php
 
 		-
 			message: '#^Offset ''area_id'' does not exist on array\{date_from\: string, date_to\: string, cash_session_id\?\: int, user_id\?\: int, category_id\?\: int, method\?\: string, status\?\: string\}\.$#'
@@ -337,34 +307,10 @@ parameters:
 			path: app/Actions/Reports/DailyReportService.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$total_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Reports/DailyReportService.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$total_cents\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Actions/Reports/DailyReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\DailyReportService\:\:report\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/DailyReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\DailyReportService\:\:zeroMethodTotals\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/DailyReportService.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\InvoiceItem\:\:\$quantity_cents\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Reports/DashboardReportService.php
 
 		-
 			message: '#^Access to an undefined property App\\Models\\InvoiceItem\:\:\$total_cents\.$#'
@@ -403,58 +349,10 @@ parameters:
 			path: app/Actions/Reports/DashboardReportService.php
 
 		-
-			message: '#^Method App\\Actions\\Reports\\DashboardReportService\:\:zeroMethodTotals\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/DashboardReportService.php
-
-		-
 			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Payment\>\:\:map\(\) contains unresolvable type\.$#'
 			identifier: argument.unresolvableType
 			count: 1
 			path: app/Actions/Reports/DashboardReportService.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Payment\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: app/Actions/Reports/DashboardReportService.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,array\<string, mixed\>\>\:\:all\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 2
-			path: app/Actions/Reports/DashboardReportService.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,array\<string, mixed\>\>\:\:values\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 2
-			path: app/Actions/Reports/DashboardReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\ExcelReportService\:\:generate\(\) has parameter \$categories with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/ExcelReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\ExcelReportService\:\:generate\(\) has parameter \$income with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/ExcelReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\ExcelReportService\:\:generate\(\) has parameter \$operations with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/ExcelReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\ExcelReportService\:\:generate\(\) has parameter \$services with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/ExcelReportService.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>rtn" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
@@ -477,24 +375,6 @@ parameters:
 		-
 			message: '#^Access to an undefined property App\\Models\\Payment\:\:\$total_cents\.$#'
 			identifier: property.notFound
-			count: 1
-			path: app/Actions/Reports/FinancialFactsService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\FinancialFactsService\:\:applyInvoiceFilters\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Actions/Reports/FinancialFactsService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\FinancialFactsService\:\:applyPaymentFilters\(\) has parameter \$query with generic class Illuminate\\Database\\Eloquent\\Builder but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Actions/Reports/FinancialFactsService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\FinancialFactsService\:\:zeroMethodTotals\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
 			count: 1
 			path: app/Actions/Reports/FinancialFactsService.php
 
@@ -523,50 +403,26 @@ parameters:
 			path: app/Actions/Reports/FinancialFactsService.php
 
 		-
-			message: '#^Method App\\Actions\\Reports\\IncomeReportService\:\:report\(\) has parameter \$filters with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/IncomeReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\IncomeReportService\:\:report\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/IncomeReportService.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$count\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Actions/Reports/MonthlyReportService.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$total_cents\.$#'
-			identifier: property.notFound
+			message: '#^Argument of an invalid type Illuminate\\Routing\\RouteCollectionInterface supplied for foreach, only iterables are supported\.$#'
+			identifier: foreach.nonIterable
 			count: 1
-			path: app/Actions/Reports/MonthlyReportService.php
+			path: app/Actions/Reports/OpenApiExporter.php
 
 		-
-			message: '#^Method App\\Actions\\Reports\\MonthlyReportService\:\:activityDates\(\) return type with generic class Illuminate\\Support\\Collection does not specify its types\: TKey, TValue$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Actions/Reports/MonthlyReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\MonthlyReportService\:\:zeroMethodTotals\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/MonthlyReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\OperationalMetricsService\:\:isConnected\(\) has parameter \$connection with no type specified\.$#'
-			identifier: missingType.parameter
+			message: '#^Using nullsafe property access "\?\-\>backup_bytes" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Actions/Reports/OperationalMetricsService.php
 
 		-
-			message: '#^Strict comparison using \!\=\= between int and false will always evaluate to true\.$#'
-			identifier: notIdentical.alwaysTrue
+			message: '#^Using nullsafe property access "\?\-\>backup_files" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Actions/Reports/OperationalMetricsService.php
 
@@ -585,7 +441,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
-			count: 6
+			count: 7
 			path: app/Actions/Reports/OperationsReportService.php
 
 		-
@@ -607,27 +463,33 @@ parameters:
 			path: app/Actions/Reports/OperationsReportService.php
 
 		-
+			message: '#^Call to function is_array\(\) with string\|null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 2
+			path: app/Actions/Reports/OperationsReportService.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Actions/Reports/OperationsReportService.php
+
+		-
 			message: '#^Cannot call method toISOString\(\) on string\.$#'
 			identifier: method.nonObject
-			count: 4
-			path: app/Actions/Reports/OperationsReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\OperationsReportService\:\:report\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/OperationsReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\OperationsReportService\:\:zeroMethodTotals\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
+			count: 5
 			path: app/Actions/Reports/OperationsReportService.php
 
 		-
 			message: '#^Offset ''invoice_number'' on array\{\}\|string on left side of \?\? does not exist\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
+			path: app/Actions/Reports/OperationsReportService.php
+
+		-
+			message: '#^Offset ''name'' on string\|null on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
 			path: app/Actions/Reports/OperationsReportService.php
 
 		-
@@ -643,9 +505,15 @@ parameters:
 			path: app/Actions/Reports/OperationsReportService.php
 
 		-
+			message: '#^Offset string on array\{\} on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: app/Actions/Reports/OperationsReportService.php
+
+		-
 			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\AuditLog\>\:\:map\(\) contains unresolvable type\.$#'
 			identifier: argument.unresolvableType
-			count: 1
+			count: 2
 			path: app/Actions/Reports/OperationsReportService.php
 
 		-
@@ -667,45 +535,15 @@ parameters:
 			path: app/Actions/Reports/OperationsReportService.php
 
 		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\AuditLog\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: app/Actions/Reports/OperationsReportService.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\BackupLog\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: app/Actions/Reports/OperationsReportService.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Invoice\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: app/Actions/Reports/OperationsReportService.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Payment\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: app/Actions/Reports/OperationsReportService.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,array\<string, mixed\>\>\:\:all\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 4
-			path: app/Actions/Reports/OperationsReportService.php
-
-		-
-			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,array\<string, mixed\>\>\:\:values\(\) contains unresolvable type\.$#'
-			identifier: method.unresolvableReturnType
-			count: 4
+			message: '#^Parameter \#1 \$values of method App\\Actions\\Reports\\OperationsReportService\:\:safeServiceValues\(\) expects array\<string, mixed\>\|null, string\|null given\.$#'
+			identifier: argument.type
+			count: 2
 			path: app/Actions/Reports/OperationsReportService.php
 
 		-
 			message: '#^Using nullsafe method call on non\-nullable type string\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 1
+			count: 2
 			path: app/Actions/Reports/OperationsReportService.php
 
 		-
@@ -721,84 +559,6 @@ parameters:
 			path: app/Actions/Reports/OperationsReportService.php
 
 		-
-			message: '#^Method App\\Actions\\Reports\\PdfExportService\:\:buildDailyClosureHtml\(\) has parameter \$data with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/PdfExportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\PdfExportService\:\:buildDailyClosureHtml\(\) has parameter \$fiscal with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/PdfExportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\PdfExportService\:\:buildRangeClosureHtml\(\) has parameter \$data with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/PdfExportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\PdfExportService\:\:buildRangeClosureHtml\(\) has parameter \$fiscal with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/PdfExportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\PdfExportService\:\:generateDailyClosurePdf\(\) has parameter \$data with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/PdfExportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\PdfExportService\:\:generateDailyClosurePdf\(\) has parameter \$fiscal with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/PdfExportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\PdfExportService\:\:generateRangeClosurePdf\(\) has parameter \$data with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/PdfExportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\PdfExportService\:\:generateRangeClosurePdf\(\) has parameter \$fiscal with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/PdfExportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\PremiumExcelExportService\:\:generate\(\) has parameter \$areas with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/PremiumExcelExportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\PremiumExcelExportService\:\:generate\(\) has parameter \$categories with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/PremiumExcelExportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\PremiumExcelExportService\:\:generate\(\) has parameter \$income with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/PremiumExcelExportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\PremiumExcelExportService\:\:generate\(\) has parameter \$operations with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/PremiumExcelExportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\PremiumExcelExportService\:\:generate\(\) has parameter \$services with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/PremiumExcelExportService.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -809,18 +569,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Actions/Reports/PremiumExcelExportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\ServiceSalesReportService\:\:report\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/ServiceSalesReportService.php
-
-		-
-			message: '#^Method App\\Actions\\Reports\\ServiceSalesReportService\:\:zeroMethodTotals\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Actions/Reports/ServiceSalesReportService.php
 
 		-
 			message: '#^Offset ''area_id'' does not exist on array\{date_from\: string, date_to\: string, cash_session_id\?\: int, user_id\?\: int, category_id\?\: int, method\?\: string, status\?\: string\}\.$#'
@@ -841,30 +589,6 @@ parameters:
 			path: app/Actions/Reports/ServiceSalesReportService.php
 
 		-
-			message: '#^Method App\\Http\\Controllers\\AuthController\:\:userPayload\(\) has parameter \$user with no type specified\.$#'
-			identifier: missingType.parameter
-			count: 1
-			path: app/Http/Controllers/AuthController.php
-
-		-
-			message: '#^Method App\\Http\\Controllers\\ReportController\:\:pdfExport\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: app/Http/Controllers/ReportController.php
-
-		-
-			message: '#^Method App\\Http\\Controllers\\ServiceController\:\:fuzzySearch\(\) return type with generic class Illuminate\\Pagination\\LengthAwarePaginator does not specify its types\: TKey, TValue$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Http/Controllers/ServiceController.php
-
-		-
-			message: '#^Method App\\Http\\Controllers\\ServiceController\:\:serviceActions\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Controllers/ServiceController.php
-
-		-
 			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
 			identifier: larastan.noEnvCallsOutsideOfConfig
 			count: 1
@@ -883,18 +607,6 @@ parameters:
 			path: app/Http/Controllers/SystemStatusController.php
 
 		-
-			message: '#^Method App\\Http\\Controllers\\UserController\:\:transformUser\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Controllers/UserController.php
-
-		-
-			message: '#^Constant App\\Http\\Middleware\\AddSecurityHeaders\:\:FALLBACK_CSP is unused\.$#'
-			identifier: classConstant.unused
-			count: 1
-			path: app/Http/Middleware/AddSecurityHeaders.php
-
-		-
 			message: '#^Cannot call method isToday\(\) on string\.$#'
 			identifier: method.nonObject
 			count: 1
@@ -913,72 +625,6 @@ parameters:
 			path: app/Http/Requests/Billing/ShowInvoiceRequest.php
 
 		-
-			message: '#^Method App\\Http\\Requests\\Cash\\CloseCashSessionRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Cash/CloseCashSessionRequest.php
-
-		-
-			message: '#^Method App\\Http\\Requests\\Cash\\IndexCashSessionRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Cash/IndexCashSessionRequest.php
-
-		-
-			message: '#^Method App\\Http\\Requests\\Cash\\OpenCashSessionRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Cash/OpenCashSessionRequest.php
-
-		-
-			message: '#^Method App\\Http\\Requests\\Catalog\\StoreCategoryRequest\:\:after\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Catalog/StoreCategoryRequest.php
-
-		-
-			message: '#^Method App\\Http\\Requests\\Catalog\\StoreServiceRequest\:\:after\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Catalog/StoreServiceRequest.php
-
-		-
-			message: '#^Method App\\Http\\Requests\\Catalog\\UpdateCategoryRequest\:\:after\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Catalog/UpdateCategoryRequest.php
-
-		-
-			message: '#^Method App\\Http\\Requests\\Catalog\\UpdateServiceRequest\:\:after\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Catalog/UpdateServiceRequest.php
-
-		-
-			message: '#^Method App\\Http\\Requests\\Fiscal\\StoreFiscalSequenceRequest\:\:after\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Fiscal/StoreFiscalSequenceRequest.php
-
-		-
-			message: '#^Method App\\Http\\Requests\\Fiscal\\UpdateFiscalSequenceRequest\:\:after\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Fiscal/UpdateFiscalSequenceRequest.php
-
-		-
-			message: '#^Method App\\Http\\Requests\\Payments\\StorePaymentRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Payments/StorePaymentRequest.php
-
-		-
-			message: '#^Method App\\Http\\Requests\\Payments\\VoidPaymentRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Payments/VoidPaymentRequest.php
-
-		-
 			message: '#^Cannot call method isToday\(\) on string\.$#'
 			identifier: method.nonObject
 			count: 1
@@ -997,34 +643,28 @@ parameters:
 			path: app/Http/Requests/Receipts/ShowReceiptRequest.php
 
 		-
-			message: '#^Method App\\Http\\Requests\\Receipts\\ShowReceiptRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Receipts/ShowReceiptRequest.php
-
-		-
 			message: '#^Using nullsafe method call on non\-nullable type string\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Requests/Receipts/ShowReceiptRequest.php
 
 		-
-			message: '#^Method App\\Http\\Requests\\Reports\\DailyReportRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Reports/DailyReportRequest.php
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Http/Requests/Reports/ExportReportRequest.php
 
 		-
-			message: '#^Method App\\Http\\Requests\\Reports\\DateRangeReportRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
+			message: '#^Using nullsafe method call on non\-nullable type string\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Requests/Reports/DateRangeReportRequest.php
+			path: app/Http/Requests/Reports/ExportReportRequest.php
 
 		-
-			message: '#^Method App\\Http\\Requests\\Reports\\MonthlyReportRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Http/Requests/Reports/MonthlyReportRequest.php
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Http/Requests/Reports/PdfExportRequest.php
 
 		-
 			message: '#^Using nullsafe method call on non\-nullable type App\\Models\\User\. Use \-\> instead\.$#'
@@ -1033,10 +673,10 @@ parameters:
 			path: app/Http/Requests/Reports/PdfExportRequest.php
 
 		-
-			message: '#^Method App\\Http\\Requests\\Reports\\ShowCashSessionReportRequest\:\:rules\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
+			message: '#^Using nullsafe method call on non\-nullable type string\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Requests/Reports/ShowCashSessionReportRequest.php
+			path: app/Http/Requests/Reports/PdfExportRequest.php
 
 		-
 			message: '#^Using nullsafe method call on non\-nullable type App\\Models\\User\. Use \-\> instead\.$#'
@@ -1049,186 +689,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Requests/Reports/ShowCashSessionReportRequest.php
-
-		-
-			message: '#^Method App\\Models\\Area\:\:services\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Area.php
-
-		-
-			message: '#^Method App\\Models\\AuditLog\:\:user\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/AuditLog.php
-
-		-
-			message: '#^Method App\\Models\\BackupLog\:\:creator\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/BackupLog.php
-
-		-
-			message: '#^Method App\\Models\\CashMovement\:\:cashSession\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/CashMovement.php
-
-		-
-			message: '#^Method App\\Models\\CashMovement\:\:payment\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/CashMovement.php
-
-		-
-			message: '#^Method App\\Models\\CashMovement\:\:user\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/CashMovement.php
-
-		-
-			message: '#^Method App\\Models\\CashRegisterSession\:\:movements\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/CashRegisterSession.php
-
-		-
-			message: '#^Method App\\Models\\CashRegisterSession\:\:payments\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/CashRegisterSession.php
-
-		-
-			message: '#^Method App\\Models\\CashRegisterSession\:\:user\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/CashRegisterSession.php
-
-		-
-			message: '#^Class App\\Models\\Category uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory but does not specify its types\: TFactory$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Category.php
-
-		-
-			message: '#^Method App\\Models\\Category\:\:services\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Category.php
-
-		-
-			message: '#^Method App\\Models\\Invoice\:\:cashSession\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Invoice.php
-
-		-
-			message: '#^Method App\\Models\\Invoice\:\:fiscalSequence\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Invoice.php
-
-		-
-			message: '#^Method App\\Models\\Invoice\:\:issuer\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Invoice.php
-
-		-
-			message: '#^Method App\\Models\\Invoice\:\:items\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Invoice.php
-
-		-
-			message: '#^Method App\\Models\\Invoice\:\:payments\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Invoice.php
-
-		-
-			message: '#^Method App\\Models\\Invoice\:\:voidedBy\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Invoice.php
-
-		-
-			message: '#^Method App\\Models\\InvoiceItem\:\:area\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/InvoiceItem.php
-
-		-
-			message: '#^Method App\\Models\\InvoiceItem\:\:invoice\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/InvoiceItem.php
-
-		-
-			message: '#^Method App\\Models\\InvoiceItem\:\:service\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/InvoiceItem.php
-
-		-
-			message: '#^Method App\\Models\\Payment\:\:cashSession\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Payment.php
-
-		-
-			message: '#^Method App\\Models\\Payment\:\:invoice\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Payment.php
-
-		-
-			message: '#^Method App\\Models\\Payment\:\:user\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Payment.php
-
-		-
-			message: '#^Method App\\Models\\Payment\:\:voidedBy\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Payment.php
-
-		-
-			message: '#^Class App\\Models\\Service uses generic trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory but does not specify its types\: TFactory$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Service.php
-
-		-
-			message: '#^Method App\\Models\\Service\:\:area\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Service.php
-
-		-
-			message: '#^Method App\\Models\\Service\:\:category\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Service.php
-
-		-
-			message: '#^Method App\\Models\\Service\:\:priceHistories\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\HasMany does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Service.php
-
-		-
-			message: '#^Method App\\Models\\ServicePriceHistory\:\:changedBy\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/ServicePriceHistory.php
-
-		-
-			message: '#^Method App\\Models\\ServicePriceHistory\:\:service\(\) return type with generic class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo does not specify its types\: TRelatedModel, TDeclaringModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/ServicePriceHistory.php
 
 		-
 			message: '#^Cannot call method isToday\(\) on string\.$#'
@@ -1257,5 +717,5 @@ parameters:
 		-
 			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
 			identifier: larastan.noEnvCallsOutsideOfConfig
-			count: 3
+			count: 5
 			path: routes/console.php
