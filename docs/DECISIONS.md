@@ -2783,3 +2783,23 @@ Motivo:
 Validacion:
 
 - `npm run test -- CashSessionReportTab.test.tsx --run`
+
+### 2026-06-02 - Filtro por metodo acota hechos de factura
+
+Decision:
+
+- `FinancialFactsService` aplica alcance por pagos cuando un reporte usa `method`, `user_id` o `cash_session_id`.
+- Ese alcance evita que `total_billed`, `total_pending` y `total_partial` incluyan facturas de otros metodos/cajeros/cajas.
+- Los hechos de factura siguen respetando `issued_at`; los cobros y desgloses cobrados siguen respetando `paid_at`.
+
+Motivo:
+
+- Un reporte filtrado por transferencia no debe mostrar facturado o pendiente de facturas cobradas en efectivo o sin pago del metodo filtrado.
+- Administracion necesita que los filtros cambien los totales de forma consistente sin mezclar fuentes de fecha.
+
+Validacion:
+
+- `php artisan test --filter=ReportsTest::test_income_report_method_filter_scopes_billed_and_pending_to_matching_payments`
+- `php artisan test --filter=ReportsTest::test_payment_scoped_breakdowns_use_payment_date_not_invoice_issue_date`
+- `php artisan test --filter=ReportsTest`
+- `vendor/bin/pint --test app/Actions/Reports/FinancialFactsService.php tests/Feature/ReportsTest.php`

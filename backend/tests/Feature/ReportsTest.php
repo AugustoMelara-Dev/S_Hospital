@@ -684,6 +684,39 @@ class ReportsTest extends TestCase
             ->assertJsonValidationErrors('method');
     }
 
+    public function test_income_report_method_filter_scopes_billed_and_pending_to_matching_payments(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $cashInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $transferInvoice = $this->createInvoice($cashier, 'Hemograma Completo');
+        $this->createInvoice($cashier, 'Eritropoyetina');
+
+        $this->payInvoice($cashier, $cashInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($cashier, $transferInvoice, $sessionId, Payment::METHOD_TRANSFER, '5.00');
+
+        $filters = http_build_query([
+            'date_from' => now()->toDateString(),
+            'date_to' => now()->toDateString(),
+            'method' => Payment::METHOD_TRANSFER,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/income?{$filters}")
+            ->assertOk()
+            ->assertJsonPath('data.total_billed', '11.50')
+            ->assertJsonPath('data.total_collected', '5.00')
+            ->assertJsonPath('data.total_pending', '6.50')
+            ->assertJsonPath('data.total_partial', '11.50')
+            ->assertJsonPath('data.invoice_count', 1)
+            ->assertJsonPath('data.payment_count', 1)
+            ->assertJsonPath('data.payments_by_method.cash', '0.00')
+            ->assertJsonPath('data.payments_by_method.transfer', '5.00')
+            ->assertJsonPath('data.filters.method', Payment::METHOD_TRANSFER);
+    }
+
     public function test_payment_scoped_breakdowns_use_payment_date_not_invoice_issue_date(): void
     {
         $this->seedBillingBase();

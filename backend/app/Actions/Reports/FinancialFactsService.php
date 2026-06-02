@@ -39,6 +39,10 @@ class FinancialFactsService
      */
     private function invoiceFacts(Carbon $start, Carbon $end, array $filters): object
     {
+        if ($this->usesPaymentScope($filters)) {
+            return $this->paymentScopedInvoiceFacts($start, $end, $filters);
+        }
+
         if ($this->hasItemFilter($filters)) {
             return $this->itemScopedInvoiceFacts($start, $end, $filters);
         }
@@ -61,6 +65,73 @@ class FinancialFactsService
             )
             ->selectRaw(
                 'COALESCE(SUM(CASE WHEN status = ? THEN total_cents ELSE 0 END), 0) as voided_cents',
+                [Invoice::STATUS_VOID],
+            )
+            ->first() ?? (object) [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function paymentScopedInvoiceFacts(Carbon $start, Carbon $end, array $filters): object
+    {
+        if ($this->hasItemFilter($filters)) {
+            return $this->paymentScopedItemInvoiceFacts($start, $end, $filters);
+        }
+
+        return Invoice::query()
+            ->joinSub($this->paymentScopedInvoiceIdsSubquery($start, $end, $filters), 'payment_scope', function ($join): void {
+                $join->on('payment_scope.invoice_id', '=', 'invoices.id');
+            })
+            ->whereBetween('invoices.issued_at', [$start, $end])
+            ->selectRaw('COUNT(*) as invoice_count')
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN invoices.status != ? THEN invoices.total_cents ELSE 0 END), 0) as billed_cents',
+                [Invoice::STATUS_VOID],
+            )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN invoices.status IN (?, ?) THEN invoices.balance_due_cents ELSE 0 END), 0) as pending_cents',
+                [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIAL],
+            )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN invoices.status = ? THEN invoices.total_cents ELSE 0 END), 0) as partial_cents',
+                [Invoice::STATUS_PARTIAL],
+            )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN invoices.status = ? THEN invoices.total_cents ELSE 0 END), 0) as voided_cents',
+                [Invoice::STATUS_VOID],
+            )
+            ->first() ?? (object) [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function paymentScopedItemInvoiceFacts(Carbon $start, Carbon $end, array $filters): object
+    {
+        return Invoice::query()
+            ->joinSub($this->paymentScopedInvoiceIdsSubquery($start, $end, $filters, includeItemFilters: false), 'payment_scope', function ($join): void {
+                $join->on('payment_scope.invoice_id', '=', 'invoices.id');
+            })
+            ->joinSub($this->itemTotalsSubquery($filters), 'filtered_items', function ($join): void {
+                $join->on('filtered_items.invoice_id', '=', 'invoices.id');
+            })
+            ->whereBetween('invoices.issued_at', [$start, $end])
+            ->selectRaw('COUNT(*) as invoice_count')
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN invoices.status != ? THEN filtered_items.item_total_cents ELSE 0 END), 0) as billed_cents',
+                [Invoice::STATUS_VOID],
+            )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN invoices.status IN (?, ?) THEN ROUND(invoices.balance_due_cents * filtered_items.item_total_cents / NULLIF(invoices.total_cents, 0)) ELSE 0 END), 0) as pending_cents',
+                [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIAL],
+            )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN invoices.status = ? THEN filtered_items.item_total_cents ELSE 0 END), 0) as partial_cents',
+                [Invoice::STATUS_PARTIAL],
+            )
+            ->selectRaw(
+                'COALESCE(SUM(CASE WHEN invoices.status = ? THEN filtered_items.item_total_cents ELSE 0 END), 0) as voided_cents',
                 [Invoice::STATUS_VOID],
             )
             ->first() ?? (object) [];
@@ -228,6 +299,64 @@ class FinancialFactsService
     private function hasItemFilter(array $filters): bool
     {
         return ! empty($filters['category_id']) || ! empty($filters['area_id']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function usesPaymentScope(array $filters): bool
+    {
+        return ! empty($filters['cash_session_id'])
+            || ! empty($filters['user_id'])
+            || ! empty($filters['method']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function paymentScopedInvoiceIdsSubquery(
+        Carbon $start,
+        Carbon $end,
+        array $filters,
+        bool $includeItemFilters = true,
+    ): \Illuminate\Database\Query\Builder {
+        return DB::table('payments')
+            ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
+            ->select('payments.invoice_id')
+            ->where('payments.status', Payment::STATUS_POSTED)
+            ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            ->whereBetween('payments.paid_at', [$start, $end])
+            ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
+                $query->where('payments.user_id', $filters['user_id']);
+            })
+            ->when(! empty($filters['cash_session_id']), function ($query) use ($filters): void {
+                $query->where('payments.cash_session_id', $filters['cash_session_id']);
+            })
+            ->when(! empty($filters['method']), function ($query) use ($filters): void {
+                $query->where('payments.method', $filters['method']);
+            })
+            ->when(! empty($filters['status']), function ($query) use ($filters): void {
+                $query->where('invoices.status', $filters['status']);
+            })
+            ->when($includeItemFilters && ! empty($filters['category_id']), function ($query) use ($filters): void {
+                $query->whereExists(function ($subquery) use ($filters): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('invoice_items')
+                        ->whereColumn('invoice_items.invoice_id', 'invoices.id')
+                        ->where('invoice_items.category_id', $filters['category_id']);
+                });
+            })
+            ->when($includeItemFilters && ! empty($filters['area_id']), function ($query) use ($filters): void {
+                $query->whereExists(function ($subquery) use ($filters): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('invoice_items')
+                        ->whereColumn('invoice_items.invoice_id', 'invoices.id')
+                        ->where('invoice_items.area_id', $filters['area_id']);
+                });
+            })
+            ->distinct();
     }
 
     /**
