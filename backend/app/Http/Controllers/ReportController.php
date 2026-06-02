@@ -16,6 +16,7 @@ use App\Actions\Reports\ServiceSalesReportService;
 use App\Http\Requests\Reports\DailyReportRequest;
 use App\Http\Requests\Reports\DashboardReportRequest;
 use App\Http\Requests\Reports\DateRangeReportRequest;
+use App\Http\Requests\Reports\ExportReportRequest;
 use App\Http\Requests\Reports\MonthlyReportRequest;
 use App\Http\Requests\Reports\PdfExportRequest;
 use App\Models\CashRegisterSession;
@@ -85,16 +86,13 @@ class ReportController extends Controller
     }
 
     public function export(
-        DateRangeReportRequest $request,
+        ExportReportRequest $request,
         IncomeReportService $incomeReports,
         CategoryReportService $categoryReports,
         AreaIncomeReportService $areaReports,
         ServiceSalesReportService $serviceReports,
         OperationsReportService $operationReports,
     ): StreamedResponse {
-        $request->user()->can('reports.export') || abort(403);
-        ($request->user()->can('reports.managerial.view') || $request->user()->can('reports.cash_session.view')) || abort(403);
-
         $filters = $this->scopedFilters($request);
         $income = $incomeReports->report($filters);
         $categories = $categoryReports->report($filters);

@@ -2412,3 +2412,20 @@ Consecuencia:
 
 - Usuarios sin `invoices.view` o `invoices.void` siguen recibiendo 403.
 - Usuarios con permiso base todavia deben cumplir alcance de factura antes de ver o modificar registros.
+
+### 2026-06-02 - Exportacion Excel usa Form Request dedicado
+
+Decision:
+
+- `GET /api/reports/export` usa `ExportReportRequest`.
+- `ExportReportRequest` conserva reglas de rango de `DateRangeReportRequest` y agrega `reports.export`.
+
+Motivo:
+
+- Exportar reportes genera archivos con informacion financiera; el permiso de exportacion debe estar en la capa de request, no mezclado en el controlador.
+- La autorizacion base de vista gerencial o caja se mantiene en el request padre.
+
+Consecuencia:
+
+- Usuarios sin `reports.export` siguen recibiendo 403.
+- Rango de fechas, alcance por caja y filtros mantienen la misma validacion.
