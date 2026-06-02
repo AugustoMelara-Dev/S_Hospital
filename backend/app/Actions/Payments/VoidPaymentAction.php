@@ -84,12 +84,14 @@ class VoidPaymentAction
                 ->where('status', Payment::STATUS_POSTED)
                 ->whereNotNull('amount_cents')
                 ->sum('amount_cents');
-            $invoiceTotalCents = Money::parseCents((string) $lockedInvoice->total, 'total');
+            $invoiceTotalCents = $this->resolveTotalCents($lockedInvoice);
             $balanceCents = max(0, $invoiceTotalCents - $postedPaidCents);
 
             $lockedInvoice->forceFill([
                 'paid_amount' => Money::formatCents($postedPaidCents),
+                'paid_amount_cents' => $postedPaidCents,
                 'balance_due' => Money::formatCents($balanceCents),
+                'balance_due_cents' => $balanceCents,
                 'status' => $postedPaidCents === 0
                     ? Invoice::STATUS_ISSUED
                     : ($balanceCents === 0 ? Invoice::STATUS_PAID : Invoice::STATUS_PARTIAL),
@@ -121,5 +123,14 @@ class VoidPaymentAction
                 'cashSession:id,user_id,status,opened_at,closed_at',
             );
         });
+    }
+
+    private function resolveTotalCents(Invoice $invoice): int
+    {
+        if ($invoice->total_cents !== null) {
+            return (int) $invoice->total_cents;
+        }
+
+        return Money::parseCents((string) $invoice->total, 'total');
     }
 }

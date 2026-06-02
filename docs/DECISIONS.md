@@ -2602,3 +2602,25 @@ Validacion:
 - `npm.cmd run typecheck`
 - `npm.cmd run lint`
 - `npm.cmd run build`
+
+### 2026-06-02 - Facturas e items conservan montos en centavos
+
+Decision:
+
+- `invoices` e `invoice_items` guardan columnas enteras en centavos junto a los decimales visibles.
+- La emision de facturas, el registro de pagos, la reversa de pagos y la conciliacion de caja mantienen esos enteros sincronizados.
+- La conciliacion suma `balance_due_cents` y solo usa el decimal visible como fallback por fila heredada sin backfill.
+
+Motivo:
+
+- Reportes y cierres no deben depender de `ROUND(decimal * 100)` repetido en SQL para saldos y totales historicos.
+- Una fuente entera reduce errores de redondeo y permite detectar discrepancias entre valor visible y fuente financiera.
+
+Validacion:
+
+- `php artisan migrate`
+- `php artisan test --filter=CalculateInvoiceTotalsActionTest`
+- `php artisan test --filter=PaymentCentsSqlGuardTest`
+- `php artisan test --filter=InvoiceCreationTest`
+- `php artisan test --filter=CashPaymentsReceiptTest`
+- `php vendor/bin/pint --test app/Actions/Billing/CalculateInvoiceTotalsAction.php app/Actions/Billing/CreateInvoiceAction.php app/Actions/Cash/BuildCashReconciliationAction.php app/Actions/Payments/RegisterPaymentAction.php app/Actions/Payments/VoidPaymentAction.php app/Models/Invoice.php app/Models/InvoiceItem.php tests/Unit/CalculateInvoiceTotalsActionTest.php tests/Unit/PaymentCentsSqlGuardTest.php tests/Feature/InvoiceCreationTest.php tests/Feature/CashPaymentsReceiptTest.php database/migrations/2026_06_02_000002_add_cents_columns_to_invoices_and_items.php`

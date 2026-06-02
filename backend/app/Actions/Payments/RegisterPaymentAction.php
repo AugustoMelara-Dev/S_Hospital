@@ -61,7 +61,7 @@ class RegisterPaymentAction
             }
 
             $amountCents = Money::parsePositiveCents($payload['amount'], 'amount');
-            $balanceCents = Money::parseCents((string) $lockedInvoice->balance_due, 'balance_due');
+            $balanceCents = $this->resolveBalanceCents($lockedInvoice);
 
             if ($amountCents > $balanceCents) {
                 throw ValidationException::withMessages([
@@ -102,12 +102,14 @@ class RegisterPaymentAction
                 'occurred_at' => now(),
             ]);
 
-            $paidCents = Money::parseCents((string) $lockedInvoice->paid_amount, 'paid_amount') + $amountCents;
+            $paidCents = $this->resolvePaidCents($lockedInvoice) + $amountCents;
             $nextBalanceCents = $balanceCents - $amountCents;
 
             $lockedInvoice->forceFill([
                 'paid_amount' => Money::formatCents($paidCents),
+                'paid_amount_cents' => $paidCents,
                 'balance_due' => Money::formatCents($nextBalanceCents),
+                'balance_due_cents' => $nextBalanceCents,
                 'status' => $nextBalanceCents === 0 ? Invoice::STATUS_PAID : Invoice::STATUS_PARTIAL,
                 'cash_session_id' => $lockedInvoice->cash_session_id ?? $cashSession->id,
             ])->save();
@@ -130,5 +132,23 @@ class RegisterPaymentAction
 
             return $payment->load('user:id,name,username', 'cashSession:id,user_id,status,opened_at');
         });
+    }
+
+    private function resolveBalanceCents(Invoice $invoice): int
+    {
+        if ($invoice->balance_due_cents !== null) {
+            return (int) $invoice->balance_due_cents;
+        }
+
+        return Money::parseCents((string) $invoice->balance_due, 'balance_due');
+    }
+
+    private function resolvePaidCents(Invoice $invoice): int
+    {
+        if ($invoice->paid_amount_cents !== null) {
+            return (int) $invoice->paid_amount_cents;
+        }
+
+        return Money::parseCents((string) $invoice->paid_amount, 'paid_amount');
     }
 }

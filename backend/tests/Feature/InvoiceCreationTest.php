@@ -51,7 +51,20 @@ class InvoiceCreationTest extends TestCase
             'issued_by' => $cashier->id,
             'status' => Invoice::STATUS_ISSUED,
             'paid_amount' => '0.00',
+            'paid_amount_cents' => 0,
             'balance_due' => '46.00',
+            'balance_due_cents' => 4600,
+            'subtotal_cents' => 4000,
+            'tax_amount_cents' => 600,
+            'discount_amount_cents' => 0,
+            'total_cents' => 4600,
+        ]);
+        $this->assertDatabaseHas('invoice_items', [
+            'invoice_id' => Invoice::query()->where('invoice_number', '000-001-01-00000001')->value('id'),
+            'unit_price_cents' => 1500,
+            'line_subtotal_cents' => 3000,
+            'tax_amount_cents' => 450,
+            'line_total_cents' => 3450,
         ]);
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $cashier->id,

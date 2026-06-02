@@ -30,8 +30,11 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         ], '15.00');
 
         $this->assertSame('25.00', $result['subtotal']);
+        $this->assertSame(2500, $result['subtotal_cents']);
         $this->assertSame('3.75', $result['tax_amount']);
+        $this->assertSame(375, $result['tax_amount_cents']);
         $this->assertSame('28.75', $result['total']);
+        $this->assertSame(2875, $result['total_cents']);
     }
 
     public function test_isv_15_percent_rounding_half_up(): void
@@ -175,6 +178,8 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         $this->assertSame('Eritropoyetina', $item['service_name']);
         $this->assertSame('EPO001', $item['scan_code']);
         $this->assertSame('25.00', $item['unit_price']);
+        $this->assertSame(2500, $item['unit_price_cents']);
+        $this->assertSame(2875, $item['line_total_cents']);
         $this->assertSame('Test note', $item['notes']);
     }
 

@@ -391,6 +391,12 @@ class CashPaymentsReceiptTest extends TestCase
             'user_id' => $cashier->id,
             'method' => Payment::METHOD_CASH,
             'amount' => '10.00',
+            'amount_cents' => 1000,
+        ]);
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'paid_amount_cents' => 1000,
+            'balance_due_cents' => 725,
         ]);
         $this->assertDatabaseHas('cash_movements', [
             'cash_session_id' => $sessionId,
@@ -415,6 +421,11 @@ class CashPaymentsReceiptTest extends TestCase
             'user_id' => $cashier->id,
             'action' => 'payment.registered',
             'entity_type' => Payment::class,
+        ]);
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'paid_amount_cents' => 1725,
+            'balance_due_cents' => 0,
         ]);
     }
 
@@ -654,6 +665,9 @@ class CashPaymentsReceiptTest extends TestCase
         Payment::query()
             ->whereKey($paymentId)
             ->update(['amount' => '99.99']);
+        Invoice::query()
+            ->whereKey($invoiceId)
+            ->update(['total' => '99.99']);
 
         $this->actingAs($supervisor)
             ->postJson("/api/invoices/{$invoiceId}/payments/{$paymentId}/void", [
