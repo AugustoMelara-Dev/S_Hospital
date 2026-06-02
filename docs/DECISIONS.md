@@ -3035,3 +3035,22 @@ Validacion:
 - `vendor/bin/phpstan analyse app/Console/Commands/MaintenanceCommand.php tests/Feature/MaintenanceModeTest.php --no-progress --error-format=table`
 - `vendor/bin/pint --test app/Console/Commands/MaintenanceCommand.php bootstrap/app.php tests/Feature/MaintenanceModeTest.php`
 - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/check-branding.ps1`
+
+### 2026-06-02 - Manual operador usa validacion LAN con evidencia
+
+Decision:
+
+- El indice maestro de operador apunta la validacion de cliente LAN a `scripts\validate_lan_client.ps1`.
+- El comando documentado escribe `qa\LAN_CLIENT_VALIDATION_PROOF.md` para dejar evidencia revisable por soporte.
+- Se agrega una prueba que falla si el manual vuelve a recomendar `ping_lan_clients.ps1` como validacion principal de cliente.
+
+Motivo:
+
+- Un ping superficial no prueba que login, rutas publicas y assets del frontend carguen desde una computadora cliente.
+- Soporte necesita evidencia guardada para distinguir red local caida, build incompleto o servidor no disponible sin pedir al operador interpretar detalles tecnicos.
+
+Validacion:
+
+- `php artisan test --filter=OperatorManualTest --colors=never`
+- `vendor/bin/phpstan analyse tests/Feature/OperatorManualTest.php --no-progress --error-format=table`
+- `vendor/bin/pint --test tests/Feature/OperatorManualTest.php`
