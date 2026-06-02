@@ -11,9 +11,9 @@ class MaintenanceCommand extends Command
 {
     protected $signature = 'hospital:maintenance
         {action : on or off}
-        {--message=Mantenimiento programado : Message shown on the maintenance page}';
+        {--message=Mantenimiento programado : Mensaje visible para el personal en la pantalla de mantenimiento}';
 
-    protected $description = 'Toggle Laravel maintenance mode for incident response. Shows a branded HTML page.';
+    protected $description = 'Activa o desactiva el modo mantenimiento institucional sin borrar datos.';
 
     public function handle(Filesystem $files): int
     {
@@ -32,6 +32,7 @@ class MaintenanceCommand extends Command
                 'time' => now()->timestamp,
                 'message' => (string) $this->option('message'),
                 'retry' => 60,
+                'status' => 503,
             ];
             $files->put($maintenanceFile, json_encode($payload, JSON_THROW_ON_ERROR));
 

@@ -3015,3 +3015,23 @@ Validacion:
 - `php artisan test --filter=UserManagementTest --colors=never`
 - `vendor/bin/phpstan analyse app/Providers/AppServiceProvider.php app/Observers/PermissionAuditObserver.php app/Http/Controllers/UserController.php tests/Feature/PermissionAuditTest.php --no-progress --error-format=table`
 - `vendor/bin/pint --test app/Providers/AppServiceProvider.php app/Observers/PermissionAuditObserver.php app/Http/Controllers/UserController.php tests/Feature/PermissionAuditTest.php config/permission.php`
+
+### 2026-06-02 - Modo mantenimiento institucional con payload seguro
+
+Decision:
+
+- El comando `hospital:maintenance` usa descripcion y ayuda en espanol institucional.
+- El archivo `storage/framework/down` incluye `status: 503` junto al mensaje visible y no guarda secretos ni bypass.
+- Las respuestas de mantenimiento para HTML y API quedan cubiertas por pruebas para evitar texto tecnico o mojibake visible.
+
+Motivo:
+
+- Durante un incidente, el personal debe entender que el sistema esta en mantenimiento sin instrucciones tecnicas ni mensajes de framework.
+- Soporte necesita un estado HTTP claro y una pantalla segura mientras recupera servicios sin borrar datos.
+
+Validacion:
+
+- `php artisan test --filter=MaintenanceModeTest --colors=never`
+- `vendor/bin/phpstan analyse app/Console/Commands/MaintenanceCommand.php tests/Feature/MaintenanceModeTest.php --no-progress --error-format=table`
+- `vendor/bin/pint --test app/Console/Commands/MaintenanceCommand.php bootstrap/app.php tests/Feature/MaintenanceModeTest.php`
+- `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/check-branding.ps1`

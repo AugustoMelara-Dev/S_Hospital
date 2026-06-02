@@ -9,6 +9,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -51,7 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Custom HTML page when the cashier app is in maintenance
         // mode (storage/framework/down exists). API requests still
         // get a 503 JSON response.
-        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $exception, Request $request) {
+        $exceptions->render(function (HttpException $exception, Request $request) {
             if ($exception->getStatusCode() !== 503) {
                 return null;
             }
