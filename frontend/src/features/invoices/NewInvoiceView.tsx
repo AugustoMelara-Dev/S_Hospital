@@ -463,12 +463,10 @@ export function NewInvoiceView({
   return (
     <NewInvoiceViewLayout
       state={state}
-      dispatch={dispatch}
       preview={preview}
       emitBlockReasons={emitBlockReasons}
       canEmit={canEmit}
       canCreatePayments={canCreatePayments}
-      canViewCatalog={canViewCatalog}
       canViewReceipts={canViewReceipts}
       onOpenCash={onOpenCash}
       onPatientNameChange={handlePatientNameChange}
@@ -507,12 +505,10 @@ export function NewInvoiceView({
 
 type LayoutProps = {
   state: NewInvoiceState;
-  dispatch: React.Dispatch<import('./state/types').NewInvoiceAction>;
   preview: { subtotal: string; tax: string; total: string };
   emitBlockReasons: string[];
   canEmit: boolean;
   canCreatePayments: boolean;
-  canViewCatalog: boolean;
   canViewReceipts: boolean;
   onOpenCash?: () => void;
   onPatientNameChange: (value: string) => void;
@@ -550,12 +546,10 @@ type LayoutProps = {
 function NewInvoiceViewLayout(props: LayoutProps) {
   const {
     state,
-    dispatch,
     preview,
     emitBlockReasons,
     canEmit,
     canCreatePayments,
-    canViewCatalog,
     canViewReceipts,
     onOpenCash,
     onPatientNameChange,
