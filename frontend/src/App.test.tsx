@@ -682,6 +682,75 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /siguiente/i })).toBeEnabled();
   });
 
+  it('shows safe operator guidance when a backup failed', async () => {
+    window.history.pushState({}, '', '/backups');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
+              active: true,
+              roles: ['admin'],
+              permissions: ['backups.view', 'backups.create'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatus(),
+        } as Response;
+      }
+
+      if (url.includes('/api/backups')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: 11,
+                filename: 'hospital-backup-20260602-090000-failed.sql',
+                size_bytes: null,
+                checksum_sha256: null,
+                status: 'failed',
+                type: 'manual',
+                created_by: 1,
+                error_message: 'SQLSTATE[HY000] storage/logs/laravel.log',
+                completed_at: null,
+                created_at: '2026-06-02T09:00:00-06:00',
+                updated_at: '2026-06-02T09:00:00-06:00',
+                creator: { id: 1, name: 'Administrador Validacion', username: 'admin.validacion' },
+              },
+            ],
+            meta: { current_page: 1, per_page: 15, total: 1 },
+          }),
+        } as Response;
+      }
+
+      return {
+        ok: true,
+        json: async () => ({}),
+      } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText('hospital-backup-20260602-090000-failed.sql')).toBeInTheDocument();
+    expect(screen.getByText(/1 con error - avise al administrador antes de crear otro respaldo/i)).toBeInTheDocument();
+    expect(screen.queryByText(/cree un nuevo respaldo/i)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/SQLSTATE|storage\/logs/i);
+  });
+
   it('lets a user with required password change submit a new password', async () => {
     let mustChange = true;
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
