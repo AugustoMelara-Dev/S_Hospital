@@ -2845,3 +2845,20 @@ Validacion:
 - `npm run build`
 - `scripts/check-branding.ps1`
 - Smoke Playwright contra `frontend/dist` con API mockeada y captura en `qa/screenshots/receipt-print-failure-2026-06-02/receipt-print-failure.png`
+
+### 2026-06-02 - Export Excel administrativo usa etiquetas legibles para areas y categorias
+
+Decision:
+
+- La hoja de ingresos por area del export Excel usa la etiqueta institucional de areas en el XLSX generado.
+- Los encabezados de cobros asignados por categoria y area usan etiquetas humanas completas en el XLSX generado.
+- El fallback de area sin clasificar usa una etiqueta humana completa para evitar reportes institucionales con texto incompleto.
+
+Motivo:
+
+- Los exports son evidencia administrativa; deben ser legibles y no parecer datos tecnicos o rotos.
+- La lectura de ingresos por area/categoria debe mantener el mismo lenguaje humano que la pantalla y el PDF.
+
+Validacion:
+
+- `php artisan test --filter='ReportsTest::test_report_export_includes_area_income_sheet|ReportsTest::test_report_export_labels_payment_scoped_breakdowns_as_prorated_collected_amounts' --colors=never`

@@ -978,7 +978,7 @@ class ReportsTest extends TestCase
         try {
             $spreadsheet = IOFactory::load($path);
             $categorySheet = $spreadsheet->getSheetByName('Categorías');
-            $sheet = $spreadsheet->getSheetByName('Areas');
+            $sheet = $spreadsheet->getSheetByName('Áreas');
             $serviceSheet = $spreadsheet->getSheetByName('Servicios');
 
             $this->assertNotNull($categorySheet);
@@ -1025,15 +1025,15 @@ class ReportsTest extends TestCase
         try {
             $spreadsheet = IOFactory::load($path);
             $categorySheet = $spreadsheet->getSheetByName('Categorías');
-            $areaSheet = $spreadsheet->getSheetByName('Areas');
+            $areaSheet = $spreadsheet->getSheetByName('Áreas');
             $serviceSheet = $spreadsheet->getSheetByName('Servicios');
 
             $this->assertNotNull($categorySheet);
-            $this->assertSame('Cobros asignados por Categoria de Servicio', $categorySheet->getCell('B2')->getValue());
+            $this->assertSame('Cobros asignados por Categoría de Servicio', $categorySheet->getCell('B2')->getValue());
             $this->assertSame('Cobrado asignado', $categorySheet->getCell('D5')->getValue());
 
             $this->assertNotNull($areaSheet);
-            $this->assertSame('Cobros asignados por Area Institucional', $areaSheet->getCell('B2')->getValue());
+            $this->assertSame('Cobros asignados por Área Institucional', $areaSheet->getCell('B2')->getValue());
             $this->assertSame('Cobrado asignado', $areaSheet->getCell('E5')->getValue());
 
             $this->assertNotNull($serviceSheet);

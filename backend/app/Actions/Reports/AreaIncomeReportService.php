@@ -73,7 +73,7 @@ class AreaIncomeReportService
             ->get()
             ->map(fn (object $row): array => [
                 'area_id' => $row->area_id === null ? null : (int) $row->area_id,
-                'area' => $row->area_name ?? 'Sin area',
+                'area' => $row->area_name ?? 'Sin área',
                 'item_count' => (int) $row->item_count,
                 'quantity' => $this->centsToMoney($row->quantity_cents),
                 'total' => $this->centsToMoney($row->total_cents),

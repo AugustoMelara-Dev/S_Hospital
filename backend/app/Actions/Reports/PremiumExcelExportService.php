@@ -391,7 +391,7 @@ class PremiumExcelExportService
         $sheet2->setShowGridlines(true);
 
         $sheet2->setCellValue('B2', $categoryAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
-            ? 'Cobros asignados por Categoria de Servicio'
+            ? 'Cobros asignados por Categoría de Servicio'
             : 'Facturación por Categoría de Servicio');
         $sheet2->getStyle('B2')->applyFromArray($titleStyle);
         $sheet2->setCellValue('B3', "Rango de fechas: {$from->format('d/m/Y')} al {$to->format('d/m/Y')}");
@@ -477,11 +477,11 @@ class PremiumExcelExportService
 
         // SHEET 3: Facturacion por Area
         $sheetArea = $spreadsheet->createSheet();
-        $sheetArea->setTitle('Areas');
+        $sheetArea->setTitle('Áreas');
         $sheetArea->setShowGridlines(true);
 
         $sheetArea->setCellValue('B2', $areaAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
-            ? 'Cobros asignados por Area Institucional'
+            ? 'Cobros asignados por Área Institucional'
             : 'Facturación por Área Institucional');
         $sheetArea->getStyle('B2')->applyFromArray($titleStyle);
         $sheetArea->setCellValue('B3', "Rango de fechas: {$from->format('d/m/Y')} al {$to->format('d/m/Y')}");
