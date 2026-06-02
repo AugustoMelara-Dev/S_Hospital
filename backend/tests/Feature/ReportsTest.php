@@ -252,6 +252,27 @@ class ReportsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.total_collected', '17.25')
             ->assertJsonPath('data.payments_by_method.cash', '17.25');
+
+        $filters = http_build_query([
+            'date_from' => now()->toDateString(),
+            'date_to' => now()->toDateString(),
+            'method' => Payment::METHOD_CASH,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/categories?{$filters}")
+            ->assertOk()
+            ->assertJsonPath('data.categories.0.total', '17.25');
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/areas?{$filters}")
+            ->assertOk()
+            ->assertJsonPath('data.areas.0.total', '17.25');
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/services?{$filters}")
+            ->assertOk()
+            ->assertJsonPath('data.services.0.total', '17.25');
     }
 
     public function test_category_report_uses_invoice_item_snapshots_and_ignores_current_catalog_changes(): void

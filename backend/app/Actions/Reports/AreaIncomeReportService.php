@@ -38,7 +38,7 @@ class AreaIncomeReportService
             })
             ->groupBy('payments.invoice_id')
             ->select('payments.invoice_id')
-            ->selectRaw('COALESCE(SUM(payments.amount), 0) as collected_total');
+            ->selectRaw('COALESCE(SUM(payments.amount_cents), 0) as collected_cents');
 
         $areas = DB::table('invoice_items')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
@@ -69,7 +69,7 @@ class AreaIncomeReportService
             ->selectRaw('COUNT(*) as item_count')
             ->selectRaw('COALESCE(SUM(ROUND(invoice_items.quantity * 100)), 0) as quantity_cents')
             ->selectRaw($usesPaymentScope
-                ? 'COALESCE(SUM(ROUND(invoice_items.line_total * 100 * payment_totals.collected_total / NULLIF(invoices.total, 0))), 0) as total_cents'
+                ? 'COALESCE(SUM(ROUND(invoice_items.line_total * payment_totals.collected_cents / NULLIF(invoices.total, 0))), 0) as total_cents'
                 : 'COALESCE(SUM(ROUND(invoice_items.line_total * 100)), 0) as total_cents')
             ->get()
             ->map(fn (object $row): array => [
