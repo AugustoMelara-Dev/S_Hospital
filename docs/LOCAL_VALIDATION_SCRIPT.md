@@ -8,7 +8,7 @@ Recorrer el flujo operativo completo sin depender de internet: login local, caja
 
 Usuarios de validacion:
 
-- Administrador temporal creado con `php artisan auth:create-initial-admin`.
+- Administrador temporal creado con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`.
 - Cajero temporal creado desde Administracion de Usuarios.
 - Supervisor temporal creado desde Administracion de Usuarios.
 

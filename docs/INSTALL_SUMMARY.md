@@ -11,7 +11,7 @@ No ejecutar `migrate:fresh` en el servidor real.
 4. Configurar `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=http://IP_DEL_SERVIDOR`, `SANCTUM_STATEFUL_DOMAINS=IP_DEL_SERVIDOR` y CORS con el host LAN final.
 5. Configurar `HOSPITAL_DUMP_BINARY` si `mysqldump.exe` o `mariadb-dump.exe` no esta en PATH.
 6. Ejecutar `php artisan migrate --force`.
-7. Crear admin real con `php artisan auth:create-initial-admin`.
+7. Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no escribir la contrasena como `--password=...`.
 8. Ejecutar `php artisan config:cache --no-ansi`.
 9. Registrar tareas Windows para backup worker y scheduler con `scripts\install_backup_tasks_windows.ps1`.
 10. Abrir la app como admin, entrar a Backups y revisar el checklist operativo: `APP_ENV=production`, `APP_DEBUG=false`, MySQL/MariaDB, dump tool, storage local, worker continuo, rutas `/up`, `/login`, `/verify-email` y evidencias LAN/impresora.
@@ -33,7 +33,7 @@ Si el preflight falla por evidencia fisica pendiente, el servidor puede seguir e
 5. Configurar obligatoriamente `APP_ENV=production` y `APP_DEBUG=false`.
 6. Generar `APP_KEY` si no existe.
 7. Ejecutar migraciones aprobadas sin `migrate:fresh`.
-8. Crear admin real con `php artisan auth:create-initial-admin`; no ejecutar seeders de desarrollo en servidor real.
+8. Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no ejecutar seeders de desarrollo en servidor real.
 9. Ejecutar `php artisan config:cache`.
 
 No entregar un servidor LAN real con `APP_ENV=local`. Produccion debe operar con cuentas reales creadas por administracion y cambio obligatorio de contrasena cuando aplique.

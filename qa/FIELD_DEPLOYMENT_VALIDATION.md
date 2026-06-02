@@ -189,7 +189,7 @@ Antes de entregar como produccion:
 
 - Configurar `APP_ENV=production`.
 - Configurar `APP_DEBUG=false`.
-- Crear admin real con `php artisan auth:create-initial-admin`.
+- Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no pasar la contrasena como argumento CLI.
 - No ejecutar seeders demo.
 - Ejecutar migraciones aprobadas sin `migrate:fresh`.
 - Ejecutar `php artisan config:cache --no-ansi`.

@@ -41,7 +41,7 @@ No declarar `PRODUCTION_READY` hasta cerrar todos los bloqueantes de entorno y h
 
 1. Preparar servidor final con MySQL/MariaDB y PATH de dump confirmado.
 2. Configurar `.env` real con `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` LAN final y secretos locales.
-3. Crear admin real con `php artisan auth:create-initial-admin`.
+3. Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no pasar la contrasena como argumento CLI.
 4. Ejecutar `php artisan migrate --force` solo con migraciones aprobadas; no usar `migrate:fresh`.
 5. Ejecutar `php artisan config:cache --no-ansi`.
 6. Levantar worker de backups como tarea/servicio Windows.

@@ -107,7 +107,7 @@ En servidor real del hospital:
 - Usar `APP_ENV=production`.
 - Usar `APP_DEBUG=false`.
 - Configurar `APP_URL`, CORS y `SANCTUM_STATEFUL_DOMAINS` con la IP fija o dominio LAN real.
-- Crear admin real con `php artisan auth:create-initial-admin`.
+- Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no pasar la contrasena como argumento CLI.
 - Ejecutar `php artisan config:cache --no-ansi`.
 - Levantar worker de backups como servicio/tarea continua y validar backup manual `pending` -> `success`.
 - Probar restore real en base descartable, no en la base activa.

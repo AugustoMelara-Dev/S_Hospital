@@ -74,7 +74,7 @@ En produccion offline LAN no se borra la base. La validacion segura usa:
 - `APP_DEBUG=false`.
 - `APP_URL` con la IP fija o dominio LAN final, por ejemplo `http://192.168.1.10`.
 - `SANCTUM_STATEFUL_DOMAINS` y CORS/Sanctum alineados al host LAN real y a cualquier dominio local permitido.
-- Admin real creado con `php artisan auth:create-initial-admin`; no usar seeders de desarrollo.
+- Admin real creado con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no usar seeders de desarrollo ni `--password=...` en consola.
 - `composer validate`
 - `php artisan test --colors=never` si el servidor tiene entorno de testing aislado.
 - `php artisan config:cache --no-ansi`
@@ -256,7 +256,7 @@ evidencia.
 Luego completar manualmente en ese mismo archivo login, caja, factura, pago,
 recibo, historial, reportes y backup `pending` -> `success`.
 - Validar concurrencia real con MySQL/MariaDB.
-- Crear admin inicial real con password temporal y cambio obligatorio.
+- Crear admin inicial real con password temporal, cambio obligatorio y contrasena entregada por entrada oculta/`HOSPITAL_INITIAL_ADMIN_PASSWORD`, no por argumento CLI.
 - Remover o no ejecutar seeders de validacion local fuera de `local`/`testing`.
 - Ejecutar gates finales: `composer validate`, `php artisan test --colors=never`,
   `vendor/bin/pint --test`, `php artisan config:cache --no-ansi`,

@@ -103,7 +103,7 @@ Mejora considerada:
 
 - Confirmar `.env` final fuera de Git.
 - Configurar `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` y CORS con IP fija o dominio LAN final.
-- Crear admin real con `php artisan auth:create-initial-admin`.
+- Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no pasar la contrasena como argumento CLI.
 - No ejecutar seeders demo ni `migrate:fresh` en servidor real.
 - Ejecutar `php artisan migrate --force` solo con backup previo y migraciones aprobadas.
 

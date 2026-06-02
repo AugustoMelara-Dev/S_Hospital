@@ -52,7 +52,7 @@ Antes de instalar en el hospital:
 7. Configurar `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` y CORS con la IP fija o dominio LAN final, por ejemplo `192.168.1.10`.
 8. Generar `APP_KEY` en el servidor.
 9. Ejecutar migraciones aprobadas sin `migrate:fresh`.
-10. Crear admin real con `php artisan auth:create-initial-admin`; no ejecutar seeders de desarrollo.
+10. Crear admin real con el instalador o con `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no ejecutar seeders de desarrollo.
 11. Ejecutar `php artisan config:cache`.
 12. Publicar por IP fija LAN o nombre local.
 13. Levantar worker local de backups: en Docker offline queda como servicio `queue-worker`; en bare-metal queda como tarea/servicio PHP con `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
@@ -72,6 +72,13 @@ que no referencia el commit actual.
 En publicacion same-origin con Laravel, `/`, `/login` y `/verify-email` sirven el build React desde `frontend/dist/index.html`, y `/assets/*` sirve los assets compilados. Si `frontend/dist` no existe, el servidor responde error operativo y no debe entregarse como listo.
 
 No entregar un servidor LAN real con `APP_ENV=local`. Produccion debe operar con cuentas reales creadas por administracion y cambio obligatorio de contrasena cuando aplique.
+
+### Admin inicial seguro
+
+- Preferir `scripts\deploy_hospital_lan.ps1`, que captura la contrasena temporal de forma oculta.
+- Si soporte crea el admin manualmente, no debe escribir la contrasena como `--password=...` en consola.
+- El comando acepta la contrasena desde `HOSPITAL_INITIAL_ADMIN_PASSWORD` y exige minimo 10 caracteres con letras y numeros.
+- Limpiar `HOSPITAL_INITIAL_ADMIN_PASSWORD` despues de crear el admin.
 
 ## Red local
 
