@@ -128,8 +128,17 @@ echo - Servidor:    http://localhost:8000
 echo - Red local:   http://%SERVER_IP%:8000
 echo.
 echo IMPORTANTE:
-echo Si aun no existe administrador real, creelo con un password temporal:
-echo docker compose exec backend php artisan auth:create-initial-admin --username=admin --email=admin@hospital.local --password=CAMBIAR_ESTA_CLAVE
+echo Si aun no existe administrador real, creelo leyendo la clave de
+echo la variable de entorno HOSPITAL_INITIAL_ADMIN_PASSWORD (no la
+echo escriba en esta consola, en el historial de comandos ni en una
+echo linea de shell visible para otros operadores):
+echo.
+echo   set HOSPITAL_INITIAL_ADMIN_PASSWORD=SuClaveTemporal
+echo   docker compose exec -e HOSPITAL_INITIAL_ADMIN_PASSWORD backend ^
+echo       php artisan auth:create-initial-admin ^
+echo       --username=admin --email=admin@hospital.local
+echo.
+echo El primer inicio de sesion le pedira cambiar la clave temporal.
 echo.
 echo Para detener servicios sin borrar datos:
 echo docker compose stop
