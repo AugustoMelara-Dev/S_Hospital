@@ -2957,3 +2957,22 @@ Validacion:
 - `php artisan test --filter=ReportsTest::test_report_export_records_active_filters_with_human_labels --colors=never`
 - `php artisan test --filter=ReportsTest --colors=never`
 - `vendor/bin/pint --test app/Actions/Reports/PremiumExcelExportService.php tests/Feature/ReportsTest.php`
+
+### 2026-06-02 - Excel describe caja exportada sin IDs tecnicos
+
+Decision:
+
+- La hoja `Filtros Aplicados` del Excel ya no presenta la caja como `Caja #id`.
+- Cuando se filtra por caja, el valor visible usa cajero, fecha/hora de apertura y estado humano (`Abierta` o `Cerrada`).
+- El ID de la sesion queda fuera del valor administrativo visible del filtro.
+
+Motivo:
+
+- Administracion debe poder leer un reporte exportado sin interpretar identificadores internos.
+- La caja es una fuente financiera, por lo que su referencia debe ser auditable y humana: quien opero, cuando abrio y en que estado estaba.
+
+Validacion:
+
+- `php artisan test --filter=ReportsTest::test_report_export_records_active_filters_with_human_labels --colors=never`
+- `php artisan test --filter=ReportsTest --colors=never`
+- `vendor/bin/pint --test app/Actions/Reports/PremiumExcelExportService.php tests/Feature/ReportsTest.php`

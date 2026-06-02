@@ -3,6 +3,7 @@
 namespace App\Actions\Reports;
 
 use App\Models\Area;
+use App\Models\CashRegisterSession;
 use App\Models\Category;
 use App\Models\FiscalSetting;
 use App\Models\User;
@@ -854,7 +855,7 @@ class PremiumExcelExportService
         $rows = [];
 
         if (! empty($filters['cash_session_id'])) {
-            $rows[] = ['Caja', 'Caja #'.(string) $filters['cash_session_id']];
+            $rows[] = ['Caja', $this->cashSessionLabel((int) $filters['cash_session_id'])];
         }
 
         if (! empty($filters['method'])) {
@@ -907,6 +908,26 @@ class PremiumExcelExportService
             'paid' => 'Pagada',
             'void' => 'Anulada',
         ][$status] ?? ucfirst($status);
+    }
+
+    private function cashSessionLabel(int $cashSessionId): string
+    {
+        $cashSession = CashRegisterSession::query()
+            ->with('user:id,name')
+            ->find($cashSessionId);
+
+        if ($cashSession === null) {
+            return 'Caja no disponible';
+        }
+
+        $cashier = $cashSession->user?->name ?? 'Cajero no disponible';
+        $openedAt = $cashSession->opened_at?->format('d/m/Y H:i') ?? 'sin apertura registrada';
+        $status = [
+            CashRegisterSession::STATUS_OPEN => 'Abierta',
+            CashRegisterSession::STATUS_CLOSED => 'Cerrada',
+        ][$cashSession->status] ?? ucfirst((string) $cashSession->status);
+
+        return "{$cashier} - Apertura {$openedAt} - {$status}";
     }
 
     private function receiptWidthLabel(?string $width): string

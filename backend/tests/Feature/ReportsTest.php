@@ -1062,6 +1062,7 @@ class ReportsTest extends TestCase
             'method' => Payment::METHOD_CASH,
             'status' => Invoice::STATUS_PAID,
             'user_id' => $cashier->id,
+            'cash_session_id' => $sessionId,
             'area_id' => $glucose->area_id,
             'category_id' => $glucose->category_id,
         ]);
@@ -1094,9 +1095,14 @@ class ReportsTest extends TestCase
             $this->assertSame('Efectivo', $filters['Método de pago'] ?? null);
             $this->assertSame('Pagada', $filters['Estado de factura'] ?? null);
             $this->assertSame($cashier->name, $filters['Cajero'] ?? null);
+            $this->assertStringContainsString($cashier->name, $filters['Caja'] ?? '');
+            $this->assertStringContainsString(now()->format('d/m/Y'), $filters['Caja'] ?? '');
+            $this->assertStringContainsString('Abierta', $filters['Caja'] ?? '');
+            $this->assertStringNotContainsString('Caja #'.(string) $sessionId, $filters['Caja'] ?? '');
             $this->assertSame('Laboratorio', $filters['Área'] ?? null);
             $this->assertSame('Laboratorio', $filters['Categoría'] ?? null);
             $this->assertNotContains((string) $cashier->id, $filters);
+            $this->assertNotContains((string) $sessionId, $filters);
             $this->assertNotContains((string) $glucose->area_id, $filters);
             $this->assertNotContains((string) $glucose->category_id, $filters);
         } finally {
