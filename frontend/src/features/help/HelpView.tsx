@@ -148,6 +148,15 @@ const dailyChecklists = [
     ],
   },
   {
+    title: 'Supervisor - revision diaria',
+    items: [
+      'Confirmar que cada cajero opera con su propio usuario.',
+      'Revisar cajas abiertas, diferencias y facturas pendientes.',
+      'Autorizar reimpresiones o anulaciones solo con motivo claro.',
+      'Pedir resumen seguro de Ayuda si hubo red, impresora o permisos fallando.',
+    ],
+  },
+  {
     title: 'Administrador - revision diaria',
     items: [
       'Revisar Estado operativo en Respaldos.',

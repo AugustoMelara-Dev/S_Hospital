@@ -48,7 +48,9 @@ describe('HelpView', () => {
     expect(screen.getByRole('heading', { name: /checklist diario por rol/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /cajero - inicio de turno/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /antes de cerrar turno/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /supervisor - revision diaria/i })).toBeInTheDocument();
     expect(screen.getByText(/comparar efectivo esperado contra efectivo contado/i)).toBeInTheDocument();
+    expect(screen.getByText(/pedir resumen seguro de ayuda/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /acciones delicadas/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /restauracion de respaldo/i })).toBeInTheDocument();
     expect(screen.getByText(/nunca restaure sobre datos reales/i)).toBeInTheDocument();
