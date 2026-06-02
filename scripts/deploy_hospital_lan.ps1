@@ -131,6 +131,11 @@ if (-not (Test-Path $envHelperPath)) {
 }
 . $envHelperPath
 
+$corsHelperPath = Join-Path $libDir "cors_helpers.ps1"
+if (Test-Path $corsHelperPath) {
+    . $corsHelperPath
+}
+
 $netDiagPath = Join-Path $libDir "net_diagnostics.ps1"
 if (-not (Test-Path $netDiagPath)) {
     Write-Host "[FAIL] No se encontro: $netDiagPath" -ForegroundColor Red
@@ -574,6 +579,7 @@ if ($DiagnosticsOnly) {
         @{ Path = (Join-Path $projectRoot "setup.bat"); Label = "setup.bat" },
         @{ Path = (Join-Path $projectRoot "scripts\deploy_hospital_lan.ps1"); Label = "deploy_hospital_lan.ps1" },
         @{ Path = (Join-Path $projectRoot "scripts\lib\env_helpers.ps1"); Label = "lib/env_helpers.ps1" },
+        @{ Path = (Join-Path $projectRoot "scripts\lib\cors_helpers.ps1"); Label = "lib/cors_helpers.ps1" },
         @{ Path = (Join-Path $projectRoot "scripts\lib\net_diagnostics.ps1"); Label = "lib/net_diagnostics.ps1" },
         @{ Path = (Join-Path $projectRoot "scripts\lib\docker_diagnostics.ps1"); Label = "lib/docker_diagnostics.ps1" },
         @{ Path = (Join-Path $projectRoot "scripts\load_offline_images.ps1"); Label = "load_offline_images.ps1" }
@@ -798,10 +804,11 @@ try {
                 # Also update backend/.env if exists
                 $backendEnv = Join-Path $projectRoot "backend\.env"
                 if (Test-Path $backendEnv) {
+                    $corsValues = Get-ProductionCorsValues -ServerIp $newIp -AppPort $portNum
                     $beVars = @{
                         "APP_URL"                    = "http://${newIp}:${portNum}"
-                        "SANCTUM_STATEFUL_DOMAINS"   = "localhost,localhost:3000,localhost:5173,127.0.0.1,127.0.0.1:${portNum},127.0.0.1:5173,${newIp},${newIp}:${portNum},${newIp}:5173,::1"
-                        "CORS_ALLOWED_ORIGINS"       = "http://localhost:5173,http://127.0.0.1:5173,http://${newIp}:5173,http://${newIp}:${portNum}"
+                        "SANCTUM_STATEFUL_DOMAINS"   = $corsValues.SanctumStatefulDomains
+                        "CORS_ALLOWED_ORIGINS"       = $corsValues.CorsAllowedOrigins
                     }
                     Update-DotEnv -Path $backendEnv -Variables $beVars
                     Write-Host "  [OK] backend/.env actualizado tambien." -ForegroundColor Green
@@ -1211,6 +1218,7 @@ try {
             if ([string]::IsNullOrWhiteSpace($dbPass)) { $dbPass = $currDbPass }
 
             # Write backend .env
+            $corsValues = Get-ProductionCorsValues -ServerIp $serverIp -AppPort $appPort
             $vars = @{
                 "APP_ENV"                    = "production"
                 "APP_DEBUG"                  = "false"
@@ -1222,8 +1230,8 @@ try {
                 "DB_DATABASE"                = $dbName
                 "DB_USERNAME"                = $dbUser
                 "DB_PASSWORD"                = $dbPass
-                "SANCTUM_STATEFUL_DOMAINS"   = "localhost,localhost:3000,localhost:5173,127.0.0.1,127.0.0.1:${appPort},127.0.0.1:5173,${serverIp},${serverIp}:${appPort},${serverIp}:5173,::1"
-                "CORS_ALLOWED_ORIGINS"       = "http://localhost:5173,http://127.0.0.1:5173,http://${serverIp}:5173,http://${serverIp}:${appPort}"
+                "SANCTUM_STATEFUL_DOMAINS"   = $corsValues.SanctumStatefulDomains
+                "CORS_ALLOWED_ORIGINS"       = $corsValues.CorsAllowedOrigins
             }
 
             Update-DotEnv -Path $backendEnvPath -Variables $vars
