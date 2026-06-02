@@ -643,6 +643,50 @@ class ServiceCatalogTest extends TestCase
         ]);
     }
 
+    public function test_service_metadata_changes_are_audited_with_old_and_new_payloads(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $originalCategoryId = $service->category_id;
+        $originalAreaId = $service->area_id;
+        $newCategory = Category::query()->create([
+            'name' => 'Administracion institucional',
+            'slug' => 'administracion-institucional',
+            'active' => true,
+            'sort_order' => 90,
+        ]);
+        $newArea = Area::query()->create([
+            'name' => 'Auditoria financiera',
+            'slug' => 'auditoria-financiera',
+            'active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'category_id' => $newCategory->id,
+                'area_id' => $newArea->id,
+                'aliases' => 'azucar, glucemia, glicemia',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.category_id', $newCategory->id)
+            ->assertJsonPath('data.area_id', $newArea->id)
+            ->assertJsonPath('data.aliases', 'azucar, glucemia, glicemia');
+
+        $audit = AuditLog::query()
+            ->where('action', 'service.updated')
+            ->where('entity_type', Service::class)
+            ->where('entity_id', $service->id)
+            ->firstOrFail();
+
+        $this->assertSame($originalCategoryId, $audit->old_values['category_id']);
+        $this->assertSame($originalAreaId, $audit->old_values['area_id']);
+        $this->assertNull($audit->old_values['aliases']);
+        $this->assertSame($newCategory->id, $audit->new_values['category_id']);
+        $this->assertSame($newArea->id, $audit->new_values['area_id']);
+        $this->assertSame('azucar, glucemia, glicemia', $audit->new_values['aliases']);
+    }
+
     public function test_services_can_be_filtered_by_inactive_status(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
