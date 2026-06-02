@@ -2749,3 +2749,20 @@ Validacion:
 
 - `php artisan test --filter=BackupWorkflowTest::test_failed_backup_persists_operator_safe_support_message`
 - `php artisan test --filter=BackupWorkflowTest`
+
+### 2026-06-02 - Reporte de caja usa totales de conciliacion visibles
+
+Decision:
+
+- La pestana de reporte de caja muestra "Esperado" desde `expected_cash_amount`, no desde `cash_session.expected_amount`.
+- `cash_session.expected_amount` queda como snapshot de cierre; en cajas abiertas puede ser `null`.
+- El reporte visible tambien expone "Cobrado" y "Pendiente" desde `payments_total`, `pending_amount` y `pending_invoice_count`.
+
+Motivo:
+
+- Administracion debe poder revisar una caja abierta sin ver `L. 0.00` cuando el backend ya calculo el efectivo esperado.
+- El saldo pendiente debe estar visible junto a la conciliacion para no confundirse con dinero cobrado.
+
+Validacion:
+
+- `npm run test -- CashSessionReportTab.test.tsx --run`

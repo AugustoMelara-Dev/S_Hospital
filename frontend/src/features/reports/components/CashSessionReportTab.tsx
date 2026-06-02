@@ -58,7 +58,7 @@ export function CashSessionReportTab({
 
       {cashSession && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4">
             <KPICard
               title="Cajero"
               value={cashSession.cash_session.user?.name ?? 'Sin asignar'}
@@ -71,11 +71,22 @@ export function CashSessionReportTab({
             />
             <KPICard
               title="Esperado"
-              value={moneyLabel(cashSession.cash_session.expected_amount)}
+              value={moneyLabel(cashSession.expected_cash_amount)}
+              description="Apertura mas cobros en efectivo"
+            />
+            <KPICard
+              title="Cobrado"
+              value={moneyLabel(cashSession.payments_total)}
+              description={`${cashSession.payments_count} ${cashSession.payments_count === 1 ? 'pago' : 'pagos'}`}
+            />
+            <KPICard
+              title="Pendiente"
+              value={moneyLabel(cashSession.pending_amount)}
+              description={pendingInvoiceLabel(cashSession.pending_invoice_count)}
             />
             <KPICard
               title="Contado"
-              value={moneyLabel(cashSession.cash_session.closing_amount)}
+              value={cashSession.cash_session.closing_amount === null ? 'Pendiente' : moneyLabel(cashSession.cash_session.closing_amount)}
             />
           </div>
 
@@ -209,6 +220,10 @@ function methodLabel(method: string): string {
 
 function moneyLabel(value: string | number | null | undefined): string {
   return formatLempirasFromCents(parseCents(value));
+}
+
+function pendingInvoiceLabel(count: number): string {
+  return `${count} ${count === 1 ? 'factura' : 'facturas'}`;
 }
 
 function formatDate(value: string): string {
