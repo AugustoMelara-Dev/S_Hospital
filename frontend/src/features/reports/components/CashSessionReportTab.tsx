@@ -7,7 +7,7 @@ import { Label } from '../../../components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/data-table';
 import { KPICard } from './KPICard';
 import type { CashSessionReport } from '../../../lib/api/types';
-import { parseCents } from '../../../lib/moneyCents';
+import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
 interface CashSessionReportTabProps {
   canExport: boolean;
@@ -66,16 +66,16 @@ export function CashSessionReportTab({
             />
             <KPICard
               title="Apertura"
-              value={`L. ${cashSession.cash_session.opening_amount}`}
+              value={moneyLabel(cashSession.cash_session.opening_amount)}
               icon={<DollarSign className="h-4 w-4" />}
             />
             <KPICard
               title="Esperado"
-              value={`L. ${cashSession.cash_session.expected_amount ?? '0.00'}`}
+              value={moneyLabel(cashSession.cash_session.expected_amount)}
             />
             <KPICard
               title="Contado"
-              value={`L. ${cashSession.cash_session.closing_amount ?? '0.00'}`}
+              value={moneyLabel(cashSession.cash_session.closing_amount)}
             />
           </div>
 
@@ -89,7 +89,7 @@ export function CashSessionReportTab({
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-destructive">
-                  L. {cashSession.cash_session.difference_amount}
+                  {moneyLabel(cashSession.cash_session.difference_amount)}
                 </div>
               </CardContent>
             </Card>
@@ -111,7 +111,7 @@ export function CashSessionReportTab({
                   {Object.entries(cashSession.totals_by_method).map(([method, total]) => (
                     <TableRow key={method}>
                       <TableCell className="font-medium">{methodLabel(method)}</TableCell>
-                      <TableCell className="text-right">L. {total}</TableCell>
+                      <TableCell className="text-right">{moneyLabel(total)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -141,7 +141,7 @@ export function CashSessionReportTab({
                         <TableCell className="font-medium">{p.invoice?.invoice_number ?? '—'}</TableCell>
                         <TableCell>{p.invoice?.patient_name ?? '—'}</TableCell>
                         <TableCell>{methodLabel(p.method)}</TableCell>
-                        <TableCell className="text-right">L. {p.amount}</TableCell>
+                        <TableCell className="text-right">{moneyLabel(p.amount)}</TableCell>
                         <TableCell>{formatDate(p.paid_at)}</TableCell>
                       </TableRow>
                     ))}
@@ -173,7 +173,7 @@ export function CashSessionReportTab({
                       <TableRow key={m.id}>
                         <TableCell className="font-medium">{m.type}</TableCell>
                         <TableCell>{m.method ?? '—'}</TableCell>
-                        <TableCell className="text-right">L. {m.amount}</TableCell>
+                        <TableCell className="text-right">{moneyLabel(m.amount)}</TableCell>
                         <TableCell className="max-w-[150px] truncate">{m.notes ?? '—'}</TableCell>
                         <TableCell>{m.user?.name ?? '—'}</TableCell>
                         <TableCell>{formatDate(m.occurred_at)}</TableCell>
@@ -205,6 +205,10 @@ export function CashSessionReportTab({
 
 function methodLabel(method: string): string {
   return { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta', other: 'Otro' }[method] ?? method;
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
 }
 
 function formatDate(value: string): string {
