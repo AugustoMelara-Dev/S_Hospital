@@ -171,7 +171,7 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
   if (needsReview) {
     return {
       level: 'review',
-      label: 'Pendiente',
+      label: 'Requiere revisi\u00f3n',
       description: 'Falta completar respaldo reciente, validacion de red/impresora o configuracion final antes de operar sin supervision.',
       className: 'border-amber-200 bg-amber-50 text-amber-900',
     };
@@ -179,7 +179,7 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
 
   return {
     level: 'ok',
-    label: 'Protegido',
+    label: 'Todo bien',
     description: 'Respaldos y chequeos basicos estan al dia. Mantenga el cierre diario y los respaldos protegidos.',
     className: 'border-emerald-200 bg-emerald-50 text-emerald-900',
   };

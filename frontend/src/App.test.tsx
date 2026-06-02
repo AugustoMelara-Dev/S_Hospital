@@ -469,11 +469,11 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: /^respaldos$/i })).toBeInTheDocument();
     expect(await screen.findByText(/respaldos del hospital/i)).toBeInTheDocument();
     expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
-    expect((await screen.findAllByText(/^pendiente$/i)).length).toBeGreaterThan(0);
+    expect(await screen.findByRole('heading', { name: /requiere revisi/i })).toBeInTheDocument();
     expect(await screen.findByText(/completar modo de operaci[oÃ³]n final/i)).toBeInTheDocument();
     expect(await screen.findByText(/validar recibo fisico media carta\/carta\/A5\/80mm\/58mm/i)).toBeInTheDocument();
     expect(screen.queryByText(/APP_ENV=production/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/requiere revisi/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /^pendiente$/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver detalle avanzado/i }));
     expect(await screen.findByText(/checklist operativo/i)).toBeInTheDocument();
     expect(screen.getByText(/servidor, datos y red local/i)).toBeInTheDocument();
