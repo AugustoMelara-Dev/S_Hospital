@@ -1980,3 +1980,20 @@ Consecuencia:
 - `composer validate` pasa dentro del contenedor backend.
 - `composer audit` queda sin advisories conocidos en el lock actual.
 - El paquete offline debe regenerarse despues de este commit para incluir el lock corregido.
+
+### 2026-06-02 - Sin indice parcial SQL para secuencia fiscal activa
+
+Decision:
+
+- No se usa `CREATE UNIQUE INDEX ... WHERE active = 1` para `fiscal_sequences`.
+- La unicidad de una secuencia activa por tipo de documento sigue apoyandose en `active_document_type`, columna nullable con indice unico ya existente.
+
+Motivo:
+
+- MariaDB/MySQL no aceptan el indice parcial con `WHERE active = 1`; una instalacion desde cero fallaria al ejecutar migraciones.
+- `active_document_type` ya modela el mismo contrato de forma portable para MySQL/MariaDB: las secuencias inactivas quedan en `NULL` y las activas guardan el `document_type` unico.
+
+Consecuencia:
+
+- Las migraciones desde cero deben pasar contra MariaDB local.
+- Cualquier endurecimiento adicional de secuencias fiscales debe respetar compatibilidad MySQL/MariaDB offline LAN.
