@@ -27,6 +27,7 @@ export const PERMISSION_DENIED_MESSAGE =
 
 export function safeClientMessage(value: string): string {
   return value
+    .replace(/\b(https?:\/\/)(?:[^\s/@]+@)([^\s]+)/gi, '$1$2')
     .replace(/(?:password|contrase.{0,2}a|token|secret|APP_KEY|DB_PASSWORD)\s*[:=]\s*\S+/gi, '[redacted]')
     .replace(/password|contrase.{0,2}a|token|secret|APP_KEY|DB_PASSWORD/gi, '[redacted]')
     .replace(/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)*_(?:id|key|token|secret|password)\b/gi, '[campo-interno]')

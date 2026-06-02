@@ -19,6 +19,15 @@ describe('clientIssueLog', () => {
     expect(message).not.toMatch(/cash_session_id|SQLSTATE|storage\/logs|\/var\/www|\.env/i);
   });
 
+  it('removes URL credentials from support messages', () => {
+    const message = safeClientMessage(
+      'No abre http://soporte:clave-secreta@192.168.1.10:8000/api/system/status',
+    );
+
+    expect(message).toContain('http://192.168.1.10:8000/api/system/status');
+    expect(message).not.toMatch(/soporte|clave-secreta|@192\.168\.1\.10/i);
+  });
+
   it('returns safe stored incidents for support', () => {
     window.localStorage.clear();
 
