@@ -2252,7 +2252,7 @@ Decision:
 
 Motivo:
 
-- CAST(... AS SIGNED) es MySQL-only. Los tests RefreshDatabase contra SQLite in-memory fallarian con 
+- CAST(... AS SIGNED) es MySQL-only. Los tests RefreshDatabase contra SQLite in-memory fallarian con
 o such function: SIGNED.
 - chunkById evita que el backfill de la tabla payments cargue millones de filas en memoria en SQLite.
 - doctrine/dbal ya no es necesario en Laravel 11+ para ->change(). Mantenerlo fuera de composer.json ahorra ~5MB.
@@ -2283,7 +2283,7 @@ Consecuencia:
 Decision:
 
 - docker-compose.prod.yml añade healthcheck al backend (DB::connection()->getPdo() via tinker) y a nginx (wget http://localhost/up).
-- 
+-
 ginx cambia de depender de ackend: service_started a ackend: service_healthy, garantizando que el paso cp /var/www/html/public del entrypoint haya terminado antes de que nginx intente servir.
 - client_max_body_size de nginx baja de 100M a 32M para coincidir con upload_max_filesize=32M y post_max_size=32M de ackend/Dockerfile.prod.
 
