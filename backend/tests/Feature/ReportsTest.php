@@ -1912,6 +1912,65 @@ class ReportsTest extends TestCase
             ->assertJsonValidationErrors('method');
     }
 
+    public function test_period_closure_pdf_declares_active_filters_with_human_labels(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        $capturedHtml = null;
+        Pdf::shouldReceive('loadHTML')
+            ->once()
+            ->with(\Mockery::on(function (string $html) use (&$capturedHtml): bool {
+                $capturedHtml = $html;
+
+                return true;
+            }))
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('output')
+                    ->once()
+                    ->andReturn('%PDF-human-filters');
+            }));
+
+        $date = now()->toDateString();
+        $query = http_build_query([
+            'date_from' => $date,
+            'date_to' => $date,
+            'method' => Payment::METHOD_CASH,
+            'status' => Invoice::STATUS_PAID,
+            'user_id' => $cashier->id,
+            'cash_session_id' => $sessionId,
+            'area_id' => $glucose->area_id,
+            'category_id' => $glucose->category_id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get("/api/reports/pdf?{$query}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-human-filters', false);
+
+        $this->assertIsString($capturedHtml);
+        $this->assertStringContainsString('Filtros aplicados', $capturedHtml);
+        $this->assertStringContainsString('Metodo de pago', $capturedHtml);
+        $this->assertStringContainsString('Efectivo', $capturedHtml);
+        $this->assertStringContainsString('Estado de factura', $capturedHtml);
+        $this->assertStringContainsString('Pagada', $capturedHtml);
+        $this->assertStringContainsString('Cajero', $capturedHtml);
+        $this->assertStringContainsString($cashier->name, $capturedHtml);
+        $this->assertStringContainsString('Caja', $capturedHtml);
+        $this->assertStringContainsString(now()->format('d/m/Y'), $capturedHtml);
+        $this->assertStringContainsString('Abierta', $capturedHtml);
+        $this->assertStringContainsString('Area', $capturedHtml);
+        $this->assertStringContainsString('Categoria', $capturedHtml);
+        $this->assertStringNotContainsString('Caja #'.(string) $sessionId, $capturedHtml);
+    }
+
     public function test_period_closure_pdf_export_includes_financial_reading_with_sources(): void
     {
         $this->seedBillingBase();

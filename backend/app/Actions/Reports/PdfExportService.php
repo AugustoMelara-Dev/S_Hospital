@@ -2,6 +2,10 @@
 
 namespace App\Actions\Reports;
 
+use App\Models\Area;
+use App\Models\CashRegisterSession;
+use App\Models\Category;
+use App\Models\User;
 use App\Support\HospitalName;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -337,6 +341,7 @@ class PdfExportService
         $rtnEsc = $this->e($rtn);
         $dateFromEsc = $this->e($dateFrom);
         $dateToEsc = $this->e($dateTo);
+        $appliedFiltersHtml = $this->buildAppliedFiltersHtml($this->appliedFilterRows($data['filters'] ?? []));
 
         $html = "
 <!DOCTYPE html>
@@ -474,6 +479,8 @@ class PdfExportService
         <div class='clear'></div>
     </div>
 
+    {$appliedFiltersHtml}
+
     <div class='summary-cards'>
         <div class='summary-card'>
             <div class='summary-card-title'>Total Facturado</div>
@@ -536,10 +543,10 @@ class PdfExportService
                 <th class='text-center'>Items Facturados</th>
                 <th class='text-right'>Subtotal (LPS)</th>
                 <th class='text-right'>Impuesto ISV (LPS)</th>
-                <th class='text-right'>".$this->e($categoryAmountHeader)."</th>
+                <th class='text-right'>".$this->e($categoryAmountHeader).'</th>
             </tr>
         </thead>
-        <tbody>";
+        <tbody>';
         if (empty($categories)) {
             $html .= "<tr><td colspan='5' class='text-center'>No hay datos disponibles en este rango.</td></tr>";
         } else {
@@ -579,10 +586,10 @@ class PdfExportService
                 <th>Area</th>
                 <th class='text-center'>Items</th>
                 <th class='text-center'>Cantidad</th>
-                <th class='text-right'>".$this->e($areaAmountHeader)."</th>
+                <th class='text-right'>".$this->e($areaAmountHeader).'</th>
             </tr>
         </thead>
-        <tbody>";
+        <tbody>';
         if (empty($areas)) {
             $html .= "<tr><td colspan='4' class='text-center'>No hay facturación por área en este rango.</td></tr>";
         } else {
@@ -646,10 +653,10 @@ class PdfExportService
             <tr>
                 <th>Nombre del Servicio</th>
                 <th class='text-center'>Cantidad Facturada</th>
-                <th class='text-right'>".$this->e($serviceAmountHeader)."</th>
+                <th class='text-right'>".$this->e($serviceAmountHeader).'</th>
             </tr>
         </thead>
-        <tbody>";
+        <tbody>';
         if (empty($services)) {
             $html .= "<tr><td colspan='3' class='text-center'>No hay datos de servicios en este rango.</td></tr>";
         } else {
@@ -786,5 +793,97 @@ class PdfExportService
             'void' => 'Anulada',
             default => ucfirst($status),
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return list<array{0: string, 1: string}>
+     */
+    private function appliedFilterRows(array $filters): array
+    {
+        $rows = [];
+
+        if (! empty($filters['cash_session_id'])) {
+            $rows[] = ['Caja', $this->cashSessionLabel((int) $filters['cash_session_id'])];
+        }
+
+        if (! empty($filters['method'])) {
+            $rows[] = ['Metodo de pago', $this->translateMethod((string) $filters['method'])];
+        }
+
+        if (! empty($filters['status'])) {
+            $rows[] = ['Estado de factura', $this->translateStatus((string) $filters['status'])];
+        }
+
+        if (! empty($filters['user_id'])) {
+            $rows[] = [
+                'Cajero',
+                User::query()->whereKey($filters['user_id'])->value('name') ?? 'Usuario no disponible',
+            ];
+        }
+
+        if (! empty($filters['area_id'])) {
+            $rows[] = [
+                'Area',
+                Area::query()->whereKey($filters['area_id'])->value('name') ?? 'Area no disponible',
+            ];
+        }
+
+        if (! empty($filters['category_id'])) {
+            $rows[] = [
+                'Categoria',
+                Category::query()->whereKey($filters['category_id'])->value('name') ?? 'Categoria no disponible',
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param  list<array{0: string, 1: string}>  $rows
+     */
+    private function buildAppliedFiltersHtml(array $rows): string
+    {
+        if ($rows === []) {
+            return '';
+        }
+
+        $html = "
+    <div class='section-title'>Filtros aplicados</div>
+    <table>
+        <tbody>";
+
+        foreach ($rows as [$label, $value]) {
+            $html .= "
+            <tr>
+                <td style='width: 30%; font-weight: bold; background-color: #f8fafc;'>".$this->e($label).'</td>
+                <td>'.$this->e($value).'</td>
+            </tr>';
+        }
+
+        return $html.'
+        </tbody>
+    </table>';
+    }
+
+    private function cashSessionLabel(int $cashSessionId): string
+    {
+        $cashSession = CashRegisterSession::query()
+            ->with('user:id,name')
+            ->find($cashSessionId);
+
+        if ($cashSession === null) {
+            return 'Caja no disponible';
+        }
+
+        $cashier = $cashSession->user?->name ?? 'Cajero no disponible';
+        $openedAt = $cashSession->opened_at?->format('d/m/Y H:i') ?? 'sin apertura registrada';
+        $status = match ($cashSession->status) {
+            CashRegisterSession::STATUS_OPEN => 'Abierta',
+            CashRegisterSession::STATUS_CLOSED => 'Cerrada',
+            default => ucfirst((string) $cashSession->status),
+        };
+
+        return "{$cashier} - Apertura {$openedAt} - {$status}";
     }
 }

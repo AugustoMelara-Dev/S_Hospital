@@ -2976,3 +2976,22 @@ Validacion:
 - `php artisan test --filter=ReportsTest::test_report_export_records_active_filters_with_human_labels --colors=never`
 - `php artisan test --filter=ReportsTest --colors=never`
 - `vendor/bin/pint --test app/Actions/Reports/PremiumExcelExportService.php tests/Feature/ReportsTest.php`
+
+### 2026-06-02 - PDF consolidado declara filtros administrativos
+
+Decision:
+
+- El PDF de cierre consolidado recibe los filtros autorizados usados para calcular el reporte.
+- Cuando hay filtros activos, el PDF incluye una seccion `Filtros aplicados` con etiquetas humanas para caja, metodo, estado, cajero, area y categoria.
+- La caja se describe con cajero, apertura y estado; no se imprime como `Caja #id`.
+
+Motivo:
+
+- Un PDF administrativo debe poder auditarse despues sin depender de la URL original ni de memoria humana.
+- Los filtros cambian la lectura financiera; por eso deben quedar visibles en el documento impreso/exportado junto a las cifras.
+
+Validacion:
+
+- `php artisan test --filter=ReportsTest::test_period_closure_pdf_declares_active_filters_with_human_labels --colors=never`
+- `php artisan test --filter=ReportsTest --colors=never`
+- `vendor/bin/pint --test app/Actions/Reports/PdfExportService.php app/Http/Controllers/ReportController.php tests/Feature/ReportsTest.php`

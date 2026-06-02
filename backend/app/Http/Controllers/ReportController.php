@@ -168,6 +168,7 @@ class ReportController extends Controller
             'areas' => $areas,
             'services' => $services,
             'operations' => $operations,
+            'filters' => $filters,
             'date_from' => $filters['date_from'],
             'date_to' => $filters['date_to'],
         ], $fiscal->toArray());
