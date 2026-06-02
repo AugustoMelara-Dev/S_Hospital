@@ -645,6 +645,9 @@ class ReportsTest extends TestCase
             ->getJson("/api/reports/categories?{$filters}")
             ->assertOk()
             ->assertJsonCount(1, 'data.categories')
+            ->assertJsonPath('data.amount_basis', 'collected_prorated')
+            ->assertJsonPath('data.amount_label', 'Cobrado asignado proporcionalmente')
+            ->assertJsonPath('data.amount_source', 'Pagos publicados filtrados, asignados proporcionalmente a items de factura por snapshot historico')
             ->assertJsonPath('data.filters.user_id', (string) $cashier->id)
             ->assertJsonPath('data.filters.method', Payment::METHOD_CASH)
             ->assertJsonPath('data.categories.0.category', 'Laboratorio')
@@ -654,8 +657,19 @@ class ReportsTest extends TestCase
             ->getJson("/api/reports/services?{$filters}")
             ->assertOk()
             ->assertJsonCount(1, 'data.services')
+            ->assertJsonPath('data.amount_basis', 'collected_prorated')
+            ->assertJsonPath('data.amount_label', 'Cobrado asignado proporcionalmente')
             ->assertJsonPath('data.services.0.service', 'Glucosa')
             ->assertJsonPath('data.services.0.total', '17.25');
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/areas?{$filters}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data.areas')
+            ->assertJsonPath('data.amount_basis', 'collected_prorated')
+            ->assertJsonPath('data.amount_label', 'Cobrado asignado proporcionalmente')
+            ->assertJsonPath('data.areas.0.area', 'Laboratorio')
+            ->assertJsonPath('data.areas.0.total', '17.25');
 
         $this->actingAs($this->admin())
             ->getJson("/api/reports/operations?{$filters}")
@@ -950,6 +964,48 @@ class ReportsTest extends TestCase
             $this->assertSame('Facturación Detallada por Servicio', $serviceSheet->getCell('B2')->getValue());
             $this->assertSame('Monto Facturado', $serviceSheet->getCell('E5')->getValue());
             $this->assertNotSame('Ventas Detalladas por Servicio', $serviceSheet->getCell('B2')->getValue());
+        } finally {
+            if ($path !== false && file_exists($path)) {
+                unlink($path);
+            }
+        }
+    }
+
+    public function test_report_export_labels_payment_scoped_breakdowns_as_prorated_collected_amounts(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        $xlsx = $this->actingAs($this->admin())
+            ->get('/api/reports/export?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&method='.Payment::METHOD_CASH)
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->streamedContent();
+
+        $path = tempnam(sys_get_temp_dir(), 'payment-scoped-report-');
+        file_put_contents($path, $xlsx);
+
+        try {
+            $spreadsheet = IOFactory::load($path);
+            $categorySheet = $spreadsheet->getSheetByName('Categorías');
+            $areaSheet = $spreadsheet->getSheetByName('Areas');
+            $serviceSheet = $spreadsheet->getSheetByName('Servicios');
+
+            $this->assertNotNull($categorySheet);
+            $this->assertSame('Cobros asignados por Categoria de Servicio', $categorySheet->getCell('B2')->getValue());
+            $this->assertSame('Cobrado asignado', $categorySheet->getCell('D5')->getValue());
+
+            $this->assertNotNull($areaSheet);
+            $this->assertSame('Cobros asignados por Area Institucional', $areaSheet->getCell('B2')->getValue());
+            $this->assertSame('Cobrado asignado', $areaSheet->getCell('E5')->getValue());
+
+            $this->assertNotNull($serviceSheet);
+            $this->assertSame('Servicios con cobro asignado', $serviceSheet->getCell('B2')->getValue());
+            $this->assertSame('Cobrado asignado', $serviceSheet->getCell('E5')->getValue());
         } finally {
             if ($path !== false && file_exists($path)) {
                 unlink($path);
@@ -1864,6 +1920,64 @@ class ReportsTest extends TestCase
         $this->assertStringContainsString('Monto Facturado (LPS)', $areaSection);
         $this->assertStringNotContainsString('Ingresos por Area Institucional', $areaSection);
         $this->assertStringNotContainsString('<th class=\'text-right\'>Total (LPS)</th>', $areaSection);
+    }
+
+    public function test_period_closure_pdf_labels_payment_scoped_breakdowns_as_prorated_collected_amounts(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        $capturedHtml = null;
+        Pdf::shouldReceive('loadHTML')
+            ->once()
+            ->with(\Mockery::on(function (string $html) use (&$capturedHtml): bool {
+                $capturedHtml = $html;
+
+                return true;
+            }))
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('output')
+                    ->once()
+                    ->andReturn('%PDF-payment-scoped-labels');
+            }));
+
+        $date = now()->toDateString();
+        $this->actingAs($admin)
+            ->get("/api/reports/pdf?date_from={$date}&date_to={$date}&method=".Payment::METHOD_CASH)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-payment-scoped-labels', false);
+
+        $this->assertIsString($capturedHtml);
+
+        $categoryStart = strpos($capturedHtml, 'Cobros asignados por Categoria de Servicio');
+        $categoryEnd = strpos($capturedHtml, 'Cobros asignados por Area Institucional');
+        $this->assertIsInt($categoryStart);
+        $this->assertIsInt($categoryEnd);
+        $categorySection = substr($capturedHtml, $categoryStart, $categoryEnd - $categoryStart);
+        $this->assertStringContainsString('Cobrado asignado proporcionalmente (LPS)', $categorySection);
+        $this->assertStringContainsString('Pagos publicados filtrados, asignados proporcionalmente', $categorySection);
+        $this->assertStringNotContainsString('Monto Facturado (LPS)', $categorySection);
+
+        $areaStart = strpos($capturedHtml, 'Cobros asignados por Area Institucional');
+        $areaEnd = strpos($capturedHtml, 'Recaudaci');
+        $this->assertIsInt($areaStart);
+        $this->assertIsInt($areaEnd);
+        $areaSection = substr($capturedHtml, $areaStart, $areaEnd - $areaStart);
+        $this->assertStringContainsString('Cobrado asignado proporcionalmente (LPS)', $areaSection);
+
+        $serviceStart = strpos($capturedHtml, 'Servicios con cobro asignado');
+        $serviceEnd = strpos($capturedHtml, 'Resumen de Auditor');
+        $this->assertIsInt($serviceStart);
+        $this->assertIsInt($serviceEnd);
+        $serviceSection = substr($capturedHtml, $serviceStart, $serviceEnd - $serviceStart);
+        $this->assertStringContainsString('Cobrado asignado proporcionalmente (LPS)', $serviceSection);
+        $this->assertStringNotContainsString('Monto Facturado (LPS)', $serviceSection);
     }
 
     public function test_period_closure_pdf_export_includes_payment_reversals_without_technical_ids(): void

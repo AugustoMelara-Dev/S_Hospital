@@ -309,6 +309,30 @@ class PdfExportService
         $areas = $data['areas']['areas'] ?? [];
         $services = $data['services']['services'] ?? [];
         $operations = $data['operations'];
+        $categoryAmountBasis = $data['categories']['amount_basis'] ?? ReportAmountBasis::BILLED;
+        $areaAmountBasis = $data['areas']['amount_basis'] ?? ReportAmountBasis::BILLED;
+        $serviceAmountBasis = $data['services']['amount_basis'] ?? ReportAmountBasis::BILLED;
+        $categoryTitle = $categoryAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
+            ? 'Cobros asignados por Categoria de Servicio'
+            : 'Facturación por Categoría de Servicio';
+        $areaTitle = $areaAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
+            ? 'Cobros asignados por Area Institucional'
+            : 'Facturación por Área Institucional';
+        $serviceTitle = $serviceAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
+            ? 'Servicios con cobro asignado'
+            : 'Servicios Más Facturados';
+        $categoryAmountHeader = $categoryAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
+            ? 'Cobrado asignado proporcionalmente (LPS)'
+            : 'Monto Facturado (LPS)';
+        $areaAmountHeader = $areaAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
+            ? 'Cobrado asignado proporcionalmente (LPS)'
+            : 'Monto Facturado (LPS)';
+        $serviceAmountHeader = $serviceAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
+            ? 'Cobrado asignado proporcionalmente (LPS)'
+            : 'Monto Facturado (LPS)';
+        $categorySource = $data['categories']['amount_source'] ?? '';
+        $areaSource = $data['areas']['amount_source'] ?? '';
+        $serviceSource = $data['services']['amount_source'] ?? '';
         $hospitalNameEsc = $this->e($hospitalName);
         $rtnEsc = $this->e($rtn);
         $dateFromEsc = $this->e($dateFrom);
@@ -503,7 +527,8 @@ class PdfExportService
         </tbody>
     </table>
 
-    <div class='section-title'>Facturación por Categoría de Servicio</div>
+    <div class='section-title'>".$this->e($categoryTitle)."</div>
+    <div style='font-size: 9px; color: #64748b; margin-bottom: 6px;'>".$this->e($categorySource)."</div>
     <table>
         <thead>
             <tr>
@@ -511,7 +536,7 @@ class PdfExportService
                 <th class='text-center'>Items Facturados</th>
                 <th class='text-right'>Subtotal (LPS)</th>
                 <th class='text-right'>Impuesto ISV (LPS)</th>
-                <th class='text-right'>Monto Facturado (LPS)</th>
+                <th class='text-right'>".$this->e($categoryAmountHeader)."</th>
             </tr>
         </thead>
         <tbody>";
@@ -546,14 +571,15 @@ class PdfExportService
         </tbody>
     </table>
 
-    <div class='section-title'>Facturación por Área Institucional</div>
+    <div class='section-title'>".$this->e($areaTitle)."</div>
+    <div style='font-size: 9px; color: #64748b; margin-bottom: 6px;'>".$this->e($areaSource)."</div>
     <table>
         <thead>
             <tr>
                 <th>Area</th>
                 <th class='text-center'>Items</th>
                 <th class='text-center'>Cantidad</th>
-                <th class='text-right'>Monto Facturado (LPS)</th>
+                <th class='text-right'>".$this->e($areaAmountHeader)."</th>
             </tr>
         </thead>
         <tbody>";
@@ -613,13 +639,14 @@ class PdfExportService
         <div class='clear'></div>
     </div>
 
-    <div class='section-title'>Servicios Más Facturados</div>
+    <div class='section-title'>".$this->e($serviceTitle)."</div>
+    <div style='font-size: 9px; color: #64748b; margin-bottom: 6px;'>".$this->e($serviceSource)."</div>
     <table>
         <thead>
             <tr>
                 <th>Nombre del Servicio</th>
                 <th class='text-center'>Cantidad Facturada</th>
-                <th class='text-right'>Monto Facturado (LPS)</th>
+                <th class='text-right'>".$this->e($serviceAmountHeader)."</th>
             </tr>
         </thead>
         <tbody>";

@@ -372,19 +372,36 @@ class PremiumExcelExportService
             $financialSheet->getColumnDimension($col)->setAutoSize(true);
         }
 
+        $categoryAmountBasis = $categories['amount_basis'] ?? ReportAmountBasis::BILLED;
+        $areaAmountBasis = $areas['amount_basis'] ?? ReportAmountBasis::BILLED;
+        $serviceAmountBasis = $services['amount_basis'] ?? ReportAmountBasis::BILLED;
+        $categoryAmountLabel = $categoryAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
+            ? 'Cobrado asignado'
+            : 'Monto Facturado';
+        $areaAmountLabel = $areaAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
+            ? 'Cobrado asignado'
+            : 'Monto Facturado';
+        $serviceAmountLabel = $serviceAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
+            ? 'Cobrado asignado'
+            : 'Monto Facturado';
+
         // SHEET 2: Facturacion por Categoria
         $sheet2 = $spreadsheet->createSheet();
         $sheet2->setTitle('Categorías');
         $sheet2->setShowGridlines(true);
 
-        $sheet2->setCellValue('B2', 'Facturación por Categoría de Servicio');
+        $sheet2->setCellValue('B2', $categoryAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
+            ? 'Cobros asignados por Categoria de Servicio'
+            : 'Facturación por Categoría de Servicio');
         $sheet2->getStyle('B2')->applyFromArray($titleStyle);
         $sheet2->setCellValue('B3', "Rango de fechas: {$from->format('d/m/Y')} al {$to->format('d/m/Y')}");
         $sheet2->getStyle('B3')->applyFromArray($subtitleStyle);
+        $sheet2->setCellValue('B4', $categories['amount_source'] ?? '');
+        $sheet2->getStyle('B4')->applyFromArray($subtitleStyle);
 
         $sheet2->setCellValue('B5', 'Categoría');
         $sheet2->setCellValue('C5', 'Cantidad Facturada');
-        $sheet2->setCellValue('D5', 'Monto Facturado');
+        $sheet2->setCellValue('D5', $categoryAmountLabel);
         $sheet2->getStyle('B5:D5')->applyFromArray($headerStyle);
 
         $row = 6;
@@ -463,15 +480,19 @@ class PremiumExcelExportService
         $sheetArea->setTitle('Areas');
         $sheetArea->setShowGridlines(true);
 
-        $sheetArea->setCellValue('B2', 'Facturación por Área Institucional');
+        $sheetArea->setCellValue('B2', $areaAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
+            ? 'Cobros asignados por Area Institucional'
+            : 'Facturación por Área Institucional');
         $sheetArea->getStyle('B2')->applyFromArray($titleStyle);
         $sheetArea->setCellValue('B3', "Rango de fechas: {$from->format('d/m/Y')} al {$to->format('d/m/Y')}");
         $sheetArea->getStyle('B3')->applyFromArray($subtitleStyle);
+        $sheetArea->setCellValue('B4', $areas['amount_source'] ?? '');
+        $sheetArea->getStyle('B4')->applyFromArray($subtitleStyle);
 
         $sheetArea->setCellValue('B5', 'Area');
         $sheetArea->setCellValue('C5', 'Items');
         $sheetArea->setCellValue('D5', 'Cantidad');
-        $sheetArea->setCellValue('E5', 'Monto Facturado');
+        $sheetArea->setCellValue('E5', $areaAmountLabel);
         $sheetArea->getStyle('B5:E5')->applyFromArray($headerStyle);
 
         $row = 6;
@@ -518,15 +539,19 @@ class PremiumExcelExportService
         $sheet3->setTitle('Servicios');
         $sheet3->setShowGridlines(true);
 
-        $sheet3->setCellValue('B2', 'Facturación Detallada por Servicio');
+        $sheet3->setCellValue('B2', $serviceAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
+            ? 'Servicios con cobro asignado'
+            : 'Facturación Detallada por Servicio');
         $sheet3->getStyle('B2')->applyFromArray($titleStyle);
         $sheet3->setCellValue('B3', "Rango de fechas: {$from->format('d/m/Y')} al {$to->format('d/m/Y')}");
         $sheet3->getStyle('B3')->applyFromArray($subtitleStyle);
+        $sheet3->setCellValue('B4', $services['amount_source'] ?? '');
+        $sheet3->getStyle('B4')->applyFromArray($subtitleStyle);
 
         $sheet3->setCellValue('B5', 'Servicio');
         $sheet3->setCellValue('C5', 'Categoría');
         $sheet3->setCellValue('D5', 'Cantidad');
-        $sheet3->setCellValue('E5', 'Monto Facturado');
+        $sheet3->setCellValue('E5', $serviceAmountLabel);
         $sheet3->getStyle('B5:E5')->applyFromArray($headerStyle);
 
         $row = 6;

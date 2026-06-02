@@ -84,7 +84,7 @@ class HealthCheckTest extends TestCase
 
         $this->assertNotNull($healthRoute, 'api/system/health route must exist');
         $this->assertNotNull($upRoute, 'api/health route must exist');
-        $this->assertContains('throttle:10,1', $healthRoute->middleware(), 'api/system/health must be rate limited');
-        $this->assertContains('throttle:10,1', $upRoute->middleware(), 'api/health must be rate limited');
+        $this->assertContains('throttle:120,1', $healthRoute->middleware(), 'api/system/health must be rate limited without blocking normal operator polling');
+        $this->assertContains('throttle:120,1', $upRoute->middleware(), 'api/health must be rate limited without blocking startup checks');
     }
 }

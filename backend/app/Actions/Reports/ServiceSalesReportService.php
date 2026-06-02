@@ -19,9 +19,8 @@ class ServiceSalesReportService
     {
         $start = Carbon::createFromFormat('Y-m-d', $filters['date_from'])->startOfDay();
         $end = Carbon::createFromFormat('Y-m-d', $filters['date_to'])->endOfDay();
-        $usesPaymentScope = ! empty($filters['cash_session_id'])
-            || ! empty($filters['user_id'])
-            || ! empty($filters['method']);
+        $amountBasis = ReportAmountBasis::fromFilters($filters);
+        $usesPaymentScope = $amountBasis === ReportAmountBasis::COLLECTED_PRORATED;
 
         $paymentTotals = DB::table('payments')
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
@@ -87,6 +86,7 @@ class ServiceSalesReportService
         return [
             'date_from' => $filters['date_from'],
             'date_to' => $filters['date_to'],
+            ...ReportAmountBasis::metadata($amountBasis),
             'filters' => [
                 'cash_session_id' => $filters['cash_session_id'] ?? null,
                 'user_id' => $filters['user_id'] ?? null,
