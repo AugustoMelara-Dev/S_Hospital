@@ -102,7 +102,7 @@ class DashboardReportService
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
             ->whereBetween('payments.paid_at', [$today, $end])
             ->groupBy('payments.method')
-            ->select('payments.method', DB::raw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as total_cents'))
+            ->select('payments.method', DB::raw('COALESCE(SUM(payments.amount_cents), 0) as total_cents)'))
             ->get()
             ->each(function (object $row) use (&$methods): void {
                 if (array_key_exists($row->method, $methods)) {
@@ -162,7 +162,7 @@ class DashboardReportService
             ->orderByDesc('collected_cents')
             ->select('payments.user_id', 'users.name', 'users.username')
             ->selectRaw('COUNT(*) as payment_count')
-            ->selectRaw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as collected_cents')
+            ->selectRaw('COALESCE(SUM(payments.amount_cents), 0) as collected_cents)')
             ->get()
             ->map(fn (object $row): array => [
                 'user_id' => (int) $row->user_id,
