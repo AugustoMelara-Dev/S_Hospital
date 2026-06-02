@@ -8,6 +8,7 @@ use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
 use App\Models\Service;
 use App\Models\User;
+use App\Support\OperationalMessageSanitizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -173,7 +174,7 @@ class SystemStatusController extends Controller
         return [
             'app_env' => (string) Config::get('app.env'),
             'app_debug' => (bool) Config::get('app.debug'),
-            'app_url' => $this->safeUrl((string) Config::get('app.url')),
+            'app_url' => OperationalMessageSanitizer::url((string) Config::get('app.url')),
             'queue_connection' => (string) Config::get('queue.default'),
             'filesystem_disk' => (string) Config::get('filesystems.default'),
             'app_version' => (string) Config::get('app.version', 'local'),
@@ -275,7 +276,7 @@ class SystemStatusController extends Controller
             'last_success_at' => $lastSuccess?->completed_at?->toJSON(),
             'last_success_filename' => $lastSuccess?->filename,
             'last_failure_at' => $lastFailure?->completed_at?->toJSON(),
-            'last_failure_message' => $this->safeOperationalMessage($lastFailure?->error_message),
+            'last_failure_message' => OperationalMessageSanitizer::message($lastFailure?->error_message),
             'dump_binary' => $this->dumpBinaryStatus(),
             'storage' => $this->backupStorageStatus(),
             'queue' => $this->queueStatus(),
@@ -761,41 +762,5 @@ class SystemStatusController extends Controller
         $projectRoot = (string) Config::get('hospital.project_root', dirname(base_path()));
 
         return $projectRoot.DIRECTORY_SEPARATOR.str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relativePath);
-    }
-
-    private function safeUrl(string $value): string
-    {
-        $parts = parse_url($value);
-
-        if ($parts === false || ! isset($parts['scheme'], $parts['host'])) {
-            return '';
-        }
-
-        $port = isset($parts['port']) ? ':'.(string) $parts['port'] : '';
-
-        return "{$parts['scheme']}://{$parts['host']}{$port}";
-    }
-
-    private function safeOperationalMessage(?string $value): ?string
-    {
-        if ($value === null || trim($value) === '') {
-            return null;
-        }
-
-        $message = $value;
-        if (preg_match('/(?i)\b(SQLSTATE|PDOException|Illuminate\\\\[A-Za-z\\\\]+|Traceback|Stack trace)\b/', $message) === 1) {
-            return 'Error tecnico registrado. Revise el paquete de soporte.';
-        }
-
-        $message = preg_replace('/(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+/', '$1=[redacted]', $message) ?? $message;
-        $message = preg_replace('/(?i)[A-Z]:\\\\[^\s`"\']+/', '[ruta-local]', $message) ?? $message;
-        $message = preg_replace('#/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"\']+#i', '[ruta-local]', $message) ?? $message;
-        $message = trim($message);
-
-        if ($message === '' || strlen($message) > 220) {
-            return 'Error tecnico registrado. Revise el paquete de soporte.';
-        }
-
-        return $message;
     }
 }

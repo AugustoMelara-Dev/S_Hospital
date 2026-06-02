@@ -64,6 +64,36 @@ class BackupWorkflowTest extends TestCase
             ->assertJsonPath('meta.per_page', 50);
     }
 
+    public function test_failed_backup_list_message_is_safe_for_operator_screen(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        BackupLog::query()->create([
+            'filename' => 'failed.sql',
+            'path' => 'backups/failed.sql',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_FAILED,
+            'type' => BackupLog::TYPE_MANUAL,
+            'created_by' => $admin->id,
+            'error_message' => 'SQLSTATE[HY000] DB_PASSWORD=secret-db-password failed at C:\Projects\S_Hospital\backend\.env',
+            'completed_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/backups?status=failed')
+            ->assertOk()
+            ->assertJsonPath('data.0.status', BackupLog::STATUS_FAILED)
+            ->assertJsonPath('data.0.error_message', 'Error tecnico registrado. Revise el paquete de soporte.')
+            ->assertJsonMissingPath('data.0.path')
+            ->assertJsonMissingPath('data.0.disk');
+
+        $encoded = json_encode($response->json(), JSON_THROW_ON_ERROR);
+        $this->assertStringNotContainsString('secret-db-password', $encoded);
+        $this->assertStringNotContainsString('SQLSTATE', $encoded);
+        $this->assertStringNotContainsString('C:\Projects\S_Hospital', $encoded);
+    }
+
     public function test_admin_can_filter_backups_by_status_before_pagination(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

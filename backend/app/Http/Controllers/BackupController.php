@@ -9,6 +9,7 @@ use App\Http\Requests\Backups\StoreBackupRequest;
 use App\Jobs\RunBackupJob;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
+use App\Support\OperationalMessageSanitizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -119,7 +120,7 @@ class BackupController extends Controller
         ];
 
         if ($backupLog->status === BackupLog::STATUS_FAILED) {
-            $payload['error_message'] = $backupLog->error_message;
+            $payload['error_message'] = OperationalMessageSanitizer::message($backupLog->error_message);
         }
 
         return $payload;
