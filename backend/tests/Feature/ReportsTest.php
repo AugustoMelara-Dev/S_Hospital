@@ -1030,15 +1030,15 @@ class ReportsTest extends TestCase
 
             $this->assertNotNull($categorySheet);
             $this->assertSame('Cobros asignados por Categoría de Servicio', $categorySheet->getCell('B2')->getValue());
-            $this->assertSame('Cobrado asignado', $categorySheet->getCell('D5')->getValue());
+            $this->assertSame('Cobrado asignado proporcionalmente', $categorySheet->getCell('D5')->getValue());
 
             $this->assertNotNull($areaSheet);
             $this->assertSame('Cobros asignados por Área Institucional', $areaSheet->getCell('B2')->getValue());
-            $this->assertSame('Cobrado asignado', $areaSheet->getCell('E5')->getValue());
+            $this->assertSame('Cobrado asignado proporcionalmente', $areaSheet->getCell('E5')->getValue());
 
             $this->assertNotNull($serviceSheet);
             $this->assertSame('Servicios con cobro asignado', $serviceSheet->getCell('B2')->getValue());
-            $this->assertSame('Cobrado asignado', $serviceSheet->getCell('E5')->getValue());
+            $this->assertSame('Cobrado asignado proporcionalmente', $serviceSheet->getCell('E5')->getValue());
         } finally {
             if ($path !== false && file_exists($path)) {
                 unlink($path);

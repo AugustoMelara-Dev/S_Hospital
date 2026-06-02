@@ -376,13 +376,13 @@ class PremiumExcelExportService
         $areaAmountBasis = $areas['amount_basis'] ?? ReportAmountBasis::BILLED;
         $serviceAmountBasis = $services['amount_basis'] ?? ReportAmountBasis::BILLED;
         $categoryAmountLabel = $categoryAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
-            ? 'Cobrado asignado'
+            ? 'Cobrado asignado proporcionalmente'
             : 'Monto Facturado';
         $areaAmountLabel = $areaAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
-            ? 'Cobrado asignado'
+            ? 'Cobrado asignado proporcionalmente'
             : 'Monto Facturado';
         $serviceAmountLabel = $serviceAmountBasis === ReportAmountBasis::COLLECTED_PRORATED
-            ? 'Cobrado asignado'
+            ? 'Cobrado asignado proporcionalmente'
             : 'Monto Facturado';
 
         // SHEET 2: Facturacion por Categoria
