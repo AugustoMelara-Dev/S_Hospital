@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\System\ShowSystemStatusRequest;
 use App\Models\BackupLog;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
 use App\Models\Service;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -129,10 +129,8 @@ class SystemStatusController extends Controller
         ],
     ];
 
-    public function show(Request $request): JsonResponse
+    public function show(ShowSystemStatusRequest $request): JsonResponse
     {
-        $request->user()->can('system.status.view') || abort(403);
-
         return response()->json([
             'data' => [
                 'environment' => $this->environmentStatus(),

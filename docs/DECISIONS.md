@@ -2105,3 +2105,20 @@ Consecuencia:
 
 - Las pruebas de reportes fallan si un cobro en rango desaparece de categoria, area o servicio por haber sido facturado fuera del rango.
 - Los reportes puramente facturados siguen usando fecha de emision y no cambian su lectura historica.
+
+### 2026-06-02 - Estado operativo usa Form Request
+
+Decision:
+
+- `GET /api/system/status` usa `ShowSystemStatusRequest`.
+- La autorizacion `system.status.view` queda fuera del controlador.
+
+Motivo:
+
+- El estado operativo expone preparacion de entorno, backups, LAN y pruebas fisicas; su lectura debe seguir el mismo patron de autorizacion que backups, usuarios y configuracion fiscal.
+- Mantener controladores delgados reduce autorizaciones dispersas y facilita pruebas de permisos.
+
+Consecuencia:
+
+- Usuarios sin `system.status.view` siguen recibiendo 403.
+- El controlador queda enfocado en construir el payload operativo.
