@@ -2377,3 +2377,20 @@ Consecuencia:
 
 - Usuarios sin `payments.view` siguen recibiendo 403.
 - Usuarios con permiso de pagos todavia necesitan alcance operativo sobre la factura.
+
+### 2026-06-02 - Listado de servicios confia en IndexServiceRequest
+
+Decision:
+
+- `GET /api/services` elimina la comprobacion duplicada de `catalog.view` en el controlador.
+- `IndexServiceRequest` queda como fuente unica de autorizacion y validacion de filtros.
+
+Motivo:
+
+- El request ya autoriza `catalog.view`; repetir la misma regla en el controlador dispersa permisos sin agregar seguridad.
+- Mantener una sola fuente facilita revisar permisos de catalogo.
+
+Consecuencia:
+
+- Usuarios sin `catalog.view` siguen recibiendo 403.
+- El controlador queda enfocado en construir la consulta y paginacion.
