@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   Archive,
+  AlertTriangle,
   Banknote,
   ClipboardCheck,
   ClipboardList,
@@ -118,6 +119,55 @@ const roleGuides = [
   {
     title: 'Administrador',
     answer: 'Gestiona usuarios, catálogo, configuración fiscal, respaldos y restauraciones. No use la base de producción para prácticas.',
+  },
+];
+
+const dailyChecklists = [
+  {
+    title: 'Cajero - inicio de turno',
+    items: [
+      'Abrir el sistema desde el acceso institucional.',
+      'Entrar con su propio usuario.',
+      'Abrir caja con monto inicial real.',
+      'Confirmar que impresora y papel esten listos.',
+    ],
+  },
+  {
+    title: 'Antes de cerrar turno',
+    items: [
+      'Revisar facturas pendientes y pagos por metodo.',
+      'Comparar efectivo esperado contra efectivo contado.',
+      'Anotar diferencias antes de cerrar.',
+      'Crear o confirmar respaldo si el supervisor lo solicita.',
+    ],
+  },
+  {
+    title: 'Administrador - revision diaria',
+    items: [
+      'Revisar Estado operativo en Respaldos.',
+      'Confirmar ultimo respaldo protegido.',
+      'Revisar espacio en disco y cola de trabajos.',
+      'Guardar evidencia si hubo fallas de red, impresion o energia.',
+    ],
+  },
+];
+
+const delicateActions = [
+  {
+    title: 'Anulacion',
+    warning: 'Solo supervisor o administrador. Revise factura, pago y motivo antes de confirmar.',
+  },
+  {
+    title: 'Restauracion de respaldo',
+    warning: 'Nunca restaure sobre datos reales sin respaldo reciente, autorizacion y base aislada de prueba.',
+  },
+  {
+    title: 'Cierre con diferencia',
+    warning: 'No cierre para ocultar errores. Registre conteo real, motivo y pida revision.',
+  },
+  {
+    title: 'Cambio de red o servidor',
+    warning: 'No cambie direcciones al azar. Valide acceso LAN desde una segunda computadora antes de operar.',
   },
 ];
 
@@ -281,6 +331,49 @@ export function HelpView() {
             <div key={item.title} className="rounded-md border border-border bg-muted/30 p-4">
               <h3 className="text-sm font-semibold text-foreground">{item.title}</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.answer}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ClipboardCheck aria-hidden="true" className="size-5 text-secondary" />
+            Checklist diario por rol
+          </CardTitle>
+          <CardDescription>Pasos cortos para iniciar, cerrar y revisar el turno sin depender de soporte tecnico.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-3">
+          {dailyChecklists.map((checklist) => (
+            <div key={checklist.title} className="rounded-md border border-border bg-muted/30 p-4">
+              <h3 className="text-sm font-semibold text-foreground">{checklist.title}</h3>
+              <ul className="mt-3 space-y-2">
+                {checklist.items.map((item) => (
+                  <li key={item} className="flex gap-2 text-sm leading-6 text-muted-foreground">
+                    <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-secondary" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle aria-hidden="true" className="size-5 text-amber-700" />
+            Acciones delicadas
+          </CardTitle>
+          <CardDescription>Advertencias antes de tocar datos, caja, respaldos o configuracion de red.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-2">
+          {delicateActions.map((item) => (
+            <div key={item.title} className="rounded-md border border-amber-200 bg-amber-50 p-4">
+              <h3 className="text-sm font-semibold text-amber-950">{item.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-amber-900">{item.warning}</p>
             </div>
           ))}
         </CardContent>
