@@ -102,7 +102,11 @@ class CreateBackupAction
             $lock->release();
         }
 
-        $this->audit($backupLog, $backupLog->created_by, 'backup.created');
+        $this->audit(
+            $backupLog,
+            $backupLog->created_by,
+            $backupLog->status === BackupLog::STATUS_SUCCESS ? 'backup.created' : 'backup.failed',
+        );
 
         return $backupLog->fresh(['creator:id,name,username']) ?? $backupLog;
     }

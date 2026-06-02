@@ -2731,3 +2731,21 @@ Validacion:
 - `npm run typecheck`
 - `npm run test -- IncomeReportTab.test.tsx ServiceSalesTab.test.tsx --run`
 - `npm run build`
+
+### 2026-06-02 - Fallos de respaldo se auditan como fallos
+
+Decision:
+
+- `CreateBackupAction` audita `backup.created` solo cuando el respaldo termina en `success`.
+- Si el dump falla, el evento final queda como `backup.failed`, separado de `backup.requested`.
+- El mensaje operativo sigue sanitizado y no expone password, SQLSTATE ni rutas locales.
+
+Motivo:
+
+- Administracion necesita distinguir un respaldo realmente creado de un intento fallido.
+- Un audit trail que marca fallos como creados puede inducir a confianza falsa antes de una restauracion.
+
+Validacion:
+
+- `php artisan test --filter=BackupWorkflowTest::test_failed_backup_persists_operator_safe_support_message`
+- `php artisan test --filter=BackupWorkflowTest`

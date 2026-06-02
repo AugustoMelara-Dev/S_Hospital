@@ -340,6 +340,18 @@ class BackupWorkflowTest extends TestCase
         $this->assertStringNotContainsString('SQLSTATE', (string) $backup->error_message);
         $this->assertStringNotContainsString('C:\Projects\S_Hospital', (string) $backup->error_message);
         $this->assertFalse(Storage::disk('local')->exists((string) $backup->path));
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'backup.failed',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $backup->id,
+        ]);
+        $this->assertDatabaseMissing('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'backup.created',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $backup->id,
+        ]);
     }
 
     public function test_download_only_serves_registered_existing_backup_files_and_audits_downloads(): void
