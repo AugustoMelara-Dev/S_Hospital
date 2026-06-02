@@ -80,6 +80,8 @@ describe('App', () => {
           },
           latest_migration: '2026_05_17_000018_create_backup_logs_table',
           migration_count: 18,
+          pending_migration_count: 0,
+          pending_migrations: [],
         },
         readiness: {
           state: 'PRODUCTION_CANDIDATE',

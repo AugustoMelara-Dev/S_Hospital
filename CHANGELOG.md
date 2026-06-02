@@ -107,6 +107,25 @@
   InvoiceHistoryView, ReportsView, BackupsView, FiscalSettingsView
   and UsersView.
 
+### Phase 17 - Login lockout (5 fails / 15 min) with full audit trail
+
+- New `login_attempts` migration records every login attempt with the
+  identifier, IP, user agent, success flag and timestamp.
+- `app/Http/Middleware/LoginLockout.php` blocks the next attempt with
+  HTTP 423 once a login or an IP exceeds 5 failed attempts in the last
+  15 minutes. The frontend already had a safe message wired in for
+  423 during the apiClient hardening pass.
+- `app/Models/LoginAttempt.php` exposes `failedCountFor` and
+  `failedCountForIp` helpers that the middleware calls.
+- `app/Http/Controllers/AuthController.php` writes a row to
+  `login_attempts` on every attempt, flipping the `success` flag when
+  Auth::attempt succeeds.
+- `routes/api.php` mounts the middleware on the `auth/login` endpoint
+  in addition to the existing throttle.
+- `tests/Feature/LoginLockoutTest.php` covers three scenarios: success
+  records, lockout engages at 5 fails, and lockout does not bleed into
+  other users from the same IP.
+
 ### Audit
 
 - `docs/AUDIT_2026_06_02.md` records the full audit and the 20-phase

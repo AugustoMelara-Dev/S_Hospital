@@ -532,6 +532,8 @@ export type SystemStatus = {
     };
     latest_migration: string | null;
     migration_count: number | null;
+    pending_migration_count: number | null;
+    pending_migrations: string[];
   };
   readiness: {
     state: 'DEMO_READY' | 'PRODUCTION_CANDIDATE' | 'PRODUCTION_READY';

@@ -34,7 +34,7 @@ Route::get('/settings/branding', [FiscalSettingsController::class, 'publicBrandi
     ->middleware('web');
 
 Route::post('/auth/login', [AuthController::class, 'login'])
-    ->middleware(['web', 'throttle:5,1']);
+    ->middleware(['web', \App\Http\Middleware\LoginLockout::class, 'throttle:5,1']);
 Route::get('/auth/session', [AuthController::class, 'session'])
     ->middleware('web');
 

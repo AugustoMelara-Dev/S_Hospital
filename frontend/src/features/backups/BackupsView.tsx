@@ -72,6 +72,7 @@ function friendlyProductionCheck(code: string, fallback: string): string {
     STORAGE_WRITABLE: 'Carpeta de respaldos lista',
     BACKUP_STORAGE_WRITABLE: 'Carpeta de respaldos lista',
     BACKUP_WORKER_CONTINUOUS: 'Respaldos automaticos activos',
+    DATABASE_MIGRATIONS_CURRENT: 'Base de datos actualizada',
     PUBLIC_ROUTES_AVAILABLE: 'Acceso desde la red local',
     SERVER_LOGS_WRITABLE: 'Registro operativo disponible',
     APP_CACHE_WRITABLE: 'Archivos temporales del sistema listos',
@@ -90,6 +91,12 @@ function sanitizeTechnicalText(value: string): string {
 function friendlyProductionDetail(code: string, fallback: string): string {
   if (code === 'BACKUP_WORKER_CONTINUOUS') {
     return 'Debe estar activo para que los respaldos pendientes se completen.';
+  }
+
+  if (code === 'DATABASE_MIGRATIONS_CURRENT') {
+    return fallback.includes('pendientes')
+      ? 'Requiere respaldo y actualización segura antes de operar reportes.'
+      : 'Base de datos actualizada.';
   }
 
   if (code === 'DUMP_BINARY_AVAILABLE') {
@@ -125,6 +132,7 @@ function friendlyReadinessBlocker(code: string, fallback: string): string {
     PENDING_RESTORE_VALIDATION: 'Validar restauracion segura',
     PENDING_CONCURRENCY_VALIDATION: 'Validar concurrencia de caja',
     PENDING_ENVIRONMENT_VALIDATION: 'Revisar configuracion final del servidor',
+    PENDING_DATABASE_MIGRATIONS: 'Actualizar base de datos con respaldo previo',
   };
 
   return labels[code] ?? sanitizeTechnicalText(fallback);
@@ -156,6 +164,7 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
     status.backups.pending_count > 0 ||
     status.readiness.blockers.some((blocker) => blocker.status !== 'validated') ||
     status.preflight.production_checks.some((check) => check.status !== 'validated') ||
+    (status.runtime.pending_migration_count ?? 0) > 0 ||
     status.preflight.public_routes.some((route) => route.status !== 'validated') ||
     status.preflight.physical_proofs.some((proof) => proof.status !== 'validated');
 
@@ -502,12 +511,26 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                   <div className="rounded-md border border-border p-3">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">Estado de datos</p>
-                      <span className="shrink-0 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800">
-                      {systemStatus.runtime.migration_count ?? 'Sin dato'}
+                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                        systemStatus.runtime.pending_migration_count === null
+                          ? 'border-amber-200 bg-amber-50 text-amber-800'
+                          : systemStatus.runtime.pending_migration_count > 0
+                            ? 'border-red-200 bg-red-50 text-red-800'
+                            : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                      }`}>
+                        {systemStatus.runtime.pending_migration_count === null
+                          ? 'Sin dato'
+                          : systemStatus.runtime.pending_migration_count > 0
+                            ? 'Requiere revisi�n'
+                            : 'Actualizada'}
                       </span>
                     </div>
                     <p className="mt-1 break-words text-xs text-muted-foreground">
-                        {systemStatus.runtime.migration_count ? 'Al día' : 'No disponible'}
+                      {systemStatus.runtime.pending_migration_count === null
+                        ? 'No se pudo verificar el estado de la base de datos.'
+                        : systemStatus.runtime.pending_migration_count > 0
+                          ? 'Haga respaldo y pida soporte para actualizar antes de revisar reportes.'
+                          : `Migraciones aplicadas: ${systemStatus.runtime.migration_count ?? 0}.`}
                     </p>
                   </div>
                   <div className="rounded-md border border-border p-3">

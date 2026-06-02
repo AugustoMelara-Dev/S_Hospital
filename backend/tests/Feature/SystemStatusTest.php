@@ -7,6 +7,7 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
@@ -59,6 +60,8 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.backups.queue.worker_command', 'php artisan queue:work --queue=backups --tries=1 --timeout=600')
             ->assertJsonPath('data.runtime.logs_writable', true)
             ->assertJsonPath('data.runtime.cache_writable', true)
+            ->assertJsonPath('data.runtime.pending_migration_count', 0)
+            ->assertJsonPath('data.runtime.pending_migrations', [])
             ->assertJsonPath('data.frontend.dist_index_exists', true)
             ->assertJsonPath('data.frontend.assets_present', true)
             ->assertJsonPath('data.frontend.entry_label', 'frontend/dist/index.html')
@@ -79,6 +82,34 @@ class SystemStatusTest extends TestCase
         $this->assertStringNotContainsString('password', json_encode($response->json(), JSON_THROW_ON_ERROR));
         $this->assertStringNotContainsString('SQLSTATE', json_encode($response->json(), JSON_THROW_ON_ERROR));
         $this->assertStringNotContainsString($proofRoot, json_encode($response->json(), JSON_THROW_ON_ERROR));
+    }
+
+    public function test_status_flags_pending_database_migrations(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        DB::table('migrations')
+            ->where('migration', '2026_06_01_000001_add_amount_cents_to_payments_table')
+            ->delete();
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath('data.runtime.pending_migration_count', 1)
+            ->assertJsonPath('data.runtime.pending_migrations.0', '2026_06_01_000001_add_amount_cents_to_payments_table');
+
+        $blockers = collect($response->json('data.readiness.blockers'));
+        $checks = collect($response->json('data.preflight.production_checks'));
+
+        $this->assertSame(
+            'pending',
+            $blockers->firstWhere('code', 'PENDING_DATABASE_MIGRATIONS')['status'] ?? null,
+        );
+        $this->assertSame(
+            'pending',
+            $checks->firstWhere('code', 'DATABASE_MIGRATIONS_CURRENT')['status'] ?? null,
+        );
     }
 
     public function test_status_marks_environment_partial_only_when_production_debug_is_off(): void
