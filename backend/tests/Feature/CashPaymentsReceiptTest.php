@@ -633,6 +633,46 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.payments.0.reference', 'TRX-REC-1');
     }
 
+    public function test_payment_reversal_cash_movement_uses_amount_cents_as_financial_source(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $supervisor = User::factory()->create();
+        $supervisor->assignRole('supervisor');
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $paymentId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->json('data.payment.id');
+
+        Payment::query()
+            ->whereKey($paymentId)
+            ->update(['amount' => '99.99']);
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/payments/{$paymentId}/void", [
+                'reason' => 'Correccion de monto en caja',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_ISSUED)
+            ->assertJsonPath('data.invoice.paid_amount', '0.00')
+            ->assertJsonPath('data.invoice.balance_due', '17.25');
+
+        $this->assertDatabaseHas('cash_movements', [
+            'cash_session_id' => $sessionId,
+            'payment_id' => $paymentId,
+            'type' => CashMovement::TYPE_PAYMENT_VOID,
+            'method' => Payment::METHOD_CASH,
+            'amount' => '-17.25',
+        ]);
+    }
+
     public function test_permissions_are_required_for_cash_and_payments(): void
     {
         $this->seedBillingBase();

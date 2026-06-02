@@ -13,9 +13,9 @@ ampliadas y puertas de calidad nuevas.
 
 ### Métricas de calidad al cierre de la auditoría
 
-- 283/283 tests PHPUnit backend (1847 assertions, 4 skipped
+- 319/319 tests PHPUnit backend (2003 assertions, 4 skipped
   legítimamente: race test concurrente que requiere MySQL real)
-- 191/191 tests Vitest frontend (97 nuevos durante la auditoría)
+- 203/203 tests Vitest frontend (109 nuevos durante la auditoría)
 - 0 errores de typecheck
 - 0 errores de ESLint
 - 0 errores de phpstan nivel 4 sobre 110 archivos en app/
@@ -23,6 +23,8 @@ ampliadas y puertas de calidad nuevas.
   preexistentes)
 - Bundle gzipped más grande: charts 116.73 kB (objetivo < 250 kB)
 - Build de producción sin warnings bloqueantes
+- OpenAPI 3.1 document served at /api/system/openapi
+- Health score (healthy + issues[]) returned by /api/system/health
 
 ### Fases completadas durante la auditoría
 

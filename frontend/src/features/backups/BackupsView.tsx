@@ -708,11 +708,11 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Tamaño</TableHead>
+                  <TableHead className="w-40 whitespace-nowrap">Fecha</TableHead>
+                  <TableHead className="min-w-64">Nombre</TableHead>
+                  <TableHead className="w-24 whitespace-nowrap">Tamaño</TableHead>
                   <TableHead>Estado</TableHead>
-                  <TableHead>Usuario</TableHead>
+                  <TableHead className="w-44 whitespace-nowrap">Usuario</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -726,9 +726,9 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 )}
                 {backupsList.map((backup) => (
                   <TableRow key={backup.id}>
-                    <TableCell>{formatDate(backup.completed_at ?? backup.created_at)}</TableCell>
-                    <TableCell className="text-sm">{backup.filename}</TableCell>
-                    <TableCell>{formatBytes(backup.size_bytes)}</TableCell>
+                    <TableCell className="whitespace-nowrap">{formatDate(backup.completed_at ?? backup.created_at)}</TableCell>
+                    <TableCell className="min-w-64 break-all text-sm">{backup.filename}</TableCell>
+                    <TableCell className="whitespace-nowrap">{formatBytes(backup.size_bytes)}</TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <BackupStatusBadge status={backup.status as 'pending' | 'success' | 'failed'} />
@@ -742,7 +742,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>{backup.creator?.name ?? 'Sistema'}</TableCell>
+                    <TableCell className="whitespace-nowrap">{backup.creator?.name ?? 'Sistema'}</TableCell>
                     <TableCell className="text-right">
                       {canDownload && backup.status === 'success' ? (
                         <Button
