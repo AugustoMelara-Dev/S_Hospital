@@ -74,6 +74,21 @@ function Get-SystemDiskSpace {
     }
 }
 
+function Read-SecretText {
+    param([string]$Prompt)
+
+    $secureValue = Read-Host $Prompt -AsSecureString
+    $secretBstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureValue)
+    try {
+        return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($secretBstr)
+    }
+    finally {
+        if ($secretBstr -ne [IntPtr]::Zero) {
+            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($secretBstr)
+        }
+    }
+}
+
 function Get-ExistingContainers {
     try {
         $names = docker ps -a --filter "name=s_hospital" --format "{{.Names}}" 2>$null
@@ -1174,7 +1189,7 @@ try {
             $dbUser = Read-Host "Usuario de Base de Datos [$currDbUser]"
             if ([string]::IsNullOrWhiteSpace($dbUser)) { $dbUser = $currDbUser }
 
-            $dbPass = Read-Host "Contrasena (Enter para conservar existente)"
+            $dbPass = Read-SecretText "Contrasena MySQL/MariaDB (Enter para conservar existente)"
             if ([string]::IsNullOrWhiteSpace($dbPass)) { $dbPass = $currDbPass }
 
             # Write backend .env
@@ -1298,16 +1313,7 @@ try {
 
         $adminPassword = ""
         while ($adminPassword.Length -lt 10) {
-            $adminPasswordSecure = Read-Host "Contrasena Temporal (minimo 10 caracteres)" -AsSecureString
-            $adminPasswordBstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($adminPasswordSecure)
-            try {
-                $adminPassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($adminPasswordBstr)
-            }
-            finally {
-                if ($adminPasswordBstr -ne [IntPtr]::Zero) {
-                    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($adminPasswordBstr)
-                }
-            }
+            $adminPassword = Read-SecretText "Contrasena Temporal (minimo 10 caracteres)"
             if ($adminPassword.Length -lt 10 -or $adminPassword -notmatch "[A-Za-z]" -or $adminPassword -notmatch "\d") {
                 Write-Host "[WARN] La contrasena temporal debe tener al menos 10 caracteres, con letras y numeros." -ForegroundColor Yellow
                 $adminPassword = ""

@@ -64,6 +64,7 @@ Current local verification notes:
 - Installer credential handling was hardened on 2026-06-01: `auth:create-initial-admin` accepts `HOSPITAL_INITIAL_ADMIN_PASSWORD`, rejects weak temporary passwords, and the LAN installer no longer sends the admin password as a CLI argument. Focused gates passed: `php artisan test --filter=InitialAdminCommandTest`, `scripts\deploy_hospital_lan.ps1 -SelfTest`, Pint for touched backend files, `git diff --check`, and a sensitive-pattern scan.
 - Active release/install docs were aligned on 2026-06-01 so admin creation in production points to the installer or `HOSPITAL_INITIAL_ADMIN_PASSWORD`, and explicitly forbids writing the temporary password as `--password=...` in console.
 - The LAN installer bare-metal path was aligned with Docker production on 2026-06-01: it now runs `migrate --force` plus explicit roles/catalog seeders instead of `migrate --force --seed`, avoiding any dependency on `DevelopmentValidationSeeder` environment guards.
+- The LAN installer now uses hidden input for MySQL/MariaDB and admin temporary passwords via `Read-SecretText`; `scripts\deploy_hospital_lan.ps1 -SelfTest` remains the focused parser/smoke gate for this script.
 
 ## Plan Review Orchestrator Result
 

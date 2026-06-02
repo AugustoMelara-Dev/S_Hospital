@@ -1692,3 +1692,20 @@ Consecuencia:
 
 - Roles/permisos y catalogo inicial siguen siendo reproducibles en production.
 - Usuarios de validacion y configuracion fiscal de demo no se ejecutan desde el instalador production.
+
+### 2026-06-01 - Instalador oculta credenciales de base de datos
+
+Decision:
+
+- El instalador LAN usa `Read-SecretText` para capturar contrasenas sensibles con `Read-Host -AsSecureString`.
+- La contrasena de MySQL/MariaDB y la contrasena temporal del admin se capturan sin eco visible en consola.
+
+Motivo:
+
+- Una instalacion hospitalaria puede ejecutarse en una PC compartida o con personal alrededor; las contrasenas no deben mostrarse mientras se escriben.
+- El instalador ya limpia variables temporales despues de crear la base y el admin.
+
+Consecuencia:
+
+- El self-test del instalador debe seguir pasando despues de cambios de parsing/funciones.
+- Futuras credenciales interactivas del instalador deben usar el helper de entrada oculta.
