@@ -100,6 +100,10 @@ const incidentGuides = [
     answer: 'No borre archivos ni repita restauraciones. Pida al administrador revisar espacio, cola de trabajos y último error.',
   },
   {
+    title: 'Base de datos necesita restaurarse',
+    answer: 'Detenga facturación nueva, conserve el respaldo más reciente y pida al administrador validar primero en una base aislada. Nunca restaure producción sin autorización y evidencia.',
+  },
+  {
     title: 'Sesión vencida',
     answer: 'Ingrese de nuevo. Si estaba cobrando, revise Historial antes de intentar otra vez.',
   },

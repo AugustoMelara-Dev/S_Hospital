@@ -38,6 +38,8 @@ describe('HelpView', () => {
     expect(screen.getAllByText('Ctrl+K').length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: /se fue la luz o reinició la pc/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /caja quedó abierta/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /base de datos necesita restaurarse/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/base aislada/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/no repita la factura/i)).toBeInTheDocument();
     expect(screen.getByText(/comparta el diagnóstico/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /^cajero$/i })).toBeInTheDocument();
