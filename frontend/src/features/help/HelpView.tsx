@@ -8,6 +8,8 @@ import {
   HelpCircle,
   Keyboard,
   LifeBuoy,
+  LogIn,
+  Monitor,
   Printer,
   ReceiptText,
   RefreshCw,
@@ -23,6 +25,16 @@ import { type ShortcutScope, shortcutLabel, shortcutsByScope } from '../../lib/s
 import { buildClientIssueSupportSummary, getClientIssues } from '../../lib/support/clientIssueLog';
 
 const guides = [
+  {
+    title: 'Abrir el sistema',
+    icon: Monitor,
+    steps: ['Use el acceso institucional del escritorio', 'Espere a que cargue Hospital San Isidro', 'Confirme que no aparezca error de servidor', 'Si no abre, avise antes de intentar cambios'],
+  },
+  {
+    title: 'Iniciar sesion',
+    icon: LogIn,
+    steps: ['Use su propio usuario', 'No comparta contrasena ni cuenta de turno', 'Si la sesion vence, ingrese de nuevo', 'Si falta permiso, pida revision de rol'],
+  },
   {
     title: 'Abrir caja',
     icon: WalletCards,
@@ -110,6 +122,10 @@ const incidentGuides = [
   {
     title: 'Sin permiso',
     answer: 'No use la cuenta de otra persona. Pida al supervisor revisar su rol y permisos.',
+  },
+  {
+    title: 'Se cerro el navegador',
+    answer: 'Abra el acceso institucional de nuevo. Revise Caja e Historial antes de repetir una factura, cobro o reimpresion.',
   },
 ];
 

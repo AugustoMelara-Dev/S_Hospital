@@ -27,6 +27,10 @@ describe('HelpView', () => {
     render(<HelpView />);
 
     expect(screen.getByRole('heading', { name: /ayuda institucional/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /abrir el sistema/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument();
+    expect(screen.getByText(/use el acceso institucional del escritorio/i)).toBeInTheDocument();
+    expect(screen.getByText(/no comparta contrasena ni cuenta de turno/i)).toBeInTheDocument();
     expect(screen.getByText(/servidor no disponible/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /impresora no responde/i })).toBeInTheDocument();
     expect(screen.getByText(/media carta, carta, A5, 80mm o 58mm/i)).toBeInTheDocument();
@@ -39,6 +43,8 @@ describe('HelpView', () => {
     expect(screen.getByRole('heading', { name: /se fue la luz o reinició la pc/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /caja quedó abierta/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /base de datos necesita restaurarse/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /se cerro el navegador/i })).toBeInTheDocument();
+    expect(screen.getByText(/revise caja e historial antes de repetir una factura/i)).toBeInTheDocument();
     expect(screen.getAllByText(/base aislada/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/no repita la factura/i)).toBeInTheDocument();
     expect(screen.getByText(/comparta el diagnóstico/i)).toBeInTheDocument();
