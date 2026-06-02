@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Actions\Reports\OperationalMetricsService;
+use App\Models\AuditLog;
+use App\Models\BackupLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -42,6 +44,32 @@ class OperationalMetricsServiceTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.database.driver', 'sqlite')
             ->assertJsonPath('data.database.connected', true);
+    }
+
+    public function test_health_endpoint_hides_internal_recent_error_details(): void
+    {
+        AuditLog::query()->create([
+            'user_id' => null,
+            'action' => 'backup.failed',
+            'entity_type' => BackupLog::class,
+            'entity_id' => 123,
+            'old_values' => null,
+            'new_values' => ['path' => 'C:\\Projects\\S_Hospital\\backend\\.env'],
+            'created_at' => now(),
+        ]);
+
+        $response = $this->getJson('/api/system/health');
+
+        $response->assertOk()
+            ->assertJsonPath('data.recent_errors.0.action', 'backup.failed')
+            ->assertJsonMissingPath('data.recent_errors.0.id')
+            ->assertJsonMissingPath('data.recent_errors.0.entity_type');
+
+        $encoded = json_encode($response->json(), JSON_THROW_ON_ERROR);
+
+        $this->assertStringNotContainsString('App\\\\Models', $encoded);
+        $this->assertStringNotContainsString('BackupLog', $encoded);
+        $this->assertStringNotContainsString('C:\\Projects\\S_Hospital', $encoded);
     }
 
     public function test_worker_heartbeat_flips_to_true_after_record(): void

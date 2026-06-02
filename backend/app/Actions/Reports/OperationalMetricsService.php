@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Actions\Reports;
 
-use App\Jobs\RunBackupJob;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -153,15 +152,15 @@ class OperationalMetricsService
     {
         try {
             return DB::table('audit_logs')
-                ->where('action', 'like', '%.failed')
-                ->orWhere('action', 'like', '%.error')
+                ->where(static function ($query): void {
+                    $query->where('action', 'like', '%.failed')
+                        ->orWhere('action', 'like', '%.error');
+                })
                 ->orderByDesc('created_at')
                 ->limit(5)
-                ->get(['id', 'action', 'entity_type', 'created_at'])
+                ->get(['action', 'created_at'])
                 ->map(static fn ($row) => [
-                    'id' => (int) $row->id,
                     'action' => (string) $row->action,
-                    'entity_type' => (string) $row->entity_type,
                     'created_at' => (string) $row->created_at,
                 ])
                 ->all();

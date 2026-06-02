@@ -2531,3 +2531,18 @@ Consecuencia:
 
 - El personal tiene pasos concretos para practicar fallos reales sin depender del desarrollador.
 - Produccion queda protegida contra usuarios de practica, seeders, restauraciones sobre base real y recibos ficticios confundidos con documentos reales.
+
+### 2026-06-02 - Health publico sin detalles internos de auditoria
+
+Contexto:
+- `/api/system/health` es una verificacion publica y liviana para continuidad operativa LAN.
+- La lista de errores recientes usaba `audit_logs` y podia exponer `id` interno y `entity_type` de modelos Laravel.
+
+Decision:
+- El resumen publico conserva solo `action` y `created_at` para indicar actividad reciente sin filtrar clases, ids, rutas, valores de auditoria ni datos tecnicos.
+- Los detalles completos permanecen en auditoria interna y vistas protegidas de soporte/administracion.
+
+Validacion:
+- `php artisan test --filter=OperationalMetricsServiceTest`
+- `php vendor/bin/pint --test app/Actions/Reports/OperationalMetricsService.php tests/Feature/OperationalMetricsServiceTest.php`
+- `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/check-branding.ps1`

@@ -33,6 +33,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { DateRangePicker } from '../../components/ui/date-range-picker';
 import { FilterBar } from '../../components/ui/filter-bar';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
+import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
 import {
   FileClock,
   MoreHorizontal,
@@ -337,8 +338,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                       <TableCell className="text-sm font-medium">{invoice.invoice_number}</TableCell>
                       <TableCell>{formatDate(invoice.issued_at)}</TableCell>
                       <TableCell className="font-medium">{invoice.patient_name}</TableCell>
-                      <TableCell className="text-right">L. {invoice.total}</TableCell>
-                      <TableCell className="text-right">L. {invoice.paid_amount}</TableCell>
+                      <TableCell className="text-right">{moneyLabel(invoice.total)}</TableCell>
+                      <TableCell className="text-right">{moneyLabel(invoice.paid_amount)}</TableCell>
                       <TableCell>
                         <StatusBadge status={invoice.status} />
                       </TableCell>
@@ -572,6 +573,10 @@ function formatDate(value: string): string {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(new Date(value));
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
 }
 
 export function localDateString(date = new Date()): string {
