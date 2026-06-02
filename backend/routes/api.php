@@ -29,6 +29,11 @@ Route::any('/system/csp-report', [\App\Http\Controllers\CspReportController::cla
 
 Route::get('/system/health', [\App\Http\Controllers\HealthController::class, 'show']);
 
+Route::get('/system/openapi', function () {
+    $document = app(\App\Actions\Reports\OpenApiExporter::class)->document(app('router'));
+    return response()->json($document);
+});
+
 Route::get('/system/setup-status', [SystemStatusController::class, 'setupStatus'])
     ->middleware('web');
 
