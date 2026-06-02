@@ -2514,3 +2514,20 @@ Consecuencia:
 
 - La vista previa de media carta queda mas ancha y baja, acorde al papel fisico.
 - La validacion fisica de impresora debe repetir media carta con esta orientacion.
+
+### 2026-06-02 - Capacitacion segura sin base real
+
+Decision:
+
+- Se agrega `docs\manuales\GUIA_CAPACITACION_SEGURA.md` como guia no tecnica para entrenar cajero, supervisor y administrador sin tocar produccion.
+- El Manual de Usuario, Manual de Supervisor, Manual de Administrador y Checklist de Capacitacion enlazan la guia.
+- El sistema no declara un modo practica productivo integrado; si no existe un entorno aislado, la capacitacion debe hacerse en instalacion separada o base descartable.
+
+Motivo:
+
+- El frente operativo exige que la capacitacion sea parte del producto, pero tambien exige no perder datos ni ensayar anulaciones, cobros o restauraciones sobre informacion real del hospital.
+
+Consecuencia:
+
+- El personal tiene pasos concretos para practicar fallos reales sin depender del desarrollador.
+- Produccion queda protegida contra usuarios de practica, seeders, restauraciones sobre base real y recibos ficticios confundidos con documentos reales.

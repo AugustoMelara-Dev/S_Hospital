@@ -91,6 +91,11 @@ Si no existe un modo practica aislado, capacite en una instalacion separada o en
 una base descartable preparada por administracion. No use la base real para
 ensayar anulaciones, restauraciones, cobros ficticios o cierres de caja.
 
+Use `docs\manuales\GUIA_CAPACITACION_SEGURA.md` antes de entrenar personal. El
+supervisor debe confirmar que el cajero practica como responder a servidor no
+disponible, red caida, impresora sin respuesta, sesion vencida y error de
+permisos sin repetir facturas ni cobros.
+
 ## Checklist Diario Del Supervisor
 
 - [ ] Servidor abre el sistema.

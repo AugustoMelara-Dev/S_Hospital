@@ -116,6 +116,9 @@ Si no existe un modo practica aislado, capacite en una instalacion separada o
 una base descartable autorizada. La base real del hospital solo se usa para
 operacion real.
 
+Para preparar una sesion de entrenamiento, use
+`docs\manuales\GUIA_CAPACITACION_SEGURA.md`.
+
 ## 9. Acciones Prohibidas En Produccion
 
 - Ejecutar `migrate:fresh`.

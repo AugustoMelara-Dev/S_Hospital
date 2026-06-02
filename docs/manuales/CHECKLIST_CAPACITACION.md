@@ -2,6 +2,19 @@
 
 Use esta lista para capacitar a personal de caja, supervision y administracion.
 
+Antes de empezar, revise `docs\manuales\GUIA_CAPACITACION_SEGURA.md`. La
+capacitacion debe hacerse en una instalacion separada o base descartable; no en
+la base real de produccion.
+
+## Preparacion
+
+- [ ] Entorno de capacitacion separado de produccion.
+- [ ] Usuarios de practica creados y marcados como temporales.
+- [ ] Datos fiscales temporales o ficticios identificados como no reales.
+- [ ] Impresora de practica o previsualizacion acordada.
+- [ ] Instructor confirma que no se usaran datos reales de pacientes.
+- [ ] Participantes saben que no deben repetir facturas ni cobros a ciegas.
+
 ## Cajero
 
 - [ ] Abre el sistema con el acceso directo.
@@ -49,6 +62,8 @@ Use esta lista para capacitar a personal de caja, supervision y administracion.
 - [ ] Conoce la guia de soporte de primer nivel.
 - [ ] Revisa un resumen seguro antes de escalar un incidente tecnico.
 - [ ] Sabe a quien llamar ante error tecnico.
+- [ ] Sabe preparar capacitacion sin tocar la base real.
+- [ ] Sabe restaurar solo en base descartable autorizada.
 
 ## Prueba Final De Flujo
 
@@ -62,3 +77,5 @@ Use esta lista para capacitar a personal de caja, supervision y administracion.
 - [ ] Crear respaldo.
 - [ ] Cerrar caja.
 - [ ] Revisar reporte del dia.
+- [ ] Preparar resumen seguro desde Ayuda.
+- [ ] Explicar que hacer si falla red, impresora, sesion o permisos.
