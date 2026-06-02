@@ -21,7 +21,7 @@ import type {
   IncomeReport,
   ReportFilters,
 } from '../../../lib/api/types';
-import { formatCents, parseCents } from '../../../lib/moneyCents';
+import { formatCents, formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
 interface IncomeReportTabProps {
   canExport: boolean;
@@ -86,8 +86,15 @@ export function IncomeReportTab({
     ? formatCents(Math.round((parseCents(income.total_collected) ?? 0) / daysInRange))
     : '0.00';
 
+  const paymentsByMethod = income?.payments_by_method ?? {
+    cash: '0.00',
+    transfer: '0.00',
+    card: '0.00',
+    other: '0.00',
+  };
+
   const chartData = income
-    ? Object.entries(income.payments_by_method).map(([method, amount]) => ({
+    ? Object.entries(paymentsByMethod).map(([method, amount]) => ({
         method: methodLabel(method),
         amount: (parseCents(amount) ?? 0) / 100,
       }))
@@ -207,17 +214,17 @@ export function IncomeReportTab({
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
             <KPICard
               title="Facturado"
-              value={`L. ${income.total_billed}`}
+              value={moneyLabel(income.total_billed)}
               icon={<DollarSign className="h-4 w-4" />}
             />
             <KPICard
               title="Cobrado"
-              value={`L. ${income.total_collected}`}
+              value={moneyLabel(income.total_collected)}
               icon={<DollarSign className="h-4 w-4" />}
             />
             <KPICard
               title="Pendiente"
-              value={`L. ${income.total_pending}`}
+              value={moneyLabel(income.total_pending)}
               icon={<TrendingUp className="h-4 w-4" />}
             />
             <KPICard
@@ -227,8 +234,8 @@ export function IncomeReportTab({
             />
             <KPICard
               title="Anulado"
-              value={`L. ${income.total_voided}`}
-              description={`Parcial: L. ${income.total_partial}; promedio cobrado: L. ${averagePerDay}`}
+              value={moneyLabel(income.total_voided)}
+              description={`Parcial: ${moneyLabel(income.total_partial)}; promedio cobrado: L. ${averagePerDay}`}
               icon={<CircleSlash className="h-4 w-4" />}
             />
           </div>
@@ -246,10 +253,10 @@ export function IncomeReportTab({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Object.entries(income.payments_by_method).map(([method, amount]) => (
+                  {Object.entries(paymentsByMethod).map(([method, amount]) => (
                     <TableRow key={method}>
                       <TableCell className="font-medium">{methodLabel(method)}</TableCell>
-                      <TableCell className="text-right">L. {amount}</TableCell>
+                      <TableCell className="text-right">{moneyLabel(amount)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -278,9 +285,9 @@ export function IncomeReportTab({
                       <TableRow key={cat.category}>
                         <TableCell className="font-medium">{cat.category}</TableCell>
                         <TableCell className="text-right">{cat.item_count}</TableCell>
-                        <TableCell className="text-right">L. {cat.subtotal}</TableCell>
-                        <TableCell className="text-right">L. {cat.tax_amount}</TableCell>
-                        <TableCell className="text-right">L. {cat.total}</TableCell>
+                        <TableCell className="text-right">{moneyLabel(cat.subtotal)}</TableCell>
+                        <TableCell className="text-right">{moneyLabel(cat.tax_amount)}</TableCell>
+                        <TableCell className="text-right">{moneyLabel(cat.total)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -310,7 +317,7 @@ export function IncomeReportTab({
                         <TableCell className="font-medium">{area.area}</TableCell>
                         <TableCell className="text-right">{area.item_count}</TableCell>
                         <TableCell className="text-right">{area.quantity}</TableCell>
-                        <TableCell className="text-right">L. {area.total}</TableCell>
+                        <TableCell className="text-right">{moneyLabel(area.total)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -330,7 +337,7 @@ export function IncomeReportTab({
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="method" tickLine={false} />
                     <YAxis tickLine={false} width={64} />
-                    <Tooltip formatter={(value) => [`L. ${value}`, 'Monto']} />
+                    <Tooltip formatter={(value) => [moneyLabel(value as number), 'Monto']} />
                     <Bar dataKey="amount" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -358,4 +365,8 @@ export function IncomeReportTab({
 
 function methodLabel(method: string): string {
   return { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta', other: 'Otro' }[method] ?? method;
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
 }
