@@ -2900,3 +2900,21 @@ Validacion:
 - `php artisan test --filter=ReportsTest::test_cash_session_period_pdf_uses_cash_session_dates_even_when_request_range_is_wrong --colors=never`
 - `php artisan test --filter=ReportsTest --colors=never`
 - `vendor/bin/pint --test app/Http/Requests/Reports/PdfExportRequest.php tests/Feature/ReportsTest.php`
+
+### 2026-06-02 - Excel declara cobros asignados como prorrateados
+
+Decision:
+
+- Cuando los desgloses de categoria, area o servicio en Excel usan filtros de pago, caja o cajero, el encabezado de monto dice `Cobrado asignado proporcionalmente`.
+- El label queda alineado con el PDF y con la fuente `Pagos publicados filtrados, asignados proporcionalmente a items de factura por snapshot historico`.
+
+Motivo:
+
+- Un cobro filtrado por metodo o caja no siempre pertenece completo a una sola categoria, area o servicio.
+- Administracion necesita saber que esos montos son una asignacion proporcional y no facturacion directa ni cobro exacto por item.
+
+Validacion:
+
+- `php artisan test --filter=ReportsTest::test_report_export_labels_payment_scoped_breakdowns_as_prorated_collected_amounts --colors=never`
+- `php artisan test --filter=ReportsTest --colors=never`
+- `vendor/bin/pint --test app/Actions/Reports/PremiumExcelExportService.php tests/Feature/ReportsTest.php`
