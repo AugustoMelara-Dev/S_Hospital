@@ -310,6 +310,11 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->postJson("/api/invoices/{$invoiceId}/void", ['reason' => ''])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('reason');
+
+        $this->actingAs($this->supervisor())
+            ->postJson("/api/invoices/{$invoiceId}/void", ['reason' => '   '])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
     }
 
     public function test_reprint_any_permission_does_not_grant_invoice_void_operation_scope(): void

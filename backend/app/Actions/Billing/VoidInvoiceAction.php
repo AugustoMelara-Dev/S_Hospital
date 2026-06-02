@@ -17,6 +17,13 @@ class VoidInvoiceAction
 
     public function execute(Invoice $invoice, User $user, string $reason): Invoice
     {
+        $reason = trim($reason);
+        if (empty($reason)) {
+            throw ValidationException::withMessages([
+                'reason' => 'El motivo de anulación es requerido.',
+            ]);
+        }
+
         $result = DB::transaction(function () use ($invoice, $user, $reason): ?Invoice {
             $lockedInvoice = Invoice::query()
                 ->withCount([

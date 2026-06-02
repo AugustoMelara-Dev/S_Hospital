@@ -22,7 +22,14 @@ class VoidPaymentAction
      */
     public function execute(Invoice $invoice, Payment $payment, array $payload, User $user, InvoiceAccess $invoiceAccess): Payment
     {
-        return DB::transaction(function () use ($invoice, $payment, $payload, $user, $invoiceAccess): Payment {
+        $reason = trim($payload['reason'] ?? '');
+        if (empty($reason)) {
+            throw ValidationException::withMessages([
+                'reason' => 'El motivo de reversión es requerido.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($invoice, $payment, $user, $invoiceAccess, $reason): Payment {
             $lockedInvoice = Invoice::query()
                 ->whereKey($invoice->id)
                 ->lockForUpdate()
@@ -58,7 +65,7 @@ class VoidPaymentAction
                 'status' => Payment::STATUS_VOID,
                 'voided_by' => $user->id,
                 'voided_at' => now(),
-                'void_reason' => trim($payload['reason']),
+                'void_reason' => $reason,
             ])->save();
 
             CashMovement::query()->create([

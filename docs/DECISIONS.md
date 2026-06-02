@@ -1945,3 +1945,38 @@ Consecuencia:
 
 - Cantidades `0` o negativas siguen rechazadas por Form Request.
 - Operaciones financieras sensibles tienen limites de frecuencia mas estrictos sin cambiar permisos ni transacciones.
+
+### 2026-06-02 - Motivos de anulacion no pueden ser solo espacios
+
+Decision:
+
+- `VoidInvoiceAction` y `VoidPaymentAction` recortan el motivo antes de mutar datos.
+- Si el motivo queda vacio, la accion devuelve un error de validacion aunque la request haya recibido un string.
+
+Motivo:
+
+- Anulaciones y reversos son eventos auditables; aceptar `"   "` deja una auditoria formalmente completa pero operacionalmente inutil.
+- La regla debe vivir tambien en la capa de accion porque estas mutaciones pueden invocarse desde controladores o helpers internos.
+
+Consecuencia:
+
+- Los tests de factura y pago cubren motivo vacio y motivo compuesto solo por espacios.
+- Los motivos validos se guardan ya recortados en factura, pago, movimiento de caja y auditoria.
+
+### 2026-06-02 - Composer lock alineado y advisories Symfony cerrados
+
+Decision:
+
+- `composer.lock` se refresca para coincidir con `composer.json`.
+- Se aplican parches compatibles para Symfony, Guzzle y polyfills dentro de la misma linea permitida por Laravel 12.
+
+Motivo:
+
+- El build del paquete offline avisaba que el lock no estaba actualizado.
+- `composer audit` reportaba advisories en paquetes Symfony, incluyendo una vulnerabilidad alta en `symfony/mime`.
+
+Consecuencia:
+
+- `composer validate` pasa dentro del contenedor backend.
+- `composer audit` queda sin advisories conocidos en el lock actual.
+- El paquete offline debe regenerarse despues de este commit para incluir el lock corregido.

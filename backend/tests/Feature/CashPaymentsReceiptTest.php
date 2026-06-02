@@ -510,6 +510,13 @@ class CashPaymentsReceiptTest extends TestCase
 
         $this->actingAs($supervisor)
             ->postJson("/api/invoices/{$invoiceId}/payments/{$cashPaymentId}/void", [
+                'reason' => '   ',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/payments/{$cashPaymentId}/void", [
                 'reason' => 'Pago registrado con metodo incorrecto',
             ])
             ->assertOk()
