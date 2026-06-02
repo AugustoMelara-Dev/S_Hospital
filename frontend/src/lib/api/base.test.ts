@@ -327,4 +327,191 @@ describe('resolveApiBaseUrl', () => {
     });
     expect(stored[0].safe_message).toMatch(/Revise los datos del formulario\./i);
   });
+
+  describe('session expired multi-subscriber registry', () => {
+    it('notifies every registered handler when a 419 fires', async () => {
+      const a = vi.fn();
+      const b = vi.fn();
+      const unsubscribeA = apiClient.onSessionExpired(a);
+      const unsubscribeB = apiClient.onSessionExpired(b);
+
+      resetCsrfCache();
+      resetRequestChain();
+
+      const csrf = vi
+        .spyOn(apiClient, 'fetchCsrfCookie')
+        .mockResolvedValueOnce(undefined);
+
+      vi.spyOn(window, 'fetch').mockImplementation((input) => {
+        const url = String(input);
+        if (url.endsWith('/sanctum/csrf-cookie')) {
+          return Promise.resolve({ ok: true, status: 204, json: async () => ({}) } as Response);
+        }
+        return Promise.resolve({
+          ok: false,
+          status: 419,
+          statusText: 'CSRF',
+          json: async () => ({ message: 'CSRF token mismatch.' }),
+        } as Response);
+      });
+
+      await expect(apiClient.request('/api/invoices', { method: 'POST' })).rejects.toBeInstanceOf(ApiError);
+
+      expect(a).toHaveBeenCalled();
+      expect(b).toHaveBeenCalled();
+
+      unsubscribeA();
+      unsubscribeB();
+      csrf.mockRestore();
+    });
+
+    it('returns an unsubscribe function that removes the handler', async () => {
+      const a = vi.fn();
+      const unsubscribe = apiClient.onSessionExpired(a);
+      unsubscribe();
+
+      resetCsrfCache();
+      resetRequestChain();
+      vi.spyOn(apiClient, 'fetchCsrfCookie').mockResolvedValueOnce(undefined);
+      vi.spyOn(window, 'fetch').mockImplementation((input) => {
+        const url = String(input);
+        if (url.endsWith('/sanctum/csrf-cookie')) {
+          return Promise.resolve({ ok: true, status: 204, json: async () => ({}) } as Response);
+        }
+        return Promise.resolve({
+          ok: false,
+          status: 401,
+          statusText: 'Unauth',
+          json: async () => ({ message: 'Unauthenticated.' }),
+        } as Response);
+      });
+
+      await expect(apiClient.request('/api/invoices', { method: 'POST' })).rejects.toBeInstanceOf(ApiError);
+
+      expect(a).not.toHaveBeenCalled();
+    });
+
+    it('survives a handler that throws', async () => {
+      const a = vi.fn(() => {
+        throw new Error('handler bug');
+      });
+      const b = vi.fn();
+      const unsubscribeA = apiClient.onSessionExpired(a);
+      const unsubscribeB = apiClient.onSessionExpired(b);
+
+      resetCsrfCache();
+      resetRequestChain();
+      vi.spyOn(apiClient, 'fetchCsrfCookie').mockResolvedValueOnce(undefined);
+      vi.spyOn(window, 'fetch').mockImplementation((input) => {
+        const url = String(input);
+        if (url.endsWith('/sanctum/csrf-cookie')) {
+          return Promise.resolve({ ok: true, status: 204, json: async () => ({}) } as Response);
+        }
+        return Promise.resolve({
+          ok: false,
+          status: 401,
+          statusText: 'Unauth',
+          json: async () => ({ message: 'Unauthenticated.' }),
+        } as Response);
+      });
+
+      await expect(apiClient.request('/api/invoices', { method: 'POST' })).rejects.toBeInstanceOf(ApiError);
+
+      expect(b).toHaveBeenCalled();
+      unsubscribeA();
+      unsubscribeB();
+    });
+
+    it('invalidateSession clears the CSRF cache', async () => {
+      resetCsrfCache();
+      vi.spyOn(apiClient, 'fetchCsrfCookie').mockResolvedValueOnce(undefined);
+      await apiClient.csrf();
+      // After this call the cache has a fresh promise.
+      apiClient.invalidateSession();
+      // The next call must re-fetch.
+      const csrf2 = vi
+        .spyOn(apiClient, 'fetchCsrfCookie')
+        .mockResolvedValueOnce(undefined);
+      await apiClient.csrf();
+      expect(csrf2).toHaveBeenCalled();
+    });
+  });
+
+  describe('per-request timeout via AbortController', () => {
+    it('aborts the request and surfaces a timeout message when the server hangs', async () => {
+      resetCsrfCache();
+      resetRequestChain();
+      vi.spyOn(apiClient, 'fetchCsrfCookie').mockResolvedValueOnce(undefined);
+
+      const fetchSpy = vi
+        .spyOn(window, 'fetch')
+        .mockImplementation((_input, init) =>
+          new Promise<Response>((_resolve, reject) => {
+            const signal = (init as RequestInit | undefined)?.signal as AbortSignal | null;
+            if (signal) {
+              signal.addEventListener('abort', () => {
+                reject(new DOMException('aborted', 'AbortError'));
+              });
+            }
+          }),
+        );
+
+      const start = Date.now();
+      await expect(
+        apiClient.request('/api/invoices', {
+          method: 'POST',
+          body: JSON.stringify({}),
+          timeout: 50,
+        }),
+      ).rejects.toBeInstanceOf(ApiError);
+      const elapsed = Date.now() - start;
+
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(elapsed).toBeLessThan(1000);
+    });
+
+    it('keeps the timeout active when a mutating request retries after 419', async () => {
+      resetCsrfCache();
+      resetRequestChain();
+
+      let postAttempts = 0;
+      vi.spyOn(apiClient, 'fetchCsrfCookie').mockResolvedValue(undefined);
+      vi.spyOn(window, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url.endsWith('/sanctum/csrf-cookie')) {
+          return Promise.resolve({ ok: true, status: 204, json: async () => ({}) } as Response);
+        }
+
+        postAttempts += 1;
+        if (postAttempts === 1) {
+          return Promise.resolve({
+            ok: false,
+            status: 419,
+            statusText: 'CSRF',
+            json: async () => ({ message: 'CSRF token mismatch.' }),
+          } as Response);
+        }
+
+        return new Promise<Response>((_resolve, reject) => {
+          const signal = (init as RequestInit | undefined)?.signal as AbortSignal | null;
+          signal?.addEventListener('abort', () => {
+            reject(new DOMException('aborted', 'AbortError'));
+          });
+        });
+      });
+
+      const start = Date.now();
+      await expect(
+        apiClient.request('/api/payments', {
+          method: 'POST',
+          body: JSON.stringify({ amount: '1.00' }),
+          timeout: 50,
+        }),
+      ).rejects.toBeInstanceOf(ApiError);
+      const elapsed = Date.now() - start;
+
+      expect(postAttempts).toBe(2);
+      expect(elapsed).toBeLessThan(1000);
+    });
+  });
 });

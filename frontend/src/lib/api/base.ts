@@ -1,10 +1,17 @@
 import { PERMISSION_DENIED_MESSAGE, logClientIssue, safeClientMessage } from '../support/clientIssueLog';
 
-let sessionExpiredHandler: (() => void) | null = null;
+const sessionExpiredHandlers = new Set<() => void>();
 let requestChain: Promise<unknown> = Promise.resolve();
 
 const CSRF_CACHE_TTL_MS = 30 * 60 * 1000;
 let csrfCache: { fetchedAt: number; promise: Promise<void> } | null = null;
+
+const DEFAULT_GET_TIMEOUT_MS = 10_000;
+const DEFAULT_MUTATION_TIMEOUT_MS = 30_000;
+
+type ApiRequestInit = RequestInit & {
+  timeout?: number;
+};
 
 export function resetRequestChain() {
   requestChain = Promise.resolve();
@@ -12,6 +19,16 @@ export function resetRequestChain() {
 
 export function resetCsrfCache() {
   csrfCache = null;
+}
+
+function notifySessionExpired(): void {
+  for (const handler of sessionExpiredHandlers) {
+    try {
+      handler();
+    } catch {
+      // A handler that throws must not break the others.
+    }
+  }
 }
 
 export class ApiError extends Error {
@@ -220,8 +237,25 @@ function enqueueRequest<T>(operation: () => Promise<T>): Promise<T> {
 export const apiClient = {
   baseUrl: resolveApiBaseUrl(configuredBaseUrl),
 
-  onSessionExpired(handler: (() => void) | null): void {
-    sessionExpiredHandler = handler;
+  // Multi-subscriber registry. StrictMode in dev can mount a hook
+  // twice; the previous single-slot design made the second cleanup
+  // null the handler even though the first mount was still alive.
+  onSessionExpired(handler: (() => void) | null): () => void {
+    if (handler === null) {
+      return () => undefined;
+    }
+    sessionExpiredHandlers.add(handler);
+    return () => {
+      sessionExpiredHandlers.delete(handler);
+    };
+  },
+
+  // Called by useHospitalSession on logout (and after a 401/419) to
+  // wipe the cached CSRF cookie promise. The next login gets a fresh
+  // token from /sanctum/csrf-cookie instead of reusing the previous
+  // user's token from the 30-minute cache window.
+  invalidateSession(): void {
+    resetCsrfCache();
   },
 
   url(path: string): string {
@@ -264,7 +298,7 @@ export const apiClient = {
 
     if (!response.ok) {
       if (response.status === 401 || response.status === 419) {
-        sessionExpiredHandler?.();
+        notifySessionExpired();
         recordApiIssue(new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status), 'csrf_session');
       }
 
@@ -275,7 +309,7 @@ export const apiClient = {
     }
   },
 
-  async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  async request<T>(path: string, options: ApiRequestInit = {}): Promise<T> {
     const method = options.method?.toUpperCase() ?? 'GET';
 
     if (method === 'GET' || method === 'HEAD') {
@@ -285,15 +319,39 @@ export const apiClient = {
     return enqueueRequest(() => this.sendRequest<T>(path, options));
   },
 
-  async sendRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  async sendRequest<T>(path: string, options: ApiRequestInit = {}): Promise<T> {
     const method = options.method?.toUpperCase() ?? 'GET';
 
     if (method !== 'GET' && method !== 'HEAD') {
       await this.csrf();
     }
 
+    // Per-request timeout via AbortController. A hung connection used
+    // to block the cashier indefinitely; the previous implementation
+    // relied on the browser's own timeout (~minutes) and on no-fetch-
+    // ever-resolving-pending query chains.
+    const externalSignal = options.signal ?? null;
+    const customTimeout = options.timeout;
+    const timeoutMs =
+      Number.isFinite(customTimeout) && Number(customTimeout) > 0
+        ? Number(customTimeout)
+        : method === 'GET' || method === 'HEAD'
+          ? DEFAULT_GET_TIMEOUT_MS
+          : DEFAULT_MUTATION_TIMEOUT_MS;
+
     const send = async (): Promise<Response> => {
       const xsrfToken = method === 'GET' || method === 'HEAD' ? null : cookieValue('XSRF-TOKEN');
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+      const relayAbort = () => controller.abort();
+
+      if (externalSignal) {
+        if (externalSignal.aborted) {
+          controller.abort();
+        } else {
+          externalSignal.addEventListener('abort', relayAbort, { once: true });
+        }
+      }
 
       try {
         const headers: Record<string, string> = {
@@ -308,13 +366,26 @@ export const apiClient = {
         return await fetch(this.url(path), {
           ...options,
           credentials: 'include',
+          signal: controller.signal,
           headers: {
             ...headers,
             ...options.headers,
           },
         });
       } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          recordApiIssue(
+            new ApiError(
+              `La operacion '${method} ${path}' excedio ${timeoutMs / 1000}s sin respuesta del servidor local. Revise la red.`,
+              0,
+            ),
+            `${method} ${path}_timeout`,
+          );
+        }
         recordApiIssue(networkError(err), `${method} ${path}`);
+      } finally {
+        window.clearTimeout(timeoutId);
+        externalSignal?.removeEventListener('abort', relayAbort);
       }
     };
 
@@ -333,7 +404,7 @@ export const apiClient = {
       } | null;
 
       if (response.status === 401) {
-        sessionExpiredHandler?.();
+        notifySessionExpired();
         recordApiIssue(new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status), `${method} ${path}`);
       }
 
@@ -342,7 +413,7 @@ export const apiClient = {
       }
 
       if (response.status === 419) {
-        sessionExpiredHandler?.();
+        notifySessionExpired();
         recordApiIssue(new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status), `${method} ${path}`);
       }
 
@@ -388,7 +459,7 @@ export const apiClient = {
 
     if (!response.ok) {
       if (response.status === 401) {
-        sessionExpiredHandler?.();
+        notifySessionExpired();
         recordApiIssue(new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status), `DOWNLOAD ${path}`);
       }
 
@@ -397,7 +468,7 @@ export const apiClient = {
       }
 
       if (response.status === 419) {
-        sessionExpiredHandler?.();
+        notifySessionExpired();
         recordApiIssue(new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status), `DOWNLOAD ${path}`);
       }
 

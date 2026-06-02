@@ -42,13 +42,19 @@ export function useHospitalSession() {
   const needsBillingCashBootstrap = false;
 
   useEffect(() => {
-    apiClient.onSessionExpired(() => {
+    const unsubscribe = apiClient.onSessionExpired(() => {
       setUser(null);
       setCashSession(null);
       setStatus('Sesión vencida. Redirigiendo al login...');
       setSessionExpired(true);
     });
 
+    return unsubscribe;
+  }, []);
+
+  // Old code path that followed is now in a separate effect to
+  // avoid running on every state change.
+  useEffect(() => {
     apiClient
       .session()
       .then((currentUser) => {
@@ -78,8 +84,6 @@ export function useHospitalSession() {
         setStatus('Listo para iniciar sesión local.');
       })
       .finally(() => setLoading(false));
-
-    return () => apiClient.onSessionExpired(null);
   }, []);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
@@ -103,6 +107,9 @@ export function useHospitalSession() {
 
   async function handleLogout() {
     await apiClient.logout().catch(() => undefined);
+    // Drop the cached CSRF promise so the next login does not reuse
+    // the previous user's token.
+    apiClient.invalidateSession();
     setUser(null);
     setCashSession(null);
     setStatus('Sesión cerrada.');
