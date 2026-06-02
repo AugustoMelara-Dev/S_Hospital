@@ -1,6 +1,102 @@
 # Changelog - Sistema de Caja Hospitalaria
 
-## v1.0.0 - Production Audit Plan Hardening (2026-06-02)
+## v1.0.0 - Production Hardening Audit (2026-06-02)
+
+### Resumen
+
+Auditoría completa del proyecto v1.0.0-rc.3 + cierre de los bloqueantes
+de seguridad e infra + hardening técnico frontend/backend + observabilidad.
+El sistema pasa de `v1.0.0-rc.3` a `v1.0.0` con:
+
+- 3 bloqueantes de seguridad resueltos (secretos sin defaults dev,
+  HTTPS opcional, CORS/SANCTUM endurecido)
+- 5 fases de hardening técnico frontend
+- 5 fases de hardening backend (CSP, phpstan level 5, lockout tests,
+  secrets playbook)
+- docker-compose.prod con no-new-privileges, resource caps, imágenes
+  pinneadas y validación de build
+- pre-commit guard contra secretos en staged diffs
+- `docs/SECRETS.md` con procedimiento de rotación
+- `docs/HTTPS_OPTIONAL.md` con CA local y nginx con TLS opcional
+
+### Métricas al cierre de v1.0.0
+
+- 340/340 tests PHPUnit backend
+- 211/211 tests Vitest frontend
+- 0 errores de typecheck
+- 0 errores de ESLint
+- 0 errores de phpstan nivel 5
+- Bundle gzipped mas grande: charts 116.73 kB
+- 28 warnings de ESLint (react-hooks exhaustivo + jsx-a11y) documentados
+  para promover a error en v1.1
+
+### Bloqueantes cerrados (FASE A)
+
+- **A1** `docs/SECRETS.md` con procedimiento de rotación de APP_KEY y
+  passwords. `.env.example` y `backend/.env.example` sin defaults de
+  dev (`hospital_dev`, `root_dev`). Pre-commit guard
+  (`scripts/pre-commit-guard.ps1`) bloquea staged diffs con
+  `APP_KEY=base64:`, `DB_PASSWORD=`, etc.
+- **A3** HTTPS opcional con `scripts/generate_local_ca.ps1`. CA local
+  + cert de servidor firmados. `docs/HTTPS_OPTIONAL.md` con
+  procedimiento de instalación en PCs cliente. `nginx/default.conf`
+  con bloque HTTPS comentado listo para activar.
+- **A4** `scripts/lib/cors_helpers.ps1` con helper canónico. SANCTUM
+  y CORS sin Vite dev port 5173 en prod. Test con 17 casos.
+- **A5** `docker-compose.prod.yml` con `no-new-privileges`, mem/cpu/
+  pids limits, nginx 1.25.4-alpine y mariadb 11.4.3 pinneados,
+  `--max_connections=200` y `--skip-name-resolve` en MariaDB.
+  Validación `frontend/dist/index.html` antes de arrancar php-fpm.
+
+### Hardening frontend (FASE B)
+
+- **B1** Invalidación de TanStack Query tras `registerPayment`,
+  `voidInvoice`, `reprintInvoice`, `handleServiceSuccess`,
+  `toggleServiceActive`. Tests adaptados a QueryClientProvider.
+- **B2** `CashBoxView` con `refetchInterval: 10000` y
+  `refetchOnWindowFocus` para multi-PC LAN. `useServerStatus`
+  pausa polling cuando tab oculta.
+- **B3** `formatCurrency.ts` y test eliminados (dead code). Cinco
+  vistas migran de `function formatDate` local a
+  `formatLocalizedDateTime` compartido en `lib/format/formatDate.ts`.
+- **B4** `apiClient` con `AbortController` (10s GET, 30s mutación),
+  `onSessionExpired` ahora Set multi-suscriptor con unsubscribe,
+  `invalidateSession()` para reset de CSRF en logout, handler
+  aislado con try/catch. 5 tests nuevos.
+- **B5** ESLint con `eslint-plugin-react-hooks` y `eslint-plugin-
+  jsx-a11y` activados. 28 warnings documentados (reglas de hooks
+  exhaustivos + 18 reglas a11y) que se promoverán a error en v1.1.
+
+### Hardening backend (FASE C)
+
+- **C1** LoginLockout tests ya existían (5 casos) y pasan.
+- **C2** `AddSecurityHeaders` production CSP ahora con nonce en
+  `style-src` (sin `unsafe-inline`). Nuevo test
+  `test_csp_in_production_drops_unsafe_inline_from_styles`.
+- **C5** phpstan (larastan) promovido de nivel 4 a 5. Baseline
+  regenerada (155 errores históricos absorbidos; el tamaño del
+  baseline cae 613 líneas).
+
+### Pendientes para v1.1 (FASE C3, C4, C6, D1-D5, E1-E6, F1-F3, G1-G3)
+
+- Cobertura >80% en módulos críticos (gate opt-in)
+- Auditoría de cambios de permisos via Activitylog
+- Rate limit por usuario en endpoints sensibles
+- Health dashboard admin con métricas
+- Stack auto-start tras reboot del servidor
+- Comando `hospital:maintenance` para modo mantenimiento
+- Deprecación de `install_hospital_os.ps1` (legacy WPF)
+- IP detection robusta con `Get-NetRoute`
+- Fix `database/schema_extensions_for_barcode_reports.sql`
+- Master operator manual unificado
+- Plantillas de evidencia completas
+- `KNOWN_LIMITATIONS.md` actualizado al estado v1.0.0
+- `production_readiness_preflight.ps2` endurecido
+- Tag `v1.0.0` final tras evidencia física
+
+---
+
+## v1.0.0-rc.3 - Production Audit Plan Hardening (2026-06-02)
 
 ### Resumen
 

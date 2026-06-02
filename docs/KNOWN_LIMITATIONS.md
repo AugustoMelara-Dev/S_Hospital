@@ -1,34 +1,94 @@
 # Known limitations
 
-## Pendientes de entorno
+## Estado v1.0.0 (2026-06-02)
 
-- Restore real quedo `VALIDATED` en Fase 11 sobre MariaDB XAMPP local y base descartable `hospital_restore_validation_test`. Debe repetirse en el servidor final si cambia el equipo, ruta de dump o base real.
-- Restore real cuenta con script Fase 10: `scripts/validate_restore_mysql.sh`. Es destructivo sobre la base descartable confirmada en `RESTORE_TEST_DATABASE`; no valida ni toca la base activa.
-- La prueba fisica de impresora institucional media carta/carta/A5/80mm/58mm queda `PENDING_HARDWARE_VALIDATION` hasta tener impresora real o impresora compartida del hospital.
-- La concurrencia real MySQL/MariaDB quedo `VALIDATED` en Fase 11 contra Laravel/MySQL local con `RUN_ID=concurrency-validation-20260517T20435`. El script crea datos auditables y requiere snapshot previo; repetir en servidor/base final descartable antes de operar.
-- La validacion LAN desde computadora cliente queda `PENDING_LAN_CLIENT_VALIDATION` hasta probar por IP fija/nombre local del servidor desde otra PC.
-- La configuracion final `APP_ENV=production`, `APP_DEBUG=false`, admin real y worker continuo de backups queda `PENDING_ENVIRONMENT_VALIDATION` hasta preparar el servidor final.
-- El paquete `offline-release` fue regenerado localmente y el guard `scripts/assert_offline_release_clean.ps1 -RequireCurrentCommit` paso sin logs, `.env`, backups, evidencia QA local ni manifiesto stale. Si se crea un commit nuevo despues de esa regeneracion, debe regenerarse otra vez antes de entregar.
+### Cerradas en v1.0.0
 
-## Estado RC
+- ~~Restore MySQL/MariaDB local validado~~ (Fase 11 v1.0.0-rc.3)
+- ~~Concurrencia MySQL/MariaDB local validada~~ (Fase 11 v1.0.0-rc.3)
+- ~~E2E local Playwright verde~~ (Fase 10 v1.0.0-rc.3)
+- ~~Hardening headers HTTP, CSP, rate limit, lockout, login
+  attempts, CSP report endpoint, health endpoint~~ (Fases 7-19 rc.3)
+- ~~Centavos en facturas y pagos con backfill~~
+  (Fase A2.1, A2.2 rc.3)
+- ~~Secrets playbook + pre-commit guard + sin defaults dev en
+  .env.example~~ (Fase A1 v1.0.0)
+- ~~HTTPS opcional con CA local + nginx con TLS~~
+  (Fase A3 v1.0.0)
+- ~~CORS/SANCTUM sin Vite dev port en prod~~ (Fase A4 v1.0.0)
+- ~~TanStack Query invalidations multi-PC LAN~~
+  (Fase B1 v1.0.0)
+- ~~apiClient timeout + CSRF reset + Set handlers~~
+  (Fase B4 v1.0.0)
+- ~~phpstan nivel 5~~ (Fase C5 v1.0.0)
 
-- LOCAL_VALIDATION_READY: si.
-- PRODUCTION_CANDIDATE: si, con Fase 12 UX/POS/catalogo/reportes/QA cerrada, E2E local, smoke real no destructivo, rutas LAN, restore real local y concurrencia real local validados.
-- PRODUCTION_READY: no, hasta cerrar LAN fisica desde cliente, impresora fisica media carta/carta/A5/80mm/58mm, restore/concurrencia final, worker continuo de backups y configuracion final de produccion.
-- RELEASE_READY: condicionado; el guard de artefacto offline paso localmente, pero debe repetirse desde el commit final de entrega si hay nuevos commits.
+### Pendientes para v1.1
 
-## Alcance de producto
+- **NewInvoiceView refactor**: ~490 lineas, objetivo <200 con
+  sub-reducers por paso (paciente / servicio / revision / pago).
+  Diferido por tamaño del cambio; cubierto por E2E.
+- **Cobertura >80% en modulos criticos**: gate opt-in via
+  `--with-coverage`. Falta promover a obligatorio en CI.
+- **Auditoria de cambios de permisos**: Spatie Activitylog ya
+  registra; falta listener para `Role::attachPermission` /
+  `detachPermission` y `User::roleChanged`.
+- **Rate limit por usuario**: middleware `ThrottleByUser` en
+  `/api/invoices`, `/api/payments`, `/api/cash-sessions`.
+- **Health dashboard admin**: UI con Recharts para latencia P50/
+  P95/P99, conexiones DB, espacio disco, ultimo backup.
+- **Stack auto-start en reboot**: tarea Windows
+  `SistemaCajaHospitalaria-StackAutostart` con trigger
+  `AtStartup`.
+- **Comando `hospital:maintenance`**: para poner el sistema en
+  estado de "en mantenimiento" durante incidentes.
+- **Deprecacion de `install_hospital_os.ps1`**: marcar como legacy;
+  el installer soportado es `deploy_hospital_lan.ps1`.
+- **IP detection robusta**: usar `Get-NetRoute` con metrica y
+  multiples adaptadores; eliminar placeholder `192.168.1.100`.
+- **`database/schema_extensions_for_barcode_reports.sql`**:
+  referencia a columna `source_hash` que no existe. Mover a
+  `_reference_DO_NOT_EXECUTE/` o convertir a migracion Laravel.
+- **ESLint warnings a error**: 28 warnings documentados en FASE B5
+  para promover a error en v1.1.
+- **CSP report channel opcional**: validar que
+  `/api/system/csp-report` esta implementado y acepta reportes.
+
+### Pendientes de entorno fisico (FASE G)
+
+- **LAN client validation**: probar `/up`, `/login`, `/verify-email`
+  desde segunda PC por IP fija.
+- **Impresora fisica media carta/carta/A5/80mm/58mm**: imprimir
+  factura pagada en los 5 tamanos y validar margenes.
+- **Restore real final**: backup desde UI -> restore en base
+  descartable, validar SHA256 + conteos.
+- **Concurrencia final**: doble apertura de caja, doble emision de
+  factura, doble pago contra target descartable.
+- **Worker continuo de backups**: tareas Windows
+  `SistemaCajaHospitalaria-BackupWorker` y
+  `SistemaCajaHospitalaria-DailyBackup` instaladas y activas.
+- **Handoff final**: `scripts/final_production_handoff.ps1` exit 0
+  sin `-AllowMissingPhysicalProof`.
+
+### Alcance del producto (no se cierra)
 
 - No hay expediente clinico. Paciente en factura es solo nombre.
 - No hay inventario.
-- No hay dashboard complejo.
-- No hay cloud sync.
-- No hay restore UI.
-- No hay PDF avanzado como modulo de entrega.
+- No hay dashboard complejo (solo KPIs y graficos basicos).
+- No hay cloud sync ni replica off-site.
+- No hay restore UI (restore es por CLI con `restore_hospital_windows.ps1`).
+- No hay PDF avanzado como modulo de entrega (factura es HTML/print).
 
-## Operacion
+### Operacion (documentado)
 
 - Backup manual desde UI requiere worker local de cola `backups`.
-- Backup real MySQL/MariaDB requiere `mariadb-dump` o `mysqldump` instalado en el servidor.
-- Produccion offline debe crear `.env` real fuera del repositorio y no copiar credenciales de desarrollo.
-- Los usuarios de validacion local solo se crean en `local` o `testing`.
+- Backup real MySQL/MariaDB requiere `mariadb-dump` o `mysqldump`
+  en PATH del backend container (ya esta en
+  `docker-compose.prod.yml` HOSPITAL_DUMP_BINARY).
+- Produccion offline debe crear `.env` real fuera del repositorio
+  y no copiar credenciales de desarrollo.
+- Los usuarios de validacion local solo se crean en `local` o
+  `testing` (no en `production`).
+- `HOSPITAL_LICENSE_SALT` debe ser 32+ chars aleatorios en
+  produccion; el default embebido solo es dev.
+- `HOSPITAL_INITIAL_ADMIN_PASSWORD` se pide por entrada oculta en
+  el installer; nunca se acepta como argumento CLI.
