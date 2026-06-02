@@ -182,9 +182,9 @@ export function CashSessionReportTab({
                   <TableBody>
                     {cashSession.movements.map((m) => (
                       <TableRow key={m.id}>
-                        <TableCell className="font-medium">{m.type}</TableCell>
-                        <TableCell>{m.method ?? '—'}</TableCell>
-                        <TableCell className="text-right">{moneyLabel(m.amount)}</TableCell>
+                        <TableCell className="font-medium">{movementTypeLabel(m.type)}</TableCell>
+                        <TableCell>{movementMethodLabel(m.method)}</TableCell>
+                        <TableCell className="text-right">{signedMoneyLabel(m.amount)}</TableCell>
                         <TableCell className="max-w-[150px] truncate">{m.notes ?? '—'}</TableCell>
                         <TableCell>{m.user?.name ?? '—'}</TableCell>
                         <TableCell>{formatDate(m.occurred_at)}</TableCell>
@@ -218,12 +218,63 @@ function methodLabel(method: string): string {
   return { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta', other: 'Otro' }[method] ?? method;
 }
 
+function movementTypeLabel(type: string): string {
+  return {
+    opening: 'Apertura de caja',
+    payment: 'Cobro registrado',
+    payment_void: 'Reverso de pago',
+    closing: 'Cierre de caja',
+    adjustment: 'Ajuste',
+  }[type] ?? humanizeEnum(type);
+}
+
+function movementMethodLabel(method: string | null): string {
+  if (!method) {
+    return '—';
+  }
+
+  return { ...methodLabels(), closing: 'Cierre de caja' }[method] ?? humanizeEnum(method);
+}
+
 function moneyLabel(value: string | number | null | undefined): string {
   return formatLempirasFromCents(parseCents(value));
 }
 
+function signedMoneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseSignedCents(value));
+}
+
+function parseSignedCents(value: string | number | null | undefined): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? Math.round(value * 100) : null;
+  }
+
+  const trimmed = value.trim();
+  if (!/^-?\d+(\.\d{1,2})?$/.test(trimmed)) {
+    return null;
+  }
+
+  return Math.round(Number(trimmed) * 100);
+}
+
 function pendingInvoiceLabel(count: number): string {
   return `${count} ${count === 1 ? 'factura' : 'facturas'}`;
+}
+
+function methodLabels(): Record<string, string> {
+  return { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta', other: 'Otro' };
+}
+
+function humanizeEnum(value: string): string {
+  return value
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
 function formatDate(value: string): string {

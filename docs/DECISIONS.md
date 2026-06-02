@@ -2766,3 +2766,20 @@ Motivo:
 Validacion:
 
 - `npm run test -- CashSessionReportTab.test.tsx --run`
+
+### 2026-06-02 - Movimientos de caja usan etiquetas humanas
+
+Decision:
+
+- La tabla de movimientos del reporte de caja no muestra enums crudos como `payment_void`, `opening` o `closing`.
+- Los tipos de movimiento se traducen a etiquetas operativas: apertura, cobro registrado, reverso de pago, cierre de caja y ajuste.
+- Los montos de movimientos aceptan signo para que un reverso conserve su valor negativo visible.
+
+Motivo:
+
+- Administracion necesita leer movimientos de caja sin interpretar codigos internos.
+- Un reverso de pago no debe verse como `L. 0.00`; debe conservar la correccion financiera trazable.
+
+Validacion:
+
+- `npm run test -- CashSessionReportTab.test.tsx --run`

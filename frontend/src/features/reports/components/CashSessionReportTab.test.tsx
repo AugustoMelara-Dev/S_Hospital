@@ -55,6 +55,94 @@ describe('CashSessionReportTab', () => {
     expect(document.body.textContent).not.toMatch(/L\. 0\.00(?:\s*)Contado/);
   });
 
+  it('renders cash movement types and methods as human financial labels', () => {
+    const cashSession = {
+      cash_session: {
+        id: 3,
+        user_id: 7,
+        status: 'closed',
+        opening_amount: '500.00',
+        closing_amount: '517.25',
+        expected_amount: '517.25',
+        difference_amount: '0.00',
+        opening_notes: null,
+        closing_notes: null,
+        opened_at: '2026-06-02T08:00:00.000000Z',
+        closed_at: '2026-06-02T16:00:00.000000Z',
+        user: { id: 7, name: 'Caja Principal', username: 'caja' },
+      },
+      totals_by_method: { cash: '17.25', transfer: '0.00', card: '0.00', other: '0.00' },
+      total_cash: '17.25',
+      total_transfer: '0.00',
+      total_card: '0.00',
+      total_other: '0.00',
+      payments_count: 1,
+      payments_total: '17.25',
+      expected_cash_amount: '517.25',
+      pending_invoice_count: 0,
+      pending_amount: '0.00',
+      payments: [],
+      movements: [
+        {
+          id: 31,
+          cash_session_id: 3,
+          payment_id: null,
+          user_id: 7,
+          type: 'opening',
+          method: null,
+          amount: '500.00',
+          notes: null,
+          occurred_at: '2026-06-02T08:00:00.000000Z',
+          user: { id: 7, name: 'Caja Principal', username: 'caja' },
+        },
+        {
+          id: 32,
+          cash_session_id: 3,
+          payment_id: 20,
+          user_id: 7,
+          type: 'payment_void',
+          method: 'cash',
+          amount: '-10.00',
+          notes: 'Pago reversado',
+          occurred_at: '2026-06-02T12:00:00.000000Z',
+          user: { id: 7, name: 'Caja Principal', username: 'caja' },
+        },
+        {
+          id: 33,
+          cash_session_id: 3,
+          payment_id: null,
+          user_id: 7,
+          type: 'closing',
+          method: 'closing',
+          amount: '517.25',
+          notes: null,
+          occurred_at: '2026-06-02T16:00:00.000000Z',
+          user: { id: 7, name: 'Caja Principal', username: 'caja' },
+        },
+      ],
+    } satisfies CashSessionReport;
+
+    render(
+      <CashSessionReportTab
+        canExport={false}
+        cashSession={cashSession}
+        cashReportId="3"
+        loading={false}
+        error=""
+        onCashReportIdChange={() => undefined}
+        onExport={() => undefined}
+        onSubmit={() => undefined}
+      />,
+    );
+
+    expect(document.body.textContent).toContain('Apertura de caja');
+    expect(document.body.textContent).toContain('Reverso de pago');
+    expect(document.body.textContent).toContain('Cierre de caja');
+    expect(document.body.textContent).toContain('Efectivo');
+    expect(document.body.textContent).toContain('L. -10.00');
+    expect(document.body.textContent).not.toMatch(/payment_void|closing|opening/);
+  });
+
   it('renders malformed cash session amounts as safe financial values', () => {
     const cashSession = {
       cash_session: {
