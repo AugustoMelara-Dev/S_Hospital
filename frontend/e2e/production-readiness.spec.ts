@@ -74,7 +74,7 @@ const services = [
     name: 'Eritropoyetina',
     slug: 'eritropoyetina',
     price: '25.00',
-    taxable: true,
+    taxable: false,
     active: true,
     special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
     category: { id: 1, name: 'Medicamentos', slug: 'medicamentos', active: true, sort_order: 1 },
@@ -247,11 +247,11 @@ async function installApiMocks(page: Page) {
         invoice_number: `000-001-01-${String(invoiceCounter).padStart(8, '0')}`,
         patient_name: payload.patient_name,
         subtotal: hasDialysisPrescription ? '0.00' : '25.00',
-        tax_amount: hasDialysisPrescription ? '0.00' : '3.75',
+        tax_amount: '0.00',
         discount_amount: '0.00',
-        total: hasDialysisPrescription ? '0.00' : '28.75',
+        total: hasDialysisPrescription ? '0.00' : '25.00',
         paid_amount: hasDialysisPrescription ? '0.00' : '0.00',
-        balance_due: hasDialysisPrescription ? '0.00' : '28.75',
+        balance_due: hasDialysisPrescription ? '0.00' : '25.00',
         status: hasDialysisPrescription ? 'paid' : 'issued',
         issued_at: operationalIssuedAt,
         items: [{
@@ -262,10 +262,10 @@ async function installApiMocks(page: Page) {
           category_name: 'Medicamentos',
           quantity: '1.00',
           unit_price: hasDialysisPrescription ? '0.00' : '25.00',
-          tax_rate: hasDialysisPrescription ? '0.00' : '15.00',
-          tax_amount: hasDialysisPrescription ? '0.00' : '3.75',
+          tax_rate: '0.00',
+          tax_amount: '0.00',
           line_subtotal: hasDialysisPrescription ? '0.00' : '25.00',
-          line_total: hasDialysisPrescription ? '0.00' : '28.75',
+          line_total: hasDialysisPrescription ? '0.00' : '25.00',
           special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
           special_rule_applied: hasDialysisPrescription,
           notes: null,
@@ -333,15 +333,15 @@ async function installApiMocks(page: Page) {
   await page.route('**/api/reports/daily**', (route) => json(route, {
     data: {
       date: '2026-05-17',
-      total_billed: '28.75',
-      total_collected: '28.75',
+      total_billed: '25.00',
+      total_collected: '25.00',
       invoice_count: 1,
       payment_count: 1,
-      payments_by_method: { cash: '28.75', transfer: '0.00', card: '0.00', other: '0.00' },
+      payments_by_method: { cash: '25.00', transfer: '0.00', card: '0.00', other: '0.00' },
       invoices_by_status: {
         issued: { count: 0, total: '0.00' },
         partial: { count: 0, total: '0.00' },
-        paid: { count: 1, total: '28.75' },
+        paid: { count: 1, total: '25.00' },
         void: { count: 0, total: '0.00' },
       },
     },
@@ -351,25 +351,25 @@ async function installApiMocks(page: Page) {
       month: '2026-05',
       date_from: '2026-05-01',
       date_to: '2026-05-31',
-      total_billed: '28.75',
-      total_collected: '28.75',
+      total_billed: '25.00',
+      total_collected: '25.00',
       total_pending: '0.00',
       total_partial: '0.00',
       total_voided: '0.00',
       invoice_count: 1,
       payment_count: 1,
-      payments_by_method: { cash: '28.75', transfer: '0.00', card: '0.00', other: '0.00' },
+      payments_by_method: { cash: '25.00', transfer: '0.00', card: '0.00', other: '0.00' },
       invoices_by_status: {
         issued: { count: 0, total: '0.00' },
         partial: { count: 0, total: '0.00' },
-        paid: { count: 1, total: '28.75' },
+        paid: { count: 1, total: '25.00' },
         void: { count: 0, total: '0.00' },
       },
       daily_totals: [
         {
           date: '2026-05-17',
-          total_billed: '28.75',
-          total_collected: '28.75',
+          total_billed: '25.00',
+          total_collected: '25.00',
           total_pending: '0.00',
           total_partial: '0.00',
           total_voided: '0.00',
@@ -385,8 +385,8 @@ async function installApiMocks(page: Page) {
       date_to: '2026-05-17',
       cash_session_id: null,
       user_id: null,
-      total_collected: '28.75',
-      payments_by_method: { cash: '28.75', transfer: '0.00', card: '0.00', other: '0.00' },
+      total_collected: '25.00',
+      payments_by_method: { cash: '25.00', transfer: '0.00', card: '0.00', other: '0.00' },
       payment_count: 1,
       invoice_count: 1,
     },
@@ -395,14 +395,14 @@ async function installApiMocks(page: Page) {
     data: {
       date_from: '2026-05-17',
       date_to: '2026-05-17',
-      categories: [{ category: 'Medicamentos', item_count: 1, quantity: '1.00', subtotal: '25.00', tax_amount: '3.75', total: '28.75' }],
+      categories: [{ category: 'Medicamentos', item_count: 1, quantity: '1.00', subtotal: '25.00', tax_amount: '0.00', total: '25.00' }],
     },
   }));
   await page.route('**/api/reports/services**', (route) => json(route, {
     data: {
       date_from: '2026-05-17',
       date_to: '2026-05-17',
-      services: [{ service: 'Eritropoyetina', item_count: 1, quantity: '1.00', subtotal: '25.00', tax_amount: '3.75', total: '28.75' }],
+      services: [{ service: 'Eritropoyetina', item_count: 1, quantity: '1.00', subtotal: '25.00', tax_amount: '0.00', total: '25.00' }],
     },
   }));
   await page.route('**/api/reports/operations**', (route) => json(route, {
@@ -727,12 +727,12 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
   await captureScreen(page, 'billing-new-cart-light', 'light');
-  await expect(page.getByText(/Total:\s*L\.\s*28\.75/)).toBeVisible();
+  await expect(page.getByText(/Total estimado:\s*L\.\s*25\.00/)).toBeVisible();
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
   await expect(page.getByText(/ingrese el monto recibido/i)).toBeVisible();
-  await page.getByLabel(/monto recibido/i).fill('28.75');
+  await page.getByLabel(/monto recibido/i).fill('25.00');
   await expect(page.getByText(/ingrese el monto recibido/i)).toBeHidden();
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
   await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
