@@ -185,7 +185,7 @@ Decision:
 - La unicidad real de caja abierta se defiende tambien en base de datos con `open_user_id` nullable y unico: solo las cajas abiertas llenan ese campo, y las cajas cerradas lo dejan `NULL` para permitir historico.
 - Registro de pago guarda `payments`, `cash_movements` y actualiza `invoices.paid_amount`, `invoices.balance_due` y `invoices.status` dentro de una sola transaccion.
 - `expected_amount` de cierre representa efectivo esperado: monto inicial mas pagos en efectivo registrados en la caja.
-- El recibo MVP devuelve datos renderizables para media carta/carta/A5/80mm/58mm y usa exclusivamente snapshots de `invoice_items` junto con datos fiscales persistidos.
+- El recibo MVP devuelve datos renderizables para A5/carta/media carta/80mm/58mm y usa exclusivamente snapshots de `invoice_items` junto con datos fiscales persistidos.
 
 Motivo:
 
@@ -290,7 +290,7 @@ Decision:
 - Restore MySQL/MariaDB real se valida solo contra una base descartable confirmada.
 - Concurrencia HTTP/Laravel/MySQL se valida solo contra entorno local/descartable confirmado y deja `RUN_ID` visible en datos auditables.
 - LAN desde servidor por IP puede quedar validada, pero LAN fisica completa requiere otra computadora cliente.
-- impresora institucional media carta/carta/A5/80mm/58mm solo se marca validada con hardware real.
+- impresora institucional A5/carta/media carta/80mm/58mm solo se marca validada con hardware real.
 
 Motivo:
 
@@ -1473,7 +1473,7 @@ Consecuencia:
 
 Decision:
 
-- Los prompts de planificacion, revision, ejecucion POS, review de commit y readiness revisan recibo institucional media carta/carta/A5/80mm/58mm.
+- Los prompts de planificacion, revision, ejecucion POS, review de commit y readiness revisan recibo institucional A5/carta/media carta/80mm/58mm.
 - `scripts/check-branding.ps1` incluye `prompts/` en las reglas que bloquean lenguaje de recibo heredado y entrega no institucional.
 - El prompt maestro deja de apuntar a documentos con nombre heredado y a referencias de impresion de rollo.
 
@@ -1492,7 +1492,7 @@ Consecuencia:
 Decision:
 
 - Backend valida recibos y reimpresiones con `half_letter`, `letter`, `a5`, `80mm` y `58mm`.
-- Configuracion fiscal rechaza `receipt_width` heredado y `receipt_paper_size` fuera de media carta/carta/A5/80mm/58mm.
+- Configuracion fiscal rechaza `receipt_width` heredado y `receipt_paper_size` fuera de A5/carta/media carta/80mm/58mm.
 - Snapshots antiguos con valores desconocidos se normalizan a media carta al generar recibo o reporte.
 - `FiscalSetting` deja de exponer `receipt_width` en respuestas JSON normales.
 
@@ -1791,7 +1791,7 @@ Decision:
 
 - Las instrucciones y selectores deben presentar los formatos como A5, carta, media carta, 80mm y 58mm.
 - Los formatos termicos 80mm/58mm siguen soportados, pero no reemplazan ni preceden los formatos de pagina en el flujo operativo.
-- Los textos que solo mencionan media carta/carta/A5 se consideran incompletos hasta agregar 80mm/58mm.
+- Los textos que solo mencionan A5/carta/media carta se consideran incompletos hasta agregar 80mm/58mm.
 
 Motivo:
 
@@ -1819,7 +1819,7 @@ Motivo:
 Consecuencia:
 
 - Los operadores ven primero A5/carta/media carta al seleccionar o probar recibos.
-- La prueba unitaria del helper falla si el orden vuelve a media carta/carta/A5.
+- La prueba unitaria del helper falla si A5, carta y media carta dejan de aparecer primero en ese orden.
 
 ### 2026-06-02 - Crear usuarios se muestra solo con permiso explicito
 

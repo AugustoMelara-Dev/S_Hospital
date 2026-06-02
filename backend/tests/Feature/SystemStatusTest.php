@@ -243,7 +243,7 @@ MARKDOWN;
 - Cashier computer: CAJA-01
 - Invoice used: FAC-000123
 - Evidence/photo reference: qa/evidence/printer-2026-05-19
-- Final conclusion: Impresion fisica aprobada para recibos media carta, carta, A5, 80mm y 58mm con reimpresion historica.
+- Final conclusion: Impresion fisica aprobada para recibos A5, carta, media carta, 80mm y 58mm con reimpresion historica.
 
 ## Media carta physical print result
 

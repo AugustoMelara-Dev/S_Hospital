@@ -9,7 +9,7 @@ Entorno: Windows local en `C:\Projects\S_Hospital`, Laravel servido en `http://1
 - PRODUCTION_CANDIDATE: si.
 - PRODUCTION_READY: no.
 
-Fase 11 valida partes reales del entorno, pero no declara produccion final porque falta completar validacion fisica desde cliente LAN independiente, impresora institucional real media carta/carta/A5/80mm/58mm y configuracion final `APP_ENV=production` / `APP_DEBUG=false` con admin real.
+Fase 11 valida partes reales del entorno, pero no declara produccion final porque falta completar validacion fisica desde cliente LAN independiente, impresora institucional real A5/carta/media carta/80mm/58mm y configuracion final `APP_ENV=production` / `APP_DEBUG=false` con admin real.
 
 ## Entorno detectado
 
@@ -204,4 +204,4 @@ Fase 11 eleva la evidencia tecnica de campo, pero el sistema queda:
 - PRODUCTION_CANDIDATE: si.
 - PRODUCTION_READY: no.
 
-Bloqueantes restantes para `PRODUCTION_READY`: cliente LAN fisico completo, impresora institucional fisica media carta/carta/A5/80mm/58mm y configuracion final de produccion con admin real.
+Bloqueantes restantes para `PRODUCTION_READY`: cliente LAN fisico completo, impresora institucional fisica A5/carta/media carta/80mm/58mm y configuracion final de produccion con admin real.
