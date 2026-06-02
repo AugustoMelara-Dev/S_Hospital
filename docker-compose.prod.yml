@@ -5,7 +5,15 @@ services:
       context: .
       dockerfile: ./backend/Dockerfile.prod
     restart: unless-stopped
-    command: sh -c "mkdir -p /shared_public && cp -r /var/www/html/public/. /shared_public/ && cp -r /var/www/frontend/dist/. /shared_public/ && exec php-fpm"
+    command: >
+      sh -c "
+        mkdir -p /shared_public &&
+        cp -r /var/www/html/public/. /shared_public/ &&
+        cp -r /var/www/frontend/dist/. /shared_public/ &&
+        test -f /shared_public/index.html || { echo 'FATAL: frontend dist is empty'; exit 1; } &&
+        php artisan config:cache &&
+        exec php-fpm
+      "
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
@@ -37,12 +45,20 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+    security_opt:
+      - "no-new-privileges:true"
+    read_only: false
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    mem_limit: 512m
+    cpus: "1.0"
+    pids_limit: 200
     depends_on:
       mysql:
         condition: service_healthy
 
   nginx:
-    image: nginx:1.25-alpine
+    image: nginx:1.25.4-alpine
     restart: unless-stopped
     ports:
       - "${APP_PORT:-8000}:80"
@@ -55,13 +71,26 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    security_opt:
+      - "no-new-privileges:true"
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:size=32m
+      - /var/run:size=8m
+    mem_limit: 128m
+    cpus: "0.5"
+    pids_limit: 100
     depends_on:
       backend:
         condition: service_healthy
 
   mysql:
-    image: mariadb:11
+    image: mariadb:11.4.3
     restart: unless-stopped
+    command:
+      - "--max_connections=200"
+      - "--innodb_strict_mode=ON"
+      - "--skip-name-resolve"
     environment:
       MARIADB_DATABASE: ${DB_DATABASE:-hospital_billing}
       MARIADB_USER: ${DB_USERNAME:-hospital}
@@ -74,6 +103,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    security_opt:
+      - "no-new-privileges:true"
+    mem_limit: 1024m
+    cpus: "1.5"
+    pids_limit: 300
 
   queue-worker:
     image: s_hospital-queue-worker:latest
@@ -111,6 +145,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    security_opt:
+      - "no-new-privileges:true"
+    mem_limit: 384m
+    cpus: "0.5"
+    pids_limit: 150
     depends_on:
       mysql:
         condition: service_healthy
