@@ -32,7 +32,7 @@ class AppServiceProvider extends ServiceProvider
 
     private function registerPermissionAudit(): void
     {
-        $observer = new PermissionAuditObserver();
+        $observer = new PermissionAuditObserver;
 
         Role::observe($observer);
         Permission::observe($observer);

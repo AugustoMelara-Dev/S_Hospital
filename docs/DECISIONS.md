@@ -2995,3 +2995,23 @@ Validacion:
 - `php artisan test --filter=ReportsTest::test_period_closure_pdf_declares_active_filters_with_human_labels --colors=never`
 - `php artisan test --filter=ReportsTest --colors=never`
 - `vendor/bin/pint --test app/Actions/Reports/PdfExportService.php app/Http/Controllers/ReportController.php tests/Feature/ReportsTest.php`
+
+### 2026-06-02 - Auditoria de roles y permisos usa eventos Spatie
+
+Decision:
+
+- La configuracion `permission.events_enabled` queda activa para emitir cambios de asignacion y retiro de roles/permisos.
+- `AppServiceProvider` conecta esos eventos con `PermissionAuditObserver`, que registra solo IDs y nombres seguros en `audit_logs`.
+- La actualizacion de usuarios evita llamar `syncRoles` cuando el rol solicitado ya esta asignado, reduciendo ruido en auditoria.
+
+Motivo:
+
+- Soporte necesita reconstruir quien cambio permisos sin revisar tablas pivote manualmente.
+- Los cambios de autorizacion son sensibles para caja y administracion; deben quedar registrados sin exponer contrasenas, tokens ni rutas internas.
+
+Validacion:
+
+- `php artisan test --filter=PermissionAuditTest --colors=never`
+- `php artisan test --filter=UserManagementTest --colors=never`
+- `vendor/bin/phpstan analyse app/Providers/AppServiceProvider.php app/Observers/PermissionAuditObserver.php app/Http/Controllers/UserController.php tests/Feature/PermissionAuditTest.php --no-progress --error-format=table`
+- `vendor/bin/pint --test app/Providers/AppServiceProvider.php app/Observers/PermissionAuditObserver.php app/Http/Controllers/UserController.php tests/Feature/PermissionAuditTest.php config/permission.php`

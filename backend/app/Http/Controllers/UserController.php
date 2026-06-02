@@ -56,7 +56,9 @@ class UserController extends Controller
             'username' => $validated['username'],
         ]);
 
-        $user->syncRoles([$validated['role']]);
+        if (! $user->hasRole($validated['role'])) {
+            $user->syncRoles([$validated['role']]);
+        }
 
         return response()->json([
             'data' => $this->transformUser($user->load('roles')),
