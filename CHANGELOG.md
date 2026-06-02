@@ -126,6 +126,18 @@
   records, lockout engages at 5 fails, and lockout does not bleed into
   other users from the same IP.
 
+### Phase 14 - Central keyboard shortcuts catalogue
+
+- `frontend/src/lib/shortcuts.ts` exposes `KEYBOARD_SHORTCUTS`,
+  `shortcutsByScope` and `shortcutLabel` so the cashier help page,
+  tooltips and the new a11y test all read from one place.
+- Catalogue covers POS bindings (Ctrl+N, Ctrl+B, Ctrl+K, Ctrl+Enter,
+  Esc), cash session hot keys (F2), invoice emission (F4), reprint
+  (F8) and the global Cmd+K navbar search.
+- `shortcuts.test.ts` asserts that every entry has a description,
+  no two entries collide inside the same scope, POS bindings are
+  present, and labels render in Ctrl+Key form (6 cases).
+
 ### Audit
 
 - `docs/AUDIT_2026_06_02.md` records the full audit and the 20-phase

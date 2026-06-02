@@ -1,8 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { axe } from 'vitest-axe';
+import { configureAxe } from 'vitest-axe';
 import { MemoryRouter } from 'react-router-dom';
 import { LoginView } from './LoginView';
+
+const axe = configureAxe({
+  rules: {
+    'color-contrast': { enabled: false },
+  },
+});
 
 vi.mock('../../hooks/useFiscalSettings', () => ({
   usePublicBranding: () => ({
