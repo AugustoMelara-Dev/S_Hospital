@@ -325,6 +325,23 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         actions={
           canCreate ? (
             <div className="flex items-center gap-2">
+              {systemStatus && (
+                <span
+                  className={`hidden md:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+                    systemStatus.backups.worker_recently_active
+                      ? 'bg-emerald-100 text-emerald-900'
+                      : 'bg-amber-100 text-amber-900'
+                  }`}
+                  aria-label={systemStatus.backups.worker_recently_active ? 'Worker de respaldos activo' : 'Worker de respaldos inactivo'}
+                >
+                  <span
+                    className={`inline-block size-1.5 rounded-full ${
+                      systemStatus.backups.worker_recently_active ? 'bg-emerald-600' : 'bg-amber-600'
+                    }`}
+                  />
+                  Worker {systemStatus.backups.worker_recently_active ? 'activo' : 'inactivo'}
+                </span>
+              )}
               <Button
                 type="button"
                 variant="outline"
@@ -521,7 +538,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                         {systemStatus.runtime.pending_migration_count === null
                           ? 'Sin dato'
                           : systemStatus.runtime.pending_migration_count > 0
-                            ? 'Requiere revisión'
+                            ? 'Requiere revisiï¿½n'
                             : 'Actualizada'}
                       </span>
                     </div>
