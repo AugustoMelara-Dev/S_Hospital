@@ -83,4 +83,59 @@ class OpenApiExporterTest extends TestCase
             }
         }
     }
+
+    public function test_advanced_report_paths_declare_supported_query_filters(): void
+    {
+        $document = app(OpenApiExporter::class)->document(app('router'));
+
+        foreach ([
+            '/api/reports/income',
+            '/api/reports/categories',
+            '/api/reports/areas',
+            '/api/reports/services',
+            '/api/reports/operations',
+            '/api/reports/export',
+            '/api/reports/pdf',
+        ] as $path) {
+            $this->assertArrayHasKey($path, $document['paths']);
+        }
+
+        $incomeParameters = $document['paths']['/api/reports/income']['get']['parameters'] ?? [];
+        $incomeParameterNames = array_column($incomeParameters, 'name');
+
+        foreach ([
+            'date_from',
+            'date_to',
+            'cash_session_id',
+            'user_id',
+            'category_id',
+            'area_id',
+            'method',
+            'status',
+        ] as $expectedParameter) {
+            $this->assertContains($expectedParameter, $incomeParameterNames, "Missing {$expectedParameter} on income report OpenAPI parameters");
+        }
+
+        $incomeRequiredByName = array_column($incomeParameters, 'required', 'name');
+        $this->assertTrue($incomeRequiredByName['date_from']);
+        $this->assertTrue($incomeRequiredByName['date_to']);
+        $this->assertFalse($incomeRequiredByName['cash_session_id']);
+
+        $pdfParameters = $document['paths']['/api/reports/pdf']['get']['parameters'] ?? [];
+        $pdfParameterNames = array_column($pdfParameters, 'name');
+        $pdfRequiredByName = array_column($pdfParameters, 'required', 'name');
+
+        $this->assertContains('date', $pdfParameterNames, 'Daily PDF export must document its date query parameter');
+        $this->assertContains('date_from', $pdfParameterNames, 'Range PDF export must document its date_from query parameter');
+        $this->assertContains('cash_session_id', $pdfParameterNames, 'Scoped PDF export must document its cash session filter');
+        $this->assertFalse($pdfRequiredByName['date']);
+        $this->assertFalse($pdfRequiredByName['date_from']);
+        $this->assertFalse($pdfRequiredByName['date_to']);
+
+        $dailyRequiredByName = array_column($document['paths']['/api/reports/daily']['get']['parameters'] ?? [], 'required', 'name');
+        $monthlyRequiredByName = array_column($document['paths']['/api/reports/monthly']['get']['parameters'] ?? [], 'required', 'name');
+
+        $this->assertFalse($dailyRequiredByName['date']);
+        $this->assertFalse($monthlyRequiredByName['month']);
+    }
 }

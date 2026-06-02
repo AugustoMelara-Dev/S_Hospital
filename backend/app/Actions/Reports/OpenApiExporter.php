@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Actions\Reports;
 
+use App\Models\Invoice;
+use App\Models\Payment;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\Router;
 
@@ -19,7 +21,13 @@ use Illuminate\Routing\Router;
 class OpenApiExporter
 {
     /**
-     * @var array<string, array{summary: string, tags: list<string>, security: bool}>
+     * @var array<string, array{
+     *     summary: string,
+     *     tags: list<string>,
+     *     security: bool,
+     *     parameters?: list<string>,
+     *     required_parameters?: list<string>
+     * }>
      */
     private const ENDPOINTS = [
         '/api/health' => [
@@ -102,6 +110,74 @@ class OpenApiExporter
             'tags' => ['reports'],
             'security' => true,
         ],
+        '/api/reports/daily' => [
+            'summary' => 'Daily financial facts separated by billed, collected, pending, partial and voided',
+            'tags' => ['reports'],
+            'security' => true,
+            'parameters' => ['date'],
+            'required_parameters' => [],
+        ],
+        '/api/reports/monthly' => [
+            'summary' => 'Monthly financial facts and daily evolution',
+            'tags' => ['reports'],
+            'security' => true,
+            'parameters' => ['month'],
+            'required_parameters' => [],
+        ],
+        '/api/reports/income' => [
+            'summary' => 'Date-range income report with payment, status, cashier, cash session, area and category filters',
+            'tags' => ['reports'],
+            'security' => true,
+            'parameters' => ['date_from', 'date_to', 'cash_session_id', 'user_id', 'category_id', 'area_id', 'method', 'status'],
+            'required_parameters' => ['date_from', 'date_to'],
+        ],
+        '/api/reports/categories' => [
+            'summary' => 'Category breakdown using historical invoice item snapshots and report filters',
+            'tags' => ['reports'],
+            'security' => true,
+            'parameters' => ['date_from', 'date_to', 'cash_session_id', 'user_id', 'category_id', 'area_id', 'method', 'status'],
+            'required_parameters' => ['date_from', 'date_to'],
+        ],
+        '/api/reports/areas' => [
+            'summary' => 'Area income breakdown using historical invoice item snapshots and report filters',
+            'tags' => ['reports'],
+            'security' => true,
+            'parameters' => ['date_from', 'date_to', 'cash_session_id', 'user_id', 'category_id', 'area_id', 'method', 'status'],
+            'required_parameters' => ['date_from', 'date_to'],
+        ],
+        '/api/reports/services' => [
+            'summary' => 'Service sales breakdown using historical invoice item snapshots and report filters',
+            'tags' => ['reports'],
+            'security' => true,
+            'parameters' => ['date_from', 'date_to', 'cash_session_id', 'user_id', 'category_id', 'method', 'status'],
+            'required_parameters' => ['date_from', 'date_to'],
+        ],
+        '/api/reports/operations' => [
+            'summary' => 'Operational audit report for voids, reprints, payment reversals, backups and cashiers',
+            'tags' => ['reports'],
+            'security' => true,
+            'parameters' => ['date_from', 'date_to', 'cash_session_id', 'user_id', 'category_id', 'area_id', 'method', 'status'],
+            'required_parameters' => ['date_from', 'date_to'],
+        ],
+        '/api/reports/export' => [
+            'summary' => 'Excel export for date-range financial reports with applied filters',
+            'tags' => ['reports'],
+            'security' => true,
+            'parameters' => ['date_from', 'date_to', 'cash_session_id', 'user_id', 'category_id', 'area_id', 'method', 'status'],
+            'required_parameters' => ['date_from', 'date_to'],
+        ],
+        '/api/reports/pdf' => [
+            'summary' => 'Daily or date-range PDF closure export with applied filters',
+            'tags' => ['reports'],
+            'security' => true,
+            'parameters' => ['date', 'date_from', 'date_to', 'cash_session_id', 'user_id', 'category_id', 'area_id', 'method', 'status'],
+            'required_parameters' => [],
+        ],
+        '/api/reports/cash-sessions/{cashSession}' => [
+            'summary' => 'Cash session reconciliation with expected cash, counted cash, difference and payment methods',
+            'tags' => ['reports'],
+            'security' => true,
+        ],
         '/api/admin/users' => [
             'summary' => 'List, create and manage users with Spatie roles',
             'tags' => ['admin'],
@@ -149,6 +225,15 @@ class OpenApiExporter
                         '423' => ['description' => 'Account locked after too many failed attempts'],
                     ],
                 ];
+
+                if (! empty($metadata['parameters'])) {
+                    $requiredParameters = $metadata['required_parameters'];
+
+                    $entry[strtolower($method)]['parameters'] = array_map(
+                        fn (string $name): array => $this->queryParameter($name, in_array($name, $requiredParameters, true)),
+                        $metadata['parameters'],
+                    );
+                }
             }
 
             $paths[$path] = $entry;
@@ -187,5 +272,38 @@ class OpenApiExporter
             ],
             'paths' => $paths,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function queryParameter(string $name, bool $required = false): array
+    {
+        return [
+            'name' => $name,
+            'in' => 'query',
+            'required' => $required,
+            'schema' => $this->queryParameterSchema($name),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function queryParameterSchema(string $name): array
+    {
+        return match ($name) {
+            'date', 'date_from', 'date_to' => ['type' => 'string', 'format' => 'date'],
+            'month' => ['type' => 'string', 'pattern' => '^\d{4}-\d{2}$'],
+            'cash_session_id', 'user_id', 'category_id', 'area_id' => ['type' => 'integer', 'minimum' => 1],
+            'method' => ['type' => 'string', 'enum' => Payment::METHODS],
+            'status' => ['type' => 'string', 'enum' => [
+                Invoice::STATUS_ISSUED,
+                Invoice::STATUS_PARTIAL,
+                Invoice::STATUS_PAID,
+                Invoice::STATUS_VOID,
+            ]],
+            default => ['type' => 'string'],
+        };
     }
 }

@@ -3088,3 +3088,19 @@ Validacion:
 
 - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test_validate_lan_client_safety.ps1`
 - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test_operational_url_safety.ps1`
+
+## 2026-06-02 - OpenAPI documenta filtros financieros avanzados
+
+Contexto: el contrato generado por `/api/system/openapi` no listaba los endpoints avanzados de reportes (`income`, `categories`, `areas`, `services`, `operations`, `export`, `pdf`) ni sus filtros de rango. Eso dejaba la integracion administrativa sin una fuente verificable de parametros para caja, cajero, area, categoria, metodo y estado.
+
+Decision: `OpenApiExporter` ahora incluye esos paths y declara sus query parameters. Los IDs siguen siendo parametros tecnicos de consulta; `docs/API_CONTRACTS.md` aclara que pantallas y exportaciones deben resolverlos a etiquetas humanas antes de mostrarlos.
+
+Criterio de verificacion: `OpenApiExporterTest::test_advanced_report_paths_declare_supported_query_filters` valida paths y filtros clave como `cash_session_id`, `user_id`, `method`, `status` y los rangos de fecha.
+
+## 2026-06-02 - PHPStan usa ruta vigente de Larastan
+
+Contexto: `vendor/bin/phpstan analyse` fallaba antes de analizar codigo porque `phpstan.neon` apuntaba a `vendor/nunomaduro/larastan/extension.neon`, ruta historica que no existe con la dependencia actual `larastan/larastan`.
+
+Decision: actualizar el include a `vendor/larastan/larastan/extension.neon`. El analisis focal de `OpenApiExporter` queda limpio con `--memory-limit=512M`.
+
+Estado restante: el analisis completo del backend ahora ejecuta y revela deuda existente de modelos Eloquent sin propiedades PHPDoc/casts tipados (`property.notFound`, 291 errores). No se corrige en esta subfase para no mezclar el contrato de reportes con una refactorizacion amplia de modelos.

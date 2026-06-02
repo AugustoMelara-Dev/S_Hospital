@@ -251,11 +251,16 @@ El recibo debe incluir Gobierno, Secretaria, Hospital San Isidro, numero/serie, 
 | Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
 |---|---|---|---|---|---|
 | GET | `/api/reports/daily` | `reports.view` | Query: `date` | Resumen diario | Rango obligatorio o default hoy. |
-| GET | `/api/reports/income` | `reports.view` | Query: `date_from`, `date_to`, `cash_session_id`, `user_id` | Ingresos agregados | Sumar en backend. |
-| GET | `/api/reports/categories` | `reports.view` | Query: `date_from`, `date_to` | Totales por categoria | No traer todo al frontend. |
+| GET | `/api/reports/income` | `reports.view` | Query: `date_from`, `date_to`, `cash_session_id`, `user_id`, `category_id`, `area_id`, `method`, `status` | Ingresos agregados | Sumar en backend; separar facturado, cobrado, pendiente, parcial y anulado. |
+| GET | `/api/reports/categories` | `reports.view` | Query: filtros de rango (`date_from`, `date_to`, caja, cajero, categoria, area, metodo, estado) | Totales por categoria | Usa snapshots historicos; no traer todo al frontend. |
+| GET | `/api/reports/areas` | `reports.view` | Query: filtros de rango (`date_from`, `date_to`, caja, cajero, categoria, area, metodo, estado) | Totales por area | Usa snapshots historicos y fuente de monto declarada. |
+| GET | `/api/reports/services` | `reports.view` | Query: filtros de rango (`date_from`, `date_to`, caja, cajero, categoria, metodo, estado) | Servicios mas cobrados/facturados | Usa snapshots historicos de factura; no recalcula desde catalogo vigente. |
 | GET | `/api/reports/cash-sessions/{id}` | `reports.view` | N/A | Resumen de caja | Esperado vs contado. |
 | GET | `/api/reports/operations` | `reports.view` | Query: `date_from`, `date_to`, filtros operativos | Anulaciones, reimpresiones, reversos, respaldos y cajeros | Vista normal no expone IDs internos, checksum de backup ni rutas locales; soporte tecnico debe usar fuentes administrativas protegidas. |
-| GET | `/api/reports/pdf` | `reports.export` | Query: `date` o (`date_from`, `date_to`) | Archivo PDF de cierre | PDF diario requiere `reports.managerial.view`; PDF por rango permite scoping por caja para usuarios con `reports.cash_session.view`. |
+| GET | `/api/reports/export` | `reports.export` | Query: filtros de rango (`date_from`, `date_to`, caja, cajero, categoria, area, metodo, estado) | Excel de cierre | Debe mostrar filtros aplicados con etiquetas humanas, no `Caja #id` ni codigos internos. |
+| GET | `/api/reports/pdf` | `reports.export` | Query: `date` o filtros de rango (`date_from`, `date_to`, caja, cajero, categoria, area, metodo, estado) | Archivo PDF de cierre | PDF diario requiere `reports.managerial.view`; PDF por rango permite scoping por caja para usuarios con `reports.cash_session.view`; filtros impresos usan etiquetas humanas. |
+
+Los filtros tecnicos `cash_session_id`, `user_id`, `category_id` y `area_id` solo viajan como query params. Las pantallas y exportaciones deben resolverlos a etiquetas humanas (caja con cajero/fecha/estado, cajero, categoria y area) antes de mostrarlos a administracion.
 
 ## Backups
 
