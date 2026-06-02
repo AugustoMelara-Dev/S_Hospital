@@ -69,7 +69,7 @@ class AddSecurityHeaders
         return implode('; ', [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline'",
-            "report-uri /api/system/csp-report",
+            'report-uri /api/system/csp-report',
         ]);
     }
 }

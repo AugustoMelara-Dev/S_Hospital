@@ -61,4 +61,26 @@ class OpenApiExporterTest extends TestCase
                 'paths',
             ]);
     }
+
+    public function test_tag_list_covers_every_cashier_module(): void
+    {
+        $document = app(OpenApiExporter::class)->document(app('router'));
+        $tagNames = array_column($document['tags'], 'name');
+
+        foreach (['auth', 'system', 'invoices', 'cash', 'catalog', 'backups', 'reports', 'settings', 'admin'] as $expected) {
+            $this->assertContains($expected, $tagNames, "OpenAPI tags missing '{$expected}'");
+        }
+    }
+
+    public function test_every_path_has_a_responses_block(): void
+    {
+        $document = app(OpenApiExporter::class)->document(app('router'));
+
+        foreach ($document['paths'] as $path => $methods) {
+            foreach ($methods as $method => $operation) {
+                $this->assertArrayHasKey('responses', $operation, "{$method} {$path} is missing a responses block");
+                $this->assertArrayHasKey('200', $operation['responses'], "{$method} {$path} is missing the 200 response");
+            }
+        }
+    }
 }
