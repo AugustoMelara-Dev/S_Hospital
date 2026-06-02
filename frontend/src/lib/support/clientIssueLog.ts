@@ -40,17 +40,38 @@ export function safeClientMessage(value: string): string {
     .slice(0, 500);
 }
 
+function safeOptionalContext(value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const safeValue = safeClientMessage(value);
+
+  return safeValue === '' ? undefined : safeValue;
+}
+
+function safeStoredIssue(issue: StoredClientIssue): StoredClientIssue {
+  return {
+    action: safeOptionalContext(issue.action),
+    module: safeOptionalContext(issue.module),
+    route: safeClientMessage(issue.route || 'no indicada') || 'no indicada',
+    safe_message: safeClientMessage(issue.safe_message),
+    technical_code: safeClientMessage(issue.technical_code || 'CLIENT_ERROR') || 'CLIENT_ERROR',
+    occurred_at: safeClientMessage(issue.occurred_at),
+  };
+}
+
 export function logClientIssue(error: unknown, context: ClientIssueContext = {}): void {
   try {
     const existing = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '[]') as StoredClientIssue[];
-    const issue: StoredClientIssue = {
+    const issue = safeStoredIssue({
       action: context.action,
       module: context.module,
       route: context.route ?? window.location.pathname,
       safe_message: safeClientMessage(error instanceof Error ? error.message : 'Error de interfaz'),
       technical_code: error instanceof Error ? error.name : 'CLIENT_ERROR',
       occurred_at: new Date().toISOString(),
-    };
+    });
 
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify([issue, ...existing].slice(0, MAX_ISSUES)));
   } catch {
@@ -99,7 +120,7 @@ export function getClientIssues(): StoredClientIssue[] {
   try {
     const issues = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '[]') as StoredClientIssue[];
 
-    return Array.isArray(issues) ? issues.slice(0, MAX_ISSUES) : [];
+    return Array.isArray(issues) ? issues.slice(0, MAX_ISSUES).map(safeStoredIssue) : [];
   } catch {
     return [];
   }

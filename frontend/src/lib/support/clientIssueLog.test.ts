@@ -46,6 +46,24 @@ describe('clientIssueLog', () => {
     expect(getClientIssues()[0].safe_message).not.toMatch(/DB_PASSWORD|secret/i);
   });
 
+  it('returns safe stored context for the help evidence panel', () => {
+    window.localStorage.clear();
+
+    logClientIssue(new Error('Servidor no disponible'), {
+      action: 'GET http://soporte:clave-secreta@192.168.1.10:8000/api/health?token=abc',
+      module: 'api DB_PASSWORD=secret',
+      route: '/help?token=abc&cash_session_id=12',
+    });
+
+    const issue = getClientIssues()[0];
+
+    expect(`${issue.action} ${issue.module} ${issue.route}`).not.toMatch(
+      /soporte|clave-secreta|token=abc|DB_PASSWORD|secret|cash_session_id/i,
+    );
+    expect(issue.action).toContain('http://192.168.1.10:8000/api/health');
+    expect(issue.route).toContain('/help');
+  });
+
   it('builds a limited support summary without secrets or local paths', () => {
     const summary = buildClientIssueSupportSummary([
       {
