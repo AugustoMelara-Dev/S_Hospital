@@ -2862,3 +2862,22 @@ Motivo:
 Validacion:
 
 - `php artisan test --filter='ReportsTest::test_report_export_includes_area_income_sheet|ReportsTest::test_report_export_labels_payment_scoped_breakdowns_as_prorated_collected_amounts' --colors=never`
+
+### 2026-06-02 - Export de caja normaliza rango por fechas reales de la caja
+
+Decision:
+
+- Cuando el export Excel recibe `cash_session_id`, el backend reemplaza `date_from` y `date_to` por `opened_at` y `closed_at` de esa caja.
+- Si la caja sigue abierta, `date_to` usa la fecha de apertura como fallback.
+- La normalizacion se hace despues de autorizacion, conservando la restriccion de que un cajero solo exporta su propia caja.
+
+Motivo:
+
+- El backend debe ser fuente de verdad aunque el frontend mande un rango equivocado o alguien llame el endpoint directamente.
+- Un export de caja historica no debe omitir cobros por depender de memoria humana o filtros de otra pantalla.
+
+Validacion:
+
+- `php artisan test --filter=ReportsTest::test_cash_session_export_uses_cash_session_dates_even_when_request_range_is_wrong --colors=never`
+- `php artisan test --filter=ReportsTest --colors=never`
+- `vendor/bin/pint --test app/Http/Requests/Reports/ExportReportRequest.php tests/Feature/ReportsTest.php`

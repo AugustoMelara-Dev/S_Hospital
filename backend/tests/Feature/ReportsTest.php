@@ -1468,6 +1468,61 @@ class ReportsTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_cash_session_export_uses_cash_session_dates_even_when_request_range_is_wrong(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+        $sessionDate = now()->subDays(7)->setTime(8, 0);
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        CashRegisterSession::query()
+            ->whereKey($sessionId)
+            ->update([
+                'opened_at' => $sessionDate,
+                'closed_at' => $sessionDate->copy()->setTime(16, 0),
+                'status' => CashRegisterSession::STATUS_CLOSED,
+            ]);
+
+        Invoice::query()
+            ->whereKey($invoiceId)
+            ->update(['issued_at' => $sessionDate->copy()->setTime(9, 0)]);
+
+        Payment::query()
+            ->where('invoice_id', $invoiceId)
+            ->update(['paid_at' => $sessionDate->copy()->setTime(10, 0)]);
+
+        $this->grantPermissions($cashier, 'reports.cash_session.view', 'reports.export');
+
+        $xlsx = $this->actingAs($cashier)
+            ->get('/api/reports/export?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&cash_session_id='.$sessionId)
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->streamedContent();
+
+        $path = tempnam(sys_get_temp_dir(), 'cash-session-export-dates-');
+        file_put_contents($path, $xlsx);
+
+        try {
+            $spreadsheet = IOFactory::load($path);
+            $filtersSheet = $spreadsheet->getSheetByName('Filtros Aplicados');
+            $financialSheet = $spreadsheet->getSheetByName('Lectura Financiera');
+
+            $this->assertNotNull($filtersSheet);
+            $this->assertSame($sessionDate->format('d/m/Y'), $filtersSheet->getCell('C7')->getValue());
+            $this->assertSame($sessionDate->format('d/m/Y'), $filtersSheet->getCell('C8')->getValue());
+
+            $this->assertNotNull($financialSheet);
+            $this->assertSame(17.25, $financialSheet->getCell('C7')->getValue());
+        } finally {
+            if ($path !== false && file_exists($path)) {
+                unlink($path);
+            }
+        }
+    }
+
     public function test_report_indexes_exist_for_payment_and_category_queries(): void
     {
         $this->assertContains('payments_status_paid_at_index', $this->indexNames('payments'));
