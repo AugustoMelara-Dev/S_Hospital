@@ -67,7 +67,7 @@ export function SessionSummary({
               ? 'Ingrese monto contado para calcular diferencia.'
               : difference === null || difference === 0
               ? 'L. 0.00'
-              : `L. ${difference > 0 ? '+' : ''}${difference.toFixed(2)}`}
+              : formatSignedLempiras(difference)}
           </p>
         </CardContent>
       </Card>
@@ -85,4 +85,15 @@ export function SessionSummary({
       </Card>
     </div>
   );
+}
+
+function formatSignedLempiras(value: number | null | undefined): string {
+  const safeValue = finiteNumber(value);
+
+  if (safeValue === 0) {
+    return 'L. 0.00';
+  }
+
+  const sign = safeValue > 0 ? '+' : '-';
+  return formatLempiras(Math.abs(safeValue)).replace('L. ', `L. ${sign}`);
 }

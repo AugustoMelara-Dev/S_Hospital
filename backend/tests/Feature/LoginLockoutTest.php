@@ -119,7 +119,7 @@ class LoginLockoutTest extends TestCase
 
         for ($i = 0; $i < 10; $i++) {
             $this->postJson('/api/auth/login', [
-                'login' => 'no-existe-' . $i,
+                'login' => 'no-existe-'.$i,
                 'password' => 'wrong-password',
             ])->assertStatus(422);
         }
