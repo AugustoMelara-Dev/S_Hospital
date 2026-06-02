@@ -6,6 +6,7 @@ import { Dialog } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Checkbox } from '../../../components/ui/checkbox';
 import type { Payment } from '../../../lib/api';
+import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
 type PaymentModalProps = {
   open: boolean;
@@ -97,22 +98,22 @@ export function PaymentModal({
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Total:</span>
-            <span className="font-medium">L. {total}</span>
+            <span className="font-medium">{moneyLabel(total)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Saldo pendiente:</span>
-            <span className="font-bold">L. {balanceDue}</span>
+            <span className="font-bold">{moneyLabel(balanceDue)}</span>
           </div>
           {changeCents !== null && (
             <div className="flex justify-between text-emerald-600">
               <span className="text-muted-foreground">Cambio:</span>
-              <span className="font-bold">L. {formatMoneyCents(changeCents)}</span>
+              <span className="font-bold">{moneyLabelFromCents(changeCents)}</span>
             </div>
           )}
           {remainingBalanceCents !== null && (
             <div className="flex justify-between text-amber-700">
               <span className="text-muted-foreground">Saldo pendiente:</span>
-              <span className="font-bold">L. {formatMoneyCents(remainingBalanceCents)}</span>
+              <span className="font-bold">{moneyLabelFromCents(remainingBalanceCents)}</span>
             </div>
           )}
           {remainingBalanceCents !== null && !partialPaymentsEnabled ? (
@@ -128,7 +129,7 @@ export function PaymentModal({
           {appliedAmountCents !== null && appliedAmountCents > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Pago aplicado:</span>
-              <span className="font-medium">L. {formatMoneyCents(appliedAmountCents)}</span>
+              <span className="font-medium">{moneyLabelFromCents(appliedAmountCents)}</span>
             </div>
           )}
         </div>
@@ -232,4 +233,12 @@ function parseMoneyCents(value: string): number | null {
 
 function formatMoneyCents(cents: number): string {
   return `${Math.trunc(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
+}
+
+function moneyLabelFromCents(cents: number): string {
+  return formatLempirasFromCents(cents);
 }

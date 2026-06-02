@@ -874,6 +874,28 @@ describe('NewInvoiceView', () => {
     expect(confirmSpy).toHaveBeenCalledWith('17.25');
   });
 
+  it('renders malformed payment modal invoice amounts as safe financial values', () => {
+    render(
+      <PaymentModal
+        open
+        onOpenChange={vi.fn()}
+        invoiceNumber="000-001-01-00000006"
+        patientName="Maria Lopez"
+        total="monto-danado"
+        balanceDue="NaN"
+        paymentMethod="cash"
+        paymentAmount=""
+        onPaymentMethodChange={vi.fn()}
+        onPaymentAmountChange={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Maria Lopez')).toBeInTheDocument();
+    expect(document.body.textContent).toContain('L. 0.00');
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|undefined/);
+  });
+
   it('calculates cash change and applied amount using cents', () => {
     const confirmSpy = vi.fn();
 
