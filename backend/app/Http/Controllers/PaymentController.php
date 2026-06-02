@@ -4,19 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Actions\Payments\RegisterPaymentAction;
 use App\Actions\Payments\VoidPaymentAction;
+use App\Http\Requests\Payments\IndexPaymentRequest;
 use App\Http\Requests\Payments\StorePaymentRequest;
 use App\Http\Requests\Payments\VoidPaymentRequest;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Support\InvoiceAccess;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class PaymentController extends Controller
 {
-    public function index(Request $request, Invoice $invoice, InvoiceAccess $invoiceAccess): JsonResponse
+    public function index(IndexPaymentRequest $request, Invoice $invoice, InvoiceAccess $invoiceAccess): JsonResponse
     {
-        $request->user()->can('payments.view') || abort(403);
         $invoiceAccess->authorizeOperationalAccess($request->user(), $invoice);
 
         return response()->json([

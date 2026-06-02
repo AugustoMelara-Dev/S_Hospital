@@ -2360,3 +2360,20 @@ Consecuencia:
 - La fase 8 (wire moneyCents en vistas) puede migrar el resto de componentes sin tocar NewInvoiceView: la regla ya esta aplicada.
 - El refactor esta incompleto (<200 lineas no alcanzado) pero los hooks extraidos cubren los caminos criticos; dividir la UI en sub-pasos queda para v1.1.0 si la UI se vuelve a expandir.
 - Cualquier cambio de regla de negocio fiscal o de carrito debe vivir primero en state/posMath.ts o state/reducer.ts y luego en los tests correspondientes.
+
+### 2026-06-02 - Listado de pagos usa Form Request
+
+Decision:
+
+- `GET /api/invoices/{invoice}/payments` usa `IndexPaymentRequest`.
+- La autorizacion `payments.view` queda fuera del controlador.
+
+Motivo:
+
+- El listado de pagos expone caja, cajero, metodo y fechas de cobro; debe quedar bajo el mismo patron de autorizacion declarativa que crear y anular pagos.
+- El acceso operativo a la factura sigue validandose con `InvoiceAccess`.
+
+Consecuencia:
+
+- Usuarios sin `payments.view` siguen recibiendo 403.
+- Usuarios con permiso de pagos todavia necesitan alcance operativo sobre la factura.
