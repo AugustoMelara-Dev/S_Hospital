@@ -48,8 +48,7 @@ class AddSecurityHeaders
             ? "'self' 'nonce-{$nonce}'"
             : "'self' 'nonce-{$nonce}' 'unsafe-eval'";
 
-        $styleSources = "'self' 'nonce-{$nonce}'";
-        $styleAttributeSources = "'unsafe-inline'";
+        $styleSources = "'self' 'unsafe-inline'";
 
         $connectSources = "'self' ws: wss:";
 
@@ -57,7 +56,6 @@ class AddSecurityHeaders
             "default-src 'self'",
             "script-src {$scriptSources}",
             "style-src {$styleSources}",
-            "style-src-attr {$styleAttributeSources}",
             "img-src 'self' data: blob:",
             "font-src 'self' data:",
             "connect-src {$connectSources}",
@@ -73,7 +71,11 @@ class AddSecurityHeaders
     {
         return implode('; ', [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+            "style-src 'self' 'unsafe-inline'",
+            "img-src 'self' data: blob:",
+            "font-src 'self' data:",
+            "connect-src 'self' ws: wss:",
             'report-uri /api/system/csp-report',
         ]);
     }

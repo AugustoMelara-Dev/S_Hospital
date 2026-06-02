@@ -24,6 +24,7 @@ services:
       LOG_CHANNEL: daily
       LOG_LEVEL: warning
       HOSPITAL_DUMP_BINARY: /usr/bin/mariadb-dump
+      RUN_MIGRATIONS: "true"
       SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
       SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
       CORS_ALLOWED_ORIGINS: http://${SERVER_IP}:${APP_PORT:-8000}
@@ -98,6 +99,7 @@ services:
       LOG_CHANNEL: daily
       LOG_LEVEL: warning
       HOSPITAL_DUMP_BINARY: /usr/bin/mariadb-dump
+      RUN_MIGRATIONS: "false"
       SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
       SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
       CORS_ALLOWED_ORIGINS: http://${SERVER_IP}:${APP_PORT:-8000}

@@ -2643,3 +2643,30 @@ Validacion:
 - `php artisan test --filter=PaymentCentsSqlGuardTest`
 - `php artisan test --filter=FinancialFactsReportTest`
 - `php artisan test --filter=ReportsTest`
+### 2026-06-02 - CSP con nonce por request y arranque productivo sin carrera
+
+Decision:
+
+- Laravel genera un nonce por request, lo guarda en atributos de request y reemplaza `__S_HOSPITAL_CSP_NONCE__` en el HTML compilado de la SPA.
+- Vite deja un placeholder estable en `index.html` para meta/script durante build; el valor real solo se inyecta al servir la pagina.
+- `script-src` usa nonce y no permite `unsafe-inline`; `style-src` mantiene `unsafe-inline` porque la UI React actual usa estilos inline en barras, graficos y componentes de progreso.
+- nginx no emite un segundo `Content-Security-Policy`; solo conserva un report-only alineado para evitar ruido falso en diagnostico.
+- La imagen productiva usa `backend/docker/entrypoint.sh` para esperar MariaDB; solo `backend` ejecuta migraciones y `queue-worker` las omite con `RUN_MIGRATIONS=false`.
+- `setup.bat` espera el healthcheck real de MariaDB con contador seguro antes de migrar/optimizar.
+
+Motivo:
+
+- Una CSP estricta mal sincronizada puede dejar la caja en blanco despues de instalar o reiniciar el servidor.
+- Los estilos inline existentes deben seguir funcionando hasta que puedan migrarse a clases/tokens sin romper flujos de caja.
+- Evitar migraciones simultaneas entre backend y worker reduce riesgo de carrera durante reinicios por corte de energia.
+
+Validacion:
+
+- `php artisan test --filter=SecurityHeadersTest`
+- `php artisan test --filter=ProductionSpaRouteTest`
+- `npm.cmd run test -- csp-nonce.test.ts`
+- `npm.cmd run lint`
+- `npm.cmd run build`
+- `scripts/assert_production_docker_sources.ps1`
+- `scripts/check-branding.ps1`
+- Smoke Playwright `http://localhost:8000/login`: cero errores de consola, nonce de header/meta coincide, sin placeholder y sin `<undefined>`.
