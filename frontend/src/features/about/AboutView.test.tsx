@@ -42,12 +42,12 @@ describe('AboutView', () => {
 
     render(<AboutView onStatus={vi.fn()} />);
 
-    expect(screen.getByText('Todo bien')).toBeInTheDocument();
+    expect(screen.getAllByText('Todo bien')).toHaveLength(2);
     expect(screen.getByText(/base de datos y respaldos responden/i)).toBeInTheDocument();
     await waitFor(() => expect(apiClient.getBackups).toHaveBeenCalled());
   });
 
-  it('shows a review summary without exposing raw technical details', () => {
+  it('shows a review summary without exposing raw technical details', async () => {
     vi.mocked(useServerStatus).mockReturnValue({
       checking: false,
       isOnline: true,
@@ -62,8 +62,9 @@ describe('AboutView', () => {
 
     render(<AboutView onStatus={vi.fn()} />);
 
-    expect(screen.getByText('Requiere revision')).toBeInTheDocument();
+    expect(screen.getAllByText('Requiere revision')).toHaveLength(2);
     expect(screen.getByText(/pida soporte/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/queue:work|App\\\\|DB_PASSWORD|\.env|C:\\\\/i);
+    await waitFor(() => expect(apiClient.getBackups).toHaveBeenCalled());
   });
 });
