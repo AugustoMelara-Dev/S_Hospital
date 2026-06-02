@@ -2,12 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { ReceiptPreview } from './ReceiptPreview';
+import type { ReceiptData } from '../../lib/api';
 
 vi.mock('react-to-print', () => ({
   useReactToPrint: () => () => undefined,
 }));
 
-function buildReceipt() {
+function buildReceipt(): ReceiptData {
   return {
     invoice: {
       id: 1,
@@ -20,6 +21,7 @@ function buildReceipt() {
       tax_rate: '15.00',
       subtotal: '15.00',
       tax_amount: '2.25',
+      discount_amount: '0.00',
       total: '17.25',
       paid_amount: '17.25',
       balance_due: '0.00',
@@ -36,25 +38,23 @@ function buildReceipt() {
       valid_until: '2027-12-31',
     },
     institutional: {
+      template_mode: 'institutional',
+      paper_size: 'half_letter' as const,
       government_line: 'Gobierno de Honduras',
       secretariat_line: 'Secretaria de Salud Publica',
       location: 'Tegucigalpa',
+      footer_text: 'Gracias por su visita',
       copy_label: 'Original',
+      signature_label: 'Firma autorizada',
     },
     items: [
       {
-        service_id: 1,
         service_name: 'Consulta general',
         category_name: 'Consultas',
         quantity: '1.00',
         unit_price: '15.00',
-        tax_rate: '15.00',
         tax_amount: '2.25',
-        line_subtotal: '15.00',
         line_total: '17.25',
-        scan_code: null,
-        barcode: null,
-        qr_code: null,
         special_rule_code: null,
         special_rule_applied: false,
         notes: null,
