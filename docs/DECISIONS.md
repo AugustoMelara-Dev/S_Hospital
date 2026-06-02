@@ -3062,3 +3062,11 @@ Contexto: el filtro de caja en reportes por rango aceptaba solo un numero manual
 Decision: el frontend intenta cargar las sesiones de caja desde `/api/cash-sessions` y, cuando hay datos listables, muestra un selector con cajero, fecha de apertura y estado. El valor enviado al backend sigue siendo `cash_session_id`; si la lista no esta disponible por permisos o error, se conserva el campo manual como fallback operativo.
 
 Criterio de verificacion: `ReportsView.test.tsx` valida que una sesion visible como "Cajero Validacion - 2026-05-17 - Abierta" se envie como `cash_session_id=11` al reporte.
+
+## 2026-06-02 - Selector humano de cajero en reportes por rango
+
+Contexto: el filtro de cajero en reportes por rango tambien dependia de escribir un ID manual, lo que mezclaba datos tecnicos con decisiones administrativas.
+
+Decision: cuando las sesiones de caja listadas incluyen usuario, el frontend deriva una lista unica de cajeros y muestra un selector con nombre y usuario. El valor enviado al backend sigue siendo `user_id`; si no hay usuarios listables, se conserva el campo manual como fallback operativo.
+
+Criterio de verificacion: `ReportsView.test.tsx` valida que "Cajero Validacion (cajero.validacion)" se envie como `user_id=2` junto al filtro de caja seleccionado.

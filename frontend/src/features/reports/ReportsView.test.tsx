@@ -1014,6 +1014,9 @@ describe('ReportsView', () => {
     const cashSessionSelector = await screen.findByRole('combobox', { name: /^caja$/i });
     expect(screen.getByText(/Cajero Validacion.*2026-05-17.*Abierta/i)).toBeInTheDocument();
     fireEvent.change(cashSessionSelector, { target: { value: '11' } });
+    const cashierSelector = screen.getByRole('combobox', { name: /^cajero$/i });
+    expect(screen.getByText(/Cajero Validacion \(cajero\.validacion\)/i)).toBeInTheDocument();
+    fireEvent.change(cashierSelector, { target: { value: '2' } });
     expect(screen.getByLabelText(/^area$/i)).toBeInTheDocument();
     expect(screen.getByText(/puede consultar hasta 31 dias por busqueda/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver rango/i }));
@@ -1026,6 +1029,7 @@ describe('ReportsView', () => {
       expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/reports/areas?'))).toBe(true);
     });
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes('cash_session_id=11'))).toBe(true);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('user_id=2'))).toBe(true);
     activateTab(/servicios/i);
     expect(await screen.findByText(/sin categor.as facturadas/i)).toBeInTheDocument();
     expect(await screen.findByText(/sin servicios facturados/i)).toBeInTheDocument();

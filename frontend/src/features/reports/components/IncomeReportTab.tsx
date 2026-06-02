@@ -98,6 +98,7 @@ export function IncomeReportTab({
   };
   const categoryAmountLabel = categories?.amount_label ?? 'Total';
   const areaAmountLabel = areas?.amount_label ?? 'Total';
+  const cashierOptions = cashierOptionsFromSessions(cashSessionOptions);
 
   const chartData = income
     ? Object.entries(paymentsByMethod).map(([method, amount]) => ({
@@ -183,18 +184,36 @@ export function IncomeReportTab({
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-[150px]">
-              <Label htmlFor="income-cashier-id">No. de cajero</Label>
-              <Input
-                id="income-cashier-id"
-                type="number"
-                inputMode="numeric"
-                min="1"
-                placeholder="Todos"
-                value={cashierId}
-                onChange={(e) => onCashierChange(e.target.value)}
-              />
-            </div>
+            {cashierOptions.length > 0 ? (
+              <div className="w-[220px]">
+                <Label htmlFor="income-cashier-id">Cajero</Label>
+                <NativeSelect
+                  id="income-cashier-id"
+                  value={cashierId}
+                  onChange={(e) => onCashierChange(e.target.value)}
+                >
+                  <option value="">Todos</option>
+                  {cashierOptions.map((cashier) => (
+                    <option key={cashier.id} value={String(cashier.id)}>
+                      {cashierLabel(cashier)}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </div>
+            ) : (
+              <div className="w-[150px]">
+                <Label htmlFor="income-cashier-id">No. de cajero</Label>
+                <Input
+                  id="income-cashier-id"
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  placeholder="Todos"
+                  value={cashierId}
+                  onChange={(e) => onCashierChange(e.target.value)}
+                />
+              </div>
+            )}
             {cashSessionOptions.length > 0 ? (
               <div className="w-[260px]">
                 <Label htmlFor="income-cash-session-id">Caja</Label>
@@ -403,6 +422,28 @@ function cashSessionLabel(session: CashSession): string {
   const status = session.status === 'open' ? 'Abierta' : 'Cerrada';
 
   return `${cashier} - ${openedAt} - ${status}`;
+}
+
+type CashierOption = NonNullable<CashSession['user']>;
+
+function cashierOptionsFromSessions(sessions: CashSession[]): CashierOption[] {
+  const seen = new Set<number>();
+  const options: CashierOption[] = [];
+
+  for (const session of sessions) {
+    if (!session.user || seen.has(session.user.id)) {
+      continue;
+    }
+
+    seen.add(session.user.id);
+    options.push(session.user);
+  }
+
+  return options;
+}
+
+function cashierLabel(cashier: CashierOption): string {
+  return cashier.username ? `${cashier.name} (${cashier.username})` : cashier.name;
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
