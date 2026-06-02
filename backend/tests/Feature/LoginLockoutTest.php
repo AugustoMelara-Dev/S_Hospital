@@ -106,4 +106,48 @@ class LoginLockoutTest extends TestCase
             'password' => 'Password123!',
         ])->assertOk();
     }
+
+    public function test_ip_lockout_engages_after_ten_failed_attempts_with_different_logins(): void
+    {
+        User::factory()->create([
+            'username' => 'usuario-ip',
+            'email' => 'ip@hospital.local',
+            'password' => Hash::make('Password123!'),
+            'must_change_password' => false,
+            'active' => true,
+        ])->assignRole('cajero');
+
+        for ($i = 0; $i < 10; $i++) {
+            $this->postJson('/api/auth/login', [
+                'login' => 'no-existe-' . $i,
+                'password' => 'wrong-password',
+            ])->assertStatus(422);
+        }
+
+        $response = $this->postJson('/api/auth/login', [
+            'login' => 'usuario-ip',
+            'password' => 'Password123!',
+        ]);
+
+        $response->assertStatus(423);
+    }
+
+    public function test_lockout_response_carries_safe_message(): void
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $this->postJson('/api/auth/login', [
+                'login' => 'cualquiera',
+                'password' => 'wrong',
+            ])->assertStatus(422);
+        }
+
+        $response = $this->postJson('/api/auth/login', [
+            'login' => 'cualquiera',
+            'password' => 'wrong',
+        ]);
+
+        $response->assertStatus(423)
+            ->assertJsonPath('message', 'Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.')
+            ->assertJsonPath('lockout_minutes', 15);
+    }
 }
