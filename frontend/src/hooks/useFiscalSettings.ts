@@ -6,6 +6,7 @@ export function useFiscalSettings() {
   return useQuery({
     queryKey: ['settings', 'fiscal'],
     queryFn: () => apiClient.getFiscalSettings(),
+    staleTime: 60_000,
   });
 }
 

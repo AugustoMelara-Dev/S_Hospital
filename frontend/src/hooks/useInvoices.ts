@@ -6,6 +6,7 @@ export function useInvoices(filters: InvoiceFilters = {}) {
   return useQuery({
     queryKey: ['invoices', filters],
     queryFn: () => apiClient.getInvoices(filters),
+    staleTime: 30_000,
   });
 }
 
