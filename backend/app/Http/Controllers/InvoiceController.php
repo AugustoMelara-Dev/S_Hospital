@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Billing\CreateInvoiceAction;
 use App\Actions\Billing\VoidInvoiceAction;
 use App\Http\Requests\Billing\IndexInvoiceRequest;
+use App\Http\Requests\Billing\ShowInvoiceRequest;
 use App\Http\Requests\Billing\StoreInvoiceRequest;
 use App\Http\Requests\Billing\VoidInvoiceRequest;
 use App\Models\Invoice;
@@ -12,7 +13,6 @@ use App\Models\User;
 use App\Support\InvoiceAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class InvoiceController extends Controller
 {
@@ -89,9 +89,8 @@ class InvoiceController extends Controller
         ], 201);
     }
 
-    public function show(Request $request, Invoice $invoice): JsonResponse
+    public function show(ShowInvoiceRequest $request, Invoice $invoice): JsonResponse
     {
-        $request->user()->can('invoices.view') || abort(403);
         $this->authorizeInvoiceAccess($request->user(), $invoice);
 
         return response()->json([
@@ -111,8 +110,6 @@ class InvoiceController extends Controller
         Invoice $invoice,
         VoidInvoiceAction $voidInvoice,
     ): JsonResponse {
-        $request->user()->can('invoices.void') || abort(403);
-
         return response()->json([
             'data' => $voidInvoice->execute($invoice, $request->user(), $request->reason()),
         ]);

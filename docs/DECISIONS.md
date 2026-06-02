@@ -2394,3 +2394,21 @@ Consecuencia:
 
 - Usuarios sin `catalog.view` siguen recibiendo 403.
 - El controlador queda enfocado en construir la consulta y paginacion.
+
+### 2026-06-02 - Lectura y anulacion de facturas usan Form Requests
+
+Decision:
+
+- `GET /api/invoices/{invoice}` usa `ShowInvoiceRequest` para autorizar `invoices.view`.
+- `POST /api/invoices/{invoice}/void` confia en `VoidInvoiceRequest` para autorizar `invoices.void`.
+- El alcance operativo/historico de la factura sigue validandose con `InvoiceAccess` desde el controlador.
+
+Motivo:
+
+- Facturas contienen paciente, caja, pagos y datos fiscales; los permisos base deben quedar declarados en requests.
+- Separar permiso base de alcance por factura deja mas clara la revision de seguridad.
+
+Consecuencia:
+
+- Usuarios sin `invoices.view` o `invoices.void` siguen recibiendo 403.
+- Usuarios con permiso base todavia deben cumplir alcance de factura antes de ver o modificar registros.
