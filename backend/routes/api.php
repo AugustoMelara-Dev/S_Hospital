@@ -52,7 +52,7 @@ Route::get('/settings/branding', [FiscalSettingsController::class, 'publicBrandi
 Route::post('/auth/login', [AuthController::class, 'login'])
     ->middleware(['web', LoginLockout::class, 'throttle:5,1']);
 Route::get('/auth/session', [AuthController::class, 'session'])
-    ->middleware('web');
+    ->middleware(['web', 'throttle.user:30,1']);
 
 Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
@@ -78,10 +78,11 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
         Route::patch('/services/{service}', [ServiceController::class, 'update']);
 
         Route::get('/invoices', [InvoiceController::class, 'index']);
-        Route::post('/invoices', [InvoiceController::class, 'store']);
+        Route::post('/invoices', [InvoiceController::class, 'store'])
+            ->middleware('throttle.user:60,1');
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
         Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'void'])
-            ->middleware('throttle:30,1');
+            ->middleware('throttle.user:30,1');
 
         Route::get('/cash-sessions/current', [CashSessionController::class, 'current']);
         Route::post('/cash-sessions/open', [CashSessionController::class, 'open']);
