@@ -74,6 +74,7 @@ Current local verification notes:
 - 2026-06-02 frontend least-privilege/API UX follow-up: user creation is hidden without `users.create`, and API network failures preserve sanitized browser detail while keeping operator-safe LAN messages.
 - 2026-06-02 billing preview fix: the invoice cart now estimates subtotal, ISV and total in cents using configured tax rate and taxable service flags while keeping backend emission authoritative.
 - 2026-06-02 restore helper hardening: `scripts\restore_hospital_windows.ps1 -SelfTest` now verifies PowerShell 5.1-compatible parsing and disposable database guards without touching backups or databases.
+- 2026-06-02 Docker production CORS follow-up: `docker-compose.prod.yml` now requires `SERVER_IP` consistently and limits CORS to the effective LAN `APP_PORT` instead of also allowing stale `:8000` when a custom port is published.
 
 ## Plan Review Orchestrator Result
 

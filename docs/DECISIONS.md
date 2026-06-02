@@ -1892,3 +1892,21 @@ Consecuencia:
 
 - Soporte puede ejecutar `restore_hospital_windows.ps1 -SelfTest` sin tocar datos.
 - Restore real sigue pendiente hasta ejecutarse contra una base descartable y documentarse en `qa/FINAL_RESTORE_PROOF.md`.
+
+### 2026-06-02 - CORS de Docker production limitado al puerto publicado
+
+Decision:
+
+- `docker-compose.prod.yml` exige `SERVER_IP` tambien en el contenedor backend.
+- `CORS_ALLOWED_ORIGINS` en backend y worker usa solo `http://${SERVER_IP}:${APP_PORT:-8000}`.
+- `SANCTUM_STATEFUL_DOMAINS` conserva el host LAN y el host con puerto publicado.
+
+Motivo:
+
+- Si `APP_PORT` cambia, permitir siempre `:8000` deja un origen LAN innecesario.
+- Produccion debe aceptar solo el origen desde el que se publicara la app.
+
+Consecuencia:
+
+- El compose prod renderiza CORS con `:8000` por defecto y con el puerto personalizado cuando `APP_PORT` se define.
+- Si el hospital usa otro nombre LAN ademas de IP, debe configurarse explicitamente en una fase final aprobada.
