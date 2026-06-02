@@ -25,6 +25,8 @@ Route::get('/health', function () {
     ]);
 });
 
+Route::any('/system/csp-report', [\App\Http\Controllers\CspReportController::class, 'store']);
+
 Route::get('/system/health', [\App\Http\Controllers\HealthController::class, 'show']);
 
 Route::get('/system/setup-status', [SystemStatusController::class, 'setupStatus'])

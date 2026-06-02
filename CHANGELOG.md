@@ -189,6 +189,29 @@
   cover the snapshot shape, the public endpoint and the heartbeat
   flip.
 
+### Phase 18 - CSP hardened with report-only channel and Cross-Origin-Opener-Policy
+
+- `app/Http/Middleware/AddSecurityHeaders` now emits a stricter
+  CSP per environment: production keeps `script-src 'self'
+  'unsafe-inline'` (the cashier entry script still uses an inline
+  bootstrap), but local development adds `'unsafe-eval'` so Vite
+  HMR keeps working. Both branches add `object-src 'none'`,
+  `manifest-src 'self'`, the `connect-src` extension for the Vite
+  ws/wss HMR socket, and a `Content-Security-Policy-Report-Only`
+  channel that points at `/api/system/csp-report`.
+- `Cross-Origin-Opener-Policy: same-origin` joins the existing
+  `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`
+  and `Permissions-Policy` headers.
+- New `app/Http/Controllers/CspReportController.php` accepts CSP
+  violation reports from the browser, scrubs the body of any
+  long-line leakage and stores a structured log entry. The endpoint
+  always responds 204 so the browser stops retrying once the
+  violation is acknowledged.
+- Next audit pass should switch the cashier SPA to a Vite plugin
+  that injects the per-request nonce into the entry script and
+  the inline styles emitted by Tailwind so `unsafe-inline` can
+  finally be removed from `script-src` and `style-src`.
+
 ### Audit
 
 - `docs/AUDIT_2026_06_02.md` records the full audit and the 20-phase
