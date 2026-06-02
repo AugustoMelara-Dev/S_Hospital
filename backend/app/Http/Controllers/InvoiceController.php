@@ -54,10 +54,10 @@ class InvoiceController extends Controller
             )
             ->when(! empty($validated['status']), fn (Builder $query) => $query->where('status', $validated['status']))
             ->when(! empty($validated['patient']), function (Builder $query) use ($validated): void {
-                $query->where('patient_name', 'like', '%'.$validated['patient'].'%');
+                $query->where('patient_name', 'like', '%'.$this->escapeLike($validated['patient']).'%');
             })
             ->when(! empty($validated['invoice_number']), function (Builder $query) use ($validated): void {
-                $query->where('invoice_number', 'like', '%'.$validated['invoice_number'].'%');
+                $query->where('invoice_number', 'like', '%'.$this->escapeLike($validated['invoice_number']).'%');
             })
             ->when(
                 $this->canAccessHistoricalInvoices($user) && ! empty($validated['user_id']),
@@ -133,5 +133,10 @@ class InvoiceController extends Controller
     private function canAccessHistoricalInvoices(User $user): bool
     {
         return $this->invoiceAccess->canAccessAnyInvoice($user);
+    }
+
+    private function escapeLike(string $input): string
+    {
+        return str_replace(['%', '_'], ['\\%', '\\_'], $input);
     }
 }
