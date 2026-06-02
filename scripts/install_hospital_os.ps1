@@ -1,6 +1,13 @@
 # install_hospital_os.ps1
-# Guided Offline LAN Windows Installation Script for Sistema de Caja Hospitalaria
-# Uses native WPF (Graphical User Interface) with fallback to CLI
+# DEPRECATED in v1.0.0. Use deploy_hospital_lan.ps1 instead.
+# This WPF-based wizard is kept for backwards compatibility with
+# operators who already have a saved shortcut to it, but no new
+# code paths reference it. The recommended installer is:
+#
+#   powershell -ExecutionPolicy Bypass -File scripts\deploy_hospital_lan.ps1
+#
+# See docs/OFFLINE_LAN_INSTALL.md and scripts/deploy_hospital_lan.ps1
+# for the supported flow.
 
 [CmdletBinding()]
 param (
@@ -9,6 +16,20 @@ param (
 
 # Force TLS 1.2/1.3 for any system calls if they occur, though we operate strictly offline
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+# v1.0.0 deprecation notice. The supported installer is
+# deploy_hospital_lan.ps1; this script is kept only for operators
+# who already have a shortcut to it. We print a clear warning to
+# the console so the operator is not surprised.
+Write-Host ""
+Write-Host "========================================================================" -ForegroundColor Yellow
+Write-Host "  DEPRECATION NOTICE" -ForegroundColor Yellow
+Write-Host "  install_hospital_os.ps1 is deprecated as of v1.0.0." -ForegroundColor Yellow
+Write-Host "  The supported installer is deploy_hospital_lan.ps1." -ForegroundColor Yellow
+Write-Host "  Continuing for backwards compatibility in this run." -ForegroundColor Yellow
+Write-Host "  See scripts/deploy_hospital_lan.ps1 for the new flow." -ForegroundColor Yellow
+Write-Host "========================================================================" -ForegroundColor Yellow
+Write-Host ""
 
 # Determine workspace root
 $scriptPath = $MyInvocation.MyCommand.Path
