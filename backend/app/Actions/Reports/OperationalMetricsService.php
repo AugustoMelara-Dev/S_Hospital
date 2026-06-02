@@ -188,4 +188,40 @@ class OperationalMetricsService
     {
         Cache::put('operational-metrics:worker-heartbeat', now()->getTimestamp(), now()->addHour());
     }
+
+    /**
+     * Convenience helper for the cashier dashboard that flattens
+     * the snapshot into a single boolean + list of issues. The
+     * frontend can then colour the worker badge without having to
+     * re-interpret the full snapshot.
+     *
+     * @return array{healthy: bool, issues: list<string>, snapshot_generated_at: ?string}
+     */
+    public function overallHealthScore(): array
+    {
+        $snapshot = $this->snapshot();
+        $issues = [];
+
+        if (! ($snapshot['database']['connected'] ?? false)) {
+            $issues[] = 'database_disconnected';
+        }
+
+        if (($snapshot['queue']['failed'] ?? 0) > 0) {
+            $issues[] = 'queue_has_failures';
+        }
+
+        if (! ($snapshot['backups']['worker_recently_active'] ?? false)) {
+            $issues[] = 'backup_worker_idle';
+        }
+
+        if (($snapshot['backups']['failed_last_24h'] ?? 0) > 0) {
+            $issues[] = 'backup_failures_in_24h';
+        }
+
+        return [
+            'healthy' => $issues === [],
+            'issues' => $issues,
+            'snapshot_generated_at' => $snapshot['generated_at'] ?? null,
+        ];
+    }
 }

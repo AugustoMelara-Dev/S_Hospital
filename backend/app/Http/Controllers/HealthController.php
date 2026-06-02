@@ -20,9 +20,11 @@ class HealthController extends Controller
     public function show(): JsonResponse
     {
         $snapshot = $this->metrics->snapshot();
+        $score = $this->metrics->overallHealthScore();
 
         return response()->json([
             'data' => $snapshot,
+            'score' => $score,
         ]);
     }
 }

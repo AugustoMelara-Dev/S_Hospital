@@ -123,4 +123,34 @@ class OperationalMetricsServiceTest extends TestCase
         $this->assertNotEmpty($snapshot['recent_errors']);
         $this->assertSame('backup.failed', $snapshot['recent_errors'][0]['action']);
     }
+
+    public function test_overall_health_score_reports_a_worker_idle_issue(): void
+    {
+        $score = app(OperationalMetricsService::class)->overallHealthScore();
+
+        $this->assertFalse($score['healthy']);
+        $this->assertContains('backup_worker_idle', $score['issues']);
+        $this->assertNotEmpty($score['snapshot_generated_at']);
+    }
+
+    public function test_health_endpoint_returns_the_score_alongside_the_snapshot(): void
+    {
+        $response = $this->getJson('/api/system/health');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'database',
+                    'queue',
+                    'backups',
+                    'storage',
+                    'recent_errors',
+                ],
+                'score' => [
+                    'healthy',
+                    'issues',
+                    'snapshot_generated_at',
+                ],
+            ]);
+    }
 }

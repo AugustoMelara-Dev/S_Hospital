@@ -6,7 +6,6 @@ namespace App\Actions\Reports;
 
 use Illuminate\Routing\Route;
 use Illuminate\Routing\Router;
-use Illuminate\Support\Str;
 
 /**
  * Dumps the API surface as a small OpenAPI 3.1 document.
@@ -118,7 +117,7 @@ class OpenApiExporter
         $paths = [];
 
         foreach ($router->getRoutes() as $route) {
-            $path = '/' . ltrim($route->uri(), '/');
+            $path = '/'.ltrim($route->uri(), '/');
             if (! str_starts_with($path, '/api/')) {
                 continue;
             }
