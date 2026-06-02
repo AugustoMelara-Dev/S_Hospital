@@ -82,4 +82,41 @@ class OperationalMetricsServiceTest extends TestCase
 
         $this->assertTrue($service->snapshot()['backups']['worker_recently_active']);
     }
+
+    public function test_storage_section_reports_backup_files_and_bytes(): void
+    {
+        BackupLog::query()->create([
+            'filename' => 'hospital-backup-2026-06-02-120000-test.sql',
+            'path' => 'backups/hospital-backup-2026-06-02-120000-test.sql',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_SUCCESS,
+            'type' => BackupLog::TYPE_MANUAL,
+            'size_bytes' => 4096,
+            'checksum_sha256' => str_repeat('a', 64),
+            'completed_at' => now(),
+        ]);
+
+        $snapshot = app(OperationalMetricsService::class)->snapshot();
+
+        $this->assertArrayHasKey('storage', $snapshot);
+        $this->assertGreaterThanOrEqual(1, $snapshot['storage']['backup_files']);
+    }
+
+    public function test_recent_errors_section_surfaces_failed_actions(): void
+    {
+        AuditLog::query()->create([
+            'user_id' => null,
+            'action' => 'backup.failed',
+            'entity_type' => BackupLog::class,
+            'entity_id' => 1,
+            'old_values' => null,
+            'new_values' => ['filename' => 'failed.sql', 'status' => 'failed'],
+            'created_at' => now(),
+        ]);
+
+        $snapshot = app(OperationalMetricsService::class)->snapshot();
+
+        $this->assertNotEmpty($snapshot['recent_errors']);
+        $this->assertSame('backup.failed', $snapshot['recent_errors'][0]['action']);
+    }
 }
