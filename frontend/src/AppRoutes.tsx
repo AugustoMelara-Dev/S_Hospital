@@ -1,18 +1,20 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { PermissionGate } from './components/PermissionGate';
-import { EmptyState } from './components/ui/states';
-import { BackupsView } from './features/backups/BackupsView';
+import { EmptyState, LoadingState } from './components/ui/states';
 import { CashBoxView } from './features/cash/CashBoxView';
-import { CatalogView } from './features/catalog/CatalogView';
-import { DashboardView } from './features/dashboard/DashboardView';
-import { InvoiceHistoryView } from './features/invoices/InvoiceHistoryView';
 import { NewInvoiceView } from './features/invoices/NewInvoiceView';
-import { ReportsView } from './features/reports/ReportsView';
-import { FiscalSettingsView } from './features/settings/FiscalSettingsView';
-import { UsersView } from './features/admin/UsersView';
-import { AboutView } from './features/about/AboutView';
-import { HelpView } from './features/help/HelpView';
 import { type AuthUser, type CashSession } from './lib/api';
+
+const AboutView = lazy(() => import('./features/about/AboutView').then((module) => ({ default: module.AboutView })));
+const BackupsView = lazy(() => import('./features/backups/BackupsView').then((module) => ({ default: module.BackupsView })));
+const CatalogView = lazy(() => import('./features/catalog/CatalogView').then((module) => ({ default: module.CatalogView })));
+const DashboardView = lazy(() => import('./features/dashboard/DashboardView').then((module) => ({ default: module.DashboardView })));
+const FiscalSettingsView = lazy(() => import('./features/settings/FiscalSettingsView').then((module) => ({ default: module.FiscalSettingsView })));
+const HelpView = lazy(() => import('./features/help/HelpView').then((module) => ({ default: module.HelpView })));
+const InvoiceHistoryView = lazy(() => import('./features/invoices/InvoiceHistoryView').then((module) => ({ default: module.InvoiceHistoryView })));
+const ReportsView = lazy(() => import('./features/reports/ReportsView').then((module) => ({ default: module.ReportsView })));
+const UsersView = lazy(() => import('./features/admin/UsersView').then((module) => ({ default: module.UsersView })));
 
 type AppRoutesProps = {
   canCreateInvoices: boolean;
@@ -68,7 +70,8 @@ export function AppRoutes({
   user,
 }: AppRoutesProps) {
   return (
-    <Routes>
+    <Suspense fallback={<LoadingState label="Cargando pantalla..." />}>
+      <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/login" element={<Navigate to={defaultAuthenticatedRoute} replace />} />
       <Route
@@ -189,7 +192,8 @@ export function AppRoutes({
         element={<AboutView onStatus={onStatus} />}
       />
       <Route path="*" element={<NotFoundView />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 

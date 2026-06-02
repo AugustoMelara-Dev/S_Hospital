@@ -103,7 +103,7 @@ describe('ReportsView', () => {
 
     render(<App />);
 
-    expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
+    expect((await screen.findAllByRole('heading', { name: /^reportes$/i }, { timeout: 5000 })).length).toBeGreaterThan(0);
     expect(screen.getByText(/facturacion, cobros, caja y auditoria en una vista clara/i)).toBeInTheDocument();
     expect(screen.queryByText(/ventas, cobros, caja y auditoria/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/^fecha$/i)).toBeInTheDocument();

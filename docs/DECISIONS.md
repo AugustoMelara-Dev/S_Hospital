@@ -1910,3 +1910,20 @@ Consecuencia:
 
 - El compose prod renderiza CORS con `:8000` por defecto y con el puerto personalizado cuando `APP_PORT` se define.
 - Si el hospital usa otro nombre LAN ademas de IP, debe configurarse explicitamente en una fase final aprobada.
+
+### 2026-06-02 - Rutas React secundarias cargan bajo demanda
+
+Decision:
+
+- `AppRoutes` usa `React.lazy` y `Suspense` para pantallas secundarias como reportes, catalogo, respaldos, usuarios, ayuda y configuracion.
+- Caja y nueva factura permanecen en el bundle principal porque tambien se abren como modales rapidos del flujo operativo.
+
+Motivo:
+
+- El build de Vite generaba un chunk principal mayor a 500 kB.
+- En red LAN y equipos de caja modestos conviene que las pantallas no activas no carguen durante el primer acceso.
+
+Consecuencia:
+
+- El chunk principal baja de 532.88 kB a 361.82 kB minificado y desaparece la advertencia de Vite.
+- Las pruebas de rutas deben esperar la carga lazy cuando validan una pantalla secundaria.
