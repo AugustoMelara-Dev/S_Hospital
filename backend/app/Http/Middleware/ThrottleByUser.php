@@ -20,9 +20,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class ThrottleByUser
 {
-    public function __construct(private readonly RateLimiter $limiter)
-    {
-    }
+    public function __construct(private readonly RateLimiter $limiter) {}
 
     public function handle(Request $request, Closure $next, int $maxAttempts = 60, int $decayMinutes = 1): Response
     {
@@ -55,7 +53,7 @@ class ThrottleByUser
     {
         $user = $request->user();
 
-        if ($user !== null && method_exists($user, 'getAuthIdentifier')) {
+        if ($user !== null) {
             $id = $user->getAuthIdentifier();
 
             if ($id !== null && $id !== '') {
