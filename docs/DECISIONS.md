@@ -2581,3 +2581,24 @@ Validacion:
 - `npm.cmd run test -- AuditoriaTab.test.tsx ReportsView.test.tsx`
 - `npm.cmd run lint`
 - `npm.cmd run build`
+
+### 2026-06-02 - Informacion del sistema muestra diagnostico administrativo seguro
+
+Decision:
+
+- La pantalla Informacion del sistema conserva el resumen publico de salud para usuarios normales.
+- Usuarios admin ven un diagnostico administrativo resumido con backend, base de datos, frontend, ultimo respaldo, cola, hora del servidor, espacio libre, acceso LAN, version y migraciones.
+- La UI no renderiza comandos de worker, rutas locales, variables crudas ni secretos; esos detalles siguen reservados para soporte tecnico protegido.
+
+Motivo:
+
+- Administracion necesita revisar continuidad operativa sin entrar a Respaldos ni interpretar JSON tecnico.
+- Cajeros no deben disparar consultas protegidas ni ver detalles que no ayudan durante el turno.
+
+Validacion:
+
+- `npm.cmd run test -- AboutView.test.tsx AppRoutes.lazy.test.tsx`
+- `npm.cmd run test -- App.test.tsx`
+- `npm.cmd run typecheck`
+- `npm.cmd run lint`
+- `npm.cmd run build`

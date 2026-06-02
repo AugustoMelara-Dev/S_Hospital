@@ -189,7 +189,7 @@ export function AppRoutes({
       />
       <Route
         path="/about"
-        element={<AboutView onStatus={onStatus} />}
+        element={<AboutView user={user} onStatus={onStatus} />}
       />
       <Route path="*" element={<NotFoundView />} />
       </Routes>

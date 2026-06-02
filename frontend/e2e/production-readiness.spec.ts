@@ -688,6 +688,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
       (
         url.includes('/sanctum/csrf-cookie') ||
         url.includes('/api/health') ||
+        url.includes('/api/system/health') ||
         url.includes('/api/auth/session') ||
         url.includes('/api/settings/logo') ||
         url.includes('/api/system/client-errors') ||

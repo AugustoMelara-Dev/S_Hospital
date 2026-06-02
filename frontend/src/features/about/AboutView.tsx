@@ -1,23 +1,33 @@
 import { useEffect, useState } from 'react';
-import { Building2, HardDrive, HeartHandshake, ShieldCheck } from 'lucide-react';
+import { Building2, Clock3, HardDrive, HeartHandshake, MonitorCheck, Network, ShieldCheck } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { PageHeader } from '../../components/ui/page-header';
 import { useFiscalSettings } from '../../hooks/useFiscalSettings';
 import { useServerStatus } from '../../hooks/useServerStatus';
-import { apiClient } from '../../lib/api';
+import { type AuthUser, type SystemStatus, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { displayHospitalName } from '../../lib/hospital-name';
 
 type AboutViewProps = {
+  user: AuthUser;
   onStatus: (message: string) => void;
 };
 
-export function AboutView({ onStatus }: AboutViewProps) {
+type AdminDiagnosticItem = {
+  label: string;
+  value: string;
+  level: 'ok' | 'review' | 'error';
+};
+
+export function AboutView({ user, onStatus }: AboutViewProps) {
   const { data: fiscal } = useFiscalSettings();
   const { checking, isOnline, lastCheck, summary } = useServerStatus();
   const [backupCount, setBackupCount] = useState<number | string>('...');
+  const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
+  const [systemStatusError, setSystemStatusError] = useState('');
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
+  const canViewAdminDiagnostics = user.roles.includes('admin');
 
   useEffect(() => {
     async function fetchBackupCount() {
@@ -31,6 +41,27 @@ export function AboutView({ onStatus }: AboutViewProps) {
 
     void fetchBackupCount();
   }, []);
+
+  useEffect(() => {
+    if (!canViewAdminDiagnostics) {
+      setSystemStatus(null);
+      setSystemStatusError('');
+      return;
+    }
+
+    async function fetchSystemStatus() {
+      setSystemStatusError('');
+
+      try {
+        setSystemStatus(await apiClient.getSystemStatus());
+      } catch (error) {
+        setSystemStatus(null);
+        setSystemStatusError(userSafeErrorMessage(error, 'No se pudo cargar el diagnostico administrativo.'));
+      }
+    }
+
+    void fetchSystemStatus();
+  }, [canViewAdminDiagnostics]);
 
   const triggerDiagnosticTest = () => {
     onStatus('Revisando conexion local...');
@@ -126,6 +157,57 @@ export function AboutView({ onStatus }: AboutViewProps) {
         </Card>
       </div>
 
+      {canViewAdminDiagnostics && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base font-bold">
+              <MonitorCheck className="h-5 w-5 text-secondary" /> Diagnostico administrativo
+            </CardTitle>
+            <CardDescription>Lectura resumida para soporte local, sin claves ni rutas internas.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {systemStatusError ? (
+              <div className="rounded-md border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                {systemStatusError}
+              </div>
+            ) : systemStatus ? (
+              <>
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  {adminDiagnosticItems(systemStatus).map((item) => (
+                    <div key={item.label} className="rounded-md border border-border bg-muted/30 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">{item.label}</p>
+                        <Badge variant={summaryBadgeVariant(item.level)}>{diagnosticLevelLabel(item.level)}</Badge>
+                      </div>
+                      <p className="mt-2 text-sm font-semibold text-foreground">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
+                  <div className="flex items-start gap-2 rounded-md border border-border bg-card p-3">
+                    <Clock3 className="mt-0.5 h-4 w-4 text-secondary" />
+                    <span>Hora del servidor: {formatServerTime(systemStatus.environment.server_time, systemStatus.environment.timezone)}</span>
+                  </div>
+                  <div className="flex items-start gap-2 rounded-md border border-border bg-card p-3">
+                    <HardDrive className="mt-0.5 h-4 w-4 text-secondary" />
+                    <span>Espacio libre para respaldos: {formatBytes(systemStatus.backups.storage.free_bytes)}</span>
+                  </div>
+                  <div className="flex items-start gap-2 rounded-md border border-border bg-card p-3">
+                    <Network className="mt-0.5 h-4 w-4 text-secondary" />
+                    <span>Acceso LAN: {systemStatus.network.client_url ?? 'pendiente de configurar'}</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="rounded-md border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                Cargando diagnostico administrativo...
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base font-bold">
@@ -158,4 +240,90 @@ function summaryBadgeVariant(level: 'ok' | 'review' | 'error'): 'success' | 'war
   }
 
   return 'destructive';
+}
+
+function diagnosticLevelLabel(level: 'ok' | 'review' | 'error'): string {
+  if (level === 'ok') return 'Todo bien';
+  if (level === 'review') return 'Revisar';
+  return 'Error';
+}
+
+function adminDiagnosticItems(status: SystemStatus): AdminDiagnosticItem[] {
+  return [
+    {
+      label: 'Backend',
+      value: 'Servidor activo',
+      level: 'ok',
+    },
+    {
+      label: 'Base de datos',
+      value: status.database.connected ? 'Conectada' : 'No responde',
+      level: status.database.connected ? 'ok' : 'error',
+    },
+    {
+      label: 'Interfaz web',
+      value: status.frontend.dist_index_exists && status.frontend.assets_present ? 'Compilada y disponible' : 'Falta build de frontend',
+      level: status.frontend.dist_index_exists && status.frontend.assets_present ? 'ok' : 'review',
+    },
+    {
+      label: 'Ultimo respaldo',
+      value: status.backups.last_success_at ? formatServerTime(status.backups.last_success_at) : 'Sin respaldo protegido reciente',
+      level: status.backups.last_success_at ? 'ok' : 'review',
+    },
+    {
+      label: 'Cola de trabajos',
+      value: queueLabel(status),
+      level: queueLevel(status),
+    },
+    {
+      label: 'Version instalada',
+      value: status.environment.app_version || 'local',
+      level: 'ok',
+    },
+    {
+      label: 'Red local',
+      value: status.network.lan_ready ? 'Direccion LAN configurada' : 'Falta direccion LAN',
+      level: status.network.lan_ready ? 'ok' : 'review',
+    },
+    {
+      label: 'Migraciones',
+      value: (status.runtime.pending_migration_count ?? 0) === 0 ? 'Base actualizada' : 'Requiere actualizacion segura',
+      level: (status.runtime.pending_migration_count ?? 0) === 0 ? 'ok' : 'review',
+    },
+  ];
+}
+
+function queueLabel(status: SystemStatus): string {
+  const failed = status.backups.queue.failed_jobs_count ?? 0;
+  const pending = status.backups.queue.pending_backup_jobs ?? 0;
+
+  if (failed > 0) return `${failed} trabajo(s) fallidos`;
+  if (pending > 0) return `${pending} respaldo(s) en espera`;
+  return 'Sin fallas registradas';
+}
+
+function queueLevel(status: SystemStatus): 'ok' | 'review' | 'error' {
+  if ((status.backups.queue.failed_jobs_count ?? 0) > 0) return 'error';
+  if ((status.backups.queue.pending_backup_jobs ?? 0) > 0) return 'review';
+  return 'ok';
+}
+
+function formatServerTime(value: string | null, timezone?: string): string {
+  if (!value) return 'Sin dato';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'Sin dato';
+  }
+
+  const formatted = new Intl.DateTimeFormat('es-HN', { dateStyle: 'short', timeStyle: 'short' }).format(date);
+  return timezone ? `${formatted} (${timezone})` : formatted;
+}
+
+function formatBytes(size: number | null): string {
+  if (size === null) return 'Sin dato';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
