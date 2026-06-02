@@ -15,6 +15,7 @@ function Protect-HospitalOperationalText([string] $Value, [string] $ProjectRoot 
         $protected = $protected -replace [regex]::Escape(($env:USERPROFILE -replace "\\", "/")), "%USERPROFILE%"
     }
 
+    $protected = $protected -replace "\b(https?://)(?:[^\s/@]+@)([^\s]+)", '$1$2'
     $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
     $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
 

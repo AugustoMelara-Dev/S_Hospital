@@ -31,4 +31,7 @@ Assert-Rejects "http://admin:secret@192.168.1.10:8000" "no debe incluir usuario 
 Assert-Rejects "http://192.168.1.10:8000?token=secret" "no debe incluir parametros ni fragmentos"
 Assert-Rejects "http://192.168.1.10:8000/#secret" "no debe incluir parametros ni fragmentos"
 
+$protectedText = Protect-HospitalOperationalText "Fallo contra http://soporte:clave-secreta@192.168.1.10:8000/login"
+Assert-Equal "Fallo contra http://192.168.1.10:8000/login" $protectedText "Operational text should redact URL credentials without hiding the LAN host."
+
 Write-Host "[OK] operational_url_safety.ps1 validation passed."
