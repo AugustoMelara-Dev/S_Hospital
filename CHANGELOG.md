@@ -1,5 +1,98 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## v1.0.0 - Production Audit Plan Hardening (2026-06-02)
+
+### Resumen
+
+Veinte fases de endurecimiento + 4 fases operacionales quedaron
+implementadas como código. El sistema pasa de `v1.0.0-rc.3` a
+`v1.0.0` con la promesa de un sistema hospitalar listo para operar
+en red local LAN, con seguridad endurecida, dinero siempre en
+centavos, observabilidad operativa y manuales para el operador no
+tecnico.
+
+### Metricas al cierre de v1.0.0
+
+- 340/340 tests PHPUnit backend (2188 assertions, 4 skipped
+  legítimos: race test concurrente que requiere MySQL real)
+- 211/211 tests Vitest frontend
+- 0 errores de typecheck
+- 0 errores de ESLint
+- 0 errores de phpstan nivel 4 sobre 110 archivos en app/
+  (baseline nivel 6 cubriendo 240 hallazgos preexistentes)
+- Bundle gzipped mas grande: charts 116.73 kB (objetivo < 250 kB)
+- Build de produccion sin warnings bloqueantes
+
+### Fases A1-A10 (codigo) cerradas en este release
+
+- **A9** Mover `SECRET_SALT` de `LicenseHelper` a `HOSPITAL_LICENSE_SALT`
+  en `.env` con rotacion por hospital
+- **A2.1** Columnas cents en `invoices` y `invoice_items` con
+  backfill PHP en driver no-MySQL
+- **A2.2** `quantity_cents` en `invoice_items`; eliminacion de
+  `ROUND(x * 100)` en `BuildCashReconciliationAction`,
+  `DashboardReportService`, `DailyReportService`, `MonthlyReportService`,
+  `AreaIncomeReportService`, `ServiceSalesReportService`,
+  `CategoryReportService`, `FinancialFactsService` (8 servicios, 12
+  guard tests)
+- **A1+A8** CSP nonce en produccion: plugin Vite emite placeholder
+  `__S_HOSPITAL_CSP_NONCE__`, backend Laravel inyecta nonce por
+  request y sirve HTML con scripts/styles etiquetados. `unsafe-inline`
+  removido de `script-src` en CSP de produccion
+- **A3** `entrypoint.sh` espera MariaDB healthcheck (default 120s)
+  antes de ejecutar `php artisan migrate --force`; `setup.bat` espera
+  healthcheck de MariaDB (max 60 intentos × 2s) en lugar de
+  `timeout /t 10` fijo
+- **A4** Rate limit 10/1min en `/api/health` y `/api/system/health`
+- **A7** CSP report-uri endurecido: rate limit 30/1min, Content-Type
+  allowlist, tamaño maximo 4KB (413), sanitizacion de secretos/URLs
+- **A10** Comandos `hospital:prune-audit-logs` y
+  `hospital:prune-failed-jobs` con schedules diarios
+- **A5** `NewInvoiceView` 775 -> 490 lineas; `NewInvoiceViewLayout`
+  extraido a archivo dedicado
+- **A6** `BackupsView` muestra badge "Worker activo/inactivo" basado
+  en `systemStatus.backups.worker_recently_active`
+
+### Bloque C (operacional) cerrado en este release
+
+- **C1** 8 manuales para operador no tecnico en `docs/manuales/`
+  (MANUAL_CAJERO, MANUAL_ADMINISTRADOR, MANUAL_SUPERVISOR,
+  GUIA_INSTALACION_OPERATIVA, GUIA_RESPALDOS_Y_RESTAURACION,
+  GUIA_SOPORTE_PRIMER_NIVEL, GUIA_CAPACITACION_SEGURA,
+  CHECKLIST_CAPACITACION)
+- **C2** `docs/DISASTER_RECOVERY.md` con 10 escenarios (servidor
+  no enciende, base no responde, contrasena admin perdida, APP_KEY
+  perdida, restore desde backup, cola de respaldos llena, tarea
+  Windows sin correr, disco lleno, cierre de caja imposible, restore
+  offline desde USB)
+- **C3** `scripts/ping_lan_clients.ps1` que una PC cliente puede correr
+  para validar `/up`, `/login`, `/verify-email`, `/api/system/health`
+  y assets JS/CSS, con opcion `-EvidencePath` para generar evidencia
+  Markdown
+
+### Fases B1-B6 (evidencia fisica) pendientes
+
+`PRODUCTION_CANDIDATE` se mantiene hasta que se complete la
+evidencia fisica con hardware real:
+
+- B1 LAN cliente (`qa/LAN_CLIENT_VALIDATION_PROOF.md`)
+- B2 Impresora institucional 5 tamanos
+  (`qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`)
+- B3 Restore final (`qa/FINAL_RESTORE_PROOF.md`)
+- B4 Concurrencia final (`qa/FINAL_CONCURRENCY_PROOF.md`)
+- B5 Tareas Windows de backup (`install_backup_tasks_windows.ps1`)
+- B6 Handoff guiado (`final_production_handoff.ps1`)
+
+Las plantillas, scripts y preflight ya estan preparados. Ver
+`docs/RELEASE_CHECKLIST.md` y `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md`.
+
+### Tag
+
+Este commit se etiqueta como `v1.0.0`. El paquete `offline-release/`
+se regenera desde este commit con `make_offline_release.ps1 -Force`
+y se verifica con `assert_offline_release_clean.ps1
+-RequireCurrentCommit`.
+
 ## v1.0.0-rc.3 - Audit Plan Complete (2026-06-02)
 
 ### Resumen
