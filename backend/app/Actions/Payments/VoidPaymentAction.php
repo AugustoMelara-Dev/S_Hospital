@@ -74,7 +74,7 @@ class VoidPaymentAction
                 'user_id' => $user->id,
                 'type' => CashMovement::TYPE_PAYMENT_VOID,
                 'method' => $lockedPayment->method,
-                'amount' => Money::formatCents(-Money::parseCents((string) $lockedPayment->amount, 'amount')),
+                'amount' => Money::formatCents(-((int) $lockedPayment->amount_cents)),
                 'notes' => substr($lockedInvoice->invoice_number.' - '.$lockedPayment->void_reason, 0, 255),
                 'occurred_at' => now(),
             ]);
