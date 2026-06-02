@@ -1,5 +1,85 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## v1.0.0-rc.3 - Audit Plan Complete (2026-06-02)
+
+### Resumen
+
+Catorce fases de la auditoría 2026-06-02 quedaron implementadas como
+código. Las seis fases restantes (1-6) requieren evidencia física
+en el servidor final (segunda PC, impresora, base de datos real,
+tareas Windows). El sistema pasa de `v1.0.0-rc.2` (12 fases previas)
+a `v1.0.0-rc.3` con cobertura de código endurecida, validaciones
+ampliadas y puertas de calidad nuevas.
+
+### Métricas de calidad al cierre de la auditoría
+
+- 273/273 tests PHPUnit backend (1809 assertions, 4 skipped
+  legítimamente: race test concurrente que requiere MySQL real)
+- 157/157 tests Vitest frontend (33 nuevos durante la auditoría)
+- 0 errores de typecheck
+- 0 errores de ESLint
+- 0 errores de phpstan nivel 3 sobre 110 archivos en app/
+- Bundle gzipped más grande: charts 116.73 kB (objetivo < 250 kB)
+- Build de producción sin warnings bloqueantes
+
+### Fases completadas durante la auditoría
+
+- **Phase 7** Refactor de NewInvoiceView (1020 → 733 líneas) con
+  reducer y POS math extraídos, 19 tests nuevos
+- **Phase 8** Wire moneyCents en 7 vistas (cart, payment, reports,
+  catalog CSV importer)
+- **Phase 9** apiClient hardening con CSRF cache 30 min, lista 422
+  completa, helper `isPermissionDeniedError`, mensaje 423 Locked
+- **Phase 10** Test de concurrencia fiscal con Symfony Process
+  (harness opt-in con flag `HOSPITAL_RUN_CONCURRENT_TESTS=1`)
+- **Phase 11** phpstan (larastan) nivel 3 instalado y en quality gate
+- **Phase 12** Coverage gate opt-in con `phpunit.coverage.xml` y
+  umbral 70% en módulos críticos
+- **Phase 13** axe-core wired en test suite; primera vista (Login)
+  pasa 0 violaciones
+- **Phase 14** Catálogo central de atajos de teclado
+  (KEYBOARD_SHORTCUTS, shortcutsByScope, shortcutLabel) con 6 tests
+- **Phase 15** Bundle size y lazy-loading gate (revisión source de
+  AppRoutes; tests garantizan que las vistas pesadas están en
+  `React.lazy`)
+- **Phase 16** Helpers de formato es-HN (formatLempiras,
+  formatDate, formatDateLong) y diccionario i18n es-HN con t()
+- **Phase 17** Login lockout (5 fails / 15 min) con tabla
+  `login_attempts`, middleware `LoginLockout` y 3 tests
+- **Phase 18** CSP endurecida con report-only channel,
+  Cross-Origin-Opener-Policy y endpoint `/api/system/csp-report`
+- **Phase 19** Endpoint público `/api/system/health` con métricas
+  operativas y heartbeat del backup worker
+
+### Fases pendientes (requieren hardware real)
+
+Las fases 1 a 6 del plan original dependen de evidencia física que
+solo puede recolectarse en el servidor final con hardware real:
+
+- **FASE 1** Evidencia física LAN cliente (segunda PC, 12 checks)
+- **FASE 2** Evidencia física impresora (5 tamaños, márgenes)
+- **FASE 3** Evidencia de restore final (SHA256, conteos)
+- **FASE 4** Evidencia de concurrencia final (RUN_ID, doble pago)
+- **FASE 5** Worker continuo de backups (tareas Windows activas)
+- **FASE 6** Handoff final con `final_production_handoff.ps1`
+
+Las plantillas `qa/*.md` y los scripts `scripts/*.ps1` ya están
+preparados. Procedimiento documentado en `docs/RELEASE_CHECKLIST.md`
+y `docs/OFFLINE_LAN_INSTALL.md`.
+
+### Cómo retomar
+
+1. Cerrar las 6 fases físicas con `final_production_handoff.ps1`
+2. Si phpstan alcanza 0 errores, subir el nivel a 4 en
+   `backend/phpstan.neon`
+3. Aplicar el patrón `LoginView.a11y.test.tsx` a las demás vistas
+   (CashBox, NewInvoice, InvoiceHistory, Reports, Backups,
+   FiscalSettings, Users)
+4. Implementar un Vite plugin para inyectar nonces en el entry
+   script y así poder quitar `'unsafe-inline'` de la CSP
+5. Conectar `useBackups` al endpoint `/api/system/health` para
+   que el panel de backups pinte el estado del worker
+
 ## Unreleased - v1.0.0 Audit Plan (2026-06-02)
 
 ### Phase 7 - NewInvoiceView refactor (partial, behaviour-preserving)
