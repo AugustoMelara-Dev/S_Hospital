@@ -62,6 +62,10 @@ tocar el escritorio ni registrar tareas:
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_hospital_startup_shortcut.ps1 -Url http://IP-DEL-SERVIDOR:8000 -WhatIfOnly
 ```
 
+La salida de `-WhatIfOnly` usa marcadores como `%PROJECT_ROOT%`,
+`%USERPROFILE%` y `[ruta-local]` para poder compartirla con soporte sin exponer
+carpetas reales del servidor.
+
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_hospital_startup_shortcut.ps1 -InstallStartupTask
 ```

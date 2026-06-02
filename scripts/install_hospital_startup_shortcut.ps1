@@ -7,8 +7,31 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+function Protect-ShortcutText([string] $value) {
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        return $value
+    }
+
+    $protected = $value
+
+    if (-not [string]::IsNullOrWhiteSpace($script:ProjectRoot)) {
+        $protected = $protected -replace [regex]::Escape($script:ProjectRoot), "%PROJECT_ROOT%"
+        $protected = $protected -replace [regex]::Escape(($script:ProjectRoot -replace "\\", "/")), "%PROJECT_ROOT%"
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
+        $protected = $protected -replace [regex]::Escape($env:USERPROFILE), "%USERPROFILE%"
+        $protected = $protected -replace [regex]::Escape(($env:USERPROFILE -replace "\\", "/")), "%USERPROFILE%"
+    }
+
+    $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
+    $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+
+    return $protected
+}
+
 trap {
-    Write-Host $_.Exception.Message
+    Write-Host (Protect-ShortcutText $_.Exception.Message)
     Write-Host 'No borre datos, respaldos, archivos .env ni volumenes Docker. Revise la URL LAN y la carpeta instalada antes de repetir.'
     exit 1
 }
@@ -50,6 +73,8 @@ if ([string]::IsNullOrWhiteSpace($desktop) -or -not (Test-Path -LiteralPath $des
 
 if ($WhatIfOnly) {
     Write-Host 'Validacion del acceso directo completada.'
+    Write-Host "Carpeta del sistema: $(Protect-ShortcutText $ProjectRoot)"
+    Write-Host "Destino del acceso directo: $(Protect-ShortcutText $shortcutPath)"
     Write-Host 'Modo WhatIf: no se creo acceso directo ni tarea de inicio.'
     exit 0
 }
