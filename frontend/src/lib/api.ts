@@ -192,6 +192,12 @@ export const apiClient = {
     return cash.getCurrentCashSession();
   },
 
+  async getCashSessions(
+    filters: { page?: number; perPage?: number; status?: CashSession['status'] } = {},
+  ): Promise<{ data: CashSession[]; meta: PaginatedMeta }> {
+    return cash.getCashSessions(filters);
+  },
+
   async openCashSession(payload: { opening_amount: string; notes?: string | null }): Promise<CashSession> {
     return cash.openCashSession(payload);
   },

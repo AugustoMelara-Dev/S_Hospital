@@ -886,6 +886,31 @@ describe('ReportsView', () => {
         } as Response;
       }
 
+      if (url.includes('/api/cash-sessions')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: 11,
+                user_id: 2,
+                status: 'open',
+                opening_amount: '500.00',
+                closing_amount: null,
+                expected_amount: '517.25',
+                difference_amount: null,
+                opening_notes: null,
+                closing_notes: null,
+                opened_at: '2026-05-17T08:00:00.000000Z',
+                closed_at: null,
+                user: { id: 2, name: 'Cajero Validacion', username: 'cajero.validacion' },
+              },
+            ],
+            meta: { current_page: 1, per_page: 50, total: 1 },
+          }),
+        } as Response;
+      }
+
       if (url.includes('/api/reports/income')) {
         return {
           ok: true,
@@ -986,6 +1011,9 @@ describe('ReportsView', () => {
     activateTab(/rango/i);
     expect(await screen.findByLabelText(/desde/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
+    const cashSessionSelector = await screen.findByRole('combobox', { name: /^caja$/i });
+    expect(screen.getByText(/Cajero Validacion.*2026-05-17.*Abierta/i)).toBeInTheDocument();
+    fireEvent.change(cashSessionSelector, { target: { value: '11' } });
     expect(screen.getByLabelText(/^area$/i)).toBeInTheDocument();
     expect(screen.getByText(/puede consultar hasta 31 dias por busqueda/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver rango/i }));
@@ -997,6 +1025,7 @@ describe('ReportsView', () => {
     await waitFor(() => {
       expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/reports/areas?'))).toBe(true);
     });
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('cash_session_id=11'))).toBe(true);
     activateTab(/servicios/i);
     expect(await screen.findByText(/sin categor.as facturadas/i)).toBeInTheDocument();
     expect(await screen.findByText(/sin servicios facturados/i)).toBeInTheDocument();

@@ -3054,3 +3054,11 @@ Validacion:
 - `php artisan test --filter=OperatorManualTest --colors=never`
 - `vendor/bin/phpstan analyse tests/Feature/OperatorManualTest.php --no-progress --error-format=table`
 - `vendor/bin/pint --test tests/Feature/OperatorManualTest.php`
+
+## 2026-06-02 - Selector humano de caja en reportes por rango
+
+Contexto: el filtro de caja en reportes por rango aceptaba solo un numero manual, lo que obligaba a administracion a recordar IDs internos y aumentaba el riesgo de consultar una caja incorrecta.
+
+Decision: el frontend intenta cargar las sesiones de caja desde `/api/cash-sessions` y, cuando hay datos listables, muestra un selector con cajero, fecha de apertura y estado. El valor enviado al backend sigue siendo `cash_session_id`; si la lista no esta disponible por permisos o error, se conserva el campo manual como fallback operativo.
+
+Criterio de verificacion: `ReportsView.test.tsx` valida que una sesion visible como "Cajero Validacion - 2026-05-17 - Abierta" se envie como `cash_session_id=11` al reporte.

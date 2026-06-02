@@ -10,6 +10,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  NativeSelect,
 } from '../../../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/data-table';
 import { KPICard } from './KPICard';
@@ -20,6 +21,7 @@ import type {
   CategoryReport,
   IncomeReport,
   ReportFilters,
+  CashSession,
 } from '../../../lib/api/types';
 import { formatCents, formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
@@ -35,6 +37,7 @@ interface IncomeReportTabProps {
   status: NonNullable<ReportFilters['status']>;
   categoryOptions: Category[];
   areaOptions: Area[];
+  cashSessionOptions: CashSession[];
   loading: boolean;
   income: IncomeReport | null;
   categories: CategoryReport | null;
@@ -64,6 +67,7 @@ export function IncomeReportTab({
   status,
   categoryOptions,
   areaOptions,
+  cashSessionOptions,
   loading,
   income,
   categories,
@@ -191,18 +195,36 @@ export function IncomeReportTab({
                 onChange={(e) => onCashierChange(e.target.value)}
               />
             </div>
-            <div className="w-[150px]">
-              <Label htmlFor="income-cash-session-id">No. de caja</Label>
-              <Input
-                id="income-cash-session-id"
-                type="number"
-                inputMode="numeric"
-                min="1"
-                placeholder="Todas"
-                value={cashSessionId}
-                onChange={(e) => onCashSessionChange(e.target.value)}
-              />
-            </div>
+            {cashSessionOptions.length > 0 ? (
+              <div className="w-[260px]">
+                <Label htmlFor="income-cash-session-id">Caja</Label>
+                <NativeSelect
+                  id="income-cash-session-id"
+                  value={cashSessionId}
+                  onChange={(e) => onCashSessionChange(e.target.value)}
+                >
+                  <option value="">Todas</option>
+                  {cashSessionOptions.map((session) => (
+                    <option key={session.id} value={String(session.id)}>
+                      {cashSessionLabel(session)}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </div>
+            ) : (
+              <div className="w-[150px]">
+                <Label htmlFor="income-cash-session-id">No. de caja</Label>
+                <Input
+                  id="income-cash-session-id"
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  placeholder="Todas"
+                  value={cashSessionId}
+                  onChange={(e) => onCashSessionChange(e.target.value)}
+                />
+              </div>
+            )}
             <Button onClick={onSubmit} disabled={loading}>
               {loading ? 'Consultando...' : 'Ver rango'}
             </Button>
@@ -373,6 +395,14 @@ export function IncomeReportTab({
 
 function methodLabel(method: string): string {
   return { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta', other: 'Otro' }[method] ?? method;
+}
+
+function cashSessionLabel(session: CashSession): string {
+  const cashier = session.user?.name ?? 'Cajero no disponible';
+  const openedAt = typeof session.opened_at === 'string' ? session.opened_at.slice(0, 10) : 'sin apertura';
+  const status = session.status === 'open' ? 'Abierta' : 'Cerrada';
+
+  return `${cashier} - ${openedAt} - ${status}`;
 }
 
 function moneyLabel(value: string | number | null | undefined): string {

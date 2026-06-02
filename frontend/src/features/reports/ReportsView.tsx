@@ -15,6 +15,7 @@ import {
   type CategoryReport,
   type AreaIncomeReport,
   type CashSessionReport,
+  type CashSession,
   type DailyReport,
   type MonthlyReport,
   type IncomeReport,
@@ -71,12 +72,14 @@ export function ReportsView({
   const [cashSession, setCashSession] = useState<CashSessionReport | null>(null);
   const [categoryOptions, setCategoryOptions] = useState<Category[]>([]);
   const [areaOptions, setAreaOptions] = useState<Area[]>([]);
+  const [cashSessionOptions, setCashSessionOptions] = useState<CashSession[]>([]);
 
   useEffect(() => {
     if (canViewManagerial) {
       void loadDaily(dailyDate);
       void loadCategories();
       void loadAreas();
+      void loadCashSessionOptions();
     }
   }, [canViewManagerial]);
 
@@ -133,6 +136,15 @@ export function ReportsView({
       setAreaOptions(await apiClient.getAreas(true));
     } catch {
       setAreaOptions([]);
+    }
+  }
+
+  async function loadCashSessionOptions() {
+    try {
+      const response = await apiClient.getCashSessions({ perPage: 50 });
+      setCashSessionOptions(Array.isArray(response.data) ? response.data : []);
+    } catch {
+      setCashSessionOptions([]);
     }
   }
 
@@ -369,6 +381,7 @@ export function ReportsView({
                 status={status}
                 categoryOptions={categoryOptions}
                 areaOptions={areaOptions}
+                cashSessionOptions={cashSessionOptions}
                 loading={loading}
                 income={income}
                 categories={categories}

@@ -17,6 +17,7 @@ describe('IncomeReportTab', () => {
         status=""
         categoryOptions={[]}
         areaOptions={[]}
+        cashSessionOptions={[]}
         loading={false}
         income={{
           date_from: '2026-05-01',

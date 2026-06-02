@@ -159,6 +159,7 @@ export type Invoice = {
 export type CashSession = {
   id: number;
   user_id: number;
+  user?: Pick<AuthUser, 'id' | 'name' | 'username'>;
   opening_amount: string;
   closing_amount: string | null;
   expected_amount: string | null;
