@@ -23,11 +23,12 @@ Route::get('/health', function () {
         'status' => 'ok',
         'service' => 'Sistema de Caja Hospitalaria',
     ]);
-});
+})->middleware('throttle:10,1');
 
 Route::any('/system/csp-report', [\App\Http\Controllers\CspReportController::class, 'store']);
 
-Route::get('/system/health', [\App\Http\Controllers\HealthController::class, 'show']);
+Route::get('/system/health', [\App\Http\Controllers\HealthController::class, 'show'])
+    ->middleware('throttle:10,1');
 
 Route::get('/system/openapi', function () {
     $document = app(\App\Actions\Reports\OpenApiExporter::class)->document(app('router'));

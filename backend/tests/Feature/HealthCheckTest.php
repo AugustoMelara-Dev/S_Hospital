@@ -66,4 +66,25 @@ class HealthCheckTest extends TestCase
             ->assertNoContent()
             ->assertHeaderMissing('Access-Control-Allow-Origin');
     }
+
+    public function test_health_endpoint_has_rate_limit_applied(): void
+    {
+        $routes = app('router')->getRoutes();
+        $healthRoute = null;
+        $upRoute = null;
+
+        foreach ($routes as $route) {
+            if ($route->uri() === 'api/system/health') {
+                $healthRoute = $route;
+            }
+            if ($route->uri() === 'api/health') {
+                $upRoute = $route;
+            }
+        }
+
+        $this->assertNotNull($healthRoute, 'api/system/health route must exist');
+        $this->assertNotNull($upRoute, 'api/health route must exist');
+        $this->assertContains('throttle:10,1', $healthRoute->middleware(), 'api/system/health must be rate limited');
+        $this->assertContains('throttle:10,1', $upRoute->middleware(), 'api/health must be rate limited');
+    }
 }
