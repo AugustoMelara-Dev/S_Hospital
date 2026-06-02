@@ -8,6 +8,7 @@ use App\Actions\Reports\OperationalMetricsService;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class OperationalMetricsServiceTest extends TestCase
@@ -85,6 +86,8 @@ class OperationalMetricsServiceTest extends TestCase
 
     public function test_storage_section_reports_backup_files_and_bytes(): void
     {
+        Storage::fake('local');
+
         BackupLog::query()->create([
             'filename' => 'hospital-backup-2026-06-02-120000-test.sql',
             'path' => 'backups/hospital-backup-2026-06-02-120000-test.sql',
@@ -99,7 +102,8 @@ class OperationalMetricsServiceTest extends TestCase
         $snapshot = app(OperationalMetricsService::class)->snapshot();
 
         $this->assertArrayHasKey('storage', $snapshot);
-        $this->assertGreaterThanOrEqual(1, $snapshot['storage']['backup_files']);
+        $this->assertSame(1, $snapshot['storage']['backup_files']);
+        $this->assertSame(4096, $snapshot['storage']['backup_bytes']);
     }
 
     public function test_recent_errors_section_surfaces_failed_actions(): void

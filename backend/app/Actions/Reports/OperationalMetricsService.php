@@ -7,7 +7,6 @@ namespace App\Actions\Reports;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
@@ -116,23 +115,14 @@ class OperationalMetricsService
     private function storage(): array
     {
         try {
-            $disk = Storage::disk('local');
-            $backupPath = 'backups';
-
-            $total = 0;
-            $count = 0;
-
-            foreach ($disk->files($backupPath) as $file) {
-                $size = $disk->size($file);
-                if ($size !== false) {
-                    $total += $size;
-                    $count++;
-                }
-            }
+            $summary = DB::table('backup_logs')
+                ->where('status', 'success')
+                ->selectRaw('COUNT(*) as backup_files, COALESCE(SUM(size_bytes), 0) as backup_bytes')
+                ->first();
 
             return [
-                'backup_files' => $count,
-                'backup_bytes' => $total,
+                'backup_files' => (int) ($summary?->backup_files ?? 0),
+                'backup_bytes' => (int) ($summary?->backup_bytes ?? 0),
             ];
         } catch (Throwable $exception) {
             Log::warning('OperationalMetricsService: storage probe failed', ['message' => $exception->getMessage()]);
