@@ -2803,3 +2803,23 @@ Validacion:
 - `php artisan test --filter=ReportsTest::test_payment_scoped_breakdowns_use_payment_date_not_invoice_issue_date`
 - `php artisan test --filter=ReportsTest`
 - `vendor/bin/pint --test app/Actions/Reports/FinancialFactsService.php tests/Feature/ReportsTest.php`
+
+### 2026-06-02 - Exportacion de caja usa fechas de la caja consultada
+
+Decision:
+
+- La exportacion Excel desde la pestana Caja construye `date_from` y `date_to` desde `cash_session.opened_at` y `cash_session.closed_at`.
+- La exportacion de caja ya no arrastra filtros de rango, metodo, area, categoria o cajero que pertenezcan a otra pestana.
+- Si la caja esta abierta, `date_to` usa la fecha de apertura como fallback seguro hasta que el backend reciba una fecha de cierre.
+
+Motivo:
+
+- Una caja historica debe exportarse con el mismo periodo que se esta revisando en pantalla.
+- Usar el rango global actual podia generar un archivo que no cuadraba con la caja consultada.
+
+Validacion:
+
+- `npm run test -- ReportsView.test.tsx --run`
+- `npm run typecheck`
+- `npm run lint`
+- `npm run build`

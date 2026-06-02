@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../App';
+import { ReportsView } from './ReportsView';
 import { AuditoriaTab } from './components/AuditoriaTab';
 import { apiClient } from '../../lib/api';
 import { queryClient } from '../../lib/query-client';
@@ -711,6 +712,92 @@ describe('ReportsView', () => {
     expect(screen.getByRole('tab', { name: /^caja$/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/n.mero de caja/i)).toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /diario/i })).not.toBeInTheDocument();
+  });
+
+  it('exports the loaded cash session using its own opened and closed dates', async () => {
+    vi.spyOn(apiClient, 'getDailyReport').mockResolvedValue({
+      date: '2026-06-02',
+      total_billed: '0.00',
+      total_collected: '0.00',
+      total_pending: '0.00',
+      total_partial: '0.00',
+      total_voided: '0.00',
+      invoice_count: 0,
+      payment_count: 0,
+      payments_by_method: { cash: '0.00', transfer: '0.00', card: '0.00', other: '0.00' },
+      invoices_by_status: {
+        issued: { count: 0, total: '0.00' },
+        partial: { count: 0, total: '0.00' },
+        paid: { count: 0, total: '0.00' },
+        void: { count: 0, total: '0.00' },
+      },
+    });
+    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getCashSessionReport').mockResolvedValue({
+      cash_session: {
+        id: 42,
+        user_id: 7,
+        status: 'closed',
+        opening_amount: '500.00',
+        closing_amount: '517.25',
+        expected_amount: '517.25',
+        difference_amount: '0.00',
+        opening_notes: null,
+        closing_notes: null,
+        opened_at: '2026-05-03T08:00:00.000000Z',
+        closed_at: '2026-05-03T16:00:00.000000Z',
+        user: { id: 7, name: 'Caja Principal', username: 'caja' },
+      },
+      totals_by_method: { cash: '17.25', transfer: '0.00', card: '0.00', other: '0.00' },
+      total_cash: '17.25',
+      total_transfer: '0.00',
+      total_card: '0.00',
+      total_other: '0.00',
+      payments_count: 1,
+      payments_total: '17.25',
+      expected_cash_amount: '517.25',
+      pending_invoice_count: 0,
+      pending_amount: '0.00',
+      payments: [],
+      movements: [],
+    });
+    const downloadReportExport = vi
+      .spyOn(apiClient, 'downloadReportExport')
+      .mockResolvedValue(new Blob(['excel-data']));
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: vi.fn(() => 'blob:cash-report'),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: vi.fn(),
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+    render(
+      <ReportsView
+        canExport
+        canViewCashSessionReport
+        canViewManagerial
+        onStatus={() => undefined}
+      />,
+    );
+
+    activateTab(/^caja$/i);
+    fireEvent.change(await screen.findByLabelText(/n.mero de caja/i), { target: { value: '42' } });
+    fireEvent.click(screen.getByRole('button', { name: /ver caja/i }));
+
+    expect(await screen.findByText('Caja Principal')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /exportar excel/i }));
+
+    await waitFor(() => {
+      expect(downloadReportExport).toHaveBeenCalledWith(expect.objectContaining({
+        cash_session_id: '42',
+        date_from: '2026-05-03',
+        date_to: '2026-05-03',
+      }));
+    });
   });
 
   it('renders report date filters and empty category state after loading range', async () => {

@@ -446,7 +446,7 @@ export function ReportsView({
               loading={loading}
               error={cashError}
               onCashReportIdChange={setCashReportId}
-              onExport={() => downloadBackendExport({ ...reportFilters(), cash_session_id: cashReportId || null })}
+              onExport={() => downloadBackendExport(cashSessionExportFilters(cashReportId, cashSession))}
               onSubmit={handleCashSubmit}
             />
           ) : (
@@ -488,4 +488,21 @@ function monthlyRangeFilters(month: string, monthly: MonthlyReport | null): Repo
     date_from: `${month}-01`,
     date_to: localDateString(new Date(year, monthNumber, 0)),
   };
+}
+
+function cashSessionExportFilters(cashReportId: string, cashSession: CashSessionReport | null): ReportFilters {
+  const openedDate = cashSessionDate(cashSession?.cash_session.opened_at);
+  const closedDate = cashSessionDate(cashSession?.cash_session.closed_at);
+
+  return {
+    date_from: openedDate ?? today,
+    date_to: closedDate ?? openedDate ?? today,
+    cash_session_id: cashReportId || null,
+  };
+}
+
+function cashSessionDate(value: string | null | undefined): string | null {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)
+    ? value.slice(0, 10)
+    : null;
 }
