@@ -120,17 +120,23 @@ function fieldLabel(field: string): string {
     return humanizeFieldName(field);
   }
 
-  const [parent, child] = field.split('.', 2);
+  const [parent, child, ...rest] = field.split('.');
 
   if (child === undefined) {
     return humanizeFieldName(parent ?? field);
   }
 
   if (/^\d+$/.test(child)) {
-    return `${humanizeFieldName(parent ?? field)} #${Number(child) + 1}`;
+    const detail = rest.map(humanizeFieldName).filter(Boolean).join(' ');
+
+    return detail
+      ? `${humanizeFieldName(parent ?? field)} #${Number(child) + 1} (${detail})`
+      : `${humanizeFieldName(parent ?? field)} #${Number(child) + 1}`;
   }
 
-  return `${humanizeFieldName(parent ?? field)} (${humanizeFieldName(child)})`;
+  const detail = [child, ...rest].map(humanizeFieldName).filter(Boolean).join(' ');
+
+  return `${humanizeFieldName(parent ?? field)} (${detail})`;
 }
 
 function humanizeFieldName(name: string): string {
@@ -311,6 +317,7 @@ export const apiClient = {
     let response = await send();
 
     if (response.status === 419 && method !== 'GET' && method !== 'HEAD') {
+      resetCsrfCache();
       await this.csrf();
       response = await send();
     }

@@ -216,8 +216,11 @@ describe('resolveApiBaseUrl', () => {
     });
 
     const first = apiClient.request('/api/first', { method: 'POST', body: JSON.stringify({ a: 1 }) });
-    await Promise.resolve();
-    await Promise.resolve();
+    for (let i = 0; i < 10 && !resolveFirstPost; i += 1) {
+      await Promise.resolve();
+    }
+    expect(resolveFirstPost).toBeDefined();
+
     const second = apiClient.request('/api/second', { method: 'POST', body: JSON.stringify({ b: 2 }) });
     await Promise.resolve();
     await Promise.resolve();
@@ -252,6 +255,39 @@ describe('resolveApiBaseUrl', () => {
       .filter((url) => url.includes('/sanctum/csrf-cookie'));
 
     expect(csrfCalls).toHaveLength(1);
+  });
+
+  it('refreshes the CSRF cookie when a mutating request receives 419', async () => {
+    document.cookie = 'XSRF-TOKEN=test-token';
+    let postAttempts = 0;
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/sanctum/csrf-cookie')) {
+        return { ok: true, json: async () => ({}) } as Response;
+      }
+
+      postAttempts += 1;
+      if (postAttempts === 1) {
+        return {
+          ok: false,
+          status: 419,
+          json: async () => ({ message: 'CSRF token mismatch.' }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: 'ok' }) } as Response;
+    });
+
+    await expect(apiClient.request('/api/payments', { method: 'POST', body: JSON.stringify({ amount: '1.00' }) }))
+      .resolves.toEqual({ data: 'ok' });
+
+    const csrfCalls = fetchMock.mock.calls
+      .map(([url]) => String(url))
+      .filter((url) => url.includes('/sanctum/csrf-cookie'));
+
+    expect(csrfCalls).toHaveLength(2);
+    expect(postAttempts).toBe(2);
   });
 
   it('logs validation issues in the local support log without leaking raw field names', async () => {
