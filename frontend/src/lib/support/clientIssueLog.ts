@@ -29,7 +29,11 @@ export function safeClientMessage(value: string): string {
   return value
     .replace(/(?:password|contrase.{0,2}a|token|secret|APP_KEY|DB_PASSWORD)\s*[:=]\s*\S+/gi, '[redacted]')
     .replace(/password|contrase.{0,2}a|token|secret|APP_KEY|DB_PASSWORD/gi, '[redacted]')
+    .replace(/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)*_(?:id|key|token|secret|password)\b/gi, '[campo-interno]')
+    .replace(/\bSQLSTATE\[[^\]]+\][^.;\n\r]*/gi, '[detalle-tecnico]')
+    .replace(/\bstorage[\\/]+logs[\\/]+[^\s]+/gi, '[ruta-local]')
     .replace(/[A-Z]:\\[^\s]+/gi, '[ruta-local]')
+    .replace(/\/(?:home|var|etc|srv|tmp|Users|xampp|laragon)\/[^\s]+/gi, '[ruta-local]')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 500);

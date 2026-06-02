@@ -8,6 +8,17 @@ describe('clientIssueLog', () => {
     expect(safeClientMessage('Revise C:\\Users\\admin\\hospital\\.env')).not.toMatch(/C:\\Users|\.env/i);
   });
 
+  it('redacts internal field names and runtime details from support messages', () => {
+    const message = safeClientMessage(
+      'cash_session_id SQLSTATE[23000]: duplicate key in storage/logs/laravel.log and /var/www/html/.env',
+    );
+
+    expect(message).toMatch(/\[campo-interno\]/);
+    expect(message).toMatch(/\[detalle-tecnico\]/);
+    expect(message).toMatch(/\[ruta-local\]/);
+    expect(message).not.toMatch(/cash_session_id|SQLSTATE|storage\/logs|\/var\/www|\.env/i);
+  });
+
   it('returns safe stored incidents for support', () => {
     window.localStorage.clear();
 
@@ -32,8 +43,8 @@ describe('clientIssueLog', () => {
         action: 'GET /api/health',
         module: 'api',
         route: '/help',
-        safe_message: 'No se pudo conectar DB_PASSWORD=secret token=abc en C:\\Users\\admin\\hospital\\.env',
-        technical_code: 'NetworkError',
+        safe_message: 'No se pudo conectar DB_PASSWORD=secret token=abc en C:\\Users\\admin\\hospital\\.env cash_session_id SQLSTATE[HY000]: trace',
+        technical_code: 'cash_session_id',
         occurred_at: '2026-05-31T12:00:00.000Z',
       },
       {
@@ -69,7 +80,7 @@ describe('clientIssueLog', () => {
     expect(summary).toContain('Resumen seguro para soporte');
     expect(summary).toContain('Incidentes guardados en este navegador: 4');
     expect(summary).toContain('Caja cerrada');
-    expect(summary).not.toMatch(/DB_PASSWORD|secret|token|abc|C:\\Users|\.env/i);
+    expect(summary).not.toMatch(/DB_PASSWORD|secret|token|abc|C:\\Users|\.env|cash_session_id|SQLSTATE/i);
     expect(summary).not.toContain('No debe aparecer');
   });
 });
