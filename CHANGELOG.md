@@ -157,6 +157,21 @@
   completeness (every top-level navigation key, POS message
   templates, cashbox pending format).
 
+### Phase 15 - Bundle size and lazy-loading gate
+
+- `npm run build` reports the largest gzipped chunks: charts 116.73
+  kB, index 109.95 kB, ui 42.32 kB, forms 27.64 kB, vendor 17.52
+  kB, query 10.79 kB. Total well under the 250 kB gzipped target.
+- `frontend/src/AppRoutes.lazy.test.ts` greps the source of
+  `AppRoutes.tsx` to assert that the nine heavy views (About,
+  Backups, Catalog, Dashboard, Fiscal Settings, Help, Invoice
+  History, Reports, Users) are bound through `React.lazy` and that
+  a Suspense fallback is provided. The cashier reaches
+  /login and /dashboard without paying for the heavy chunks.
+- Next audit pass should split Recharts from the initial load by
+  deferring the charts chunk behind an intersection observer on the
+  dashboard panels.
+
 ### Audit
 
 - `docs/AUDIT_2026_06_02.md` records the full audit and the 20-phase
