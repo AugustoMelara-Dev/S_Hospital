@@ -472,8 +472,13 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                 setReceiptWidth(newWidth);
               }}
               onPrint={async () => {
-                await auditReceiptPrint();
-                onStatus(`Recibo ${selectedInvoice.invoice_number} enviado a impresión.`);
+                try {
+                  await auditReceiptPrint();
+                  onStatus(`Recibo ${selectedInvoice.invoice_number} enviado a impresión.`);
+                } catch (error) {
+                  onStatus(userSafeErrorMessage(error, 'No se pudo auditar la reimpresión.'));
+                  throw error;
+                }
               }}
             />
           </div>

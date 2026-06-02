@@ -31,7 +31,11 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
   });
 
   async function handlePrintClick() {
-    await onPrint?.();
+    try {
+      await onPrint?.();
+    } catch {
+      return;
+    }
 
     printReceiptDocument(receiptWidth, () => {
       if (!navigator.userAgent.toLowerCase().includes('jsdom')) {

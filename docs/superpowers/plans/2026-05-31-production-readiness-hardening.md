@@ -67,6 +67,7 @@ Current local verification notes:
 - The LAN installer now uses hidden input for MySQL/MariaDB and admin temporary passwords via `Read-SecretText`; `scripts\deploy_hospital_lan.ps1 -SelfTest` remains the focused parser/smoke gate for this script.
 - Fiscal settings exposure was hardened on 2026-06-01: `GET /api/settings/fiscal` now enforces `settings.fiscal.view`, while `/api/settings/branding` remains public and narrow for login/branding. Focused backend coverage was added for the cajero 403 case.
 - Invoice operation scope was hardened on 2026-06-01: payment and invoice void flows require operational access through own-day invoice or `invoices.operate_any`; report/reprint permissions alone are covered as negative cases.
+- Receipt print audit was rechecked on 2026-06-01: history print uses the reprint endpoint before print, and `ReceiptPreview` now has focused coverage that printing waits for the audit callback and does not print if the callback fails.
 
 ## Plan Review Orchestrator Result
 

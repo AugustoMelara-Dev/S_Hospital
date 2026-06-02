@@ -1205,6 +1205,7 @@ Decision:
 
 - Los tamanos institucionales aceptados son `half_letter`, `letter`, `a5`, `80mm` y `58mm`.
 - La vista de recibo desde historial llama a `/api/invoices/{invoice}/reprint` antes de imprimir para registrar auditoria de copia.
+- Si la auditoria de reimpresion falla, el componente de recibo no llama al mecanismo de impresion.
 - El CSS de impresion define paginas especificas para 80mm y 58mm y mantiene la impresion aislada con `body[data-printing-receipt="true"]`.
 
 Motivo:
