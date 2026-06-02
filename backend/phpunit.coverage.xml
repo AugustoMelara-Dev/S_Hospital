@@ -20,6 +20,13 @@
             <directory>app</directory>
         </include>
     </source>
+    <coverage>
+        <report>
+            <clover outputFile="build/logs/clover.xml"/>
+            <html outputDirectory="build/logs/coverage" lowUpperBound="50" highLowerBound="80"/>
+            <text outputFile="build/logs/coverage.txt" showOnlySummary="true"/>
+        </report>
+    </coverage>
     <php>
         <env name="APP_ENV" value="testing" force="true"/>
         <env name="APP_KEY" value="base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" force="true"/>
