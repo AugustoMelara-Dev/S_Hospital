@@ -12,6 +12,11 @@ use Throwable;
 
 class PdfExportRequest extends FormRequest
 {
+    /**
+     * @var array<string, mixed>|null
+     */
+    private ?array $authorizedReportFilters = null;
+
     public function authorize(): bool
     {
         if ($this->user()?->can('reports.export') !== true) {
@@ -98,10 +103,14 @@ class PdfExportRequest extends FormRequest
      */
     public function authorizedReportFilters(): array
     {
+        if ($this->authorizedReportFilters !== null) {
+            return $this->authorizedReportFilters;
+        }
+
         $filters = $this->reportFilters();
 
         if ($this->user()?->can('reports.managerial.view') === true) {
-            return $filters;
+            return $this->authorizedReportFilters = $this->normalizeCashSessionDateRange($filters);
         }
 
         abort_if(empty($filters['cash_session_id']), 403);
@@ -114,6 +123,28 @@ class PdfExportRequest extends FormRequest
         abort_unless($ownsCashSession, 403);
 
         $filters['user_id'] = $this->user()?->id;
+
+        return $this->authorizedReportFilters = $this->normalizeCashSessionDateRange($filters);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    private function normalizeCashSessionDateRange(array $filters): array
+    {
+        if (empty($filters['cash_session_id'])) {
+            return $filters;
+        }
+
+        $cashSession = CashRegisterSession::query()->findOrFail($filters['cash_session_id']);
+        $openedDate = $cashSession->opened_at?->toDateString();
+        $closedDate = $cashSession->closed_at?->toDateString();
+
+        if ($openedDate !== null) {
+            $filters['date_from'] = $openedDate;
+            $filters['date_to'] = $closedDate ?? $openedDate;
+        }
 
         return $filters;
     }

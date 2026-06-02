@@ -1767,6 +1767,62 @@ class ReportsTest extends TestCase
         $this->assertStringStartsWith('%PDF', $response->getContent());
     }
 
+    public function test_cash_session_period_pdf_uses_cash_session_dates_even_when_request_range_is_wrong(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+        $sessionDate = now()->subDays(7)->setTime(8, 0);
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        CashRegisterSession::query()
+            ->whereKey($sessionId)
+            ->update([
+                'opened_at' => $sessionDate,
+                'closed_at' => $sessionDate->copy()->setTime(16, 0),
+                'status' => CashRegisterSession::STATUS_CLOSED,
+            ]);
+
+        Invoice::query()
+            ->whereKey($invoiceId)
+            ->update(['issued_at' => $sessionDate->copy()->setTime(9, 0)]);
+
+        Payment::query()
+            ->where('invoice_id', $invoiceId)
+            ->update(['paid_at' => $sessionDate->copy()->setTime(10, 0)]);
+
+        $this->grantPermissions($cashier, 'reports.cash_session.view', 'reports.export');
+
+        $capturedHtml = null;
+        Pdf::shouldReceive('loadHTML')
+            ->once()
+            ->with(\Mockery::on(function (string $html) use (&$capturedHtml): bool {
+                $capturedHtml = $html;
+
+                return true;
+            }))
+            ->andReturn(tap(\Mockery::mock(DomPdfWrapper::class), function ($pdf): void {
+                $pdf->shouldReceive('output')
+                    ->once()
+                    ->andReturn('%PDF-cash-session-period');
+            }));
+
+        $this->actingAs($cashier)
+            ->get('/api/reports/pdf?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&cash_session_id='.$sessionId)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertSee('%PDF-cash-session-period', false);
+
+        $this->assertIsString($capturedHtml);
+        $this->assertStringContainsString(
+            'Período: '.$sessionDate->toDateString().' al '.$sessionDate->toDateString(),
+            $capturedHtml,
+        );
+        $this->assertStringContainsString('L. 17.25', $capturedHtml);
+    }
+
     public function test_period_closure_pdf_export_validates_range_filters(): void
     {
         $this->seedBillingBase();

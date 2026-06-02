@@ -2881,3 +2881,22 @@ Validacion:
 - `php artisan test --filter=ReportsTest::test_cash_session_export_uses_cash_session_dates_even_when_request_range_is_wrong --colors=never`
 - `php artisan test --filter=ReportsTest --colors=never`
 - `vendor/bin/pint --test app/Http/Requests/Reports/ExportReportRequest.php tests/Feature/ReportsTest.php`
+
+### 2026-06-02 - PDF de caja normaliza rango por fechas reales de la caja
+
+Decision:
+
+- Cuando el PDF de cierre de periodo recibe `cash_session_id`, el backend reemplaza `date_from` y `date_to` por `opened_at` y `closed_at` de esa caja.
+- La normalizacion aplica tanto a administracion como a cajeros autorizados, despues de validar permisos y propiedad de caja.
+- Si la caja sigue abierta, `date_to` usa la fecha de apertura como fallback.
+
+Motivo:
+
+- El PDF debe coincidir con la caja consultada aunque el request traiga filtros heredados de otra pantalla.
+- Administracion necesita un documento imprimible que no pierda cobros historicos por un rango equivocado.
+
+Validacion:
+
+- `php artisan test --filter=ReportsTest::test_cash_session_period_pdf_uses_cash_session_dates_even_when_request_range_is_wrong --colors=never`
+- `php artisan test --filter=ReportsTest --colors=never`
+- `vendor/bin/pint --test app/Http/Requests/Reports/PdfExportRequest.php tests/Feature/ReportsTest.php`
