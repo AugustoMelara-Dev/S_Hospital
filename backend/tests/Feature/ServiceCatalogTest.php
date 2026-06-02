@@ -148,6 +148,30 @@ class ServiceCatalogTest extends TestCase
             ->assertJsonPath('data.0.special_rule_code', Service::ERYTHROPOIETIN_RULE);
     }
 
+    public function test_category_index_requires_catalog_view_and_validates_active_filter(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $viewer = $this->cashier();
+        $plainUser = User::factory()->create();
+        $inactiveCategory = Category::query()->firstOrFail();
+        $inactiveCategory->forceFill(['active' => false])->save();
+
+        $this->actingAs($plainUser)
+            ->getJson('/api/categories')
+            ->assertForbidden();
+
+        $this->actingAs($viewer)
+            ->getJson('/api/categories?active=0')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $inactiveCategory->id);
+
+        $this->actingAs($viewer)
+            ->getJson('/api/categories?active=not-bool')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('active');
+    }
+
     public function test_area_options_are_available_to_catalog_and_managerial_report_users(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);

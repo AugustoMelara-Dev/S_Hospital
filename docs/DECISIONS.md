@@ -2033,3 +2033,22 @@ Consecuencia:
 
 - Cajeros siguen recibiendo 403 al listar o desactivar usuarios.
 - Admin puede desactivar otro usuario, pero recibe 422 si intenta desactivarse a si mismo.
+
+### 2026-06-02 - Lectura de categorias valida filtros con Form Request
+
+Decision:
+
+- `GET /api/categories` usa `IndexCategoryRequest`.
+- El filtro `active` se valida como booleano antes de consultar.
+- La autorizacion `catalog.view` queda fuera del controlador.
+
+Motivo:
+
+- El catalogo es fuente operativa para facturacion y debe rechazar filtros ambiguos antes de construir consultas.
+- Mantener lectura, creacion y actualizacion de categorias bajo Form Requests reduce diferencias entre endpoints del mismo modulo.
+
+Consecuencia:
+
+- Usuarios sin `catalog.view` reciben 403 al listar categorias.
+- `active=0` sigue permitiendo consultar categorias inactivas a usuarios autorizados.
+- Valores no booleanos para `active` devuelven 422.
