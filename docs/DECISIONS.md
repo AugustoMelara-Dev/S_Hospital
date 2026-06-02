@@ -2918,3 +2918,23 @@ Validacion:
 - `php artisan test --filter=ReportsTest::test_report_export_labels_payment_scoped_breakdowns_as_prorated_collected_amounts --colors=never`
 - `php artisan test --filter=ReportsTest --colors=never`
 - `vendor/bin/pint --test app/Actions/Reports/PremiumExcelExportService.php tests/Feature/ReportsTest.php`
+
+### 2026-06-02 - CSP productiva exige nonce tambien en estilos
+
+Decision:
+
+- En ambiente `production`, `Content-Security-Policy` usa `style-src 'self' 'nonce-...'` y elimina `unsafe-inline` para estilos.
+- Desarrollo conserva `unsafe-inline` para compatibilidad local, pero mantiene nonce para probar la ruta.
+- La ruta SPA y el plugin Vite `csp-nonce` siguen siendo la fuente autorizada para sustituir el nonce por request.
+
+Motivo:
+
+- Reducir superficie de inyeccion en el sistema instalado sin depender de internet ni servicios externos.
+- Mantener la proteccion compatible con los estilos y scripts emitidos por el build productivo.
+
+Validacion:
+
+- `php artisan test --filter=SecurityHeadersTest --colors=never`
+- `php artisan test --filter=ProductionSpaRouteTest::test_spa_html_substitutes_csp_nonce_placeholder --colors=never`
+- `npm run test -- csp-nonce.test.ts --run`
+- `vendor/bin/pint --test app/Http/Middleware/AddSecurityHeaders.php tests/Feature/SecurityHeadersTest.php`
