@@ -1997,3 +1997,21 @@ Consecuencia:
 
 - Las migraciones desde cero deben pasar contra MariaDB local.
 - Cualquier endurecimiento adicional de secuencias fiscales debe respetar compatibilidad MySQL/MariaDB offline LAN.
+
+### 2026-06-02 - Backups create/download usan Form Requests
+
+Decision:
+
+- `POST /api/backups` usa `StoreBackupRequest`.
+- `GET /api/backups/{backupLog}/download` usa `DownloadBackupRequest`.
+- La validacion fisica del archivo descargable sigue en el controlador porque depende del registro, disco local y ruta real.
+
+Motivo:
+
+- La regla del proyecto pide Form Requests para validacion/autorizacion de endpoints.
+- Crear y descargar respaldos son operaciones sensibles; el permiso debe quedar en una clase dedicada y testeable, no como `Request` generico en el controlador.
+
+Consecuencia:
+
+- `BackupController` conserva las defensas de path traversal y auditoria de descarga.
+- Usuarios sin permisos siguen recibiendo 403 en listado, creacion y descarga.

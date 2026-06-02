@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Backups\CreateBackupAction;
+use App\Http\Requests\Backups\DownloadBackupRequest;
 use App\Http\Requests\Backups\IndexBackupRequest;
+use App\Http\Requests\Backups\StoreBackupRequest;
 use App\Jobs\RunBackupJob;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -37,10 +38,8 @@ class BackupController extends Controller
         ]);
     }
 
-    public function store(Request $request, CreateBackupAction $createBackup): JsonResponse
+    public function store(StoreBackupRequest $request, CreateBackupAction $createBackup): JsonResponse
     {
-        $request->user()->can('backups.create') || abort(403);
-
         $backupLog = $createBackup->createPending($request->user(), BackupLog::TYPE_MANUAL);
         RunBackupJob::dispatch($backupLog->id);
 
@@ -49,10 +48,8 @@ class BackupController extends Controller
         ], 202);
     }
 
-    public function download(Request $request, BackupLog $backupLog): BinaryFileResponse
+    public function download(DownloadBackupRequest $request, BackupLog $backupLog): BinaryFileResponse
     {
-        $request->user()->can('backups.download') || abort(403);
-
         abort_unless($backupLog->status === BackupLog::STATUS_SUCCESS, 404);
         abort_unless($backupLog->disk === 'local', 404);
         abort_unless($backupLog->path !== null && $this->isSafeRelativeBackupPath($backupLog->path), 404);
