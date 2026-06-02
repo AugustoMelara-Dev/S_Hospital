@@ -170,11 +170,11 @@ contenido crudo del archivo Startup; muestra solo estado y rutas protegidas para
 evitar exponer carpetas locales en capturas de soporte.
 El log operativo queda en `backend/storage/logs/backup-automation.log`.
 
-DespuÃ©s de cada backup diario, copiar el archivo mÃ¡s reciente a una unidad USB o disco externo del hospital. No usar servicios cloud como requisito operativo.
+Despues de cada backup diario, copiar el archivo mas reciente a una unidad USB o disco externo del hospital. No usar servicios cloud como requisito operativo.
 
 ## Restore manual en entorno de prueba
 
-Restore debe probarse en una base limpia de prueba, nunca directo en producciÃ³n sin parada controlada.
+Restore debe probarse en una base limpia de prueba, nunca directo en produccion sin parada controlada.
 
 En Windows puede usarse el helper seguro incluido en el repositorio. Primero
 ejecute el self-test; no toca bases ni backups:
@@ -228,33 +228,33 @@ php artisan test --colors=never
 7. Validar en navegador local de prueba:
    - `/up` responde OK.
    - `/login` carga.
-   - Admin puede iniciar sesiÃ³n.
+   - Admin puede iniciar sesion.
    - Existen usuarios, permisos, servicios, facturas, pagos y cajas esperadas.
-   - Ãšltimo backup aparece en `backup_logs`.
+   - Ultimo backup aparece en `backup_logs`.
 
-## Restore en producciÃ³n
+## Restore en produccion
 
-Restore en producciÃ³n requiere:
+Restore en produccion requiere:
 
 1. Avisar parada operativa y detener acceso de clientes LAN.
 2. Crear un backup nuevo antes del restore.
 3. Copiar la base actual a un destino externo.
-4. Validar checksum del archivo que se restaurarÃ¡.
+4. Validar checksum del archivo que se restaurara.
 5. Restaurar primero en prueba si no se hizo antes.
-6. Restaurar en producciÃ³n con el servicio web detenido o en modo mantenimiento.
+6. Restaurar en produccion con el servicio web detenido o en modo mantenimiento.
 7. Ejecutar `php artisan config:cache`.
 8. Validar `/up`, `/login`, `/verify-email`, login admin, listado de facturas, caja y reporte diario.
 9. Documentar fecha, operador, archivo usado, checksum y resultado.
 
-## Checklist de evidencia mÃ­nima
+## Checklist de evidencia minima
 
 - Fecha y hora del restore de prueba.
-- Equipo donde se probÃ³.
+- Equipo donde se probo.
 - Archivo restaurado.
 - Checksum esperado y checksum calculado.
 - Resultado de `php artisan migrate:status`.
 - Resultado de `/up`, `/login`, `/verify-email`.
-- Conteos mÃ­nimos revisados: users, roles, permissions, services, invoices, payments, cash_register_sessions, backup_logs.
+- Conteos minimos revisados: users, roles, permissions, services, invoices, payments, cash_register_sessions, backup_logs.
 - Firma o nombre del responsable local.
 
 ## Script Fase 10

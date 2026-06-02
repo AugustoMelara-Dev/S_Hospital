@@ -538,7 +538,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                         {systemStatus.runtime.pending_migration_count === null
                           ? 'Sin dato'
                           : systemStatus.runtime.pending_migration_count > 0
-                            ? 'Requiere revisi�n'
+                            ? 'Requiere revision'
                             : 'Actualizada'}
                       </span>
                     </div>
