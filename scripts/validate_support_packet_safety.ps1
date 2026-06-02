@@ -70,6 +70,7 @@ try {
         "SQLSTATE[HY000] error in $fixtureRoot\backend\.env"
         "MAIL_PASSWORD=fixture_mail_password"
         "C:\Hospital\Sistema\.env"
+        "PDOException in /var/www/html/storage/logs/laravel.log and /var/www/html/.env"
     ) -Encoding ASCII
 
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $collector `
@@ -102,7 +103,8 @@ try {
         "fixture_db_password",
         "fixture_token",
         "fixture_mail_password",
-        "C:\\Hospital\\Sistema"
+        "C:\\Hospital\\Sistema",
+        "/var/www/html"
     )
 
     foreach ($pattern in $forbidden) {

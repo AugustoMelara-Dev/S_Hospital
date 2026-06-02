@@ -91,7 +91,7 @@ Si puede iniciar sesion:
    **Requiere revision** o **Error**.
 
 No copie datos de pacientes fuera de los canales autorizados.
-No copie `.env`, passwords, tokens, rutas de Windows ni mensajes tecnicos crudos.
+No copie `.env`, passwords, tokens, rutas locales del servidor ni mensajes tecnicos crudos.
 
 ## Que Hacer Segun El Problema
 

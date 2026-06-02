@@ -245,6 +245,7 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\collect_support_packet.ps1 
 ```
 
 El paquete queda en `qa\support-packets\`. Incluye manifiesto, diagnostico y
-extractos recortados de logs. No agrega `.env`, respaldos SQL, passwords, tokens
-ni carpetas completas de datos. Si el navegador abre, agregue tambien el resumen
+extractos recortados de logs. No agrega `.env`, respaldos SQL, passwords,
+tokens, rutas locales reales del servidor ni carpetas completas de datos. Si el
+navegador abre, agregue tambien el resumen
 seguro desde **Ayuda > Preparar resumen**.
