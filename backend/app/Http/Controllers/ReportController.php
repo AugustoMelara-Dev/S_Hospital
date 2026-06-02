@@ -143,8 +143,6 @@ class ReportController extends Controller
         ]);
 
         if ($request->isDailyClosure()) {
-            $request->user()->can('reports.managerial.view') || abort(403);
-
             $date = $request->reportDate();
             $data = $dailyReports->report($date);
 
@@ -156,22 +154,7 @@ class ReportController extends Controller
             ]);
         }
 
-        $filters = $request->reportFilters();
-
-        if (! $request->user()->can('reports.managerial.view')) {
-            abort_if(empty($filters['cash_session_id']), 403);
-
-            if (! empty($filters['cash_session_id'])) {
-                $exists = CashRegisterSession::query()
-                    ->whereKey($filters['cash_session_id'])
-                    ->where('user_id', $request->user()->id)
-                    ->exists();
-                if (! $exists) {
-                    abort(403);
-                }
-            }
-            $filters['user_id'] = $request->user()->id;
-        }
+        $filters = $request->authorizedReportFilters();
 
         $income = $incomeReports->report($filters);
         $categories = $categoryReports->report($filters);

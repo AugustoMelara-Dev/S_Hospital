@@ -2429,3 +2429,20 @@ Consecuencia:
 
 - Usuarios sin `reports.export` siguen recibiendo 403.
 - Rango de fechas, alcance por caja y filtros mantienen la misma validacion.
+
+### 2026-06-02 - PDF de reportes centraliza alcance en request
+
+Decision:
+
+- `PdfExportRequest` expone filtros autorizados para reportes de periodo.
+- `ReportController@pdfExport` deja de repetir validaciones de permiso gerencial y propiedad de caja.
+
+Motivo:
+
+- La exportacion PDF contiene informacion financiera y su alcance debe resolverse junto con la autorizacion del request.
+- Mantener el controlador delgado reduce diferencias entre PDF y Excel.
+
+Consecuencia:
+
+- Cierre diario PDF sigue limitado a usuarios gerenciales por `PdfExportRequest::authorize`.
+- Usuarios de caja solo pueden exportar periodos con su propia `cash_session_id`.

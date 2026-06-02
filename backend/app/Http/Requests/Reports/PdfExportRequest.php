@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Reports;
 
+use App\Models\CashRegisterSession;
 use App\Models\Invoice;
 use App\Models\Payment;
 use Illuminate\Foundation\Http\FormRequest;
@@ -90,6 +91,31 @@ class PdfExportRequest extends FormRequest
             'method' => $this->input('method'),
             'status' => $this->input('status'),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function authorizedReportFilters(): array
+    {
+        $filters = $this->reportFilters();
+
+        if ($this->user()?->can('reports.managerial.view') === true) {
+            return $filters;
+        }
+
+        abort_if(empty($filters['cash_session_id']), 403);
+
+        $ownsCashSession = CashRegisterSession::query()
+            ->whereKey($filters['cash_session_id'])
+            ->where('user_id', $this->user()?->id)
+            ->exists();
+
+        abort_unless($ownsCashSession, 403);
+
+        $filters['user_id'] = $this->user()?->id;
+
+        return $filters;
     }
 
     private function maxDateTo(): string
