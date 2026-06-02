@@ -92,6 +92,8 @@ export function IncomeReportTab({
     card: '0.00',
     other: '0.00',
   };
+  const categoryAmountLabel = categories?.amount_label ?? 'Total';
+  const areaAmountLabel = areas?.amount_label ?? 'Total';
 
   const chartData = income
     ? Object.entries(paymentsByMethod).map(([method, amount]) => ({
@@ -268,6 +270,9 @@ export function IncomeReportTab({
             <Card>
               <CardHeader>
                 <CardTitle>Por Categoría</CardTitle>
+                {categories.amount_source ? (
+                  <p className="text-sm text-muted-foreground">{categories.amount_source}</p>
+                ) : null}
               </CardHeader>
               <CardContent>
                 <Table>
@@ -277,7 +282,7 @@ export function IncomeReportTab({
                       <TableHead className="text-right">Items</TableHead>
                       <TableHead className="text-right">Subtotal</TableHead>
                       <TableHead className="text-right">ISV</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">{categoryAmountLabel}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -300,6 +305,9 @@ export function IncomeReportTab({
             <Card>
               <CardHeader>
                 <CardTitle>Por Area</CardTitle>
+                {areas.amount_source ? (
+                  <p className="text-sm text-muted-foreground">{areas.amount_source}</p>
+                ) : null}
               </CardHeader>
               <CardContent>
                 <Table>
@@ -308,7 +316,7 @@ export function IncomeReportTab({
                       <TableHead>Area</TableHead>
                       <TableHead className="text-right">Items</TableHead>
                       <TableHead className="text-right">Cantidad</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">{areaAmountLabel}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

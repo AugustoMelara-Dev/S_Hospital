@@ -2709,3 +2709,25 @@ Validacion:
 - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\check-branding.ps1`
 - `npm.cmd run e2e -- production-readiness.spec.ts`
 
+
+### 2026-06-02 - Reportes muestran la base del monto en UI y exports
+
+Decision:
+
+- Los reportes por categoria, area y servicio exponen `amount_basis`, `amount_label` y `amount_source`.
+- La UI, Excel y PDF usan esa metadata para distinguir "Facturado" de "Cobrado asignado proporcionalmente".
+- Cuando el reporte se filtra por metodo, cajero o caja, el monto visible se etiqueta como cobro proporcional y no como monto facturado.
+
+Motivo:
+
+- Administracion no debe presentar cobros filtrados como facturacion emitida.
+- Cada monto debe indicar su fuente para que una lectura posterior no dependa de memoria humana.
+
+Validacion:
+
+- `php artisan test --filter=ReportsTest::test_range_filters_apply_to_category_services_and_cashier_reports`
+- `php artisan test --filter=ReportsTest::test_report_export_labels_payment_scoped_breakdowns_as_prorated_collected_amounts`
+- `php artisan test --filter=ReportsTest::test_period_closure_pdf_labels_payment_scoped_breakdowns_as_prorated_collected_amounts`
+- `npm run typecheck`
+- `npm run test -- IncomeReportTab.test.tsx ServiceSalesTab.test.tsx --run`
+- `npm run build`

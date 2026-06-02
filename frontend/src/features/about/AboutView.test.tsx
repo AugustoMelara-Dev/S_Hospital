@@ -156,6 +156,7 @@ function mockSystemStatus(): SystemStatus {
     },
     backups: {
       pending_count: 0,
+      worker_recently_active: true,
       last_success_at: '2026-06-02T13:00:00.000Z',
       last_success_filename: 'hospital-backup.sql',
       last_failure_at: null,

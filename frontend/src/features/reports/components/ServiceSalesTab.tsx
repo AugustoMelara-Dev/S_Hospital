@@ -28,6 +28,8 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
 
   const totalQuantity = serviceSales?.services.reduce((acc, service) => acc + (parseQuantityUnits(service.quantity) ?? 0), 0) ?? 0;
   const totalBilledCents = serviceSales?.services.reduce((acc, service) => acc + (parseCents(service.total) ?? 0), 0) ?? 0;
+  const serviceAmountLabel = serviceSales?.amount_label ?? 'Monto Facturado';
+  const categoryAmountLabel = categories?.amount_label ?? 'Monto Facturado';
   const chartData = serviceSales
     ? serviceSales.services.slice(0, 10).map((s) => ({
         service: s.service.length > 18 ? `${s.service.slice(0, 18)}...` : s.service,
@@ -77,7 +79,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
               value={formatQuantity(totalQuantity)}
             />
             <KPICard
-              title="Monto Facturado"
+              title={serviceAmountLabel}
               value={`L. ${formatCents(totalBilledCents)}`}
             />
           </div>
@@ -88,6 +90,9 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
         <Card>
           <CardHeader>
             <CardTitle>Por Categoría</CardTitle>
+            {categories.amount_source ? (
+              <p className="text-sm text-muted-foreground">{categories.amount_source}</p>
+            ) : null}
           </CardHeader>
           <CardContent>
             <Table>
@@ -98,7 +103,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                   <TableHead className="text-right">Unidades</TableHead>
                   <TableHead className="text-right">Subtotal</TableHead>
                   <TableHead className="text-right">ISV</TableHead>
-                  <TableHead className="text-right">Monto Facturado</TableHead>
+                  <TableHead className="text-right">{categoryAmountLabel}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -129,7 +134,10 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Servicios Más Facturados</CardTitle>
+              <CardTitle>{serviceSales.amount_basis === 'collected_prorated' ? 'Servicios con cobro asignado' : 'Servicios Más Facturados'}</CardTitle>
+              {serviceSales.amount_source ? (
+                <p className="text-sm text-muted-foreground">{serviceSales.amount_source}</p>
+              ) : null}
             </CardHeader>
             <CardContent>
               <Table>
@@ -138,7 +146,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                     <TableHead>Servicio</TableHead>
                     <TableHead>Categoría</TableHead>
                     <TableHead className="text-right">Cantidad</TableHead>
-                    <TableHead className="text-right">Monto Facturado</TableHead>
+                    <TableHead className="text-right">{serviceAmountLabel}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -158,7 +166,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
           {chartData.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Top 10 Servicios por Monto Facturado</CardTitle>
+                <CardTitle>Top 10 Servicios por {serviceAmountLabel}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={260}>
@@ -166,7 +174,7 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="service" tickLine={false} interval={0} height={70} angle={-20} textAnchor="end" />
                     <YAxis tickLine={false} width={64} />
-                    <Tooltip formatter={(value) => [moneyLabel(value as number), 'Monto facturado']} />
+                    <Tooltip formatter={(value) => [moneyLabel(value as number), serviceAmountLabel]} />
                     <Bar dataKey="total" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>

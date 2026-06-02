@@ -318,6 +318,9 @@ export type IncomeReport = {
 export type CategoryReport = {
   date_from: string;
   date_to: string;
+  amount_basis: 'billed' | 'collected_prorated';
+  amount_label: string;
+  amount_source: string;
   filters: ReportFilters;
   categories: Array<{
     category: string;
@@ -332,6 +335,9 @@ export type CategoryReport = {
 export type ServiceSalesReport = {
   date_from: string;
   date_to: string;
+  amount_basis: 'billed' | 'collected_prorated';
+  amount_label: string;
+  amount_source: string;
   filters: ReportFilters;
   services: Array<{
     service: string;
@@ -345,6 +351,9 @@ export type ServiceSalesReport = {
 export type AreaIncomeReport = {
   date_from: string;
   date_to: string;
+  amount_basis: 'billed' | 'collected_prorated';
+  amount_label: string;
+  amount_source: string;
   filters: ReportFilters;
   areas: Array<{
     area_id: number | null;
@@ -503,6 +512,7 @@ export type SystemStatus = {
   };
   backups: {
     pending_count: number;
+    worker_recently_active: boolean;
     last_success_at: string | null;
     last_success_filename: string | null;
     last_failure_at: string | null;
