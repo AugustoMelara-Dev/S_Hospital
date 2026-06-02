@@ -14,6 +14,7 @@ import {
 import { type ReceiptData } from '../../lib/api';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
+import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 
 type ReceiptPreviewProps = {
   autoPrint?: boolean;

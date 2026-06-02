@@ -17,6 +17,13 @@ const MONTHS_LONG = [
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ];
 
+// Shared Intl formatter instances. Building an Intl.DateTimeFormat is
+// expensive; reuse one per locale and style.
+const SHORT_DATETIME = new Intl.DateTimeFormat('es-HN', {
+  dateStyle: 'short',
+  timeStyle: 'short',
+});
+
 export function formatDate(value: string | Date | null | undefined): string {
   const date = parseDate(value);
   if (date === null) {
@@ -62,6 +69,18 @@ export function formatMonthYear(value: string | Date | null | undefined): string
   }
 
   return `${MONTHS_SHORT[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+// Locale-aware datetime formatter. Replaces the per-view
+// `function formatDate(value) { return new Intl.DateTimeFormat('es-HN', ...).format(...) }`
+// copies that were duplicated across ReceiptPreview, InvoiceHistoryView,
+// CashSessionReportTab, BackupsView, and AuditoriaTab.
+export function formatLocalizedDateTime(value: string | Date | null | undefined): string {
+  const date = parseDate(value);
+  if (date === null) {
+    return '-';
+  }
+  return SHORT_DATETIME.format(date);
 }
 
 function parseDate(value: string | Date | null | undefined): Date | null {
