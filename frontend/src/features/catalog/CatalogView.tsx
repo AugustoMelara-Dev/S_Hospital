@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { type Area, type AuthUser, type Category, type Service, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { Plus, Search, MoreHorizontal, Boxes } from 'lucide-react';
 import { Button } from '../../components/ui/button';
@@ -52,6 +53,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   const [scannerEnabled, setScannerEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const queryClient = useQueryClient();
 
   const [serviceSheetOpen, setServiceSheetOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
@@ -152,11 +154,14 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   }
 
   function handleServiceSuccess() {
+    queryClient.invalidateQueries({ queryKey: ['services'] });
+    queryClient.invalidateQueries({ queryKey: ['categories'] });
     void loadCatalogData();
     onStatus('Servicio guardado exitosamente.');
   }
 
   function handleCategorySuccess() {
+    queryClient.invalidateQueries({ queryKey: ['categories'] });
     void loadCatalogData();
     onStatus('Categoría guardada exitosamente.');
   }
@@ -178,12 +183,13 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         },
         service.id,
       );
+      queryClient.invalidateQueries({ queryKey: ['services'] });
       void loadCatalogData();
       onStatus(service.active ? 'Servicio desactivado.' : 'Servicio activado.');
     } catch {
       onStatus('No se pudo cambiar el estado del servicio.');
     }
-  }, [loadCatalogData, onStatus]);
+  }, [loadCatalogData, onStatus, queryClient]);
 
   function normalizeServiceForSheet(service: Service) {
     return {

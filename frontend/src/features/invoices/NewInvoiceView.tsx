@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useMemo, useRef, useReducer } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiClient, type CashSession, type ReceiptData, type Service, userSafeErrorMessage } from '../../lib/api';
 import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { invoiceSchema } from '../../schemas/invoice.schema';
@@ -31,6 +32,7 @@ export function NewInvoiceView({
 }: NewInvoiceViewProps) {
   const [state, dispatch] = useReducer(newInvoiceReducer, cashSession, getInitialNewInvoiceState);
   const { data: fiscalSettings } = useFiscalSettings();
+  const queryClient = useQueryClient();
 
   const patientInputRef = useRef<HTMLInputElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -387,6 +389,13 @@ export function NewInvoiceView({
         method: state.paymentMethod,
         amount: appliedAmount,
       });
+      // Notify any other open client (history view, dashboard, cashier
+      // list on a second PC) that this invoice and the cash session have
+      // changed. Without this, the second PC keeps stale totals until a
+      // manual refresh.
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: result.invoice });
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: result.invoice.balance_due });
       const nextReceipt = await apiClient.getReceipt(result.invoice.id, state.receiptWidth);

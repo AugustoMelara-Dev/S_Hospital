@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   type AuthUser,
   type Invoice,
@@ -51,6 +52,7 @@ const today = localDateString();
 
 export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState<InvoiceFilters>(() => filtersFromSearchParams(searchParams));
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const invoicesList = Array.isArray(invoices) ? invoices : [];
@@ -174,6 +176,11 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
     try {
       const voided = await apiClient.voidInvoice(selectedInvoice.id, voidReason.trim());
+      // Notify the rest of the app (dashboard, cashier list, second PC
+      // in LAN) that this invoice and the cash session are stale.
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setSelectedInvoice(voided);
       setInvoices((current) => {
         const currentList = Array.isArray(current) ? current : [];
@@ -196,8 +203,11 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
       const nextReceipt = await apiClient.reprintInvoice(reprintTarget.id, {
         width: requestedWidth,
-        reason: reprintReason.trim() || 'Reimpresión solicitada desde historial.',
+        reason: reprintReason.trim() || 'Reimpresion solicitada desde historial.',
       });
+      // Reprint posts an audit log entry that other views (dashboard,
+      // cashier list) may display; let them refetch.
+      queryClient.invalidateQueries({ queryKey: ['audit'] });
       const normalizedWidth = institutionalReceiptPaperSize(nextReceipt.width);
       setReceiptWidth(normalizedWidth);
       setReceipt({ ...nextReceipt, width: normalizedWidth });

@@ -1,8 +1,19 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { InvoiceHistoryView } from './InvoiceHistoryView';
 import { apiClient, type AuthUser, type Invoice } from '../../lib/api';
+
+function renderWithQueryClient(node: ReactNode) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>{node}</MemoryRouter>
+    </QueryClientProvider>
+  );
+}
 
 describe('InvoiceHistoryView', () => {
   it('renders malformed invoice history amounts as safe financial values', async () => {
@@ -26,11 +37,7 @@ describe('InvoiceHistoryView', () => {
       meta: { current_page: 1, per_page: 10, total: 1 },
     });
 
-    render(
-      <MemoryRouter>
-        <InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />
-      </MemoryRouter>,
-    );
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
 
     await waitFor(() => expect(screen.getByText('Paciente Historial')).toBeInTheDocument());
 

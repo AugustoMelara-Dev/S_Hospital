@@ -1,7 +1,16 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { CatalogView } from './CatalogView';
 import { apiClient, type AuthUser, type Service } from '../../lib/api';
+
+function renderWithQueryClient(node: ReactNode) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={queryClient}>{node}</QueryClientProvider>);
+}
 
 describe('CatalogView', () => {
   it('renders malformed service prices as safe financial values', async () => {
@@ -13,12 +22,26 @@ describe('CatalogView', () => {
       meta: { current_page: 1, per_page: 15, total: 1 },
     });
 
-    render(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
 
     await waitFor(() => expect(screen.getByText('Glucosa')).toBeInTheDocument());
 
     expect(document.body.textContent).toContain('L. 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|undefined/);
+  });
+
+  it('renders inside a QueryClientProvider without crashing', async () => {
+    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getFiscalSettings').mockResolvedValue(null);
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [],
+      meta: { current_page: 1, per_page: 15, total: 0 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(apiClient.getServicesPage).toHaveBeenCalled());
   });
 });
 
