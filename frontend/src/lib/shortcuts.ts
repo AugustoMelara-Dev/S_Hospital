@@ -39,8 +39,7 @@ export const KEYBOARD_SHORTCUTS: ShortcutEntry[] = [
     description: 'Foco en la busqueda de servicios o en el campo de codigo escaneable.',
   },
   {
-    key: 'k',
-    ctrl: true,
+    key: 'F6',
     scope: 'pos',
     description: 'Foco en el campo de escaneo de codigos de barra o QR.',
   },

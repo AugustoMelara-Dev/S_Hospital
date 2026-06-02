@@ -23,6 +23,20 @@ describe('keyboard shortcuts catalogue', () => {
     }
   });
 
+  it('does not collide after global shortcuts are merged into each screen scope', () => {
+    const scopes = ['pos', 'cash', 'reports', 'history'] as const;
+
+    for (const scope of scopes) {
+      const seen = new Set<string>();
+
+      for (const entry of shortcutsByScope(scope)) {
+        const signature = `${entry.ctrl ? 'ctrl+' : ''}${entry.alt ? 'alt+' : ''}${entry.shift ? 'shift+' : ''}${entry.key.toLowerCase()}`;
+        expect(seen.has(signature), `Duplicate effective shortcut in ${scope}: ${signature}`).toBe(false);
+        seen.add(signature);
+      }
+    }
+  });
+
   it('includes at least one global shortcut for navigation', () => {
     const global = KEYBOARD_SHORTCUTS.filter((shortcut) => shortcut.scope === 'global');
     expect(global.length).toBeGreaterThan(0);
