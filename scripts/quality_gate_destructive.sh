@@ -70,3 +70,9 @@ fi
 echo "Running destructive dev/testing reset against APP_ENV=${APP_ENV_VALUE}, DB_CONNECTION=${DB_CONNECTION_VALUE}, DB_DATABASE=${DB_DATABASE_VALUE:-<empty>}."
 (cd backend && php artisan migrate:fresh --seed)
 (cd backend && php artisan test --colors=never)
+if [ -x backend/vendor/bin/phpstan ]; then
+  (cd backend && ./vendor/bin/phpstan analyse --memory-limit=1G)
+else
+  echo "Required static analysis missing: run composer install in backend so vendor/bin/phpstan is available."
+  exit 1
+fi

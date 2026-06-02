@@ -48,6 +48,18 @@
 - Tests in `frontend/src/lib/api/base.test.ts` cover CSRF caching, full
   422 list, 423, 403, 5xx sanitization, and the new helpers.
 
+### Phase 11 - Static analysis (phpstan) wired into the quality gate
+
+- `nunomaduro/larastan` is added to `backend/composer.json` (dev) so
+  the existing `scripts/quality_gate.sh` finds `./vendor/bin/phpstan`
+  and runs it on every CI run.
+- `backend/phpstan.neon` ships with the project at level 3 and ignores
+  Eloquent dynamic properties plus the Laravel scaffold files that
+  Laravel 12 no longer publishes.
+- The level is deliberately conservative; the next audit pass should
+  raise it to 4 once the cashier-facing Actions get explicit return
+  type hints.
+
 ### Audit
 
 - `docs/AUDIT_2026_06_02.md` records the full audit and the 20-phase
