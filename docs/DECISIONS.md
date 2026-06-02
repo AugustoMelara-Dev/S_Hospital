@@ -2938,3 +2938,22 @@ Validacion:
 - `php artisan test --filter=ProductionSpaRouteTest::test_spa_html_substitutes_csp_nonce_placeholder --colors=never`
 - `npm run test -- csp-nonce.test.ts --run`
 - `vendor/bin/pint --test app/Http/Middleware/AddSecurityHeaders.php tests/Feature/SecurityHeadersTest.php`
+
+### 2026-06-02 - Excel registra filtros administrativos con etiquetas humanas
+
+Decision:
+
+- La hoja `Filtros Aplicados` del Excel agrega filtros activos de caja, metodo, estado, cajero, area y categoria.
+- Los valores se muestran como etiquetas humanas, por ejemplo `Efectivo`, `Pagada`, nombre de cajero, nombre de area y nombre de categoria.
+- El export evita escribir IDs crudos de usuario, area o categoria como valor visible del filtro.
+
+Motivo:
+
+- Un reporte exportado debe poder revisarse despues sin depender de memoria humana sobre que filtros se aplicaron.
+- Administracion necesita entender el alcance del archivo sin interpretar parametros tecnicos de la URL.
+
+Validacion:
+
+- `php artisan test --filter=ReportsTest::test_report_export_records_active_filters_with_human_labels --colors=never`
+- `php artisan test --filter=ReportsTest --colors=never`
+- `vendor/bin/pint --test app/Actions/Reports/PremiumExcelExportService.php tests/Feature/ReportsTest.php`

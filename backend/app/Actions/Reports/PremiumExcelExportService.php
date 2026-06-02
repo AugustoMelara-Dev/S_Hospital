@@ -2,7 +2,10 @@
 
 namespace App\Actions\Reports;
 
+use App\Models\Area;
+use App\Models\Category;
 use App\Models\FiscalSetting;
+use App\Models\User;
 use App\Support\HospitalName;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -151,9 +154,17 @@ class PremiumExcelExportService
         $sheet0->setCellValue('B12', 'Generado Por');
         $sheet0->setCellValue('C12', auth()->user()?->name ?? 'Sistema');
 
-        $sheet0->getStyle('B7:C12')->applyFromArray($borderStyle);
-        $sheet0->getStyle('B7:B12')->applyFromArray($boldRowStyle);
-        $sheet0->getStyle('C7:C12')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+        $row = 13;
+        foreach ($this->appliedFilterRows($income['filters'] ?? []) as [$label, $value]) {
+            $sheet0->setCellValue('B'.$row, $label);
+            $sheet0->setCellValue('C'.$row, $value);
+            $row++;
+        }
+
+        $lastFilterRow = $row - 1;
+        $sheet0->getStyle("B7:C{$lastFilterRow}")->applyFromArray($borderStyle);
+        $sheet0->getStyle("B7:B{$lastFilterRow}")->applyFromArray($boldRowStyle);
+        $sheet0->getStyle("C7:C{$lastFilterRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
 
         // Auto widths
         foreach (['B', 'C'] as $col) {
@@ -834,6 +845,50 @@ class PremiumExcelExportService
         return $spreadsheet;
     }
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return list<array{0: string, 1: string}>
+     */
+    private function appliedFilterRows(array $filters): array
+    {
+        $rows = [];
+
+        if (! empty($filters['cash_session_id'])) {
+            $rows[] = ['Caja', 'Caja #'.(string) $filters['cash_session_id']];
+        }
+
+        if (! empty($filters['method'])) {
+            $rows[] = ['Método de pago', $this->paymentMethodLabel((string) $filters['method'])];
+        }
+
+        if (! empty($filters['status'])) {
+            $rows[] = ['Estado de factura', $this->invoiceStatusLabel((string) $filters['status'])];
+        }
+
+        if (! empty($filters['user_id'])) {
+            $rows[] = [
+                'Cajero',
+                User::query()->whereKey($filters['user_id'])->value('name') ?? 'Usuario no disponible',
+            ];
+        }
+
+        if (! empty($filters['area_id'])) {
+            $rows[] = [
+                'Área',
+                Area::query()->whereKey($filters['area_id'])->value('name') ?? 'Área no disponible',
+            ];
+        }
+
+        if (! empty($filters['category_id'])) {
+            $rows[] = [
+                'Categoría',
+                Category::query()->whereKey($filters['category_id'])->value('name') ?? 'Categoría no disponible',
+            ];
+        }
+
+        return $rows;
+    }
+
     private function paymentMethodLabel(string $method): string
     {
         return [
@@ -842,6 +897,16 @@ class PremiumExcelExportService
             'card' => 'Tarjeta',
             'other' => 'Otro',
         ][$method] ?? ucfirst($method);
+    }
+
+    private function invoiceStatusLabel(string $status): string
+    {
+        return [
+            'issued' => 'Emitida',
+            'partial' => 'Parcial',
+            'paid' => 'Pagada',
+            'void' => 'Anulada',
+        ][$status] ?? ucfirst($status);
     }
 
     private function receiptWidthLabel(?string $width): string

@@ -1046,6 +1046,66 @@ class ReportsTest extends TestCase
         }
     }
 
+    public function test_report_export_records_active_filters_with_human_labels(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        $query = http_build_query([
+            'date_from' => now()->toDateString(),
+            'date_to' => now()->toDateString(),
+            'method' => Payment::METHOD_CASH,
+            'status' => Invoice::STATUS_PAID,
+            'user_id' => $cashier->id,
+            'area_id' => $glucose->area_id,
+            'category_id' => $glucose->category_id,
+        ]);
+
+        $xlsx = $this->actingAs($this->admin())
+            ->get("/api/reports/export?{$query}")
+            ->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->streamedContent();
+
+        $path = tempnam(sys_get_temp_dir(), 'human-filter-report-');
+        file_put_contents($path, $xlsx);
+
+        try {
+            $spreadsheet = IOFactory::load($path);
+            $sheet = $spreadsheet->getSheetByName('Filtros Aplicados');
+
+            $this->assertNotNull($sheet);
+
+            $filters = [];
+            foreach (range(7, 24) as $row) {
+                $label = (string) $sheet->getCell('B'.$row)->getValue();
+                $value = (string) $sheet->getCell('C'.$row)->getValue();
+
+                if ($label !== '') {
+                    $filters[$label] = $value;
+                }
+            }
+
+            $this->assertSame('Efectivo', $filters['Método de pago'] ?? null);
+            $this->assertSame('Pagada', $filters['Estado de factura'] ?? null);
+            $this->assertSame($cashier->name, $filters['Cajero'] ?? null);
+            $this->assertSame('Laboratorio', $filters['Área'] ?? null);
+            $this->assertSame('Laboratorio', $filters['Categoría'] ?? null);
+            $this->assertNotContains((string) $cashier->id, $filters);
+            $this->assertNotContains((string) $glucose->area_id, $filters);
+            $this->assertNotContains((string) $glucose->category_id, $filters);
+        } finally {
+            if ($path !== false && file_exists($path)) {
+                unlink($path);
+            }
+        }
+    }
+
     public function test_report_export_uses_institutional_logo_placeholder_without_technical_branding(): void
     {
         $this->seedBillingBase();
