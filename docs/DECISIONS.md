@@ -2670,3 +2670,42 @@ Validacion:
 - `scripts/assert_production_docker_sources.ps1`
 - `scripts/check-branding.ps1`
 - Smoke Playwright `http://localhost:8000/login`: cero errores de consola, nonce de header/meta coincide, sin placeholder y sin `<undefined>`.
+
+### 2026-06-02 - Health checks no bloquean el polling operativo normal
+
+Decision:
+
+- `/api/health` y `/api/system/health` mantienen rate limit, pero suben a `120,1`.
+- El limite protege endpoints publicos sin generar falsos errores cuando el shell, ayuda, respaldos y pruebas de arranque consultan diagnostico en pocos segundos.
+
+Motivo:
+
+- El limite anterior `10,1` produjo `429 Too Many Requests` durante el e2e institucional y dejaba ruido de consola en pantallas operativas.
+- El diagnostico local debe alertar fallos reales, no bloquear verificaciones normales del propio sistema.
+
+Validacion:
+
+- `docker compose exec backend php artisan test --filter=HealthCheckTest`
+- `npm.cmd run e2e -- production-readiness.spec.ts`
+
+### 2026-06-02 - Nueva factura separa layout de orquestacion
+
+Decision:
+
+- `NewInvoiceView` conserva estado, permisos, API y acciones de facturacion.
+- `NewInvoiceViewLayout` concentra la estructura visual, modales, alertas y referencias de teclado del flujo de caja.
+
+Motivo:
+
+- La pantalla de caja es critica y estaba acumulando demasiada presentacion junto a reglas de emision, pago e impresion.
+- Separar layout reduce riesgo al mejorar mensajes, accesibilidad y soporte operativo sin tocar calculos ni transacciones.
+
+Validacion:
+
+- `npm.cmd run test -- NewInvoiceView.test.tsx InvoiceCart.test.tsx InvoiceConfirmation.test.tsx InvoiceSuccess.test.tsx ServiceSearch.test.tsx`
+- `npm.cmd run typecheck`
+- `npm.cmd run lint`
+- `npm.cmd run build`
+- `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\check-branding.ps1`
+- `npm.cmd run e2e -- production-readiness.spec.ts`
+
