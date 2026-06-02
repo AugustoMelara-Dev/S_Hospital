@@ -311,12 +311,19 @@ class ReportsTest extends TestCase
             'name' => 'Glucosa Cambiada',
             'category_id' => $newCategory->id,
         ]);
+        Invoice::query()->findOrFail($invoiceId)->items()->update([
+            'quantity' => '9.99',
+            'line_subtotal' => '999.99',
+            'tax_amount' => '999.99',
+            'line_total' => '999.99',
+        ]);
 
         $this->actingAs($this->supervisor())
             ->getJson('/api/reports/categories?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
             ->assertOk()
             ->assertJsonPath('data.categories.0.category', $snapshotCategory)
             ->assertJsonPath('data.categories.0.item_count', 1)
+            ->assertJsonPath('data.categories.0.quantity', '1.00')
             ->assertJsonPath('data.categories.0.subtotal', '15.00')
             ->assertJsonPath('data.categories.0.tax_amount', '2.25')
             ->assertJsonPath('data.categories.0.total', '17.25');
@@ -448,6 +455,8 @@ class ReportsTest extends TestCase
             ->id;
 
         $this->payInvoice($cashier, $invoiceId, $sessionId, Payment::METHOD_CASH, '69.00');
+        Invoice::query()->whereKey($invoiceId)->update(['total' => '999.99']);
+        Invoice::query()->findOrFail($invoiceId)->items()->update(['line_total' => '999.99']);
 
         $this->actingAs($this->admin())
             ->getJson('/api/reports/income?date_from='.now()->toDateString().'&date_to='.now()->toDateString().'&area_id='.$glucose->area_id)
