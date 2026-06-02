@@ -2122,3 +2122,20 @@ Consecuencia:
 
 - Usuarios sin `system.status.view` siguen recibiendo 403.
 - El controlador queda enfocado en construir el payload operativo.
+
+### 2026-06-02 - Lectura fiscal usa Form Request
+
+Decision:
+
+- `GET /api/settings/fiscal` usa `ShowFiscalSettingsRequest`.
+- La autorizacion `settings.fiscal.view` queda fuera del controlador.
+
+Motivo:
+
+- La configuracion fiscal completa incluye datos institucionales y opciones operativas sensibles; su lectura debe seguir el mismo patron que actualizacion y logo.
+- La pantalla publica conserva `/api/settings/branding` como respuesta estrecha sin CAI, RTN interno ni opciones operativas.
+
+Consecuencia:
+
+- Cajeros y usuarios sin permiso fiscal siguen recibiendo 403 en la configuracion completa.
+- Login/branding publico no cambia.

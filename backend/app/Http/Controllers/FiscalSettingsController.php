@@ -2,19 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Fiscal\ShowFiscalSettingsRequest;
 use App\Http\Requests\Fiscal\UpdateFiscalSettingsRequest;
 use App\Models\AuditLog;
 use App\Models\FiscalSetting;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class FiscalSettingsController extends Controller
 {
-    public function show(Request $request): JsonResponse
+    public function show(ShowFiscalSettingsRequest $request): JsonResponse
     {
-        $request->user()->can('settings.fiscal.view') || abort(403);
-
         return response()->json([
             'data' => FiscalSetting::query()->first(),
         ]);
