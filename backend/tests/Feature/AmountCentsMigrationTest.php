@@ -17,6 +17,11 @@ class AmountCentsMigrationTest extends TestCase
             Schema::hasColumn('payments', 'amount_cents'),
             'payments.amount_cents must exist after running migrations on the test driver (SQLite).'
         );
+
+        $this->assertTrue(
+            Schema::hasColumn('invoice_items', 'quantity_cents'),
+            'invoice_items.quantity_cents must exist after running migrations so report quantities use integer snapshots.'
+        );
     }
 
     public function test_migration_is_idempotent_when_run_a_second_time(): void
@@ -41,6 +46,16 @@ class AmountCentsMigrationTest extends TestCase
             "if (in_array(\$driver, ['mysql', 'mariadb'], true))",
             $source,
             'Migration must guard the CAST(amount * 100 AS SIGNED) SQL behind a mysql/mariadb driver check so SQLite RefreshDatabase tests do not fail.'
+        );
+
+        $quantityMigration = include base_path('database/migrations/2026_06_02_000003_add_quantity_cents_to_invoice_items.php');
+        $quantityReflection = new \ReflectionClass($quantityMigration);
+        $quantitySource = file_get_contents($quantityReflection->getFileName());
+
+        $this->assertStringContainsString(
+            "if (in_array(\$driver, ['mysql', 'mariadb'], true))",
+            $quantitySource,
+            'Quantity cents migration must guard CAST(quantity * 100 AS SIGNED) behind a mysql/mariadb driver check.'
         );
     }
 }

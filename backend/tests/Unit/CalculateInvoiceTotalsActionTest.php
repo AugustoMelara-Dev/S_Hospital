@@ -177,6 +177,8 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         $item = $result['items'][0];
         $this->assertSame('Eritropoyetina', $item['service_name']);
         $this->assertSame('EPO001', $item['scan_code']);
+        $this->assertSame('1.00', $item['quantity']);
+        $this->assertSame(100, $item['quantity_cents']);
         $this->assertSame('25.00', $item['unit_price']);
         $this->assertSame(2500, $item['unit_price_cents']);
         $this->assertSame(2875, $item['line_total_cents']);

@@ -61,6 +61,7 @@ class InvoiceCreationTest extends TestCase
         ]);
         $this->assertDatabaseHas('invoice_items', [
             'invoice_id' => Invoice::query()->where('invoice_number', '000-001-01-00000001')->value('id'),
+            'quantity_cents' => 200,
             'unit_price_cents' => 1500,
             'line_subtotal_cents' => 3000,
             'tax_amount_cents' => 450,
