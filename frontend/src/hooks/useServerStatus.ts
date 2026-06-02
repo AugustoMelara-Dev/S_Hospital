@@ -88,8 +88,14 @@ export function useServerStatus() {
     // Initial check
     checkStatus();
 
-    // Set interval to check every 30 seconds
-    const interval = setInterval(checkStatus, 30_000);
+    // Set interval to check every 30 seconds, but pause while the tab
+    // is hidden to avoid hammering the server and draining the laptop
+    // battery during cashier breaks.
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void checkStatus();
+      }
+    }, 30_000);
 
     return () => {
       active = false;

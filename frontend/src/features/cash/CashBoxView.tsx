@@ -60,16 +60,23 @@ export function CashBoxView({
   const { data: session, isLoading, refetch } = useQuery({
     queryKey: ['cash-sessions', 'current'],
     queryFn: () => apiClient.getCurrentCashSession(),
+    // Multi-PC LAN: another cashier may close the box. Poll every
+    // 10s so this UI shows "Sin caja" within the same window without
+    // a manual refresh.
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
   });
 
-  const { data: movements } = useQuery({
+  const { data: movementsData } = useQuery({
     queryKey: ['cash-sessions', session?.id, 'movements'],
     queryFn: () =>
       session?.id && canViewCashSessionReport
         ? apiClient.getCashSessionReport(String(session.id)).then((report) => report.movements)
-        : Promise.resolve([]),
+        : Promise.resolve([] as Awaited<ReturnType<typeof apiClient.getCashSessionReport>>['movements']),
     enabled: !!session?.id && canViewCashSessionReport,
+    refetchInterval: 15_000,
   });
+  const movements = movementsData ?? [];
 
   const openSessionMutation = useMutation({
     mutationFn: (payload: { opening_amount: string; notes?: string | null }) =>
