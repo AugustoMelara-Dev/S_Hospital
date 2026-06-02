@@ -75,8 +75,8 @@ class VoidPaymentAction
             $postedPaidCents = (int) Payment::query()
                 ->where('invoice_id', $lockedInvoice->id)
                 ->where('status', Payment::STATUS_POSTED)
-                ->selectRaw('COALESCE(SUM(ROUND(amount * 100)), 0) as total_cents')
-                ->value('total_cents');
+                ->whereNotNull('amount_cents')
+                ->sum('amount_cents');
             $invoiceTotalCents = Money::parseCents((string) $lockedInvoice->total, 'total');
             $balanceCents = max(0, $invoiceTotalCents - $postedPaidCents);
 

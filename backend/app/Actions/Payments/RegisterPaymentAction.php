@@ -85,6 +85,7 @@ class RegisterPaymentAction
                 'user_id' => $user->id,
                 'method' => $payload['method'],
                 'amount' => Money::formatCents($amountCents),
+                'amount_cents' => $amountCents,
                 'reference' => $payload['reference'] ?? null,
                 'status' => Payment::STATUS_POSTED,
                 'paid_at' => now(),

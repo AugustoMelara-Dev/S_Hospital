@@ -28,11 +28,12 @@ class BuildCashReconciliationAction
             ->where('payments.cash_session_id', $session->id)
             ->where('payments.status', Payment::STATUS_POSTED)
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
+            ->whereNotNull('payments.amount_cents')
             ->groupBy('payments.method')
             ->select(
                 'payments.method',
                 DB::raw('COUNT(*) as payments_count'),
-                DB::raw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as total_cents'),
+                DB::raw('SUM(payments.amount_cents) as total_cents'),
             )
             ->get();
 

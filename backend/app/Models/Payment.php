@@ -32,6 +32,7 @@ class Payment extends Model
         'user_id',
         'method',
         'amount',
+        'amount_cents',
         'reference',
         'status',
         'voided_by',
@@ -44,6 +45,7 @@ class Payment extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'amount_cents' => 'integer',
             'voided_at' => 'datetime',
             'paid_at' => 'datetime',
         ];
