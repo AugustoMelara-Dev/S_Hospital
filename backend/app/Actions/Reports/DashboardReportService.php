@@ -130,8 +130,8 @@ class DashboardReportService
                 'invoice_items.service_name',
                 'invoice_items.category_name',
             )
-            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.quantity * 100)), 0) as quantity_cents')
-            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.line_total * 100)), 0) as total_cents')
+            ->selectRaw('COALESCE(SUM(invoice_items.quantity_cents), 0) as quantity_cents')
+            ->selectRaw('COALESCE(SUM(invoice_items.line_total_cents), 0) as total_cents')
             ->orderByDesc('total_cents')
             ->limit(10)
             ->get()

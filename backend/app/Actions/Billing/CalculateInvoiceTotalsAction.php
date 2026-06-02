@@ -49,6 +49,7 @@ class CalculateInvoiceTotalsAction
                 'barcode' => $service->barcode,
                 'qr_code' => $service->qr_code,
                 'quantity' => $this->formatDecimalUnits($quantityUnits),
+                'quantity_cents' => $quantityUnits,
                 'unit_price' => $this->formatMoney($unitPriceCents),
                 'unit_price_cents' => $unitPriceCents,
                 'tax_rate' => $service->taxable ? $this->formatRate($taxRateBasisPoints) : '0.00',

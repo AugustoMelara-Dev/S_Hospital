@@ -48,7 +48,7 @@ class DailyReportService
         Invoice::query()
             ->whereBetween('issued_at', [$start, $end])
             ->groupBy('status')
-            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('COALESCE(SUM(ROUND(total * 100)), 0) as total_cents'))
+            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('COALESCE(SUM(total_cents), 0) as total_cents'))
             ->get()
             ->each(function (object $row) use (&$statuses): void {
                 $statuses[$row->status] = [

@@ -2624,3 +2624,22 @@ Validacion:
 - `php artisan test --filter=InvoiceCreationTest`
 - `php artisan test --filter=CashPaymentsReceiptTest`
 - `php vendor/bin/pint --test app/Actions/Billing/CalculateInvoiceTotalsAction.php app/Actions/Billing/CreateInvoiceAction.php app/Actions/Cash/BuildCashReconciliationAction.php app/Actions/Payments/RegisterPaymentAction.php app/Actions/Payments/VoidPaymentAction.php app/Models/Invoice.php app/Models/InvoiceItem.php tests/Unit/CalculateInvoiceTotalsActionTest.php tests/Unit/PaymentCentsSqlGuardTest.php tests/Feature/InvoiceCreationTest.php tests/Feature/CashPaymentsReceiptTest.php database/migrations/2026_06_02_000002_add_cents_columns_to_invoices_and_items.php`
+
+### 2026-06-02 - Reportes financieros evitan redondeo SQL de decimales
+
+Decision:
+
+- `invoice_items` guarda `quantity_cents` como cantidad entera en centesimas junto al decimal visible.
+- `FinancialFactsService` lee `total_cents`, `balance_due_cents` y `line_total_cents` para facturado, pendiente y prorrateos por categoria o area.
+- Los reportes financieros dejan de usar `ROUND(total * 100)`, `ROUND(balance_due * 100)` o `ROUND(invoice_items.line_total * 100)`.
+
+Motivo:
+
+- Los cierres de caja y reportes administrativos deben sostener sumas repetibles aunque el cajero filtre por area, categoria, caja o metodo.
+- Mantener cantidades y montos como enteros reduce drift en MariaDB/MySQL y facilita auditar diferencias entre valor visible y fuente financiera.
+
+Validacion:
+
+- `php artisan test --filter=PaymentCentsSqlGuardTest`
+- `php artisan test --filter=FinancialFactsReportTest`
+- `php artisan test --filter=ReportsTest`

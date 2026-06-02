@@ -19,6 +19,7 @@ class InvoiceItem extends Model
         'barcode',
         'qr_code',
         'quantity',
+        'quantity_cents',
         'unit_price',
         'unit_price_cents',
         'tax_rate',
@@ -37,6 +38,7 @@ class InvoiceItem extends Model
     {
         return [
             'quantity' => 'decimal:2',
+            'quantity_cents' => 'integer',
             'unit_price' => 'decimal:2',
             'unit_price_cents' => 'integer',
             'tax_rate' => 'decimal:2',

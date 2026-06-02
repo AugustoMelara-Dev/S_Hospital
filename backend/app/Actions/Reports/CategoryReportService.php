@@ -67,16 +67,16 @@ class CategoryReportService
             ->orderBy('invoice_items.category_name')
             ->select('invoice_items.category_name')
             ->selectRaw('COUNT(*) as item_count')
-            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.quantity * 100)), 0) as quantity_cents')
+            ->selectRaw('COALESCE(SUM(invoice_items.quantity_cents), 0) as quantity_cents')
             ->selectRaw($usesPaymentScope
-                ? 'COALESCE(SUM(ROUND(invoice_items.line_subtotal * payment_totals.collected_cents / NULLIF(invoices.total, 0))), 0) as subtotal_cents'
-                : 'COALESCE(SUM(ROUND(invoice_items.line_subtotal * 100)), 0) as subtotal_cents')
+                ? 'COALESCE(SUM(ROUND(invoice_items.line_subtotal_cents * payment_totals.collected_cents / NULLIF(invoices.total_cents, 0))), 0) as subtotal_cents'
+                : 'COALESCE(SUM(invoice_items.line_subtotal_cents), 0) as subtotal_cents')
             ->selectRaw($usesPaymentScope
-                ? 'COALESCE(SUM(ROUND(invoice_items.tax_amount * payment_totals.collected_cents / NULLIF(invoices.total, 0))), 0) as tax_cents'
-                : 'COALESCE(SUM(ROUND(invoice_items.tax_amount * 100)), 0) as tax_cents')
+                ? 'COALESCE(SUM(ROUND(invoice_items.tax_amount_cents * payment_totals.collected_cents / NULLIF(invoices.total_cents, 0))), 0) as tax_cents'
+                : 'COALESCE(SUM(invoice_items.tax_amount_cents), 0) as tax_cents')
             ->selectRaw($usesPaymentScope
-                ? 'COALESCE(SUM(ROUND(invoice_items.line_total * payment_totals.collected_cents / NULLIF(invoices.total, 0))), 0) as total_cents'
-                : 'COALESCE(SUM(ROUND(invoice_items.line_total * 100)), 0) as total_cents')
+                ? 'COALESCE(SUM(ROUND(invoice_items.line_total_cents * payment_totals.collected_cents / NULLIF(invoices.total_cents, 0))), 0) as total_cents'
+                : 'COALESCE(SUM(invoice_items.line_total_cents), 0) as total_cents')
             ->get()
             ->map(fn (object $row): array => [
                 'category' => $row->category_name,

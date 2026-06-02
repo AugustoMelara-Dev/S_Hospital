@@ -54,10 +54,8 @@ class BuildCashReconciliationAction
         $pendingRow = Invoice::query()
             ->where('cash_session_id', $session->id)
             ->whereIn('status', [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIAL])
-            ->selectRaw('COUNT(*) as invoice_count, COALESCE(SUM(COALESCE(balance_due_cents, ROUND(balance_due * 100))), 0) as total_cents')
+            ->selectRaw('COUNT(*) as invoice_count, COALESCE(SUM(balance_due_cents), 0) as total_cents')
             ->first();
-
-        $pendingCents = (int) ($pendingRow?->total_cents ?? 0);
 
         $openingCents = Money::parseCents((string) $session->opening_amount, 'opening_amount');
         $cashCents = Money::parseCents($paymentsByMethod[Payment::METHOD_CASH], 'cash_payments');
@@ -68,7 +66,7 @@ class BuildCashReconciliationAction
             'payments_by_method' => $paymentsByMethod,
             'expected_cash_amount' => Money::formatCents($openingCents + $cashCents),
             'pending_invoice_count' => (int) ($pendingRow?->invoice_count ?? 0),
-            'pending_amount' => Money::formatCents($pendingCents),
+            'pending_amount' => Money::formatCents((int) ($pendingRow?->total_cents ?? 0)),
         ];
     }
 

@@ -48,10 +48,37 @@ class PaymentCentsSqlGuardTest extends TestCase
         $source = $this->readSource('app/Actions/Cash/BuildCashReconciliationAction.php');
 
         $this->assertStringContainsString(
-            'SUM(COALESCE(balance_due_cents',
+            'SUM(balance_due_cents)',
             $source,
-            'BuildCashReconciliationAction must aggregate invoices.balance_due_cents while tolerating legacy rows during migration.'
+            'BuildCashReconciliationAction must aggregate invoices.balance_due_cents now that the column exists.'
         );
+
+        $this->assertStringNotContainsString(
+            'ROUND(balance_due * 100)',
+            $source,
+            'BuildCashReconciliationAction must not fall back to ROUND(balance_due * 100) since balance_due_cents is non-nullable.'
+        );
+    }
+
+    public function test_financial_facts_use_invoice_and_item_cents_columns(): void
+    {
+        $source = $this->readSource('app/Actions/Reports/FinancialFactsService.php');
+
+        foreach (['total_cents', 'balance_due_cents', 'line_total_cents'] as $column) {
+            $this->assertStringContainsString(
+                $column,
+                $source,
+                "FinancialFactsService must aggregate {$column} instead of recomputing cents from decimal values."
+            );
+        }
+
+        foreach (['ROUND(total * 100)', 'ROUND(balance_due * 100)', 'ROUND(invoice_items.line_total * 100)'] as $unsafeSql) {
+            $this->assertStringNotContainsString(
+                $unsafeSql,
+                $source,
+                "FinancialFactsService must not use {$unsafeSql}; reports need persisted integer cents for stable LAN cashier totals."
+            );
+        }
     }
 
     public function test_payment_actions_persist_invoice_cents_columns(): void
@@ -87,6 +114,83 @@ class PaymentCentsSqlGuardTest extends TestCase
                 $column,
                 $source,
                 "CreateInvoiceAction must persist invoices.{$column} so reports can read cents without recomputing SQL floats."
+            );
+        }
+    }
+
+    public function test_report_services_do_not_recompute_invoice_cents_via_sql(): void
+    {
+        $reports = [
+            'app/Actions/Reports/DashboardReportService.php',
+            'app/Actions/Reports/DailyReportService.php',
+            'app/Actions/Reports/MonthlyReportService.php',
+            'app/Actions/Reports/AreaIncomeReportService.php',
+            'app/Actions/Reports/ServiceSalesReportService.php',
+            'app/Actions/Reports/CategoryReportService.php',
+            'app/Actions/Reports/FinancialFactsService.php',
+        ];
+
+        foreach ($reports as $relativePath) {
+            $source = $this->readSource($relativePath);
+
+            $this->assertStringNotContainsString(
+                'ROUND(invoice_items.quantity * 100)',
+                $source,
+                "{$relativePath} must aggregate invoice_items.quantity_cents (added in the cents migration)."
+            );
+
+            $this->assertStringNotContainsString(
+                'ROUND(invoice_items.line_total * 100)',
+                $source,
+                "{$relativePath} must aggregate invoice_items.line_total_cents (added in the cents migration)."
+            );
+
+            $this->assertStringNotContainsString(
+                'ROUND(invoice_items.line_subtotal * 100)',
+                $source,
+                "{$relativePath} must aggregate invoice_items.line_subtotal_cents (added in the cents migration)."
+            );
+
+            $this->assertStringNotContainsString(
+                'ROUND(invoice_items.tax_amount * 100)',
+                $source,
+                "{$relativePath} must aggregate invoice_items.tax_amount_cents (added in the cents migration)."
+            );
+
+            $this->assertStringNotContainsString(
+                'ROUND(invoice_items.line_total * payment_totals',
+                $source,
+                "{$relativePath} must compute cents-weighted totals using *_cents columns, not SQL float."
+            );
+
+            $this->assertStringNotContainsString(
+                'ROUND(invoice_items.line_subtotal * payment_totals',
+                $source,
+                "{$relativePath} must compute cents-weighted totals using *_cents columns, not SQL float."
+            );
+
+            $this->assertStringNotContainsString(
+                'ROUND(invoice_items.tax_amount * payment_totals',
+                $source,
+                "{$relativePath} must compute cents-weighted totals using *_cents columns, not SQL float."
+            );
+
+            $this->assertStringNotContainsString(
+                'ROUND(invoices.balance_due * 100',
+                $source,
+                "{$relativePath} must use invoices.balance_due_cents directly instead of recomputing via SQL float."
+            );
+
+            $this->assertStringNotContainsString(
+                'ROUND(invoices.total * 100',
+                $source,
+                "{$relativePath} must use invoices.total_cents directly instead of recomputing via SQL float."
+            );
+
+            $this->assertStringNotContainsString(
+                'ROUND(total * 100)',
+                $source,
+                "{$relativePath} must use invoices.total_cents directly instead of recomputing via SQL float."
             );
         }
     }

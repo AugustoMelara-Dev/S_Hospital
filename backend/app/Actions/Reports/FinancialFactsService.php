@@ -48,19 +48,19 @@ class FinancialFactsService
             ->tap(fn (Builder $query) => $this->applyInvoiceFilters($query, $filters))
             ->selectRaw('COUNT(*) as invoice_count')
             ->selectRaw(
-                'COALESCE(SUM(CASE WHEN status != ? THEN ROUND(total * 100) ELSE 0 END), 0) as billed_cents',
+                'COALESCE(SUM(CASE WHEN status != ? THEN total_cents ELSE 0 END), 0) as billed_cents',
                 [Invoice::STATUS_VOID],
             )
             ->selectRaw(
-                'COALESCE(SUM(CASE WHEN status IN (?, ?) THEN ROUND(balance_due * 100) ELSE 0 END), 0) as pending_cents',
+                'COALESCE(SUM(CASE WHEN status IN (?, ?) THEN balance_due_cents ELSE 0 END), 0) as pending_cents',
                 [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIAL],
             )
             ->selectRaw(
-                'COALESCE(SUM(CASE WHEN status = ? THEN ROUND(total * 100) ELSE 0 END), 0) as partial_cents',
+                'COALESCE(SUM(CASE WHEN status = ? THEN total_cents ELSE 0 END), 0) as partial_cents',
                 [Invoice::STATUS_PARTIAL],
             )
             ->selectRaw(
-                'COALESCE(SUM(CASE WHEN status = ? THEN ROUND(total * 100) ELSE 0 END), 0) as voided_cents',
+                'COALESCE(SUM(CASE WHEN status = ? THEN total_cents ELSE 0 END), 0) as voided_cents',
                 [Invoice::STATUS_VOID],
             )
             ->first() ?? (object) [];
@@ -83,7 +83,7 @@ class FinancialFactsService
                 [Invoice::STATUS_VOID],
             )
             ->selectRaw(
-                'COALESCE(SUM(CASE WHEN invoices.status IN (?, ?) THEN ROUND(invoices.balance_due * 100 * filtered_items.item_total_cents / NULLIF(ROUND(invoices.total * 100), 0)) ELSE 0 END), 0) as pending_cents',
+                'COALESCE(SUM(CASE WHEN invoices.status IN (?, ?) THEN ROUND(invoices.balance_due_cents * filtered_items.item_total_cents / NULLIF(invoices.total_cents, 0)) ELSE 0 END), 0) as pending_cents',
                 [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIAL],
             )
             ->selectRaw(
@@ -105,7 +105,7 @@ class FinancialFactsService
     {
         $hasItemFilter = $this->hasItemFilter($filters);
         $amountExpression = $hasItemFilter
-            ? 'ROUND(payments.amount_cents * filtered_items.item_total_cents / NULLIF(ROUND(invoices.total * 100), 0))'
+            ? 'ROUND(payments.amount_cents * filtered_items.item_total_cents / NULLIF(invoices.total_cents, 0))'
             : 'payments.amount_cents';
 
         $base = Payment::query()
@@ -237,7 +237,7 @@ class FinancialFactsService
     {
         return DB::table('invoice_items')
             ->select('invoice_items.invoice_id')
-            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.line_total * 100)), 0) as item_total_cents')
+            ->selectRaw('COALESCE(SUM(invoice_items.line_total_cents), 0) as item_total_cents')
             ->when(! empty($filters['category_id']), function ($query) use ($filters): void {
                 $query->where('invoice_items.category_id', $filters['category_id']);
             })
