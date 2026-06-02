@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { EmptyState } from '../../../components/ui/states';
 import { KPICard } from './KPICard';
 import type { OperationsReport } from '../../../lib/api/types';
+import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
 interface AuditoriaTabProps {
   canExport: boolean;
@@ -114,7 +115,7 @@ export function AuditoriaTab({
                       <TableRow key={`void-${voidedInvoice.invoice_number ?? index}-${voidedInvoice.voided_at ?? 'sin-fecha'}`}>
                         <TableCell className="font-medium">{voidedInvoice.invoice_number}</TableCell>
                         <TableCell>{voidedInvoice.patient_name}</TableCell>
-                        <TableCell className="text-right">L. {voidedInvoice.total}</TableCell>
+                        <TableCell className="text-right">{moneyLabel(voidedInvoice.total)}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{voidedInvoice.reason ?? 'Sin motivo'}</TableCell>
                         <TableCell>{voidedInvoice.user ?? 'Sin usuario'}</TableCell>
                         <TableCell>{formatDate(voidedInvoice.voided_at)}</TableCell>
@@ -184,7 +185,7 @@ export function AuditoriaTab({
                         <TableCell className="font-medium">{paymentVoid.invoice_number ?? '-'}</TableCell>
                         <TableCell>{paymentVoid.patient_name ?? '-'}</TableCell>
                         <TableCell>{paymentMethodLabel(paymentVoid.method)}</TableCell>
-                        <TableCell className="text-right">L. {paymentVoid.amount}</TableCell>
+                        <TableCell className="text-right">{moneyLabel(paymentVoid.amount)}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{paymentVoid.reason ?? 'Sin motivo'}</TableCell>
                         <TableCell>{paymentVoid.voided_by ?? 'Sin usuario'}</TableCell>
                         <TableCell>{formatDate(paymentVoid.voided_at)}</TableCell>
@@ -261,7 +262,7 @@ export function AuditoriaTab({
                         <TableCell className="text-right">{cashier.payment_count}</TableCell>
                         <TableCell className="text-right">{cashier.cash_session_count}</TableCell>
                         <TableCell className="text-right">{cashier.invoice_count}</TableCell>
-                        <TableCell className="text-right">L. {cashier.total_collected}</TableCell>
+                        <TableCell className="text-right">{moneyLabel(cashier.total_collected)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -314,6 +315,10 @@ function backupTypeLabel(type: string): string {
 
 function paymentMethodLabel(method: string): string {
   return { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta', other: 'Otro' }[method] ?? method;
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
 }
 
 function formatBytes(size: number | null): string {

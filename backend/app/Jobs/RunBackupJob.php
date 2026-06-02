@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Actions\Backups\CreateBackupAction;
+use App\Actions\Reports\OperationalMetricsService;
 use App\Models\BackupLog;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -26,5 +27,7 @@ class RunBackupJob implements ShouldQueue
         $backupLog = BackupLog::query()->findOrFail($this->backupLogId);
 
         $createBackup->run($backupLog);
+
+        OperationalMetricsService::recordWorkerHeartbeat();
     }
 }

@@ -172,6 +172,23 @@
   deferring the charts chunk behind an intersection observer on the
   dashboard panels.
 
+### Phase 19 - Public health endpoint and worker heartbeat
+
+- New `app/Actions/Reports/OperationalMetricsService.php` snapshots
+  database connectivity, queue depth, backup counters, storage
+  usage and recent audit_log failures. Each subsystem is wrapped
+  in try/catch so a failing component does not break the response.
+- New `app/Http/Controllers/HealthController.php` exposes
+  `GET /api/system/health` as a public endpoint (no auth) so the
+  cashier dashboard and the preflight scripts can poll without
+  sharing an admin session.
+- `app/Jobs/RunBackupJob::handle` records a worker heartbeat in
+  the cache after every successful backup. The health response
+  surfaces a boolean so the preflight can flag a stopped worker.
+- 3 new tests in `tests/Feature/OperationalMetricsServiceTest`
+  cover the snapshot shape, the public endpoint and the heartbeat
+  flip.
+
 ### Audit
 
 - `docs/AUDIT_2026_06_02.md` records the full audit and the 20-phase

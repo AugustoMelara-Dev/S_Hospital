@@ -25,6 +25,8 @@ Route::get('/health', function () {
     ]);
 });
 
+Route::get('/system/health', [\App\Http\Controllers\HealthController::class, 'show']);
+
 Route::get('/system/setup-status', [SystemStatusController::class, 'setupStatus'])
     ->middleware('web');
 
