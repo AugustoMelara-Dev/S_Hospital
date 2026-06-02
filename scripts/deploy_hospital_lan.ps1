@@ -63,6 +63,12 @@ function Test-PathHasSpaces {
     return ($Path -match "\s")
 }
 
+function Test-DatabaseName {
+    param([string]$Name)
+
+    return -not [string]::IsNullOrWhiteSpace($Name) -and $Name -match '^[A-Za-z][A-Za-z0-9_]{0,63}$'
+}
+
 function Get-SystemDiskSpace {
     param([string]$Path)
     try {
@@ -289,12 +295,18 @@ if ($SelfTest) {
     Assert-Test "Detecta espacios en ruta" (Test-PathHasSpaces "C:\Hospital OS Test")
     Assert-Test "No detecta espacios en ruta limpia" (-not (Test-PathHasSpaces "C:\Hospital"))
 
-    # Test 10: offline-images detection
+    # Test 10: Database name validation
+    Assert-Test "Nombre de base valido" (Test-DatabaseName "hospital_billing")
+    Assert-Test "Nombre de base invalido con guion" (-not (Test-DatabaseName "hospital-billing"))
+    Assert-Test "Nombre de base invalido con punto y coma" (-not (Test-DatabaseName "hospital;DROP"))
+    Assert-Test "Nombre de base invalido iniciando con numero" (-not (Test-DatabaseName "1hospital"))
+
+    # Test 11: offline-images detection
     $offlineDir = Join-Path $projectRoot "offline-images"
     $offlineExists = Test-Path $offlineDir
     Assert-Test "Deteccion offline-images (existe=$offlineExists) no lanza excepcion" $true
 
-    # Test 11: Docker diagnostics don't throw
+    # Test 12: Docker diagnostics don't throw
     try {
         $dockerInst = Test-DockerInstalled
         Assert-Test "Test-DockerInstalled no lanza excepcion (resultado=$dockerInst)" $true
@@ -303,7 +315,7 @@ if ($SelfTest) {
         Assert-Test "Test-DockerInstalled lanzo excepcion" $false $_.Exception.Message
     }
 
-    # Test 12: System info
+    # Test 13: System info
     try {
         $winInfo = Get-WindowsVersionInfo
         Assert-Test "Get-WindowsVersionInfo retorna datos" ($null -ne $winInfo.PSVersion)
@@ -312,7 +324,7 @@ if ($SelfTest) {
         Assert-Test "Get-WindowsVersionInfo lanzo excepcion" $false
     }
 
-    # Test 13: Admin check
+    # Test 14: Admin check
     try {
         $isAdmin = Test-IsAdmin
         Assert-Test "Test-IsAdmin no lanza excepcion (admin=$isAdmin)" $true
@@ -321,7 +333,7 @@ if ($SelfTest) {
         Assert-Test "Test-IsAdmin lanzo excepcion" $false
     }
 
-    # Test 14: DHCP check doesn't throw
+    # Test 15: DHCP check doesn't throw
     try {
         $dhcp = Get-DhcpStatus -InterfaceIndex -1 -IPAddress "0.0.0.0"
         Assert-Test "Get-DhcpStatus con indice invalido no lanza excepcion" $true
@@ -1185,6 +1197,12 @@ try {
 
             $dbName = Read-Host "Nombre Base de Datos [$currDbName]"
             if ([string]::IsNullOrWhiteSpace($dbName)) { $dbName = $currDbName }
+
+            if (-not (Test-DatabaseName $dbName)) {
+                Write-Host "[FAIL] Nombre de base invalido. Use una letra inicial y solo letras, numeros o guion bajo." -ForegroundColor Red
+                Read-Host "Presione Enter para volver al menu"
+                continue
+            }
 
             $dbUser = Read-Host "Usuario de Base de Datos [$currDbUser]"
             if ([string]::IsNullOrWhiteSpace($dbUser)) { $dbUser = $currDbUser }

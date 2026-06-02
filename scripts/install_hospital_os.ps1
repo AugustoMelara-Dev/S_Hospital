@@ -124,6 +124,102 @@ function Update-DotEnv {
     Set-Content $Path -Value $newLines
 }
 
+function Test-DatabaseName {
+    param([string]$Name)
+
+    return -not [string]::IsNullOrWhiteSpace($Name) -and $Name -match '^[A-Za-z][A-Za-z0-9_]{0,63}$'
+}
+
+function Invoke-CreateMysqlDatabase {
+    param (
+        [string]$Php,
+        [string]$Host,
+        [string]$Port,
+        [string]$Database,
+        [string]$Username,
+        [string]$Password
+    )
+
+    if (-not (Test-DatabaseName $Database)) {
+        return "INVALID_DATABASE_NAME"
+    }
+
+    $env:HOSPITAL_INSTALL_DB_HOST = $Host
+    $env:HOSPITAL_INSTALL_DB_PORT = $Port
+    $env:HOSPITAL_INSTALL_DB_NAME = $Database
+    $env:HOSPITAL_INSTALL_DB_USER = $Username
+    $env:HOSPITAL_INSTALL_DB_PASS = $Password
+
+    $createDbCode = @'
+$host = getenv("HOSPITAL_INSTALL_DB_HOST");
+$port = getenv("HOSPITAL_INSTALL_DB_PORT");
+$db = getenv("HOSPITAL_INSTALL_DB_NAME");
+$user = getenv("HOSPITAL_INSTALL_DB_USER");
+$pass = getenv("HOSPITAL_INSTALL_DB_PASS");
+try {
+    if (!preg_match('/^[A-Za-z][A-Za-z0-9_]{0,63}$/', $db)) {
+        echo "INVALID_DATABASE_NAME";
+        exit;
+    }
+
+    $p = new PDO("mysql:host=$host;port=$port", $user, $pass);
+    $p->exec("CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    echo "CREATED";
+} catch(Exception $e) {
+    echo $e->getMessage();
+}
+'@
+
+    try {
+        return & $Php -r $createDbCode
+    }
+    finally {
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_HOST -ErrorAction SilentlyContinue } catch { }
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_PORT -ErrorAction SilentlyContinue } catch { }
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_NAME -ErrorAction SilentlyContinue } catch { }
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_USER -ErrorAction SilentlyContinue } catch { }
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_PASS -ErrorAction SilentlyContinue } catch { }
+    }
+}
+
+function Invoke-TestMysqlConnection {
+    param (
+        [string]$Php,
+        [string]$Host,
+        [string]$Port,
+        [string]$Username,
+        [string]$Password
+    )
+
+    $env:HOSPITAL_INSTALL_DB_HOST = $Host
+    $env:HOSPITAL_INSTALL_DB_PORT = $Port
+    $env:HOSPITAL_INSTALL_DB_USER = $Username
+    $env:HOSPITAL_INSTALL_DB_PASS = $Password
+
+    $testDbCode = @'
+$host = getenv("HOSPITAL_INSTALL_DB_HOST");
+$port = getenv("HOSPITAL_INSTALL_DB_PORT");
+$user = getenv("HOSPITAL_INSTALL_DB_USER");
+$pass = getenv("HOSPITAL_INSTALL_DB_PASS");
+try {
+    new PDO("mysql:host=$host;port=$port", $user, $pass);
+    echo "OK";
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
+'@
+
+    try {
+        return & $Php -r $testDbCode
+    }
+    finally {
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_HOST -ErrorAction SilentlyContinue } catch { }
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_PORT -ErrorAction SilentlyContinue } catch { }
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_USER -ErrorAction SilentlyContinue } catch { }
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_PASS -ErrorAction SilentlyContinue } catch { }
+    }
+}
+
 function Install-BackupAutomation {
     param (
         [string]$PhpPath,
@@ -458,10 +554,8 @@ if ($useGui) {
         $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::DarkGoldenrod
         $window.UpdateLayout()
 
-        # Call php to try database connection via PDO
-        $code = "try { new PDO('mysql:host=$host;port=$port', '$user', '$pass'); echo 'OK'; } catch (Exception \$e) { echo \$e->getMessage(); }"
         try {
-            $res = & $php -r $code
+            $res = Invoke-TestMysqlConnection -Php $php -Host $host -Port $port -Username $user -Password $pass
             if ($res -eq "OK") {
                 $TxtDbResult.Text = "Conexion exitosa al servidor MySQL!"
                 $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Green
@@ -490,6 +584,12 @@ if ($useGui) {
             return
         }
 
+        if (-not (Test-DatabaseName $db)) {
+            $TxtDbResult.Text = "Error: El nombre de la base debe iniciar con letra y usar solo letras, numeros o guion bajo."
+            $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Red
+            return
+        }
+
         $TxtDbResult.Text = "Guardando configuracion temporal y corriendo migraciones seguras..."
         $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::DarkGoldenrod
         
@@ -506,8 +606,7 @@ if ($useGui) {
         Update-DotEnv -Path $envFile -Variables $vars
 
         # Crear base de datos si no existe
-        $createDbCode = "try { `$p = new PDO('mysql:host=$host;port=$port', '$user', '$pass'); `$p->exec('CREATE DATABASE IF NOT EXISTS ``$db`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'); echo 'CREATED'; } catch(Exception `$e) { echo `$e->getMessage(); }"
-        $dbStatus = & $php -r $createDbCode
+        $dbStatus = Invoke-CreateMysqlDatabase -Php $php -Host $host -Port $port -Database $db -Username $user -Password $pass
 
         if ($dbStatus -ne "CREATED") {
             $TxtDbResult.Text = "Error al asegurar existencia de la base de datos: $dbStatus"
@@ -584,6 +683,11 @@ function Run-SetupCli {
 
     $dbPass = Read-Host "Contrasena MySQL"
 
+    if (-not (Test-DatabaseName $dbName)) {
+        Write-Host "Nombre de base invalido. Use una letra inicial y solo letras, numeros o guion bajo." -ForegroundColor Red
+        return
+    }
+
     # Save to env
     Write-Host "`nGuardando variables en archivo de configuracion .env..." -ForegroundColor DarkCyan
     $vars = @{
@@ -603,8 +707,7 @@ function Run-SetupCli {
 
     # Ensure Database Exists and Migrate
     Write-Host "Asegurando base de datos y aplicando migraciones seguras..." -ForegroundColor DarkCyan
-    $createDbCode = "try { `$p = new PDO('mysql:host=$dbHost;port=$dbPort', '$dbUser', '$dbPass'); `$p->exec('CREATE DATABASE IF NOT EXISTS ``$dbName`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'); echo 'CREATED'; } catch(Exception `$e) { echo `$e->getMessage(); }"
-    $dbStatus = & $php -r $createDbCode
+    $dbStatus = Invoke-CreateMysqlDatabase -Php $php -Host $dbHost -Port $dbPort -Database $dbName -Username $dbUser -Password $dbPass
 
     if ($dbStatus -eq "CREATED") {
         $currentDir = Get-Location
