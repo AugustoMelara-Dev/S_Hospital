@@ -608,6 +608,8 @@ export type ReportFilters = {
   status?: Invoice['status'] | '' | null;
 };
 
+export type PdfReportFilters = ReportFilters & { date?: string };
+
 export type DashboardReport = {
   last_7_days: Array<{
     date: string;

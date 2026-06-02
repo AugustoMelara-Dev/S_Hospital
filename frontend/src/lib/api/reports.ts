@@ -4,12 +4,12 @@ import type {
   MonthlyReport,
   IncomeReport,
   CategoryReport,
+  AreaIncomeReport,
   ServiceSalesReport,
   OperationsReport,
   CashSessionReport,
-  AreaIncomeReport,
   ReportFilters,
-  PaginatedMeta,
+  PdfReportFilters,
   DashboardReport,
 } from './types';
 
@@ -88,14 +88,6 @@ export const reports = {
     return response.data;
   },
 
-  async getBackups(filters: { page?: number; perPage?: number } = {}): Promise<{ data: import('./types').BackupLog[]; meta: PaginatedMeta }> {
-    const params = new URLSearchParams();
-    if (filters.page) params.set('page', String(filters.page));
-    if (filters.perPage) params.set('per_page', String(filters.perPage));
-    const query = params.toString() ? `?${params.toString()}` : '';
-    return apiClient.request<{ data: import('./types').BackupLog[]; meta: PaginatedMeta }>(`/api/backups${query}`);
-  },
-
   exportUrl(filters: ReportFilters): string {
     const params = buildReportParams(filters);
     return apiClient.url(`/api/reports/export?${params.toString()}`);
@@ -106,8 +98,8 @@ export const reports = {
     return apiClient.download(`/api/reports/export?${params.toString()}`);
   },
 
-  async downloadPdf(filters: ReportFilters & { date?: string }): Promise<Blob> {
-    const params = buildReportParams(filters as ReportFilters);
+  async downloadPdf(filters: PdfReportFilters): Promise<Blob> {
+    const params = buildReportParams(filters);
     if (filters.date) {
       params.set('date', filters.date);
     }

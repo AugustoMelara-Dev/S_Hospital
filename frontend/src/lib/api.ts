@@ -40,6 +40,7 @@ import type {
   ServiceFilters,
   InvoiceFilters,
   ReportFilters,
+  PdfReportFilters,
   DashboardReport,
 } from './api/types';
 
@@ -89,6 +90,7 @@ export type {
   ServiceFilters,
   InvoiceFilters,
   ReportFilters,
+  PdfReportFilters,
   DashboardReport,
   UserPayload,
 };
@@ -176,6 +178,14 @@ export const apiClient = {
     return billing.voidInvoice(invoiceId, reason);
   },
 
+  async voidPayment(
+    invoiceId: number,
+    paymentId: number,
+    reason: string,
+  ): Promise<{ payment: Payment; invoice: Invoice }> {
+    return billing.voidPayment(invoiceId, paymentId, { reason });
+  },
+
   async getCurrentCashSession(): Promise<CashSession | null> {
     return cash.getCurrentCashSession();
   },
@@ -232,7 +242,7 @@ export const apiClient = {
     return reports.downloadExport(filters);
   },
 
-  async downloadReportPdf(filters: ReportFilters & { date?: string }): Promise<Blob> {
+  async downloadReportPdf(filters: PdfReportFilters): Promise<Blob> {
     return reports.downloadPdf(filters);
   },
 
