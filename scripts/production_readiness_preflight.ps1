@@ -381,6 +381,38 @@ if ($appEnv -eq "production") { Add-Pass "APP_ENV=production" } else { Add-Failu
 if ($appDebug -eq "false") { Add-Pass "APP_DEBUG=false" } else { Add-Failure "APP_DEBUG must be false, current value is '$appDebug'" }
 if ($appUrl -eq $BaseUrl.TrimEnd("/")) { Add-Pass "APP_URL matches BaseUrl" } else { Add-Failure "APP_URL must match $($BaseUrl.TrimEnd('/')), current value is '$appUrl'" }
 
+# Reject the default blank APP_KEY from .env.example. The installer
+# always generates a real value with `php artisan key:generate`;
+# a blank key means someone copied the template and forgot to run it.
+$appKey = (Get-EnvValue $envValues "APP_KEY" "")
+if ([string]::IsNullOrWhiteSpace($appKey) -or $appKey -eq "base64:") {
+    Add-Failure "APP_KEY is empty or the .env.example placeholder. Run 'php artisan key:generate' on the server."
+} else {
+    Add-Pass "APP_KEY is set to a non-placeholder value"
+}
+
+# Same check for the database password. The installer randomizes
+# it; if the value is the well-known dev default the operator
+# never overrode the .env, which is a real production hazard.
+$dbPassword = (Get-EnvValue $envValues "DB_PASSWORD" "")
+$forbiddenDbPasswords = @("hospital_dev", "root_dev", "changeme", "password", "secret")
+if ([string]::IsNullOrWhiteSpace($dbPassword)) {
+    Add-Failure "DB_PASSWORD is empty. The installer must generate a random 24-char password."
+} elseif ($forbiddenDbPasswords -contains $dbPassword) {
+    Add-Failure "DB_PASSWORD is set to a well-known dev value '$dbPassword'. Replace it with a random 24-char string."
+} else {
+    Add-Pass "DB_PASSWORD is set to a non-default value"
+}
+
+$dbRootPassword = (Get-EnvValue $envValues "DB_ROOT_PASSWORD" "")
+if ([string]::IsNullOrWhiteSpace($dbRootPassword)) {
+    Add-Failure "DB_ROOT_PASSWORD is empty. The installer must generate a random 24-char password."
+} elseif ($forbiddenDbPasswords -contains $dbRootPassword) {
+    Add-Failure "DB_ROOT_PASSWORD is set to a well-known dev value '$dbRootPassword'. Replace it."
+} else {
+    Add-Pass "DB_ROOT_PASSWORD is set to a non-default value"
+}
+
 if ($BaseUrl -match "localhost|127\.0\.0\.1|::1") {
     Add-Failure "BaseUrl must be the final LAN IP or local domain, not localhost"
 } else {
