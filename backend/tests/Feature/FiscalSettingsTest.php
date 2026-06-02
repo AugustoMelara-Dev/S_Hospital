@@ -135,6 +135,24 @@ class FiscalSettingsTest extends TestCase
             ->assertJsonMissingPath('data.partial_payments_enabled');
     }
 
+    public function test_cashier_cannot_view_full_fiscal_settings(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create([
+            ...$this->validPayload(),
+            'scanner_enabled' => true,
+            'partial_payments_enabled' => true,
+        ]);
+
+        $cashier = User::factory()->create();
+        $cashier->assignRole('cajero');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/settings/fiscal')
+            ->assertForbidden();
+    }
+
     public function test_supervisor_can_view_but_not_update_fiscal_settings(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

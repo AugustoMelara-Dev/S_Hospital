@@ -65,6 +65,7 @@ Current local verification notes:
 - Active release/install docs were aligned on 2026-06-01 so admin creation in production points to the installer or `HOSPITAL_INITIAL_ADMIN_PASSWORD`, and explicitly forbids writing the temporary password as `--password=...` in console.
 - The LAN installer bare-metal path was aligned with Docker production on 2026-06-01: it now runs `migrate --force` plus explicit roles/catalog seeders instead of `migrate --force --seed`, avoiding any dependency on `DevelopmentValidationSeeder` environment guards.
 - The LAN installer now uses hidden input for MySQL/MariaDB and admin temporary passwords via `Read-SecretText`; `scripts\deploy_hospital_lan.ps1 -SelfTest` remains the focused parser/smoke gate for this script.
+- Fiscal settings exposure was hardened on 2026-06-01: `GET /api/settings/fiscal` now enforces `settings.fiscal.view`, while `/api/settings/branding` remains public and narrow for login/branding. Focused backend coverage was added for the cajero 403 case.
 
 ## Plan Review Orchestrator Result
 

@@ -1709,3 +1709,20 @@ Consecuencia:
 
 - El self-test del instalador debe seguir pasando despues de cambios de parsing/funciones.
 - Futuras credenciales interactivas del instalador deben usar el helper de entrada oculta.
+
+### 2026-06-01 - Lectura fiscal completa exige permiso explicito
+
+Decision:
+
+- `GET /api/settings/fiscal` exige `settings.fiscal.view` ademas de sesion activa y contrasena cambiada.
+- `GET /api/settings/branding` se mantiene publico y limitado a campos institucionales necesarios para login/branding.
+
+Motivo:
+
+- La configuracion fiscal completa contiene campos operativos e internos que no deben quedar disponibles para cualquier usuario autenticado.
+- El endpoint publico de branding cubre la necesidad de la pantalla de acceso sin exponer RTN, opciones de caja, scanner o configuracion fiscal completa.
+
+Consecuencia:
+
+- `FiscalSettingsTest` falla si un rol sin `settings.fiscal.view`, como cajero, vuelve a leer `/api/settings/fiscal`.
+- Supervisores/admins conservan lectura segun la matriz de permisos.
