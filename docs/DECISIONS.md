@@ -3070,3 +3070,21 @@ Contexto: el filtro de cajero en reportes por rango tambien dependia de escribir
 Decision: cuando las sesiones de caja listadas incluyen usuario, el frontend deriva una lista unica de cajeros y muestra un selector con nombre y usuario. El valor enviado al backend sigue siendo `user_id`; si no hay usuarios listables, se conserva el campo manual como fallback operativo.
 
 Criterio de verificacion: `ReportsView.test.tsx` valida que "Cajero Validacion (cajero.validacion)" se envie como `user_id=2` junto al filtro de caja seleccionado.
+
+### 2026-06-02 - Validador LAN tiene prueba de seguridad no destructiva
+
+Decision:
+
+- `scripts\test_validate_lan_client_safety.ps1` valida que `validate_lan_client.ps1 -WhatIfOnly` no escriba evidencia.
+- La prueba confirma que la evidencia LAN solo puede guardarse dentro de `qa\`, que no se reemplaza sin `-Force` y que URLs con usuario/contrasena se rechazan sin exponer credenciales.
+- La prueba usa un fixture temporal y no consulta la red ni toca datos reales.
+
+Motivo:
+
+- El validador LAN ahora es el camino documentado para evidencia desde una PC cliente, por lo que debe ser seguro antes de pedirlo a personal no tecnico.
+- Una evidencia mal ubicada o una URL con credenciales podria exponer datos operativos o confundir a soporte durante instalacion y entrega.
+
+Validacion:
+
+- `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test_validate_lan_client_safety.ps1`
+- `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test_operational_url_safety.ps1`
