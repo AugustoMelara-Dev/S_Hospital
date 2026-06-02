@@ -47,6 +47,12 @@ Clientes de red:
 http://IP-DEL-SERVIDOR:8000
 ```
 
+Nunca escriba usuario, contrasena ni token dentro de la direccion del sistema.
+Use `http://IP-DEL-SERVIDOR:8000`, no una direccion con formato
+`http://usuario:contrasena@IP-DEL-SERVIDOR:8000`. Los scripts operativos
+rechazan ese formato para que no quede guardado en accesos directos, logs ni
+diagnosticos.
+
 Antes de validar desde clientes, confirme que `APP_URL` usa la IP o nombre LAN
 del servidor. Si queda en `localhost` o `127.0.0.1`, solo funcionara en la
 computadora servidor y los clientes no encontraran el sistema.

@@ -11,8 +11,16 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+$scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+. (Join-Path $scriptRoot 'lib\operational_url_safety.ps1')
+
+trap {
+    Write-Host (Protect-HospitalOperationalText $_.Exception.Message $ProjectRoot)
+    Write-Host 'No borre datos, respaldos, archivos .env ni volumenes Docker. Revise la URL LAN y pida soporte si el problema continua.'
+    exit 1
+}
+
 if ($ProjectRoot -eq "") {
-    $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
     $ProjectRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
 }
 
@@ -52,6 +60,8 @@ function Open-SystemBrowser([string] $TargetUrl) {
         Write-Host "Abra manualmente esta direccion: $TargetUrl"
     }
 }
+
+$Url = Test-HospitalOperationalUrlInput $Url
 
 Write-Host "Abriendo Sistema de Caja Hospitalaria en $Url"
 

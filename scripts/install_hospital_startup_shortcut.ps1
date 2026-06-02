@@ -7,6 +7,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+$scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+. (Join-Path $scriptRoot 'lib\operational_url_safety.ps1')
+
 function Protect-ShortcutText([string] $value) {
     if ([string]::IsNullOrWhiteSpace($value)) {
         return $value
@@ -36,28 +39,12 @@ trap {
     exit 1
 }
 
-function Test-HospitalUrlInput([string] $TargetUrl) {
-    if ([string]::IsNullOrWhiteSpace($TargetUrl)) {
-        throw 'La direccion del sistema esta vacia. Use http://127.0.0.1:8000 en servidor o http://IP-DEL-SERVIDOR:8000 en clientes.'
-    }
-
-    try {
-        $uri = [System.Uri] $TargetUrl
-    } catch {
-        throw 'La direccion del sistema no es valida. Use una direccion como http://IP-DEL-SERVIDOR:8000.'
-    }
-
-    if (-not $uri.IsAbsoluteUri -or $uri.Scheme -notin @('http', 'https') -or [string]::IsNullOrWhiteSpace($uri.Host)) {
-        throw 'La direccion del sistema debe iniciar con http:// o https:// e incluir el servidor.'
-    }
-}
-
 $shortcutName = 'Abrir Sistema de Caja Hospitalaria.lnk'
 $desktop = [Environment]::GetFolderPath('Desktop')
 $shortcutPath = Join-Path $desktop $shortcutName
 $openScript = Join-Path $ProjectRoot 'scripts\open_hospital_system.ps1'
 
-Test-HospitalUrlInput $Url
+$Url = Test-HospitalOperationalUrlInput $Url
 
 if (-not (Test-Path -LiteralPath $ProjectRoot -PathType Container)) {
     throw 'No se encontro la carpeta instalada del sistema. Ejecute este script desde la carpeta de S_Hospital.'

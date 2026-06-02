@@ -32,7 +32,11 @@ Si hay duda, detenga nuevas facturas desde clientes y recopile evidencia.
 3. Abra el sistema desde el acceso directo.
 4. Si no abre, espere dos minutos y vuelva a intentar. El acceso directo
    ejecutara reparacion segura automaticamente si el servidor no responde.
-5. Si soporte necesita repetir la revision de forma manual, ejecute:
+5. No escriba usuario, contrasena ni token dentro de la direccion. Use solo
+   `http://IP-DEL-SERVIDOR:8000`; los scripts rechazan direcciones como
+   `http://usuario:contrasena@IP-DEL-SERVIDOR:8000` para proteger logs y
+   accesos directos.
+6. Si soporte necesita repetir la revision de forma manual, ejecute:
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -BaseUrl http://127.0.0.1:8000

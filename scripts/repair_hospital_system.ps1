@@ -11,8 +11,16 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+. (Join-Path $scriptRoot "lib\operational_url_safety.ps1")
+
+trap {
+    Write-Host (Protect-HospitalOperationalText $_.Exception.Message $ProjectRoot)
+    Write-Host "No borre datos, respaldos, archivos .env ni volumenes Docker. Entregue el diagnostico seguro a soporte si existe."
+    exit 1
+}
+
 if ($ProjectRoot -eq "") {
-    $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
     $ProjectRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
 }
 
@@ -113,6 +121,8 @@ if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
         $BaseUrl = "http://127.0.0.1:8000"
     }
 }
+
+$BaseUrl = Test-HospitalOperationalUrlInput $BaseUrl
 
 if ($WhatIfOnly) {
     Write-Host "Validacion de reparacion segura completada."

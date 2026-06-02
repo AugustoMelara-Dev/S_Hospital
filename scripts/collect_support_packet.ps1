@@ -12,6 +12,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+. (Join-Path $scriptRoot "lib\operational_url_safety.ps1")
+
 function Protect-SupportText([string] $value) {
     $protected = $value
 
@@ -50,6 +53,8 @@ if ($ProjectRoot -eq "") {
 if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
     $BaseUrl = "http://127.0.0.1:8000"
 }
+
+$BaseUrl = Test-HospitalOperationalUrlInput $BaseUrl
 
 if ($OutputDir -eq "") {
     $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
