@@ -1,6 +1,11 @@
-import type { AxeMatchers } from 'vitest-axe';
+import 'vitest';
 
 declare module 'vitest' {
-  interface Assertion<T = any> extends AxeMatchers {}
-  interface AsymmetricMatchersContaining extends AxeMatchers {}
+  interface Assertion<T = unknown> {
+    toHaveNoViolations(this: Assertion<T>): void;
+  }
+
+  interface AsymmetricMatchersContaining {
+    toHaveNoViolations(): void;
+  }
 }
