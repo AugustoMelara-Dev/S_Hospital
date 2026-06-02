@@ -2546,3 +2546,20 @@ Validacion:
 - `php artisan test --filter=OperationalMetricsServiceTest`
 - `php vendor/bin/pint --test app/Actions/Reports/OperationalMetricsService.php tests/Feature/OperationalMetricsServiceTest.php`
 - `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/check-branding.ps1`
+
+### 2026-06-02 - Operaciones lista cambios de catalogo
+
+Decision:
+
+- El reporte operativo incluye `catalog_changes` y `summary.service_change_count` para cambios auditados de servicios.
+- Los valores expuestos se sanitizan: se omiten ids tecnicos, slug y codigos de escaneo, y `category_id`/`area_id` se traducen a nombres humanos cuando existen.
+
+Motivo:
+
+- Precio, visibilidad, billability, categoria, area y alias de servicios son base institucional de facturacion y deben poder revisarse sin memoria humana.
+- Administracion necesita ver cambios importantes del catalogo en el mismo contexto operativo que anulaciones, reversos, reimpresiones y respaldos.
+
+Validacion:
+
+- `php artisan test --filter=ReportsTest`
+- `php vendor/bin/pint --test app/Actions/Reports/OperationsReportService.php tests/Feature/ReportsTest.php`

@@ -2,12 +2,16 @@
 
 namespace App\Actions\Reports;
 
+use App\Models\Area;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
+use App\Models\Category;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\Service;
 use App\Support\Money;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class OperationsReportService
 {
@@ -148,6 +152,34 @@ class OperationsReportService
                     'user' => $audit->user?->name,
                 ];
             })
+            ->values()
+            ->all();
+
+        $serviceChangeQuery = AuditLog::query()
+            ->with('user:id,name,username')
+            ->where('entity_type', Service::class)
+            ->where('action', 'like', 'service.%')
+            ->whereBetween('created_at', [$start, $end])
+            ->when(! empty($filters['user_id']), function ($query) use ($filters): void {
+                $query->where('user_id', $filters['user_id']);
+            });
+
+        $serviceChangeCount = (clone $serviceChangeQuery)->count();
+        $serviceChangeRows = (clone $serviceChangeQuery)
+            ->latest('created_at')
+            ->limit(25)
+            ->get();
+        $categoryNames = $this->categoryNamesFor($serviceChangeRows);
+        $areaNames = $this->areaNamesFor($serviceChangeRows);
+        $catalogChanges = $serviceChangeRows
+            ->map(fn (AuditLog $audit): array => [
+                'action' => $audit->action,
+                'service' => $audit->new_values['name'] ?? $audit->old_values['name'] ?? 'Servicio sin nombre',
+                'old_values' => $this->safeServiceValues($audit->old_values, $categoryNames, $areaNames),
+                'new_values' => $this->safeServiceValues($audit->new_values, $categoryNames, $areaNames),
+                'created_at' => $audit->created_at?->toISOString(),
+                'user' => $audit->user?->name,
+            ])
             ->values()
             ->all();
 
@@ -359,6 +391,7 @@ class OperationsReportService
             'summary' => [
                 'void_count' => $voidCount,
                 'reprint_count' => $reprintCount,
+                'service_change_count' => $serviceChangeCount,
                 'payment_void_count' => $paymentVoidCount,
                 'backup_count' => $backupCount,
                 'failed_backup_count' => $failedBackupCount,
@@ -366,6 +399,7 @@ class OperationsReportService
             ],
             'voids' => $voids,
             'reprints' => $reprints,
+            'catalog_changes' => $catalogChanges,
             'payment_voids' => $paymentVoids,
             'backups' => $backups,
             'cashiers' => $cashiers,
@@ -391,5 +425,106 @@ class OperationsReportService
         }
 
         return intdiv(($paymentCents * $filteredTotalCents) + intdiv($invoiceTotalCents, 2), $invoiceTotalCents);
+    }
+
+    /**
+     * @param  Collection<int, AuditLog>  $audits
+     * @return array<int, string>
+     */
+    private function categoryNamesFor(Collection $audits): array
+    {
+        $ids = $this->collectAuditIds($audits, 'category_id');
+
+        if ($ids === []) {
+            return [];
+        }
+
+        return Category::query()
+            ->whereIn('id', $ids)
+            ->pluck('name', 'id')
+            ->mapWithKeys(fn (string $name, int|string $id): array => [(int) $id => $name])
+            ->all();
+    }
+
+    /**
+     * @param  Collection<int, AuditLog>  $audits
+     * @return array<int, string>
+     */
+    private function areaNamesFor(Collection $audits): array
+    {
+        $ids = $this->collectAuditIds($audits, 'area_id');
+
+        if ($ids === []) {
+            return [];
+        }
+
+        return Area::query()
+            ->whereIn('id', $ids)
+            ->pluck('name', 'id')
+            ->mapWithKeys(fn (string $name, int|string $id): array => [(int) $id => $name])
+            ->all();
+    }
+
+    /**
+     * @param  Collection<int, AuditLog>  $audits
+     * @return array<int>
+     */
+    private function collectAuditIds(Collection $audits, string $field): array
+    {
+        return $audits
+            ->flatMap(function (AuditLog $audit) use ($field): array {
+                $oldValues = is_array($audit->old_values) ? $audit->old_values : [];
+                $newValues = is_array($audit->new_values) ? $audit->new_values : [];
+
+                return [
+                    $oldValues[$field] ?? null,
+                    $newValues[$field] ?? null,
+                ];
+            })
+            ->filter(fn (mixed $id): bool => is_numeric($id))
+            ->map(fn (mixed $id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $values
+     * @param  array<int, string>  $categoryNames
+     * @param  array<int, string>  $areaNames
+     * @return array<string, mixed>
+     */
+    private function safeServiceValues(?array $values, array $categoryNames, array $areaNames): array
+    {
+        if ($values === null) {
+            return [];
+        }
+
+        $safe = [];
+        foreach ([
+            'name',
+            'aliases',
+            'price',
+            'taxable',
+            'active',
+            'visible_in_billing',
+            'is_billable',
+            'special_rule_code',
+            'price_change_reason',
+        ] as $field) {
+            if (array_key_exists($field, $values)) {
+                $safe[$field] = $values[$field];
+            }
+        }
+
+        if (isset($values['category_id']) && is_numeric($values['category_id'])) {
+            $safe['category'] = $categoryNames[(int) $values['category_id']] ?? 'Categoria no disponible';
+        }
+
+        if (isset($values['area_id']) && is_numeric($values['area_id'])) {
+            $safe['area'] = $areaNames[(int) $values['area_id']] ?? 'Area no disponible';
+        }
+
+        return $safe;
     }
 }

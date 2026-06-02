@@ -1109,6 +1109,36 @@ class ReportsTest extends TestCase
             ->assertJsonMissingPath('data.cashiers.0.user_id');
     }
 
+    public function test_operations_report_lists_catalog_service_changes_without_technical_ids(): void
+    {
+        $this->seedBillingBase();
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'price' => '18.00',
+                'price_change_reason' => 'Ajuste aprobado por administracion',
+            ])
+            ->assertOk();
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/operations?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
+            ->assertOk()
+            ->assertJsonPath('data.summary.service_change_count', 1)
+            ->assertJsonCount(1, 'data.catalog_changes')
+            ->assertJsonPath('data.catalog_changes.0.action', 'service.price_updated')
+            ->assertJsonPath('data.catalog_changes.0.service', 'Glucosa')
+            ->assertJsonPath('data.catalog_changes.0.user', $admin->name)
+            ->assertJsonPath('data.catalog_changes.0.old_values.price', '15.00')
+            ->assertJsonPath('data.catalog_changes.0.new_values.price', '18.00')
+            ->assertJsonPath('data.catalog_changes.0.new_values.price_change_reason', 'Ajuste aprobado por administracion')
+            ->assertJsonMissingPath('data.catalog_changes.0.service_id')
+            ->assertJsonMissingPath('data.catalog_changes.0.entity_id')
+            ->assertJsonMissingPath('data.catalog_changes.0.old_values.category_id')
+            ->assertJsonMissingPath('data.catalog_changes.0.new_values.category_id');
+    }
+
     public function test_operations_report_lists_payment_reversals(): void
     {
         $this->seedBillingBase();
