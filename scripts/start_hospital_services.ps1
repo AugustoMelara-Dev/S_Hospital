@@ -32,6 +32,8 @@ trap {
     exit 1
 }
 
+$ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+
 Write-Host 'Iniciando servicios locales del Sistema de Caja Hospitalaria...'
 Write-Host "Carpeta del sistema: %PROJECT_ROOT%"
 
