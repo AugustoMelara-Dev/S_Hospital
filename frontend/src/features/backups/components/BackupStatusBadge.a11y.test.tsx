@@ -1,7 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import { render } from '@testing-library/react';
 import { axe } from 'vitest-axe';
-import { MemoryRouter } from 'react-router-dom';
 import { BackupStatusBadge } from './BackupStatusBadge';
 
 describe('BackupStatusBadge accessibility', () => {

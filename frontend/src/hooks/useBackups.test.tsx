@@ -118,6 +118,79 @@ describe('useBackups', () => {
   });
 });
 
+describe('useBackupWorkerHealth polling', () => {
+  beforeEach(() => {
+    mockedGetSystemHealth.mockReset();
+  });
+
+  it('maps a healthy snapshot with the projected shape', async () => {
+    mockedGetSystemHealth.mockResolvedValue({
+      generated_at: '2026-06-02T08:00:00Z',
+      database: { driver: 'mysql', connected: true },
+      queue: { connection: 'database', pending: 0, failed: 0 },
+      backups: {
+        worker_recently_active: true,
+        pending: 0,
+        success_last_24h: 6,
+        failed_last_24h: 0,
+      },
+      storage: { backup_files: 14, backup_bytes: 4_194_304 },
+      recent_errors: [],
+    });
+
+    const { result } = renderHook(() => useBackupWorkerHealth(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data).toEqual({
+      recent: true,
+      pending: 0,
+      successLast24h: 6,
+      failedLast24h: 0,
+    });
+  });
+
+  it('flips the recent flag to false when the worker heartbeat is stale', async () => {
+    mockedGetSystemHealth.mockResolvedValue({
+      generated_at: '2026-06-02T08:00:00Z',
+      database: { driver: 'mysql', connected: true },
+      queue: { connection: 'database', pending: 0, failed: 0 },
+      backups: {
+        worker_recently_active: false,
+        pending: 0,
+        success_last_24h: 0,
+        failed_last_24h: 3,
+      },
+      storage: { backup_files: 10, backup_bytes: 1_048_576 },
+      recent_errors: [],
+    });
+
+    const { result } = renderHook(() => useBackupWorkerHealth(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data?.recent).toBe(false);
+    expect(result.current.data?.failedLast24h).toBe(3);
+  });
+
+  it('skips the network round-trip when the hook is disabled', () => {
+    const { result } = renderHook(() => useBackupWorkerHealth(false), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(mockedGetSystemHealth).not.toHaveBeenCalled();
+  });
+});
+
 describe('useCreateBackup', () => {
   it('invalidates the backups query key on success', async () => {
     mockedCreateBackup.mockResolvedValue({
