@@ -23,6 +23,7 @@ describe('ReceiptPreview', () => {
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
   });
 
   it('waits for audited print callback before printing', async () => {
@@ -66,6 +67,35 @@ describe('ReceiptPreview', () => {
 
     await waitFor(() => expect(onPrint).toHaveBeenCalledTimes(1));
     expect(printSpy).not.toHaveBeenCalled();
+  });
+
+  it('sets and clears the active print paper width', async () => {
+    vi.useFakeTimers();
+    const receipt = receiptFixture();
+    receipt.width = '80mm';
+    printSpy.mockImplementation(() => undefined);
+
+    render(
+      <ReceiptPreview
+        receipt={receipt}
+        onPrint={vi.fn()}
+        onWidthChange={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Imprimir' }));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(printSpy).toHaveBeenCalledTimes(1);
+    expect(document.body.dataset.receiptWidth).toBe('80mm');
+    expect(document.body.dataset.printingReceipt).toBe('true');
+
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(document.body.dataset.receiptWidth).toBeUndefined();
+    expect(document.body.dataset.printingReceipt).toBeUndefined();
+    vi.useRealTimers();
   });
 });
 

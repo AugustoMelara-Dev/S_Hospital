@@ -1119,7 +1119,5 @@ describe('NewInvoiceView', () => {
     expect(screen.getByText(/vence/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /imprimir/i }));
     await waitFor(() => expect(printSpy).toHaveBeenCalledOnce());
-    await waitFor(() => expect(document.body.dataset.receiptWidth).toBe('80mm'));
-    await waitFor(() => expect(document.body.dataset.receiptWidth).toBeUndefined());
   });
 });
