@@ -1675,3 +1675,20 @@ Consecuencia:
 - `InitialAdminCommandTest` falla si el comando deja de aceptar la variable de entorno o permite crear admin sin una fuente de contrasena.
 - `InitialAdminCommandTest` tambien falla si el comando vuelve a aceptar una contrasena temporal debil.
 - El self-test del instalador usa placeholders explicitos y no cadenas que parezcan secretos reales.
+
+### 2026-06-01 - Instalador production no ejecuta DatabaseSeeder completo
+
+Decision:
+
+- El instalador LAN ejecuta migraciones y luego siembra explicitamente `RolesAndPermissionsSeeder` y `ServiceCatalogSeeder`.
+- No usa `php artisan migrate --force --seed` en el camino production bare-metal.
+
+Motivo:
+
+- `DatabaseSeeder` incluye `DevelopmentValidationSeeder` para `local/testing`; aunque ese seeder tiene guardas de entorno, produccion no debe depender de que una semilla de validacion se omita correctamente.
+- El camino Docker production ya usaba seeders explicitos; bare-metal debe comportarse igual.
+
+Consecuencia:
+
+- Roles/permisos y catalogo inicial siguen siendo reproducibles en production.
+- Usuarios de validacion y configuracion fiscal de demo no se ejecutan desde el instalador production.

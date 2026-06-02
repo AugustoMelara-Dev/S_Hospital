@@ -1250,7 +1250,9 @@ try {
                 & $phpPath artisan key:generate --force
             }
 
-            & $phpPath artisan migrate --force --seed
+            & $phpPath artisan migrate --force
+            & $phpPath artisan db:seed --class=RolesAndPermissionsSeeder --force
+            & $phpPath artisan db:seed --class=ServiceCatalogSeeder --force
             & $phpPath artisan config:cache
             & $phpPath artisan route:cache
             & $phpPath artisan view:cache
