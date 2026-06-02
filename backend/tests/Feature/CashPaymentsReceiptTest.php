@@ -342,6 +342,30 @@ class CashPaymentsReceiptTest extends TestCase
         ]);
     }
 
+    public function test_reprint_any_permission_does_not_grant_invoice_payment_operation_scope(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $reprintUser = User::factory()->create();
+        $reprintUser->givePermissionTo(['payments.create', 'receipts.reprint_any']);
+
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->actingAs($reprintUser)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('payments', [
+            'invoice_id' => $invoiceId,
+            'user_id' => $reprintUser->id,
+        ]);
+    }
+
     public function test_register_payment_creates_cash_movement_and_updates_partial_then_paid_invoice(): void
     {
         $this->seedBillingBase();
@@ -749,6 +773,7 @@ class CashPaymentsReceiptTest extends TestCase
             'invoice_id' => $invoiceId,
             'method' => Payment::METHOD_OTHER,
             'amount' => '0.00',
+            'amount_cents' => 0,
             'reference' => 'Factura sin cobro por regla autorizada',
         ]);
         $this->assertDatabaseHas('audit_logs', [

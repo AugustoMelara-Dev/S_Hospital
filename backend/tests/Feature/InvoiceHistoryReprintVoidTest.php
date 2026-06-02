@@ -312,6 +312,28 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->assertJsonValidationErrors('reason');
     }
 
+    public function test_reprint_any_permission_does_not_grant_invoice_void_operation_scope(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $reprintUser = User::factory()->create();
+        $reprintUser->givePermissionTo(['invoices.void', 'receipts.reprint_any']);
+        $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
+
+        $this->actingAs($reprintUser)
+            ->postJson("/api/invoices/{$invoiceId}/void", [
+                'reason' => 'Intento sin alcance operativo',
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'status' => Invoice::STATUS_ISSUED,
+            'voided_by' => null,
+            'voided_at' => null,
+        ]);
+    }
+
     public function test_void_marks_invoice_and_does_not_delete_items(): void
     {
         $this->seedBillingBase();
@@ -436,6 +458,7 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             'user_id' => $cashier->id,
             'method' => Payment::METHOD_CASH,
             'amount' => '17.25',
+            'amount_cents' => 1725,
             'status' => Payment::STATUS_POSTED,
             'paid_at' => now(),
         ]);

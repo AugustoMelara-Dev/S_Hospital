@@ -162,7 +162,7 @@ Servicio minimo:
 | GET | `/api/invoices` | `invoices.view` | Query: `date_from`, `date_to`, `status`, `patient`, `page` | Lista paginada | Rango por defecto del dia. |
 | POST | `/api/invoices` | `invoices.create` | Paciente, items, flags de reglas especiales | Factura emitida | Transaccional; reserva correlativo dentro de la creacion. |
 | GET | `/api/invoices/{id}` | `invoices.view` | N/A | Factura con items/pagos | Incluye snapshots. |
-| POST | `/api/invoices/{id}/void` | `invoices.void` | `{ "reason": "..." }` | Factura anulada | Requiere supervisor/admin, auditar. |
+| POST | `/api/invoices/{id}/void` | `invoices.void` + alcance operativo | `{ "reason": "..." }` | Factura anulada | Alcance operativo: factura propia del dia o `invoices.operate_any`. Requiere motivo y auditoria. |
 
 Payload crear factura:
 
@@ -222,9 +222,9 @@ Los items emitidos no se editan. Si hay error, se anula la factura y se emite un
 
 | Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
 |---|---|---|---|---|---|
-| POST | `/api/invoices/{invoice}/payments` | `payments.create` | Metodo, monto, referencia | Pago registrado | Transaccional: payment + cash_movement + invoice totals. |
-| GET | `/api/invoices/{invoice}/payments` | `payments.view` | N/A | Pagos | Incluye estado. |
-| POST | `/api/payments/{id}/void` | `payments.void` | `{ "reason": "..." }` | Pago anulado | Requiere supervisor/admin, auditar y recalcular factura. |
+| POST | `/api/invoices/{invoice}/payments` | `payments.create` + alcance operativo | Metodo, monto, referencia | Pago registrado | Alcance operativo: factura propia del dia o `invoices.operate_any`. Transaccional: payment + cash_movement + invoice totals. |
+| GET | `/api/invoices/{invoice}/payments` | `payments.view` + alcance operativo | N/A | Pagos | Incluye estado. |
+| POST | `/api/invoices/{invoice}/payments/{payment}/void` | `payments.void` + alcance operativo | `{ "reason": "..." }` | Pago anulado | Auditar y recalcular factura. |
 
 Payload pago:
 

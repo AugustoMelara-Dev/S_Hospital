@@ -1149,6 +1149,7 @@ Decision:
 
 - Las facturas cuyo total calculado es L.0.00 siguen quedando `paid`.
 - Al emitirlas se crea un registro `payments` por L.0.00, metodo `other`, referencia `Factura sin cobro por regla autorizada`, caja abierta, cajero y fecha.
+- El registro tambien guarda `amount_cents = 0` para cumplir el contrato entero usado por reportes y arqueo.
 - No se crea movimiento de efectivo para el pago cero.
 
 Motivo:
@@ -1726,3 +1727,21 @@ Consecuencia:
 
 - `FiscalSettingsTest` falla si un rol sin `settings.fiscal.view`, como cajero, vuelve a leer `/api/settings/fiscal`.
 - Supervisores/admins conservan lectura segun la matriz de permisos.
+
+### 2026-06-01 - Operaciones financieras usan alcance operativo de factura
+
+Decision:
+
+- Cobros, lectura de pagos, reversion de pagos y anulacion de facturas usan `InvoiceAccess::authorizeOperationalAccess`.
+- El alcance operativo permite operar una factura propia del dia o cualquier factura solo con `invoices.operate_any`.
+- Permisos historicos/de lectura como `reports.managerial.view` o `receipts.reprint_any` no otorgan por si solos capacidad de cobro, reversion o anulacion.
+
+Motivo:
+
+- Ver reportes o reimprimir facturas historicas no debe equivaler a operar financieramente facturas de otros cajeros.
+- La matriz separa lectura historica de acciones criticas sobre caja/factura.
+
+Consecuencia:
+
+- Las pruebas fallan si `reports.managerial.view` o `receipts.reprint_any` vuelven a permitir pagos o anulaciones de facturas fuera del alcance operativo.
+- Usuarios con `invoices.void` tambien necesitan operar su factura propia del dia o tener `invoices.operate_any` para anular facturas ajenas/antiguas.

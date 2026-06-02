@@ -91,6 +91,7 @@ class CreateInvoiceAction
                     'user_id' => $issuer->id,
                     'method' => Payment::METHOD_OTHER,
                     'amount' => '0.00',
+                    'amount_cents' => 0,
                     'reference' => 'Factura sin cobro por regla autorizada',
                     'status' => Payment::STATUS_POSTED,
                     'paid_at' => now(),

@@ -6,12 +6,15 @@ use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\InvoiceAccess;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class VoidInvoiceAction
 {
+    public function __construct(private readonly InvoiceAccess $invoiceAccess) {}
+
     public function execute(Invoice $invoice, User $user, string $reason): Invoice
     {
         $result = DB::transaction(function () use ($invoice, $user, $reason): ?Invoice {
@@ -22,6 +25,8 @@ class VoidInvoiceAction
                 ])
                 ->lockForUpdate()
                 ->findOrFail($invoice->id);
+
+            $this->invoiceAccess->authorizeOperationalAccess($user, $lockedInvoice);
 
             if ($lockedInvoice->status === Invoice::STATUS_VOID) {
                 throw ValidationException::withMessages([
