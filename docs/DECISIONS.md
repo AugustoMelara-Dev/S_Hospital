@@ -2139,3 +2139,20 @@ Consecuencia:
 
 - Cajeros y usuarios sin permiso fiscal siguen recibiendo 403 en la configuracion completa.
 - Login/branding publico no cambia.
+
+### 2026-06-02 - Caja actual usa Form Request
+
+Decision:
+
+- `GET /api/cash-sessions/current` usa `CurrentCashSessionRequest`.
+- La autorizacion `cash.view` queda fuera del controlador.
+
+Motivo:
+
+- La caja actual alimenta el estado operativo del cajero y la conciliacion visible; su lectura debe seguir el mismo patron de requests autorizados que abrir, cerrar y listar caja.
+- Evitar `abort(403)` disperso facilita revisar permisos de caja por endpoint.
+
+Consecuencia:
+
+- Usuarios sin `cash.view` siguen recibiendo 403.
+- La respuesta de caja actual y reconciliacion no cambia.

@@ -6,18 +6,18 @@ use App\Actions\Cash\BuildCashReconciliationAction;
 use App\Actions\Cash\CloseCashSessionAction;
 use App\Actions\Cash\OpenCashSessionAction;
 use App\Http\Requests\Cash\CloseCashSessionRequest;
+use App\Http\Requests\Cash\CurrentCashSessionRequest;
 use App\Http\Requests\Cash\IndexCashSessionRequest;
 use App\Http\Requests\Cash\OpenCashSessionRequest;
 use App\Models\CashRegisterSession;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class CashSessionController extends Controller
 {
-    public function current(Request $request, BuildCashReconciliationAction $buildCashReconciliation): JsonResponse
-    {
-        $request->user()->can('cash.view') || abort(403);
-
+    public function current(
+        CurrentCashSessionRequest $request,
+        BuildCashReconciliationAction $buildCashReconciliation,
+    ): JsonResponse {
         $session = CashRegisterSession::query()
             ->with('user:id,name,username')
             ->where('user_id', $request->user()->id)
