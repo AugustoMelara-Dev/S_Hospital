@@ -37,8 +37,20 @@ class IncomeReportService
             'total_voided' => $facts['total_voided'],
             'payments_by_method' => $facts['payments_by_method'],
             'payment_count' => (int) ($facts['payment_count'] ?? 0),
-            'invoice_count' => $this->paymentScopedInvoiceCount($start, $end, $filters),
+            'invoice_count' => $this->usesPaymentScope($filters)
+                ? $this->paymentScopedInvoiceCount($start, $end, $filters)
+                : (int) ($facts['invoice_count'] ?? 0),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function usesPaymentScope(array $filters): bool
+    {
+        return ! empty($filters['cash_session_id'])
+            || ! empty($filters['user_id'])
+            || ! empty($filters['method']);
     }
 
     /**

@@ -214,9 +214,10 @@ class ReportsTest extends TestCase
         $this->actingAs($this->admin())
             ->getJson('/api/reports/income?date_from='.now()->toDateString().'&date_to='.now()->toDateString())
             ->assertOk()
+            ->assertJsonPath('data.total_billed', '28.75')
             ->assertJsonPath('data.total_collected', '17.25')
             ->assertJsonPath('data.payment_count', 1)
-            ->assertJsonPath('data.invoice_count', 1);
+            ->assertJsonPath('data.invoice_count', 2);
 
         $this->actingAs($this->admin())
             ->getJson('/api/reports/income?date_from='.now()->toDateString().'&date_to='.now()->subDay()->toDateString())

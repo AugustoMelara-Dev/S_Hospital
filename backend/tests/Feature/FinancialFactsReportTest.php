@@ -109,8 +109,33 @@ class FinancialFactsReportTest extends TestCase
             ->assertJsonPath('data.payments_by_method.cash', '17.25')
             ->assertJsonPath('data.payments_by_method.other', '1.50')
             ->assertJsonPath('data.payments_by_method.card', '0.00')
-            ->assertJsonPath('data.invoice_count', 2)
+            ->assertJsonPath('data.invoice_count', 3)
             ->assertJsonPath('data.payment_count', 2);
+    }
+
+    public function test_income_report_counts_unpaid_invoices_when_not_payment_scoped(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '100.00');
+        $paidInvoice = $this->createInvoice($cashier, 'Glucosa');
+        $this->createInvoice($cashier, 'Eritropoyetina');
+
+        $this->payInvoice($cashier, $paidInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        $query = http_build_query([
+            'date_from' => now()->toDateString(),
+            'date_to' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/income?{$query}")
+            ->assertOk()
+            ->assertJsonPath('data.total_billed', '46.00')
+            ->assertJsonPath('data.total_collected', '17.25')
+            ->assertJsonPath('data.total_pending', '28.75')
+            ->assertJsonPath('data.invoice_count', 2)
+            ->assertJsonPath('data.payment_count', 1);
     }
 
     private function seedBillingBase(): void
