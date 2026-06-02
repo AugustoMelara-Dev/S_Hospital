@@ -46,6 +46,13 @@ if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
   });
 }
 
+if (typeof HTMLCanvasElement !== 'undefined') {
+  Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
+    configurable: true,
+    value: vi.fn(() => null),
+  });
+}
+
 beforeEach(() => {
   document.body.innerHTML = '';
 });
