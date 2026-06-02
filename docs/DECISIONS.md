@@ -2156,3 +2156,144 @@ Consecuencia:
 
 - Usuarios sin `cash.view` siguen recibiendo 403.
 - La respuesta de caja actual y reconciliacion no cambia.
+
+### 2026-06-02 - Guardas de release validan limites de subida
+
+Decision:
+
+- `scripts/assert_production_docker_sources.ps1` valida que `nginx/default.conf` tenga `client_max_body_size` y que no exceda `upload_max_filesize` ni `post_max_size` de `backend/Dockerfile.prod`.
+- `scripts/assert_offline_release_clean.ps1` valida que `docker-compose.prod.yml`, `backend/Dockerfile.prod` y `nginx/default.conf` dentro de `offline-release` coincidan con la fuente versionada.
+
+Motivo:
+
+- El paquete offline no debe aceptar archivos que PHP rechazara despues ni entregar una configuracion nginx stale distinta al codigo auditado.
+- Un operador no tecnico necesita un guard ejecutable que falle antes del handoff, no una nota manual escondida en documentacion.
+
+Consecuencia:
+
+- Si se cambia nginx, Dockerfile o compose productivo, se debe regenerar `offline-release` antes de entrega.
+- El release queda bloqueado si el limite de nginx vuelve a quedar por encima de PHP o si el artefacto copiado esta desactualizado.
+
+### 2026-06-01 - Production config defaults hardened (F1)
+
+Decision:
+
+- config/database.php deja de tener env('DB_CONNECTION', 'sqlite') y pasa a env('DB_CONNECTION', 'mysql'). Los queue drivers (database, beanstalkd, sqs, redis) declaran fter_commit => true.
+
+Motivo:
+
+- En produccion, un DB_CONNECTION no exportado en .env caia silenciosamente a SQLite. Esto contradice AGENTS.md ("MySQL/MariaDB local en servidor LAN") y permitia que el sistema arrancara con una BD en archivo, rompiendo concurrencia, lock de correlativo fiscal y consistencia de caja.
+- fter_commit: false permitia que un job despachado dentro de una transaccion quedara huerfano si la transaccion hacia rollback. Laravel 11+ recomienda 	rue por defecto.
+
+Consecuencia:
+
+- Tests phpunit con RefreshDatabase siguen pasando porque phpunit.xml fuerza DB_CONNECTION=sqlite con orce="true".
+- Tests phpunit siguen ejecutando jobs sincronamente porque phpunit.xml fuerza QUEUE_CONNECTION=sync.
+- Operadores deben exportar DB_CONNECTION en .env antes de la primera corrida.
+- CloseCashSessionAction mantiene su DB::afterCommit explicito; con el flag global, la llamada se vuelve redundante pero no rompe.
+
+### 2026-06-01 - PDF XSS hardening (F2)
+
+Decision:
+
+- PdfExportService introduce un helper e(mixed): string publico que aplica htmlspecialchars(, ENT_QUOTES | ENT_HTML5, 'UTF-8'). Toda cadena controlada por el usuario (nombre del hospital, RTN, fechas, metodo, estado, contadores) se envuelve con e() antes de interpolarse en el HTML del PDF.
+- Las funciones publicas generateDailyClosurePdf y generateRangeClosurePdf delegan en uildDailyClosureHtml y uildRangeClosureHtml para que el HTML sea testeable sin decodificar el binario del PDF.
+
+Motivo:
+
+- Un atacante con permisos de admin (puede editar FiscalSetting) podia inyectar <script>, <img onerror=...> o <svg/onload=...> en el nombre del hospital o RTN. El payload se ejecutaba en el visor de PDF del operador segun la configuracion.
+- DomPDF no escapa HTML por defecto; es responsabilidad del productor.
+
+Consecuencia:
+
+- 5 vitest cases cubren payloads XSS conocidos y verifican que la salida contiene &lt;script&gt;, &lt;img, &lt;svg/ en lugar del HTML literal.
+- Si en el futuro se quiere permitir HTML limitado (negrita, saltos), hay que cambiar e() a una libreria con allowlist (DOMPurifier) o un parser HTML. Por ahora, escape total es lo correcto.
+
+### 2026-06-01 - Dinero en centavos (F3)
+
+Decision:
+
+- payments añade columna mount_cents bigInteger (migration 2026_06_01_000001).
+- RegisterPaymentAction, VoidPaymentAction, BuildCashReconciliationAction y los reportes con ROUND(payments.amount * 100) se cambian a SUM(payments.amount_cents).
+
+Motivo:
+
+- En MySQL/MariaDB, DECIMAL(12,2) * 100 se hace en punto flotante. Para valores grandes o agregaciones largas, se acumula drift. intdiv((amount * 100) + 50, 100) (round-half-up) en cents es la forma canonica de evitarlo.
+- AGENTS.md dice: "Evitar logica de dinero en floats; usar enteros en centavos o decimal(12,2) con cuidado". Con mount_cents agregado, el camino critico (pagos, anulacion, reconciliacion) cumple esa regla.
+
+Consecuencia:
+
+- invoices y invoice_items aun usan decimal(12,2) sin columna cents. Sus ROUND(total * 100) y ROUND(line_total * 100) en report services quedan. Migrarlos requiere añadir *_cents a las dos tablas y backfill, que es scope de una iteracion futura.
+- Nueva regression test PaymentCentsSqlGuardTest parsea el codigo fuente de los report services y falla si alguien reintroduce ROUND(payments.amount * 100).
+
+### 2026-06-01 - Autorizacion solo via Form Requests (F4)
+
+Decision:
+
+- Se elimina el directorio ackend/app/Policies/ con sus 5 clases (InvoicePolicy, PaymentPolicy, CashRegisterSessionPolicy, FiscalSettingPolicy, BackupPolicy). Nunca fueron registradas con Gate::policy() ni invocadas via $user->can('action', ).
+- La autorizacion se queda como esta: Form Request::authorize() y string permissions en los actions y controllers.
+
+Motivo:
+
+- Las policies eran codigo muerto que confunde a quien lee por primera vez.
+- CashRegisterSessionPolicy::viewAny y ::create retornaban 	rue sin chequeos. Si se hubiera activado el auto-discovery de Laravel o un Gate::policy() futuro, habria sido una escalacion de privilegios.
+- La estrategia actual (Form Request + $user->can('perm')) es consistente y esta cubierta por tests.
+
+Consecuencia:
+
+- Nueva test AuthorizationStrategyTest parsea el filesystem y AppServiceProvider para detectar regresiones (re-introducir pp/Policies o Gate::policy() sin wiring).
+- Si en el futuro se quieren policies por modelo, hay que registrarlas explicitamente con Gate::policy() en AppServiceProvider::boot().
+
+### 2026-06-01 - Migracion amount_cents con driver-guard (F5)
+
+Decision:
+
+- 2026_06_01_000001_add_amount_cents_to_payments_table.php se envuelve en Schema::hasColumn para re-entry safety, y la logica CAST(amount * 100 AS SIGNED) se restringe a drivers mysql|mariadb. En otros drivers (sqlite de tests) se hace backfill en PHP con ound((float) * 100) y chunkById(500).
+
+Motivo:
+
+- CAST(... AS SIGNED) es MySQL-only. Los tests RefreshDatabase contra SQLite in-memory fallarian con 
+o such function: SIGNED.
+- chunkById evita que el backfill de la tabla payments cargue millones de filas en memoria en SQLite.
+- doctrine/dbal ya no es necesario en Laravel 11+ para ->change(). Mantenerlo fuera de composer.json ahorra ~5MB.
+
+Consecuencia:
+
+- AmountCentsMigrationTest (PHPUnit) verifica que la columna existe despues de RefreshDatabase y que el codigo fuente contiene el guard del driver.
+- La migracion es idempotente: se puede re-ejecutar sin error despues de un fallo parcial.
+
+### 2026-06-01 - Helpers de money/quantity centralizados (F8)
+
+Decision:
+
+- Nuevo rontend/src/lib/moneyCents.ts con parseCents, parsePositiveCents, ormatCents, ormatLempirasFromCents, parseQuantityUnits, ormatQuantity. 8 vitest cases.
+
+Motivo:
+
+- parseCents, ormatCents, parseQuantityUnits estaban duplicados en NewInvoiceView, InvoiceCart, PaymentModal, CashBoxView, OpenSessionForm. Cada copia tenia pequeñas variaciones de regex/precision, lo que hacia que el redondeo de UI difiriera entre vistas.
+- Money en el backend (PHP) ya define la politica de redondeo (HALF_AWAY_FROM_ZERO). Los helpers del frontend reflejan esa misma politica.
+
+Consecuencia:
+
+- Por ahora, las vistas siguen con su codigo local. La migracion de cada vista a usar moneyCents es scope de v1.1.0.
+- Las pruebas (8 vitest cases) garantizan que el helper no introduce drift.
+
+### 2026-06-01 - Backend y nginx con healthchecks (F11)
+
+Decision:
+
+- docker-compose.prod.yml añade healthcheck al backend (DB::connection()->getPdo() via tinker) y a nginx (wget http://localhost/up).
+- 
+ginx cambia de depender de ackend: service_started a ackend: service_healthy, garantizando que el paso cp /var/www/html/public del entrypoint haya terminado antes de que nginx intente servir.
+- client_max_body_size de nginx baja de 100M a 32M para coincidir con upload_max_filesize=32M y post_max_size=32M de ackend/Dockerfile.prod.
+
+Motivo:
+
+- Sin healthchecks, un PHP-FPM trabado o un nginx sirviendo 404 (porque el cp aun no termino) pasaban desapercibidos.
+- El limite de 100M era engañoso: nginx aceptaba el body pero PHP lo rechazaba con un 413/500 silencioso.
+
+Consecuencia:
+
+- Operadores pueden detectar caidas via docker compose ps (muestra healthy/unhealthy).
+- Si en el futuro se sube el limite PHP, hay que acordarse de subir client_max_body_size tambien (comentado en default.conf).
+- offline-release/MANIFEST.txt (no commiteado, regenerado por pipeline) registra la nueva configuracion.

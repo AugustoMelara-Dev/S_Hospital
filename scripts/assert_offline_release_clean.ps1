@@ -89,6 +89,25 @@ function Test-IsForbiddenEnvFile([string] $name) {
     return $name -notmatch '(?i)(^\.env\.example$|^\.env\..*\.example$|^\.env\.sample$|^\.env\.dist$)'
 }
 
+function Test-ReleaseFileMatchesSource([string] $relativePath) {
+    $source = Join-Path $ProjectRoot $relativePath
+    $release = Join-Path $ReleaseRoot $relativePath
+
+    if (-not (Test-Path -LiteralPath $source -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $release -PathType Leaf)) {
+        return
+    }
+
+    $sourceHash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
+    $releaseHash = (Get-FileHash -LiteralPath $release -Algorithm SHA256).Hash
+
+    if ($sourceHash -eq $releaseHash) {
+        Add-Pass "$relativePath matches versioned source"
+    } else {
+        Add-Failure "$relativePath in offline release differs from versioned source. Regenerate offline-release before handoff."
+    }
+}
+
 try {
     $ReleaseRoot = (Resolve-Path -LiteralPath $ReleaseRoot).Path
 } catch {
@@ -115,6 +134,10 @@ Test-RequiredPath "scripts\load_offline_images.ps1" "file"
 Test-RequiredPath "scripts\install_backup_tasks_windows.ps1" "file"
 Test-RequiredPath "scripts\run_backup_worker.cmd" "file"
 Test-RequiredPath "scripts\run_scheduled_backup.cmd" "file"
+
+Test-ReleaseFileMatchesSource "docker-compose.prod.yml"
+Test-ReleaseFileMatchesSource "backend\Dockerfile.prod"
+Test-ReleaseFileMatchesSource "nginx\default.conf"
 
 $forbiddenItems = Get-ChildItem -LiteralPath $ReleaseRoot -Recurse -Force | Where-Object {
     $relative = Get-RelativeReleasePath $_

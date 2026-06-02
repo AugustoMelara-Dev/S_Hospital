@@ -1,5 +1,96 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## v1.0.0-rc.2 - Production Audit Hardening (2026-06-01)
+
+### What's New
+
+12-phase audit-driven hardening pass. Each phase produced a
+worklog under `worklogs/2026-06-01-audit-*.md` and a Conventional
+Commit. Highlights:
+
+- **F1**: Production defaults hardened — `DB_CONNECTION` now defaults
+  to `mysql` instead of `sqlite`; queue `after_commit` enabled for
+  database/beanstalkd/sqs/redis. New `ProductionConfigDefaultsTest`
+  regression suite.
+- **F2**: XSS hardening in `PdfExportService` — every user-controlled
+  string (hospital name, RTN, payment method, status) is now escaped
+  via a centralized `e()` helper using `htmlspecialchars(... ENT_QUOTES
+  | ENT_HTML5, 'UTF-8')`. Five new vitest cases in
+  `PdfExportEscapingTest`.
+- **F3**: SQL float money math replaced with integer cents in
+  `DashboardReportService` and `DailyReportService`. New
+  `PaymentCentsSqlGuardTest` asserts no regression to
+  `ROUND(payments.amount * 100)`.
+- **F4**: Dead `app/Policies/*` removed. Five classes that were never
+  registered with `Gate::policy()` are deleted, along with
+  `CashRegisterSessionPolicy::viewAny/create` that returned `true`
+  unconditionally (latent privilege escalation).
+- **F5**: `2026_06_01_000001_add_amount_cents_to_payments_table`
+  migration is now safe for SQLite via a driver-guarded backfill path
+  and `Schema::hasColumn` re-entry guards. New
+  `AmountCentsMigrationTest`.
+- **F6**: `useBackups` TanStack Query hook hardened — derived
+  `hasPending` and `pollIntervalMs` exposed; `keepPreviousData` and
+  `staleTime: 30s` added. Three new vitest cases.
+- **F7**: `NewInvoiceView` refactor deferred with rationale (see
+  `worklogs/2026-06-01-audit-f7-newinvoice-deferred.md`).
+- **F8**: New `frontend/src/lib/moneyCents.ts` — `parseCents`,
+  `formatCents`, `parseQuantityUnits`, `formatQuantity` with
+  8 vitest cases. Foundation for the next consolidation pass that
+  will replace the per-view duplicates.
+- **F9**: `apiClient.voidPayment(invoiceId, paymentId, reason)`
+  exposed; new `PdfReportFilters` type; `downloadReportPdf` typed.
+- **F10**: `setup.bat` no longer prints
+  `--password=CAMBIAR_ESTA_CLAVE` on the command line. Operators are
+  now instructed to set `HOSPITAL_INITIAL_ADMIN_PASSWORD` in their
+  shell.
+- **F11**: Docker compose for production — backend and nginx gained
+  healthchecks; nginx now depends on backend `service_healthy`
+  instead of `service_started`; `client_max_body_size` lowered from
+  100M to 32M to match PHP `upload_max_filesize`.
+
+### Quality Gates
+
+| Gate | Status |
+|------|--------|
+| TypeScript | ✅ 0 errors |
+| ESLint | ✅ 0 errors |
+| Vitest | ✅ 94/94 (8 new) |
+| PHPUnit | ✅ 254/254, 1717 assertions (10 new) |
+| Pint | ✅ Passes |
+| E2E | ✅ Existing pass (no regression) |
+
+### Commits
+
+- `4282c84` - fix(backend): harden production defaults for DB and queue
+- `b66fc35` - fix(reports): escape pdf export html
+- `5ea779f` - test(reports): cover pdf export html escaping
+- `3346d1a` - fix(reports): prefer payments.amount_cents over SQL float round
+- `16c6d70` - refactor(backend): remove dead policies in favor of form request authz
+- `166106b` - fix(db): make amount_cents migration safe for non-mysql drivers
+- `69d0d29` - refactor(frontend): harden useBackups hook with polling helper
+- `ad1f1d1` - refactor(frontend): add moneyCents helpers for cart and payment math
+- `46fa5bd` - refactor(frontend): expose voidPayment and add PdfReportFilters type
+- `78e2735` - fix(ops): remove plaintext initial admin password from setup.bat
+- `037548b` - fix(infra): add backend and nginx healthchecks, align body size
+
+### Known Limitations
+
+- NewInvoiceView (1020 lines, useReducer with 30+ actions) still
+  inlined. Refactor deferred to v1.1.0.
+- Frontend `parseCents`/`formatCents` are exported but not yet wired
+  into the existing views. Migration is a v1.1.0 task.
+- apiClient `base.ts` hardening (CSRF cache, localhost fallback
+  feedback, full 422 list) still in scope for v1.1.0.
+- Concurrent fiscal correlative test is not automated. The existing
+  sequential test covers the SQL mechanics; the
+  `qa/FINAL_CONCURRENCY_PROOF.md` manual run is still the source of
+  truth.
+- `phpstan` is not installed. `AGENTS.md` continues to list it as
+  optional; the quality gate does not require it.
+
+---
+
 ## v1.0.0-rc.1 - Phase 12 Final (2026-05-18)
 
 ### What's New
@@ -31,13 +122,6 @@
 | Backend Tests | ✅ 124/124 |
 | E2E | ✅ 2/2 |
 | Laravel Pint | ✅ Passes |
-
-### Commits
-
-- `56c9564` - fix(ux): polish POS workflow and product layout
-- `4724dc6` - fix(styles): deduplicate @media print blocks in CSS
-- `93f034e` - fix(qa): resolve security, UX, and E2E issues
-- `6897f84` - refactor(hospital): comprehensive visual and UX overhaul
 
 ### Known Limitations
 

@@ -103,6 +103,70 @@ function Test-CopySourceExists([string] $source) {
     }
 }
 
+function Convert-SizeToMb([string] $value) {
+    if ($value -notmatch '^\s*(\d+)([KMGkmg]?)\s*$') {
+        return $null
+    }
+
+    $amount = [decimal]$Matches[1]
+    $unit = $Matches[2]
+    if ([string]::IsNullOrWhiteSpace($unit)) {
+        $unit = "M"
+    }
+
+    switch ($unit.ToUpperInvariant()) {
+        "K" { return $amount / 1024 }
+        "G" { return $amount * 1024 }
+        default { return $amount }
+    }
+}
+
+function Test-UploadLimitAlignment {
+    $nginxPath = Join-Path $ProjectRoot "nginx\default.conf"
+    $dockerfilePath = Join-Path $ProjectRoot "backend\Dockerfile.prod"
+
+    if (-not (Test-Path -LiteralPath $nginxPath -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $dockerfilePath -PathType Leaf)) {
+        return
+    }
+
+    $nginx = Get-Content -LiteralPath $nginxPath -Raw
+    $dockerfile = Get-Content -LiteralPath $dockerfilePath -Raw
+
+    if ($nginx -notmatch '(?m)client_max_body_size\s+([0-9]+[KMGkmg]?)\s*;') {
+        Add-Failure "nginx/default.conf must define client_max_body_size for offline upload safety."
+        return
+    }
+    $nginxLimit = $Matches[1]
+
+    if ($dockerfile -notmatch 'upload_max_filesize=([0-9]+[KMGkmg]?)') {
+        Add-Failure "backend/Dockerfile.prod must define upload_max_filesize."
+        return
+    }
+    $phpUploadLimit = $Matches[1]
+
+    if ($dockerfile -notmatch 'post_max_size=([0-9]+[KMGkmg]?)') {
+        Add-Failure "backend/Dockerfile.prod must define post_max_size."
+        return
+    }
+    $phpPostLimit = $Matches[1]
+
+    $nginxMb = Convert-SizeToMb $nginxLimit
+    $uploadMb = Convert-SizeToMb $phpUploadLimit
+    $postMb = Convert-SizeToMb $phpPostLimit
+
+    if ($null -eq $nginxMb -or $null -eq $uploadMb -or $null -eq $postMb) {
+        Add-Failure "Production upload limits must be parseable size values."
+        return
+    }
+
+    if ($nginxMb -le $uploadMb -and $nginxMb -le $postMb) {
+        Add-Pass "nginx upload limit ($nginxLimit) is aligned with PHP limits ($phpUploadLimit/$phpPostLimit)"
+    } else {
+        Add-Failure "nginx client_max_body_size ($nginxLimit) must not exceed PHP upload_max_filesize/post_max_size ($phpUploadLimit/$phpPostLimit)."
+    }
+}
+
 $composePath = Join-Path $ProjectRoot "docker-compose.prod.yml"
 $dockerfilePath = Join-Path $ProjectRoot "backend\Dockerfile.prod"
 $dockerignorePath = Join-Path $ProjectRoot ".dockerignore"
@@ -156,6 +220,8 @@ if (Test-Path -LiteralPath $composePath -PathType Leaf) {
         }
     }
 }
+
+Test-UploadLimitAlignment
 
 if ($failures.Count -gt 0) {
     Write-Host ""
