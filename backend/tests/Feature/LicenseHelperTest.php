@@ -143,4 +143,63 @@ class LicenseHelperTest extends TestCase
         $this->assertEquals('Registro expirado', $status['type']);
         $this->assertStringNotContainsString('comercial', strtolower($status['message']));
     }
+
+    public function test_configured_license_salt_overrides_default(): void
+    {
+        config(['app.license_salt' => '']);
+
+        FiscalSetting::query()->create([
+            'hospital_name' => 'Hospital Central',
+            'rtn' => '08011999123456',
+            'default_tax_rate' => '15.00',
+            'receipt_width' => '80mm',
+        ]);
+
+        $defaultSignature = LicenseHelper::generateSignature('Hospital Central', '08011999123456', '2030-12-31');
+
+        config(['app.license_salt' => 'per-hospital-rotation-salt-2026']);
+
+        $rotatedSignature = LicenseHelper::generateSignature('Hospital Central', '08011999123456', '2030-12-31');
+
+        $this->assertNotEquals($defaultSignature, $rotatedSignature);
+
+        Storage::disk('local')->put('license.json', json_encode([
+            'licensee' => 'Hospital Central',
+            'rtn' => '08011999123456',
+            'expires_at' => '2030-12-31',
+            'signature' => $rotatedSignature,
+        ]));
+
+        $status = LicenseHelper::checkLicense();
+
+        $this->assertTrue($status['valid']);
+        $this->assertEquals('Registro LAN verificado', $status['type']);
+    }
+
+    public function test_rotating_license_salt_invalidates_prior_signature(): void
+    {
+        FiscalSetting::query()->create([
+            'hospital_name' => 'Hospital Central',
+            'rtn' => '08011999123456',
+            'default_tax_rate' => '15.00',
+            'receipt_width' => '80mm',
+        ]);
+
+        config(['app.license_salt' => 'old-salt']);
+        $oldSignature = LicenseHelper::generateSignature('Hospital Central', '08011999123456', '2030-12-31');
+
+        config(['app.license_salt' => 'new-salt']);
+
+        Storage::disk('local')->put('license.json', json_encode([
+            'licensee' => 'Hospital Central',
+            'rtn' => '08011999123456',
+            'expires_at' => '2030-12-31',
+            'signature' => $oldSignature,
+        ]));
+
+        $status = LicenseHelper::checkLicense();
+
+        $this->assertFalse($status['valid']);
+        $this->assertEquals('Firma Invalida', $status['type']);
+    }
 }

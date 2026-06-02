@@ -8,7 +8,18 @@ use Illuminate\Support\Facades\Storage;
 
 class LicenseHelper
 {
-    private const SECRET_SALT = 'Hospital_OS_LAN_Secured_2026_Key';
+    private const DEFAULT_SALT = 'Hospital_OS_LAN_Secured_2026_Key';
+
+    private static function secretSalt(): string
+    {
+        $configured = (string) (function_exists('config') ? config('app.license_salt') : '');
+
+        if ($configured !== '') {
+            return $configured;
+        }
+
+        return self::DEFAULT_SALT;
+    }
 
     /**
      * Get the local operation status metadata.
@@ -121,6 +132,6 @@ class LicenseHelper
             trim($expiresAt),
         ]);
 
-        return hash_hmac('sha256', $payload, self::SECRET_SALT);
+        return hash_hmac('sha256', $payload, self::secretSalt());
     }
 }

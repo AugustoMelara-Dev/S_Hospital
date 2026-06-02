@@ -125,4 +125,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'license_salt' => env('HOSPITAL_LICENSE_SALT', ''),
+
 ];
