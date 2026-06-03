@@ -247,10 +247,14 @@ modificados, pruebas ejecutadas, pendientes fisicos, riesgos y las notas de
 seguridad de no borrar `.env`, no resetear datos, no hacer push, no filtrar
 secretos y no inventar cumplimiento fiscal.
 
-Este preflight falla si el servidor no usa `APP_ENV=production`, si `APP_DEBUG`
-no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o
-`mariadb-dump`, si las rutas publicas no responden, o si no existen las pruebas
-documentadas de cliente LAN, impresora fisica, restore final y concurrencia final.
+Este preflight falla si la auditoria del objetivo operativo deja de trazar
+ayuda, diagnostico, soporte, instalacion, recuperacion, doble accion,
+respaldos, capacitacion, LAN, impresora, paquete offline y preflight final a
+evidencia o bloqueantes explicitos. Tambien falla si el servidor no usa
+`APP_ENV=production`, si `APP_DEBUG` no es `false`, si falta `frontend/dist`,
+si faltan `mysql`/`mysqldump` o `mariadb-dump`, si las rutas publicas no
+responden, o si no existen las pruebas documentadas de cliente LAN, impresora
+fisica, restore final y concurrencia final.
 
 En Windows tambien falla si no existen `SistemaCajaHospitalaria-BackupWorker` y
 `SistemaCajaHospitalaria-DailyBackup`, o si el worker continuo no esta `Running`.

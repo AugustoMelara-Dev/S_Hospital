@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 11:57:50
+- Generated at: 2026-06-03 12:03:48
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -142,6 +142,8 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found offline-images
 [ OK ] Found scripts\deploy_hospital_lan.ps1
 [ OK ] Found scripts\load_offline_images.ps1
+[ OK ] Found scripts\production_readiness_preflight.ps1
+[ OK ] Found scripts\final_production_handoff.ps1
 [ OK ] Found scripts\install_hospital_startup_shortcut.ps1
 [ OK ] Found scripts\install_backup_tasks_windows.ps1
 [ OK ] Found scripts\validate_support_packet_safety.ps1
@@ -167,6 +169,8 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] nginx\default.conf in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\collect_support_packet.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\deploy_hospital_lan.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] scripts\production_readiness_preflight.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] scripts\final_production_handoff.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\install_hospital_startup_shortcut.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\install_backup_tasks_windows.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\lib\operational_url_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
@@ -177,10 +181,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit a5eaf742 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit dd9c5b60 before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
-OFFLINE_RELEASE_CLEAN: NO (31 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (33 blocking issue(s))
 ```
 
 ## Support packet safety validation output

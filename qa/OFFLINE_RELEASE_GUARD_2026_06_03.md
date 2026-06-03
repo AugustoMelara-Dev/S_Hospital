@@ -16,7 +16,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_relea
 Observed result:
 
 - `OFFLINE_RELEASE_CLEAN: NO`.
-- Blocking issue count: 31 in the latest handoff smoke with `-RequireCurrentCommit`; 30 in the direct guard run without commit validation.
+- Blocking issue count: 33 in the latest handoff smoke with `-RequireCurrentCommit`; 32 in the direct guard run without commit validation.
 - The guard detected missing `scripts\validate_startup_repair_safety.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_browser_smoke_evidence.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_operator_manuals_safety.ps1` in `offline-release`.
@@ -32,6 +32,8 @@ Observed result:
 - The guard detected missing `scripts\validate_shift_incident_recovery_safety.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_final_handoff_completeness.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_operations_objective_audit.ps1` in `offline-release`.
+- The guard detected that `scripts\production_readiness_preflight.ps1` in `offline-release` differs from versioned source.
+- The guard detected that `scripts\final_production_handoff.ps1` in `offline-release` differs from versioned source.
 - The guard detected multiple release files that differ from versioned source.
 - The guard detected that `offline-images` contains no Docker image tar files.
 

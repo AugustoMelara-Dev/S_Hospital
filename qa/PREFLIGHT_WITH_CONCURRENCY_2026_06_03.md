@@ -8,6 +8,7 @@
 
 ## Newly validated by this run
 
+- Operations objective audit is present and traced to local evidence/final blockers.
 - Final restore evidence is present and completed.
 - Final concurrency evidence is present and completed.
 

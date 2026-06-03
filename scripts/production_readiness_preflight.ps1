@@ -162,6 +162,26 @@ function Test-BackupWrapperCheck([string] $scriptPath, [string] $label) {
     }
 }
 
+function Invoke-OperationsObjectiveAuditGuard {
+    $auditGuardScript = Join-Path $ProjectRoot "scripts\validate_operations_objective_audit.ps1"
+    if (-not (Test-Path -LiteralPath $auditGuardScript -PathType Leaf)) {
+        Add-Failure "Missing operations objective audit guard at $auditGuardScript"
+        return
+    }
+
+    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $auditGuardScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    foreach ($line in $output) {
+        Write-Host (Protect-PreflightText $line)
+    }
+
+    if ($exitCode -eq 0) {
+        Add-Pass "Operations objective audit guard passed"
+    } else {
+        Add-Failure "Operations objective audit guard failed with exit code $exitCode."
+    }
+}
+
 function Test-BackupScheduledTask([string] $taskName, [string[]] $AllowedStates) {
     if ($null -eq (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue)) {
         Add-Failure "Get-ScheduledTask is not available; cannot validate Windows backup task $taskName"
@@ -372,6 +392,7 @@ $configuredDumpBinary = Get-EnvValue $envValues "HOSPITAL_DUMP_BINARY" ""
 
 Write-Host "Production readiness preflight for $BaseUrl"
 Write-Host "Project root: $(Protect-PreflightText $ProjectRoot)"
+Invoke-OperationsObjectiveAuditGuard
 if ($isDockerProductionPackage) {
     Add-Pass "Docker production package layout detected"
     Test-DockerComposeConfig $composeProdPath $envPath
