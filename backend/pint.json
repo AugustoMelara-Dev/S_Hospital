@@ -1,0 +1,11 @@
+{
+    "preset": "project",
+    "exclude": [
+        "vendor",
+        "node_modules",
+        "storage",
+        "bootstrap/cache",
+        "public",
+        "build"
+    ]
+}
