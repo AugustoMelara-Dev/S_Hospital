@@ -239,6 +239,11 @@ Antes de cerrar el frente operativo, ejecute
 soporte, instalacion, recuperacion, doble accion, respaldos, capacitacion,
 LAN, impresora, paquete offline y preflight final siguen trazados a evidencia
 o bloqueantes de campo explicitos.
+Antes de llevar plantillas al servidor final, ejecute
+`scripts\validate_field_proof_templates.ps1`; debe reportar
+`FIELD_PROOF_TEMPLATES: YES` para confirmar que las plantillas de cliente LAN,
+impresora fisica, restore descartable y concurrencia descartable conservan los
+labels y checks que exige el preflight.
 Antes de entregar el paquete final al hospital, ejecute
 `scripts\validate_final_handoff_completeness.ps1`; debe reportar
 `FINAL_HANDOFF_COMPLETENESS: YES` para confirmar que el reporte final conserva
