@@ -37,6 +37,9 @@ El instalador debe aplicar migraciones seguras sin borrar datos, sin ejecutar
 `migrate:fresh` y sin correr seeders de demostracion. Tambien debe dejar
 `APP_VERSION` configurado para que el diagnostico identifique la version
 instalada.
+En modo Docker productivo, el instalador debe registrar las tareas de respaldo
+y la tarea de autoarranque del stack para que el sistema intente recuperarse
+despues de un reinicio de Windows.
 
 ## Abrir El Sistema
 
@@ -64,7 +67,9 @@ computadora servidor y los clientes no encontraran el sistema.
 
 ## Arranque Automatico
 
-El script `scripts/install_hospital_startup_shortcut.ps1` crea el acceso directo. Si el tecnico lo autoriza, puede registrar una tarea al iniciar sesion:
+El script `scripts/install_hospital_startup_shortcut.ps1` crea el acceso
+directo para abrir el sistema desde el escritorio. Si el tecnico lo autoriza,
+puede registrar una tarea al iniciar sesion para abrir el navegador del usuario:
 
 Antes de crear accesos, soporte puede validar la URL y la carpeta instalada sin
 tocar el escritorio ni registrar tareas:
@@ -79,6 +84,29 @@ carpetas reales del servidor.
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_hospital_startup_shortcut.ps1 -InstallStartupTask
+```
+
+Para que los servicios del sistema intenten levantarse despues de un reinicio
+de Windows, soporte debe registrar la tarea del stack desde PowerShell como
+Administrador. Primero valide sin tocar tareas:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -WhatIfOnly
+```
+
+Si la validacion es correcta:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -UpdateExisting
+```
+
+La tarea esperada se llama `SistemaCajaHospitalaria-StackAutostart`, usa trigger
+`AtStartup` y ejecuta `scripts\start_hospital_services.ps1`. No borra datos, no
+restaura respaldos y no ejecuta seeders. Para revisar estado sin exponer rutas
+locales:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -Status
 ```
 
 ## Respaldos Automaticos

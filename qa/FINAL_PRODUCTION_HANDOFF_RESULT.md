@@ -17,8 +17,8 @@
 | Backup worker | `qa/BACKUP_WORKER_SMOKE_2026_06_03.md` | Manual backup moved from pending to `success`, checksum present |
 | Restore | `qa/FINAL_RESTORE_PROOF.md` and `qa/FINAL_RESTORE_PROOF_2026_06_03.md` | Backup restored into disposable MariaDB database; active DB not overwritten |
 | Concurrency | `qa/FINAL_CONCURRENCY_PROOF.md` | Double cash open `201 / 422`, unique invoice numbers, double payment `201 / 422` |
-| Startup/repair | `qa/STARTUP_REPAIR_AUTOMATION_SMOKE_2026_06_03.md` | Startup, repair, open-system and backup task scripts validated in safe modes |
-| Startup/repair gate | `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md` | Handoff now rechecks startup, repair, shortcut and backup-task dry runs before production approval |
+| Startup/repair | `qa/STARTUP_REPAIR_AUTOMATION_SMOKE_2026_06_03.md` | Startup, repair, open-system, stack-autostart and backup task scripts validated in safe modes |
+| Startup/repair gate | `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md` | Handoff now rechecks startup, repair, shortcut, stack-autostart and backup-task dry runs before production approval |
 | System diagnostics | `qa/SYSTEM_STATUS_HEARTBEAT_SANITIZATION_2026_06_03.md` | Scheduler heartbeat messages in `/api/system/status` are sanitized before admin/support display |
 | Client support log | `qa/CLIENT_SUPPORT_SANITIZATION_2026_06_03.md` | Browser incident summaries and backend diagnostics redact standalone `.env.*` mentions |
 | Support packet | `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md` | Disposable fixture confirmed no `.env`, secrets or real local paths are copied into support artifacts |
@@ -80,7 +80,7 @@ The help screen covers opening the system, login, cashbox, invoicing, charging, 
 ## Files changed in this hardening front
 
 - In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.
-- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.
+- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.
 - Safety guards and evidence helpers: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
 - Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.
 
@@ -90,7 +90,10 @@ The following items require the final installed hospital server, LAN client and 
 
 - Complete `qa/LAN_CLIENT_VALIDATION_PROOF.md` from a second PC on the hospital LAN.
 - Complete `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` by printing media carta, carta, A5, 80mm and 58mm receipts on the real cashier printer.
-- Install or update `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup` Windows scheduled tasks on the final server.
+- Install or update `SistemaCajaHospitalaria-StackAutostart`,
+  `SistemaCajaHospitalaria-BackupWorker` and
+  `SistemaCajaHospitalaria-DailyBackup` Windows scheduled tasks on the final
+  server.
 - Configure final production environment: `APP_ENV=production`, `APP_DEBUG=false`, final LAN `APP_URL`, random DB passwords and root password.
 - Re-run backup worker smoke on the final server with the final dump binary/PATH.
 - Re-run restore and concurrency evidence on the final server or explicitly approved disposable final target.
@@ -105,7 +108,11 @@ The latest local preflight after restore and concurrency evidence still returned
 
 - Local Docker and mocked browser evidence do not replace the final installed hospital server, second-client LAN validation, real MariaDB deployment or physical printer proof.
 - The offline release package is intentionally blocked until regenerated from the final commit with Docker image tar files and matching checksums.
-- Windows scheduled tasks `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup` must be installed or updated on the final server and verified with a real backup worker smoke.
+- Windows scheduled tasks `SistemaCajaHospitalaria-StackAutostart`,
+  `SistemaCajaHospitalaria-BackupWorker` and
+  `SistemaCajaHospitalaria-DailyBackup` must be installed or updated on the
+  final server and verified with a reboot/startup check plus real backup worker
+  smoke.
 - Restore and concurrency evidence must be repeated on a disposable final-server target or another explicitly approved validation database; never use the active production database for destructive restore testing.
 - Fiscal sequences/settings still require administrative validation in the real environment; this handoff does not invent fiscal compliance.
 

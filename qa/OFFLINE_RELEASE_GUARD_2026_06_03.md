@@ -4,7 +4,7 @@ Decision: `BLOCKED_UNTIL_REGENERATED`.
 
 Scope:
 
-- Verify that `scripts\assert_offline_release_clean.ps1` rejects the current local `offline-release` package after the browser-smoke-evidence, startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, dependency-manifest, double-action, installer-legacy, LAN-recovery, shift-incident-recovery, final-handoff-completeness, operations-objective-audit, field-proof-template and evidence validators were added.
+- Verify that `scripts\assert_offline_release_clean.ps1` rejects the current local `offline-release` package after the browser-smoke-evidence, startup/repair, stack-autostart, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, dependency-manifest, double-action, installer-legacy, LAN-recovery, shift-incident-recovery, final-handoff-completeness, operations-objective-audit, field-proof-template and evidence validators were added.
 - Confirm that a stale offline package cannot be handed off as production-ready.
 
 Command run:
@@ -16,8 +16,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_relea
 Observed result:
 
 - `OFFLINE_RELEASE_CLEAN: NO`.
-- Blocking issue count: 43 in the latest direct guard run with
+- Blocking issue count: 44 in the latest direct guard run with
   `-RequireCurrentCommit`.
+- The guard detected missing `scripts\install_stack_autostart_windows.ps1` in
+  `offline-release`.
 - The guard detected missing `scripts\validate_startup_repair_safety.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_browser_smoke_evidence.ps1` in `offline-release`.
 - The guard detected that `scripts\validate_dependency_manifest.ps1` in `offline-release` differs from versioned source.
@@ -86,8 +88,9 @@ Verification after correction:
   `OFFLINE_RELEASE_CLEAN: NO (1 blocking issue)` with
   `Forbidden file or directory in offline release: qa/FINAL_RESTORE_PROOF.md`.
 - Current real `offline-release` remains blocked with
-  `OFFLINE_RELEASE_CLEAN: NO (42 blocking issues)` until it is regenerated from
-  the final commit with real Docker image exports.
+  `OFFLINE_RELEASE_CLEAN: NO (44 blocking issues)` until it is regenerated from
+  the final commit with real Docker image exports and the stack-autostart
+  script.
 
 Required next action before delivery:
 

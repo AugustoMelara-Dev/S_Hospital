@@ -1,3 +1,10 @@
+## 2026-06-03 - Autoarranque seguro del stack Windows
+
+Contexto: la continuidad operativa requiere que el servidor intente levantar el sistema despues de un reinicio sin esperar a que el desarrollador este presente. Ya existia acceso directo y reparacion segura, pero faltaba una tarea dedicada de arranque del stack con evidencia no destructiva.
+
+Decision: se agrega `scripts/install_stack_autostart_windows.ps1` para registrar `SistemaCajaHospitalaria-StackAutostart` con trigger `AtStartup` y accion hacia `scripts/start_hospital_services.ps1`. El script incluye `-WhatIfOnly`, `-Status`, `-UpdateExisting` y `-Uninstall`, requiere Administrador para cambios reales y redacted/sanitiza rutas locales en salida.
+
+Criterio de verificacion: `scripts/validate_startup_repair_safety.ps1` exige el script, valida el dry-run de autoarranque y confirma el trigger `AtStartup`; la guia operativa documenta instalacion, estado y limites seguros sin borrar datos, restaurar backups ni ejecutar seeders.
 ## 2026-06-02 - Diagnostico avanzado se habilita por permiso, no por rol fijo
 
 Contexto: `/api/system/status` ya esta protegido por `system.status.view`, pero la pantalla **Informacion del sistema** mostraba el diagnostico avanzado solo cuando el usuario tenia rol literal `admin`. Eso impedia asignar una cuenta de soporte local con permiso de diagnostico sin darle control administrativo completo.

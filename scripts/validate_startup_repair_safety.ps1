@@ -108,6 +108,7 @@ $startupScript = Require-File "scripts\start_hospital_services.ps1"
 $repairScript = Require-File "scripts\repair_hospital_system.ps1"
 $openScript = Require-File "scripts\open_hospital_system.ps1"
 $shortcutScript = Require-File "scripts\install_hospital_startup_shortcut.ps1"
+$stackAutostartScript = Require-File "scripts\install_stack_autostart_windows.ps1"
 $backupTasksScript = Require-File "scripts\install_backup_tasks_windows.ps1"
 $handoffScript = Require-File "scripts\final_production_handoff.ps1"
 $preflightScript = Require-File "scripts\production_readiness_preflight.ps1"
@@ -119,6 +120,7 @@ Test-ScriptDoesNotContainDestructiveOperations "scripts\open_hospital_system.ps1
 foreach ($scriptInfo in @(
     @{ Relative = "scripts\final_production_handoff.ps1"; Path = $handoffScript },
     @{ Relative = "scripts\production_readiness_preflight.ps1"; Path = $preflightScript },
+    @{ Relative = "scripts\install_stack_autostart_windows.ps1"; Path = $stackAutostartScript },
     @{ Relative = "scripts\install_backup_tasks_windows.ps1"; Path = $backupTasksScript }
 )) {
     if ($null -ne $scriptInfo.Path) {
@@ -146,6 +148,11 @@ if ($failures.Count -eq 0) {
         "Shortcut dry run" `
         @("-ExecutionPolicy", "Bypass", "-File", $shortcutScript, "-ProjectRoot", $ProjectRoot, "-Url", "http://127.0.0.1:8000", "-WhatIfOnly") `
         @("Modo WhatIf: no se creo acceso directo ni tarea de inicio.")
+
+    Invoke-SafeCheck `
+        "Stack autostart dry run" `
+        @("-ExecutionPolicy", "Bypass", "-File", $stackAutostartScript, "-ProjectRoot", $ProjectRoot, "-WhatIfOnly") `
+        @("Modo WhatIf: no se registro, actualizo ni elimino la tarea de autoarranque.", "Trigger previsto: AtStartup.")
 
     Invoke-SafeCheck `
         "Backup task dry run" `

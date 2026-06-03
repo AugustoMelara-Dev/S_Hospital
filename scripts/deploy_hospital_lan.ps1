@@ -1141,6 +1141,19 @@ try {
             }
             catch { }
             Write-Host "[OK] Tareas de backup Docker registradas." -ForegroundColor Green
+
+            Write-Host "[*] Registrando autoarranque del stack Docker..." -ForegroundColor Yellow
+            $stackAutostartScript = Join-Path $projectRoot "scripts\install_stack_autostart_windows.ps1"
+            if (-not (Test-Path $stackAutostartScript)) {
+                throw "No se encontro el instalador de autoarranque. El sistema no debe entregarse sin plan de arranque despues de reinicio."
+            }
+
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $stackAutostartScript -ProjectRoot $projectRoot -UpdateExisting | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                throw "No se pudo programar el autoarranque del stack. Revise install-logs y vuelva a ejecutar setup.bat."
+            }
+
+            Write-Host "[OK] Autoarranque del stack Docker registrado." -ForegroundColor Green
         }
         # ==============================================================
         # BARE-METAL MODE

@@ -9,12 +9,15 @@
 - [x] Startup script dry run. Result/evidence: `scripts/start_hospital_services.ps1 -WhatIfOnly` detected `development-docker` and would request `backend`, `frontend`, and `mysql` without starting or modifying containers.
 - [x] Repair script dry run. Result/evidence: `scripts/repair_hospital_system.ps1 -WhatIfOnly -NoBrowser -SkipDockerStart` validated diagnostic path, Docker mode, services, and target URL without writing diagnostics, opening a browser, or starting Docker.
 - [x] Open-system smoke without browser. Result/evidence: `scripts/open_hospital_system.ps1 -NoBrowser -SkipRepair` confirmed `http://127.0.0.1:8000` responds and skipped browser launch.
+- [x] Stack autostart dry run. Result/evidence: `scripts/install_stack_autostart_windows.ps1 -WhatIfOnly` showed the planned `SistemaCajaHospitalaria-StackAutostart` task with trigger `AtStartup` without registering, updating, or deleting Windows tasks.
 - [x] Backup task registration dry run. Result/evidence: `scripts/install_backup_tasks_windows.ps1 -WhatIfOnly -PhpPath php` showed the worker and daily backup task commands without creating, updating, or deleting scheduled tasks.
 - [x] Backup task status. Result/evidence: `scripts/install_backup_tasks_windows.ps1 -Status` reported `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup` as not installed in this local environment.
 
 ## Remaining final-server work
 
 - Install or update the Windows scheduled tasks on the hospital server.
+- Install or update `SistemaCajaHospitalaria-StackAutostart` on the hospital
+  server from elevated PowerShell, then confirm services start after reboot.
 - Confirm the worker task stays running after reboot/login.
 - Confirm the daily backup task runs at the configured time.
 - Re-run production preflight on the final LAN URL after tasks and physical proof are complete.

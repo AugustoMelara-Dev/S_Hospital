@@ -124,6 +124,7 @@ if ($failures.Count -eq 0) {
         'scripts/final_production_handoff.ps1',
         'scripts/repair_hospital_system.ps1',
         'scripts/collect_support_packet.ps1',
+        'scripts/install_stack_autostart_windows.ps1',
         'scripts/validate_browser_smoke_evidence.ps1',
         'scripts/validate_shift_incident_recovery_safety.ps1',
         'scripts/validate_lan_recovery_safety.ps1',
@@ -163,6 +164,7 @@ if ($failures.Count -eq 0) {
     $requiredBlockers = @(
         'LAN_CLIENT_VALIDATION_PROOF.md',
         'INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
+        'SistemaCajaHospitalaria-StackAutostart',
         'SistemaCajaHospitalaria-BackupWorker',
         'SistemaCajaHospitalaria-DailyBackup',
         'APP_ENV=production',

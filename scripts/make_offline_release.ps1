@@ -18,6 +18,7 @@ $script:OfflineReleaseCriticalScripts = @(
     "init_production_proofs.ps1",
     "install_backup_tasks_windows.ps1",
     "install_hospital_startup_shortcut.ps1",
+    "install_stack_autostart_windows.ps1",
     "load_offline_images.ps1",
     "open_hospital_system.ps1",
     "production_readiness_preflight.ps1",

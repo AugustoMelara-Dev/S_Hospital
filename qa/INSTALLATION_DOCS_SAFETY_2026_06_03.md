@@ -24,8 +24,10 @@ Observed result:
   `migrate:fresh`, no demo seeders and `APP_VERSION` remains required.
 - The guide includes safe LAN access: `http://IP-DEL-SERVIDOR:8000`, no
   credentials in URLs and `APP_URL` configured for LAN clients.
-- The guide includes startup, shortcut, backup worker, daily backup, current
-  user fallback, repair, support packet and evidence-path safety checks.
+- The guide includes startup, shortcut, stack autostart
+  `SistemaCajaHospitalaria-StackAutostart`, backup worker, daily backup,
+  current user fallback, repair, support packet and evidence-path safety
+  checks.
 - The guide keeps final blockers for LAN client, printer, restore and
   concurrency evidence, and keeps status as `PRODUCTION_CANDIDATE`.
 - The guide documents guided handoff with `-InitializeProofFiles` so missing

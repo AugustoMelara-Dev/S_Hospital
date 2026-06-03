@@ -17,7 +17,7 @@ Purpose:
 | In-app institutional Help for cashier workflows, failures and support summary | `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `frontend/src/features/help/HelpView.tsx` | `VALIDATED_LOCAL` | Verify with real cashier/supervisor during training |
 | Human-safe support evidence that redacts secrets and local paths | `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_ENV_FILE_REDACTION_2026_06_03.md`, `qa/CLIENT_SUPPORT_SANITIZATION_2026_06_03.md` | `VALIDATED_LOCAL` | Confirm staff know not to attach `.env`, SQL dumps or passwords |
 | Local diagnostics for backend, database, frontend, backups, queue, time, disk, LAN and version with advanced details gated | `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/SYSTEM_STATUS_HEARTBEAT_SANITIZATION_2026_06_03.md` | `VALIDATED_LOCAL` | Verify on final server with production settings and real backup tasks |
-| Institutional installer, startup shortcut, backup tasks and safe repair script | `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/STARTUP_REPAIR_AUTOMATION_SMOKE_2026_06_03.md` | `VALIDATED_LOCAL` | Install/update Windows tasks on final server and run final startup/repair smoke |
+| Institutional installer, startup shortcut, stack autostart, backup tasks and safe repair script | `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/STARTUP_REPAIR_AUTOMATION_SMOKE_2026_06_03.md` | `VALIDATED_LOCAL` | Install/update Windows tasks on final server and run final reboot/startup/repair smoke |
 | Recovery guidance for power loss, restart, browser closed, LAN change, printer failure, open cashbox, failed backup and restore | `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md` | `VALIDATED_LOCAL` | Drill at least one supervised shift incident with hospital staff |
 | Duplicate-action protection for cashbox, invoice and payment workflows | `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md`, `qa/FINAL_CONCURRENCY_PROOF.md` | `VALIDATED_LOCAL` | Re-run concurrency on final-server disposable target |
 | Automatic and manual backup plus safe restore validation | `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_RESTORE_DOCS_SAFETY_2026_06_03.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` | `PARTIAL_FIELD_BLOCKED` | Install final backup worker, run final backup worker smoke, restore only into disposable final-server database |
@@ -32,7 +32,9 @@ Purpose:
 
 - `qa/LAN_CLIENT_VALIDATION_PROOF.md` is not complete from a real second hospital LAN client.
 - `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` is not complete from the real cashier printer.
-- `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup` are not verified on the final server.
+- `SistemaCajaHospitalaria-StackAutostart`,
+  `SistemaCajaHospitalaria-BackupWorker` and
+  `SistemaCajaHospitalaria-DailyBackup` are not verified on the final server.
 - Final production environment values, final backup worker smoke, final restore/concurrency evidence and final preflight are still missing.
 - Final supervised staff training has not been recorded in `qa\TRAINING_ACCEPTANCE_PROOF.md`; do not include staff names or patient data when it is completed.
 - `offline-release` is stale and missing current guard scripts and Docker image tar files; the builder self-test now verifies the simulated bundle layout and dependency manifest guard before final regeneration.

@@ -36,9 +36,6 @@
   `/api/invoices`, `/api/payments`, `/api/cash-sessions`.
 - **Health dashboard admin**: UI con Recharts para latencia P50/
   P95/P99, conexiones DB, espacio disco, ultimo backup.
-- **Stack auto-start en reboot**: tarea Windows
-  `SistemaCajaHospitalaria-StackAutostart` con trigger
-  `AtStartup`.
 - **Comando `hospital:maintenance`**: para poner el sistema en
   estado de "en mantenimiento" durante incidentes.
 - **Deprecacion de `install_hospital_os.ps1`**: marcar como legacy;
@@ -81,6 +78,10 @@
 ### Operacion (documentado)
 
 - Backup manual desde UI requiere worker local de cola `backups`.
+- Autoarranque del stack al reiniciar Windows se instala con
+  `scripts\install_stack_autostart_windows.ps1` y la tarea
+  `SistemaCajaHospitalaria-StackAutostart` con trigger `AtStartup`; requiere
+  PowerShell como Administrador en el servidor final.
 - Backup real MySQL/MariaDB requiere `mariadb-dump` o `mysqldump`
   en PATH del backend container (ya esta en
   `docker-compose.prod.yml` HOSPITAL_DUMP_BINARY).
