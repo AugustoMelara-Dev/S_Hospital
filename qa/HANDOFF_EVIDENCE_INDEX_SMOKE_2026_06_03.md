@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 11:14:06
+- Generated at: 2026-06-03 11:23:17
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -23,6 +23,7 @@
 - Double-action safety guard exit code: 0
 - Installer legacy safety guard exit code: 0
 - LAN recovery safety guard exit code: 0
+- Shift incident recovery safety guard exit code: 0
 - Training safety guard exit code: 0
 - Evidence index guard exit code: 0
 - Preflight skipped: True
@@ -58,6 +59,7 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\validate_system_diagnostics
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_double_action_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_installer_legacy_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_recovery_safety.ps1
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_shift_incident_recovery_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
 powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000
@@ -106,6 +108,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] Missing required release file: scripts\validate_double_action_safety.ps1
 [FAIL] Missing required release file: scripts\validate_installer_legacy_safety.ps1
 [FAIL] Missing required release file: scripts\validate_lan_recovery_safety.ps1
+[FAIL] Missing required release file: scripts\validate_shift_incident_recovery_safety.ps1
 [ OK ] Found scripts\run_backup_worker.cmd
 [ OK ] Found scripts\run_scheduled_backup.cmd
 [FAIL] docker-compose.prod.yml in offline release differs from versioned source. Regenerate offline-release before handoff.
@@ -123,10 +126,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 3235a4d5 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 7e679f04 before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
-OFFLINE_RELEASE_CLEAN: NO (27 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (28 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -682,6 +685,56 @@ INSTALLER_LEGACY_SAFETY: YES
 [ OK ] LAN refresh WhatIf does not modify env files
 
 LAN_RECOVERY_SAFETY: YES
+```
+
+## Shift incident recovery safety validation output
+
+```text
+[ OK ] Found frontend\src\features\help\HelpView.tsx
+[ OK ] Found frontend\src\features\help\HelpView.test.tsx
+[ OK ] Found frontend\src\lib\support\clientIssueLog.ts
+[ OK ] Found docs\manuales\MANUAL_CAJERO.md
+[ OK ] Found docs\manuales\MANUAL_SUPERVISOR.md
+[ OK ] Found docs\manuales\MANUAL_ADMINISTRADOR.md
+[ OK ] Found docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md
+[ OK ] Found docs\manuales\GUIA_CAPACITACION_SEGURA.md
+[ OK ] Found docs\RELEASE_CHECKLIST.md
+[ OK ] Help and tests cover incident: Servidor no disponible
+[ OK ] Help and tests cover incident: Impresora no responde
+[ OK ] Help and tests cover incident: Falla la red|Red Local Caida|red local caida
+[ OK ] Help and tests cover incident: Se fue la luz|reinici
+[ OK ] Help and tests cover incident: Caja qued
+[ OK ] Help and tests cover incident: Respaldo fallido
+[ OK ] Help and tests cover incident: Base de datos necesita restaurarse
+[ OK ] Help and tests cover incident: Sesion Vencida|Sesi
+[ OK ] Help and tests cover incident: Sin permiso
+[ OK ] Help and tests cover incident: Se cerro el navegador|Navegador cerrado
+[ OK ] Help tells staff to review cashbox and history after power/browser incidents
+[ OK ] Help prevents duplicate printing/payment after printer failure
+[ OK ] Help directs database restore to isolated validation first
+[ OK ] Help tells staff not to use another account for permissions
+[ OK ] Help keeps safe support evidence workflow
+[ OK ] Help support summary warns not to repeat invoices or payments
+[ OK ] Cashier manual tells staff to prepare safe help summary on errors
+[ OK ] Cashier manual forbids retrying uncertain invoices or payments
+[ OK ] Cashier manual requires history review before repeating work
+[ OK ] Supervisor manual has real-failure section
+[ OK ] Supervisor manual covers browser close without duplicate work
+[ OK ] Supervisor manual covers open cashbox recovery
+[ OK ] Supervisor manual covers backup failure without self-restore
+[ OK ] Support guide gathers operational incident facts
+[ OK ] Support guide uses safe repair diagnostics
+[ OK ] Support guide uses safe support packet without secrets
+[ OK ] Support guide forbids destructive first-level actions
+[ OK ] Support guide requires closure checks before declaring incident resolved
+[ OK ] Training guide drills real incidents before production
+[ OK ] Training guide forbids production practice and destructive restore
+[ OK ] Administrator manual keeps restore as authorized isolated procedure
+[ OK ] Release checklist mentions shift incident recovery guard
+[ OK ] Incident recovery docs do not expose secret assignments
+[ OK ] Help incident guidance does not expose secret assignments
+
+SHIFT_INCIDENT_RECOVERY_SAFETY: YES
 ```
 
 ## Evidence index validation output

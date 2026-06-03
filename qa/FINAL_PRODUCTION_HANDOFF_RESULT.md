@@ -30,10 +30,11 @@
 | Double-action safety | `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md` | Code, tests, concurrency proof, Help and manuals keep duplicate-action safeguards for caja, facturas and pagos |
 | Installer legacy safety | `qa/INSTALLER_LEGACY_SAFETY_2026_06_03.md` | `setup.bat` stays on the supported LAN installer and the old installer remains deprecated compatibility only |
 | LAN recovery safety | `qa/LAN_RECOVERY_SAFETY_2026_06_03.md` | `refresh_lan_ip.ps1` uses real helper libraries, supports no-write `-WhatIf`, and manuals cover DHCP/IP-change recovery before second-client validation |
+| Shift incident recovery safety | `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md` | Ayuda, manuales, soporte y capacitacion keep safe steps for power/restart/browser, printer, open cashbox, failed backup, permissions and isolated restore |
 | Training safety | `qa/TRAINING_SAFETY_2026_06_03.md` | Manuals and in-app Help keep isolated-practice guidance and forbid training on production data |
 | Evidence index | `qa/OPS_EVIDENCE_INDEX_2026_06_03.md` | Handoff evidence references exist under `qa/` and physical blockers remain listed before `PRODUCTION_READY` |
 | Offline release guard | `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md` | Current local offline package is stale and correctly blocked until regenerated from the final commit |
-| Handoff self-check | `qa/HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` | `final_production_handoff.ps1 -SkipPreflight` writes a report, runs support-packet, startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, double-action, installer-legacy, LAN-recovery, training-safety and evidence-index validation, and keeps `PRODUCTION_CANDIDATE` |
+| Handoff self-check | `qa/HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` | `final_production_handoff.ps1 -SkipPreflight` writes a report, runs support-packet, startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, double-action, installer-legacy, LAN-recovery, shift-incident-recovery, training-safety and evidence-index validation, and keeps `PRODUCTION_CANDIDATE` |
 | Preflight | `qa/PREFLIGHT_WITH_CONCURRENCY_2026_06_03.md` | Restore and concurrency evidence now pass preflight; production readiness still blocked |
 
 ## Tests and gates run locally
@@ -44,7 +45,7 @@
 - Focused backend tests: `SecurityHeadersTest`, `BackupWorkflowTest`, `DatabaseDumpWriterTest`, `SystemStatusTest`, `CashPaymentsReceiptTest`, `ReportsTest`, `BroadcastingWiringTest`, `AuditLogTest`, `GenerateFiscalNumberActionTest`.
 - Frontend gates: `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run test -- --run`, `npm.cmd run build`, `scripts\check-branding.ps1`.
 - E2E/browser: mocked production readiness E2E with screenshots, real Laravel smoke without mutations.
-- Operational scripts: backup worker smoke, restore into disposable DB, concurrency validation, startup/repair/task dry-runs, system diagnostics sanitization, client support sanitization, support packet safety validation, support packet env-file redaction, startup/repair safety validation, operator manuals safety validation, backup/restore docs safety validation, installation docs safety validation, help screen safety validation, system diagnostics safety validation, double-action safety validation, installer legacy safety validation, LAN recovery safety validation, training safety validation, evidence index validation, handoff self-check, offline release guard, production preflight.
+- Operational scripts: backup worker smoke, restore into disposable DB, concurrency validation, startup/repair/task dry-runs, system diagnostics sanitization, client support sanitization, support packet safety validation, support packet env-file redaction, startup/repair safety validation, operator manuals safety validation, backup/restore docs safety validation, installation docs safety validation, help screen safety validation, system diagnostics safety validation, double-action safety validation, installer legacy safety validation, LAN recovery safety validation, shift incident recovery safety validation, training safety validation, evidence index validation, handoff self-check, offline release guard, production preflight.
 
 ## Operator documentation and in-app support
 

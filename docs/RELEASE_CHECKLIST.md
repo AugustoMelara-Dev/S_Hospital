@@ -144,7 +144,8 @@ El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
 `scripts\validate_system_diagnostics_safety.ps1`,
 `scripts\validate_double_action_safety.ps1`,
 `scripts\validate_installer_legacy_safety.ps1`,
-`scripts\validate_lan_recovery_safety.ps1` y
+`scripts\validate_lan_recovery_safety.ps1`,
+`scripts\validate_shift_incident_recovery_safety.ps1` y
 `scripts\validate_training_safety.ps1`. Despues de escribir el reporte, ejecuta
 `scripts\validate_ops_evidence_index.ps1` contra ese mismo archivo y bloquea
 `PRODUCTION_READY` si el paquete de soporte puede filtrar secretos, si
@@ -158,7 +159,10 @@ por permiso, checks de backend/base/frontend/respaldo/cola/hora/disco/LAN/versio
 o sanitizacion, si las defensas contra doble accion pierden cobertura, si
 el instalador legacy vuelve a aparecer como flujo soportado, si la recuperacion
 por cambio de IP LAN pierde `-WhatIf`, validacion de cliente o proteccion de
-evidencia, si capacitacion segura falla, si el indice tiene referencias
+evidencia, si las guias de recuperacion de incidentes de turno pierden pasos
+para luz/reinicio/navegador, impresora, caja abierta, respaldo fallido,
+restauracion aislada o prohibicion de repetir facturas/cobros, si capacitacion
+segura falla, si el indice tiene referencias
 rotas, rutas locales, secretos obvios o no mantiene los bloqueantes fisicos.
 Antes de entregar accesos directos o scripts de recuperacion, ejecute
 `scripts\validate_startup_repair_safety.ps1`; debe reportar
@@ -203,6 +207,12 @@ ejecute `scripts\validate_lan_recovery_safety.ps1`; debe reportar
 `LAN_RECOVERY_SAFETY: YES` para confirmar que `refresh_lan_ip.ps1` usa helpers
 existentes, soporta `-WhatIf`, no ejecuta comandos destructivos y que soporte
 de primer nivel sabe validar cliente LAN despues del refresco.
+Antes de entregar guias de turno o soporte de primer nivel, ejecute
+`scripts\validate_shift_incident_recovery_safety.ps1`; debe reportar
+`SHIFT_INCIDENT_RECOVERY_SAFETY: YES` para confirmar que Ayuda, manuales y
+soporte conservan pasos claros ante servidor caido, luz/reinicio/navegador,
+impresora, red, caja abierta, respaldo fallido, sesion/permisos y restauracion
+solo en base aislada, sin repetir facturas ni cobros a ciegas.
 Antes de entregar material de capacitacion, ejecute
 `scripts\validate_training_safety.ps1`; debe reportar `TRAINING_SAFETY: YES`
 para confirmar que manuales y Ayuda siguen prohibiendo practicas sobre la base
