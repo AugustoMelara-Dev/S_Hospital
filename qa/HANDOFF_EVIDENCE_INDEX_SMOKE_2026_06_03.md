@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 12:42:37
+- Generated at: 2026-06-03 12:51:01
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -26,6 +26,7 @@
 - LAN recovery safety guard exit code: 0
 - Shift incident recovery safety guard exit code: 0
 - Training safety guard exit code: 0
+- Proof initialization safety guard exit code: 0
 - Final handoff completeness guard exit code: 0
 - Evidence index guard exit code: 0
 - Preflight skipped: True
@@ -193,7 +194,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 08819fd5 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 0296b7eb before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
 OFFLINE_RELEASE_CLEAN: NO (41 blocking issue(s))
@@ -336,6 +337,56 @@ STARTUP_REPAIR_SAFETY: YES
 [ OK ] HelpView test protects production database warning
 
 TRAINING_SAFETY: YES
+```
+
+## Proof initialization safety validation output
+
+```text
+[ OK ] Found scripts\init_production_proofs.ps1
+[ OK ] Found docs\RELEASE_CHECKLIST.md
+[ OK ] Found docs\manuales\GUIA_INSTALACION_OPERATIVA.md
+[ OK ] Found scripts\make_offline_release.ps1
+[ OK ] Found scripts\assert_offline_release_clean.ps1
+[ OK ] Initializer includes LAN_CLIENT_VALIDATION_PROOF example template
+[ OK ] Initializer includes LAN_CLIENT_VALIDATION_PROOF target proof
+[ OK ] Offline builder includes LAN_CLIENT_VALIDATION_PROOF example template
+[ OK ] Offline guard requires LAN_CLIENT_VALIDATION_PROOF example template
+[ OK ] Initializer includes INSTITUTIONAL_RECEIPT_PRINT_PROOF example template
+[ OK ] Initializer includes INSTITUTIONAL_RECEIPT_PRINT_PROOF target proof
+[ OK ] Offline builder includes INSTITUTIONAL_RECEIPT_PRINT_PROOF example template
+[ OK ] Offline guard requires INSTITUTIONAL_RECEIPT_PRINT_PROOF example template
+[ OK ] Initializer includes FINAL_RESTORE_PROOF example template
+[ OK ] Initializer includes FINAL_RESTORE_PROOF target proof
+[ OK ] Offline builder includes FINAL_RESTORE_PROOF example template
+[ OK ] Offline guard requires FINAL_RESTORE_PROOF example template
+[ OK ] Initializer includes FINAL_CONCURRENCY_PROOF example template
+[ OK ] Initializer includes FINAL_CONCURRENCY_PROOF target proof
+[ OK ] Offline builder includes FINAL_CONCURRENCY_PROOF example template
+[ OK ] Offline guard requires FINAL_CONCURRENCY_PROOF example template
+[ OK ] Initializer includes TRAINING_ACCEPTANCE_PROOF example template
+[ OK ] Initializer includes TRAINING_ACCEPTANCE_PROOF target proof
+[ OK ] Offline builder includes TRAINING_ACCEPTANCE_PROOF example template
+[ OK ] Offline guard requires TRAINING_ACCEPTANCE_PROOF example template
+[ OK ] Initializer supports WhatIfOnly
+[ OK ] Initializer protects existing evidence unless Force is passed
+[ OK ] Initializer sanitizes local paths in output
+[ OK ] Release checklist documents proof initialization
+[ OK ] Install guide documents proof initialization dry-run
+[ OK ] Initializer does not run destructive database commands
+[ OK ] Proof initializer WhatIf succeeds against disposable fixture
+[ OK ] Proof initializer WhatIf does not create proof files
+[ OK ] Proof initializer creates missing proof files in disposable fixture
+[ OK ] Proof initializer created qa\LAN_CLIENT_VALIDATION_PROOF.md
+[ OK ] Proof initializer created qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md
+[ OK ] Proof initializer created qa\FINAL_RESTORE_PROOF.md
+[ OK ] Proof initializer created qa\FINAL_CONCURRENCY_PROOF.md
+[ OK ] Proof initializer created qa\TRAINING_ACCEPTANCE_PROOF.md
+[ OK ] Proof initializer exits successfully when proof files already exist
+[ OK ] Proof initializer preserves existing proof files without Force
+[ OK ] Proof initializer output sanitizes local fixture paths
+
+PROOF_INITIALIZATION_SAFETY: YES
+Proof initialization creates missing final-evidence templates without overwriting existing evidence.
 ```
 
 ## Operator manuals safety validation output
