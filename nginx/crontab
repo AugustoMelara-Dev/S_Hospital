@@ -1,0 +1,10 @@
+# Sistema de Caja Hospitalaria - Scheduler crontab
+# Runs every minute to invoke `php artisan schedule:run`, which in turn
+# dispatches the daily and 15-minute backup jobs, plus the audit-log
+# and failed-jobs prune jobs registered in backend/routes/console.php.
+# After each tick we record the heartbeat with `hospital:scheduler-tick`
+# so SystemStatusController can report how long ago the scheduler
+# actually ran.
+#
+# Format: min hour day month dow command
+* * * * * cd /var/www/html && (php artisan schedule:run && php artisan hospital:scheduler-tick --result=ok) >> /var/log/scheduler.log 2>&1 || (php artisan hospital:scheduler-tick --result=fail --message="$?" >> /var/log/scheduler.log 2>&1)

@@ -6,6 +6,7 @@ use App\Models\BackupLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -337,5 +338,76 @@ MARKDOWN;
 - Photo path, printed-sample reference, or signed local note: qa/evidence/printer-2026-05-19/*.jpg
 - Notes: Validacion ejecutada con impresora fisica de caja.
 MARKDOWN;
+    }
+
+    public function test_scheduler_heartbeat_is_reported_as_never_run_when_no_tick_recorded(): void
+    {
+        Cache::forget('hospital:scheduler:last_tick');
+        Cache::forget('hospital:scheduler:last_result');
+        Cache::forget('hospital:scheduler:last_message');
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath('data.backups.queue.scheduler_heartbeat.status', 'never_run')
+            ->assertJsonPath('data.backups.queue.scheduler_heartbeat.ticks_last_24h', 0);
+    }
+
+    public function test_scheduler_heartbeat_is_ok_when_recent_tick_recorded(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        Cache::put('hospital:scheduler:last_tick', now()->subSeconds(30)->toIso8601String(), 60);
+        Cache::put('hospital:scheduler:last_result', 'ok', 60);
+
+        $this->actingAs($admin)
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath('data.backups.queue.scheduler_heartbeat.status', 'ok')
+            ->assertJsonPath('data.backups.queue.scheduler_heartbeat.last_result', 'ok');
+    }
+
+    public function test_scheduler_heartbeat_flags_stale_ticks(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        // 5 minutes ago => 'stale' (between 180s and 600s).
+        Cache::put('hospital:scheduler:last_tick', now()->subMinutes(5)->toIso8601String(), 600);
+
+        $this->actingAs($admin)
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath('data.backups.queue.scheduler_heartbeat.status', 'stale');
+    }
+
+    public function test_scheduler_heartbeat_flags_stuck_ticks(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        // 20 minutes ago => 'stuck' (> 600s).
+        Cache::put('hospital:scheduler:last_tick', now()->subMinutes(20)->toIso8601String(), 1500);
+
+        $this->actingAs($admin)
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath('data.backups.queue.scheduler_heartbeat.status', 'stuck');
+    }
+
+    public function test_scheduler_tick_command_records_heartbeat_in_cache_and_db(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        Cache::forget('hospital:scheduler:last_tick');
+
+        $this->artisan('hospital:scheduler-tick', ['--result' => 'ok'])
+            ->assertSuccessful();
+
+        $this->assertNotNull(Cache::get('hospital:scheduler:last_tick'));
+        $this->assertSame('ok', Cache::get('hospital:scheduler:last_result'));
+        $this->assertDatabaseHas('scheduler_ticks', ['result' => 'ok']);
     }
 }

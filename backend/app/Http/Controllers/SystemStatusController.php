@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\User;
 use App\Support\OperationalMessageSanitizer;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -423,6 +424,8 @@ class SystemStatusController extends Controller
             $pendingJobs = DB::table('jobs')->where('queue', 'backups')->count();
         }
 
+        $heartbeat = $this->schedulerHeartbeat();
+
         return [
             'connection' => $connection,
             'jobs_table_available' => Schema::hasTable('jobs'),
@@ -431,6 +434,51 @@ class SystemStatusController extends Controller
             'pending_backup_jobs' => $pendingJobs,
             'worker_command' => 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
             'scheduler_command' => 'php artisan schedule:run',
+            'scheduler_heartbeat' => $heartbeat,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function schedulerHeartbeat(): array
+    {
+        $lastTick = Cache::get('hospital:scheduler:last_tick');
+        $lastResult = Cache::get('hospital:scheduler:last_result', 'unknown');
+        $lastMessage = Cache::get('hospital:scheduler:last_message', '');
+
+        $lastTickCarbon = null;
+        $ageSeconds = null;
+        $status = 'never_run';
+        if (is_string($lastTick) && $lastTick !== '') {
+            try {
+                $lastTickCarbon = \Illuminate\Support\Carbon::parse($lastTick);
+                $ageSeconds = max(0, now()->diffInSeconds($lastTickCarbon, absolute: true));
+                $status = $ageSeconds <= 180 ? 'ok' : ($ageSeconds <= 600 ? 'stale' : 'stuck');
+            } catch (\Throwable) {
+                $lastTickCarbon = null;
+                $status = 'invalid';
+            }
+        }
+
+        $historyCount = 0;
+        $ticksLast24h = 0;
+        if (Schema::hasTable('scheduler_ticks')) {
+            $historyCount = (int) DB::table('scheduler_ticks')->count();
+            $ticksLast24h = (int) DB::table('scheduler_ticks')
+                ->where('at', '>=', now()->subDay())
+                ->count();
+        }
+
+        return [
+            'status' => $status,
+            'last_tick_at' => $lastTickCarbon?->toIso8601String(),
+            'last_result' => $lastResult,
+            'last_message' => $lastMessage,
+            'age_seconds' => $ageSeconds,
+            'ticks_in_db' => $historyCount,
+            'ticks_last_24h' => $ticksLast24h,
+            'expected' => 'ticks_last_24h >= 1400',
         ];
     }
 

@@ -156,6 +156,50 @@ services:
       backend:
         condition: service_started
 
+  # Scheduler sidecar: runs `php artisan schedule:run` every minute via
+  # supercronic. The Laravel scheduler is the canonical way to dispatch
+  # the daily/15-minute backup jobs, the audit-log prune, and the
+  # failed-jobs prune registered in backend/routes/console.php.
+  #
+  # Without this sidecar, those jobs simply never run in production.
+  # supercronic is a cron replacement that handles signals cleanly inside
+  # a container and exits the process on SIGTERM.
+  scheduler:
+    image: supercronic/supercronic:v1.2.3
+    restart: unless-stopped
+    command: ["supercronic", "/etc/crontab"]
+    volumes:
+      - ./nginx/crontab:/etc/crontab:ro
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?APP_KEY is required}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-hospital_billing}
+      DB_USERNAME: ${DB_USERNAME:-hospital}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      HOSPITAL_DAILY_BACKUP_TIME: ${HOSPITAL_DAILY_BACKUP_TIME:-02:00}
+      HOSPITAL_OPERATION_START: ${HOSPITAL_OPERATION_START:-06:00}
+      HOSPITAL_OPERATION_END: ${HOSPITAL_OPERATION_END:-18:00}
+      HOSPITAL_AUDIT_RETENTION_DAYS: ${HOSPITAL_AUDIT_RETENTION_DAYS:-365}
+      HOSPITAL_FAILED_JOBS_RETENTION_DAYS: ${HOSPITAL_FAILED_JOBS_RETENTION_DAYS:-30}
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/supercronic.last && find /tmp/supercronic.last -mmin -3 || exit 1"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    security_opt:
+      - "no-new-privileges:true"
+    mem_limit: 64m
+    cpus: "0.25"
+    pids_limit: 50
+    depends_on:
+      backend:
+        condition: service_healthy
+
 volumes:
   mysql_prod_data:
   backup_data:
