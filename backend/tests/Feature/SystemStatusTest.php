@@ -398,6 +398,28 @@ MARKDOWN;
         $this->assertStringNotContainsString('SQLSTATE', $payload);
     }
 
+    public function test_scheduler_heartbeat_message_hides_standalone_env_file_mentions(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        Cache::put('hospital:scheduler:last_tick', now()->subSeconds(30)->toIso8601String(), 60);
+        Cache::put('hospital:scheduler:last_result', 'fail', 60);
+        Cache::put('hospital:scheduler:last_message', 'Revise .env.production y TOKEN=abc antes de reiniciar', 60);
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath(
+                'data.backups.queue.scheduler_heartbeat.last_message',
+                'Revise [archivo-protegido] y TOKEN=[redacted] antes de reiniciar',
+            );
+
+        $payload = json_encode($response->json(), JSON_THROW_ON_ERROR);
+        $this->assertStringNotContainsString('.env', $payload);
+        $this->assertStringNotContainsString('abc', $payload);
+    }
+
     public function test_scheduler_heartbeat_flags_stale_ticks(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

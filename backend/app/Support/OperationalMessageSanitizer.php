@@ -30,6 +30,7 @@ class OperationalMessageSanitizer
 
         $message = preg_replace('/\b(https?:\/\/)(?:[^\s\/@]+@)([^\s]+)/i', '$1$2', $message) ?? $message;
         $message = preg_replace('/(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+/', '$1=[redacted]', $message) ?? $message;
+        $message = preg_replace('/(?i)(^|[^\w.-])\.env(?:\.[A-Za-z0-9_-]+)?\b/', '$1[archivo-protegido]', $message) ?? $message;
         $message = preg_replace('/(?i)[A-Z]:\\\\[^\s`"\']+/', '[ruta-local]', $message) ?? $message;
         $message = preg_replace('#/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"\']+#i', '[ruta-local]', $message) ?? $message;
         $message = trim($message);

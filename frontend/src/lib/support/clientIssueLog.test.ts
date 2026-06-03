@@ -6,6 +6,8 @@ describe('clientIssueLog', () => {
     expect(safeClientMessage('DB_PASSWORD=secret token=abc')).not.toMatch(/secret|token/i);
     expect(safeClientMessage('contraseña=secret')).not.toMatch(/contraseña|secret/i);
     expect(safeClientMessage('Revise C:\\Users\\admin\\hospital\\.env')).not.toMatch(/C:\\Users|\.env/i);
+    expect(safeClientMessage('Revise .env.local antes de llamar soporte')).toContain('[archivo-protegido]');
+    expect(safeClientMessage('Revise .env.local antes de llamar soporte')).not.toMatch(/\.env/i);
   });
 
   it('redacts internal field names and runtime details from support messages', () => {
