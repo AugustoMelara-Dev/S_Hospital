@@ -47,6 +47,7 @@ $helpScreenSafetyScript = Join-Path $scriptsDir "validate_help_screen_safety.ps1
 $systemDiagnosticsSafetyScript = Join-Path $scriptsDir "validate_system_diagnostics_safety.ps1"
 $doubleActionSafetyScript = Join-Path $scriptsDir "validate_double_action_safety.ps1"
 $installerLegacySafetyScript = Join-Path $scriptsDir "validate_installer_legacy_safety.ps1"
+$lanRecoverySafetyScript = Join-Path $scriptsDir "validate_lan_recovery_safety.ps1"
 $lanProofPath = Join-Path $qaDir "LAN_CLIENT_VALIDATION_PROOF.md"
 $printerProofPath = Join-Path $qaDir "INSTITUTIONAL_RECEIPT_PRINT_PROOF.md"
 $restoreProofPath = Join-Path $qaDir "FINAL_RESTORE_PROOF.md"
@@ -300,6 +301,18 @@ function Invoke-InstallerLegacySafetyGuard {
     }
 }
 
+function Invoke-LanRecoverySafetyGuard {
+    Write-Section "LAN recovery safety validation"
+    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $lanRecoverySafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
 function Add-ReportLine([System.Collections.Generic.List[string]] $lines, [string] $line = "") {
     $lines.Add($line) | Out-Null
 }
@@ -350,6 +363,8 @@ function Write-HandoffReport(
     [int] $doubleActionSafetyExit,
     [string[]] $installerLegacySafetyOutput,
     [int] $installerLegacySafetyExit,
+    [string[]] $lanRecoverySafetyOutput,
+    [int] $lanRecoverySafetyExit,
     [string[]] $trainingSafetyOutput,
     [int] $trainingSafetyExit,
     [string[]] $evidenceIndexOutput,
@@ -361,7 +376,7 @@ function Write-HandoffReport(
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
     $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted
-    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
+    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
 
     Add-ReportLine $lines "# Final production handoff result"
     Add-ReportLine $lines ""
@@ -387,6 +402,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- System diagnostics safety guard exit code: $systemDiagnosticsSafetyExit"
     Add-ReportLine $lines "- Double-action safety guard exit code: $doubleActionSafetyExit"
     Add-ReportLine $lines "- Installer legacy safety guard exit code: $installerLegacySafetyExit"
+    Add-ReportLine $lines "- LAN recovery safety guard exit code: $lanRecoverySafetyExit"
     Add-ReportLine $lines "- Training safety guard exit code: $trainingSafetyExit"
     Add-ReportLine $lines "- Evidence index guard exit code: $evidenceIndexExit"
     Add-ReportLine $lines "- Preflight skipped: $preflightSkipped"
@@ -451,13 +467,16 @@ function Write-HandoffReport(
     if ($installerLegacySafetyExit -ne 0) {
         Add-ReportLine $lines "- Installer legacy safety validation returned exit code $installerLegacySafetyExit."
     }
+    if ($lanRecoverySafetyExit -ne 0) {
+        Add-ReportLine $lines "- LAN recovery safety validation returned exit code $lanRecoverySafetyExit."
+    }
     if ($trainingSafetyExit -ne 0) {
         Add-ReportLine $lines "- Training safety validation returned exit code $trainingSafetyExit."
     }
     if ($evidenceIndexExit -ne 0) {
         Add-ReportLine $lines "- Final handoff evidence index validation returned exit code $evidenceIndexExit."
     }
-    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
+    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
         Add-ReportLine $lines "- None reported by the handoff script."
     }
     Add-ReportLine $lines ""
@@ -480,6 +499,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_system_diagnostics_safety.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_double_action_safety.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_installer_legacy_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_recovery_safety.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath $(Protect-HandoffText $path)"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl $($BaseUrl.TrimEnd('/'))"
@@ -595,6 +615,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
+    Add-ReportLine $lines "## LAN recovery safety validation output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $lanRecoverySafetyOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
     Add-ReportLine $lines "## Evidence index validation output"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
@@ -636,6 +665,7 @@ Assert-ScriptExists $helpScreenSafetyScript
 Assert-ScriptExists $systemDiagnosticsSafetyScript
 Assert-ScriptExists $doubleActionSafetyScript
 Assert-ScriptExists $installerLegacySafetyScript
+Assert-ScriptExists $lanRecoverySafetyScript
 
 Write-Host "Sistema de Caja Hospitalaria final production handoff"
 Write-Host "ProjectRoot: $(Protect-HandoffText $ProjectRoot)"
@@ -696,6 +726,7 @@ $helpScreenSafety = Invoke-HelpScreenSafetyGuard
 $systemDiagnosticsSafety = Invoke-SystemDiagnosticsSafetyGuard
 $doubleActionSafety = Invoke-DoubleActionSafetyGuard
 $installerLegacySafety = Invoke-InstallerLegacySafetyGuard
+$lanRecoverySafety = Invoke-LanRecoverySafetyGuard
 $trainingSafety = Invoke-TrainingSafetyGuard
 
 if ($SkipPreflight) {
@@ -728,6 +759,8 @@ if ($SkipPreflight) {
         -doubleActionSafetyExit $doubleActionSafety.ExitCode `
         -installerLegacySafetyOutput $installerLegacySafety.Output `
         -installerLegacySafetyExit $installerLegacySafety.ExitCode `
+        -lanRecoverySafetyOutput $lanRecoverySafety.Output `
+        -lanRecoverySafetyExit $lanRecoverySafety.ExitCode `
         -trainingSafetyOutput $trainingSafety.Output `
         -trainingSafetyExit $trainingSafety.ExitCode `
         -evidenceIndexOutput @("Evidence index validation pending until the handoff report is written.") `
@@ -764,6 +797,8 @@ if ($SkipPreflight) {
         -doubleActionSafetyExit $doubleActionSafety.ExitCode `
         -installerLegacySafetyOutput $installerLegacySafety.Output `
         -installerLegacySafetyExit $installerLegacySafety.ExitCode `
+        -lanRecoverySafetyOutput $lanRecoverySafety.Output `
+        -lanRecoverySafetyExit $lanRecoverySafety.ExitCode `
         -trainingSafetyOutput $trainingSafety.Output `
         -trainingSafetyExit $trainingSafety.ExitCode `
         -evidenceIndexOutput $evidenceIndex.Output `
@@ -806,6 +841,8 @@ Write-HandoffReport `
     -doubleActionSafetyExit $doubleActionSafety.ExitCode `
     -installerLegacySafetyOutput $installerLegacySafety.Output `
     -installerLegacySafetyExit $installerLegacySafety.ExitCode `
+    -lanRecoverySafetyOutput $lanRecoverySafety.Output `
+    -lanRecoverySafetyExit $lanRecoverySafety.ExitCode `
     -trainingSafetyOutput $trainingSafety.Output `
     -trainingSafetyExit $trainingSafety.ExitCode `
     -evidenceIndexOutput @("Evidence index validation pending until the handoff report is written.") `
@@ -842,6 +879,8 @@ Write-HandoffReport `
     -doubleActionSafetyExit $doubleActionSafety.ExitCode `
     -installerLegacySafetyOutput $installerLegacySafety.Output `
     -installerLegacySafetyExit $installerLegacySafety.ExitCode `
+    -lanRecoverySafetyOutput $lanRecoverySafety.Output `
+    -lanRecoverySafetyExit $lanRecoverySafety.ExitCode `
     -trainingSafetyOutput $trainingSafety.Output `
     -trainingSafetyExit $trainingSafety.ExitCode `
     -evidenceIndexOutput $evidenceIndex.Output `
@@ -850,7 +889,7 @@ Write-HandoffReport `
     -preflightExit $preflightExit `
     -preflightSkipped $false
 
-if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
+if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
     Write-Host ""
     Write-Host "PRODUCTION_READY evidence gate passed." -ForegroundColor Green
     exit 0
@@ -858,7 +897,7 @@ if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.
 
 Write-Host ""
 Write-Host "PRODUCTION_READY remains blocked. Keep status as PRODUCTION_CANDIDATE and close the missing evidence above." -ForegroundColor Yellow
-if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
+if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
     exit 1
 }
 if ($supportPacketSafety.ExitCode -ne 0) {
@@ -887,6 +926,9 @@ if ($doubleActionSafety.ExitCode -ne 0) {
 }
 if ($installerLegacySafety.ExitCode -ne 0) {
     exit $installerLegacySafety.ExitCode
+}
+if ($lanRecoverySafety.ExitCode -ne 0) {
+    exit $lanRecoverySafety.ExitCode
 }
 if ($trainingSafety.ExitCode -ne 0) {
     exit $trainingSafety.ExitCode

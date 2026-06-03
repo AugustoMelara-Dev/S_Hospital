@@ -118,6 +118,15 @@ No copie `.env`, passwords, tokens, rutas locales del servidor ni mensajes tecni
 - Revise en el diagnostico la fila **Direccion APP_URL para LAN**.
 - Si indica `localhost` o `127.0.0.1`, el servidor puede abrir localmente pero
   las computadoras cliente deben usar la IP o nombre LAN del servidor.
+- Si la IP del servidor cambio por DHCP, cambio de router o cambio de tarjeta
+  de red, soporte tecnico debe validar primero sin aplicar cambios:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\refresh_lan_ip.ps1 -WhatIf
+```
+
+- Si la IP detectada es la correcta, soporte tecnico puede ejecutar el refresco
+  y luego validar desde una computadora cliente con `validate_lan_client.ps1`.
 - No facture desde clientes hasta que vuelva la conexion.
 - Anote que computadoras fallaron y cuales siguieron funcionando.
 

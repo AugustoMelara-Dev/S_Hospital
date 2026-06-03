@@ -235,6 +235,17 @@ seeders y no restaura backups automaticamente.
 Tambien advierte si `APP_URL` sigue en `localhost` o `127.0.0.1`, porque esa
 configuracion impide validar clientes LAN.
 
+Si despues de la instalacion cambia la IP del servidor por DHCP, cambio de
+router o cambio de tarjeta de red, no edite `.env` manualmente. Primero revise
+que IP detectaria el sistema:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\refresh_lan_ip.ps1 -WhatIf
+```
+
+Despues de aplicar el refresco, repita la validacion desde una segunda
+computadora con `scripts\validate_lan_client.ps1`.
+
 ## Paquete Seguro Para Soporte
 
 Cuando el responsable tecnico necesite mas evidencia, genere un paquete seguro:
