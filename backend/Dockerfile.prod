@@ -34,7 +34,7 @@ RUN apk add --no-cache \
 
 # Configure and install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install intl mbstring pdo_mysql zip gd opcache
+    && docker-php-ext-install intl mbstring pdo_mysql zip gd opcache bcmath
 
 # Copy OPcache configuration for production performance
 RUN { \
