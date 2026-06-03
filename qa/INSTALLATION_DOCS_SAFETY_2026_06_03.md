@@ -33,6 +33,9 @@ Observed result:
 - The release checklist requires both `make_offline_release.ps1 -SelfTest` and
   `validate_dependency_manifest.ps1` before regenerating or handing off the
   offline package.
+- The primary installation, first-level support and backup/restore guides use
+  `-NoProfile` in documented PowerShell commands to avoid operator profile
+  startup issues during recovery.
 
 Safety notes:
 

@@ -39,7 +39,7 @@ Si hay duda, detenga nuevas facturas desde clientes y recopile evidencia.
 6. Si soporte necesita repetir la revision de forma manual, ejecute:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -BaseUrl http://127.0.0.1:8000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -BaseUrl http://127.0.0.1:8000
 ```
 
 El archivo de salida esperado es:
@@ -59,7 +59,7 @@ aparezcan rutas reales, `.env`, passwords o tokens.
 Si soporte pide un paquete mas completo, genere uno con:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\collect_support_packet.ps1 -RunRepairDiagnostic -SkipDockerStart
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\collect_support_packet.ps1 -RunRepairDiagnostic -SkipDockerStart
 ```
 
 El script crea una carpeta en `qa\support-packets\`. Incluye diagnostico y
@@ -70,7 +70,7 @@ Antes de entregar o actualizar el paquete offline, soporte tecnico puede validar
 que esa proteccion sigue funcionando sin tocar datos reales:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1
 ```
 
 El validador crea un fixture temporal, genera un paquete de soporte y falla si
@@ -82,7 +82,7 @@ no tenga archivos faltantes, rutas locales ni una declaracion prematura de
 produccion lista:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1
 ```
 
 Ese cheque no levanta servicios ni toca la base de datos. Solo revisa el handoff
@@ -122,7 +122,7 @@ No copie `.env`, passwords, tokens, rutas locales del servidor ni mensajes tecni
   de red, soporte tecnico debe validar primero sin aplicar cambios:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\refresh_lan_ip.ps1 -WhatIf
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\refresh_lan_ip.ps1 -WhatIf
 ```
 
 - Si la IP detectada es la correcta, soporte tecnico puede ejecutar el refresco

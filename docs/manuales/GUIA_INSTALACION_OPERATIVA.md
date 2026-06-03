@@ -70,7 +70,7 @@ Antes de crear accesos, soporte puede validar la URL y la carpeta instalada sin
 tocar el escritorio ni registrar tareas:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_hospital_startup_shortcut.ps1 -Url http://IP-DEL-SERVIDOR:8000 -WhatIfOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_hospital_startup_shortcut.ps1 -Url http://IP-DEL-SERVIDOR:8000 -WhatIfOnly
 ```
 
 La salida de `-WhatIfOnly` usa marcadores como `%PROJECT_ROOT%`,
@@ -78,7 +78,7 @@ La salida de `-WhatIfOnly` usa marcadores como `%PROJECT_ROOT%`,
 carpetas reales del servidor.
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_hospital_startup_shortcut.ps1 -InstallStartupTask
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_hospital_startup_shortcut.ps1 -InstallStartupTask
 ```
 
 ## Respaldos Automaticos
@@ -95,11 +95,11 @@ Si el instalador no pudo registrar tareas por permisos, el tecnico puede hacerlo
 despues con:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
 ```
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting
 ```
 
 El modo `-WhatIfOnly` no registra ni elimina tareas. Su salida usa nombres
@@ -112,14 +112,14 @@ Si no hay permisos de administrador, soporte puede validar el arranque de
 backups para el usuario actual sin cambiar el registro ni iniciar procesos:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -WhatIfOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -WhatIfOnly
 ```
 
 Ese modo valida hora y PHP sin crear archivo Startup, sin cambiar registro y sin
 iniciar worker. Para revisar estado sin exponer rutas locales:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status
 ```
 
 Luego debe crear un respaldo manual desde la UI y confirmar que cambia de
@@ -164,14 +164,14 @@ Para revisar si las plantillas de evidencia estan disponibles sin reemplazar
 archivos existentes:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1 -WhatIfOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1 -WhatIfOnly
 ```
 
 El comando de cierre debe seguir reportando `PRODUCTION_CANDIDATE` hasta que
 esas cuatro evidencias existan y el preflight pase sin omisiones:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000 -InitializeProofFiles
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000 -InitializeProofFiles
 ```
 
 El reporte de cierre se guarda en `qa\FINAL_PRODUCTION_HANDOFF_RESULT.md`.
@@ -184,11 +184,11 @@ por separado con `-Force` y autorizacion tecnica.
 Para crear el borrador inicial de la prueba LAN desde la segunda computadora:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md -WhatIfOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md -WhatIfOnly
 ```
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
 ```
 
 Ese script no reemplaza un archivo existente por accidente. Use `-Force` solo
@@ -210,23 +210,23 @@ Si el sistema no abre:
    contenedores:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\start_hospital_services.ps1 -WhatIfOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\start_hospital_services.ps1 -WhatIfOnly
 ```
 
 4. Si la validacion indica los servicios esperados, ejecute:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\start_hospital_services.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\start_hospital_services.ps1
 ```
 
 5. Si soporte necesita repetir la reparacion manualmente, ejecute:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -WhatIfOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -WhatIfOnly
 ```
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -BaseUrl http://127.0.0.1:8000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -BaseUrl http://127.0.0.1:8000
 ```
 
 6. Si sigue fallando, envie `qa\LOCAL_REPAIR_DIAGNOSTIC.md` al responsable tecnico.
@@ -243,7 +243,7 @@ router o cambio de tarjeta de red, no edite `.env` manualmente. Primero revise
 que IP detectaria el sistema:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\refresh_lan_ip.ps1 -WhatIf
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\refresh_lan_ip.ps1 -WhatIf
 ```
 
 Despues de aplicar el refresco, repita la validacion desde una segunda
@@ -256,11 +256,11 @@ Cuando el responsable tecnico necesite mas evidencia, genere un paquete seguro:
 Para validar primero sin crear carpeta ni copiar logs:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\collect_support_packet.ps1 -WhatIfOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\collect_support_packet.ps1 -WhatIfOnly
 ```
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\collect_support_packet.ps1 -RunRepairDiagnostic -SkipDockerStart
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\collect_support_packet.ps1 -RunRepairDiagnostic -SkipDockerStart
 ```
 
 El paquete queda en `qa\support-packets\`. Incluye manifiesto, diagnostico y

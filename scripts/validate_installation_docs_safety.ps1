@@ -41,8 +41,17 @@ function Test-Contains([string] $content, [string] $pattern, [string] $label) {
     }
 }
 
+function Test-NoProfilePowerShellCommands([string] $content, [string] $label) {
+    if ($content -match 'powershell\.exe\s+-ExecutionPolicy') {
+        Add-Failure "$label uses powershell.exe without -NoProfile."
+    } else {
+        Add-Pass "$label uses -NoProfile in documented PowerShell commands"
+    }
+}
+
 $installGuide = Read-RequiredFile "docs\manuales\GUIA_INSTALACION_OPERATIVA.md"
 $supportGuide = Read-RequiredFile "docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md"
+$backupGuide = Read-RequiredFile "docs\manuales\GUIA_RESPALDOS_Y_RESTAURACION.md"
 $releaseChecklist = Read-RequiredFile "docs\RELEASE_CHECKLIST.md"
 
 if ($installGuide -ne "") {
@@ -98,9 +107,18 @@ if ($installGuide -ne "") {
     Test-Contains $installGuide '(?i)no se levanta Docker|no registra ni elimina tareas|no crea archivo Startup' "Installation guide documents non-mutating dry runs"
     Test-Contains $installGuide '(?i)no reinicia datos|no ejecuta\s+seeders|no restaura backups automaticamente' "Installation guide documents safe repair limits"
     Test-Contains $installGuide '(?i)No agregue archivos.*\.env|No borre.*\.env|No copie.*\.env' "Installation guide protects .env files"
+    Test-NoProfilePowerShellCommands $installGuide "Installation guide"
 }
 
-$combined = "$installGuide`n$supportGuide`n$releaseChecklist"
+if ($supportGuide -ne "") {
+    Test-NoProfilePowerShellCommands $supportGuide "First-level support guide"
+}
+
+if ($backupGuide -ne "") {
+    Test-NoProfilePowerShellCommands $backupGuide "Backup and restore guide"
+}
+
+$combined = "$installGuide`n$supportGuide`n$backupGuide`n$releaseChecklist"
 foreach ($requiredText in @(
     'PRODUCTION_READY',
     'PRODUCTION_CANDIDATE',

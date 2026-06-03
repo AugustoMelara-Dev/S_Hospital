@@ -60,8 +60,8 @@ el arranque por usuario actual. Primero valide sin tocar registro ni iniciar
 procesos:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -WhatIfOnly
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -WhatIfOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status
 ```
 
 La salida de estado no debe mostrar rutas locales crudas ni el contenido del
@@ -76,7 +76,7 @@ la contrasena escrita en el historial de PowerShell:
 ```powershell
 $env:HOSPITAL_SMOKE_BASE_URL = "http://IP-DEL-SERVIDOR:8000"
 $env:HOSPITAL_SMOKE_LOGIN = "usuario.soporte"
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_backup_worker_smoke.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_backup_worker_smoke.ps1
 ```
 
 No escriba usuario, contrasena ni token dentro de `HOSPITAL_SMOKE_BASE_URL`.

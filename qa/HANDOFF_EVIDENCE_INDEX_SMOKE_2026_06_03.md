@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 14:52:34
+- Generated at: 2026-06-03 15:03:21
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -93,34 +93,34 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 ## Next commands
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://127.0.0.1:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath php
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://127.0.0.1:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath php
 Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"
 # Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report.
 bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_browser_smoke_evidence.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_startup_repair_safety.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_safety.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_backup_restore_docs_safety.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_installation_docs_safety.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_help_screen_safety.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_system_diagnostics_safety.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_double_action_safety.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_installer_legacy_safety.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_recovery_safety.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_shift_incident_recovery_safety.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_field_proof_templates.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_proof_initialization_safety.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1 -SelfTest
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_operations_objective_audit.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_dependency_manifest.ps1
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_final_handoff_completeness.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
-powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000
-powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://127.0.0.1:8000 -PhpPath php
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_browser_smoke_evidence.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_startup_repair_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_backup_restore_docs_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installation_docs_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_help_screen_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_system_diagnostics_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_double_action_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installer_legacy_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_recovery_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_shift_incident_recovery_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_field_proof_templates.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_proof_initialization_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1 -SelfTest
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_operations_objective_audit.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_dependency_manifest.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_final_handoff_completeness.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://127.0.0.1:8000 -PhpPath php
 ```
 
 ## Backup task status output
@@ -201,7 +201,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 66c4f74d before release handoff.
+[FAIL] MANIFEST.txt must reference current commit e19a6cc9 before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
 OFFLINE_RELEASE_CLEAN: NO (42 blocking issue(s))
@@ -526,6 +526,7 @@ BACKUP_RESTORE_DOCS_SAFETY: YES
 ```text
 [ OK ] Found docs\manuales\GUIA_INSTALACION_OPERATIVA.md
 [ OK ] Found docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md
+[ OK ] Found docs\manuales\GUIA_RESPALDOS_Y_RESTAURACION.md
 [ OK ] Found docs\RELEASE_CHECKLIST.md
 [ OK ] Installation guide includes section: Antes De Instalar
 [ OK ] Installation guide includes section: Instalar
@@ -569,6 +570,9 @@ BACKUP_RESTORE_DOCS_SAFETY: YES
 [ OK ] Installation guide documents non-mutating dry runs
 [ OK ] Installation guide documents safe repair limits
 [ OK ] Installation guide protects .env files
+[ OK ] Installation guide uses -NoProfile in documented PowerShell commands
+[ OK ] First-level support guide uses -NoProfile in documented PowerShell commands
+[ OK ] Backup and restore guide uses -NoProfile in documented PowerShell commands
 [ OK ] Install/release docs include guardrail: PRODUCTION_READY
 [ OK ] Install/release docs include guardrail: PRODUCTION_CANDIDATE
 [ OK ] Install/release docs include guardrail: No ejecutar `migrate:fresh` en el servidor real
