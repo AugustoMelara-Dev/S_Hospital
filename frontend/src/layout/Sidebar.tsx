@@ -76,7 +76,7 @@ export function SidebarContent({
       </div>
 
       <nav aria-label="Navegacion principal" className="flex-1 overflow-y-auto p-3">
-        <ul className="flex flex-col gap-1" role="list">
+        <ul className="flex flex-col gap-1">
           {visibleNavigation.map((item) => {
             const Icon = item.icon;
             const isActive = activeItem?.path === item.path;
