@@ -15,8 +15,7 @@ use Tests\TestCase;
  *
  * v1.0.0 keeps the existing checks (they are correct) and adds
  * dedicated `InvoicePolicy` and `CashSessionPolicy` classes so
- * the Gate facade can resolve them and so `php artisan
- * policy:list` is introspectable. The two checks below lock the
+ * the Gate facade can resolve them. The two checks below lock the
  * invariant: when the directory exists, the provider must wire
  * the policy mappings, and vice versa.
  */

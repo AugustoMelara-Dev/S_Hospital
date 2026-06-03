@@ -3120,3 +3120,11 @@ Contexto: al activar Larastan sobre todo el backend, el analisis estatico aun en
 Decision: se tipan relaciones Eloquent usadas por categorias/facturas, `ReverseInvoiceAction` trabaja con una coleccion de pagos tipada, `CloseCashSessionAction` usa `Illuminate\Auth\Access\AuthorizationException` y `EchoConfigController` lee configuracion desde `config()` para ser compatible con config cache. No se cambian reglas fiscales ni datos.
 
 Criterio de verificacion: `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G --error-format=table` pasa sin errores. Tambien pasan `BroadcastingWiringTest`, `InvoiceReverseTest`, `CashPaymentsReceiptTest`, `BackupWorkflowTest`, Pint focal y `scripts\check-branding.ps1`.
+
+## 2026-06-02 - Policies registradas para recursos criticos
+
+Contexto: el frente operativo requiere permisos mantenibles y mensajes de error comprensibles. La auditoria interna ya habia senalado que `app/Policies/` no existia, aunque el sistema autorizaba con Form Requests y guards en Actions. Eso dejaba la matriz de permisos menos visible para soporte y futuras correcciones.
+
+Decision: se agregan `InvoicePolicy` y `CashSessionPolicy`, y `AppServiceProvider` registra ambos mappings con `Gate::policy`. Las policies delegan en las reglas existentes (`InvoiceAccess`, permisos `cash.*` e `invoices.*`) para no cambiar comportamiento de endpoints en esta subfase.
+
+Criterio de verificacion: `AuthorizationStrategyTest` valida existencia y resolucion via `Gate::getPolicyFor`. Tambien pasan PHPStan completo, `InvoiceReverseTest`, `CashPaymentsReceiptTest`, `PermissionAuditTest`, PHPStan/Pint focales y branding check.

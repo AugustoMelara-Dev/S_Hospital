@@ -16,7 +16,7 @@ use Illuminate\Auth\Access\HandlesAuthorization;
  * (e.g. `VoidInvoiceAction::execute()` calling
  * `InvoiceAccess::authorizeOperationalAccess()`). Centralizing
  * here makes the permission map introspectable from `php artisan
- * policy:list` and testable in isolation.
+ * Gate::getPolicyFor(...) and testable in isolation.
  *
  * For now the policy delegates to `InvoiceAccess`, which is the
  * canonical per-invoice scope check. Future v1.1 work can fold

@@ -57,9 +57,9 @@ class AppServiceProvider extends ServiceProvider
      * The policy methods delegate to the same checks the FormRequest
      * authorize() methods and the Actions use, so the behaviour
      * is unchanged for the existing endpoints. The win is that
-     * `php artisan policy:list` now shows the matrix, and
-     * controllers that need to `Gate::deny(...)` on a resource
-     * have a single class to import.
+     * Gate::getPolicyFor(...) can prove the mapping in tests, and
+     * controllers that need to `Gate::deny(...)` on a resource have
+     * a single class to import.
      */
     private function registerPolicies(): void
     {
