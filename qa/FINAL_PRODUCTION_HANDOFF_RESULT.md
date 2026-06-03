@@ -19,6 +19,7 @@
 | Startup/repair | `qa/STARTUP_REPAIR_AUTOMATION_SMOKE_2026_06_03.md` | Startup, repair, open-system and backup task scripts validated in safe modes |
 | Support packet | `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md` | Disposable fixture confirmed no `.env`, secrets or real local paths are copied into support artifacts |
 | Evidence index | `qa/OPS_EVIDENCE_INDEX_2026_06_03.md` | Handoff evidence references exist under `qa/` and physical blockers remain listed before `PRODUCTION_READY` |
+| Offline release guard | `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md` | Current local offline package is stale and correctly blocked until regenerated from the final commit |
 | Preflight | `qa/PREFLIGHT_WITH_CONCURRENCY_2026_06_03.md` | Restore and concurrency evidence now pass preflight; production readiness still blocked |
 
 ## Tests and gates run locally
@@ -29,7 +30,7 @@
 - Focused backend tests: `SecurityHeadersTest`, `BackupWorkflowTest`, `DatabaseDumpWriterTest`, `CashPaymentsReceiptTest`, `ReportsTest`, `BroadcastingWiringTest`, `AuditLogTest`, `GenerateFiscalNumberActionTest`.
 - Frontend gates: `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run test -- --run`, `npm.cmd run build`, `scripts\check-branding.ps1`.
 - E2E/browser: mocked production readiness E2E with screenshots, real Laravel smoke without mutations.
-- Operational scripts: backup worker smoke, restore into disposable DB, concurrency validation, startup/repair/task dry-runs, support packet safety validation, evidence index validation, production preflight.
+- Operational scripts: backup worker smoke, restore into disposable DB, concurrency validation, startup/repair/task dry-runs, support packet safety validation, evidence index validation, offline release guard, production preflight.
 
 ## Operator documentation and in-app support
 

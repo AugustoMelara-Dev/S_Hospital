@@ -3128,6 +3128,14 @@ Decision: se tipan relaciones Eloquent usadas por categorias/facturas, `ReverseI
 
 Criterio de verificacion: `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G --error-format=table` pasa sin errores. Tambien pasan `BroadcastingWiringTest`, `InvoiceReverseTest`, `CashPaymentsReceiptTest`, `BackupWorkflowTest`, Pint focal y `scripts\check-branding.ps1`.
 
+## 2026-06-03 - Guard offline exige validador de indice de evidencias
+
+Contexto: el handoff final se convirtio en el indice auditable de pruebas, pendientes fisicos y riesgos. Si el paquete offline se arma desde un commit nuevo pero omite `scripts\validate_ops_evidence_index.ps1`, soporte podria entregar evidencia con referencias rotas, rutas locales o una declaracion prematura de `PRODUCTION_READY`.
+
+Decision: `scripts\assert_offline_release_clean.ps1` exige que el paquete incluya `scripts\validate_ops_evidence_index.ps1` y compara su SHA256 contra la fuente versionada, igual que los demas scripts criticos de soporte, arranque, diagnostico y respaldos.
+
+Criterio de verificacion: `scripts\validate_ops_evidence_index.ps1` pasa contra el handoff actual y `scripts\assert_offline_release_clean.ps1` debe fallar hasta que `offline-release` se regenere desde el commit final.
+
 ## 2026-06-02 - Policies registradas para recursos criticos
 
 Contexto: el frente operativo requiere permisos mantenibles y mensajes de error comprensibles. La auditoria interna ya habia senalado que `app/Policies/` no existia, aunque el sistema autorizaba con Form Requests y guards en Actions. Eso dejaba la matriz de permisos menos visible para soporte y futuras correcciones.
