@@ -4,7 +4,7 @@ Decision: `BLOCKED_UNTIL_REGENERATED`.
 
 Scope:
 
-- Verify that `scripts\assert_offline_release_clean.ps1` rejects the current local `offline-release` package after the startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics and evidence validators were added.
+- Verify that `scripts\assert_offline_release_clean.ps1` rejects the current local `offline-release` package after the startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, double-action and evidence validators were added.
 - Confirm that a stale offline package cannot be handed off as production-ready.
 
 Command run:
@@ -16,7 +16,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_relea
 Observed result:
 
 - `OFFLINE_RELEASE_CLEAN: NO`.
-- Blocking issue count: 24 in the latest handoff smoke with `-RequireCurrentCommit`; 23 in the direct guard run without commit validation.
+- Blocking issue count: 25 in the latest handoff smoke with `-RequireCurrentCommit`; 24 in the direct guard run without commit validation.
 - The guard detected missing `scripts\validate_startup_repair_safety.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_operator_manuals_safety.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_backup_restore_docs_safety.ps1` in `offline-release`.
@@ -25,6 +25,7 @@ Observed result:
 - The guard detected missing `scripts\validate_system_diagnostics_safety.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_ops_evidence_index.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_training_safety.ps1` in `offline-release`.
+- The guard detected missing `scripts\validate_double_action_safety.ps1` in `offline-release`.
 - The guard detected multiple release files that differ from versioned source.
 - The guard detected that `offline-images` contains no Docker image tar files.
 

@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 10:35:25
+- Generated at: 2026-06-03 10:47:10
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -20,6 +20,7 @@
 - Installation docs safety guard exit code: 0
 - Help screen safety guard exit code: 0
 - System diagnostics safety guard exit code: 0
+- Double-action safety guard exit code: 0
 - Training safety guard exit code: 0
 - Evidence index guard exit code: 0
 - Preflight skipped: True
@@ -52,6 +53,7 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\validate_backup_restore_doc
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_installation_docs_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_help_screen_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_system_diagnostics_safety.ps1
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_double_action_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
 powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000
@@ -97,6 +99,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] Missing required release file: scripts\validate_system_diagnostics_safety.ps1
 [FAIL] Missing required release file: scripts\validate_ops_evidence_index.ps1
 [FAIL] Missing required release file: scripts\validate_training_safety.ps1
+[FAIL] Missing required release file: scripts\validate_double_action_safety.ps1
 [ OK ] Found scripts\run_backup_worker.cmd
 [ OK ] Found scripts\run_scheduled_backup.cmd
 [FAIL] docker-compose.prod.yml in offline release differs from versioned source. Regenerate offline-release before handoff.
@@ -114,10 +117,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 81ae0288 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 7fd4a75d before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
-OFFLINE_RELEASE_CLEAN: NO (24 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (25 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -518,6 +521,70 @@ HELP_SCREEN_SAFETY: YES
 [ OK ] System status controller does not expose secret-like assignments
 
 SYSTEM_DIAGNOSTICS_SAFETY: YES
+```
+
+## Double-action safety validation output
+
+```text
+[ OK ] Found scripts\validate_mysql_concurrency.mjs
+[ OK ] Found qa\FINAL_CONCURRENCY_PROOF.md
+[ OK ] Found backend\tests\Feature\InvoiceCreationTest.php
+[ OK ] Found backend\tests\Feature\CashPaymentsReceiptTest.php
+[ OK ] Found backend\app\Actions\Billing\CreateInvoiceAction.php
+[ OK ] Found backend\app\Actions\Cash\OpenCashSessionAction.php
+[ OK ] Found backend\app\Actions\Payments\RegisterPaymentAction.php
+[ OK ] Found frontend\src\lib\api\base.ts
+[ OK ] Found frontend\src\lib\api\base.test.ts
+[ OK ] Found frontend\src\features\help\HelpView.tsx
+[ OK ] Found docs\manuales\MANUAL_CAJERO.md
+[ OK ] Found docs\manuales\MANUAL_SUPERVISOR.md
+[ OK ] Found docs\manuales\MANUAL_ADMINISTRADOR.md
+[ OK ] Concurrency validator requires explicit real-MySQL opt-in
+[ OK ] Concurrency validator confirms target URL separately
+[ OK ] Concurrency validator requires target environment
+[ OK ] Concurrency validator rejects credentials in URLs
+[ OK ] Concurrency validator refuses production-like targets
+[ OK ] Concurrency validator requires disposable/local target wording
+[ OK ] Concurrency evidence path is constrained
+[ OK ] Concurrency evidence stays under qa
+[ OK ] Concurrency validator exercises double cash opening
+[ OK ] Concurrency validator exercises concurrent invoice emission
+[ OK ] Concurrency validator exercises double payment
+[ OK ] Concurrency validator accepts created status and conflict/validation statuses
+[ OK ] Concurrency validator documents audit limitation for disposable snapshots
+[ OK ] Final concurrency proof records double cash opening result
+[ OK ] Final concurrency proof records concurrent invoice result
+[ OK ] Final concurrency proof records double payment result
+[ OK ] Final concurrency proof records duplicate-action status split
+[ OK ] Final concurrency proof has a final conclusion
+[ OK ] Invoice feature test covers concurrent invoice number uniqueness
+[ OK ] Invoice feature test rejects duplicate invoice numbers
+[ OK ] Invoice feature test checks distinct invoice numbers
+[ OK ] Invoice creation uses a database transaction
+[ OK ] Invoice creation locks open cash session while issuing
+[ OK ] Invoice creation uses fiscal number action inside transaction
+[ OK ] Cash open action checks for already-open session
+[ OK ] Cash open action locks existing session check
+[ OK ] Cash open action returns operator-safe duplicate cashbox message
+[ OK ] Cash tests cover duplicate open request
+[ OK ] Cash tests cover database uniqueness guard
+[ OK ] Cash tests expect duplicate open validation
+[ OK ] Payment registration locks the invoice
+[ OK ] Payment registration locks the cash session
+[ OK ] Payment registration rejects already paid invoices
+[ OK ] Payment registration rejects overpayment
+[ OK ] Payment tests reject paid invoices and overpayment
+[ OK ] API maps duplicate billing operations to history guidance
+[ OK ] API maps cashbox conflicts to cashbox/history guidance
+[ OK ] API tests protect duplicate-operation guidance
+[ OK ] API tests avoid exposing raw internal conflict fields
+[ OK ] Help warns staff not to repeat invoices or payments
+[ OK ] Help tells staff to check cashbox/history before retrying
+[ OK ] Cashier manual warns before repeating invoice or payment
+[ OK ] Supervisor manual warns before repeating invoice or payment
+[ OK ] Administrator manual requires history/audit review before retrying
+
+DOUBLE_ACTION_SAFETY: YES
 ```
 
 ## Evidence index validation output

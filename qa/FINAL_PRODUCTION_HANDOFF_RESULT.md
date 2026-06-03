@@ -27,10 +27,11 @@
 | Installation docs | `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md` | Installation guide keeps conservative install, LAN URL, startup, backup-task, repair and support handoff requirements |
 | Help screen | `qa/HELP_SCREEN_SAFETY_2026_06_03.md` | In-app Help keeps critical workflows, real incident guidance, role checklists and sanitized support summaries |
 | System diagnostics | `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md` | Information/system status diagnostics keep normal summaries, permission-gated details and sanitized operational fields |
+| Double-action safety | `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md` | Code, tests, concurrency proof, Help and manuals keep duplicate-action safeguards for caja, facturas and pagos |
 | Training safety | `qa/TRAINING_SAFETY_2026_06_03.md` | Manuals and in-app Help keep isolated-practice guidance and forbid training on production data |
 | Evidence index | `qa/OPS_EVIDENCE_INDEX_2026_06_03.md` | Handoff evidence references exist under `qa/` and physical blockers remain listed before `PRODUCTION_READY` |
 | Offline release guard | `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md` | Current local offline package is stale and correctly blocked until regenerated from the final commit |
-| Handoff self-check | `qa/HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` | `final_production_handoff.ps1 -SkipPreflight` writes a report, runs support-packet, startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, training-safety and evidence-index validation, and keeps `PRODUCTION_CANDIDATE` |
+| Handoff self-check | `qa/HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` | `final_production_handoff.ps1 -SkipPreflight` writes a report, runs support-packet, startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, double-action, training-safety and evidence-index validation, and keeps `PRODUCTION_CANDIDATE` |
 | Preflight | `qa/PREFLIGHT_WITH_CONCURRENCY_2026_06_03.md` | Restore and concurrency evidence now pass preflight; production readiness still blocked |
 
 ## Tests and gates run locally
@@ -41,7 +42,7 @@
 - Focused backend tests: `SecurityHeadersTest`, `BackupWorkflowTest`, `DatabaseDumpWriterTest`, `SystemStatusTest`, `CashPaymentsReceiptTest`, `ReportsTest`, `BroadcastingWiringTest`, `AuditLogTest`, `GenerateFiscalNumberActionTest`.
 - Frontend gates: `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run test -- --run`, `npm.cmd run build`, `scripts\check-branding.ps1`.
 - E2E/browser: mocked production readiness E2E with screenshots, real Laravel smoke without mutations.
-- Operational scripts: backup worker smoke, restore into disposable DB, concurrency validation, startup/repair/task dry-runs, system diagnostics sanitization, client support sanitization, support packet safety validation, support packet env-file redaction, startup/repair safety validation, operator manuals safety validation, backup/restore docs safety validation, installation docs safety validation, help screen safety validation, system diagnostics safety validation, training safety validation, evidence index validation, handoff self-check, offline release guard, production preflight.
+- Operational scripts: backup worker smoke, restore into disposable DB, concurrency validation, startup/repair/task dry-runs, system diagnostics sanitization, client support sanitization, support packet safety validation, support packet env-file redaction, startup/repair safety validation, operator manuals safety validation, backup/restore docs safety validation, installation docs safety validation, help screen safety validation, system diagnostics safety validation, double-action safety validation, training safety validation, evidence index validation, handoff self-check, offline release guard, production preflight.
 
 ## Operator documentation and in-app support
 
