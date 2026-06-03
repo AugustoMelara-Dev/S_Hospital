@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 08:46:28
+- Generated at: 2026-06-03 09:07:35
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -13,6 +13,7 @@
 - Final restore proof file: `qa/FINAL_RESTORE_PROOF.md`
 - Final concurrency proof file: `qa/FINAL_CONCURRENCY_PROOF.md`
 - Offline release artifact guard exit code: 1
+- Training safety guard exit code: 0
 - Evidence index guard exit code: 0
 - Preflight skipped: True
 - Preflight exit code: 2
@@ -37,6 +38,7 @@ Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"
 # Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report.
 bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
 powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000
 powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://127.0.0.1:8000 -PhpPath php
@@ -74,6 +76,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found scripts\install_backup_tasks_windows.ps1
 [ OK ] Found scripts\validate_support_packet_safety.ps1
 [FAIL] Missing required release file: scripts\validate_ops_evidence_index.ps1
+[FAIL] Missing required release file: scripts\validate_training_safety.ps1
 [ OK ] Found scripts\run_backup_worker.cmd
 [ OK ] Found scripts\run_scheduled_backup.cmd
 [FAIL] docker-compose.prod.yml in offline release differs from versioned source. Regenerate offline-release before handoff.
@@ -91,10 +94,42 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit b6b4b750 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 10f8de18 before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
-OFFLINE_RELEASE_CLEAN: NO (17 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (18 blocking issue(s))
+```
+
+## Training safety validation output
+
+```text
+[ OK ] Training docs forbid practicing in production
+[ OK ] Training docs require isolated environment or disposable database
+[ OK ] Training docs require cashier role practice
+[ OK ] Training docs require supervisor role practice
+[ OK ] Training docs require administrator role practice
+[ OK ] Training docs require support summary practice
+[ OK ] Training docs include scenario: servidor no disponible
+[ OK ] Training docs include scenario: red local
+[ OK ] Training docs include scenario: impresora no responde
+[ OK ] Training docs include scenario: caja qued
+[ OK ] Training docs include scenario: respaldo fallido
+[ OK ] Training docs include scenario: sesion vencida
+[ OK ] Training docs include scenario: error de permisos
+[ OK ] Training docs include scenario: navegador
+[ OK ] Training docs include scenario: energia
+[ OK ] Training docs forbid real production users
+[ OK ] Training docs forbid real patient data
+[ OK ] Training docs forbid migrate fresh in production
+[ OK ] Training docs forbid restoring over real database
+[ OK ] Training docs forbid sharing secrets
+[ OK ] Help screen exposes safe training section
+[ OK ] Help screen exposes practice mode warning
+[ OK ] Help screen warns not to use production database
+[ OK ] Help screen mentions isolated practice database
+[ OK ] HelpView test protects production database warning
+
+TRAINING_SAFETY: YES
 ```
 
 ## Evidence index validation output

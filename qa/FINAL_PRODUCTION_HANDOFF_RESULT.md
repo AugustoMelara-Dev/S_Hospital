@@ -21,7 +21,7 @@
 | Training safety | `qa/TRAINING_SAFETY_2026_06_03.md` | Manuals and in-app Help keep isolated-practice guidance and forbid training on production data |
 | Evidence index | `qa/OPS_EVIDENCE_INDEX_2026_06_03.md` | Handoff evidence references exist under `qa/` and physical blockers remain listed before `PRODUCTION_READY` |
 | Offline release guard | `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md` | Current local offline package is stale and correctly blocked until regenerated from the final commit |
-| Handoff self-check | `qa/HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` | `final_production_handoff.ps1 -SkipPreflight` writes a report, runs evidence-index validation against it and keeps `PRODUCTION_CANDIDATE` |
+| Handoff self-check | `qa/HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` | `final_production_handoff.ps1 -SkipPreflight` writes a report, runs training-safety and evidence-index validation, and keeps `PRODUCTION_CANDIDATE` |
 | Preflight | `qa/PREFLIGHT_WITH_CONCURRENCY_2026_06_03.md` | Restore and concurrency evidence now pass preflight; production readiness still blocked |
 
 ## Tests and gates run locally
