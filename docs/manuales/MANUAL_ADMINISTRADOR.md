@@ -54,6 +54,27 @@ Antes de migraciones, actualizaciones o cambios de configuracion fiscal:
 3. Registre quien hizo el cambio y por que.
 4. Pruebe el flujo principal despues del cambio.
 
+## Checklist Diario Del Administrador
+
+- [ ] Revise que el sistema abra desde el servidor y una computadora cliente.
+- [ ] Revise **Informacion del sistema** o **Respaldos** para confirmar estado operativo.
+- [ ] Confirme que existe respaldo reciente completado.
+- [ ] Confirme que el worker o tarea de respaldos sigue activo.
+- [ ] Revise si hay respaldos fallidos, trabajos pendientes o espacio bajo.
+- [ ] Revise usuarios activos y permisos solo cuando haya cambios de personal.
+- [ ] Confirme que no hay evidencia fisica pendiente si se esta preparando entrega final.
+- [ ] Documente incidentes o cambios importantes en el registro interno del hospital.
+
+## Advertencias Antes De Acciones Delicadas
+
+- Antes de migrar, actualizar o cambiar configuracion fiscal, cree respaldo y confirme que se puede ubicar.
+- Antes de restaurar, use una base descartable para validar el backup; no restaure sobre produccion sin autorizacion.
+- Antes de cambiar permisos, confirme el rol real de la persona y evite cuentas compartidas.
+- Antes de pedir repetir una factura o cobro durante soporte, revise Historial, pagos y auditoria.
+- Antes de entregar el sistema como listo, complete evidencia LAN, impresora, restore, concurrencia y preflight final.
+- Nunca ejecute `migrate:fresh`, seeders de prueba o borrado de volumenes en produccion.
+- No invente cumplimiento fiscal; valide numeracion, CAI, serie y fechas con administracion responsable.
+
 ## Capacitacion Segura
 
 El administrador prepara el entorno de entrenamiento. No use la base real para

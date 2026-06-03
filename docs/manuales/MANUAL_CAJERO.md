@@ -70,6 +70,25 @@ El recibo institucional no debe llevar codigos internos ni QR.
 
 Si hay diferencia, avise al supervisor.
 
+## Checklist Diario Del Cajero
+
+- [ ] Abrio el sistema desde el acceso directo institucional.
+- [ ] Inicio sesion con su propio usuario.
+- [ ] Confirmo que la caja esta abierta antes de facturar.
+- [ ] Reviso paciente, servicios, total y metodo de pago antes de cobrar.
+- [ ] Imprimio o dejo listo el recibo despues del pago.
+- [ ] Reviso Historial antes de repetir una factura, cobro o impresion.
+- [ ] Reporto diferencias de caja al supervisor.
+- [ ] Cerro caja al final del turno con conteo real.
+
+## Advertencias Antes De Acciones Delicadas
+
+- Antes de cobrar, confirme que el paciente y el total son correctos.
+- Antes de reimprimir, busque la factura en Historial y confirme que es la correcta.
+- Antes de repetir una factura o cobro, revise Historial o pida ayuda al supervisor.
+- Antes de cerrar caja, cuente el efectivo real y anote cualquier diferencia.
+- Nunca borre facturas, no comparta contrasenas y no use la cuenta de otra persona.
+
 ## Si Algo Falla
 
 - Si no imprime: revise impresora, papel y conexion.

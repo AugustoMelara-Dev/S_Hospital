@@ -37,6 +37,14 @@ Antes de autorizar:
 No borre facturas. Si una factura pagada requiere correccion y el sistema no
 ofrece reverso autorizado, detenga el caso y avise a administracion.
 
+## Advertencias Antes De Acciones Delicadas
+
+- Antes de autorizar una anulacion, revise factura, pago, cajero, fecha y motivo.
+- Antes de autorizar una reimpresion, confirme que la factura correcta esta en Historial.
+- Antes de pedir repetir una factura o cobro, revise Historial y pagos registrados.
+- Antes de cerrar caja con diferencia, exija conteo real y una nota entendible.
+- Nunca borre facturas, no use la cuenta del cajero y no oculte diferencias de caja.
+
 ## Cierre De Caja
 
 1. Pida al cajero revisar pagos por metodo.

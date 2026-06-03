@@ -40,6 +40,7 @@ $evidenceIndexScript = Join-Path $scriptsDir "validate_ops_evidence_index.ps1"
 $trainingSafetyScript = Join-Path $scriptsDir "validate_training_safety.ps1"
 $supportPacketSafetyScript = Join-Path $scriptsDir "validate_support_packet_safety.ps1"
 $startupRepairSafetyScript = Join-Path $scriptsDir "validate_startup_repair_safety.ps1"
+$operatorManualsSafetyScript = Join-Path $scriptsDir "validate_operator_manuals_safety.ps1"
 $lanProofPath = Join-Path $qaDir "LAN_CLIENT_VALIDATION_PROOF.md"
 $printerProofPath = Join-Path $qaDir "INSTITUTIONAL_RECEIPT_PRINT_PROOF.md"
 $restoreProofPath = Join-Path $qaDir "FINAL_RESTORE_PROOF.md"
@@ -209,6 +210,18 @@ function Invoke-StartupRepairSafetyGuard {
     }
 }
 
+function Invoke-OperatorManualsSafetyGuard {
+    Write-Section "Operator manuals safety validation"
+    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $operatorManualsSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
 function Add-ReportLine([System.Collections.Generic.List[string]] $lines, [string] $line = "") {
     $lines.Add($line) | Out-Null
 }
@@ -245,6 +258,8 @@ function Write-HandoffReport(
     [int] $supportPacketSafetyExit,
     [string[]] $startupRepairSafetyOutput,
     [int] $startupRepairSafetyExit,
+    [string[]] $operatorManualsSafetyOutput,
+    [int] $operatorManualsSafetyExit,
     [string[]] $trainingSafetyOutput,
     [int] $trainingSafetyExit,
     [string[]] $evidenceIndexOutput,
@@ -256,7 +271,7 @@ function Write-HandoffReport(
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
     $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted
-    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
+    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
 
     Add-ReportLine $lines "# Final production handoff result"
     Add-ReportLine $lines ""
@@ -275,6 +290,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Offline release artifact guard exit code: $releaseGuardExit"
     Add-ReportLine $lines "- Support packet safety guard exit code: $supportPacketSafetyExit"
     Add-ReportLine $lines "- Startup and repair safety guard exit code: $startupRepairSafetyExit"
+    Add-ReportLine $lines "- Operator manuals safety guard exit code: $operatorManualsSafetyExit"
     Add-ReportLine $lines "- Training safety guard exit code: $trainingSafetyExit"
     Add-ReportLine $lines "- Evidence index guard exit code: $evidenceIndexExit"
     Add-ReportLine $lines "- Preflight skipped: $preflightSkipped"
@@ -318,13 +334,16 @@ function Write-HandoffReport(
     if ($startupRepairSafetyExit -ne 0) {
         Add-ReportLine $lines "- Startup and repair safety validation returned exit code $startupRepairSafetyExit."
     }
+    if ($operatorManualsSafetyExit -ne 0) {
+        Add-ReportLine $lines "- Operator manuals safety validation returned exit code $operatorManualsSafetyExit."
+    }
     if ($trainingSafetyExit -ne 0) {
         Add-ReportLine $lines "- Training safety validation returned exit code $trainingSafetyExit."
     }
     if ($evidenceIndexExit -ne 0) {
         Add-ReportLine $lines "- Final handoff evidence index validation returned exit code $evidenceIndexExit."
     }
-    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
+    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
         Add-ReportLine $lines "- None reported by the handoff script."
     }
     Add-ReportLine $lines ""
@@ -340,6 +359,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "bash -lc `"HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_BASE_URL=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh`""
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_startup_repair_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_safety.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath $(Protect-HandoffText $path)"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl $($BaseUrl.TrimEnd('/'))"
@@ -392,6 +412,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
+    Add-ReportLine $lines "## Operator manuals safety validation output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $operatorManualsSafetyOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
     Add-ReportLine $lines "## Evidence index validation output"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
@@ -426,6 +455,7 @@ Assert-ScriptExists $evidenceIndexScript
 Assert-ScriptExists $trainingSafetyScript
 Assert-ScriptExists $supportPacketSafetyScript
 Assert-ScriptExists $startupRepairSafetyScript
+Assert-ScriptExists $operatorManualsSafetyScript
 
 Write-Host "Sistema de Caja Hospitalaria final production handoff"
 Write-Host "ProjectRoot: $(Protect-HandoffText $ProjectRoot)"
@@ -479,6 +509,7 @@ $releaseGuardOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
 $supportPacketSafety = Invoke-SupportPacketSafetyGuard
 $startupRepairSafety = Invoke-StartupRepairSafetyGuard
+$operatorManualsSafety = Invoke-OperatorManualsSafetyGuard
 $trainingSafety = Invoke-TrainingSafetyGuard
 
 if ($SkipPreflight) {
@@ -497,6 +528,8 @@ if ($SkipPreflight) {
         -supportPacketSafetyExit $supportPacketSafety.ExitCode `
         -startupRepairSafetyOutput $startupRepairSafety.Output `
         -startupRepairSafetyExit $startupRepairSafety.ExitCode `
+        -operatorManualsSafetyOutput $operatorManualsSafety.Output `
+        -operatorManualsSafetyExit $operatorManualsSafety.ExitCode `
         -trainingSafetyOutput $trainingSafety.Output `
         -trainingSafetyExit $trainingSafety.ExitCode `
         -evidenceIndexOutput @("Evidence index validation pending until the handoff report is written.") `
@@ -519,6 +552,8 @@ if ($SkipPreflight) {
         -supportPacketSafetyExit $supportPacketSafety.ExitCode `
         -startupRepairSafetyOutput $startupRepairSafety.Output `
         -startupRepairSafetyExit $startupRepairSafety.ExitCode `
+        -operatorManualsSafetyOutput $operatorManualsSafety.Output `
+        -operatorManualsSafetyExit $operatorManualsSafety.ExitCode `
         -trainingSafetyOutput $trainingSafety.Output `
         -trainingSafetyExit $trainingSafety.ExitCode `
         -evidenceIndexOutput $evidenceIndex.Output `
@@ -547,6 +582,8 @@ Write-HandoffReport `
     -supportPacketSafetyExit $supportPacketSafety.ExitCode `
     -startupRepairSafetyOutput $startupRepairSafety.Output `
     -startupRepairSafetyExit $startupRepairSafety.ExitCode `
+    -operatorManualsSafetyOutput $operatorManualsSafety.Output `
+    -operatorManualsSafetyExit $operatorManualsSafety.ExitCode `
     -trainingSafetyOutput $trainingSafety.Output `
     -trainingSafetyExit $trainingSafety.ExitCode `
     -evidenceIndexOutput @("Evidence index validation pending until the handoff report is written.") `
@@ -569,6 +606,8 @@ Write-HandoffReport `
     -supportPacketSafetyExit $supportPacketSafety.ExitCode `
     -startupRepairSafetyOutput $startupRepairSafety.Output `
     -startupRepairSafetyExit $startupRepairSafety.ExitCode `
+    -operatorManualsSafetyOutput $operatorManualsSafety.Output `
+    -operatorManualsSafetyExit $operatorManualsSafety.ExitCode `
     -trainingSafetyOutput $trainingSafety.Output `
     -trainingSafetyExit $trainingSafety.ExitCode `
     -evidenceIndexOutput $evidenceIndex.Output `
@@ -577,7 +616,7 @@ Write-HandoffReport `
     -preflightExit $preflightExit `
     -preflightSkipped $false
 
-if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
+if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
     Write-Host ""
     Write-Host "PRODUCTION_READY evidence gate passed." -ForegroundColor Green
     exit 0
@@ -585,7 +624,7 @@ if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.
 
 Write-Host ""
 Write-Host "PRODUCTION_READY remains blocked. Keep status as PRODUCTION_CANDIDATE and close the missing evidence above." -ForegroundColor Yellow
-if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
+if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
     exit 1
 }
 if ($supportPacketSafety.ExitCode -ne 0) {
@@ -593,6 +632,9 @@ if ($supportPacketSafety.ExitCode -ne 0) {
 }
 if ($startupRepairSafety.ExitCode -ne 0) {
     exit $startupRepairSafety.ExitCode
+}
+if ($operatorManualsSafety.ExitCode -ne 0) {
+    exit $operatorManualsSafety.ExitCode
 }
 if ($trainingSafety.ExitCode -ne 0) {
     exit $trainingSafety.ExitCode

@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 09:23:53
+- Generated at: 2026-06-03 09:53:23
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -15,6 +15,7 @@
 - Offline release artifact guard exit code: 1
 - Support packet safety guard exit code: 0
 - Startup and repair safety guard exit code: 0
+- Operator manuals safety guard exit code: 0
 - Training safety guard exit code: 0
 - Evidence index guard exit code: 0
 - Preflight skipped: True
@@ -42,6 +43,7 @@ bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_resto
 bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_startup_repair_safety.ps1
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
 powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000
@@ -80,6 +82,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found scripts\install_backup_tasks_windows.ps1
 [ OK ] Found scripts\validate_support_packet_safety.ps1
 [FAIL] Missing required release file: scripts\validate_startup_repair_safety.ps1
+[FAIL] Missing required release file: scripts\validate_operator_manuals_safety.ps1
 [FAIL] Missing required release file: scripts\validate_ops_evidence_index.ps1
 [FAIL] Missing required release file: scripts\validate_training_safety.ps1
 [ OK ] Found scripts\run_backup_worker.cmd
@@ -99,10 +102,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 9339c423 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit eeb6109d before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
-OFFLINE_RELEASE_CLEAN: NO (19 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (20 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -192,6 +195,59 @@ STARTUP_REPAIR_SAFETY: YES
 [ OK ] HelpView test protects production database warning
 
 TRAINING_SAFETY: YES
+```
+
+## Operator manuals safety validation output
+
+```text
+[ OK ] Found docs\manuales\MANUAL_CAJERO.md
+[ OK ] Found docs\manuales\MANUAL_SUPERVISOR.md
+[ OK ] Found docs\manuales\MANUAL_ADMINISTRADOR.md
+[ OK ] Found docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md
+[ OK ] Found docs\manuales\GUIA_CAPACITACION_SEGURA.md
+[ OK ] Cashier manual has daily checklist section
+[ OK ] Cashier manual has delicate-action warning section
+[ OK ] Cashier manual checklist has actionable checkboxes
+[ OK ] Cashier manual warns before duplicate invoice/payment attempts
+[ OK ] Cashier manual includes Abrir El Sistema
+[ OK ] Cashier manual includes Iniciar Sesion
+[ OK ] Cashier manual includes Abrir Caja
+[ OK ] Cashier manual includes Crear Factura
+[ OK ] Cashier manual includes Cobrar
+[ OK ] Cashier manual includes Imprimir Recibo
+[ OK ] Cashier manual includes Cerrar Caja
+[ OK ] Cashier manual includes Si Algo Falla
+[ OK ] Cashier manual blocks charging without open cashbox
+[ OK ] Supervisor manual has daily checklist section
+[ OK ] Supervisor manual has delicate-action warning section
+[ OK ] Supervisor manual checklist has actionable checkboxes
+[ OK ] Supervisor manual warns before duplicate invoice/payment attempts
+[ OK ] Supervisor manual includes incident: Servidor No Disponible
+[ OK ] Supervisor manual includes incident: Red Local Caida
+[ OK ] Supervisor manual includes incident: Impresora No Responde
+[ OK ] Supervisor manual includes incident: Caja Quedo Abierta
+[ OK ] Supervisor manual includes incident: Respaldo Fallido
+[ OK ] Supervisor manual includes incident: Sesion Vencida O Sin Permiso
+[ OK ] Supervisor manual forbids deleting invoices
+[ OK ] Administrator manual has daily checklist section
+[ OK ] Administrator manual has delicate-action warning section
+[ OK ] Administrator manual checklist has actionable checkboxes
+[ OK ] Administrator manual warns before duplicate invoice/payment attempts
+[ OK ] Administrator manual includes Usuarios Y Permisos
+[ OK ] Administrator manual includes Respaldos
+[ OK ] Administrator manual includes Cambios Criticos
+[ OK ] Administrator manual includes Capacitacion Segura
+[ OK ] Administrator manual forbids invented fiscal compliance
+[ OK ] Administrator manual forbids destructive production commands
+[ OK ] Operator docs include safe training/support term: base real
+[ OK ] Operator docs include safe training/support term: produccion
+[ OK ] Operator docs include safe training/support term: base descartable
+[ OK ] Operator docs include safe training/support term: no use la base real
+[ OK ] Operator docs include safe training/support term: No restaure
+[ OK ] Operator docs include safe training/support term: No borre
+[ OK ] Operator manuals do not expose secret-like assignments
+
+OPERATOR_MANUALS_SAFETY: YES
 ```
 
 ## Evidence index validation output
