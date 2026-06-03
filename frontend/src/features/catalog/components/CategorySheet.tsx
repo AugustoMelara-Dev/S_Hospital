@@ -100,10 +100,12 @@ export function CategorySheet({ open, onOpenChange, category, onSuccess }: Categ
           />
         </div>
 
-        <label className="flex items-center gap-2 cursor-pointer">
-          <Checkbox {...register('active')} />
-          <span className="text-sm font-medium">Categoría activa</span>
-        </label>
+        <div className="flex items-center gap-2">
+          <Checkbox id="category-active" {...register('active')} />
+          <Label htmlFor="category-active" className="cursor-pointer">
+            Categoría activa
+          </Label>
+        </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button

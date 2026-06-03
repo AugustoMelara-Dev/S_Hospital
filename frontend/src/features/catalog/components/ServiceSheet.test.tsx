@@ -79,4 +79,19 @@ describe('ServiceSheet', () => {
     });
     expect(onSuccess).toHaveBeenCalled();
   });
+
+  it('exposes service status checkboxes as labeled controls', () => {
+    render(
+      <ServiceSheet
+        open
+        onOpenChange={vi.fn()}
+        categories={[{ id: 1, name: 'Laboratorio' }]}
+        areas={[{ id: 1, name: 'Laboratorio' }]}
+        onSuccess={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText(/aplica isv/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/servicio activo/i)).toBeInTheDocument();
+  });
 });

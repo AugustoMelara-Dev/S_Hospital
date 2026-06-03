@@ -353,15 +353,19 @@ export function ServiceSheet({
         </div>
 
         <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Checkbox {...register('taxable')} />
-            <span className="text-sm font-medium">Aplica ISV</span>
-          </label>
+          <div className="flex items-center gap-2">
+            <Checkbox id="service-taxable" {...register('taxable')} />
+            <Label htmlFor="service-taxable" className="cursor-pointer">
+              Aplica ISV
+            </Label>
+          </div>
 
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Checkbox {...register('active')} />
-            <span className="text-sm font-medium">Servicio activo</span>
-          </label>
+          <div className="flex items-center gap-2">
+            <Checkbox id="service-active" {...register('active')} />
+            <Label htmlFor="service-active" className="cursor-pointer">
+              Servicio activo
+            </Label>
+          </div>
         </div>
 
         {submitError && (
