@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 11:23:17
+- Generated at: 2026-06-03 11:33:51
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -14,6 +14,7 @@
 - Final concurrency proof file: `qa/FINAL_CONCURRENCY_PROOF.md`
 - Offline release artifact guard exit code: 1
 - Support packet safety guard exit code: 0
+- Browser smoke evidence guard exit code: 0
 - Startup and repair safety guard exit code: 0
 - Operator manuals safety guard exit code: 0
 - Backup and restore docs safety guard exit code: 0
@@ -50,6 +51,7 @@ bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_resto
 # Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report.
 bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_browser_smoke_evidence.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_startup_repair_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_backup_restore_docs_safety.ps1
@@ -97,6 +99,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found scripts\install_hospital_startup_shortcut.ps1
 [ OK ] Found scripts\install_backup_tasks_windows.ps1
 [ OK ] Found scripts\validate_support_packet_safety.ps1
+[FAIL] Missing required release file: scripts\validate_browser_smoke_evidence.ps1
 [FAIL] Missing required release file: scripts\validate_startup_repair_safety.ps1
 [FAIL] Missing required release file: scripts\validate_operator_manuals_safety.ps1
 [FAIL] Missing required release file: scripts\validate_backup_restore_docs_safety.ps1
@@ -126,10 +129,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 7e679f04 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 15bdb5fb before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
-OFFLINE_RELEASE_CLEAN: NO (28 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (29 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -139,6 +142,43 @@ Paquete seguro para soporte creado en: %PROJECT_ROOT%\qa\support-packets\validat
 Archivo principal: %PROJECT_ROOT%\qa\support-packets\validation\MANIFIESTO.md
 [OK] SUPPORT_PACKET_SAFETY: YES
 [OK] No se copiaron .env, secretos ni rutas locales reales.
+```
+
+## Browser smoke evidence validation output
+
+```text
+[ OK ] Found qa\browser-smoke-2026-06-03\rc-e2e-mocked-report.json
+[ OK ] Found qa\screenshots\rc-help-support-2026-05-31\help-support-report.json
+[ OK ] RC browser smoke declares mocked-e2e mode
+[ OK ] RC browser smoke states it does not replace LAN/printer proof
+[ OK ] RC browser smoke has no console issues
+[ OK ] RC browser smoke metadata matches dashboard-light
+[ OK ] RC browser smoke dashboard-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches dashboard-dark
+[ OK ] RC browser smoke dashboard-dark screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches cashbox-open-light
+[ OK ] RC browser smoke cashbox-open-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches billing-new-empty-light
+[ OK ] RC browser smoke billing-new-empty-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches billing-new-cart-light
+[ OK ] RC browser smoke billing-new-cart-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches receipt-preview-a5-light
+[ OK ] RC browser smoke receipt-preview-a5-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches receipt-preview-light
+[ OK ] RC browser smoke receipt-preview-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches receipt-preview-dark
+[ OK ] RC browser smoke receipt-preview-dark screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches reports-admin-light
+[ OK ] RC browser smoke reports-admin-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches backups-pending-light
+[ OK ] RC browser smoke backups-pending-light screenshot exists and is non-empty
+[ OK ] Help/support smoke has no console issues
+[ OK ] Help/support light capture records safe support evidence without secret words
+[ OK ] Help/support light screenshot exists and is non-empty
+[ OK ] Help/support dark capture records safe support evidence without secret words
+[ OK ] Help/support dark screenshot exists and is non-empty
+
+BROWSER_SMOKE_EVIDENCE: YES
 ```
 
 ## Startup and repair safety validation output

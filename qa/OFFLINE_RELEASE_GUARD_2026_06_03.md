@@ -4,7 +4,7 @@ Decision: `BLOCKED_UNTIL_REGENERATED`.
 
 Scope:
 
-- Verify that `scripts\assert_offline_release_clean.ps1` rejects the current local `offline-release` package after the startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, double-action, installer-legacy, LAN-recovery, shift-incident-recovery and evidence validators were added.
+- Verify that `scripts\assert_offline_release_clean.ps1` rejects the current local `offline-release` package after the browser-smoke-evidence, startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, double-action, installer-legacy, LAN-recovery, shift-incident-recovery and evidence validators were added.
 - Confirm that a stale offline package cannot be handed off as production-ready.
 
 Command run:
@@ -16,8 +16,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_relea
 Observed result:
 
 - `OFFLINE_RELEASE_CLEAN: NO`.
-- Blocking issue count: 28 in the latest handoff smoke with `-RequireCurrentCommit`; 27 in the direct guard run without commit validation.
+- Blocking issue count: 29 in the latest handoff smoke with `-RequireCurrentCommit`; 28 in the direct guard run without commit validation.
 - The guard detected missing `scripts\validate_startup_repair_safety.ps1` in `offline-release`.
+- The guard detected missing `scripts\validate_browser_smoke_evidence.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_operator_manuals_safety.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_backup_restore_docs_safety.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_installation_docs_safety.ps1` in `offline-release`.

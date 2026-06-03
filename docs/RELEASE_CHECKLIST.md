@@ -136,6 +136,7 @@ siguientes. Si usa `-ReportPath`, debe ser un archivo `.md` dentro de `qa/`;
 el helper rechaza rutas fuera de la carpeta de evidencia antes de ejecutar
 preflight o escribir el reporte.
 El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
+`scripts\validate_browser_smoke_evidence.ps1`,
 `scripts\validate_startup_repair_safety.ps1`,
 `scripts\validate_operator_manuals_safety.ps1`,
 `scripts\validate_backup_restore_docs_safety.ps1`,
@@ -149,6 +150,8 @@ El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
 `scripts\validate_training_safety.ps1`. Despues de escribir el reporte, ejecuta
 `scripts\validate_ops_evidence_index.ps1` contra ese mismo archivo y bloquea
 `PRODUCTION_READY` si el paquete de soporte puede filtrar secretos, si
+la evidencia visual de navegador pierde capturas criticas, consola limpia o
+advertencia de que no sustituye LAN/impresora fisica, si
 arranque/reparacion segura falla, si los manuales por rol pierden checklists o
 advertencias, si la guia de respaldos/restauracion deja de exigir evidencia
 segura, si la guia de instalacion deja de proteger instalacion conservadora,
@@ -168,6 +171,12 @@ Antes de entregar accesos directos o scripts de recuperacion, ejecute
 `scripts\validate_startup_repair_safety.ps1`; debe reportar
 `STARTUP_REPAIR_SAFETY: YES` para confirmar que los flujos de arranque,
 reparacion y tareas de respaldo siguen teniendo modo seguro sin borrar datos.
+Antes de entregar evidencia visual o de navegador, ejecute
+`scripts\validate_browser_smoke_evidence.ps1`; debe reportar
+`BROWSER_SMOKE_EVIDENCE: YES` para confirmar que existen capturas de dashboard,
+caja, nueva factura, recibos, reportes, respaldos y Ayuda/soporte, que la
+consola no reporta errores y que la evidencia mockeada no se confunde con la
+validacion fisica de LAN e impresora.
 Antes de entregar manuales por rol, ejecute
 `scripts\validate_operator_manuals_safety.ps1`; debe reportar
 `OPERATOR_MANUALS_SAFETY: YES` para confirmar que cajero, supervisor y

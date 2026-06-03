@@ -11,6 +11,7 @@
 | Area | Evidence | Result |
 |---|---|---|
 | Browser smoke | `qa/browser-smoke-2026-06-03/rc-e2e-mocked-report.json` and screenshots | Passed with `console_issues: []` |
+| Browser smoke evidence guard | `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md` | Critical browser screenshots and Help/support captures exist, console issues are empty, and mocked evidence is not treated as physical LAN/printer proof |
 | Real Laravel smoke | `npm.cmd run smoke:real` against `http://127.0.0.1:8000` | Passed read-only route/navigation smoke; mutating smoke intentionally skipped |
 | CSP production serving | `b7d2ca72 fix(security): allow spa runtime styles in csp` | Real smoke no longer reports CSP style errors |
 | Backup worker | `qa/BACKUP_WORKER_SMOKE_2026_06_03.md` | Manual backup moved from pending to `success`, checksum present |
@@ -34,7 +35,7 @@
 | Training safety | `qa/TRAINING_SAFETY_2026_06_03.md` | Manuals and in-app Help keep isolated-practice guidance and forbid training on production data |
 | Evidence index | `qa/OPS_EVIDENCE_INDEX_2026_06_03.md` | Handoff evidence references exist under `qa/` and physical blockers remain listed before `PRODUCTION_READY` |
 | Offline release guard | `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md` | Current local offline package is stale and correctly blocked until regenerated from the final commit |
-| Handoff self-check | `qa/HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` | `final_production_handoff.ps1 -SkipPreflight` writes a report, runs support-packet, startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, double-action, installer-legacy, LAN-recovery, shift-incident-recovery, training-safety and evidence-index validation, and keeps `PRODUCTION_CANDIDATE` |
+| Handoff self-check | `qa/HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` | `final_production_handoff.ps1 -SkipPreflight` writes a report, runs support-packet, browser-smoke-evidence, startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, double-action, installer-legacy, LAN-recovery, shift-incident-recovery, training-safety and evidence-index validation, and keeps `PRODUCTION_CANDIDATE` |
 | Preflight | `qa/PREFLIGHT_WITH_CONCURRENCY_2026_06_03.md` | Restore and concurrency evidence now pass preflight; production readiness still blocked |
 
 ## Tests and gates run locally
@@ -45,7 +46,7 @@
 - Focused backend tests: `SecurityHeadersTest`, `BackupWorkflowTest`, `DatabaseDumpWriterTest`, `SystemStatusTest`, `CashPaymentsReceiptTest`, `ReportsTest`, `BroadcastingWiringTest`, `AuditLogTest`, `GenerateFiscalNumberActionTest`.
 - Frontend gates: `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run test -- --run`, `npm.cmd run build`, `scripts\check-branding.ps1`.
 - E2E/browser: mocked production readiness E2E with screenshots, real Laravel smoke without mutations.
-- Operational scripts: backup worker smoke, restore into disposable DB, concurrency validation, startup/repair/task dry-runs, system diagnostics sanitization, client support sanitization, support packet safety validation, support packet env-file redaction, startup/repair safety validation, operator manuals safety validation, backup/restore docs safety validation, installation docs safety validation, help screen safety validation, system diagnostics safety validation, double-action safety validation, installer legacy safety validation, LAN recovery safety validation, shift incident recovery safety validation, training safety validation, evidence index validation, handoff self-check, offline release guard, production preflight.
+- Operational scripts: backup worker smoke, restore into disposable DB, concurrency validation, startup/repair/task dry-runs, system diagnostics sanitization, client support sanitization, support packet safety validation, support packet env-file redaction, browser smoke evidence validation, startup/repair safety validation, operator manuals safety validation, backup/restore docs safety validation, installation docs safety validation, help screen safety validation, system diagnostics safety validation, double-action safety validation, installer legacy safety validation, LAN recovery safety validation, shift incident recovery safety validation, training safety validation, evidence index validation, handoff self-check, offline release guard, production preflight.
 
 ## Operator documentation and in-app support
 

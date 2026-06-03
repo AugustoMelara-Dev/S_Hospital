@@ -39,6 +39,7 @@ $releaseGuardScript = Join-Path $scriptsDir "assert_offline_release_clean.ps1"
 $evidenceIndexScript = Join-Path $scriptsDir "validate_ops_evidence_index.ps1"
 $trainingSafetyScript = Join-Path $scriptsDir "validate_training_safety.ps1"
 $supportPacketSafetyScript = Join-Path $scriptsDir "validate_support_packet_safety.ps1"
+$browserSmokeEvidenceScript = Join-Path $scriptsDir "validate_browser_smoke_evidence.ps1"
 $startupRepairSafetyScript = Join-Path $scriptsDir "validate_startup_repair_safety.ps1"
 $operatorManualsSafetyScript = Join-Path $scriptsDir "validate_operator_manuals_safety.ps1"
 $backupRestoreDocsSafetyScript = Join-Path $scriptsDir "validate_backup_restore_docs_safety.ps1"
@@ -206,6 +207,18 @@ function Invoke-SupportPacketSafetyGuard {
     }
 }
 
+function Invoke-BrowserSmokeEvidenceGuard {
+    Write-Section "Browser smoke evidence validation"
+    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $browserSmokeEvidenceScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
 function Invoke-StartupRepairSafetyGuard {
     Write-Section "Startup and repair safety validation"
     $output = @(& powershell.exe -ExecutionPolicy Bypass -File $startupRepairSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
@@ -360,6 +373,8 @@ function Write-HandoffReport(
     [int] $releaseGuardExit,
     [string[]] $supportPacketSafetyOutput,
     [int] $supportPacketSafetyExit,
+    [string[]] $browserSmokeEvidenceOutput,
+    [int] $browserSmokeEvidenceExit,
     [string[]] $startupRepairSafetyOutput,
     [int] $startupRepairSafetyExit,
     [string[]] $operatorManualsSafetyOutput,
@@ -391,7 +406,7 @@ function Write-HandoffReport(
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
     $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted
-    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
+    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
 
     Add-ReportLine $lines "# Final production handoff result"
     Add-ReportLine $lines ""
@@ -409,6 +424,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '- Final concurrency proof file: `qa/FINAL_CONCURRENCY_PROOF.md`'
     Add-ReportLine $lines "- Offline release artifact guard exit code: $releaseGuardExit"
     Add-ReportLine $lines "- Support packet safety guard exit code: $supportPacketSafetyExit"
+    Add-ReportLine $lines "- Browser smoke evidence guard exit code: $browserSmokeEvidenceExit"
     Add-ReportLine $lines "- Startup and repair safety guard exit code: $startupRepairSafetyExit"
     Add-ReportLine $lines "- Operator manuals safety guard exit code: $operatorManualsSafetyExit"
     Add-ReportLine $lines "- Backup and restore docs safety guard exit code: $backupRestoreDocsSafetyExit"
@@ -459,6 +475,9 @@ function Write-HandoffReport(
     if ($supportPacketSafetyExit -ne 0) {
         Add-ReportLine $lines "- Support packet safety validation returned exit code $supportPacketSafetyExit."
     }
+    if ($browserSmokeEvidenceExit -ne 0) {
+        Add-ReportLine $lines "- Browser smoke evidence validation returned exit code $browserSmokeEvidenceExit."
+    }
     if ($startupRepairSafetyExit -ne 0) {
         Add-ReportLine $lines "- Startup and repair safety validation returned exit code $startupRepairSafetyExit."
     }
@@ -495,7 +514,7 @@ function Write-HandoffReport(
     if ($evidenceIndexExit -ne 0) {
         Add-ReportLine $lines "- Final handoff evidence index validation returned exit code $evidenceIndexExit."
     }
-    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
+    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
         Add-ReportLine $lines "- None reported by the handoff script."
     }
     Add-ReportLine $lines ""
@@ -510,6 +529,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "# Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report."
     Add-ReportLine $lines "bash -lc `"HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_BASE_URL=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh`""
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_browser_smoke_evidence.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_startup_repair_safety.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_safety.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_backup_restore_docs_safety.ps1"
@@ -549,6 +569,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $supportPacketSafetyOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## Browser smoke evidence validation output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $browserSmokeEvidenceOutput) {
         Add-ReportLine $lines (Protect-HandoffText $line)
     }
     Add-ReportLine $lines '```'
@@ -686,6 +715,7 @@ Assert-ScriptExists $releaseGuardScript
 Assert-ScriptExists $evidenceIndexScript
 Assert-ScriptExists $trainingSafetyScript
 Assert-ScriptExists $supportPacketSafetyScript
+Assert-ScriptExists $browserSmokeEvidenceScript
 Assert-ScriptExists $startupRepairSafetyScript
 Assert-ScriptExists $operatorManualsSafetyScript
 Assert-ScriptExists $backupRestoreDocsSafetyScript
@@ -748,6 +778,7 @@ $releaseGuardExit = $LASTEXITCODE
 $releaseGuardOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
 $supportPacketSafety = Invoke-SupportPacketSafetyGuard
+$browserSmokeEvidence = Invoke-BrowserSmokeEvidenceGuard
 $startupRepairSafety = Invoke-StartupRepairSafetyGuard
 $operatorManualsSafety = Invoke-OperatorManualsSafetyGuard
 $backupRestoreDocsSafety = Invoke-BackupRestoreDocsSafetyGuard
@@ -774,6 +805,8 @@ if ($SkipPreflight) {
         -releaseGuardExit $releaseGuardExit `
         -supportPacketSafetyOutput $supportPacketSafety.Output `
         -supportPacketSafetyExit $supportPacketSafety.ExitCode `
+        -browserSmokeEvidenceOutput $browserSmokeEvidence.Output `
+        -browserSmokeEvidenceExit $browserSmokeEvidence.ExitCode `
         -startupRepairSafetyOutput $startupRepairSafety.Output `
         -startupRepairSafetyExit $startupRepairSafety.ExitCode `
         -operatorManualsSafetyOutput $operatorManualsSafety.Output `
@@ -814,6 +847,8 @@ if ($SkipPreflight) {
         -releaseGuardExit $releaseGuardExit `
         -supportPacketSafetyOutput $supportPacketSafety.Output `
         -supportPacketSafetyExit $supportPacketSafety.ExitCode `
+        -browserSmokeEvidenceOutput $browserSmokeEvidence.Output `
+        -browserSmokeEvidenceExit $browserSmokeEvidence.ExitCode `
         -startupRepairSafetyOutput $startupRepairSafety.Output `
         -startupRepairSafetyExit $startupRepairSafety.ExitCode `
         -operatorManualsSafetyOutput $operatorManualsSafety.Output `
@@ -860,6 +895,8 @@ Write-HandoffReport `
     -releaseGuardExit $releaseGuardExit `
     -supportPacketSafetyOutput $supportPacketSafety.Output `
     -supportPacketSafetyExit $supportPacketSafety.ExitCode `
+    -browserSmokeEvidenceOutput $browserSmokeEvidence.Output `
+    -browserSmokeEvidenceExit $browserSmokeEvidence.ExitCode `
     -startupRepairSafetyOutput $startupRepairSafety.Output `
     -startupRepairSafetyExit $startupRepairSafety.ExitCode `
     -operatorManualsSafetyOutput $operatorManualsSafety.Output `
@@ -900,6 +937,8 @@ Write-HandoffReport `
     -releaseGuardExit $releaseGuardExit `
     -supportPacketSafetyOutput $supportPacketSafety.Output `
     -supportPacketSafetyExit $supportPacketSafety.ExitCode `
+    -browserSmokeEvidenceOutput $browserSmokeEvidence.Output `
+    -browserSmokeEvidenceExit $browserSmokeEvidence.ExitCode `
     -startupRepairSafetyOutput $startupRepairSafety.Output `
     -startupRepairSafetyExit $startupRepairSafety.ExitCode `
     -operatorManualsSafetyOutput $operatorManualsSafety.Output `
@@ -928,7 +967,7 @@ Write-HandoffReport `
     -preflightExit $preflightExit `
     -preflightSkipped $false
 
-if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
+if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
     Write-Host ""
     Write-Host "PRODUCTION_READY evidence gate passed." -ForegroundColor Green
     exit 0
@@ -936,11 +975,14 @@ if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.
 
 Write-Host ""
 Write-Host "PRODUCTION_READY remains blocked. Keep status as PRODUCTION_CANDIDATE and close the missing evidence above." -ForegroundColor Yellow
-if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
+if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
     exit 1
 }
 if ($supportPacketSafety.ExitCode -ne 0) {
     exit $supportPacketSafety.ExitCode
+}
+if ($browserSmokeEvidence.ExitCode -ne 0) {
+    exit $browserSmokeEvidence.ExitCode
 }
 if ($startupRepairSafety.ExitCode -ne 0) {
     exit $startupRepairSafety.ExitCode
