@@ -4,6 +4,7 @@ namespace App\Actions\Reports;
 
 use App\Models\FiscalSetting;
 use App\Support\HospitalName;
+use App\Support\Money;
 use Illuminate\Support\Carbon;
 use PhpOffice\PhpSpreadsheet\Chart\Chart;
 use PhpOffice\PhpSpreadsheet\Chart\DataSeries;
@@ -20,6 +21,11 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class ExcelReportService
 {
+    private function moneyFloat(mixed $value): float
+    {
+        return Money::parseCents((string) ($value ?? 0), 'amount') / 100;
+    }
+
     public function generate(
         array $income,
         array $categories,
@@ -112,7 +118,7 @@ class ExcelReportService
         $sheet1->mergeCells('B6:C6');
         $sheet1->setCellValue('B6', 'TOTAL FACTURADO');
         $sheet1->getStyle('B6:C6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet1->setCellValue('B7', (float) $income['total_billed']);
+        $sheet1->setCellValue('B7', $this->moneyFloat($income['total_billed']));
         $sheet1->getStyle('B7')->getNumberFormat()->setFormatCode('L. #,##0.00');
         $sheet1->getStyle('B6:C7')->applyFromArray($kpiCardStyle);
         $sheet1->getStyle('B7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -120,7 +126,7 @@ class ExcelReportService
         $sheet1->mergeCells('E6:F6');
         $sheet1->setCellValue('E6', 'TOTAL COBRADO');
         $sheet1->getStyle('E6:F6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet1->setCellValue('E7', (float) $income['total_collected']);
+        $sheet1->setCellValue('E7', $this->moneyFloat($income['total_collected']));
         $sheet1->getStyle('E7')->getNumberFormat()->setFormatCode('L. #,##0.00');
         $sheet1->getStyle('E6:F7')->applyFromArray($kpiCardStyle);
         $sheet1->getStyle('E7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -150,7 +156,7 @@ class ExcelReportService
 
         foreach ($income['payments_by_method'] as $method => $total) {
             $sheet1->setCellValue('B'.$row, $methodLabels[$method] ?? ucfirst($method));
-            $sheet1->setCellValue('C'.$row, (float) $total);
+            $sheet1->setCellValue('C'.$row, $this->moneyFloat($total));
             $sheet1->getStyle('C'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
             $row++;
         }
@@ -228,7 +234,7 @@ class ExcelReportService
         foreach ($categories['categories'] as $cat) {
             $sheet2->setCellValue('B'.$row, $cat['category']);
             $sheet2->setCellValue('C'.$row, (int) $cat['quantity']);
-            $sheet2->setCellValue('D'.$row, (float) $cat['total']);
+            $sheet2->setCellValue('D'.$row, $this->moneyFloat($cat['total']));
 
             $sheet2->getStyle('C'.$row)->getNumberFormat()->setFormatCode('#,##0');
             $sheet2->getStyle('D'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
@@ -312,7 +318,7 @@ class ExcelReportService
             $sheet3->setCellValue('B'.$row, $svc['service']);
             $sheet3->setCellValue('C'.$row, $svc['category']);
             $sheet3->setCellValue('D'.$row, (int) $svc['quantity']);
-            $sheet3->setCellValue('E'.$row, (float) $svc['total']);
+            $sheet3->setCellValue('E'.$row, $this->moneyFloat($svc['total']));
 
             $sheet3->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0');
             $sheet3->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
@@ -354,7 +360,7 @@ class ExcelReportService
             $sheet4->setCellValue('B'.$row, $cashier['name']);
             $sheet4->setCellValue('C'.$row, '@'.$cashier['username']);
             $sheet4->setCellValue('D'.$row, (int) $cashier['payment_count']);
-            $sheet4->setCellValue('E'.$row, (float) $cashier['total_collected']);
+            $sheet4->setCellValue('E'.$row, $this->moneyFloat($cashier['total_collected']));
 
             $sheet4->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0');
             $sheet4->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
@@ -397,7 +403,7 @@ class ExcelReportService
         foreach ($operations['voids'] as $void) {
             $sheet5->setCellValue('B'.$row, $void['invoice_number']);
             $sheet5->setCellValue('C'.$row, $void['patient_name'] ?? 'N/A');
-            $sheet5->setCellValue('D'.$row, (float) $void['total']);
+            $sheet5->setCellValue('D'.$row, $this->moneyFloat($void['total']));
             $sheet5->setCellValue('E'.$row, $void['reason'] ?? $void['void_reason'] ?? 'Sin motivo');
             $sheet5->setCellValue('F'.$row, $void['user'] ?? $void['voided_by_name'] ?? 'N/A');
 
@@ -457,7 +463,7 @@ class ExcelReportService
             $sheet5->setCellValue('B'.$row, $paymentVoid['invoice_number'] ?? 'N/A');
             $sheet5->setCellValue('C'.$row, $paymentVoid['patient_name'] ?? 'N/A');
             $sheet5->setCellValue('D'.$row, $this->paymentMethodLabel($paymentVoid['method'] ?? ''));
-            $sheet5->setCellValue('E'.$row, (float) ($paymentVoid['amount'] ?? 0));
+            $sheet5->setCellValue('E'.$row, $this->moneyFloat($paymentVoid['amount'] ?? 0));
             $sheet5->setCellValue('F'.$row, $paymentVoid['reason'] ?? 'Sin motivo');
             $sheet5->setCellValue('G'.$row, $paymentVoid['voided_by'] ?? 'N/A');
             $sheet5->setCellValue('H'.$row, isset($paymentVoid['voided_at'])

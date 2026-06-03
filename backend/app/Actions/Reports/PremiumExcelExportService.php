@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\FiscalSetting;
 use App\Models\User;
 use App\Support\HospitalName;
+use App\Support\Money;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Chart\Chart;
@@ -26,6 +27,11 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 
 class PremiumExcelExportService
 {
+    private function moneyFloat(mixed $value): float
+    {
+        return Money::parseCents((string) ($value ?? 0), 'amount') / 100;
+    }
+
     public function generate(
         array $income,
         array $categories,
@@ -242,7 +248,7 @@ class PremiumExcelExportService
         $sheet1->mergeCells('B6:C6');
         $sheet1->setCellValue('B6', 'TOTAL FACTURADO');
         $sheet1->getStyle('B6:C6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet1->setCellValue('B7', (float) $income['total_billed']);
+        $sheet1->setCellValue('B7', $this->moneyFloat($income['total_billed']));
         $sheet1->getStyle('B7')->getNumberFormat()->setFormatCode('L. #,##0.00');
         $sheet1->getStyle('B6:C7')->applyFromArray($kpiCardStyle);
         $sheet1->getStyle('B7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -250,7 +256,7 @@ class PremiumExcelExportService
         $sheet1->mergeCells('E6:F6');
         $sheet1->setCellValue('E6', 'TOTAL COBRADO');
         $sheet1->getStyle('E6:F6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet1->setCellValue('E7', (float) $income['total_collected']);
+        $sheet1->setCellValue('E7', $this->moneyFloat($income['total_collected']));
         $sheet1->getStyle('E7')->getNumberFormat()->setFormatCode('L. #,##0.00');
         $sheet1->getStyle('E6:F7')->applyFromArray($kpiCardStyle);
         $sheet1->getStyle('E7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -279,7 +285,7 @@ class PremiumExcelExportService
 
         foreach ($income['payments_by_method'] as $method => $total) {
             $sheet1->setCellValue('B'.$row, $methodLabels[$method] ?? ucfirst($method));
-            $sheet1->setCellValue('C'.$row, (float) $total);
+            $sheet1->setCellValue('C'.$row, $this->moneyFloat($total));
             $sheet1->getStyle('C'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
             $row++;
         }
@@ -361,11 +367,11 @@ class PremiumExcelExportService
         $financialSheet->getStyle('B5:D5')->applyFromArray($headerStyle);
 
         $financialRows = [
-            ['Facturado', (float) ($income['total_billed'] ?? 0), 'Facturas no anuladas emitidas en el rango'],
-            ['Cobrado', (float) ($income['total_collected'] ?? 0), 'Pagos publicados no anulados en el rango'],
-            ['Pendiente', (float) ($income['total_pending'] ?? 0), 'Saldo actual de facturas emitidas o parciales'],
-            ['Parcial', (float) ($income['total_partial'] ?? 0), 'Facturas con pago parcial separadas de pagadas'],
-            ['Anulado', (float) ($income['total_voided'] ?? 0), 'Facturas anuladas reportadas fuera de ingresos'],
+            ['Facturado', $this->moneyFloat($income['total_billed'] ?? 0), 'Facturas no anuladas emitidas en el rango'],
+            ['Cobrado', $this->moneyFloat($income['total_collected'] ?? 0), 'Pagos publicados no anulados en el rango'],
+            ['Pendiente', $this->moneyFloat($income['total_pending'] ?? 0), 'Saldo actual de facturas emitidas o parciales'],
+            ['Parcial', $this->moneyFloat($income['total_partial'] ?? 0), 'Facturas con pago parcial separadas de pagadas'],
+            ['Anulado', $this->moneyFloat($income['total_voided'] ?? 0), 'Facturas anuladas reportadas fuera de ingresos'],
         ];
 
         $row = 6;
@@ -421,7 +427,7 @@ class PremiumExcelExportService
         foreach ($categories['categories'] as $cat) {
             $sheet2->setCellValue('B'.$row, $cat['category']);
             $sheet2->setCellValue('C'.$row, (int) $cat['quantity']);
-            $sheet2->setCellValue('D'.$row, (float) $cat['total']);
+            $sheet2->setCellValue('D'.$row, $this->moneyFloat($cat['total']));
 
             $sheet2->getStyle('C'.$row)->getNumberFormat()->setFormatCode('#,##0');
             $sheet2->getStyle('D'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
@@ -517,8 +523,8 @@ class PremiumExcelExportService
             foreach ($areas['areas'] as $area) {
                 $sheetArea->setCellValue('B'.$row, $area['area']);
                 $sheetArea->setCellValue('C'.$row, (int) $area['item_count']);
-                $sheetArea->setCellValue('D'.$row, (float) $area['quantity']);
-                $sheetArea->setCellValue('E'.$row, (float) $area['total']);
+                $sheetArea->setCellValue('D'.$row, $this->moneyFloat($area['quantity']));
+                $sheetArea->setCellValue('E'.$row, $this->moneyFloat($area['total']));
 
                 $sheetArea->getStyle('C'.$row)->getNumberFormat()->setFormatCode('#,##0');
                 $sheetArea->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0.00');
@@ -572,7 +578,7 @@ class PremiumExcelExportService
             $sheet3->setCellValue('B'.$row, $svc['service']);
             $sheet3->setCellValue('C'.$row, $svc['category']);
             $sheet3->setCellValue('D'.$row, (int) $svc['quantity']);
-            $sheet3->setCellValue('E'.$row, (float) $svc['total']);
+            $sheet3->setCellValue('E'.$row, $this->moneyFloat($svc['total']));
 
             $sheet3->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0');
             $sheet3->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
@@ -609,7 +615,7 @@ class PremiumExcelExportService
             $calcRow = 11;
             foreach ($topServices as $svc) {
                 $sheet3->setCellValue('G'.$calcRow, $svc['service']);
-                $sheet3->setCellValue('H'.$calcRow, (float) $svc['total']);
+                $sheet3->setCellValue('H'.$calcRow, $this->moneyFloat($svc['total']));
                 $sheet3->getStyle('H'.$calcRow)->getNumberFormat()->setFormatCode('L. #,##0.00');
                 $calcRow++;
             }
@@ -679,7 +685,7 @@ class PremiumExcelExportService
             $sheet4->setCellValue('B'.$row, $cashier['name']);
             $sheet4->setCellValue('C'.$row, '@'.$cashier['username']);
             $sheet4->setCellValue('D'.$row, (int) $cashier['payment_count']);
-            $sheet4->setCellValue('E'.$row, (float) $cashier['total_collected']);
+            $sheet4->setCellValue('E'.$row, $this->moneyFloat($cashier['total_collected']));
 
             $sheet4->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0');
             $sheet4->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
@@ -767,7 +773,7 @@ class PremiumExcelExportService
         foreach ($operations['voids'] as $void) {
             $sheet5->setCellValue('B'.$row, $void['invoice_number']);
             $sheet5->setCellValue('C'.$row, $void['patient_name'] ?? 'N/A');
-            $sheet5->setCellValue('D'.$row, (float) $void['total']);
+            $sheet5->setCellValue('D'.$row, $this->moneyFloat($void['total']));
             $sheet5->setCellValue('E'.$row, $void['reason'] ?? $void['void_reason'] ?? 'Sin motivo');
             $sheet5->setCellValue('F'.$row, $void['user'] ?? $void['voided_by_name'] ?? 'N/A');
 
@@ -827,7 +833,7 @@ class PremiumExcelExportService
             $sheet5->setCellValue('B'.$row, $paymentVoid['invoice_number'] ?? 'N/A');
             $sheet5->setCellValue('C'.$row, $paymentVoid['patient_name'] ?? 'N/A');
             $sheet5->setCellValue('D'.$row, $this->paymentMethodLabel($paymentVoid['method'] ?? ''));
-            $sheet5->setCellValue('E'.$row, (float) ($paymentVoid['amount'] ?? 0));
+            $sheet5->setCellValue('E'.$row, $this->moneyFloat($paymentVoid['amount'] ?? 0));
             $sheet5->setCellValue('F'.$row, $paymentVoid['reason'] ?? 'Sin motivo');
             $sheet5->setCellValue('G'.$row, $paymentVoid['voided_by'] ?? 'N/A');
             $sheet5->setCellValue('H'.$row, isset($paymentVoid['voided_at'])

@@ -6,6 +6,7 @@ use App\Actions\Reports\Concerns\FormatsReportMoney;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
+use App\Support\Money;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -138,7 +139,7 @@ class DashboardReportService
             ->map(fn (object $row): array => [
                 'service_name' => $row->service_name,
                 'category_name' => $row->category_name,
-                'quantity' => number_format((int) $row->quantity_cents / 100, 2, '.', ''),
+                'quantity' => Money::formatCents((int) $row->quantity_cents),
                 'total' => $this->centsToMoney($row->total_cents),
             ])
             ->values()
