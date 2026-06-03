@@ -16,8 +16,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_relea
 Observed result:
 
 - `OFFLINE_RELEASE_CLEAN: NO`.
-- Blocking issue count: 16.
+- Blocking issue count: 17.
 - The guard detected missing `scripts\validate_ops_evidence_index.ps1` in `offline-release`.
+- The guard detected missing `scripts\validate_training_safety.ps1` in `offline-release`.
 - The guard detected multiple release files that differ from versioned source.
 - The guard detected that `offline-images` contains no Docker image tar files.
 

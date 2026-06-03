@@ -3128,6 +3128,14 @@ Decision: se tipan relaciones Eloquent usadas por categorias/facturas, `ReverseI
 
 Criterio de verificacion: `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G --error-format=table` pasa sin errores. Tambien pasan `BroadcastingWiringTest`, `InvoiceReverseTest`, `CashPaymentsReceiptTest`, `BackupWorkflowTest`, Pint focal y `scripts\check-branding.ps1`.
 
+## 2026-06-03 - Gate de capacitacion segura
+
+Contexto: el frente operativo exige que la capacitacion sea parte del producto, pero no puede permitir que cajeros, supervisores o administradores ensayen facturas, cobros, anulaciones, restauraciones o respaldos sobre la base real del hospital.
+
+Decision: se agrega `scripts\validate_training_safety.ps1` para validar que `docs\manuales\GUIA_CAPACITACION_SEGURA.md`, `docs\manuales\CHECKLIST_CAPACITACION.md` y la pantalla `HelpView` con su test conserven instrucciones de entorno aislado, base descartable, roles, fallos que deben practicarse y acciones prohibidas en produccion.
+
+Criterio de verificacion: `scripts\validate_training_safety.ps1` reporta `TRAINING_SAFETY: YES`; `scripts\assert_offline_release_clean.ps1` exige que el script viaje en el paquete offline y coincida con la fuente versionada.
+
 ## 2026-06-03 - Handoff final valida su propio indice de evidencia
 
 Contexto: `scripts\validate_ops_evidence_index.ps1` podia ejecutarse manualmente, pero `scripts\final_production_handoff.ps1` escribia el reporte final sin comprobar que ese mismo reporte conservara referencias `qa/`, bloqueantes fisicos y ausencia de rutas locales o secretos obvios.

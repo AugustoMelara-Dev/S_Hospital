@@ -139,6 +139,10 @@ Despues de escribir el reporte, el helper ejecuta
 `scripts\validate_ops_evidence_index.ps1` contra ese mismo archivo y bloquea
 `PRODUCTION_READY` si el indice tiene referencias rotas, rutas locales,
 secretos obvios o no mantiene los bloqueantes fisicos.
+Antes de entregar material de capacitacion, ejecute
+`scripts\validate_training_safety.ps1`; debe reportar `TRAINING_SAFETY: YES`
+para confirmar que manuales y Ayuda siguen prohibiendo practicas sobre la base
+real de produccion.
 
 Este preflight falla si el servidor no usa `APP_ENV=production`, si `APP_DEBUG`
 no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o
