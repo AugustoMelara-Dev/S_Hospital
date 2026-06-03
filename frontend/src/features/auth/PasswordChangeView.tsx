@@ -2,6 +2,7 @@ import { type FormEvent } from 'react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
 
 export type PasswordChangeForm = {
   current_password: string;
@@ -34,36 +35,45 @@ export function PasswordChangeView({ form, onChange, onSubmit, submitting = fals
                 {status}
               </p>
             ) : null}
-            <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
-              Contraseña actual
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="current-password" className="text-muted-foreground">
+                Contraseña actual
+              </Label>
               <Input
+                id="current-password"
                 type="password"
                 value={form.current_password}
                 autoComplete="current-password"
                 disabled={submitting}
                 onChange={(event) => onChange({ ...form, current_password: event.target.value })}
               />
-            </label>
-            <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
-              Nueva contraseña
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="new-password" className="text-muted-foreground">
+                Nueva contraseña
+              </Label>
               <Input
+                id="new-password"
                 type="password"
                 value={form.password}
                 autoComplete="new-password"
                 disabled={submitting}
                 onChange={(event) => onChange({ ...form, password: event.target.value })}
               />
-            </label>
-            <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
-              Confirmar nueva contraseña
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="password-confirmation" className="text-muted-foreground">
+                Confirmar nueva contraseña
+              </Label>
               <Input
+                id="password-confirmation"
                 type="password"
                 value={form.password_confirmation}
                 autoComplete="new-password"
                 disabled={submitting}
                 onChange={(event) => onChange({ ...form, password_confirmation: event.target.value })}
               />
-            </label>
+            </div>
             <Button type="submit" disabled={submitting}>
               {submitting ? 'Actualizando...' : 'Actualizar contraseña'}
             </Button>
