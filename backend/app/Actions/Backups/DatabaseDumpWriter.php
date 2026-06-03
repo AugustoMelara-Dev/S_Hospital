@@ -45,7 +45,7 @@ class DatabaseDumpWriter
             throw new RuntimeException('SQLite no tiene archivo fisico para respaldar.');
         }
 
-        if (! copy($database, $absolutePath)) {
+        if (is_dir($absolutePath) || ! @copy($database, $absolutePath)) {
             throw new RuntimeException('No se pudo copiar el archivo SQLite local.');
         }
     }
@@ -126,18 +126,19 @@ class DatabaseDumpWriter
     private function findDumpBinary(): ?string
     {
         $configuredBinary = (string) env('HOSPITAL_DUMP_BINARY', '');
-        $candidates = array_values(array_filter([
-            $configuredBinary !== '' ? $configuredBinary : null,
-            'mariadb-dump',
-            'mysqldump',
-            'C:\\xampp\\mysql\\bin\\mariadb-dump.exe',
-            'C:\\xampp\\mysql\\bin\\mysqldump.exe',
-            'C:\\laragon\\bin\\mysql\\mysql-8.0\\bin\\mysqldump.exe',
-            '/usr/bin/mariadb-dump',
-            '/usr/bin/mysqldump',
-            '/usr/local/bin/mariadb-dump',
-            '/usr/local/bin/mysqldump',
-        ]));
+        $candidates = $configuredBinary !== ''
+            ? [$configuredBinary]
+            : [
+                'mariadb-dump',
+                'mysqldump',
+                'C:\\xampp\\mysql\\bin\\mariadb-dump.exe',
+                'C:\\xampp\\mysql\\bin\\mysqldump.exe',
+                'C:\\laragon\\bin\\mysql\\mysql-8.0\\bin\\mysqldump.exe',
+                '/usr/bin/mariadb-dump',
+                '/usr/bin/mysqldump',
+                '/usr/local/bin/mariadb-dump',
+                '/usr/local/bin/mysqldump',
+            ];
 
         foreach ($candidates as $binary) {
             $isPath = str_contains($binary, '/') || str_contains($binary, '\\');
@@ -159,10 +160,22 @@ class DatabaseDumpWriter
 
     private function sanitizeDumpError(string $error): string
     {
-        return str($error)
-            ->replaceMatches('/password[^\\s]*/i', 'password=[redacted]')
+        $hadPassword = preg_match('/password|using password/i', $error) === 1;
+        $sanitized = str($error)
+            ->replaceMatches('/--password(?:=|\\s+)(?:"[^"]*"|\'[^\']*\'|\\S+)/i', '--password=[redacted]')
+            ->replaceMatches('/\\bpassword\\s*=\\s*(?:"[^"]*"|\'[^\']*\'|[^\\s)]+)/i', 'password=[redacted]')
+            ->replaceMatches('/using password:\\s*[^)\\s]+/i', 'using password=[redacted]')
+            ->replaceMatches('/using password\\s+[a-z]+/i', 'using password=[redacted]')
             ->squish()
             ->limit(500)
-            ->toString() ?: 'La herramienta local de backup fallo.';
+            ->toString();
+
+        if ($hadPassword && ! str_contains($sanitized, 'password=[redacted]')) {
+            $sanitized = rtrim($sanitized, '.').' password=[redacted]';
+        }
+
+        return $sanitized === ''
+            ? 'La herramienta local de backup fallo.'
+            : 'La herramienta local de backup fallo: '.$sanitized;
     }
 }
