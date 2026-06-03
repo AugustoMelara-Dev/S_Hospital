@@ -122,7 +122,7 @@ function HospitalApp() {
           title="Sin permisos operativos"
           description="No tiene permisos operativos asignados."
         />
-      ) : session.cashBootstrapLoading ? (
+      ) : session.loading ? (
         <LoadingState label="Validando caja para facturación..." />
       ) : (
         <AppRoutes

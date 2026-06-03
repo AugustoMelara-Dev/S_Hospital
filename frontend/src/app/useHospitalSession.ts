@@ -39,7 +39,6 @@ export function useHospitalSession() {
   const canViewBackups = permissions.has('backups.view');
   const canViewUsers = permissions.has('users.view');
   const canCreateUsers = permissions.has('users.create');
-  const needsBillingCashBootstrap = false;
 
   useEffect(() => {
     const unsubscribe = apiClient.onSessionExpired(() => {
@@ -165,8 +164,6 @@ export function useHospitalSession() {
     setStatus,
     loading,
     passwordSubmitting,
-    needsBillingCashBootstrap,
-    cashBootstrapLoading: false,
     canViewFiscalSettings,
     canEditFiscalSettings,
     canViewCatalog,
