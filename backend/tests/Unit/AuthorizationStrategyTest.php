@@ -4,30 +4,47 @@ namespace Tests\Unit;
 
 use Tests\TestCase;
 
+/**
+ * Documents the project's authorization strategy.
+ *
+ * Prior to v1.0.0 the audit (docs/AUDIT_2026_06_02.md) flagged the
+ * absence of `app/Policies/` as a violation of AGENTS.md
+ * ("Policies/Gates para permisos"). The reason the directory did
+ * not exist was that the same checks were duplicated in
+ * `FormRequest::authorize()` and runtime guards in the Actions.
+ *
+ * v1.0.0 keeps the existing checks (they are correct) and adds
+ * dedicated `InvoicePolicy` and `CashSessionPolicy` classes so
+ * the Gate facade can resolve them and so `php artisan
+ * policy:list` is introspectable. The two checks below lock the
+ * invariant: when the directory exists, the provider must wire
+ * the policy mappings, and vice versa.
+ */
 class AuthorizationStrategyTest extends TestCase
 {
-    public function test_policies_directory_is_removed_in_favor_of_form_request_authz(): void
+    public function test_policies_directory_has_invoice_and_cash_session_policies(): void
     {
         $policiesPath = app_path('Policies');
 
-        $this->assertDirectoryDoesNotExist(
-            $policiesPath,
-            'app/Policies was removed because the project uses Form Request authorize() + permission string checks (e.g. $user->can("invoices.view")) as the single source of authorization. Re-introducing the directory without also wiring Gate::policy() registrations would leave the policies dead.'
-        );
+        $this->assertDirectoryExists($policiesPath);
+        $this->assertFileExists($policiesPath.'/InvoicePolicy.php');
+        $this->assertFileExists($policiesPath.'/CashSessionPolicy.php');
     }
 
-    public function test_app_service_provider_does_not_register_specific_policies(): void
+    public function test_app_service_provider_registers_gate_policy_mappings(): void
     {
         $providerPath = app_path('Providers/AppServiceProvider.php');
 
         $this->assertFileExists($providerPath);
 
-        $contents = file_get_contents($providerPath);
+        $contents = (string) file_get_contents($providerPath);
 
-        $this->assertStringNotContainsString(
+        $this->assertStringContainsString(
             'Gate::policy(',
-            (string) $contents,
-            'AppServiceProvider must not register Gate::policy mappings while the app/Policies directory is empty. If you re-add policies, register them here too.'
+            $contents,
+            'AppServiceProvider must register Gate::policy mappings so the policies in app/Policies/ are wired.',
         );
+        $this->assertStringContainsString('Invoice::class, InvoicePolicy::class', $contents);
+        $this->assertStringContainsString('CashRegisterSession::class, CashSessionPolicy::class', $contents);
     }
 }
