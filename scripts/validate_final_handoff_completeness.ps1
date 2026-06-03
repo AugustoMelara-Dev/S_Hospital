@@ -85,6 +85,7 @@ if ($failures.Count -eq 0) {
     Assert-Content '(?i)Remaining blockers before production handoff|Blocking items' "El handoff debe incluir pendientes fisicos/bloqueantes."
     Assert-Content '(?i)Risks and limits' "El handoff debe incluir riesgos y limites."
     Assert-Content '(?i)Safety notes' "El handoff debe incluir notas de seguridad."
+    Assert-Content '(?i)Dependency manifest' "El handoff debe mencionar la validacion del manifest de dependencias."
 
     $requiredEvidence = @(
         'BROWSER_SMOKE_EVIDENCE_2026_06_03.md',
@@ -127,6 +128,7 @@ if ($failures.Count -eq 0) {
         'scripts/validate_operations_objective_audit.ps1',
         'scripts/validate_field_proof_templates.ps1',
         'scripts/validate_proof_initialization_safety.ps1',
+        'scripts/validate_dependency_manifest.ps1',
         'scripts/init_production_proofs.ps1',
         'scripts/make_offline_release.ps1',
         'docs/manuales'
@@ -146,6 +148,7 @@ if ($failures.Count -eq 0) {
         'npm.cmd run build',
         'check-branding.ps1',
         'smoke:real',
+        'validate_dependency_manifest.ps1',
         'production_readiness_preflight.ps1'
     )
 
