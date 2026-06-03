@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
 import { Alert } from '../../components/ui/alert';
 import { PageHeader } from '../../components/ui/page-header';
@@ -75,21 +75,12 @@ export function ReportsView({
   const [cashSessionOptions, setCashSessionOptions] = useState<CashSession[]>([]);
 
   useEffect(() => {
-    if (canViewManagerial) {
-      void loadDaily(dailyDate);
-      void loadCategories();
-      void loadAreas();
-      void loadCashSessionOptions();
-    }
-  }, [canViewManagerial]);
-
-  useEffect(() => {
     if (!canViewManagerial && activeTab !== 'caja') {
       setActiveTab('caja');
     }
   }, [activeTab, canViewManagerial]);
 
-  async function loadDaily(date: string) {
+  const loadDaily = useCallback(async (date: string) => {
     setLoading(true);
     setDailyError('');
     onStatus('Cargando reporte diario...');
@@ -104,15 +95,15 @@ export function ReportsView({
     } finally {
       setLoading(false);
     }
-  }
+  }, [onStatus]);
 
-  async function loadCategories() {
+  const loadCategories = useCallback(async () => {
     try {
       setCategoryOptions(await apiClient.getCategories());
     } catch {
       setCategoryOptions([]);
     }
-  }
+  }, []);
 
   async function loadMonthly(month: string) {
     setLoading(true);
@@ -131,22 +122,31 @@ export function ReportsView({
     }
   }
 
-  async function loadAreas() {
+  const loadAreas = useCallback(async () => {
     try {
       setAreaOptions(await apiClient.getAreas(true));
     } catch {
       setAreaOptions([]);
     }
-  }
+  }, []);
 
-  async function loadCashSessionOptions() {
+  const loadCashSessionOptions = useCallback(async () => {
     try {
       const response = await apiClient.getCashSessions({ perPage: 50 });
       setCashSessionOptions(Array.isArray(response.data) ? response.data : []);
     } catch {
       setCashSessionOptions([]);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    if (canViewManagerial) {
+      void loadDaily(today);
+      void loadCategories();
+      void loadAreas();
+      void loadCashSessionOptions();
+    }
+  }, [canViewManagerial, loadAreas, loadCashSessionOptions, loadCategories, loadDaily]);
 
   async function loadRangeReports() {
     // Validar rango de fechas en el frontend
