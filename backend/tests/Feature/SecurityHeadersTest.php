@@ -61,9 +61,10 @@ class SecurityHeadersTest extends TestCase
         $secondCsp = (string) $second->headers->get('Content-Security-Policy');
 
         $this->assertMatchesRegularExpression("/script-src 'self' 'nonce-[A-Fa-f0-9]{32}'/", $firstCsp);
-        $this->assertMatchesRegularExpression("/style-src 'self' 'nonce-[A-Fa-f0-9]{32}'/", $firstCsp);
+        $this->assertStringContainsString("style-src 'self' 'unsafe-inline'", $firstCsp);
+        $this->assertStringContainsString("style-src-elem 'self' 'unsafe-inline'", $firstCsp);
         $this->assertStringNotContainsString("script-src 'self' 'unsafe-inline'", $firstCsp);
-        $this->assertStringNotContainsString("style-src 'self' 'unsafe-inline'", $firstCsp);
+        $this->assertStringContainsString("style-src-attr 'unsafe-inline'", $firstCsp);
 
         preg_match("/'nonce-([A-Fa-f0-9]{32})'/", $firstCsp, $firstMatch);
         preg_match("/'nonce-([A-Fa-f0-9]{32})'/", $secondCsp, $secondMatch);
@@ -73,15 +74,17 @@ class SecurityHeadersTest extends TestCase
         $this->assertNotSame($firstMatch[1], $secondMatch[1], 'Nonce must rotate between requests.');
     }
 
-    public function test_csp_in_production_drops_unsafe_inline_from_styles(): void
+    public function test_csp_in_production_drops_unsafe_inline_scripts_while_allowing_spa_runtime_styles(): void
     {
         $this->app->detectEnvironment(fn () => 'production');
 
         $response = $this->get('/up');
         $csp = (string) $response->headers->get('Content-Security-Policy');
 
-        $this->assertStringNotContainsString("'unsafe-inline'", $csp);
         $this->assertStringNotContainsString("'unsafe-eval'", $csp);
-        $this->assertMatchesRegularExpression("/style-src 'self' 'nonce-[A-Fa-f0-9]{32}'/", $csp);
+        $this->assertStringNotContainsString("script-src 'self' 'unsafe-inline'", $csp);
+        $this->assertStringContainsString("style-src 'self' 'unsafe-inline'", $csp);
+        $this->assertStringContainsString("style-src-elem 'self' 'unsafe-inline'", $csp);
+        $this->assertStringContainsString("style-src-attr 'unsafe-inline'", $csp);
     }
 }
