@@ -10,6 +10,7 @@ import {
   apiClient,
   userSafeErrorMessage,
 } from '../../lib/api';
+import { STRINGS, t } from '../../lib/i18n';
 import { useInvoices } from '../../hooks/useInvoices';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -83,7 +84,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const meta: PaginatedMeta = invoicesQuery.data?.meta ?? { current_page: 1, per_page: 10, total: 0 };
   const loading = invoicesQuery.isFetching;
   const loadError = invoicesQuery.isError
-    ? userSafeErrorMessage(invoicesQuery.error, 'No se pudo cargar historial.')
+    ? userSafeErrorMessage(invoicesQuery.error, t('invoiceHistory.loadErrorDefault'))
     : '';
 
   async function submitFilters(event: FormEvent<HTMLFormElement>) {
@@ -114,9 +115,9 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     try {
       const invoice = await apiClient.getInvoice(invoiceId);
       setSelectedInvoice(invoice);
-      onStatus(`Factura ${invoice.invoice_number} cargada.`);
+      onStatus(STRINGS.invoiceHistory.detailLoaded(invoice.invoice_number));
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo cargar detalle.'));
+      onStatus(userSafeErrorMessage(error, t('invoiceHistory.detailLoadError')));
     }
   }
 
@@ -134,7 +135,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setReceipt({ ...receiptData, width: normalizedWidth });
       setReceiptModalOpen(true);
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo cargar recibo.'));
+      onStatus(userSafeErrorMessage(error, t('invoiceHistory.receiptLoadError')));
     }
   }
 
@@ -145,7 +146,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
     const auditedReceipt = await apiClient.reprintInvoice(selectedInvoice.id, {
       width: institutionalReceiptPaperSize(receipt.width),
-      reason: 'Impresion desde vista de recibo.',
+      reason: t('invoiceHistory.printReason'),
     });
     const normalizedWidth = institutionalReceiptPaperSize(auditedReceipt.width);
     setReceiptWidth(normalizedWidth);
@@ -161,7 +162,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
   async function voidSelectedInvoice() {
     if (!selectedInvoice || voidReason.trim().length < 5) {
-      onStatus('Ingrese un motivo de anulacion de al menos 5 caracteres.');
+      onStatus(t('invoiceHistory.reasonMinLength'));
 
       return;
     }
@@ -176,9 +177,9 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setSelectedInvoice(voided);
       setReceipt(null);
       setVoidReason('');
-      onStatus(`Factura ${voided.invoice_number} anulada.`);
+      onStatus(STRINGS.invoiceHistory.voided(voided.invoice_number));
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo anular la factura.'));
+      onStatus(userSafeErrorMessage(error, t('invoiceHistory.voidError')));
     }
   }
 
@@ -191,7 +192,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
       const nextReceipt = await apiClient.reprintInvoice(reprintTarget.id, {
         width: requestedWidth,
-        reason: reprintReason.trim() || 'Reimpresion solicitada desde historial.',
+        reason: reprintReason.trim() || t('invoiceHistory.reprintDefaultReason'),
       });
       // Reprint posts an audit log entry that other views (dashboard,
       // cashier list) may display; let them refetch.
@@ -200,9 +201,9 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setReceiptWidth(normalizedWidth);
       setReceipt({ ...nextReceipt, width: normalizedWidth });
       setReceiptModalOpen(true);
-      onStatus(`Recibo ${invoice.invoice_number} listo para imprimir.`);
+      onStatus(STRINGS.invoiceHistory.reprintReady(invoice.invoice_number));
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo reimprimir el recibo.'));
+      onStatus(userSafeErrorMessage(error, t('invoiceHistory.reprintError')));
     } finally {
       setReprintTarget(null);
       setReprintReason('');
@@ -227,10 +228,10 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     <section id="historial" className="flex flex-col gap-5" aria-labelledby="invoice-history-title">
       <div>
         <h1 id="invoice-history-title" className="text-2xl font-bold tracking-tight">
-          Historial de facturas
+          {t('invoiceHistory.title')}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Consulte facturas recientes, reimprima recibos y gestione anulaciones autorizadas.
+          {t('invoiceHistory.tagline')}
         </p>
       </div>
       <FilterBar
@@ -248,29 +249,29 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         />
 
         <div className="space-y-1.5">
-          <Label htmlFor="status" className="text-xs font-semibold text-slate-600 dark:text-slate-400">Estado</Label>
+          <Label htmlFor="status" className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t('invoiceHistory.statusLabel')}</Label>
           <Select
             value={filters.status ?? 'all'}
             onValueChange={(v) => setFilters({ ...filters, status: v === 'all' ? '' : v as InvoiceFilters['status'] })}
           >
             <SelectTrigger id="status" className="h-10">
-              <SelectValue placeholder="Todos" />
+              <SelectValue placeholder={t('invoiceHistory.allStatus')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="issued">Emitida</SelectItem>
-              <SelectItem value="partial">Parcial</SelectItem>
-              <SelectItem value="paid">Pagada</SelectItem>
-              <SelectItem value="void">Anulada</SelectItem>
+              <SelectItem value="all">{t('invoiceHistory.allStatus')}</SelectItem>
+              <SelectItem value="issued">{t('invoiceHistory.statusIssued')}</SelectItem>
+              <SelectItem value="partial">{t('invoiceHistory.statusPartial')}</SelectItem>
+              <SelectItem value="paid">{t('invoiceHistory.statusPaid')}</SelectItem>
+              <SelectItem value="void">{t('invoiceHistory.statusVoid')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="patient" className="text-xs font-semibold text-slate-600 dark:text-slate-400">Paciente</Label>
+          <Label htmlFor="patient" className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t('invoiceHistory.patientLabel')}</Label>
           <Input
             id="patient"
-            placeholder="Nombre del paciente..."
+            placeholder={t('invoiceHistory.patientPlaceholder')}
             value={filters.patient ?? ''}
             onChange={(event) => setFilters({ ...filters, patient: event.target.value })}
             className="h-10"
@@ -278,10 +279,10 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="invoice_number" className="text-xs font-semibold text-slate-600 dark:text-slate-400">Número de factura</Label>
+          <Label htmlFor="invoice_number" className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t('invoiceHistory.invoiceNumberLabel')}</Label>
           <Input
             id="invoice_number"
-            placeholder="A-0001..."
+            placeholder={t('invoiceHistory.invoiceNumberPlaceholder')}
             value={filters.invoice_number ?? ''}
             onChange={(event) => setFilters({ ...filters, invoice_number: event.target.value })}
             className="h-10"
@@ -290,7 +291,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       </FilterBar>
 
       {loadError ? (
-        <Alert variant="destructive" title="No se pudo cargar el historial">
+        <Alert variant="destructive" title={t('invoiceHistory.loadErrorTitle')}>
           {loadError}
         </Alert>
       ) : null}
@@ -299,21 +300,21 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FileClock className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No hay facturas</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('invoiceHistory.emptyTitle')}</h3>
             <p className="text-muted-foreground text-center mb-4">
               {hasActiveFilters
-                ? 'No se encontraron facturas con los filtros seleccionados.'
-                : 'No hay facturas registradas aún.'}
+                ? t('invoiceHistory.emptyWithFilters')
+                : t('invoiceHistory.emptyNoData')}
             </p>
             {hasActiveFilters && (
               <Button variant="outline" onClick={clearFilters}>
-                Limpiar filtros
+                {t('invoiceHistory.clearFilters')}
               </Button>
             )}
           </CardContent>
         </Card>
       ) : loading ? (
-        <LoadingState label="Cargando facturas..." />
+        <LoadingState label={t('invoiceHistory.loading')} />
       ) : !loadError ? (
         <Card>
           <CardContent className="p-0">
@@ -321,13 +322,13 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>No.</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Pagado</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
+                    <TableHead>{t('invoiceHistory.thNumber')}</TableHead>
+                    <TableHead>{t('invoiceHistory.thDate')}</TableHead>
+                    <TableHead>{t('invoiceHistory.thPatient')}</TableHead>
+                    <TableHead className="text-right">{t('invoiceHistory.thTotal')}</TableHead>
+                    <TableHead className="text-right">{t('invoiceHistory.thPaid')}</TableHead>
+                    <TableHead>{t('invoiceHistory.thStatus')}</TableHead>
+                    <TableHead className="text-right">{t('invoiceHistory.thActions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -351,7 +352,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                               onClick={() => void openReceiptModal(invoice.id)}
                             >
                               <Receipt className="h-4 w-4" aria-hidden="true" />
-                              Ver recibo
+                              {t('invoiceHistory.viewReceipt')}
                             </Button>
                           )}
 
@@ -363,7 +364,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                               onClick={() => setReprintTarget(invoice)}
                             >
                               <Printer className="h-4 w-4" aria-hidden="true" />
-                              Reimprimir
+                              {t('invoiceHistory.reprint')}
                             </Button>
                           )}
 
@@ -373,7 +374,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                             type="button"
                             variant="ghost"
                             size="sm"
-                            aria-label={`Ver acciones de factura ${invoice.invoice_number}`}
+                            aria-label={STRINGS.invoiceHistory.actionsAria(invoice.invoice_number)}
                             onClick={() =>
                               setOpenActionsId(openActionsId === invoice.id ? null : invoice.id)
                             }
@@ -386,7 +387,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                               <Button
                                 type="button"
                                 variant="ghost"
-                                aria-label="Cerrar menu de acciones"
+                                aria-label={t('invoiceHistory.closeActionsAria')}
                                 className="fixed inset-0 z-40 h-auto min-h-0 w-auto cursor-default rounded-none bg-transparent p-0 hover:bg-transparent"
                                 onClick={() => setOpenActionsId(null)}
                               />
@@ -404,7 +405,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                                         }}
                                       >
                                         <XCircle className="h-4 w-4" aria-hidden="true" />
-                                        Anular
+                                        {t('invoiceHistory.void')}
                                       </Button>
                                 </div>
                               </div>
@@ -426,7 +427,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       {!isEmpty && (
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">
-            {meta.total} registro{meta.total !== 1 ? 's' : ''} en total
+            {STRINGS.invoiceHistory.totalRecords(meta.total)}
           </span>
           <PaginationControls
             meta={meta}
@@ -439,17 +440,17 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       <Dialog
         open={receiptModalOpen}
         onOpenChange={setReceiptModalOpen}
-        title={`Recibo - ${selectedInvoice?.invoice_number ?? ''}`}
-        description="Vista previa de recibo institucional. Cambiar el tamano no registra reimpresion."
+        title={STRINGS.invoiceHistory.receiptModalTitle(selectedInvoice?.invoice_number ?? '')}
+        description={t('invoiceHistory.receiptModalDescription')}
       >
         {receipt && selectedInvoice && (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <label htmlFor="receipt-width" className="text-sm font-semibold">Tamano</label>
+                <label htmlFor="receipt-width" className="text-sm font-semibold">{t('invoiceHistory.sizeLabel')}</label>
                 <NativeSelect
                   id="receipt-width"
-                  aria-label="Tamano de vista previa"
+                  aria-label={t('invoiceHistory.sizeAria')}
                   value={receiptWidth}
                   onChange={(event) => {
                     const newWidth = institutionalReceiptPaperSize(event.target.value);
@@ -476,9 +477,9 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
               onPrint={async () => {
                 try {
                   await auditReceiptPrint();
-                  onStatus(`Recibo ${selectedInvoice.invoice_number} enviado a impresión.`);
+                  onStatus(STRINGS.invoiceHistory.reprintSent(selectedInvoice.invoice_number));
                 } catch (error) {
-                  onStatus(userSafeErrorMessage(error, 'No se pudo auditar la reimpresión.'));
+                  onStatus(userSafeErrorMessage(error, t('invoiceHistory.auditError')));
                   throw error;
                 }
               }}
@@ -488,7 +489,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       </Dialog>
 
       <ConfirmDialog
-        confirmLabel="Anular Factura"
+        confirmLabel={t('invoiceHistory.confirmVoidLabel')}
         danger
         onCancel={() => {
           setConfirmingVoid(false);
@@ -499,50 +500,50 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           void voidSelectedInvoice();
         }}
         open={confirmingVoid}
-        title={`¿Anular factura ${selectedInvoice?.invoice_number}?`}
+        title={STRINGS.invoiceHistory.confirmVoidTitle(selectedInvoice?.invoice_number ?? '')}
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm">
-            <strong>Paciente:</strong> {selectedInvoice?.patient_name}
+            <strong>{t('invoiceConfirmation.patientLabel')}</strong> {selectedInvoice?.patient_name}
           </p>
           <div className="space-y-2">
-            <Label htmlFor="voidReason">Motivo de anulación *</Label>
+            <Label htmlFor="voidReason">{t('invoiceHistory.voidReasonLabel')}</Label>
             <Textarea
               id="voidReason"
-              aria-label="Motivo de anulacion"
+              aria-label={t('invoiceHistory.voidReasonAria')}
               value={voidReason}
               onChange={(e) => setVoidReason(e.target.value)}
-              placeholder="Explique el motivo de la anulación (mínimo 5 caracteres)..."
+              placeholder={t('invoiceHistory.voidReasonPlaceholder')}
               rows={3}
             />
             <p className="text-xs text-muted-foreground">
-              Esta acción no se puede deshacer. La factura será marcada como anulada.
+              {t('invoiceHistory.voidReasonHelp')}
             </p>
           </div>
         </div>
       </ConfirmDialog>
 
       <ConfirmDialog
-        confirmLabel="Registrar reimpresión"
+        confirmLabel={t('invoiceHistory.confirmReprintLabel')}
         onCancel={() => {
           setReprintTarget(null);
           setReprintReason('');
         }}
         onConfirm={() => void confirmReprintInvoice()}
         open={Boolean(reprintTarget)}
-        title={`¿Reimprimir ${reprintTarget?.invoice_number ?? 'recibo'}?`}
+        title={STRINGS.invoiceHistory.confirmReprintTitle(reprintTarget?.invoice_number ?? t('invoiceHistory.confirmReprintDefaultTarget'))}
       >
         <div className="flex flex-col gap-3">
           <p>
-            Esta acción queda auditada. Cambiar el tamaño en la vista previa no registra reimpresión; este botón sí.
+            {t('invoiceHistory.confirmReprintBody')}
           </p>
           <div className="space-y-2">
-            <Label htmlFor="reprintReason">Motivo opcional</Label>
+            <Label htmlFor="reprintReason">{t('invoiceHistory.reprintReasonLabel')}</Label>
             <Textarea
               id="reprintReason"
               value={reprintReason}
               onChange={(event) => setReprintReason(event.target.value)}
-              placeholder="Ejemplo: copia solicitada por paciente"
+              placeholder={t('invoiceHistory.reprintReasonPlaceholder')}
               rows={2}
             />
           </div>
@@ -553,10 +554,10 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 }
 
 const statusConfig = {
-  issued: { label: 'Emitida', className: 'bg-blue-100 text-blue-800' },
-  partial: { label: 'Parcial', className: 'bg-amber-100 text-amber-800' },
-  paid: { label: 'Pagada', className: 'bg-emerald-100 text-emerald-800' },
-  void: { label: 'Anulada', className: 'bg-red-100 text-red-800' },
+  issued: { label: t('invoiceHistory.statusIssued'), className: 'bg-blue-100 text-blue-800' },
+  partial: { label: t('invoiceHistory.statusPartial'), className: 'bg-amber-100 text-amber-800' },
+  paid: { label: t('invoiceHistory.statusPaid'), className: 'bg-emerald-100 text-emerald-800' },
+  void: { label: t('invoiceHistory.statusVoid'), className: 'bg-red-100 text-red-800' },
 } as const;
 
 function StatusBadge({ status }: { status: Invoice['status'] }) {

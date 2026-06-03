@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Dialog } from '../../../components/ui/dialog';
 import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
+import { STRINGS, t } from '../../../lib/i18n';
 
 type CartItem = {
   service: import('../../../lib/api').Service;
@@ -45,27 +46,27 @@ export function InvoiceConfirmation({
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title={willOpenPayment ? 'Confirmar emisión y cobro' : 'Confirmar factura'}
+      title={willOpenPayment ? t('invoiceConfirmation.titleWithPayment') : t('invoiceConfirmation.titleOnly')}
       description={
         willOpenPayment
-          ? 'Se emitirá la factura y el sistema abrirá el cobro inmediatamente.'
-          : 'Revise los detalles antes de emitir la factura.'
+          ? t('invoiceConfirmation.descriptionWithPayment')
+          : t('invoiceConfirmation.descriptionOnly')
       }
     >
       <div className="flex flex-col gap-4">
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Paciente:</span>
-            <span className="font-medium">{patientName || 'Sin nombre'}</span>
+            <span className="text-muted-foreground">{t('invoiceConfirmation.patientLabel')}</span>
+            <span className="font-medium">{patientName || t('invoiceConfirmation.noName')}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Caja:</span>
-            <span className="font-medium">#{cashSessionId ?? 'Sin caja'}</span>
+            <span className="text-muted-foreground">{t('invoiceConfirmation.cashboxLabel')}</span>
+            <span className="font-medium">#{cashSessionId ?? t('invoiceConfirmation.noCashbox')}</span>
           </div>
         </div>
 
         <div className="rounded-md border border-border p-3">
-          <p className="font-semibold text-sm mb-2">Servicios:</p>
+          <p className="font-semibold text-sm mb-2">{t('invoiceConfirmation.servicesLabel')}</p>
           <ul className="space-y-1.5 text-sm max-h-[200px] overflow-y-auto">
             {items.map((item, index) => (
               <li key={`${item.service.id}-${index}`} className="flex justify-between">
@@ -73,7 +74,7 @@ export function InvoiceConfirmation({
                   {item.quantity} x {item.service.name}
                 </span>
                 {item.dialysisPrescription && item.service.special_rule_code === 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION' ? (
-                  <span className="text-emerald-600 font-medium">GRATIS</span>
+                  <span className="text-emerald-600 font-medium">{t('invoiceConfirmation.free')}</span>
                 ) : (
                   <span className="text-muted-foreground">{moneyLabel(item.service.price)}</span>
                 )}
@@ -84,28 +85,28 @@ export function InvoiceConfirmation({
 
         <div className="space-y-1.5 text-sm border-t border-border pt-3">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Subtotal:</span>
+            <span className="text-muted-foreground">{t('invoiceConfirmation.subtotalLabel')}</span>
             <span>{moneyLabel(preview.subtotal)}</span>
           </div>
           {taxRate && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">ISV ({taxRate}%):</span>
+              <span className="text-muted-foreground">{STRINGS.invoiceConfirmation.taxLabel(taxRate)}</span>
               <span>{moneyLabel(preview.tax)}</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-base">
-            <span>Total estimado:</span>
+            <span>{t('invoiceConfirmation.estimatedTotalLabel')}</span>
             <span>{moneyLabel(preview.total)}</span>
           </div>
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Los precios finales seran calculados por el backend al emitir la factura.
+          {t('invoiceConfirmation.finalPricesDisclaimer')}
         </p>
 
         <div className="flex gap-3 pt-2">
           <Button type="button" variant="secondary" className="flex-1" onClick={() => onOpenChange(false)}>
-            Cancelar
+            {t('invoiceConfirmation.cancel')}
           </Button>
           <Button
             ref={confirmButtonRef}
@@ -125,7 +126,11 @@ export function InvoiceConfirmation({
             }}
             disabled={submitting}
           >
-            {submitting ? 'Emitiendo...' : willOpenPayment ? 'Emitir y abrir cobro' : 'Confirmar emisión'}
+            {submitting
+              ? t('invoiceConfirmation.submitting')
+              : willOpenPayment
+                ? t('invoiceConfirmation.submitWithPayment')
+                : t('invoiceConfirmation.submitOnly')}
           </Button>
         </div>
       </div>

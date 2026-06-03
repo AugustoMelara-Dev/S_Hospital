@@ -34,6 +34,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
+import { STRINGS, t } from '../../lib/i18n';
 
 type CatalogViewProps = {
   user: AuthUser;
@@ -100,7 +101,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       setServicesData(nextServices);
       setScannerEnabled(fiscalSettings?.scanner_enabled === true);
     } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudo cargar el catalogo.');
+      const message = userSafeErrorMessage(error, t('catalog.loadErrorDefault'));
       setLoadError(message);
       onStatus(message);
       setCategories([]);
@@ -157,13 +158,13 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     queryClient.invalidateQueries({ queryKey: ['services'] });
     queryClient.invalidateQueries({ queryKey: ['categories'] });
     void loadCatalogData();
-    onStatus('Servicio guardado exitosamente.');
+    onStatus(t('catalog.serviceSaved'));
   }
 
   function handleCategorySuccess() {
     queryClient.invalidateQueries({ queryKey: ['categories'] });
     void loadCatalogData();
-    onStatus('Categoría guardada exitosamente.');
+    onStatus(t('catalog.categorySaved'));
   }
 
   const toggleServiceActive = useCallback(async (service: Service) => {
@@ -185,9 +186,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       );
       queryClient.invalidateQueries({ queryKey: ['services'] });
       void loadCatalogData();
-      onStatus(service.active ? 'Servicio desactivado.' : 'Servicio activado.');
+      onStatus(service.active ? t('catalog.serviceDeactivated') : t('catalog.serviceActivated'));
     } catch {
-      onStatus('No se pudo cambiar el estado del servicio.');
+      onStatus(t('catalog.toggleError'));
     }
   }, [loadCatalogData, onStatus, queryClient]);
 
@@ -205,25 +206,25 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     <section id="catalogo" className="flex flex-col gap-5" aria-labelledby="catalog-title">
       <div className="flex items-center justify-between">
         <div>
-          <h1 id="catalog-title" className="text-2xl font-bold tracking-tight">Catalogo de servicios</h1>
+          <h1 id="catalog-title" className="text-2xl font-bold tracking-tight">{t('catalog.title')}</h1>
           {!canManageCatalog && (
             <p className="mt-1 text-sm text-muted-foreground">
-              Cajero puede consultar catalogo y precios, sin permisos para modificar servicios.
+              {t('catalog.readOnlyHint')}
             </p>
           )}
           <p className="text-sm text-muted-foreground">
-            {meta.total} servicio{meta.total !== 1 ? 's' : ''} en el catálogo
+            {STRINGS.catalog.servicesCount(meta.total)}
           </p>
         </div>
         {canManageCatalog && (
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={openNewCategory}>
               <Plus className="h-4 w-4 mr-2" />
-              Nueva categoria
+              {t('catalog.newCategory')}
             </Button>
             <Button size="sm" onClick={openNewService}>
               <Plus className="h-4 w-4 mr-2" />
-              Nuevo servicio
+              {t('catalog.newService')}
             </Button>
           </div>
         )}
@@ -236,7 +237,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por nombre o código..."
+                  placeholder={t('catalog.searchPlaceholder')}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9"
@@ -245,11 +246,11 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             </div>
 
             <Select value={categoryFilter} onValueChange={handleCategoryFilterChange}>
-              <SelectTrigger className="w-[200px]" aria-label="Filtrar por categoría">
-                <SelectValue placeholder="Categoría" />
+              <SelectTrigger className="w-[200px]" aria-label={t('catalog.filterCategoryAria')}>
+                <SelectValue placeholder={t('catalog.filterCategoryPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas las categorías</SelectItem>
+                <SelectItem value="all">{t('catalog.filterAllCategories')}</SelectItem>
                 {categories.map((cat) => (
                   <SelectItem key={cat.id} value={String(cat.id)}>
                     {cat.name}
@@ -259,13 +260,13 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             </Select>
 
             <Select value={activeFilter} onValueChange={handleActiveFilterChange}>
-              <SelectTrigger className="w-[150px]" aria-label="Filtrar por estado">
-                <SelectValue placeholder="Estado" />
+              <SelectTrigger className="w-[150px]" aria-label={t('catalog.filterStateAria')}>
+                <SelectValue placeholder={t('catalog.filterStatePlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="active">Activos</SelectItem>
-                <SelectItem value="inactive">Inactivos</SelectItem>
+                <SelectItem value="all">{t('catalog.filterAll')}</SelectItem>
+                <SelectItem value="active">{t('catalog.filterActive')}</SelectItem>
+                <SelectItem value="inactive">{t('catalog.filterInactive')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -273,7 +274,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       </Card>
 
       {loadError ? (
-        <Alert variant="destructive" title="No se pudo cargar el catálogo">
+        <Alert variant="destructive" title={t('catalog.loadErrorTitle')}>
           {loadError}
         </Alert>
       ) : null}
@@ -285,13 +286,13 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Categoría</TableHead>
-                    <TableHead>Área</TableHead>
-                    <TableHead>Precio</TableHead>
-                    {scannerEnabled && <TableHead>Código</TableHead>}
-                    <TableHead>Estado</TableHead>
-                    {canManageCatalog && <TableHead className="text-right">Acciones</TableHead>}
+                    <TableHead>{t('catalog.thName')}</TableHead>
+                    <TableHead>{t('catalog.thCategory')}</TableHead>
+                    <TableHead>{t('catalog.thArea')}</TableHead>
+                    <TableHead>{t('catalog.thPrice')}</TableHead>
+                    {scannerEnabled && <TableHead>{t('catalog.thCode')}</TableHead>}
+                    <TableHead>{t('catalog.thState')}</TableHead>
+                    {canManageCatalog && <TableHead className="text-right">{t('catalog.thActions')}</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -349,20 +350,20 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Boxes className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No hay servicios</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('catalog.noServicesTitle')}</h3>
             <p className="text-muted-foreground text-center mb-4">
               {hasFilters
-                ? 'No se encontraron servicios con los filtros seleccionados.'
-                : 'Comience agregando su primer servicio al catálogo.'}
+                ? t('catalog.noServicesWithFilters')
+                : t('catalog.noServicesEmpty')}
             </p>
             {hasFilters ? (
               <Button variant="outline" onClick={clearFilters}>
-                Limpiar filtros
+                {t('catalog.clearFilters')}
               </Button>
             ) : canManageCatalog ? (
               <Button onClick={openNewService}>
                 <Plus className="h-4 w-4 mr-2" />
-                Nuevo Servicio
+                {t('catalog.newServiceButton')}
               </Button>
             ) : null}
           </CardContent>
@@ -373,14 +374,14 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Categoría</TableHead>
-                    <TableHead>Área</TableHead>
-                    <TableHead>Precio</TableHead>
-                    {scannerEnabled && <TableHead>Código</TableHead>}
-                    <TableHead>Estado</TableHead>
+                    <TableHead>{t('catalog.thName')}</TableHead>
+                    <TableHead>{t('catalog.thCategory')}</TableHead>
+                    <TableHead>{t('catalog.thArea')}</TableHead>
+                    <TableHead>{t('catalog.thPrice')}</TableHead>
+                    {scannerEnabled && <TableHead>{t('catalog.thCode')}</TableHead>}
+                    <TableHead>{t('catalog.thState')}</TableHead>
                     {canManageCatalog && (
-                      <TableHead className="text-right">Acciones</TableHead>
+                      <TableHead className="text-right">{t('catalog.thActions')}</TableHead>
                     )}
                   </TableRow>
                 </TableHeader>
@@ -392,8 +393,8 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                           <span className="font-medium">{service.name}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-sm">{service.category?.name ?? 'Sin categoria'}</TableCell>
-                      <TableCell className="px-4 py-3 text-sm">{service.area?.name ?? 'Sin area'}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm">{service.category?.name ?? t('catalog.noCategory')}</TableCell>
+                      <TableCell className="px-4 py-3 text-sm">{service.area?.name ?? t('catalog.noArea')}</TableCell>
                       <TableCell className="px-4 py-3">
                         <span className="font-semibold">{moneyLabel(service.price)}</span>
                       </TableCell>
@@ -401,9 +402,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                         <TableCell className="px-4 py-3 text-sm text-muted-foreground">
                           <div className="flex flex-col gap-1">
                             {([
-                              ['Escaner', service.scan_code],
-                              ['Barra', service.barcode],
-                              ['QR', service.qr_code],
+                              [t('catalog.codeScan'), service.scan_code],
+                              [t('catalog.codeBar'), service.barcode],
+                              [t('catalog.codeQr'), service.qr_code],
                             ] as const)
                               .filter(([, code]) => Boolean(code))
                               .map(([label, code]) => (
@@ -417,27 +418,27 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                       )}
                       <TableCell className="px-4 py-3">
                         <Badge variant={service.active ? 'default' : 'outline'}>
-                          {service.active ? 'Activo' : 'Inactivo'}
+                          {service.active ? t('catalog.stateActive') : t('catalog.stateInactive')}
                         </Badge>
                       </TableCell>
                       {canManageCatalog && (
                         <TableCell className="px-4 py-3 text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" aria-label={`Acciones de servicio ${service.name}`}>
+                              <Button variant="ghost" size="sm" aria-label={STRINGS.catalog.actionsAria(service.name)}>
                                 <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => openEditService(service)}>
-                                Editar
+                                {t('catalog.edit')}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => toggleServiceActive(service)}
                                 className={service.active ? 'text-destructive' : 'text-emerald-600'}
                               >
-                                {service.active ? 'Desactivar' : 'Activar'}
+                                {service.active ? t('catalog.deactivate') : t('catalog.activate')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -455,17 +456,17 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">
-              Mostrando {services.length} de {meta.total} servicios
+              {STRINGS.catalog.showing(services.length, meta.total)}
             </span>
             <Select value={String(perPage)} onValueChange={(v: string) => handlePerPageChange(Number(v))}>
-              <SelectTrigger className="w-[100px]" aria-label="Servicios por página">
+              <SelectTrigger className="w-[100px]" aria-label={t('catalog.perPageAria')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="10">10 por pág</SelectItem>
-                <SelectItem value="15">15 por pág</SelectItem>
-                <SelectItem value="25">25 por pág</SelectItem>
-                <SelectItem value="50">50 por pág</SelectItem>
+                <SelectItem value="10">{t('catalog.perPage10')}</SelectItem>
+                <SelectItem value="15">{t('catalog.perPage15')}</SelectItem>
+                <SelectItem value="25">{t('catalog.perPage25')}</SelectItem>
+                <SelectItem value="50">{t('catalog.perPage50')}</SelectItem>
               </SelectContent>
             </Select>
           </div>

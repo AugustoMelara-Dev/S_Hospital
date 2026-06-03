@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Checkbox } from '../../../components/ui/checkbox';
 import type { Payment } from '../../../lib/api';
 import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
+import { t } from '../../../lib/i18n';
+import { STRINGS } from '../../../lib/i18n';
 
 type PaymentModalProps = {
   open: boolean;
@@ -70,12 +72,12 @@ export function PaymentModal({
     e.preventDefault();
     const amountCents = parseMoneyCents(paymentAmount);
     if (amountCents === null || amountCents <= 0) {
-      setError('Ingrese un monto valido');
+      setError(t('invoicePayment.invalidAmount'));
       amountInputRef.current?.focus();
       return;
     }
     if (balanceCents !== null && amountCents < balanceCents && !partialPaymentsEnabled) {
-      setError('El monto recibido es menor al total.');
+      setError(t('invoicePayment.amountLessThanTotal'));
       amountInputRef.current?.focus();
       return;
     }
@@ -87,48 +89,48 @@ export function PaymentModal({
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Registrar pago"
-      description={`Factura ${invoiceNumber} ya fue emitida. Si sale de este paso quedara pendiente de cobro.`}
+      title={t('invoicePayment.title')}
+      description={STRINGS.invoicePayment.description(invoiceNumber)}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Paciente:</span>
+            <span className="text-muted-foreground">{t('invoicePayment.patientLabel')}</span>
             <span className="font-medium">{patientName}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Total:</span>
+            <span className="text-muted-foreground">{t('invoicePayment.totalLabel')}</span>
             <span className="font-medium">{moneyLabel(total)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Saldo pendiente:</span>
+            <span className="text-muted-foreground">{t('invoicePayment.balanceDueLabel')}</span>
             <span className="font-bold">{moneyLabel(balanceDue)}</span>
           </div>
           {changeCents !== null && (
             <div className="flex justify-between text-emerald-600">
-              <span className="text-muted-foreground">Cambio:</span>
+              <span className="text-muted-foreground">{t('invoicePayment.changeLabel')}</span>
               <span className="font-bold">{moneyLabelFromCents(changeCents)}</span>
             </div>
           )}
           {remainingBalanceCents !== null && (
             <div className="flex justify-between text-amber-700">
-              <span className="text-muted-foreground">Saldo pendiente:</span>
+              <span className="text-muted-foreground">{t('invoicePayment.balanceDueLabel')}</span>
               <span className="font-bold">{moneyLabelFromCents(remainingBalanceCents)}</span>
             </div>
           )}
           {remainingBalanceCents !== null && !partialPaymentsEnabled ? (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive" role="alert">
-              El monto recibido es menor al total.
+              {t('invoicePayment.amountLessThanTotal')}
             </div>
           ) : null}
           {remainingBalanceCents !== null && partialPaymentsEnabled ? (
             <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="alert">
-              Este pago quedara como abono parcial y mantendra saldo pendiente.
+              {t('invoicePayment.partialNotice')}
             </div>
           ) : null}
           {appliedAmountCents !== null && appliedAmountCents > 0 && (
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Pago aplicado:</span>
+              <span className="text-muted-foreground">{t('invoicePayment.appliedLabel')}</span>
               <span className="font-medium">{moneyLabelFromCents(appliedAmountCents)}</span>
             </div>
           )}
@@ -137,27 +139,27 @@ export function PaymentModal({
         <div className="space-y-3">
           {needsAmount && !error ? (
             <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="alert">
-              Ingrese el monto recibido para registrar el cobro.
+              {t('invoicePayment.needsAmountWarning')}
             </div>
           ) : null}
 
           <div>
-            <Label htmlFor="payment-method" className="mb-1.5 block">Metodo de pago</Label>
+            <Label htmlFor="payment-method" className="mb-1.5 block">{t('invoicePayment.methodLabel')}</Label>
             <Select value={paymentMethod} onValueChange={(v) => onPaymentMethodChange(v as Payment['method'])}>
               <SelectTrigger id="payment-method">
-                <SelectValue placeholder="Seleccione metodo" />
+                <SelectValue placeholder={t('invoicePayment.methodPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="cash">Efectivo</SelectItem>
-                <SelectItem value="card">Tarjeta</SelectItem>
-                <SelectItem value="transfer">Transferencia</SelectItem>
-                <SelectItem value="other">Otro</SelectItem>
+                <SelectItem value="cash">{t('invoicePayment.methodCash')}</SelectItem>
+                <SelectItem value="card">{t('invoicePayment.methodCard')}</SelectItem>
+                <SelectItem value="transfer">{t('invoicePayment.methodTransfer')}</SelectItem>
+                <SelectItem value="other">{t('invoicePayment.methodOther')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <Label htmlFor="payment-amount" className="mb-1.5 block">Monto recibido (L.)</Label>
+            <Label htmlFor="payment-amount" className="mb-1.5 block">{t('invoicePayment.amountLabel')}</Label>
             <Input
               ref={amountInputRef}
               id="payment-amount"
@@ -169,7 +171,7 @@ export function PaymentModal({
                 setError(null);
                 onPaymentAmountChange(e.target.value);
               }}
-              placeholder="0.00"
+              placeholder={t('invoicePayment.amountPlaceholder')}
               aria-invalid={error ? 'true' : 'false'}
               aria-describedby={error ? 'payment-amount-error' : undefined}
             />
@@ -185,30 +187,34 @@ export function PaymentModal({
             />
             <div className="grid gap-0.5 leading-none">
               <Label htmlFor="preview-before-print" className="cursor-pointer font-medium text-foreground">
-                Ver preview antes de imprimir
+                {t('invoicePayment.previewLabel')}
               </Label>
               <span className="text-xs text-muted-foreground mt-0.5">
-                Desactivado: al confirmar cobro se registra el pago y se abre impresion directa.
+                {t('invoicePayment.previewHelp')}
               </span>
             </div>
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Cancelar la ventana de impresion no revierte el pago. Si necesita corregir una factura pagada, use el flujo de anulacion autorizado.
+            {t('invoicePayment.printDisclaimer')}
           </p>
         </div>
 
         <div className="flex gap-3 pt-2">
           <Button type="button" variant="secondary" className="flex-1" onClick={() => onOpenChange(false)}>
-            Dejar pendiente
+            {t('invoicePayment.leavePending')}
           </Button>
           <Button
             type="submit"
             className="flex-1"
             disabled={submitting}
-            aria-label={previewBeforePrint ? 'Confirmar cobro y ver preview' : 'Confirmar cobro e imprimir'}
+            aria-label={previewBeforePrint ? t('invoicePayment.ariaConfirmPreview') : t('invoicePayment.ariaConfirmPrint')}
           >
-            {submitting ? 'Cobrando...' : previewBeforePrint ? 'Registrar cobro y ver preview' : 'Registrar cobro e imprimir'}
+            {submitting
+              ? t('invoicePayment.submitting')
+              : previewBeforePrint
+                ? t('invoicePayment.submitPreview')
+                : t('invoicePayment.submitPrint')}
           </Button>
         </div>
       </form>

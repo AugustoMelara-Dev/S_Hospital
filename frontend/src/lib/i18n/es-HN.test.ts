@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { STRINGS, t } from './es-HN';
+import { STRINGS } from './es-HN';
+import { t } from './index';
 
 describe('es-HN dictionary', () => {
   it('exposes the expected app identity', () => {
@@ -25,5 +26,21 @@ describe('es-HN dictionary', () => {
 
   it('returns the dictionary from t()', () => {
     expect(t()).toBe(STRINGS);
+  });
+
+  it('resolves a known dotted path through t(key)', () => {
+    expect(t('invoicePayment.title')).toBe('Registrar pago');
+    expect(t('invoicePayment.methodCash')).toBe('Efectivo');
+    expect(t('cash.title')).toBe('Caja');
+    expect(t('catalog.title')).toBe('Catalogo de servicios');
+  });
+
+  it('falls back to the key itself for missing entries', () => {
+    expect(t('invoicePayment.does.not.exist')).toBe('invoicePayment.does.not.exist');
+    expect(t('totally.missing')).toBe('totally.missing');
+  });
+
+  it('falls back to the key for function-shaped values (call through STRINGS directly)', () => {
+    expect(t('pos.issued')).toBe('pos.issued');
   });
 });

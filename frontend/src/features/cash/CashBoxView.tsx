@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { formatLempiras } from '@/lib/money';
+import { STRINGS, t } from '@/lib/i18n';
 import { SessionStatusCard } from './components/SessionStatusCard';
 import { OpenSessionForm } from './components/OpenSessionForm';
 import { SessionSummary } from './components/SessionSummary';
@@ -88,10 +89,10 @@ export function CashBoxView({
       setClosingNotes('');
       setFormAlert(null);
       onSessionChange?.(opened);
-      onStatus('Caja abierta.');
+      onStatus(t('cash.opened'));
     },
     onError: (error) => {
-      const message = userSafeErrorMessage(error, 'No se pudo abrir caja.');
+      const message = userSafeErrorMessage(error, t('cash.openError'));
       setFormAlert(message);
       onStatus(message);
     },
@@ -108,10 +109,10 @@ export function CashBoxView({
       setClosingNotes('');
       setFormAlert(null);
       onSessionChange?.(null);
-      onStatus('Caja cerrada.');
+      onStatus(t('cash.closed'));
     },
     onError: (error) => {
-      const message = userSafeErrorMessage(error, 'No se pudo cerrar caja.');
+      const message = userSafeErrorMessage(error, t('cash.closeError'));
       setFormAlert(message);
       onStatus(message);
     },
@@ -134,7 +135,7 @@ export function CashBoxView({
   }, [isOpen, activeSession?.id]);
 
   function handleOpenSession(data: { opening_amount: string }) {
-    onStatus('Abriendo caja...');
+    onStatus(t('cash.opening'));
     openSessionMutation.mutate({ opening_amount: data.opening_amount });
   }
 
@@ -142,21 +143,21 @@ export function CashBoxView({
     e.preventDefault();
     if (!activeSession) return;
     if (!canCloseCash) {
-      setFormAlert('Este usuario no tiene permiso para cerrar caja.');
+      setFormAlert(t('cash.closePermissionError'));
       return;
     }
     if (hasPendingBalance) {
-      setFormAlert(`No se puede cerrar caja con ${pendingInvoiceCount} factura(s) pendientes o parciales por ${formatLempiras(pendingAmount)}.`);
+      setFormAlert(STRINGS.cash.closePendingError(pendingInvoiceCount, formatLempiras(pendingAmount)));
       return;
     }
     if (closingAmount.trim() === '') {
-      setClosingAmountError('Falta ingresar el monto contado antes de cerrar caja.');
+      setClosingAmountError(t('cash.closeAmountRequired'));
       setFormAlert(null);
       closingAmountRef.current?.focus();
       return;
     }
     if (!hasValidClosingAmount) {
-      setClosingAmountError('Ingrese un monto contado valido, por ejemplo 100.00.');
+      setClosingAmountError(t('cash.closeAmountInvalid'));
       setFormAlert(null);
       closingAmountRef.current?.focus();
       return;
@@ -167,7 +168,7 @@ export function CashBoxView({
 
   function handleCloseSession() {
     if (!activeSession) return;
-    onStatus('Cerrando caja...');
+    onStatus(t('cash.closing'));
     setConfirmingClose(false);
     closeSessionMutation.mutate({
       id: activeSession.id,
@@ -186,18 +187,18 @@ export function CashBoxView({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardDescription>Operación de caja</CardDescription>
-              <CardTitle id="cash-title">Caja</CardTitle>
+              <CardDescription>{t('cash.operationLabel')}</CardDescription>
+              <CardTitle id="cash-title">{t('cash.title')}</CardTitle>
             </div>
             <Button type="button" variant="secondary" size="sm" onClick={() => void refetch()} disabled={isLoading}>
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Actualizar
+              {t('cash.refresh')}
             </Button>
           </CardHeader>
 
           <CardContent className="flex flex-col gap-4">
             {formAlert ? (
-              <Alert variant="destructive" title="No se pudo completar la operación">
+              <Alert variant="destructive" title={t('cash.errorTitle')}>
                 {formAlert}
               </Alert>
             ) : null}
@@ -205,13 +206,13 @@ export function CashBoxView({
             <SessionStatusCard session={activeSession ?? null} />
 
             {isOpen && (
-              <Alert variant="success" title="Caja lista para facturar">
+              <Alert variant="success" title={t('cash.readyTitle')}>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <span className="flex-1">
-                    La caja esta abierta. Puede pasar directamente al POS para crear y cobrar facturas.
+                    {t('cash.readyBody')}
                   </span>
                   <Button asChild size="sm">
-                    <Link to="/billing/new">Nueva factura</Link>
+                    <Link to="/billing/new">{t('cash.newInvoice')}</Link>
                   </Button>
                 </div>
               </Alert>
@@ -221,7 +222,7 @@ export function CashBoxView({
               <Alert variant="warning">
                 <AlertTriangle className="h-4 w-4" />
                 <div>
-                  <strong>Pagos bloqueados.</strong> Abra caja antes de emitir y cobrar facturas.
+                  <strong>{t('cash.blockedTitle')}</strong> {t('cash.blockedBody')}
                 </div>
               </Alert>
             )}
@@ -239,35 +240,35 @@ export function CashBoxView({
             {activeSession.payments_by_method && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Resumen por Método de Pago</CardTitle>
+                  <CardTitle>{t('cash.summaryTitle')}</CardTitle>
                   <CardDescription>
-                    Efectivo entra al efectivo esperado. Transferencias, tarjetas y otros metodos quedan separados para conciliacion.
+                    {t('cash.summaryDescription')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <div className="flex flex-col">
-                      <span className="text-sm text-muted-foreground">Efectivo</span>
+                      <span className="text-sm text-muted-foreground">{t('cash.methodCash')}</span>
                       <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.cash)}</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-sm text-muted-foreground">Transferencia</span>
+                      <span className="text-sm text-muted-foreground">{t('cash.methodTransfer')}</span>
                       <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.transfer)}</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-sm text-muted-foreground">Tarjeta</span>
+                      <span className="text-sm text-muted-foreground">{t('cash.methodCard')}</span>
                       <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.card)}</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-sm text-muted-foreground">Otros</span>
+                      <span className="text-sm text-muted-foreground">{t('cash.methodOther')}</span>
                       <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.other)}</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-sm text-muted-foreground">Pagos registrados</span>
+                      <span className="text-sm text-muted-foreground">{t('cash.registeredPayments')}</span>
                       <span className="text-xl font-bold">{activeSession.payments_count ?? 0}</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-sm text-muted-foreground">Saldo pendiente</span>
+                      <span className="text-sm text-muted-foreground">{t('cash.pendingBalance')}</span>
                       <span className="text-xl font-bold">{formatLempiras(activeSession.pending_amount)}</span>
                     </div>
                   </div>
@@ -277,14 +278,14 @@ export function CashBoxView({
 
             <Card>
               <CardHeader>
-                <CardTitle>Cerrar Caja</CardTitle>
-                <CardDescription>Cierre auditado de la sesión actual</CardDescription>
+                <CardTitle>{t('cash.closeCardTitle')}</CardTitle>
+                <CardDescription>{t('cash.closeCardDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleCloseConfirmation} className="flex flex-col gap-4">
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-semibold" htmlFor="closing_amount">
-                      Monto Contado (L.) *
+                      {t('cash.closingAmountLabel')}
                     </label>
                     <Input
                       ref={closingAmountRef}
@@ -296,7 +297,7 @@ export function CashBoxView({
                         setClosingAmount(e.target.value);
                         if (closingAmountError) setClosingAmountError(null);
                       }}
-                      placeholder="0.00"
+                      placeholder={t('cash.closingAmountPlaceholder')}
                       className="text-lg"
                       aria-invalid={closingAmountError ? 'true' : 'false'}
                       aria-describedby={closingAmountError ? 'closing-amount-error' : 'closing-amount-help'}
@@ -307,7 +308,7 @@ export function CashBoxView({
                       </p>
                     ) : (
                       <p id="closing-amount-help" className="text-xs text-muted-foreground">
-                        Cuente el efectivo fisico en gaveta. No incluya tarjeta ni transferencia.
+                        {t('cash.closingAmountHelp')}
                       </p>
                     )}
                   </div>
@@ -316,7 +317,7 @@ export function CashBoxView({
                     <Alert variant="warning">
                       <AlertTriangle className="h-4 w-4" />
                       <div>
-                        Hay una diferencia de <strong>{formatLempiras(difference)}</strong>. Se requerirá una nota explicativa al cerrar.
+                        {STRINGS.cash.differenceAlert(formatLempiras(difference))}
                       </div>
                     </Alert>
                   )}
@@ -325,21 +326,20 @@ export function CashBoxView({
                     <Alert variant="warning">
                       <AlertTriangle className="h-4 w-4" />
                       <div>
-                        Hay <strong>{pendingInvoiceCount}</strong> factura(s) pendientes o parciales por{' '}
-                        <strong>{formatLempiras(pendingAmount)}</strong>. Revise los cobros antes de cerrar.
+                        {STRINGS.cash.pendingAlert(pendingInvoiceCount, formatLempiras(pendingAmount))}
                       </div>
                     </Alert>
                   )}
 
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-semibold" htmlFor="closing_notes">
-                      Nota de Cierre
+                      {t('cash.notesLabel')}
                     </label>
                     <Textarea
                       id="closing_notes"
                       value={closingNotes}
                       onChange={(e) => setClosingNotes(e.target.value)}
-                      placeholder={hasCashDifference ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional...'}
+                      placeholder={hasCashDifference ? t('cash.notesPlaceholderRequired') : t('cash.notesPlaceholderOptional')}
                       rows={2}
                     />
                   </div>
@@ -349,11 +349,11 @@ export function CashBoxView({
                     variant="default"
                     disabled={closeSessionMutation.isPending || !canCloseCash || hasPendingBalance}
                   >
-                    {closeSessionMutation.isPending ? 'Cerrando...' : 'Cerrar Caja'}
+                    {closeSessionMutation.isPending ? t('cash.closeSubmitting') : t('cash.closeSubmit')}
                   </Button>
                   {!canCloseCash && (
                     <p className="text-sm text-muted-foreground">
-                      Solo usuarios con permiso de cierre pueden cerrar caja.
+                      {t('cash.closeDisclaimer')}
                     </p>
                   )}
                 </form>
@@ -370,8 +370,8 @@ export function CashBoxView({
             onSubmit={handleOpenSession}
           />
         ) : (
-          <Alert variant="warning" title="Caja en modo consulta">
-            Este usuario puede ver caja, pero no tiene permiso para abrir una nueva sesión.
+          <Alert variant="warning" title={t('cash.consultModeTitle')}>
+            {t('cash.consultModeBody')}
           </Alert>
         )}
       </div>
