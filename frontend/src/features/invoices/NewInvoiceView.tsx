@@ -37,14 +37,62 @@ export function NewInvoiceView({
   const patientInputRef = useRef<HTMLInputElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const scannerInputRef = useRef<HTMLInputElement | null>(null);
+  const initialPatientNameRef = useRef(state.patientName);
+
+  const loadPointOfSaleData = useCallback(async () => {
+    if (!canViewCatalog) {
+      dispatch({ type: 'SET_ALERT_MESSAGE', payload: 'Este usuario no tiene permiso para consultar el catalogo de servicios.' });
+      dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
+      return;
+    }
+    dispatch({ type: 'SET_LOADING_SERVICES', payload: true });
+    try {
+      const [currentCashSession, nextCategories, nextServices] = await Promise.all([
+        apiClient.getCurrentCashSession(),
+        apiClient.getCategories(true),
+        apiClient.getServices({ active: true, billing: true, perPage: POS_SERVICE_PAGE_SIZE }),
+      ]);
+      dispatch({
+        type: 'LOAD_DATA_SUCCESS',
+        payload: {
+          loadedCashSession: currentCashSession,
+          categories: Array.isArray(nextCategories) ? nextCategories : [],
+          services: Array.isArray(nextServices) ? nextServices : [],
+        },
+      });
+      onCashSessionChange?.(currentCashSession);
+    } catch (error) {
+      onStatus(userSafeErrorMessage(error, 'No se pudo cargar servicios activos.'));
+    } finally {
+      dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
+    }
+  }, [canViewCatalog, onCashSessionChange, onStatus]);
+
+  const searchPointOfSaleServices = useCallback(async () => {
+    dispatch({ type: 'SET_LOADING_SERVICES', payload: true });
+    try {
+      const nextServices = await apiClient.getServices({
+        active: true,
+        billing: true,
+        search: state.search.trim() || undefined,
+        categoryId: state.selectedCategoryId && state.selectedCategoryId !== 'all' ? state.selectedCategoryId : undefined,
+        perPage: POS_SERVICE_PAGE_SIZE,
+      });
+      dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: Array.isArray(nextServices) ? nextServices : [] });
+    } catch (error) {
+      onStatus(userSafeErrorMessage(error, 'No se pudo buscar servicios activos.'));
+    } finally {
+      dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
+    }
+  }, [onStatus, state.search, state.selectedCategoryId]);
 
   useEffect(() => {
     void loadPointOfSaleData();
-  }, []);
+  }, [loadPointOfSaleData]);
 
   useEffect(() => {
     window.setTimeout(() => {
-      if (state.patientName.trim()) {
+      if (initialPatientNameRef.current.trim()) {
         searchInputRef.current?.focus();
         return;
       }
@@ -60,7 +108,7 @@ export function NewInvoiceView({
       void searchPointOfSaleServices();
     }, 250);
     return () => window.clearTimeout(timeoutId);
-  }, [canViewCatalog, state.search, state.selectedCategoryId]);
+  }, [canViewCatalog, searchPointOfSaleServices]);
 
   useEffect(() => {
     if (cashSession) {
@@ -97,100 +145,10 @@ export function NewInvoiceView({
   );
   const canEmit = emitBlockReasons.length === 0;
 
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      const target = e.target as HTMLElement;
-      const isInsideDialog = Boolean(target.closest('[data-dialog-content], [role="dialog"], [role="alertdialog"]'));
-      const hasOpenOverlay = state.showConfirmation || state.showPayment || state.showSuccess || state.showReceipt || state.showClearConfirm;
-
-      if (e.ctrlKey && e.key.toLowerCase() === 'n') {
-        e.preventDefault();
-        patientInputRef.current?.focus();
-      }
-      if (e.ctrlKey && e.key.toLowerCase() === 'b') {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-      if (e.ctrlKey && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        scannerInputRef.current?.focus();
-      }
-      if (e.key === 'Escape') {
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
-        if (state.showConfirmation || state.showPayment || state.showSuccess || state.showReceipt) return;
-        if (target.closest('[data-dialog-content]')) return;
-        if (state.patientName || state.search || state.scanCode || state.cartItems.length > 0) {
-          e.preventDefault();
-          dispatch({ type: 'SET_SHOW_CLEAR_CONFIRM', payload: true });
-        }
-      }
-      if (e.ctrlKey && e.key === 'Enter') {
-        e.preventDefault();
-        if (isInsideDialog || hasOpenOverlay) {
-          return;
-        }
-        if (canEmit) {
-          handleEmitClick();
-        } else {
-          validateForm();
-        }
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [canEmit, state.cartItems.length, handleClearCart, state.patientName, state.scanCode, state.search, state.showClearConfirm, state.showConfirmation, state.showPayment, state.showReceipt, state.showSuccess]);
-
   const preview = useMemo(
     () => computeSimpleEstimate(state.cartItems, fiscalSettings?.default_tax_rate),
     [state.cartItems, fiscalSettings?.default_tax_rate],
   );
-
-  async function loadPointOfSaleData() {
-    if (!canViewCatalog) {
-      dispatch({ type: 'SET_ALERT_MESSAGE', payload: 'Este usuario no tiene permiso para consultar el catalogo de servicios.' });
-      dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
-      return;
-    }
-    dispatch({ type: 'SET_LOADING_SERVICES', payload: true });
-    try {
-      const [currentCashSession, nextCategories, nextServices] = await Promise.all([
-        apiClient.getCurrentCashSession(),
-        apiClient.getCategories(true),
-        apiClient.getServices({ active: true, billing: true, perPage: POS_SERVICE_PAGE_SIZE }),
-      ]);
-      dispatch({
-        type: 'LOAD_DATA_SUCCESS',
-        payload: {
-          loadedCashSession: currentCashSession,
-          categories: Array.isArray(nextCategories) ? nextCategories : [],
-          services: Array.isArray(nextServices) ? nextServices : [],
-        },
-      });
-      onCashSessionChange?.(currentCashSession);
-    } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo cargar servicios activos.'));
-    } finally {
-      dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
-    }
-  }
-
-  async function searchPointOfSaleServices() {
-    dispatch({ type: 'SET_LOADING_SERVICES', payload: true });
-    try {
-      const nextServices = await apiClient.getServices({
-        active: true,
-        billing: true,
-        search: state.search.trim() || undefined,
-        categoryId: state.selectedCategoryId && state.selectedCategoryId !== 'all' ? state.selectedCategoryId : undefined,
-        perPage: POS_SERVICE_PAGE_SIZE,
-      });
-      dispatch({ type: 'SEARCH_SERVICES_SUCCESS', payload: Array.isArray(nextServices) ? nextServices : [] });
-    } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo buscar servicios activos.'));
-    } finally {
-      dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
-    }
-  }
 
   function addToCart(service: Service) {
     dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
@@ -272,7 +230,7 @@ export function NewInvoiceView({
     searchInputRef.current?.focus();
   }
 
-  function validateForm(): boolean {
+  const validateForm = useCallback((): boolean => {
     if (!state.loadedCashSession) {
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: 'Abra caja antes de emitir y cobrar una factura.' });
       onStatus('Abra caja antes de emitir y cobrar una factura.');
@@ -306,13 +264,56 @@ export function NewInvoiceView({
       return false;
     }
     return true;
-  }
+  }, [onStatus, state.cartItems, state.loadedCashSession, state.patientName]);
 
-  function handleEmitClick() {
+  const handleEmitClick = useCallback(() => {
     dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
     if (!validateForm()) return;
     dispatch({ type: 'SET_SHOW_CONFIRMATION', payload: true });
-  }
+  }, [validateForm]);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement;
+      const isInsideDialog = Boolean(target.closest('[data-dialog-content], [role="dialog"], [role="alertdialog"]'));
+      const hasOpenOverlay = state.showConfirmation || state.showPayment || state.showSuccess || state.showReceipt || state.showClearConfirm;
+
+      if (e.ctrlKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        patientInputRef.current?.focus();
+      }
+      if (e.ctrlKey && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      if (e.ctrlKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        scannerInputRef.current?.focus();
+      }
+      if (e.key === 'Escape') {
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+        if (state.showConfirmation || state.showPayment || state.showSuccess || state.showReceipt) return;
+        if (target.closest('[data-dialog-content]')) return;
+        if (state.patientName || state.search || state.scanCode || state.cartItems.length > 0) {
+          e.preventDefault();
+          dispatch({ type: 'SET_SHOW_CLEAR_CONFIRM', payload: true });
+        }
+      }
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        if (isInsideDialog || hasOpenOverlay) {
+          return;
+        }
+        if (canEmit) {
+          handleEmitClick();
+        } else {
+          validateForm();
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canEmit, handleEmitClick, state.cartItems.length, state.patientName, state.scanCode, state.search, state.showClearConfirm, state.showConfirmation, state.showPayment, state.showReceipt, state.showSuccess, validateForm]);
 
   async function submitInvoice() {
     dispatch({ type: 'SET_SUBMITTING', payload: true });
