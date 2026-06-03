@@ -5,7 +5,9 @@ Decision: `PASSED`.
 Scope:
 
 - Verify that `qa\FINAL_PRODUCTION_HANDOFF_RESULT.md` keeps the final delivery evidence requested for this hardening front.
+- Verify that `qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` keeps the same final evidence contract after the automated handoff smoke run.
 - Confirm that the final report includes browser captures or visual smoke evidence, diagnostics, files changed, tests and gates, physical blockers, risks and safety notes.
+- Confirm that the report keeps the offline release guard self-test command and allowlist output.
 - Keep the release state as `PRODUCTION_CANDIDATE` until the final hospital server evidence is complete.
 
 Command run:
@@ -17,6 +19,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_final_hando
 Observed result:
 
 - `FINAL_HANDOFF_COMPLETENESS: YES`.
+- The default handoff `qa\FINAL_PRODUCTION_HANDOFF_RESULT.md` passes the strengthened guard.
+- The smoke handoff `qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` passes the strengthened guard.
 - The handoff includes captures/browser smoke evidence.
 - The handoff includes system diagnostics, Help/support and support-packet evidence.
 - The handoff includes files changed in this hardening front.
@@ -24,6 +28,8 @@ Observed result:
 - The handoff includes physical blockers for LAN client validation, printer proof, Windows backup tasks, production environment, backup worker, restore, concurrency and offline release regeneration.
 - The handoff includes risks and limits.
 - The handoff keeps safety notes: no `.env` deletion, no database volume reset, no production restore overwrite, no push, no printed secrets and no invented fiscal compliance.
+- The handoff preserves `assert_offline_release_clean.ps1 -SelfTest` and the offline guard allowlist output.
+- Generic QA example-template wording is not recorded as a fake `qa/` evidence path.
 
 Safety notes:
 

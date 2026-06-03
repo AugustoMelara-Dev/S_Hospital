@@ -36,12 +36,13 @@
 | Field proof templates safety | `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md` | Final LAN, printer, restore and concurrency proof templates keep preflight-required labels and safety instructions |
 | Proof initialization safety | `qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md` | `init_production_proofs.ps1` creates missing final-evidence files in a disposable fixture and preserves existing evidence without `-Force` |
 | Offline release builder self-test | `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md` | `make_offline_release.ps1 -SelfTest` verifies the simulated bundle includes root setup, nginx, critical operational scripts, operator docs and QA proof templates without touching the real package |
+| Offline release guard self-test | `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md` | `assert_offline_release_clean.ps1 -SelfTest` verifies that only final-field QA example templates are allowed in the offline release and completed QA evidence remains blocked |
 | Dependency manifest | `scripts/validate_dependency_manifest.ps1` | Local handoff now checks `package_manifest.json` against backend and frontend dependency declarations before production approval |
 | Operations objective audit | `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md` | Active objective requirements are traced to local evidence and remaining final-field blockers |
 | Final handoff completeness | `qa/FINAL_HANDOFF_COMPLETENESS_2026_06_03.md` | Final report keeps captures, diagnostics, changed files, gates, physical blockers, risks and safety notes |
 | Evidence index | `qa/OPS_EVIDENCE_INDEX_2026_06_03.md` | Handoff evidence references exist under `qa/` and physical blockers remain listed before `PRODUCTION_READY` |
 | Offline release guard | `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md` | Current local offline package is stale and correctly blocked until regenerated from the final commit |
-| Handoff self-check | `qa/HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` | `final_production_handoff.ps1 -SkipPreflight` writes a report, runs support-packet, browser-smoke-evidence, startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, double-action, installer-legacy, LAN-recovery, shift-incident-recovery, training-safety, field-proof-template, proof-initialization-safety, objective-audit, offline-release-builder-self-test, dependency-manifest, final-handoff-completeness and evidence-index validation, and keeps `PRODUCTION_CANDIDATE` |
+| Handoff self-check | `qa/HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` | `final_production_handoff.ps1 -SkipPreflight` writes a report, runs support-packet, browser-smoke-evidence, startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, double-action, installer-legacy, LAN-recovery, shift-incident-recovery, training-safety, field-proof-template, proof-initialization-safety, objective-audit, offline-release-builder-self-test, offline-release-guard-self-test, dependency-manifest, final-handoff-completeness and evidence-index validation, and keeps `PRODUCTION_CANDIDATE` |
 | Preflight | `qa/PREFLIGHT_WITH_CONCURRENCY_2026_06_03.md` | Restore and concurrency evidence now pass preflight; production readiness still blocked |
 
 ## Tests and gates run locally
@@ -52,7 +53,13 @@
 - Focused backend tests: `SecurityHeadersTest`, `BackupWorkflowTest`, `DatabaseDumpWriterTest`, `SystemStatusTest`, `CashPaymentsReceiptTest`, `ReportsTest`, `BroadcastingWiringTest`, `AuditLogTest`, `GenerateFiscalNumberActionTest`.
 - Frontend gates: `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run test -- --run`, `npm.cmd run build`, `scripts\check-branding.ps1`.
 - E2E/browser: mocked production readiness E2E with screenshots, real Laravel smoke without mutations.
-- Operational scripts: backup worker smoke, restore into disposable DB, concurrency validation, startup/repair/task dry-runs, system diagnostics sanitization, client support sanitization, support packet safety validation, support packet env-file redaction, browser smoke evidence validation, startup/repair safety validation, operator manuals safety validation, backup/restore docs safety validation, installation docs safety validation, help screen safety validation, system diagnostics safety validation, double-action safety validation, installer legacy safety validation, LAN recovery safety validation, shift incident recovery safety validation, training safety validation, field proof templates validation, proof initialization safety validation, offline release builder self-test, dependency manifest validation, operations objective audit validation, evidence index validation, handoff self-check, offline release guard, production preflight.
+- Operational scripts: backup worker smoke, restore into disposable DB, concurrency validation, startup/repair/task dry-runs, system diagnostics sanitization, client support sanitization, support packet safety validation, support packet env-file redaction, browser smoke evidence validation, startup/repair safety validation, operator manuals safety validation, backup/restore docs safety validation, installation docs safety validation, help screen safety validation, system diagnostics safety validation, double-action safety validation, installer legacy safety validation, LAN recovery safety validation, shift incident recovery safety validation, training safety validation, field proof templates validation, proof initialization safety validation, offline release builder self-test, offline release guard self-test, dependency manifest validation, operations objective audit validation, evidence index validation, handoff self-check, offline release guard, production preflight.
+
+Offline release guard self-test output preserved in the smoke handoff:
+
+```text
+[OK] SelfTest passed. Only final-field qa/*.example.md templates are allowed in offline release.
+```
 
 ## Operator documentation and in-app support
 
