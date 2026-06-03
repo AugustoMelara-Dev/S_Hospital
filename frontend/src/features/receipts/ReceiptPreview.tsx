@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type React from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { Alert } from '../../components/ui/alert';
@@ -34,7 +34,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
     contentRef: receiptRef,
   });
 
-  async function handlePrintClick() {
+  const handlePrintClick = useCallback(async () => {
     setPrintError('');
 
     try {
@@ -57,7 +57,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
         'No se pudo abrir la ventana de impresion. Verifique la impresora y reimprima desde Historial con motivo cuando el supervisor lo autorice.',
       );
     }
-  }
+  }, [handlePrint, onPrint, receiptWidth]);
 
   useEffect(() => {
     if (!autoPrint || autoPrintedReceiptRef.current === receipt.invoice.invoice_number) {
@@ -68,7 +68,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
     window.setTimeout(() => {
       void handlePrintClick();
     }, 150);
-  }, [autoPrint, receipt.invoice.invoice_number]);
+  }, [autoPrint, handlePrintClick, receipt.invoice.invoice_number]);
 
   const location = receipt.institutional?.location ?? receipt.hospital.address;
   const taxLabel = `${receipt.invoice.tax_label ?? 'ISV'}${receipt.invoice.tax_rate ? ` ${receipt.invoice.tax_rate}%` : ''}`;
