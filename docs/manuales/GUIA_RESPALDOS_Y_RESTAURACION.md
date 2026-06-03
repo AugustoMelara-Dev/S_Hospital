@@ -111,14 +111,49 @@ Si la validacion falla, lea el mensaje principal antes de reintentar:
 ## Restauracion
 
 Restaurar cambia la informacion disponible en el sistema. Debe hacerse solo con autorizacion.
+No existe restauracion por interfaz normal para evitar que un usuario reemplace
+datos reales por accidente.
 
 Antes de restaurar:
 
 1. Detenga la facturacion.
 2. Cree una copia del estado actual si es posible.
 3. Confirme cual respaldo se usara.
-4. Pruebe la restauracion en ambiente seguro cuando sea posible.
+4. Pruebe la restauracion en una base descartable, nunca sobre la base real de
+   produccion.
 5. Documente fecha, motivo y responsable.
+
+El responsable tecnico debe usar una base de prueba con nombre claro, por
+ejemplo `hospital_restore_validation_YYYYMMDD`, y confirmar que es distinta de
+la base activa. No use nombres como la base real de produccion.
+
+La validacion final se documenta en:
+
+```text
+qa\FINAL_RESTORE_PROOF.md
+```
+
+Debe incluir respaldo usado, SHA256, tamano, base origen, base descartable,
+conteos principales y conclusion. Si el archivo tiene placeholders, rutas
+locales no verificables o no prueba una base descartable, no sirve para entrega.
+
+Comando de referencia para Linux/Docker o Git Bash:
+
+```bash
+HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test bash scripts/validate_restore_mysql.sh
+```
+
+Si se usa Windows/XAMPP, el procedimiento debe seguir la misma regla: restaurar
+en base descartable, verificar conteos y conservar evidencia. Nunca restaure
+sobre la base activa para "probar".
+
+No ejecute seeders de prueba despues de restaurar un respaldo. Una restauracion
+de validacion debe demostrar que el archivo recupera los datos respaldados, no
+crear datos nuevos.
+
+No agregue archivos `.env`, respaldos SQL ni carpetas completas de datos al
+paquete de soporte. Use `scripts\collect_support_packet.ps1` para preparar
+evidencia recortada y segura.
 
 ## Senales De Alerta
 

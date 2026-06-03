@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 09:53:23
+- Generated at: 2026-06-03 10:06:52
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -16,6 +16,7 @@
 - Support packet safety guard exit code: 0
 - Startup and repair safety guard exit code: 0
 - Operator manuals safety guard exit code: 0
+- Backup and restore docs safety guard exit code: 0
 - Training safety guard exit code: 0
 - Evidence index guard exit code: 0
 - Preflight skipped: True
@@ -44,6 +45,7 @@ bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=htt
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_startup_repair_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_safety.ps1
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_backup_restore_docs_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
 powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000
@@ -83,6 +85,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found scripts\validate_support_packet_safety.ps1
 [FAIL] Missing required release file: scripts\validate_startup_repair_safety.ps1
 [FAIL] Missing required release file: scripts\validate_operator_manuals_safety.ps1
+[FAIL] Missing required release file: scripts\validate_backup_restore_docs_safety.ps1
 [FAIL] Missing required release file: scripts\validate_ops_evidence_index.ps1
 [FAIL] Missing required release file: scripts\validate_training_safety.ps1
 [ OK ] Found scripts\run_backup_worker.cmd
@@ -102,10 +105,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit eeb6109d before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 7747b08c before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
-OFFLINE_RELEASE_CLEAN: NO (20 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (21 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -248,6 +251,37 @@ TRAINING_SAFETY: YES
 [ OK ] Operator manuals do not expose secret-like assignments
 
 OPERATOR_MANUALS_SAFETY: YES
+```
+
+## Backup and restore docs safety validation output
+
+```text
+[ OK ] Found docs\manuales\GUIA_RESPALDOS_Y_RESTAURACION.md
+[ OK ] Found docs\manuales\GUIA_INSTALACION_OPERATIVA.md
+[ OK ] Found docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md
+[ OK ] Backup/restore guide includes Crear Respaldo Manual
+[ OK ] Backup/restore guide includes Respaldos Automaticos
+[ OK ] Backup/restore guide includes Retencion de respaldos
+[ OK ] Backup/restore guide includes validate_backup_worker_smoke.ps1
+[ OK ] Backup/restore guide includes qa\BACKUP_WORKER_SMOKE_PROOF.md
+[ OK ] Backup/restore guide includes Restauracion
+[ OK ] Backup/restore guide includes qa\FINAL_RESTORE_PROOF.md
+[ OK ] Backup/restore guide includes validate_restore_mysql.sh
+[ OK ] Backup/restore guide includes HOSPITAL_VALIDATE_RESTORE_MYSQL=1
+[ OK ] Restore guide requires disposable/safe restore target
+[ OK ] Restore guide forbids restoring over production for testing
+[ OK ] Restore guide requires verifiable restore evidence fields
+[ OK ] Restore guide explains no normal UI restore
+[ OK ] Backup worker smoke avoids credentials in URL
+[ OK ] Backup/support docs include safety term: No borre
+[ OK ] Backup/support docs include safety term: No restaure
+[ OK ] Backup/support docs include safety term: No ejecute seeders
+[ OK ] Backup/support docs include safety term: no restaura backups automaticamente
+[ OK ] Backup/support docs include safety term: paquete de soporte
+[ OK ] Backup/support docs include safety term: No agregue archivos .env
+[ OK ] Backup/restore docs do not expose secret-like assignments
+
+BACKUP_RESTORE_DOCS_SAFETY: YES
 ```
 
 ## Evidence index validation output
