@@ -21,7 +21,7 @@ class StorePaymentRequest extends FormRequest
         return [
             'cash_session_id' => ['required', 'integer', 'exists:cash_register_sessions,id'],
             'method' => ['required', Rule::in(Payment::METHODS)],
-            'amount' => ['required', 'decimal:0,2', 'min:0.01'],
+            'amount' => ['required', 'string', 'regex:/^-?\d{1,9}(\.\d{1,2})?$/'],
             'reference' => ['nullable', 'string', 'max:120'],
         ];
     }

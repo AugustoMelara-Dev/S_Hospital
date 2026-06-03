@@ -11,6 +11,7 @@ use App\Http\Controllers\EchoConfigController;
 use App\Http\Controllers\FiscalSequenceController;
 use App\Http\Controllers\FiscalSettingsController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\InvoiceAuditController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LogoController;
 use App\Http\Controllers\PaymentController;
@@ -85,6 +86,7 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
         Route::post('/invoices', [InvoiceController::class, 'store'])
             ->middleware('throttle.user:60,1');
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
+        Route::get('/invoices/{invoice}/audit', [InvoiceAuditController::class, 'show']);
         Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'void'])
             ->middleware('throttle.user:30,1');
         Route::post('/invoices/{invoice}/reverse', [InvoiceController::class, 'reverse'])

@@ -34,6 +34,24 @@ class Money
         return $cents;
     }
 
+    public static function parseSignedCents(string $value, string $field): int
+    {
+        $normalized = trim($value);
+
+        if (! preg_match('/^-?\d+(\.\d{1,2})?$/', $normalized)) {
+            throw ValidationException::withMessages([
+                $field => 'El monto debe tener maximo dos decimales.',
+            ]);
+        }
+
+        $sign = $normalized !== '' && $normalized[0] === '-' ? -1 : 1;
+        $absolute = ltrim($normalized, '-');
+
+        [$integer, $decimal] = array_pad(explode('.', $absolute, 2), 2, '00');
+
+        return $sign * (((int) $integer * 100) + (int) str_pad(substr($decimal, 0, 2), 2, '0'));
+    }
+
     public static function formatCents(int $cents): string
     {
         $sign = $cents < 0 ? '-' : '';

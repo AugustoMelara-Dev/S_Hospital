@@ -62,12 +62,18 @@ class RegisterPaymentAction
                 ]);
             }
 
-            $amountCents = Money::parsePositiveCents($payload['amount'], 'amount');
+            $amountCents = Money::parseSignedCents($payload['amount'], 'amount');
             $balanceCents = $this->resolveBalanceCents($lockedInvoice);
 
-            if ($amountCents > $balanceCents) {
+            if ($amountCents === 0) {
                 throw ValidationException::withMessages([
-                    'amount' => 'El pago no puede exceder el saldo pendiente.',
+                    'amount' => 'El monto no puede ser cero.',
+                ]);
+            }
+
+            if (abs($amountCents) > $balanceCents) {
+                throw ValidationException::withMessages([
+                    'amount' => 'El monto no puede exceder el saldo pendiente en valor absoluto.',
                 ]);
             }
 
@@ -75,7 +81,7 @@ class RegisterPaymentAction
                 ? (bool) (FiscalSetting::query()->value('partial_payments_enabled') ?? false)
                 : false;
 
-            if ($amountCents < $balanceCents && ! $partialPaymentsEnabled) {
+            if ($amountCents > 0 && $amountCents < $balanceCents && ! $partialPaymentsEnabled) {
                 throw ValidationException::withMessages([
                     'amount' => 'El monto recibido es menor al total.',
                 ]);
