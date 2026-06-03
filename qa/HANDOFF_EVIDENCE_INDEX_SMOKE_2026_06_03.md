@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 12:51:01
+- Generated at: 2026-06-03 13:01:37
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -26,6 +26,7 @@
 - LAN recovery safety guard exit code: 0
 - Shift incident recovery safety guard exit code: 0
 - Training safety guard exit code: 0
+- Field proof templates safety guard exit code: 0
 - Proof initialization safety guard exit code: 0
 - Final handoff completeness guard exit code: 0
 - Evidence index guard exit code: 0
@@ -194,7 +195,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 0296b7eb before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 0af6650b before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
 OFFLINE_RELEASE_CLEAN: NO (41 blocking issue(s))
@@ -337,6 +338,18 @@ STARTUP_REPAIR_SAFETY: YES
 [ OK ] HelpView test protects production database warning
 
 TRAINING_SAFETY: YES
+```
+
+## Field proof templates safety validation output
+
+```text
+[ OK ] qa\LAN_CLIENT_VALIDATION_PROOF.example.md keeps required fields, checks and safety instructions.
+[ OK ] qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md keeps required fields, checks and safety instructions.
+[ OK ] qa\FINAL_RESTORE_PROOF.example.md keeps required fields, checks and safety instructions.
+[ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md keeps required fields, checks and safety instructions.
+
+FIELD_PROOF_TEMPLATES: YES
+Final-field proof templates match preflight-required labels, checks and safety instructions.
 ```
 
 ## Proof initialization safety validation output

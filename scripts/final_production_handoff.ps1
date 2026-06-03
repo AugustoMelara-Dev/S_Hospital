@@ -38,6 +38,7 @@ $backupTasksScript = Join-Path $scriptsDir "install_backup_tasks_windows.ps1"
 $releaseGuardScript = Join-Path $scriptsDir "assert_offline_release_clean.ps1"
 $evidenceIndexScript = Join-Path $scriptsDir "validate_ops_evidence_index.ps1"
 $trainingSafetyScript = Join-Path $scriptsDir "validate_training_safety.ps1"
+$fieldProofTemplatesSafetyScript = Join-Path $scriptsDir "validate_field_proof_templates.ps1"
 $proofInitializationSafetyScript = Join-Path $scriptsDir "validate_proof_initialization_safety.ps1"
 $supportPacketSafetyScript = Join-Path $scriptsDir "validate_support_packet_safety.ps1"
 $browserSmokeEvidenceScript = Join-Path $scriptsDir "validate_browser_smoke_evidence.ps1"
@@ -200,6 +201,18 @@ function Invoke-TrainingSafetyGuard {
 function Invoke-SupportPacketSafetyGuard {
     Write-Section "Support packet safety validation"
     $output = @(& powershell.exe -ExecutionPolicy Bypass -File $supportPacketSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
+function Invoke-FieldProofTemplatesSafetyGuard {
+    Write-Section "Field proof templates safety validation"
+    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $fieldProofTemplatesSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -423,6 +436,8 @@ function Write-HandoffReport(
     [int] $shiftIncidentRecoverySafetyExit,
     [string[]] $trainingSafetyOutput,
     [int] $trainingSafetyExit,
+    [string[]] $fieldProofTemplatesSafetyOutput,
+    [int] $fieldProofTemplatesSafetyExit,
     [string[]] $proofInitializationSafetyOutput,
     [int] $proofInitializationSafetyExit,
     [string[]] $finalHandoffCompletenessOutput,
@@ -436,7 +451,7 @@ function Write-HandoffReport(
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
     $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted
-    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $proofInitializationSafetyExit -eq 0 -and $finalHandoffCompletenessExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
+    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $fieldProofTemplatesSafetyExit -eq 0 -and $proofInitializationSafetyExit -eq 0 -and $finalHandoffCompletenessExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
 
     Add-ReportLine $lines "# Final production handoff result"
     Add-ReportLine $lines ""
@@ -466,6 +481,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- LAN recovery safety guard exit code: $lanRecoverySafetyExit"
     Add-ReportLine $lines "- Shift incident recovery safety guard exit code: $shiftIncidentRecoverySafetyExit"
     Add-ReportLine $lines "- Training safety guard exit code: $trainingSafetyExit"
+    Add-ReportLine $lines "- Field proof templates safety guard exit code: $fieldProofTemplatesSafetyExit"
     Add-ReportLine $lines "- Proof initialization safety guard exit code: $proofInitializationSafetyExit"
     Add-ReportLine $lines "- Final handoff completeness guard exit code: $finalHandoffCompletenessExit"
     Add-ReportLine $lines "- Evidence index guard exit code: $evidenceIndexExit"
@@ -543,6 +559,9 @@ function Write-HandoffReport(
     if ($trainingSafetyExit -ne 0) {
         Add-ReportLine $lines "- Training safety validation returned exit code $trainingSafetyExit."
     }
+    if ($fieldProofTemplatesSafetyExit -ne 0) {
+        Add-ReportLine $lines "- Field proof templates safety validation returned exit code $fieldProofTemplatesSafetyExit."
+    }
     if ($proofInitializationSafetyExit -ne 0) {
         Add-ReportLine $lines "- Proof initialization safety validation returned exit code $proofInitializationSafetyExit."
     }
@@ -552,7 +571,7 @@ function Write-HandoffReport(
     if ($evidenceIndexExit -ne 0) {
         Add-ReportLine $lines "- Final handoff evidence index validation returned exit code $evidenceIndexExit."
     }
-    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $proofInitializationSafetyExit -eq 0 -and $finalHandoffCompletenessExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
+    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $fieldProofTemplatesSafetyExit -eq 0 -and $proofInitializationSafetyExit -eq 0 -and $finalHandoffCompletenessExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
         Add-ReportLine $lines "- None reported by the handoff script."
     }
     Add-ReportLine $lines ""
@@ -692,6 +711,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
+    Add-ReportLine $lines "## Field proof templates safety validation output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $fieldProofTemplatesSafetyOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
     Add-ReportLine $lines "## Proof initialization safety validation output"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
@@ -823,6 +851,7 @@ Assert-ScriptExists $backupTasksScript
 Assert-ScriptExists $releaseGuardScript
 Assert-ScriptExists $evidenceIndexScript
 Assert-ScriptExists $trainingSafetyScript
+Assert-ScriptExists $fieldProofTemplatesSafetyScript
 Assert-ScriptExists $proofInitializationSafetyScript
 Assert-ScriptExists $supportPacketSafetyScript
 Assert-ScriptExists $browserSmokeEvidenceScript
@@ -901,6 +930,7 @@ $installerLegacySafety = Invoke-InstallerLegacySafetyGuard
 $lanRecoverySafety = Invoke-LanRecoverySafetyGuard
 $shiftIncidentRecoverySafety = Invoke-ShiftIncidentRecoverySafetyGuard
 $trainingSafety = Invoke-TrainingSafetyGuard
+$fieldProofTemplatesSafety = Invoke-FieldProofTemplatesSafetyGuard
 $proofInitializationSafety = Invoke-ProofInitializationSafetyGuard
 
 if ($SkipPreflight) {
@@ -941,6 +971,8 @@ if ($SkipPreflight) {
         -shiftIncidentRecoverySafetyExit $shiftIncidentRecoverySafety.ExitCode `
         -trainingSafetyOutput $trainingSafety.Output `
         -trainingSafetyExit $trainingSafety.ExitCode `
+        -fieldProofTemplatesSafetyOutput $fieldProofTemplatesSafety.Output `
+        -fieldProofTemplatesSafetyExit $fieldProofTemplatesSafety.ExitCode `
         -proofInitializationSafetyOutput $proofInitializationSafety.Output `
         -proofInitializationSafetyExit $proofInitializationSafety.ExitCode `
         -finalHandoffCompletenessOutput @("Final handoff completeness validation pending until the handoff report is written.") `
@@ -988,6 +1020,8 @@ if ($SkipPreflight) {
         -shiftIncidentRecoverySafetyExit $shiftIncidentRecoverySafety.ExitCode `
         -trainingSafetyOutput $trainingSafety.Output `
         -trainingSafetyExit $trainingSafety.ExitCode `
+        -fieldProofTemplatesSafetyOutput $fieldProofTemplatesSafety.Output `
+        -fieldProofTemplatesSafetyExit $fieldProofTemplatesSafety.ExitCode `
         -proofInitializationSafetyOutput $proofInitializationSafety.Output `
         -proofInitializationSafetyExit $proofInitializationSafety.ExitCode `
         -finalHandoffCompletenessOutput $finalHandoffCompleteness.Output `
@@ -1040,6 +1074,8 @@ Write-HandoffReport `
     -shiftIncidentRecoverySafetyExit $shiftIncidentRecoverySafety.ExitCode `
     -trainingSafetyOutput $trainingSafety.Output `
     -trainingSafetyExit $trainingSafety.ExitCode `
+    -fieldProofTemplatesSafetyOutput $fieldProofTemplatesSafety.Output `
+    -fieldProofTemplatesSafetyExit $fieldProofTemplatesSafety.ExitCode `
     -proofInitializationSafetyOutput $proofInitializationSafety.Output `
     -proofInitializationSafetyExit $proofInitializationSafety.ExitCode `
     -finalHandoffCompletenessOutput @("Final handoff completeness validation pending until the handoff report is written.") `
@@ -1087,6 +1123,8 @@ Write-HandoffReport `
     -shiftIncidentRecoverySafetyExit $shiftIncidentRecoverySafety.ExitCode `
     -trainingSafetyOutput $trainingSafety.Output `
     -trainingSafetyExit $trainingSafety.ExitCode `
+    -fieldProofTemplatesSafetyOutput $fieldProofTemplatesSafety.Output `
+    -fieldProofTemplatesSafetyExit $fieldProofTemplatesSafety.ExitCode `
     -proofInitializationSafetyOutput $proofInitializationSafety.Output `
     -proofInitializationSafetyExit $proofInitializationSafety.ExitCode `
     -finalHandoffCompletenessOutput $finalHandoffCompleteness.Output `
@@ -1097,7 +1135,7 @@ Write-HandoffReport `
     -preflightExit $preflightExit `
     -preflightSkipped $false
 
-if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $proofInitializationSafety.ExitCode -eq 0 -and $finalHandoffCompleteness.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
+if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $fieldProofTemplatesSafety.ExitCode -eq 0 -and $proofInitializationSafety.ExitCode -eq 0 -and $finalHandoffCompleteness.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
     Write-Host ""
     Write-Host "PRODUCTION_READY evidence gate passed." -ForegroundColor Green
     exit 0
@@ -1105,7 +1143,7 @@ if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.
 
 Write-Host ""
 Write-Host "PRODUCTION_READY remains blocked. Keep status as PRODUCTION_CANDIDATE and close the missing evidence above." -ForegroundColor Yellow
-if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $proofInitializationSafety.ExitCode -eq 0 -and $finalHandoffCompleteness.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
+if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $fieldProofTemplatesSafety.ExitCode -eq 0 -and $proofInitializationSafety.ExitCode -eq 0 -and $finalHandoffCompleteness.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
     exit 1
 }
 if ($supportPacketSafety.ExitCode -ne 0) {
@@ -1146,6 +1184,9 @@ if ($shiftIncidentRecoverySafety.ExitCode -ne 0) {
 }
 if ($trainingSafety.ExitCode -ne 0) {
     exit $trainingSafety.ExitCode
+}
+if ($fieldProofTemplatesSafety.ExitCode -ne 0) {
+    exit $fieldProofTemplatesSafety.ExitCode
 }
 if ($proofInitializationSafety.ExitCode -ne 0) {
     exit $proofInitializationSafety.ExitCode
