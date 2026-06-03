@@ -177,6 +177,7 @@ function Invoke-Json($method, $path, $body = $null, $purpose = "call the backup 
         WebSession = $session
         Headers = $headers
         TimeoutSec = 30
+        UseBasicParsing = $true
     }
 
     if ($null -ne $body) {
@@ -215,7 +216,7 @@ $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 $current = $created.data
 
 while ((Get-Date) -lt $deadline) {
-    $list = Invoke-Json "GET" "/api/backups?status=all&per_page=25" $null "leer la lista de respaldos"
+    $list = Invoke-Json "GET" "/api/backups?per_page=25" $null "leer la lista de respaldos"
     $match = @($list.data | Where-Object { $_.id -eq $backupId }) | Select-Object -First 1
     if ($null -ne $match) {
         $current = $match

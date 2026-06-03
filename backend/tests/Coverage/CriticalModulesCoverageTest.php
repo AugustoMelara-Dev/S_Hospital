@@ -102,7 +102,7 @@ class CriticalModulesCoverageTest extends TestCase
             if ($percent < self::COVERAGE_THRESHOLD) {
                 $failures[] = sprintf(
                     '%s is at %.2f%% (%.1f%% below the 80%% threshold). '
-                    .'Missing lines: %s',
+                    .'Files in module: %s',
                     $module,
                     $percent,
                     self::COVERAGE_THRESHOLD - $percent,

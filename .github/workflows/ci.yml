@@ -57,8 +57,9 @@ jobs:
           DB_CONNECTION: sqlite
           DB_DATABASE: ':memory:'
           APP_KEY: base64:dGVzdHRlc3R0ZXN0dGVzdHRlc3R0ZXN0dGVzdHRlc3Q=
+          HOSPITAL_REQUIRE_COVERAGE: '1'
         run: |
-          vendor/bin/phpunit --testdox
+          vendor/bin/phpunit -c phpunit.coverage.xml --testdox
 
       - name: Run Pint code style
         working-directory: backend
@@ -165,7 +166,8 @@ jobs:
           DB_DATABASE: hospital_billing
           DB_USERNAME: hospital
           DB_PASSWORD: hospital_dev
-        run: vendor/bin/phpunit --testdox
+          HOSPITAL_REQUIRE_COVERAGE: '1'
+        run: vendor/bin/phpunit -c phpunit.coverage.xml --testdox
 
   frontend:
     name: Frontend (Vitest + lint + build)
