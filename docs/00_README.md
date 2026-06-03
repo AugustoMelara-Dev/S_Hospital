@@ -80,6 +80,9 @@ deployment, then jump to the appropriate section below.
 - **[KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)** - What is closed
   in v1.0.0, what is deferred to v1.1, what needs physical
   hardware (FASE G).
+- **[OPERATIVE_NOTES_2026_06_02.md](OPERATIVE_NOTES_2026_06_02.md)** -
+  Current release snapshot (v1.0.0) with the CRITICAL and
+  audit items closed in this branch.
 - **[LOCAL_VALIDATION_SCRIPT.md](LOCAL_VALIDATION_SCRIPT.md)** -
   Local validation script for the 5 receipt paper sizes.
 - **[OPERATIVE_VALIDATION_FLOW.md](OPERATIVE_VALIDATION_FLOW.md)** -
