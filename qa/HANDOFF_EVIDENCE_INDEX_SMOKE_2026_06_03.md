@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 15:10:40
+- Generated at: 2026-06-03 15:15:39
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -200,11 +200,18 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\validate_dependency_manifest.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] setup.bat in offline release differs from scripts\release_setup.bat. Regenerate offline-release before handoff.
+[ OK ] setup.bat runs from its own folder
+[ OK ] setup.bat launches PowerShell with -NoProfile
+[ OK ] setup.bat delegates to supported LAN installer
+[ OK ] setup.bat does not invoke deprecated installer
+[ OK ] setup.bat avoids legacy/demo wording
+[ OK ] setup.bat uses institutional wording
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 6396fe9e before release handoff.
+[FAIL] MANIFEST.txt must reference current commit ac5ff085 before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
-OFFLINE_RELEASE_CLEAN: NO (42 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (43 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -843,6 +850,10 @@ DOUBLE_ACTION_SAFETY: YES
 [ OK ] offline release builder uses release_setup.bat as root setup.bat
 [ OK ] offline release guard requires supported LAN installer
 [ OK ] offline release guard checks supported LAN installer source hash
+[ OK ] offline release guard checks root setup launcher source hash
+[ OK ] offline release guard checks setup launcher working directory
+[ OK ] offline release guard checks setup launcher NoProfile
+[ OK ] offline release guard rejects legacy setup launcher
 [ OK ] supported installer uses institutional name
 [ OK ] supported installer has diagnostics-only mode
 [ OK ] supported installer has self-test mode

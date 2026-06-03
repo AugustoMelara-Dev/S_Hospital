@@ -16,7 +16,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_relea
 Observed result:
 
 - `OFFLINE_RELEASE_CLEAN: NO`.
-- Blocking issue count: 42 in the latest handoff smoke with `-RequireCurrentCommit`; 41 in the direct guard run without commit validation.
+- Blocking issue count: 43 in the latest direct guard run with
+  `-RequireCurrentCommit`.
 - The guard detected missing `scripts\validate_startup_repair_safety.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_browser_smoke_evidence.ps1` in `offline-release`.
 - The guard detected that `scripts\validate_dependency_manifest.ps1` in `offline-release` differs from versioned source.
@@ -40,6 +41,10 @@ Observed result:
 - The guard detected that `scripts\final_production_handoff.ps1` in `offline-release` differs from versioned source.
 - The guard detected that `scripts\make_offline_release.ps1` in `offline-release` differs from versioned source.
 - The guard detected multiple release files that differ from versioned source.
+- The guard detected that root `setup.bat` in `offline-release` differs from
+  `scripts\release_setup.bat`, while still checking that the stale launcher
+  runs from its own folder, uses `-NoProfile`, delegates to the LAN installer
+  and avoids legacy/demo wording.
 - The guard detected that `offline-images` contains no Docker image tar files.
 
 Safety notes:

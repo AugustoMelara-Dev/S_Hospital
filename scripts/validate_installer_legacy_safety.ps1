@@ -69,6 +69,10 @@ Assert-NotContains "setup.bat launcher does not describe the install as demo" $r
 Assert-Contains "offline release builder uses release_setup.bat as root setup.bat" $releaseBuilder "release_setup\.bat[\s\S]*setup\.bat"
 Assert-Contains "offline release guard requires supported LAN installer" $releaseGuard "scripts\\deploy_hospital_lan\.ps1"
 Assert-Contains "offline release guard checks supported LAN installer source hash" $releaseGuard 'Test-ReleaseFileMatchesSource "scripts\\deploy_hospital_lan\.ps1"'
+Assert-Contains "offline release guard checks root setup launcher source hash" $releaseGuard "setup\.bat matches scripts\\release_setup\.bat"
+Assert-Contains "offline release guard checks setup launcher working directory" $releaseGuard 'cd /d "%~dp0"'
+Assert-Contains "offline release guard checks setup launcher NoProfile" $releaseGuard "setup\.bat launches PowerShell with -NoProfile"
+Assert-Contains "offline release guard rejects legacy setup launcher" $releaseGuard "setup\.bat must not invoke the deprecated installer"
 
 Assert-Contains "supported installer uses institutional name" $lanInstaller "Sistema de Caja Hospitalaria"
 Assert-Contains "supported installer has diagnostics-only mode" $lanInstaller "DiagnosticsOnly"

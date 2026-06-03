@@ -108,6 +108,62 @@ function Test-ReleaseFileMatchesSource([string] $relativePath) {
     }
 }
 
+function Test-ReleaseSetupLauncher() {
+    $source = Join-Path $ProjectRoot "scripts\release_setup.bat"
+    $release = Join-Path $ReleaseRoot "setup.bat"
+
+    if (-not (Test-Path -LiteralPath $source -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $release -PathType Leaf)) {
+        return
+    }
+
+    $sourceHash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
+    $releaseHash = (Get-FileHash -LiteralPath $release -Algorithm SHA256).Hash
+
+    if ($sourceHash -eq $releaseHash) {
+        Add-Pass "setup.bat matches scripts\release_setup.bat"
+    } else {
+        Add-Failure "setup.bat in offline release differs from scripts\release_setup.bat. Regenerate offline-release before handoff."
+    }
+
+    $content = Get-Content -LiteralPath $release -Raw
+    if ($content -notmatch 'cd /d "%~dp0"') {
+        Add-Failure "setup.bat must switch to its own folder before launching the installer."
+    } else {
+        Add-Pass "setup.bat runs from its own folder"
+    }
+
+    if ($content -notmatch "powershell\s+-NoProfile\s+-ExecutionPolicy\s+Bypass") {
+        Add-Failure "setup.bat must launch PowerShell with -NoProfile."
+    } else {
+        Add-Pass "setup.bat launches PowerShell with -NoProfile"
+    }
+
+    if ($content -notmatch "scripts\\deploy_hospital_lan\.ps1") {
+        Add-Failure "setup.bat must delegate to scripts\deploy_hospital_lan.ps1."
+    } else {
+        Add-Pass "setup.bat delegates to supported LAN installer"
+    }
+
+    if ($content -match "install_hospital_os\.ps1") {
+        Add-Failure "setup.bat must not invoke the deprecated installer."
+    } else {
+        Add-Pass "setup.bat does not invoke deprecated installer"
+    }
+
+    if ($content -match ('Billing' + '\s+' + 'OS') -or $content -match '(?i)\bdemo\b|demostracion') {
+        Add-Failure "setup.bat must use institutional production wording, not legacy/demo wording."
+    } else {
+        Add-Pass "setup.bat avoids legacy/demo wording"
+    }
+
+    if ($content -notmatch "Sistema de Caja Hospitalaria") {
+        Add-Failure "setup.bat must use institutional system wording."
+    } else {
+        Add-Pass "setup.bat uses institutional wording"
+    }
+}
+
 try {
     $ReleaseRoot = (Resolve-Path -LiteralPath $ReleaseRoot).Path
 } catch {
@@ -198,6 +254,7 @@ Test-ReleaseFileMatchesSource "scripts\validate_field_proof_templates.ps1"
 Test-ReleaseFileMatchesSource "scripts\validate_proof_initialization_safety.ps1"
 Test-ReleaseFileMatchesSource "scripts\run_backup_worker.cmd"
 Test-ReleaseFileMatchesSource "scripts\run_scheduled_backup.cmd"
+Test-ReleaseSetupLauncher
 Test-ReleaseFileMatchesSource "qa\LAN_CLIENT_VALIDATION_PROOF.example.md"
 Test-ReleaseFileMatchesSource "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md"
 Test-ReleaseFileMatchesSource "qa\FINAL_RESTORE_PROOF.example.md"
