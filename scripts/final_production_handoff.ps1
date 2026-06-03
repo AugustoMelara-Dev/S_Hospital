@@ -81,11 +81,11 @@ function Write-Section([string] $title) {
     Write-Host "== $title ==" -ForegroundColor Cyan
 }
 
-function Write-Result([bool] $passed, [string] $message) {
+function Write-Result([bool] $passed, [string] $passedMessage, [string] $failedMessage) {
     if ($passed) {
-        Write-Host "[ OK ] $message" -ForegroundColor Green
+        Write-Host "[ OK ] $passedMessage" -ForegroundColor Green
     } else {
-        Write-Host "[MISS] $message" -ForegroundColor Yellow
+        Write-Host "[MISS] $failedMessage" -ForegroundColor Yellow
     }
 }
 
@@ -317,10 +317,10 @@ $printerProofCompleted = Test-ProofLooksCompleted $printerProofPath
 $restoreProofCompleted = Test-ProofLooksCompleted $restoreProofPath
 $concurrencyProofCompleted = Test-ProofLooksCompleted $concurrencyProofPath
 $allHandoffProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted
-Write-Result $lanProofCompleted "Second-client LAN proof file looks present; preflight performs strict validation."
-Write-Result $printerProofCompleted "Physical printer proof file looks present; preflight performs strict validation."
-Write-Result $restoreProofCompleted "Final restore proof file looks present; preflight performs strict validation."
-Write-Result $concurrencyProofCompleted "Final concurrency proof file looks present; preflight performs strict validation."
+Write-Result $lanProofCompleted "Second-client LAN proof file has required handoff fields; preflight performs strict validation." "Second-client LAN proof is missing, incomplete, has placeholders, or references missing evidence."
+Write-Result $printerProofCompleted "Physical printer proof file has required handoff fields; preflight performs strict validation." "Physical printer proof is missing, incomplete, has placeholders, or references missing evidence."
+Write-Result $restoreProofCompleted "Final restore proof file has required handoff fields; preflight performs strict validation." "Final restore proof is missing, incomplete, has placeholders, or references missing evidence."
+Write-Result $concurrencyProofCompleted "Final concurrency proof file has required handoff fields; preflight performs strict validation." "Final concurrency proof is missing, incomplete, has placeholders, or references missing evidence."
 
 if (-not $lanProofCompleted) {
     Write-Host "Run from the second LAN client:"
