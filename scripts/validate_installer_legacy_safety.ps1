@@ -60,6 +60,12 @@ $operativeNotes = Read-RequiredFile "docs\OPERATIVE_NOTES_2026_06_02.md"
 
 Assert-Contains "setup.bat launcher delegates to supported LAN installer" $releaseSetup "deploy_hospital_lan\.ps1"
 Assert-NotContains "setup.bat launcher does not invoke legacy installer" $releaseSetup "install_hospital_os\.ps1"
+Assert-Contains "setup.bat launcher runs from its own folder" $releaseSetup 'cd /d "%~dp0"'
+Assert-Contains "setup.bat launcher disables PowerShell profiles" $releaseSetup "powershell\s+-NoProfile\s+-ExecutionPolicy\s+Bypass"
+Assert-Contains "setup.bat launcher gives administrator recovery instructions" $releaseSetup "Ejecutar como administrador"
+Assert-Contains "setup.bat launcher uses institutional wording" $releaseSetup "Sistema de Caja Hospitalaria"
+Assert-NotContains "setup.bat launcher does not use legacy branding" $releaseSetup ('Billing' + '\s+' + 'OS')
+Assert-NotContains "setup.bat launcher does not describe the install as demo" $releaseSetup "(?i)\bdemo\b|demostracion"
 Assert-Contains "offline release builder uses release_setup.bat as root setup.bat" $releaseBuilder "release_setup\.bat[\s\S]*setup\.bat"
 Assert-Contains "offline release guard requires supported LAN installer" $releaseGuard "scripts\\deploy_hospital_lan\.ps1"
 Assert-Contains "offline release guard checks supported LAN installer source hash" $releaseGuard 'Test-ReleaseFileMatchesSource "scripts\\deploy_hospital_lan\.ps1"'

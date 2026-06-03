@@ -6,6 +6,8 @@ Scope:
 
 - Verify that the supported production installer remains `scripts\deploy_hospital_lan.ps1`.
 - Verify that root `setup.bat` delegates to the supported LAN installer.
+- Verify that root `setup.bat` runs from its own folder, disables PowerShell
+  profiles and keeps institutional production wording.
 - Verify that `scripts\install_hospital_os.ps1` stays marked as deprecated compatibility only.
 - Verify that active operator docs do not point staff to the legacy installer as the normal path.
 
@@ -19,6 +21,9 @@ Observed result:
 
 - `INSTALLER_LEGACY_SAFETY: YES`.
 - `scripts\release_setup.bat` delegates to `scripts\deploy_hospital_lan.ps1`.
+- `scripts\release_setup.bat` switches to its own directory before launching,
+  calls PowerShell with `-NoProfile`, gives administrator recovery instructions
+  and does not use legacy/demo wording.
 - `scripts\make_offline_release.ps1` copies `scripts\release_setup.bat` as root `setup.bat`.
 - `scripts\install_hospital_os.ps1` keeps a runtime `DEPRECATION NOTICE` and points operators to the supported installer.
 - Installation docs tell operators to use `setup.bat` and clarify that old shortcuts to `install_hospital_os.ps1` are compatibility only.

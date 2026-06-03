@@ -152,6 +152,26 @@ if ($SelfTest) {
             Write-Fail "SelfTest FAILED: scripts/release_setup.bat should be replaced by root setup.bat in the bundle."
         }
 
+        $setupContent = Get-Content -LiteralPath (Join-Path $tempRoot "setup.bat") -Raw
+        if ($setupContent -notmatch 'cd /d "%~dp0"') {
+            Write-Fail "SelfTest FAILED: setup.bat must switch to its own folder before launching the installer."
+        }
+        if ($setupContent -notmatch "powershell\s+-NoProfile\s+-ExecutionPolicy\s+Bypass") {
+            Write-Fail "SelfTest FAILED: setup.bat must launch PowerShell with -NoProfile."
+        }
+        if ($setupContent -notmatch "scripts\\deploy_hospital_lan\.ps1") {
+            Write-Fail "SelfTest FAILED: setup.bat must delegate to scripts\deploy_hospital_lan.ps1."
+        }
+        if ($setupContent -match "install_hospital_os\.ps1") {
+            Write-Fail "SelfTest FAILED: setup.bat must not invoke the deprecated installer."
+        }
+        if ($setupContent -match ('Billing' + '\s+' + 'OS') -or $setupContent -match '(?i)\bdemo\b|demostracion') {
+            Write-Fail "SelfTest FAILED: setup.bat must use institutional production wording, not legacy/demo wording."
+        }
+        if ($setupContent -notmatch "Sistema de Caja Hospitalaria") {
+            Write-Fail "SelfTest FAILED: setup.bat must use institutional system wording."
+        }
+
         Write-Host "[OK] SelfTest passed. default.conf=$defaultConfLines lines, crontab=$crontabLines lines, scripts=$($script:OfflineReleaseCriticalScripts.Count), docs=$($script:OfflineReleaseCriticalDocs.Count), proofTemplates=$($script:OfflineReleaseProofTemplates.Count), hash=$sourceHash" -ForegroundColor Green
     } finally {
         if (Test-Path -LiteralPath $tempRoot) {

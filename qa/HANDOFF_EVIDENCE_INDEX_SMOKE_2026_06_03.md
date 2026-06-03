@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 15:03:21
+- Generated at: 2026-06-03 15:10:40
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -201,7 +201,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit e19a6cc9 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 6396fe9e before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
 OFFLINE_RELEASE_CLEAN: NO (42 blocking issue(s))
@@ -834,6 +834,12 @@ DOUBLE_ACTION_SAFETY: YES
 [ OK ] Found docs\OPERATIVE_NOTES_2026_06_02.md
 [ OK ] setup.bat launcher delegates to supported LAN installer
 [ OK ] setup.bat launcher does not invoke legacy installer
+[ OK ] setup.bat launcher runs from its own folder
+[ OK ] setup.bat launcher disables PowerShell profiles
+[ OK ] setup.bat launcher gives administrator recovery instructions
+[ OK ] setup.bat launcher uses institutional wording
+[ OK ] setup.bat launcher does not use legacy branding
+[ OK ] setup.bat launcher does not describe the install as demo
 [ OK ] offline release builder uses release_setup.bat as root setup.bat
 [ OK ] offline release guard requires supported LAN installer
 [ OK ] offline release guard checks supported LAN installer source hash

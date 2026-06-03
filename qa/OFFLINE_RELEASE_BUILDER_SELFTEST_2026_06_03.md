@@ -7,6 +7,9 @@ Scope:
 - Validate that `scripts\make_offline_release.ps1 -SelfTest` can simulate the packaged file layout without building Docker images or touching the real `offline-release` directory.
 - Confirm that the simulated bundle includes root `setup.bat`, nginx config/crontab, critical operational scripts, non-technical operator docs and QA proof templates needed after installation.
 - Confirm that `scripts\release_setup.bat` is replaced by the root launcher in the simulated bundle.
+- Confirm that the simulated root `setup.bat` runs from its own folder,
+  launches PowerShell with `-NoProfile`, delegates to the supported LAN
+  installer and avoids legacy/demo wording.
 
 Command run:
 
@@ -21,6 +24,8 @@ Observed result:
 - 35 critical scripts were present in the simulated bundle, including preflight, handoff, dependency manifest validation, LAN validation, proof initialization, backup task helpers and operational safety validators.
 - 7 critical docs were present in the simulated bundle, including release checklist and role/support/backup manuals.
 - 5 QA proof templates were present in the simulated bundle, including LAN, printer, restore, concurrency and anonymous training acceptance templates.
+- The simulated root `setup.bat` kept `cd /d "%~dp0"`, `-NoProfile`,
+  delegation to `scripts\deploy_hospital_lan.ps1` and institutional wording.
 
 Safety notes:
 
