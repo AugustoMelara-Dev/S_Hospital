@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -10,6 +10,7 @@ import {
   apiClient,
   userSafeErrorMessage,
 } from '../../lib/api';
+import { useInvoices } from '../../hooks/useInvoices';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Alert } from '../../components/ui/alert';
@@ -55,9 +56,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<InvoiceFilters>(() => filtersFromSearchParams(searchParams));
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const invoicesList = Array.isArray(invoices) ? invoices : [];
-  const [meta, setMeta] = useState<PaginatedMeta>({ current_page: 1, per_page: 10, total: 0 });
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('half_letter');
@@ -65,8 +63,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [reprintReason, setReprintReason] = useState('');
   const [confirmingVoid, setConfirmingVoid] = useState(false);
   const [reprintTarget, setReprintTarget] = useState<Invoice | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState('');
   const [openActionsId, setOpenActionsId] = useState<number | null>(null);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
 
@@ -75,33 +71,28 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const canViewReceipt = user.permissions.includes('receipts.view');
   const canVoid = user.permissions.includes('invoices.void');
 
-  useEffect(() => {
-    void loadInvoices(filters);
-  }, []);
-
-  async function loadInvoices(nextFilters: InvoiceFilters) {
-    setLoading(true);
-    setLoadError('');
-
-    try {
-      const response = await apiClient.getInvoices(nextFilters);
-      setInvoices(response.data);
-      setMeta(response.meta);
-    } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudo cargar historial.');
-      setLoadError(message);
-      onStatus(message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // TanStack Query replaces the prior manual useState + useEffect
+  // loading. Cross-PC invalidation is handled by useBroadcastSync
+  // through the queryClient. staleTime of 30s matches the cashier
+  // expectation that the screen stays fresh for the duration of a
+  // single filter/refresh action.
+  const invoicesQuery = useInvoices(filters);
+  const invoicesList: Invoice[] = Array.isArray(invoicesQuery.data?.data)
+    ? (invoicesQuery.data!.data as Invoice[])
+    : [];
+  const meta: PaginatedMeta = invoicesQuery.data?.meta ?? { current_page: 1, per_page: 10, total: 0 };
+  const loading = invoicesQuery.isFetching;
+  const loadError = invoicesQuery.isError
+    ? userSafeErrorMessage(invoicesQuery.error, 'No se pudo cargar historial.')
+    : '';
 
   async function submitFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextFilters = { ...filters, page: 1 };
     setFilters(nextFilters);
     setSearchParams(searchParamsFromFilters(nextFilters));
-    await loadInvoices(nextFilters);
+    // The query refetches automatically because filters is in the
+    // queryKey.
   }
 
   function clearFilters() {
@@ -116,7 +107,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     };
     setFilters(clearedFilters);
     setSearchParams({});
-    void loadInvoices(clearedFilters);
+    // Refetch is automatic via the filters key.
   }
 
   async function openDetail(invoiceId: number) {
@@ -165,7 +156,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     const nextFilters = { ...filters, page };
     setFilters(nextFilters);
     setSearchParams(searchParamsFromFilters(nextFilters));
-    await loadInvoices(nextFilters);
+    // Refetch is automatic via the filters key.
   }
 
   async function voidSelectedInvoice() {
@@ -183,10 +174,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setSelectedInvoice(voided);
-      setInvoices((current) => {
-        const currentList = Array.isArray(current) ? current : [];
-        return currentList.map((invoice) => (invoice.id === voided.id ? voided : invoice));
-      });
       setReceipt(null);
       setVoidReason('');
       onStatus(`Factura ${voided.invoice_number} anulada.`);

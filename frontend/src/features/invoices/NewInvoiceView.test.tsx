@@ -1080,10 +1080,16 @@ describe('NewInvoiceView', () => {
     fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenLastCalledWith(
-        expect.stringContaining('/api/invoices/101/void'),
-        expect.objectContaining({ method: 'POST' }),
-      );
+      // After the void POST, the list refetches via TanStack Query
+      // invalidation, so the last call is the GET, not the POST.
+      // Assert that the POST was issued at some point.
+      const calledWithVoid = fetchMock.mock.calls.some(([url, init]) => {
+        return (
+          String(url).includes('/api/invoices/101/void')
+          && (init as RequestInit | undefined)?.method === 'POST'
+        );
+      });
+      expect(calledWithVoid).toBe(true);
     });
   });
 
