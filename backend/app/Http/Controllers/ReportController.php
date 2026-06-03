@@ -2,21 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Reports\AreaIncomeReportService;
 use App\Actions\Reports\CashSessionReportService;
 use App\Actions\Reports\CategoryReportService;
 use App\Actions\Reports\DailyReportService;
 use App\Actions\Reports\DashboardReportService;
-use App\Actions\Reports\PremiumExcelExportService;
 use App\Actions\Reports\IncomeReportService;
+use App\Actions\Reports\MonthlyReportService;
 use App\Actions\Reports\OperationsReportService;
-use App\Actions\Reports\ServiceSalesReportService;
 use App\Actions\Reports\PdfExportService;
+use App\Actions\Reports\PremiumExcelExportService;
+use App\Actions\Reports\ServiceSalesReportService;
 use App\Http\Requests\Reports\DailyReportRequest;
 use App\Http\Requests\Reports\DashboardReportRequest;
 use App\Http\Requests\Reports\DateRangeReportRequest;
+use App\Http\Requests\Reports\ExportReportRequest;
+use App\Http\Requests\Reports\MonthlyReportRequest;
+use App\Http\Requests\Reports\PdfExportRequest;
+use App\Http\Requests\Reports\ShowCashSessionReportRequest;
 use App\Models\CashRegisterSession;
+use App\Models\FiscalSetting;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -37,46 +43,60 @@ class ReportController extends Controller
         ]);
     }
 
+    public function monthly(MonthlyReportRequest $request, MonthlyReportService $reports): JsonResponse
+    {
+        return response()->json([
+            'data' => $reports->report($request->reportMonth()),
+        ]);
+    }
+
     public function income(DateRangeReportRequest $request, IncomeReportService $reports): JsonResponse
     {
         return response()->json([
-            'data' => $reports->report($this->scopedFilters($request)),
+            'data' => $reports->report($request->authorizedFilters()),
         ]);
     }
 
     public function categories(DateRangeReportRequest $request, CategoryReportService $reports): JsonResponse
     {
         return response()->json([
-            'data' => $reports->report($this->scopedFilters($request)),
+            'data' => $reports->report($request->authorizedFilters()),
+        ]);
+    }
+
+    public function areas(DateRangeReportRequest $request, AreaIncomeReportService $reports): JsonResponse
+    {
+        return response()->json([
+            'data' => $reports->report($request->authorizedFilters()),
         ]);
     }
 
     public function services(DateRangeReportRequest $request, ServiceSalesReportService $reports): JsonResponse
     {
         return response()->json([
-            'data' => $reports->report($this->scopedFilters($request)),
+            'data' => $reports->report($request->authorizedFilters()),
         ]);
     }
 
     public function operations(DateRangeReportRequest $request, OperationsReportService $reports): JsonResponse
     {
         return response()->json([
-            'data' => $reports->report($this->scopedFilters($request), $request->user()->can('backups.view')),
+            'data' => $reports->report($request->authorizedFilters(), $request->user()->can('backups.view')),
         ]);
     }
 
     public function export(
-        DateRangeReportRequest $request,
+        ExportReportRequest $request,
         IncomeReportService $incomeReports,
         CategoryReportService $categoryReports,
+        AreaIncomeReportService $areaReports,
         ServiceSalesReportService $serviceReports,
         OperationsReportService $operationReports,
     ): StreamedResponse {
-        $request->user()->can('reports.export') || abort(403);
-
-        $filters = $this->scopedFilters($request);
+        $filters = $request->authorizedFilters();
         $income = $incomeReports->report($filters);
         $categories = $categoryReports->report($filters);
+        $areas = $areaReports->report($filters);
         $services = $serviceReports->report($filters);
         $operations = $operationReports->report($filters, $request->user()->can('backups.view'));
 
@@ -84,6 +104,7 @@ class ReportController extends Controller
         $spreadsheet = $excelService->generate(
             $income,
             $categories,
+            $areas,
             $services,
             $operations,
             Carbon::parse($request->dateFrom()),
@@ -107,122 +128,64 @@ class ReportController extends Controller
     }
 
     public function pdfExport(
-        Request $request,
+        PdfExportRequest $request,
         DailyReportService $dailyReports,
         IncomeReportService $incomeReports,
         CategoryReportService $categoryReports,
+        AreaIncomeReportService $areaReports,
         ServiceSalesReportService $servicesReports,
         OperationsReportService $operationsReports,
         PdfExportService $pdfService
     ) {
-        $request->user()->can('reports.export') || abort(403);
-
-        $fiscal = \App\Models\FiscalSetting::first() ?? new \App\Models\FiscalSetting([
+        $fiscal = FiscalSetting::first() ?? new FiscalSetting([
             'hospital_name' => 'Hospital Local',
-            'rtn' => 'N/A'
+            'rtn' => 'N/A',
         ]);
 
-        if ($request->filled('date') || (!$request->filled('date_from') && !$request->filled('date_to'))) {
-            $date = $request->input('date', now()->toDateString());
+        if ($request->isDailyClosure()) {
+            $date = $request->reportDate();
             $data = $dailyReports->report($date);
-            
+
             $pdf = $pdfService->generateDailyClosurePdf($data, $fiscal->toArray());
-            
+
             return response($pdf, 200, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="cierre_diario_' . $date . '.pdf"',
+                'Content-Disposition' => 'attachment; filename="cierre_diario_'.$date.'.pdf"',
             ]);
         }
 
-        $request->validate([
-            'date_from' => ['required', 'date_format:Y-m-d'],
-            'date_to' => ['required', 'date_format:Y-m-d', 'after_or_equal:date_from'],
-        ]);
-
-        $filters = [
-            'date_from' => $request->input('date_from'),
-            'date_to' => $request->input('date_to'),
-            'cash_session_id' => $request->input('cash_session_id'),
-            'user_id' => $request->input('user_id'),
-            'category_id' => $request->input('category_id'),
-            'method' => $request->input('method'),
-            'status' => $request->input('status'),
-        ];
-
-        if (!$request->user()->can('cash.close_any')) {
-            if (!empty($filters['cash_session_id'])) {
-                $exists = \App\Models\CashRegisterSession::query()
-                    ->whereKey($filters['cash_session_id'])
-                    ->where('user_id', $request->user()->id)
-                    ->exists();
-                if (!$exists) {
-                    abort(403);
-                }
-            }
-            $filters['user_id'] = $request->user()->id;
-        }
+        $filters = $request->authorizedReportFilters();
 
         $income = $incomeReports->report($filters);
         $categories = $categoryReports->report($filters);
+        $areas = $areaReports->report($filters);
         $services = $servicesReports->report($filters);
         $operations = $operationsReports->report($filters, $request->user()->can('backups.view'));
 
         $pdf = $pdfService->generateRangeClosurePdf([
             'income' => $income,
             'categories' => $categories,
+            'areas' => $areas,
             'services' => $services,
             'operations' => $operations,
+            'filters' => $filters,
             'date_from' => $filters['date_from'],
             'date_to' => $filters['date_to'],
         ], $fiscal->toArray());
 
         return response($pdf, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="cierre_periodo_' . $filters['date_from'] . '_a_' . $filters['date_to'] . '.pdf"',
+            'Content-Disposition' => 'attachment; filename="cierre_periodo_'.$filters['date_from'].'_a_'.$filters['date_to'].'.pdf"',
         ]);
     }
 
     public function cashSession(
-        Request $request,
+        ShowCashSessionReportRequest $request,
         CashRegisterSession $cashSession,
         CashSessionReportService $reports,
     ): JsonResponse {
-        ($request->user()->can('reports.cash_session.view')
-            || $request->user()->can('reports.managerial.view')) || abort(403);
-
-        abort_unless(
-            $request->user()->can('cash.close_any') || $cashSession->user_id === $request->user()->id,
-            403,
-        );
-
         return response()->json([
             'data' => $reports->report($cashSession),
         ]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function scopedFilters(DateRangeReportRequest $request): array
-    {
-        $filters = $request->validated();
-
-        if ($request->user()->can('cash.close_any')) {
-            return $filters;
-        }
-
-        if (
-            ! empty($filters['cash_session_id'])
-            && CashRegisterSession::query()
-                ->whereKey($filters['cash_session_id'])
-                ->where('user_id', $request->user()->id)
-                ->doesntExist()
-        ) {
-            abort(403);
-        }
-
-        $filters['user_id'] = $request->user()->id;
-
-        return $filters;
     }
 }

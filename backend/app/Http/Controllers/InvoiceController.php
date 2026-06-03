@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Billing\CreateInvoiceAction;
+use App\Actions\Billing\ReverseInvoiceAction;
 use App\Actions\Billing\VoidInvoiceAction;
 use App\Http\Requests\Billing\IndexInvoiceRequest;
+use App\Http\Requests\Billing\ReverseInvoiceRequest;
+use App\Http\Requests\Billing\ShowInvoiceRequest;
 use App\Http\Requests\Billing\StoreInvoiceRequest;
 use App\Http\Requests\Billing\VoidInvoiceRequest;
 use App\Models\Invoice;
@@ -12,7 +15,6 @@ use App\Models\User;
 use App\Support\InvoiceAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class InvoiceController extends Controller
 {
@@ -54,10 +56,10 @@ class InvoiceController extends Controller
             )
             ->when(! empty($validated['status']), fn (Builder $query) => $query->where('status', $validated['status']))
             ->when(! empty($validated['patient']), function (Builder $query) use ($validated): void {
-                $query->where('patient_name', 'like', '%'.$validated['patient'].'%');
+                $query->where('patient_name', 'like', '%'.$this->escapeLike($validated['patient']).'%');
             })
             ->when(! empty($validated['invoice_number']), function (Builder $query) use ($validated): void {
-                $query->where('invoice_number', 'like', '%'.$validated['invoice_number'].'%');
+                $query->where('invoice_number', 'like', '%'.$this->escapeLike($validated['invoice_number']).'%');
             })
             ->when(
                 $this->canAccessHistoricalInvoices($user) && ! empty($validated['user_id']),
@@ -89,11 +91,8 @@ class InvoiceController extends Controller
         ], 201);
     }
 
-    public function show(Request $request, Invoice $invoice): JsonResponse
+    public function show(ShowInvoiceRequest $request, Invoice $invoice): JsonResponse
     {
-        $request->user()->can('invoices.view') || abort(403);
-        $this->authorizeInvoiceAccess($request->user(), $invoice);
-
         return response()->json([
             'data' => $invoice->load([
                 'items',
@@ -111,27 +110,28 @@ class InvoiceController extends Controller
         Invoice $invoice,
         VoidInvoiceAction $voidInvoice,
     ): JsonResponse {
-        $request->user()->can('invoices.void') || abort(403);
-
         return response()->json([
             'data' => $voidInvoice->execute($invoice, $request->user(), $request->reason()),
         ]);
     }
 
-    private function authorizeInvoiceAccess(User $user, Invoice $invoice): void
-    {
-        if ($this->invoiceAccess->canAccessAnyInvoice($user)) {
-            return;
-        }
-
-        abort_unless(
-            $invoice->issued_by === $user->id && $invoice->issued_at?->isToday() === true,
-            403,
-        );
+    public function reverse(
+        ReverseInvoiceRequest $request,
+        Invoice $invoice,
+        ReverseInvoiceAction $reverseInvoice,
+    ): JsonResponse {
+        return response()->json([
+            'data' => $reverseInvoice->execute($invoice, $request->user(), $request->reason()),
+        ]);
     }
 
     private function canAccessHistoricalInvoices(User $user): bool
     {
         return $this->invoiceAccess->canAccessAnyInvoice($user);
+    }
+
+    private function escapeLike(string $input): string
+    {
+        return str_replace(['%', '_'], ['\\%', '\\_'], $input);
     }
 }

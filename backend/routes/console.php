@@ -14,7 +14,7 @@ Artisan::command('auth:create-initial-admin
     {--username= : Username del admin inicial}
     {--email= : Email del admin inicial}
     {--name=Admin Local : Nombre visible del admin inicial}
-    {--password= : Password temporal, debe cambiarse al entrar}', function () {
+    {--password= : Compatibilidad tecnica; preferir HOSPITAL_INITIAL_ADMIN_PASSWORD}', function () {
     if (User::role('admin')->exists()) {
         $this->error('Ya existe un usuario admin.');
 
@@ -23,10 +23,16 @@ Artisan::command('auth:create-initial-admin
 
     $username = trim((string) $this->option('username'));
     $email = trim((string) $this->option('email'));
-    $password = (string) $this->option('password');
+    $password = (string) ($this->option('password') ?: getenv('HOSPITAL_INITIAL_ADMIN_PASSWORD') ?: '');
 
     if ($username === '' || $email === '' || $password === '') {
-        $this->error('Debe enviar --username, --email y --password.');
+        $this->error('Debe enviar --username, --email y una contrasena por HOSPITAL_INITIAL_ADMIN_PASSWORD o --password.');
+
+        return 1;
+    }
+
+    if (strlen($password) < 10 || ! preg_match('/[A-Za-z]/', $password) || ! preg_match('/\d/', $password)) {
+        $this->error('La contrasena temporal debe tener al menos 10 caracteres, con letras y numeros.');
 
         return 1;
     }
@@ -51,4 +57,26 @@ Schedule::command('hospital:backup --type=scheduled')
     ->withoutOverlapping(120)
     ->onOneServer()
     ->runInBackground()
-    ->description('Hospital Billing OS daily scheduled database backup');
+    ->description('Respaldo diario del Sistema de Caja Hospitalaria');
+
+Schedule::command('hospital:backup --type=scheduled')
+    ->everyFifteenMinutes()
+    ->between((string) env('HOSPITAL_OPERATION_START', '06:00'), (string) env('HOSPITAL_OPERATION_END', '18:00'))
+    ->withoutOverlapping(120)
+    ->onOneServer()
+    ->runInBackground()
+    ->description('Respaldo automatico operativo del Sistema de Caja Hospitalaria');
+
+Schedule::command('hospital:prune-audit-logs --days='.(int) env('HOSPITAL_AUDIT_RETENTION_DAYS', 365))
+    ->dailyAt('03:15')
+    ->onOneServer()
+    ->withoutOverlapping(60)
+    ->runInBackground()
+    ->description('Podar audit_logs anteriores a la retencion configurada');
+
+Schedule::command('hospital:prune-failed-jobs --days='.(int) env('HOSPITAL_FAILED_JOBS_RETENTION_DAYS', 30))
+    ->dailyAt('03:30')
+    ->onOneServer()
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->description('Podar failed_jobs anteriores a la retencion configurada');

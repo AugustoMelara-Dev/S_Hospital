@@ -1,11 +1,12 @@
 import { type FormEvent } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Banknote, DollarSign, FileText, CreditCard, Download } from 'lucide-react';
+import { Banknote, DollarSign, FileText, Download, CircleSlash } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/data-table';
+import { finiteNumber, formatLempiras } from '../../../lib/money';
 import { KPICard } from './KPICard';
 import type { DailyReport } from '../../../lib/api/types';
 
@@ -40,7 +41,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
   const chartData = daily
     ? Object.entries(paymentsByMethod).map(([method, amount]) => ({
         method: methodLabel(method),
-        amount: Number.parseFloat(amount as string) || 0,
+        amount: finiteNumber(amount as string),
       }))
     : [];
 
@@ -69,29 +70,66 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
 
       {daily && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
             <KPICard
               title="Facturado"
-              value={`L. ${daily.total_billed}`}
+              value={formatLempiras(daily.total_billed)}
               icon={<DollarSign className="h-4 w-4" />}
             />
             <KPICard
               title="Cobrado"
-              value={`L. ${daily.total_collected}`}
+              value={formatLempiras(daily.total_collected)}
               icon={<Banknote className="h-4 w-4" />}
+            />
+            <KPICard
+              title="Pendiente"
+              value={formatLempiras(daily.total_pending)}
+              description="Facturas emitidas o parciales"
+              icon={<DollarSign className="h-4 w-4" />}
             />
             <KPICard
               title="Facturas"
               value={daily.invoice_count}
-              description={`${(invoicesByStatus.paid?.count ?? 0) + (invoicesByStatus.partial?.count ?? 0)} pagadas`}
+              description={`${invoicesByStatus.paid?.count ?? 0} pagadas, ${invoicesByStatus.partial?.count ?? 0} parciales`}
               icon={<FileText className="h-4 w-4" />}
             />
             <KPICard
-              title="Pagos"
-              value={daily.payment_count}
-              icon={<CreditCard className="h-4 w-4" />}
+              title="Anulado"
+              value={formatLempiras(daily.total_voided)}
+              description={`${invoicesByStatus.void?.count ?? 0} facturas anuladas`}
+              icon={<CircleSlash className="h-4 w-4" />}
             />
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Lectura financiera</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Concepto</TableHead>
+                    <TableHead className="text-right">Monto</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="font-medium">Pagos registrados</TableCell>
+                    <TableCell className="text-right">{daily.payment_count}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Facturas parciales</TableCell>
+                    <TableCell className="text-right">{formatLempiras(daily.total_partial)}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">Saldo pendiente</TableCell>
+                    <TableCell className="text-right">{formatLempiras(daily.total_pending)}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>
@@ -109,7 +147,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
                   {Object.entries(paymentsByMethod).map(([method, amount]) => (
                     <TableRow key={method}>
                       <TableCell className="font-medium">{methodLabel(method)}</TableCell>
-                      <TableCell className="text-right">L. {amount}</TableCell>
+                      <TableCell className="text-right">{formatLempiras(amount)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -135,7 +173,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
                     <TableRow key={status}>
                       <TableCell className="font-medium">{statusLabel(status)}</TableCell>
                       <TableCell className="text-right">{(data as { count: number; total: string })?.count ?? 0}</TableCell>
-                      <TableCell className="text-right">L. {(data as { count: number; total: string })?.total ?? '0.00'}</TableCell>
+                      <TableCell className="text-right">{formatLempiras((data as { count: number; total: string })?.total)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -154,7 +192,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="method" tickLine={false} />
                     <YAxis tickLine={false} width={64} />
-                    <Tooltip formatter={(value) => [`L. ${value}`, 'Monto']} />
+                    <Tooltip formatter={(value) => [formatLempiras(value as number), 'Monto']} />
                     <Bar dataKey="amount" fill="var(--color-primary)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>

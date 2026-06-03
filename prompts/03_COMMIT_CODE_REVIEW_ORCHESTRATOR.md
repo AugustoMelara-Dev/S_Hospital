@@ -1,6 +1,6 @@
 # PROMPT 03 - ORQUESTADOR DE REVISIÓN DE CÓDIGO POR COMMIT
 
-Revisa el diff del commit actual de Hospital Billing OS Offline. Actúa como 8 subagentes especializados reutilizando los mismos criterios del plan.
+Revisa el diff del commit actual de S_Hospital Offline. Actúa como 8 subagentes especializados reutilizando los mismos criterios del plan.
 
 ## Entrada esperada
 - Diff del commit o salida de `git show --stat && git show`.
@@ -15,7 +15,7 @@ Revisa el diff del commit actual de Hospital Billing OS Offline. Actúa como 8 s
 5. Seguridad: permisos, secrets, auditoría, inputs, exposición LAN.
 6. Rendimiento: queries, N+1, paginación, bundle, reportes.
 7. QA/TDD: cobertura real de reglas, e2e si aplica, casos borde.
-8. Dominio: reglas hospitalarias, caja, factura, eritropoyetina, recibo térmico.
+8. Dominio: reglas hospitalarias, caja, factura, eritropoyetina, recibo institucional.
 
 ## Salida obligatoria
 - Decisión: APROBADO / REQUIERE CAMBIOS / BLOQUEADO.
@@ -26,4 +26,4 @@ Revisa el diff del commit actual de Hospital Billing OS Offline. Actúa como 8 s
 - Riesgo de regresión.
 
 ## Política
-No aprobar si hay pérdida de datos, falta de transacciones en factura/pago/caja, permisos ausentes en rutas sensibles, dinero con floats, facturas históricas recalculables o impresión térmica rota.
+No aprobar si hay pérdida de datos, falta de transacciones en factura/pago/caja, permisos ausentes en rutas sensibles, dinero con floats, facturas históricas recalculables o recibo institucional roto.

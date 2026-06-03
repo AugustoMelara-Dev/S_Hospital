@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Dialog } from '../../../components/ui/dialog';
+import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
 type CartItem = {
   service: import('../../../lib/api').Service;
@@ -14,6 +15,7 @@ type InvoiceConfirmationProps = {
   patientName: string;
   items: CartItem[];
   preview: { subtotal: string; tax: string; total: string };
+  taxRate?: string;
   cashSessionId?: number;
   onConfirm: () => void;
   submitting?: boolean;
@@ -25,12 +27,13 @@ export function InvoiceConfirmation({
   patientName,
   items,
   preview,
+  taxRate,
   cashSessionId,
   onConfirm,
   submitting,
 }: InvoiceConfirmationProps) {
   const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
-  const willOpenPayment = Boolean(cashSessionId) && Number(preview.total) > 0;
+  const willOpenPayment = Boolean(cashSessionId) && (parseCents(preview.total) ?? 0) > 0;
 
   useEffect(() => {
     if (open) {
@@ -70,10 +73,10 @@ export function InvoiceConfirmation({
                   {item.quantity} x {item.service.name}
                 </span>
                 {item.dialysisPrescription && item.service.special_rule_code === 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION' ? (
-                    <span className="text-emerald-600 font-medium">GRATIS</span>
-                  ) : (
-                    <span className="text-muted-foreground">L. {item.service.price}</span>
-                  )}
+                  <span className="text-emerald-600 font-medium">GRATIS</span>
+                ) : (
+                  <span className="text-muted-foreground">{moneyLabel(item.service.price)}</span>
+                )}
               </li>
             ))}
           </ul>
@@ -82,15 +85,17 @@ export function InvoiceConfirmation({
         <div className="space-y-1.5 text-sm border-t border-border pt-3">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Subtotal:</span>
-            <span>L. {preview.subtotal}</span>
+            <span>{moneyLabel(preview.subtotal)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">ISV (15%):</span>
-            <span>L. {preview.tax}</span>
-          </div>
+          {taxRate && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">ISV ({taxRate}%):</span>
+              <span>{moneyLabel(preview.tax)}</span>
+            </div>
+          )}
           <div className="flex justify-between font-bold text-base">
-            <span>Total:</span>
-            <span>L. {preview.total}</span>
+            <span>Total estimado:</span>
+            <span>{moneyLabel(preview.total)}</span>
           </div>
         </div>
 
@@ -126,4 +131,8 @@ export function InvoiceConfirmation({
       </div>
     </Dialog>
   );
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
 }

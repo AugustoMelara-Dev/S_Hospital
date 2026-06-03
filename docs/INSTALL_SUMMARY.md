@@ -11,15 +11,16 @@ No ejecutar `migrate:fresh` en el servidor real.
 4. Configurar `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=http://IP_DEL_SERVIDOR`, `SANCTUM_STATEFUL_DOMAINS=IP_DEL_SERVIDOR` y CORS con el host LAN final.
 5. Configurar `HOSPITAL_DUMP_BINARY` si `mysqldump.exe` o `mariadb-dump.exe` no esta en PATH.
 6. Ejecutar `php artisan migrate --force`.
-7. Crear admin real con `php artisan auth:create-initial-admin`.
+7. Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no escribir la contrasena como `--password=...`.
 8. Ejecutar `php artisan config:cache --no-ansi`.
 9. Registrar tareas Windows para backup worker y scheduler con `scripts\install_backup_tasks_windows.ps1`.
 10. Abrir la app como admin, entrar a Backups y revisar el checklist operativo: `APP_ENV=production`, `APP_DEBUG=false`, MySQL/MariaDB, dump tool, storage local, worker continuo, rutas `/up`, `/login`, `/verify-email` y evidencias LAN/impresora.
 11. Crear un backup manual y confirmar que cambia de `pending` a `success`.
 12. Preparar archivos de evidencia con `scripts\init_production_proofs.ps1`.
 13. Desde una segunda PC cliente, ejecutar `scripts\validate_lan_client.ps1 -BaseUrl http://IP_DEL_SERVIDOR -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md` y completar los checks manuales de login, caja, factura, pago, reportes y backup.
-14. Completar `qa\THERMAL_PRINTER_PROOF.md` con la impresora fisica 80mm/58mm.
-15. Ejecutar `scripts\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR` sin `-AllowMissingPhysicalProof` solo cuando ya existan pruebas de segunda PC LAN e impresora.
+14. Completar `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con la impresora fisica media carta/carta/A5/80mm/58mm.
+15. Regenerar el paquete con `scripts\make_offline_release.ps1 -Force` y ejecutar `scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit`.
+16. Ejecutar `scripts\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR` sin `-AllowMissingPhysicalProof` solo cuando ya existan pruebas de segunda PC LAN e impresora.
 
 Si el preflight falla por evidencia fisica pendiente, el servidor puede seguir en `PRODUCTION_CANDIDATE`, pero no se debe vender como `PRODUCTION_READY`.
 
@@ -30,12 +31,12 @@ Si el preflight falla por evidencia fisica pendiente, el servidor puede seguir e
 3. Instalar PHP, extensiones necesarias y MySQL/MariaDB local.
 4. Crear `.env` real en el servidor, fuera de Git, con secretos locales.
 5. Configurar obligatoriamente `APP_ENV=production` y `APP_DEBUG=false`.
-6. Generar `APP_KEY` si no existe.
+6. Generar `APP_KEY` si no existe con `php artisan key:generate`.
 7. Ejecutar migraciones aprobadas sin `migrate:fresh`.
-8. Crear admin real con `php artisan auth:create-initial-admin`; no ejecutar seeders demo en servidor real.
+8. Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no ejecutar seeders de desarrollo en servidor real.
 9. Ejecutar `php artisan config:cache`.
 
-No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`, `supervisor.demo` y `cajero.demo` son exclusivamente para desarrollo/testing.
+No entregar un servidor LAN real con `APP_ENV=local`. Produccion debe operar con cuentas reales creadas por administracion y cambio obligatorio de contrasena cuando aplique.
 
 ## Servidor LAN
 
@@ -54,6 +55,13 @@ Ejecutar como tarea al iniciar Windows o servicio supervisado:
 ```powershell
 cd C:\HospitalBilling\backend
 php artisan queue:work --queue=backups --tries=1 --timeout=600
+```
+
+En paquete Docker offline, el worker continuo es el servicio `queue-worker` y se
+valida con:
+
+```powershell
+scripts\run_backup_worker.cmd --check
 ```
 
 ## Backup y restore
@@ -78,4 +86,4 @@ php artisan queue:work --queue=backups --tries=1 --timeout=600
 - Ejecutar `scripts/e2e_gate.sh` en la maquina de build.
 - Ejecutar `scripts/validate_restore_mysql.sh` en entorno MySQL/MariaDB con herramienta dump.
 - Ejecutar `scripts/validate_mysql_concurrency.sh` contra servidor Laravel conectado a MySQL/MariaDB.
-- Completar checklist de impresora termica 80mm/58mm en la PC de caja.
+- Completar checklist de impresora institucional media carta/carta/A5/80mm/58mm en la PC de caja.

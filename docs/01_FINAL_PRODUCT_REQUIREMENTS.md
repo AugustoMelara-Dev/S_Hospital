@@ -1,4 +1,4 @@
-# 01 Final Product Requirements
+﻿# 01 Final Product Requirements
 
 ## Objetivo
 
@@ -26,7 +26,7 @@ Convertir el sistema funcional actual en un producto hospitalario local, profesi
 
 ## POS obligatorio
 
-El POS no puede mostrar los 122 servicios como lista interminable. Debe incluir busqueda rapida, seleccion por categoria, tarjetas o tabla compacta, carrito lateral, resumen de factura, pago claro y recibo termico.
+El POS no puede mostrar los 122 servicios como lista interminable. Debe incluir busqueda rapida, seleccion por categoria, tarjetas o tabla compacta, carrito lateral, resumen de factura, pago claro y recibo institucional.
 
 ## Barcode/QR/scan_code
 

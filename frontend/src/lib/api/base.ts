@@ -1,8 +1,34 @@
-let sessionExpiredHandler: (() => void) | null = null;
+import { PERMISSION_DENIED_MESSAGE, logClientIssue, safeClientMessage } from '../support/clientIssueLog';
+
+const sessionExpiredHandlers = new Set<() => void>();
 let requestChain: Promise<unknown> = Promise.resolve();
+
+const CSRF_CACHE_TTL_MS = 30 * 60 * 1000;
+let csrfCache: { fetchedAt: number; promise: Promise<void> } | null = null;
+
+const DEFAULT_GET_TIMEOUT_MS = 10_000;
+const DEFAULT_MUTATION_TIMEOUT_MS = 30_000;
+
+type ApiRequestInit = RequestInit & {
+  timeout?: number;
+};
 
 export function resetRequestChain() {
   requestChain = Promise.resolve();
+}
+
+export function resetCsrfCache() {
+  csrfCache = null;
+}
+
+function notifySessionExpired(): void {
+  for (const handler of sessionExpiredHandlers) {
+    try {
+      handler();
+    } catch {
+      // A handler that throws must not break the others.
+    }
+  }
 }
 
 export class ApiError extends Error {
@@ -21,17 +47,43 @@ export function isSessionExpiredError(error: unknown): boolean {
   return error instanceof ApiError && (error.status === 401 || error.status === 419);
 }
 
+export function isPermissionDeniedError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 403;
+}
+
+function conflictSafeMessage(message: string): string {
+  const normalized = message.toLowerCase();
+
+  if (/caja|cash[_\s-]?session/.test(normalized)) {
+    return 'La caja esta cerrada o cambio de estado. Revise Caja e Historial antes de repetir facturas o cobros.';
+  }
+
+  if (/factura|invoice|pago|payment|duplic|already|ya registrada|ya registrado/.test(normalized)) {
+    return 'La factura o el pago ya cambio de estado. Revise Historial antes de repetir la operacion.';
+  }
+
+  if (/respaldo|backup|restore|restaur/.test(normalized)) {
+    return 'El respaldo cambio de estado. Actualice Respaldos y pida soporte antes de restaurar o repetir.';
+  }
+
+  return 'La accion no se pudo completar porque el estado actual cambio. Actualice la pantalla e intente de nuevo.';
+}
+
 export function userSafeErrorMessage(error: unknown, fallback: string): string {
   if (isSessionExpiredError(error)) {
     return 'Sesión vencida. Vuelva a iniciar sesión para continuar.';
   }
 
+  if (error instanceof ApiError && error.status === 423) {
+    return 'Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.';
+  }
+
   if (error instanceof ApiError && error.status === 403) {
-    return 'No tiene permiso para esta accion.';
+    return PERMISSION_DENIED_MESSAGE;
   }
 
   if (error instanceof ApiError && error.status === 422) {
-    return error.message;
+    return formatValidationMessage(error);
   }
 
   if (error instanceof ApiError && error.status === 429) {
@@ -39,7 +91,7 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
   }
 
   if (error instanceof ApiError && error.status === 409) {
-    return 'La accion no se pudo completar porque el estado actual cambio. Actualice la pantalla e intente de nuevo.';
+    return conflictSafeMessage(error.message);
   }
 
   if (error instanceof ApiError && error.status >= 500) {
@@ -55,6 +107,60 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
   }
 
   return fallback;
+}
+
+function formatValidationMessage(error: ApiError): string {
+  if (!error.validationErrors || Object.keys(error.validationErrors).length === 0) {
+    return error.message || 'Revise los datos del formulario.';
+  }
+
+  const entries: string[] = [];
+
+  for (const [field, messages] of Object.entries(error.validationErrors)) {
+    const cleanMessages = (messages ?? []).filter((m): m is string => Boolean(m && m.trim()));
+    if (cleanMessages.length === 0) {
+      continue;
+    }
+    const label = fieldLabel(field);
+    entries.push(label ? `${label}: ${cleanMessages.join(', ')}` : cleanMessages.join(', '));
+  }
+
+  if (entries.length === 0) {
+    return error.message || 'Revise los datos del formulario.';
+  }
+
+  return entries.join('\n');
+}
+
+function fieldLabel(field: string): string {
+  if (!field.includes('.')) {
+    return humanizeFieldName(field);
+  }
+
+  const [parent, child, ...rest] = field.split('.');
+
+  if (child === undefined) {
+    return humanizeFieldName(parent ?? field);
+  }
+
+  if (/^\d+$/.test(child)) {
+    const detail = rest.map(humanizeFieldName).filter(Boolean).join(' ');
+
+    return detail
+      ? `${humanizeFieldName(parent ?? field)} #${Number(child) + 1} (${detail})`
+      : `${humanizeFieldName(parent ?? field)} #${Number(child) + 1}`;
+  }
+
+  const detail = [child, ...rest].map(humanizeFieldName).filter(Boolean).join(' ');
+
+  return `${humanizeFieldName(parent ?? field)} (${detail})`;
+}
+
+function humanizeFieldName(name: string): string {
+  return name
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function cookieValue(name: string): string | null {
@@ -73,8 +179,50 @@ function cookieValue(name: string): string | null {
 
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim() ?? '';
 
-function networkError(): ApiError {
-  return new ApiError('No se pudo conectar con el servidor LAN. Revise que el servidor local este encendido y vuelva a intentar.', 0);
+export function resolveApiBaseUrl(
+  configuredUrl: string,
+  currentLocation: Pick<Location, 'hostname'> | undefined = typeof window === 'undefined' ? undefined : window.location,
+): string {
+  const normalizedUrl = configuredUrl.trim().replace(/\/$/, '');
+
+  if (!normalizedUrl) {
+    return '';
+  }
+
+  try {
+    const parsedUrl = new URL(normalizedUrl);
+    const loopbackHosts = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+
+    if (
+      currentLocation?.hostname &&
+      loopbackHosts.has(parsedUrl.hostname) &&
+      currentLocation.hostname !== parsedUrl.hostname
+    ) {
+      return '';
+    }
+  } catch {
+    return normalizedUrl;
+  }
+
+  return normalizedUrl;
+}
+
+function networkError(error?: unknown): ApiError {
+  const baseMessage = 'No se pudo conectar con el servidor LAN. Revise que el servidor local este encendido y vuelva a intentar.';
+  const rawDetail = error instanceof Error ? error.message : error === undefined ? '' : String(error);
+  const safeDetail = safeClientMessage(rawDetail);
+  const message = safeDetail ? `${baseMessage} Detalle seguro del navegador: ${safeDetail}` : baseMessage;
+
+  return new ApiError(message, 0);
+}
+
+function recordApiIssue(error: ApiError, action: string): never {
+  logClientIssue(error, {
+    action,
+    module: 'api',
+  });
+
+  throw error;
 }
 
 function enqueueRequest<T>(operation: () => Promise<T>): Promise<T> {
@@ -87,10 +235,27 @@ function enqueueRequest<T>(operation: () => Promise<T>): Promise<T> {
 }
 
 export const apiClient = {
-  baseUrl: configuredBaseUrl.replace(/\/$/, ''),
+  baseUrl: resolveApiBaseUrl(configuredBaseUrl),
 
-  onSessionExpired(handler: (() => void) | null): void {
-    sessionExpiredHandler = handler;
+  // Multi-subscriber registry. StrictMode in dev can mount a hook
+  // twice; the previous single-slot design made the second cleanup
+  // null the handler even though the first mount was still alive.
+  onSessionExpired(handler: (() => void) | null): () => void {
+    if (handler === null) {
+      return () => undefined;
+    }
+    sessionExpiredHandlers.add(handler);
+    return () => {
+      sessionExpiredHandlers.delete(handler);
+    };
+  },
+
+  // Called by useHospitalSession on logout (and after a 401/419) to
+  // wipe the cached CSRF cookie promise. The next login gets a fresh
+  // token from /sanctum/csrf-cookie instead of reusing the previous
+  // user's token from the 30-minute cache window.
+  invalidateSession(): void {
+    resetCsrfCache();
   },
 
   url(path: string): string {
@@ -98,40 +263,95 @@ export const apiClient = {
     return `${this.baseUrl}${normalizedPath}`;
   },
 
+  async systemHealth(): Promise<{ data: import('./types').OperationalHealth }> {
+    return this.request<{ data: import('./types').OperationalHealth }>('/api/system/health');
+  },
+
   async csrf(): Promise<void> {
+    const now = Date.now();
+
+    if (csrfCache && now - csrfCache.fetchedAt < CSRF_CACHE_TTL_MS) {
+      return csrfCache.promise;
+    }
+
+    const pending = this.fetchCsrfCookie();
+    csrfCache = { fetchedAt: now, promise: pending };
+
+    try {
+      await pending;
+    } catch (error) {
+      csrfCache = null;
+      throw error;
+    }
+  },
+
+  async fetchCsrfCookie(): Promise<void> {
     let response: Response;
 
     try {
       response = await fetch(this.url('/sanctum/csrf-cookie'), {
         credentials: 'include',
       });
-    } catch {
-      throw networkError();
+    } catch (err) {
+      recordApiIssue(networkError(err), 'csrf_network');
     }
 
     if (!response.ok) {
       if (response.status === 401 || response.status === 419) {
-        sessionExpiredHandler?.();
-        throw new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status);
+        notifySessionExpired();
+        recordApiIssue(new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status), 'csrf_session');
       }
 
-      throw new ApiError('No se pudo preparar la sesión segura. Revise el servidor local e intente de nuevo.', response.status);
+      recordApiIssue(
+        new ApiError('No se pudo preparar la sesión segura. Revise el servidor local e intente de nuevo.', response.status),
+        'csrf_prepare',
+      );
     }
   },
 
-  async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  async request<T>(path: string, options: ApiRequestInit = {}): Promise<T> {
+    const method = options.method?.toUpperCase() ?? 'GET';
+
+    if (method === 'GET' || method === 'HEAD') {
+      return this.sendRequest<T>(path, options);
+    }
+
     return enqueueRequest(() => this.sendRequest<T>(path, options));
   },
 
-  async sendRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  async sendRequest<T>(path: string, options: ApiRequestInit = {}): Promise<T> {
     const method = options.method?.toUpperCase() ?? 'GET';
 
     if (method !== 'GET' && method !== 'HEAD') {
       await this.csrf();
     }
 
+    // Per-request timeout via AbortController. A hung connection used
+    // to block the cashier indefinitely; the previous implementation
+    // relied on the browser's own timeout (~minutes) and on no-fetch-
+    // ever-resolving-pending query chains.
+    const externalSignal = options.signal ?? null;
+    const customTimeout = options.timeout;
+    const timeoutMs =
+      Number.isFinite(customTimeout) && Number(customTimeout) > 0
+        ? Number(customTimeout)
+        : method === 'GET' || method === 'HEAD'
+          ? DEFAULT_GET_TIMEOUT_MS
+          : DEFAULT_MUTATION_TIMEOUT_MS;
+
     const send = async (): Promise<Response> => {
       const xsrfToken = method === 'GET' || method === 'HEAD' ? null : cookieValue('XSRF-TOKEN');
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+      const relayAbort = () => controller.abort();
+
+      if (externalSignal) {
+        if (externalSignal.aborted) {
+          controller.abort();
+        } else {
+          externalSignal.addEventListener('abort', relayAbort, { once: true });
+        }
+      }
 
       try {
         const headers: Record<string, string> = {
@@ -146,19 +366,33 @@ export const apiClient = {
         return await fetch(this.url(path), {
           ...options,
           credentials: 'include',
+          signal: controller.signal,
           headers: {
             ...headers,
             ...options.headers,
           },
         });
-      } catch {
-        throw networkError();
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          recordApiIssue(
+            new ApiError(
+              `La operacion '${method} ${path}' excedio ${timeoutMs / 1000}s sin respuesta del servidor local. Revise la red.`,
+              0,
+            ),
+            `${method} ${path}_timeout`,
+          );
+        }
+        recordApiIssue(networkError(err), `${method} ${path}`);
+      } finally {
+        window.clearTimeout(timeoutId);
+        externalSignal?.removeEventListener('abort', relayAbort);
       }
     };
 
     let response = await send();
 
     if (response.status === 419 && method !== 'GET' && method !== 'HEAD') {
+      resetCsrfCache();
       await this.csrf();
       response = await send();
     }
@@ -170,25 +404,40 @@ export const apiClient = {
       } | null;
 
       if (response.status === 401) {
-        sessionExpiredHandler?.();
-        throw new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status);
+        notifySessionExpired();
+        recordApiIssue(new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status), `${method} ${path}`);
       }
 
       if (response.status === 403) {
-        throw new ApiError('No tiene permiso para esta accion.', response.status);
+        recordApiIssue(new ApiError(PERMISSION_DENIED_MESSAGE, response.status), `${method} ${path}`);
       }
 
       if (response.status === 419) {
-        sessionExpiredHandler?.();
-        throw new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status);
+        notifySessionExpired();
+        recordApiIssue(new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status), `${method} ${path}`);
       }
 
       if (response.status === 422 && error?.errors) {
-        const validationMessage = Object.values(error.errors).flat().filter(Boolean).slice(0, 3).join(' ');
-        throw new ApiError(validationMessage || 'Revise los datos del formulario.', response.status, error.errors);
+        const apiError = new ApiError(
+          'Revise los datos del formulario.',
+          response.status,
+          error.errors,
+        );
+        logClientIssue(apiError, {
+          action: `${method} ${path}`,
+          module: 'api',
+        });
+        throw apiError;
       }
 
-      throw new ApiError(error?.message ?? `HTTP ${response.status}`, response.status);
+      if (response.status === 423) {
+        recordApiIssue(
+          new ApiError('Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.', response.status),
+          `${method} ${path}`,
+        );
+      }
+
+      recordApiIssue(new ApiError(error?.message ?? `HTTP ${response.status}`, response.status), `${method} ${path}`);
     }
 
     return (await response.json()) as T;
@@ -204,27 +453,34 @@ export const apiClient = {
           Accept: 'application/json, application/octet-stream, text/csv',
         },
       });
-    } catch {
-      throw networkError();
+    } catch (err) {
+      recordApiIssue(networkError(err), `DOWNLOAD ${path}`);
     }
 
     if (!response.ok) {
       if (response.status === 401) {
-        sessionExpiredHandler?.();
-        throw new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status);
+        notifySessionExpired();
+        recordApiIssue(new ApiError('Sesión vencida. Vuelva a iniciar sesión para continuar.', response.status), `DOWNLOAD ${path}`);
       }
 
       if (response.status === 403) {
-        throw new ApiError('No tiene permiso para esta accion.', response.status);
+        recordApiIssue(new ApiError(PERMISSION_DENIED_MESSAGE, response.status), `DOWNLOAD ${path}`);
       }
 
       if (response.status === 419) {
-        sessionExpiredHandler?.();
-        throw new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status);
+        notifySessionExpired();
+        recordApiIssue(new ApiError('La sesión expiró. Actualice la pantalla e intente de nuevo.', response.status), `DOWNLOAD ${path}`);
+      }
+
+      if (response.status === 423) {
+        recordApiIssue(
+          new ApiError('Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.', response.status),
+          `DOWNLOAD ${path}`,
+        );
       }
 
       const error = (await response.json().catch(() => null)) as { message?: string } | null;
-      throw new ApiError(error?.message ?? `HTTP ${response.status}`, response.status);
+      recordApiIssue(new ApiError(error?.message ?? `HTTP ${response.status}`, response.status), `DOWNLOAD ${path}`);
     }
 
     return response.blob();

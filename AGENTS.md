@@ -1,4 +1,4 @@
-# AGENTS.md - Hospital Billing OS Offline
+# AGENTS.md - S_Hospital Offline
 
 ## Identidad del proyecto
 Construir un sistema hospitalario local para facturación, caja, pagos, reportes, catálogo de servicios y emisión de recibos térmicos.
@@ -79,10 +79,10 @@ Backups diarios automáticos y backup manual desde panel admin.
 Preferir Docker Compose para desarrollo reproducible.
 Comandos base sugeridos:
 docker compose up -d
-docker compose exec app php artisan migrate --seed
-docker compose exec app php artisan test
-docker compose exec app vendor/bin/pint --test
-docker compose exec app vendor/bin/phpstan analyse
+docker compose exec backend php artisan migrate --seed
+docker compose exec backend php artisan test
+docker compose exec backend vendor/bin/pint --test
+docker compose exec backend vendor/bin/phpstan analyse
 docker compose exec frontend npm run typecheck
 docker compose exec frontend npm run lint
 docker compose exec frontend npm run test

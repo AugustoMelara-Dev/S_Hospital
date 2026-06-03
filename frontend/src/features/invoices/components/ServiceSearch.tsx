@@ -5,6 +5,7 @@ import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import type { Category, Service } from '../../../lib/api';
 import { cn } from '../../../lib/utils';
+import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
 const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 const SERVICE_RESULT_LIMIT = 24;
@@ -23,6 +24,7 @@ type ServiceSearchProps = {
   searchInputRef?: RefObject<HTMLInputElement | null>;
   scannerInputRef?: RefObject<HTMLInputElement | null>;
   loading?: boolean;
+  scannerEnabled?: boolean;
 };
 
 export function ServiceSearch({
@@ -39,6 +41,7 @@ export function ServiceSearch({
   searchInputRef,
   scannerInputRef,
   loading,
+  scannerEnabled = false,
 }: ServiceSearchProps) {
   const [addFirstWhenReady, setAddFirstWhenReady] = useState(false);
   const filteredServices = services.filter((service) => {
@@ -49,7 +52,7 @@ export function ServiceSearch({
 
     return matchesCategory;
   });
-  const hasIntent = Boolean(search.trim()) || (selectedCategoryId !== undefined && selectedCategoryId !== 'all');
+  const hasIntent = Boolean(search.trim()) || selectedCategoryId !== undefined;
   const visibleServices = hasIntent ? filteredServices.slice(0, SERVICE_RESULT_LIMIT) : [];
   const hiddenCount = Math.max(0, filteredServices.length - visibleServices.length);
   const firstVisibleService = visibleServices[0];
@@ -78,7 +81,7 @@ export function ServiceSearch({
   return (
     <div className="flex flex-col gap-4 lg:h-full lg:overflow-hidden">
       <div className="flex flex-col gap-3 lg:shrink-0">
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+        <div className={scannerEnabled ? 'grid gap-3 sm:grid-cols-[1fr_auto]' : 'grid gap-3'}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -103,27 +106,29 @@ export function ServiceSearch({
               className="pl-10"
             />
           </div>
-          <div className="flex gap-2">
-            <div className="relative w-36">
-              <Input
-                ref={scannerInputRef}
-                aria-label="Scanner USB o codigo manual"
-                placeholder="Codigo"
-                value={scanCode}
-                onChange={(e) => onScanCodeChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    if (e.ctrlKey || e.metaKey || e.altKey) return;
-                    e.preventDefault();
-                    onAddByScanCode();
-                  }
-                }}
-              />
+          {scannerEnabled ? (
+            <div className="flex gap-2">
+              <div className="relative w-36">
+                <Input
+                  ref={scannerInputRef}
+                  aria-label="Scanner USB o codigo manual"
+                  placeholder="Codigo"
+                  value={scanCode}
+                  onChange={(e) => onScanCodeChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      if (e.ctrlKey || e.metaKey || e.altKey) return;
+                      e.preventDefault();
+                      onAddByScanCode();
+                    }
+                  }}
+                />
+              </div>
+              <Button type="button" variant="secondary" size="sm" onClick={() => onAddByScanCode()}>
+                Escanear
+              </Button>
             </div>
-            <Button type="button" variant="secondary" size="sm" onClick={() => onAddByScanCode()}>
-              Escanear
-            </Button>
-          </div>
+          ) : null}
         </div>
 
         <div>
@@ -192,7 +197,7 @@ export function ServiceSearch({
                   key={service.id}
                   type="button"
                   variant="outline"
-                  aria-label={`Agregar ${service.name} por L. ${service.price}`}
+                  aria-label={`Agregar ${service.name} por ${moneyLabel(service.price)}`}
                   className="group relative h-auto min-h-24 items-center justify-start gap-3 p-3 text-left font-normal transition-transform hover:border-primary/40 hover:bg-accent/40 hover:shadow-sm active:scale-[0.99]"
                   onClick={() => handleAddService(service)}
                 >
@@ -202,7 +207,7 @@ export function ServiceSearch({
                       <span className="inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                         {service.category?.name ?? 'Sin categoria'}
                       </span>
-                      {(service.scan_code || service.barcode || service.qr_code) && (
+                      {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) && (
                         <span className="text-[10px] text-muted-foreground">
                           {service.scan_code ?? service.barcode ?? service.qr_code}
                         </span>
@@ -211,7 +216,7 @@ export function ServiceSearch({
                   </div>
                   <div className="absolute right-3 top-3">
                     <span className="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-1 text-sm font-semibold text-emerald-700">
-                      L. {service.price}
+                      {moneyLabel(service.price)}
                     </span>
                   </div>
                   {isErythropoietin && (
@@ -235,6 +240,10 @@ export function ServiceSearch({
       </div>
     </div>
   );
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
 }
 
 function CategoryButton({

@@ -17,10 +17,12 @@ class ServiceSearch
 
         $haystack = self::normalize(implode(' ', array_filter([
             $service->name,
+            $service->aliases,
             $service->scan_code,
             $service->barcode,
             $service->qr_code,
             $service->category?->name,
+            $service->area?->name,
         ])));
 
         if (str_contains($haystack, $needle)) {

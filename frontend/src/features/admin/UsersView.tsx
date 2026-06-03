@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   type AuthUser,
   type UserPayload,
@@ -37,9 +37,17 @@ import {
 
 type UsersViewProps = {
   onStatus: (message: string) => void;
+  canCreateUsers: boolean;
 };
 
-export function UsersView({ onStatus }: UsersViewProps) {
+const PASSWORD_POLICY_HINT = 'Mínimo 10 caracteres, con letras y números';
+const PASSWORD_POLICY_ERROR = 'La contraseña debe tener al menos 10 caracteres e incluir letras y números.';
+
+function isPasswordPolicyCompliant(password: string) {
+  return password.length >= 10 && /\p{L}/u.test(password) && /\p{N}/u.test(password);
+}
+
+export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,16 +63,22 @@ export function UsersView({ onStatus }: UsersViewProps) {
     role: 'cajero',
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [isSavingUser, setIsSavingUser] = useState(false);
+  const saveUserInFlightRef = useRef(false);
   
   // Reset Password Modal
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [targetResetUser, setTargetResetUser] = useState<AuthUser | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [resetError, setResetError] = useState('');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const resetPasswordInFlightRef = useRef(false);
 
   // Toggle Status Confirm Dialog
   const [isToggleDialogOpen, setIsToggleDialogOpen] = useState(false);
   const [targetToggleUser, setTargetToggleUser] = useState<AuthUser | null>(null);
+  const [isTogglingUser, setIsTogglingUser] = useState(false);
+  const toggleUserInFlightRef = useRef(false);
 
   useEffect(() => {
     void fetchUsers();
@@ -110,8 +124,8 @@ export function UsersView({ onStatus }: UsersViewProps) {
 
     if (!editingUser && !userForm.password) {
       errors.password = 'La contraseña es obligatoria para nuevos usuarios.';
-    } else if (!editingUser && userForm.password.length < 6) {
-      errors.password = 'La contraseña debe tener al menos 6 caracteres.';
+    } else if (!editingUser && !isPasswordPolicyCompliant(userForm.password)) {
+      errors.password = PASSWORD_POLICY_ERROR;
     }
 
     setFormErrors(errors);
@@ -146,8 +160,11 @@ export function UsersView({ onStatus }: UsersViewProps) {
 
   const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saveUserInFlightRef.current) return;
     if (!validateForm()) return;
 
+    saveUserInFlightRef.current = true;
+    setIsSavingUser(true);
     onStatus('Guardando usuario...');
     try {
       if (editingUser) {
@@ -178,6 +195,9 @@ export function UsersView({ onStatus }: UsersViewProps) {
       const msg = userSafeErrorMessage(err, 'No se pudo guardar el usuario.');
       onStatus(msg);
       setFormErrors({ form: msg });
+    } finally {
+      saveUserInFlightRef.current = false;
+      setIsSavingUser(false);
     }
   };
 
@@ -189,6 +209,10 @@ export function UsersView({ onStatus }: UsersViewProps) {
 
   const handleConfirmToggle = async () => {
     if (!targetToggleUser) return;
+    if (toggleUserInFlightRef.current) return;
+
+    toggleUserInFlightRef.current = true;
+    setIsTogglingUser(true);
     onStatus('Cambiando estado de usuario...');
     try {
       const updated = await apiClient.toggleUserActive(targetToggleUser.id);
@@ -199,6 +223,8 @@ export function UsersView({ onStatus }: UsersViewProps) {
       const msg = userSafeErrorMessage(err, 'No se pudo cambiar el estado del usuario.');
       onStatus(msg);
     } finally {
+      toggleUserInFlightRef.current = false;
+      setIsTogglingUser(false);
       setIsToggleDialogOpen(false);
       setTargetToggleUser(null);
     }
@@ -215,11 +241,14 @@ export function UsersView({ onStatus }: UsersViewProps) {
   const handleConfirmReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!targetResetUser) return;
-    if (newPassword.length < 6) {
-      setResetError('La contraseña debe tener al menos 6 caracteres.');
+    if (resetPasswordInFlightRef.current) return;
+    if (!isPasswordPolicyCompliant(newPassword)) {
+      setResetError(PASSWORD_POLICY_ERROR);
       return;
     }
 
+    resetPasswordInFlightRef.current = true;
+    setIsResettingPassword(true);
     onStatus('Restableciendo contraseña...');
     try {
       await apiClient.resetUserPassword(targetResetUser.id, newPassword);
@@ -229,6 +258,9 @@ export function UsersView({ onStatus }: UsersViewProps) {
       const msg = userSafeErrorMessage(err, 'No se pudo restablecer la contraseña.');
       setResetError(msg);
       onStatus(msg);
+    } finally {
+      resetPasswordInFlightRef.current = false;
+      setIsResettingPassword(false);
     }
   };
 
@@ -253,10 +285,12 @@ export function UsersView({ onStatus }: UsersViewProps) {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Button onClick={handleOpenCreateModal} className="w-full md:w-auto">
-          <UserPlus className="mr-2 h-4 w-4" />
-          Crear usuario
-        </Button>
+        {canCreateUsers && (
+          <Button onClick={handleOpenCreateModal} className="w-full md:w-auto">
+            <UserPlus className="mr-2 h-4 w-4" />
+            Crear usuario
+          </Button>
+        )}
       </div>
 
       <Card className="border border-border">
@@ -374,7 +408,9 @@ export function UsersView({ onStatus }: UsersViewProps) {
       {/* User Create/Edit Dialog */}
       <Dialog
         open={isUserModalOpen}
-        onOpenChange={setIsUserModalOpen}
+        onOpenChange={(open) => {
+          if (!isSavingUser) setIsUserModalOpen(open);
+        }}
         size="md"
         title={editingUser ? 'Editar usuario' : 'Crear usuario'}
         description="Configure nombre, acceso y rol operativo."
@@ -441,7 +477,7 @@ export function UsersView({ onStatus }: UsersViewProps) {
                   id="password"
                   type="password"
                   className="pl-9"
-                  placeholder="****** (mínimo 6 caracteres)"
+                  placeholder={PASSWORD_POLICY_HINT}
                   value={userForm.password}
                   onChange={(e) => setUserForm((prev) => ({ ...prev, password: e.target.value }))}
                 />
@@ -468,11 +504,11 @@ export function UsersView({ onStatus }: UsersViewProps) {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setIsUserModalOpen(false)}>
+            <Button type="button" variant="secondary" onClick={() => setIsUserModalOpen(false)} disabled={isSavingUser}>
               Cancelar
             </Button>
-            <Button type="submit">
-              {editingUser ? 'Guardar cambios' : 'Crear usuario'}
+            <Button type="submit" disabled={isSavingUser}>
+              {isSavingUser ? 'Guardando...' : editingUser ? 'Guardar cambios' : 'Crear usuario'}
             </Button>
           </div>
         </form>
@@ -481,7 +517,9 @@ export function UsersView({ onStatus }: UsersViewProps) {
       {/* Reset Password Dialog */}
       <Dialog
         open={isResetModalOpen}
-        onOpenChange={setIsResetModalOpen}
+        onOpenChange={(open) => {
+          if (!isResettingPassword) setIsResetModalOpen(open);
+        }}
         size="md"
         title={`Restablecer clave para ${targetResetUser?.name}`}
         description="Establezca una nueva clave temporal. El usuario estará obligado a cambiarla en su próximo ingreso."
@@ -501,7 +539,7 @@ export function UsersView({ onStatus }: UsersViewProps) {
                 id="new-password"
                 type="password"
                 className="pl-9"
-                placeholder="****** (mínimo 6 caracteres)"
+                placeholder={PASSWORD_POLICY_HINT}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
@@ -509,11 +547,11 @@ export function UsersView({ onStatus }: UsersViewProps) {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setIsResetModalOpen(false)}>
+            <Button type="button" variant="secondary" onClick={() => setIsResetModalOpen(false)} disabled={isResettingPassword}>
               Cancelar
             </Button>
-            <Button type="submit" variant="default">
-              Restablecer clave
+            <Button type="submit" variant="default" disabled={isResettingPassword}>
+              {isResettingPassword ? 'Restableciendo...' : 'Restablecer clave'}
             </Button>
           </div>
         </form>
@@ -523,7 +561,9 @@ export function UsersView({ onStatus }: UsersViewProps) {
       <ConfirmDialog
         open={isToggleDialogOpen}
         title={targetToggleUser?.active ? '¿Desactivar usuario?' : '¿Activar usuario?'}
-        confirmLabel={targetToggleUser?.active ? 'Desactivar' : 'Activar'}
+        confirmLabel={isTogglingUser ? 'Cambiando...' : targetToggleUser?.active ? 'Desactivar' : 'Activar'}
+        confirmDisabled={isTogglingUser}
+        cancelDisabled={isTogglingUser}
         danger={targetToggleUser?.active}
         onCancel={() => {
           setIsToggleDialogOpen(false);

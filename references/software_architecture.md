@@ -1,4 +1,4 @@
-# Referencia: arquitectura de software para Hospital Billing OS
+# Referencia: arquitectura de software para Sistema de Caja Hospitalaria
 
 ## Principios obligatorios
 

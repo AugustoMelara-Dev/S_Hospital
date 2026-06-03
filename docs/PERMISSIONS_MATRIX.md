@@ -1,4 +1,4 @@
-# Permissions Matrix - Hospital Billing OS Offline
+﻿# Permissions Matrix - Sistema de Caja Hospitalaria
 
 ## Roles
 
@@ -19,6 +19,7 @@ El backend debe validar todos los permisos con Policies/Gates o middleware equiv
 | Crear/editar servicios/precios | `catalog.manage` | Si | Configurable | No |
 | Ver facturas | `invoices.view` | Si | Si | Si, propias/dia por defecto |
 | Crear facturas | `invoices.create` | Si | Si | Si |
+| Operar cualquier factura para cobro/reversion | `invoices.operate_any` | Si | Si | No |
 | Anular facturas | `invoices.void` | Si | Si | No |
 | Ver caja | `cash.view` | Si | Si | Si, caja propia |
 | Abrir caja | `cash.open` | Si | Si | Si |
@@ -49,6 +50,7 @@ El backend debe validar todos los permisos con Policies/Gates o middleware equiv
 
 - Puede configurar datos fiscales, hospital, recibo, roles, usuarios y backups.
 - Puede anular facturas/pagos con motivo.
+- Puede operar facturas fuera de su propia caja/dia mediante `invoices.operate_any`.
 - Puede ver reportes y auditoria completa.
 - No debe borrar facturas ni pagos; solo anular.
 
@@ -57,6 +59,7 @@ El backend debe validar todos los permisos con Policies/Gates o middleware equiv
 - Puede gestionar catalogo/precios solo si el hospital lo autoriza. En demo puede estar permitido, pero debe ser un permiso configurable, no una regla fija del rol.
 - Puede ver reportes y cajas.
 - Puede anular facturas/pagos con motivo.
+- Puede operar facturas fuera de su propia caja/dia mediante `invoices.operate_any`.
 - Puede reimprimir facturas historicas.
 - No puede editar configuracion fiscal ni usuarios.
 - No puede descargar backups.

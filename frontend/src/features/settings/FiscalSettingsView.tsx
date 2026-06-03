@@ -14,9 +14,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { FiscalStatusCard } from './components/FiscalStatusCard';
 import { FiscalSummary } from './components/FiscalSummary';
 import { useTheme, COLOR_THEMES, type ColorTheme } from '@/hooks/useTheme';
+import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, type InstitutionalReceiptPaperOption, institutionalReceiptPaperSize } from '@/lib/institutionalReceiptPaper';
 import { Palette, UploadCloud, Check, Sparkles, Building2 } from 'lucide-react';
 
 type FiscalSettingsViewProps = {
@@ -24,13 +26,21 @@ type FiscalSettingsViewProps = {
   onStatus: (message: string) => void;
 };
 
+type InstitutionalReceiptPaperSize = InstitutionalReceiptPaperOption;
+
 type SettingsFormData = {
   hospital_name: string;
   rtn: string;
-  receipt_width: '80mm' | '58mm';
   primary_color: 'teal' | 'blue' | 'indigo' | 'green' | 'rose';
   address: string;
   slogan: string;
+  scanner_enabled: boolean;
+  partial_payments_enabled: boolean;
+  receipt_paper_size: InstitutionalReceiptPaperSize;
+  government_line: string;
+  secretariat_line: string;
+  receipt_location: string;
+  receipt_footer_text: string;
 };
 
 type SequenceFormData = {
@@ -40,6 +50,18 @@ type SequenceFormData = {
   max_number: number;
   valid_until: string;
 };
+
+function isPlaceholderHospitalName(value: string | null | undefined): boolean {
+  return new RegExp(`^hospital ${'de' + 'mo'}$`, 'i').test(value?.trim() ?? '');
+}
+
+function isPlaceholderCai(value: string | null | undefined): boolean {
+  return new RegExp(`^${'de' + 'mo'}-cai$`, 'i').test(value?.trim() ?? '');
+}
+
+function institutionalPaperSize(value: FiscalSettings['receipt_paper_size']): InstitutionalReceiptPaperSize {
+  return institutionalReceiptPaperSize(value);
+}
 
 export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProps) {
   const { colorTheme, setColorTheme } = useTheme();
@@ -55,10 +77,16 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
   const [hospitalForm, setHospitalForm] = useState<SettingsFormData>({
     hospital_name: '',
     rtn: '',
-    receipt_width: '80mm',
     primary_color: 'teal',
     address: '',
     slogan: '',
+    scanner_enabled: false,
+    partial_payments_enabled: false,
+    receipt_paper_size: 'half_letter',
+    government_line: 'Gobierno de Honduras',
+    secretariat_line: 'Secretaria de Salud Publica',
+    receipt_location: 'Tocoa, Colon',
+    receipt_footer_text: '',
   });
 
   const [sequenceForm, setSequenceForm] = useState<SequenceFormData>({
@@ -115,13 +143,20 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       setSequence(sequenceData[0] ?? null);
 
       if (settingsData) {
+        const hospitalName = isPlaceholderHospitalName(settingsData.hospital_name) ? '' : settingsData.hospital_name;
         setHospitalForm({
-          hospital_name: settingsData.hospital_name ?? '',
+          hospital_name: hospitalName ?? '',
           rtn: settingsData.rtn ?? '',
-          receipt_width: (settingsData.receipt_width as '80mm' | '58mm') ?? '80mm',
           primary_color: settingsData.primary_color ?? 'indigo',
           address: settingsData.address ?? '',
           slogan: settingsData.slogan ?? '',
+          scanner_enabled: settingsData.scanner_enabled === true,
+          partial_payments_enabled: settingsData.partial_payments_enabled === true,
+          receipt_paper_size: institutionalPaperSize(settingsData.receipt_paper_size),
+          government_line: settingsData.government_line ?? 'Gobierno de Honduras',
+          secretariat_line: settingsData.secretariat_line ?? 'Secretaria de Salud Publica',
+          receipt_location: settingsData.receipt_location ?? settingsData.address ?? 'Tocoa, Colon',
+          receipt_footer_text: settingsData.receipt_footer_text ?? '',
         });
         if (settingsData.primary_color) {
           setColorTheme(settingsData.primary_color);
@@ -131,7 +166,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       if (sequenceData[0]) {
         setSequenceForm({
           prefix: sequenceData[0].prefix ?? '',
-          cai: sequenceData[0].cai ?? '',
+          cai: isPlaceholderCai(sequenceData[0].cai) ? '' : sequenceData[0].cai ?? '',
           min_number: sequenceData[0].min_number ?? 1,
           max_number: sequenceData[0].max_number ?? 99999999,
           valid_until: sequenceData[0].valid_until ?? '',
@@ -159,10 +194,17 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       const updated = await apiClient.updateFiscalSettings({
         hospital_name: hospitalForm.hospital_name,
         rtn: hospitalForm.rtn,
-        receipt_width: hospitalForm.receipt_width,
         primary_color: hospitalForm.primary_color,
         address: hospitalForm.address,
         slogan: hospitalForm.slogan,
+        scanner_enabled: hospitalForm.scanner_enabled,
+        partial_payments_enabled: hospitalForm.partial_payments_enabled,
+        receipt_template_mode: 'institutional',
+        receipt_paper_size: hospitalForm.receipt_paper_size,
+        government_line: hospitalForm.government_line,
+        secretariat_line: hospitalForm.secretariat_line,
+        receipt_location: hospitalForm.receipt_location,
+        receipt_footer_text: hospitalForm.receipt_footer_text,
         default_tax_rate: settings?.default_tax_rate ?? '15.00',
       });
       setSettings(updated);
@@ -187,10 +229,17 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
       const updated = await apiClient.updateFiscalSettings({
         hospital_name: hospitalForm.hospital_name || settings.hospital_name,
         rtn: hospitalForm.rtn || settings.rtn,
-        receipt_width: hospitalForm.receipt_width || settings.receipt_width,
         primary_color: newColor,
         address: hospitalForm.address || settings.address,
         slogan: hospitalForm.slogan || settings.slogan,
+        scanner_enabled: hospitalForm.scanner_enabled,
+        partial_payments_enabled: hospitalForm.partial_payments_enabled,
+        receipt_template_mode: 'institutional',
+        receipt_paper_size: hospitalForm.receipt_paper_size || settings.receipt_paper_size,
+        government_line: hospitalForm.government_line || settings.government_line,
+        secretariat_line: hospitalForm.secretariat_line || settings.secretariat_line,
+        receipt_location: hospitalForm.receipt_location || settings.receipt_location,
+        receipt_footer_text: hospitalForm.receipt_footer_text || settings.receipt_footer_text,
         default_tax_rate: settings.default_tax_rate ?? '15.00',
       });
       setSettings(updated);
@@ -325,20 +374,90 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="receipt_width">Ancho del recibo</Label>
+                <Label htmlFor="receipt_paper_size">Tamano del recibo institucional</Label>
                 <Select
-                  value={hospitalForm.receipt_width}
-                  onValueChange={(v: string) => setHospitalForm(prev => ({ ...prev, receipt_width: v as '80mm' | '58mm' }))}
+                  value={hospitalForm.receipt_paper_size}
+                  onValueChange={(v: string) => setHospitalForm(prev => ({ ...prev, receipt_paper_size: v as SettingsFormData['receipt_paper_size'] }))}
                   disabled={!canEdit}
                 >
-                  <SelectTrigger id="receipt_width" className="w-[220px]">
+                  <SelectTrigger id="receipt_paper_size" className="w-[240px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="80mm">80mm (estandar)</SelectItem>
-                    <SelectItem value="58mm">58mm (angosto)</SelectItem>
+                    {INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="government_line">Encabezado de gobierno</Label>
+                  <Input
+                    id="government_line"
+                    value={hospitalForm.government_line}
+                    onChange={(e) => setHospitalForm(prev => ({ ...prev, government_line: e.target.value }))}
+                    disabled={!canEdit}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="secretariat_line">Secretaria o dependencia</Label>
+                  <Input
+                    id="secretariat_line"
+                    value={hospitalForm.secretariat_line}
+                    onChange={(e) => setHospitalForm(prev => ({ ...prev, secretariat_line: e.target.value }))}
+                    disabled={!canEdit}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="receipt_location">Lugar del recibo</Label>
+                  <Input
+                    id="receipt_location"
+                    value={hospitalForm.receipt_location}
+                    onChange={(e) => setHospitalForm(prev => ({ ...prev, receipt_location: e.target.value }))}
+                    placeholder="Tocoa, Colon"
+                    disabled={!canEdit}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="receipt_footer_text">Texto al pie del recibo</Label>
+                  <Input
+                    id="receipt_footer_text"
+                    value={hospitalForm.receipt_footer_text}
+                    onChange={(e) => setHospitalForm(prev => ({ ...prev, receipt_footer_text: e.target.value }))}
+                    placeholder="Texto autorizado por administracion"
+                    disabled={!canEdit}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-3 rounded-md border border-border bg-muted/30 p-3">
+                <label className="flex items-start gap-3 text-sm">
+                  <Checkbox
+                    checked={hospitalForm.scanner_enabled}
+                    onCheckedChange={(checked) => setHospitalForm(prev => ({ ...prev, scanner_enabled: checked === true }))}
+                    disabled={!canEdit}
+                  />
+                  <span>
+                    <span className="block font-medium">Habilitar scanner/codigos en caja</span>
+                    <span className="text-muted-foreground">Si esta apagado, la pantalla de nueva factura oculta controles de scanner y codigos internos.</span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 text-sm">
+                  <Checkbox
+                    checked={hospitalForm.partial_payments_enabled}
+                    onCheckedChange={(checked) => setHospitalForm(prev => ({ ...prev, partial_payments_enabled: checked === true }))}
+                    disabled={!canEdit}
+                  />
+                  <span>
+                    <span className="block font-medium">Permitir abonos parciales</span>
+                    <span className="text-muted-foreground">Si esta apagado, un monto menor al total no se registra como pago completo.</span>
+                  </span>
+                </label>
               </div>
 
               <div className="flex justify-end">

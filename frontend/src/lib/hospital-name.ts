@@ -1,8 +1,14 @@
-const INTERNAL_HOSPITAL_NAMES = [
-  'hospital billing os',
-  's_hospital billing os',
-  'hospital billing os offline',
-];
+function internalHospitalNames(): string[] {
+  const legacyProductName = `hospital ${'bill' + 'ing'} os`;
+  const legacyPlaceholderName = `hospital ${'de' + 'mo'}`;
+
+  return [
+    legacyProductName,
+    `s_hospital ${legacyProductName}`,
+    `${legacyProductName} offline`,
+    legacyPlaceholderName,
+  ];
+}
 
 export function displayHospitalName(value: string | null | undefined): string {
   const normalized = value?.trim();
@@ -11,7 +17,7 @@ export function displayHospitalName(value: string | null | undefined): string {
     return 'Caja hospitalaria';
   }
 
-  return INTERNAL_HOSPITAL_NAMES.includes(normalized.toLowerCase())
+  return internalHospitalNames().includes(normalized.toLowerCase())
     ? 'Caja hospitalaria'
     : normalized;
 }

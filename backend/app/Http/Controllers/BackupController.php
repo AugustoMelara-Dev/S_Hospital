@@ -3,26 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Backups\CreateBackupAction;
+use App\Http\Requests\Backups\DownloadBackupRequest;
+use App\Http\Requests\Backups\IndexBackupRequest;
+use App\Http\Requests\Backups\StoreBackupRequest;
+use App\Jobs\RunBackupJob;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
+use App\Support\OperationalMessageSanitizer;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class BackupController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(IndexBackupRequest $request): JsonResponse
     {
-        $request->user()->can('backups.view') || abort(403);
-        $validated = $request->validate([
-            'status' => ['sometimes', 'string', Rule::in([
-                BackupLog::STATUS_PENDING,
-                BackupLog::STATUS_SUCCESS,
-                BackupLog::STATUS_FAILED,
-            ])],
-        ]);
+        $validated = $request->validated();
 
         $backups = BackupLog::query()
             ->with('creator:id,name,username')
@@ -31,7 +27,7 @@ class BackupController extends Controller
                 fn ($query) => $query->where('status', $validated['status']),
             )
             ->latest()
-            ->paginate(max(1, min((int) $request->integer('per_page', 15), 50)));
+            ->paginate($request->perPage());
 
         return response()->json([
             'data' => collect($backups->items())->map(fn (BackupLog $backupLog): array => $this->payload($backupLog))->values(),
@@ -43,21 +39,18 @@ class BackupController extends Controller
         ]);
     }
 
-    public function store(Request $request, CreateBackupAction $createBackup): JsonResponse
+    public function store(StoreBackupRequest $request, CreateBackupAction $createBackup): JsonResponse
     {
-        $request->user()->can('backups.create') || abort(403);
-
-        $backupLog = $createBackup->execute($request->user(), BackupLog::TYPE_MANUAL);
+        $backupLog = $createBackup->createPending($request->user(), BackupLog::TYPE_MANUAL);
+        RunBackupJob::dispatch($backupLog->id);
 
         return response()->json([
             'data' => $this->payload($backupLog),
-        ], $backupLog->status === BackupLog::STATUS_SUCCESS ? 201 : 500);
+        ], 202);
     }
 
-    public function download(Request $request, BackupLog $backupLog): BinaryFileResponse
+    public function download(DownloadBackupRequest $request, BackupLog $backupLog): BinaryFileResponse
     {
-        $request->user()->can('backups.download') || abort(403);
-
         abort_unless($backupLog->status === BackupLog::STATUS_SUCCESS, 404);
         abort_unless($backupLog->disk === 'local', 404);
         abort_unless($backupLog->path !== null && $this->isSafeRelativeBackupPath($backupLog->path), 404);
@@ -127,7 +120,7 @@ class BackupController extends Controller
         ];
 
         if ($backupLog->status === BackupLog::STATUS_FAILED) {
-            $payload['error_message'] = $backupLog->error_message;
+            $payload['error_message'] = OperationalMessageSanitizer::message($backupLog->error_message);
         }
 
         return $payload;

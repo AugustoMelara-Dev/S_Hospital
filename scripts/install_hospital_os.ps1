@@ -1,6 +1,13 @@
 # install_hospital_os.ps1
-# Guided Offline LAN Windows Installation Script for S_Hospital
-# Uses native WPF (Graphical User Interface) with fallback to CLI
+# DEPRECATED in v1.0.0. Use deploy_hospital_lan.ps1 instead.
+# This WPF-based wizard is kept for backwards compatibility with
+# operators who already have a saved shortcut to it, but no new
+# code paths reference it. The recommended installer is:
+#
+#   powershell -ExecutionPolicy Bypass -File scripts\deploy_hospital_lan.ps1
+#
+# See docs/OFFLINE_LAN_INSTALL.md and scripts/deploy_hospital_lan.ps1
+# for the supported flow.
 
 [CmdletBinding()]
 param (
@@ -10,19 +17,56 @@ param (
 # Force TLS 1.2/1.3 for any system calls if they occur, though we operate strictly offline
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+# v1.0.0 deprecation notice. The supported installer is
+# deploy_hospital_lan.ps1; this script is kept only for operators
+# who already have a shortcut to it. We print a clear warning to
+# the console so the operator is not surprised.
+Write-Host ""
+Write-Host "========================================================================" -ForegroundColor Yellow
+Write-Host "  DEPRECATION NOTICE" -ForegroundColor Yellow
+Write-Host "  install_hospital_os.ps1 is deprecated as of v1.0.0." -ForegroundColor Yellow
+Write-Host "  The supported installer is deploy_hospital_lan.ps1." -ForegroundColor Yellow
+Write-Host "  Continuing for backwards compatibility in this run." -ForegroundColor Yellow
+Write-Host "  See scripts/deploy_hospital_lan.ps1 for the new flow." -ForegroundColor Yellow
+Write-Host "========================================================================" -ForegroundColor Yellow
+Write-Host ""
+
 # Determine workspace root
 $scriptPath = $MyInvocation.MyCommand.Path
 $scriptsDir = Split-Path $scriptPath -Parent
 $workspaceRoot = Split-Path $scriptsDir -Parent
 $backendRoot = Join-Path $workspaceRoot "backend"
 
+function Get-InstallerVersion {
+    try {
+        $git = Get-Command git -ErrorAction SilentlyContinue
+        if ($git) {
+            $shortHash = & git -C $workspaceRoot rev-parse --short HEAD 2>$null
+            if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($shortHash)) {
+                return "git-$($shortHash.Trim())"
+            }
+        }
+    } catch {
+        # Version is diagnostic metadata only; installation must continue.
+    }
+
+    return "manual-$(Get-Date -Format 'yyyyMMdd')"
+}
+
+$installedVersion = Get-InstallerVersion
+$runSetupCliAfterDefinition = $false
+
 # 1. Detect active LAN IP
-$ips = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { 
-    $_.IPAddress -notlike "127.*" -and 
-    $_.IPAddress -notlike "169.254.*" 
+$ips = Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
+    $_.IPAddress -notlike "127.*" -and
+    $_.IPAddress -notlike "169.254.*"
 } | Select-Object -ExpandProperty IPAddress
 
-$detectedIp = "192.168.1.100"
+# Use an empty placeholder so the operator MUST select a real IP
+# from the candidates or enter one manually. A 192.168.1.100
+# placeholder used to leak here and would silently become the
+# install target if no candidate was found.
+$detectedIp = ""
 if ($ips.Count -gt 0) {
     $detectedIp = $ips[0]
 }
@@ -102,7 +146,131 @@ function Update-DotEnv {
         }
     }
 
-    Set-Content $Path -Value $newLines
+    # PowerShell 5.1 defaults Set-Content to UTF-16 LE with BOM, which
+    # breaks 'docker compose --env-file' and Laravel's env() parser.
+    # Always write ASCII so the file is portable across PS 5.1, PS 7,
+    # docker compose, and Laravel's Dotenv parser.
+    Set-Content -LiteralPath $Path -Value $newLines -Encoding ASCII
+}
+
+function Test-DatabaseName {
+    param([string]$Name)
+
+    return -not [string]::IsNullOrWhiteSpace($Name) -and $Name -match '^[A-Za-z][A-Za-z0-9_]{0,63}$'
+}
+
+function Invoke-CreateMysqlDatabase {
+    param (
+        [string]$Php,
+        [string]$Host,
+        [string]$Port,
+        [string]$Database,
+        [string]$Username,
+        [string]$Password
+    )
+
+    if (-not (Test-DatabaseName $Database)) {
+        return "INVALID_DATABASE_NAME"
+    }
+
+    $env:HOSPITAL_INSTALL_DB_HOST = $Host
+    $env:HOSPITAL_INSTALL_DB_PORT = $Port
+    $env:HOSPITAL_INSTALL_DB_NAME = $Database
+    $env:HOSPITAL_INSTALL_DB_USER = $Username
+    $env:HOSPITAL_INSTALL_DB_PASS = $Password
+
+    $createDbCode = @'
+$host = getenv("HOSPITAL_INSTALL_DB_HOST");
+$port = getenv("HOSPITAL_INSTALL_DB_PORT");
+$db = getenv("HOSPITAL_INSTALL_DB_NAME");
+$user = getenv("HOSPITAL_INSTALL_DB_USER");
+$pass = getenv("HOSPITAL_INSTALL_DB_PASS");
+try {
+    if (!preg_match('/^[A-Za-z][A-Za-z0-9_]{0,63}$/', $db)) {
+        echo "INVALID_DATABASE_NAME";
+        exit;
+    }
+
+    $p = new PDO("mysql:host=$host;port=$port", $user, $pass);
+    $p->exec("CREATE DATABASE IF NOT EXISTS `$db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    echo "CREATED";
+} catch(Exception $e) {
+    echo $e->getMessage();
+}
+'@
+
+    try {
+        return & $Php -r $createDbCode
+    }
+    finally {
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_HOST -ErrorAction SilentlyContinue } catch { }
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_PORT -ErrorAction SilentlyContinue } catch { }
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_NAME -ErrorAction SilentlyContinue } catch { }
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_USER -ErrorAction SilentlyContinue } catch { }
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_PASS -ErrorAction SilentlyContinue } catch { }
+    }
+}
+
+function Invoke-TestMysqlConnection {
+    param (
+        [string]$Php,
+        [string]$Host,
+        [string]$Port,
+        [string]$Username,
+        [string]$Password
+    )
+
+    $env:HOSPITAL_INSTALL_DB_HOST = $Host
+    $env:HOSPITAL_INSTALL_DB_PORT = $Port
+    $env:HOSPITAL_INSTALL_DB_USER = $Username
+    $env:HOSPITAL_INSTALL_DB_PASS = $Password
+
+    $testDbCode = @'
+$host = getenv("HOSPITAL_INSTALL_DB_HOST");
+$port = getenv("HOSPITAL_INSTALL_DB_PORT");
+$user = getenv("HOSPITAL_INSTALL_DB_USER");
+$pass = getenv("HOSPITAL_INSTALL_DB_PASS");
+try {
+    new PDO("mysql:host=$host;port=$port", $user, $pass);
+    echo "OK";
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
+'@
+
+    try {
+        return & $Php -r $testDbCode
+    }
+    finally {
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_HOST -ErrorAction SilentlyContinue } catch { }
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_PORT -ErrorAction SilentlyContinue } catch { }
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_USER -ErrorAction SilentlyContinue } catch { }
+        try { Remove-Item Env:\HOSPITAL_INSTALL_DB_PASS -ErrorAction SilentlyContinue } catch { }
+    }
+}
+
+function Install-BackupAutomation {
+    param (
+        [string]$PhpPath,
+        [string]$DailyBackupTime
+    )
+
+    $backupTasksScript = Join-Path $scriptsDir "install_backup_tasks_windows.ps1"
+    if (-not (Test-Path -LiteralPath $backupTasksScript)) {
+        throw "No se encontro el instalador de tareas de respaldo en scripts\install_backup_tasks_windows.ps1."
+    }
+
+    $output = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $backupTasksScript `
+        -ProjectRoot $workspaceRoot `
+        -PhpPath $PhpPath `
+        -DailyBackupTime $DailyBackupTime `
+        -UpdateExisting 2>&1 | ForEach-Object { $_.ToString() }
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "No se pudieron registrar las tareas de respaldo. Ejecute PowerShell como Administrador y vuelva a intentar. Detalle: $($output -join ' ')"
+    }
+
+    return $output
 }
 
 if ($useGui) {
@@ -112,7 +280,7 @@ if ($useGui) {
     [xml]$xaml = @"
     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-            Title="S_Hospital - Instalador del Servidor LAN (Offline)" Height="520" Width="620"
+            Title="Sistema de Caja Hospitalaria - Instalador del Servidor LAN (Offline)" Height="520" Width="620"
             WindowStartupLocation="CenterScreen" Background="#F8FAFC" ResizeMode="NoResize">
         <Grid>
             <Grid.RowDefinitions>
@@ -129,10 +297,10 @@ if ($useGui) {
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="S_Hospital Server Setup" Foreground="#0D9488" FontSize="18" FontWeight="Bold"/>
-                        <TextBlock Text="Asistente de Configuración para Red Local Offline" Foreground="#94A3B8" FontSize="12"/>
+                        <TextBlock Text="Sistema de Caja Hospitalaria" Foreground="#0D9488" FontSize="18" FontWeight="Bold"/>
+                        <TextBlock Text="Asistente de Configuracion para Red Local Offline" Foreground="#94A3B8" FontSize="12"/>
                     </StackPanel>
-                    <TextBlock Grid.Column="1" Text="v1.0.0" Foreground="#475569" VerticalAlignment="Center" FontSize="14" FontWeight="Bold"/>
+                    <TextBlock Grid.Column="1" Text="$installedVersion" Foreground="#475569" VerticalAlignment="Center" FontSize="14" FontWeight="Bold"/>
                 </Grid>
             </Border>
             <Border Grid.Row="0" Height="4" Background="#0D9488" VerticalAlignment="Bottom"/>
@@ -142,26 +310,26 @@ if ($useGui) {
                 <!-- STEP 1: Welcome & LAN -->
                 <StackPanel Name="PanelStep1" Visibility="Visible">
                     <TextBlock Text="Paso 1: Detectar y Confirmar IP LAN de Red Local" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
-                    <TextBlock Text="Este script configura el servidor web y la base de datos MySQL local para ejecutarse sin internet en su red de área local (LAN)." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
+                    <TextBlock Text="Este script configura el servidor web y la base de datos MySQL local para ejecutarse sin internet en su red de area local (LAN)." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
                     
                     <Label Content="IP Activa Detectada en la Computadora Servidor:" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,5"/>
                     <TextBox Name="TxtLanIp" Text="$detectedIp" Padding="8" FontSize="14" BorderBrush="#CBD5E1" BorderThickness="1" Margin="0,0,0,15"/>
                     
                     <Border Background="#F0FDFA" BorderBrush="#CCFBF1" BorderThickness="1" Padding="12" CornerRadius="6">
-                        <TextBlock Text="Nota: Las computadoras cliente (recepción, consultorios, caja) accederán al sistema usando esta dirección IP. Asegúrese de que este servidor tenga configurada una dirección IP estática en su router LAN para evitar que cambie al reiniciar." FontSize="11" Foreground="#0F766E" TextWrapping="Wrap"/>
+                        <TextBlock Text="Nota: Las computadoras cliente (recepcion, consultorios, caja) accederan al sistema usando esta direccion IP. Asegurese de que este servidor tenga configurada una direccion IP estatica en su router LAN para evitar que cambie al reiniciar." FontSize="11" Foreground="#0F766E" TextWrapping="Wrap"/>
                     </Border>
                 </StackPanel>
 
                 <!-- STEP 2: PHP Environment -->
                 <StackPanel Name="PanelStep2" Visibility="Collapsed">
                     <TextBlock Text="Paso 2: Localizar Entorno PHP de Servidor" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
-                    <TextBlock Text="El sistema requiere un motor de PHP 8.2+ para procesar transacciones médicas y reportes." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
+                    <TextBlock Text="El sistema requiere un motor de PHP 8.2+ para procesar caja, facturacion y reportes." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
                     
                     <Label Content="Ruta al Ejecutable de PHP (php.exe):" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,5"/>
                     <TextBox Name="TxtPhpPath" Text="$phpPath" Padding="8" FontSize="13" BorderBrush="#CBD5E1" BorderThickness="1" Margin="0,0,0,10"/>
                     
                     <Button Name="BtnTestPhp" Content="Validar php.exe local" Padding="10,6" Background="#E2E8F0" Foreground="#0F172A" FontWeight="Bold" BorderThickness="0" HorizontalAlignment="Left" Margin="0,0,0,10"/>
-                    <TextBlock Name="TxtPhpResult" Text="Pendiente de verificación" FontSize="11" FontWeight="Bold" Foreground="#64748B" TextWrapping="Wrap"/>
+                    <TextBlock Name="TxtPhpResult" Text="Pendiente de verificacion" FontSize="11" FontWeight="Bold" Foreground="#64748B" TextWrapping="Wrap"/>
                 </StackPanel>
 
                 <!-- STEP 3: MySQL Setup -->
@@ -193,39 +361,39 @@ if ($useGui) {
                         <Label Grid.Row="3" Grid.Column="0" Content="Usuario MySQL:" VerticalAlignment="Center" Foreground="#334155"/>
                         <TextBox Grid.Row="3" Grid.Column="1" Name="TxtDbUser" Text="root" Padding="4" VerticalAlignment="Center"/>
 
-                        <Label Grid.Row="4" Grid.Column="0" Content="Contraseña:" VerticalAlignment="Center" Foreground="#334155"/>
+                        <Label Grid.Row="4" Grid.Column="0" Content="Contrasena:" VerticalAlignment="Center" Foreground="#334155"/>
                         <PasswordBox Grid.Row="4" Grid.Column="1" Name="TxtDbPass" Padding="4" VerticalAlignment="Center"/>
                     </Grid>
                     
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                        <Button Name="BtnTestDb" Content="Probar Conexión" Padding="10,5" Background="#E2E8F0" Foreground="#0F172A" FontWeight="Bold" BorderThickness="0" Margin="0,0,10,0"/>
-                        <Button Name="BtnMigrateDb" Content="Ejecutar Migraciones y Semillas" Padding="12,5" Background="#0D9488" Foreground="White" FontWeight="Bold" BorderThickness="0"/>
+                        <Button Name="BtnTestDb" Content="Probar Conexion" Padding="10,5" Background="#E2E8F0" Foreground="#0F172A" FontWeight="Bold" BorderThickness="0" Margin="0,0,10,0"/>
+                        <Button Name="BtnMigrateDb" Content="Ejecutar migraciones seguras" Padding="12,5" Background="#0D9488" Foreground="White" FontWeight="Bold" BorderThickness="0"/>
                     </StackPanel>
-                    <TextBlock Name="TxtDbResult" Text="Pendiente de conexión" FontSize="11" FontWeight="Bold" Foreground="#64748B" TextWrapping="Wrap"/>
+                    <TextBlock Name="TxtDbResult" Text="Pendiente de conexion" FontSize="11" FontWeight="Bold" Foreground="#64748B" TextWrapping="Wrap"/>
                 </StackPanel>
 
                 <!-- STEP 4: Scheduler Backups -->
                 <StackPanel Name="PanelStep4" Visibility="Collapsed">
-                    <TextBlock Text="Paso 4: Respaldos Locales Diarios en Windows Task Scheduler" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
-                    <TextBlock Text="El sistema incluye un comando local de backups. Registraremos una tarea programada diaria en Windows para asegurar la información hospitalaria ante fallas de hardware." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
+                    <TextBlock Text="Paso 4: Respaldos Locales y Cola de Trabajos" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
+                    <TextBlock Text="El sistema necesita un worker continuo para procesar respaldos solicitados desde la pantalla Respaldos, y una tarea diaria para crear copia local automatica." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
                     
-                    <CheckBox Name="ChkEnableBackup" Content="Registrar Tarea de Copia de Seguridad Diaria Automática" IsChecked="True" FontSize="13" FontWeight="SemiBold" Foreground="#0F172A" Margin="0,0,0,15"/>
+                    <CheckBox Name="ChkEnableBackup" Content="Registrar worker continuo y respaldo diario automatico" IsChecked="True" FontSize="13" FontWeight="SemiBold" Foreground="#0F172A" Margin="0,0,0,15"/>
                     
-                    <Label Content="Hora de Ejecución Diaria (Ejemplo: 23:00):" Foreground="#334155" Margin="0,0,0,5"/>
+                    <Label Content="Hora de Ejecucion Diaria (Ejemplo: 23:00):" Foreground="#334155" Margin="0,0,0,5"/>
                     <TextBox Name="TxtBackupTime" Text="23:00" Padding="8" Width="120" HorizontalAlignment="Left" FontSize="14" BorderBrush="#CBD5E1" BorderThickness="1" Margin="0,0,0,10"/>
-                    <TextBlock Text="Nota: La tarea se ejecutará en segundo plano sin interrumpir a los cajeros en caja." FontSize="11" Foreground="#0D9488"/>
+                    <TextBlock Text="Nota: Las tareas se ejecutan en segundo plano sin interrumpir a los cajeros. Requieren PowerShell como Administrador para registrarse." FontSize="11" Foreground="#0D9488"/>
                 </StackPanel>
 
                 <!-- STEP 5: Firewall & LAN URLs -->
                 <StackPanel Name="PanelStep5" Visibility="Collapsed">
-                    <TextBlock Text="Paso 5: Completar Instalación de Red LAN" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
-                    <TextBlock Text="S_Hospital está configurado con éxito. Se puede habilitar la apertura de puerto en el Firewall de Windows para admitir conexiones entrantes en su LAN." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
+                    <TextBlock Text="Paso 5: Completar Instalacion de Red LAN" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
+                    <TextBlock Text="El Sistema de Caja Hospitalaria esta configurado. Se puede habilitar la apertura de puerto en el Firewall de Windows para admitir conexiones entrantes en su LAN." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
                     
                     <CheckBox Name="ChkOpenFirewall" Content="Abrir Puerto 8000 en el Firewall de Windows para clientes LAN" IsChecked="True" FontSize="13" FontWeight="SemiBold" Foreground="#0F172A" Margin="0,0,0,15"/>
                     
                     <Border Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1" Padding="15" CornerRadius="8">
                         <StackPanel>
-                            <TextBlock Text="Dirección Web LAN para Clientes:" FontWeight="Bold" Foreground="#0F172A" FontSize="12"/>
+                            <TextBlock Text="Direccion Web LAN para Clientes:" FontWeight="Bold" Foreground="#0F172A" FontSize="12"/>
                             <TextBlock Name="TxtLanUrl" Text="http://192.168.1.15:8000" FontSize="16" FontWeight="Bold" Foreground="#0D9488" Margin="0,6,0,0"/>
                             <TextBlock Text="Copie y guarde este enlace. Desde cualquier tablet, PC o laptop en la misma red local LAN, ingrese esta URL en Chrome/Edge para facturar." FontSize="11" Foreground="#64748B" TextWrapping="Wrap" Margin="0,8,0,0"/>
                         </StackPanel>
@@ -236,7 +404,7 @@ if ($useGui) {
             <!-- Bottom Navigation Bar -->
             <Border Grid.Row="2" Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0" Padding="20,10">
                 <Grid>
-                    <Button Name="BtnBack" Content="&lt; Atrás" HorizontalAlignment="Left" Width="100" IsEnabled="False" Padding="6" Background="#E2E8F0" BorderThickness="0" FontWeight="Bold"/>
+                    <Button Name="BtnBack" Content="&lt; Atras" HorizontalAlignment="Left" Width="100" IsEnabled="False" Padding="6" Background="#E2E8F0" BorderThickness="0" FontWeight="Bold"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Name="BtnNext" Content="Siguiente &gt;" Width="110" Padding="6" Margin="0,0,10,0" Background="#0F172A" Foreground="White" BorderThickness="0" FontWeight="Bold"/>
                         <Button Name="BtnCancel" Content="Cancelar" Width="100" Padding="6" Background="#E2E8F0" BorderThickness="0" FontWeight="Bold"/>
@@ -327,7 +495,7 @@ if ($useGui) {
         if ($currentStep -lt 5) {
             # Basic validation
             if ($currentStep -eq 1 -and [string]::IsNullOrWhiteSpace($TxtLanIp.Text)) {
-                [System.Windows.MessageBox]::Show("Ingrese una dirección IP LAN válida.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+                [System.Windows.MessageBox]::Show("Ingrese una direccion IP LAN valida.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
                 return
             }
             if ($currentStep -eq 2 -and [string]::IsNullOrWhiteSpace($TxtPhpPath.Text)) {
@@ -342,6 +510,7 @@ if ($useGui) {
                 $dbPassVal = $TxtDbPass.Password
                 # Update backend/.env file
                 $vars = @{
+                    "APP_VERSION" = $installedVersion
                     "APP_URL" = "http://$($TxtLanIp.Text):8000"
                     "SANCTUM_STATEFUL_DOMAINS" = "localhost,localhost:3000,localhost:5173,127.0.0.1,127.0.0.1:8000,127.0.0.1:5173,$($TxtLanIp.Text),$($TxtLanIp.Text):8000,$($TxtLanIp.Text):5173,::1"
                     "CORS_ALLOWED_ORIGINS" = "http://localhost:5173,http://127.0.0.1:5173,http://$($TxtLanIp.Text):5173,http://$($TxtLanIp.Text):8000"
@@ -358,26 +527,19 @@ if ($useGui) {
                 # Task Scheduler Backup setup
                 if ($ChkEnableBackup.IsChecked) {
                     $bTime = $TxtBackupTime.Text
-                    # Create Windows task scheduler daily db backup
-                    $taskName = "S_Hospital_Daily_Backup"
-                    $artisanPath = Join-Path $backendRoot "artisan"
-                    $taskAction = "cmd.exe /c cd /d ""$backendRoot"" && ""$($TxtPhpPath.Text)"" artisan hospital:backup"
-                    
-                    # Unregister if already exists
-                    schtasks /delete /tn $taskName /f 2>$null
-                    schtasks /create /tn $taskName /tr $taskAction /sc daily /st $bTime /f | Out-Null
+                    Install-BackupAutomation -PhpPath $TxtPhpPath.Text -DailyBackupTime $bTime | Out-Null
                 }
 
                 # Firewall port configuration
                 if ($ChkOpenFirewall.IsChecked) {
-                    netsh advfirewall firewall delete rule name="S_Hospital Server LAN Port 8000" 2>$null
-                    netsh advfirewall firewall add rule name="S_Hospital Server LAN Port 8000" dir=in action=allow protocol=TCP localport=8000 | Out-Null
+                    netsh advfirewall firewall delete rule name="Sistema de Caja Hospitalaria LAN Port 8000" 2>$null
+                    netsh advfirewall firewall add rule name="Sistema de Caja Hospitalaria LAN Port 8000" dir=in action=allow protocol=TCP localport=8000 | Out-Null
                 }
 
-                [System.Windows.MessageBox]::Show("¡Instalación de S_Hospital finalizada con éxito!`n`nEl servidor local LAN está activo en: http://$($TxtLanIp.Text):8000", "Éxito", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                [System.Windows.MessageBox]::Show("Instalacion del Sistema de Caja Hospitalaria finalizada.`n`nEl servidor local LAN esta activo en: http://$($TxtLanIp.Text):8000", "Exito", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
                 $window.Close()
             } catch {
-                [System.Windows.MessageBox]::Show("Ocurrió un error al guardar la configuración: $_", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+                [System.Windows.MessageBox]::Show("Ocurrio un error al guardar la configuracion: $_", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
             }
         }
     })
@@ -394,7 +556,7 @@ if ($useGui) {
         try {
             $ver = & $path -v
             $firstLine = ($ver -split "`n")[0]
-            $TxtPhpResult.Text = "Éxito: $firstLine"
+            $TxtPhpResult.Text = "Exito: $firstLine"
             $TxtPhpResult.Foreground = [System.Windows.Media.Brushes]::Green
         } catch {
             $TxtPhpResult.Text = "Error al intentar ejecutar: $_"
@@ -412,33 +574,31 @@ if ($useGui) {
         $php = $TxtPhpPath.Text
 
         if (-not (Test-Path $php)) {
-            $TxtDbResult.Text = "Error: Primero debe configurar una ruta PHP válida en el Paso 2."
+            $TxtDbResult.Text = "Error: Primero debe configurar una ruta PHP valida en el Paso 2."
             $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Red
             return
         }
 
-        $TxtDbResult.Text = "Probando conexión a MySQL..."
+        $TxtDbResult.Text = "Probando conexion a MySQL..."
         $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::DarkGoldenrod
         $window.UpdateLayout()
 
-        # Call php to try database connection via PDO
-        $code = "try { new PDO('mysql:host=$host;port=$port', '$user', '$pass'); echo 'OK'; } catch (Exception \$e) { echo \$e->getMessage(); }"
         try {
-            $res = & $php -r $code
+            $res = Invoke-TestMysqlConnection -Php $php -Host $host -Port $port -Username $user -Password $pass
             if ($res -eq "OK") {
-                $TxtDbResult.Text = "¡Conexión exitosa al servidor MySQL!"
+                $TxtDbResult.Text = "Conexion exitosa al servidor MySQL!"
                 $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Green
             } else {
-                $TxtDbResult.Text = "Fallo de conexión: $res"
+                $TxtDbResult.Text = "Fallo de conexion: $res"
                 $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Red
             }
         } catch {
-            $TxtDbResult.Text = "Error al probar conexión: $_"
+            $TxtDbResult.Text = "Error al probar conexion: $_"
             $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Red
         }
     })
 
-    # Run migrations and seeders
+    # Run safe migrations only. Never reset data from the installer.
     $BtnMigrateDb.Add_Click({
         $host = $TxtDbHost.Text
         $port = $TxtDbPort.Text
@@ -448,16 +608,23 @@ if ($useGui) {
         $php = $TxtPhpPath.Text
 
         if (-not (Test-Path $php)) {
-            $TxtDbResult.Text = "Error: Primero debe configurar una ruta PHP válida en el Paso 2."
+            $TxtDbResult.Text = "Error: Primero debe configurar una ruta PHP valida en el Paso 2."
             $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Red
             return
         }
 
-        $TxtDbResult.Text = "Guardando configuración temporal y corriendo migraciones y semillas..."
+        if (-not (Test-DatabaseName $db)) {
+            $TxtDbResult.Text = "Error: El nombre de la base debe iniciar con letra y usar solo letras, numeros o guion bajo."
+            $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Red
+            return
+        }
+
+        $TxtDbResult.Text = "Guardando configuracion temporal y corriendo migraciones seguras..."
         $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::DarkGoldenrod
         
         # Guardar en .env para que artisan use los datos reales
         $vars = @{
+            "APP_VERSION" = $installedVersion
             "DB_HOST" = $host
             "DB_PORT" = $port
             "DB_DATABASE" = $db
@@ -468,8 +635,7 @@ if ($useGui) {
         Update-DotEnv -Path $envFile -Variables $vars
 
         # Crear base de datos si no existe
-        $createDbCode = "try { `$p = new PDO('mysql:host=$host;port=$port', '$user', '$pass'); `$p->exec('CREATE DATABASE IF NOT EXISTS ``$db`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'); echo 'CREATED'; } catch(Exception `$e) { echo `$e->getMessage(); }"
-        $dbStatus = & $php -r $createDbCode
+        $dbStatus = Invoke-CreateMysqlDatabase -Php $php -Host $host -Port $port -Database $db -Username $user -Password $pass
 
         if ($dbStatus -ne "CREATED") {
             $TxtDbResult.Text = "Error al asegurar existencia de la base de datos: $dbStatus"
@@ -477,7 +643,7 @@ if ($useGui) {
             return
         }
 
-        # Ejecutar artisan migrate --seed
+        # Ejecutar migraciones sin borrar datos ni correr seeders de demostracion
         try {
             $currentDir = Get-Location
             Set-Location $backendRoot
@@ -486,10 +652,10 @@ if ($useGui) {
             & $php artisan config:clear | Out-Null
             
             # Ejecutar migracion
-            $migrateOutput = & $php artisan migrate:fresh --seed --force 2>&1
+            $migrateOutput = & $php artisan migrate --force 2>&1
             Set-Location $currentDir
 
-            $TxtDbResult.Text = "¡Tablas de base de datos creadas y catálogos inicializados con éxito!"
+            $TxtDbResult.Text = "Migraciones aplicadas sin borrar datos. Cree usuarios y catalogos iniciales con el procedimiento aprobado."
             $TxtDbResult.Foreground = [System.Windows.Media.Brushes]::Green
         } catch {
             $TxtDbResult.Text = "Error al ejecutar migraciones: $_"
@@ -508,17 +674,17 @@ if ($useGui) {
     # ----------------------------------------------------
     # Fail-safe CLI wizard implementation
     # ----------------------------------------------------
-    Run-SetupCli
+    $runSetupCliAfterDefinition = $true
 }
 
 function Run-SetupCli {
     Write-Host ""
     Write-Host "==========================================================" -ForegroundColor Teal
-    Write-Host "  S_Hospital - Instalador del Servidor LAN (Modo Consola) " -ForegroundColor White -BackgroundColor Teal
+    Write-Host "  Sistema de Caja Hospitalaria - Instalador LAN (Modo Consola) " -ForegroundColor White -BackgroundColor Teal
     Write-Host "==========================================================" -ForegroundColor Teal
     Write-Host ""
     
-    $lanIp = Read-Host "Dirección IP LAN del Servidor (por defecto $detectedIp)"
+    $lanIp = Read-Host "Direccion IP LAN del Servidor (por defecto $detectedIp)"
     if ([string]::IsNullOrWhiteSpace($lanIp)) { $lanIp = $detectedIp }
 
     $php = Read-Host "Ruta al ejecutable php.exe (por defecto $phpPath)"
@@ -531,7 +697,7 @@ function Run-SetupCli {
         Write-Host "Advertencia: php.exe no encontrado en $php" -ForegroundColor Yellow
     }
 
-    Write-Host "`n--- Configuración de Base de Datos MySQL ---"
+    Write-Host "`n--- Configuracion de Base de Datos MySQL ---"
     $dbHost = Read-Host "Host MySQL (por defecto 127.0.0.1)"
     if ([string]::IsNullOrWhiteSpace($dbHost)) { $dbHost = "127.0.0.1" }
 
@@ -544,11 +710,17 @@ function Run-SetupCli {
     $dbUser = Read-Host "Usuario MySQL (por defecto root)"
     if ([string]::IsNullOrWhiteSpace($dbUser)) { $dbUser = "root" }
 
-    $dbPass = Read-Host "Contraseña MySQL"
+    $dbPass = Read-Host "Contrasena MySQL"
+
+    if (-not (Test-DatabaseName $dbName)) {
+        Write-Host "Nombre de base invalido. Use una letra inicial y solo letras, numeros o guion bajo." -ForegroundColor Red
+        return
+    }
 
     # Save to env
-    Write-Host "`nGuardando variables en archivo de configuración .env..." -ForegroundColor DarkCyan
+    Write-Host "`nGuardando variables en archivo de configuracion .env..." -ForegroundColor DarkCyan
     $vars = @{
+        "APP_VERSION" = $installedVersion
         "APP_URL" = "http://$lanIp:8000"
         "SANCTUM_STATEFUL_DOMAINS" = "localhost,localhost:3000,localhost:5173,127.0.0.1,127.0.0.1:8000,127.0.0.1:5173,$lanIp,$lanIp:8000,$lanIp:5173,::1"
         "CORS_ALLOWED_ORIGINS" = "http://localhost:5173,http://127.0.0.1:5173,http://$lanIp:5173,http://$lanIp:8000"
@@ -563,44 +735,49 @@ function Run-SetupCli {
     Update-DotEnv -Path $envFile -Variables $vars
 
     # Ensure Database Exists and Migrate
-    Write-Host "Asegurando base de datos e inicializando catálogos..." -ForegroundColor DarkCyan
-    $createDbCode = "try { `$p = new PDO('mysql:host=$dbHost;port=$dbPort', '$dbUser', '$dbPass'); `$p->exec('CREATE DATABASE IF NOT EXISTS ``$dbName`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'); echo 'CREATED'; } catch(Exception `$e) { echo `$e->getMessage(); }"
-    $dbStatus = & $php -r $createDbCode
+    Write-Host "Asegurando base de datos y aplicando migraciones seguras..." -ForegroundColor DarkCyan
+    $dbStatus = Invoke-CreateMysqlDatabase -Php $php -Host $dbHost -Port $dbPort -Database $dbName -Username $dbUser -Password $dbPass
 
     if ($dbStatus -eq "CREATED") {
         $currentDir = Get-Location
         Set-Location $backendRoot
         & $php artisan config:clear | Out-Null
-        $migrateRes = & $php artisan migrate:fresh --seed --force 2>&1
+        $migrateRes = & $php artisan migrate --force 2>&1
         Set-Location $currentDir
-        Write-Host "Base de datos y catálogos creados con éxito." -ForegroundColor Green
+        Write-Host "Migraciones aplicadas sin borrar datos. Cree usuarios y catalogos iniciales con el procedimiento aprobado." -ForegroundColor Green
     } else {
         Write-Host "No se pudo crear base de datos: $dbStatus" -ForegroundColor Red
     }
 
     # Backup Task Scheduler
-    $enableBackup = Read-Host "¿Habilitar copia de seguridad diaria programada? (S/N)"
+    $enableBackup = Read-Host "Habilitar worker continuo y respaldo diario programado? (S/N)"
     if ($enableBackup -eq "S" -or $enableBackup -eq "s") {
         $bTime = Read-Host "Hora del respaldo (por defecto 23:00)"
         if ([string]::IsNullOrWhiteSpace($bTime)) { $bTime = "23:00" }
-        
-        $taskName = "S_Hospital_Daily_Backup"
-        $taskAction = "cmd.exe /c cd /d ""$backendRoot"" && ""$php"" artisan hospital:backup"
-        schtasks /delete /tn $taskName /f 2>$null
-        schtasks /create /tn $taskName /tr $taskAction /sc daily /st $bTime /f | Out-Null
-        Write-Host "Copia de seguridad registrada exitosamente en Task Scheduler." -ForegroundColor Green
+
+        try {
+            Install-BackupAutomation -PhpPath $php -DailyBackupTime $bTime | Out-Host
+            Write-Host "Worker de respaldos y respaldo diario registrados exitosamente." -ForegroundColor Green
+        } catch {
+            Write-Host "No se pudieron registrar las tareas de respaldo: $_" -ForegroundColor Red
+            Write-Host "Ejecute PowerShell como Administrador o use scripts\install_backup_tasks_windows.ps1 cuando el tecnico lo autorice." -ForegroundColor Yellow
+        }
     }
 
     # Open Firewall
-    $openFirewall = Read-Host "¿Desea abrir el puerto 8000 en el Firewall de Windows para clientes LAN? (S/N)"
+    $openFirewall = Read-Host "Desea abrir el puerto 8000 en el Firewall de Windows para clientes LAN? (S/N)"
     if ($openFirewall -eq "S" -or $openFirewall -eq "s") {
-        netsh advfirewall firewall delete rule name="S_Hospital Server LAN Port 8000" 2>$null
-        netsh advfirewall firewall add rule name="S_Hospital Server LAN Port 8000" dir=in action=allow protocol=TCP localport=8000 | Out-Null
+        netsh advfirewall firewall delete rule name="Sistema de Caja Hospitalaria LAN Port 8000" 2>$null
+        netsh advfirewall firewall add rule name="Sistema de Caja Hospitalaria LAN Port 8000" dir=in action=allow protocol=TCP localport=8000 | Out-Null
         Write-Host "Firewall de Windows configurado." -ForegroundColor Green
     }
 
     Write-Host "`n==========================================================" -ForegroundColor Green
-    Write-Host " ¡Instalación de Servidor S_Hospital Finalizada con Éxito!" -ForegroundColor White -BackgroundColor Green
+    Write-Host " Instalacion de servidor del Sistema de Caja Hospitalaria finalizada " -ForegroundColor White -BackgroundColor Green
     Write-Host " Servidor Web LAN disponible en: http://$lanIp:8000" -ForegroundColor Green
     Write-Host "==========================================================" -ForegroundColor Green
+}
+
+if ($runSetupCliAfterDefinition) {
+    Run-SetupCli
 }

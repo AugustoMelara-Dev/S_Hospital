@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Dialog } from '../../../components/ui/dialog';
 import { SuccessCheckmark } from '../../../components/ui/animations';
+import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
 type InvoiceStatus = 'issued' | 'paid' | 'partial' | 'void';
 
@@ -60,7 +61,7 @@ export function InvoiceSuccess({
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 p-4">
           <p className="font-semibold text-emerald-900 dark:text-emerald-350 text-lg">{invoiceNumber}</p>
           <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">Paciente: <strong>{patientName}</strong></p>
-          <p className="text-sm text-emerald-700 dark:text-emerald-400">Total: <strong>L. {total}</strong></p>
+          <p className="text-sm text-emerald-700 dark:text-emerald-400">Total: <strong>{moneyLabel(total)}</strong></p>
           <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-2 uppercase font-medium tracking-wide">
             Estado: {STATUS_LABELS[status]}
           </p>
@@ -81,7 +82,7 @@ export function InvoiceSuccess({
         ) : (
           <div className="flex flex-col gap-3">
             <Button ref={primaryActionRef} type="button" size="lg" className="w-full font-semibold" onClick={onImprimir}>
-              Imprimir recibo térmico
+              Imprimir recibo institucional
             </Button>
             <Button type="button" variant="secondary" className="w-full" onClick={onNuevaFactura}>
               Crear otra factura
@@ -108,4 +109,8 @@ export function InvoiceSuccess({
       </div>
     </Dialog>
   );
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
 }

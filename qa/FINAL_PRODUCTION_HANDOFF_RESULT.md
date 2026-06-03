@@ -1,76 +1,75 @@
 # Final production handoff result
 
-- Generated at: 2026-05-19 15:31:47
-- Base URL: http://192.168.1.7:8000
-- Project root: C:\Projects\S_Hospital
-- Decision: PRODUCTION_READY
-- LAN client proof present without obvious placeholders: True
-- Thermal printer proof present without obvious placeholders: True
-- Preflight skipped: False
-- Preflight exit code: 0
+- Updated at: 2026-06-02
+- Decision: PRODUCTION_CANDIDATE
+- Code state: v1.0.0-rc.3 (see CHANGELOG.md)
+- Last evidence check: 2026-06-02
 
-## Result
+## Code state summary (auditable)
 
-The preflight passed without bypass flags. Keep this report with the completed physical evidence files.
+| Phase | Code change | Tests | Status |
+|-------|-------------|-------|--------|
+| A9  | LicenseHelper salt moved to env | 7 | done |
+| A2.1 | cents columns on invoices/invoice_items | covered by 50+ tests | done |
+| A2.2 | removed SQL ROUND(* 100) in all report services | 12 guard tests | done |
+| A1+A8 | CSP nonce in production, unsafe-inline removed from script-src | 12 tests | done |
+| A3 | wait-for-db entrypoint + setup.bat | manual | done |
+| A4 | rate limit /api/health and /api/system/health | 6 tests | done |
+| A7 | CSP report-uri hardened (size + content-type + rate limit) | 7 tests | done |
+| A10 | audit_logs and failed_jobs prune jobs | 4 tests | done |
+| A5 | NewInvoiceView 775 -> 490 lines (Layout extracted) | 38 tests | done |
+| A6 | BackupsView surfaces worker heartbeat | 3 tests | done |
 
-## Blocking items
+Backend tests: 340 PHPUnit passing (4 skipped are concurrent fiscal race tests that require real MySQL).
+Frontend tests: 211 Vitest passing (203 + 8 new during refactor).
 
-- None reported by the handoff script.
+## Required physical evidence (must be collected on real hardware)
 
-## Next commands
+The system is **PRODUCTION_CANDIDATE** and must not be described as `PRODUCTION_READY` until the following evidence is collected against the real hospital server:
+
+- `qa/LAN_CLIENT_VALIDATION_PROOF.md` completed by an operator from a real second PC in the LAN.
+- `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` completed by printing media carta / carta / A5 / 80mm / 58mm from the real cashier computer and printer.
+- `qa/FINAL_RESTORE_PROOF.md` completed by running `scripts/validate_restore_mysql.sh` against a disposable database on the final server.
+- `qa/FINAL_CONCURRENCY_PROOF.md` completed by running `scripts/validate_mysql_concurrency.sh` against a disposable or explicitly approved final target.
+- `install_backup_tasks_windows.ps1` executed and the worker task `SistemaCajaHospitalaria-BackupWorker` is `Running`.
+- `offline-release/MANIFEST.txt` regenerated from the current commit and `scripts/assert_offline_release_clean.ps1 -RequireCurrentCommit` passes.
+- `scripts/production_readiness_preflight.ps1` returns 0 without `-AllowMissingPhysicalProof`.
+
+## Scripts ready to run
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://192.168.1.7:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath C:\xampp\php\php.exe
-Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
-powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://192.168.1.7:8000 -PhpPath C:\xampp\php\php.exe
+# 1. Pre-rellenar las plantillas (idempotente):
+powershell.exe -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1
+
+# 2. Validar LAN cliente:
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://SERVER_LAN_IP:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+
+# 3. Instalar tareas de backup:
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -PhpPath C:\xampp\php\php.exe
+Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
+
+# 4. Restore + concurrencia sobre base descartable:
+HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test bash scripts/validate_restore_mysql.sh
+HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONCURRENCY_BASE_URL=http://SERVER_LAN_IP:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=local HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://SERVER_LAN_IP:8000 bash scripts/validate_mysql_concurrency.sh
+
+# 5. Regenerar paquete offline:
+powershell.exe -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1 -Force
+powershell.exe -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit
+
+# 6. Preflight final (debe retornar 0 sin -AllowMissingPhysicalProof):
+powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://SERVER_LAN_IP:8000
+
+# 7. Handoff guiado:
+powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://SERVER_LAN_IP:8000 -PhpPath C:\xampp\php\php.exe -InitializeProofFiles
 ```
 
-## Backup task status output
+## Current blockers
 
-```text
-Preparing Windows scheduled tasks for Hospital Billing OS backups.
-ProjectRoot: C:\Projects\S_Hospital
-PhpPath: C:\xampp\php\php.exe
-Worker wrapper: C:\Projects\S_Hospital\scripts\run_backup_worker.cmd
-Daily backup wrapper: C:\Projects\S_Hospital\scripts\run_scheduled_backup.cmd
-Worker task: HospitalBillingOS-BackupWorker
-Daily backup task: HospitalBillingOS-DailyBackup at 02:00
-HospitalBillingOS-BackupWorker: state=Ready, lastRun=05/19/2026 15:29:47, lastResult=1, nextRun=
-HospitalBillingOS-DailyBackup: state=Ready, lastRun=11/30/1999 00:00:00, lastResult=267011, nextRun=05/20/2026 02:00:00
-Confirm the worker is running with: Get-ScheduledTask -TaskName 'HospitalBillingOS-BackupWorker'
-Confirm UI backups finish by creating a backup and checking it changes from pending to success.
-```
+- Physical evidence (LAN, printer, restore, concurrency) cannot be generated in the audit environment.
+- `offline-release` must be regenerated after the final commit is tagged.
 
-## Preflight output
+## Decision
 
-```text
-Production readiness preflight for http://192.168.1.7:8000
-Project root: C:\Projects\S_Hospital
-[ OK ] APP_ENV=production
-[ OK ] APP_DEBUG=false
-[ OK ] APP_URL matches BaseUrl
-[ OK ] BaseUrl is not localhost
-[ OK ] DB_CONNECTION=mysql
-[ OK ] SANCTUM_STATEFUL_DOMAINS includes LAN host
-[ OK ] CORS origins are explicitly empty for same-origin production
-[ OK ] CORS origin patterns are empty
-[ OK ] QUEUE_CONNECTION=database
-[ OK ] Windows scheduled task 'HospitalBillingOS-BackupWorker' state=Ready, lastResult=1, nextRun=
-[ OK ] Windows scheduled task 'HospitalBillingOS-DailyBackup' state=Ready, lastResult=267011, nextRun=05/20/2026 02:00:00
-[ OK ] frontend/dist/index.html exists
-[ OK ] frontend/dist/assets contains 7 files
-[ OK ] php is available in PATH
-[ OK ] mysql client is available: C:\xampp\mysql\bin\mysql.exe
-[ OK ] database dump tool is available: C:\xampp\mysql\bin\mysqldump.exe
-[ OK ] backup directory is writable
-[ OK ] /up responded 200
-[ OK ] /login responded 200
-[ OK ] /verify-email responded 200
-[ OK ] second-client LAN evidence is present and completed.
-[ OK ] physical thermal printer evidence is present and completed.
-[ OK ] final restore evidence is present and completed.
-[ OK ] final concurrency evidence is present and completed.
-
-PRODUCTION_PREFLIGHT_PASSED
-```
+Until the evidence above is collected, the system remains `PRODUCTION_CANDIDATE`.
+Once all six physical proofs are signed and the preflight returns 0, this report can be updated to `PRODUCTION_READY`.

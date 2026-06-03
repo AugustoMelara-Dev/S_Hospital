@@ -1,4 +1,4 @@
-# 06 Barcode QR Workflow
+﻿# 06 Barcode QR Workflow
 
 ## Objetivo
 

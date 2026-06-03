@@ -4,7 +4,7 @@
 
 Current state: `PRODUCTION_CANDIDATE`.
 
-Do not declare `PRODUCTION_READY` yet. The server-side production checks passed, but real second-client LAN proof and physical thermal-printer proof are still missing.
+Do not declare `PRODUCTION_READY` yet. The server-side production checks passed, but real second-client LAN proof and physical institutional receipt proof for media carta/carta/A5/80mm/58mm are still missing.
 
 ## Server production environment
 
@@ -54,9 +54,9 @@ Result: `PRODUCTION_READY: NO (2 blocking issue(s))`.
 Blocking failures:
 
 - Missing `qa/LAN_CLIENT_VALIDATION_PROOF.md` with real second-client LAN evidence.
-- Missing `qa/THERMAL_PRINTER_PROOF.md` with real physical thermal printer evidence.
+- Missing `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` with real physical institutional printer evidence.
 
-These cannot be closed from the server machine alone. They require a real second client computer and the real thermal printer or exact printer configuration used by the hospital.
+These cannot be closed from the server machine alone. They require a real second client computer and the real institutional printer or exact printer configuration used by the hospital.
 
 ## Quality gates
 
@@ -74,13 +74,13 @@ These cannot be closed from the server machine alone. They require a real second
 ## Remaining mandatory actions
 
 1. From a second computer on the final LAN, fill `qa/LAN_CLIENT_VALIDATION_PROOF.md` using `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
-2. On the cashier/printer computer, fill `qa/THERMAL_PRINTER_PROOF.md` using `qa/THERMAL_PRINTER_PROOF.example.md`.
+2. On the cashier/printer computer, fill `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` using `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md`.
 3. Re-run `scripts/production_readiness_preflight.ps1` without `-AllowMissingPhysicalProof`.
 4. In an elevated PowerShell session, re-register backup scheduled tasks:
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath C:\xampp\php\php.exe
-Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
+Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath C:\xampp\php\php.exe
 ```
 
@@ -125,10 +125,10 @@ Result: `PRODUCTION_READY: NO (2 blocking issue(s))`.
 Remaining blockers:
 
 - Missing `qa/LAN_CLIENT_VALIDATION_PROOF.md` with real second-client LAN evidence.
-- Missing `qa/THERMAL_PRINTER_PROOF.md` with real physical thermal printer evidence.
+- Missing `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` with real physical institutional printer evidence.
 
 During the handoff dry run, Windows scheduled tasks named
-`HospitalBillingOS-BackupWorker` and `HospitalBillingOS-DailyBackup` were not
+`SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup` were not
 installed in this session. Install or update them from elevated PowerShell
 before handoff, then create a UI backup and confirm it changes from `pending` to
 `success`.

@@ -19,7 +19,7 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_window
 
 ```powershell
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath C:\xampp\php\php.exe
-Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
+Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 ```
 
 3. Crear backup manual desde UI.
@@ -30,12 +30,12 @@ Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
 1. Editar servicios solo desde **Catalogo**.
 2. No cambiar precios para corregir facturas historicas; las facturas usan snapshots.
 3. Configurar CAI/rango fiscal antes de operar con datos reales.
-4. No ejecutar seeders demo en servidor real.
+4. No ejecutar seeders de validacion local en servidor real.
 
 ## Validacion final
 
 1. Completar pruebas LAN desde segunda PC.
-2. Completar prueba fisica de impresora 80mm/58mm.
+2. Completar prueba fisica de impresora media carta/carta/A5/80mm/58mm.
 3. Ejecutar restore en base descartable.
 4. Ejecutar concurrencia en entorno descartable.
 5. Correr preflight sin bypass:

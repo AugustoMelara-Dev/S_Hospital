@@ -1,5 +1,6 @@
 import { Cell, Legend, Pie, PieChart, Tooltip } from 'recharts';
 import { type MoneyByMethod } from '../../lib/api';
+import { finiteNumber, formatLempiras } from '../../lib/money';
 import { useElementWidth } from './useElementWidth';
 
 type PaymentMethodPieChartProps = {
@@ -9,11 +10,13 @@ type PaymentMethodPieChartProps = {
 type TooltipValue = string | number | readonly (string | number)[] | undefined;
 
 function numericTooltipValue(value: TooltipValue): number {
-  if (Array.isArray(value)) {
-    return Number(value[0] ?? 0);
+  if (typeof value === 'string' || typeof value === 'number') {
+    return finiteNumber(value);
   }
 
-  return Number(value ?? 0);
+  const scalar = Array.isArray(value) ? value[0] : 0;
+
+  return finiteNumber(scalar ?? 0);
 }
 
 const COLORS = {
@@ -35,7 +38,7 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
   const chartData = Object.entries(data)
     .map(([method, amountStr]) => ({
       name: LABELS[method as keyof typeof LABELS] || method,
-      value: parseFloat(amountStr) || 0,
+      value: finiteNumber(amountStr),
       key: method,
     }))
     .filter((d) => d.value > 0);
@@ -45,7 +48,7 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
   if (total === 0) {
     return (
       <div className="flex h-[240px] items-center justify-center rounded-md border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
-        Sin ingresos cobrados hoy
+        Sin cobros registrados hoy
       </div>
     );
   }
@@ -83,7 +86,7 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
               const numericValue = numericTooltipValue(value);
 
               return [
-                `L. ${numericValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${((numericValue / total) * 100).toFixed(1)}%)`,
+                `${formatLempiras(numericValue)} (${((numericValue / total) * 100).toFixed(1)}%)`,
                 'Total',
               ];
             }}

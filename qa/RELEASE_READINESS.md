@@ -1,19 +1,19 @@
-# Release readiness - Fase 12
+# Preparacion de entrega RC - S_Hospital
 
 Fecha: 2026-05-18
-Alcance: cierre local de producto vendible Fase 12, con evidencia de QA real y limites de produccion final.
+Alcance: preparacion local del producto institucional, con evidencia de QA real y limites de produccion final.
 
 ## Estado
 
-Estado general: PRODUCTION_CANDIDATE; NO PRODUCTION_READY hasta cerrar validacion completa desde cliente LAN fisico, impresora termica fisica y configuracion final de produccion con admin real.
+Estado general: PRODUCTION_CANDIDATE; NO PRODUCTION_READY hasta cerrar validacion completa desde cliente LAN fisico, impresora institucional fisica, restore/concurrencia final, worker continuo de backups y configuracion final de produccion con admin real.
 
-La demo vendible puede cubrir login, caja, factura, regla de eritropoyetina, scanner/codigos, cobro, recibo termico, historial, reimpresion, anulacion sin pagos, reportes avanzados y backup local. Fase 12 cierra el producto local como demo vendible y conserva la evidencia de Fase 11 para restore/concurrencia/rutas LAN. Los pendientes de hardware/entorno quedan documentados como limitaciones y no se presentan como validados.
+La preparacion local cubre login, caja, factura, regla de eritropoyetina, scanner/codigos, cobro, recibo institucional, historial, reimpresion, anulacion sin pagos, reportes avanzados y backup local. El cierre conserva evidencia de restore, concurrencia y rutas LAN. Los pendientes de hardware/entorno quedan documentados como limitaciones y no se presentan como validados.
 
 ## Definiciones de estado
 
-- DEMO_READY: flujo vendible validado en ambiente local/controlado.
+- LOCAL_VALIDATION_READY: flujo operativo validado en ambiente local/controlado.
 - PRODUCTION_CANDIDATE: codigo, gates seguros, E2E local y runbooks/scripts de validacion real estan listos, pero faltan pruebas en servidor/hardware final.
-- PRODUCTION_READY: restore real, concurrencia real MySQL/MariaDB, LAN desde cliente fisico e impresora termica real fueron ejecutados y documentados.
+- PRODUCTION_READY: restore real, concurrencia real MySQL/MariaDB, LAN desde cliente fisico, impresora institucional real media carta/carta/A5/80mm/58mm, worker continuo de backups, paquete offline limpio del commit final y configuracion production final fueron ejecutados y documentados.
 
 ## Evidencia QA ejecutada
 
@@ -31,7 +31,7 @@ Resultado Fase 12:
 Cobertura Fase 12 cerrada:
 
 - AppShell profesional con sidebar, topbar, caja, usuario, hora local y estado LAN.
-- POS con categorias, busqueda, scanner/codigo, carrito lateral, confirmacion, caja obligatoria y recibo 80mm/58mm.
+- POS con categorias, busqueda, scanner/codigo, carrito lateral, confirmacion, caja obligatoria y recibo institucional media carta/carta/A5/80mm/58mm.
 - Catalogo con tabla compartida, filtros, estado activo/inactivo y `scan_code`, `barcode`, `qr_code`.
 - Reportes gerenciales con KPIs, filtros, servicios mas vendidos, auditoria operativa, backups y exportacion autorizada.
 - QA separado entre E2E mockeado, smoke real no destructivo y smoke mutacional opt-in.
@@ -39,6 +39,7 @@ Cobertura Fase 12 cerrada:
 Resultado local:
 
 - `composer validate`: OK.
+- `composer audit`: OK, sin advisories conocidos despues de actualizar parches Symfony/Guzzle compatibles.
 - `php artisan migrate:fresh --seed`: OK solo en entorno local descartable previo; no es comando seguro de produccion.
 - `php artisan test --colors=never`: OK, 103 tests / 537 assertions.
 - `vendor/bin/pint --test`: OK.
@@ -47,7 +48,7 @@ Resultado local:
 - `npm.cmd run lint`: OK.
 - `npm.cmd run test`: OK, 18 tests.
 - `npm.cmd run build`: OK.
-- `npm.cmd run e2e`: OK, 1 Playwright test / flujo cajero-admin con login, caja, factura, eritropoyetina normal y gratis, pago, recibo 80mm/58mm, historial, reimpresion, reportes y backup pending. Usa API mockeada local/testing; no toca produccion.
+- `npm.cmd run e2e`: OK, 1 Playwright test / flujo cajero-admin con login, caja, factura, eritropoyetina normal y gratis, pago, recibo institucional, historial, reimpresion, reportes y backup pending. Usa API mockeada local/testing; no toca produccion.
 - `bash scripts/quality_gate.sh`: el `bash` por defecto de Windows apunta a WSL y fallo porque no hay distro instalada.
 - `C:\Program Files\Git\usr\bin\bash.exe scripts/quality_gate.sh`: OK como gate seguro/no destructivo. `phpstan` no esta instalado y no forma parte del gate requerido actual.
 - `C:\Program Files\Git\usr\bin\bash.exe scripts/e2e_gate.sh`: OK; usa wrapper PowerShell controlado para arrancar Vite, ejecutar Playwright y detener el servidor.
@@ -61,7 +62,7 @@ Busqueda local de secretos/dependencias cloud:
 
 - No se encontraron secretos reales commiteados en frontend ni codigo de aplicacion.
 - Las referencias a AWS/S3/Slack detectadas pertenecen a configuracion base opcional de Laravel/vendor lock, no a una dependencia operativa obligatoria.
-- Demo credentials existen solo en `local`/`testing` y estan cubiertas por test ampliado. No entregar servidor LAN real con `APP_ENV=local`.
+- Credenciales temporales de validacion existen solo en `local`/`testing` y estan cubiertas por test ampliado. No entregar servidor LAN real con `APP_ENV=local`.
 
 Comandos a ejecutar para cierre local:
 
@@ -93,27 +94,39 @@ $env:HOSPITAL_ALLOW_DESTRUCTIVE_RESET = "1"
 & "C:\Program Files\Git\usr\bin\bash.exe" scripts/quality_gate_destructive.sh
 ```
 
-El script destructivo aborta salvo `APP_ENV=local/testing`, variable explicita y base con nombre `test/demo/local` o SQLite en testing.
+El script destructivo aborta salvo `APP_ENV=local/testing`, variable explicita y base con nombre descartable (`test`, `local` o equivalente controlado) o SQLite en testing.
 
 ## Validacion produccion sin reset
 
 En servidor real del hospital:
 
+- Regenerar `offline-release` desde el commit que se entregara si hubo commits posteriores al ultimo paquete validado.
+- Ejecutar `scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit` y guardar la salida en evidencia de soporte.
 - No ejecutar `php artisan migrate:fresh --seed`.
-- No ejecutar seeders demo ni entregar usuarios demo activos.
+- No ejecutar seeders de validacion local ni entregar usuarios temporales activos.
 - Mantener `.env` production fuera de Git.
 - Usar `APP_ENV=production`.
 - Usar `APP_DEBUG=false`.
 - Configurar `APP_URL`, CORS y `SANCTUM_STATEFUL_DOMAINS` con la IP fija o dominio LAN real.
-- Crear admin real con `php artisan auth:create-initial-admin`.
+- Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no pasar la contrasena como argumento CLI.
 - Ejecutar `php artisan config:cache --no-ansi`.
 - Levantar worker de backups como servicio/tarea continua y validar backup manual `pending` -> `success`.
 - Probar restore real en base descartable, no en la base activa.
 - Probar desde segunda PC en LAN.
-- Probar impresora termica fisica 80mm/58mm.
+- Probar impresora institucional fisica con media carta/carta/A5/80mm/58mm.
 - Ejecutar pruebas solo contra entorno de testing aislado.
 - Validar manualmente `/up`, `/login`, `/verify-email`, caja, factura, cobro, impresion y backup sin borrar datos.
 - Si se sirve same-origin desde Laravel, ejecutar `npm.cmd run build` antes de publicar y confirmar que `/login` y `/verify-email` devuelven el build React.
+
+El guard de release debe fallar si el paquete contiene `.env`, logs,
+respaldos SQL, `node_modules`, evidencia QA local o un manifiesto que indique
+que las imagenes deben regenerarse.
+
+## Evidencia de artefacto offline
+
+El paquete `offline-release` fue regenerado localmente con `scripts\make_offline_release.ps1 -Force` y el guard `scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit` paso con `OFFLINE_RELEASE_CLEAN: YES`.
+
+Esta evidencia solo es vigente para el HEAD usado al generar el paquete. Si se crea otro commit, el paquete debe regenerarse y el guard debe volver a pasar antes de entrega.
 
 ## Analisis estatico
 
@@ -133,8 +146,8 @@ En servidor real del hospital:
 
 - Las rutas operativas estan bajo autenticacion, usuario activo y cambio de password completado.
 - Permisos sensibles se validan en backend.
-- Demo users se crean solo en `local` o `testing`.
-- Produccion offline LAN debe usar `APP_ENV=production`, `APP_DEBUG=false`, `config:cache` y admin real creado sin seeders demo.
+- Usuarios temporales de validacion se crean solo en `local` o `testing`.
+- Produccion offline LAN debe usar `APP_ENV=production`, `APP_DEBUG=false`, `config:cache` y admin real creado sin seeders de validacion local.
 - No hay dependencia cloud obligatoria para operacion.
 - Backups son locales.
 
@@ -151,9 +164,9 @@ En servidor real del hospital:
 
 - Restore real: VALIDATED en entorno local con MariaDB XAMPP y base descartable. Repetir en servidor final antes de entregar produccion si el hardware/rutas cambian.
 - Concurrencia real MySQL/MariaDB: VALIDATED en entorno local mutante con snapshot/backup previo. Repetir en servidor final o base descartable final antes de entregar produccion.
-- Impresora fisica termica: `PENDING_HARDWARE_VALIDATION` hasta probar 80mm/58mm en la PC de caja.
+- Impresora fisica institucional: `PENDING_HARDWARE_VALIDATION` hasta probar media carta/carta/A5/80mm/58mm en la PC de caja.
 - LAN fisica: `PENDING_LAN_CLIENT_VALIDATION` hasta validar checklist completo desde otra computadora cliente por IP fija/nombre servidor.
-- Produccion final: `PENDING_ENVIRONMENT_VALIDATION` hasta configurar `APP_ENV=production`, `APP_DEBUG=false`, admin real, sin seeders demo y `config:cache` en servidor final.
+- Produccion final: `PENDING_ENVIRONMENT_VALIDATION` hasta configurar `APP_ENV=production`, `APP_DEBUG=false`, admin real, worker continuo de backups, sin seeders de validacion local y `config:cache` en servidor final. El artefacto offline debe estar regenerado desde el commit final y con guard limpio al momento de entrega.
 
 ## Evidencia Fase 10
 

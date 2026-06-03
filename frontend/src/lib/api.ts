@@ -11,8 +11,10 @@ import { users, type UserPayload } from './api/users';
 import type {
   AuthUser,
   FiscalSettings,
+  PublicBranding,
   FiscalSequence,
   Category,
+  Area,
   Service,
   CategoryPayload,
   ServicePayload,
@@ -25,17 +27,21 @@ import type {
   ReceiptData,
   MoneyByMethod,
   DailyReport,
+  MonthlyReport,
   IncomeReport,
   CategoryReport,
+  AreaIncomeReport,
   ServiceSalesReport,
   OperationsReport,
   CashSessionReport,
   BackupLog,
   SystemStatus,
+  OperationalHealth,
   PaginatedMeta,
   ServiceFilters,
   InvoiceFilters,
   ReportFilters,
+  PdfReportFilters,
   DashboardReport,
 } from './api/types';
 
@@ -56,8 +62,10 @@ export {
 export type {
   AuthUser,
   FiscalSettings,
+  PublicBranding,
   FiscalSequence,
   Category,
+  Area,
   Service,
   CategoryPayload,
   ServicePayload,
@@ -70,17 +78,21 @@ export type {
   ReceiptData,
   MoneyByMethod,
   DailyReport,
+  MonthlyReport,
   IncomeReport,
   CategoryReport,
+  AreaIncomeReport,
   ServiceSalesReport,
   OperationsReport,
   CashSessionReport,
   BackupLog,
   SystemStatus,
+  OperationalHealth,
   PaginatedMeta,
   ServiceFilters,
   InvoiceFilters,
   ReportFilters,
+  PdfReportFilters,
   DashboardReport,
   UserPayload,
 };
@@ -112,6 +124,10 @@ export const apiClient = {
 
   async getCategories(active?: boolean): Promise<Category[]> {
     return catalog.getCategories(active);
+  },
+
+  async getAreas(active?: boolean): Promise<Area[]> {
+    return catalog.getAreas(active);
   },
 
   async saveCategory(payload: CategoryPayload, id?: number): Promise<Category> {
@@ -164,8 +180,22 @@ export const apiClient = {
     return billing.voidInvoice(invoiceId, reason);
   },
 
+  async voidPayment(
+    invoiceId: number,
+    paymentId: number,
+    reason: string,
+  ): Promise<{ payment: Payment; invoice: Invoice }> {
+    return billing.voidPayment(invoiceId, paymentId, { reason });
+  },
+
   async getCurrentCashSession(): Promise<CashSession | null> {
     return cash.getCurrentCashSession();
+  },
+
+  async getCashSessions(
+    filters: { page?: number; perPage?: number; status?: CashSession['status'] } = {},
+  ): Promise<{ data: CashSession[]; meta: PaginatedMeta }> {
+    return cash.getCashSessions(filters);
   },
 
   async openCashSession(payload: { opening_amount: string; notes?: string | null }): Promise<CashSession> {
@@ -184,12 +214,20 @@ export const apiClient = {
     return reports.getDailyReport(date);
   },
 
+  async getMonthlyReport(month?: string): Promise<MonthlyReport> {
+    return reports.getMonthlyReport(month);
+  },
+
   async getIncomeReport(filters: ReportFilters): Promise<IncomeReport> {
     return reports.getIncomeReport(filters);
   },
 
   async getCategoryReport(filters: ReportFilters): Promise<CategoryReport> {
     return reports.getCategoryReport(filters);
+  },
+
+  async getAreaIncomeReport(filters: ReportFilters): Promise<AreaIncomeReport> {
+    return reports.getAreaIncomeReport(filters);
   },
 
   async getServiceSalesReport(filters: ReportFilters): Promise<ServiceSalesReport> {
@@ -212,7 +250,7 @@ export const apiClient = {
     return reports.downloadExport(filters);
   },
 
-  async downloadReportPdf(filters: ReportFilters & { date?: string }): Promise<Blob> {
+  async downloadReportPdf(filters: PdfReportFilters): Promise<Blob> {
     return reports.downloadPdf(filters);
   },
 
@@ -236,8 +274,16 @@ export const apiClient = {
     return system.getStatus();
   },
 
+  async getSystemHealth(): Promise<OperationalHealth> {
+    return system.getHealth();
+  },
+
   async getFiscalSettings(): Promise<FiscalSettings | null> {
     return fiscal.getFiscalSettings();
+  },
+
+  async getPublicBranding(): Promise<PublicBranding | null> {
+    return fiscal.getPublicBranding();
   },
 
   async updateFiscalSettings(payload: FiscalSettings): Promise<FiscalSettings> {

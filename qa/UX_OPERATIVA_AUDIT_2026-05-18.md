@@ -2,7 +2,7 @@
 
 Decision final de este tramo: **UX-1 APROBADA**.
 
-Estado de release recomendado: **DEMO_READY / PRODUCTION_CANDIDATE**. No declarar `PRODUCTION_READY` hasta validar cliente LAN fisico, impresora termica fisica 80mm/58mm y configuracion final del servidor.
+Estado de release recomendado: **PRODUCTION_CANDIDATE**. No declarar `PRODUCTION_READY` hasta validar cliente LAN fisico, impresora institucional fisica y configuracion final del servidor.
 
 ## Alcance de esta pasada
 
@@ -30,7 +30,7 @@ Archivos de validacion tocados:
 
 URL usada: `http://127.0.0.1:8000/billing/new`.
 
-Usuario/rol inicial: `cajero.demo / cajero`.
+Usuario/rol inicial: `cajero.validacion / cajero`.
 
 Estado de caja: `Caja #2 abierta`.
 
@@ -48,7 +48,7 @@ Resultado:
 - Al emitir, se genero `000-001-01-00000081`.
 - El modal de pago enfoco `payment-amount`.
 - Cerrar/abandonar pago podia dejar factura emitida sin una pantalla persistente de siguiente paso suficientemente obvia.
-- El intento de cobro con `cajero.demo` termino con `No tiene permiso para esta accion`; por eso la medicion completa de recibo se repitio con `admin.demo`.
+- El intento de cobro con `cajero.validacion` termino con `No tiene permiso para esta accion`; por eso la medicion completa de recibo se repitio con `admin.validacion`.
 - Clics observados para avanzar en la medicion antes: 2 clics manuales criticos (`Confirmar emision`, `Confirmar cobro`) cuando Enter no completo la interaccion en esa corrida.
 - Scroll: no hubo scroll operativo de pagina relevante; `window.scrollY` se mantuvo en 0 o muy bajo por ajuste del navegador.
 - Consola: sin `console.error` ni `pageerror` en la corrida observada.
@@ -74,7 +74,7 @@ Veredicto UX-0 antes: **REQUIERE CAMBIOS** por ambiguedad `emitir` vs `cobrar`, 
 
 URL usada: `http://127.0.0.1:8000/billing/new`.
 
-Usuario/rol: `admin.demo / admin`.
+Usuario/rol: `admin.validacion / admin`.
 
 Estado de caja: `Caja #1 abierta`.
 
@@ -156,7 +156,7 @@ Capturas regeneradas:
 - UX-3: historial, catalogo, backups y fiscal a profundidad.
 - UX-4: reportes/admin/permisos a profundidad.
 - UX-5: cierre final de todos los gates como frente completo.
-- Validacion fisica: impresora termica 80mm/58mm y cliente LAN real.
+- Validacion fisica: impresora institucional media carta/carta/A5/80mm/58mm y cliente LAN real.
 
 ## Commit sugerido
 
@@ -170,7 +170,7 @@ Decision final de este tramo: **UX-4 APROBADA**.
 
 URL base usada: `http://127.0.0.1:8000`.
 
-Usuarios/roles usados: `admin.demo / admin`, `supervisor.demo / supervisor`, `cajero.demo / cajero`.
+Usuarios/roles usados: `admin.validacion / admin`, `supervisor.validacion / supervisor`, `cajero.validacion / cajero`.
 
 ## Medicion antes
 

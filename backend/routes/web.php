@@ -1,11 +1,12 @@
 <?php
 
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Route;
+use App\Http\Middleware\AddSecurityHeaders;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 $statelessWebMiddleware = [
@@ -19,7 +20,7 @@ $statelessWebMiddleware = [
 Route::get('/up', function () {
     return response()->json([
         'status' => 'ok',
-        'service' => config('app.name'),
+        'service' => 'Sistema de Caja Hospitalaria',
     ]);
 })->withoutMiddleware($statelessWebMiddleware);
 
@@ -34,8 +35,17 @@ $frontendResponse = function () {
         );
     }
 
-    return response()->file($indexPath, [
+    $nonce = (string) request()->attributes->get(
+        AddSecurityHeaders::NONCE_ATTRIBUTE,
+        bin2hex(random_bytes(16)),
+    );
+
+    $html = File::get($indexPath);
+    $html = str_replace('__S_HOSPITAL_CSP_NONCE__', $nonce, $html);
+
+    return response($html, 200, [
         'Cache-Control' => 'no-store',
+        'Content-Type' => 'text/html; charset=UTF-8',
         'X-Content-Type-Options' => 'nosniff',
     ]);
 };

@@ -3,12 +3,15 @@
 namespace Tests\Feature;
 
 use App\Actions\Backups\CreateBackupAction;
+use App\Actions\Backups\DatabaseDumpWriter;
+use App\Actions\Backups\PruneBackupsAction;
 use App\Models\BackupLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Tests\TestCase;
 
 class BackupWorkflowTest extends TestCase
@@ -63,6 +66,36 @@ class BackupWorkflowTest extends TestCase
             ->assertJsonPath('meta.per_page', 50);
     }
 
+    public function test_failed_backup_list_message_is_safe_for_operator_screen(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        BackupLog::query()->create([
+            'filename' => 'failed.sql',
+            'path' => 'backups/failed.sql',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_FAILED,
+            'type' => BackupLog::TYPE_MANUAL,
+            'created_by' => $admin->id,
+            'error_message' => 'SQLSTATE[HY000] DB_PASSWORD=secret-db-password failed at C:\Projects\S_Hospital\backend\.env',
+            'completed_at' => now(),
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/backups?status=failed')
+            ->assertOk()
+            ->assertJsonPath('data.0.status', BackupLog::STATUS_FAILED)
+            ->assertJsonPath('data.0.error_message', 'Error tecnico registrado. Revise el paquete de soporte.')
+            ->assertJsonMissingPath('data.0.path')
+            ->assertJsonMissingPath('data.0.disk');
+
+        $encoded = json_encode($response->json(), JSON_THROW_ON_ERROR);
+        $this->assertStringNotContainsString('secret-db-password', $encoded);
+        $this->assertStringNotContainsString('SQLSTATE', $encoded);
+        $this->assertStringNotContainsString('C:\Projects\S_Hospital', $encoded);
+    }
+
     public function test_admin_can_filter_backups_by_status_before_pagination(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -115,23 +148,20 @@ class BackupWorkflowTest extends TestCase
         }
     }
 
-    public function test_manual_backup_endpoint_creates_local_backup_immediately(): void
+    public function test_manual_backup_endpoint_queues_local_backup(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
 
         $response = $this->actingAs($admin)
             ->postJson('/api/backups')
-            ->assertCreated()
-            ->assertJsonPath('data.status', BackupLog::STATUS_SUCCESS)
+            ->assertAccepted()
+            ->assertJsonPath('data.status', BackupLog::STATUS_PENDING)
             ->assertJsonPath('data.type', BackupLog::TYPE_MANUAL);
 
         $backup = BackupLog::query()->findOrFail($response->json('data.id'));
 
-        $this->assertSame(BackupLog::STATUS_SUCCESS, $backup->status);
-        $this->assertNotNull($backup->completed_at);
-        $this->assertNotNull($backup->checksum_sha256);
-        $this->assertTrue(Storage::disk('local')->exists((string) $backup->path));
+        $this->assertContains($backup->status, [BackupLog::STATUS_PENDING, BackupLog::STATUS_SUCCESS]);
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $admin->id,
@@ -139,12 +169,11 @@ class BackupWorkflowTest extends TestCase
             'entity_type' => BackupLog::class,
             'entity_id' => $backup->id,
         ]);
-        $this->assertDatabaseHas('audit_logs', [
-            'user_id' => $admin->id,
-            'action' => 'backup.created',
-            'entity_type' => BackupLog::class,
-            'entity_id' => $backup->id,
-        ]);
+        if ($backup->status === BackupLog::STATUS_SUCCESS) {
+            $this->assertNotNull($backup->completed_at);
+            $this->assertNotNull($backup->checksum_sha256);
+            $this->assertTrue(Storage::disk('local')->exists((string) $backup->path));
+        }
     }
 
     public function test_backup_runner_creates_success_log_checksum_and_audit_entry(): void
@@ -169,12 +198,106 @@ class BackupWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_backup_prune_keeps_latest_successful_backups_and_never_prunes_failed_or_pending(): void
+    {
+        $oldest = $this->successfulBackupLog(filename: 'oldest.sql', path: 'backups/oldest.sql');
+        $middle = $this->successfulBackupLog(filename: 'middle.sql', path: 'backups/middle.sql');
+        $newest = $this->successfulBackupLog(filename: 'newest.sql', path: 'backups/newest.sql');
+        $failed = BackupLog::query()->create([
+            'filename' => 'failed.sql',
+            'path' => 'backups/failed.sql',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_FAILED,
+            'type' => BackupLog::TYPE_SCHEDULED,
+            'completed_at' => now()->subDays(4),
+        ]);
+        $pending = BackupLog::query()->create([
+            'filename' => 'pending.sql',
+            'path' => 'backups/pending.sql',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_PENDING,
+            'type' => BackupLog::TYPE_SCHEDULED,
+        ]);
+
+        $oldest->forceFill(['completed_at' => now()->subDays(3)])->save();
+        $middle->forceFill(['completed_at' => now()->subDays(2)])->save();
+        $newest->forceFill(['completed_at' => now()->subDay()])->save();
+
+        $pruned = app(PruneBackupsAction::class)->execute(2);
+
+        $this->assertSame(1, $pruned);
+        $this->assertDatabaseMissing('backup_logs', ['id' => $oldest->id]);
+        $this->assertDatabaseHas('backup_logs', ['id' => $middle->id]);
+        $this->assertDatabaseHas('backup_logs', ['id' => $newest->id]);
+        $this->assertDatabaseHas('backup_logs', ['id' => $failed->id]);
+        $this->assertDatabaseHas('backup_logs', ['id' => $pending->id]);
+        $this->assertFalse(Storage::disk('local')->exists('backups/oldest.sql'));
+        $this->assertTrue(Storage::disk('local')->exists('backups/middle.sql'));
+        $this->assertTrue(Storage::disk('local')->exists('backups/newest.sql'));
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'backup.pruned',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $oldest->id,
+        ]);
+    }
+
+    public function test_backup_prune_preserves_unsafe_successful_records_for_review(): void
+    {
+        $newest = $this->successfulBackupLog(filename: 'newest.sql', path: 'backups/newest.sql');
+        $safeOld = $this->successfulBackupLog(filename: 'safe-old.sql', path: 'backups/safe-old.sql');
+        $unsafeOld = BackupLog::query()->create([
+            'filename' => 'unsafe-old.sql',
+            'path' => 'backups/../unsafe-old.sql',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_SUCCESS,
+            'type' => BackupLog::TYPE_SCHEDULED,
+            'size_bytes' => 9,
+            'checksum_sha256' => hash('sha256', 'select 1;'),
+            'completed_at' => now()->subDays(3),
+        ]);
+
+        $newest->forceFill(['completed_at' => now()->subDay()])->save();
+        $safeOld->forceFill(['completed_at' => now()->subDays(2)])->save();
+
+        $pruned = app(PruneBackupsAction::class)->execute(1);
+
+        $this->assertSame(1, $pruned);
+        $this->assertDatabaseHas('backup_logs', ['id' => $newest->id]);
+        $this->assertDatabaseMissing('backup_logs', ['id' => $safeOld->id]);
+        $this->assertDatabaseHas('backup_logs', ['id' => $unsafeOld->id]);
+        $this->assertFalse(Storage::disk('local')->exists('backups/safe-old.sql'));
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'backup.pruned',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $safeOld->id,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'backup.prune_skipped',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $unsafeOld->id,
+        ]);
+    }
+
+    public function test_successful_backup_runs_configured_retention_after_creation(): void
+    {
+        Config::set('backups.retention.successful_count', 1);
+        $oldBackup = $this->successfulBackupLog(filename: 'old.sql', path: 'backups/old.sql');
+        $oldBackup->forceFill(['completed_at' => now()->subDay()])->save();
+
+        $created = app(CreateBackupAction::class)->execute(type: BackupLog::TYPE_SCHEDULED);
+
+        $this->assertSame(BackupLog::STATUS_SUCCESS, $created->status);
+        $this->assertDatabaseMissing('backup_logs', ['id' => $oldBackup->id]);
+        $this->assertFalse(Storage::disk('local')->exists('backups/old.sql'));
+        $this->assertDatabaseHas('backup_logs', ['id' => $created->id]);
+    }
+
     public function test_failed_backup_is_recorded_without_leaking_database_password(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
         $connection = Config::get('database.default');
-        
+
         $originalDb = Config::get("database.connections.{$connection}.database");
         $originalPassword = Config::get("database.connections.{$connection}.password");
 
@@ -193,6 +316,42 @@ class BackupWorkflowTest extends TestCase
             Config::set("database.connections.{$connection}.database", $originalDb);
             Config::set("database.connections.{$connection}.password", $originalPassword);
         }
+    }
+
+    public function test_failed_backup_persists_operator_safe_support_message(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        $writer = new class extends DatabaseDumpWriter
+        {
+            public function dumpTo(string $absolutePath): void
+            {
+                throw new RuntimeException('SQLSTATE[HY000] DB_PASSWORD=secret-db-password failed at C:\Projects\S_Hospital\backend\.env');
+            }
+        };
+
+        $backup = (new CreateBackupAction($writer, app(PruneBackupsAction::class)))
+            ->execute($admin, BackupLog::TYPE_MANUAL);
+
+        $this->assertSame(BackupLog::STATUS_FAILED, $backup->status);
+        $this->assertSame('Error tecnico registrado. Revise el paquete de soporte.', $backup->error_message);
+        $this->assertStringNotContainsString('secret-db-password', (string) $backup->error_message);
+        $this->assertStringNotContainsString('SQLSTATE', (string) $backup->error_message);
+        $this->assertStringNotContainsString('C:\Projects\S_Hospital', (string) $backup->error_message);
+        $this->assertFalse(Storage::disk('local')->exists((string) $backup->path));
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'backup.failed',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $backup->id,
+        ]);
+        $this->assertDatabaseMissing('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'backup.created',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $backup->id,
+        ]);
     }
 
     public function test_download_only_serves_registered_existing_backup_files_and_audits_downloads(): void
@@ -283,13 +442,13 @@ class BackupWorkflowTest extends TestCase
             ->assertNotFound();
     }
 
-    private function successfulBackupLog(?User $creator = null): BackupLog
+    private function successfulBackupLog(?User $creator = null, string $filename = 'test-backup.sql', string $path = 'backups/test-backup.sql'): BackupLog
     {
-        Storage::disk('local')->put('backups/test-backup.sql', 'select 1;');
+        Storage::disk('local')->put($path, 'select 1;');
 
         return BackupLog::query()->create([
-            'filename' => 'test-backup.sql',
-            'path' => 'backups/test-backup.sql',
+            'filename' => $filename,
+            'path' => $path,
             'disk' => 'local',
             'status' => BackupLog::STATUS_SUCCESS,
             'type' => BackupLog::TYPE_MANUAL,

@@ -1,6 +1,6 @@
 # PROMPT 05 - REVISIÓN DE PREPARACIÓN PARA ENTREGA
 
-Revisa si Hospital Billing OS Offline está listo para demo/entrega al cliente.
+Revisa si S_Hospital Offline esta listo para entrega RC institucional al hospital.
 
 ## Verificar
 - Facturación completa con nombre del paciente.
@@ -8,7 +8,7 @@ Revisa si Hospital Billing OS Offline está listo para demo/entrega al cliente.
 - Eritropoyetina con regla de receta de diálisis.
 - Caja, pagos, cierre, reportes básicos.
 - Usuarios y permisos.
-- Factura térmica 80mm/58mm.
+- Recibo institucional media carta/carta/A5/80mm/58mm, sin QR, barcode, codigos internos ni datos tecnicos.
 - Reimpresión y anulación auditada.
 - Offline LAN sin servicios cloud.
 - Backups y restauración documentados.
@@ -19,6 +19,6 @@ Revisa si Hospital Billing OS Offline está listo para demo/entrega al cliente.
 ## Salida
 - Estado: LISTO / LISTO CON OBSERVACIONES / NO LISTO.
 - Tabla de brechas.
-- Checklist de demo.
+- Checklist de presentacion operativa.
 - Riesgos al instalar en hospital.
-- Guion de demostración de 10 minutos.
+- Guion de recorrido operativo de 10 minutos.

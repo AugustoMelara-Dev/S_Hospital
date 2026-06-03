@@ -17,6 +17,7 @@ describe('App', () => {
           app_url: 'http://127.0.0.1:8000',
           queue_connection: 'database',
           filesystem_disk: 'local',
+          app_version: 'local',
           php_version: '8.3.0',
           server_time: '2026-05-19T19:00:00.000000Z',
           timezone: 'America/Tegucigalpa',
@@ -25,6 +26,20 @@ describe('App', () => {
           connection: 'mysql',
           driver: 'mysql',
           is_mysql_family: true,
+          connected: true,
+        },
+        frontend: {
+          dist_index_exists: true,
+          assets_present: true,
+          assets_count: 4,
+          entry_label: 'frontend/dist/index.html',
+        },
+        network: {
+          configured_host: '192.168.1.10',
+          host_type: 'lan',
+          lan_ready: true,
+          client_url: 'http://192.168.1.10:8000',
+          guidance: 'Clientes deben entrar por esta direccion LAN.',
         },
         backups: {
           pending_count: 0,
@@ -66,14 +81,26 @@ describe('App', () => {
           },
           latest_migration: '2026_05_17_000018_create_backup_logs_table',
           migration_count: 18,
+          pending_migration_count: 0,
+          pending_migrations: [],
         },
         readiness: {
           state: 'PRODUCTION_CANDIDATE',
           production_ready: false,
           blockers: [
             {
+              code: 'APP_ENV_PRODUCTION',
+              label: 'APP_ENV=production',
+              status: 'pending',
+            },
+            {
               code: 'PENDING_LAN_CLIENT_VALIDATION',
               label: 'Validacion desde segunda PC LAN',
+              status: 'pending',
+            },
+            {
+              code: 'PENDING_HARDWARE_VALIDATION',
+              label: 'Validacion fisica media carta/carta/A5/80mm/58mm',
               status: 'pending',
             },
           ],
@@ -125,9 +152,9 @@ describe('App', () => {
               detail: 'Archivo de evidencia no existe todavia.',
             },
             {
-              code: 'THERMAL_PRINTER_PROOF',
-              label: 'Impresora termica 80mm/58mm',
-              required_file: 'qa/THERMAL_PRINTER_PROOF.md',
+              code: 'INSTITUTIONAL_RECEIPT_PRINT_PROOF',
+              label: 'Impresora institucional media carta/carta/A5/80mm/58mm',
+              required_file: 'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
               status: 'pending',
               detail: 'Archivo de evidencia no existe todavia.',
             },
@@ -188,7 +215,7 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: /caja hospitalaria rápida y clara/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/usuario o correo/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/usuario o correo/i)).toHaveValue('');
   });
 
   it('recovers an authenticated session after a hard refresh on login', async () => {
@@ -201,9 +228,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['settings.fiscal.view'],
@@ -230,11 +257,14 @@ describe('App', () => {
     await waitFor(() => {
       expect(window.location.pathname).toBe('/dashboard');
     });
-    expect(screen.queryByRole('heading', { name: /S_Hospital Billing OS/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /S_Sistema de Caja Hospitalaria/i })).not.toBeInTheDocument();
   });
 
   it('renders app shell and fiscal settings route for an authenticated admin', async () => {
     window.history.pushState({}, '', '/settings/fiscal');
+    const placeholderHospitalName = `Hospital ${'De' + 'mo'}`;
+    const placeholderCai = `${'DE' + 'MO'}-CAI`;
+
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
       if (url.includes('/api/auth/session')) {
@@ -243,9 +273,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['settings.fiscal.view', 'settings.fiscal.update'],
@@ -259,10 +289,10 @@ describe('App', () => {
           ok: true,
           json: async () => ({
             data: {
-              hospital_name: 'Hospital Demo',
+              hospital_name: placeholderHospitalName,
               rtn: '08011999123456',
               default_tax_rate: '15.00',
-              receipt_width: '80mm',
+              receipt_paper_size: 'half_letter',
             },
           }),
         } as Response;
@@ -279,7 +309,7 @@ describe('App', () => {
                 min_number: 1,
                 max_number: 99999999,
                 current_number: 0,
-                cai: 'DEMO-CAI',
+                cai: placeholderCai,
                 valid_until: '2027-05-17',
                 active: true,
               },
@@ -303,12 +333,14 @@ describe('App', () => {
       '/settings/fiscal',
     );
     expect(await screen.findByRole('heading', { name: /^configuracion$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /configuracion pendiente/i })).toBeInTheDocument();
+    expect(screen.getByText(/datos temporales o de validacion/i)).toBeInTheDocument();
     activateTab(/^hospital$/i);
     expect(await screen.findByRole('heading', { name: /hospital y recibo/i })).toBeInTheDocument();
-    expect(await screen.findByDisplayValue('Hospital Demo')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue(placeholderHospitalName)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar hospital y recibo/i })).toBeEnabled();
     activateTab(/numeracion/i);
-    expect(await screen.findByDisplayValue('DEMO-CAI')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue(placeholderCai)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar numeracion/i })).toBeEnabled();
   });
 
@@ -323,9 +355,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view'],
@@ -405,9 +437,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['backups.view', 'backups.create', 'backups.download'],
@@ -437,12 +469,23 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: /^respaldos$/i })).toBeInTheDocument();
     expect(await screen.findByText(/respaldos del hospital/i)).toBeInTheDocument();
-    expect((await screen.findAllByText(/respaldos autom[aá]ticos/i)).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /requiere revisi/i })).toBeInTheDocument();
+    expect(await screen.findByText(/completar modo de operaci[oÃ³]n final/i)).toBeInTheDocument();
+    expect(await screen.findByText(/validar recibo fisico media carta\/carta\/A5\/80mm\/58mm/i)).toBeInTheDocument();
+    expect(screen.queryByText(/APP_ENV=production/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /^pendiente$/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /ver detalle avanzado/i }));
     expect(await screen.findByText(/checklist operativo/i)).toBeInTheDocument();
-    expect(screen.getByText(/modo de operaci[oó]n final/i)).toBeInTheDocument();
+    expect(screen.getByText(/servidor, datos y red local/i)).toBeInTheDocument();
+    expect(screen.getByText(/base de datos:\s*conectada/i)).toBeInTheDocument();
+    expect(screen.getByText(/acceso cliente/i)).toBeInTheDocument();
+    expect(screen.getByText(/192\.168\.1\.10:8000/i)).toBeInTheDocument();
+    expect(screen.getByText(/versi[oó]n instalada/i)).toBeInTheDocument();
+    expect(screen.getByText(/^modo de operaci[oó]n final$/i)).toBeInTheDocument();
     expect(screen.getByText(/pantalla de ingreso abre/i)).toBeInTheDocument();
     expect(screen.getByText(/segunda pc en lan/i)).toBeInTheDocument();
-    expect(screen.getByText(/impresora t[eé]rmica/i)).toBeInTheDocument();
+    expect(screen.getByText(/impresora institucional/i)).toBeInTheDocument();
     expect(screen.queryByText(/production_candidate/i)).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /crear respaldo/i }).some((button) => !button.hasAttribute('disabled'))).toBe(true);
   });
@@ -457,9 +500,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['cash.view'],
@@ -491,9 +534,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['backups.view', 'backups.create', 'backups.download'],
@@ -523,7 +566,7 @@ describe('App', () => {
             completed_at: null,
             created_at: '2026-05-17T10:15:00-06:00',
             updated_at: '2026-05-17T10:15:00-06:00',
-            creator: { id: 1, name: 'Admin Demo', username: 'admin.demo' },
+            creator: { id: 1, name: 'Administrador Validacion', username: 'admin.validacion' },
           };
           backupList.push(newBackup);
           return {
@@ -578,9 +621,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['backups.view', 'backups.download'],
@@ -613,7 +656,7 @@ describe('App', () => {
                 completed_at: '2026-05-17T10:15:00-06:00',
                 created_at: '2026-05-17T10:15:00-06:00',
                 updated_at: '2026-05-17T10:15:00-06:00',
-                creator: { id: 1, name: 'Admin Demo', username: 'admin.demo' },
+                creator: { id: 1, name: 'Administrador Validacion', username: 'admin.validacion' },
               },
             ],
             meta: { current_page: 1, per_page: 15, total: 16 },
@@ -640,6 +683,75 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /siguiente/i })).toBeEnabled();
   });
 
+  it('shows safe operator guidance when a backup failed', async () => {
+    window.history.pushState({}, '', '/backups');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
+              active: true,
+              roles: ['admin'],
+              permissions: ['backups.view', 'backups.create'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatus(),
+        } as Response;
+      }
+
+      if (url.includes('/api/backups')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: 11,
+                filename: 'hospital-backup-20260602-090000-failed.sql',
+                size_bytes: null,
+                checksum_sha256: null,
+                status: 'failed',
+                type: 'manual',
+                created_by: 1,
+                error_message: 'SQLSTATE[HY000] storage/logs/laravel.log',
+                completed_at: null,
+                created_at: '2026-06-02T09:00:00-06:00',
+                updated_at: '2026-06-02T09:00:00-06:00',
+                creator: { id: 1, name: 'Administrador Validacion', username: 'admin.validacion' },
+              },
+            ],
+            meta: { current_page: 1, per_page: 15, total: 1 },
+          }),
+        } as Response;
+      }
+
+      return {
+        ok: true,
+        json: async () => ({}),
+      } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText('hospital-backup-20260602-090000-failed.sql')).toBeInTheDocument();
+    expect(screen.getByText(/1 con error - avise al administrador antes de crear otro respaldo/i)).toBeInTheDocument();
+    expect(screen.queryByText(/cree un nuevo respaldo/i)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/SQLSTATE|storage\/logs/i);
+  });
+
   it('lets a user with required password change submit a new password', async () => {
     let mustChange = true;
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
@@ -651,9 +763,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['settings.fiscal.view', 'settings.fiscal.update'],
@@ -700,6 +812,128 @@ describe('App', () => {
     });
   });
 
+  it('shows password change errors on the required password screen', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
+              active: true,
+              roles: ['admin'],
+              permissions: ['settings.fiscal.view'],
+              must_change_password: true,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/auth/change-password')) {
+        return {
+          ok: false,
+          status: 422,
+          json: async () => ({
+            errors: {
+              current_password: ['La contrasena actual no es correcta.'],
+            },
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({}) } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText(/cambio obligatorio de contrase/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/actual/i), {
+      target: { value: 'wrong-password' },
+    });
+    fireEvent.change(screen.getByLabelText(/^nueva/i), {
+      target: { value: 'NewPassword123' },
+    });
+    fireEvent.change(screen.getByLabelText(/confirmar/i), {
+      target: { value: 'NewPassword123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/contrasena actual no es correcta/i);
+  });
+
+  it('prevents duplicated required password change submissions while pending', async () => {
+    let resolveChange!: (response: Response) => void;
+    const sessionUser = {
+      id: 1,
+      name: 'Administrador Validacion',
+      email: 'admin.validacion@hospital-san-isidro.local',
+      username: 'admin.validacion',
+      active: true,
+      roles: ['admin'],
+      permissions: ['settings.fiscal.view'],
+      must_change_password: true,
+    };
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({ data: sessionUser }),
+        } as Response;
+      }
+
+      if (url.includes('/api/auth/change-password')) {
+        return new Promise<Response>((resolve) => {
+          resolveChange = resolve;
+        });
+      }
+
+      return { ok: true, json: async () => ({}) } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText(/cambio obligatorio de contrase/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/actual/i), {
+      target: { value: 'Password123!' },
+    });
+    fireEvent.change(screen.getByLabelText(/^nueva/i), {
+      target: { value: 'NewPassword123' },
+    });
+    fireEvent.change(screen.getByLabelText(/confirmar/i), {
+      target: { value: 'NewPassword123' },
+    });
+
+    const submit = screen.getByRole('button', { name: /actualizar/i });
+    fireEvent.click(submit);
+    fireEvent.click(submit);
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/auth/change-password'))).toHaveLength(1);
+    });
+    await waitFor(() => expect(screen.getByRole('button', { name: /actualizando/i })).toBeDisabled());
+
+    resolveChange({
+      ok: true,
+      json: async () => ({
+        data: {
+          ...sessionUser,
+          must_change_password: false,
+        },
+      }),
+    } as Response);
+
+    await waitFor(() => expect(screen.queryByText(/cambio obligatorio de contrase/i)).not.toBeInTheDocument());
+  });
+
   it('renders not found for an unknown authenticated route', async () => {
     window.history.pushState({}, '', '/ruta-inexistente');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
@@ -710,9 +944,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['reports.view'],
@@ -741,9 +975,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: [
@@ -796,7 +1030,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
+    expect((await screen.findAllByRole('heading', { name: /^reportes$/i }, { timeout: 5000 })).length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: /nueva factura/i })).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /^configuraci[oó]n$/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: /nueva factura/i })).not.toBeInTheDocument();

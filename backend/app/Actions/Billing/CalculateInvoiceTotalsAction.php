@@ -9,7 +9,13 @@ class CalculateInvoiceTotalsAction
 {
     /**
      * @param  list<array{service: Service, quantity: string, dialysis_prescription: bool, notes: ?string}>  $items
-     * @return array{subtotal: string, tax_amount: string, discount_amount: string, total: string, items: list<array<string, mixed>>}
+     * @return array{
+     *     subtotal: string, subtotal_cents: int,
+     *     tax_amount: string, tax_amount_cents: int,
+     *     discount_amount: string, discount_amount_cents: int,
+     *     total: string, total_cents: int,
+     *     items: list<array<string, mixed>>
+     * }
      */
     public function execute(array $items, string $taxRate): array
     {
@@ -37,15 +43,22 @@ class CalculateInvoiceTotalsAction
                 'service_name' => $service->name,
                 'category_id' => $service->category_id,
                 'category_name' => $service->category?->name ?? 'Sin categoria',
+                'area_id' => $service->area_id,
+                'area_name' => $service->area?->name ?? $service->category?->name ?? 'Sin area',
                 'scan_code' => $service->scan_code,
                 'barcode' => $service->barcode,
                 'qr_code' => $service->qr_code,
                 'quantity' => $this->formatDecimalUnits($quantityUnits),
+                'quantity_cents' => $quantityUnits,
                 'unit_price' => $this->formatMoney($unitPriceCents),
+                'unit_price_cents' => $unitPriceCents,
                 'tax_rate' => $service->taxable ? $this->formatRate($taxRateBasisPoints) : '0.00',
                 'tax_amount' => $this->formatMoney($lineTaxCents),
+                'tax_amount_cents' => $lineTaxCents,
                 'line_subtotal' => $this->formatMoney($lineSubtotalCents),
+                'line_subtotal_cents' => $lineSubtotalCents,
                 'line_total' => $this->formatMoney($lineTotalCents),
+                'line_total_cents' => $lineTotalCents,
                 'special_rule_code' => $service->special_rule_code,
                 'special_rule_applied' => $specialRuleApplied,
                 'notes' => $item['notes'],
@@ -57,9 +70,13 @@ class CalculateInvoiceTotalsAction
 
         return [
             'subtotal' => $this->formatMoney($subtotalCents),
+            'subtotal_cents' => $subtotalCents,
             'tax_amount' => $this->formatMoney($taxCents),
+            'tax_amount_cents' => $taxCents,
             'discount_amount' => $this->formatMoney($discountCents),
+            'discount_amount_cents' => $discountCents,
             'total' => $this->formatMoney($totalCents),
+            'total_cents' => $totalCents,
             'items' => $calculatedItems,
         ];
     }

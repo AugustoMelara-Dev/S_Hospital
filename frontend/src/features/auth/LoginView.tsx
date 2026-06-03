@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { useFiscalSettings } from '../../hooks/useFiscalSettings';
+import { usePublicBranding } from '../../hooks/useFiscalSettings';
 import { displayHospitalName } from '../../lib/hospital-name';
 
 type LoginViewProps = {
@@ -27,7 +27,7 @@ export function LoginView({
   status,
   logoUrl,
 }: LoginViewProps) {
-  const { data: fiscal } = useFiscalSettings();
+  const { data: fiscal } = usePublicBranding();
   const [showPassword, setShowPassword] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
@@ -54,6 +54,8 @@ export function LoginView({
     status.includes('error') ||
     status.includes('No se pudo') ||
     status.includes('incorrecta') ||
+    status.includes('inv') ||
+    status.includes('credenciales') ||
     status.includes('Demasiados')
       ? 'destructive'
       : 'success';
@@ -84,7 +86,7 @@ export function LoginView({
             <div className="max-w-md">
               <h1 className="text-3xl font-semibold leading-tight">Caja hospitalaria rápida y clara.</h1>
               <p className="mt-3 text-sm leading-6 text-sidebar-foreground/75">
-                Facturación, cobros, reportes y recibos térmicos para operar dentro del hospital.
+                Facturacion, cobros, reportes y recibos institucionales para operar dentro del hospital.
               </p>
             </div>
             <div className="grid gap-3 text-sm">

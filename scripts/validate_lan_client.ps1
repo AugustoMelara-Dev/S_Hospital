@@ -2,14 +2,86 @@ param(
     [Parameter(Mandatory = $true)]
     [string] $BaseUrl,
 
+    [string] $ProjectRoot = "",
+
     [string] $EvidencePath = "",
 
     [string] $ClientName = $env:COMPUTERNAME,
     [string] $ResponsiblePerson = "",
-    [string] $UserRole = ""
+    [string] $UserRole = "",
+
+    [switch] $Force,
+    [switch] $WhatIfOnly
 )
 
 $ErrorActionPreference = "Stop"
+
+$scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+. (Join-Path $scriptRoot "lib\operational_url_safety.ps1")
+
+function Protect-LanText([string] $value) {
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        return $value
+    }
+
+    $protected = $value
+    if (-not [string]::IsNullOrWhiteSpace($script:ProjectRoot)) {
+        $protected = $protected -replace [regex]::Escape($script:ProjectRoot), "%PROJECT_ROOT%"
+        $protected = $protected -replace [regex]::Escape(($script:ProjectRoot -replace "\\", "/")), "%PROJECT_ROOT%"
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
+        $protected = $protected -replace [regex]::Escape($env:USERPROFILE), "%USERPROFILE%"
+        $protected = $protected -replace [regex]::Escape(($env:USERPROFILE -replace "\\", "/")), "%USERPROFILE%"
+    }
+
+    $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+
+    return $protected
+}
+
+trap {
+    $safeMessage = Protect-LanText $_.Exception.Message
+    Write-Host $safeMessage
+    if ($safeMessage -match "ya existe") {
+        Write-Host "No reemplace evidencia LAN existente sin -Force y sin autorizacion del responsable tecnico."
+    } else {
+        Write-Host "No se consulto la red ni se escribio evidencia LAN."
+    }
+    exit 1
+}
+
+if ($ProjectRoot -eq "") {
+    $ProjectRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
+}
+
+$ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+
+function Resolve-LanEvidencePath([string] $path) {
+    if ([string]::IsNullOrWhiteSpace($path)) {
+        return ""
+    }
+
+    if ([System.IO.Path]::GetExtension($path) -ne ".md") {
+        throw "La evidencia LAN debe ser un archivo Markdown (.md) dentro de qa."
+    }
+
+    $candidate = if ([System.IO.Path]::IsPathRooted($path)) {
+        $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($path)
+    } else {
+        Join-Path $ProjectRoot $path
+    }
+
+    $fullPath = [System.IO.Path]::GetFullPath($candidate)
+    $qaRoot = [System.IO.Path]::GetFullPath((Join-Path $ProjectRoot "qa"))
+    $qaPrefix = $qaRoot.TrimEnd("\") + "\"
+
+    if ($fullPath -eq $qaRoot -or -not $fullPath.StartsWith($qaPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "La evidencia LAN debe guardarse como archivo .md dentro de la carpeta qa del sistema."
+    }
+
+    return $fullPath
+}
 
 function New-CheckResult([string] $Label, [string] $Url, [int[]] $AllowedStatusCodes = @(200), [string] $ExpectedContentType = "") {
     try {
@@ -53,10 +125,22 @@ function Get-FirstAssetPath([string] $BaseUrl) {
     return $null
 }
 
-$base = $BaseUrl.TrimEnd("/")
-$baseUri = $null
-if (-not [Uri]::TryCreate($base, [UriKind]::Absolute, [ref] $baseUri) -or $baseUri.Scheme -notin @("http", "https")) {
-    throw "BaseUrl must be an absolute http(s) LAN URL, for example http://192.168.1.10"
+$base = Test-HospitalOperationalUrlInput $BaseUrl
+$baseUri = [Uri] $base
+
+$resolvedEvidencePath = $EvidencePath
+if ($EvidencePath -ne "") {
+    $resolvedEvidencePath = Resolve-LanEvidencePath $EvidencePath
+
+    if ((Test-Path -LiteralPath $resolvedEvidencePath) -and -not $Force) {
+        throw "La evidencia LAN ya existe. Use -Force solo si el responsable tecnico autorizo reemplazarla."
+    }
+}
+
+if ($WhatIfOnly) {
+    Write-Host "Validacion LAN preparada."
+    Write-Host "Modo WhatIf: no se consulto la red y no se escribio evidencia."
+    exit 0
 }
 
 if ($base -match "localhost|127\.0\.0\.1|::1") {
@@ -92,6 +176,12 @@ foreach ($check in $checks) {
 $allPassed = -not ($checks | Where-Object { -not $_.Passed })
 
 if ($EvidencePath -ne "") {
+    $EvidencePath = $resolvedEvidencePath
+    $evidenceDir = Split-Path -Parent $EvidencePath
+    if (-not [string]::IsNullOrWhiteSpace($evidenceDir) -and -not (Test-Path -LiteralPath $evidenceDir)) {
+        New-Item -ItemType Directory -Path $evidenceDir -Force | Out-Null
+    }
+
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
     $lines.Add("# LAN client validation proof") | Out-Null
@@ -134,7 +224,8 @@ if ($EvidencePath -ne "") {
     $lines.Add("- Notes:") | Out-Null
 
     Set-Content -LiteralPath $EvidencePath -Value $lines -Encoding ASCII
-    Write-Host "Wrote evidence starter: $EvidencePath"
+    $writeMode = if ($Force) { "replaced" } else { "created" }
+    Write-Host "LAN evidence starter ${writeMode}: $(Protect-LanText $EvidencePath)"
 }
 
 if (-not $allPassed) {

@@ -1,5 +1,6 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   type AuthUser,
   type Invoice,
@@ -9,6 +10,7 @@ import {
   apiClient,
   userSafeErrorMessage,
 } from '../../lib/api';
+import { useInvoices } from '../../hooks/useInvoices';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Alert } from '../../components/ui/alert';
@@ -32,6 +34,9 @@ import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { Textarea } from '../../components/ui/textarea';
 import { DateRangePicker } from '../../components/ui/date-range-picker';
 import { FilterBar } from '../../components/ui/filter-bar';
+import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
+import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
+import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import {
   FileClock,
   MoreHorizontal,
@@ -49,19 +54,15 @@ const today = localDateString();
 
 export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState<InvoiceFilters>(() => filtersFromSearchParams(searchParams));
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const invoicesList = Array.isArray(invoices) ? invoices : [];
-  const [meta, setMeta] = useState<PaginatedMeta>({ current_page: 1, per_page: 10, total: 0 });
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
-  const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('80mm');
+  const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('half_letter');
   const [voidReason, setVoidReason] = useState('');
   const [reprintReason, setReprintReason] = useState('');
   const [confirmingVoid, setConfirmingVoid] = useState(false);
   const [reprintTarget, setReprintTarget] = useState<Invoice | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState('');
   const [openActionsId, setOpenActionsId] = useState<number | null>(null);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
 
@@ -70,33 +71,28 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const canViewReceipt = user.permissions.includes('receipts.view');
   const canVoid = user.permissions.includes('invoices.void');
 
-  useEffect(() => {
-    void loadInvoices(filters);
-  }, []);
-
-  async function loadInvoices(nextFilters: InvoiceFilters) {
-    setLoading(true);
-    setLoadError('');
-
-    try {
-      const response = await apiClient.getInvoices(nextFilters);
-      setInvoices(response.data);
-      setMeta(response.meta);
-    } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudo cargar historial.');
-      setLoadError(message);
-      onStatus(message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // TanStack Query replaces the prior manual useState + useEffect
+  // loading. Cross-PC invalidation is handled by useBroadcastSync
+  // through the queryClient. staleTime of 30s matches the cashier
+  // expectation that the screen stays fresh for the duration of a
+  // single filter/refresh action.
+  const invoicesQuery = useInvoices(filters);
+  const invoicesList: Invoice[] = Array.isArray(invoicesQuery.data?.data)
+    ? (invoicesQuery.data!.data as Invoice[])
+    : [];
+  const meta: PaginatedMeta = invoicesQuery.data?.meta ?? { current_page: 1, per_page: 10, total: 0 };
+  const loading = invoicesQuery.isFetching;
+  const loadError = invoicesQuery.isError
+    ? userSafeErrorMessage(invoicesQuery.error, 'No se pudo cargar historial.')
+    : '';
 
   async function submitFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextFilters = { ...filters, page: 1 };
     setFilters(nextFilters);
     setSearchParams(searchParamsFromFilters(nextFilters));
-    await loadInvoices(nextFilters);
+    // The query refetches automatically because filters is in the
+    // queryKey.
   }
 
   function clearFilters() {
@@ -111,7 +107,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     };
     setFilters(clearedFilters);
     setSearchParams({});
-    void loadInvoices(clearedFilters);
+    // Refetch is automatic via the filters key.
   }
 
   async function openDetail(invoiceId: number) {
@@ -131,19 +127,36 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     try {
       const invoice = await apiClient.getInvoice(invoiceId);
       setSelectedInvoice(invoice);
-      const receiptData = await apiClient.getReceipt(invoiceId, receiptWidth);
-      setReceipt(receiptData);
+      const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
+      const receiptData = await apiClient.getReceipt(invoiceId, requestedWidth);
+      const normalizedWidth = institutionalReceiptPaperSize(receiptData.width);
+      setReceiptWidth(normalizedWidth);
+      setReceipt({ ...receiptData, width: normalizedWidth });
       setReceiptModalOpen(true);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo cargar recibo.'));
     }
   }
 
+  async function auditReceiptPrint() {
+    if (!selectedInvoice || !receipt) {
+      return;
+    }
+
+    const auditedReceipt = await apiClient.reprintInvoice(selectedInvoice.id, {
+      width: institutionalReceiptPaperSize(receipt.width),
+      reason: 'Impresion desde vista de recibo.',
+    });
+    const normalizedWidth = institutionalReceiptPaperSize(auditedReceipt.width);
+    setReceiptWidth(normalizedWidth);
+    setReceipt({ ...auditedReceipt, width: normalizedWidth });
+  }
+
   async function changePage(page: number) {
     const nextFilters = { ...filters, page };
     setFilters(nextFilters);
     setSearchParams(searchParamsFromFilters(nextFilters));
-    await loadInvoices(nextFilters);
+    // Refetch is automatic via the filters key.
   }
 
   async function voidSelectedInvoice() {
@@ -155,11 +168,12 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
     try {
       const voided = await apiClient.voidInvoice(selectedInvoice.id, voidReason.trim());
+      // Notify the rest of the app (dashboard, cashier list, second PC
+      // in LAN) that this invoice and the cash session are stale.
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setSelectedInvoice(voided);
-      setInvoices((current) => {
-        const currentList = Array.isArray(current) ? current : [];
-        return currentList.map((invoice) => (invoice.id === voided.id ? voided : invoice));
-      });
       setReceipt(null);
       setVoidReason('');
       onStatus(`Factura ${voided.invoice_number} anulada.`);
@@ -174,11 +188,17 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     try {
       const invoice = await apiClient.getInvoice(reprintTarget.id);
       setSelectedInvoice(invoice);
+      const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
       const nextReceipt = await apiClient.reprintInvoice(reprintTarget.id, {
-        width: receiptWidth,
-        reason: reprintReason.trim() || 'Reimpresión solicitada desde historial.',
+        width: requestedWidth,
+        reason: reprintReason.trim() || 'Reimpresion solicitada desde historial.',
       });
-      setReceipt(nextReceipt);
+      // Reprint posts an audit log entry that other views (dashboard,
+      // cashier list) may display; let them refetch.
+      queryClient.invalidateQueries({ queryKey: ['audit'] });
+      const normalizedWidth = institutionalReceiptPaperSize(nextReceipt.width);
+      setReceiptWidth(normalizedWidth);
+      setReceipt({ ...nextReceipt, width: normalizedWidth });
       setReceiptModalOpen(true);
       onStatus(`Recibo ${invoice.invoice_number} listo para imprimir.`);
     } catch (error) {
@@ -316,8 +336,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                       <TableCell className="text-sm font-medium">{invoice.invoice_number}</TableCell>
                       <TableCell>{formatDate(invoice.issued_at)}</TableCell>
                       <TableCell className="font-medium">{invoice.patient_name}</TableCell>
-                      <TableCell className="text-right">L. {invoice.total}</TableCell>
-                      <TableCell className="text-right">L. {invoice.paid_amount}</TableCell>
+                      <TableCell className="text-right">{moneyLabel(invoice.total)}</TableCell>
+                      <TableCell className="text-right">{moneyLabel(invoice.paid_amount)}</TableCell>
                       <TableCell>
                         <StatusBadge status={invoice.status} />
                       </TableCell>
@@ -417,26 +437,27 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         open={receiptModalOpen}
         onOpenChange={setReceiptModalOpen}
         title={`Recibo - ${selectedInvoice?.invoice_number ?? ''}`}
-        description="Vista previa de recibo. Cambiar entre 80mm y 58mm no registra reimpresion."
+        description="Vista previa de recibo institucional. Cambiar el tamano no registra reimpresion."
       >
         {receipt && selectedInvoice && (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <label htmlFor="receipt-width" className="text-sm font-semibold">Ancho</label>
+                <label htmlFor="receipt-width" className="text-sm font-semibold">Tamano</label>
                 <NativeSelect
                   id="receipt-width"
-                  aria-label="Ancho de vista previa"
+                  aria-label="Tamano de vista previa"
                   value={receiptWidth}
                   onChange={(event) => {
-                    const newWidth = event.target.value as ReceiptData['width'];
+                    const newWidth = institutionalReceiptPaperSize(event.target.value);
                     setReceiptWidth(newWidth);
                     setReceipt({ ...receipt, width: newWidth });
                   }}
-                  className="w-[100px]"
+                  className="w-[140px]"
                 >
-                  <option value="80mm">80mm</option>
-                  <option value="58mm">58mm</option>
+                  {INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </NativeSelect>
               </div>
 
@@ -445,11 +466,18 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             <ReceiptPreview
               receipt={receipt}
               onWidthChange={(width) => {
-                setReceipt({ ...receipt, width });
-                setReceiptWidth(width);
+                const newWidth = institutionalReceiptPaperSize(width);
+                setReceipt({ ...receipt, width: newWidth });
+                setReceiptWidth(newWidth);
               }}
-              onPrint={() => {
-                onStatus(`Recibo ${selectedInvoice.invoice_number} enviado a impresión.`);
+              onPrint={async () => {
+                try {
+                  await auditReceiptPrint();
+                  onStatus(`Recibo ${selectedInvoice.invoice_number} enviado a impresión.`);
+                } catch (error) {
+                  onStatus(userSafeErrorMessage(error, 'No se pudo auditar la reimpresión.'));
+                  throw error;
+                }
               }}
             />
           </div>
@@ -503,7 +531,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       >
         <div className="flex flex-col gap-3">
           <p>
-            Esta acción queda auditada. Cambiar entre 80mm y 58mm en la vista previa no registra reimpresión; este botón sí.
+            Esta acción queda auditada. Cambiar el tamaño en la vista previa no registra reimpresión; este botón sí.
           </p>
           <div className="space-y-2">
             <Label htmlFor="reprintReason">Motivo opcional</Label>
@@ -539,10 +567,11 @@ function StatusBadge({ status }: { status: Invoice['status'] }) {
 }
 
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat('es-HN', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value));
+  return formatLocalizedDateTime(value);
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
 }
 
 export function localDateString(date = new Date()): string {

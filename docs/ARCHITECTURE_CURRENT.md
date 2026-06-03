@@ -1,10 +1,10 @@
-# Current Architecture - Hospital Billing OS Offline
+# Current Architecture - Sistema de Caja Hospitalaria Offline
 
 Last updated: 2026-05-22.
 
 ## System Shape
 
-Hospital Billing OS is an offline LAN application:
+Sistema de Caja Hospitalaria is an offline LAN application:
 
 - One local server PC runs Laravel, MySQL/MariaDB, the built React SPA and backup automation.
 - Client PCs use a browser against the server IP or LAN hostname.

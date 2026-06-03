@@ -28,7 +28,7 @@ Reportes tecnicos de captura:
 | Severidad | Modulo | Hallazgo | Evidencia | Recomendacion |
 | --- | --- | --- | --- | --- |
 | Alta | Respaldos | El boton de crear respaldo dejaba registros pendientes si no estaba activo el proceso de cola. Para un usuario administrativo eso se ve como respaldo que no termina. | `backups-settled.png` muestra respaldos pendientes. | El respaldo manual debe completarse en la misma accion o mostrar resultado final inmediato. Corregido en esta fase. |
-| Alta | Global | El titulo de pestana y el login mostraban nombres internos del proyecto en instalaciones heredadas. | `ux-live-auth-report.json` marco `/Hospital Billing OS/i`; recaptura `login-clean-name.png` confirma limpieza visual. | Usar una etiqueta operativa visible al usuario. Corregido a `Caja hospitalaria` sin bloquear nombres configurados reales. |
+| Alta | Global | El titulo de pestana y el login mostraban nombres internos del proyecto en instalaciones heredadas. | `ux-live-auth-report.json` marco `/Sistema de Caja Hospitalaria/i`; recaptura `login-clean-name.png` confirma limpieza visual. | Usar una etiqueta operativa visible al usuario. Corregido a `Caja hospitalaria` sin bloquear nombres configurados reales. |
 | Media | Global | Modo oscuro y acentos violetas aumentan carga visual para caja. Hay muchos bordes, tarjetas y paneles simultaneos. | Capturas autenticadas muestran alto contraste oscuro, sidebar pesado y muchos contenedores. | Definir tema claro como experiencia recomendada de caja y reservar modo oscuro como opcion secundaria. Reducir tarjetas anidadas y superficie de bordes. |
 | Media | Nueva factura | La fila de categorias puede quedar con scroll horizontal angosto y texto cortado; el cajero pierde contexto. | `billing-new-settled.png` muestra categorias partidas y barra horizontal visible. | Convertir categorias en tabs/chips envolventes o lista lateral compacta, sin scroll horizontal visible. |
 | Media | Catalogo | La tabla mostraba el identificador interno del servicio debajo del nombre, lo que agregaba ruido sin valor operativo. | `catalog.png` y `CatalogView.tsx`. | Ocultar identificadores internos y dejar nombre, categoria, precio, codigo util y estado. Corregido en esta fase. |
@@ -42,8 +42,8 @@ Reportes tecnicos de captura:
 
 - Respaldo manual: `POST /api/backups` ahora ejecuta el respaldo inmediatamente y devuelve `201` si queda completado.
 - Prueba actualizada: `BackupWorkflowTest` valida que el respaldo manual cree archivo, checksum, fecha de completado y auditoria.
-- Titulo HTML: cambiado de `Hospital Billing OS` a `Caja hospitalaria`.
-- Login, sidebar, topbar y exportaciones: se agrego saneamiento de nombres heredados internos (`Hospital Billing OS`, `S_Hospital Billing OS`) para mostrar `Caja hospitalaria` mientras el hospital configura su nombre real.
+- Titulo HTML: cambiado de `Sistema de Caja Hospitalaria` a `Caja hospitalaria`.
+- Login, sidebar, topbar y exportaciones: se agrego saneamiento de nombres heredados internos (`Sistema de Caja Hospitalaria`, `S_Sistema de Caja Hospitalaria`) para mostrar `Caja hospitalaria` mientras el hospital configura su nombre real.
 - Usuarios: cabecera `Username / Email` cambiada a `Usuario / Correo`.
 - Nueva factura: se reemplazo el texto `POS hospitalario` por `Factura y cobro en caja`.
 - Nueva factura: las categorias ya no usan un carril horizontal que corta nombres; ahora se muestran como botones en una cuadricula compacta con seleccion clara.
@@ -74,7 +74,7 @@ Reportes tecnicos de captura:
 - `docker compose exec backend php artisan test --colors=never --filter=HospitalNameTest` paso: 2 pruebas, 5 aserciones.
 - `docker compose exec backend php artisan test --colors=never --filter=BackupWorkflowTest` paso: 14 pruebas, 60 aserciones.
 - `npm.cmd run build` paso. Queda advertencia no bloqueante de chunk apenas mayor a 500 kB.
-- Browser integrado en `http://127.0.0.1:5173`: titulo `Caja hospitalaria`, DOM sin `S_Hospital Billing OS` ni `Hospital Billing OS`, consola sin errores, captura `login-clean-name.png`.
+- Browser integrado en `http://127.0.0.1:5173`: titulo `Caja hospitalaria`, DOM sin `S_Sistema de Caja Hospitalaria` ni `Sistema de Caja Hospitalaria`, consola sin errores, captura `login-clean-name.png`.
 - Busqueda textual focalizada en layout/dashboard/settings/reportes: no quedan textos visibles de `API`, `Laravel`, `React`, `Vite`, `software`, `Modulos disponibles` ni textos rotos `Ã`/`Â`; los matches restantes son tipos internos de codigo.
 
 ## Riesgos restantes

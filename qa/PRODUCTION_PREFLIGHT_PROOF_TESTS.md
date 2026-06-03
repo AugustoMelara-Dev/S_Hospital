@@ -10,7 +10,7 @@ rechaza evidencia incompleta.
 
 - `scripts/production_readiness_preflight.ps1`
 - `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`
-- `qa/THERMAL_PRINTER_PROOF.example.md`
+- `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md`
 
 ## Escenarios requeridos
 
@@ -18,13 +18,16 @@ rechaza evidencia incompleta.
 |---|---|
 | Evidencia de impresora vacia | Falla por archivo demasiado corto. |
 | Evidencia de impresora copiada desde plantilla | Falla por campo obligatorio vacio o check sin resultado. |
-| Evidencia de impresora sin `80mm result:` | Falla con `Complete '80mm result:'`. |
-| Evidencia de impresora sin `58mm result:` | Falla con `Complete '58mm result:'`. |
-| Evidencia de impresora con campos minimos y checks llenos | La seccion de proof pasa con `physical thermal printer evidence is present and completed`. |
+| Evidencia de impresora sin `Media carta result:` | Falla con `Complete 'Media carta result:'`. |
+| Evidencia de impresora sin `Carta result:`, `A5 result:`, `80mm result:` o `58mm result:` | Falla con el campo faltante. |
+| Evidencia de impresora con `Evidence/photo reference:` apuntando a una ruta local inexistente | Falla con `references missing local evidence`. |
+| Evidencia de impresora con `Evidence/photo reference:` apuntando a una ruta absoluta local | Falla porque la evidencia final debe usar ruta relativa o referencia no local. |
+| Evidencia de impresora con `Evidence/photo reference:` apuntando a `backend/`, `docs/`, `scripts/`, `frontend/` o una ruta con `..` | Falla porque capturas/fotos locales deben vivir bajo `qa/` sin traversal. |
+| Evidencia de impresora con campos minimos y checks llenos | La seccion de proof pasa con `physical institutional printer evidence is present and completed`. |
 | `CORS_ALLOWED_ORIGINS=*` | Falla siempre. |
 | `CORS_ALLOWED_ORIGIN_PATTERNS` no vacio | Falla siempre. |
-| Windows sin `HospitalBillingOS-BackupWorker` instalado y corriendo | Falla siempre. |
-| Windows sin `HospitalBillingOS-DailyBackup` instalado | Falla siempre. |
+| Windows sin `SistemaCajaHospitalaria-BackupWorker` instalado y corriendo | Falla siempre. |
+| Windows sin `SistemaCajaHospitalaria-DailyBackup` instalado | Falla siempre. |
 | `-AllowMissingPhysicalProof` | Falla con `PRODUCTION_READY: NO`; solo sirve para diagnostico parcial. |
 
 ## Campos criticos de impresora
@@ -38,6 +41,9 @@ El proof real debe usar los mismos nombres que valida el preflight:
 - Browser/version:
 - Cashier computer:
 - Invoice used:
+- Media carta result:
+- Carta result:
+- A5 result:
 - 80mm result:
 - 58mm result:
 - Reprint result:

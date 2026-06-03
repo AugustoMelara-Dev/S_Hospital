@@ -37,9 +37,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
@@ -136,7 +136,7 @@ describe('NewInvoiceView', () => {
     expect(await screen.findByRole('heading', { name: /nueva factura/i })).toBeInTheDocument();
     expect(await screen.findByLabelText(/nombre del paciente/i)).toBeInTheDocument();
     expect(await screen.findByLabelText(/buscar por nombre, categoria o codigo/i)).toBeInTheDocument();
-    expect(await screen.findByLabelText(/scanner usb o codigo manual/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/scanner usb o codigo manual/i)).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/buscar por nombre, categoria o codigo/i), {
       target: { value: 'eritropoyetina' },
     });
@@ -200,9 +200,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
@@ -229,6 +229,15 @@ describe('NewInvoiceView', () => {
               opened_at: '2026-05-17T08:00:00-06:00',
               closed_at: null,
             },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/settings/fiscal')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: { scanner_enabled: true, partial_payments_enabled: false, receipt_paper_size: 'half_letter', default_tax_rate: '15.00' },
           }),
         } as Response;
       }
@@ -271,14 +280,14 @@ describe('NewInvoiceView', () => {
           ok: true,
           json: async () => ({
             data: {
-              width: '80mm',
-              hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+              width: 'half_letter',
+              hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
               fiscal: {
-                cai: 'DEMO-CAI',
+                cai: 'VALIDACION-CAI',
                 authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
                 valid_until: '2027-05-17',
               },
-              invoice: { ...paidInvoice, cashier: 'Cajero Demo' },
+              invoice: { ...paidInvoice, cashier: 'Cajero Validacion' },
               items: [
                 {
                   service_name: 'Glucosa',
@@ -299,7 +308,7 @@ describe('NewInvoiceView', () => {
                   amount: '17.25',
                   reference: null,
                   paid_at: '2026-05-17T08:03:00-06:00',
-                  cashier: 'Cajero Demo',
+                  cashier: 'Cajero Validacion',
                 },
               ],
             },
@@ -334,8 +343,8 @@ describe('NewInvoiceView', () => {
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
     expect((await screen.findAllByLabelText(/vista previa del recibo/i)).length).toBeGreaterThan(0);
-    expect(await screen.findByText(/hospital demo/i)).toBeInTheDocument();
-    expect(screen.getByText('80mm')).toBeInTheDocument();
+    expect(await screen.findByText(/hospital san isidro/i)).toBeInTheDocument();
+    expect(screen.getByText('Media carta')).toBeInTheDocument();
   });
 
   it('rejects inactive services returned by scanner lookup', async () => {
@@ -343,15 +352,22 @@ describe('NewInvoiceView', () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
 
+      if (url.includes('/api/settings/fiscal')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { scanner_enabled: true, partial_payments_enabled: false, receipt_paper_size: 'half_letter' } }),
+        } as Response;
+      }
+
       if (url.includes('/api/auth/session')) {
         return {
           ok: true,
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
@@ -455,15 +471,22 @@ describe('NewInvoiceView', () => {
     expect(
       fetchMock.mock.calls.some(([url]) => {
         const value = String(url);
-        return value.includes('/api/services') && value.includes('code=INACTIVE-001') && !value.includes('active=1');
+        return value.includes('/api/services') && value.includes('code=INACTIVE-001') && value.includes('active=1');
       }),
     ).toBe(true);
   });
 
-  it('shows a clear scanner error when the code does not exist', async () => {
+  it('does not add a cached service when scanner lookup has no backend match', async () => {
     window.history.pushState({}, '', '/billing/new');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
+
+      if (url.includes('/api/settings/fiscal')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { scanner_enabled: true, partial_payments_enabled: false, receipt_paper_size: 'half_letter' } }),
+        } as Response;
+      }
 
       if (url.includes('/api/auth/session')) {
         return {
@@ -471,9 +494,106 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Demo',
-              email: 'cajero.demo@hospital-billing.local',
-              username: 'cajero.demo',
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 7,
+              user_id: 2,
+              opening_amount: '500.00',
+              closing_amount: null,
+              expected_amount: null,
+              difference_amount: null,
+              status: 'open',
+              opening_notes: null,
+              closing_notes: null,
+              opened_at: '2026-05-17T08:00:00-06:00',
+              closed_at: null,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+
+      if (url.includes('/api/services') && url.includes('code=CACHED-001')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+
+      if (url.includes('/api/services')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: 21,
+                category_id: 1,
+                name: 'Servicio en cache local',
+                slug: 'servicio-en-cache-local',
+                price: '12.00',
+                scan_code: 'CACHED-001',
+                barcode: null,
+                qr_code: null,
+                taxable: true,
+                active: true,
+                special_rule_code: null,
+                category: null,
+              },
+            ],
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({}) } as Response;
+    });
+
+    render(<App />);
+
+    fireEvent.change(await screen.findByLabelText(/scanner usb o codigo manual/i), {
+      target: { value: 'CACHED-001' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
+
+    expect((await screen.findAllByText(/no se encontro servicio activo para este codigo/i)).length).toBeGreaterThan(0);
+    expect(screen.getByText(/no hay servicios agregados/i)).toBeInTheDocument();
+  });
+
+  it('shows a clear scanner error when the code does not exist', async () => {
+    window.history.pushState({}, '', '/billing/new');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/settings/fiscal')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { scanner_enabled: true, partial_payments_enabled: false, receipt_paper_size: 'half_letter' } }),
+        } as Response;
+      }
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 2,
+              name: 'Cajero Validacion',
+              email: 'cajero.validacion@hospital-san-isidro.local',
+              username: 'cajero.validacion',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
@@ -539,9 +659,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 3,
-              name: 'Supervisor Demo',
-              email: 'supervisor.demo@hospital-billing.local',
-              username: 'supervisor.demo',
+              name: 'Supervisor Validacion',
+              email: 'supervisor.validacion@hospital-san-isidro.local',
+              username: 'supervisor.validacion',
               active: true,
               roles: ['supervisor'],
               permissions: ['invoices.view', 'receipts.reprint', 'receipts.reprint_any'],
@@ -569,7 +689,7 @@ describe('NewInvoiceView', () => {
                 status: 'paid',
                 issued_at: '2026-05-17T08:00:00-06:00',
                 items: [],
-                issuer: { id: 2, name: 'Cajero Demo', username: 'cajero.demo' },
+                issuer: { id: 2, name: 'Cajero Validacion', username: 'cajero.validacion' },
               },
             ],
             meta: { current_page: 1, per_page: 10, total: 1 },
@@ -624,8 +744,8 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               receipt: {
-                width: '80mm',
-                hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+                width: 'half_letter',
+                hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
                 fiscal: {
                   cai: 'TEST-CAI',
                   authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
@@ -635,7 +755,7 @@ describe('NewInvoiceView', () => {
                   id: 100,
                   invoice_number: '000-001-01-00000001',
                   issued_at: '2026-05-17T08:00:00-06:00',
-                  cashier: 'Cajero Demo',
+                  cashier: 'Cajero Validacion',
                   patient_name: 'Maria Lopez',
                   subtotal: '15.00',
                   tax_amount: '2.25',
@@ -659,8 +779,8 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               receipt: {
-                width: '80mm',
-                hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+                width: 'half_letter',
+                hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
                 fiscal: {
                   cai: 'TEST-CAI',
                   authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
@@ -670,7 +790,7 @@ describe('NewInvoiceView', () => {
                   id: 100,
                   invoice_number: '000-001-01-00000001',
                   issued_at: '2026-05-17T08:00:00-06:00',
-                  cashier: 'Cajero Demo',
+                  cashier: 'Cajero Validacion',
                   patient_name: 'Maria Lopez',
                   subtotal: '15.00',
                   tax_amount: '2.25',
@@ -711,18 +831,22 @@ describe('NewInvoiceView', () => {
     fireEvent.click(await screen.findByRole('button', { name: /registrar reimpresi/i }));
     expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
     await waitFor(() => {
-      const receiptEl = screen.getByLabelText(/recibo t[eé]rmico/i);
+      const receiptEl = screen.getByLabelText(/recibo institucional/i);
       expect(receiptEl).toBeInTheDocument();
-      expect(receiptEl).toHaveClass('receipt-80mm');
+      expect(receiptEl).toHaveClass('receipt-half_letter');
     });
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(1);
 
-    fireEvent.change(screen.getByLabelText(/ancho de vista previa/i), { target: { value: '58mm' } });
+    fireEvent.click(screen.getByRole('button', { name: /^imprimir$/i }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/recibo t[eé]rmico/i)).toHaveClass('receipt-58mm');
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(2);
     });
-    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(1);
+    const printAuditCall = fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))[1];
+    expect(JSON.parse(String(printAuditCall[1]?.body))).toMatchObject({
+      reason: 'Impresion desde vista de recibo.',
+      width: 'half_letter',
+    });
   });
 
   it('applies received cash as balance due and keeps change visible', () => {
@@ -750,6 +874,52 @@ describe('NewInvoiceView', () => {
     expect(confirmSpy).toHaveBeenCalledWith('17.25');
   });
 
+  it('renders malformed payment modal invoice amounts as safe financial values', () => {
+    render(
+      <PaymentModal
+        open
+        onOpenChange={vi.fn()}
+        invoiceNumber="000-001-01-00000006"
+        patientName="Maria Lopez"
+        total="monto-danado"
+        balanceDue="NaN"
+        paymentMethod="cash"
+        paymentAmount=""
+        onPaymentMethodChange={vi.fn()}
+        onPaymentAmountChange={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Maria Lopez')).toBeInTheDocument();
+    expect(document.body.textContent).toContain('L. 0.00');
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|undefined/);
+  });
+
+  it('calculates cash change and applied amount using cents', () => {
+    const confirmSpy = vi.fn();
+
+    render(
+      <PaymentModal
+        open
+        onOpenChange={vi.fn()}
+        invoiceNumber="000-001-01-00000005"
+        patientName="Maria Lopez"
+        total="0.20"
+        balanceDue="0.20"
+        paymentMethod="cash"
+        paymentAmount="0.30"
+        onPaymentMethodChange={vi.fn()}
+        onPaymentAmountChange={vi.fn()}
+        onConfirm={confirmSpy}
+      />,
+    );
+
+    expect(screen.getByText('L. 0.10')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
+    expect(confirmSpy).toHaveBeenCalledWith('0.20');
+  });
+
   it('allows partial payment and shows the remaining balance clearly', () => {
     const confirmSpy = vi.fn();
 
@@ -766,6 +936,7 @@ describe('NewInvoiceView', () => {
         onPaymentMethodChange={vi.fn()}
         onPaymentAmountChange={vi.fn()}
         onConfirm={confirmSpy}
+        partialPaymentsEnabled
       />,
     );
 
@@ -779,6 +950,14 @@ describe('NewInvoiceView', () => {
     const styles = readFileSync('src/styles.css', 'utf8');
 
     expect(styles).toContain('body[data-printing-receipt="true"] *');
+    expect(styles).toContain('@page receipt-half-letter');
+    expect(styles).toContain('size: 8.5in 5.5in;');
+    expect(styles).toContain('.institutional-receipt.receipt-letter');
+    expect(styles).toContain('.institutional-receipt.receipt-a5');
+    expect(styles).toContain('.institutional-receipt.receipt-80mm');
+    expect(styles).toContain('.institutional-receipt.receipt-58mm');
+    expect(styles).toContain('@page receipt-80mm');
+    expect(styles).toContain('@page receipt-58mm');
     expect(styles).not.toContain('body * {\n      visibility: hidden;');
     expect(styles).not.toContain('body * {\r\n      visibility: hidden;');
   });
@@ -798,9 +977,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Admin Demo',
-              email: 'admin.demo@hospital-billing.local',
-              username: 'admin.demo',
+              name: 'Administrador Validacion',
+              email: 'admin.validacion@hospital-san-isidro.local',
+              username: 'admin.validacion',
               active: true,
               roles: ['admin'],
               permissions: ['invoices.view', 'invoices.void', 'receipts.reprint', 'receipts.reprint_any'],
@@ -828,7 +1007,7 @@ describe('NewInvoiceView', () => {
                 status: 'issued',
                 issued_at: '2026-05-17T09:00:00-06:00',
                 items: [],
-                issuer: { id: 2, name: 'Cajero Demo', username: 'cajero.demo' },
+                issuer: { id: 2, name: 'Cajero Validacion', username: 'cajero.validacion' },
               },
             ],
             meta: { current_page: 1, per_page: 10, total: 1 },
@@ -901,19 +1080,25 @@ describe('NewInvoiceView', () => {
     fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenLastCalledWith(
-        expect.stringContaining('/api/invoices/101/void'),
-        expect.objectContaining({ method: 'POST' }),
-      );
+      // After the void POST, the list refetches via TanStack Query
+      // invalidation, so the last call is the GET, not the POST.
+      // Assert that the POST was issued at some point.
+      const calledWithVoid = fetchMock.mock.calls.some(([url, init]) => {
+        return (
+          String(url).includes('/api/invoices/101/void')
+          && (init as RequestInit | undefined)?.method === 'POST'
+        );
+      });
+      expect(calledWithVoid).toBe(true);
     });
   });
 
-  it('renders 58mm receipt print structure with fiscal valid until date', async () => {
+  it('renders institutional receipt print structure with fiscal valid until date', async () => {
     const receipt: ReceiptData = {
-      width: '58mm',
-      hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+      width: '80mm',
+      hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
       fiscal: {
-        cai: 'DEMO-CAI',
+        cai: 'VALIDACION-CAI',
         authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
         valid_until: '2027-05-17',
       },
@@ -921,7 +1106,7 @@ describe('NewInvoiceView', () => {
         id: 100,
         invoice_number: '000-001-01-00000001',
         issued_at: '2026-05-17T08:00:00-06:00',
-        cashier: 'Cajero Demo',
+        cashier: 'Cajero Validacion',
         patient_name: 'Maria Lopez',
         subtotal: '15.00',
         tax_amount: '2.25',
@@ -951,20 +1136,18 @@ describe('NewInvoiceView', () => {
           amount: '17.25',
           reference: null,
           paid_at: '2026-05-17T08:03:00-06:00',
-          cashier: 'Cajero Demo',
+          cashier: 'Cajero Validacion',
         },
       ],
     };
-    const printSpy = vi.fn(() => {
-      expect(document.body.dataset.receiptWidth).toBe('58mm');
-    });
+    const printSpy = vi.fn();
 
     render(<ReceiptPreview receipt={receipt} onWidthChange={vi.fn()} onPrint={printSpy} />);
 
-    expect(screen.getByLabelText(/recibo t[eé]rmico/i)).toHaveClass('receipt-58mm');
+    expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-80mm');
+    expect(screen.getByText(/termico 80mm/i)).toBeInTheDocument();
     expect(screen.getByText(/vence/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /imprimir/i }));
-    expect(printSpy).toHaveBeenCalledOnce();
-    await waitFor(() => expect(document.body.dataset.receiptWidth).toBeUndefined());
+    await waitFor(() => expect(printSpy).toHaveBeenCalledOnce());
   });
 });

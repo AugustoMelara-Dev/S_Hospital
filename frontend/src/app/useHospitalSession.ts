@@ -1,11 +1,11 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { type AuthUser, type CashSession, apiClient, userSafeErrorMessage } from '../lib/api';
 import { type PasswordChangeForm } from '../features/auth/PasswordChangeView';
 
 export function useHospitalSession() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [cashSession, setCashSession] = useState<CashSession | null>(null);
-  const [login, setLogin] = useState(import.meta.env.DEV ? 'admin.demo' : '');
+  const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [passwordForm, setPasswordForm] = useState<PasswordChangeForm>({
     current_password: '',
@@ -15,6 +15,8 @@ export function useHospitalSession() {
   const [status, setStatus] = useState('Listo para iniciar sesión local.');
   const [loading, setLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false);
+  const passwordSubmitInFlightRef = useRef(false);
 
   const permissions = useMemo(() => new Set(user?.permissions ?? []), [user?.permissions]);
   const canViewFiscalSettings = permissions.has('settings.fiscal.view');
@@ -36,22 +38,32 @@ export function useHospitalSession() {
     canViewCashSessionReports;
   const canViewBackups = permissions.has('backups.view');
   const canViewUsers = permissions.has('users.view');
-  const needsBillingCashBootstrap = false;
+  const canCreateUsers = permissions.has('users.create');
 
   useEffect(() => {
-    apiClient.onSessionExpired(() => {
+    const unsubscribe = apiClient.onSessionExpired(() => {
       setUser(null);
       setCashSession(null);
       setStatus('Sesión vencida. Redirigiendo al login...');
       setSessionExpired(true);
     });
 
+    return unsubscribe;
+  }, []);
+
+  // Old code path that followed is now in a separate effect to
+  // avoid running on every state change.
+  useEffect(() => {
     apiClient
       .session()
       .then((currentUser) => {
         setUser(currentUser);
         if (currentUser) {
-          setStatus('Sesión activa.');
+          setStatus(
+            currentUser.must_change_password
+              ? 'Actualice su contraseña para continuar.'
+              : 'Sesión activa.',
+          );
           setSessionExpired(false);
         }
         if (currentUser?.permissions.includes('cash.view') && import.meta.env.MODE !== 'test') {
@@ -71,8 +83,6 @@ export function useHospitalSession() {
         setStatus('Listo para iniciar sesión local.');
       })
       .finally(() => setLoading(false));
-
-    return () => apiClient.onSessionExpired(null);
   }, []);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
@@ -96,6 +106,9 @@ export function useHospitalSession() {
 
   async function handleLogout() {
     await apiClient.logout().catch(() => undefined);
+    // Drop the cached CSRF promise so the next login does not reuse
+    // the previous user's token.
+    apiClient.invalidateSession();
     setUser(null);
     setCashSession(null);
     setStatus('Sesión cerrada.');
@@ -114,6 +127,10 @@ export function useHospitalSession() {
 
   async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (passwordSubmitInFlightRef.current) return;
+
+    passwordSubmitInFlightRef.current = true;
+    setPasswordSubmitting(true);
     setStatus('Actualizando contraseña...');
 
     try {
@@ -127,6 +144,9 @@ export function useHospitalSession() {
       setStatus('Contraseña actualizada.');
     } catch (error) {
       setStatus(userSafeErrorMessage(error, 'No se pudo actualizar la contraseña.'));
+    } finally {
+      passwordSubmitInFlightRef.current = false;
+      setPasswordSubmitting(false);
     }
   }
 
@@ -143,8 +163,7 @@ export function useHospitalSession() {
     status,
     setStatus,
     loading,
-    needsBillingCashBootstrap,
-    cashBootstrapLoading: false,
+    passwordSubmitting,
     canViewFiscalSettings,
     canEditFiscalSettings,
     canViewCatalog,
@@ -161,6 +180,7 @@ export function useHospitalSession() {
     canViewReports,
     canViewBackups,
     canViewUsers,
+    canCreateUsers,
     hasAnyOperationalPermission:
       canViewFiscalSettings ||
       canViewCatalog ||

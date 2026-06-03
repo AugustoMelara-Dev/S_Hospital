@@ -2,21 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Catalog\IndexCategoryRequest;
 use App\Http\Requests\Catalog\StoreCategoryRequest;
 use App\Http\Requests\Catalog\UpdateCategoryRequest;
 use App\Models\AuditLog;
 use App\Models\Category;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(IndexCategoryRequest $request): JsonResponse
     {
-        $request->user()->can('catalog.view') || abort(403);
-
         $categories = Category::query()
             ->when($request->has('active'), fn ($query) => $query->where('active', $request->boolean('active')))
             ->orderBy('sort_order')
@@ -86,7 +85,7 @@ class CategoryController extends Controller
     /**
      * @param  array<string, mixed>|null  $oldValues
      */
-    private function audit(Request $request, string $action, Category $category, ?array $oldValues): void
+    private function audit(FormRequest $request, string $action, Category $category, ?array $oldValues): void
     {
         AuditLog::query()->create([
             'user_id' => $request->user()->id,

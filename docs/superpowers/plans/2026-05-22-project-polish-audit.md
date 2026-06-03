@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Identify and close the remaining improvement areas in Hospital Billing OS Offline without breaking offline LAN billing, cashbox, payments, reports, receipts, security, or maintainability.
+**Goal:** Identify and close the remaining improvement areas in Sistema de Caja Hospitalaria Offline without breaking offline LAN billing, cashbox, payments, reports, receipts, security, or maintainability.
 
 **Architecture:** The project is already functionally mature: Laravel tests, frontend typecheck/lint/tests/build, Sanctum auth, roles, receipts, reports, backups, and the POS flow exist. This plan avoids a rewrite and instead hardens the last high-leverage seams: money correctness in report/export presentation, frontend bundle boundaries, accessibility/UX verification, SEO/PWA metadata for local LAN discoverability, maintainability documentation, and release proof.
 

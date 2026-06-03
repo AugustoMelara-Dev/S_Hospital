@@ -1,5 +1,5 @@
 -- database_schema_critico.sql
--- Propuesta crítica para Hospital Billing OS Offline
+-- Propuesta crítica para S_Hospital Offline
 
 CREATE TABLE users (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

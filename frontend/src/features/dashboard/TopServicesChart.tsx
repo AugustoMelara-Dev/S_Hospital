@@ -1,4 +1,5 @@
 import { Badge } from '../../components/ui/badge';
+import { finiteNumber, formatLempiras } from '../../lib/money';
 
 type TopServiceData = {
   service_name: string;
@@ -15,17 +16,17 @@ export function TopServicesChart({ services }: TopServicesChartProps) {
   if (services.length === 0) {
     return (
       <div className="flex h-[300px] items-center justify-center rounded-md border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
-        Sin ventas registradas este mes
+        Sin servicios facturados este mes
       </div>
     );
   }
 
-  const maxTotal = Math.max(...services.map((s) => parseFloat(s.total) || 1));
+  const maxTotal = Math.max(...services.map((s) => finiteNumber(s.total) || 1));
 
   return (
     <div className="flex flex-col gap-4">
       {services.slice(0, 5).map((service, index) => {
-        const totalVal = parseFloat(service.total) || 0;
+        const totalVal = finiteNumber(service.total);
         const pct = Math.min(100, Math.max(0, (totalVal / maxTotal) * 100));
 
         return (
@@ -40,13 +41,13 @@ export function TopServicesChart({ services }: TopServicesChartProps) {
                     {service.category_name}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
-                    {parseFloat(service.quantity).toFixed(0)} unds
+                    {finiteNumber(service.quantity).toFixed(0)} unds
                   </span>
                 </div>
               </div>
               <div className="text-right shrink-0">
                 <span className="font-bold text-foreground">
-                  L. {Number(service.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatLempiras(service.total)}
                 </span>
               </div>
             </div>

@@ -7,13 +7,12 @@ const { chromium } = playwright;
 const root = path.resolve(import.meta.dirname, '..');
 const screenshotDir = path.join(root, 'screenshots', 'phase-12-visual-smoke');
 const baseUrl = process.env.VISUAL_SMOKE_BASE_URL ?? 'http://127.0.0.1:5173';
-const user = process.env.VISUAL_SMOKE_USER ?? 'admin.demo';
-const password = process.env.VISUAL_SMOKE_PASSWORD ?? 'Password123!';
-const isLocalDemoTarget = baseUrl === 'http://127.0.0.1:8000' && user === 'admin.demo';
-const allowMutations = process.env.VISUAL_SMOKE_ALLOW_MUTATIONS === '1' || isLocalDemoTarget;
+const user = requiredEnv('VISUAL_SMOKE_USER');
+const password = requiredEnv('VISUAL_SMOKE_PASSWORD');
+const allowMutations = process.env.VISUAL_SMOKE_ALLOW_MUTATIONS === '1';
 
 if (!allowMutations) {
-  throw new Error('Visual smoke creates invoices/payments. Set VISUAL_SMOKE_ALLOW_MUTATIONS=1 or use the local admin.demo target.');
+  throw new Error('Visual smoke creates invoices/payments. Set VISUAL_SMOKE_ALLOW_MUTATIONS=1 for an authorized disposable target.');
 }
 
 const routeScreens = {
@@ -43,6 +42,14 @@ const routeLabels = {
 
 const consoleByScreen = {};
 const findings = [];
+
+function requiredEnv(name) {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`Missing ${name}. Use an authorized local test account; do not rely on preconfigured credentials.`);
+  }
+  return value;
+}
 let activeScreen = 'bootstrap';
 let lastInvoiceNumber = '';
 
@@ -159,9 +166,9 @@ async function ensureLoggedIn(page) {
     return;
   }
 
-  await page.getByLabel(/usuario o email/i).fill(user);
-  await page.getByLabel(/contrasena/i).fill(password);
-  await page.getByRole('button', { name: /entrar/i }).click();
+  await page.locator('#login-input').fill(user);
+  await page.locator('#password-input').fill(password);
+  await page.getByRole('button', { name: /iniciar|entrar/i }).click();
   await page.waitForURL(/dashboard|billing|cashbox|catalog|invoices|reports|backups|settings/, { timeout: 15000 });
   await waitSettled(page);
 }
@@ -274,7 +281,13 @@ async function main() {
   page.on('requestfailed', (request) => {
     const failure = request.failure();
     const url = request.url();
-    if (url.includes('/@vite') || url.includes('favicon') || url.includes('/sanctum/csrf-cookie')) {
+    if (
+      url.includes('/@vite') ||
+      url.includes('favicon') ||
+      url.includes('/sanctum/csrf-cookie') ||
+      (url.includes('/api/cash-sessions/current') && failure?.errorText === 'net::ERR_ABORTED') ||
+      (url.includes('/api/reports/cash-sessions/') && failure?.errorText === 'net::ERR_ABORTED')
+    ) {
       return;
     }
     record(`requestfailed: ${request.method()} ${url} ${failure?.errorText ?? ''}`.trim());
@@ -310,36 +323,27 @@ async function main() {
     }
 
     const serviceForSmoke = await firstActiveService(page);
-    const serviceCode = serviceForSmoke?.scan_code || serviceForSmoke?.barcode || serviceForSmoke?.qr_code || '';
-    const serviceQuery = serviceCode || serviceForSmoke?.name || 'glucosa';
+    const serviceQuery = serviceForSmoke?.name || 'glucosa';
     const serviceName = serviceForSmoke?.name || serviceQuery;
 
-    if (serviceCode) {
-      await page.getByLabel(/scanner usb o codigo manual/i).fill(serviceCode);
-      await page.getByRole('button', { name: /escanear/i }).click();
-      await waitSettled(page);
-      await waitServicesReady(page);
-      await page.getByRole('button', { name: /quitar/i }).first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
-      await page.getByRole('button', { name: /emitir y cobrar|emitir factura/i }).waitFor({ state: 'visible', timeout: 15000 });
-    } else {
-      const searchInput = page.getByLabel(/buscar por nombre/i);
-      await searchInput.fill(serviceQuery);
-      await waitSettled(page);
+    const searchInput = page.getByLabel(/buscar por nombre/i);
+    await searchInput.fill(serviceQuery);
+    await waitSettled(page);
+    await waitServicesReady(page);
 
-      const serviceButton = page.getByRole('button', { name: new RegExp(serviceName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }).first();
-      if (await serviceButton.isVisible().catch(() => false)) {
-        await serviceButton.click();
+    const serviceButton = page.getByRole('button', { name: new RegExp(serviceName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }).first();
+    if (await serviceButton.isVisible().catch(() => false)) {
+      await serviceButton.click();
+      await waitSettled(page);
+    } else {
+      await searchInput.fill('');
+      await waitSettled(page);
+      const firstVisibleService = page.locator('#nueva-factura button').filter({ hasText: /L\.\s*\d/ }).first();
+      if (await firstVisibleService.isVisible().catch(() => false)) {
+        await firstVisibleService.click();
         await waitSettled(page);
       } else {
-        await searchInput.fill('');
-        await waitSettled(page);
-        const firstVisibleService = page.locator('#nueva-factura button').filter({ hasText: /L\.\s*\d/ }).first();
-        if (await firstVisibleService.isVisible().catch(() => false)) {
-          await firstVisibleService.click();
-          await waitSettled(page);
-        } else {
-          findings.push(`billing-new-with-services: no se encontro servicio activo visible para ${serviceQuery}.`);
-        }
+        findings.push(`billing-new-with-services: no se encontro servicio activo visible para ${serviceQuery}.`);
       }
     }
     if ((await cartItemCount(page)) < 1) {
@@ -385,8 +389,19 @@ async function main() {
       lastInvoiceNumber = paymentText.match(/000-\d{3}-\d{2}-\d{8}/)?.[0] ?? '';
     }
 
-    await page.getByRole('button', { name: /confirmar cobro/i }).click();
-    await page.getByLabel(/vista previa del recibo/i).waitFor({ state: 'visible', timeout: 15000 });
+    const paymentDialog = page.getByRole('dialog').filter({ has: paymentHeading });
+    const paymentText = await paymentDialog.innerText();
+    const balanceDue = paymentText.match(/Saldo pendiente:\s*L\.\s*([0-9,.]+)/i)?.[1]?.replace(',', '') ?? '1000.00';
+    await page.getByLabel(/monto recibido/i).fill(balanceDue);
+    const previewCheckbox = page.getByRole('checkbox', { name: /ver preview antes de imprimir/i });
+    if (
+      await previewCheckbox.isVisible().catch(() => false) &&
+      (await previewCheckbox.getAttribute('aria-checked').catch(() => 'false')) !== 'true'
+    ) {
+      await previewCheckbox.click();
+    }
+    await page.getByRole('button', { name: /registrar cobro y ver preview|confirmar cobro|registrar cobro e imprimir/i }).click();
+    await page.getByRole('dialog', { name: /vista previa del recibo/i }).waitFor({ state: 'visible', timeout: 15000 });
     await screenshot(page, 'receipt-preview');
     await closeOperationalDialogIfPresent(page);
 
@@ -438,15 +453,15 @@ async function main() {
     await page.getByText(/total cobrado/i).waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
     await screenshot(page, 'reports');
     const reportsText = await page.locator('body').innerText();
-    if (!/total cobrado|total ingresos|top servicios|auditoria operativa/i.test(reportsText)) {
+    if (!/facturado|cobrado|pendiente|cobros por metodo|auditoria/i.test(reportsText)) {
       findings.push('reports: no se encontraron metricas utiles visibles.');
     }
 
     await navigate(page, routeScreens.backups, 'backups');
-    await page.getByText(/no hay backups|pendiente|completado|fallido/i).waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+    await page.getByText(/respaldos|pendiente|protegido|error/i).waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
     await screenshot(page, 'backups');
     const backupsText = await page.locator('body').innerText();
-    if (!/no hay backups|backup|pendiente|completado|fallido/i.test(backupsText)) {
+    if (!/respaldos|pendiente|protegido|error/i.test(backupsText)) {
       findings.push('backups: el estado vacio o pendiente no se entiende visualmente.');
     }
 
@@ -465,7 +480,7 @@ async function main() {
       user,
       role: 'admin',
       environment: 'local-real',
-      mutationMode: process.env.VISUAL_SMOKE_ALLOW_MUTATIONS === '1' ? 'explicit' : 'local-admin-demo-default',
+      mutationMode: process.env.VISUAL_SMOKE_ALLOW_MUTATIONS === '1' ? 'explicit-authorized' : 'blocked',
       screenshots: Object.keys(routeScreens).map((name) => ({
         name,
         route: routeScreens[name],

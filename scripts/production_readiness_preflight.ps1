@@ -9,26 +9,57 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+. (Join-Path $scriptRoot "lib\operational_url_safety.ps1")
+
+trap {
+    Write-Host (Protect-HospitalOperationalText $_.Exception.Message $ProjectRoot)
+    Write-Host "No se ejecuto el preflight. Revise que BaseUrl use solo http://IP-DEL-SERVIDOR:8000 y no incluya usuario, contrasena ni token."
+    exit 1
+}
+
 if ($ProjectRoot -eq "") {
-    $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
     $ProjectRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
 }
+
+$ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+$BaseUrl = Test-HospitalOperationalUrlInput $BaseUrl
 
 $failures = New-Object System.Collections.Generic.List[string]
 $warnings = New-Object System.Collections.Generic.List[string]
 
+function Protect-PreflightText([string] $value) {
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        return $value
+    }
+
+    $protected = $value
+    $protected = $protected -replace [regex]::Escape($ProjectRoot), "%PROJECT_ROOT%"
+    $protected = $protected -replace [regex]::Escape(($ProjectRoot -replace "\\", "/")), "%PROJECT_ROOT%"
+    if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
+        $protected = $protected -replace [regex]::Escape($env:USERPROFILE), "%USERPROFILE%"
+        $protected = $protected -replace [regex]::Escape(($env:USERPROFILE -replace "\\", "/")), "%USERPROFILE%"
+    }
+    $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
+    $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+
+    return $protected
+}
+
 function Add-Failure([string] $message) {
-    $failures.Add($message) | Out-Null
-    Write-Host "[FAIL] $message" -ForegroundColor Red
+    $safeMessage = Protect-PreflightText $message
+    $failures.Add($safeMessage) | Out-Null
+    Write-Host "[FAIL] $safeMessage" -ForegroundColor Red
 }
 
 function Add-Warning([string] $message) {
-    $warnings.Add($message) | Out-Null
-    Write-Host "[WARN] $message" -ForegroundColor Yellow
+    $safeMessage = Protect-PreflightText $message
+    $warnings.Add($safeMessage) | Out-Null
+    Write-Host "[WARN] $safeMessage" -ForegroundColor Yellow
 }
 
 function Add-Pass([string] $message) {
-    Write-Host "[ OK ] $message" -ForegroundColor Green
+    Write-Host "[ OK ] $(Protect-PreflightText $message)" -ForegroundColor Green
 }
 
 function Add-Strong-Warning([string] $message) {
@@ -41,7 +72,7 @@ function Read-EnvFile([string] $path) {
     $values = @{}
 
     if (-not (Test-Path -LiteralPath $path)) {
-        Add-Failure "Missing backend .env at $path"
+        Add-Failure "Missing environment file at $path"
         return $values
     }
 
@@ -102,6 +133,35 @@ function Test-IsWindowsHost {
     return $env:OS -eq "Windows_NT" -or $PSVersionTable.Platform -eq "Win32NT" -or $null -ne (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue)
 }
 
+function Test-DockerComposeConfig([string] $composePath, [string] $envFilePath) {
+    if (-not (Test-CommandExists "docker")) {
+        Add-Failure "docker is not available for Docker production package validation"
+        return
+    }
+
+    $configCommand = 'docker compose -f "' + $composePath + '" --env-file "' + $envFilePath + '" config --quiet >nul 2>nul'
+    & cmd.exe /c $configCommand
+    if ($LASTEXITCODE -eq 0) {
+        Add-Pass "docker-compose.prod.yml validates with production .env"
+    } else {
+        Add-Failure "docker-compose.prod.yml or root .env is invalid for Docker production package"
+    }
+}
+
+function Test-BackupWrapperCheck([string] $scriptPath, [string] $label) {
+    if (-not (Test-Path -LiteralPath $scriptPath)) {
+        Add-Failure "Missing backup wrapper $label at $scriptPath"
+        return
+    }
+
+    & cmd.exe /c "`"$scriptPath`" --check" *> $null
+    if ($LASTEXITCODE -eq 0) {
+        Add-Pass "$label wrapper --check passed"
+    } else {
+        Add-Failure "$label wrapper --check failed"
+    }
+}
+
 function Test-BackupScheduledTask([string] $taskName, [string[]] $AllowedStates) {
     if ($null -eq (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue)) {
         Add-Failure "Get-ScheduledTask is not available; cannot validate Windows backup task $taskName"
@@ -150,6 +210,35 @@ function Get-ProofFieldValue([string] $content, [string] $fieldLabel) {
     }
 
     return $match.Groups["value"].Value.Trim()
+}
+
+function Test-ProofReferencedLocalEvidence([string] $path, [string] $proofName, [string] $content, [string] $fieldLabel) {
+    $value = Get-ProofFieldValue $content $fieldLabel
+    if (Test-ProofValueIsIncomplete $value) {
+        return
+    }
+
+    $reference = $value.Trim()
+    if ([System.IO.Path]::IsPathRooted($reference)) {
+        Add-Failure "$proofName evidence must use a relative evidence reference, not an absolute local path, in $path."
+        return
+    }
+
+    $looksLikeRepoPath = $reference -match '^(qa|docs|scripts|frontend|backend)[\\/]'
+    if (-not $looksLikeRepoPath) {
+        return
+    }
+
+    if ($reference -notmatch '^qa[\\/]' -or $reference -match '(^|[\\/])\.\.([\\/]|$)') {
+        Add-Failure "$proofName evidence must reference files under qa/ without traversal, or use a non-local physical/support reference, in $path."
+        return
+    }
+
+    $candidate = Join-Path $ProjectRoot $reference
+
+    if (-not (Test-Path -LiteralPath $candidate)) {
+        Add-Failure "$proofName evidence references missing local evidence '$reference' in $path."
+    }
 }
 
 function Test-ProofHasCompletedField([string] $content, [string] $fieldLabel) {
@@ -222,6 +311,13 @@ function Test-ProofFile([string] $path, [string] $proofName, [string[]] $require
         }
     }
 
+    $failureCountBeforeEvidence = $failures.Count
+    Test-ProofReferencedLocalEvidence $path $proofName $content "Evidence/photo reference"
+    Test-ProofReferencedLocalEvidence $path $proofName $content "Evidence/capture reference"
+    if ($failures.Count -gt $failureCountBeforeEvidence) {
+        return
+    }
+
     Add-Pass "$proofName evidence is present and completed."
 }
 
@@ -252,14 +348,14 @@ function Invoke-RouteCheck([string] $url, [string] $label, [int[]] $AllowedStatu
 
 $backendDir = Join-Path $ProjectRoot "backend"
 $frontendDist = Join-Path $ProjectRoot "frontend\dist"
-$envPath = Join-Path $backendDir ".env"
+$backendEnvPath = Join-Path $backendDir ".env"
+$rootEnvPath = Join-Path $ProjectRoot ".env"
+$composeProdPath = Join-Path $ProjectRoot "docker-compose.prod.yml"
+$isDockerProductionPackage = (Test-Path -LiteralPath $composeProdPath) -and (Test-Path -LiteralPath $rootEnvPath) -and (-not (Test-Path -LiteralPath (Join-Path $backendDir "artisan")))
+$envPath = if ($isDockerProductionPackage) { $rootEnvPath } else { $backendEnvPath }
 $envValues = Read-EnvFile $envPath
 
-$baseUri = $null
-if (-not [Uri]::TryCreate($BaseUrl.TrimEnd("/"), [UriKind]::Absolute, [ref] $baseUri) -or $baseUri.Scheme -notin @("http", "https")) {
-    Add-Failure "BaseUrl must be an absolute http(s) LAN URL, for example http://192.168.1.10"
-    $baseUri = [Uri] "http://invalid.local"
-}
+$baseUri = [Uri] $BaseUrl
 
 $baseHostWithPort = if ($baseUri.IsDefaultPort) { $baseUri.Host } else { "$($baseUri.Host):$($baseUri.Port)" }
 $appEnv = Get-EnvValue $envValues "APP_ENV" "local"
@@ -275,11 +371,47 @@ $queueConnection = Get-EnvValue $envValues "QUEUE_CONNECTION" ""
 $configuredDumpBinary = Get-EnvValue $envValues "HOSPITAL_DUMP_BINARY" ""
 
 Write-Host "Production readiness preflight for $BaseUrl"
-Write-Host "Project root: $ProjectRoot"
+Write-Host "Project root: $(Protect-PreflightText $ProjectRoot)"
+if ($isDockerProductionPackage) {
+    Add-Pass "Docker production package layout detected"
+    Test-DockerComposeConfig $composeProdPath $envPath
+}
 
 if ($appEnv -eq "production") { Add-Pass "APP_ENV=production" } else { Add-Failure "APP_ENV must be production, current value is '$appEnv'" }
 if ($appDebug -eq "false") { Add-Pass "APP_DEBUG=false" } else { Add-Failure "APP_DEBUG must be false, current value is '$appDebug'" }
 if ($appUrl -eq $BaseUrl.TrimEnd("/")) { Add-Pass "APP_URL matches BaseUrl" } else { Add-Failure "APP_URL must match $($BaseUrl.TrimEnd('/')), current value is '$appUrl'" }
+
+# Reject the default blank APP_KEY from .env.example. The installer
+# always generates a real value with `php artisan key:generate`;
+# a blank key means someone copied the template and forgot to run it.
+$appKey = (Get-EnvValue $envValues "APP_KEY" "")
+if ([string]::IsNullOrWhiteSpace($appKey) -or $appKey -eq "base64:") {
+    Add-Failure "APP_KEY is empty or the .env.example placeholder. Run 'php artisan key:generate' on the server."
+} else {
+    Add-Pass "APP_KEY is set to a non-placeholder value"
+}
+
+# Same check for the database password. The installer randomizes
+# it; if the value is the well-known dev default the operator
+# never overrode the .env, which is a real production hazard.
+$dbPassword = (Get-EnvValue $envValues "DB_PASSWORD" "")
+$forbiddenDbPasswords = @("hospital_dev", "root_dev", "changeme", "password", "secret")
+if ([string]::IsNullOrWhiteSpace($dbPassword)) {
+    Add-Failure "DB_PASSWORD is empty. The installer must generate a random 24-char password."
+} elseif ($forbiddenDbPasswords -contains $dbPassword) {
+    Add-Failure "DB_PASSWORD is set to a well-known dev value '$dbPassword'. Replace it with a random 24-char string."
+} else {
+    Add-Pass "DB_PASSWORD is set to a non-default value"
+}
+
+$dbRootPassword = (Get-EnvValue $envValues "DB_ROOT_PASSWORD" "")
+if ([string]::IsNullOrWhiteSpace($dbRootPassword)) {
+    Add-Failure "DB_ROOT_PASSWORD is empty. The installer must generate a random 24-char password."
+} elseif ($forbiddenDbPasswords -contains $dbRootPassword) {
+    Add-Failure "DB_ROOT_PASSWORD is set to a well-known dev value '$dbRootPassword'. Replace it."
+} else {
+    Add-Pass "DB_ROOT_PASSWORD is set to a non-default value"
+}
 
 if ($BaseUrl -match "localhost|127\.0\.0\.1|::1") {
     Add-Failure "BaseUrl must be the final LAN IP or local domain, not localhost"
@@ -318,71 +450,90 @@ if ($queueConnection -eq "database") {
 }
 
 if (Test-IsWindowsHost) {
-    Test-BackupScheduledTask "HospitalBillingOS-BackupWorker" @("Ready", "Running")
-    Test-BackupScheduledTask "HospitalBillingOS-DailyBackup" @("Ready", "Running")
+    Test-BackupScheduledTask "SistemaCajaHospitalaria-BackupWorker" @("Ready", "Running")
+    Test-BackupScheduledTask "SistemaCajaHospitalaria-DailyBackup" @("Ready", "Running")
 } else {
     Add-Warning "Non-Windows host detected. Validate an equivalent continuous backup worker/service before production handoff."
 }
 
-if (Test-Path -LiteralPath (Join-Path $frontendDist "index.html")) {
+if ($isDockerProductionPackage) {
+    Add-Pass "Docker package serves compiled frontend from backend/shared_public image flow"
+} elseif (Test-Path -LiteralPath (Join-Path $frontendDist "index.html")) {
     Add-Pass "frontend/dist/index.html exists"
 } else {
     Add-Failure "Missing frontend build. Run npm.cmd run build in frontend/"
 }
 
 $assetDir = Join-Path $frontendDist "assets"
-if (Test-Path -LiteralPath $assetDir) {
+if ($isDockerProductionPackage) {
+    Add-Pass "Frontend asset verification deferred to /login route check for Docker package"
+} elseif (Test-Path -LiteralPath $assetDir) {
     $assetCount = (Get-ChildItem -LiteralPath $assetDir -File | Measure-Object).Count
     if ($assetCount -gt 0) { Add-Pass "frontend/dist/assets contains $assetCount files" } else { Add-Failure "frontend/dist/assets is empty" }
 } else {
     Add-Failure "Missing frontend/dist/assets"
 }
 
-if (Test-CommandExists "php") { Add-Pass "php is available in PATH" } else { Add-Failure "php is not available in PATH" }
-
-$mysqlClient = Find-FirstExecutableCandidate @(
-    "mysql",
-    "mariadb",
-    "C:\xampp\mysql\bin\mysql.exe",
-    "C:\xampp\mysql\bin\mariadb.exe",
-    "C:\laragon\bin\mysql\mysql-8.0\bin\mysql.exe",
-    "/usr/bin/mysql",
-    "/usr/bin/mariadb",
-    "/usr/local/bin/mysql",
-    "/usr/local/bin/mariadb"
-)
-if ($null -ne $mysqlClient) { Add-Pass "mysql client is available: $mysqlClient" } else { Add-Failure "mysql or mariadb client is not available" }
-
-$dumpTool = Find-FirstExecutableCandidate @(
-    $configuredDumpBinary,
-    "mariadb-dump",
-    "mysqldump",
-    "C:\xampp\mysql\bin\mariadb-dump.exe",
-    "C:\xampp\mysql\bin\mysqldump.exe",
-    "C:\laragon\bin\mysql\mysql-8.0\bin\mysqldump.exe",
-    "/usr/bin/mariadb-dump",
-    "/usr/bin/mysqldump",
-    "/usr/local/bin/mariadb-dump",
-    "/usr/local/bin/mysqldump"
-)
-if ($null -ne $dumpTool) {
-    Add-Pass "database dump tool is available: $dumpTool"
+if ($isDockerProductionPackage) {
+    Add-Pass "Host PHP is not required for Docker production package"
+} elseif (Test-CommandExists "php") {
+    Add-Pass "php is available in PATH"
 } else {
-    Add-Failure "mariadb-dump or mysqldump must be available for backups"
+    Add-Failure "php is not available in PATH"
 }
 
-$backupDir = Join-Path $backendDir "storage\app\private\backups"
-if (-not (Test-Path -LiteralPath $backupDir)) {
-    New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+if ($isDockerProductionPackage) {
+    Add-Pass "MySQL client and dump tool are validated inside Docker image/runtime"
+} else {
+    $mysqlClient = Find-FirstExecutableCandidate @(
+        "mysql",
+        "mariadb",
+        "C:\xampp\mysql\bin\mysql.exe",
+        "C:\xampp\mysql\bin\mariadb.exe",
+        "C:\laragon\bin\mysql\mysql-8.0\bin\mysql.exe",
+        "/usr/bin/mysql",
+        "/usr/bin/mariadb",
+        "/usr/local/bin/mysql",
+        "/usr/local/bin/mariadb"
+    )
+    if ($null -ne $mysqlClient) { Add-Pass "mysql client is available: $mysqlClient" } else { Add-Failure "mysql or mariadb client is not available" }
+
+    $dumpTool = Find-FirstExecutableCandidate @(
+        $configuredDumpBinary,
+        "mariadb-dump",
+        "mysqldump",
+        "C:\xampp\mysql\bin\mariadb-dump.exe",
+        "C:\xampp\mysql\bin\mysqldump.exe",
+        "C:\laragon\bin\mysql\mysql-8.0\bin\mysqldump.exe",
+        "/usr/bin/mariadb-dump",
+        "/usr/bin/mysqldump",
+        "/usr/local/bin/mariadb-dump",
+        "/usr/local/bin/mysqldump"
+    )
+    if ($null -ne $dumpTool) {
+        Add-Pass "database dump tool is available: $dumpTool"
+    } else {
+        Add-Failure "mariadb-dump or mysqldump must be available for backups"
+    }
 }
 
-$probePath = Join-Path $backupDir ".write-test"
-try {
-    Set-Content -LiteralPath $probePath -Value "ok" -NoNewline
-    Remove-Item -LiteralPath $probePath -Force
-    Add-Pass "backup directory is writable"
-} catch {
-    Add-Failure "backup directory is not writable: $($_.Exception.Message)"
+if ($isDockerProductionPackage) {
+    Test-BackupWrapperCheck (Join-Path $ProjectRoot "scripts\run_backup_worker.cmd") "Backup worker"
+    Test-BackupWrapperCheck (Join-Path $ProjectRoot "scripts\run_scheduled_backup.cmd") "Scheduled backup"
+} else {
+    $backupDir = Join-Path $backendDir "storage\app\private\backups"
+    if (-not (Test-Path -LiteralPath $backupDir)) {
+        New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+    }
+
+    $probePath = Join-Path $backupDir ".write-test"
+    try {
+        Set-Content -LiteralPath $probePath -Value "ok" -NoNewline -Encoding ASCII
+        Remove-Item -LiteralPath $probePath -Force
+        Add-Pass "backup directory is writable"
+    } catch {
+        Add-Failure "backup directory is not writable: $($_.Exception.Message)"
+    }
 }
 
 Invoke-RouteCheck "$($BaseUrl.TrimEnd('/'))/up" "/up"
@@ -423,8 +574,8 @@ if ($AllowMissingPhysicalProof) {
         )
 
     Test-ProofFile `
-        -path (Join-Path $ProjectRoot "qa\THERMAL_PRINTER_PROOF.md") `
-        -proofName "physical thermal printer" `
+        -path (Join-Path $ProjectRoot "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md") `
+        -proofName "physical institutional printer" `
         -requiredFields @(
             "Date/time",
             "Responsible person",
@@ -434,6 +585,9 @@ if ($AllowMissingPhysicalProof) {
             "Browser/version",
             "Cashier computer",
             "Invoice used",
+            "Media carta result",
+            "Carta result",
+            "A5 result",
             "80mm result",
             "58mm result",
             "Reprint result",
@@ -444,8 +598,12 @@ if ($AllowMissingPhysicalProof) {
             "Final conclusion"
         ) `
         -requiredChecks @(
+            "media carta",
+            "carta",
+            "A5",
             "80mm",
             "58mm",
+            "white background",
             "Reprint",
             "headers/footers",
             "historical"

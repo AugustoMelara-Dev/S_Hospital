@@ -3,6 +3,7 @@ import { AlertTriangle } from 'lucide-react';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { finiteNumber, formatLempiras } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
 interface AlertDialogContentProps {
@@ -103,7 +104,14 @@ export function AlertDialogAction({ children, onClick, disabled }: AlertDialogAc
 interface CloseSessionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  session: { opening_amount: string; expected_cash_amount?: string | null; expected_amount?: string | null };
+  session: {
+    opening_amount: string;
+    expected_cash_amount?: string | null;
+    expected_amount?: string | null;
+    payments_by_method?: { cash: string; transfer: string; card: string; other: string };
+    pending_invoice_count?: number;
+    pending_amount?: string | null;
+  };
   closingAmount: string;
   closingNotes: string;
   difference: number;
@@ -124,9 +132,17 @@ export function CloseSessionDialog({
   onConfirm,
 }: CloseSessionDialogProps) {
   const closingNotesRef = useRef<HTMLTextAreaElement | null>(null);
-  const openingAmount = parseFloat(session.opening_amount || '0');
-  const expectedAmount = parseFloat(session.expected_cash_amount ?? session.expected_amount ?? '0');
+  const openingAmount = finiteNumber(session.opening_amount);
+  const expectedAmount = finiteNumber(session.expected_cash_amount ?? session.expected_amount);
+  const pendingAmount = finiteNumber(session.pending_amount);
+  const pendingInvoiceCount = session.pending_invoice_count ?? 0;
   const isDifference = difference !== 0;
+  const methods = session.payments_by_method ?? {
+    cash: '0.00',
+    transfer: '0.00',
+    card: '0.00',
+    other: '0.00',
+  };
 
   useEffect(() => {
     if (open && isDifference) {
@@ -143,20 +159,47 @@ export function CloseSessionDialog({
             <div className="mt-2 space-y-2">
               <div className="flex justify-between">
                 <span>Monto apertura:</span>
-                <strong>L. {openingAmount.toFixed(2)}</strong>
+                <strong>{formatLempiras(openingAmount)}</strong>
               </div>
               <div className="flex justify-between">
-                <span>Total esperado:</span>
-                <strong>L. {expectedAmount.toFixed(2)}</strong>
+                <span>Efectivo esperado:</span>
+                <strong>{formatLempiras(expectedAmount)}</strong>
               </div>
+              <div className="grid grid-cols-2 gap-2 rounded-md border border-border p-3 text-xs">
+                <div className="flex justify-between gap-2">
+                  <span>Efectivo</span>
+                  <strong>{formatLempiras(methods.cash)}</strong>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span>Transferencia</span>
+                  <strong>{formatLempiras(methods.transfer)}</strong>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span>Tarjeta</span>
+                  <strong>{formatLempiras(methods.card)}</strong>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span>Otros</span>
+                  <strong>{formatLempiras(methods.other)}</strong>
+                </div>
+              </div>
+              <div className="flex justify-between">
+                <span>Saldo pendiente:</span>
+                <strong>{formatLempiras(pendingAmount)}</strong>
+              </div>
+              {pendingInvoiceCount > 0 && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/20 dark:text-amber-100">
+                  Hay {pendingInvoiceCount} factura(s) pendientes o parciales. El servidor no permitira cerrar hasta revisarlas.
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>Contado:</span>
-                <strong>L. {closingAmount || '0.00'}</strong>
+                <strong>{formatLempiras(closingAmount || '0.00')}</strong>
               </div>
               <div className="flex justify-between">
                 <span>Diferencia:</span>
                 <strong className={cn(isDifference ? 'text-destructive' : 'text-emerald-600')}>
-                  L. {difference.toFixed(2)}
+                  {formatLempiras(difference)}
                 </strong>
               </div>
             </div>

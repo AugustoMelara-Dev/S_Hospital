@@ -2,11 +2,11 @@
 
 Decision: **UX-2 APROBADA** para flujo local/browser de caja y recibo.
 
-Estado de release recomendado: **DEMO_READY / PRODUCTION_CANDIDATE**. No declarar `PRODUCTION_READY` hasta validar impresora termica fisica 80mm/58mm, segundo cliente LAN real y configuracion final del servidor.
+Estado de release recomendado: **PRODUCTION_CANDIDATE**. No declarar `PRODUCTION_READY` hasta validar impresora institucional fisica, segundo cliente LAN real y configuracion final del servidor.
 
 ## Alcance
 
-Frente validado: caja, apertura, cierre, resumen por metodo, efectivo esperado, recibo termico 80mm/58mm, preview, impresion explicita y reimpresion explicita desde historial.
+Frente validado: caja, apertura, cierre, resumen por metodo, efectivo esperado, recibo institucional media carta/carta/A5/80mm/58mm, preview, impresion explicita y reimpresion explicita desde historial.
 
 No se tocaron migraciones, reglas fiscales, CORS/Sanctum, permisos backend, reportes/admin/backups/fiscal fuera de navegacion minima de smoke, ni UX-3/UX-4/UX-5.
 
@@ -14,7 +14,7 @@ No se tocaron migraciones, reglas fiscales, CORS/Sanctum, permisos backend, repo
 
 URL: `http://127.0.0.1:8000`.
 
-Usuario usado: `admin.demo` / admin.
+Usuario usado: `admin.validacion` / admin.
 
 Estado antes: caja admin #1 abierta con apertura L.500.00, 58 pagos, total pagos L.2794.50 y efectivo esperado L.3294.50.
 
@@ -35,7 +35,7 @@ Hallazgos antes:
 - Habia dos entradas de monto contado en la misma pantalla: una en el resumen y otra en el formulario de cierre.
 - El error por monto contado vacio aparecia, pero el estado visual ya insinuaba una diferencia.
 - El resumen por metodo no mostraba `Otros` y explicaba poco que tarjeta/transferencia no entran al efectivo esperado.
-- El recibo 80mm/58mm, preview y reimpresion auditada funcionaban.
+- El recibo media carta/carta/A5/80mm/58mm, preview y reimpresion auditada funcionaban.
 - Cambiar preview 80mm/58mm desde historial no llamaba `/reprint`; solo el boton `Reimprimir` lo hacia.
 - Print CSS estaba condicionado por `body[data-printing-receipt="true"]`.
 - Consola/red: sin 401/419/CORS/500. Hubo un 422 esperado en el intento deliberado de caja duplicada y warnings de descripcion accesible en dialogos de recibo/historial.
@@ -73,7 +73,7 @@ Decision antes: **REQUIERE CAMBIOS**.
 
 ## Medicion despues
 
-Usuario usado: `admin.demo` / admin.
+Usuario usado: `admin.validacion` / admin.
 
 Estado antes de la pasada posterior: sin caja abierta del admin.
 
@@ -82,7 +82,7 @@ Caja usada durante medicion posterior:
 - Caja #6: apertura L.0.00, cierre L.0.00.
 - Caja #7: apertura L.100.00, factura/cobro y cierre igual.
 - Caja #8: apertura L.50.00, cierre L.40.00 con nota por diferencia.
-- Visual smoke final dejo caja #9 abierta para `admin.demo` con apertura L.500.00.
+- Visual smoke final dejo caja #9 abierta para `admin.validacion` con apertura L.500.00.
 
 Factura usada:
 
@@ -123,7 +123,7 @@ Recibo manual posterior:
 - Cambio de preview desde historial: 0 llamadas a `/reprint`.
 - Reimpresion explicita: 1 llamada a `/reprint`.
 
-Impresora fisica: **PENDIENTE_HARDWARE_VALIDATION**. No habia impresora fisica 80mm/58mm disponible en esta pasada.
+Impresora fisica: **PENDIENTE_HARDWARE_VALIDATION**. No habia impresora fisica media carta/carta/A5/80mm/58mm disponible en esta pasada.
 
 ## Gates
 
@@ -152,7 +152,7 @@ Resultado final: **UX-2 APROBADA** para caja/recibo en entorno local de navegado
 
 Pendientes fuera de UX-2:
 
-- Validacion fisica de impresora termica 80mm/58mm.
+- Validacion fisica de impresora institucional media carta/carta/A5/80mm/58mm.
 - Validacion desde segundo cliente LAN real.
 - UX-3/UX-4/UX-5.
 

@@ -4,6 +4,7 @@ namespace App\Actions\Reports;
 
 use App\Models\FiscalSetting;
 use App\Support\HospitalName;
+use App\Support\Money;
 use Illuminate\Support\Carbon;
 use PhpOffice\PhpSpreadsheet\Chart\Chart;
 use PhpOffice\PhpSpreadsheet\Chart\DataSeries;
@@ -20,7 +21,10 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class ExcelReportService
 {
-    use Concerns\FormatsReportMoney;
+    private function moneyFloat(mixed $value): float
+    {
+        return Money::parseCents((string) ($value ?? 0), 'amount') / 100;
+    }
 
     public function generate(
         array $income,
@@ -114,7 +118,7 @@ class ExcelReportService
         $sheet1->mergeCells('B6:C6');
         $sheet1->setCellValue('B6', 'TOTAL FACTURADO');
         $sheet1->getStyle('B6:C6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet1->setCellValue('B7', $this->decimalForSpreadsheet($income['total_billed']));
+        $sheet1->setCellValue('B7', $this->moneyFloat($income['total_billed']));
         $sheet1->getStyle('B7')->getNumberFormat()->setFormatCode('L. #,##0.00');
         $sheet1->getStyle('B6:C7')->applyFromArray($kpiCardStyle);
         $sheet1->getStyle('B7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -122,7 +126,7 @@ class ExcelReportService
         $sheet1->mergeCells('E6:F6');
         $sheet1->setCellValue('E6', 'TOTAL COBRADO');
         $sheet1->getStyle('E6:F6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $sheet1->setCellValue('E7', $this->decimalForSpreadsheet($income['total_collected']));
+        $sheet1->setCellValue('E7', $this->moneyFloat($income['total_collected']));
         $sheet1->getStyle('E7')->getNumberFormat()->setFormatCode('L. #,##0.00');
         $sheet1->getStyle('E6:F7')->applyFromArray($kpiCardStyle);
         $sheet1->getStyle('E7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -152,7 +156,7 @@ class ExcelReportService
 
         foreach ($income['payments_by_method'] as $method => $total) {
             $sheet1->setCellValue('B'.$row, $methodLabels[$method] ?? ucfirst($method));
-            $sheet1->setCellValue('C'.$row, $this->decimalForSpreadsheet($total));
+            $sheet1->setCellValue('C'.$row, $this->moneyFloat($total));
             $sheet1->getStyle('C'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
             $row++;
         }
@@ -190,7 +194,7 @@ class ExcelReportService
 
         $plotArea1 = new PlotArea($layout1, [$series1]);
         $legend1 = new Legend(Legend::POSITION_RIGHT, null, false);
-        $title1 = new Title('Distribución de Ingresos por Método de Pago');
+        $title1 = new Title('Distribución de Cobros por Método de Pago');
 
         $chart1 = new Chart(
             'payment_methods_chart',
@@ -230,7 +234,7 @@ class ExcelReportService
         foreach ($categories['categories'] as $cat) {
             $sheet2->setCellValue('B'.$row, $cat['category']);
             $sheet2->setCellValue('C'.$row, (int) $cat['quantity']);
-            $sheet2->setCellValue('D'.$row, $this->decimalForSpreadsheet($cat['total']));
+            $sheet2->setCellValue('D'.$row, $this->moneyFloat($cat['total']));
 
             $sheet2->getStyle('C'.$row)->getNumberFormat()->setFormatCode('#,##0');
             $sheet2->getStyle('D'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
@@ -314,7 +318,7 @@ class ExcelReportService
             $sheet3->setCellValue('B'.$row, $svc['service']);
             $sheet3->setCellValue('C'.$row, $svc['category']);
             $sheet3->setCellValue('D'.$row, (int) $svc['quantity']);
-            $sheet3->setCellValue('E'.$row, $this->decimalForSpreadsheet($svc['total']));
+            $sheet3->setCellValue('E'.$row, $this->moneyFloat($svc['total']));
 
             $sheet3->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0');
             $sheet3->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
@@ -356,7 +360,7 @@ class ExcelReportService
             $sheet4->setCellValue('B'.$row, $cashier['name']);
             $sheet4->setCellValue('C'.$row, '@'.$cashier['username']);
             $sheet4->setCellValue('D'.$row, (int) $cashier['payment_count']);
-            $sheet4->setCellValue('E'.$row, $this->decimalForSpreadsheet($cashier['total_collected']));
+            $sheet4->setCellValue('E'.$row, $this->moneyFloat($cashier['total_collected']));
 
             $sheet4->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0');
             $sheet4->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
@@ -399,9 +403,9 @@ class ExcelReportService
         foreach ($operations['voids'] as $void) {
             $sheet5->setCellValue('B'.$row, $void['invoice_number']);
             $sheet5->setCellValue('C'.$row, $void['patient_name'] ?? 'N/A');
-            $sheet5->setCellValue('D'.$row, $this->decimalForSpreadsheet($void['total']));
-            $sheet5->setCellValue('E'.$row, $void['void_reason'] ?? 'Sin motivo');
-            $sheet5->setCellValue('F'.$row, $void['voided_by_name'] ?? 'N/A');
+            $sheet5->setCellValue('D'.$row, $this->moneyFloat($void['total']));
+            $sheet5->setCellValue('E'.$row, $void['reason'] ?? $void['void_reason'] ?? 'Sin motivo');
+            $sheet5->setCellValue('F'.$row, $void['user'] ?? $void['voided_by_name'] ?? 'N/A');
 
             $sheet5->getStyle('D'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
             $row++;
@@ -416,7 +420,7 @@ class ExcelReportService
 
         // Reprints section (below voids table)
         $row += 3;
-        $sheet5->setCellValue('B'.$row, 'Historial de Reimpresiones Térmicas');
+        $sheet5->setCellValue('B'.$row, 'Historial de Reimpresiones Institucionales');
         $sheet5->getStyle('B'.$row)->applyFromArray($titleStyle);
 
         $row += 2;
@@ -428,21 +432,74 @@ class ExcelReportService
         $sheet5->getStyle("B{$row}:F{$row}")->applyFromArray($headerStyle);
         $sheet5->getStyle("B{$row}:F{$row}")->getFill()->setStartColor(new Color('F59E0B')); // Amber
 
-        $reprintStart = $row + 1;
         $row++;
         foreach ($operations['reprints'] as $reprint) {
             $sheet5->setCellValue('B'.$row, $reprint['invoice_number']);
             $sheet5->setCellValue('C'.$row, $reprint['patient_name'] ?? 'N/A');
-            $sheet5->setCellValue('D'.$row, "{$reprint['width']}mm");
+            $sheet5->setCellValue('D'.$row, $this->receiptWidthLabel($reprint['width'] ?? null));
             $sheet5->setCellValue('E'.$row, $reprint['reason'] ?? 'Sin motivo');
-            $sheet5->setCellValue('F'.$row, $reprint['username'] ?? 'N/A');
+            $sheet5->setCellValue('F'.$row, $reprint['user'] ?? $reprint['username'] ?? 'N/A');
             $row++;
         }
 
-        foreach (['B', 'C', 'D', 'E', 'F'] as $col) {
+        // Payment reversals section
+        $row += 3;
+        $sheet5->setCellValue('B'.$row, 'Historial de Reversos de Pago');
+        $sheet5->getStyle('B'.$row)->applyFromArray($titleStyle);
+
+        $row += 2;
+        $sheet5->setCellValue('B'.$row, 'Factura');
+        $sheet5->setCellValue('C'.$row, 'Paciente');
+        $sheet5->setCellValue('D'.$row, 'Método');
+        $sheet5->setCellValue('E'.$row, 'Monto');
+        $sheet5->setCellValue('F'.$row, 'Motivo');
+        $sheet5->setCellValue('G'.$row, 'Reversado por');
+        $sheet5->setCellValue('H'.$row, 'Fecha');
+        $sheet5->getStyle("B{$row}:H{$row}")->applyFromArray($headerStyle);
+        $sheet5->getStyle("B{$row}:H{$row}")->getFill()->setStartColor(new Color('7C3AED'));
+
+        $row++;
+        foreach ($operations['payment_voids'] ?? [] as $paymentVoid) {
+            $sheet5->setCellValue('B'.$row, $paymentVoid['invoice_number'] ?? 'N/A');
+            $sheet5->setCellValue('C'.$row, $paymentVoid['patient_name'] ?? 'N/A');
+            $sheet5->setCellValue('D'.$row, $this->paymentMethodLabel($paymentVoid['method'] ?? ''));
+            $sheet5->setCellValue('E'.$row, $this->moneyFloat($paymentVoid['amount'] ?? 0));
+            $sheet5->setCellValue('F'.$row, $paymentVoid['reason'] ?? 'Sin motivo');
+            $sheet5->setCellValue('G'.$row, $paymentVoid['voided_by'] ?? 'N/A');
+            $sheet5->setCellValue('H'.$row, isset($paymentVoid['voided_at'])
+                ? Carbon::parse($paymentVoid['voided_at'])->format('d/m/Y H:i')
+                : 'N/A');
+            $sheet5->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+            $row++;
+        }
+
+        foreach (['B', 'C', 'D', 'E', 'F', 'G', 'H'] as $col) {
             $sheet5->getColumnDimension($col)->setAutoSize(true);
         }
 
         return $spreadsheet;
+    }
+
+    private function paymentMethodLabel(string $method): string
+    {
+        return [
+            'cash' => 'Efectivo',
+            'transfer' => 'Transferencia',
+            'card' => 'Tarjeta',
+            'other' => 'Otro',
+        ][$method] ?? ucfirst($method);
+    }
+
+    private function receiptWidthLabel(?string $width): string
+    {
+        return [
+            '58' => 'Termico 58mm',
+            '80' => 'Termico 80mm',
+            '58mm' => 'Termico 58mm',
+            '80mm' => 'Termico 80mm',
+            'a5' => 'A5',
+            'half_letter' => 'Media carta',
+            'letter' => 'Carta',
+        ][$width ?? ''] ?? 'N/A';
     }
 }

@@ -1,8 +1,8 @@
-# Windows Server Local Install - Hospital Billing OS
+# Windows Server Local Install - Sistema de Caja Hospitalaria
 
 ## Objetivo
 
-Guia inicial para instalar Hospital Billing OS en una PC servidor Windows dentro de una red local. Esta guia es para produccion offline LAN y no reemplaza el Docker Compose de desarrollo.
+Guia inicial para instalar Sistema de Caja Hospitalaria en una PC servidor Windows dentro de una red local. Esta guia es para produccion offline LAN y no reemplaza el Docker Compose de desarrollo.
 
 ## Requisitos del servidor
 

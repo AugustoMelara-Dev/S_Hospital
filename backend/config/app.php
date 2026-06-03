@@ -15,6 +15,8 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    'version' => env('APP_VERSION', 'local'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment
@@ -122,5 +124,7 @@ return [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
+
+    'license_salt' => env('HOSPITAL_LICENSE_SALT', ''),
 
 ];

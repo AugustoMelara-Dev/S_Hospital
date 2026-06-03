@@ -3,7 +3,24 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property string $document_type
+ * @property string $prefix
+ * @property int $min_number
+ * @property int $max_number
+ * @property int $current_number
+ * @property string $cai
+ * @property Carbon $valid_until
+ * @property bool $active
+ * @property string|null $active_document_type
+ * @property int|null $created_by
+ * @property int|null $updated_by
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
 class FiscalSequence extends Model
 {
     protected $fillable = [

@@ -1,5 +1,6 @@
 import { User } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
+import { formatLempiras } from '../../lib/money';
 
 type CashierSummary = {
   user_id: number;
@@ -37,7 +38,7 @@ export function CashierList({ cashiers }: CashierListProps) {
           </div>
           <div className="text-right shrink-0">
             <p className="text-sm font-bold text-foreground">
-              L. {Number(cashier.total_collected).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatLempiras(cashier.total_collected)}
             </p>
             <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 mt-0.5">
               {cashier.payment_count} {cashier.payment_count === 1 ? 'pago' : 'pagos'}

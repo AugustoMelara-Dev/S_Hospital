@@ -1,4 +1,4 @@
-# Guia rapida para cajero
+﻿# Guia rapida para cajero
 
 ## Inicio de turno
 

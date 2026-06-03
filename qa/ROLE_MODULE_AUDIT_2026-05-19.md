@@ -77,12 +77,12 @@ Modules covered:
 - `npm.cmd run smoke:real` against `http://192.168.1.7:8000`: passed, 1 non-mutating real navigation test; mutation test intentionally skipped without `E2E_REAL_ALLOW_MUTATIONS=1`.
 - Real scheduled backup command: passed after detecting XAMPP dump binary. Created `hospital-backup-20260519-143246-t2tcamra.sql`, status `success`, size `299891`, SHA256 `4633427ffb79efec03b97fd98997d2d367d809580e4816d90040b44da1c3c49b`.
 - Windows wrapper backup command: passed. `scripts/run_scheduled_backup.cmd` created `hospital-backup-20260519-144322-ys8wi5a9.sql`.
-- Current-user startup automation: installed under `C:\Users\melar\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\HospitalBillingOSBackupAutomation.cmd`.
+- Current-user startup automation: installed under `C:\Users\melar\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\SistemaCajaHospitalariaBackupAutomation.cmd`.
 - Current-user HKCU Run automation: installed as `"C:\Projects\S_Hospital\scripts\start_backup_automation.cmd"` according to `scripts/install_backup_startup_current_user.ps1 -Status`.
 - Runtime automation process: started successfully, log at `backend/storage/logs/backup-automation.log`; worker PID observed in process list after launcher start.
 
 ## Remaining Field Validation
 
 - Physical LAN client access from a second device still needs to be tested on the final server IP.
-- Physical thermal printer 80mm/58mm still needs real hardware evidence before claiming `PRODUCTION_READY`.
+- Physical institutional printer output for media carta/carta/A5/80mm/58mm still needs real hardware evidence before claiming `PRODUCTION_READY`.
 - Windows Task Scheduler management requires an elevated PowerShell session on this machine. Because the non-elevated session cannot reliably create/start/query scheduled tasks, the current-user Startup automation is active as the local fallback.

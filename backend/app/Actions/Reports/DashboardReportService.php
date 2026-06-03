@@ -6,6 +6,7 @@ use App\Actions\Reports\Concerns\FormatsReportMoney;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
+use App\Support\Money;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -20,6 +21,8 @@ use Illuminate\Support\Facades\DB;
 class DashboardReportService
 {
     use FormatsReportMoney;
+
+    public function __construct(private readonly FinancialFactsService $financialFacts) {}
 
     /**
      * @return array<string, mixed>
@@ -49,29 +52,17 @@ class DashboardReportService
             $date = $now->copy()->subDays($i);
             $start = $date->copy()->startOfDay();
             $end = $date->copy()->endOfDay();
-
-            $invoiceSummary = Invoice::query()
-                ->whereBetween('issued_at', [$start, $end])
-                ->where('status', '!=', Invoice::STATUS_VOID)
-                ->selectRaw('COUNT(*) as invoice_count')
-                ->selectRaw('COALESCE(SUM(ROUND(total * 100)), 0) as billed_cents')
-                ->first();
-
-            $paymentSummary = Payment::query()
-                ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
-                ->where('payments.status', Payment::STATUS_POSTED)
-                ->where('invoices.status', '!=', Invoice::STATUS_VOID)
-                ->whereBetween('payments.paid_at', [$start, $end])
-                ->selectRaw('COUNT(*) as payment_count')
-                ->selectRaw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as collected_cents')
-                ->first();
+            $facts = $this->financialFacts->forRange($start, $end);
 
             $days[] = [
                 'date' => $date->toDateString(),
-                'total_billed' => $this->centsToMoney($invoiceSummary?->billed_cents),
-                'total_collected' => $this->centsToMoney($paymentSummary?->collected_cents),
-                'invoice_count' => (int) ($invoiceSummary?->invoice_count ?? 0),
-                'payment_count' => (int) ($paymentSummary?->payment_count ?? 0),
+                'total_billed' => $facts['total_billed'],
+                'total_collected' => $facts['total_collected'],
+                'total_pending' => $facts['total_pending'],
+                'total_partial' => $facts['total_partial'],
+                'total_voided' => $facts['total_voided'],
+                'invoice_count' => $facts['invoice_count'],
+                'payment_count' => $facts['payment_count'],
             ];
         }
 
@@ -85,28 +76,16 @@ class DashboardReportService
     {
         $start = $now->copy()->startOfMonth();
         $end = $now->copy()->endOfMonth();
-
-        $invoiceSummary = Invoice::query()
-            ->whereBetween('issued_at', [$start, $end])
-            ->where('status', '!=', Invoice::STATUS_VOID)
-            ->selectRaw('COUNT(*) as invoice_count')
-            ->selectRaw('COALESCE(SUM(ROUND(total * 100)), 0) as billed_cents')
-            ->first();
-
-        $paymentSummary = Payment::query()
-            ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
-            ->where('payments.status', Payment::STATUS_POSTED)
-            ->where('invoices.status', '!=', Invoice::STATUS_VOID)
-            ->whereBetween('payments.paid_at', [$start, $end])
-            ->selectRaw('COUNT(*) as payment_count')
-            ->selectRaw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as collected_cents')
-            ->first();
+        $facts = $this->financialFacts->forRange($start, $end);
 
         return [
-            'total_billed' => $this->centsToMoney($invoiceSummary?->billed_cents),
-            'total_collected' => $this->centsToMoney($paymentSummary?->collected_cents),
-            'invoice_count' => (int) ($invoiceSummary?->invoice_count ?? 0),
-            'payment_count' => (int) ($paymentSummary?->payment_count ?? 0),
+            'total_billed' => $facts['total_billed'],
+            'total_collected' => $facts['total_collected'],
+            'total_pending' => $facts['total_pending'],
+            'total_partial' => $facts['total_partial'],
+            'total_voided' => $facts['total_voided'],
+            'invoice_count' => $facts['invoice_count'],
+            'payment_count' => $facts['payment_count'],
         ];
     }
 
@@ -124,7 +103,7 @@ class DashboardReportService
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
             ->whereBetween('payments.paid_at', [$today, $end])
             ->groupBy('payments.method')
-            ->select('payments.method', DB::raw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as total_cents'))
+            ->select('payments.method', DB::raw('COALESCE(SUM(payments.amount_cents), 0) as total_cents'))
             ->get()
             ->each(function (object $row) use (&$methods): void {
                 if (array_key_exists($row->method, $methods)) {
@@ -152,15 +131,15 @@ class DashboardReportService
                 'invoice_items.service_name',
                 'invoice_items.category_name',
             )
-            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.quantity * 100)), 0) as quantity_cents')
-            ->selectRaw('COALESCE(SUM(ROUND(invoice_items.line_total * 100)), 0) as total_cents')
+            ->selectRaw('COALESCE(SUM(invoice_items.quantity_cents), 0) as quantity_cents')
+            ->selectRaw('COALESCE(SUM(invoice_items.line_total_cents), 0) as total_cents')
             ->orderByDesc('total_cents')
             ->limit(10)
             ->get()
             ->map(fn (object $row): array => [
                 'service_name' => $row->service_name,
                 'category_name' => $row->category_name,
-                'quantity' => number_format((int) $row->quantity_cents / 100, 2, '.', ''),
+                'quantity' => Money::formatCents((int) $row->quantity_cents),
                 'total' => $this->centsToMoney($row->total_cents),
             ])
             ->values()
@@ -184,7 +163,7 @@ class DashboardReportService
             ->orderByDesc('collected_cents')
             ->select('payments.user_id', 'users.name', 'users.username')
             ->selectRaw('COUNT(*) as payment_count')
-            ->selectRaw('COALESCE(SUM(ROUND(payments.amount * 100)), 0) as collected_cents')
+            ->selectRaw('COALESCE(SUM(payments.amount_cents), 0) as collected_cents')
             ->get()
             ->map(fn (object $row): array => [
                 'user_id' => (int) $row->user_id,

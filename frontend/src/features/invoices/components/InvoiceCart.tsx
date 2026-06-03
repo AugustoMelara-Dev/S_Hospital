@@ -3,6 +3,7 @@ import { Button } from '../../../components/ui/button';
 import { Checkbox } from '../../../components/ui/checkbox';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
+import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
 export type CartItem = {
   service: import('../../../lib/api').Service;
@@ -13,6 +14,7 @@ export type CartItem = {
 type InvoiceCartProps = {
   items: CartItem[];
   preview: { subtotal: string; tax: string; total: string };
+  taxRate?: string;
   onUpdateQuantity: (index: number, quantity: string) => void;
   onUpdateDialysisPrescription: (index: number, checked: boolean) => void;
   onRemoveItem: (index: number) => void;
@@ -29,6 +31,7 @@ const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 export function InvoiceCart({
   items,
   preview,
+  taxRate,
   onUpdateQuantity,
   onUpdateDialysisPrescription,
   onRemoveItem,
@@ -85,7 +88,7 @@ export function InvoiceCart({
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-sm truncate">{item.service.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        L. {item.service.price} {isFree && <span className="text-emerald-600 font-medium">(Gratis - Receta dialisis)</span>}
+                        {moneyLabel(item.service.price)} {isFree && <span className="text-emerald-600 font-medium">(Gratis - Receta dialisis)</span>}
                       </p>
                     </div>
                     <Button
@@ -156,15 +159,17 @@ export function InvoiceCart({
         <div className="space-y-2 mb-4">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Subtotal:</span>
-            <span>L. {preview.subtotal}</span>
+            <span>{moneyLabel(preview.subtotal)}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">ISV (15%):</span>
-            <span>L. {preview.tax}</span>
-          </div>
+          {taxRate && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">ISV ({taxRate}%):</span>
+              <span>{moneyLabel(preview.tax)}</span>
+            </div>
+          )}
           <div className="flex justify-between font-bold text-xl border-t border-border pt-2">
-            <span>Total:</span>
-            <span className="text-primary">L. {preview.total}</span>
+            <span>Total estimado:</span>
+            <span className="text-primary">{moneyLabel(preview.total)}</span>
           </div>
         </div>
 
@@ -214,6 +219,10 @@ function actionLabelForBlockReason(reason: string, emptyActionLabel: string): st
   }
 
   return 'Complete requisitos';
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
 }
 
 function parseQuantityUnits(value: string): number {

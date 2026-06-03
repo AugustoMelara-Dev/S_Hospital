@@ -3,7 +3,11 @@ FROM php:8.3-cli-alpine
 RUN apk add --no-cache bash curl git icu-dev libzip-dev oniguruma-dev zip \
     freetype-dev libjpeg-turbo-dev libpng-dev mariadb-client \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install intl mbstring pdo_mysql zip gd
+    && docker-php-ext-install intl mbstring pdo_mysql zip gd bcmath opcache
+
+# FPM tuning is dev-only, but copying it costs nothing and keeps
+# dev/prod parity.
+COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/zz-hospital-tuning.conf
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

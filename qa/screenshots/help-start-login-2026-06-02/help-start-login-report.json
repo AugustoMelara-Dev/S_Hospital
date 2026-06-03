@@ -1,0 +1,14 @@
+{
+  "generated_at": "2026-06-02T19:55:06.541Z",
+  "route": "/help",
+  "base_url": "http://127.0.0.1:4180",
+  "mode": "mocked-api-built-dist",
+  "assertions": [
+    "Ayuda institucional visible",
+    "Abrir el sistema visible",
+    "Iniciar sesion visible",
+    "Se cerro el navegador visible",
+    "Acciones seguras sin repetir factura/cobro visibles"
+  ],
+  "console_issues": []
+}

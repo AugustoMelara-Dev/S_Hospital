@@ -1,13 +1,15 @@
 import { apiClient } from './base';
 import type {
   DailyReport,
+  MonthlyReport,
   IncomeReport,
   CategoryReport,
+  AreaIncomeReport,
   ServiceSalesReport,
   OperationsReport,
   CashSessionReport,
   ReportFilters,
-  PaginatedMeta,
+  PdfReportFilters,
   DashboardReport,
 } from './types';
 
@@ -33,6 +35,12 @@ export const reports = {
     return response.data;
   },
 
+  async getMonthlyReport(month?: string): Promise<MonthlyReport> {
+    const query = month ? `?month=${encodeURIComponent(month)}` : '';
+    const response = await apiClient.request<{ data: MonthlyReport }>(`/api/reports/monthly${query}`);
+    return response.data;
+  },
+
   async getIncomeReport(filters: ReportFilters): Promise<IncomeReport> {
     const params = buildReportParams(filters);
     const response = await apiClient.request<{ data: IncomeReport }>(
@@ -45,6 +53,14 @@ export const reports = {
     const params = buildReportParams(filters);
     const response = await apiClient.request<{ data: CategoryReport }>(
       `/api/reports/categories?${params.toString()}`,
+    );
+    return response.data;
+  },
+
+  async getAreaIncomeReport(filters: ReportFilters): Promise<AreaIncomeReport> {
+    const params = buildReportParams(filters);
+    const response = await apiClient.request<{ data: AreaIncomeReport }>(
+      `/api/reports/areas?${params.toString()}`,
     );
     return response.data;
   },
@@ -72,14 +88,6 @@ export const reports = {
     return response.data;
   },
 
-  async getBackups(filters: { page?: number; perPage?: number } = {}): Promise<{ data: import('./types').BackupLog[]; meta: PaginatedMeta }> {
-    const params = new URLSearchParams();
-    if (filters.page) params.set('page', String(filters.page));
-    if (filters.perPage) params.set('per_page', String(filters.perPage));
-    const query = params.toString() ? `?${params.toString()}` : '';
-    return apiClient.request<{ data: import('./types').BackupLog[]; meta: PaginatedMeta }>(`/api/backups${query}`);
-  },
-
   exportUrl(filters: ReportFilters): string {
     const params = buildReportParams(filters);
     return apiClient.url(`/api/reports/export?${params.toString()}`);
@@ -90,8 +98,8 @@ export const reports = {
     return apiClient.download(`/api/reports/export?${params.toString()}`);
   },
 
-  async downloadPdf(filters: ReportFilters & { date?: string }): Promise<Blob> {
-    const params = buildReportParams(filters as ReportFilters);
+  async downloadPdf(filters: PdfReportFilters): Promise<Blob> {
+    const params = buildReportParams(filters);
     if (filters.date) {
       params.set('date', filters.date);
     }

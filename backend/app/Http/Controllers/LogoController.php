@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Fiscal\UploadLogoRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class LogoController extends Controller
 {
-    public function show(Request $request): JsonResponse
+    public function show(): JsonResponse
     {
         $exists = Storage::disk('public')->exists('branding/logo.png');
         $url = null;
@@ -25,14 +25,8 @@ class LogoController extends Controller
         ]);
     }
 
-    public function upload(Request $request): JsonResponse
+    public function upload(UploadLogoRequest $request): JsonResponse
     {
-        $request->user()->can('settings.fiscal.update') || abort(403);
-
-        $request->validate([
-            'logo' => ['required', 'image', 'mimes:png,jpg,jpeg', 'max:2048'], // Max 2MB
-        ]);
-
         if (! $request->file('logo')?->isValid()) {
             throw ValidationException::withMessages([
                 'logo' => ['El archivo del logo no es valido.'],

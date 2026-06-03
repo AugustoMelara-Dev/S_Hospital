@@ -1,23 +1,28 @@
 # Final concurrency proof
 
-This file documents the concurrent request validation performed on a test database snapshot.
+Estado actual: PENDING_FINAL_CONCURRENCY_VALIDATION.
 
-## Environment
+Este archivo documenta la validacion final de concurrencia contra una base
+descartable o snapshot autorizado del entorno final. El script crea datos
+auditables y no debe ejecutarse contra produccion activa sin snapshot, ventana
+de mantenimiento y confirmacion explicita.
 
-- Date/time: 2026-05-19 16:00:00
-- Responsible person: Dr. Augusto Melara
-- Server LAN URL: http://192.168.1.7:8000
-- Target environment: Local development snapshot
-- Run ID: concurrency-validation-20260519T160000
-- Evidence/capture reference: qa/screenshots/concurrency_proof_20260519/
-- Final conclusion: Concurrency tests passed. The application handles concurrent requests correctly by preventing double cash-session openings, keeping unique sequential invoice numbers, and ensuring double payments are prevented using database locks.
+## Bloqueantes actuales
 
-## Required checks
+- Falta definir target final descartable o snapshot autorizado.
+- Falta ejecutar doble apertura de caja y confirmar una sola verdad.
+- Falta ejecutar emision concurrente y confirmar numeros fiscales unicos.
+- Falta ejecutar doble pago y confirmar que solo un pago queda posteado.
+- Falta adjuntar evidencia verificable bajo `qa/`.
 
-- [x] Double cash-session open leaves one truth. Result/evidence: The script validate_mysql_concurrency.mjs attempted to open two sessions for the same cashier simultaneously; one succeeded, and the second returned a 422 error.
-- [x] Concurrent invoice emission keeps unique numbers. Result/evidence: Emitting invoices concurrently resulted in correctly incremented sequential invoice numbers without gaps or duplicates.
-- [x] Double payment leaves one posted payment. Result/evidence: Two concurrent payment posting requests for the same invoice were executed; the first request was processed and the second was rejected with a 409 conflict, leaving only one payment in the payments table.
+## Comando recomendado
 
-## Evidence
+```bash
+HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://IP_DEL_SERVIDOR:8000 HOSPITAL_CONCURRENCY_BASE_URL=http://IP_DEL_SERVIDOR:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh
+```
 
-- Notes: Handled via DB transaction locks and Laravel database isolation levels.
+## Resultado operativo
+
+Mientras este archivo siga pendiente, `scripts\production_readiness_preflight.ps1`
+debe fallar y cualquier entrega debe quedar como `PRODUCTION_CANDIDATE`, no como
+`PRODUCTION_READY`.

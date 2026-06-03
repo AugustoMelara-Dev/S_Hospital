@@ -1,11 +1,16 @@
 <?php
 
+use App\Actions\Reports\OpenApiExporter;
+use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CashSessionController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CspReportController;
+use App\Http\Controllers\EchoConfigController;
 use App\Http\Controllers\FiscalSequenceController;
 use App\Http\Controllers\FiscalSettingsController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LogoController;
 use App\Http\Controllers\PaymentController;
@@ -14,13 +19,29 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SystemStatusController;
 use App\Http\Controllers\UserController;
+use App\Http\Middleware\LoginLockout;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
     return response()->json([
         'status' => 'ok',
-        'service' => config('app.name'),
+        'service' => 'Sistema de Caja Hospitalaria',
     ]);
+})->middleware('throttle:120,1');
+
+Route::any('/system/csp-report', [CspReportController::class, 'store'])
+    ->middleware('throttle:30,1');
+
+Route::get('/system/health', [HealthController::class, 'show'])
+    ->middleware('throttle:120,1');
+
+Route::get('/system/echo-config', [EchoConfigController::class, 'show'])
+    ->middleware('throttle:30,1');
+
+Route::get('/system/openapi', function () {
+    $document = app(OpenApiExporter::class)->document(app('router'));
+
+    return response()->json($document);
 });
 
 Route::get('/system/setup-status', [SystemStatusController::class, 'setupStatus'])
@@ -29,14 +50,13 @@ Route::get('/system/setup-status', [SystemStatusController::class, 'setupStatus'
 Route::get('/settings/logo', [LogoController::class, 'show'])
     ->middleware('web');
 
-Route::get('/settings/fiscal', [FiscalSettingsController::class, 'show'])
+Route::get('/settings/branding', [FiscalSettingsController::class, 'publicBranding'])
     ->middleware('web');
-
 
 Route::post('/auth/login', [AuthController::class, 'login'])
-    ->middleware(['web', 'throttle:5,1']);
+    ->middleware(['web', LoginLockout::class, 'throttle:5,1']);
 Route::get('/auth/session', [AuthController::class, 'session'])
-    ->middleware('web');
+    ->middleware(['web', 'throttle.user:30,1']);
 
 Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
@@ -44,6 +64,7 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
     Route::middleware('password.changed')->group(function () {
+        Route::get('/settings/fiscal', [FiscalSettingsController::class, 'show']);
         Route::put('/settings/fiscal', [FiscalSettingsController::class, 'update']);
         Route::post('/settings/logo', [LogoController::class, 'upload']);
 
@@ -54,30 +75,40 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
         Route::get('/categories', [CategoryController::class, 'index']);
         Route::post('/categories', [CategoryController::class, 'store']);
         Route::patch('/categories/{category}', [CategoryController::class, 'update']);
+        Route::get('/areas', [AreaController::class, 'index']);
 
         Route::get('/services', [ServiceController::class, 'index']);
         Route::post('/services', [ServiceController::class, 'store']);
         Route::patch('/services/{service}', [ServiceController::class, 'update']);
 
         Route::get('/invoices', [InvoiceController::class, 'index']);
-        Route::post('/invoices', [InvoiceController::class, 'store']);
+        Route::post('/invoices', [InvoiceController::class, 'store'])
+            ->middleware('throttle.user:60,1');
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
-        Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'void']);
+        Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'void'])
+            ->middleware('throttle.user:30,1');
+        Route::post('/invoices/{invoice}/reverse', [InvoiceController::class, 'reverse'])
+            ->middleware('throttle.user:10,1');
 
         Route::get('/cash-sessions/current', [CashSessionController::class, 'current']);
         Route::post('/cash-sessions/open', [CashSessionController::class, 'open']);
         Route::post('/cash-sessions/{cashSession}/close', [CashSessionController::class, 'close']);
         Route::get('/cash-sessions', [CashSessionController::class, 'index']);
 
-        Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store']);
+        Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store'])
+            ->middleware('throttle:60,1');
         Route::get('/invoices/{invoice}/payments', [PaymentController::class, 'index']);
+        Route::post('/invoices/{invoice}/payments/{payment}/void', [PaymentController::class, 'void'])
+            ->middleware('throttle:30,1');
         Route::get('/invoices/{invoice}/receipt', [ReceiptController::class, 'show']);
         Route::post('/invoices/{invoice}/reprint', [ReceiptController::class, 'reprint']);
 
         Route::get('/reports/dashboard', [ReportController::class, 'dashboard']);
         Route::get('/reports/daily', [ReportController::class, 'daily']);
+        Route::get('/reports/monthly', [ReportController::class, 'monthly']);
         Route::get('/reports/income', [ReportController::class, 'income']);
         Route::get('/reports/categories', [ReportController::class, 'categories']);
+        Route::get('/reports/areas', [ReportController::class, 'areas']);
         Route::get('/reports/services', [ReportController::class, 'services']);
         Route::get('/reports/operations', [ReportController::class, 'operations']);
         Route::get('/reports/export', [ReportController::class, 'export'])

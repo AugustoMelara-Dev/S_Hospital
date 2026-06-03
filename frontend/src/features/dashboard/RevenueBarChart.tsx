@@ -8,6 +8,7 @@ import {
   ComposedChart,
   Area,
 } from 'recharts';
+import { finiteNumber, formatLempiras } from '../../lib/money';
 import { useElementWidth } from './useElementWidth';
 
 type DailyTrendData = {
@@ -26,11 +27,13 @@ type TooltipValue = string | number | readonly (string | number)[] | undefined;
 type TooltipName = string | number | undefined;
 
 function numericTooltipValue(value: TooltipValue): number {
-  if (Array.isArray(value)) {
-    return Number(value[0] ?? 0);
+  if (typeof value === 'string' || typeof value === 'number') {
+    return finiteNumber(value);
   }
 
-  return Number(value ?? 0);
+  const scalar = Array.isArray(value) ? value[0] : 0;
+
+  return finiteNumber(scalar ?? 0);
 }
 
 export function RevenueBarChart({ data }: RevenueBarChartProps) {
@@ -42,8 +45,8 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
 
     return {
       name: formattedDate,
-      Billed: parseFloat(d.total_billed),
-      Collected: parseFloat(d.total_collected),
+      Billed: finiteNumber(d.total_billed),
+      Collected: finiteNumber(d.total_collected),
       invoices: d.invoice_count,
       payments: d.payment_count,
     };
@@ -97,7 +100,7 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             }}
             formatter={(value: TooltipValue, name: TooltipName) => [
-              `L. ${numericTooltipValue(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+              formatLempiras(numericTooltipValue(value)),
               name === 'Billed' ? 'Facturado' : 'Cobrado',
             ]}
             labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
@@ -109,7 +112,7 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
             iconSize={8}
             formatter={(value) => (
               <span className="text-xs font-medium text-foreground">
-                {value === 'Billed' ? 'Facturado (Ventas)' : 'Cobrado (Flujo)'}
+                {value === 'Billed' ? 'Facturado (emision)' : 'Cobrado (pagos)'}
               </span>
             )}
           />

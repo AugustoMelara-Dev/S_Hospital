@@ -1,0 +1,65 @@
+{
+  "baseUrl": "http://127.0.0.1:8000",
+  "generatedAt": "2026-05-31T12:53:44.633Z",
+  "screenshots": [
+    {
+      "name": "light-dashboard",
+      "route": "/dashboard",
+      "url": "http://127.0.0.1:8000/dashboard",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\rc-lan-api-relative-2026-05-31\\light-dashboard.png"
+    },
+    {
+      "name": "light-billing-new",
+      "route": "/billing/new",
+      "url": "http://127.0.0.1:8000/billing/new",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\rc-lan-api-relative-2026-05-31\\light-billing-new.png"
+    },
+    {
+      "name": "light-backups",
+      "route": "/backups",
+      "url": "http://127.0.0.1:8000/backups",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\rc-lan-api-relative-2026-05-31\\light-backups.png"
+    },
+    {
+      "name": "light-reports",
+      "route": "/reports",
+      "url": "http://127.0.0.1:8000/reports",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\rc-lan-api-relative-2026-05-31\\light-reports.png"
+    },
+    {
+      "name": "dark-dashboard",
+      "route": "/dashboard",
+      "url": "http://127.0.0.1:8000/dashboard",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\rc-lan-api-relative-2026-05-31\\dark-dashboard.png"
+    },
+    {
+      "name": "dark-billing-new",
+      "route": "/billing/new",
+      "url": "http://127.0.0.1:8000/billing/new",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\rc-lan-api-relative-2026-05-31\\dark-billing-new.png"
+    },
+    {
+      "name": "dark-backups",
+      "route": "/backups",
+      "url": "http://127.0.0.1:8000/backups",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\rc-lan-api-relative-2026-05-31\\dark-backups.png"
+    },
+    {
+      "name": "dark-reports",
+      "route": "/reports",
+      "url": "http://127.0.0.1:8000/reports",
+      "path": "C:\\Projects\\S_Hospital\\qa\\screenshots\\rc-lan-api-relative-2026-05-31\\dark-reports.png"
+    }
+  ],
+  "issues": [],
+  "receiptChecked": false,
+  "receiptForbiddenFlags": {
+    "qr": false,
+    "barcode": false,
+    "internalCode": false
+  },
+  "visibleForbiddenFlags": {
+    "billingOs": false,
+    "demo": false
+  }
+}

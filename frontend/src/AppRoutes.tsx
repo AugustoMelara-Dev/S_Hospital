@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { PermissionGate } from './components/PermissionGate';
 import { EmptyState, LoadingState } from './components/ui/states';
+import { AboutView } from './features/about/AboutView';
 import { BackupsView } from './features/backups/BackupsView';
 import { CashBoxView } from './features/cash/CashBoxView';
 import { CatalogView } from './features/catalog/CatalogView';
@@ -10,7 +11,6 @@ import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 import { ReportsView } from './features/reports/ReportsView';
 import { FiscalSettingsView } from './features/settings/FiscalSettingsView';
 import { UsersView } from './features/admin/UsersView';
-import { AboutView } from './features/about/AboutView';
 import { HelpView } from './features/help/HelpView';
 import { type AuthUser, type CashSession } from './lib/api';
 
@@ -33,6 +33,7 @@ type AppRoutesProps = {
   canViewCashSessionReports: boolean;
   canExportReports: boolean;
   canViewUsers: boolean;
+  canCreateUsers: boolean;
   cashSession: CashSession | null;
   defaultAuthenticatedRoute: string;
   onQuickCash: () => void;
@@ -59,6 +60,7 @@ export function AppRoutes({
   canViewCashSessionReports,
   canExportReports,
   canViewUsers,
+  canCreateUsers,
   cashSession,
   defaultAuthenticatedRoute,
   onQuickCash,
@@ -178,7 +180,7 @@ export function AppRoutes({
         path="/admin/users"
         element={
           <PermissionGate allowed={canViewUsers} reason="Requiere permiso para gestionar usuarios.">
-            <UsersView onStatus={onStatus} />
+            <UsersView onStatus={onStatus} canCreateUsers={canCreateUsers} />
           </PermissionGate>
         }
       />
@@ -188,7 +190,7 @@ export function AppRoutes({
       />
       <Route
         path="/about"
-        element={<AboutView onStatus={onStatus} />}
+        element={<AboutView user={user} onStatus={onStatus} />}
       />
       <Route path="*" element={<NotFoundView />} />
     </Routes>
