@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   type AuthUser,
   type UserPayload,
@@ -80,11 +80,7 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
   const [isTogglingUser, setIsTogglingUser] = useState(false);
   const toggleUserInFlightRef = useRef(false);
 
-  useEffect(() => {
-    void fetchUsers();
-  }, []);
-
-  async function fetchUsers() {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const data = await apiClient.getUsers();
@@ -95,7 +91,11 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [onStatus]);
+
+  useEffect(() => {
+    void fetchUsers();
+  }, [fetchUsers]);
 
   // Filter users based on search term
   const filteredUsers = users.filter((u) => {
