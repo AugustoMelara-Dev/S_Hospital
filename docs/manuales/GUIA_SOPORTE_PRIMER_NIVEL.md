@@ -77,6 +77,17 @@ El validador crea un fixture temporal, genera un paquete de soporte y falla si
 aparecen secretos, `.env` o rutas locales reales. No levanta Docker, no migra y
 no consulta la base de datos del hospital.
 
+Antes de enviar el reporte final de entrega, valide que el indice de evidencias
+no tenga archivos faltantes, rutas locales ni una declaracion prematura de
+produccion lista:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1
+```
+
+Ese cheque no levanta servicios ni toca la base de datos. Solo revisa el handoff
+final y los archivos de evidencia dentro de `qa\`.
+
 ## Evidencia Dentro Del Sistema
 
 Si puede iniciar sesion:
