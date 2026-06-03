@@ -115,6 +115,7 @@ jobs:
         with:
           php-version: '8.2'
           extensions: intl, mbstring, pdo_mysql, zip, gd, bcmath, opcache
+          coverage: pcov
           ini-values: memory_limit=512M
 
       - name: Cache Composer
@@ -122,6 +123,7 @@ jobs:
         with:
           path: backend/vendor
           key: composer-mariadb-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-mariadb-${{ runner.os }}-
 
       - name: Install backend dependencies
         working-directory: backend
