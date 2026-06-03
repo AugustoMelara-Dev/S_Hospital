@@ -14,8 +14,10 @@ hardening técnico adicional.
 - **CRIT-1** Pre-commit guard ampliado (HOSPITAL_LICENSE_SALT,
   HOSPITAL_INITIAL_ADMIN_PASSWORD, .env, nginx/ssl/) + dev
   APP_KEY rotado.
-- **CRIT-2** Plan documentado para regenerar `offline-release/`
-  con imágenes (D4) — el bundle actual sigue vacío.
+- **CRIT-2** Proceso reproducible para generar `offline-release/`
+  con imágenes y checksums (D4). El paquete final del hospital
+  debe generarse sin omitir `docker build`/`docker save` y pasar
+  `OFFLINE_RELEASE_CLEAN: YES`.
 - **CRIT-3** Pipeline CI/CD con GitHub Actions (ci.yml +
   release.yml) cubriendo backend-SQLite, backend-MariaDB,
   frontend y e2e-mocked.

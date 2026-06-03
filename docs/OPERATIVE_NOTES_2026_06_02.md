@@ -5,9 +5,9 @@
 
 ## Estado del sistema
 
-- **Release actual:** v1.0.0-rc.3 (en este branch)
+- **Release actual:** v1.0.0-rc.4 (en este branch)
 - **Próxima release objetivo:** v1.0.0 (PRODUCTION_READY)
-- **Backend:** Laravel 12, 380 tests PHPUnit, 0 errores PHPStan nivel 5/6
+- **Backend:** Laravel 12, 380 tests PHPUnit, 0 errores PHPStan nivel 5
 - **Frontend:** React 19 + TS estricto, 217 tests Vitest, 0 typecheck
   errors, 0 ESLint errors
 - **E2E:** Playwright production-readiness spec (mocked) verde
@@ -18,8 +18,8 @@
 
 `KNOWN_LIMITATIONS.md` se mantiene como snapshot histórico del
 estado rc.3. Este documento (`OPERATIVE_NOTES_2026_06_02.md`)
-refleja el corte a la fecha de release y agrega los hallazgos
-de la auditoría del 2026-06-02.
+refleja el corte rc.4 y agrega los hallazgos de la auditoría
+del 2026-06-02.
 
 ## Cerrado en v1.0.0
 
@@ -30,12 +30,12 @@ se cerraron los siguientes bloqueantes CRITICAL:
   `HOSPITAL_LICENSE_SALT`, `HOSPITAL_INITIAL_ADMIN_PASSWORD`,
   archivos `.env`, y `nginx/ssl/`. Dev APP_KEY rotado.
   Ver `docs/SECRETS.md` para el log de rotación.
-- **CRIT-2** - Plan para regenerar `offline-release/` con
-  imágenes y checksums (D4). El bundle actual
-  (`offline-images/` vacío) está documentado en
-  `KNOWN_LIMITATIONS.md` y bloquea la entrega final al
-  hospital hasta que se ejecute `make_offline_release.ps1 -Force`
-  en un build box con internet.
+- **CRIT-2** - Proceso reproducible para generar `offline-release/`
+  con imágenes y checksums (D4). El guard de fuentes
+  productivas y artefacto offline fue validado para rc.4;
+  el paquete final del hospital debe generarse en un build
+  box sin omitir `docker build`/`docker save` y debe terminar
+  con `OFFLINE_RELEASE_CLEAN: YES`.
 - **CRIT-3** - Pipeline CI/CD en GitHub Actions (`.github/workflows/ci.yml`
   y `release.yml`). Todo push/PR corre backend-SQLite, backend-MariaDB,
   frontend typecheck+lint+vitest+build, y e2e-mocked Playwright.
