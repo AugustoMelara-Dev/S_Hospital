@@ -3128,6 +3128,13 @@ Decision: se tipan relaciones Eloquent usadas por categorias/facturas, `ReverseI
 
 Criterio de verificacion: `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G --error-format=table` pasa sin errores. Tambien pasan `BroadcastingWiringTest`, `InvoiceReverseTest`, `CashPaymentsReceiptTest`, `BackupWorkflowTest`, Pint focal y `scripts\check-branding.ps1`.
 
+## 2026-06-03 - Handoff final ejecuta gate de paquete seguro para soporte
+
+Contexto: `scripts\validate_support_packet_safety.ps1` protegia el paquete de soporte contra `.env`, secretos y rutas locales reales, pero el cierre final aun podia generar el reporte sin ejecutar ese gate. El frente operativo depende de que soporte reciba evidencia util sin exponer credenciales ni datos innecesarios.
+
+Decision: `scripts\final_production_handoff.ps1` ejecuta `validate_support_packet_safety.ps1`, incluye su salida en el reporte y bloquea `PRODUCTION_READY` si el gate falla. Este gate se ejecuta antes de capacitacion segura y antes de validar el indice del reporte.
+
+Criterio de verificacion: `final_production_handoff.ps1 -SkipPreflight -ReportPath qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` genera reporte `PRODUCTION_CANDIDATE`, incluye `SUPPORT_PACKET_SAFETY: YES`, `TRAINING_SAFETY: YES` y mantiene `OPS_EVIDENCE_INDEX: YES`.
 ## 2026-06-03 - Handoff final ejecuta gate de capacitacion segura
 
 Contexto: `scripts\validate_training_safety.ps1` protegia manuales y Ayuda, pero el cierre final aun podia generar `FINAL_PRODUCTION_HANDOFF_RESULT.md` sin ejecutar ese gate. Eso dejaba la capacitacion segura como paso manual y podia permitir entregar material que no advierte contra practicar en produccion.

@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 09:07:35
+- Generated at: 2026-06-03 09:14:46
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -13,6 +13,7 @@
 - Final restore proof file: `qa/FINAL_RESTORE_PROOF.md`
 - Final concurrency proof file: `qa/FINAL_CONCURRENCY_PROOF.md`
 - Offline release artifact guard exit code: 1
+- Support packet safety guard exit code: 0
 - Training safety guard exit code: 0
 - Evidence index guard exit code: 0
 - Preflight skipped: True
@@ -38,6 +39,7 @@ Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"
 # Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report.
 bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
 powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000
@@ -94,10 +96,19 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 10f8de18 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit f1c06747 before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
 OFFLINE_RELEASE_CLEAN: NO (18 blocking issue(s))
+```
+
+## Support packet safety validation output
+
+```text
+Paquete seguro para soporte creado en: %PROJECT_ROOT%\qa\support-packets\validation
+Archivo principal: %PROJECT_ROOT%\qa\support-packets\validation\MANIFIESTO.md
+[OK] SUPPORT_PACKET_SAFETY: YES
+[OK] No se copiaron .env, secretos ni rutas locales reales.
 ```
 
 ## Training safety validation output
