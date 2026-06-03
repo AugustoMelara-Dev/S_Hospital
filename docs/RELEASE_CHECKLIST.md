@@ -147,7 +147,10 @@ El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
 `scripts\validate_installer_legacy_safety.ps1`,
 `scripts\validate_lan_recovery_safety.ps1`,
 `scripts\validate_shift_incident_recovery_safety.ps1` y
-`scripts\validate_training_safety.ps1`. Despues de escribir el reporte, ejecute
+`scripts\validate_training_safety.ps1`. Ejecute tambien
+`scripts\validate_operations_objective_audit.ps1` para confirmar que los
+requisitos del objetivo operativo siguen trazados a evidencia local y
+bloqueantes finales. Despues de escribir el reporte, ejecute
 `scripts\validate_final_handoff_completeness.ps1` para confirmar que la entrega
 final conserva capturas, diagnostico, archivos modificados, pruebas, pendientes
 fisicos, riesgos y notas de seguridad. Despues de escribir el reporte, ejecuta
@@ -230,6 +233,12 @@ Antes de entregar material de capacitacion, ejecute
 `scripts\validate_training_safety.ps1`; debe reportar `TRAINING_SAFETY: YES`
 para confirmar que manuales y Ayuda siguen prohibiendo practicas sobre la base
 real de produccion.
+Antes de cerrar el frente operativo, ejecute
+`scripts\validate_operations_objective_audit.ps1`; debe reportar
+`OPERATIONS_OBJECTIVE_AUDIT: YES` para confirmar que ayuda, diagnostico,
+soporte, instalacion, recuperacion, doble accion, respaldos, capacitacion,
+LAN, impresora, paquete offline y preflight final siguen trazados a evidencia
+o bloqueantes de campo explicitos.
 Antes de entregar el paquete final al hospital, ejecute
 `scripts\validate_final_handoff_completeness.ps1`; debe reportar
 `FINAL_HANDOFF_COMPLETENESS: YES` para confirmar que el reporte final conserva

@@ -100,6 +100,7 @@ if ($failures.Count -eq 0) {
         'TRAINING_SAFETY_2026_06_03.md',
         'LAN_RECOVERY_SAFETY_2026_06_03.md',
         'SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md',
+        'OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md',
         'OPS_EVIDENCE_INDEX_2026_06_03.md',
         'OFFLINE_RELEASE_GUARD_2026_06_03.md'
     )
@@ -119,6 +120,7 @@ if ($failures.Count -eq 0) {
         'scripts/validate_browser_smoke_evidence.ps1',
         'scripts/validate_shift_incident_recovery_safety.ps1',
         'scripts/validate_lan_recovery_safety.ps1',
+        'scripts/validate_operations_objective_audit.ps1',
         'docs/manuales'
     )
 
