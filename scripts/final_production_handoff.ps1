@@ -261,6 +261,18 @@ function Invoke-OfflineReleaseBuilderSelfTestGuard {
     }
 }
 
+function Invoke-OfflineReleaseGuardSelfTest {
+    Write-Section "Offline release guard self-test"
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $releaseGuardScript -ProjectRoot $ProjectRoot -SelfTest 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
 function Invoke-DependencyManifestGuard {
     Write-Section "Dependency manifest validation"
     $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $dependencyManifestScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
@@ -483,6 +495,8 @@ function Write-HandoffReport(
     [int] $operationsObjectiveAuditExit,
     [string[]] $offlineReleaseBuilderSelfTestOutput,
     [int] $offlineReleaseBuilderSelfTestExit,
+    [string[]] $offlineReleaseGuardSelfTestOutput,
+    [int] $offlineReleaseGuardSelfTestExit,
     [string[]] $dependencyManifestOutput,
     [int] $dependencyManifestExit,
     [string[]] $finalHandoffCompletenessOutput,
@@ -496,7 +510,7 @@ function Write-HandoffReport(
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
     $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted
-    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $fieldProofTemplatesSafetyExit -eq 0 -and $proofInitializationSafetyExit -eq 0 -and $operationsObjectiveAuditExit -eq 0 -and $offlineReleaseBuilderSelfTestExit -eq 0 -and $dependencyManifestExit -eq 0 -and $finalHandoffCompletenessExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
+    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $fieldProofTemplatesSafetyExit -eq 0 -and $proofInitializationSafetyExit -eq 0 -and $operationsObjectiveAuditExit -eq 0 -and $offlineReleaseBuilderSelfTestExit -eq 0 -and $offlineReleaseGuardSelfTestExit -eq 0 -and $dependencyManifestExit -eq 0 -and $finalHandoffCompletenessExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
 
     Add-ReportLine $lines "# Final production handoff result"
     Add-ReportLine $lines ""
@@ -530,6 +544,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Proof initialization safety guard exit code: $proofInitializationSafetyExit"
     Add-ReportLine $lines "- Operations objective audit guard exit code: $operationsObjectiveAuditExit"
     Add-ReportLine $lines "- Offline release builder self-test exit code: $offlineReleaseBuilderSelfTestExit"
+    Add-ReportLine $lines "- Offline release guard self-test exit code: $offlineReleaseGuardSelfTestExit"
     Add-ReportLine $lines "- Dependency manifest guard exit code: $dependencyManifestExit"
     Add-ReportLine $lines "- Final handoff completeness guard exit code: $finalHandoffCompletenessExit"
     Add-ReportLine $lines "- Evidence index guard exit code: $evidenceIndexExit"
@@ -619,6 +634,9 @@ function Write-HandoffReport(
     if ($offlineReleaseBuilderSelfTestExit -ne 0) {
         Add-ReportLine $lines "- Offline release builder self-test returned exit code $offlineReleaseBuilderSelfTestExit."
     }
+    if ($offlineReleaseGuardSelfTestExit -ne 0) {
+        Add-ReportLine $lines "- Offline release guard self-test returned exit code $offlineReleaseGuardSelfTestExit."
+    }
     if ($dependencyManifestExit -ne 0) {
         Add-ReportLine $lines "- Dependency manifest validation returned exit code $dependencyManifestExit."
     }
@@ -628,7 +646,7 @@ function Write-HandoffReport(
     if ($evidenceIndexExit -ne 0) {
         Add-ReportLine $lines "- Final handoff evidence index validation returned exit code $evidenceIndexExit."
     }
-    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $fieldProofTemplatesSafetyExit -eq 0 -and $proofInitializationSafetyExit -eq 0 -and $operationsObjectiveAuditExit -eq 0 -and $offlineReleaseBuilderSelfTestExit -eq 0 -and $dependencyManifestExit -eq 0 -and $finalHandoffCompletenessExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
+    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $fieldProofTemplatesSafetyExit -eq 0 -and $proofInitializationSafetyExit -eq 0 -and $operationsObjectiveAuditExit -eq 0 -and $offlineReleaseBuilderSelfTestExit -eq 0 -and $offlineReleaseGuardSelfTestExit -eq 0 -and $dependencyManifestExit -eq 0 -and $finalHandoffCompletenessExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
         Add-ReportLine $lines "- None reported by the handoff script."
     }
     Add-ReportLine $lines ""
@@ -641,7 +659,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '- Concurrency and double-action evidence: `qa/FINAL_CONCURRENCY_PROOF.md` and `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md`.'
     Add-ReportLine $lines '- Startup, installation, LAN and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.'
     Add-ReportLine $lines '- Operator and training evidence: `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md`, `qa/TRAINING_SAFETY_2026_06_03.md` and `qa/TRAINING_ACCEPTANCE_PROOF.example.md`.'
-    Add-ReportLine $lines '- Field proof, proof initialization, offline builder, objective, release and index evidence: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md`, `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`.'
+    Add-ReportLine $lines '- Field proof, proof initialization, offline builder, offline release guard, objective, release and index evidence: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md`, `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`.'
     Add-ReportLine $lines ""
 
     Add-ReportLine $lines "## Tests and gates to preserve"
@@ -706,6 +724,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_field_proof_templates.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_proof_initialization_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1 -SelfTest"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1 -SelfTest"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_operations_objective_audit.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_dependency_manifest.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_final_handoff_completeness.ps1 -HandoffPath $(Protect-HandoffText $path)"
@@ -800,6 +819,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $offlineReleaseBuilderSelfTestOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## Offline release guard self-test output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $offlineReleaseGuardSelfTestOutput) {
         Add-ReportLine $lines (Protect-HandoffText $line)
     }
     Add-ReportLine $lines '```'
@@ -1022,6 +1050,7 @@ $fieldProofTemplatesSafety = Invoke-FieldProofTemplatesSafetyGuard
 $proofInitializationSafety = Invoke-ProofInitializationSafetyGuard
 $operationsObjectiveAudit = Invoke-OperationsObjectiveAuditGuard
 $offlineReleaseBuilderSelfTest = Invoke-OfflineReleaseBuilderSelfTestGuard
+$offlineReleaseGuardSelfTest = Invoke-OfflineReleaseGuardSelfTest
 $dependencyManifest = Invoke-DependencyManifestGuard
 
 if ($SkipPreflight) {
@@ -1070,6 +1099,8 @@ if ($SkipPreflight) {
         -operationsObjectiveAuditExit $operationsObjectiveAudit.ExitCode `
         -offlineReleaseBuilderSelfTestOutput $offlineReleaseBuilderSelfTest.Output `
         -offlineReleaseBuilderSelfTestExit $offlineReleaseBuilderSelfTest.ExitCode `
+        -offlineReleaseGuardSelfTestOutput $offlineReleaseGuardSelfTest.Output `
+        -offlineReleaseGuardSelfTestExit $offlineReleaseGuardSelfTest.ExitCode `
         -dependencyManifestOutput $dependencyManifest.Output `
         -dependencyManifestExit $dependencyManifest.ExitCode `
         -finalHandoffCompletenessOutput @("Final handoff completeness validation pending until the handoff report is written.") `
@@ -1125,6 +1156,8 @@ if ($SkipPreflight) {
         -operationsObjectiveAuditExit $operationsObjectiveAudit.ExitCode `
         -offlineReleaseBuilderSelfTestOutput $offlineReleaseBuilderSelfTest.Output `
         -offlineReleaseBuilderSelfTestExit $offlineReleaseBuilderSelfTest.ExitCode `
+        -offlineReleaseGuardSelfTestOutput $offlineReleaseGuardSelfTest.Output `
+        -offlineReleaseGuardSelfTestExit $offlineReleaseGuardSelfTest.ExitCode `
         -dependencyManifestOutput $dependencyManifest.Output `
         -dependencyManifestExit $dependencyManifest.ExitCode `
         -finalHandoffCompletenessOutput $finalHandoffCompleteness.Output `
@@ -1185,6 +1218,8 @@ Write-HandoffReport `
     -operationsObjectiveAuditExit $operationsObjectiveAudit.ExitCode `
     -offlineReleaseBuilderSelfTestOutput $offlineReleaseBuilderSelfTest.Output `
     -offlineReleaseBuilderSelfTestExit $offlineReleaseBuilderSelfTest.ExitCode `
+    -offlineReleaseGuardSelfTestOutput $offlineReleaseGuardSelfTest.Output `
+    -offlineReleaseGuardSelfTestExit $offlineReleaseGuardSelfTest.ExitCode `
     -dependencyManifestOutput $dependencyManifest.Output `
     -dependencyManifestExit $dependencyManifest.ExitCode `
     -finalHandoffCompletenessOutput @("Final handoff completeness validation pending until the handoff report is written.") `
@@ -1240,6 +1275,8 @@ Write-HandoffReport `
     -operationsObjectiveAuditExit $operationsObjectiveAudit.ExitCode `
     -offlineReleaseBuilderSelfTestOutput $offlineReleaseBuilderSelfTest.Output `
     -offlineReleaseBuilderSelfTestExit $offlineReleaseBuilderSelfTest.ExitCode `
+    -offlineReleaseGuardSelfTestOutput $offlineReleaseGuardSelfTest.Output `
+    -offlineReleaseGuardSelfTestExit $offlineReleaseGuardSelfTest.ExitCode `
     -dependencyManifestOutput $dependencyManifest.Output `
     -dependencyManifestExit $dependencyManifest.ExitCode `
     -finalHandoffCompletenessOutput $finalHandoffCompleteness.Output `
@@ -1250,7 +1287,7 @@ Write-HandoffReport `
     -preflightExit $preflightExit `
     -preflightSkipped $false
 
-if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $fieldProofTemplatesSafety.ExitCode -eq 0 -and $proofInitializationSafety.ExitCode -eq 0 -and $operationsObjectiveAudit.ExitCode -eq 0 -and $offlineReleaseBuilderSelfTest.ExitCode -eq 0 -and $dependencyManifest.ExitCode -eq 0 -and $finalHandoffCompleteness.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
+if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $fieldProofTemplatesSafety.ExitCode -eq 0 -and $proofInitializationSafety.ExitCode -eq 0 -and $operationsObjectiveAudit.ExitCode -eq 0 -and $offlineReleaseBuilderSelfTest.ExitCode -eq 0 -and $offlineReleaseGuardSelfTest.ExitCode -eq 0 -and $dependencyManifest.ExitCode -eq 0 -and $finalHandoffCompleteness.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
     Write-Host ""
     Write-Host "PRODUCTION_READY evidence gate passed." -ForegroundColor Green
     exit 0
@@ -1258,7 +1295,7 @@ if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.
 
 Write-Host ""
 Write-Host "PRODUCTION_READY remains blocked. Keep status as PRODUCTION_CANDIDATE and close the missing evidence above." -ForegroundColor Yellow
-if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $fieldProofTemplatesSafety.ExitCode -eq 0 -and $proofInitializationSafety.ExitCode -eq 0 -and $operationsObjectiveAudit.ExitCode -eq 0 -and $offlineReleaseBuilderSelfTest.ExitCode -eq 0 -and $dependencyManifest.ExitCode -eq 0 -and $finalHandoffCompleteness.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
+if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $fieldProofTemplatesSafety.ExitCode -eq 0 -and $proofInitializationSafety.ExitCode -eq 0 -and $operationsObjectiveAudit.ExitCode -eq 0 -and $offlineReleaseBuilderSelfTest.ExitCode -eq 0 -and $offlineReleaseGuardSelfTest.ExitCode -eq 0 -and $dependencyManifest.ExitCode -eq 0 -and $finalHandoffCompleteness.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
     exit 1
 }
 if ($supportPacketSafety.ExitCode -ne 0) {
@@ -1311,6 +1348,9 @@ if ($operationsObjectiveAudit.ExitCode -ne 0) {
 }
 if ($offlineReleaseBuilderSelfTest.ExitCode -ne 0) {
     exit $offlineReleaseBuilderSelfTest.ExitCode
+}
+if ($offlineReleaseGuardSelfTest.ExitCode -ne 0) {
+    exit $offlineReleaseGuardSelfTest.ExitCode
 }
 if ($dependencyManifest.ExitCode -ne 0) {
     exit $dependencyManifest.ExitCode

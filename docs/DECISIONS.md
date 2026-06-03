@@ -3173,6 +3173,14 @@ Decision: `scripts\assert_offline_release_clean.ps1` distingue `qa\*.example.md`
 
 Criterio de verificacion: `scripts\assert_offline_release_clean.ps1 -SelfTest` confirma la allowlist de las cinco plantillas, el builder self-test conserva esas plantillas, el guard offline ya no debe marcarlas como contenido prohibido y `offline-release` sigue bloqueado hasta regenerarse desde el commit final con imagenes Docker reales y manifiesto actualizado.
 
+## 2026-06-03 - Handoff final ejecuta self-test del guard offline
+
+Contexto: el guard offline ya valida que el paquete no lleve evidencia real bajo `qa\` y permite solo plantillas `qa\*.example.md`. Si ese self-test quedaba manual, el handoff podia pasar otros gates sin demostrar que la regla de empaque seguia viva.
+
+Decision: `scripts\final_production_handoff.ps1` ejecuta `scripts\assert_offline_release_clean.ps1 -SelfTest`, registra su codigo de salida y embebe la salida en el reporte final. `PRODUCTION_READY` queda bloqueado si ese self-test falla.
+
+Criterio de verificacion: el handoff con `-SkipPreflight` muestra `Offline release guard self-test exit code: 0` y conserva la salida `Only final-field qa/*.example.md templates are allowed in offline release` dentro del reporte de evidencia.
+
 ## 2026-06-02 - Policies registradas para recursos criticos
 
 Contexto: el frente operativo requiere permisos mantenibles y mensajes de error comprensibles. La auditoria interna ya habia senalado que `app/Policies/` no existia, aunque el sistema autorizaba con Form Requests y guards en Actions. Eso dejaba la matriz de permisos menos visible para soporte y futuras correcciones.

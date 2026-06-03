@@ -68,6 +68,9 @@ Verification after correction:
 - `scripts\assert_offline_release_clean.ps1 -SelfTest` returned `SelfTest
   passed`, confirming that only the five final-field `qa\*.example.md`
   templates are allowed by the guard.
+- `scripts\final_production_handoff.ps1 -SkipPreflight` now runs the same
+  self-test, records `Offline release guard self-test exit code: 0` and embeds
+  the self-test output in the handoff evidence report.
 - Positive synthetic guard fixture:
   `scripts\make_offline_release.ps1 -ReleaseRoot C:\tmp\s_hospital_offline_guard_templates -Force -AllowDirty -SkipDockerBuild -SkipDockerSave -SkipGuard`
   plus checksum-only synthetic tar files allowed the guard to reach package
