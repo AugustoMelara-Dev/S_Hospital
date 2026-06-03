@@ -56,9 +56,9 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
             )}
           </div>
           <div>
-            <h3 className="font-semibold">
+            <h2 className="font-semibold">
               {isConfigured ? 'Configuracion completa' : 'Configuracion pendiente'}
-            </h3>
+            </h2>
             <p className="text-sm text-muted-foreground">
               {isConfigured
                 ? 'El sistema esta listo para emitir facturas.'

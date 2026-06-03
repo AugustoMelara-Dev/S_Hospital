@@ -245,7 +245,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             </div>
 
             <Select value={categoryFilter} onValueChange={handleCategoryFilterChange}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-[200px]" aria-label="Filtrar por categoría">
                 <SelectValue placeholder="Categoría" />
               </SelectTrigger>
               <SelectContent>
@@ -259,7 +259,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             </Select>
 
             <Select value={activeFilter} onValueChange={handleActiveFilterChange}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-[150px]" aria-label="Filtrar por estado">
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
@@ -458,7 +458,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
               Mostrando {services.length} de {meta.total} servicios
             </span>
             <Select value={String(perPage)} onValueChange={(v: string) => handlePerPageChange(Number(v))}>
-              <SelectTrigger className="w-[100px]">
+              <SelectTrigger className="w-[100px]" aria-label="Servicios por página">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

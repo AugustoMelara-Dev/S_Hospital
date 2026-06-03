@@ -373,7 +373,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
             <CardContent className="flex flex-col gap-3 pt-6 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-normal">Estado operativo</p>
-                <h3 className="mt-1 text-xl font-semibold">{operationalStatus.label}</h3>
+                <h2 className="mt-1 text-xl font-semibold">{operationalStatus.label}</h2>
                 <p className="mt-1 max-w-3xl text-sm leading-6">{operationalStatus.description}</p>
               </div>
               <Button
