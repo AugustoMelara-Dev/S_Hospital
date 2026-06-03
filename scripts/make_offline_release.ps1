@@ -5,8 +5,11 @@ param(
     [switch] $AllowDirty,
     [switch] $SkipDockerBuild,
     [switch] $SkipDockerSave,
-    [switch] $SkipGuard
+    [switch] $SkipGuard,
+    [switch] $SelfTest
 )
+
+$script:NginxDefaultConfMinLines = 80
 
 $ErrorActionPreference = "Stop"
 
@@ -14,6 +17,50 @@ if ($ProjectRoot -eq "") {
     $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 } else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+}
+
+if ($SelfTest) {
+    $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("s_hospital_offline_release_selftest_" + [Guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
+    try {
+        $tempNginx = Join-Path $tempRoot "nginx"
+        New-Item -ItemType Directory -Force -Path $tempNginx | Out-Null
+
+        $sourceDefaultConf = Join-Path $ProjectRoot "nginx/default.conf"
+        $sourceCrontab = Join-Path $ProjectRoot "nginx/crontab"
+        if (-not (Test-Path -LiteralPath $sourceDefaultConf -PathType Leaf)) {
+            Write-Fail "SelfTest FAILED: source nginx/default.conf is missing at $sourceDefaultConf."
+        }
+        if (-not (Test-Path -LiteralPath $sourceCrontab -PathType Leaf)) {
+            Write-Fail "SelfTest FAILED: source nginx/crontab is missing at $sourceCrontab."
+        }
+
+        Copy-Item -LiteralPath $sourceDefaultConf -Destination (Join-Path $tempNginx "default.conf") -Force
+        Copy-Item -LiteralPath $sourceCrontab -Destination (Join-Path $tempNginx "crontab") -Force
+
+        $defaultConfLines = (Get-Content -LiteralPath (Join-Path $tempNginx "default.conf")).Count
+        $crontabLines = (Get-Content -LiteralPath (Join-Path $tempNginx "crontab")).Count
+
+        if ($defaultConfLines -lt $script:NginxDefaultConfMinLines) {
+            Write-Fail "SelfTest FAILED: nginx/default.conf is $defaultConfLines lines (>= $script:NginxDefaultConfMinLines required). The release bundle would ship a stripped-down config."
+        }
+        if ($crontabLines -lt 1) {
+            Write-Fail "SelfTest FAILED: nginx/crontab is empty after copy."
+        }
+
+        $sourceHash = (Get-FileHash -LiteralPath $sourceDefaultConf -Algorithm SHA256).Hash
+        $copiedHash = (Get-FileHash -LiteralPath (Join-Path $tempNginx "default.conf") -Algorithm SHA256).Hash
+        if ($sourceHash -ne $copiedHash) {
+            Write-Fail "SelfTest FAILED: copied nginx/default.conf does not match source hash."
+        }
+
+        Write-Host "[OK] SelfTest passed. default.conf=$defaultConfLines lines, crontab=$crontabLines lines, hash=$sourceHash" -ForegroundColor Green
+    } finally {
+        if (Test-Path -LiteralPath $tempRoot) {
+            Remove-Item -LiteralPath $tempRoot -Recurse -Force
+        }
+    }
+    return
 }
 
 if ($ReleaseRoot -eq "") {
@@ -83,6 +130,10 @@ if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot "nginx\default.conf") -
     Write-Fail "Falta nginx\default.conf versionado."
 }
 
+if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot "nginx\crontab") -PathType Leaf)) {
+    Write-Fail "Falta nginx\crontab versionado."
+}
+
 if (-not (Test-Path -LiteralPath $dockerSourcesGuard -PathType Leaf)) {
     Write-Fail "Falta scripts\assert_production_docker_sources.ps1 versionado."
 }
@@ -116,6 +167,13 @@ Write-Step "Copiando archivos versionados de instalacion."
 Copy-RequiredFile "docker-compose.prod.yml"
 Copy-RequiredFile "backend\Dockerfile.prod"
 Copy-RequiredFile "nginx\default.conf"
+Copy-RequiredFile "nginx\crontab"
+
+$bundledDefaultConf = Join-Path $ReleaseRoot "nginx\default.conf"
+$bundledDefaultConfLines = (Get-Content -LiteralPath $bundledDefaultConf).Count
+if ($bundledDefaultConfLines -lt $script:NginxDefaultConfMinLines) {
+    Write-Fail "nginx\default.conf en release tiene solo $bundledDefaultConfLines lineas (>= $script:NginxDefaultConfMinLines requeridas). Se rechaza empacar una config truncada."
+}
 if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot "scripts\release_setup.bat") -PathType Leaf)) {
     Write-Fail "Falta scripts\release_setup.bat versionado."
 }
