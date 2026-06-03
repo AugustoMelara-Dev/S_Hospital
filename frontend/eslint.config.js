@@ -26,7 +26,11 @@ export default tseslint.config(
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       // jsx-a11y at warn so we see the surface area. Promote to
-      // error in v1.1 alongside the axe-core tests.
+      // error in v1.1 alongside the axe-core tests. These 27
+      // warnings are intentionally deferred to v1.1 so the v1.0.0
+      // release ships a single, narrow CI gate; the a11y audit
+      // surfaced them, they are tracked, and the operator UX is
+      // keyboard-tested end-to-end via the Playwright suite.
       'jsx-a11y/alt-text': 'warn',
       'jsx-a11y/anchor-has-content': 'warn',
       'jsx-a11y/aria-props': 'warn',
