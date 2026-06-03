@@ -3,7 +3,30 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property string $hospital_name
+ * @property string $rtn
+ * @property string $default_tax_rate
+ * @property string $receipt_width
+ * @property string $primary_color
+ * @property string|null $address
+ * @property string|null $slogan
+ * @property bool $scanner_enabled
+ * @property bool $partial_payments_enabled
+ * @property string $receipt_template_mode
+ * @property string $receipt_paper_size
+ * @property string|null $government_line
+ * @property string|null $secretariat_line
+ * @property string|null $receipt_location
+ * @property string|null $receipt_footer_text
+ * @property int|null $created_by
+ * @property int|null $updated_by
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
 class FiscalSetting extends Model
 {
     protected $hidden = [

@@ -4,7 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $invoice_id
+ * @property int $cash_session_id
+ * @property int $user_id
+ * @property string $method
+ * @property string $amount
+ * @property int $amount_cents
+ * @property string|null $reference
+ * @property string $status
+ * @property int|null $voided_by
+ * @property Carbon|null $voided_at
+ * @property string|null $void_reason
+ * @property Carbon|null $paid_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Invoice|null $invoice
+ * @property-read CashRegisterSession|null $cashSession
+ * @property-read User|null $user
+ */
 class Payment extends Model
 {
     public const STATUS_POSTED = 'posted';

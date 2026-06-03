@@ -5,7 +5,30 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property int|null $open_user_id
+ * @property string $opening_amount
+ * @property string|null $closing_amount
+ * @property string|null $expected_amount
+ * @property string|null $difference_amount
+ * @property int|null $payments_count_snapshot
+ * @property string|null $payments_total_snapshot
+ * @property array<string, mixed>|null $method_totals_snapshot
+ * @property int|null $pending_invoice_count_snapshot
+ * @property string|null $pending_amount_snapshot
+ * @property string $status
+ * @property string|null $opening_notes
+ * @property string|null $closing_notes
+ * @property Carbon|null $opened_at
+ * @property Carbon|null $closed_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User|null $user
+ */
 class CashRegisterSession extends Model
 {
     public const STATUS_OPEN = 'open';

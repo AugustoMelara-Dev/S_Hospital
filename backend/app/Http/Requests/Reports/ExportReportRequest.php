@@ -30,13 +30,11 @@ class ExportReportRequest extends DateRangeReportRequest
 
         if (! empty($filters['cash_session_id'])) {
             $cashSession = CashRegisterSession::query()->findOrFail($filters['cash_session_id']);
-            $openedDate = $cashSession->opened_at?->toDateString();
+            $openedDate = $cashSession->opened_at->toDateString();
             $closedDate = $cashSession->closed_at?->toDateString();
 
-            if ($openedDate !== null) {
-                $filters['date_from'] = $openedDate;
-                $filters['date_to'] = $closedDate ?? $openedDate;
-            }
+            $filters['date_from'] = $openedDate;
+            $filters['date_to'] = $closedDate ?? $openedDate;
         }
 
         return $this->authorizedFilters = $filters;

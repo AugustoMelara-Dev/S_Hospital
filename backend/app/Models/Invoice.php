@@ -2,10 +2,57 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property string $invoice_number
+ * @property int $fiscal_sequence_id
+ * @property string|null $fiscal_cai
+ * @property string|null $fiscal_range_from
+ * @property string|null $fiscal_range_to
+ * @property Carbon|null $fiscal_valid_until
+ * @property string|null $fiscal_prefix
+ * @property string|null $hospital_name
+ * @property string|null $hospital_rtn
+ * @property string|null $hospital_address
+ * @property string|null $hospital_slogan
+ * @property string|null $receipt_template_mode
+ * @property string|null $receipt_paper_size
+ * @property string|null $receipt_government_line
+ * @property string|null $receipt_secretariat_line
+ * @property string|null $receipt_location
+ * @property string|null $receipt_footer_text
+ * @property string $tax_label
+ * @property string|null $tax_rate_snapshot
+ * @property string $patient_name
+ * @property string $subtotal
+ * @property int $subtotal_cents
+ * @property string $tax_amount
+ * @property int $tax_amount_cents
+ * @property string $discount_amount
+ * @property int $discount_amount_cents
+ * @property string $total
+ * @property int $total_cents
+ * @property string $paid_amount
+ * @property int $paid_amount_cents
+ * @property string $balance_due
+ * @property int $balance_due_cents
+ * @property string $status
+ * @property int|null $cash_session_id
+ * @property int $issued_by
+ * @property Carbon|null $issued_at
+ * @property int|null $voided_by
+ * @property Carbon|null $voided_at
+ * @property string|null $void_reason
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, InvoiceItem> $items
+ */
 class Invoice extends Model
 {
     public const STATUS_ISSUED = 'issued';

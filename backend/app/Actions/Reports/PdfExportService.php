@@ -876,8 +876,8 @@ class PdfExportService
             return 'Caja no disponible';
         }
 
-        $cashier = $cashSession->user?->name ?? 'Cajero no disponible';
-        $openedAt = $cashSession->opened_at?->format('d/m/Y H:i') ?? 'sin apertura registrada';
+        $cashier = $cashSession->user->name ?? 'Cajero no disponible';
+        $openedAt = $cashSession->opened_at->format('d/m/Y H:i');
         $status = match ($cashSession->status) {
             CashRegisterSession::STATUS_OPEN => 'Abierta',
             CashRegisterSession::STATUS_CLOSED => 'Cerrada',

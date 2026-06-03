@@ -5,6 +5,33 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $invoice_id
+ * @property int|null $service_id
+ * @property string $service_name
+ * @property int|null $category_id
+ * @property string $category_name
+ * @property int|null $area_id
+ * @property string|null $area_name
+ * @property string|null $scan_code
+ * @property string|null $barcode
+ * @property string|null $qr_code
+ * @property string $quantity
+ * @property int $quantity_cents
+ * @property string $unit_price
+ * @property int $unit_price_cents
+ * @property string $tax_rate
+ * @property string $tax_amount
+ * @property int $tax_amount_cents
+ * @property string $line_subtotal
+ * @property int $line_subtotal_cents
+ * @property string $line_total
+ * @property int $line_total_cents
+ * @property string|null $special_rule_code
+ * @property bool $special_rule_applied
+ * @property string|null $notes
+ */
 class InvoiceItem extends Model
 {
     protected $fillable = [

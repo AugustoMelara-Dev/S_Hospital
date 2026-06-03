@@ -4,7 +4,24 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $cash_session_id
+ * @property int|null $payment_id
+ * @property int $user_id
+ * @property string $type
+ * @property string|null $method
+ * @property string $amount
+ * @property string|null $notes
+ * @property Carbon $occurred_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read CashRegisterSession|null $cashSession
+ * @property-read Payment|null $payment
+ * @property-read User|null $user
+ */
 class CashMovement extends Model
 {
     public const TYPE_OPENING = 'opening';

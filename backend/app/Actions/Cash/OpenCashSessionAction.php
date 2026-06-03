@@ -57,7 +57,7 @@ class OpenCashSessionAction
                     'entity_id' => $session->id,
                     'new_values' => [
                         'opening_amount' => $session->opening_amount,
-                        'opened_at' => $session->opened_at?->toISOString(),
+                        'opened_at' => $session->opened_at->toISOString(),
                     ],
                 ]);
 

@@ -152,8 +152,9 @@ class PremiumExcelExportService
         $sheet0->setCellValue('B11', 'Fecha de Generación');
         $sheet0->setCellValue('C11', now()->format('d/m/Y H:i:s'));
 
+        $currentUser = auth()->user();
         $sheet0->setCellValue('B12', 'Generado Por');
-        $sheet0->setCellValue('C12', auth()->user()?->name ?? 'Sistema');
+        $sheet0->setCellValue('C12', $currentUser instanceof User ? $currentUser->name : 'Sistema');
 
         $row = 13;
         foreach ($this->appliedFilterRows($income['filters'] ?? []) as [$label, $value]) {
@@ -920,8 +921,8 @@ class PremiumExcelExportService
             return 'Caja no disponible';
         }
 
-        $cashier = $cashSession->user?->name ?? 'Cajero no disponible';
-        $openedAt = $cashSession->opened_at?->format('d/m/Y H:i') ?? 'sin apertura registrada';
+        $cashier = $cashSession->user->name ?? 'Cajero no disponible';
+        $openedAt = $cashSession->opened_at->format('d/m/Y H:i');
         $status = [
             CashRegisterSession::STATUS_OPEN => 'Abierta',
             CashRegisterSession::STATUS_CLOSED => 'Cerrada',
