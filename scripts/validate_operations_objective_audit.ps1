@@ -125,8 +125,11 @@ if ($failures.Count -eq 0) {
         'qa/BACKUP_WORKER_SMOKE_2026_06_03.md',
         'qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md',
         'qa/TRAINING_SAFETY_2026_06_03.md',
+        'qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md',
+        'qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md',
         'qa/OFFLINE_RELEASE_GUARD_2026_06_03.md',
-        'qa/PREFLIGHT_WITH_CONCURRENCY_2026_06_03.md'
+        'qa/PREFLIGHT_WITH_CONCURRENCY_2026_06_03.md',
+        'scripts/validate_dependency_manifest.ps1'
     )
 
     foreach ($evidence in $requiredEvidence) {
@@ -145,6 +148,8 @@ if ($failures.Count -eq 0) {
         'APP_ENV=production',
         'APP_DEBUG=false',
         'offline-release',
+        'dependency manifest',
+        'InitializeProofFiles',
         'final backup worker smoke',
         'final restore/concurrency evidence',
         'preflight'
