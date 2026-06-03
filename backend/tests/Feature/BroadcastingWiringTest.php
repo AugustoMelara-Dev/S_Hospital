@@ -2,9 +2,20 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Billing\CreateInvoiceAction;
+use App\Actions\Cash\OpenCashSessionAction;
 use App\Events\CashSessionChanged;
 use App\Events\InvoiceChanged;
 use App\Events\PaymentChanged;
+use App\Models\CashRegisterSession;
+use App\Models\FiscalSequence;
+use App\Models\FiscalSetting;
+use App\Models\Invoice;
+use App\Models\Payment;
+use App\Models\Service;
+use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
+use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -92,13 +103,13 @@ class BroadcastingWiringTest extends TestCase
         });
     }
 
-    private function makeInvoice(): \App\Models\Invoice
+    private function makeInvoice(): Invoice
     {
-        $invoice = new \App\Models\Invoice();
+        $invoice = new Invoice;
         $invoice->id = 1;
         $invoice->invoice_number = '000-001-01-00000042';
         $invoice->patient_name = 'Test';
-        $invoice->status = \App\Models\Invoice::STATUS_ISSUED;
+        $invoice->status = Invoice::STATUS_ISSUED;
         $invoice->total = '17.25';
         $invoice->paid_amount = '0.00';
         $invoice->balance_due = '17.25';
@@ -107,26 +118,26 @@ class BroadcastingWiringTest extends TestCase
         return $invoice;
     }
 
-    private function makePayment(): \App\Models\Payment
+    private function makePayment(): Payment
     {
-        $payment = new \App\Models\Payment();
+        $payment = new Payment;
         $payment->id = 1;
         $payment->invoice_id = 1;
         $payment->cash_session_id = 1;
         $payment->method = 'cash';
         $payment->amount = '17.25';
-        $payment->status = \App\Models\Payment::STATUS_POSTED;
+        $payment->status = Payment::STATUS_POSTED;
         $payment->setRawAttributes(['updated_at' => now()], true);
 
         return $payment;
     }
 
-    private function makeCashSession(): \App\Models\CashRegisterSession
+    private function makeCashSession(): CashRegisterSession
     {
-        $session = new \App\Models\CashRegisterSession();
+        $session = new CashRegisterSession;
         $session->id = 1;
         $session->user_id = 1;
-        $session->status = \App\Models\CashRegisterSession::STATUS_OPEN;
+        $session->status = CashRegisterSession::STATUS_OPEN;
         $session->opened_at = now();
 
         return $session;
@@ -135,16 +146,16 @@ class BroadcastingWiringTest extends TestCase
     private function seedBillingBase(): void
     {
         $this->seed([
-            \Database\Seeders\RolesAndPermissionsSeeder::class,
-            \Database\Seeders\ServiceCatalogSeeder::class,
+            RolesAndPermissionsSeeder::class,
+            ServiceCatalogSeeder::class,
         ]);
-        \App\Models\FiscalSetting::query()->create([
+        FiscalSetting::query()->create([
             'hospital_name' => 'Hospital San Isidro',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
             'receipt_paper_size' => 'half_letter',
         ]);
-        \App\Models\FiscalSequence::query()->create([
+        FiscalSequence::query()->create([
             'document_type' => 'invoice',
             'prefix' => '000-001-01',
             'min_number' => 1,
@@ -156,29 +167,29 @@ class BroadcastingWiringTest extends TestCase
         ]);
     }
 
-    private function openSession(\App\Models\User $cashier): int
+    private function openSession(User $cashier): int
     {
-        return app(\App\Actions\Cash\OpenCashSessionAction::class)
+        return app(OpenCashSessionAction::class)
             ->execute(['opening_amount' => '500.00'], $cashier)
             ->id;
     }
 
-    private function createInvoice(\App\Models\User $cashier, string $patientName, string $serviceName): int
+    private function createInvoice(User $cashier, string $patientName, string $serviceName): int
     {
-        return app(\App\Actions\Billing\CreateInvoiceAction::class)
+        return app(CreateInvoiceAction::class)
             ->execute([
                 'patient_name' => $patientName,
                 'items' => [[
-                    'service_id' => \App\Models\Service::query()->where('name', $serviceName)->firstOrFail()->id,
+                    'service_id' => Service::query()->where('name', $serviceName)->firstOrFail()->id,
                     'quantity' => '1.00',
                 ]],
             ], $cashier)
             ->id;
     }
 
-    private function cashier(): \App\Models\User
+    private function cashier(): User
     {
-        $cashier = \App\Models\User::factory()->create();
+        $cashier = User::factory()->create();
         $cashier->assignRole('cajero');
 
         return $cashier->refresh()->load('roles.permissions');
