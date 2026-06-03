@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 13:08:23
+- Generated at: 2026-06-03 13:14:52
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -29,6 +29,7 @@
 - Field proof templates safety guard exit code: 0
 - Proof initialization safety guard exit code: 0
 - Operations objective audit guard exit code: 0
+- Offline release builder self-test exit code: 0
 - Final handoff completeness guard exit code: 0
 - Evidence index guard exit code: 0
 - Preflight skipped: True
@@ -196,7 +197,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 69f93398 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit c2f96c56 before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
 OFFLINE_RELEASE_CLEAN: NO (41 blocking issue(s))
@@ -408,6 +409,12 @@ Proof initialization creates missing final-evidence templates without overwritin
 ```text
 [OK] OPERATIONS_OBJECTIVE_AUDIT: YES
 [OK] Objective requirements are traced to evidence and final-field blockers remain explicit.
+```
+
+## Offline release builder self-test output
+
+```text
+[OK] SelfTest passed. default.conf=108 lines, crontab=10 lines, scripts=34, docs=7, proofTemplates=5, hash=9A27BC9EC6BD8C54C693CAF302557C1B93F7EB37EEFA3D38D8F052CECD34EA60
 ```
 
 ## Operator manuals safety validation output
