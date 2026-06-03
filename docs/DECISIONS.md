@@ -3165,6 +3165,14 @@ Decision: `scripts\assert_offline_release_clean.ps1` exige que el paquete incluy
 
 Criterio de verificacion: `scripts\validate_ops_evidence_index.ps1` pasa contra el handoff actual y `scripts\assert_offline_release_clean.ps1` debe fallar hasta que `offline-release` se regenere desde el commit final.
 
+## 2026-06-03 - Guard offline permite solo plantillas QA vacias
+
+Contexto: `scripts\make_offline_release.ps1` debe incluir plantillas vacias para que el hospital documente validacion fisica de LAN, impresora, restore, concurrencia y capacitacion anonima. El guard offline ya exigia esos archivos, pero luego bloqueaba cualquier ruta `qa\`, creando una contradiccion: un paquete bien armado con plantillas de campo podia fallar como si transportara evidencia real.
+
+Decision: `scripts\assert_offline_release_clean.ps1` distingue `qa\*.example.md` permitidos de evidencia real. Solo se permiten las cinco plantillas finales de campo; el resto de `qa\`, paquetes de soporte, logs, dumps SQL, archivos de base y `.env` no-ejemplo siguen bloqueados.
+
+Criterio de verificacion: el builder self-test conserva las cinco plantillas, el guard offline ya no debe marcar esas plantillas como contenido prohibido y `offline-release` sigue bloqueado hasta regenerarse desde el commit final con imagenes Docker reales y manifiesto actualizado.
+
 ## 2026-06-02 - Policies registradas para recursos criticos
 
 Contexto: el frente operativo requiere permisos mantenibles y mensajes de error comprensibles. La auditoria interna ya habia senalado que `app/Policies/` no existia, aunque el sistema autorizaba con Form Requests y guards en Actions. Eso dejaba la matriz de permisos menos visible para soporte y futuras correcciones.

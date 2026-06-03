@@ -164,6 +164,24 @@ function Test-ReleaseSetupLauncher() {
     }
 }
 
+function Test-IsAllowedProofTemplate([string] $relativePath) {
+    $normalized = $relativePath -replace "\\", "/"
+
+    foreach ($templateName in @(
+        "LAN_CLIENT_VALIDATION_PROOF.example.md",
+        "INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md",
+        "FINAL_RESTORE_PROOF.example.md",
+        "FINAL_CONCURRENCY_PROOF.example.md",
+        "TRAINING_ACCEPTANCE_PROOF.example.md"
+    )) {
+        if ($normalized -eq "qa/$templateName") {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 try {
     $ReleaseRoot = (Resolve-Path -LiteralPath $ReleaseRoot).Path
 } catch {
@@ -266,12 +284,13 @@ $forbiddenItems = Get-ChildItem -LiteralPath $ReleaseRoot -Recurse -Force | Wher
     $name = $_.Name
 
     if ($_.PSIsContainer) {
-        return $relative -match '(^|/)(node_modules|install-logs|playwright-report|test-results|\.git|qa)(/|$)' -or
+        return $relative -match '(^|/)(node_modules|install-logs|playwright-report|test-results|\.git)(/|$)' -or
             $relative -match '(^|/)storage/(app/private/backups|logs)(/|$)'
     }
 
     return (Test-IsForbiddenEnvFile $name) -or
-        $relative -match '(^|/)(install-logs|qa|test-results|playwright-report)/' -or
+        $relative -match '(^|/)(install-logs|test-results|playwright-report)/' -or
+        ($relative -match '(^|/)qa/' -and -not (Test-IsAllowedProofTemplate $relative)) -or
         $relative -match '(^|/)storage/(app/private/backups|logs)/' -or
         $relative -match '\.(sql|sql\.gz|dump|bak|log|sqlite|sqlite3|db)$'
 }

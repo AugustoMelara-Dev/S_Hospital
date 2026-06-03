@@ -53,6 +53,33 @@ Safety notes:
 - No release package was regenerated in this step.
 - No `.env`, database volume, backup SQL or production data was deleted or reset.
 
+Guard correction added:
+
+- `scripts\assert_offline_release_clean.ps1` now permits only the five required
+  final-field proof templates under `qa\*.example.md`.
+- The same guard still rejects completed QA evidence, support packets, logs,
+  SQL dumps, SQLite/database files, backup archives and non-example `.env`
+  files in the offline package.
+- This avoids a false blocker where the package builder correctly included
+  empty field templates but the release guard rejected the `qa\` path itself.
+
+Verification after correction:
+
+- Positive synthetic guard fixture:
+  `scripts\make_offline_release.ps1 -ReleaseRoot C:\tmp\s_hospital_offline_guard_templates -Force -AllowDirty -SkipDockerBuild -SkipDockerSave -SkipGuard`
+  plus checksum-only synthetic tar files allowed the guard to reach package
+  structure checks without touching the real package or Docker.
+- `scripts\assert_offline_release_clean.ps1 -ReleaseRoot C:\tmp\s_hospital_offline_guard_templates -RequireCurrentCommit`
+  returned `OFFLINE_RELEASE_CLEAN: YES` when only the five `qa\*.example.md`
+  proof templates were present.
+- Negative synthetic guard fixture:
+  adding `qa\FINAL_RESTORE_PROOF.md` to the same temporary package returned
+  `OFFLINE_RELEASE_CLEAN: NO (1 blocking issue)` with
+  `Forbidden file or directory in offline release: qa/FINAL_RESTORE_PROOF.md`.
+- Current real `offline-release` remains blocked with
+  `OFFLINE_RELEASE_CLEAN: NO (42 blocking issues)` until it is regenerated from
+  the final commit with real Docker image exports.
+
 Required next action before delivery:
 
 - Regenerate `offline-release` from the final commit with real Docker image exports.
