@@ -28,6 +28,7 @@ $script:OfflineReleaseCriticalScripts = @(
     "start_hospital_services.ps1",
     "validate_backup_restore_docs_safety.ps1",
     "validate_browser_smoke_evidence.ps1",
+    "validate_dependency_manifest.ps1",
     "validate_double_action_safety.ps1",
     "validate_field_proof_templates.ps1",
     "validate_final_handoff_completeness.ps1",

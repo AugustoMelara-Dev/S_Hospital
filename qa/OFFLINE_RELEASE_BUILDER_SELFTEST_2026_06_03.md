@@ -18,7 +18,7 @@ Observed result:
 
 - `SelfTest passed`.
 - `nginx/default.conf` remained 108 lines and matched source hash `9A27BC9EC6BD8C54C693CAF302557C1B93F7EB37EEFA3D38D8F052CECD34EA60`.
-- 34 critical scripts were present in the simulated bundle, including preflight, handoff, LAN validation, proof initialization, backup task helpers and operational safety validators.
+- 35 critical scripts were present in the simulated bundle, including preflight, handoff, dependency manifest validation, LAN validation, proof initialization, backup task helpers and operational safety validators.
 - 7 critical docs were present in the simulated bundle, including release checklist and role/support/backup manuals.
 - 5 QA proof templates were present in the simulated bundle, including LAN, printer, restore, concurrency and anonymous training acceptance templates.
 
