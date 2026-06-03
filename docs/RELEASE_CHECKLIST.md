@@ -252,6 +252,11 @@ Antes de llevar plantillas al servidor final, ejecute
 `FIELD_PROOF_TEMPLATES: YES` para confirmar que las plantillas de cliente LAN,
 impresora fisica, restore descartable y concurrencia descartable conservan los
 labels y checks que exige el preflight.
+Antes de inicializar archivos de evidencia en el servidor final, ejecute
+`scripts\validate_proof_initialization_safety.ps1`; debe reportar
+`PROOF_INITIALIZATION_SAFETY: YES` para confirmar que
+`scripts\init_production_proofs.ps1` crea plantillas faltantes sin sobrescribir
+evidencia real salvo `-Force` autorizado.
 Antes de entregar el paquete final al hospital, ejecute
 `scripts\validate_final_handoff_completeness.ps1`; debe reportar
 `FINAL_HANDOFF_COMPLETENESS: YES` para confirmar que el reporte final conserva
