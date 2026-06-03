@@ -155,6 +155,11 @@ Test-RequiredPath "scripts\validate_operations_objective_audit.ps1" "file"
 Test-RequiredPath "scripts\validate_field_proof_templates.ps1" "file"
 Test-RequiredPath "scripts\run_backup_worker.cmd" "file"
 Test-RequiredPath "scripts\run_scheduled_backup.cmd" "file"
+Test-RequiredPath "qa\LAN_CLIENT_VALIDATION_PROOF.example.md" "file"
+Test-RequiredPath "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md" "file"
+Test-RequiredPath "qa\FINAL_RESTORE_PROOF.example.md" "file"
+Test-RequiredPath "qa\FINAL_CONCURRENCY_PROOF.example.md" "file"
+Test-RequiredPath "qa\TRAINING_ACCEPTANCE_PROOF.example.md" "file"
 
 Test-ReleaseFileMatchesSource "docker-compose.prod.yml"
 Test-ReleaseFileMatchesSource "backend\Dockerfile.prod"
@@ -189,6 +194,11 @@ Test-ReleaseFileMatchesSource "scripts\validate_operations_objective_audit.ps1"
 Test-ReleaseFileMatchesSource "scripts\validate_field_proof_templates.ps1"
 Test-ReleaseFileMatchesSource "scripts\run_backup_worker.cmd"
 Test-ReleaseFileMatchesSource "scripts\run_scheduled_backup.cmd"
+Test-ReleaseFileMatchesSource "qa\LAN_CLIENT_VALIDATION_PROOF.example.md"
+Test-ReleaseFileMatchesSource "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md"
+Test-ReleaseFileMatchesSource "qa\FINAL_RESTORE_PROOF.example.md"
+Test-ReleaseFileMatchesSource "qa\FINAL_CONCURRENCY_PROOF.example.md"
+Test-ReleaseFileMatchesSource "qa\TRAINING_ACCEPTANCE_PROOF.example.md"
 
 $forbiddenItems = Get-ChildItem -LiteralPath $ReleaseRoot -Recurse -Force | Where-Object {
     $relative = Get-RelativeReleasePath $_

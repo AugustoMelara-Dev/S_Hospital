@@ -71,10 +71,11 @@ function Assert-Contains([string] $label, [string] $content, [string] $pattern) 
 
 $safeTraining = Read-RequiredText "docs\manuales\GUIA_CAPACITACION_SEGURA.md"
 $trainingChecklist = Read-RequiredText "docs\manuales\CHECKLIST_CAPACITACION.md"
+$trainingAcceptanceTemplate = Read-RequiredText "qa\TRAINING_ACCEPTANCE_PROOF.example.md"
 $helpView = Read-RequiredText "frontend\src\features\help\HelpView.tsx"
 $helpViewTest = Read-RequiredText "frontend\src\features\help\HelpView.test.tsx"
 
-$combinedDocs = "$safeTraining`n$trainingChecklist"
+$combinedDocs = "$safeTraining`n$trainingChecklist`n$trainingAcceptanceTemplate"
 $combinedUi = "$helpView`n$helpViewTest"
 
 Assert-Contains "Training docs forbid practicing in production" $combinedDocs 'no use la base de produccion para practicar|no en\s+la base real de produccion'
@@ -103,6 +104,29 @@ Assert-Contains "Training docs forbid real patient data" $combinedDocs 'datos re
 Assert-Contains "Training docs forbid migrate fresh in production" $combinedDocs 'migrate:fresh.{0,40}produccion'
 Assert-Contains "Training docs forbid restoring over real database" $combinedDocs 'restaurar backups sobre la base real|nunca sobre la\s+base real'
 Assert-Contains "Training docs forbid sharing secrets" $combinedDocs '\.env.{0,80}passwords.{0,80}tokens|passwords.{0,80}tokens'
+
+Assert-Contains "Training acceptance template requires anonymous proof" $trainingAcceptanceTemplate 'keep it anonymous|no escriba nombres|do not write.{0,80}names'
+Assert-Contains "Training acceptance template requires final conclusion" $trainingAcceptanceTemplate 'final conclusion'
+Assert-Contains "Training acceptance template records evidence reference" $trainingAcceptanceTemplate 'evidence/capture reference'
+Assert-Contains "Training acceptance template blocks production database practice" $trainingAcceptanceTemplate 'did not use the production database'
+Assert-Contains "Training acceptance template blocks real patient data" $trainingAcceptanceTemplate 'did not use real patient data'
+Assert-Contains "Training acceptance template covers cashier workflow" $trainingAcceptanceTemplate 'opening cashbox.{0,120}invoicing.{0,120}charging.{0,120}printing'
+Assert-Contains "Training acceptance template covers supervisor incidents" $trainingAcceptanceTemplate 'printer failure.{0,120}lan failure.{0,120}permission issue'
+Assert-Contains "Training acceptance template covers administrator restore safety" $trainingAcceptanceTemplate 'restore-only-on-disposable-database|disposable target'
+Assert-Contains "Training acceptance template preserves physical blockers" $trainingAcceptanceTemplate 'second-client lan proof[\s\S]{0,240}physical printer proof[\s\S]{0,240}production preflight'
+
+foreach ($item in @(
+    @{ Pattern = '(?i)APP_KEY\s*[:=]\s*[^\s`]+'; Message = 'Training acceptance template must not contain APP_KEY-like assignments' },
+    @{ Pattern = '(?i)DB_PASSWORD\s*[:=]\s*[^\s`]+'; Message = 'Training acceptance template must not contain DB_PASSWORD-like assignments' },
+    @{ Pattern = '(?i)(TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^\s`]+'; Message = 'Training acceptance template must not contain secret-like assignments' },
+    @{ Pattern = '(?i)[A-Z]:\\(?![\\])'; Message = 'Training acceptance template must not contain absolute Windows paths' }
+)) {
+    if ($trainingAcceptanceTemplate -match $item.Pattern) {
+        Add-Failure $item.Message
+    } else {
+        Add-Pass $item.Message
+    }
+}
 
 Assert-Contains "Help screen exposes safe training section" $combinedUi 'capacitacion segura'
 Assert-Contains "Help screen exposes practice mode warning" $combinedUi 'modo practica'

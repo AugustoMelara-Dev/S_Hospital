@@ -54,6 +54,13 @@ $script:OfflineReleaseCriticalDocs = @(
     "manuales\MANUAL_CAJERO.md",
     "manuales\MANUAL_SUPERVISOR.md"
 )
+$script:OfflineReleaseProofTemplates = @(
+    "LAN_CLIENT_VALIDATION_PROOF.example.md",
+    "INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md",
+    "FINAL_RESTORE_PROOF.example.md",
+    "FINAL_CONCURRENCY_PROOF.example.md",
+    "TRAINING_ACCEPTANCE_PROOF.example.md"
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -83,6 +90,14 @@ if ($SelfTest) {
         Copy-Item -LiteralPath $sourceCrontab -Destination (Join-Path $tempNginx "crontab") -Force
         Copy-Item -LiteralPath (Join-Path $ProjectRoot "scripts") -Destination (Join-Path $tempRoot "scripts") -Recurse -Force
         Copy-Item -LiteralPath (Join-Path $ProjectRoot "docs") -Destination (Join-Path $tempRoot "docs") -Recurse -Force
+        New-Item -ItemType Directory -Force -Path (Join-Path $tempRoot "qa") | Out-Null
+        foreach ($templateName in $script:OfflineReleaseProofTemplates) {
+            $sourceTemplate = Join-Path (Join-Path $ProjectRoot "qa") $templateName
+            if (-not (Test-Path -LiteralPath $sourceTemplate -PathType Leaf)) {
+                Write-Fail "SelfTest FAILED: source qa/$templateName is missing."
+            }
+            Copy-Item -LiteralPath $sourceTemplate -Destination (Join-Path (Join-Path $tempRoot "qa") $templateName) -Force
+        }
 
         $releaseSetup = Join-Path $ProjectRoot "scripts\release_setup.bat"
         if (-not (Test-Path -LiteralPath $releaseSetup -PathType Leaf)) {
@@ -121,6 +136,13 @@ if ($SelfTest) {
             }
         }
 
+        foreach ($templateName in $script:OfflineReleaseProofTemplates) {
+            $bundledTemplate = Join-Path (Join-Path $tempRoot "qa") $templateName
+            if (-not (Test-Path -LiteralPath $bundledTemplate -PathType Leaf)) {
+                Write-Fail "SelfTest FAILED: bundled qa/$templateName is missing."
+            }
+        }
+
         if (-not (Test-Path -LiteralPath (Join-Path $tempRoot "setup.bat") -PathType Leaf)) {
             Write-Fail "SelfTest FAILED: root setup.bat launcher was not created."
         }
@@ -128,7 +150,7 @@ if ($SelfTest) {
             Write-Fail "SelfTest FAILED: scripts/release_setup.bat should be replaced by root setup.bat in the bundle."
         }
 
-        Write-Host "[OK] SelfTest passed. default.conf=$defaultConfLines lines, crontab=$crontabLines lines, scripts=$($script:OfflineReleaseCriticalScripts.Count), docs=$($script:OfflineReleaseCriticalDocs.Count), hash=$sourceHash" -ForegroundColor Green
+        Write-Host "[OK] SelfTest passed. default.conf=$defaultConfLines lines, crontab=$crontabLines lines, scripts=$($script:OfflineReleaseCriticalScripts.Count), docs=$($script:OfflineReleaseCriticalDocs.Count), proofTemplates=$($script:OfflineReleaseProofTemplates.Count), hash=$sourceHash" -ForegroundColor Green
     } finally {
         if (Test-Path -LiteralPath $tempRoot) {
             Remove-Item -LiteralPath $tempRoot -Recurse -Force
@@ -253,6 +275,9 @@ if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot "scripts\release_setup.
 }
 Copy-RequiredDirectory "scripts"
 Copy-RequiredDirectory "docs"
+foreach ($templateName in $script:OfflineReleaseProofTemplates) {
+    Copy-RequiredFile (Join-Path "qa" $templateName)
+}
 Copy-Item -LiteralPath (Join-Path $ProjectRoot "scripts\release_setup.bat") -Destination (Join-Path $ReleaseRoot "setup.bat") -Force
 Remove-Item -LiteralPath (Join-Path $ReleaseRoot "scripts\release_setup.bat") -Force
 

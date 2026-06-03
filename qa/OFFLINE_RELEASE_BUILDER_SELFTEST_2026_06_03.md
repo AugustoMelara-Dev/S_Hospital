@@ -5,7 +5,7 @@ Decision: `PASSED_LOCAL_SELFTEST`.
 Scope:
 
 - Validate that `scripts\make_offline_release.ps1 -SelfTest` can simulate the packaged file layout without building Docker images or touching the real `offline-release` directory.
-- Confirm that the simulated bundle includes root `setup.bat`, nginx config/crontab, critical operational scripts and non-technical operator docs.
+- Confirm that the simulated bundle includes root `setup.bat`, nginx config/crontab, critical operational scripts, non-technical operator docs and QA proof templates needed after installation.
 - Confirm that `scripts\release_setup.bat` is replaced by the root launcher in the simulated bundle.
 
 Command run:
@@ -20,6 +20,7 @@ Observed result:
 - `nginx/default.conf` remained 108 lines and matched source hash `9A27BC9EC6BD8C54C693CAF302557C1B93F7EB37EEFA3D38D8F052CECD34EA60`.
 - 33 critical scripts were present in the simulated bundle, including preflight, handoff, LAN validation, backup task helpers and operational safety validators.
 - 7 critical docs were present in the simulated bundle, including release checklist and role/support/backup manuals.
+- 5 QA proof templates were present in the simulated bundle, including LAN, printer, restore, concurrency and anonymous training acceptance templates.
 
 Safety notes:
 

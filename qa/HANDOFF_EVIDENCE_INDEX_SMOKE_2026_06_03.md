@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 12:23:29
+- Generated at: 2026-06-03 12:34:22
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -49,7 +49,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 - Backup worker and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/FINAL_RESTORE_PROOF.md` and `qa/FINAL_RESTORE_PROOF_2026_06_03.md`.
 - Concurrency and double-action evidence: `qa/FINAL_CONCURRENCY_PROOF.md` and `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md`.
 - Startup, installation, LAN and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.
-- Operator and training evidence: `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md` and `qa/TRAINING_SAFETY_2026_06_03.md`.
+- Operator and training evidence: `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md`, `qa/TRAINING_SAFETY_2026_06_03.md` and `qa/TRAINING_ACCEPTANCE_PROOF.example.md`.
 - Field proof, offline builder, objective, release and index evidence: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`.
 
 ## Tests and gates to preserve
@@ -63,9 +63,9 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 ## Files changed in this handoff front
 
 - In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.
-- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.
+- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.
 - Evidence guards: `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
-- Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.
+- Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.
 
 ## Risks and limits
 
@@ -168,6 +168,11 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] Missing required release file: scripts\validate_field_proof_templates.ps1
 [ OK ] Found scripts\run_backup_worker.cmd
 [ OK ] Found scripts\run_scheduled_backup.cmd
+[FAIL] Missing required release file: qa\LAN_CLIENT_VALIDATION_PROOF.example.md
+[FAIL] Missing required release file: qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md
+[FAIL] Missing required release file: qa\FINAL_RESTORE_PROOF.example.md
+[FAIL] Missing required release file: qa\FINAL_CONCURRENCY_PROOF.example.md
+[FAIL] Missing required release file: qa\TRAINING_ACCEPTANCE_PROOF.example.md
 [FAIL] docker-compose.prod.yml in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] backend\Dockerfile.prod in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] nginx\default.conf in offline release differs from versioned source. Regenerate offline-release before handoff.
@@ -186,10 +191,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 3d74d607 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 73214d1b before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
-OFFLINE_RELEASE_CLEAN: NO (35 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (40 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -309,6 +314,19 @@ STARTUP_REPAIR_SAFETY: YES
 [ OK ] Training docs forbid migrate fresh in production
 [ OK ] Training docs forbid restoring over real database
 [ OK ] Training docs forbid sharing secrets
+[ OK ] Training acceptance template requires anonymous proof
+[ OK ] Training acceptance template requires final conclusion
+[ OK ] Training acceptance template records evidence reference
+[ OK ] Training acceptance template blocks production database practice
+[ OK ] Training acceptance template blocks real patient data
+[ OK ] Training acceptance template covers cashier workflow
+[ OK ] Training acceptance template covers supervisor incidents
+[ OK ] Training acceptance template covers administrator restore safety
+[ OK ] Training acceptance template preserves physical blockers
+[ OK ] Training acceptance template must not contain APP_KEY-like assignments
+[ OK ] Training acceptance template must not contain DB_PASSWORD-like assignments
+[ OK ] Training acceptance template must not contain secret-like assignments
+[ OK ] Training acceptance template must not contain absolute Windows paths
 [ OK ] Help screen exposes safe training section
 [ OK ] Help screen exposes practice mode warning
 [ OK ] Help screen warns not to use production database
@@ -845,7 +863,7 @@ SHIFT_INCIDENT_RECOVERY_SAFETY: YES
 
 ```text
 [OK] OPS_EVIDENCE_INDEX: YES
-[OK] Referencias qa/ verificadas: 24
+[OK] Referencias qa/ verificadas: 25
 [OK] El handoff conserva bloqueantes fisicos antes de PRODUCTION_READY.
 ```
 

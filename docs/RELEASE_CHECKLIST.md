@@ -237,6 +237,10 @@ Antes de entregar material de capacitacion, ejecute
 `scripts\validate_training_safety.ps1`; debe reportar `TRAINING_SAFETY: YES`
 para confirmar que manuales y Ayuda siguen prohibiendo practicas sobre la base
 real de produccion.
+Use `qa\TRAINING_ACCEPTANCE_PROOF.example.md` para documentar la capacitacion
+real sin nombres, pacientes, usuarios, contrasenas, respaldos SQL ni rutas de
+equipos; deje `PRODUCTION_CANDIDATE` si faltan LAN, impresora, respaldo final o
+preflight final.
 Antes de cerrar el frente operativo, ejecute
 `scripts\validate_operations_objective_audit.ps1`; debe reportar
 `OPERATIONS_OBJECTIVE_AUDIT: YES` para confirmar que ayuda, diagnostico,

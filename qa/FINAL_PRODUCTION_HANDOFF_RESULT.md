@@ -32,9 +32,9 @@
 | Installer legacy safety | `qa/INSTALLER_LEGACY_SAFETY_2026_06_03.md` | `setup.bat` stays on the supported LAN installer and the old installer remains deprecated compatibility only |
 | LAN recovery safety | `qa/LAN_RECOVERY_SAFETY_2026_06_03.md` | `refresh_lan_ip.ps1` uses real helper libraries, supports no-write `-WhatIf`, and manuals cover DHCP/IP-change recovery before second-client validation |
 | Shift incident recovery safety | `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md` | Ayuda, manuales, soporte y capacitacion keep safe steps for power/restart/browser, printer, open cashbox, failed backup, permissions and isolated restore |
-| Training safety | `qa/TRAINING_SAFETY_2026_06_03.md` | Manuals and in-app Help keep isolated-practice guidance and forbid training on production data |
+| Training safety | `qa/TRAINING_SAFETY_2026_06_03.md` and `qa/TRAINING_ACCEPTANCE_PROOF.example.md` | Manuals, in-app Help and anonymous acceptance template keep isolated-practice guidance and forbid training on production data |
 | Field proof templates safety | `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md` | Final LAN, printer, restore and concurrency proof templates keep preflight-required labels and safety instructions |
-| Offline release builder self-test | `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md` | `make_offline_release.ps1 -SelfTest` verifies the simulated bundle includes root setup, nginx, critical operational scripts and operator docs without touching the real package |
+| Offline release builder self-test | `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md` | `make_offline_release.ps1 -SelfTest` verifies the simulated bundle includes root setup, nginx, critical operational scripts, operator docs and QA proof templates without touching the real package |
 | Operations objective audit | `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md` | Active objective requirements are traced to local evidence and remaining final-field blockers |
 | Final handoff completeness | `qa/FINAL_HANDOFF_COMPLETENESS_2026_06_03.md` | Final report keeps captures, diagnostics, changed files, gates, physical blockers, risks and safety notes |
 | Evidence index | `qa/OPS_EVIDENCE_INDEX_2026_06_03.md` | Handoff evidence references exist under `qa/` and physical blockers remain listed before `PRODUCTION_READY` |
@@ -61,6 +61,7 @@
 - First-level support: `docs/manuales/GUIA_SOPORTE_PRIMER_NIVEL.md`
 - Safe training: `docs/manuales/GUIA_CAPACITACION_SEGURA.md`
 - Training checklist: `docs/manuales/CHECKLIST_CAPACITACION.md`
+- Anonymous training acceptance template: `qa/TRAINING_ACCEPTANCE_PROOF.example.md`
 - Backup and restore guide: `docs/manuales/GUIA_RESPALDOS_Y_RESTAURACION.md`
 - Installation guide: `docs/manuales/GUIA_INSTALACION_OPERATIVA.md`
 - In-app help: `frontend/src/features/help/HelpView.tsx`
@@ -70,9 +71,9 @@ The help screen covers opening the system, login, cashbox, invoicing, charging, 
 ## Files changed in this hardening front
 
 - In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.
-- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.
+- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.
 - Safety guards and evidence helpers: `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
-- Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.
+- Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.
 
 ## Remaining blockers before production handoff
 
