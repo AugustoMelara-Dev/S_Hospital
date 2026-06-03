@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 15:20:41
+- Generated at: 2026-06-03 15:25:31
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -208,7 +208,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] setup.bat avoids legacy/demo wording
 [ OK ] setup.bat uses institutional wording
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 150bb7af before release handoff.
+[FAIL] MANIFEST.txt must reference current commit c55c218b before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
 OFFLINE_RELEASE_CLEAN: NO (43 blocking issue(s))
@@ -275,6 +275,7 @@ BROWSER_SMOKE_EVIDENCE: YES
 [ OK ] scripts\open_hospital_system.ps1 includes human safety warning
 [ OK ] scripts\final_production_handoff.ps1 uses -NoProfile for nested PowerShell calls
 [ OK ] scripts\production_readiness_preflight.ps1 uses -NoProfile for nested PowerShell calls
+[ OK ] scripts\install_backup_tasks_windows.ps1 uses -NoProfile for nested PowerShell calls
 Iniciando servicios locales del Sistema de Caja Hospitalaria...
 Carpeta del sistema: %PROJECT_ROOT%
 Validacion de arranque completada.

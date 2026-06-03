@@ -9,6 +9,9 @@ Scope:
 - Confirm safe dry-run modes do not start Docker, open the browser, write diagnostics or register scheduled tasks.
 - Confirm final handoff and production preflight use `-NoProfile` for nested
   PowerShell calls so a broken operator profile cannot hang closure checks.
+- Confirm backup task installer follow-up commands use `-NoProfile` so support
+  can inspect, update or uninstall scheduled backup tasks even when an operator
+  PowerShell profile is broken.
 
 Command run:
 
@@ -25,6 +28,8 @@ Observed result:
 - Backup task dry run did not register, update or remove scheduled tasks.
 - Nested final handoff and production preflight PowerShell calls use
   `-NoProfile`.
+- Backup task installer follow-up instructions for status, update and uninstall
+  use `powershell.exe -NoProfile -ExecutionPolicy Bypass`.
 
 Safety notes:
 

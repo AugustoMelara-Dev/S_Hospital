@@ -241,7 +241,7 @@ Register-ScheduledTask `
 
 Write-Host "Tareas programadas registradas."
 Write-Host "Inicie el worker con: Start-ScheduledTask -TaskName '$workerTaskName'"
-Write-Host "Revise estado con: powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status"
-Write-Host "Actualice con: powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting"
-Write-Host "Desinstale con: powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Uninstall"
+Write-Host "Revise estado con: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status"
+Write-Host "Actualice con: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting"
+Write-Host "Desinstale con: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Uninstall"
 Write-Host "Antes de entrega final, valide que un respaldo en la UI pasa de pendiente a completado."

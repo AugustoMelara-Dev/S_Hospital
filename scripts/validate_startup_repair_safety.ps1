@@ -118,7 +118,8 @@ Test-ScriptDoesNotContainDestructiveOperations "scripts\open_hospital_system.ps1
 
 foreach ($scriptInfo in @(
     @{ Relative = "scripts\final_production_handoff.ps1"; Path = $handoffScript },
-    @{ Relative = "scripts\production_readiness_preflight.ps1"; Path = $preflightScript }
+    @{ Relative = "scripts\production_readiness_preflight.ps1"; Path = $preflightScript },
+    @{ Relative = "scripts\install_backup_tasks_windows.ps1"; Path = $backupTasksScript }
 )) {
     if ($null -ne $scriptInfo.Path) {
         $content = Get-Content -LiteralPath $scriptInfo.Path -Raw
