@@ -93,12 +93,28 @@ manually) at `.git/hooks/pre-commit`. It blocks:
 - Adding a tracked file that contains `APP_KEY=base64:` followed by
   more than 16 base64 characters (real key, not the placeholder).
 - Adding `DB_PASSWORD=anything-but-empty-or-placeholder` to a tracked
-  file.
+  file (the legacy dev defaults `hospital_dev` and `root_dev` are also
+  blocked — v1.0.0 rotation).
+- Adding `DB_ROOT_PASSWORD=anything-but-empty-or-placeholder` to a
+  tracked file.
+- Adding `HOSPITAL_LICENSE_SALT` with 8+ non-placeholder characters.
+- Adding `HOSPITAL_INITIAL_ADMIN_PASSWORD` with any non-empty value.
 - Adding a file inside `offline-release/` to the index (it is
   generated, not committed).
+- Adding a file inside `nginx/ssl/` (private cert material).
+- Adding a real `.env`, `.env.local`, or `.env.production` file (only
+  `*.env.example` and `*.env.docker.example` are allowed).
+- Adding a `HOSPITAL_DUMP_BINARY` with a Windows path (warning only,
+  review intent).
 
 The guard only inspects staged diffs. It does not scan the working tree
 or untracked files.
+
+### Rotation log
+
+| Date | Reason | What was rotated |
+|---|---|---|
+| 2026-06-02 | Audit finding CRIT-1 — dev `APP_KEY` in `.env` was the same value used in tests and matched the prior leaked value. | New random dev `APP_KEY` generated; pre-commit guard expanded to cover `HOSPITAL_LICENSE_SALT`, `HOSPITAL_INITIAL_ADMIN_PASSWORD`, `.env` files, and `nginx/ssl/`. |
 
 To skip the guard for a one-off commit (for example, when committing a
 test fixture with a fake key): `git commit --no-verify`. Never skip

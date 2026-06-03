@@ -8,7 +8,11 @@
   - APP_KEY=base64: followed by a non-empty value (real key).
   - DB_PASSWORD or DB_ROOT_PASSWORD assigned a non-empty, non-placeholder
     value.
+  - HOSPITAL_LICENSE_SALT with a non-empty, non-placeholder value.
+  - HOSPITAL_INITIAL_ADMIN_PASSWORD with a non-empty, non-placeholder value.
   - Any file inside offline-release/ that is not in the allow-list.
+  - Any tracked .env file (defense in depth in case .gitignore is bypassed).
+  - Any file inside nginx/ssl/ (private certs, never commit).
 
   The guard is bypassed with `git commit --no-verify` for intentional
   cases (e.g. test fixtures with fake keys). See docs/SECRETS.md.
@@ -66,6 +70,16 @@ foreach ($line in $staged) {
         }
         continue
     }
+    if ($currentFile -like 'nginx/ssl/*') {
+        $script:failures.Add("$currentFile : private SSL material in nginx/ssl/ is generated; do not commit. Run scripts/generate_local_ca.ps1 instead.") | Out-Null
+        continue
+    }
+    if ($currentFile -match '(\.env$|/\.env$|^\.env$|/\.env\.local$|/\.env\.production$)' -and $currentFile -notmatch '\.env\.example$|\.env\.docker\.example$') {
+        # Block actual .env files (root, backend/.env, .env.local, .env.production)
+        # but allow *.env.example and *.env.docker.example templates.
+        $script:failures.Add("$currentFile : a .env file is being added. Use .env.example for templates; the real .env is generated per host.") | Out-Null
+        continue
+    }
 
     # Line-level rules.
     if ($added -match '^APP_KEY=base64:([A-Za-z0-9+/=]{16,})$') {
@@ -76,6 +90,16 @@ foreach ($line in $staged) {
     }
     if ($added -match '^DB_ROOT_PASSWORD=(.+)$' -and $Matches[1] -notin @('', '""', "''", 'changeme')) {
         $script:failures.Add("$currentFile : DB_ROOT_PASSWORD is set to a non-placeholder value. Leave empty; the installer generates a random one.") | Out-Null
+    }
+    if ($added -match '^HOSPITAL_LICENSE_SALT=(.+)$' -and $Matches[1].Length -ge 8 -and $Matches[1] -notin @('', '""', "''", 'changeme')) {
+        $script:failures.Add("$currentFile : HOSPITAL_LICENSE_SALT is set to a real value. Leave empty; the installer generates a random 32-char salt.") | Out-Null
+    }
+    if ($added -match '^HOSPITAL_INITIAL_ADMIN_PASSWORD=(.+)$' -and $Matches[1] -notin @('', '""', "''", 'changeme')) {
+        $script:failures.Add("$currentFile : HOSPITAL_INITIAL_ADMIN_PASSWORD is set to a real value. Leave empty; the installer prompts the operator.") | Out-Null
+    }
+    if ($added -match '^HOSPITAL_DUMP_BINARY=[A-Z]:\\') {
+        # Windows-specific absolute dump path; flag for review (not always a secret)
+        Write-Host "Note: $currentFile sets HOSPITAL_DUMP_BINARY to a Windows path. Confirm this is the production path." -ForegroundColor Yellow
     }
 }
 

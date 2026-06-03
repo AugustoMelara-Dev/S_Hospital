@@ -112,6 +112,48 @@ try {
         -Filename "offline-release/MANIFEST.txt" `
         -ExpectBlock $false
 
+    # Pattern 8: HOSPITAL_LICENSE_SALT with a real value is blocked.
+    Test-Block -Label "HOSPITAL_LICENSE_SALT with 32+ char value is blocked" `
+        -Content "HOSPITAL_LICENSE_SALT=abcdefghijklmnopqrstuvwxyz123456" `
+        -Filename "config/.env.proposed" `
+        -ExpectBlock $true
+
+    # Pattern 9: HOSPITAL_LICENSE_SALT empty is allowed.
+    Test-Block -Label "HOSPITAL_LICENSE_SALT= (empty) is allowed" `
+        -Content "HOSPITAL_LICENSE_SALT=" `
+        -Filename "config/.env.proposed" `
+        -ExpectBlock $false
+
+    # Pattern 10: HOSPITAL_INITIAL_ADMIN_PASSWORD with a real value is blocked.
+    Test-Block -Label "HOSPITAL_INITIAL_ADMIN_PASSWORD with real value is blocked" `
+        -Content "HOSPITAL_INITIAL_ADMIN_PASSWORD=StrongAdminPass2026!" `
+        -Filename "config/.env.proposed" `
+        -ExpectBlock $true
+
+    # Pattern 11: HOSPITAL_INITIAL_ADMIN_PASSWORD empty is allowed.
+    Test-Block -Label "HOSPITAL_INITIAL_ADMIN_PASSWORD= (empty) is allowed" `
+        -Content "HOSPITAL_INITIAL_ADMIN_PASSWORD=" `
+        -Filename "config/.env.proposed" `
+        -ExpectBlock $false
+
+    # Pattern 12: any tracked .env file is blocked (defense in depth).
+    Test-Block -Label "Tracked .env file is blocked" `
+        -Content "APP_KEY=base64:abc" `
+        -Filename "config/.env" `
+        -ExpectBlock $true
+
+    # Pattern 13: .env.example is allowed.
+    Test-Block -Label ".env.example is allowed" `
+        -Content "APP_KEY=" `
+        -Filename "backend/.env.example" `
+        -ExpectBlock $false
+
+    # Pattern 14: nginx/ssl/ private cert is blocked.
+    Test-Block -Label "nginx/ssl/server.key is blocked" `
+        -Content "-----BEGIN PRIVATE KEY-----" `
+        -Filename "nginx/ssl/server.key" `
+        -ExpectBlock $true
+
     Write-Host ""
     Write-Host "All pre-commit guard tests passed." -ForegroundColor Green
     exit 0
