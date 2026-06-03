@@ -3136,3 +3136,43 @@ Contexto: el release guard offline fallo porque `backend/Dockerfile.prod` copiab
 Decision: `backend/Dockerfile.prod` copia `backend/docker/php-fpm.conf` hacia `/usr/local/etc/php-fpm.d/zz-hospital-tuning.conf`. El Dockerfile de desarrollo mantiene su ruta porque su contexto es `backend/`.
 
 Criterio de verificacion: `scripts\make_offline_release.ps1 -Force -SkipDockerBuild` vuelve a encontrar todas las fuentes Docker productivas y debe reportar `OFFLINE_RELEASE_CLEAN: YES`.
+
+## 2026-05-22 - Metadata privada para app LAN
+
+Contexto: el producto no busca SEO publico; necesita identidad clara de navegador/atajo instalable y privacidad por defecto en una red local.
+
+Decision: frontend/index.html declara descripcion, robots noindex/nofollow/noarchive, manifest e icono local. Laravel sirve /manifest.webmanifest y /icons/* desde frontend/dist, y robots.txt bloquea indexacion.
+
+Criterio de verificacion: ProductionSpaRouteTest protege rutas SPA, manifest, icono y metadata fuente; npm.cmd run build y el test focal pasan.
+
+## 2026-05-22 - Chunk diferido para dashboard
+
+Contexto: el dashboard concentra graficos que no son necesarios para operar caja/facturacion.
+
+Decision: AppRoutes carga el dashboard con React.lazy y LoadingState, manteniendo rutas operativas principales estaticas para no fragilizar navegacion ni pruebas.
+
+Criterio de verificacion: el build genera un chunk DashboardView independiente y pasan npm.cmd run test, npm.cmd run typecheck, npm.cmd run lint y npm.cmd run build.
+
+## 2026-05-22 - Smoke accesible para caja y POS
+
+Contexto: la ruta critica del hospital es operativa y offline; el gate debe proteger teclado, foco, labels y ausencia de errores de consola.
+
+Decision: production-readiness.spec.ts cubre foco inicial de caja, labels de paciente/busqueda/scanner, agregado por teclado en POS, foco de confirmacion, foco de cobro, selector de ancho de recibo y cierre de caja con diferencia.
+
+Criterio de verificacion: qa/ACCESSIBILITY_UX_AUDIT.md registra alcance y resultados; pasan npm.cmd run e2e, npm.cmd run test, npm.cmd run typecheck, npm.cmd run lint y npm.cmd run build.
+
+## 2026-05-22 - Mapa actual de arquitectura
+
+Contexto: el proyecto necesita que cambios futuros respeten fronteras existentes de controllers, Form Requests, Actions, servicios de reportes, UI primitives y features React.
+
+Decision: docs/ARCHITECTURE_CURRENT.md documenta limites actuales de backend, frontend, assets runtime y quality gates; docs/RELEASE_CHECKLIST.md distingue pruebas automatizadas de evidencia fisica real.
+
+Criterio de verificacion: las fases futuras deben actualizar ARCHITECTURE_CURRENT.md cuando cambien limites de modulo o gates obligatorios.
+
+## 2026-05-22 - Evidencia final del pase de pulido
+
+Contexto: la definicion de terminado requiere evidencia reproducible y honesta, separando automatizacion de validacion fisica real.
+
+Decision: qa/PROJECT_POLISH_FINAL_REPORT.md registra comandos finales, resultados, smoke local HTTP y riesgos residuales. El pase de pulido no declara PRODUCTION_READY sin evidencia fisica de LAN, impresora, restore, concurrencia y backup worker.
+
+Criterio de verificacion: el cierre tecnico queda listo para revision del PR, pero el handoff de produccion sigue sujeto a evidencias fisicas/finales.

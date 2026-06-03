@@ -50,7 +50,20 @@ $frontendResponse = function () {
     ]);
 };
 
-Route::withoutMiddleware($statelessWebMiddleware)->group(function () use ($frontendResponse) {
+$frontendStaticResponse = function (string $relativePath, string $contentType) {
+    abort_if(str_contains($relativePath, '..') || str_contains($relativePath, '\\'), 404);
+
+    $assetPath = base_path('../frontend/dist/'.$relativePath);
+    abort_unless(File::isFile($assetPath), 404);
+
+    return response()->file($assetPath, [
+        'Cache-Control' => 'public, max-age=86400',
+        'Content-Type' => $contentType,
+        'X-Content-Type-Options' => 'nosniff',
+    ]);
+};
+
+Route::withoutMiddleware($statelessWebMiddleware)->group(function () use ($frontendResponse, $frontendStaticResponse) {
     Route::get('/', $frontendResponse);
 
     Route::get('/login', $frontendResponse);
@@ -65,6 +78,24 @@ Route::withoutMiddleware($statelessWebMiddleware)->group(function () use ($front
     Route::get('/help', $frontendResponse);
     Route::get('/settings/fiscal', $frontendResponse);
     Route::get('/admin/users', $frontendResponse);
+
+    Route::get(
+        '/manifest.webmanifest',
+        fn () => $frontendStaticResponse('manifest.webmanifest', 'application/manifest+json; charset=UTF-8'),
+    );
+
+    Route::get('/icons/{path}', function (string $path) use ($frontendStaticResponse) {
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $contentType = match ($extension) {
+            'svg' => 'image/svg+xml',
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            'ico' => 'image/x-icon',
+            default => 'application/octet-stream',
+        };
+
+        return $frontendStaticResponse('icons/'.$path, $contentType);
+    })->where('path', '.*');
 
     Route::get('/assets/{path}', function (string $path) {
         abort_if(str_contains($path, '..') || str_contains($path, '\\'), 404);

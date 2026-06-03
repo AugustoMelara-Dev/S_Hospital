@@ -1,4 +1,5 @@
 /// <reference types="node" />
+import { readFileSync } from 'node:fs';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
@@ -1035,5 +1036,13 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: /nueva factura/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /datos fiscales del hospital/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /respaldos/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps heavy authenticated routes behind lazy route chunks', () => {
+    const source = readFileSync('src/AppRoutes.tsx', 'utf8');
+
+    expect(source).toContain('lazy(() => import');
+    expect(source).toContain("import('./features/dashboard/DashboardView')");
+    expect(source).toContain('<Suspense fallback={<LoadingState label="Cargando módulo..." />}>');
   });
 });
