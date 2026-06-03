@@ -44,6 +44,7 @@ $operatorManualsSafetyScript = Join-Path $scriptsDir "validate_operator_manuals_
 $backupRestoreDocsSafetyScript = Join-Path $scriptsDir "validate_backup_restore_docs_safety.ps1"
 $installationDocsSafetyScript = Join-Path $scriptsDir "validate_installation_docs_safety.ps1"
 $helpScreenSafetyScript = Join-Path $scriptsDir "validate_help_screen_safety.ps1"
+$systemDiagnosticsSafetyScript = Join-Path $scriptsDir "validate_system_diagnostics_safety.ps1"
 $lanProofPath = Join-Path $qaDir "LAN_CLIENT_VALIDATION_PROOF.md"
 $printerProofPath = Join-Path $qaDir "INSTITUTIONAL_RECEIPT_PRINT_PROOF.md"
 $restoreProofPath = Join-Path $qaDir "FINAL_RESTORE_PROOF.md"
@@ -261,6 +262,18 @@ function Invoke-HelpScreenSafetyGuard {
     }
 }
 
+function Invoke-SystemDiagnosticsSafetyGuard {
+    Write-Section "System diagnostics safety validation"
+    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $systemDiagnosticsSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
 function Add-ReportLine([System.Collections.Generic.List[string]] $lines, [string] $line = "") {
     $lines.Add($line) | Out-Null
 }
@@ -305,6 +318,8 @@ function Write-HandoffReport(
     [int] $installationDocsSafetyExit,
     [string[]] $helpScreenSafetyOutput,
     [int] $helpScreenSafetyExit,
+    [string[]] $systemDiagnosticsSafetyOutput,
+    [int] $systemDiagnosticsSafetyExit,
     [string[]] $trainingSafetyOutput,
     [int] $trainingSafetyExit,
     [string[]] $evidenceIndexOutput,
@@ -316,7 +331,7 @@ function Write-HandoffReport(
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
     $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted
-    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
+    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
 
     Add-ReportLine $lines "# Final production handoff result"
     Add-ReportLine $lines ""
@@ -339,6 +354,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Backup and restore docs safety guard exit code: $backupRestoreDocsSafetyExit"
     Add-ReportLine $lines "- Installation docs safety guard exit code: $installationDocsSafetyExit"
     Add-ReportLine $lines "- Help screen safety guard exit code: $helpScreenSafetyExit"
+    Add-ReportLine $lines "- System diagnostics safety guard exit code: $systemDiagnosticsSafetyExit"
     Add-ReportLine $lines "- Training safety guard exit code: $trainingSafetyExit"
     Add-ReportLine $lines "- Evidence index guard exit code: $evidenceIndexExit"
     Add-ReportLine $lines "- Preflight skipped: $preflightSkipped"
@@ -394,13 +410,16 @@ function Write-HandoffReport(
     if ($helpScreenSafetyExit -ne 0) {
         Add-ReportLine $lines "- Help screen safety validation returned exit code $helpScreenSafetyExit."
     }
+    if ($systemDiagnosticsSafetyExit -ne 0) {
+        Add-ReportLine $lines "- System diagnostics safety validation returned exit code $systemDiagnosticsSafetyExit."
+    }
     if ($trainingSafetyExit -ne 0) {
         Add-ReportLine $lines "- Training safety validation returned exit code $trainingSafetyExit."
     }
     if ($evidenceIndexExit -ne 0) {
         Add-ReportLine $lines "- Final handoff evidence index validation returned exit code $evidenceIndexExit."
     }
-    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
+    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
         Add-ReportLine $lines "- None reported by the handoff script."
     }
     Add-ReportLine $lines ""
@@ -420,6 +439,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_backup_restore_docs_safety.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_installation_docs_safety.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_help_screen_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_system_diagnostics_safety.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath $(Protect-HandoffText $path)"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl $($BaseUrl.TrimEnd('/'))"
@@ -508,6 +528,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
+    Add-ReportLine $lines "## System diagnostics safety validation output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $systemDiagnosticsSafetyOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
     Add-ReportLine $lines "## Evidence index validation output"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
@@ -546,6 +575,7 @@ Assert-ScriptExists $operatorManualsSafetyScript
 Assert-ScriptExists $backupRestoreDocsSafetyScript
 Assert-ScriptExists $installationDocsSafetyScript
 Assert-ScriptExists $helpScreenSafetyScript
+Assert-ScriptExists $systemDiagnosticsSafetyScript
 
 Write-Host "Sistema de Caja Hospitalaria final production handoff"
 Write-Host "ProjectRoot: $(Protect-HandoffText $ProjectRoot)"
@@ -603,6 +633,7 @@ $operatorManualsSafety = Invoke-OperatorManualsSafetyGuard
 $backupRestoreDocsSafety = Invoke-BackupRestoreDocsSafetyGuard
 $installationDocsSafety = Invoke-InstallationDocsSafetyGuard
 $helpScreenSafety = Invoke-HelpScreenSafetyGuard
+$systemDiagnosticsSafety = Invoke-SystemDiagnosticsSafetyGuard
 $trainingSafety = Invoke-TrainingSafetyGuard
 
 if ($SkipPreflight) {
@@ -629,6 +660,8 @@ if ($SkipPreflight) {
         -installationDocsSafetyExit $installationDocsSafety.ExitCode `
         -helpScreenSafetyOutput $helpScreenSafety.Output `
         -helpScreenSafetyExit $helpScreenSafety.ExitCode `
+        -systemDiagnosticsSafetyOutput $systemDiagnosticsSafety.Output `
+        -systemDiagnosticsSafetyExit $systemDiagnosticsSafety.ExitCode `
         -trainingSafetyOutput $trainingSafety.Output `
         -trainingSafetyExit $trainingSafety.ExitCode `
         -evidenceIndexOutput @("Evidence index validation pending until the handoff report is written.") `
@@ -659,6 +692,8 @@ if ($SkipPreflight) {
         -installationDocsSafetyExit $installationDocsSafety.ExitCode `
         -helpScreenSafetyOutput $helpScreenSafety.Output `
         -helpScreenSafetyExit $helpScreenSafety.ExitCode `
+        -systemDiagnosticsSafetyOutput $systemDiagnosticsSafety.Output `
+        -systemDiagnosticsSafetyExit $systemDiagnosticsSafety.ExitCode `
         -trainingSafetyOutput $trainingSafety.Output `
         -trainingSafetyExit $trainingSafety.ExitCode `
         -evidenceIndexOutput $evidenceIndex.Output `
@@ -695,6 +730,8 @@ Write-HandoffReport `
     -installationDocsSafetyExit $installationDocsSafety.ExitCode `
     -helpScreenSafetyOutput $helpScreenSafety.Output `
     -helpScreenSafetyExit $helpScreenSafety.ExitCode `
+    -systemDiagnosticsSafetyOutput $systemDiagnosticsSafety.Output `
+    -systemDiagnosticsSafetyExit $systemDiagnosticsSafety.ExitCode `
     -trainingSafetyOutput $trainingSafety.Output `
     -trainingSafetyExit $trainingSafety.ExitCode `
     -evidenceIndexOutput @("Evidence index validation pending until the handoff report is written.") `
@@ -725,6 +762,8 @@ Write-HandoffReport `
     -installationDocsSafetyExit $installationDocsSafety.ExitCode `
     -helpScreenSafetyOutput $helpScreenSafety.Output `
     -helpScreenSafetyExit $helpScreenSafety.ExitCode `
+    -systemDiagnosticsSafetyOutput $systemDiagnosticsSafety.Output `
+    -systemDiagnosticsSafetyExit $systemDiagnosticsSafety.ExitCode `
     -trainingSafetyOutput $trainingSafety.Output `
     -trainingSafetyExit $trainingSafety.ExitCode `
     -evidenceIndexOutput $evidenceIndex.Output `
@@ -733,7 +772,7 @@ Write-HandoffReport `
     -preflightExit $preflightExit `
     -preflightSkipped $false
 
-if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
+if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
     Write-Host ""
     Write-Host "PRODUCTION_READY evidence gate passed." -ForegroundColor Green
     exit 0
@@ -741,7 +780,7 @@ if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.
 
 Write-Host ""
 Write-Host "PRODUCTION_READY remains blocked. Keep status as PRODUCTION_CANDIDATE and close the missing evidence above." -ForegroundColor Yellow
-if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
+if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
     exit 1
 }
 if ($supportPacketSafety.ExitCode -ne 0) {
@@ -761,6 +800,9 @@ if ($installationDocsSafety.ExitCode -ne 0) {
 }
 if ($helpScreenSafety.ExitCode -ne 0) {
     exit $helpScreenSafety.ExitCode
+}
+if ($systemDiagnosticsSafety.ExitCode -ne 0) {
+    exit $systemDiagnosticsSafety.ExitCode
 }
 if ($trainingSafety.ExitCode -ne 0) {
     exit $trainingSafety.ExitCode

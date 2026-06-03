@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 10:27:09
+- Generated at: 2026-06-03 10:35:25
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -19,6 +19,7 @@
 - Backup and restore docs safety guard exit code: 0
 - Installation docs safety guard exit code: 0
 - Help screen safety guard exit code: 0
+- System diagnostics safety guard exit code: 0
 - Training safety guard exit code: 0
 - Evidence index guard exit code: 0
 - Preflight skipped: True
@@ -50,6 +51,7 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_s
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_backup_restore_docs_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_installation_docs_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_help_screen_safety.ps1
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_system_diagnostics_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
 powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000
@@ -92,6 +94,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] Missing required release file: scripts\validate_backup_restore_docs_safety.ps1
 [FAIL] Missing required release file: scripts\validate_installation_docs_safety.ps1
 [FAIL] Missing required release file: scripts\validate_help_screen_safety.ps1
+[FAIL] Missing required release file: scripts\validate_system_diagnostics_safety.ps1
 [FAIL] Missing required release file: scripts\validate_ops_evidence_index.ps1
 [FAIL] Missing required release file: scripts\validate_training_safety.ps1
 [ OK ] Found scripts\run_backup_worker.cmd
@@ -111,10 +114,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 7096220f before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 81ae0288 before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
-OFFLINE_RELEASE_CLEAN: NO (23 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (24 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -431,6 +434,90 @@ INSTALLATION_DOCS_SAFETY: YES
 [ OK ] Help screen does not expose secret-like assignments
 
 HELP_SCREEN_SAFETY: YES
+```
+
+## System diagnostics safety validation output
+
+```text
+[ OK ] Found frontend\src\features\about\AboutView.tsx
+[ OK ] Found frontend\src\features\about\AboutView.test.tsx
+[ OK ] Found frontend\src\hooks\useServerStatus.ts
+[ OK ] Found frontend\src\hooks\useServerStatus.test.tsx
+[ OK ] Found backend\app\Http\Controllers\SystemStatusController.php
+[ OK ] Found backend\tests\Feature\SystemStatusTest.php
+[ OK ] Found backend\routes\api.php
+[ OK ] About diagnostics include required text: Informacion del sistema
+[ OK ] About diagnostics include required text: Resumen operativo
+[ OK ] About diagnostics include required text: Todo bien
+[ OK ] About diagnostics include required text: Error
+[ OK ] About diagnostics include required text: Diagnostico administrativo
+[ OK ] About diagnostics include required text: sin claves ni rutas internas
+[ OK ] About diagnostics include required text: Backend
+[ OK ] About diagnostics include required text: Base de datos
+[ OK ] About diagnostics include required text: Interfaz web
+[ OK ] About diagnostics include required text: Ultimo respaldo
+[ OK ] About diagnostics include required text: Cola de trabajos
+[ OK ] About diagnostics include required text: Version instalada
+[ OK ] About diagnostics include required text: Red local
+[ OK ] About diagnostics include required text: Migraciones
+[ OK ] About diagnostics include required text: Hora del servidor
+[ OK ] About diagnostics include required text: Espacio libre para respaldos
+[ OK ] About diagnostics include required text: Acceso LAN
+[ OK ] About diagnostics include required text: system.status.view
+[ OK ] About diagnostics gate advanced details by permission
+[ OK ] About diagnostics centralize admin status labels
+[ OK ] About diagnostics render status levels consistently
+[ OK ] About diagnostics format disk space for operators
+[ OK ] Server status hook includes safe summary behavior: /api/system/health
+[ OK ] Server status hook includes safe summary behavior: Todo bien
+[ OK ] Server status hook includes safe summary behavior: Requiere revision
+[ OK ] Server status hook includes safe summary behavior: Error
+[ OK ] Server status hook includes safe summary behavior: No se pudo confirmar el servidor local
+[ OK ] Server status hook includes safe summary behavior: La base de datos local no responde
+[ OK ] Server status hook includes safe summary behavior: Detenga la facturacion
+[ OK ] Server status hook includes safe summary behavior: Hay trabajos o respaldos con alerta
+[ OK ] Server status hook includes safe summary behavior: revise respaldos
+[ OK ] Server status hook includes safe summary behavior: worker_recently_active
+[ OK ] Server status hook includes safe summary behavior: success_last_24h
+[ OK ] Server status hook includes safe summary behavior: failed_last_24h
+[ OK ] Server status hook includes safe summary behavior: storage
+[ OK ] Backend system status includes safe field: environmentStatus
+[ OK ] Backend system status includes safe field: databaseStatus
+[ OK ] Backend system status includes safe field: frontendStatus
+[ OK ] Backend system status includes safe field: networkStatus
+[ OK ] Backend system status includes safe field: backupStatus
+[ OK ] Backend system status includes safe field: runtimeStatus
+[ OK ] Backend system status includes safe field: readinessStatus
+[ OK ] Backend system status includes safe field: preflightStatus
+[ OK ] Backend system status includes safe field: app_version
+[ OK ] Backend system status includes safe field: server_time
+[ OK ] Backend system status includes safe field: timezone
+[ OK ] Backend system status includes safe field: lan_ready
+[ OK ] Backend system status includes safe field: client_url
+[ OK ] Backend system status includes safe field: last_success_at
+[ OK ] Backend system status includes safe field: pending_backup_jobs
+[ OK ] Backend system status includes safe field: failed_jobs_count
+[ OK ] Backend system status includes safe field: free_bytes
+[ OK ] Backend system status includes safe field: pending_migration_count
+[ OK ] Backend system status includes safe field: PRODUCTION_CANDIDATE
+[ OK ] Backend system status includes safe field: OperationalMessageSanitizer::url
+[ OK ] Backend system status includes safe field: OperationalMessageSanitizer::message
+[ OK ] Backend system status route is registered
+[ OK ] Backend public health route is registered
+[ OK ] Diagnostics tests cover: non-technical language
+[ OK ] Diagnostics tests cover: without exposing raw technical details
+[ OK ] Diagnostics tests cover: protected administrative diagnostics
+[ OK ] Diagnostics tests cover: system status permission
+[ OK ] Diagnostics tests cover: reads the public operational health endpoint
+[ OK ] Diagnostics tests cover: cashier-safe language
+[ OK ] Diagnostics tests cover: database failures
+[ OK ] Diagnostics tests cover: without secret values
+[ OK ] Diagnostics tests cover: sanitized scheduler heartbeat messages
+[ OK ] Diagnostics tests cover: system.status.view
+[ OK ] About diagnostics UI does not expose forbidden technical details
+[ OK ] System status controller does not expose secret-like assignments
+
+SYSTEM_DIAGNOSTICS_SAFETY: YES
 ```
 
 ## Evidence index validation output

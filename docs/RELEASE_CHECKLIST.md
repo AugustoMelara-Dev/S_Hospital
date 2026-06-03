@@ -140,7 +140,8 @@ El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
 `scripts\validate_operator_manuals_safety.ps1`,
 `scripts\validate_backup_restore_docs_safety.ps1`,
 `scripts\validate_installation_docs_safety.ps1`,
-`scripts\validate_help_screen_safety.ps1` y
+`scripts\validate_help_screen_safety.ps1`,
+`scripts\validate_system_diagnostics_safety.ps1` y
 `scripts\validate_training_safety.ps1`. Despues de escribir el reporte, ejecuta
 `scripts\validate_ops_evidence_index.ps1` contra ese mismo archivo y bloquea
 `PRODUCTION_READY` si el paquete de soporte puede filtrar secretos, si
@@ -149,7 +150,9 @@ advertencias, si la guia de respaldos/restauracion deja de exigir evidencia
 segura, si la guia de instalacion deja de proteger instalacion conservadora,
 arranque, LAN, respaldos, reparacion y cierre `PRODUCTION_CANDIDATE`, si
 la pantalla de Ayuda pierde flujos criticos, incidentes reales o resumen seguro
-sin secretos, si capacitacion segura falla, si el indice tiene referencias
+sin secretos, si el diagnostico local pierde resumen normal, detalle avanzado
+por permiso, checks de backend/base/frontend/respaldo/cola/hora/disco/LAN/version
+o sanitizacion, si capacitacion segura falla, si el indice tiene referencias
 rotas, rutas locales, secretos obvios o no mantiene los bloqueantes fisicos.
 Antes de entregar accesos directos o scripts de recuperacion, ejecute
 `scripts\validate_startup_repair_safety.ps1`; debe reportar
@@ -173,6 +176,12 @@ Antes de entregar la ayuda dentro del sistema, ejecute
 `HELP_SCREEN_SAFETY: YES` para confirmar que Ayuda conserva apertura del
 sistema, login, caja, factura, cobro, impresion, cierre, respaldos, soporte,
 incidentes reales, roles, advertencias y resumen seguro sin secretos.
+Antes de entregar diagnostico local, ejecute
+`scripts\validate_system_diagnostics_safety.ps1`; debe reportar
+`SYSTEM_DIAGNOSTICS_SAFETY: YES` para confirmar que Informacion del sistema y
+`/api/system/status` conservan resumen normal, detalle avanzado por permiso,
+backend, base de datos, frontend, ultimo respaldo, cola, hora, disco, LAN,
+version y sanitizacion.
 Antes de entregar material de capacitacion, ejecute
 `scripts\validate_training_safety.ps1`; debe reportar `TRAINING_SAFETY: YES`
 para confirmar que manuales y Ayuda siguen prohibiendo practicas sobre la base
