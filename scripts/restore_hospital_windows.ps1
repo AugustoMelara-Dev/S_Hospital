@@ -176,13 +176,13 @@ function Invoke-SelfTest {
     Write-Step "Ejecutando self-test de restore seguro"
 
     $tempEnv = Join-Path $env:TEMP "hospital-restore-selftest.env"
-    Set-Content -Path $tempEnv -Value @(
+    Set-Content -LiteralPath $tempEnv -Value @(
         "DB_HOST=192.168.1.10",
         "DB_PORT=3307",
         "DB_DATABASE=hospital_billing",
         "DB_USERNAME=hospital_user",
         "DB_PASSWORD=secret-value"
-    )
+    ) -Encoding ASCII
 
     $config = Get-DatabaseConfig -EnvPath $tempEnv
     Remove-Item $tempEnv -Force -ErrorAction SilentlyContinue

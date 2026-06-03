@@ -146,7 +146,11 @@ function Update-DotEnv {
         }
     }
 
-    Set-Content $Path -Value $newLines
+    # PowerShell 5.1 defaults Set-Content to UTF-16 LE with BOM, which
+    # breaks 'docker compose --env-file' and Laravel's env() parser.
+    # Always write ASCII so the file is portable across PS 5.1, PS 7,
+    # docker compose, and Laravel's Dotenv parser.
+    Set-Content -LiteralPath $Path -Value $newLines -Encoding ASCII
 }
 
 function Test-DatabaseName {

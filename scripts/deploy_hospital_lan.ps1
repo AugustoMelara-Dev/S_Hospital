@@ -279,7 +279,7 @@ if ($SelfTest) {
         $dummyAppKey = "selftest-app-key-placeholder"
         $dummyOriginalDbPassword = "selftest-original-db-password"
         $dummyUpdatedDbPassword = "selftest-updated-db-password"
-        Set-Content -Path $tempEnv -Value @("APP_KEY=$dummyAppKey", "DB_PASSWORD=$dummyOriginalDbPassword", "CUSTOM=value")
+        Set-Content -LiteralPath $tempEnv -Value @("APP_KEY=$dummyAppKey", "DB_PASSWORD=$dummyOriginalDbPassword", "CUSTOM=value") -Encoding ASCII
         $before = Read-EnvFile $tempEnv
         # Update some vars
         Update-DotEnv -Path $tempEnv -Variables @{ "DB_PASSWORD" = $dummyUpdatedDbPassword; "NEW_VAR" = "new" }

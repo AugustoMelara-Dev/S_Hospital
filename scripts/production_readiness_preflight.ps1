@@ -528,7 +528,7 @@ if ($isDockerProductionPackage) {
 
     $probePath = Join-Path $backupDir ".write-test"
     try {
-        Set-Content -LiteralPath $probePath -Value "ok" -NoNewline
+        Set-Content -LiteralPath $probePath -Value "ok" -NoNewline -Encoding ASCII
         Remove-Item -LiteralPath $probePath -Force
         Add-Pass "backup directory is writable"
     } catch {
