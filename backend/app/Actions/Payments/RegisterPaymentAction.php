@@ -57,13 +57,22 @@ class RegisterPaymentAction
             }
 
             if ($lockedInvoice->status === Invoice::STATUS_PAID) {
-                throw ValidationException::withMessages([
-                    'invoice' => 'La factura ya esta pagada.',
-                ]);
+                $amountCents = Money::parseSignedCents($payload['amount'], 'amount');
+                // Allow a negative payment on a PAID invoice: this is the
+                // refund approximation (FASE F4). The amount must be in
+                // the range [0, paid_amount_cents] so the invoice never
+                // goes negative on the paid side. Positive payments on
+                // a PAID invoice are still rejected.
+                if ($amountCents >= 0) {
+                    throw ValidationException::withMessages([
+                        'invoice' => 'La factura ya esta pagada.',
+                    ]);
+                }
             }
 
             $amountCents = Money::parseSignedCents($payload['amount'], 'amount');
             $balanceCents = $this->resolveBalanceCents($lockedInvoice);
+            $paidCents = $this->resolvePaidCents($lockedInvoice);
 
             if ($amountCents === 0) {
                 throw ValidationException::withMessages([
@@ -71,9 +80,18 @@ class RegisterPaymentAction
                 ]);
             }
 
-            if (abs($amountCents) > $balanceCents) {
+            if ($amountCents > 0 && $amountCents > $balanceCents) {
                 throw ValidationException::withMessages([
-                    'amount' => 'El monto no puede exceder el saldo pendiente en valor absoluto.',
+                    'amount' => 'El monto no puede exceder el saldo pendiente.',
+                ]);
+            }
+
+            // A negative payment cannot refund more than has been
+            // paid so far. Without this guard a cashier could push
+            // the invoice's paid_amount_cents into the negative.
+            if ($amountCents < 0 && abs($amountCents) > $paidCents) {
+                throw ValidationException::withMessages([
+                    'amount' => 'La devolucion no puede exceder el monto pagado en valor absoluto.',
                 ]);
             }
 
@@ -110,15 +128,15 @@ class RegisterPaymentAction
                 'occurred_at' => now(),
             ]);
 
-            $paidCents = $this->resolvePaidCents($lockedInvoice) + $amountCents;
+            $nextPaidCents = $paidCents + $amountCents;
             $nextBalanceCents = $balanceCents - $amountCents;
 
             $lockedInvoice->forceFill([
-                'paid_amount' => Money::formatCents($paidCents),
-                'paid_amount_cents' => $paidCents,
+                'paid_amount' => Money::formatCents($nextPaidCents),
+                'paid_amount_cents' => $nextPaidCents,
                 'balance_due' => Money::formatCents($nextBalanceCents),
                 'balance_due_cents' => $nextBalanceCents,
-                'status' => $nextBalanceCents === 0 ? Invoice::STATUS_PAID : Invoice::STATUS_PARTIAL,
+                'status' => $nextBalanceCents === 0 ? Invoice::STATUS_PAID : ($nextPaidCents <= 0 ? Invoice::STATUS_ISSUED : Invoice::STATUS_PARTIAL),
                 'cash_session_id' => $lockedInvoice->cash_session_id ?? $cashSession->id,
             ])->save();
 

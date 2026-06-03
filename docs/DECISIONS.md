@@ -3220,3 +3220,17 @@ Contexto: la definicion de terminado requiere evidencia reproducible y honesta, 
 Decision: qa/PROJECT_POLISH_FINAL_REPORT.md registra comandos finales, resultados, smoke local HTTP y riesgos residuales. El pase de pulido no declara PRODUCTION_READY sin evidencia fisica de LAN, impresora, restore, concurrencia y backup worker.
 
 Criterio de verificacion: el cierre tecnico queda listo para revision del PR, pero el handoff de produccion sigue sujeto a evidencias fisicas/finales.
+
+## 2026-06-02 - Refund workflow (out of scope for v1.0.0, documentado)
+
+Contexto: el manual del cajero (manuales/MANUAL_CAJERO.md) menciona la necesidad operativa de devolver dinero despues de un cobro. AGENTS.md no requiere este flujo y el spec original lo dejo fuera.
+
+Decision: v1.0.0 no implementa un formulario dedicado de devolucion. La necesidad operativa se cubre con dos mecanismos ya existentes:
+
+1. **Pago con monto negativo (aproximacion de devolucion):** si el cajero necesita devolver L. 25 a un paciente despues de un cobro de L. 100 en efectivo, registra un pago con amount=-5.00 sobre la misma cash_session_id, con reference='Devolucion factura 000-001-01-00000042' y el mismo method. La accion RegisterPaymentAction acepta montos negativos; la formula paid_amount_cents = paid_amount_cents + amount_cents y alance_due_cents = total_cents - paid_amount_cents produce el resultado correcto, y el audit log queda balanceado.
+
+2. **Reverso completo de factura pagada:** usar el endpoint POST /api/invoices/{id}/reverse (FASE A3) que anula cada pago (con su cash_movement negativo) y luego la factura, todo en una sola transaccion.
+
+Consecuencia: manuales/MANUAL_CAJERO.md se actualiza en v1.1 para apuntar a estos dos flujos en vez de un formulario separado. Una UI dedicada de 'Devolucion' queda en el roadmap de v1.1 si el feedback operacional del hospital lo justifica.
+
+Criterio de verificacion: el test unit 	ests/Unit/RefundPaymentTest.php (FASE F4) verifica que un pago positivo seguido de un pago negativo deja la factura con paid_amount_cents y balance_due_cents consistentes, y que el audit log contiene ambas entradas.
