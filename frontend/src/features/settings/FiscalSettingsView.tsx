@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   type FiscalSequence,
   type FiscalSettings,
@@ -98,19 +98,14 @@ export function FiscalSettingsView({ canEdit, initialTab = 'resumen', onStatus }
     valid_until: '',
   });
 
-  useEffect(() => {
-    void loadFiscalConfiguration();
-    void loadLogo();
-  }, []);
-
-  async function loadLogo() {
+  const loadLogo = useCallback(async () => {
     try {
       const url = await apiClient.getLogo();
       setLogoUrl(url);
     } catch {
       // Ignore
     }
-  }
+  }, []);
 
   async function handleUploadLogo() {
     if (!logoFile) return;
@@ -130,7 +125,7 @@ export function FiscalSettingsView({ canEdit, initialTab = 'resumen', onStatus }
     }
   }
 
-  async function loadFiscalConfiguration() {
+  const loadFiscalConfiguration = useCallback(async () => {
     setLoading(true);
     setError('');
 
@@ -180,7 +175,12 @@ export function FiscalSettingsView({ canEdit, initialTab = 'resumen', onStatus }
     } finally {
       setLoading(false);
     }
-  }
+  }, [onStatus, setColorTheme]);
+
+  useEffect(() => {
+    void loadFiscalConfiguration();
+    void loadLogo();
+  }, [loadFiscalConfiguration, loadLogo]);
 
   async function handleSaveHospital() {
     if (!hospitalForm.hospital_name.trim()) {
