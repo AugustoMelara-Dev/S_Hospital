@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 10:06:52
+- Generated at: 2026-06-03 10:18:46
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -17,6 +17,7 @@
 - Startup and repair safety guard exit code: 0
 - Operator manuals safety guard exit code: 0
 - Backup and restore docs safety guard exit code: 0
+- Installation docs safety guard exit code: 0
 - Training safety guard exit code: 0
 - Evidence index guard exit code: 0
 - Preflight skipped: True
@@ -46,6 +47,7 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\validate_support_packet_saf
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_startup_repair_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_backup_restore_docs_safety.ps1
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_installation_docs_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
 powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000
@@ -86,6 +88,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] Missing required release file: scripts\validate_startup_repair_safety.ps1
 [FAIL] Missing required release file: scripts\validate_operator_manuals_safety.ps1
 [FAIL] Missing required release file: scripts\validate_backup_restore_docs_safety.ps1
+[FAIL] Missing required release file: scripts\validate_installation_docs_safety.ps1
 [FAIL] Missing required release file: scripts\validate_ops_evidence_index.ps1
 [FAIL] Missing required release file: scripts\validate_training_safety.ps1
 [ OK ] Found scripts\run_backup_worker.cmd
@@ -105,10 +108,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 7747b08c before release handoff.
+[FAIL] MANIFEST.txt must reference current commit aaa6d069 before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
-OFFLINE_RELEASE_CLEAN: NO (21 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (22 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -282,6 +285,69 @@ OPERATOR_MANUALS_SAFETY: YES
 [ OK ] Backup/restore docs do not expose secret-like assignments
 
 BACKUP_RESTORE_DOCS_SAFETY: YES
+```
+
+## Installation docs safety validation output
+
+```text
+[ OK ] Found docs\manuales\GUIA_INSTALACION_OPERATIVA.md
+[ OK ] Found docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md
+[ OK ] Found docs\RELEASE_CHECKLIST.md
+[ OK ] Installation guide includes section: Antes De Instalar
+[ OK ] Installation guide includes section: Instalar
+[ OK ] Installation guide includes section: Abrir El Sistema
+[ OK ] Installation guide includes section: Arranque Automatico
+[ OK ] Installation guide includes section: Respaldos Automaticos
+[ OK ] Installation guide includes section: Validacion Inicial
+[ OK ] Installation guide includes section: Cierre Final Antes De Operar
+[ OK ] Installation guide includes section: Soporte
+[ OK ] Installation guide includes section: Paquete Seguro Para Soporte
+[ OK ] Installation guide includes safety text: No borre carpetas de datos ni volumenes de base de datos
+[ OK ] Installation guide includes safety text: no debe ofrecer una opcion de "instalacion limpia"
+[ OK ] Installation guide includes safety text: migrate:fresh
+[ OK ] Installation guide includes safety text: sin correr seeders de demostracion
+[ OK ] Installation guide includes safety text: APP_VERSION
+[ OK ] Installation guide includes safety text: http://IP-DEL-SERVIDOR:8000
+[ OK ] Installation guide includes safety text: APP_URL
+[ OK ] Installation guide includes safety text: install_hospital_startup_shortcut.ps1
+[ OK ] Installation guide includes safety text: -WhatIfOnly
+[ OK ] Installation guide includes safety text: install_backup_tasks_windows.ps1
+[ OK ] Installation guide includes safety text: install_backup_startup_current_user.ps1
+[ OK ] Installation guide includes safety text: BackupWorker
+[ OK ] Installation guide includes safety text: DailyBackup
+[ OK ] Installation guide includes safety text: Pendiente
+[ OK ] Installation guide includes safety text: Protegido
+[ OK ] Installation guide includes safety text: LAN_CLIENT_VALIDATION_PROOF.md
+[ OK ] Installation guide includes safety text: INSTITUTIONAL_RECEIPT_PRINT_PROOF.md
+[ OK ] Installation guide includes safety text: FINAL_RESTORE_PROOF.md
+[ OK ] Installation guide includes safety text: FINAL_CONCURRENCY_PROOF.md
+[ OK ] Installation guide includes safety text: final_production_handoff.ps1
+[ OK ] Installation guide includes safety text: PRODUCTION_CANDIDATE
+[ OK ] Installation guide includes safety text: validate_lan_client.ps1
+[ OK ] Installation guide includes safety text: repair_hospital_system.ps1
+[ OK ] Installation guide includes safety text: LOCAL_REPAIR_DIAGNOSTIC.md
+[ OK ] Installation guide includes safety text: collect_support_packet.ps1
+[ OK ] Installation guide includes safety text: support-packets
+[ OK ] Installation guide forbids credentials in URLs
+[ OK ] Installation guide keeps handoff reports inside qa
+[ OK ] Installation guide keeps LAN evidence inside qa
+[ OK ] Installation guide documents non-mutating dry runs
+[ OK ] Installation guide documents safe repair limits
+[ OK ] Installation guide protects .env files
+[ OK ] Install/release docs include guardrail: PRODUCTION_READY
+[ OK ] Install/release docs include guardrail: PRODUCTION_CANDIDATE
+[ OK ] Install/release docs include guardrail: No ejecutar `migrate:fresh` en el servidor real
+[ OK ] Install/release docs include guardrail: no restaura backups automaticamente
+[ OK ] Install/release docs include guardrail: no reemplaza un archivo existente por accidente
+[ OK ] Install/release docs include guardrail: no sobrescribe
+[ OK ] Install/release docs include guardrail: No declare la instalacion lista para produccion
+[ OK ] Install/release docs include guardrail: segunda computadora
+[ OK ] Install/release docs include guardrail: impresora institucional
+[ OK ] Install/release docs include guardrail: base descartable
+[ OK ] Install/release docs include guardrail: concurrencia
+[ OK ] Installation/support docs do not expose secret-like assignments
+
+INSTALLATION_DOCS_SAFETY: YES
 ```
 
 ## Evidence index validation output

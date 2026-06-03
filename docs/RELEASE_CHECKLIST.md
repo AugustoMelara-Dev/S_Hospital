@@ -138,14 +138,17 @@ preflight o escribir el reporte.
 El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
 `scripts\validate_startup_repair_safety.ps1`,
 `scripts\validate_operator_manuals_safety.ps1`,
-`scripts\validate_backup_restore_docs_safety.ps1` y
+`scripts\validate_backup_restore_docs_safety.ps1`,
+`scripts\validate_installation_docs_safety.ps1` y
 `scripts\validate_training_safety.ps1`. Despues de escribir el reporte, ejecuta
 `scripts\validate_ops_evidence_index.ps1` contra ese mismo archivo y bloquea
 `PRODUCTION_READY` si el paquete de soporte puede filtrar secretos, si
 arranque/reparacion segura falla, si los manuales por rol pierden checklists o
 advertencias, si la guia de respaldos/restauracion deja de exigir evidencia
-segura, si capacitacion segura falla, si el indice tiene referencias rotas,
-rutas locales, secretos obvios o no mantiene los bloqueantes fisicos.
+segura, si la guia de instalacion deja de proteger instalacion conservadora,
+arranque, LAN, respaldos, reparacion y cierre `PRODUCTION_CANDIDATE`, si
+capacitacion segura falla, si el indice tiene referencias rotas, rutas locales,
+secretos obvios o no mantiene los bloqueantes fisicos.
 Antes de entregar accesos directos o scripts de recuperacion, ejecute
 `scripts\validate_startup_repair_safety.ps1`; debe reportar
 `STARTUP_REPAIR_SAFETY: YES` para confirmar que los flujos de arranque,
@@ -158,6 +161,11 @@ Antes de entregar instrucciones de respaldo/restauracion, ejecute
 `scripts\validate_backup_restore_docs_safety.ps1`; debe reportar
 `BACKUP_RESTORE_DOCS_SAFETY: YES` para confirmar que la guia conserva
 respaldo manual, worker, retencion, restore descartable y evidencia final.
+Antes de entregar instalacion o mantenimiento, ejecute
+`scripts\validate_installation_docs_safety.ps1`; debe reportar
+`INSTALLATION_DOCS_SAFETY: YES` para confirmar que la guia conserva instalacion
+sin borrado, URL LAN segura, accesos/arranque, tareas de respaldo,
+reparacion segura, paquete de soporte y bloqueo `PRODUCTION_CANDIDATE`.
 Antes de entregar material de capacitacion, ejecute
 `scripts\validate_training_safety.ps1`; debe reportar `TRAINING_SAFETY: YES`
 para confirmar que manuales y Ayuda siguen prohibiendo practicas sobre la base
