@@ -7,6 +7,8 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class PdfExportService
 {
+    use Concerns\FormatsReportMoney;
+
     public function generateDailyClosurePdf(array $data, array $fiscal): string
     {
         $hospitalName = HospitalName::display($fiscal['hospital_name'] ?? null);
@@ -165,12 +167,12 @@ class PdfExportService
     <div class='summary-cards'>
         <div class='summary-card'>
             <div class='summary-card-title'>Total Facturado</div>
-            <div class='summary-card-value'>L. " . number_format((float)$data['total_billed'], 2) . "</div>
+            <div class='summary-card-value'>L. " . $this->formatMoneyForDisplay($data['total_billed']) . "</div>
             <div style='font-size: 10px; color: #64748b; margin-top: 4px;'>Facturas Emitidas: {$data['invoice_count']}</div>
         </div>
         <div class='summary-card summary-card-right'>
             <div class='summary-card-title'>Total Recaudado</div>
-            <div class='summary-card-value' style='color: #0d9488;'>L. " . number_format((float)$data['total_collected'], 2) . "</div>
+            <div class='summary-card-value' style='color: #0d9488;'>L. " . $this->formatMoneyForDisplay($data['total_collected']) . "</div>
             <div style='font-size: 10px; color: #64748b; margin-top: 4px;'>Pagos Procesados: {$data['payment_count']}</div>
         </div>
         <div class='clear'></div>
@@ -190,7 +192,7 @@ class PdfExportService
             $html .= "
             <tr>
                 <td><strong>{$methodName}</strong></td>
-                <td class='text-right'>L. " . number_format((float)$total, 2) . "</td>
+                <td class='text-right'>L. " . $this->formatMoneyForDisplay($total) . "</td>
             </tr>";
         }
         $html .= "
@@ -215,7 +217,7 @@ class PdfExportService
             <tr>
                 <td><strong>{$statusName}</strong></td>
                 <td class='text-center'>{$count}</td>
-                <td class='text-right'>L. " . number_format((float)$total, 2) . "</td>
+                <td class='text-right'>L. " . $this->formatMoneyForDisplay($total) . "</td>
             </tr>";
         }
         $html .= "
@@ -394,12 +396,12 @@ class PdfExportService
     <div class='summary-cards'>
         <div class='summary-card'>
             <div class='summary-card-title'>Total Facturado</div>
-            <div class='summary-card-value'>L. " . number_format((float)$income['total_billed'], 2) . "</div>
+            <div class='summary-card-value'>L. " . $this->formatMoneyForDisplay($income['total_billed']) . "</div>
             <div style='font-size: 9px; color: #64748b; margin-top: 3px;'>Facturas Emitidas: {$income['invoice_count']}</div>
         </div>
         <div class='summary-card summary-card-right'>
             <div class='summary-card-title'>Total Recaudado</div>
-            <div class='summary-card-value' style='color: #0d9488;'>L. " . number_format((float)$income['total_collected'], 2) . "</div>
+            <div class='summary-card-value' style='color: #0d9488;'>L. " . $this->formatMoneyForDisplay($income['total_collected']) . "</div>
             <div style='font-size: 9px; color: #64748b; margin-top: 3px;'>Pagos Procesados: {$income['payment_count']}</div>
         </div>
         <div class='clear'></div>
@@ -425,9 +427,9 @@ class PdfExportService
                 <tr>
                     <td><strong>" . htmlspecialchars($cat['category']) . "</strong></td>
                     <td class='text-center'>{$cat['item_count']}</td>
-                    <td class='text-right'>L. " . number_format((float)$cat['subtotal'], 2) . "</td>
-                    <td class='text-right'>L. " . number_format((float)$cat['tax_amount'], 2) . "</td>
-                    <td class='text-right'><strong>L. " . number_format((float)$cat['total'], 2) . "</strong></td>
+                    <td class='text-right'>L. " . $this->formatMoneyForDisplay($cat['subtotal']) . "</td>
+                    <td class='text-right'>L. " . $this->formatMoneyForDisplay($cat['tax_amount']) . "</td>
+                    <td class='text-right'><strong>L. " . $this->formatMoneyForDisplay($cat['total']) . "</strong></td>
                 </tr>";
             }
         }
@@ -449,7 +451,7 @@ class PdfExportService
             $html .= "
             <tr>
                 <td><strong>{$methodName}</strong></td>
-                <td class='text-right'>L. " . number_format((float)$total, 2) . "</td>
+                <td class='text-right'>L. " . $this->formatMoneyForDisplay($total) . "</td>
             </tr>";
         }
         $html .= "
@@ -488,7 +490,7 @@ class PdfExportService
                 <tr>
                     <td>" . htmlspecialchars($srv['service']) . "</td>
                     <td class='text-center'>{$srv['item_count']}</td>
-                    <td class='text-right'>L. " . number_format((float)$srv['total'], 2) . "</td>
+                    <td class='text-right'>L. " . $this->formatMoneyForDisplay($srv['total']) . "</td>
                 </tr>";
             }
         }

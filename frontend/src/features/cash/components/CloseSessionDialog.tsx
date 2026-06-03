@@ -52,8 +52,10 @@ interface AlertDialogDescriptionProps {
 
 export function AlertDialogDescription({ children }: AlertDialogDescriptionProps) {
   return (
-    <AlertDialogPrimitive.Description className="text-sm text-muted-foreground">
-      {children}
+    <AlertDialogPrimitive.Description asChild>
+      <div className="text-sm text-muted-foreground">
+        {children}
+      </div>
     </AlertDialogPrimitive.Description>
   );
 }
@@ -163,12 +165,12 @@ export function CloseSessionDialog({
 
         {isDifference && (
           <div className="mt-4 space-y-2">
-            <label className="text-sm font-semibold" htmlFor="closing_notes">
+            <label className="text-sm font-semibold" htmlFor="closing_difference_notes">
               Nota sobre la diferencia *
             </label>
             <Textarea
               ref={closingNotesRef}
-              id="closing_notes"
+              id="closing_difference_notes"
               value={closingNotes}
               onChange={(e) => onClosingNotesChange(e.target.value)}
               placeholder="Explique la diferencia..."

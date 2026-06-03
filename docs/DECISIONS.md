@@ -699,3 +699,114 @@ Consecuencia:
 - La evidencia visual actual queda versionable y auditable por modulo.
 - `npm.cmd run test`, `npm.cmd run typecheck`, `npm.cmd run lint`, `npm.cmd run build`, `php artisan test --colors=never --filter=BackupWorkflowTest`, `php artisan test --colors=never --filter=ReportsTest` y `php artisan test --colors=never --filter=ProductionSpaRouteTest` pasan.
 - El build conserva una advertencia no bloqueante de Vite por un chunk apenas mayor a 500 kB; debe tratarse como optimizacion posterior, no como bloqueo funcional.
+
+### 2026-05-22 - Dinero de reportes calculado en centavos
+
+Decision:
+
+- Los reportes operativos asignan cobros filtrados por categoria usando centavos enteros, no casts directos a `float`.
+- `FormatsReportMoney` centraliza conversiones de dinero para reportes: parseo a centavos, formato decimal y conversion display-only para celdas de Excel/PDF.
+- Los exportadores Excel/PDF pueden recibir un decimal numerico solo en la frontera de presentacion, pero la logica autoritativa de totales queda en centavos o strings decimales.
+
+Motivo:
+
+- El proyecto prohibe depender de floats para reglas de dinero.
+- Los reportes por categoria distribuyen pagos proporcionalmente entre items de una factura, una operacion sensible a redondeos de centavos.
+- Centralizar el formato evita que cada exportador vuelva a introducir conversiones inconsistentes.
+
+Consecuencia:
+
+- `IncomeReportService` y `OperationsReportService` ya no contienen casts `(float)` para aritmetica de dinero.
+- La prueba `ReportMoneyArchitectureTest` protege esta regla arquitectonica.
+- `php artisan test --colors=never --filter=ReportMoneyArchitectureTest`, `php artisan test --colors=never --filter=ReportsTest`, `php artisan test --colors=never` y `php artisan config:cache` pasan.
+
+### 2026-05-22 - Chunk diferido para dashboard
+
+Decision:
+
+- `AppRoutes` carga el dashboard con `React.lazy` y un `LoadingState` compartido, mientras mantiene POS, caja, catalogo, historial, reportes, respaldos, configuracion, usuarios, ayuda y acerca de como rutas estaticas.
+- Los tooltips de graficos del dashboard usan tipos explicitos en lugar de `any`.
+
+Motivo:
+
+- El dashboard concentra graficos y resumenes que no son necesarios para operar la ruta critica de caja/facturacion.
+- Diferir demasiadas rutas pequenas hizo fragiles las pruebas por `Suspense`; el splitting debe priorizar beneficio medible sin volver inestable la navegacion operativa.
+- Eliminar `any` en los formatters de Recharts mantiene el contrato TypeScript estricto.
+
+Consecuencia:
+
+- El build genera un chunk `DashboardView` independiente y el chunk principal queda por debajo del umbral de advertencia de Vite.
+- Reportes queda estatico por ahora; si se vuelve a diferir, primero debe agregarse un harness de pruebas compatible con `Suspense`.
+- `npm.cmd run test`, `npm.cmd run typecheck`, `npm.cmd run lint` y `npm.cmd run build` pasan en frontend.
+
+### 2026-05-22 - Smoke accesible para caja y POS
+
+Decision:
+
+- La regresion UX/accesibilidad se valida con Playwright existente, sin agregar dependencias nuevas.
+- `production-readiness.spec.ts` cubre foco inicial de caja, labels de paciente/busqueda/scanner, agregado por teclado en POS, foco de confirmacion, foco de cobro, selector de ancho de recibo y cierre de caja con diferencia.
+- `CloseSessionDialog` usa un `id` unico para la nota de diferencia y una descripcion Radix con HTML valido.
+
+Motivo:
+
+- La ruta critica del hospital es operativa y offline; antes de agregar herramientas como axe, el gate debe proteger teclado, foco, labels y ausencia de errores de consola en los flujos de caja.
+- El dialogo de cierre de caja tenia un riesgo real de label ambiguo por `id` duplicado y generaba errores de HTML anidado invalido.
+
+Consecuencia:
+
+- `qa/ACCESSIBILITY_UX_AUDIT.md` registra el alcance, hallazgos corregidos y comandos ejecutados.
+- `npm.cmd run e2e`, `npm.cmd run test`, `npm.cmd run typecheck`, `npm.cmd run lint` y `npm.cmd run build` pasan en frontend.
+- La validacion con impresora termica fisica y LAN real sigue separada como evidencia de produccion.
+
+### 2026-05-22 - Metadata privada para app LAN
+
+Decision:
+
+- `frontend/index.html` declara descripcion, nombre de aplicacion, robots `noindex,nofollow,noarchive`, colores de tema claro/oscuro, manifest e icono local.
+- `frontend/public/manifest.webmanifest` e `frontend/public/icons/*.svg` son assets locales copiados por Vite; no usan CDN ni red externa.
+- Laravel sirve `/manifest.webmanifest` y `/icons/*` desde `frontend/dist` para la instalacion LAN, y `robots.txt` bloquea indexacion.
+
+Motivo:
+
+- El producto no busca SEO publico; necesita identidad clara de navegador/atajo instalable y privacidad por defecto en una red local.
+- Los clientes LAN deben poder cargar metadata e iconos sin depender de internet ni de rutas del dev server.
+
+Consecuencia:
+
+- `/login`, accesos directos e instalacion tipo PWA identifican el sistema como "Caja hospitalaria".
+- `ProductionSpaRouteTest` protege rutas SPA, assets, manifest, icono y metadata fuente.
+- `npm.cmd run build` y `php artisan test --colors=never --filter=ProductionSpaRouteTest` pasan.
+
+### 2026-05-22 - Mapa actual de arquitectura
+
+Decision:
+
+- `docs/ARCHITECTURE_CURRENT.md` documenta los limites actuales de backend, frontend, assets runtime y quality gates.
+- `docs/RELEASE_CHECKLIST.md` registra los gates de pulido ejecutados el 2026-05-22 y el caveat de Composer fuera de PATH.
+
+Motivo:
+
+- El proyecto ya no necesita una reescritura; necesita que nuevos cambios respeten las fronteras existentes de controllers, Form Requests, Actions, servicios de reportes, UI primitives y features React.
+- El checklist debe distinguir pruebas automatizadas de evidencia fisica real para no declarar `PRODUCTION_READY` por accidente.
+
+Consecuencia:
+
+- Un contribuidor puede ubicar los modulos de facturacion, caja, pagos, recibos, reportes, backups, UI y metadata sin leer todo el historial.
+- Las fases futuras deben actualizar `ARCHITECTURE_CURRENT.md` si cambian limites de modulo o gates obligatorios.
+
+### 2026-05-22 - Evidencia final del pase de pulido
+
+Decision:
+
+- `qa/PROJECT_POLISH_FINAL_REPORT.md` registra comandos finales, resultados, smoke local HTTP y riesgos residuales.
+- El pase de pulido no declara `PRODUCTION_READY`; mantiene separadas las evidencias fisicas de LAN, impresora, restore, concurrencia y backup worker.
+
+Motivo:
+
+- La definicion de terminado requiere evidencia reproducible y honesta, no solo cambios commiteados.
+- Los gates automatizados pueden pasar sin validar hardware o segunda PC LAN real.
+
+Consecuencia:
+
+- El cierre tecnico queda listo para revision/PR con gates automatizados verdes.
+- El handoff de produccion sigue bloqueado hasta completar evidencia fisica/final en servidor real.

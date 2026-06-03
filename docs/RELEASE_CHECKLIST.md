@@ -18,6 +18,28 @@ impresora termica y configuracion final del servidor real.
 
 El quality gate normal es no destructivo. No ejecuta `php artisan migrate:fresh --seed` contra el `.env` activo.
 
+Nota de entorno: en la shell de trabajo del 2026-05-22, `composer` no estaba
+disponible en PATH, por lo que `composer validate` debe ejecutarse en una
+terminal con Composer instalado antes de cerrar release.
+
+## Gate de pulido 2026-05-22
+
+Validado durante el pase de arquitectura/mantenibilidad/UX/metadata:
+
+- Backend completo: `php artisan test --colors=never`.
+- Backend config: `php artisan config:cache`.
+- Reportes: `php artisan test --colors=never --filter=ReportMoneyArchitectureTest`.
+- Reportes funcionales: `php artisan test --colors=never --filter=ReportsTest`.
+- SPA/metadata: `php artisan test --colors=never --filter=ProductionSpaRouteTest`.
+- Frontend unitario: `npm.cmd run test`.
+- Frontend tipos: `npm.cmd run typecheck`.
+- Frontend lint: `npm.cmd run lint`.
+- Frontend build: `npm.cmd run build`.
+- E2E mockeado: `npm.cmd run e2e`.
+
+Estos gates no sustituyen validacion fisica de segunda PC LAN, impresora
+termica, restore final, concurrencia final ni backup worker en el servidor real.
+
 ## Gate E2E Fase 10
 
 Playwright queda separado del gate seguro para que los fallos de navegador no se oculten dentro del build normal:

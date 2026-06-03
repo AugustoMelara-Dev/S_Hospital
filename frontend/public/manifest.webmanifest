@@ -1,0 +1,26 @@
+{
+  "name": "Caja hospitalaria",
+  "short_name": "Caja",
+  "description": "Sistema local para facturacion, caja, pagos, recibos termicos, reportes y respaldos en red LAN.",
+  "start_url": "/login",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "categories": ["business", "finance", "medical"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

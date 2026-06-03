@@ -6,6 +6,16 @@ type PaymentMethodPieChartProps = {
   data: MoneyByMethod;
 };
 
+type TooltipValue = string | number | readonly (string | number)[] | undefined;
+
+function numericTooltipValue(value: TooltipValue): number {
+  if (Array.isArray(value)) {
+    return Number(value[0] ?? 0);
+  }
+
+  return Number(value ?? 0);
+}
+
 const COLORS = {
   cash: 'var(--color-success)',
   transfer: 'var(--color-info)',
@@ -69,11 +79,14 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
               fontSize: '12px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             }}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            formatter={(value: any) => [
-              `L. ${Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${((Number(value ?? 0) / total) * 100).toFixed(1)}%)`,
-              'Total',
-            ]}
+            formatter={(value: TooltipValue) => {
+              const numericValue = numericTooltipValue(value);
+
+              return [
+                `L. ${numericValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${((numericValue / total) * 100).toFixed(1)}%)`,
+                'Total',
+              ];
+            }}
           />
           <Legend
             verticalAlign="bottom"

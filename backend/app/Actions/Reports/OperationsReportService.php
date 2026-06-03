@@ -219,22 +219,21 @@ class OperationsReportService
             $grouped[$userId]['cash_sessions'][] = $payment->cash_session_id;
             $grouped[$userId]['invoices'][] = $payment->invoice_id;
 
-            $paymentAmountCents = (int) round(((float) $payment->amount) * 100);
+            $paymentAmountCents = $this->moneyToCents($payment->amount);
             if (! empty($filters['category_id'])) {
-                $categoryTotal = 0.0;
+                $categoryTotalCents = 0;
                 $invoice = $payment->invoice;
                 if ($invoice) {
                     foreach ($invoice->items as $item) {
                         if ((int) $item->category_id === (int) $filters['category_id']) {
-                            $categoryTotal += (float) $item->line_total;
+                            $categoryTotalCents += $this->moneyToCents($item->line_total);
                         }
                     }
-                    $invoiceTotal = (float) $invoice->total;
-                    if ($invoiceTotal > 0) {
-                        $collectedCents = (int) round($paymentAmountCents * ($categoryTotal / $invoiceTotal));
-                    } else {
-                        $collectedCents = 0;
-                    }
+                    $collectedCents = $this->allocateProportionalCents(
+                        $paymentAmountCents,
+                        $categoryTotalCents,
+                        $this->moneyToCents($invoice->total),
+                    );
                 } else {
                     $collectedCents = 0;
                 }

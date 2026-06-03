@@ -1,10 +1,10 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { PermissionGate } from './components/PermissionGate';
-import { EmptyState } from './components/ui/states';
+import { EmptyState, LoadingState } from './components/ui/states';
 import { BackupsView } from './features/backups/BackupsView';
 import { CashBoxView } from './features/cash/CashBoxView';
 import { CatalogView } from './features/catalog/CatalogView';
-import { DashboardView } from './features/dashboard/DashboardView';
 import { InvoiceHistoryView } from './features/invoices/InvoiceHistoryView';
 import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 import { ReportsView } from './features/reports/ReportsView';
@@ -13,6 +13,8 @@ import { UsersView } from './features/admin/UsersView';
 import { AboutView } from './features/about/AboutView';
 import { HelpView } from './features/help/HelpView';
 import { type AuthUser, type CashSession } from './lib/api';
+
+const DashboardView = lazy(() => import('./features/dashboard/DashboardView').then((module) => ({ default: module.DashboardView })));
 
 type AppRoutesProps = {
   canCreateInvoices: boolean;
@@ -72,20 +74,22 @@ export function AppRoutes({
       <Route
         path="/dashboard"
         element={
-          <DashboardView
-            canCreateInvoices={canCreateInvoices}
-            canViewBackups={canViewBackups}
-            canViewCash={canViewCash}
-            canViewCatalog={canViewCatalog}
-            canViewFiscalSettings={canViewFiscalSettings}
-            canViewInvoices={canViewInvoices}
-            canViewManagerialReports={canViewManagerialReports}
-            canViewReports={canViewReports}
-            cashSession={cashSession}
-            onQuickCash={onQuickCash}
-            onQuickInvoice={onQuickInvoice}
-            onStatus={onStatus}
-          />
+          <Suspense fallback={<LoadingState label="Cargando módulo..." />}>
+            <DashboardView
+              canCreateInvoices={canCreateInvoices}
+              canViewBackups={canViewBackups}
+              canViewCash={canViewCash}
+              canViewCatalog={canViewCatalog}
+              canViewFiscalSettings={canViewFiscalSettings}
+              canViewInvoices={canViewInvoices}
+              canViewManagerialReports={canViewManagerialReports}
+              canViewReports={canViewReports}
+              cashSession={cashSession}
+              onQuickCash={onQuickCash}
+              onQuickInvoice={onQuickInvoice}
+              onStatus={onStatus}
+            />
+          </Suspense>
         }
       />
       <Route
