@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 09:14:46
+- Generated at: 2026-06-03 09:23:53
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -14,6 +14,7 @@
 - Final concurrency proof file: `qa/FINAL_CONCURRENCY_PROOF.md`
 - Offline release artifact guard exit code: 1
 - Support packet safety guard exit code: 0
+- Startup and repair safety guard exit code: 0
 - Training safety guard exit code: 0
 - Evidence index guard exit code: 0
 - Preflight skipped: True
@@ -40,6 +41,7 @@ bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_resto
 # Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report.
 bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_startup_repair_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
 powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000
@@ -77,6 +79,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found scripts\install_hospital_startup_shortcut.ps1
 [ OK ] Found scripts\install_backup_tasks_windows.ps1
 [ OK ] Found scripts\validate_support_packet_safety.ps1
+[FAIL] Missing required release file: scripts\validate_startup_repair_safety.ps1
 [FAIL] Missing required release file: scripts\validate_ops_evidence_index.ps1
 [FAIL] Missing required release file: scripts\validate_training_safety.ps1
 [ OK ] Found scripts\run_backup_worker.cmd
@@ -96,10 +99,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit f1c06747 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 9339c423 before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
-OFFLINE_RELEASE_CLEAN: NO (18 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (19 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -109,6 +112,54 @@ Paquete seguro para soporte creado en: %PROJECT_ROOT%\qa\support-packets\validat
 Archivo principal: %PROJECT_ROOT%\qa\support-packets\validation\MANIFIESTO.md
 [OK] SUPPORT_PACKET_SAFETY: YES
 [OK] No se copiaron .env, secretos ni rutas locales reales.
+```
+
+## Startup and repair safety validation output
+
+```text
+[ OK ] Found scripts\start_hospital_services.ps1
+[ OK ] Found scripts\repair_hospital_system.ps1
+[ OK ] Found scripts\open_hospital_system.ps1
+[ OK ] Found scripts\install_hospital_startup_shortcut.ps1
+[ OK ] Found scripts\install_backup_tasks_windows.ps1
+[ OK ] scripts\start_hospital_services.ps1 includes human safety warning
+[ OK ] scripts\repair_hospital_system.ps1 includes human safety warning
+[ OK ] scripts\open_hospital_system.ps1 includes human safety warning
+Iniciando servicios locales del Sistema de Caja Hospitalaria...
+Carpeta del sistema: %PROJECT_ROOT%
+Validacion de arranque completada.
+Modo Docker detectado: development-docker.
+Servicios que se solicitarian: backend, frontend, mysql.
+Modo WhatIf: no se levanta Docker y no se modifican contenedores.
+[ OK ] Startup dry run completed in safe mode
+Validacion de reparacion segura completada.
+Modo WhatIf: no se levanta Docker, no se abre navegador y no se escribe diagnostico.
+Ruta de diagnostico validada dentro del sistema instalado.
+Modo Docker detectado: development-docker.
+Servicios que se solicitarian: backend, frontend, mysql.
+URL que se revisaria: http://127.0.0.1:8000.
+[ OK ] Repair dry run completed in safe mode
+Validacion del acceso directo completada.
+Carpeta del sistema: %PROJECT_ROOT%
+Destino del acceso directo: %USERPROFILE%\OneDrive\Desktop\Abrir Sistema de Caja Hospitalaria.lnk
+Modo WhatIf: no se creo acceso directo ni tarea de inicio.
+[ OK ] Shortcut dry run completed in safe mode
+Preparando tareas programadas de respaldos para Sistema de Caja Hospitalaria.
+Instalacion: %PROJECT_ROOT%
+Modo: PATH del sistema
+Worker: %PROJECT_ROOT%\scripts\run_backup_worker.cmd
+Respaldo diario: %PROJECT_ROOT%\scripts\run_scheduled_backup.cmd
+Tarea worker: SistemaCajaHospitalaria-BackupWorker
+Tarea diaria: SistemaCajaHospitalaria-DailyBackup a las 23:30
+Modo WhatIf: no se registraron, actualizaron ni eliminaron tareas.
+Comando worker previsto: cmd.exe /c "%PROJECT_ROOT%\scripts\run_backup_worker.cmd" "[php-configurado]"
+Comando respaldo diario previsto: cmd.exe /c "%PROJECT_ROOT%\scripts\run_scheduled_backup.cmd" "[php-configurado]"
+Para actualizar tareas existentes use: -UpdateExisting
+Para remover tareas use: -Uninstall
+Para revisar estado use: -Status
+[ OK ] Backup task dry run completed in safe mode
+
+STARTUP_REPAIR_SAFETY: YES
 ```
 
 ## Training safety validation output

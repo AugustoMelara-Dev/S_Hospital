@@ -135,12 +135,18 @@ o `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` completos, el resultado correcto sig
 siguientes. Si usa `-ReportPath`, debe ser un archivo `.md` dentro de `qa/`;
 el helper rechaza rutas fuera de la carpeta de evidencia antes de ejecutar
 preflight o escribir el reporte.
-El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1` y
+El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
+`scripts\validate_startup_repair_safety.ps1` y
 `scripts\validate_training_safety.ps1`. Despues de escribir el reporte, ejecuta
 `scripts\validate_ops_evidence_index.ps1` contra ese mismo archivo y bloquea
 `PRODUCTION_READY` si el paquete de soporte puede filtrar secretos, si
-capacitacion segura falla, si el indice tiene referencias rotas, rutas locales,
-secretos obvios o no mantiene los bloqueantes fisicos.
+arranque/reparacion segura falla, si capacitacion segura falla, si el indice
+tiene referencias rotas, rutas locales, secretos obvios o no mantiene los
+bloqueantes fisicos.
+Antes de entregar accesos directos o scripts de recuperacion, ejecute
+`scripts\validate_startup_repair_safety.ps1`; debe reportar
+`STARTUP_REPAIR_SAFETY: YES` para confirmar que los flujos de arranque,
+reparacion y tareas de respaldo siguen teniendo modo seguro sin borrar datos.
 Antes de entregar material de capacitacion, ejecute
 `scripts\validate_training_safety.ps1`; debe reportar `TRAINING_SAFETY: YES`
 para confirmar que manuales y Ayuda siguen prohibiendo practicas sobre la base
