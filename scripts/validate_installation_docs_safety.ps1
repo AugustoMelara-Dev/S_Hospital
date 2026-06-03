@@ -81,6 +81,7 @@ if ($installGuide -ne "") {
         'FINAL_RESTORE_PROOF.md',
         'FINAL_CONCURRENCY_PROOF.md',
         'final_production_handoff.ps1',
+        '-InitializeProofFiles',
         'PRODUCTION_CANDIDATE',
         'validate_lan_client.ps1',
         'repair_hospital_system.ps1',
@@ -111,7 +112,10 @@ foreach ($requiredText in @(
     'segunda computadora',
     'impresora institucional',
     'base descartable',
-    'concurrencia'
+    'concurrencia',
+    'make_offline_release.ps1 -SelfTest',
+    'validate_dependency_manifest.ps1',
+    'package_manifest.json'
 )) {
     Test-Contains $combined ([regex]::Escape($requiredText)) "Install/release docs include guardrail: $requiredText"
 }

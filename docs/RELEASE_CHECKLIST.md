@@ -222,6 +222,9 @@ Antes de regenerar el paquete offline final, ejecute
 `scripts\make_offline_release.ps1 -SelfTest`; debe reportar `SelfTest passed`
 para confirmar que el layout simulado incluye `setup.bat`, nginx, scripts
 operativos criticos y manuales sin tocar Docker ni `offline-release`.
+Ejecute tambien `scripts\validate_dependency_manifest.ps1`; debe confirmar que
+`package_manifest.json` coincide con `backend\composer.json` y
+`frontend\package.json` antes de crear o entregar el paquete offline.
 Antes de entregar red local, reparacion o procedimientos por cambio de IP,
 ejecute `scripts\validate_lan_recovery_safety.ps1`; debe reportar
 `LAN_RECOVERY_SAFETY: YES` para confirmar que `refresh_lan_ip.ps1` usa helpers

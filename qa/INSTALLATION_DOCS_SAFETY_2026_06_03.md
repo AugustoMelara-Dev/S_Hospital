@@ -28,6 +28,11 @@ Observed result:
   user fallback, repair, support packet and evidence-path safety checks.
 - The guide keeps final blockers for LAN client, printer, restore and
   concurrency evidence, and keeps status as `PRODUCTION_CANDIDATE`.
+- The guide documents guided handoff with `-InitializeProofFiles` so missing
+  proof drafts are created without overwriting real evidence.
+- The release checklist requires both `make_offline_release.ps1 -SelfTest` and
+  `validate_dependency_manifest.ps1` before regenerating or handing off the
+  offline package.
 
 Safety notes:
 
