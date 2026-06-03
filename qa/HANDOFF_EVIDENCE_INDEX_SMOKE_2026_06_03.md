@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 15:25:31
+- Generated at: 2026-06-03 15:30:54
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -208,7 +208,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] setup.bat avoids legacy/demo wording
 [ OK ] setup.bat uses institutional wording
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit c55c218b before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 1a0bc5cd before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
 OFFLINE_RELEASE_CLEAN: NO (43 blocking issue(s))
@@ -536,6 +536,12 @@ BACKUP_RESTORE_DOCS_SAFETY: YES
 [ OK ] Found docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md
 [ OK ] Found docs\manuales\GUIA_RESPALDOS_Y_RESTAURACION.md
 [ OK ] Found docs\OFFLINE_LAN_INSTALL.md
+[ OK ] Found docs\BACKUP_RESTORE.md
+[ OK ] Found docs\DAILY_CLOSE_PROTOCOL.md
+[ OK ] Found docs\DISASTER_RECOVERY.md
+[ OK ] Found docs\TRAINING_ADMIN.md
+[ OK ] Found docs\Manual_Usuario.md
+[ OK ] Found docs\manuales\INDICE_OPERADOR.md
 [ OK ] Found docs\RELEASE_CHECKLIST.md
 [ OK ] Installation guide includes section: Antes De Instalar
 [ OK ] Installation guide includes section: Instalar
@@ -583,6 +589,13 @@ BACKUP_RESTORE_DOCS_SAFETY: YES
 [ OK ] First-level support guide uses -NoProfile in documented PowerShell commands
 [ OK ] Backup and restore guide uses -NoProfile in documented PowerShell commands
 [ OK ] Offline LAN install guide uses -NoProfile in documented PowerShell commands
+[ OK ] Release checklist uses -NoProfile in documented PowerShell commands
+[ OK ] Backup/restore reference uses -NoProfile in documented PowerShell commands
+[ OK ] Daily close protocol uses -NoProfile in documented PowerShell commands
+[ OK ] Disaster recovery guide uses -NoProfile in documented PowerShell commands
+[ OK ] Admin training guide uses -NoProfile in documented PowerShell commands
+[ OK ] General user manual uses -NoProfile in documented PowerShell commands
+[ OK ] Operator index uses -NoProfile in documented PowerShell commands
 [ OK ] Install/release docs include guardrail: PRODUCTION_READY
 [ OK ] Install/release docs include guardrail: PRODUCTION_CANDIDATE
 [ OK ] Install/release docs include guardrail: No ejecutar `migrate:fresh` en el servidor real

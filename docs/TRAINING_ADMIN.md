@@ -12,13 +12,13 @@
 1. Confirmar tareas Windows:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
 ```
 
 2. Si faltan tareas, instalar desde PowerShell elevado:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath C:\xampp\php\php.exe
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath C:\xampp\php\php.exe
 Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 ```
 
@@ -41,5 +41,5 @@ Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 5. Correr preflight sin bypass:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR
 ```

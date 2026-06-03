@@ -42,8 +42,8 @@ function Test-Contains([string] $content, [string] $pattern, [string] $label) {
 }
 
 function Test-NoProfilePowerShellCommands([string] $content, [string] $label) {
-    if ($content -match 'powershell\.exe\s+-ExecutionPolicy') {
-        Add-Failure "$label uses powershell.exe without -NoProfile."
+    if ($content -match 'powershell(?:\.exe)?\s+-ExecutionPolicy') {
+        Add-Failure "$label uses PowerShell without -NoProfile."
     } else {
         Add-Pass "$label uses -NoProfile in documented PowerShell commands"
     }
@@ -53,6 +53,12 @@ $installGuide = Read-RequiredFile "docs\manuales\GUIA_INSTALACION_OPERATIVA.md"
 $supportGuide = Read-RequiredFile "docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md"
 $backupGuide = Read-RequiredFile "docs\manuales\GUIA_RESPALDOS_Y_RESTAURACION.md"
 $offlineLanInstallGuide = Read-RequiredFile "docs\OFFLINE_LAN_INSTALL.md"
+$backupRestoreReference = Read-RequiredFile "docs\BACKUP_RESTORE.md"
+$dailyCloseProtocol = Read-RequiredFile "docs\DAILY_CLOSE_PROTOCOL.md"
+$disasterRecoveryGuide = Read-RequiredFile "docs\DISASTER_RECOVERY.md"
+$trainingAdminGuide = Read-RequiredFile "docs\TRAINING_ADMIN.md"
+$userManual = Read-RequiredFile "docs\Manual_Usuario.md"
+$operatorIndex = Read-RequiredFile "docs\manuales\INDICE_OPERADOR.md"
 $releaseChecklist = Read-RequiredFile "docs\RELEASE_CHECKLIST.md"
 
 if ($installGuide -ne "") {
@@ -123,7 +129,21 @@ if ($offlineLanInstallGuide -ne "") {
     Test-NoProfilePowerShellCommands $offlineLanInstallGuide "Offline LAN install guide"
 }
 
-$combined = "$installGuide`n$supportGuide`n$backupGuide`n$offlineLanInstallGuide`n$releaseChecklist"
+foreach ($docInfo in @(
+    @{ Content = $releaseChecklist; Label = "Release checklist" },
+    @{ Content = $backupRestoreReference; Label = "Backup/restore reference" },
+    @{ Content = $dailyCloseProtocol; Label = "Daily close protocol" },
+    @{ Content = $disasterRecoveryGuide; Label = "Disaster recovery guide" },
+    @{ Content = $trainingAdminGuide; Label = "Admin training guide" },
+    @{ Content = $userManual; Label = "General user manual" },
+    @{ Content = $operatorIndex; Label = "Operator index" }
+)) {
+    if ($docInfo.Content -ne "") {
+        Test-NoProfilePowerShellCommands $docInfo.Content $docInfo.Label
+    }
+}
+
+$combined = "$installGuide`n$supportGuide`n$backupGuide`n$offlineLanInstallGuide`n$backupRestoreReference`n$dailyCloseProtocol`n$disasterRecoveryGuide`n$trainingAdminGuide`n$userManual`n$operatorIndex`n$releaseChecklist"
 foreach ($requiredText in @(
     'PRODUCTION_READY',
     'PRODUCTION_CANDIDATE',

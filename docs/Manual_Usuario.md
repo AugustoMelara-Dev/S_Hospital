@@ -95,13 +95,13 @@ Use **Ayuda** dentro del sistema.
    servidor:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -BaseUrl http://127.0.0.1:8000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -BaseUrl http://127.0.0.1:8000
 ```
 
 Si soporte necesita mas evidencia, genere un paquete seguro:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\collect_support_packet.ps1 -RunRepairDiagnostic -SkipDockerStart
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\collect_support_packet.ps1 -RunRepairDiagnostic -SkipDockerStart
 ```
 
 No envie `.env`, respaldos SQL, passwords, tokens ni logs completos por canales

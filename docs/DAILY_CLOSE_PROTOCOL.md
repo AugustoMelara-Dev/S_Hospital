@@ -23,7 +23,7 @@
 5. Si queda `pending`, revisar worker:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
 Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 ```
 

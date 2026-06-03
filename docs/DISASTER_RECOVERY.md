@@ -110,7 +110,7 @@ cajero).
    el estado no es `Running`, reejecute el instalador:
 
    ```powershell
-   powershell -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -PhpPath C:\xampp\php\php.exe
+   powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -PhpPath C:\xampp\php\php.exe
    Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
    ```
 

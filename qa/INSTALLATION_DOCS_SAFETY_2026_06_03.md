@@ -36,6 +36,9 @@ Observed result:
 - The primary installation, first-level support, backup/restore and offline LAN
   install guides use `-NoProfile` in documented PowerShell commands to avoid
   operator profile startup issues during recovery and release packaging.
+- The release checklist, backup/restore reference, daily-close protocol,
+  disaster-recovery guide, admin training guide, general user manual and
+  operator index also avoid PowerShell commands without `-NoProfile`.
 
 Safety notes:
 

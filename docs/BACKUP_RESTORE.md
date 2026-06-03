@@ -1,4 +1,4 @@
-﻿# Backup y Restore Local - Sistema de Caja Hospitalaria
+# Backup y Restore Local - Sistema de Caja Hospitalaria
 
 ## Alcance de Fase 8
 
@@ -104,9 +104,9 @@ Helper para registrar las tareas de Windows:
 
 ```powershell
 cd C:\Projects\S_Hospital
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -PhpPath C:\xampp\php\php.exe
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -PhpPath C:\xampp\php\php.exe
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
 ```
 
 El helper crea una tarea de worker al iniciar Windows y una tarea diaria de
@@ -157,8 +157,8 @@ en `install-logs\backup_worker_task.log`,
 Si el Programador de tareas esta bloqueado por permisos/UAC, existe una alternativa por usuario actual:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -PhpPath C:\xampp\php\php.exe -DailyBackupTime 02:00
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -PhpPath C:\xampp\php\php.exe -DailyBackupTime 02:00
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status
 scripts\start_backup_automation.cmd
 ```
 

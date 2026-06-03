@@ -4,7 +4,7 @@
 # operators who already have a saved shortcut to it, but no new
 # code paths reference it. The recommended installer is:
 #
-#   powershell -ExecutionPolicy Bypass -File scripts\deploy_hospital_lan.ps1
+#   powershell -NoProfile -ExecutionPolicy Bypass -File scripts\deploy_hospital_lan.ps1
 #
 # See docs/OFFLINE_LAN_INSTALL.md and scripts/deploy_hospital_lan.ps1
 # for the supported flow.

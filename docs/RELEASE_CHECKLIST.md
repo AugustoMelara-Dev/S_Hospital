@@ -112,7 +112,7 @@ Preflight ejecutable en el servidor final:
 
 ```powershell
 cd C:\Projects\S_Hospital
-powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 `
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 `
   -BaseUrl http://IP_DEL_SERVIDOR
 ```
 
@@ -120,7 +120,7 @@ Handoff guiado de cierre final:
 
 ```powershell
 cd C:\Projects\S_Hospital
-powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 `
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 `
   -BaseUrl http://IP_DEL_SERVIDOR `
   -PhpPath C:\xampp\php\php.exe `
   -InitializeProofFiles
@@ -368,16 +368,16 @@ Helper para crear tareas Windows en el servidor final:
 
 ```powershell
 cd C:\Projects\S_Hospital
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -PhpPath C:\xampp\php\php.exe
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -PhpPath C:\xampp\php\php.exe
 Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
-powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
 ```
 
 Usar `-WhatIfOnly` primero para revisar rutas. Despues de registrar las tareas,
 crear un backup desde la UI y confirmar que pasa de `pending` a `success`.
 Si las tareas ya existen, el script falla salvo que se use `-UpdateExisting`.
-Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Uninstall`.
+Para removerlas: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Uninstall`.
 
 ## Antes de produccion final
 
@@ -392,14 +392,14 @@ Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_b
 
 ```powershell
 cd C:\Projects\S_Hospital
-powershell.exe -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1
 ```
 
 - Desde la segunda PC cliente LAN, generar evidencia inicial de rutas:
 
 ```powershell
 cd C:\Projects\S_Hospital
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 `
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 `
   -BaseUrl http://IP_DEL_SERVIDOR `
   -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
 ```
