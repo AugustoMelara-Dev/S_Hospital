@@ -47,6 +47,10 @@ RUN { \
         echo 'opcache.enable_file_override=1'; \
     } > /usr/local/etc/php/conf.d/opcache-recommended.ini
 
+# Copy the FPM pool tuning for production. Replaces the upstream
+# default of 5 dynamic children (which starves a 5-cashier LAN).
+COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/zz-hospital-tuning.conf
+
 # Copy custom php.ini configuration (upload size, memory limit)
 RUN { \
         echo 'upload_max_filesize=32M'; \
