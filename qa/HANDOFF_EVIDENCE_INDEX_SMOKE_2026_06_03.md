@@ -1,0 +1,112 @@
+# Final production handoff result
+
+- Generated at: 2026-06-03 08:46:28
+- Base URL: http://127.0.0.1:8000
+- Project root: %PROJECT_ROOT%
+- Decision: PRODUCTION_CANDIDATE
+- LAN client proof present without obvious placeholders: False
+- Institutional receipt print proof present without obvious placeholders: False
+- Final restore proof present without obvious placeholders: True
+- Final concurrency proof present without obvious placeholders: True
+- LAN client proof file: `qa/LAN_CLIENT_VALIDATION_PROOF.md`
+- Institutional receipt print proof file: `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`
+- Final restore proof file: `qa/FINAL_RESTORE_PROOF.md`
+- Final concurrency proof file: `qa/FINAL_CONCURRENCY_PROOF.md`
+- Offline release artifact guard exit code: 1
+- Evidence index guard exit code: 0
+- Preflight skipped: True
+- Preflight exit code: 2
+
+## Result
+
+Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until every blocker below is closed with real field evidence.
+
+## Blocking items
+
+- Missing or incomplete `qa/LAN_CLIENT_VALIDATION_PROOF.md` from a real second LAN client.
+- Missing or incomplete `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` from the real cashier printer.
+- Preflight was skipped in this handoff run.
+- Offline release artifact is missing, stale, or contains forbidden files.
+
+## Next commands
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://127.0.0.1:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath php
+Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
+bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"
+# Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report.
+bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
+powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000
+powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://127.0.0.1:8000 -PhpPath php
+```
+
+## Backup task status output
+
+```text
+Preparando tareas programadas de respaldos para Sistema de Caja Hospitalaria.
+Instalacion: %PROJECT_ROOT%
+Modo: no requerido para esta accion
+Worker: %PROJECT_ROOT%\scripts\run_backup_worker.cmd
+Respaldo diario: %PROJECT_ROOT%\scripts\run_scheduled_backup.cmd
+Tarea worker: SistemaCajaHospitalaria-BackupWorker
+Tarea diaria: SistemaCajaHospitalaria-DailyBackup
+SistemaCajaHospitalaria-BackupWorker: no instalada
+SistemaCajaHospitalaria-DailyBackup: no instalada
+Confirme que el worker esta activo y que un respaldo creado desde la UI pasa de pendiente a completado.
+```
+
+## Offline release artifact guard output
+
+```text
+Checking offline release: %PROJECT_ROOT%\offline-release
+[ OK ] Found setup.bat
+[ OK ] Found docker-compose.prod.yml
+[ OK ] Found backend\Dockerfile.prod
+[ OK ] Found nginx\default.conf
+[ OK ] Found MANIFEST.txt
+[ OK ] Found checksums.sha256
+[ OK ] Found offline-images
+[ OK ] Found scripts\deploy_hospital_lan.ps1
+[ OK ] Found scripts\load_offline_images.ps1
+[ OK ] Found scripts\install_hospital_startup_shortcut.ps1
+[ OK ] Found scripts\install_backup_tasks_windows.ps1
+[ OK ] Found scripts\validate_support_packet_safety.ps1
+[FAIL] Missing required release file: scripts\validate_ops_evidence_index.ps1
+[ OK ] Found scripts\run_backup_worker.cmd
+[ OK ] Found scripts\run_scheduled_backup.cmd
+[FAIL] docker-compose.prod.yml in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] backend\Dockerfile.prod in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] nginx\default.conf in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] scripts\collect_support_packet.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] scripts\deploy_hospital_lan.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] scripts\install_hospital_startup_shortcut.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] scripts\install_backup_tasks_windows.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] scripts\lib\operational_url_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] scripts\open_hospital_system.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] scripts\repair_hospital_system.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] scripts\start_hospital_services.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] scripts\validate_support_packet_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] MANIFEST.txt has no stale release wording
+[FAIL] MANIFEST.txt must reference current commit b6b4b750 before release handoff.
+[FAIL] offline-images contains no Docker image tar files.
+
+OFFLINE_RELEASE_CLEAN: NO (17 blocking issue(s))
+```
+
+## Evidence index validation output
+
+```text
+[OK] OPS_EVIDENCE_INDEX: YES
+[OK] Referencias qa/ verificadas: 4
+[OK] El handoff conserva bloqueantes fisicos antes de PRODUCTION_READY.
+```
+
+## Preflight output
+
+```text
+Preflight skipped by -SkipPreflight.
+```

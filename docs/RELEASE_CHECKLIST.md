@@ -135,6 +135,10 @@ o `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` completos, el resultado correcto sig
 siguientes. Si usa `-ReportPath`, debe ser un archivo `.md` dentro de `qa/`;
 el helper rechaza rutas fuera de la carpeta de evidencia antes de ejecutar
 preflight o escribir el reporte.
+Despues de escribir el reporte, el helper ejecuta
+`scripts\validate_ops_evidence_index.ps1` contra ese mismo archivo y bloquea
+`PRODUCTION_READY` si el indice tiene referencias rotas, rutas locales,
+secretos obvios o no mantiene los bloqueantes fisicos.
 
 Este preflight falla si el servidor no usa `APP_ENV=production`, si `APP_DEBUG`
 no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o

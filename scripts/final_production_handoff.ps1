@@ -36,6 +36,7 @@ $preflightScript = Join-Path $scriptsDir "production_readiness_preflight.ps1"
 $proofInitScript = Join-Path $scriptsDir "init_production_proofs.ps1"
 $backupTasksScript = Join-Path $scriptsDir "install_backup_tasks_windows.ps1"
 $releaseGuardScript = Join-Path $scriptsDir "assert_offline_release_clean.ps1"
+$evidenceIndexScript = Join-Path $scriptsDir "validate_ops_evidence_index.ps1"
 $lanProofPath = Join-Path $qaDir "LAN_CLIENT_VALIDATION_PROOF.md"
 $printerProofPath = Join-Path $qaDir "INSTITUTIONAL_RECEIPT_PRINT_PROOF.md"
 $restoreProofPath = Join-Path $qaDir "FINAL_RESTORE_PROOF.md"
@@ -157,6 +158,18 @@ function Assert-ScriptExists([string] $path) {
     }
 }
 
+function Invoke-EvidenceIndexGuard([string] $handoffPath) {
+    Write-Section "Evidence index validation"
+    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $evidenceIndexScript -ProjectRoot $ProjectRoot -HandoffPath $handoffPath 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
 function Add-ReportLine([System.Collections.Generic.List[string]] $lines, [string] $line = "") {
     $lines.Add($line) | Out-Null
 }
@@ -189,6 +202,8 @@ function Write-HandoffReport(
     [string[]] $backupStatusOutput,
     [string[]] $releaseGuardOutput,
     [int] $releaseGuardExit,
+    [string[]] $evidenceIndexOutput,
+    [int] $evidenceIndexExit,
     [string[]] $preflightOutput,
     [int] $preflightExit,
     [bool] $preflightSkipped
@@ -196,7 +211,7 @@ function Write-HandoffReport(
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
     $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted
-    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
+    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
 
     Add-ReportLine $lines "# Final production handoff result"
     Add-ReportLine $lines ""
@@ -208,7 +223,12 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Institutional receipt print proof present without obvious placeholders: $printerProofCompleted"
     Add-ReportLine $lines "- Final restore proof present without obvious placeholders: $restoreProofCompleted"
     Add-ReportLine $lines "- Final concurrency proof present without obvious placeholders: $concurrencyProofCompleted"
+    Add-ReportLine $lines '- LAN client proof file: `qa/LAN_CLIENT_VALIDATION_PROOF.md`'
+    Add-ReportLine $lines '- Institutional receipt print proof file: `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`'
+    Add-ReportLine $lines '- Final restore proof file: `qa/FINAL_RESTORE_PROOF.md`'
+    Add-ReportLine $lines '- Final concurrency proof file: `qa/FINAL_CONCURRENCY_PROOF.md`'
     Add-ReportLine $lines "- Offline release artifact guard exit code: $releaseGuardExit"
+    Add-ReportLine $lines "- Evidence index guard exit code: $evidenceIndexExit"
     Add-ReportLine $lines "- Preflight skipped: $preflightSkipped"
     Add-ReportLine $lines "- Preflight exit code: $preflightExit"
     Add-ReportLine $lines ""
@@ -225,16 +245,16 @@ function Write-HandoffReport(
     Add-ReportLine $lines "## Blocking items"
     Add-ReportLine $lines ""
     if (-not $lanProofCompleted) {
-        Add-ReportLine $lines "- Missing or incomplete qa/LAN_CLIENT_VALIDATION_PROOF.md from a real second LAN client."
+        Add-ReportLine $lines '- Missing or incomplete `qa/LAN_CLIENT_VALIDATION_PROOF.md` from a real second LAN client.'
     }
     if (-not $printerProofCompleted) {
-        Add-ReportLine $lines "- Missing or incomplete qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md from the real cashier printer."
+        Add-ReportLine $lines '- Missing or incomplete `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` from the real cashier printer.'
     }
     if (-not $restoreProofCompleted) {
-        Add-ReportLine $lines "- Missing or incomplete qa/FINAL_RESTORE_PROOF.md from a disposable restore database on the final server."
+        Add-ReportLine $lines '- Missing or incomplete `qa/FINAL_RESTORE_PROOF.md` from a disposable restore database on the final server.'
     }
     if (-not $concurrencyProofCompleted) {
-        Add-ReportLine $lines "- Missing or incomplete qa/FINAL_CONCURRENCY_PROOF.md from a disposable concurrency target."
+        Add-ReportLine $lines '- Missing or incomplete `qa/FINAL_CONCURRENCY_PROOF.md` from a disposable concurrency target.'
     }
     if ($preflightSkipped) {
         Add-ReportLine $lines "- Preflight was skipped in this handoff run."
@@ -244,7 +264,10 @@ function Write-HandoffReport(
     if ($releaseGuardExit -ne 0) {
         Add-ReportLine $lines "- Offline release artifact is missing, stale, or contains forbidden files."
     }
-    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
+    if ($evidenceIndexExit -ne 0) {
+        Add-ReportLine $lines "- Final handoff evidence index validation returned exit code $evidenceIndexExit."
+    }
+    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
         Add-ReportLine $lines "- None reported by the handoff script."
     }
     Add-ReportLine $lines ""
@@ -258,6 +281,8 @@ function Write-HandoffReport(
     Add-ReportLine $lines 'bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"'
     Add-ReportLine $lines "# Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report."
     Add-ReportLine $lines "bash -lc `"HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_BASE_URL=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh`""
+    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath $(Protect-HandoffText $path)"
+    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl $($BaseUrl.TrimEnd('/'))"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -PhpPath $(Protect-HandoffText $PhpPath)"
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
@@ -275,6 +300,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $releaseGuardOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## Evidence index validation output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $evidenceIndexOutput) {
         Add-ReportLine $lines (Protect-HandoffText $line)
     }
     Add-ReportLine $lines '```'
@@ -301,6 +335,7 @@ Assert-ScriptExists $preflightScript
 Assert-ScriptExists $proofInitScript
 Assert-ScriptExists $backupTasksScript
 Assert-ScriptExists $releaseGuardScript
+Assert-ScriptExists $evidenceIndexScript
 
 Write-Host "Sistema de Caja Hospitalaria final production handoff"
 Write-Host "ProjectRoot: $(Protect-HandoffText $ProjectRoot)"
@@ -364,6 +399,24 @@ if ($SkipPreflight) {
         -backupStatusOutput $backupStatusOutput `
         -releaseGuardOutput $releaseGuardOutput `
         -releaseGuardExit $releaseGuardExit `
+        -evidenceIndexOutput @("Evidence index validation pending until the handoff report is written.") `
+        -evidenceIndexExit 2 `
+        -preflightOutput @("Preflight skipped by -SkipPreflight.") `
+        -preflightExit 2 `
+        -preflightSkipped $true
+
+    $evidenceIndex = Invoke-EvidenceIndexGuard $ReportPath
+    Write-HandoffReport `
+        -path $ReportPath `
+        -lanProofCompleted $lanProofCompleted `
+        -printerProofCompleted $printerProofCompleted `
+        -restoreProofCompleted $restoreProofCompleted `
+        -concurrencyProofCompleted $concurrencyProofCompleted `
+        -backupStatusOutput $backupStatusOutput `
+        -releaseGuardOutput $releaseGuardOutput `
+        -releaseGuardExit $releaseGuardExit `
+        -evidenceIndexOutput $evidenceIndex.Output `
+        -evidenceIndexExit $evidenceIndex.ExitCode `
         -preflightOutput @("Preflight skipped by -SkipPreflight.") `
         -preflightExit 2 `
         -preflightSkipped $true
@@ -384,11 +437,29 @@ Write-HandoffReport `
     -backupStatusOutput $backupStatusOutput `
     -releaseGuardOutput $releaseGuardOutput `
     -releaseGuardExit $releaseGuardExit `
+    -evidenceIndexOutput @("Evidence index validation pending until the handoff report is written.") `
+    -evidenceIndexExit 2 `
     -preflightOutput $preflightOutput `
     -preflightExit $preflightExit `
     -preflightSkipped $false
 
-if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $allHandoffProofsCompleted) {
+$evidenceIndex = Invoke-EvidenceIndexGuard $ReportPath
+Write-HandoffReport `
+    -path $ReportPath `
+    -lanProofCompleted $lanProofCompleted `
+    -printerProofCompleted $printerProofCompleted `
+    -restoreProofCompleted $restoreProofCompleted `
+    -concurrencyProofCompleted $concurrencyProofCompleted `
+    -backupStatusOutput $backupStatusOutput `
+    -releaseGuardOutput $releaseGuardOutput `
+    -releaseGuardExit $releaseGuardExit `
+    -evidenceIndexOutput $evidenceIndex.Output `
+    -evidenceIndexExit $evidenceIndex.ExitCode `
+    -preflightOutput $preflightOutput `
+    -preflightExit $preflightExit `
+    -preflightSkipped $false
+
+if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
     Write-Host ""
     Write-Host "PRODUCTION_READY evidence gate passed." -ForegroundColor Green
     exit 0
@@ -396,7 +467,10 @@ if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $allHandoffProofsComp
 
 Write-Host ""
 Write-Host "PRODUCTION_READY remains blocked. Keep status as PRODUCTION_CANDIDATE and close the missing evidence above." -ForegroundColor Yellow
-if ($preflightExit -eq 0) {
+if ($preflightExit -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
     exit 1
+}
+if ($evidenceIndex.ExitCode -ne 0) {
+    exit $evidenceIndex.ExitCode
 }
 exit $preflightExit

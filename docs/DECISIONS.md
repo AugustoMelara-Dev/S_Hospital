@@ -3128,6 +3128,13 @@ Decision: se tipan relaciones Eloquent usadas por categorias/facturas, `ReverseI
 
 Criterio de verificacion: `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G --error-format=table` pasa sin errores. Tambien pasan `BroadcastingWiringTest`, `InvoiceReverseTest`, `CashPaymentsReceiptTest`, `BackupWorkflowTest`, Pint focal y `scripts\check-branding.ps1`.
 
+## 2026-06-03 - Handoff final valida su propio indice de evidencia
+
+Contexto: `scripts\validate_ops_evidence_index.ps1` podia ejecutarse manualmente, pero `scripts\final_production_handoff.ps1` escribia el reporte final sin comprobar que ese mismo reporte conservara referencias `qa/`, bloqueantes fisicos y ausencia de rutas locales o secretos obvios.
+
+Decision: `final_production_handoff.ps1` escribe un borrador, ejecuta `validate_ops_evidence_index.ps1` contra el reporte generado, reescribe el handoff con la salida del gate y bloquea `PRODUCTION_READY` si el indice falla. El reporte generado enumera explicitamente las pruebas LAN, impresora, restore y concurrencia como referencias Markdown bajo `qa/`.
+
+Criterio de verificacion: `final_production_handoff.ps1 -SkipPreflight -ReportPath qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` genera un reporte `PRODUCTION_CANDIDATE` y el gate de indice pasa sobre ese reporte con `OPS_EVIDENCE_INDEX: YES`.
 ## 2026-06-03 - Guard offline exige validador de indice de evidencias
 
 Contexto: el handoff final se convirtio en el indice auditable de pruebas, pendientes fisicos y riesgos. Si el paquete offline se arma desde un commit nuevo pero omite `scripts\validate_ops_evidence_index.ps1`, soporte podria entregar evidencia con referencias rotas, rutas locales o una declaracion prematura de `PRODUCTION_READY`.
