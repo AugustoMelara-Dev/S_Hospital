@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Billing\CreateInvoiceAction;
+use App\Actions\Billing\ReverseInvoiceAction;
 use App\Actions\Billing\VoidInvoiceAction;
 use App\Http\Requests\Billing\IndexInvoiceRequest;
+use App\Http\Requests\Billing\ReverseInvoiceRequest;
 use App\Http\Requests\Billing\ShowInvoiceRequest;
 use App\Http\Requests\Billing\StoreInvoiceRequest;
 use App\Http\Requests\Billing\VoidInvoiceRequest;
@@ -110,6 +112,16 @@ class InvoiceController extends Controller
     ): JsonResponse {
         return response()->json([
             'data' => $voidInvoice->execute($invoice, $request->user(), $request->reason()),
+        ]);
+    }
+
+    public function reverse(
+        ReverseInvoiceRequest $request,
+        Invoice $invoice,
+        ReverseInvoiceAction $reverseInvoice,
+    ): JsonResponse {
+        return response()->json([
+            'data' => $reverseInvoice->execute($invoice, $request->user(), $request->reason()),
         ]);
     }
 

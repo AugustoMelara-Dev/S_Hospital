@@ -83,6 +83,8 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
         Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'void'])
             ->middleware('throttle.user:30,1');
+        Route::post('/invoices/{invoice}/reverse', [InvoiceController::class, 'reverse'])
+            ->middleware('throttle.user:10,1');
 
         Route::get('/cash-sessions/current', [CashSessionController::class, 'current']);
         Route::post('/cash-sessions/open', [CashSessionController::class, 'open']);
