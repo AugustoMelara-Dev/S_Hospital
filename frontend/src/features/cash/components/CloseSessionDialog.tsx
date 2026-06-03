@@ -1,8 +1,9 @@
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
 import { AlertTriangle } from 'lucide-react';
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { finiteNumber, formatLempiras } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
 interface AlertDialogContentProps {
@@ -52,8 +53,10 @@ interface AlertDialogDescriptionProps {
 
 export function AlertDialogDescription({ children }: AlertDialogDescriptionProps) {
   return (
-    <AlertDialogPrimitive.Description className="text-sm text-muted-foreground">
-      {children}
+    <AlertDialogPrimitive.Description asChild>
+      <div className="text-sm text-muted-foreground">
+        {children}
+      </div>
     </AlertDialogPrimitive.Description>
   );
 }
@@ -101,7 +104,14 @@ export function AlertDialogAction({ children, onClick, disabled }: AlertDialogAc
 interface CloseSessionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  session: { opening_amount: string; expected_cash_amount?: string | null; expected_amount?: string | null };
+  session: {
+    opening_amount: string;
+    expected_cash_amount?: string | null;
+    expected_amount?: string | null;
+    payments_by_method?: { cash: string; transfer: string; card: string; other: string };
+    pending_invoice_count?: number;
+    pending_amount?: string | null;
+  };
   closingAmount: string;
   closingNotes: string;
   difference: number;
@@ -121,9 +131,24 @@ export function CloseSessionDialog({
   onClosingNotesChange,
   onConfirm,
 }: CloseSessionDialogProps) {
-  const openingAmount = parseFloat(session.opening_amount || '0');
-  const expectedAmount = parseFloat(session.expected_cash_amount ?? session.expected_amount ?? '0');
+  const closingNotesRef = useRef<HTMLTextAreaElement | null>(null);
+  const openingAmount = finiteNumber(session.opening_amount);
+  const expectedAmount = finiteNumber(session.expected_cash_amount ?? session.expected_amount);
+  const pendingAmount = finiteNumber(session.pending_amount);
+  const pendingInvoiceCount = session.pending_invoice_count ?? 0;
   const isDifference = difference !== 0;
+  const methods = session.payments_by_method ?? {
+    cash: '0.00',
+    transfer: '0.00',
+    card: '0.00',
+    other: '0.00',
+  };
+
+  useEffect(() => {
+    if (open && isDifference) {
+      window.setTimeout(() => closingNotesRef.current?.focus(), 0);
+    }
+  }, [isDifference, open]);
 
   return (
     <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -134,20 +159,47 @@ export function CloseSessionDialog({
             <div className="mt-2 space-y-2">
               <div className="flex justify-between">
                 <span>Monto apertura:</span>
-                <strong>L. {openingAmount.toFixed(2)}</strong>
+                <strong>{formatLempiras(openingAmount)}</strong>
               </div>
               <div className="flex justify-between">
-                <span>Total esperado:</span>
-                <strong>L. {expectedAmount.toFixed(2)}</strong>
+                <span>Efectivo esperado:</span>
+                <strong>{formatLempiras(expectedAmount)}</strong>
               </div>
+              <div className="grid grid-cols-2 gap-2 rounded-md border border-border p-3 text-xs">
+                <div className="flex justify-between gap-2">
+                  <span>Efectivo</span>
+                  <strong>{formatLempiras(methods.cash)}</strong>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span>Transferencia</span>
+                  <strong>{formatLempiras(methods.transfer)}</strong>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span>Tarjeta</span>
+                  <strong>{formatLempiras(methods.card)}</strong>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span>Otros</span>
+                  <strong>{formatLempiras(methods.other)}</strong>
+                </div>
+              </div>
+              <div className="flex justify-between">
+                <span>Saldo pendiente:</span>
+                <strong>{formatLempiras(pendingAmount)}</strong>
+              </div>
+              {pendingInvoiceCount > 0 && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/20 dark:text-amber-100">
+                  Hay {pendingInvoiceCount} factura(s) pendientes o parciales. El servidor no permitira cerrar hasta revisarlas.
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>Contado:</span>
-                <strong>L. {closingAmount || '0.00'}</strong>
+                <strong>{formatLempiras(closingAmount || '0.00')}</strong>
               </div>
               <div className="flex justify-between">
                 <span>Diferencia:</span>
                 <strong className={cn(isDifference ? 'text-destructive' : 'text-emerald-600')}>
-                  L. {difference.toFixed(2)}
+                  {formatLempiras(difference)}
                 </strong>
               </div>
             </div>
@@ -156,15 +208,18 @@ export function CloseSessionDialog({
 
         {isDifference && (
           <div className="mt-4 space-y-2">
-            <label className="text-sm font-semibold" htmlFor="closing_notes">
+            <label className="text-sm font-semibold" htmlFor="closing_difference_notes">
               Nota sobre la diferencia *
             </label>
             <Textarea
-              id="closing_notes"
+              ref={closingNotesRef}
+              id="closing_difference_notes"
               value={closingNotes}
               onChange={(e) => onClosingNotesChange(e.target.value)}
               placeholder="Explique la diferencia..."
               rows={2}
+              aria-invalid={isDifference && !closingNotes.trim()}
+              aria-describedby={isDifference && !closingNotes.trim() ? 'closing-notes-error' : undefined}
             />
           </div>
         )}
@@ -177,7 +232,7 @@ export function CloseSessionDialog({
         </AlertDialogFooter>
 
         {isDifference && !closingNotes.trim() && (
-          <div className="mt-2 flex items-center gap-2 text-sm text-destructive">
+          <div id="closing-notes-error" role="alert" className="mt-2 flex items-center gap-2 text-sm text-destructive">
             <AlertTriangle className="h-4 w-4" />
             <span>La nota es obligatoria cuando hay diferencia.</span>
           </div>

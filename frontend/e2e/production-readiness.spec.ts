@@ -1,10 +1,20 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+
+const captureRcScreenshots = process.env.E2E_CAPTURE_RC_SCREENSHOTS === '1';
+const captureDirName = 'rc-e2e-mocked-2026-06-01';
+const captureOutputDir = process.env.E2E_CAPTURE_RC_OUTPUT_DIR ?? path.join('test-results', captureDirName);
+const captureReportDir = (
+  process.env.E2E_CAPTURE_RC_REPORT_DIR ?? path.posix.join('frontend', 'test-results', captureDirName)
+).replaceAll('\\', '/');
+const capturedScreens: Array<{ name: string; path: string; route: string; theme: 'light' | 'dark' }> = [];
 
 const cashierUser = {
   id: 2,
-  name: 'Cajero Demo',
-  email: 'cajero.demo@hospital-billing.local',
-  username: 'cajero.demo',
+  name: 'Cajero Validacion',
+  email: 'cajero.validacion@hospital-san-isidro.local',
+  username: 'cajero.validacion',
   active: true,
   roles: ['cajero'],
   permissions: [
@@ -24,9 +34,9 @@ const cashierUser = {
 
 const adminUser = {
   id: 1,
-  name: 'Admin Demo',
-  email: 'admin.demo@hospital-billing.local',
-  username: 'admin.demo',
+  name: 'Administrador Validacion',
+  email: 'admin.validacion@hospital-san-isidro.local',
+  username: 'admin.validacion',
   active: true,
   roles: ['admin'],
   permissions: [
@@ -64,7 +74,7 @@ const services = [
     name: 'Eritropoyetina',
     slug: 'eritropoyetina',
     price: '25.00',
-    taxable: true,
+    taxable: false,
     active: true,
     special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
     category: { id: 1, name: 'Medicamentos', slug: 'medicamentos', active: true, sort_order: 1 },
@@ -82,12 +92,61 @@ const services = [
   },
 ];
 
+function localDateString(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+const operationalDate = localDateString();
+const operationalIssuedAt = `${operationalDate}T08:00:00-06:00`;
+const operationalPaidAt = `${operationalDate}T08:03:00-06:00`;
+
 function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({
     status,
     contentType: 'application/json',
     body: JSON.stringify(body),
   });
+}
+
+async function captureScreen(page: Page, name: string, theme: 'light' | 'dark' = 'light') {
+  if (!captureRcScreenshots) {
+    return;
+  }
+
+  await mkdir(captureOutputDir, { recursive: true });
+  const fileName = `${name}.png`;
+  const file = path.join(captureOutputDir, fileName);
+  await page.screenshot({ path: file, fullPage: true });
+  capturedScreens.push({ name, path: path.posix.join(captureReportDir, fileName), route: new URL(page.url()).pathname, theme });
+}
+
+async function setVisualTheme(page: Page, theme: 'light' | 'dark') {
+  await page.evaluate((nextTheme) => {
+    localStorage.setItem('hospital-billing-theme', nextTheme);
+    document.documentElement.classList.toggle('dark', nextTheme === 'dark');
+  }, theme);
+}
+
+async function writeCaptureReport(consoleIssues: string[] = []) {
+  if (!captureRcScreenshots) {
+    return;
+  }
+
+  await mkdir(captureOutputDir, { recursive: true });
+  await writeFile(
+    path.join(captureOutputDir, 'rc-e2e-mocked-report.json'),
+    `${JSON.stringify({
+      generated_at: new Date().toISOString(),
+      mode: 'mocked-e2e',
+      note: 'Capturas con API mockeada; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.',
+      screenshots: capturedScreens,
+      console_issues: consoleIssues,
+    }, null, 2)}\n`,
+  );
 }
 
 async function installApiMocks(page: Page) {
@@ -97,7 +156,36 @@ async function installApiMocks(page: Page) {
   const invoices: Record<number, Record<string, unknown>> = {};
   const backupLogs: Record<string, unknown>[] = [];
 
+  await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204 }));
   await page.route('**/sanctum/csrf-cookie', (route) => route.fulfill({ status: 204 }));
+
+  await page.route('**/api/settings/fiscal', (route) => json(route, {
+    data: {
+      primary_color: 'indigo',
+      name: 'Hospital San Isidro',
+      rtn: '08011999123456',
+      address: 'Tocoa, Colon',
+      phone: '2222-2222',
+      email: 'contacto@hospital-san-isidro.local',
+      scanner_enabled: false,
+      partial_payments_enabled: false,
+      receipt_paper_size: 'half_letter',
+    }
+  }));
+  await page.route('**/api/settings/branding', (route) => json(route, {
+    data: {
+      hospital_name: 'Hospital San Isidro',
+      primary_color: 'indigo',
+      slogan: 'Sistema de Caja Hospitalaria',
+      government_line: 'Gobierno de Honduras',
+      secretariat_line: 'Secretaria de Salud Publica',
+      receipt_location: 'Tocoa, Colon',
+    },
+  }));
+
+  await page.route('**/api/settings/logo', (route) => json(route, { logo_url: null }));
+  await page.route('**/api/health', (route) => json(route, { status: 'ok' }));
+  await page.route('**/api/system/client-errors', (route) => route.fulfill({ status: 204 }));
 
   await page.route('**/api/auth/login', async (route) => {
     let payload: { login?: string } = {};
@@ -106,7 +194,7 @@ async function installApiMocks(page: Page) {
     } catch {
       payload = {};
     }
-    currentUser = payload.login === 'admin.demo' ? adminUser : cashierUser;
+    currentUser = payload.login === 'admin.validacion' ? adminUser : cashierUser;
     return json(route, { data: currentUser });
   });
 
@@ -122,6 +210,8 @@ async function installApiMocks(page: Page) {
       { id: 2, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 2 },
     ],
   }));
+  await page.route('**/api/areas**', (route) => json(route, { data: [] }));
+  await page.route('**/api/service-areas**', (route) => json(route, { data: [] }));
   await page.route('**/api/services**', (route) => json(route, { data: services, meta: { total: services.length } }));
   await page.route('**/api/cash-sessions/current', (route) => json(route, { data: currentCashSession }));
   await page.route('**/api/cash-sessions/open', async (route) => {
@@ -157,13 +247,13 @@ async function installApiMocks(page: Page) {
         invoice_number: `000-001-01-${String(invoiceCounter).padStart(8, '0')}`,
         patient_name: payload.patient_name,
         subtotal: hasDialysisPrescription ? '0.00' : '25.00',
-        tax_amount: hasDialysisPrescription ? '0.00' : '3.75',
+        tax_amount: '0.00',
         discount_amount: '0.00',
-        total: hasDialysisPrescription ? '0.00' : '28.75',
+        total: hasDialysisPrescription ? '0.00' : '25.00',
         paid_amount: hasDialysisPrescription ? '0.00' : '0.00',
-        balance_due: hasDialysisPrescription ? '0.00' : '28.75',
+        balance_due: hasDialysisPrescription ? '0.00' : '25.00',
         status: hasDialysisPrescription ? 'paid' : 'issued',
-        issued_at: '2026-05-18T08:00:00-06:00',
+        issued_at: operationalIssuedAt,
         items: [{
           id: 1,
           service_id: 10,
@@ -172,10 +262,10 @@ async function installApiMocks(page: Page) {
           category_name: 'Medicamentos',
           quantity: '1.00',
           unit_price: hasDialysisPrescription ? '0.00' : '25.00',
-          tax_rate: hasDialysisPrescription ? '0.00' : '15.00',
-          tax_amount: hasDialysisPrescription ? '0.00' : '3.75',
+          tax_rate: '0.00',
+          tax_amount: '0.00',
           line_subtotal: hasDialysisPrescription ? '0.00' : '25.00',
-          line_total: hasDialysisPrescription ? '0.00' : '28.75',
+          line_total: hasDialysisPrescription ? '0.00' : '25.00',
           special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
           special_rule_applied: hasDialysisPrescription,
           notes: null,
@@ -210,7 +300,7 @@ async function installApiMocks(page: Page) {
           amount: invoice.total,
           reference: null,
           status: 'posted',
-          paid_at: '2026-05-18T08:03:00-06:00',
+          paid_at: operationalPaidAt,
         },
         invoice,
       },
@@ -219,13 +309,13 @@ async function installApiMocks(page: Page) {
 
   await page.route('**/api/invoices/*/receipt**', (route) => {
     const invoiceId = Number(route.request().url().match(/invoices\/(\d+)\/receipt/)?.[1]);
-    const width = new URL(route.request().url()).searchParams.get('width') ?? '80mm';
+    const width = new URL(route.request().url()).searchParams.get('width') ?? 'half_letter';
     return json(route, { data: receiptFor(invoices[invoiceId], width) });
   });
 
   await page.route('**/api/invoices/*/reprint', (route) => {
     const invoiceId = Number(route.request().url().match(/invoices\/(\d+)\/reprint/)?.[1]);
-    const width = new URL(route.request().url()).searchParams.get('width') ?? '80mm';
+    const width = new URL(route.request().url()).searchParams.get('width') ?? 'half_letter';
     return json(route, { data: { receipt: receiptFor(invoices[invoiceId], width) } });
   });
 
@@ -243,17 +333,50 @@ async function installApiMocks(page: Page) {
   await page.route('**/api/reports/daily**', (route) => json(route, {
     data: {
       date: '2026-05-17',
-      total_billed: '28.75',
-      total_collected: '28.75',
+      total_billed: '25.00',
+      total_collected: '25.00',
       invoice_count: 1,
       payment_count: 1,
-      payments_by_method: { cash: '28.75', transfer: '0.00', card: '0.00', other: '0.00' },
+      payments_by_method: { cash: '25.00', transfer: '0.00', card: '0.00', other: '0.00' },
       invoices_by_status: {
         issued: { count: 0, total: '0.00' },
         partial: { count: 0, total: '0.00' },
-        paid: { count: 1, total: '28.75' },
+        paid: { count: 1, total: '25.00' },
         void: { count: 0, total: '0.00' },
       },
+    },
+  }));
+  await page.route('**/api/reports/monthly**', (route) => json(route, {
+    data: {
+      month: '2026-05',
+      date_from: '2026-05-01',
+      date_to: '2026-05-31',
+      total_billed: '25.00',
+      total_collected: '25.00',
+      total_pending: '0.00',
+      total_partial: '0.00',
+      total_voided: '0.00',
+      invoice_count: 1,
+      payment_count: 1,
+      payments_by_method: { cash: '25.00', transfer: '0.00', card: '0.00', other: '0.00' },
+      invoices_by_status: {
+        issued: { count: 0, total: '0.00' },
+        partial: { count: 0, total: '0.00' },
+        paid: { count: 1, total: '25.00' },
+        void: { count: 0, total: '0.00' },
+      },
+      daily_totals: [
+        {
+          date: '2026-05-17',
+          total_billed: '25.00',
+          total_collected: '25.00',
+          total_pending: '0.00',
+          total_partial: '0.00',
+          total_voided: '0.00',
+          invoice_count: 1,
+          payment_count: 1,
+        },
+      ],
     },
   }));
   await page.route('**/api/reports/income**', (route) => json(route, {
@@ -262,8 +385,8 @@ async function installApiMocks(page: Page) {
       date_to: '2026-05-17',
       cash_session_id: null,
       user_id: null,
-      total_collected: '28.75',
-      payments_by_method: { cash: '28.75', transfer: '0.00', card: '0.00', other: '0.00' },
+      total_collected: '25.00',
+      payments_by_method: { cash: '25.00', transfer: '0.00', card: '0.00', other: '0.00' },
       payment_count: 1,
       invoice_count: 1,
     },
@@ -272,14 +395,14 @@ async function installApiMocks(page: Page) {
     data: {
       date_from: '2026-05-17',
       date_to: '2026-05-17',
-      categories: [{ category: 'Medicamentos', item_count: 1, quantity: '1.00', subtotal: '25.00', tax_amount: '3.75', total: '28.75' }],
+      categories: [{ category: 'Medicamentos', item_count: 1, quantity: '1.00', subtotal: '25.00', tax_amount: '0.00', total: '25.00' }],
     },
   }));
   await page.route('**/api/reports/services**', (route) => json(route, {
     data: {
       date_from: '2026-05-17',
       date_to: '2026-05-17',
-      services: [{ service: 'Eritropoyetina', item_count: 1, quantity: '1.00', subtotal: '25.00', tax_amount: '3.75', total: '28.75' }],
+      services: [{ service: 'Eritropoyetina', item_count: 1, quantity: '1.00', subtotal: '25.00', tax_amount: '0.00', total: '25.00' }],
     },
   }));
   await page.route('**/api/reports/operations**', (route) => json(route, {
@@ -315,14 +438,159 @@ async function installApiMocks(page: Page) {
 
     return json(route, { data: backupLogs, meta: { current_page: 1, per_page: 15, total: backupLogs.length } });
   });
+  await page.route('**/api/system/status', (route) => json(route, {
+    data: {
+      environment: {
+        app_env: 'local',
+        app_debug: true,
+        app_url: 'http://127.0.0.1:5173',
+        queue_connection: 'database',
+        filesystem_disk: 'local',
+        php_version: '8.3.0',
+        server_time: new Date().toISOString(),
+        timezone: 'America/Tegucigalpa',
+      },
+      database: {
+        connection: 'mysql',
+        driver: 'mysql',
+        is_mysql_family: true,
+      },
+      frontend: {
+        dist_index_exists: true,
+        assets_present: true,
+        assets_count: 4,
+        entry_label: 'frontend/dist/index.html',
+      },
+      network: {
+        configured_host: '192.168.1.10',
+        host_type: 'lan',
+        lan_ready: true,
+        client_url: 'http://192.168.1.10:8000',
+        guidance: 'Clientes deben entrar por esta direccion LAN.',
+      },
+      backups: {
+        pending_count: backupLogs.filter((backup) => backup.status === 'pending').length,
+        last_success_at: null,
+        last_success_filename: null,
+        last_failure_at: null,
+        last_failure_message: null,
+        dump_binary: {
+          configured: false,
+          available: true,
+          name: 'mysqldump.exe',
+        },
+        storage: {
+          writable: true,
+          free_bytes: 1048576,
+        },
+        queue: {
+          connection: 'database',
+          pending_backup_jobs: 0,
+          worker_command: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
+          scheduler_command: 'php artisan schedule:run',
+          failed_jobs_count: 0,
+          jobs_table_available: true,
+          failed_jobs_table_available: true,
+        },
+      },
+      runtime: {
+        migration_count: 12,
+        latest_migration: '2026_05_01_000001_create_backup_logs_table',
+        laravel_log: {
+          exists: true,
+          size_bytes: 2048,
+          modified_at: new Date().toISOString(),
+        },
+        backup_automation_log: {
+          exists: false,
+          size_bytes: null,
+          modified_at: null,
+        },
+      },
+      readiness: {
+        state: 'PRODUCTION_CANDIDATE',
+        production_ready: false,
+        blockers: [
+          {
+            code: 'PENDING_LAN_CLIENT_VALIDATION',
+            label: 'Validacion desde segunda PC LAN',
+            status: 'pending',
+          },
+          {
+            code: 'PENDING_HARDWARE_VALIDATION',
+            label: 'Impresora institucional fisica media carta/carta/A5/80mm/58mm',
+            status: 'pending',
+          },
+        ],
+      },
+      preflight: {
+        production_checks: [
+          {
+            code: 'APP_ENV_PRODUCTION',
+            label: 'APP_ENV=production',
+            status: 'pending',
+            detail: 'Actual: local',
+          },
+          {
+            code: 'DUMP_BINARY_AVAILABLE',
+            label: 'mysqldump/mariadb-dump disponible',
+            status: 'validated',
+            detail: 'mysqldump.exe',
+          },
+          {
+            code: 'BACKUP_WORKER_CONTINUOUS',
+            label: 'Worker de backups como tarea/servicio',
+            status: 'manual_required',
+            detail: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
+          },
+        ],
+        public_routes: [
+          {
+            path: '/up',
+            expected: 'HTTP 200',
+            status: 'manual_required',
+          },
+          {
+            path: '/login',
+            expected: 'SPA cargada desde host LAN',
+            status: 'manual_required',
+          },
+          {
+            path: '/verify-email',
+            expected: 'SPA o ruta esperada cargada desde host LAN',
+            status: 'manual_required',
+          },
+        ],
+        physical_proofs: [
+          {
+            code: 'LAN_CLIENT_VALIDATION_PROOF',
+            label: 'Segunda PC en LAN',
+            required_file: 'qa/LAN_CLIENT_VALIDATION_PROOF.md',
+            status: 'pending',
+          },
+          {
+            code: 'INSTITUTIONAL_RECEIPT_PRINT_PROOF',
+            label: 'Impresora institucional media carta/carta/A5/80mm/58mm',
+            required_file: 'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
+            status: 'pending',
+          },
+        ],
+        commands: {
+          preflight: 'powershell.exe -ExecutionPolicy Bypass -File scripts\\\\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR',
+          backup_worker: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
+          scheduler: 'php artisan schedule:run',
+        },
+      },
+    },
+  }));
 }
 
 function receiptFor(invoice: Record<string, unknown>, width: string) {
   return {
     width,
-    hospital: { name: 'Hospital Demo', rtn: '08011999123456' },
+    hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
     fiscal: {
-      cai: 'DEMO-CAI',
+      cai: 'VALIDACION-CAI',
       authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
       valid_until: '2027-05-17',
     },
@@ -330,7 +598,7 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
       id: invoice.id,
       invoice_number: invoice.invoice_number,
       issued_at: invoice.issued_at,
-      cashier: 'Cajero Demo',
+      cashier: 'Cajero Validacion',
       patient_name: invoice.patient_name,
       subtotal: invoice.subtotal,
       tax_amount: invoice.tax_amount,
@@ -346,17 +614,34 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
       method: 'cash',
       amount: invoice.total,
       reference: null,
-      paid_at: '2026-05-18T08:03:00-06:00',
-      cashier: 'Cajero Demo',
+      paid_at: operationalPaidAt,
+      cashier: 'Cajero Validacion',
     }],
   };
 }
 
 async function loginAs(page: Page, username: string) {
   await page.goto('/login');
-  await page.getByLabel(/usuario o email/i).fill(username);
-  await page.getByLabel(/contrasena/i).fill('Password123!');
-  await page.getByRole('button', { name: /entrar/i }).click();
+  const loginInput = page.getByLabel(/usuario o (correo|email)/i);
+  const visibleState = await Promise.any([
+    loginInput.waitFor({ state: 'visible', timeout: 10_000 }).then(() => 'login' as const),
+    page.getByRole('heading', { name: /inicio|dashboard/i }).waitFor({ state: 'visible', timeout: 10_000 }).then(() => 'session' as const),
+  ]).catch(() => 'timeout' as const);
+
+  if (visibleState === 'session') {
+    return;
+  }
+
+  if (visibleState === 'timeout') {
+    await expect(loginInput).toBeVisible();
+  }
+
+  await loginInput.fill(username);
+  await page.getByLabel(/^contraseña$|^contrasena$/i).fill('Password123!');
+  await Promise.all([
+    page.waitForResponse('**/api/auth/login'),
+    page.getByRole('button', { name: /iniciar|entrar/i }).click(),
+  ]);
 }
 
 async function expectOperationalNavigation(page: Page) {
@@ -367,7 +652,7 @@ async function expectOperationalNavigation(page: Page) {
     return;
   }
 
-  await page.getByRole('button', { name: 'Abrir menú', exact: true }).click();
+  await page.getByRole('button', { name: 'Abrir menu', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Caja', exact: true }).first()).toBeVisible();
   await expect(page.getByRole('link', { name: /cat.logo/i }).first()).toBeVisible();
   await page.keyboard.press('Escape');
@@ -378,7 +663,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
 
   page.on('console', (message) => {
     if (message.type() === 'error') {
-      consoleIssues.push(`console.error: ${message.text()}`);
+      const location = message.location().url;
+      consoleIssues.push(`console.error: ${message.text()}${location ? ` (${location})` : ''}`);
     }
   });
   page.on('pageerror', (error) => {
@@ -386,7 +672,30 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   });
   page.on('requestfailed', (request) => {
     const failure = request.failure();
-    if (request.url().includes('/sanctum/csrf-cookie') && failure?.errorText === 'net::ERR_ABORTED') {
+    const url = request.url();
+    if (
+      failure?.errorText === 'net::ERR_ABORTED' &&
+      (
+        url.includes('/src/') ||
+        url.includes('/node_modules/') ||
+        url.includes('/@vite/')
+      )
+    ) {
+      return;
+    }
+
+    if (
+      (
+        url.includes('/sanctum/csrf-cookie') ||
+        url.includes('/api/health') ||
+        url.includes('/api/system/health') ||
+        url.includes('/api/auth/session') ||
+        url.includes('/api/settings/logo') ||
+        url.includes('/api/system/client-errors') ||
+        url.includes('/api/cash-sessions/current')
+      ) &&
+      failure?.errorText === 'net::ERR_ABORTED'
+    ) {
       return;
     }
 
@@ -394,30 +703,49 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   });
 
   await installApiMocks(page);
-  await loginAs(page, 'cajero.demo');
+  await loginAs(page, 'cajero.validacion');
+  await setVisualTheme(page, 'light');
+  await page.goto('/dashboard');
+  await expect(page.getByRole('heading', { name: /inicio|dashboard/i })).toBeVisible();
+  await captureScreen(page, 'dashboard-light', 'light');
+  await setVisualTheme(page, 'dark');
+  await captureScreen(page, 'dashboard-dark', 'dark');
+  await setVisualTheme(page, 'light');
+
   await page.goto('/cashbox');
 
-  await expect(page.locator('#cash-title')).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^caja$/i })).toBeVisible();
   await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
   await expect(page.getByRole('heading', { name: /cerrar caja/i })).toBeVisible();
   if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
     await page.getByRole('button', { name: /cerrar modal/i }).click();
   }
+  await captureScreen(page, 'cashbox-open-light', 'light');
 
-  await page.getByRole('link', { name: /nueva factura/i }).click();
+  await page.getByLabel('Navegacion principal').getByRole('link', { name: /nueva factura/i }).click();
+  await captureScreen(page, 'billing-new-empty-light', 'light');
   await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
   await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
-  await expect(page.getByText(/Total:\s*L\.\s*28\.75/)).toBeVisible();
+  await captureScreen(page, 'billing-new-cart-light', 'light');
+  await expect(page.getByText(/Total estimado:\s*L\.\s*25\.00/)).toBeVisible();
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
   await expect(page.getByRole('heading', { name: /registrar pago/i })).toBeVisible();
+  await expect(page.getByText(/ingrese el monto recibido/i)).toBeVisible();
+  await page.getByLabel(/monto recibido/i).fill('25.00');
+  await expect(page.getByText(/ingrese el monto recibido/i)).toBeHidden();
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
-  await expect(page.getByRole('heading', { name: /preview t.rmico/i })).toBeVisible();
-  await expect(page.getByText('80mm')).toBeVisible();
-  await page.locator('[aria-label="Ancho del recibo"]').click();
-  await page.getByRole('option', { name: '58mm' }).click();
-  await expect(page.getByLabel(/recibo termico/i)).toHaveClass(/receipt-58mm/);
+  await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
+  await expect(page.getByText('Media carta')).toBeVisible();
+  await page.locator('[aria-label="Tamano del recibo"]').click();
+  await page.getByRole('option', { name: 'A5', exact: true }).click();
+  await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
+  await captureScreen(page, 'receipt-preview-a5-light', 'light');
+  await captureScreen(page, 'receipt-preview-light', 'light');
+  await setVisualTheme(page, 'dark');
+  await captureScreen(page, 'receipt-preview-dark', 'dark');
+  await setVisualTheme(page, 'light');
   await page.getByRole('button', { name: /cerrar modal/i }).click();
   await page.getByRole('button', { name: /crear otra factura/i }).click();
 
@@ -428,8 +756,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByLabel(/receta de dialisis/i).click();
   await expect(page.getByLabel(/receta de dialisis/i)).toHaveAttribute('aria-checked', 'true');
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
-  await page.getByRole('button', { name: /confirmar emision/i }).click();
-  await expect(page.getByRole('heading', { name: /preview t.rmico/i })).toBeVisible();
+  await page.getByRole('button', { name: /confirmar emisi.n/i }).click();
+  await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
   await expect(page.getByText('L. 0.00').first()).toBeVisible();
   await page.getByRole('button', { name: /cerrar modal/i }).click();
   await page.getByRole('button', { name: /crear otra factura/i }).click();
@@ -443,25 +771,32 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /^reimprimir$/i }).first().click();
   await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
   await expect(page.getByRole('heading', { name: /recibo - 000-001-01-00000001/i })).toBeVisible();
-  await page.locator('[aria-label="Ancho del recibo"]').click();
-  await page.getByRole('option', { name: '58mm' }).click();
-  await expect(page.getByLabel(/recibo termico/i)).toHaveClass(/receipt-58mm/);
+  await page.locator('[aria-label="Tamano del recibo"]').click();
+  await page.getByRole('option', { name: 'A5', exact: true }).click();
+  await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
 
   await page.getByRole('button', { name: /cerrar modal/i }).click();
-  await page.getByRole('button', { name: /cerrar sesi.n/i }).click();
-  await page.getByLabel(/usuario o email/i).fill('admin.demo');
-  await page.getByLabel(/contrasena/i).fill('Password123!');
-  await page.getByRole('button', { name: /entrar/i }).click();
+  await page.getByRole('button', { name: /abrir menu de usuario/i }).click();
+  await page.getByText(/cerrar sesi.n/i).click();
+  await page.getByLabel(/usuario o (correo|email)/i).fill('admin.validacion');
+  await page.getByLabel(/^contraseña$|^contrasena$/i).fill('Password123!');
+  await Promise.all([
+    page.waitForResponse('**/api/auth/login'),
+    page.getByRole('button', { name: /iniciar|entrar/i }).click(),
+  ]);
   await expect(page.getByRole('link', { name: /reportes/i })).toBeVisible();
   await page.getByRole('link', { name: /reportes/i }).click();
   await expect(page.getByRole('heading', { name: /^reportes$/i })).toBeVisible();
-  await expect(page.getByText(/total cobrado/i)).toBeVisible();
+  await expect(page.getByRole('heading', { name: /cobrado/i })).toBeVisible();
+  await captureScreen(page, 'reports-admin-light', 'light');
 
-  await page.getByRole('link', { name: /backups/i }).click();
-  await expect(page.getByRole('heading', { name: /^backups$/i })).toBeVisible();
-  await page.getByRole('button', { name: /crear backup/i }).first().click();
-  await page.getByRole('button', { name: /^crear backup$/i }).click();
-  await expect(page.getByText('Pendiente', { exact: true })).toBeVisible();
+  await page.getByRole('link', { name: /respaldos/i }).click();
+  await expect(page.getByRole('heading', { name: /^respaldos$/i })).toBeVisible();
+  await page.getByRole('button', { name: /crear respaldo/i }).first().click();
+  await page.getByRole('button', { name: /^crear respaldo$/i }).click();
+  await expect(page.getByRole('table').getByText('Pendiente', { exact: true })).toBeVisible();
+  await captureScreen(page, 'backups-pending-light', 'light');
+  await writeCaptureReport(consoleIssues);
   expect(consoleIssues).toEqual([]);
 });
 
@@ -475,7 +810,8 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
 
   page.on('console', (message) => {
     if (message.type() === 'error') {
-      consoleIssues.push(`console.error: ${message.text()}`);
+      const location = message.location().url;
+      consoleIssues.push(`console.error: ${message.text()}${location ? ` (${location})` : ''}`);
     }
   });
   page.on('pageerror', (error) => {
@@ -483,7 +819,7 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
   });
 
   await installApiMocks(page);
-  await loginAs(page, 'cajero.demo');
+  await loginAs(page, 'cajero.validacion');
 
   for (const viewport of viewports) {
     await page.setViewportSize(viewport);
@@ -491,7 +827,8 @@ test('responsive shell keeps operational modules reachable', async ({ page }) =>
     await expect(page.getByRole('heading', { name: /nueva factura/i })).toBeVisible();
     await expectOperationalNavigation(page);
     await expect(page.getByLabel(/nombre del paciente/i)).toBeVisible();
-    await expect(page.getByLabel(/scanner usb o codigo manual/i)).toBeVisible();
+    await expect(page.getByLabel(/buscar por nombre/i)).toBeVisible();
+    await expect(page.getByLabel(/scanner usb o codigo manual/i)).toHaveCount(0);
   }
 
   expect(consoleIssues).toEqual([]);

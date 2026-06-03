@@ -41,4 +41,65 @@ class InitialAdminCommandTest extends TestCase
             '--password' => 'Temporary123',
         ])->assertFailed();
     }
+
+    public function test_initial_admin_command_accepts_password_from_environment(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $previousPassword = getenv('HOSPITAL_INITIAL_ADMIN_PASSWORD');
+        putenv('HOSPITAL_INITIAL_ADMIN_PASSWORD=Temporary123');
+
+        try {
+            $this->artisan('auth:create-initial-admin', [
+                '--username' => 'admin.env',
+                '--email' => 'admin.env@hospital.test',
+            ])->assertSuccessful();
+        } finally {
+            $previousPassword === false
+                ? putenv('HOSPITAL_INITIAL_ADMIN_PASSWORD')
+                : putenv("HOSPITAL_INITIAL_ADMIN_PASSWORD={$previousPassword}");
+        }
+
+        $admin = User::query()->where('username', 'admin.env')->firstOrFail();
+
+        $this->assertTrue($admin->hasRole('admin'));
+    }
+
+    public function test_initial_admin_command_requires_a_password_source(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $previousPassword = getenv('HOSPITAL_INITIAL_ADMIN_PASSWORD');
+        putenv('HOSPITAL_INITIAL_ADMIN_PASSWORD');
+
+        try {
+            $this->artisan('auth:create-initial-admin', [
+                '--username' => 'admin.missing',
+                '--email' => 'admin.missing@hospital.test',
+            ])->assertFailed();
+        } finally {
+            $previousPassword === false
+                ? putenv('HOSPITAL_INITIAL_ADMIN_PASSWORD')
+                : putenv("HOSPITAL_INITIAL_ADMIN_PASSWORD={$previousPassword}");
+        }
+
+        $this->assertDatabaseMissing('users', [
+            'username' => 'admin.missing',
+        ]);
+    }
+
+    public function test_initial_admin_command_rejects_weak_temporary_password(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $this->artisan('auth:create-initial-admin', [
+            '--username' => 'admin.weak',
+            '--email' => 'admin.weak@hospital.test',
+            '--password' => '1234567890',
+        ])->assertFailed();
+
+        $this->assertDatabaseMissing('users', [
+            'username' => 'admin.weak',
+        ]);
+    }
 }

@@ -6,6 +6,14 @@ export function useFiscalSettings() {
   return useQuery({
     queryKey: ['settings', 'fiscal'],
     queryFn: () => apiClient.getFiscalSettings(),
+    staleTime: 60_000,
+  });
+}
+
+export function usePublicBranding() {
+  return useQuery({
+    queryKey: ['settings', 'branding'],
+    queryFn: () => apiClient.getPublicBranding(),
   });
 }
 

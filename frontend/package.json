@@ -1,5 +1,5 @@
 {
-  "name": "hospital-billing-os-frontend",
+  "name": "s-hospital-frontend",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "build": "tsc --noEmit && vite build",
+    "check:branding": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/check-branding.ps1",
     "e2e": "playwright test",
     "smoke:real": "playwright test --config=playwright.real.config.ts",
     "visual:smoke": "node ../qa/visual-smoke/phase-12-visual-smoke.mjs"
@@ -30,7 +31,9 @@
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-query": "^5.100.10",
     "clsx": "^2.1.1",
+    "laravel-echo": "^2.3.4",
     "lucide-react": "^1.16.0",
+    "pusher-js": "^8.5.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.76.0",
@@ -51,12 +54,16 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "axe-core": "^4.12.0",
     "eslint": "^9.0.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^15.0.0",
     "jsdom": "^25.0.0",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.0.0",
     "vite": "^7.0.0",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.6",
+    "vitest-axe": "^0.1.0"
   }
 }

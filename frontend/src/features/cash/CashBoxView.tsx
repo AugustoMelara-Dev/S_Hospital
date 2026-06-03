@@ -1,4 +1,5 @@
-import { type FormEvent, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
+import { formatLempiras } from '@/lib/money';
 import { SessionStatusCard } from './components/SessionStatusCard';
 import { OpenSessionForm } from './components/OpenSessionForm';
 import { SessionSummary } from './components/SessionSummary';
@@ -14,6 +16,7 @@ import { CloseSessionDialog } from './components/CloseSessionDialog';
 import { CashMovementsTable } from './components/CashMovementsTable';
 
 type CashBoxViewProps = {
+  cashSession?: CashSession | null;
   canCloseCash?: boolean;
   canOpenCash?: boolean;
   canViewCashSessionReport?: boolean;
@@ -38,6 +41,7 @@ function formatCents(cents: number): number {
 }
 
 export function CashBoxView({
+  cashSession = null,
   canCloseCash = true,
   canOpenCash = true,
   canViewCashSessionReport = false,
@@ -49,27 +53,36 @@ export function CashBoxView({
   const [closingAmount, setClosingAmount] = useState('');
   const [closingNotes, setClosingNotes] = useState('');
   const [formAlert, setFormAlert] = useState<string | null>(null);
+  const [closingAmountError, setClosingAmountError] = useState<string | null>(null);
   const [confirmingClose, setConfirmingClose] = useState(false);
   const closingAmountRef = useRef<HTMLInputElement | null>(null);
 
   const { data: session, isLoading, refetch } = useQuery({
     queryKey: ['cash-sessions', 'current'],
     queryFn: () => apiClient.getCurrentCashSession(),
+    // Multi-PC LAN: another cashier may close the box. Poll every
+    // 10s so this UI shows "Sin caja" within the same window without
+    // a manual refresh.
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
   });
 
-  const { data: movements } = useQuery({
+  const { data: movementsData } = useQuery({
     queryKey: ['cash-sessions', session?.id, 'movements'],
     queryFn: () =>
       session?.id && canViewCashSessionReport
         ? apiClient.getCashSessionReport(String(session.id)).then((report) => report.movements)
-        : Promise.resolve([]),
+        : Promise.resolve([] as Awaited<ReturnType<typeof apiClient.getCashSessionReport>>['movements']),
     enabled: !!session?.id && canViewCashSessionReport,
+    refetchInterval: 15_000,
   });
+  const movements = movementsData ?? [];
 
   const openSessionMutation = useMutation({
     mutationFn: (payload: { opening_amount: string; notes?: string | null }) =>
       apiClient.openCashSession(payload),
     onSuccess: (opened) => {
+      queryClient.setQueryData(['cash-sessions', 'current'], opened);
       queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
       setClosingAmount('');
       setClosingNotes('');
@@ -88,6 +101,7 @@ export function CashBoxView({
     mutationFn: ({ id, payload }: { id: number; payload: { closing_amount: string; notes?: string | null } }) =>
       apiClient.closeCashSession(id, payload),
     onSuccess: () => {
+      queryClient.setQueryData(['cash-sessions', 'current'], null);
       queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       setClosingAmount('');
@@ -103,9 +117,21 @@ export function CashBoxView({
     },
   });
 
-  const expectedCashAmount = session?.expected_cash_amount ?? session?.expected_amount ?? session?.opening_amount ?? '0.00';
-  const difference = formatCents(parseCents(closingAmount || '0.00') - parseCents(expectedCashAmount));
-  const isOpen = session?.status === 'open';
+  const activeSession = session ?? cashSession;
+  const expectedCashAmount = activeSession?.expected_cash_amount ?? activeSession?.expected_amount ?? activeSession?.opening_amount ?? '0.00';
+  const hasValidClosingAmount = /^\d+(\.\d{1,2})?$/.test(closingAmount.trim());
+  const difference = hasValidClosingAmount ? formatCents(parseCents(closingAmount) - parseCents(expectedCashAmount)) : null;
+  const hasCashDifference = difference !== null && difference !== 0;
+  const isOpen = activeSession?.status === 'open';
+  const pendingInvoiceCount = activeSession?.pending_invoice_count ?? 0;
+  const pendingAmount = activeSession?.pending_amount ?? '0.00';
+  const hasPendingBalance = pendingInvoiceCount > 0 || parseCents(pendingAmount) > 0;
+
+  useEffect(() => {
+    if (isOpen) {
+      window.setTimeout(() => closingAmountRef.current?.focus(), 0);
+    }
+  }, [isOpen, activeSession?.id]);
 
   function handleOpenSession(data: { opening_amount: string }) {
     onStatus('Abriendo caja...');
@@ -114,25 +140,37 @@ export function CashBoxView({
 
   function handleCloseConfirmation(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!session) return;
+    if (!activeSession) return;
     if (!canCloseCash) {
       setFormAlert('Este usuario no tiene permiso para cerrar caja.');
       return;
     }
+    if (hasPendingBalance) {
+      setFormAlert(`No se puede cerrar caja con ${pendingInvoiceCount} factura(s) pendientes o parciales por ${formatLempiras(pendingAmount)}.`);
+      return;
+    }
     if (closingAmount.trim() === '') {
-      setFormAlert('Ingrese el monto contado antes de cerrar caja.');
+      setClosingAmountError('Falta ingresar el monto contado antes de cerrar caja.');
+      setFormAlert(null);
       closingAmountRef.current?.focus();
       return;
     }
+    if (!hasValidClosingAmount) {
+      setClosingAmountError('Ingrese un monto contado valido, por ejemplo 100.00.');
+      setFormAlert(null);
+      closingAmountRef.current?.focus();
+      return;
+    }
+    setClosingAmountError(null);
     setConfirmingClose(true);
   }
 
   function handleCloseSession() {
-    if (!session) return;
+    if (!activeSession) return;
     onStatus('Cerrando caja...');
     setConfirmingClose(false);
     closeSessionMutation.mutate({
-      id: session.id,
+      id: activeSession.id,
       payload: {
         closing_amount: closingAmount,
         notes: closingNotes.trim() === '' ? null : closingNotes,
@@ -164,7 +202,20 @@ export function CashBoxView({
               </Alert>
             ) : null}
 
-            <SessionStatusCard session={session ?? null} />
+            <SessionStatusCard session={activeSession ?? null} />
+
+            {isOpen && (
+              <Alert variant="success" title="Caja lista para facturar">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <span className="flex-1">
+                    La caja esta abierta. Puede pasar directamente al POS para crear y cobrar facturas.
+                  </span>
+                  <Button asChild size="sm">
+                    <Link to="/billing/new">Nueva factura</Link>
+                  </Button>
+                </div>
+              </Alert>
+            )}
 
             {isPOSBlocked && (
               <Alert variant="warning">
@@ -177,37 +228,47 @@ export function CashBoxView({
           </CardContent>
         </Card>
 
-        {isOpen && session ? (
+        {isOpen && activeSession ? (
           <>
             <SessionSummary
-              session={session}
-              closingAmount={closingAmount}
+              session={activeSession}
+              closingAmount={hasValidClosingAmount ? closingAmount : null}
               difference={difference}
-              onClosingAmountChange={setClosingAmount}
             />
 
-            {session.payments_by_method && (
+            {activeSession.payments_by_method && (
               <Card>
                 <CardHeader>
                   <CardTitle>Resumen por Método de Pago</CardTitle>
+                  <CardDescription>
+                    Efectivo entra al efectivo esperado. Transferencias, tarjetas y otros metodos quedan separados para conciliacion.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Efectivo</span>
-                      <span className="text-xl font-bold">L. {session.payments_by_method.cash ?? '0.00'}</span>
+                      <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.cash)}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Transferencia</span>
-                      <span className="text-xl font-bold">L. {session.payments_by_method.transfer ?? '0.00'}</span>
+                      <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.transfer)}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Tarjeta</span>
-                      <span className="text-xl font-bold">L. {session.payments_by_method.card ?? '0.00'}</span>
+                      <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.card)}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-muted-foreground">Otros</span>
+                      <span className="text-xl font-bold">{formatLempiras(activeSession.payments_by_method.other)}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Pagos registrados</span>
-                      <span className="text-xl font-bold">{session.payments_count ?? 0}</span>
+                      <span className="text-xl font-bold">{activeSession.payments_count ?? 0}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-muted-foreground">Saldo pendiente</span>
+                      <span className="text-xl font-bold">{formatLempiras(activeSession.pending_amount)}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -231,18 +292,41 @@ export function CashBoxView({
                       type="text"
                       inputMode="decimal"
                       value={closingAmount}
-                      onChange={(e) => setClosingAmount(e.target.value)}
+                      onChange={(e) => {
+                        setClosingAmount(e.target.value);
+                        if (closingAmountError) setClosingAmountError(null);
+                      }}
                       placeholder="0.00"
                       className="text-lg"
-                      aria-invalid={formAlert?.includes('monto contado') ? 'true' : 'false'}
+                      aria-invalid={closingAmountError ? 'true' : 'false'}
+                      aria-describedby={closingAmountError ? 'closing-amount-error' : 'closing-amount-help'}
                     />
+                    {closingAmountError ? (
+                      <p id="closing-amount-error" className="text-sm text-destructive" role="alert">
+                        {closingAmountError}
+                      </p>
+                    ) : (
+                      <p id="closing-amount-help" className="text-xs text-muted-foreground">
+                        Cuente el efectivo fisico en gaveta. No incluya tarjeta ni transferencia.
+                      </p>
+                    )}
                   </div>
 
-                  {difference !== 0 && (
+                  {hasCashDifference && (
                     <Alert variant="warning">
                       <AlertTriangle className="h-4 w-4" />
                       <div>
-                        Hay una diferencia de <strong>L. {difference.toFixed(2)}</strong>. Se requerirá una nota explicativa al cerrar.
+                        Hay una diferencia de <strong>{formatLempiras(difference)}</strong>. Se requerirá una nota explicativa al cerrar.
+                      </div>
+                    </Alert>
+                  )}
+
+                  {hasPendingBalance && (
+                    <Alert variant="warning">
+                      <AlertTriangle className="h-4 w-4" />
+                      <div>
+                        Hay <strong>{pendingInvoiceCount}</strong> factura(s) pendientes o parciales por{' '}
+                        <strong>{formatLempiras(pendingAmount)}</strong>. Revise los cobros antes de cerrar.
                       </div>
                     </Alert>
                   )}
@@ -255,7 +339,7 @@ export function CashBoxView({
                       id="closing_notes"
                       value={closingNotes}
                       onChange={(e) => setClosingNotes(e.target.value)}
-                      placeholder={difference !== 0 ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional...'}
+                      placeholder={hasCashDifference ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional...'}
                       rows={2}
                     />
                   </div>
@@ -263,7 +347,7 @@ export function CashBoxView({
                   <Button
                     type="submit"
                     variant="default"
-                    disabled={closeSessionMutation.isPending || !canCloseCash}
+                    disabled={closeSessionMutation.isPending || !canCloseCash || hasPendingBalance}
                   >
                     {closeSessionMutation.isPending ? 'Cerrando...' : 'Cerrar Caja'}
                   </Button>
@@ -287,7 +371,7 @@ export function CashBoxView({
           />
         ) : (
           <Alert variant="warning" title="Caja en modo consulta">
-            Este usuario puede ver caja, pero no tiene permiso para abrir una nueva sesion.
+            Este usuario puede ver caja, pero no tiene permiso para abrir una nueva sesión.
           </Alert>
         )}
       </div>
@@ -296,12 +380,15 @@ export function CashBoxView({
         open={confirmingClose}
         onOpenChange={setConfirmingClose}
         session={{
-          opening_amount: session?.opening_amount ?? '0',
-          expected_cash_amount: session?.expected_cash_amount ?? session?.expected_amount ?? undefined,
+          opening_amount: activeSession?.opening_amount ?? '0',
+          expected_cash_amount: activeSession?.expected_cash_amount ?? activeSession?.expected_amount ?? undefined,
+          payments_by_method: activeSession?.payments_by_method,
+          pending_invoice_count: activeSession?.pending_invoice_count,
+          pending_amount: activeSession?.pending_amount,
         }}
         closingAmount={closingAmount}
         closingNotes={closingNotes}
-        difference={difference}
+        difference={difference ?? 0}
         isSubmitting={closeSessionMutation.isPending}
         onClosingNotesChange={setClosingNotes}
         onConfirm={handleCloseSession}

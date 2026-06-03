@@ -1,4 +1,6 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   type AuthUser,
   type Invoice,
@@ -8,10 +10,11 @@ import {
   apiClient,
   userSafeErrorMessage,
 } from '../../lib/api';
+import { useInvoices } from '../../hooks/useInvoices';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Alert } from '../../components/ui/alert';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import {
   Table,
@@ -26,15 +29,19 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { PaginationControls } from '../../components/ui/pagination';
 import { NativeSelect, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { Skeleton } from '../../components/ui/states';
+import { LoadingState } from '../../components/ui/states';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { Textarea } from '../../components/ui/textarea';
+import { DateRangePicker } from '../../components/ui/date-range-picker';
+import { FilterBar } from '../../components/ui/filter-bar';
+import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
+import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
+import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import {
   FileClock,
   MoreHorizontal,
   Printer,
   Receipt,
-  Search,
   XCircle,
 } from 'lucide-react';
 
@@ -46,26 +53,16 @@ type InvoiceHistoryViewProps = {
 const today = localDateString();
 
 export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) {
-  const [filters, setFilters] = useState<InvoiceFilters>({
-    date_from: today,
-    date_to: today,
-    status: '',
-    patient: '',
-    invoice_number: '',
-    page: 1,
-    per_page: 10,
-  });
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [meta, setMeta] = useState<PaginatedMeta>({ current_page: 1, per_page: 10, total: 0 });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+  const [filters, setFilters] = useState<InvoiceFilters>(() => filtersFromSearchParams(searchParams));
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
-  const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('80mm');
+  const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('half_letter');
   const [voidReason, setVoidReason] = useState('');
   const [reprintReason, setReprintReason] = useState('');
   const [confirmingVoid, setConfirmingVoid] = useState(false);
   const [reprintTarget, setReprintTarget] = useState<Invoice | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState('');
   const [openActionsId, setOpenActionsId] = useState<number | null>(null);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
 
@@ -74,32 +71,28 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const canViewReceipt = user.permissions.includes('receipts.view');
   const canVoid = user.permissions.includes('invoices.void');
 
-  useEffect(() => {
-    void loadInvoices(filters);
-  }, []);
-
-  async function loadInvoices(nextFilters: InvoiceFilters) {
-    setLoading(true);
-    setLoadError('');
-
-    try {
-      const response = await apiClient.getInvoices(nextFilters);
-      setInvoices(response.data);
-      setMeta(response.meta);
-    } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudo cargar historial.');
-      setLoadError(message);
-      onStatus(message);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // TanStack Query replaces the prior manual useState + useEffect
+  // loading. Cross-PC invalidation is handled by useBroadcastSync
+  // through the queryClient. staleTime of 30s matches the cashier
+  // expectation that the screen stays fresh for the duration of a
+  // single filter/refresh action.
+  const invoicesQuery = useInvoices(filters);
+  const invoicesList: Invoice[] = Array.isArray(invoicesQuery.data?.data)
+    ? (invoicesQuery.data!.data as Invoice[])
+    : [];
+  const meta: PaginatedMeta = invoicesQuery.data?.meta ?? { current_page: 1, per_page: 10, total: 0 };
+  const loading = invoicesQuery.isFetching;
+  const loadError = invoicesQuery.isError
+    ? userSafeErrorMessage(invoicesQuery.error, 'No se pudo cargar historial.')
+    : '';
 
   async function submitFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextFilters = { ...filters, page: 1 };
     setFilters(nextFilters);
-    await loadInvoices(nextFilters);
+    setSearchParams(searchParamsFromFilters(nextFilters));
+    // The query refetches automatically because filters is in the
+    // queryKey.
   }
 
   function clearFilters() {
@@ -113,7 +106,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       per_page: 10,
     };
     setFilters(clearedFilters);
-    void loadInvoices(clearedFilters);
+    setSearchParams({});
+    // Refetch is automatic via the filters key.
   }
 
   async function openDetail(invoiceId: number) {
@@ -133,18 +127,36 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     try {
       const invoice = await apiClient.getInvoice(invoiceId);
       setSelectedInvoice(invoice);
-      const receiptData = await apiClient.getReceipt(invoiceId, receiptWidth);
-      setReceipt(receiptData);
+      const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
+      const receiptData = await apiClient.getReceipt(invoiceId, requestedWidth);
+      const normalizedWidth = institutionalReceiptPaperSize(receiptData.width);
+      setReceiptWidth(normalizedWidth);
+      setReceipt({ ...receiptData, width: normalizedWidth });
       setReceiptModalOpen(true);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo cargar recibo.'));
     }
   }
 
+  async function auditReceiptPrint() {
+    if (!selectedInvoice || !receipt) {
+      return;
+    }
+
+    const auditedReceipt = await apiClient.reprintInvoice(selectedInvoice.id, {
+      width: institutionalReceiptPaperSize(receipt.width),
+      reason: 'Impresion desde vista de recibo.',
+    });
+    const normalizedWidth = institutionalReceiptPaperSize(auditedReceipt.width);
+    setReceiptWidth(normalizedWidth);
+    setReceipt({ ...auditedReceipt, width: normalizedWidth });
+  }
+
   async function changePage(page: number) {
     const nextFilters = { ...filters, page };
     setFilters(nextFilters);
-    await loadInvoices(nextFilters);
+    setSearchParams(searchParamsFromFilters(nextFilters));
+    // Refetch is automatic via the filters key.
   }
 
   async function voidSelectedInvoice() {
@@ -156,8 +168,12 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
     try {
       const voided = await apiClient.voidInvoice(selectedInvoice.id, voidReason.trim());
+      // Notify the rest of the app (dashboard, cashier list, second PC
+      // in LAN) that this invoice and the cash session are stale.
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setSelectedInvoice(voided);
-      setInvoices((current) => current.map((invoice) => (invoice.id === voided.id ? voided : invoice)));
       setReceipt(null);
       setVoidReason('');
       onStatus(`Factura ${voided.invoice_number} anulada.`);
@@ -172,11 +188,17 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     try {
       const invoice = await apiClient.getInvoice(reprintTarget.id);
       setSelectedInvoice(invoice);
+      const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
       const nextReceipt = await apiClient.reprintInvoice(reprintTarget.id, {
-        width: receiptWidth,
-        reason: reprintReason.trim() || 'Reimpresión solicitada desde historial.',
+        width: requestedWidth,
+        reason: reprintReason.trim() || 'Reimpresion solicitada desde historial.',
       });
-      setReceipt(nextReceipt);
+      // Reprint posts an audit log entry that other views (dashboard,
+      // cashier list) may display; let them refetch.
+      queryClient.invalidateQueries({ queryKey: ['audit'] });
+      const normalizedWidth = institutionalReceiptPaperSize(nextReceipt.width);
+      setReceiptWidth(normalizedWidth);
+      setReceipt({ ...nextReceipt, width: normalizedWidth });
       setReceiptModalOpen(true);
       onStatus(`Recibo ${invoice.invoice_number} listo para imprimir.`);
     } catch (error) {
@@ -199,7 +221,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     filters.status
   );
 
-  const isEmpty = invoices.length === 0;
+  const isEmpty = invoicesList.length === 0;
 
   return (
     <section id="historial" className="flex flex-col gap-5" aria-labelledby="invoice-history-title">
@@ -211,83 +233,61 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           Consulte facturas recientes, reimprima recibos y gestione anulaciones autorizadas.
         </p>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={submitFilters} className="flex flex-wrap gap-4">
-            <div className="w-[150px]">
-              <Label htmlFor="date_from">Desde</Label>
-              <Input
-                id="date_from"
-                type="date"
-                value={filters.date_from ?? ''}
-                onChange={(event) => setFilters({ ...filters, date_from: event.target.value })}
-              />
-            </div>
+      <FilterBar
+        onSearch={(e) => void submitFilters(e)}
+        onClear={clearFilters}
+        isLoading={loading}
+        hasActiveFilters={hasActiveFilters}
+      >
+        <DateRangePicker
+          startDate={filters.date_from ?? ''}
+          endDate={filters.date_to ?? ''}
+          onStartDateChange={(val) => setFilters({ ...filters, date_from: val })}
+          onEndDateChange={(val) => setFilters({ ...filters, date_to: val })}
+          className="col-span-1 sm:col-span-2"
+        />
 
-            <div className="w-[150px]">
-              <Label htmlFor="date_to">Hasta</Label>
-              <Input
-                id="date_to"
-                type="date"
-                value={filters.date_to ?? ''}
-                onChange={(event) => setFilters({ ...filters, date_to: event.target.value })}
-              />
-            </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="status" className="text-xs font-semibold text-slate-600 dark:text-slate-400">Estado</Label>
+          <Select
+            value={filters.status ?? 'all'}
+            onValueChange={(v) => setFilters({ ...filters, status: v === 'all' ? '' : v as InvoiceFilters['status'] })}
+          >
+            <SelectTrigger id="status" className="h-10">
+              <SelectValue placeholder="Todos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="issued">Emitida</SelectItem>
+              <SelectItem value="partial">Parcial</SelectItem>
+              <SelectItem value="paid">Pagada</SelectItem>
+              <SelectItem value="void">Anulada</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-            <div className="w-[150px]">
-              <Label htmlFor="status">Estado</Label>
-              <Select
-                value={filters.status ?? 'all'}
-                onValueChange={(v) => setFilters({ ...filters, status: v === 'all' ? '' : v as InvoiceFilters['status'] })}
-              >
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="issued">Emitida</SelectItem>
-                  <SelectItem value="partial">Parcial</SelectItem>
-                  <SelectItem value="paid">Pagada</SelectItem>
-                  <SelectItem value="void">Anulada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="patient" className="text-xs font-semibold text-slate-600 dark:text-slate-400">Paciente</Label>
+          <Input
+            id="patient"
+            placeholder="Nombre del paciente..."
+            value={filters.patient ?? ''}
+            onChange={(event) => setFilters({ ...filters, patient: event.target.value })}
+            className="h-10"
+          />
+        </div>
 
-            <div className="flex-1 min-w-[200px]">
-              <Label htmlFor="patient">Paciente</Label>
-              <Input
-                id="patient"
-                placeholder="Nombre del paciente..."
-                value={filters.patient ?? ''}
-                onChange={(event) => setFilters({ ...filters, patient: event.target.value })}
-              />
-            </div>
-
-            <div className="w-[150px]">
-              <Label htmlFor="invoice_number">Numero de factura</Label>
-              <Input
-                id="invoice_number"
-                placeholder="A-0001..."
-                value={filters.invoice_number ?? ''}
-                onChange={(event) => setFilters({ ...filters, invoice_number: event.target.value })}
-              />
-            </div>
-
-            <div className="flex items-end gap-2">
-              <Button type="submit" disabled={loading}>
-                <Search className="h-4 w-4" />
-                {loading ? 'Buscando...' : 'Buscar'}
-              </Button>
-              <Button type="button" variant="outline" onClick={clearFilters}>
-                Limpiar
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+        <div className="space-y-1.5">
+          <Label htmlFor="invoice_number" className="text-xs font-semibold text-slate-600 dark:text-slate-400">Número de factura</Label>
+          <Input
+            id="invoice_number"
+            placeholder="A-0001..."
+            value={filters.invoice_number ?? ''}
+            onChange={(event) => setFilters({ ...filters, invoice_number: event.target.value })}
+            className="h-10"
+          />
+        </div>
+      </FilterBar>
 
       {loadError ? (
         <Alert variant="destructive" title="No se pudo cargar el historial">
@@ -313,72 +313,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
           </CardContent>
         </Card>
       ) : loading ? (
-        <Card>
-          <CardContent className="p-0">
-            <div className="table-wrap">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>No.</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Pagado</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-</CardContent>
-        </Card>
+        <LoadingState label="Cargando facturas..." />
       ) : !loadError ? (
         <Card>
           <CardContent className="p-0">
@@ -396,13 +331,13 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invoices.map((invoice) => (
+                  {invoicesList.map((invoice) => (
                     <TableRow key={invoice.id}>
-                      <TableCell className="font-mono text-sm">{invoice.invoice_number}</TableCell>
+                      <TableCell className="text-sm font-medium">{invoice.invoice_number}</TableCell>
                       <TableCell>{formatDate(invoice.issued_at)}</TableCell>
                       <TableCell className="font-medium">{invoice.patient_name}</TableCell>
-                      <TableCell className="text-right">L. {invoice.total}</TableCell>
-                      <TableCell className="text-right">L. {invoice.paid_amount}</TableCell>
+                      <TableCell className="text-right">{moneyLabel(invoice.total)}</TableCell>
+                      <TableCell className="text-right">{moneyLabel(invoice.paid_amount)}</TableCell>
                       <TableCell>
                         <StatusBadge status={invoice.status} />
                       </TableCell>
@@ -454,9 +389,11 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                               />
                               <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-md border border-border bg-card shadow-lg">
                                 <div className="py-1">
-                                      <button
+                                      <Button
                                         type="button"
-                                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-muted"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full justify-start text-destructive hover:bg-destructive/10"
                                         onClick={() => {
                                           setOpenActionsId(null);
                                           void openDetail(invoice.id);
@@ -465,7 +402,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                                       >
                                         <XCircle className="h-4 w-4" aria-hidden="true" />
                                         Anular
-                                      </button>
+                                      </Button>
                                 </div>
                               </div>
                             </>
@@ -500,25 +437,27 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         open={receiptModalOpen}
         onOpenChange={setReceiptModalOpen}
         title={`Recibo - ${selectedInvoice?.invoice_number ?? ''}`}
+        description="Vista previa de recibo institucional. Cambiar el tamano no registra reimpresion."
       >
         {receipt && selectedInvoice && (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <label htmlFor="receipt-width" className="text-sm font-semibold">Ancho</label>
+                <label htmlFor="receipt-width" className="text-sm font-semibold">Tamano</label>
                 <NativeSelect
                   id="receipt-width"
-                  aria-label="Ancho de vista previa"
+                  aria-label="Tamano de vista previa"
                   value={receiptWidth}
                   onChange={(event) => {
-                    const newWidth = event.target.value as ReceiptData['width'];
+                    const newWidth = institutionalReceiptPaperSize(event.target.value);
                     setReceiptWidth(newWidth);
                     setReceipt({ ...receipt, width: newWidth });
                   }}
-                  className="w-[100px]"
+                  className="w-[140px]"
                 >
-                  <option value="80mm">80mm</option>
-                  <option value="58mm">58mm</option>
+                  {INSTITUTIONAL_RECEIPT_PAPER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </NativeSelect>
               </div>
 
@@ -527,11 +466,18 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             <ReceiptPreview
               receipt={receipt}
               onWidthChange={(width) => {
-                setReceipt({ ...receipt, width });
-                setReceiptWidth(width);
+                const newWidth = institutionalReceiptPaperSize(width);
+                setReceipt({ ...receipt, width: newWidth });
+                setReceiptWidth(newWidth);
               }}
-              onPrint={() => {
-                onStatus(`Recibo ${selectedInvoice.invoice_number} enviado a impresión.`);
+              onPrint={async () => {
+                try {
+                  await auditReceiptPrint();
+                  onStatus(`Recibo ${selectedInvoice.invoice_number} enviado a impresión.`);
+                } catch (error) {
+                  onStatus(userSafeErrorMessage(error, 'No se pudo auditar la reimpresión.'));
+                  throw error;
+                }
               }}
             />
           </div>
@@ -585,7 +531,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       >
         <div className="flex flex-col gap-3">
           <p>
-            Esta acción queda auditada. Cambiar entre 80mm y 58mm en la vista previa no registra reimpresión; este botón sí.
+            Esta acción queda auditada. Cambiar el tamaño en la vista previa no registra reimpresión; este botón sí.
           </p>
           <div className="space-y-2">
             <Label htmlFor="reprintReason">Motivo opcional</Label>
@@ -621,10 +567,11 @@ function StatusBadge({ status }: { status: Invoice['status'] }) {
 }
 
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat('es-HN', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value));
+  return formatLocalizedDateTime(value);
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
 }
 
 export function localDateString(date = new Date()): string {
@@ -633,4 +580,30 @@ export function localDateString(date = new Date()): string {
   const day = String(date.getDate()).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
+}
+
+function filtersFromSearchParams(searchParams: URLSearchParams): InvoiceFilters {
+  return {
+    date_from: searchParams.get('date_from') || today,
+    date_to: searchParams.get('date_to') || today,
+    status: (searchParams.get('status') ?? '') as InvoiceFilters['status'],
+    patient: searchParams.get('patient') ?? '',
+    invoice_number: searchParams.get('invoice_number') ?? '',
+    page: Number(searchParams.get('page') || '1'),
+    per_page: Number(searchParams.get('per_page') || '10'),
+  };
+}
+
+function searchParamsFromFilters(filters: InvoiceFilters): Record<string, string> {
+  const params: Record<string, string> = {};
+
+  if (filters.date_from && filters.date_from !== today) params.date_from = filters.date_from;
+  if (filters.date_to && filters.date_to !== today) params.date_to = filters.date_to;
+  if (filters.status) params.status = filters.status;
+  if (filters.patient) params.patient = filters.patient;
+  if (filters.invoice_number) params.invoice_number = filters.invoice_number;
+  if (filters.page && filters.page > 1) params.page = String(filters.page);
+  if (filters.per_page && filters.per_page !== 10) params.per_page = String(filters.per_page);
+
+  return params;
 }

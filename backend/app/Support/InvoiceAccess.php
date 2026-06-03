@@ -17,7 +17,7 @@ class InvoiceAccess
 
     public function canOperateInvoice(User $user, Invoice $invoice): bool
     {
-        if ($this->canAccessAnyInvoice($user)) {
+        if ($this->canOperateAnyInvoice($user)) {
             return true;
         }
 
@@ -25,8 +25,16 @@ class InvoiceAccess
             && $invoice->issued_at?->isToday() === true;
     }
 
+    public function canOperateAnyInvoice(User $user): bool
+    {
+        return $user->can('invoices.operate_any');
+    }
+
     public function canAccessAnyInvoice(User $user): bool
     {
-        return $user->can('invoices.void');
+        return $user->hasRole(['admin', 'supervisor'])
+            || $user->can('receipts.reprint_any')
+            || $user->can('reports.managerial.view')
+            || $user->can('invoices.void');
     }
 }

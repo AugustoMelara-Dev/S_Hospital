@@ -1,0 +1,243 @@
+services:
+  backend:
+    image: s_hospital-backend:latest
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile.prod
+    restart: unless-stopped
+    command: >
+      sh -c "
+        mkdir -p /shared_public &&
+        cp -r /var/www/html/public/. /shared_public/ &&
+        cp -r /var/www/frontend/dist/. /shared_public/ &&
+        test -f /shared_public/index.html || { echo 'FATAL: frontend dist is empty'; exit 1; } &&
+        php artisan config:cache &&
+        exec php-fpm
+      "
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?APP_KEY is required}
+      APP_URL: http://${SERVER_IP:?SERVER_IP is required}:${APP_PORT:-8000}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-hospital_billing}
+      DB_USERNAME: ${DB_USERNAME:-hospital}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      CACHE_STORE: file
+      QUEUE_CONNECTION: database
+      SESSION_DRIVER: database
+      SESSION_ENCRYPT: "true"
+      LOG_CHANNEL: daily
+      LOG_LEVEL: warning
+      HOSPITAL_DUMP_BINARY: /usr/bin/mariadb-dump
+      RUN_MIGRATIONS: "true"
+      SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
+      SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
+      CORS_ALLOWED_ORIGINS: http://${SERVER_IP}:${APP_PORT:-8000}
+    volumes:
+      - backup_data:/var/www/html/storage/app/private/backups
+      - shared_public:/shared_public
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan tinker --execute=\"DB::connection()->getPdo(); echo 'OK';\" 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    security_opt:
+      - "no-new-privileges:true"
+    read_only: false
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    mem_limit: 512m
+    cpus: "1.0"
+    pids_limit: 200
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.25.4-alpine
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - shared_public:/var/www/html/public:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/up >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    security_opt:
+      - "no-new-privileges:true"
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:size=32m
+      - /var/run:size=8m
+    mem_limit: 128m
+    cpus: "0.5"
+    pids_limit: 100
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  mysql:
+    image: mariadb:11.4.3
+    restart: unless-stopped
+    command:
+      - "--max_connections=200"
+      - "--innodb_strict_mode=ON"
+      - "--skip-name-resolve"
+    environment:
+      MARIADB_DATABASE: ${DB_DATABASE:-hospital_billing}
+      MARIADB_USER: ${DB_USERNAME:-hospital}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD is required}
+    volumes:
+      - mysql_prod_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    security_opt:
+      - "no-new-privileges:true"
+    mem_limit: 1024m
+    cpus: "1.5"
+    pids_limit: 300
+
+  queue-worker:
+    image: s_hospital-queue-worker:latest
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile.prod
+    restart: unless-stopped
+    command: php artisan queue:work --queue=backups --tries=1 --timeout=600
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?APP_KEY is required}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-hospital_billing}
+      DB_USERNAME: ${DB_USERNAME:-hospital}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      CACHE_STORE: file
+      QUEUE_CONNECTION: database
+      SESSION_DRIVER: database
+      SESSION_ENCRYPT: "true"
+      LOG_CHANNEL: daily
+      LOG_LEVEL: warning
+      HOSPITAL_DUMP_BINARY: /usr/bin/mariadb-dump
+      RUN_MIGRATIONS: "false"
+      SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
+      SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
+      CORS_ALLOWED_ORIGINS: http://${SERVER_IP}:${APP_PORT:-8000}
+    volumes:
+      - backup_data:/var/www/html/storage/app/private/backups
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan tinker --execute=\"DB::connection()->getPdo(); echo 'OK';\" 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    security_opt:
+      - "no-new-privileges:true"
+    mem_limit: 384m
+    cpus: "0.5"
+    pids_limit: 150
+    depends_on:
+      mysql:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
+  # Scheduler sidecar: runs `php artisan schedule:run` every minute via
+  # supercronic. The Laravel scheduler is the canonical way to dispatch
+  # the daily/15-minute backup jobs, the audit-log prune, and the
+  # failed-jobs prune registered in backend/routes/console.php.
+  #
+  # Without this sidecar, those jobs simply never run in production.
+  # supercronic is a cron replacement that handles signals cleanly inside
+  # a container and exits the process on SIGTERM.
+  scheduler:
+    image: supercronic/supercronic:v1.2.3
+    restart: unless-stopped
+    command: ["supercronic", "/etc/crontab"]
+    volumes:
+      - ./nginx/crontab:/etc/crontab:ro
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?APP_KEY is required}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-hospital_billing}
+      DB_USERNAME: ${DB_USERNAME:-hospital}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      HOSPITAL_DAILY_BACKUP_TIME: ${HOSPITAL_DAILY_BACKUP_TIME:-02:00}
+      HOSPITAL_OPERATION_START: ${HOSPITAL_OPERATION_START:-06:00}
+      HOSPITAL_OPERATION_END: ${HOSPITAL_OPERATION_END:-18:00}
+      HOSPITAL_AUDIT_RETENTION_DAYS: ${HOSPITAL_AUDIT_RETENTION_DAYS:-365}
+      HOSPITAL_FAILED_JOBS_RETENTION_DAYS: ${HOSPITAL_FAILED_JOBS_RETENTION_DAYS:-30}
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/supercronic.last && find /tmp/supercronic.last -mmin -3 || exit 1"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    security_opt:
+      - "no-new-privileges:true"
+    mem_limit: 64m
+    cpus: "0.25"
+    pids_limit: 50
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # Soketi: Pusher-compatible WebSocket server. Cashier clients
+  # (laravel-echo + pusher-js) subscribe to channels declared in
+  # backend/routes/channels.php and receive real-time events emitted
+  # from the Actions (InvoiceChanged, PaymentChanged,
+  # CashSessionChanged). Eliminates the polling-tax on every cashier
+  # PC and keeps every open invoice list, dashboard, and cash session
+  # in sync within ~1.5s.
+  soketi:
+    image: soketi/soketi:1.6-16-alpine
+    restart: unless-stopped
+    command: >
+      sh -c "
+        soketi start \
+          --port=6001 \
+          --default-app-id=$${PUSHER_APP_ID:-hospital-app} \
+          --default-app-key=$${PUSHER_APP_KEY:-hospital-key} \
+          --default-app-secret=$${PUSHER_APP_SECRET:-hospital-secret}
+      "
+    environment:
+      PUSHER_APP_ID: ${PUSHER_APP_ID:-hospital-app}
+      PUSHER_APP_KEY: ${PUSHER_APP_KEY:-hospital-key}
+      PUSHER_APP_SECRET: ${PUSHER_APP_SECRET:-hospital-secret}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:6001/ >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    security_opt:
+      - "no-new-privileges:true"
+    mem_limit: 96m
+    cpus: "0.25"
+    pids_limit: 100
+    depends_on:
+      backend:
+        condition: service_started
+
+volumes:
+  mysql_prod_data:
+  backup_data:
+  shared_public:

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Receipts;
 
 use App\Models\Invoice;
+use App\Support\ReceiptPaperSize;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,14 +32,14 @@ class ReprintReceiptRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'width' => ['required', Rule::in(['80mm', '58mm'])],
+            'width' => ['required', Rule::in(ReceiptPaperSize::values())],
             'reason' => ['nullable', 'string', 'max:500'],
         ];
     }
 
     public function width(): string
     {
-        return (string) $this->validated('width');
+        return ReceiptPaperSize::normalize((string) $this->validated('width'));
     }
 
     public function reason(): ?string

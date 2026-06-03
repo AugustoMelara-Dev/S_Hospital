@@ -2,19 +2,29 @@
 
 namespace Tests\Feature;
 
+use App\Models\Area;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Service;
+use App\Models\ServicePriceHistory;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class ServiceCatalogTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
 
     public function test_service_catalog_seeder_loads_expected_categories_services_and_special_rule(): void
     {
@@ -23,7 +33,9 @@ class ServiceCatalogTest extends TestCase
         $this->seed(ServiceCatalogSeeder::class);
 
         $this->assertSame(5, Category::query()->count());
+        $this->assertSame(5, Area::query()->count());
         $this->assertSame(122, Service::query()->count());
+        $this->assertSame(0, Service::query()->whereNull('area_id')->count());
 
         $erythropoietin = Service::query()
             ->where('name', 'Eritropoyetina')
@@ -35,7 +47,7 @@ class ServiceCatalogTest extends TestCase
         $this->assertNotNull($erythropoietin->source_hash);
     }
 
-    public function test_service_catalog_seeder_assigns_demo_scan_codes(): void
+    public function test_service_catalog_seeder_assigns_validation_scan_codes(): void
     {
         $this->seed(ServiceCatalogSeeder::class);
 
@@ -63,7 +75,7 @@ class ServiceCatalogTest extends TestCase
         $this->assertSame(122, Service::query()->count());
     }
 
-    public function test_service_catalog_seeder_does_not_clear_existing_non_demo_codes(): void
+    public function test_service_catalog_seeder_does_not_clear_existing_non_validation_codes(): void
     {
         $this->seed(ServiceCatalogSeeder::class);
 
@@ -136,6 +148,62 @@ class ServiceCatalogTest extends TestCase
             ->assertJsonPath('data.0.special_rule_code', Service::ERYTHROPOIETIN_RULE);
     }
 
+    public function test_category_index_requires_catalog_view_and_validates_active_filter(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $viewer = $this->cashier();
+        $plainUser = User::factory()->create();
+        $inactiveCategory = Category::query()->firstOrFail();
+        $inactiveCategory->forceFill(['active' => false])->save();
+
+        $this->actingAs($plainUser)
+            ->getJson('/api/categories')
+            ->assertForbidden();
+
+        $this->actingAs($viewer)
+            ->getJson('/api/categories?active=0')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $inactiveCategory->id);
+
+        $this->actingAs($viewer)
+            ->getJson('/api/categories?active=not-bool')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('active');
+    }
+
+    public function test_area_options_are_available_to_catalog_and_managerial_report_users(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $catalogViewer = User::factory()->create();
+        $reportViewer = User::factory()->create();
+        $plainUser = User::factory()->create();
+        $catalogViewer->givePermissionTo('catalog.view');
+        $reportViewer->givePermissionTo('reports.managerial.view');
+        $inactiveArea = Area::query()->firstOrFail();
+        $inactiveArea->forceFill(['active' => false])->save();
+
+        $this->actingAs($catalogViewer)
+            ->getJson('/api/areas?active=1')
+            ->assertOk()
+            ->assertJsonCount(4, 'data');
+
+        $this->actingAs($reportViewer)
+            ->getJson('/api/areas?active=0')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $inactiveArea->id);
+
+        $this->actingAs($catalogViewer)
+            ->getJson('/api/areas?active=not-bool')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('active');
+
+        $this->actingAs($plainUser)
+            ->getJson('/api/areas')
+            ->assertForbidden();
+    }
+
     public function test_service_search_tolerates_typos_and_accents(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
@@ -162,6 +230,26 @@ class ServiceCatalogTest extends TestCase
             ->assertJsonFragment(['name' => 'Ácido úrico especial']);
     }
 
+    public function test_service_aliases_are_searchable(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'aliases' => 'epo, eritro, medicamento dialisis',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.aliases', 'epo, eritro, medicamento dialisis');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?search=epo')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Eritropoyetina']);
+    }
+
     public function test_services_can_be_requested_with_capped_per_page_to_return_full_initial_catalog(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
@@ -183,6 +271,11 @@ class ServiceCatalogTest extends TestCase
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
+        $area = Area::query()->create([
+            'name' => 'Consulta externa',
+            'slug' => 'consulta-externa',
+            'active' => true,
+        ]);
 
         $categoryId = $this->actingAs($admin)
             ->postJson('/api/categories', [
@@ -197,6 +290,7 @@ class ServiceCatalogTest extends TestCase
         $serviceId = $this->actingAs($admin)
             ->postJson('/api/services', [
                 'category_id' => $categoryId,
+                'area_id' => $area->id,
                 'name' => 'Consulta general',
                 'price' => '100.00',
                 'scan_code' => 'CONS-GEN-001',
@@ -210,6 +304,15 @@ class ServiceCatalogTest extends TestCase
             ->json('data.id');
 
         $this->actingAs($admin)
+            ->postJson('/api/services', [
+                'category_id' => $categoryId,
+                'name' => 'Consulta sin area',
+                'price' => '100.00',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('area_id');
+
+        $this->actingAs($admin)
             ->patchJson("/api/categories/{$categoryId}", [
                 'name' => 'Consulta ambulatoria',
             ])
@@ -219,6 +322,7 @@ class ServiceCatalogTest extends TestCase
         $this->actingAs($admin)
             ->patchJson("/api/services/{$serviceId}", [
                 'price' => '125.00',
+                'price_change_reason' => 'Ajuste de tarifa autorizado',
                 'barcode' => '7700000000011',
             ])
             ->assertOk()
@@ -271,6 +375,7 @@ class ServiceCatalogTest extends TestCase
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
         $laboratory = Category::query()->where('slug', 'laboratorio')->firstOrFail();
+        $laboratoryArea = Area::query()->where('slug', 'laboratorio')->firstOrFail();
 
         $this->actingAs($admin)
             ->postJson('/api/categories', [
@@ -282,8 +387,40 @@ class ServiceCatalogTest extends TestCase
         $this->actingAs($admin)
             ->postJson('/api/services', [
                 'category_id' => $laboratory->id,
+                'area_id' => $laboratoryArea->id,
                 'name' => 'Ultrasonido',
                 'price' => '80.00',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('name');
+    }
+
+    public function test_duplicate_service_names_are_scoped_by_category_and_area(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $laboratory = Category::query()->where('slug', 'laboratorio')->firstOrFail();
+        $laboratoryArea = Area::query()->where('slug', 'laboratorio')->firstOrFail();
+        $externalArea = Area::query()->create([
+            'name' => 'Laboratorio externo',
+            'slug' => 'laboratorio-externo',
+            'active' => true,
+        ]);
+
+        $externalServiceId = $this->actingAs($admin)
+            ->postJson('/api/services', [
+                'category_id' => $laboratory->id,
+                'area_id' => $externalArea->id,
+                'name' => 'Ultrasonido',
+                'price' => '80.00',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.area_id', $externalArea->id)
+            ->json('data.id');
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$externalServiceId}", [
+                'area_id' => $laboratoryArea->id,
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('name');
@@ -322,6 +459,7 @@ class ServiceCatalogTest extends TestCase
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
         $category = Category::query()->firstOrFail();
+        $area = Area::query()->firstOrFail();
         $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
 
         $this->actingAs($admin)
@@ -331,6 +469,7 @@ class ServiceCatalogTest extends TestCase
         $this->actingAs($admin)
             ->postJson('/api/services', [
                 'category_id' => $category->id,
+                'area_id' => $area->id,
                 'name' => 'Servicio duplicado scanner',
                 'price' => '10.00',
                 'scan_code' => 'DUP-001',
@@ -344,6 +483,7 @@ class ServiceCatalogTest extends TestCase
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         $admin = $this->admin();
         $category = Category::query()->firstOrFail();
+        $area = Area::query()->firstOrFail();
         $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
 
         $this->actingAs($admin)
@@ -353,6 +493,7 @@ class ServiceCatalogTest extends TestCase
         $this->actingAs($admin)
             ->postJson('/api/services', [
                 'category_id' => $category->id,
+                'area_id' => $area->id,
                 'name' => 'Servicio duplicado barcode',
                 'price' => '10.00',
                 'barcode' => 'GLOBAL-CODE-001',
@@ -385,7 +526,10 @@ class ServiceCatalogTest extends TestCase
         $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
 
         $this->actingAs($admin)
-            ->patchJson("/api/services/{$service->id}", ['price' => '30.00'])
+            ->patchJson("/api/services/{$service->id}", [
+                'price' => '30.00',
+                'price_change_reason' => 'Actualizacion aprobada por administracion',
+            ])
             ->assertOk();
 
         $this->actingAs($admin)
@@ -409,6 +553,138 @@ class ServiceCatalogTest extends TestCase
 
         $this->assertSame('25.00', $priceAudit->old_values['price']);
         $this->assertSame('30.00', $priceAudit->new_values['price']);
+
+        $priceHistory = ServicePriceHistory::query()->where('service_id', $service->id)->firstOrFail();
+        $this->assertSame('25.00', $priceHistory->old_price);
+        $this->assertSame('30.00', $priceHistory->new_price);
+        $this->assertSame($admin->id, $priceHistory->changed_by);
+        $this->assertSame('Actualizacion aprobada por administracion', $priceHistory->reason);
+        $this->assertSame('Actualizacion aprobada por administracion', $priceAudit->new_values['price_change_reason']);
+    }
+
+    public function test_price_change_requires_a_server_side_reason(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", ['price' => '30.00'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('price_change_reason');
+
+        $this->assertSame('25.00', $service->refresh()->price);
+        $this->assertDatabaseMissing('service_price_histories', [
+            'service_id' => $service->id,
+            'new_price' => '30.00',
+        ]);
+    }
+
+    public function test_invalid_price_update_returns_validation_error_before_price_reason_check(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", ['price' => 'precio-malo'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('price')
+            ->assertJsonMissingValidationErrors('price_change_reason');
+
+        $this->assertSame('25.00', $service->refresh()->price);
+    }
+
+    public function test_billing_filter_excludes_hidden_and_non_billable_services(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $hemogram = Service::query()->where('name', 'Hemograma Completo')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$glucose->id}", ['visible_in_billing' => false])
+            ->assertOk();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$hemogram->id}", [
+                'is_billable' => false,
+                'scan_code' => 'NO-BILL-HEMO',
+            ])
+            ->assertOk();
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?active=1&billing=1&search=Glucosa')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?active=1&billing=1&code=NO-BILL-HEMO')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?active=1&search=Glucosa')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Glucosa']);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'service.visibility_updated',
+            'entity_type' => Service::class,
+            'entity_id' => $glucose->id,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'service.billability_updated',
+            'entity_type' => Service::class,
+            'entity_id' => $hemogram->id,
+        ]);
+    }
+
+    public function test_service_metadata_changes_are_audited_with_old_and_new_payloads(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $originalCategoryId = $service->category_id;
+        $originalAreaId = $service->area_id;
+        $newCategory = Category::query()->create([
+            'name' => 'Administracion institucional',
+            'slug' => 'administracion-institucional',
+            'active' => true,
+            'sort_order' => 90,
+        ]);
+        $newArea = Area::query()->create([
+            'name' => 'Auditoria financiera',
+            'slug' => 'auditoria-financiera',
+            'active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'category_id' => $newCategory->id,
+                'area_id' => $newArea->id,
+                'aliases' => 'azucar, glucemia, glicemia',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.category_id', $newCategory->id)
+            ->assertJsonPath('data.area_id', $newArea->id)
+            ->assertJsonPath('data.aliases', 'azucar, glucemia, glicemia');
+
+        $audit = AuditLog::query()
+            ->where('action', 'service.updated')
+            ->where('entity_type', Service::class)
+            ->where('entity_id', $service->id)
+            ->firstOrFail();
+
+        $this->assertSame($originalCategoryId, $audit->old_values['category_id']);
+        $this->assertSame($originalAreaId, $audit->old_values['area_id']);
+        $this->assertNull($audit->old_values['aliases']);
+        $this->assertSame($newCategory->id, $audit->new_values['category_id']);
+        $this->assertSame($newArea->id, $audit->new_values['area_id']);
+        $this->assertSame('azucar, glucemia, glicemia', $audit->new_values['aliases']);
     }
 
     public function test_services_can_be_filtered_by_inactive_status(): void
@@ -441,7 +717,10 @@ class ServiceCatalogTest extends TestCase
 
         try {
             $this->actingAs($admin)
-                ->patchJson("/api/services/{$service->id}", ['price' => '30.00'])
+                ->patchJson("/api/services/{$service->id}", [
+                    'price' => '30.00',
+                    'price_change_reason' => 'Prueba de rollback de auditoria',
+                ])
                 ->assertStatus(500);
         } finally {
             Event::forget('eloquent.creating: '.AuditLog::class);

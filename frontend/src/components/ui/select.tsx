@@ -1,5 +1,5 @@
 import * as SelectPrimitive from '@radix-ui/react-select';
-import { ChevronDown } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import { forwardRef, type SelectHTMLAttributes } from 'react';
 import { cn } from '../../lib/utils';
 
@@ -83,7 +83,7 @@ export function SelectItem({ className, children, ...props }: SelectPrimitive.Se
     >
       <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <span className="h-4 w-4">✓</span>
+          <Check className="h-4 w-4" aria-hidden="true" />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>

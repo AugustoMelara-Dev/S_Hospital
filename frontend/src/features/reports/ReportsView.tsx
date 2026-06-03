@@ -1,6 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
-import { Badge } from '../../components/ui/badge';
 import { Alert } from '../../components/ui/alert';
 import { PageHeader } from '../../components/ui/page-header';
 import { EmptyState } from '../../components/ui/states';
@@ -9,11 +8,16 @@ import { IncomeReportTab } from './components/IncomeReportTab';
 import { ServiceSalesTab } from './components/ServiceSalesTab';
 import { AuditoriaTab } from './components/AuditoriaTab';
 import { CashSessionReportTab } from './components/CashSessionReportTab';
+import { MonthlyReportTab } from './components/MonthlyReportTab';
 import {
   type Category,
+  type Area,
   type CategoryReport,
+  type AreaIncomeReport,
   type CashSessionReport,
+  type CashSession,
   type DailyReport,
+  type MonthlyReport,
   type IncomeReport,
   type OperationsReport,
   type ReportFilters,
@@ -29,9 +33,10 @@ type ReportsViewProps = {
   onStatus: (message: string) => void;
 };
 
-type ReportTab = 'diario' | 'rango' | 'servicios' | 'auditoria' | 'caja';
+type ReportTab = 'diario' | 'mensual' | 'rango' | 'servicios' | 'auditoria' | 'caja';
 
 const today = localDateString(new Date());
+const currentMonth = today.slice(0, 7);
 
 export function ReportsView({
   canExport,
@@ -39,35 +44,50 @@ export function ReportsView({
   canViewManagerial,
   onStatus,
 }: ReportsViewProps) {
-  const [activeTab, setActiveTab] = useState<ReportTab>('diario');
+  const [activeTab, setActiveTab] = useState<ReportTab>(canViewManagerial ? 'diario' : 'caja');
   const [dailyDate, setDailyDate] = useState(today);
+  const [monthlyMonth, setMonthlyMonth] = useState(currentMonth);
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
   const [categoryId, setCategoryId] = useState('');
+  const [areaId, setAreaId] = useState('');
   const [cashSessionId, setCashSessionId] = useState('');
   const [cashierId, setCashierId] = useState('');
   const [method, setMethod] = useState<NonNullable<ReportFilters['method']>>('');
   const [status, setStatus] = useState<NonNullable<ReportFilters['status']>>('');
   const [cashReportId, setCashReportId] = useState('');
   const [dailyError, setDailyError] = useState('');
+  const [monthlyError, setMonthlyError] = useState('');
   const [rangeError, setRangeError] = useState('');
   const [cashError, setCashError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const [daily, setDaily] = useState<DailyReport | null>(null);
+  const [monthly, setMonthly] = useState<MonthlyReport | null>(null);
   const [income, setIncome] = useState<IncomeReport | null>(null);
   const [categories, setCategories] = useState<CategoryReport | null>(null);
+  const [areas, setAreas] = useState<AreaIncomeReport | null>(null);
   const [serviceSales, setServiceSales] = useState<ServiceSalesReport | null>(null);
   const [operations, setOperations] = useState<OperationsReport | null>(null);
   const [cashSession, setCashSession] = useState<CashSessionReport | null>(null);
   const [categoryOptions, setCategoryOptions] = useState<Category[]>([]);
+  const [areaOptions, setAreaOptions] = useState<Area[]>([]);
+  const [cashSessionOptions, setCashSessionOptions] = useState<CashSession[]>([]);
 
   useEffect(() => {
     if (canViewManagerial) {
       void loadDaily(dailyDate);
       void loadCategories();
+      void loadAreas();
+      void loadCashSessionOptions();
     }
   }, [canViewManagerial]);
+
+  useEffect(() => {
+    if (!canViewManagerial && activeTab !== 'caja') {
+      setActiveTab('caja');
+    }
+  }, [activeTab, canViewManagerial]);
 
   async function loadDaily(date: string) {
     setLoading(true);
@@ -94,21 +114,76 @@ export function ReportsView({
     }
   }
 
+  async function loadMonthly(month: string) {
+    setLoading(true);
+    setMonthlyError('');
+    onStatus('Cargando reporte mensual...');
+
+    try {
+      setMonthly(await apiClient.getMonthlyReport(month));
+      onStatus('Reporte mensual cargado.');
+    } catch (error) {
+      const message = userSafeErrorMessage(error, 'No se pudo cargar el reporte mensual.');
+      setMonthlyError(message);
+      onStatus(message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadAreas() {
+    try {
+      setAreaOptions(await apiClient.getAreas(true));
+    } catch {
+      setAreaOptions([]);
+    }
+  }
+
+  async function loadCashSessionOptions() {
+    try {
+      const response = await apiClient.getCashSessions({ perPage: 50 });
+      setCashSessionOptions(Array.isArray(response.data) ? response.data : []);
+    } catch {
+      setCashSessionOptions([]);
+    }
+  }
+
   async function loadRangeReports() {
+    // Validar rango de fechas en el frontend
+    const d1 = new Date(dateFrom + 'T00:00:00');
+    const d2 = new Date(dateTo + 'T00:00:00');
+    const diffTime = d2.getTime() - d1.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    if (diffDays > 31) {
+      const msg = 'El rango máximo permitido para reportes es de 31 días.';
+      setRangeError(msg);
+      onStatus(msg);
+      return;
+    }
+    if (diffDays < 1) {
+      const msg = 'La fecha de inicio debe ser anterior o igual a la fecha de fin.';
+      setRangeError(msg);
+      onStatus(msg);
+      return;
+    }
+
     setLoading(true);
     setRangeError('');
     onStatus('Cargando reportes por rango...');
 
     try {
       const filters = reportFilters();
-      const [incomeReport, categoryReport, serviceReport, operationsReport] = await Promise.all([
+      const [incomeReport, categoryReport, areaReport, serviceReport, operationsReport] = await Promise.all([
         apiClient.getIncomeReport(filters),
         apiClient.getCategoryReport(filters),
+        apiClient.getAreaIncomeReport(filters),
         apiClient.getServiceSalesReport(filters),
         apiClient.getOperationsReport(filters),
       ]);
       setIncome(incomeReport);
       setCategories(categoryReport);
+      setAreas(areaReport);
       setServiceSales(serviceReport);
       setOperations(operationsReport);
       onStatus('Reportes por rango cargados.');
@@ -149,6 +224,7 @@ export function ReportsView({
       date_from: dateFrom,
       date_to: dateTo,
       category_id: categoryId || null,
+      area_id: areaId || null,
       user_id: cashierId || null,
       cash_session_id: cashSessionId || null,
       method: method || null,
@@ -156,9 +232,63 @@ export function ReportsView({
     };
   }
 
+  async function downloadBackendExport(filters: ReportFilters) {
+    if (!canExport) {
+      onStatus('Exportación Excel requiere permiso de exportación de reportes.');
+      return;
+    }
+
+    onStatus('Preparando exportación Excel...');
+
+    try {
+      const blob = await apiClient.downloadReportExport(filters);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `reporte-hospital-${filters.date_from ?? today}-a-${filters.date_to ?? today}.xlsx`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      onStatus('Exportación Excel descargada.');
+    } catch (error) {
+      const message = userSafeErrorMessage(error, 'No se pudo exportar el reporte.');
+      onStatus(message);
+    }
+  }
+
+  async function downloadBackendPdf(filters: ReportFilters & { date?: string }) {
+    if (!canExport) {
+      onStatus('Exportación PDF requiere permiso de exportación de reportes.');
+      return;
+    }
+
+    onStatus('Preparando exportación PDF...');
+
+    try {
+      const blob = await apiClient.downloadReportPdf(filters);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      const filename = filters.date 
+        ? `cierre_diario_${filters.date}.pdf`
+        : `cierre_periodo_${filters.date_from}_a_${filters.date_to}.pdf`;
+      anchor.download = filename;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      onStatus('Exportación PDF descargada.');
+    } catch (error) {
+      const message = userSafeErrorMessage(error, 'No se pudo exportar el reporte PDF.');
+      onStatus(message);
+    }
+  }
+
   function handleDailySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void loadDaily(dailyDate);
+  }
+
+  function handleMonthlySubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void loadMonthly(monthlyMonth);
   }
 
   function handleCashSubmit(event: FormEvent<HTMLFormElement>) {
@@ -170,20 +300,20 @@ export function ReportsView({
     <section id="reportes" aria-labelledby="reports-title">
       <PageHeader
         title="Reportes"
-        description="Gerencia hospitalaria"
-        actions={
-          <Badge variant={loading ? 'outline' : 'secondary'}>
-            {loading ? 'Consultando...' : 'Datos auditables'}
-          </Badge>
-        }
+        description="Facturacion, cobros, caja y auditoria en una vista clara."
       />
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ReportTab)} className="space-y-6">
         <TabsList className="bg-muted/50">
-          <TabsTrigger value="diario">Diario</TabsTrigger>
-          <TabsTrigger value="rango">Por Rango</TabsTrigger>
-          <TabsTrigger value="servicios">Servicios</TabsTrigger>
-          <TabsTrigger value="auditoria">Auditoría</TabsTrigger>
+          {canViewManagerial && (
+            <>
+              <TabsTrigger value="diario">Diario</TabsTrigger>
+              <TabsTrigger value="mensual">Mensual</TabsTrigger>
+              <TabsTrigger value="rango">Por Rango</TabsTrigger>
+              <TabsTrigger value="servicios">Servicios</TabsTrigger>
+              <TabsTrigger value="auditoria">Auditoría</TabsTrigger>
+            </>
+          )}
           {canViewCashSessionReport && (
             <TabsTrigger value="caja">Caja</TabsTrigger>
           )}
@@ -198,7 +328,30 @@ export function ReportsView({
               error={dailyError}
               loading={loading}
               onDateChange={setDailyDate}
+              onExport={() => downloadBackendExport({ date_from: dailyDate, date_to: dailyDate })}
+              onExportPdf={() => downloadBackendPdf({ date: dailyDate, date_from: dailyDate, date_to: dailyDate })}
               onSubmit={handleDailySubmit}
+            />
+          ) : (
+            <EmptyState
+              title="Reportes gerenciales no disponibles"
+              description="Este usuario no tiene permisos gerenciales."
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="mensual" className="mt-0">
+          {canViewManagerial ? (
+            <MonthlyReportTab
+              canExport={canExport}
+              error={monthlyError}
+              loading={loading}
+              month={monthlyMonth}
+              monthly={monthly}
+              onExport={() => downloadBackendExport(monthlyRangeFilters(monthlyMonth, monthly))}
+              onExportPdf={() => downloadBackendPdf(monthlyRangeFilters(monthlyMonth, monthly))}
+              onMonthChange={setMonthlyMonth}
+              onSubmit={handleMonthlySubmit}
             />
           ) : (
             <EmptyState
@@ -221,20 +374,27 @@ export function ReportsView({
                 dateFrom={dateFrom}
                 dateTo={dateTo}
                 categoryId={categoryId}
+                areaId={areaId}
                 cashSessionId={cashSessionId}
                 cashierId={cashierId}
                 method={method}
                 status={status}
                 categoryOptions={categoryOptions}
+                areaOptions={areaOptions}
+                cashSessionOptions={cashSessionOptions}
                 loading={loading}
                 income={income}
                 categories={categories}
+                areas={areas}
                 onDateFromChange={setDateFrom}
                 onDateToChange={setDateTo}
                 onCategoryChange={setCategoryId}
+                onAreaChange={setAreaId}
                 onCashSessionChange={setCashSessionId}
                 onCashierChange={setCashierId}
                 onMethodChange={setMethod}
+                onExport={() => downloadBackendExport(reportFilters())}
+                onExportPdf={() => downloadBackendPdf(reportFilters())}
                 onStatusChange={setStatus}
                 onSubmit={loadRangeReports}
               />
@@ -257,6 +417,8 @@ export function ReportsView({
               serviceSales={serviceSales}
               onDateFromChange={setDateFrom}
               onDateToChange={setDateTo}
+              onExport={() => downloadBackendExport(reportFilters())}
+              onExportPdf={() => downloadBackendPdf(reportFilters())}
               onSubmit={loadRangeReports}
             />
           ) : (
@@ -276,6 +438,8 @@ export function ReportsView({
               dateTo={dateTo}
               onDateFromChange={setDateFrom}
               onDateToChange={setDateTo}
+              onExport={() => downloadBackendExport(reportFilters())}
+              onExportPdf={() => downloadBackendPdf(reportFilters())}
               onSubmit={loadRangeReports}
             />
           ) : (
@@ -295,6 +459,7 @@ export function ReportsView({
               loading={loading}
               error={cashError}
               onCashReportIdChange={setCashReportId}
+              onExport={() => downloadBackendExport(cashSessionExportFilters(cashReportId, cashSession))}
               onSubmit={handleCashSubmit}
             />
           ) : (
@@ -314,4 +479,43 @@ function localDateString(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function monthlyRangeFilters(month: string, monthly: MonthlyReport | null): ReportFilters {
+  if (monthly?.month === month) {
+    return {
+      date_from: monthly.date_from,
+      date_to: monthly.date_to,
+    };
+  }
+
+  const [year, monthNumber] = month.split('-').map(Number);
+  if (!Number.isInteger(year) || !Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12) {
+    return {
+      date_from: today,
+      date_to: today,
+    };
+  }
+
+  return {
+    date_from: `${month}-01`,
+    date_to: localDateString(new Date(year, monthNumber, 0)),
+  };
+}
+
+function cashSessionExportFilters(cashReportId: string, cashSession: CashSessionReport | null): ReportFilters {
+  const openedDate = cashSessionDate(cashSession?.cash_session.opened_at);
+  const closedDate = cashSessionDate(cashSession?.cash_session.closed_at);
+
+  return {
+    date_from: openedDate ?? today,
+    date_to: closedDate ?? openedDate ?? today,
+    cash_session_id: cashReportId || null,
+  };
+}
+
+function cashSessionDate(value: string | null | undefined): string | null {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)
+    ? value.slice(0, 10)
+    : null;
 }

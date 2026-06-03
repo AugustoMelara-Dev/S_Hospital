@@ -1,13 +1,16 @@
 import { apiClient } from './base';
 import type {
   DailyReport,
+  MonthlyReport,
   IncomeReport,
   CategoryReport,
+  AreaIncomeReport,
   ServiceSalesReport,
   OperationsReport,
   CashSessionReport,
   ReportFilters,
-  PaginatedMeta,
+  PdfReportFilters,
+  DashboardReport,
 } from './types';
 
 function buildReportParams(filters: ReportFilters): URLSearchParams {
@@ -21,9 +24,20 @@ function buildReportParams(filters: ReportFilters): URLSearchParams {
 }
 
 export const reports = {
+  async getDashboardReport(): Promise<DashboardReport> {
+    const response = await apiClient.request<{ data: DashboardReport }>(`/api/reports/dashboard`);
+    return response.data;
+  },
+
   async getDailyReport(date?: string): Promise<DailyReport> {
     const query = date ? `?date=${encodeURIComponent(date)}` : '';
     const response = await apiClient.request<{ data: DailyReport }>(`/api/reports/daily${query}`);
+    return response.data;
+  },
+
+  async getMonthlyReport(month?: string): Promise<MonthlyReport> {
+    const query = month ? `?month=${encodeURIComponent(month)}` : '';
+    const response = await apiClient.request<{ data: MonthlyReport }>(`/api/reports/monthly${query}`);
     return response.data;
   },
 
@@ -39,6 +53,14 @@ export const reports = {
     const params = buildReportParams(filters);
     const response = await apiClient.request<{ data: CategoryReport }>(
       `/api/reports/categories?${params.toString()}`,
+    );
+    return response.data;
+  },
+
+  async getAreaIncomeReport(filters: ReportFilters): Promise<AreaIncomeReport> {
+    const params = buildReportParams(filters);
+    const response = await apiClient.request<{ data: AreaIncomeReport }>(
+      `/api/reports/areas?${params.toString()}`,
     );
     return response.data;
   },
@@ -66,14 +88,6 @@ export const reports = {
     return response.data;
   },
 
-  async getBackups(filters: { page?: number; perPage?: number } = {}): Promise<{ data: import('./types').BackupLog[]; meta: PaginatedMeta }> {
-    const params = new URLSearchParams();
-    if (filters.page) params.set('page', String(filters.page));
-    if (filters.perPage) params.set('per_page', String(filters.perPage));
-    const query = params.toString() ? `?${params.toString()}` : '';
-    return apiClient.request<{ data: import('./types').BackupLog[]; meta: PaginatedMeta }>(`/api/backups${query}`);
-  },
-
   exportUrl(filters: ReportFilters): string {
     const params = buildReportParams(filters);
     return apiClient.url(`/api/reports/export?${params.toString()}`);
@@ -82,5 +96,13 @@ export const reports = {
   async downloadExport(filters: ReportFilters): Promise<Blob> {
     const params = buildReportParams(filters);
     return apiClient.download(`/api/reports/export?${params.toString()}`);
+  },
+
+  async downloadPdf(filters: PdfReportFilters): Promise<Blob> {
+    const params = buildReportParams(filters);
+    if (filters.date) {
+      params.set('date', filters.date);
+    }
+    return apiClient.download(`/api/reports/pdf?${params.toString()}`);
   },
 };

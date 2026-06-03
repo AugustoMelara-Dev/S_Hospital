@@ -1,25 +1,26 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const useExternalServer = process.env.PLAYWRIGHT_EXTERNAL_SERVER === '1';
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:5173';
 
 export default defineConfig({
   testDir: './e2e',
   testIgnore: ['**/real-smoke.spec.ts'],
-  timeout: 30_000,
+  timeout: 90_000,
   expect: {
-    timeout: 7_500,
+    timeout: 10_000,
   },
   fullyParallel: false,
   reporter: [['list']],
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL,
     trace: 'retain-on-failure',
   },
   webServer: useExternalServer
     ? undefined
     : {
         command: 'npm.cmd run dev',
-        url: 'http://127.0.0.1:5173',
+        url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
       },

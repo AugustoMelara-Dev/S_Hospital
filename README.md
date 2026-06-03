@@ -1,44 +1,82 @@
-# Hospital Billing OS - Paquete Final UX/UI + Producto Real
+# Sistema de Caja Hospitalaria
 
-Este paquete corrige la dirección del proyecto después de la validación técnica: el backend/core puede estar fuerte, pero la experiencia de usuario no está lista para entregar como producto profesional.
+Sistema local para caja, facturacion, pagos, reportes, catalogo de servicios, respaldos y recibos institucionales del Hospital San Isidro o del hospital configurado por administracion.
 
-Objetivo: convertir el sistema de una aplicación funcional pero plana en un producto hospitalario de caja/facturación con UX real, sidebar, módulos separados, POS rápido, catálogo por categorías, escaneo de código/QR, reportes avanzados y criterios de aceptación estrictos.
+La aplicacion esta pensada para operar sin internet en una red local LAN: una computadora servidor ejecuta la base de datos y los servicios, y las estaciones de caja acceden por navegador usando la IP local del servidor.
 
-## Orden de uso con Codex
+## Alcance Operativo
 
-1. Copiar este paquete completo en la raíz del repo.
-2. Crear branch `codex/*` para la fase correspondiente, por ejemplo `codex/phase-12a-app-shell-design-system`.
-3. Ejecutar `prompts/00_FINAL_PRODUCT_PLAN_MODE.md`.
-4. Ejecutar `prompts/01_FINAL_PRODUCT_PLAN_REVIEW.md`.
-5. Aprobar plan manualmente.
-6. Ejecutar fases una por una:
-   - Fase 12A: App Shell + navegación + design system.
-   - Fase 12B: POS/facturación rápida por categorías, búsqueda y scanner.
-   - Fase 12C: Catálogo profesional + códigos QR/barcode.
-   - Fase 12D: Reportes avanzados.
-   - Fase 12E: Pulido visual, QA UX y demo final.
-7. Después de cada commit, ejecutar `prompts/06_COMMIT_REVIEW_FINAL_PRODUCT.md`.
+- Caja hospitalaria con apertura, cobro, cierre y diferencias.
+- Facturacion con paciente obligatorio, servicios, totales y pagos.
+- Recibo institucional imprimible en media carta, carta o A5.
+- Reimpresion con motivo y auditoria cuando el usuario tenga permiso.
+- Reporte diario para cierre y revision administrativa.
+- Respaldos manuales y programados.
+- Configuracion fiscal/hospitalaria sin inventar CAI, serie ni rangos legales.
 
-## No negociar
+## Principios De Produccion
 
-- No dejar todo en una sola página.
-- No dejar listas interminables sin categorías/filtros.
-- No entregar UI sin layout profesional.
-- No usar frontend monolítico como producto final.
-- No implementar reportes avanzados sumando en el frontend.
-- No afirmar production-ready si impresora/LAN/restore/concurrencia siguen pendientes.
+- No borrar datos de produccion.
+- No reiniciar ni eliminar volumenes de base de datos.
+- No depender de internet para login, facturacion, reportes o impresion.
+- No exponer credenciales ni variables internas al usuario normal.
+- Validar numeracion, serie, CAI o talonarios con administracion, Contaduria, SAR o SEFIN antes de operar formalmente.
 
-## Stack recomendado
+## Stack
 
-- React + TypeScript + Vite.
-- Tailwind CSS + shadcn/ui.
-- TanStack Router o React Router.
-- TanStack Query.
-- TanStack Table.
-- React Hook Form + Zod.
-- Lucide React.
-- Recharts.
-- date-fns.
-- @zxing/browser para cámara/QR opcional.
-- USB scanner como input tipo teclado.
-- Laravel API + MySQL/MariaDB.
+1. Frontend: React + TypeScript + Tailwind CSS.
+2. Backend: Laravel API.
+3. Base de datos: MySQL/MariaDB local.
+4. Despliegue recomendado: Docker Compose en servidor local Windows.
+
+## Instalacion Local
+
+Para desarrollo o preparacion tecnica:
+
+```bash
+docker compose up -d
+docker compose exec backend php artisan migrate --seed
+```
+
+Para instalacion operativa en Windows, use `setup.bat`. El instalador levanta los servicios, aplica migraciones seguras y crea el acceso directo:
+
+```powershell
+.\setup.bat
+```
+
+Despues de instalar, configure un usuario administrador real y valide:
+
+- Datos del hospital.
+- Serie y numeracion autorizada.
+- Plantilla de recibo.
+- Respaldos.
+- Impresora.
+- Acceso LAN de las estaciones cliente.
+
+## Acceso
+
+Servidor local:
+
+```text
+http://127.0.0.1:5173
+```
+
+Clientes en red local:
+
+```text
+http://IP-DEL-SERVIDOR:5173
+```
+
+## Documentacion Para Operacion
+
+Los manuales para personal estan en:
+
+- `docs/manuales/MANUAL_CAJERO.md`
+- `docs/manuales/MANUAL_ADMINISTRADOR.md`
+- `docs/manuales/GUIA_INSTALACION_OPERATIVA.md`
+- `docs/manuales/GUIA_RESPALDOS_Y_RESTAURACION.md`
+- `docs/manuales/CHECKLIST_CAPACITACION.md`
+
+## Notas De Seguridad
+
+El sistema es local. La base de datos debe quedar en el servidor del hospital y no debe exponerse innecesariamente a la red. Los respaldos deben copiarse periodicamente a un medio externo seguro.

@@ -16,7 +16,9 @@ class RolesAndPermissionsSeeder extends Seeder
         'catalog.manage',
         'invoices.view',
         'invoices.create',
+        'invoices.operate_any',
         'invoices.void',
+        'invoices.reverse',
         'cash.view',
         'cash.open',
         'cash.close',
@@ -38,6 +40,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'backups.view',
         'backups.create',
         'backups.download',
+        'system.status.view',
         'audit.view',
     ];
 
@@ -61,7 +64,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'catalog.manage',
             'invoices.view',
             'invoices.create',
+            'invoices.operate_any',
             'invoices.void',
+            'invoices.reverse',
             'cash.view',
             'cash.open',
             'cash.close',

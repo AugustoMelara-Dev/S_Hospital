@@ -1,0 +1,15 @@
+{
+  "status": 200,
+  "title": "Caja hospitalaria",
+  "hasRootText": true,
+  "bodyPreview": "Hospital San Isidro\n\nAcceso en red local\n\nCaja hospitalaria rápida y clara.\n\nFacturacion, cobros, reportes y recibos institucionales para operar dentro del hospital.\n\nFunciona dentro de la red local.\nSesión protegida para usuarios autorizad",
+  "csp": "default-src 'self'; script-src 'self' 'nonce-6a102dbb04740c4b7043c5782cf61b0b' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; manifest-src 'self'",
+  "metaNonce": "6a102dbb04740c4b7043c5782cf61b0b",
+  "nonceHeaderMatchesMeta": true,
+  "hasPlaceholder": false,
+  "hasUndefinedTag": false,
+  "consoleMessages": [],
+  "consoleErrorCount": 0,
+  "pageErrors": [],
+  "screenshotPath": "C:\\Projects\\S_Hospital\\qa\\screenshots\\csp-hardening-2026-06-02\\login-csp-smoke.png"
+}

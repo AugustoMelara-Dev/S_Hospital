@@ -1,0 +1,29 @@
+SISTEMA DE CAJA HOSPITALARIA - SOFTWARE LICENSE AGREEMENT
+===============================================
+
+IMPORTANT: PLEASE READ THIS SOFTWARE LICENSE AGREEMENT ("AGREEMENT") CAREFULLY BEFORE USING, INSTALLING, OR DISTRIBUTING THIS SOFTWARE. BY INSTALLING, COPYING, OR OTHERWISE USING THE SOFTWARE, YOU AGREE TO BE BOUND BY THE TERMS OF THIS AGREEMENT.
+
+1. LICENSE GRANT
+----------------
+Subject to the terms and conditions of this Agreement, the Licensor grants to you (the "Licensee") a non-exclusive, non-transferable, commercial license to install, execute, and run the Sistema de Caja Hospitalaria ("Software") on a local area network (LAN) server and associated client machines.
+
+This license is restricted to:
+- Offline LAN deployments matching purchase terms.
+- Use within authorized physical medical facilities or clinics.
+
+2. RESTRICTIONS
+---------------
+Licensee shall not:
+- Modify, reverse engineer, decompile, or disassemble the Software.
+- Copy or distribute the Software to unauthorized third parties or host it on public multi-tenant cloud systems without explicit written consent from the Licensor.
+- Remove or obscure any copyright notices, trademark tags, logos, or licensing metadata from the interface or code.
+
+3. INTELLECTUAL PROPERTY AND BRANDING
+-------------------------------------
+All title, ownership rights, and intellectual property rights in and to the Software (including but not limited to the Laravel backend architecture, React frontend design system, specialized Excel reporting engine, and custom offline database schema) remain the exclusive property of the Licensor.
+
+4. WARRANTY AND LIMITATION OF LIABILITY
+---------------------------------------
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Copyright (c) 2026. Sistema de Caja Hospitalaria. All rights reserved.

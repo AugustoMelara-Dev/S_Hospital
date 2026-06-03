@@ -1,10 +1,16 @@
 import { apiClient } from './base';
-import type { Category, CategoryPayload, Service, ServicePayload, ServiceFilters, PaginatedMeta } from './types';
+import type { Area, Category, CategoryPayload, Service, ServicePayload, ServiceFilters, PaginatedMeta } from './types';
 
 export const catalog = {
   async getCategories(active?: boolean): Promise<Category[]> {
     const query = active === undefined ? '' : `?active=${active ? '1' : '0'}`;
     const response = await apiClient.request<{ data: Category[] }>(`/api/categories${query}`);
+    return response.data;
+  },
+
+  async getAreas(active?: boolean): Promise<Area[]> {
+    const query = active === undefined ? '' : `?active=${active ? '1' : '0'}`;
+    const response = await apiClient.request<{ data: Area[] }>(`/api/areas${query}`);
     return response.data;
   },
 
@@ -25,6 +31,7 @@ export const catalog = {
     if (filters.search) params.set('search', filters.search);
     if (filters.code) params.set('code', filters.code);
     if (filters.active !== undefined) params.set('active', filters.active ? '1' : '0');
+    if (filters.billing !== undefined) params.set('billing', filters.billing ? '1' : '0');
     if (filters.categoryId) params.set('category_id', String(filters.categoryId));
     if (filters.page) params.set('page', String(filters.page));
     if (filters.perPage) params.set('per_page', String(filters.perPage));

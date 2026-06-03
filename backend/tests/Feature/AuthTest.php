@@ -169,7 +169,7 @@ class AuthTest extends TestCase
             ->assertJsonPath('data.must_change_password', true);
 
         $this->actingAs($user)
-            ->getJson('/api/settings/fiscal')
+            ->getJson('/api/cash-sessions/current')
             ->assertForbidden()
             ->assertJsonPath('must_change_password', true);
     }

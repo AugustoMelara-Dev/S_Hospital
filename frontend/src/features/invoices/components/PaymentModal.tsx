@@ -1,14 +1,17 @@
-import { type FormEvent, type SyntheticEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Dialog } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
+import { Checkbox } from '../../../components/ui/checkbox';
 import type { Payment } from '../../../lib/api';
+import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
 type PaymentModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  previewBeforePrint?: boolean;
   invoiceNumber: string;
   patientName: string;
   total: string;
@@ -17,13 +20,16 @@ type PaymentModalProps = {
   paymentAmount: string;
   onPaymentMethodChange: (method: Payment['method']) => void;
   onPaymentAmountChange: (amount: string) => void;
+  onPreviewBeforePrintChange?: (enabled: boolean) => void;
   onConfirm: (appliedAmount: string) => void;
   submitting?: boolean;
+  partialPaymentsEnabled?: boolean;
 };
 
 export function PaymentModal({
   open,
   onOpenChange,
+  previewBeforePrint = false,
   invoiceNumber,
   patientName,
   total,
@@ -32,19 +38,26 @@ export function PaymentModal({
   paymentAmount,
   onPaymentMethodChange,
   onPaymentAmountChange,
+  onPreviewBeforePrintChange,
   onConfirm,
   submitting,
+  partialPaymentsEnabled = false,
 }: PaymentModalProps) {
   const [error, setError] = useState<string | null>(null);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
 
-  const balance = parseFloat(balanceDue);
-  const payment = parseFloat(paymentAmount);
-  const change = !isNaN(payment) && payment > balance ? payment - balance : null;
-  const remainingBalance = !isNaN(payment) && !isNaN(balance) && payment > 0 && payment < balance
-    ? balance - payment
+  const balanceCents = parseMoneyCents(balanceDue);
+  const paymentCents = parseMoneyCents(paymentAmount);
+  const changeCents = paymentCents !== null && balanceCents !== null && paymentCents > balanceCents
+    ? paymentCents - balanceCents
     : null;
-  const appliedAmount = !isNaN(payment) && !isNaN(balance) && payment >= balance ? balance : payment;
+  const remainingBalanceCents = paymentCents !== null && balanceCents !== null && paymentCents > 0 && paymentCents < balanceCents
+    ? balanceCents - paymentCents
+    : null;
+  const appliedAmountCents = paymentCents !== null && balanceCents !== null && paymentCents >= balanceCents
+    ? balanceCents
+    : paymentCents;
+  const needsAmount = paymentCents === null || paymentCents <= 0;
 
   useEffect(() => {
     if (open) {
@@ -53,16 +66,21 @@ export function PaymentModal({
     }
   }, [open]);
 
-  function handleSubmit(e: FormEvent | SyntheticEvent) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const amount = parseFloat(paymentAmount);
-    if (isNaN(amount) || amount <= 0) {
+    const amountCents = parseMoneyCents(paymentAmount);
+    if (amountCents === null || amountCents <= 0) {
       setError('Ingrese un monto valido');
       amountInputRef.current?.focus();
       return;
     }
+    if (balanceCents !== null && amountCents < balanceCents && !partialPaymentsEnabled) {
+      setError('El monto recibido es menor al total.');
+      amountInputRef.current?.focus();
+      return;
+    }
     setError(null);
-    onConfirm(appliedAmount.toFixed(2));
+    onConfirm(formatMoneyCents(appliedAmountCents ?? amountCents));
   }
 
   return (
@@ -70,7 +88,7 @@ export function PaymentModal({
       open={open}
       onOpenChange={onOpenChange}
       title="Registrar pago"
-      description={`Cobrar factura ${invoiceNumber}`}
+      description={`Factura ${invoiceNumber} ya fue emitida. Si sale de este paso quedara pendiente de cobro.`}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="space-y-2 text-sm">
@@ -80,33 +98,49 @@ export function PaymentModal({
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Total:</span>
-            <span className="font-medium">L. {total}</span>
+            <span className="font-medium">{moneyLabel(total)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Saldo pendiente:</span>
-            <span className="font-bold">L. {balanceDue}</span>
+            <span className="font-bold">{moneyLabel(balanceDue)}</span>
           </div>
-          {change !== null && (
+          {changeCents !== null && (
             <div className="flex justify-between text-emerald-600">
               <span className="text-muted-foreground">Cambio:</span>
-              <span className="font-bold">L. {change.toFixed(2)}</span>
+              <span className="font-bold">{moneyLabelFromCents(changeCents)}</span>
             </div>
           )}
-          {remainingBalance !== null && (
+          {remainingBalanceCents !== null && (
             <div className="flex justify-between text-amber-700">
               <span className="text-muted-foreground">Saldo pendiente:</span>
-              <span className="font-bold">L. {remainingBalance.toFixed(2)}</span>
+              <span className="font-bold">{moneyLabelFromCents(remainingBalanceCents)}</span>
             </div>
           )}
-          {!isNaN(appliedAmount) && appliedAmount > 0 && (
+          {remainingBalanceCents !== null && !partialPaymentsEnabled ? (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive" role="alert">
+              El monto recibido es menor al total.
+            </div>
+          ) : null}
+          {remainingBalanceCents !== null && partialPaymentsEnabled ? (
+            <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="alert">
+              Este pago quedara como abono parcial y mantendra saldo pendiente.
+            </div>
+          ) : null}
+          {appliedAmountCents !== null && appliedAmountCents > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Pago aplicado:</span>
-              <span className="font-medium">L. {appliedAmount.toFixed(2)}</span>
+              <span className="font-medium">{moneyLabelFromCents(appliedAmountCents)}</span>
             </div>
           )}
         </div>
 
         <div className="space-y-3">
+          {needsAmount && !error ? (
+            <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="alert">
+              Ingrese el monto recibido para registrar el cobro.
+            </div>
+          ) : null}
+
           <div>
             <Label htmlFor="payment-method" className="mb-1.5 block">Metodo de pago</Label>
             <Select value={paymentMethod} onValueChange={(v) => onPaymentMethodChange(v as Payment['method'])}>
@@ -131,11 +165,9 @@ export function PaymentModal({
               step="0.01"
               min="0"
               value={paymentAmount}
-              onChange={(e) => onPaymentAmountChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSubmit(e);
-                }
+              onChange={(e) => {
+                setError(null);
+                onPaymentAmountChange(e.target.value);
               }}
               placeholder="0.00"
               aria-invalid={error ? 'true' : 'false'}
@@ -143,17 +175,65 @@ export function PaymentModal({
             />
             {error && <p id="payment-amount-error" className="mt-1 text-sm text-destructive" role="alert">{error}</p>}
           </div>
+
+          <label className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5 text-sm cursor-pointer select-none">
+            <Checkbox
+              id="preview-before-print"
+              checked={previewBeforePrint}
+              onCheckedChange={(checked) => onPreviewBeforePrintChange?.(checked === true)}
+              className="mt-0.5"
+            />
+            <div className="grid gap-0.5 leading-none">
+              <span className="font-medium text-foreground">
+                Ver preview antes de imprimir
+              </span>
+              <span className="text-xs text-muted-foreground mt-0.5">
+                Desactivado: al confirmar cobro se registra el pago y se abre impresion directa.
+              </span>
+            </div>
+          </label>
+
+          <p className="text-xs text-muted-foreground">
+            Cancelar la ventana de impresion no revierte el pago. Si necesita corregir una factura pagada, use el flujo de anulacion autorizado.
+          </p>
         </div>
 
         <div className="flex gap-3 pt-2">
           <Button type="button" variant="secondary" className="flex-1" onClick={() => onOpenChange(false)}>
-            Cancelar
+            Dejar pendiente
           </Button>
-          <Button type="submit" className="flex-1" disabled={submitting}>
-            {submitting ? 'Cobrando...' : 'Confirmar cobro'}
+          <Button
+            type="submit"
+            className="flex-1"
+            disabled={submitting}
+            aria-label={previewBeforePrint ? 'Confirmar cobro y ver preview' : 'Confirmar cobro e imprimir'}
+          >
+            {submitting ? 'Cobrando...' : previewBeforePrint ? 'Registrar cobro y ver preview' : 'Registrar cobro e imprimir'}
           </Button>
         </div>
       </form>
     </Dialog>
   );
+}
+
+function parseMoneyCents(value: string): number | null {
+  const normalized = value.trim();
+  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
+    return null;
+  }
+
+  const [integer, decimal = '00'] = normalized.split('.');
+  return Number(integer) * 100 + Number(decimal.padEnd(2, '0').slice(0, 2));
+}
+
+function formatMoneyCents(cents: number): string {
+  return `${Math.trunc(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
+}
+
+function moneyLabelFromCents(cents: number): string {
+  return formatLempirasFromCents(cents);
 }

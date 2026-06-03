@@ -7,6 +7,8 @@ import { Label } from '../../../components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/data-table';
 import { KPICard } from './KPICard';
 import type { CashSessionReport } from '../../../lib/api/types';
+import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
+import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
 
 interface CashSessionReportTabProps {
   canExport: boolean;
@@ -15,6 +17,7 @@ interface CashSessionReportTabProps {
   loading: boolean;
   error: string;
   onCashReportIdChange: (value: string) => void;
+  onExport: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }
 
@@ -25,43 +28,9 @@ export function CashSessionReportTab({
   loading,
   error,
   onCashReportIdChange,
+  onExport,
   onSubmit,
 }: CashSessionReportTabProps) {
-  function exportCSV() {
-    if (!canExport || !cashSession) return;
-    const session = cashSession.cash_session;
-    const rows: string[][] = [
-      ['RESUMEN DE CAJA'],
-      ['Caja #', cashReportId],
-      ['Cajero', session.user?.name ?? 'Sin cajero'],
-      ['Apertura', session.opening_amount],
-      ['Esperado', session.expected_amount ?? '0'],
-      ['Contado', session.closing_amount ?? '0'],
-      ['Diferencia', session.difference_amount ?? '0'],
-      [],
-      ['MÉTODOS DE PAGO'],
-      ['Método', 'Total'],
-      ...Object.entries(cashSession.totals_by_method).map(([m, t]) => [m, t]),
-      [],
-      ['PAGOS'],
-      ['Factura', 'Paciente', 'Método', 'Monto', 'Fecha'],
-      ...cashSession.payments.map((p) => [
-        p.invoice?.invoice_number ?? '—',
-        p.invoice?.patient_name ?? '—',
-        p.method,
-        p.amount,
-        formatDate(p.paid_at),
-      ]),
-    ];
-    const csv = rows.map((r) => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `caja-${cashReportId}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
 
   return (
     <div className="space-y-6">
@@ -81,7 +50,7 @@ export function CashSessionReportTab({
               />
             </div>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Consultando...' : 'Ver Caja'}
+              {loading ? 'Consultando...' : 'Ver caja'}
             </Button>
           </form>
           {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
@@ -90,28 +59,39 @@ export function CashSessionReportTab({
 
       {cashSession && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4">
             <KPICard
               title="Cajero"
               value={cashSession.cash_session.user?.name ?? 'Sin asignar'}
               icon={<User className="h-4 w-4" />}
             />
             <KPICard
-              title="Monto Apertura"
-              value={`L. ${cashSession.cash_session.opening_amount}`}
+              title="Apertura"
+              value={moneyLabel(cashSession.cash_session.opening_amount)}
               icon={<DollarSign className="h-4 w-4" />}
             />
             <KPICard
-              title="Total Esperado"
-              value={`L. ${cashSession.cash_session.expected_amount ?? '0.00'}`}
+              title="Esperado"
+              value={moneyLabel(cashSession.expected_cash_amount)}
+              description="Apertura mas cobros en efectivo"
             />
             <KPICard
-              title="Total Contado"
-              value={`L. ${cashSession.cash_session.closing_amount ?? '0.00'}`}
+              title="Cobrado"
+              value={moneyLabel(cashSession.payments_total)}
+              description={`${cashSession.payments_count} ${cashSession.payments_count === 1 ? 'pago' : 'pagos'}`}
+            />
+            <KPICard
+              title="Pendiente"
+              value={moneyLabel(cashSession.pending_amount)}
+              description={pendingInvoiceLabel(cashSession.pending_invoice_count)}
+            />
+            <KPICard
+              title="Contado"
+              value={cashSession.cash_session.closing_amount === null ? 'Pendiente' : moneyLabel(cashSession.cash_session.closing_amount)}
             />
           </div>
 
-          {cashSession.cash_session.difference_amount && Number.parseFloat(cashSession.cash_session.difference_amount) !== 0 && (
+          {cashSession.cash_session.difference_amount && (parseCents(cashSession.cash_session.difference_amount) ?? 0) !== 0 && (
             <Card className="border-destructive">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-destructive">
@@ -121,7 +101,7 @@ export function CashSessionReportTab({
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-destructive">
-                  L. {cashSession.cash_session.difference_amount}
+                  {moneyLabel(cashSession.cash_session.difference_amount)}
                 </div>
               </CardContent>
             </Card>
@@ -129,7 +109,7 @@ export function CashSessionReportTab({
 
           <Card>
             <CardHeader>
-              <CardTitle>Totales por Método</CardTitle>
+              <CardTitle>Totales por metodo</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -143,7 +123,7 @@ export function CashSessionReportTab({
                   {Object.entries(cashSession.totals_by_method).map(([method, total]) => (
                     <TableRow key={method}>
                       <TableCell className="font-medium">{methodLabel(method)}</TableCell>
-                      <TableCell className="text-right">L. {total}</TableCell>
+                      <TableCell className="text-right">{moneyLabel(total)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -173,7 +153,7 @@ export function CashSessionReportTab({
                         <TableCell className="font-medium">{p.invoice?.invoice_number ?? '—'}</TableCell>
                         <TableCell>{p.invoice?.patient_name ?? '—'}</TableCell>
                         <TableCell>{methodLabel(p.method)}</TableCell>
-                        <TableCell className="text-right">L. {p.amount}</TableCell>
+                        <TableCell className="text-right">{moneyLabel(p.amount)}</TableCell>
                         <TableCell>{formatDate(p.paid_at)}</TableCell>
                       </TableRow>
                     ))}
@@ -203,9 +183,9 @@ export function CashSessionReportTab({
                   <TableBody>
                     {cashSession.movements.map((m) => (
                       <TableRow key={m.id}>
-                        <TableCell className="font-medium">{m.type}</TableCell>
-                        <TableCell>{m.method ?? '—'}</TableCell>
-                        <TableCell className="text-right">L. {m.amount}</TableCell>
+                        <TableCell className="font-medium">{movementTypeLabel(m.type)}</TableCell>
+                        <TableCell>{movementMethodLabel(m.method)}</TableCell>
+                        <TableCell className="text-right">{signedMoneyLabel(m.amount)}</TableCell>
                         <TableCell className="max-w-[150px] truncate">{m.notes ?? '—'}</TableCell>
                         <TableCell>{m.user?.name ?? '—'}</TableCell>
                         <TableCell>{formatDate(m.occurred_at)}</TableCell>
@@ -219,13 +199,13 @@ export function CashSessionReportTab({
 
           <div className="flex justify-end">
             {canExport ? (
-              <Button variant="outline" onClick={exportCSV}>
+              <Button variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar CSV
+                Exportar Excel
               </Button>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Exportacion CSV requiere permiso de exportacion de reportes.
+                Exportación Excel requiere permiso de exportación de reportes.
               </p>
             )}
           </div>
@@ -239,6 +219,65 @@ function methodLabel(method: string): string {
   return { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta', other: 'Otro' }[method] ?? method;
 }
 
+function movementTypeLabel(type: string): string {
+  return {
+    opening: 'Apertura de caja',
+    payment: 'Cobro registrado',
+    payment_void: 'Reverso de pago',
+    closing: 'Cierre de caja',
+    adjustment: 'Ajuste',
+  }[type] ?? humanizeEnum(type);
+}
+
+function movementMethodLabel(method: string | null): string {
+  if (!method) {
+    return '—';
+  }
+
+  return { ...methodLabels(), closing: 'Cierre de caja' }[method] ?? humanizeEnum(method);
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
+}
+
+function signedMoneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseSignedCents(value));
+}
+
+function parseSignedCents(value: string | number | null | undefined): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? Math.round(value * 100) : null;
+  }
+
+  const trimmed = value.trim();
+  if (!/^-?\d+(\.\d{1,2})?$/.test(trimmed)) {
+    return null;
+  }
+
+  return Math.round(Number(trimmed) * 100);
+}
+
+function pendingInvoiceLabel(count: number): string {
+  return `${count} ${count === 1 ? 'factura' : 'facturas'}`;
+}
+
+function methodLabels(): Record<string, string> {
+  return { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta', other: 'Otro' };
+}
+
+function humanizeEnum(value: string): string {
+  return value
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat('es-HN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+  return formatLocalizedDateTime(value);
 }

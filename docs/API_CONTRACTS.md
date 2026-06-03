@@ -1,4 +1,4 @@
-# API Contracts - Hospital Billing OS Offline
+# API Contracts - Sistema de Caja Hospitalaria
 
 ## Convenciones generales
 
@@ -64,7 +64,7 @@ Respuesta `me` minima:
 {
   "data": {
     "id": 1,
-    "name": "Cajero Demo",
+    "name": "Cajero Principal",
     "username": "cajero",
     "roles": ["cajero"],
     "permissions": ["invoices.create", "payments.create"],
@@ -75,11 +75,10 @@ Respuesta `me` minima:
 
 ### Credenciales iniciales
 
-Credenciales demo solo estan permitidas en desarrollo. Produccion no debe entregarse con usuarios demo activos.
+Las credenciales iniciales de produccion deben crearse localmente y exigir cambio de contrasena antes de operar.
 
 Reglas minimas:
 
-- Seeder de desarrollo puede crear `admin.demo`, `supervisor.demo` y `cajero.demo`.
 - Seeder/instalacion de produccion debe crear un admin inicial con password temporal o documentar un procedimiento local equivalente antes del primer uso real.
 - El admin inicial de produccion debe tener `must_change_password=true` hasta que cambie su password.
 - Mientras `must_change_password=true`, el backend solo debe permitir `GET /api/auth/me`, cambio de password y logout.
@@ -103,6 +102,7 @@ Reglas minimas:
 
 | Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
 |---|---|---|---|---|---|
+| GET | `/api/settings/branding` | Publico | N/A | Nombre institucional, color y lineas publicas | Para login/branding. No expone RTN, CAI, scanner, pagos ni configuracion operativa. |
 | GET | `/api/settings/fiscal` | `settings.fiscal.view` | N/A | Config fiscal actual | Admin/supervisor lectura. |
 | PUT | `/api/settings/fiscal` | `settings.fiscal.update` | Hospital, RTN, impuesto, recibo, secuencia fiscal | Config actualizada | Solo admin. Auditar. |
 | GET | `/api/fiscal-sequences` | `settings.fiscal.view` | N/A | Secuencias | Para factura/recibo. |
@@ -113,17 +113,17 @@ Payload fiscal minimo:
 
 ```json
 {
-  "hospital_name": "Hospital Demo",
-  "rtn": "08011999123456",
+  "hospital_name": "Hospital San Isidro",
+  "rtn": "RTN_AUTORIZADO",
   "default_tax_rate": "15.00",
-  "receipt_width": "80mm",
+  "receipt_paper_size": "half_letter",
   "invoice_sequence": {
     "document_type": "invoice",
     "prefix": "000-001-01",
     "current_number": 0,
     "min_number": 1,
     "max_number": 99999999,
-    "cai": "DEMO-CAI",
+    "cai": "CAI_AUTORIZADO",
     "valid_until": "2026-12-31",
     "active": true
   }
@@ -162,7 +162,7 @@ Servicio minimo:
 | GET | `/api/invoices` | `invoices.view` | Query: `date_from`, `date_to`, `status`, `patient`, `page` | Lista paginada | Rango por defecto del dia. |
 | POST | `/api/invoices` | `invoices.create` | Paciente, items, flags de reglas especiales | Factura emitida | Transaccional; reserva correlativo dentro de la creacion. |
 | GET | `/api/invoices/{id}` | `invoices.view` | N/A | Factura con items/pagos | Incluye snapshots. |
-| POST | `/api/invoices/{id}/void` | `invoices.void` | `{ "reason": "..." }` | Factura anulada | Requiere supervisor/admin, auditar. |
+| POST | `/api/invoices/{id}/void` | `invoices.void` + alcance operativo | `{ "reason": "..." }` | Factura anulada | Alcance operativo: factura propia del dia o `invoices.operate_any`. Requiere motivo y auditoria. |
 
 Payload crear factura:
 
@@ -222,9 +222,9 @@ Los items emitidos no se editan. Si hay error, se anula la factura y se emite un
 
 | Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
 |---|---|---|---|---|---|
-| POST | `/api/invoices/{invoice}/payments` | `payments.create` | Metodo, monto, referencia | Pago registrado | Transaccional: payment + cash_movement + invoice totals. |
-| GET | `/api/invoices/{invoice}/payments` | `payments.view` | N/A | Pagos | Incluye estado. |
-| POST | `/api/payments/{id}/void` | `payments.void` | `{ "reason": "..." }` | Pago anulado | Requiere supervisor/admin, auditar y recalcular factura. |
+| POST | `/api/invoices/{invoice}/payments` | `payments.create` + alcance operativo | Metodo, monto, referencia | Pago registrado | Alcance operativo: factura propia del dia o `invoices.operate_any`. Transaccional: payment + cash_movement + invoice totals. |
+| GET | `/api/invoices/{invoice}/payments` | `payments.view` + alcance operativo | N/A | Pagos | Incluye estado. |
+| POST | `/api/invoices/{invoice}/payments/{payment}/void` | `payments.void` + alcance operativo | `{ "reason": "..." }` | Pago anulado | Auditar y recalcular factura. |
 
 Payload pago:
 
@@ -241,19 +241,26 @@ Payload pago:
 
 | Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
 |---|---|---|---|---|---|
-| GET | `/api/invoices/{invoice}/receipt` | `receipts.view` | Query: `width=80mm|58mm` | Datos renderizables de recibo | Usa snapshots. |
-| POST | `/api/invoices/{invoice}/reprint` | `receipts.reprint` | `{ "width": "80mm", "reason": "customer_copy" }` | Datos recibo + audit log | Auditar reimpresion. |
+| GET | `/api/invoices/{invoice}/receipt` | `receipts.view` | Query: `width=half_letter|letter|a5|80mm|58mm` | Datos renderizables de recibo | Usa snapshots. |
+| POST | `/api/invoices/{invoice}/reprint` | `receipts.reprint` | `{ "width": "half_letter", "reason": "copia solicitada por paciente" }` | Datos recibo + audit log | Auditar reimpresion. Acepta media carta, carta, A5, 80mm y 58mm. |
 
-El recibo debe incluir paciente, factura, fecha, cajero, items, subtotal, impuesto, total, pagos y datos fiscales configurados.
+El recibo debe incluir Gobierno, Secretaria, Hospital San Isidro, numero/serie, fecha, paciente o enterante, conceptos, total, pagado, saldo, cajero, metodo de pago, firma, sello y original/copia. No debe imprimir QR, codigo de barras, codigos internos ni datos tecnicos.
 
 ## Reports
 
 | Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
 |---|---|---|---|---|---|
 | GET | `/api/reports/daily` | `reports.view` | Query: `date` | Resumen diario | Rango obligatorio o default hoy. |
-| GET | `/api/reports/income` | `reports.view` | Query: `date_from`, `date_to`, `cash_session_id`, `user_id` | Ingresos agregados | Sumar en backend. |
-| GET | `/api/reports/categories` | `reports.view` | Query: `date_from`, `date_to` | Totales por categoria | No traer todo al frontend. |
+| GET | `/api/reports/income` | `reports.view` | Query: `date_from`, `date_to`, `cash_session_id`, `user_id`, `category_id`, `area_id`, `method`, `status` | Ingresos agregados | Sumar en backend; separar facturado, cobrado, pendiente, parcial y anulado. |
+| GET | `/api/reports/categories` | `reports.view` | Query: filtros de rango (`date_from`, `date_to`, caja, cajero, categoria, area, metodo, estado) | Totales por categoria | Usa snapshots historicos; no traer todo al frontend. |
+| GET | `/api/reports/areas` | `reports.view` | Query: filtros de rango (`date_from`, `date_to`, caja, cajero, categoria, area, metodo, estado) | Totales por area | Usa snapshots historicos y fuente de monto declarada. |
+| GET | `/api/reports/services` | `reports.view` | Query: filtros de rango (`date_from`, `date_to`, caja, cajero, categoria, metodo, estado) | Servicios mas cobrados/facturados | Usa snapshots historicos de factura; no recalcula desde catalogo vigente. |
 | GET | `/api/reports/cash-sessions/{id}` | `reports.view` | N/A | Resumen de caja | Esperado vs contado. |
+| GET | `/api/reports/operations` | `reports.view` | Query: `date_from`, `date_to`, filtros operativos | Anulaciones, reimpresiones, reversos, respaldos y cajeros | Vista normal no expone IDs internos, checksum de backup ni rutas locales; soporte tecnico debe usar fuentes administrativas protegidas. |
+| GET | `/api/reports/export` | `reports.export` | Query: filtros de rango (`date_from`, `date_to`, caja, cajero, categoria, area, metodo, estado) | Excel de cierre | Debe mostrar filtros aplicados con etiquetas humanas, no `Caja #id` ni codigos internos. |
+| GET | `/api/reports/pdf` | `reports.export` | Query: `date` o filtros de rango (`date_from`, `date_to`, caja, cajero, categoria, area, metodo, estado) | Archivo PDF de cierre | PDF diario requiere `reports.managerial.view`; PDF por rango permite scoping por caja para usuarios con `reports.cash_session.view`; filtros impresos usan etiquetas humanas. |
+
+Los filtros tecnicos `cash_session_id`, `user_id`, `category_id` y `area_id` solo viajan como query params. Las pantallas y exportaciones deben resolverlos a etiquetas humanas (caja con cajero/fecha/estado, cajero, categoria y area) antes de mostrarlos a administracion.
 
 ## Backups
 

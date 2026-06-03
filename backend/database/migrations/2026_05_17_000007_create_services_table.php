@@ -23,7 +23,9 @@ return new class extends Migration
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
-            $table->unique(['category_id', 'slug']);
+            if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+                $table->unique(['category_id', 'slug']);
+            }
             $table->index(['category_id', 'active']);
             $table->index(['active', 'name']);
             $table->index('special_rule_code');

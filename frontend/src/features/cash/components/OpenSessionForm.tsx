@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { parseCents } from '@/lib/moneyCents';
 
 const openSessionSchema = z.object({
   opening_amount: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Debe ser un número válido')
-    .refine(val => parseFloat(val) >= 0, 'El monto no puede ser negativo'),
+    .refine(val => (parseCents(val) ?? 0) >= 0, 'El monto no puede ser negativo'),
 });
 
 type OpenSessionFormData = z.infer<typeof openSessionSchema>;
@@ -26,7 +27,7 @@ export function OpenSessionForm({ isSubmitting, onSubmit }: OpenSessionFormProps
   const { register, handleSubmit, formState: { errors } } = useForm<OpenSessionFormData>({
     resolver: zodResolver(openSessionSchema),
     defaultValues: {
-      opening_amount: '500.00',
+      opening_amount: '0.00',
     },
   });
   const openingAmountRegistration = register('opening_amount');
@@ -43,7 +44,7 @@ export function OpenSessionForm({ isSubmitting, onSubmit }: OpenSessionFormProps
           Abrir Caja
         </CardTitle>
         <CardDescription>
-          Ingrese el monto inicial en efectivo para comenzar la sesión.
+          Ingrese el efectivo real disponible al iniciar. Puede ser L.0.00.
         </CardDescription>
       </CardHeader>
       <CardContent>

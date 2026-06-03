@@ -1,50 +1,50 @@
 @import "tailwindcss";
 
-@theme inline {
-  /* Hospital Billing OS - Professional Design System */
+@theme {
+  /* Sistema de diseño de caja hospitalaria */
 
   /* Background & Foreground */
-  --color-background: #f8fafc;
-  --color-foreground: #0f172a;
+  --color-background: #f7f8fb;
+  --color-foreground: #111827;
 
   /* Card */
   --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
+  --color-card-foreground: #111827;
 
-  /* Primary - Slate-700 for professional admin feel */
-  --color-primary: #334155;
+  /* Primary - neutral ink for minimal hospital operations */
+  --color-primary: #111827;
   --color-primary-foreground: #ffffff;
 
-  /* Secondary - Teal-600 for actions and highlights */
-  --color-secondary: #0d9488;
+  /* Secondary - restrained clinical accent */
+  --color-secondary: #0f766e;
   --color-secondary-foreground: #ffffff;
 
   /* Muted */
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
+  --color-muted: #f3f4f6;
+  --color-muted-foreground: #6b7280;
 
   /* Accent */
-  --color-accent: #f0fdfa;
-  --color-accent-foreground: #0d9488;
+  --color-accent: #ecfdf5;
+  --color-accent-foreground: #0f766e;
 
   /* Destructive - Rose-600 */
   --color-destructive: #e11d48;
   --color-destructive-foreground: #ffffff;
 
   /* Border & Input */
-  --color-border: #e2e8f0;
-  --color-input: #e2e8f0;
-  --color-ring: #0d9488;
+  --color-border: #e5e7eb;
+  --color-input: #d1d5db;
+  --color-ring: #0f766e;
 
-  /* Sidebar - Dark Slate */
-  --color-sidebar: #0f172a;
-  --color-sidebar-foreground: #f8fafc;
-  --color-sidebar-primary: #0d9488;
+  /* Sidebar - white minimal shell */
+  --color-sidebar: #ffffff;
+  --color-sidebar-foreground: #111827;
+  --color-sidebar-primary: #0f766e;
   --color-sidebar-primary-foreground: #ffffff;
-  --color-sidebar-accent: #1e293b;
-  --color-sidebar-accent-foreground: #f8fafc;
-  --color-sidebar-border: #334155;
-  --color-sidebar-ring: #0d9488;
+  --color-sidebar-accent: #f3f4f6;
+  --color-sidebar-accent-foreground: #111827;
+  --color-sidebar-border: #e5e7eb;
+  --color-sidebar-ring: #0f766e;
 
   /* Status Colors */
   --color-success: #059669;
@@ -57,13 +57,81 @@
   /* Border Radius */
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.5rem;
 
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  /* Animations */
+  --animate-fade-in: fade-in 0.3s ease-out;
+  --animate-slide-up: slide-up 0.3s ease-out;
+  --animate-scale-in: scale-in 0.2s ease-out;
+  --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
+  --animate-check-draw: check-draw 0.4s ease-out forwards;
+}
+
+/* Dark Mode Theme */
+html.dark {
+  --color-background: #0f172a;
+  --color-foreground: #e2e8f0;
+  --color-card: #1e293b;
+  --color-card-foreground: #e2e8f0;
+  --color-primary: #94a3b8;
+  --color-primary-foreground: #0f172a;
+  --color-secondary: #14b8a6;
+  --color-secondary-foreground: #0f172a;
+  --color-muted: #1e293b;
+  --color-muted-foreground: #94a3b8;
+  --color-accent: #042f2e;
+  --color-accent-foreground: #14b8a6;
+  --color-destructive: #fb7185;
+  --color-destructive-foreground: #1c1917;
+  --color-border: #334155;
+  --color-input: #334155;
+  --color-ring: #14b8a6;
+  --color-sidebar: #020617;
+  --color-sidebar-foreground: #f8fafc;
+  --color-sidebar-primary: #14b8a6;
+  --color-sidebar-primary-foreground: #0f172a;
+  --color-sidebar-accent: #0f172a;
+  --color-sidebar-accent-foreground: #e2e8f0;
+  --color-sidebar-border: #1e293b;
+  --color-sidebar-ring: #14b8a6;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-info: #38bdf8;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes check-draw {
+  0% { stroke-dashoffset: 24; opacity: 0; }
+  50% { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 1; }
 }
 
 @layer base {
@@ -80,6 +148,7 @@
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   button,
@@ -91,9 +160,6 @@
 }
 
 @layer components {
-  .app-kicker {
-  }
-
   .section-heading {
     @apply flex flex-col gap-3 border-b border-border pb-4 md:flex-row md:items-end md:justify-between;
   }
@@ -167,23 +233,7 @@
     @apply flex flex-col gap-2 text-sm font-semibold text-muted-foreground;
   }
 
-  input:not([type="checkbox"]),
-  select,
-  textarea {
-    @apply min-h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60;
-  }
 
-  textarea {
-    @apply min-h-24 resize-y;
-  }
-
-  button {
-    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-60;
-  }
-
-  button svg {
-    @apply size-4 shrink-0;
-  }
 
   .secondary-button {
     @apply border border-border bg-card text-foreground hover:bg-muted;
@@ -237,18 +287,7 @@
     @apply overflow-x-auto rounded-xl border border-border bg-card;
   }
 
-  table {
-    @apply w-full min-w-[760px] border-collapse;
-  }
 
-  th,
-  td {
-    @apply border-b border-border px-4 py-3 text-left align-top;
-  }
-
-  th {
-    @apply text-xs font-semibold uppercase tracking-normal text-muted-foreground;
-  }
 
   .history-filters,
   .range-filters {
@@ -378,23 +417,19 @@
   }
 
   .status-success {
-    @apply bg-emerald-50 text-emerald-700 border border-emerald-200;
+    @apply border border-success/30 bg-success/10 text-success;
   }
 
   .status-failed {
-    @apply bg-rose-50 text-rose-700 border border-rose-200;
+    @apply border border-destructive/30 bg-destructive/10 text-destructive;
   }
 
   .status-pending {
-    @apply bg-amber-50 text-amber-700 border border-amber-200;
+    @apply border border-warning/30 bg-warning/10 text-warning;
   }
 
   .status-info {
-    @apply bg-sky-50 text-sky-700 border border-sky-200;
-  }
-
-  .checksum-cell {
-    @apply max-w-64 break-all font-mono text-xs;
+    @apply border border-info/30 bg-info/10 text-info;
   }
 
   .notice-inline {
@@ -423,26 +458,80 @@
     border-radius: 0.5rem;
   }
 
-  /* Thermal Receipt Styles */
-  .thermal-receipt {
-    width: 80mm;
-    padding: 16px;
+  /* Institutional receipt styles */
+  .institutional-receipt {
+    width: 8.5in;
+    min-height: 5.5in;
+    padding: 28px;
     background: white;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 10px;
-    line-height: 1.3;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    line-height: 1.35;
     color: #000;
-    page: receipt-80;
+    border: 1px solid #0f172a;
+    page: receipt-half-letter;
   }
 
-  .thermal-receipt.receipt-58mm {
+  .institutional-receipt.receipt-letter {
+    width: 8.5in;
+    min-height: 11in;
+    page: receipt-letter;
+  }
+
+  .institutional-receipt.receipt-a5 {
+    width: 148mm;
+    min-height: 210mm;
+    page: receipt-a5;
+  }
+
+  .institutional-receipt.receipt-80mm {
+    width: 80mm;
+    min-height: auto;
+    padding: 10px;
+    font-size: 10px;
+    line-height: 1.25;
+    page: receipt-80mm;
+  }
+
+  .institutional-receipt.receipt-58mm {
     width: 58mm;
+    min-height: auto;
+    padding: 8px;
     font-size: 9px;
-    padding: 12px;
-    page: receipt-58;
+    line-height: 1.2;
+    page: receipt-58mm;
   }
 
-  .thermal-receipt * {
+  .institutional-receipt.receipt-80mm .receipt-header .hospital-name,
+  .institutional-receipt.receipt-58mm .receipt-header .hospital-name {
+    font-size: 13px;
+    line-height: 1.15;
+  }
+
+  .institutional-receipt.receipt-80mm .receipt-title,
+  .institutional-receipt.receipt-58mm .receipt-title {
+    font-size: 11px;
+  }
+
+  .institutional-receipt.receipt-80mm .receipt-title-row,
+  .institutional-receipt.receipt-58mm .receipt-title-row {
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .institutional-receipt.receipt-80mm .receipt-title-row span,
+  .institutional-receipt.receipt-58mm .receipt-title-row span {
+    font-size: 8px;
+    padding: 2px 4px;
+  }
+
+  .institutional-receipt.receipt-80mm .receipt-signature-line,
+  .institutional-receipt.receipt-58mm .receipt-signature-line {
+    margin-top: 24px;
+    width: 72%;
+  }
+
+  .institutional-receipt * {
     box-sizing: border-box;
   }
 
@@ -453,11 +542,8 @@
 
   .receipt-header .hospital-name {
     display: block;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: bold;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     max-width: 100%;
   }
 
@@ -468,16 +554,29 @@
 
   .receipt-rule {
     border: none;
-    border-top: 1px dashed #000;
-    margin: 8px 0;
+    border-top: 1px solid #000;
+    margin: 10px 0;
   }
 
   .receipt-title {
-    font-size: 12px;
+    font-size: 16px;
     font-weight: bold;
-    text-align: center;
-    margin: 8px 0;
-    letter-spacing: 0.5px;
+    margin: 0;
+  }
+
+  .receipt-title-row {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+    text-transform: uppercase;
+  }
+
+  .receipt-title-row span {
+    border: 1px solid #000;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
   }
 
   .receipt-section-title {
@@ -488,16 +587,15 @@
   }
 
   .receipt-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+    display: grid;
+    gap: 4px;
   }
 
   .receipt-table-head {
     display: flex;
     justify-content: space-between;
     font-weight: bold;
-    border-bottom: 1px solid #000;
+    border-bottom: 2px solid #000;
     padding-bottom: 4px;
     margin-bottom: 4px;
   }
@@ -513,6 +611,7 @@
     justify-content: space-between;
     align-items: flex-start;
     gap: 8px;
+    min-height: 22px;
   }
 
   .receipt-row .strong {
@@ -574,10 +673,17 @@
 
   .receipt-footer {
     text-align: center;
-    font-size: 8px;
+    font-size: 11px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 6px;
+    margin-top: 32px;
+  }
+
+  .receipt-signature-line {
+    border-top: 1px solid #000;
+    margin: 36px auto 0;
+    width: 60%;
   }
 
   /* Badge variants */
@@ -586,27 +692,37 @@
   }
 
   .badge-success {
-    @apply bg-emerald-100 text-emerald-800;
+    @apply bg-success/15 text-success;
   }
 
   .badge-warning {
-    @apply bg-amber-100 text-amber-800;
+    @apply bg-warning/15 text-warning;
   }
 
   .badge-danger {
-    @apply bg-rose-100 text-rose-800;
+    @apply bg-destructive/15 text-destructive;
   }
 
   .badge-info {
-    @apply bg-sky-100 text-sky-800;
+    @apply bg-info/15 text-info;
   }
 
   .badge-secondary {
-    @apply bg-slate-100 text-slate-800;
+    @apply bg-muted text-muted-foreground;
   }
 }
 
 @media print {
+  .print-hidden,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
   body[data-printing-receipt="true"] {
     background: #fff !important;
   }
@@ -615,27 +731,42 @@
     visibility: hidden;
   }
 
-  body[data-printing-receipt="true"] .thermal-receipt,
-  body[data-printing-receipt="true"] .thermal-receipt * {
+  body[data-printing-receipt="true"] .institutional-receipt,
+  body[data-printing-receipt="true"] .institutional-receipt * {
     visibility: visible;
   }
 
-  body[data-printing-receipt="true"] .thermal-receipt {
+  body[data-printing-receipt="true"] .institutional-receipt {
     position: absolute;
     left: 0;
     top: 0;
-    width: 80mm;
-    padding: 16px;
+    width: 8.5in;
+    min-height: 5.5in;
+    padding: 28px;
     background: white;
+    color: black;
   }
 
-  body[data-printing-receipt="true"] .thermal-receipt.receipt-58mm {
+  body[data-printing-receipt="true"] .institutional-receipt.receipt-letter {
+    width: 8.5in;
+    min-height: 11in;
+  }
+
+  body[data-printing-receipt="true"] .institutional-receipt.receipt-a5 {
+    width: 148mm;
+    min-height: 210mm;
+  }
+
+  body[data-printing-receipt="true"] .institutional-receipt.receipt-80mm {
+    width: 80mm;
+    min-height: auto;
+    padding: 10px;
+  }
+
+  body[data-printing-receipt="true"] .institutional-receipt.receipt-58mm {
     width: 58mm;
-    padding: 12px;
-  }
-
-  body[data-printing-receipt="true"] .no-print {
-    display: none !important;
+    min-height: auto;
+    padding: 8px;
   }
 
   body[data-printing-receipt="true"] .receipt-preview-container {
@@ -649,13 +780,33 @@
     box-shadow: none !important;
   }
 
-  @page receipt-80 {
-    size: 80mm auto;
-    margin: 0;
+  @page {
+    margin: 1.5cm;
   }
 
-  @page receipt-58 {
-    size: 58mm auto;
-    margin: 0;
+  @page receipt-half-letter {
+    size: 8.5in 5.5in;
+    margin: 0.35in;
   }
+
+  @page receipt-letter {
+    size: letter;
+    margin: 0.5in;
+  }
+
+  @page receipt-a5 {
+    size: A5;
+    margin: 10mm;
+  }
+
+  @page receipt-80mm {
+    size: 80mm 297mm;
+    margin: 3mm;
+  }
+
+  @page receipt-58mm {
+    size: 58mm 210mm;
+    margin: 2mm;
+  }
+
 }

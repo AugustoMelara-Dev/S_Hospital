@@ -1,0 +1,27 @@
+{
+  "recaptureSettled8": [
+    {
+      "name": "reports",
+      "hasHeading": true,
+      "loadingStillVisible": true,
+      "consoleIssues": 0
+    },
+    {
+      "name": "settings-fiscal",
+      "hasHeading": false,
+      "loadingStillVisible": true,
+      "consoleIssues": 0
+    },
+    {
+      "name": "help",
+      "hasHeading": true,
+      "loadingStillVisible": false,
+      "consoleIssues": 0
+    }
+  ],
+  "menuProof8": {
+    "menuButtonCount": 1,
+    "logoutMatches": 2,
+    "duplicateSidebarLogoutVisible": false
+  }
+}

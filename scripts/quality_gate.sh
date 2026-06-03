@@ -8,9 +8,10 @@ if [ -d backend ]; then
   (cd backend && php artisan config:cache --no-ansi)
   (cd backend && php artisan config:clear --no-ansi)
   if [ -x backend/vendor/bin/phpstan ]; then
-    (cd backend && ./vendor/bin/phpstan analyse)
+    (cd backend && ./vendor/bin/phpstan analyse --memory-limit=1G)
   else
-    echo "Optional static analysis skipped: backend/vendor/bin/phpstan is not installed and is not part of the current required gate."
+    echo "Required static analysis missing: run composer install in backend so vendor/bin/phpstan is available."
+    exit 1
   fi
 fi
 

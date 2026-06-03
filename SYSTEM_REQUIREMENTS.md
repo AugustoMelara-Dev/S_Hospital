@@ -1,4 +1,4 @@
-# System Requirements - Hospital Billing OS Offline
+# System Requirements - S_Hospital Offline
 
 ## Objetivo
 Sistema para facturación hospitalaria local con caja, pagos, reportes, catálogo editable, usuarios, permisos, impresión térmica y backups.

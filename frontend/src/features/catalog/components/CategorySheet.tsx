@@ -83,9 +83,11 @@ export function CategorySheet({ open, onOpenChange, category, onSuccess }: Categ
           <Input
             id="name"
             {...register('name')}
+            aria-invalid={Boolean(errors.name)}
+            aria-describedby={errors.name ? 'category-name-error' : undefined}
             className={cn(errors.name && 'border-destructive')}
           />
-          {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+          {errors.name && <p id="category-name-error" role="alert" className="text-sm text-destructive">{errors.name.message}</p>}
         </div>
 
         <div className="space-y-2">

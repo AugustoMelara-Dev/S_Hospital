@@ -1,23 +1,22 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { type AuthUser, type CashSession, apiClient, userSafeErrorMessage } from '../lib/api';
 import { type PasswordChangeForm } from '../features/auth/PasswordChangeView';
 
 export function useHospitalSession() {
-  const location = useLocation();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [cashSession, setCashSession] = useState<CashSession | null>(null);
-  const [login, setLogin] = useState(import.meta.env.DEV ? 'admin.demo' : '');
+  const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [passwordForm, setPasswordForm] = useState<PasswordChangeForm>({
     current_password: '',
     password: '',
     password_confirmation: '',
   });
-  const [status, setStatus] = useState('Listo para iniciar sesion local.');
+  const [status, setStatus] = useState('Listo para iniciar sesión local.');
   const [loading, setLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
-  const initialPathRef = useRef(location.pathname);
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false);
+  const passwordSubmitInFlightRef = useRef(false);
 
   const permissions = useMemo(() => new Set(user?.permissions ?? []), [user?.permissions]);
   const canViewFiscalSettings = permissions.has('settings.fiscal.view');
@@ -38,28 +37,34 @@ export function useHospitalSession() {
     canViewManagerialReports ||
     canViewCashSessionReports;
   const canViewBackups = permissions.has('backups.view');
-  const needsBillingCashBootstrap = false;
+  const canViewUsers = permissions.has('users.view');
+  const canCreateUsers = permissions.has('users.create');
 
   useEffect(() => {
-    apiClient.onSessionExpired(() => {
+    const unsubscribe = apiClient.onSessionExpired(() => {
       setUser(null);
       setCashSession(null);
-      setStatus('Sesion vencida. Redirigiendo al login...');
+      setStatus('Sesión vencida. Redirigiendo al login...');
       setSessionExpired(true);
     });
 
-    if (initialPathRef.current === '/login') {
-      setLoading(false);
+    return unsubscribe;
+  }, []);
 
-      return () => apiClient.onSessionExpired(null);
-    }
-
+  // Old code path that followed is now in a separate effect to
+  // avoid running on every state change.
+  useEffect(() => {
     apiClient
       .session()
       .then((currentUser) => {
         setUser(currentUser);
         if (currentUser) {
-          setStatus('Sesion activa.');
+          setStatus(
+            currentUser.must_change_password
+              ? 'Actualice su contraseña para continuar.'
+              : 'Sesión activa.',
+          );
+          setSessionExpired(false);
         }
         if (currentUser?.permissions.includes('cash.view') && import.meta.env.MODE !== 'test') {
           void apiClient
@@ -74,10 +79,10 @@ export function useHospitalSession() {
       })
       .catch(() => {
         setUser(null);
+        setSessionExpired(false);
+        setStatus('Listo para iniciar sesión local.');
       })
       .finally(() => setLoading(false));
-
-    return () => apiClient.onSessionExpired(null);
   }, []);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
@@ -86,23 +91,27 @@ export function useHospitalSession() {
 
     try {
       const loggedUser = await apiClient.login(login, password);
+      setSessionExpired(false);
       setUser(loggedUser);
       setPassword('');
       setStatus(
         loggedUser.must_change_password
-          ? 'El usuario debe cambiar su contrasena antes de operar.'
-          : 'Sesion iniciada.',
+          ? 'El usuario debe cambiar su contraseña antes de operar.'
+          : 'Sesión iniciada.',
       );
     } catch (error) {
-      setStatus(userSafeErrorMessage(error, 'No se pudo iniciar sesion.'));
+      setStatus(userSafeErrorMessage(error, 'No se pudo iniciar sesión.'));
     }
   }
 
   async function handleLogout() {
     await apiClient.logout().catch(() => undefined);
+    // Drop the cached CSRF promise so the next login does not reuse
+    // the previous user's token.
+    apiClient.invalidateSession();
     setUser(null);
     setCashSession(null);
-    setStatus('Sesion cerrada.');
+    setStatus('Sesión cerrada.');
   }
 
   async function refreshCashSession() {
@@ -118,7 +127,11 @@ export function useHospitalSession() {
 
   async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatus('Actualizando contrasena...');
+    if (passwordSubmitInFlightRef.current) return;
+
+    passwordSubmitInFlightRef.current = true;
+    setPasswordSubmitting(true);
+    setStatus('Actualizando contraseña...');
 
     try {
       const updatedUser = await apiClient.changePassword(passwordForm);
@@ -128,9 +141,12 @@ export function useHospitalSession() {
         password: '',
         password_confirmation: '',
       });
-      setStatus('Contrasena actualizada.');
+      setStatus('Contraseña actualizada.');
     } catch (error) {
-      setStatus(userSafeErrorMessage(error, 'No se pudo actualizar la contrasena.'));
+      setStatus(userSafeErrorMessage(error, 'No se pudo actualizar la contraseña.'));
+    } finally {
+      passwordSubmitInFlightRef.current = false;
+      setPasswordSubmitting(false);
     }
   }
 
@@ -147,8 +163,7 @@ export function useHospitalSession() {
     status,
     setStatus,
     loading,
-    needsBillingCashBootstrap,
-    cashBootstrapLoading: false,
+    passwordSubmitting,
     canViewFiscalSettings,
     canEditFiscalSettings,
     canViewCatalog,
@@ -164,6 +179,8 @@ export function useHospitalSession() {
     canExportReports,
     canViewReports,
     canViewBackups,
+    canViewUsers,
+    canCreateUsers,
     hasAnyOperationalPermission:
       canViewFiscalSettings ||
       canViewCatalog ||
@@ -171,7 +188,8 @@ export function useHospitalSession() {
       canViewCash ||
       canViewInvoices ||
       canViewReports ||
-      canViewBackups,
+      canViewBackups ||
+      canViewUsers,
     defaultAuthenticatedRoute: '/dashboard',
     sessionExpired,
     handleLogin,

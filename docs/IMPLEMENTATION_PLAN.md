@@ -1,8 +1,8 @@
-# Hospital Billing OS Offline - Implementation Plan
+# Sistema de Caja Hospitalaria - Implementation Plan
 
 ## 1. Resumen ejecutivo
 
-Hospital Billing OS Offline se construira desde cero en este repositorio como una app LAN local para facturacion hospitalaria, caja, pagos, catalogo de servicios, recibos termicos, reportes, usuarios, permisos, auditoria y respaldos.
+Sistema de Caja Hospitalaria se construira desde cero en este repositorio como una app LAN local para facturacion hospitalaria, caja, pagos, catalogo de servicios, recibos institucionales, reportes, usuarios, permisos, auditoria y respaldos.
 
 La implementacion usara:
 
@@ -12,7 +12,7 @@ La implementacion usara:
 - Desarrollo: Docker Compose reproducible.
 - Produccion: instalacion offline LAN en una computadora servidor, documentada tambien para Windows servidor.
 
-La prioridad de producto es una demo vendible temprana: login, abrir caja, crear factura con nombre de paciente, buscar servicios, aplicar regla de eritropoyetina, cobrar, imprimir recibo termico 80mm/58mm, reimprimir y ver reporte diario. El diseno debe permitir completar el sistema sin rehacer la arquitectura.
+La prioridad de producto es una validacion operativa temprana: login, abrir caja, crear factura con nombre de paciente, buscar servicios, aplicar regla de eritropoyetina, cobrar, imprimir recibo institucional media carta/carta/A5/80mm/58mm, reimprimir y ver reporte diario. El diseno debe permitir completar el sistema sin rehacer la arquitectura.
 
 ## 2. Principios obligatorios
 
@@ -25,7 +25,7 @@ La prioridad de producto es una demo vendible temprana: login, abrir caja, crear
 - No borrar facturas ni pagos; anular con permiso, motivo y auditoria.
 - Numeracion fiscal debe ser atomica y protegida contra concurrencia.
 - No emitir factura si la configuracion fiscal obligatoria esta incompleta, vencida, inactiva o fuera de rango.
-- Credenciales demo solo se permiten en desarrollo; produccion requiere admin inicial con password temporal, `must_change_password=true` o procedimiento local documentado antes de uso real.
+- Credenciales temporales solo se permiten en desarrollo/testing; produccion requiere admin inicial con password temporal, `must_change_password=true` o procedimiento local documentado antes de uso real.
 - Docker es herramienta de desarrollo, no requisito para operar en produccion offline si la instalacion local esta documentada.
 
 ## 3. Arquitectura propuesta
@@ -92,7 +92,8 @@ docs/
   IMPLEMENTATION_PLAN.md
   API_CONTRACTS.md
   PERMISSIONS_MATRIX.md
-  DEMO_FLOW.md
+  OPERATIVE_VALIDATION_FLOW.md
+  LOCAL_VALIDATION_SCRIPT.md
   FISCAL_RULES.md
   DECISIONS.md
 devex/
@@ -149,7 +150,7 @@ Regla de saldo:
 Alcance:
 
 - Crear documentacion base en `docs/`.
-- Definir contratos API, permisos, demo flow, reglas fiscales y decisiones.
+- Definir contratos API, permisos, flujo de validacion operativa, reglas fiscales y decisiones.
 - No crear `backend/` ni `frontend/`.
 
 Quality gate:
@@ -250,12 +251,12 @@ Alcance:
 - Permisos base segun `docs/PERMISSIONS_MATRIX.md`.
 - CRUD/API de settings fiscales: hospital, RTN, CAI, rango, fecha limite, correlativo, impuesto y formato de recibo.
 - Flujo de password temporal/cambio obligatorio para admin inicial y usuarios creados por admin.
-- Usuarios demo solo para desarrollo; no se entrega produccion con usuario demo activo.
+- Usuarios temporales solo para desarrollo/testing; no se entrega produccion con usuarios de prueba activos.
 
 Archivos probables:
 
 - Migraciones de users/settings/permissions/fiscal_sequences.
-- Seeders de roles/permisos y admin demo.
+- Seeders de roles/permisos y admin temporal para desarrollo/testing.
 - Controllers/Auth, Controllers/Settings.
 - Frontend auth y settings fiscal.
 
@@ -332,7 +333,7 @@ Commit sugerido:
 
 - `feat(billing): create transactional invoice workflow`
 
-### Fase 5 - Caja, pagos y recibo termico MVP
+### Fase 5 - Caja, pagos y recibo institucional MVP
 
 Alcance:
 
@@ -341,7 +342,7 @@ Alcance:
 - Crear movimiento de caja.
 - Actualizar `paid_amount`, `balance_due` y estado de factura dentro de transaccion.
 - Cerrar caja con esperado vs contado.
-- Agregar preview/print MVP de recibo 80mm/58mm.
+- Agregar preview/print MVP de recibo media carta/carta/A5/80mm/58mm.
 
 Archivos probables:
 
@@ -358,7 +359,7 @@ Quality gate:
 - Test pago parcial y pago completo.
 - Test cierre de caja.
 - Test receipt render con RTN/CAI/rango si existen.
-- Smoke E2E demo parcial.
+- Smoke E2E de validacion parcial.
 
 Commit sugerido:
 
@@ -447,20 +448,20 @@ Commit sugerido:
 
 - `feat(backups): add local backup workflow`
 
-### Fase 9 - QA release y demo vendible
+### Fase 9 - QA release y validacion operativa
 
 Alcance:
 
-- Playwright E2E completo de demo.
+- Playwright E2E completo del flujo operativo.
 - Release readiness.
-- Guion de demo final.
+- Guion de validacion final.
 - Evidencia de quality gate.
 
 Archivos probables:
 
-- `frontend/tests/e2e/billing-demo.spec.ts`
+- `frontend/tests/e2e/billing-flow.spec.ts`
 - `qa/RELEASE_READINESS.md`
-- `docs/CORE_DEMO_SCRIPT.md`
+- `docs/LOCAL_VALIDATION_SCRIPT.md`
 - `docs/FINAL_DELIVERY_REPORT.md`
 
 Quality gate:
@@ -472,7 +473,7 @@ Quality gate:
 
 Commit sugerido:
 
-- `test(e2e): cover vendible billing demo flow`
+- `test(e2e): cover hospital billing validation flow`
 
 ### Fase 10 - Production readiness y validaciones reales
 
@@ -482,8 +483,8 @@ Alcance:
 - Rutas LAN finales para `/login`, `/verify-email`, `/up` y assets del frontend compilado.
 - Script verificable de restore real MySQL/MariaDB.
 - Script verificable de concurrencia real MySQL/MariaDB.
-- Checklist fisico de impresora termica 80mm/58mm.
-- Documentacion de estados `DEMO_READY`, `PRODUCTION_CANDIDATE` y `PRODUCTION_READY`.
+- Checklist fisico de impresora institucional media carta/carta/A5/80mm/58mm.
+- Documentacion de estados `PRODUCTION_CANDIDATE` y `PRODUCTION_READY`, sin presentar evidencia fisica pendiente como completada.
 
 Archivos probables:
 
@@ -494,7 +495,7 @@ Archivos probables:
 - `scripts/validate_restore_mysql.sh`
 - `scripts/validate_mysql_concurrency.sh`
 - `scripts/validate_mysql_concurrency.mjs`
-- `docs/THERMAL_PRINTER_VALIDATION.md`
+- `docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md`
 - `qa/RELEASE_READINESS.md`
 
 Quality gate:
@@ -517,7 +518,7 @@ Alcance:
 - Ejecutar concurrencia real solo contra target local/descartable confirmado.
 - Validar rutas LAN por IP y documentar si falta computadora cliente fisica.
 - Validar worker de backups y documentar como dejarlo corriendo en Windows.
-- Documentar pendientes reales de impresora termica y configuracion final de produccion.
+- Documentar pendientes reales de impresora institucional y configuracion final de produccion.
 
 Archivos probables:
 
@@ -554,7 +555,7 @@ Commit sugerido:
 9. `feat(invoices): add history reprint and voiding`
 10. `feat(reports): add basic income and cash reports`
 11. `feat(backups): add local backup workflow`
-12. `test(e2e): cover vendible billing demo flow`
+12. `test(e2e): cover hospital billing validation flow`
 
 ## 8. Comandos de verificacion previstos
 

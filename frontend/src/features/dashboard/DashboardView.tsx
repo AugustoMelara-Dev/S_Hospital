@@ -1,17 +1,29 @@
 import {
   Activity,
-  ClipboardList,
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  CreditCard,
+  RefreshCw,
   ReceiptText,
+  ShieldCheck,
+  Sparkles,
+  TrendingUp,
   WalletCards,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { PageHeader } from '../../components/ui/page-header';
 import { Skeleton } from '../../components/ui/states';
-import { type CashSession, type DailyReport, apiClient } from '../../lib/api';
+import { type CashSession, type DashboardReport, apiClient, userSafeErrorMessage } from '../../lib/api';
+import { formatLempiras } from '../../lib/money';
+import { CashierList } from './CashierList';
+import { PaymentMethodPieChart } from './PaymentMethodPieChart';
+import { RevenueBarChart } from './RevenueBarChart';
+import { TopServicesChart } from './TopServicesChart';
+import { SetupWizardDialog } from './components/SetupWizardDialog';
 
 type DashboardViewProps = {
   canCreateInvoices: boolean;
@@ -28,201 +40,408 @@ type DashboardViewProps = {
   onStatus: (message: string) => void;
 };
 
-const today = localDateString();
+type SetupStatus = {
+  needs_setup: boolean;
+  steps: {
+    fiscal_settings: boolean;
+    admin_exists: boolean;
+    catalog_has_services: boolean;
+    fiscal_sequence_exists: boolean;
+  };
+};
 
 export function DashboardView({
   canCreateInvoices,
-  canViewBackups,
   canViewCash,
-  canViewCatalog,
   canViewFiscalSettings,
-  canViewInvoices,
   canViewManagerialReports,
-  canViewReports,
   cashSession,
   onQuickCash,
   onQuickInvoice,
   onStatus,
 }: DashboardViewProps) {
-  const [dailyReport, setDailyReport] = useState<DailyReport | null>(null);
-  const [dailyError, setDailyError] = useState('');
-  const [loadingDaily, setLoadingDaily] = useState(false);
+  const [dashboardData, setDashboardData] = useState<DashboardReport | null>(null);
+  const [dashboardError, setDashboardError] = useState('');
+  const [loadingDashboard, setLoadingDashboard] = useState(false);
+  const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
 
-  useEffect(() => {
+  const fetchDashboard = () => {
     if (!canViewManagerialReports) {
       return;
     }
 
-    let active = true;
-    setLoadingDaily(true);
-
+    setLoadingDashboard(true);
     apiClient
-      .getDailyReport(today)
-      .then((report) => {
-        if (!active) {
-          return;
-        }
-
-        setDailyReport(report);
-        setDailyError('');
+      .getDashboardReport()
+      .then((data) => {
+        setDashboardData(data);
+        setDashboardError('');
       })
-      .catch((error) => {
-        if (!active) {
-          return;
-        }
-
-        const message = error instanceof Error ? error.message : 'No se pudo cargar el resumen diario.';
-        setDailyError(message);
-        onStatus(message);
+      .catch((err) => {
+        const msg = userSafeErrorMessage(err, 'No se pudo cargar el resumen.');
+        setDashboardError(msg);
+        onStatus(msg);
       })
       .finally(() => {
-        if (active) {
-          setLoadingDaily(false);
-        }
+        setLoadingDashboard(false);
       });
+  };
 
-    return () => {
-      active = false;
-    };
-  }, [canViewManagerialReports, onStatus]);
+  const fetchSetupStatus = () => {
+    if (!canViewFiscalSettings && !canViewManagerialReports) {
+      return;
+    }
 
-  const enabledModuleCount = [
-    canCreateInvoices,
-    canViewBackups,
-    canViewCash,
-    canViewCatalog,
-    canViewFiscalSettings,
-    canViewInvoices,
-    canViewReports,
-  ].filter(Boolean).length;
+    apiClient.request<SetupStatus>('/api/system/setup-status')
+      .then((res: SetupStatus) => {
+        setSetupStatus(res);
+      })
+      .catch(() => {
+        setSetupStatus(null);
+      });
+  };
+
+  useEffect(() => {
+    fetchDashboard();
+    fetchSetupStatus();
+  }, [canViewManagerialReports, canViewFiscalSettings]);
 
   return (
     <>
       <PageHeader
-        title="Dashboard"
-        description="Panel operativo para caja hospitalaria local. Prioriza facturacion, caja abierta y estado del dia."
+        title="Inicio"
+        description="Lo necesario para operar caja, cobros y facturacion sin perderse."
       />
 
-      <div className="grid gap-4">
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores del dia">
+      {setupStatus?.needs_setup && (
+        <Card className="border-warning/30 bg-warning/5">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warning" />
+                <div>
+                  <CardTitle className="text-base font-bold text-warning-foreground">
+                    Configuracion pendiente
+                  </CardTitle>
+                  <CardDescription className="mt-1 text-xs text-warning-foreground/80">
+                    Complete estos datos para emitir facturas correctamente.
+                  </CardDescription>
+                </div>
+              </div>
+              {canViewFiscalSettings && (
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5 text-xs font-semibold"
+                  onClick={() => setIsWizardOpen(true)}
+                >
+                  <Sparkles className="size-3.5" />
+                  Revisar
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <SetupStepCheck
+                label="Datos del hospital"
+                done={setupStatus.steps.fiscal_settings}
+                helper="Nombre y RTN"
+              />
+              <SetupStepCheck
+                label="Usuario administrador"
+                done={setupStatus.steps.admin_exists}
+                helper="Acceso principal listo"
+              />
+              <SetupStepCheck
+                label="Catalogo"
+                done={setupStatus.steps.catalog_has_services}
+                helper="Servicios para facturar"
+              />
+              <SetupStepCheck
+                label="Rango fiscal"
+                done={setupStatus.steps.fiscal_sequence_exists}
+                helper="Numeracion vigente"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-5">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumen operativo del mes">
           <MetricCard
-            helper={cashSession ? 'Lista para cobrar facturas.' : 'Abrir caja antes de operar POS.'}
-            label="Caja activa"
-            value={cashSession ? `#${cashSession.id}` : loadingDaily ? <Skeleton className="h-7 w-16" /> : 'Sin caja'}
+            icon={<WalletCards className="size-4 text-emerald-600" />}
+            label="Caja"
+            value={cashSession ? `Caja #${cashSession.id}` : 'Cerrada'}
+            helper={cashSession ? 'Lista para cobrar' : 'Abra caja antes de facturar'}
             variant={cashSession ? 'success' : 'warning'}
           />
+
           <MetricCard
-            helper={canViewManagerialReports ? 'Total emitido segun backend.' : 'Requiere permiso gerencial.'}
-            label="Facturado hoy"
-            value={dailyReport ? `L. ${dailyReport.total_billed}` : loadingDaily ? <Skeleton className="h-7 w-20" /> : 'No disponible'}
+            icon={<TrendingUp className="size-4 text-primary" />}
+            label="Facturado"
+            value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : formatLempiras(dashboardData?.current_month.total_billed)}
+            helper={dashboardData ? `${dashboardData.current_month.invoice_count} facturas este mes` : 'Facturacion del mes'}
           />
+
           <MetricCard
-            helper={canViewManagerialReports ? 'Pagos registrados del dia.' : 'Requiere permiso gerencial.'}
-            label="Cobrado hoy"
-            value={dailyReport ? `L. ${dailyReport.total_collected}` : loadingDaily ? <Skeleton className="h-7 w-20" /> : 'No disponible'}
+            icon={<CreditCard className="size-4 text-emerald-600" />}
+            label="Cobrado"
+            value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : formatLempiras(dashboardData?.current_month.total_collected)}
+            helper={dashboardData ? `${dashboardData.current_month.payment_count} pagos recibidos` : 'Cobros del mes'}
           />
+
           <MetricCard
-            helper={dailyReport ? `${dailyReport.payment_count} pagos registrados.` : 'Resumen operativo.'}
-            label="Facturas hoy"
-            value={dailyReport ? String(dailyReport.invoice_count) : loadingDaily ? <Skeleton className="h-7 w-12" /> : 'No disponible'}
+            icon={<ReceiptText className="size-4 text-info" />}
+            label="Facturas"
+            value={loadingDashboard ? <Skeleton className="h-7 w-16" /> : String(dashboardData?.current_month.invoice_count ?? 0)}
+            helper="Emitidas este mes"
+            variant="info"
           />
         </section>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <Card>
-          <CardHeader>
-            <div className="flex items-start gap-3">
-              <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-md border border-border bg-muted">
-                <Activity className="size-5 text-primary" aria-hidden="true" />
-              </span>
-              <div>
-                <CardTitle>Estado operativo</CardTitle>
-                <CardDescription>Lo minimo que caja debe saber antes de atender.</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <StatusRow label="Caja" ok={Boolean(cashSession)} text={cashSession ? 'Abierta' : 'Pendiente'} />
-            <StatusRow label="Reportes" ok={!dailyError} text={dailyError || 'Sin alertas visibles'} />
-            <StatusRow label="Modulos" ok={enabledModuleCount > 0} text={`${enabledModuleCount} disponibles`} />
-          </CardContent>
-        </Card>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+          <div className="flex flex-col gap-5">
+            <Card>
+              <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <CardTitle className="text-base font-bold">Facturacion y cobros</CardTitle>
+                  <CardDescription>Ultimos 7 dias.</CardDescription>
+                </div>
+                {canViewManagerialReports && (
+                  <Button variant="outline" size="sm" className="gap-2" onClick={fetchDashboard}>
+                    <RefreshCw className={`size-4 ${loadingDashboard ? 'animate-spin' : ''}`} />
+                    Actualizar
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent className="px-2">
+                {!canViewManagerialReports ? (
+                  <PermissionLockedState />
+                ) : loadingDashboard ? (
+                  <div className="flex h-[300px] items-center justify-center">
+                    <Skeleton className="h-[280px] w-full" />
+                  </div>
+                ) : dashboardError ? (
+                  <ErrorState message={dashboardError} onRetry={fetchDashboard} />
+                ) : dashboardData ? (
+                  <RevenueBarChart data={dashboardData.last_7_days} />
+                ) : (
+                  <EmptyPanel message="No hay datos disponibles." />
+                )}
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Siguiente accion</CardTitle>
-            <CardDescription>
-              Un solo camino principal, sin repetir el tablero completo.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {!cashSession && canViewCash ? (
-              <Button type="button" onClick={onQuickCash}>
-                <WalletCards aria-hidden="true" />
-                Abrir caja
-              </Button>
-            ) : canCreateInvoices ? (
-              <Button type="button" onClick={onQuickInvoice}>
-                <ReceiptText aria-hidden="true" />
-                Emitir factura
-              </Button>
-            ) : null}
-            {canViewReports ? (
-              <div className="rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-                <ClipboardList aria-hidden="true" />
-                Revise reportes solo cuando ya haya movimientos del dia.
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base font-bold">Cajeros hoy</CardTitle>
+                <CardDescription>Cobros recibidos por usuario.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!canViewManagerialReports ? (
+                  <PermissionLockedState />
+                ) : loadingDashboard ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : dashboardError ? (
+                  <ErrorState message={dashboardError} onRetry={fetchDashboard} />
+                ) : dashboardData ? (
+                  <CashierList cashiers={dashboardData.cashiers_summary} />
+                ) : null}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="flex flex-col gap-5">
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="text-base font-bold">Siguiente accion</CardTitle>
+                <CardDescription>Una accion principal segun el estado de caja.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                {!cashSession && canViewCash ? (
+                  <Button type="button" onClick={onQuickCash} className="h-10 w-full justify-start gap-2 font-medium">
+                    <WalletCards className="size-4 shrink-0" />
+                    Abrir caja
+                    <ArrowRight className="ml-auto size-4 shrink-0" />
+                  </Button>
+                ) : canCreateInvoices ? (
+                  <Button type="button" onClick={onQuickInvoice} className="h-10 w-full justify-start gap-2 font-medium">
+                    <ReceiptText className="size-4 shrink-0" />
+                    Nueva factura
+                    <ArrowRight className="ml-auto size-4 shrink-0" />
+                  </Button>
+                ) : (
+                  <EmptyPanel message="No hay acciones disponibles para este usuario." compact />
+                )}
+
+                <div className="rounded-md border border-border bg-background p-3 text-xs text-muted-foreground">
+                  <div className="flex gap-2">
+                    <ShieldCheck className="size-4 shrink-0 text-primary" />
+                    <div>
+                      <p className="font-semibold text-foreground">Red local</p>
+                      <p className="mt-0.5">Los cobros y respaldos se guardan en el servidor del hospital.</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-bold">Cobros de hoy</CardTitle>
+                <CardDescription>Distribucion por metodo de pago.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!canViewManagerialReports ? (
+                  <PermissionLockedState />
+                ) : loadingDashboard ? (
+                  <div className="flex h-[240px] items-center justify-center">
+                    <Skeleton className="size-40 rounded-full" />
+                  </div>
+                ) : dashboardError ? (
+                  <ErrorState message={dashboardError} onRetry={fetchDashboard} />
+                ) : dashboardData ? (
+                  <PaymentMethodPieChart data={dashboardData.payments_by_method} />
+                ) : null}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base font-bold">Servicios principales</CardTitle>
+                <CardDescription>Top 5 del mes.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!canViewManagerialReports ? (
+                  <PermissionLockedState />
+                ) : loadingDashboard ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                  </div>
+                ) : dashboardError ? (
+                  <ErrorState message={dashboardError} onRetry={fetchDashboard} />
+                ) : dashboardData ? (
+                  <TopServicesChart services={dashboardData.top_services} />
+                ) : null}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
+
+      {canViewFiscalSettings && (
+        <SetupWizardDialog
+          open={isWizardOpen}
+          onOpenChange={setIsWizardOpen}
+          onComplete={() => {
+            fetchSetupStatus();
+            fetchDashboard();
+          }}
+        />
+      )}
     </>
   );
 }
 
 function MetricCard({
+  icon,
   helper,
   label,
   value,
   variant = 'neutral',
 }: {
+  icon: ReactNode;
   helper: string;
   label: string;
   value: ReactNode;
-  variant?: 'neutral' | 'success' | 'warning';
+  variant?: 'neutral' | 'success' | 'warning' | 'info';
 }) {
-  const badge = {
-    neutral: 'Operativo',
-    success: 'Listo',
+  const badgeText = {
+    neutral: 'Listo',
+    success: 'Abierta',
     warning: 'Atencion',
+    info: 'Mes',
   }[variant];
 
   return (
-    <div className="metric-card">
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
-        <Badge variant={variant === 'warning' ? 'warning' : variant === 'success' ? 'success' : 'info'}>{badge}</Badge>
-      </div>
-      <strong className="text-2xl">{value}</strong>
-      <p className="text-sm text-muted-foreground">{helper}</p>
-    </div>
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            {icon}
+            <span className="truncate text-xs font-semibold uppercase text-muted-foreground">{label}</span>
+          </div>
+          <Badge variant={variant === 'warning' ? 'warning' : variant === 'success' ? 'success' : 'secondary'}>
+            {badgeText}
+          </Badge>
+        </div>
+        <div className="mt-4 flex flex-col gap-0.5">
+          <strong className="text-xl font-bold tracking-tight text-foreground">{value}</strong>
+          <span className="text-xs text-muted-foreground">{helper}</span>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
-function StatusRow({ label, ok, text }: { label: string; ok: boolean; text: string }) {
+function SetupStepCheck({ label, done, helper }: { label: string; done: boolean; helper: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/40 p-3">
-      <span className="text-sm font-semibold">{label}</span>
-      <Badge variant={ok ? 'secondary' : 'outline'}>{text}</Badge>
+    <div className="flex items-start gap-3 rounded-md border border-border bg-background p-3">
+      <div className="mt-0.5 shrink-0">
+        {done ? (
+          <CheckCircle2 className="size-4 text-emerald-600" />
+        ) : (
+          <AlertTriangle className="size-4 text-warning" />
+        )}
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-xs font-semibold text-foreground">{label}</p>
+        <p className="mt-0.5 text-[10px] text-muted-foreground">{helper}</p>
+      </div>
     </div>
   );
 }
 
-function localDateString(date = new Date()): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+function PermissionLockedState() {
+  return (
+    <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+      <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <Activity className="size-6" />
+      </div>
+      <p className="text-sm font-semibold text-foreground">Sin permiso para ver este resumen</p>
+      <p className="mt-1 max-w-[240px] text-xs text-muted-foreground">
+        El resto de acciones disponibles para su rol siguen visibles en el menu.
+      </p>
+    </div>
+  );
+}
 
-  return `${year}-${month}-${day}`;
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+      <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+        <AlertTriangle className="size-6" />
+      </div>
+      <p className="text-sm font-semibold text-foreground">No se pudo cargar</p>
+      <p className="mb-4 mt-1 max-w-[320px] text-xs text-muted-foreground">{message}</p>
+      <Button variant="outline" size="sm" onClick={onRetry} className="gap-2">
+        <RefreshCw className="size-3.5" />
+        Reintentar
+      </Button>
+    </div>
+  );
+}
+
+function EmptyPanel({ message, compact = false }: { message: string; compact?: boolean }) {
+  return (
+    <div className={`flex items-center justify-center rounded-md border border-dashed border-border bg-muted/20 px-4 text-center text-sm text-muted-foreground ${compact ? 'min-h-20' : 'h-[300px]'}`}>
+      {message}
+    </div>
+  );
 }

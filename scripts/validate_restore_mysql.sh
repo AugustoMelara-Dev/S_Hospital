@@ -4,6 +4,41 @@ set -euo pipefail
 ROOT_DIR="${HOSPITAL_PROJECT_ROOT:-$(pwd)}"
 BACKEND_DIR="$ROOT_DIR/backend"
 
+safe_path() {
+  local value="${1:-}"
+
+  if [ -n "$value" ] && [ -n "${ROOT_DIR:-}" ]; then
+    value="${value//$ROOT_DIR/%PROJECT_ROOT%}"
+  fi
+
+  if [ -n "$value" ] && [ -n "${HOME:-}" ]; then
+    value="${value//$HOME/%USERPROFILE%}"
+  fi
+
+  printf '%s' "$value"
+}
+
+validate_restore_evidence_path() {
+  if [ -z "$RESTORE_EVIDENCE_PATH" ]; then
+    return
+  fi
+
+  case "$RESTORE_EVIDENCE_PATH" in
+    qa/*.md) ;;
+    *)
+      echo "Abort: HOSPITAL_RESTORE_EVIDENCE_PATH must be a Markdown file under qa/."
+      exit 1
+      ;;
+  esac
+
+  case "$RESTORE_EVIDENCE_PATH" in
+    *..*|*\\*)
+      echo "Abort: HOSPITAL_RESTORE_EVIDENCE_PATH must not contain traversal or backslashes."
+      exit 1
+      ;;
+  esac
+}
+
 env_value() {
   local key="$1"
   local fallback="${2:-}"
@@ -38,6 +73,7 @@ DB_DATABASE_VALUE="$(env_value DB_DATABASE hospital_billing)"
 DB_USERNAME_VALUE="$(env_value DB_USERNAME hospital)"
 DB_PASSWORD_VALUE="$(env_value DB_PASSWORD "")"
 RESTORE_TEST_DATABASE_VALUE="${RESTORE_TEST_DATABASE:-}"
+RESTORE_EVIDENCE_PATH="${HOSPITAL_RESTORE_EVIDENCE_PATH:-}"
 RESTORE_TEST_DATABASE_LOWER="${RESTORE_TEST_DATABASE_VALUE,,}"
 DB_DATABASE_LOWER="${DB_DATABASE_VALUE,,}"
 
@@ -97,6 +133,8 @@ if [ "$APP_ENV_VALUE" = "production" ] && [ "${HOSPITAL_ALLOW_PRODUCTION_VALIDAT
   exit 1
 fi
 
+validate_restore_evidence_path
+
 if ! command -v mysql >/dev/null 2>&1; then
   echo "Abort: mysql client is required for restore validation."
   exit 1
@@ -133,6 +171,9 @@ if [ ! -f "$BACKUP_ABSOLUTE" ]; then
   exit 1
 fi
 
+BACKUP_FILE_NAME="$(basename "$BACKUP_ABSOLUTE")"
+BACKUP_EVIDENCE_PATH="storage/app/private/backups/${BACKUP_FILE_NAME}"
+
 echo "WARNING: disposable database ${RESTORE_TEST_DATABASE_VALUE} will be dropped and recreated."
 echo "Restoring backup into disposable database ${RESTORE_TEST_DATABASE_VALUE}."
 export MYSQL_PWD="$DB_PASSWORD_VALUE"
@@ -140,5 +181,74 @@ mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE
   -e "DROP DATABASE IF EXISTS \`${RESTORE_TEST_DATABASE_VALUE}\`; CREATE DATABASE \`${RESTORE_TEST_DATABASE_VALUE}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" "$RESTORE_TEST_DATABASE_VALUE" < "$BACKUP_ABSOLUTE"
 
-echo "Restore validation completed. Backup: $BACKUP_ABSOLUTE"
-echo "Next manual checks: point a temporary .env to ${RESTORE_TEST_DATABASE_VALUE}, then run php artisan migrate:status, php artisan config:cache --no-ansi, and browser checks for /up, /login, /verify-email."
+BACKUP_SHA256="$(php -r 'echo hash_file("sha256", $argv[1]);' "$BACKUP_ABSOLUTE")"
+BACKUP_BYTES="$(php -r 'echo filesize($argv[1]);' "$BACKUP_ABSOLUTE")"
+MIGRATION_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM migrations;" 2>/dev/null || printf '0')"
+USER_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM users;" 2>/dev/null || printf '0')"
+SERVICE_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM services;" 2>/dev/null || printf '0')"
+INVOICE_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM invoices;" 2>/dev/null || printf '0')"
+PAYMENT_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM payments;" 2>/dev/null || printf '0')"
+BACKUP_LOG_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM backup_logs;" 2>/dev/null || printf '0')"
+
+if [ "$MIGRATION_COUNT" -le 0 ]; then
+  echo "Abort: restored database has no migrations."
+  exit 1
+fi
+
+if [ "$SERVICE_COUNT" -le 0 ]; then
+  echo "Abort: restored database has no services."
+  exit 1
+fi
+
+if [ -n "$RESTORE_EVIDENCE_PATH" ]; then
+  mkdir -p "$(dirname "$RESTORE_EVIDENCE_PATH")"
+  cat > "$RESTORE_EVIDENCE_PATH" <<EOF
+# Final restore proof
+
+## Environment
+
+- Date/time: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+- Responsible person: Automated validation script
+- Source database: ${DB_DATABASE_VALUE}
+- Disposable restore database: ${RESTORE_TEST_DATABASE_VALUE}
+- Backup file: ${BACKUP_EVIDENCE_PATH}
+- Backup SHA256: ${BACKUP_SHA256}
+- Backup size bytes: ${BACKUP_BYTES}
+- Evidence/capture reference: $(safe_path "$RESTORE_EVIDENCE_PATH")
+- Final conclusion: Restore validation completed against a disposable database with schema and core table counts verified.
+
+## Required checks
+
+- [x] Disposable restore database is not the active database. Result/evidence: ${RESTORE_TEST_DATABASE_VALUE} != ${DB_DATABASE_VALUE}.
+- [x] Backup file exists and has SHA256. Result/evidence: ${BACKUP_SHA256}.
+- [x] Restore imports without SQL error. Result/evidence: mysql import completed.
+- [x] Migration table has rows. Result/evidence: migrations=${MIGRATION_COUNT}.
+- [x] Services table has rows. Result/evidence: services=${SERVICE_COUNT}.
+- [x] Core counts captured. Result/evidence: users=${USER_COUNT}, invoices=${INVOICE_COUNT}, payments=${PAYMENT_COUNT}, backup_logs=${BACKUP_LOG_COUNT}.
+
+## Evidence
+
+\`\`\`json
+{
+  "status": "VALIDATED",
+  "source_database": "${DB_DATABASE_VALUE}",
+  "restore_database": "${RESTORE_TEST_DATABASE_VALUE}",
+  "backup_file": "${BACKUP_EVIDENCE_PATH}",
+  "backup_sha256": "${BACKUP_SHA256}",
+  "backup_size_bytes": ${BACKUP_BYTES},
+  "counts": {
+    "migrations": ${MIGRATION_COUNT},
+    "users": ${USER_COUNT},
+    "services": ${SERVICE_COUNT},
+    "invoices": ${INVOICE_COUNT},
+    "payments": ${PAYMENT_COUNT},
+    "backup_logs": ${BACKUP_LOG_COUNT}
+  }
+}
+\`\`\`
+EOF
+  echo "Restore evidence written to $(safe_path "$RESTORE_EVIDENCE_PATH")"
+fi
+
+echo "Restore validation completed. Backup file: $BACKUP_FILE_NAME"
+echo "Counts: migrations=$MIGRATION_COUNT users=$USER_COUNT services=$SERVICE_COUNT invoices=$INVOICE_COUNT payments=$PAYMENT_COUNT backup_logs=$BACKUP_LOG_COUNT"

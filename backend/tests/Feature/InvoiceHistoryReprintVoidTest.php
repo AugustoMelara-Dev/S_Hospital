@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Billing\CreateInvoiceAction;
+use App\Actions\Cash\OpenCashSessionAction;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
@@ -149,11 +151,11 @@ class InvoiceHistoryReprintVoidTest extends TestCase
 
         $this->actingAs($cashier)
             ->postJson("/api/invoices/{$invoiceId}/reprint", [
-                'width' => '58mm',
+                'width' => 'half_letter',
                 'reason' => 'Copia para paciente',
             ])
             ->assertOk()
-            ->assertJsonPath('data.receipt.width', '58mm')
+            ->assertJsonPath('data.receipt.width', 'half_letter')
             ->assertJsonPath('data.receipt.items.0.service_name', 'Glucosa')
             ->assertJsonPath('data.receipt.items.0.unit_price', '15.00')
             ->assertJsonPath('data.audit.action', 'invoice.reprinted');
@@ -185,13 +187,64 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         ]);
 
         $this->actingAs($cashier)
-            ->postJson("/api/invoices/{$invoiceId}/reprint", ['width' => '80mm'])
+            ->postJson("/api/invoices/{$invoiceId}/reprint", ['width' => 'letter'])
             ->assertOk()
-            ->assertJsonPath('data.receipt.hospital.name', 'Hospital Demo')
+            ->assertJsonPath('data.receipt.hospital.name', 'Hospital San Isidro')
             ->assertJsonPath('data.receipt.hospital.rtn', '08011999123456')
             ->assertJsonPath('data.receipt.fiscal.cai', 'TEST-CAI')
             ->assertJsonPath('data.receipt.fiscal.authorized_range', '000-001-01-00000001 a 000-001-01-99999999')
             ->assertJsonPath('data.receipt.fiscal.valid_until', now()->addYear()->toDateString());
+    }
+
+    public function test_reprint_excludes_voided_payments_after_reversal(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $supervisor = $this->supervisor();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
+
+        $cashPaymentId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '10.00',
+            ])
+            ->assertCreated()
+            ->json('data.payment.id');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_TRANSFER,
+                'amount' => '7.25',
+                'reference' => 'TRX-REPRINT-1',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID);
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/payments/{$cashPaymentId}/void", [
+                'reason' => 'Correccion antes de reimpresion',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_PARTIAL);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/reprint", [
+                'width' => 'half_letter',
+                'reason' => 'Copia con pago corregido',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.audit.action', 'invoice.reprinted')
+            ->assertJsonPath('data.receipt.invoice.status', Invoice::STATUS_PARTIAL)
+            ->assertJsonPath('data.receipt.invoice.paid_amount', '7.25')
+            ->assertJsonPath('data.receipt.invoice.balance_due', '10.00')
+            ->assertJsonCount(1, 'data.receipt.payments')
+            ->assertJsonPath('data.receipt.payments.0.method', Payment::METHOD_TRANSFER)
+            ->assertJsonPath('data.receipt.payments.0.amount', '7.25')
+            ->assertJsonPath('data.receipt.payments.0.reference', 'TRX-REPRINT-1');
     }
 
     public function test_cashier_cannot_reprint_other_or_old_invoice_without_reprint_any(): void
@@ -204,11 +257,11 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         Invoice::query()->whereKey($ownOldId)->update(['issued_at' => now()->subDay()]);
 
         $this->actingAs($cashier)
-            ->postJson("/api/invoices/{$otherId}/reprint", ['width' => '80mm'])
+            ->postJson("/api/invoices/{$otherId}/reprint", ['width' => 'letter'])
             ->assertForbidden();
 
         $this->actingAs($cashier)
-            ->postJson("/api/invoices/{$ownOldId}/reprint", ['width' => '80mm'])
+            ->postJson("/api/invoices/{$ownOldId}/reprint", ['width' => 'letter'])
             ->assertForbidden();
     }
 
@@ -220,12 +273,27 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         Invoice::query()->whereKey($oldId)->update(['issued_at' => now()->subDays(2)]);
 
         $this->actingAs($this->supervisor())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => '80mm'])
+            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => 'letter'])
             ->assertOk();
 
         $this->actingAs($this->admin())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => '58mm'])
+            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => 'a5'])
             ->assertOk();
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => '80mm'])
+            ->assertOk()
+            ->assertJsonPath('data.receipt.width', '80mm');
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => '58mm'])
+            ->assertOk()
+            ->assertJsonPath('data.receipt.width', '58mm');
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => 'ticket-roll'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('width');
     }
 
     public function test_void_requires_permission_and_reason(): void
@@ -242,6 +310,33 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->postJson("/api/invoices/{$invoiceId}/void", ['reason' => ''])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('reason');
+
+        $this->actingAs($this->supervisor())
+            ->postJson("/api/invoices/{$invoiceId}/void", ['reason' => '   '])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+    }
+
+    public function test_reprint_any_permission_does_not_grant_invoice_void_operation_scope(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $reprintUser = User::factory()->create();
+        $reprintUser->givePermissionTo(['invoices.void', 'receipts.reprint_any']);
+        $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
+
+        $this->actingAs($reprintUser)
+            ->postJson("/api/invoices/{$invoiceId}/void", [
+                'reason' => 'Intento sin alcance operativo',
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'status' => Invoice::STATUS_ISSUED,
+            'voided_by' => null,
+            'voided_at' => null,
+        ]);
     }
 
     public function test_void_marks_invoice_and_does_not_delete_items(): void
@@ -312,6 +407,49 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         ]);
     }
 
+    public function test_void_invoice_is_allowed_after_all_payments_are_reversed(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $supervisor = $this->supervisor();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
+
+        $paymentId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->json('data.payment.id');
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/payments/{$paymentId}/void", [
+                'reason' => 'Pago reversado antes de anular factura',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_ISSUED)
+            ->assertJsonPath('data.invoice.paid_amount', '0.00')
+            ->assertJsonPath('data.invoice.balance_due', '17.25');
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/void", [
+                'reason' => 'Factura emitida por error y sin cobros vigentes',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', Invoice::STATUS_VOID)
+            ->assertJsonPath('data.void_reason', 'Factura emitida por error y sin cobros vigentes')
+            ->assertJsonPath('data.payments.0.status', Payment::STATUS_VOID);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $supervisor->id,
+            'action' => 'invoice.voided',
+            'entity_type' => Invoice::class,
+            'entity_id' => $invoiceId,
+        ]);
+    }
+
     public function test_void_revalidates_payment_state_inside_transaction_before_marking_void(): void
     {
         $this->seedBillingBase();
@@ -325,6 +463,7 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             'user_id' => $cashier->id,
             'method' => Payment::METHOD_CASH,
             'amount' => '17.25',
+            'amount_cents' => 1725,
             'status' => Payment::STATUS_POSTED,
             'paid_at' => now(),
         ]);
@@ -350,10 +489,10 @@ class InvoiceHistoryReprintVoidTest extends TestCase
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         FiscalSetting::query()->create([
-            'hospital_name' => 'Hospital Demo',
+            'hospital_name' => 'Hospital San Isidro',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_width' => '80mm',
+            'receipt_paper_size' => 'half_letter',
         ]);
         FiscalSequence::query()->create([
             'document_type' => 'invoice',
@@ -381,24 +520,22 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ],
         );
 
-        return $this->actingAs($cashier)
-            ->postJson('/api/invoices', [
+        return app(CreateInvoiceAction::class)
+            ->execute([
                 'patient_name' => $patientName,
                 'items' => [[
                     'service_id' => Service::query()->where('name', $serviceName)->firstOrFail()->id,
                     'quantity' => '1.00',
                 ]],
-            ])
-            ->assertCreated()
-            ->json('data.id');
+            ], $cashier->fresh())
+            ->id;
     }
 
     private function openSession(User $cashier): int
     {
-        return $this->actingAs($cashier)
-            ->postJson('/api/cash-sessions/open', ['opening_amount' => '500.00'])
-            ->assertCreated()
-            ->json('data.id');
+        return app(OpenCashSessionAction::class)
+            ->execute(['opening_amount' => '500.00'], $cashier->fresh())
+            ->id;
     }
 
     private function admin(): User
@@ -406,7 +543,7 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        return $admin;
+        return $admin->refresh()->load('roles.permissions');
     }
 
     private function supervisor(): User
@@ -414,7 +551,7 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         $supervisor = User::factory()->create();
         $supervisor->assignRole('supervisor');
 
-        return $supervisor;
+        return $supervisor->refresh()->load('roles.permissions');
     }
 
     private function cashier(): User
@@ -422,6 +559,6 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         $cashier = User::factory()->create();
         $cashier->assignRole('cajero');
 
-        return $cashier;
+        return $cashier->refresh()->load('roles.permissions');
     }
 }

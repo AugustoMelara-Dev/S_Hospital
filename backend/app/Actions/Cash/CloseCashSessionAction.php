@@ -2,18 +2,24 @@
 
 namespace App\Actions\Cash;
 
+use App\Actions\Backups\CreateBackupAction;
+use App\Events\CashSessionChanged;
+use App\Jobs\RunBackupJob;
 use App\Models\AuditLog;
+use App\Models\BackupLog;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
-use App\Models\Payment;
 use App\Models\User;
 use App\Support\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class CloseCashSessionAction
 {
+    public function __construct(private readonly BuildCashReconciliationAction $buildCashReconciliation) {}
+
     /**
      * @param  array{closing_amount: string, notes?: ?string}  $payload
      *
@@ -37,14 +43,16 @@ class CloseCashSessionAction
                 ]);
             }
 
-            $openingCents = Money::parseCents((string) $lockedSession->opening_amount, 'opening_amount');
-            $cashPaymentCents = Payment::query()
-                ->where('cash_session_id', $lockedSession->id)
-                ->where('method', Payment::METHOD_CASH)
-                ->where('status', Payment::STATUS_POSTED)
-                ->get()
-                ->sum(fn (Payment $payment): int => Money::parseCents((string) $payment->amount, 'payments'));
-            $expectedCents = $openingCents + $cashPaymentCents;
+            $reconciliation = $this->buildCashReconciliation->execute($lockedSession);
+            $pendingInvoiceCount = $reconciliation['pending_invoice_count'];
+
+            if ($pendingInvoiceCount > 0) {
+                throw ValidationException::withMessages([
+                    'cash_session' => "No se puede cerrar la caja con {$pendingInvoiceCount} factura(s) pendientes o parciales por L. {$reconciliation['pending_amount']}. Revise los cobros antes de cerrar.",
+                ]);
+            }
+
+            $expectedCents = Money::parseCents($reconciliation['expected_cash_amount'], 'expected_cash_amount');
             $closingCents = Money::parseCents($payload['closing_amount'], 'closing_amount');
             $differenceCents = $closingCents - $expectedCents;
             $notes = trim((string) ($payload['notes'] ?? ''));
@@ -59,6 +67,11 @@ class CloseCashSessionAction
                 'closing_amount' => Money::formatCents($closingCents),
                 'expected_amount' => Money::formatCents($expectedCents),
                 'difference_amount' => Money::formatCents($differenceCents),
+                'payments_count_snapshot' => $reconciliation['payments_count'],
+                'payments_total_snapshot' => $reconciliation['payments_total'],
+                'method_totals_snapshot' => $reconciliation['payments_by_method'],
+                'pending_invoice_count_snapshot' => $pendingInvoiceCount,
+                'pending_amount_snapshot' => $reconciliation['pending_amount'],
                 'status' => CashRegisterSession::STATUS_CLOSED,
                 'open_user_id' => null,
                 'closing_notes' => $notes === '' ? null : $notes,
@@ -84,8 +97,29 @@ class CloseCashSessionAction
                     'closing_amount' => $lockedSession->closing_amount,
                     'expected_amount' => $lockedSession->expected_amount,
                     'difference_amount' => $lockedSession->difference_amount,
+                    'payments_by_method' => $reconciliation['payments_by_method'],
+                    'payments_total' => $reconciliation['payments_total'],
+                    'payments_count' => $reconciliation['payments_count'],
+                    'pending_invoice_count' => $pendingInvoiceCount,
+                    'pending_amount' => $reconciliation['pending_amount'],
                 ],
             ]);
+
+            DB::afterCommit(function () use ($lockedSession) {
+                CashSessionChanged::dispatch($lockedSession->fresh(), 'closed');
+            });
+
+            DB::afterCommit(function () use ($user): void {
+                try {
+                    $backupLog = app(CreateBackupAction::class)->createPending($user, BackupLog::TYPE_SCHEDULED);
+                    RunBackupJob::dispatch($backupLog->id);
+                } catch (\Throwable $exception) {
+                    Log::warning('No se pudo programar respaldo al cerrar caja.', [
+                        'user_id' => $user->id,
+                        'message' => $exception->getMessage(),
+                    ]);
+                }
+            });
 
             return $lockedSession->load('user:id,name,username');
         });

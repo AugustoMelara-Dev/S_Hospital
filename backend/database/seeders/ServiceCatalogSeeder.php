@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Area;
 use App\Models\Category;
 use App\Models\Service;
 use Illuminate\Database\Seeder;
@@ -16,11 +17,11 @@ class ServiceCatalogSeeder extends Seeder
     private const CATALOG_PATH = 'database/seeders/data/catalogo_servicios_inicial.csv';
 
     /**
-     * Demo-only operational codes used by barcode/USB scanner validation.
+     * Validation-only operational codes used by barcode/USB scanner validation.
      *
      * @var array<string, array{scan_code: string|null, barcode: string|null, qr_code: string|null}>
      */
-    private const DEMO_CODES = [
+    private const VALIDATION_CODES = [
         'csv:service:laboratorio:acido-urico' => [
             'scan_code' => 'LAB-ACIDO-URICO',
             'barcode' => '7700000001001',
@@ -44,6 +45,13 @@ class ServiceCatalogSeeder extends Seeder
                 $categorySlug = $this->slug($row['categoria']);
                 $categorySourceKey = $this->categorySourceKey($row['categoria']);
                 $categoryOrders[$categorySlug] ??= count($categoryOrders);
+                $area = Area::query()->firstOrCreate(
+                    ['slug' => $categorySlug],
+                    [
+                        'name' => $row['categoria'],
+                        'active' => true,
+                    ],
+                );
 
                 $category = Category::query()
                     ->where('source_key', $categorySourceKey)
@@ -73,6 +81,7 @@ class ServiceCatalogSeeder extends Seeder
                 $serviceData = [
                     'source_key' => $serviceSourceKey,
                     'name' => $row['servicio'],
+                    'area_id' => $area->id,
                     'category_id' => $category->id,
                     'slug' => $serviceSlug,
                     'source_hash' => $this->serviceSourceHash($row),
@@ -82,8 +91,8 @@ class ServiceCatalogSeeder extends Seeder
                     'special_rule_code' => $this->specialRuleCode($row),
                 ];
 
-                if (isset(self::DEMO_CODES[$serviceSourceKey])) {
-                    $serviceData = array_merge($serviceData, self::DEMO_CODES[$serviceSourceKey]);
+                if (isset(self::VALIDATION_CODES[$serviceSourceKey])) {
+                    $serviceData = array_merge($serviceData, self::VALIDATION_CODES[$serviceSourceKey]);
                 }
 
                 $service->fill($serviceData)->save();

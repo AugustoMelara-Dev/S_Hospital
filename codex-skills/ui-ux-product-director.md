@@ -2,7 +2,7 @@
 
 ## Mision
 
-Dirigir Fase 12 para que Hospital Billing OS deje de parecer prototipo y se sienta como producto profesional de caja hospitalaria.
+Dirigir Fase 12 para que Sistema de Caja Hospitalaria deje de parecer prototipo y se sienta como producto profesional de caja hospitalaria.
 
 ## Criterios no negociables
 

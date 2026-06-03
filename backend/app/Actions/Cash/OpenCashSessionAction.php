@@ -2,6 +2,7 @@
 
 namespace App\Actions\Cash;
 
+use App\Events\CashSessionChanged;
 use App\Models\AuditLog;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
@@ -57,9 +58,13 @@ class OpenCashSessionAction
                     'entity_id' => $session->id,
                     'new_values' => [
                         'opening_amount' => $session->opening_amount,
-                        'opened_at' => $session->opened_at?->toISOString(),
+                        'opened_at' => $session->opened_at->toISOString(),
                     ],
                 ]);
+
+                DB::afterCommit(function () use ($session) {
+                    CashSessionChanged::dispatch($session->fresh(), 'opened');
+                });
 
                 return $session->load('user:id,name,username');
             });

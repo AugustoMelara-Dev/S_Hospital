@@ -5,6 +5,7 @@ namespace App\Actions\Backups;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use App\Models\User;
+use App\Support\OperationalMessageSanitizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -14,6 +15,7 @@ class CreateBackupAction
 {
     public function __construct(
         private readonly DatabaseDumpWriter $databaseDumpWriter,
+        private readonly PruneBackupsAction $pruneBackups,
     ) {}
 
     public function execute(?User $user = null, string $type = BackupLog::TYPE_MANUAL): BackupLog
@@ -85,6 +87,12 @@ class CreateBackupAction
                 'completed_at' => now(),
                 'error_message' => null,
             ])->save();
+
+            try {
+                $this->pruneBackups->execute();
+            } catch (\Throwable $pruneException) {
+                report($pruneException);
+            }
         } catch (\Throwable $exception) {
             $this->removePartialFile((string) $backupLog->path);
             $this->removePartialFile((string) $backupLog->path.'.tmp');
@@ -94,7 +102,11 @@ class CreateBackupAction
             $lock->release();
         }
 
-        $this->audit($backupLog, $backupLog->created_by, 'backup.created');
+        $this->audit(
+            $backupLog,
+            $backupLog->created_by,
+            $backupLog->status === BackupLog::STATUS_SUCCESS ? 'backup.created' : 'backup.failed',
+        );
 
         return $backupLog->fresh(['creator:id,name,username']) ?? $backupLog;
     }
@@ -133,7 +145,8 @@ class CreateBackupAction
             $message = $message->replace($password, '[redacted]');
         }
 
-        return $message->limit(500)->toString();
+        return OperationalMessageSanitizer::message($message->toString())
+            ?? 'Error tecnico registrado. Revise el paquete de soporte.';
     }
 
     private function audit(BackupLog $backupLog, ?int $userId, string $action): void

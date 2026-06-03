@@ -6,6 +6,8 @@ use App\Models\FiscalSetting;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class FiscalSettingsTest extends TestCase
@@ -35,7 +37,8 @@ class FiscalSettingsTest extends TestCase
             ->putJson('/api/settings/fiscal', $this->validPayload())
             ->assertOk()
             ->assertJsonPath('data.hospital_name', 'Hospital San Miguel')
-            ->assertJsonPath('data.receipt_width', '80mm');
+            ->assertJsonPath('data.receipt_paper_size', 'half_letter')
+            ->assertJsonMissingPath('data.receipt_width');
 
         $this->assertDatabaseHas('fiscal_settings', [
             'hospital_name' => 'Hospital San Miguel',
@@ -67,6 +70,89 @@ class FiscalSettingsTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_save_institutional_and_thermal_receipt_paper_sizes(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        foreach (['half_letter', 'letter', 'a5', '80mm', '58mm'] as $paperSize) {
+            $this->actingAs($admin)
+                ->putJson('/api/settings/fiscal', [
+                    ...$this->validPayload(),
+                    'receipt_paper_size' => $paperSize,
+                ])
+                ->assertOk()
+                ->assertJsonPath('data.receipt_paper_size', $paperSize);
+
+            $this->assertDatabaseHas('fiscal_settings', [
+                'receipt_paper_size' => $paperSize,
+            ]);
+        }
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                ...$this->validPayload(),
+                'receipt_paper_size' => 'ticket-roll',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('receipt_paper_size');
+    }
+
+    public function test_legacy_receipt_width_field_is_not_updateable(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->putJson('/api/settings/fiscal', [
+                ...$this->validPayload(),
+                'receipt_width' => '80mm',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('receipt_width');
+    }
+
+    public function test_guest_cannot_view_full_fiscal_settings_but_can_view_public_branding(): void
+    {
+        FiscalSetting::query()->create([
+            ...$this->validPayload(),
+            'scanner_enabled' => true,
+            'partial_payments_enabled' => true,
+        ]);
+
+        $this->getJson('/api/settings/fiscal')
+            ->assertUnauthorized();
+
+        $this->getJson('/api/settings/branding')
+            ->assertOk()
+            ->assertJsonPath('data.hospital_name', 'Hospital San Miguel')
+            ->assertJsonMissingPath('data.rtn')
+            ->assertJsonMissingPath('data.scanner_enabled')
+            ->assertJsonMissingPath('data.partial_payments_enabled');
+    }
+
+    public function test_cashier_cannot_view_full_fiscal_settings(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        FiscalSetting::query()->create([
+            ...$this->validPayload(),
+            'scanner_enabled' => true,
+            'partial_payments_enabled' => true,
+        ]);
+
+        $cashier = User::factory()->create();
+        $cashier->assignRole('cajero');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/settings/fiscal')
+            ->assertForbidden();
+    }
+
     public function test_supervisor_can_view_but_not_update_fiscal_settings(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
@@ -85,6 +171,54 @@ class FiscalSettingsTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_admin_can_upload_logo_and_public_endpoint_returns_cache_busted_url(): void
+    {
+        Storage::fake('public');
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->postJson('/api/settings/logo', [
+                'logo' => UploadedFile::fake()->image('hospital.png', 320, 160),
+            ])
+            ->assertOk()
+            ->assertJsonPath('message', 'Logo actualizado con exito.')
+            ->assertJsonPath('logo_url', fn (string $url): bool => str_contains($url, '/storage/branding/logo.png?t='));
+
+        Storage::disk('public')->assertExists('branding/logo.png');
+
+        $this->getJson('/api/settings/logo')
+            ->assertOk()
+            ->assertJsonPath('logo_url', fn (?string $url): bool => is_string($url) && str_contains($url, '/storage/branding/logo.png?t='));
+    }
+
+    public function test_logo_upload_requires_fiscal_update_permission_and_image_file(): void
+    {
+        Storage::fake('public');
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $cashier = User::factory()->create();
+        $cashier->assignRole('cajero');
+
+        $this->actingAs($cashier)
+            ->postJson('/api/settings/logo', [
+                'logo' => UploadedFile::fake()->image('hospital.png'),
+            ])
+            ->assertForbidden();
+
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->postJson('/api/settings/logo', [
+                'logo' => UploadedFile::fake()->create('hospital.txt', 1, 'text/plain'),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('logo');
+    }
+
     /**
      * @return array<string, string>
      */
@@ -94,7 +228,10 @@ class FiscalSettingsTest extends TestCase
             'hospital_name' => 'Hospital San Miguel',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_width' => '80mm',
+            'receipt_paper_size' => 'half_letter',
+            'primary_color' => 'indigo',
+            'address' => 'Barrio El Centro',
+            'slogan' => 'Tu salud es nuestra prioridad',
         ];
     }
 }

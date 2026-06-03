@@ -51,7 +51,21 @@ class InvoiceCreationTest extends TestCase
             'issued_by' => $cashier->id,
             'status' => Invoice::STATUS_ISSUED,
             'paid_amount' => '0.00',
+            'paid_amount_cents' => 0,
             'balance_due' => '46.00',
+            'balance_due_cents' => 4600,
+            'subtotal_cents' => 4000,
+            'tax_amount_cents' => 600,
+            'discount_amount_cents' => 0,
+            'total_cents' => 4600,
+        ]);
+        $this->assertDatabaseHas('invoice_items', [
+            'invoice_id' => Invoice::query()->where('invoice_number', '000-001-01-00000001')->value('id'),
+            'quantity_cents' => 200,
+            'unit_price_cents' => 1500,
+            'line_subtotal_cents' => 3000,
+            'tax_amount_cents' => 450,
+            'line_total_cents' => 3450,
         ]);
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $cashier->id,
@@ -117,6 +131,31 @@ class InvoiceCreationTest extends TestCase
             ->assertJsonValidationErrors('items.0.service_id');
     }
 
+    public function test_invoice_rejects_hidden_or_non_billable_services(): void
+    {
+        $this->seedBillingBase();
+        $hidden = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $nonBillable = Service::query()->where('name', 'Hemograma Completo')->firstOrFail();
+        $hidden->forceFill(['visible_in_billing' => false])->save();
+        $nonBillable->forceFill(['is_billable' => false])->save();
+
+        $this->actingAs($this->cashier())
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [['service_id' => $hidden->id, 'quantity' => '1.00']],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('items.0.service_id');
+
+        $this->actingAs($this->cashier())
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [['service_id' => $nonBillable->id, 'quantity' => '1.00']],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('items.0.service_id');
+    }
+
     public function test_invoice_rejects_missing_service(): void
     {
         $this->seedBillingBase();
@@ -164,6 +203,7 @@ class InvoiceCreationTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.items.0.service_name', 'Glucosa')
             ->assertJsonPath('data.items.0.category_name', 'Laboratorio')
+            ->assertJsonPath('data.items.0.area_name', 'Laboratorio')
             ->assertJsonPath('data.items.0.unit_price', '15.00')
             ->assertJsonPath('data.items.0.line_total', '17.25');
     }
@@ -386,10 +426,10 @@ class InvoiceCreationTest extends TestCase
     private function createFiscalSettings(): void
     {
         FiscalSetting::query()->create([
-            'hospital_name' => 'Hospital Demo',
+            'hospital_name' => 'Hospital San Isidro',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_width' => '80mm',
+            'receipt_paper_size' => 'half_letter',
         ]);
     }
 

@@ -1,4 +1,4 @@
-# Offline LAN Install - Hospital Billing OS
+# Offline LAN Install - Sistema de Caja Hospitalaria
 
 ## Proposito
 
@@ -23,7 +23,8 @@ docker compose up -d
 
 Servicios:
 
-- `backend`: Laravel en `http://localhost:8000`.
+- `backend`: Laravel en `http://localhost:8000` durante desarrollo local.
+- El frontend compilado debe llamar a `/api` y `/sanctum` en el mismo host que sirve la aplicacion. No compilar el build LAN con `VITE_API_BASE_URL=http://localhost:8000`, porque los clientes entran por IP o nombre local del servidor.
 - `frontend`: Vite React en `http://localhost:5173`.
 - `mysql`: MariaDB local para desarrollo.
 
@@ -49,21 +50,69 @@ Antes de instalar en el hospital:
 5. Instalar MySQL/MariaDB local en el servidor.
 6. Configurar `.env` real fuera del repositorio con secretos locales, `APP_ENV=production` y `APP_DEBUG=false`.
 7. Configurar `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` y CORS con la IP fija o dominio LAN final, por ejemplo `192.168.1.10`.
-8. Generar `APP_KEY` en el servidor.
+8. Generar `APP_KEY` en el servidor con `php artisan key:generate`.
 9. Ejecutar migraciones aprobadas sin `migrate:fresh`.
-10. Crear admin real con `php artisan auth:create-initial-admin`; no ejecutar seeders demo.
+10. Crear admin real con el instalador o con `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no ejecutar seeders de desarrollo.
 11. Ejecutar `php artisan config:cache`.
 12. Publicar por IP fija LAN o nombre local.
-13. Levantar worker local de backups como servicio/tarea continua con `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
+13. Levantar worker local de backups: en Docker offline queda como servicio `queue-worker`; en bare-metal queda como tarea/servicio PHP con `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
 14. Validar `/up`, `/login` y `/verify-email`.
+
+Antes de entregar un paquete offline regenerado, ejecutar el guard de artefacto:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1 -Force
+powershell.exe -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit
+```
+
+El guard falla si `offline-release` incluye `.env` real, logs, respaldos SQL,
+`node_modules`, evidencia QA local, checksums incompletos o un `MANIFEST.txt`
+que no referencia el commit actual.
 
 En publicacion same-origin con Laravel, `/`, `/login` y `/verify-email` sirven el build React desde `frontend/dist/index.html`, y `/assets/*` sirve los assets compilados. Si `frontend/dist` no existe, el servidor responde error operativo y no debe entregarse como listo.
 
-No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`, `supervisor.demo` y `cajero.demo` pertenecen solo a desarrollo/testing.
+No entregar un servidor LAN real con `APP_ENV=local`. Produccion debe operar con cuentas reales creadas por administracion y cambio obligatorio de contrasena cuando aplique.
+
+### Admin inicial seguro
+
+- Preferir `scripts\deploy_hospital_lan.ps1`, que captura la contrasena temporal de forma oculta.
+- Si soporte crea el admin manualmente, no debe escribir la contrasena como `--password=...` en consola.
+- El comando acepta la contrasena desde `HOSPITAL_INITIAL_ADMIN_PASSWORD` y exige minimo 10 caracteres con letras y numeros.
+- Limpiar `HOSPITAL_INITIAL_ADMIN_PASSWORD` despues de crear el admin.
 
 ## Red local
 
-- Configurar IP fija en el servidor.
+- Configurar IP fija en el servidor usando uno de estos metodos:
+
+**Metodo 1: Panel de control de Windows (grafico)**
+1. Abrir Panel de control > Centro de redes y recursos compartidos > Cambiar configuracion del adaptador
+2. Doble clic en la conexion de red (Ethernet o Wi-Fi) > Propiedades
+3. Seleccionar "Protocolo de Internet version 4 (TCP/IPv4)" > Propiedades
+4. Seleccionar "Usar la siguiente direccion IP" e ingresar:
+   - Direccion IP: `192.168.1.10` (ejemplo, ajustar segun red local)
+   - Mascara de subred: `255.255.255.0`
+   - Puerta de enlace predeterminada: `192.168.1.1` (router)
+   - Servidor DNS preferido: `8.8.8.8` (u otro DNS local)
+5. Aceptar y guardar
+
+**Metodo 2: PowerShell (sin reinicio)**
+```powershell
+New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress "192.168.1.10" -PrefixLength 24 -DefaultGateway "192.168.1.1"
+Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddresses "8.8.8.8","8.8.4.4"
+```
+
+**Metodo 3: Reservar IP en el router (recomendado para DHCP)**
+1. Acceder al router en `192.168.1.1` (o la puerta de enlace)
+2. Buscar "DHCP Reservation" o "Static IP Assignment"
+3. Agregar la direccion MAC del servidor y asignar una IP fija (ej: `192.168.1.10`)
+4. Guardar y reiniciar el router si es necesario
+
+**Validar la configuracion:**
+```powershell
+ipconfig /all
+ping 192.168.1.1
+```
+
 - Permitir HTTP/HTTPS en firewall local.
 - No abrir el sistema a internet salvo decision explicita posterior.
 - Si se configura HTTPS local, instalar certificado confiable para los clientes.
@@ -78,20 +127,20 @@ No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`,
 - Si MySQL/MariaDB debe aceptar conexiones solo del backend local, mantenerlo escuchando en `127.0.0.1`.
 - Si se usa un servidor web local, validar que `/up`, `/login` y `/verify-email` respondan desde otra computadora LAN.
 
-## Impresora termica
+## Impresora institucional
 
-- Instalar la impresora 80mm o 58mm en la computadora que imprimira.
+- Instalar la impresora media carta, carta, A5, 80mm o 58mm en la computadora que imprimira.
 - Validar una impresion de prueba desde el navegador usado en caja.
-- Configurar el tamano de papel del driver para evitar salida tipo carta.
+- Configurar el tamano de papel del driver segun el formato aprobado: media carta, carta, A5, 80mm o 58mm.
 - Si la impresora se comparte en red, probar desde cada cliente autorizado antes de operar.
 - Marcar escala 100%, margenes minimos o ninguno, encabezados/pies del navegador desactivados si el navegador lo permite.
-- Ejecutar una prueba 80mm y una prueba 58mm con una factura pagada y una reimpresion desde historial.
+- Ejecutar una prueba con factura pagada y una reimpresion desde historial. Confirmar fondo blanco, firma/sello y ausencia de QR, codigo de barras o codigos internos.
 
 ## Backups
 
-- Programar backup diario con `php artisan hospital:backup --type=scheduled`.
+- Programar backup diario con `scripts\install_backup_tasks_windows.ps1`; el helper detecta Docker offline o PHP local.
 - Permitir backup manual desde admin.
-- Mantener un worker local de cola `backups` para ejecutar backups pedidos desde la UI sin bloquear el request HTTP.
+- Mantener un worker local de cola `backups` para ejecutar backups pedidos desde la UI sin bloquear el request HTTP. En `docker-compose.prod.yml` ese worker es el servicio `queue-worker`.
 - Guardar archivos en carpeta local protegida y copiar una version a USB o disco externo.
 - No usar cloud backups como dependencia de produccion.
 - Ver `docs/BACKUP_RESTORE.md` para restore manual y checklist de validacion.
@@ -114,7 +163,7 @@ No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`,
 4. Revisar `.env` real sin reemplazar secretos.
 5. Ejecutar migraciones aprobadas sin `php artisan migrate:fresh`.
 6. Ejecutar `php artisan config:cache`.
-7. Reiniciar o validar el worker local de backups.
+7. Reiniciar o validar el worker local de backups. En Docker offline use `scripts\run_backup_worker.cmd --check`; en bare-metal use el mismo wrapper o la tarea PHP instalada.
 8. Validar `/up`, `/login`, `/verify-email`.
 9. Entrar como admin y revisar facturas, caja, reportes y backups.
 
@@ -129,6 +178,7 @@ No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`,
 - Cajero inicia sesion, abre caja, crea factura de prueba y puede imprimir recibo.
 - Supervisor/admin ve reporte diario.
 - Backup manual queda `pending` y luego `success` cuando el worker corre; si falta herramienta de dump en servidor, queda `failed` con causa operativa sin credenciales.
+- En paquete Docker offline, `scripts\run_scheduled_backup.cmd --check` debe pasar despues de que `setup.bat` cree `.env`; sin `.env` debe fallar antes de registrar tareas.
 - Restore de prueba documentado antes de operar datos reales.
 
 ## Evidencia Fase 11 local
@@ -137,7 +187,7 @@ No entregar un servidor LAN real con `APP_ENV=local`. Los usuarios `admin.demo`,
 - Concurrencia real fue validada contra `http://192.168.1.7:8000` con `RUN_ID=concurrency-validation-20260517T20435`.
 - Rutas por IP desde servidor respondieron para `/up`, `/login`, `/verify-email` y assets.
 - No se declara LAN fisica completa hasta repetir el checklist desde otra computadora cliente.
-- No se declara impresora fisica validada hasta imprimir 80mm/58mm en hardware real.
+- No se declara impresora fisica validada hasta imprimir media carta/carta/A5/80mm/58mm en hardware real.
 
 ## Scripts de validacion real
 

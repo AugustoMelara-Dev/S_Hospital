@@ -1,8 +1,8 @@
-# Release checklist - demo vendible y produccion real
+# Release checklist - validacion operativa y produccion real
 
-Estado actual documentado: `DEMO_READY` y `PRODUCTION_CANDIDATE`. No declarar
+Estado actual documentado: `PRODUCTION_CANDIDATE`. No declarar
 `PRODUCTION_READY` hasta cerrar validacion fisica de cliente LAN, hardware de
-impresora termica y configuracion final del servidor real.
+impresora institucional y configuracion final del servidor real.
 
 ## Quality gate seguro
 
@@ -17,6 +17,28 @@ impresora termica y configuracion final del servidor real.
 - `bash scripts/quality_gate.sh` si Bash esta disponible en el entorno.
 
 El quality gate normal es no destructivo. No ejecuta `php artisan migrate:fresh --seed` contra el `.env` activo.
+
+Nota de entorno: en la shell de trabajo del 2026-05-22, `composer` no estaba
+disponible en PATH, por lo que `composer validate` debe ejecutarse en una
+terminal con Composer instalado antes de cerrar release.
+
+## Gate de pulido 2026-05-22
+
+Validado durante el pase de arquitectura/mantenibilidad/UX/metadata:
+
+- Backend completo: `php artisan test --colors=never`.
+- Backend config: `php artisan config:cache`.
+- Reportes: `php artisan test --colors=never --filter=ReportMoneyArchitectureTest`.
+- Reportes funcionales: `php artisan test --colors=never --filter=ReportsTest`.
+- SPA/metadata: `php artisan test --colors=never --filter=ProductionSpaRouteTest`.
+- Frontend unitario: `npm.cmd run test`.
+- Frontend tipos: `npm.cmd run typecheck`.
+- Frontend lint: `npm.cmd run lint`.
+- Frontend build: `npm.cmd run build`.
+- E2E mockeado: `npm.cmd run e2e`.
+
+Estos gates no sustituyen validacion fisica de segunda PC LAN, impresora
+termica, restore final, concurrencia final ni backup worker en el servidor real.
 
 ## Gate E2E Fase 10
 
@@ -33,17 +55,33 @@ cd C:\Projects\S_Hospital
 & "C:\Program Files\Git\usr\bin\bash.exe" scripts/e2e_gate.sh
 ```
 
-El E2E local usa ambiente seguro y API mockeada para cubrir login, caja, factura, eritropoyetina normal/gratis, pago, recibo 80mm/58mm, historial, reimpresion, reportes y backup pending. No valida MySQL/MariaDB real ni hardware.
+Contra una instalacion ya levantada, por ejemplo Apache/Laravel en el servidor
+local o una URL LAN, usar el gate Windows sin iniciar Vite:
+
+```powershell
+cd C:\Projects\S_Hospital
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1 `
+  -UseExistingServer `
+  -BaseUrl http://127.0.0.1:8000
+```
+
+Cambiar `-BaseUrl` por la IP LAN real cuando se valide desde la red, por
+ejemplo `http://192.168.1.10`. Este gate sigue usando los escenarios E2E
+controlados de Playwright; ayuda a detectar rutas rotas, pantalla inicial,
+errores de navegador y regresiones de flujo. No reemplaza las pruebas fisicas
+de impresora, cliente LAN, MySQL/MariaDB real, restore o concurrencia.
+
+El E2E local usa ambiente seguro y API mockeada para cubrir login, caja, factura, eritropoyetina normal/gratis, pago, recibo media carta/carta/A5/80mm/58mm, historial, reimpresion, reportes y backup pending. No valida MySQL/MariaDB real ni hardware.
 
 ## Reset dev/testing con base descartable
 
-`php artisan migrate:fresh --seed` solo puede usarse para validar migraciones y seeders en una base descartable de desarrollo, testing o demo. No ejecutar `migrate:fresh` en el servidor real del hospital.
+`php artisan migrate:fresh --seed` solo puede usarse para validar migraciones y seeders en una base descartable de desarrollo o testing. No ejecutar `migrate:fresh` en el servidor real del hospital.
 
 Usar el script destructivo solo si se cumplen todas las condiciones:
 
 - `APP_ENV` es `local` o `testing`.
 - `HOSPITAL_ALLOW_DESTRUCTIVE_RESET=1`.
-- `DB_DATABASE` contiene `test`, `demo` o `local`, o se usa `DB_CONNECTION=sqlite` en `testing`.
+- `DB_DATABASE` contiene `test` o `local`, o se usa `DB_CONNECTION=sqlite` en `testing`.
 
 ```bash
 HOSPITAL_ALLOW_DESTRUCTIVE_RESET=1 bash scripts/quality_gate_destructive.sh
@@ -58,7 +96,7 @@ En produccion offline LAN no se borra la base. La validacion segura usa:
 - `APP_DEBUG=false`.
 - `APP_URL` con la IP fija o dominio LAN final, por ejemplo `http://192.168.1.10`.
 - `SANCTUM_STATEFUL_DOMAINS` y CORS/Sanctum alineados al host LAN real y a cualquier dominio local permitido.
-- Admin real creado con `php artisan auth:create-initial-admin`; no usar seeders demo.
+- Admin real creado con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no usar seeders de desarrollo ni `--password=...` en consola.
 - `composer validate`
 - `php artisan test --colors=never` si el servidor tiene entorno de testing aislado.
 - `php artisan config:cache --no-ansi`
@@ -78,10 +116,33 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_prefli
   -BaseUrl http://IP_DEL_SERVIDOR
 ```
 
+Handoff guiado de cierre final:
+
+```powershell
+cd C:\Projects\S_Hospital
+powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 `
+  -BaseUrl http://IP_DEL_SERVIDOR `
+  -PhpPath C:\xampp\php\php.exe `
+  -InitializeProofFiles
+```
+
+Este helper no aprueba produccion por si solo: crea o muestra archivos de
+evidencia pendientes, muestra el estado de tareas de backup y ejecuta el
+preflight sin `-AllowMissingPhysicalProof`. Si faltan `qa/LAN_CLIENT_VALIDATION_PROOF.md`
+o `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` completos, el resultado correcto sigue siendo
+`PRODUCTION_CANDIDATE`. Tambien deja un resumen operativo en
+`qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` con la decision, bloqueantes y comandos
+siguientes. Si usa `-ReportPath`, debe ser un archivo `.md` dentro de `qa/`;
+el helper rechaza rutas fuera de la carpeta de evidencia antes de ejecutar
+preflight o escribir el reporte.
+
 Este preflight falla si el servidor no usa `APP_ENV=production`, si `APP_DEBUG`
 no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o
 `mariadb-dump`, si las rutas publicas no responden, o si no existen las pruebas
-documentadas de cliente LAN e impresora fisica.
+documentadas de cliente LAN, impresora fisica, restore final y concurrencia final.
+
+En Windows tambien falla si no existen `SistemaCajaHospitalaria-BackupWorker` y
+`SistemaCajaHospitalaria-DailyBackup`, o si el worker continuo no esta `Running`.
 
 La evidencia fisica de LAN e impresora es obligatoria por defecto. El flag
 `-AllowMissingPhysicalProof` solo permite una corrida parcial de entorno y deja
@@ -97,16 +158,18 @@ HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_test HO
 ```
 
 Este script es destructivo sobre `RESTORE_TEST_DATABASE`: hace `DROP DATABASE` y restaura el backup en esa base descartable. Nunca usarlo contra la base activa ni contra nombres sensibles. El nombre debe contener `test`, `restore`, `validation` o `disposable`.
+Si genera evidencia con `HOSPITAL_RESTORE_EVIDENCE_PATH`, use solo un archivo `.md` bajo `qa/`, por ejemplo `qa/FINAL_RESTORE_PROOF.md`; el script rechaza rutas absolutas, rutas con `..` o rutas con backslashes antes de crear backup o tocar la base descartable.
 
 Evidencia Fase 11: ejecutado en MariaDB XAMPP local contra `hospital_restore_validation_test` con backup `hospital-backup-20260517-204322-lcsexyiz.sql`, SHA256 `5975701b3c288ae4b9cd4e75d1881a38173e2bc3c3e799bc4b77ab7ac3630362`. Repetir en servidor final si cambia el entorno.
 
 Concurrencia MySQL/MariaDB por HTTP contra servidor de validacion:
 
 ```bash
-HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=local HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://127.0.0.1:8000 HOSPITAL_ALLOW_DEMO_VALIDATION=1 bash scripts/validate_mysql_concurrency.sh
+HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=local HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_LOGIN=usuario.validacion HOSPITAL_CONCURRENCY_PASSWORD=password-temporal bash scripts/validate_mysql_concurrency.sh
 ```
 
-Este script es mutante: abre caja, crea facturas y registra pagos con un `RUN_ID`. No borra facturas porque son registros auditables; requiere snapshot/base descartable antes de ejecutarlo.
+Este script es mutante: abre caja, crea facturas y registra pagos con un `RUN_ID`. No borra facturas porque son registros auditables; requiere snapshot/base descartable antes de ejecutarlo y credenciales temporales explicitas, nunca credenciales reales de produccion.
+No ponga usuario o contrasena dentro de `HOSPITAL_CONCURRENCY_BASE_URL`; use siempre las variables de cuenta temporal. Para guardar evidencia sin editarla a mano, agregue `HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md` y luego revise que la conclusion corresponda al entorno descartable usado. Esa ruta debe ser un archivo `.md` dentro de `qa/`; el script no escribe evidencia fuera de la carpeta instalada.
 
 Evidencia Fase 11: ejecutado contra `http://192.168.1.7:8000` con `HOSPITAL_CONCURRENCY_TARGET_ENV=local` y `RUN_ID=concurrency-validation-20260517T20435`; valido doble apertura de caja, doble emision de factura y doble pago. Repetir en servidor/base final descartable antes de declarar produccion.
 
@@ -130,7 +193,7 @@ LAN fisica:
 - Verificar que usuario inactivo no puede operar aunque exista sesion.
 - Confirmar que no hay secretos reales en frontend ni repositorio.
 
-## Demo operativa
+## Validacion operativa
 
 - Login local.
 - Abrir caja.
@@ -139,7 +202,7 @@ LAN fisica:
 - Eritropoyetina normal L.25.
 - Eritropoyetina con receta de dialisis L.0.
 - Cobrar factura.
-- Ver recibo 80mm y 58mm.
+- Ver recibo media carta, carta, A5, 80mm y 58mm.
 - Reimprimir desde historial.
 - Anular factura sin pagos con motivo.
 - Ver reportes.
@@ -151,7 +214,7 @@ LAN fisica:
 - Confirmar que produccion usa MySQL/MariaDB local.
 - Confirmar que frontend compilado y backend se sirven desde la PC servidor por IP LAN.
 - Confirmar `APP_ENV=production`, `APP_DEBUG=false` y `php artisan config:cache` antes de entregar servidor real.
-- Confirmar que no se ejecutaron seeders demo en el servidor real.
+- Confirmar que no se ejecutaron seeders de validacion local en el servidor real.
 - Confirmar que `.env` production queda fuera de Git y no reemplaza secretos durante actualizaciones.
 - Confirmar dominios/IP LAN explicitos para `APP_URL`, CORS y `SANCTUM_STATEFUL_DOMAINS`.
 - Confirmar worker local de backups:
@@ -171,7 +234,7 @@ Helper para crear tareas Windows en el servidor final:
 cd C:\Projects\S_Hospital
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -WhatIfOnly
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -PhpPath C:\xampp\php\php.exe
-Start-ScheduledTask -TaskName HospitalBillingOS-BackupWorker
+Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
 ```
 
@@ -184,12 +247,39 @@ Para removerlas: `powershell.exe -ExecutionPolicy Bypass -File scripts\install_b
 
 - Probar restore real en una base descartable del servidor final y guardar checksum/conteos.
 - Probar desde una segunda PC en LAN usando la IP fija o dominio LAN, nunca `localhost`.
-- Probar impresora fisica termica 80mm/58mm desde la PC o cliente que imprimira.
+- Probar impresora fisica media carta/carta/A5/80mm/58mm desde la PC o cliente que imprimira.
 - Crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
-- Crear `qa/THERMAL_PRINTER_PROOF.md` usando `qa/THERMAL_PRINTER_PROOF.example.md`.
+- Crear `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` usando `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md`.
+- Crear `qa/FINAL_RESTORE_PROOF.md` usando `qa/FINAL_RESTORE_PROOF.example.md`.
+- Crear `qa/FINAL_CONCURRENCY_PROOF.md` usando `qa/FINAL_CONCURRENCY_PROOF.example.md`.
+- Para preparar ambos archivos sin escribir evidencia falsa:
+
+```powershell
+cd C:\Projects\S_Hospital
+powershell.exe -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1
+```
+
+- Desde la segunda PC cliente LAN, generar evidencia inicial de rutas:
+
+```powershell
+cd C:\Projects\S_Hospital
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 `
+  -BaseUrl http://IP_DEL_SERVIDOR `
+  -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+```
+
+El script no sobrescribe `qa\LAN_CLIENT_VALIDATION_PROOF.md` si ya existe. Use
+`-Force` solamente cuando quiera reemplazar un borrador incompleto de forma
+deliberada, despues de guardar cualquier evidencia real anterior.
+`-EvidencePath` debe apuntar a un archivo `.md` dentro de `qa\`; rutas fuera de
+esa carpeta o sin extension Markdown fallan antes de consultar la red o escribir
+evidencia.
+
+Luego completar manualmente en ese mismo archivo login, caja, factura, pago,
+recibo, historial, reportes y backup `pending` -> `success`.
 - Validar concurrencia real con MySQL/MariaDB.
-- Crear admin inicial real con password temporal y cambio obligatorio.
-- Remover o no ejecutar seeders demo fuera de `local`/`testing`.
+- Crear admin inicial real con password temporal, cambio obligatorio y contrasena entregada por entrada oculta/`HOSPITAL_INITIAL_ADMIN_PASSWORD`, no por argumento CLI.
+- Remover o no ejecutar seeders de validacion local fuera de `local`/`testing`.
 - Ejecutar gates finales: `composer validate`, `php artisan test --colors=never`,
   `vendor/bin/pint --test`, `php artisan config:cache --no-ansi`,
   `php artisan config:clear --no-ansi`, `npm.cmd run typecheck`,

@@ -1,0 +1,252 @@
+name: CI
+
+on:
+  push:
+    branches: [main, codex/**]
+  pull_request:
+    branches: [main, codex/**]
+  workflow_dispatch:
+
+# Cancel superseded runs on the same branch.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-sqlite:
+    name: Backend (SQLite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      # MariaDB only for the e2e health-check job below; sqlite is the
+      # default for the unit + feature suite.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: intl, mbstring, pdo_mysql, pdo_sqlite, zip, gd, bcmath, opcache
+          coverage: pcov
+          ini-values: memory_limit=512M
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Laravel key + cache
+        working-directory: backend
+        run: |
+          cp .env.example .env || true
+          php artisan key:generate --force
+          php artisan config:clear
+
+      - name: Run PHPUnit
+        working-directory: backend
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+          APP_KEY: base64:dGVzdHRlc3R0ZXN0dGVzdHRlc3R0ZXN0dGVzdHRlc3Q=
+        run: |
+          vendor/bin/phpunit --testdox
+
+      - name: Run Pint code style
+        working-directory: backend
+        run: vendor/bin/pint --test
+
+      - name: Run PHPStan static analysis
+        working-directory: backend
+        run: |
+          if [ -f vendor/bin/phpstan ]; then
+            vendor/bin/phpstan analyse --no-progress
+          else
+            echo "phpstan not installed; skipping"
+          fi
+
+      - name: Pre-commit guard smoke
+        shell: pwsh
+        run: |
+          if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+            powershell -ExecutionPolicy Bypass -File backend/tests/PowerShell/pre-commit-guard.tests.ps1
+            powershell -ExecutionPolicy Bypass -File backend/tests/PowerShell/cors-helpers.tests.ps1
+            powershell -ExecutionPolicy Bypass -File backend/tests/PowerShell/env-helpers.tests.ps1
+          } else {
+            echo "pwsh not available on ubuntu runner; skipping PowerShell tests"
+          }
+
+  backend-mariadb:
+    name: Backend (MariaDB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: root_dev
+          MARIADB_DATABASE: hospital_billing
+          MARIADB_USER: hospital
+          MARIADB_PASSWORD: hospital_dev
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: intl, mbstring, pdo_mysql, zip, gd, bcmath, opcache
+          ini-values: memory_limit=512M
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-mariadb-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Wait for MariaDB
+        run: |
+          for i in $(seq 1 30); do
+            if mysqladmin ping -h 127.0.0.1 -u hospital -phospital_dev --silent 2>/dev/null; then
+              echo "MariaDB ready"
+              exit 0
+            fi
+            echo "Waiting for MariaDB..."
+            sleep 2
+          done
+          exit 1
+
+      - name: Configure env
+        working-directory: backend
+        run: |
+          cp .env.example .env
+          sed -i 's|APP_KEY=.*|APP_KEY=base64:dGVzdHRlc3R0ZXN0dGVzdHRlc3R0ZXN0dGVzdHRlc3Q=|' .env
+          sed -i 's|DB_CONNECTION=.*|DB_CONNECTION=mysql|' .env
+          sed -i 's|DB_HOST=.*|DB_HOST=127.0.0.1|' .env
+          sed -i 's|DB_PORT=.*|DB_PORT=3306|' .env
+          sed -i 's|DB_DATABASE=.*|DB_DATABASE=hospital_billing|' .env
+          sed -i 's|DB_USERNAME=.*|DB_USERNAME=hospital|' .env
+          sed -i 's|DB_PASSWORD=.*|DB_PASSWORD=hospital_dev|' .env
+
+      - name: Run migrations + seed
+        working-directory: backend
+        run: |
+          php artisan config:clear
+          php artisan migrate --force
+          php artisan db:seed --class=RolesAndPermissionsSeeder --force
+          php artisan db:seed --class=ServiceCatalogSeeder --force || true
+
+      - name: Run PHPUnit (MariaDB)
+        working-directory: backend
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: hospital_billing
+          DB_USERNAME: hospital
+          DB_PASSWORD: hospital_dev
+        run: vendor/bin/phpunit --testdox
+
+  frontend:
+    name: Frontend (Vitest + lint + build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: TypeScript typecheck
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: ESLint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Vitest
+        working-directory: frontend
+        run: npm run test -- --run
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+  e2e-mocked:
+    name: E2E (mocked Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: [backend-sqlite, frontend]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: intl, mbstring, pdo_sqlite, zip, gd, bcmath
+          ini-values: memory_limit=512M
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run mocked E2E
+        working-directory: frontend
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+          APP_KEY: base64:dGVzdHRlc3R0ZXN0dGVzdHRlc3R0ZXN0dGVzdHRlc3Q=
+        run: |
+          # The production-readiness spec is fully mocked at the route level
+          # and does not require a live backend; we just need the SPA built
+          # and Playwright's route handlers in place.
+          npm run test:e2e -- --reporter=list

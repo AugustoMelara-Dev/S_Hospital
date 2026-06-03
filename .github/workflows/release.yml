@@ -1,0 +1,98 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v1.0.0). Defaults to the latest pushed tag.'
+        required: false
+
+jobs:
+  validate:
+    name: Validate tag and release notes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "value=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check release notes exist
+        run: |
+          TAG=${{ steps.tag.outputs.value }}
+          NOTES="docs/RELEASE_NOTES_${TAG}.md"
+          if [ ! -f "$NOTES" ]; then
+            echo "::error::Release notes not found: $NOTES"
+            echo "Create the file before tagging. Expected at $NOTES"
+            exit 1
+          fi
+          echo "Release notes found: $NOTES"
+          head -20 "$NOTES"
+
+      - name: Verify physical evidence
+        run: |
+          for f in qa/LAN_CLIENT_VALIDATION_PROOF.md \
+                   qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md \
+                   qa/FINAL_RESTORE_PROOF.md \
+                   qa/FINAL_CONCURRENCY_PROOF.md; do
+            if grep -q "PENDING" "$f"; then
+              echo "::error::$f is still PENDING. Refusing to release."
+              exit 1
+            fi
+            echo "OK: $f is past PENDING"
+          done
+
+      - name: Verify final handoff
+        run: |
+          if [ ! -f qa/FINAL_PRODUCTION_HANDOFF_RESULT.md ]; then
+            echo "::error::qa/FINAL_PRODUCTION_HANDOFF_RESULT.md missing"
+            exit 1
+          fi
+          if ! grep -q "PRODUCTION_READY=YES" qa/FINAL_PRODUCTION_HANDOFF_RESULT.md; then
+            echo "::error::qa/FINAL_PRODUCTION_HANDOFF_RESULT.md does not declare PRODUCTION_READY=YES"
+            exit 1
+          fi
+          echo "OK: PRODUCTION_READY=YES"
+
+  github-release:
+    name: GitHub Release
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "value=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.value }}
+          name: ${{ steps.tag.outputs.value }}
+          body_path: docs/RELEASE_NOTES_${{ steps.tag.outputs.value }}.md
+          generate_release_notes: false
+          draft: false
+          prerelease: ${{ contains(steps.tag.outputs.value, '-rc') || contains(steps.tag.outputs.value, '-beta') }}

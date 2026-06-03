@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\LoginAttempt;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,14 @@ class AuthController extends Controller
         $credentials = $request->validated();
         $loginField = filter_var($credentials['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
+        $attempt = LoginAttempt::query()->create([
+            'login' => $credentials['login'],
+            'ip' => $request->ip(),
+            'user_agent' => substr((string) $request->userAgent(), 0, 191),
+            'success' => false,
+            'attempted_at' => now(),
+        ]);
+
         if (! Auth::attempt([$loginField => $credentials['login'], 'password' => $credentials['password']])) {
             throw ValidationException::withMessages([
                 'login' => ['Las credenciales no son validas.'],
@@ -26,6 +35,8 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         $user = $request->user();
+
+        $attempt->forceFill(['success' => true])->save();
 
         if (! $user->active) {
             Auth::guard('web')->logout();

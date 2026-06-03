@@ -1,0 +1,63 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { apiClient } from './base';
+import { reports } from './reports';
+
+vi.mock('./base', () => ({
+  apiClient: {
+    download: vi.fn(),
+    request: vi.fn(),
+    url: vi.fn((path: string) => path),
+  },
+}));
+
+const mockedDownload = vi.mocked(apiClient.download);
+
+function pdfSearchParams(): URLSearchParams {
+  const [path] = mockedDownload.mock.calls[0] ?? [];
+  expect(path).toBeTypeOf('string');
+
+  return new URL(`http://hospital.test${path}`).searchParams;
+}
+
+describe('reports api client', () => {
+  beforeEach(() => {
+    mockedDownload.mockReset();
+  });
+
+  it('downloads daily pdf reports with the explicit daily date parameter', async () => {
+    const pdf = new Blob(['pdf']);
+    mockedDownload.mockResolvedValueOnce(pdf);
+
+    await expect(reports.downloadPdf({
+      date: '2026-06-02',
+      date_from: '2026-06-02',
+      date_to: '2026-06-02',
+    })).resolves.toBe(pdf);
+
+    expect(mockedDownload).toHaveBeenCalledTimes(1);
+    const params = pdfSearchParams();
+    expect(params.get('date')).toBe('2026-06-02');
+    expect(params.get('date_from')).toBe('2026-06-02');
+    expect(params.get('date_to')).toBe('2026-06-02');
+  });
+
+  it('omits empty optional filters from pdf report requests', async () => {
+    mockedDownload.mockResolvedValueOnce(new Blob(['pdf']));
+
+    await reports.downloadPdf({
+      date_from: '2026-06-01',
+      date_to: '2026-06-02',
+      method: '',
+      status: null,
+      user_id: undefined,
+    });
+
+    const params = pdfSearchParams();
+    expect(params.get('date_from')).toBe('2026-06-01');
+    expect(params.get('date_to')).toBe('2026-06-02');
+    expect(params.has('method')).toBe(false);
+    expect(params.has('status')).toBe(false);
+    expect(params.has('user_id')).toBe(false);
+  });
+});

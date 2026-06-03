@@ -1,0 +1,20 @@
+{
+  "status": 200,
+  "title": "Caja hospitalaria",
+  "hasNonceHeader": true,
+  "metaNonceLength": 32,
+  "scriptNonceLength": 0,
+  "nonceHeaderMatchesMeta": true,
+  "nonceMetaMatchesScript": false,
+  "hasPlaceholder": false,
+  "errorCount": 0,
+  "warningCount": 0,
+  "infoCount": 0,
+  "consoleMessages": [],
+  "pageErrors": [],
+  "screenshotPath": "qa/screenshots/csp-hardening-2026-06-02/login-csp-smoke-fresh.png",
+  "notes": [
+    "Browsers intentionally hide script nonce values from DOM reads after parsing; header-to-meta match is the authoritative runtime check.",
+    "Screenshot was generated with Playwright CLI against http://localhost:8000/login after the production SPA CSP nonce commit."
+  ]
+}

@@ -11,12 +11,12 @@ const statusConfig = {
     icon: Clock,
   },
   success: {
-    label: 'Completado',
+    label: 'Protegido',
     className: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     icon: CheckCircle,
   },
   failed: {
-    label: 'Fallido',
+    label: 'Error',
     className: 'bg-red-100 text-red-800 border-red-200',
     icon: XCircle,
   },
@@ -48,8 +48,8 @@ export function BackupStatusBadge({ status, className }: BackupStatusBadgeProps)
 
 export function getStatusDescription(status: BackupStatus): string {
   return {
-    pending: 'El backup está siendo creado...',
-    success: 'Backup creado exitosamente',
-    failed: 'El backup falló. Revise el detalle antes de crear uno nuevo.',
+    pending: 'El respaldo se está creando.',
+    success: 'Datos protegidos con este respaldo.',
+    failed: 'No se pudo completar. Revise con soporte antes de crear otro.',
   }[status];
 }

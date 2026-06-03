@@ -90,7 +90,7 @@ class DatabaseDumpWriter
             "select name, sql from sqlite_master where type = 'table' and name not like 'sqlite_%' order by name"
         ));
         $lines = [
-            '-- Hospital Billing OS local SQLite test backup',
+            '-- Sistema de Caja Hospitalaria local SQLite test backup',
             'PRAGMA foreign_keys=OFF;',
             'BEGIN TRANSACTION;',
         ];
@@ -125,7 +125,26 @@ class DatabaseDumpWriter
 
     private function findDumpBinary(): ?string
     {
-        foreach (['mariadb-dump', 'mysqldump'] as $binary) {
+        $configuredBinary = (string) env('HOSPITAL_DUMP_BINARY', '');
+        $candidates = array_values(array_filter([
+            $configuredBinary !== '' ? $configuredBinary : null,
+            'mariadb-dump',
+            'mysqldump',
+            'C:\\xampp\\mysql\\bin\\mariadb-dump.exe',
+            'C:\\xampp\\mysql\\bin\\mysqldump.exe',
+            'C:\\laragon\\bin\\mysql\\mysql-8.0\\bin\\mysqldump.exe',
+            '/usr/bin/mariadb-dump',
+            '/usr/bin/mysqldump',
+            '/usr/local/bin/mariadb-dump',
+            '/usr/local/bin/mysqldump',
+        ]));
+
+        foreach ($candidates as $binary) {
+            $isPath = str_contains($binary, '/') || str_contains($binary, '\\');
+            if ($isPath && ! is_file($binary)) {
+                continue;
+            }
+
             $process = new Process([$binary, '--version']);
             $process->setTimeout(10);
             $process->run();

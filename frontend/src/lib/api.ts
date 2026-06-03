@@ -6,11 +6,15 @@ import { cash } from './api/cash';
 import { reports } from './api/reports';
 import { backups } from './api/backups';
 import { fiscal } from './api/fiscal';
+import { system } from './api/system';
+import { users, type UserPayload } from './api/users';
 import type {
   AuthUser,
   FiscalSettings,
+  PublicBranding,
   FiscalSequence,
   Category,
+  Area,
   Service,
   CategoryPayload,
   ServicePayload,
@@ -23,16 +27,22 @@ import type {
   ReceiptData,
   MoneyByMethod,
   DailyReport,
+  MonthlyReport,
   IncomeReport,
   CategoryReport,
+  AreaIncomeReport,
   ServiceSalesReport,
   OperationsReport,
   CashSessionReport,
   BackupLog,
+  SystemStatus,
+  OperationalHealth,
   PaginatedMeta,
   ServiceFilters,
   InvoiceFilters,
   ReportFilters,
+  PdfReportFilters,
+  DashboardReport,
 } from './api/types';
 
 export {
@@ -46,12 +56,16 @@ export {
   reports,
   backups,
   fiscal,
+  system,
+  users,
 };
 export type {
   AuthUser,
   FiscalSettings,
+  PublicBranding,
   FiscalSequence,
   Category,
+  Area,
   Service,
   CategoryPayload,
   ServicePayload,
@@ -64,16 +78,23 @@ export type {
   ReceiptData,
   MoneyByMethod,
   DailyReport,
+  MonthlyReport,
   IncomeReport,
   CategoryReport,
+  AreaIncomeReport,
   ServiceSalesReport,
   OperationsReport,
   CashSessionReport,
   BackupLog,
+  SystemStatus,
+  OperationalHealth,
   PaginatedMeta,
   ServiceFilters,
   InvoiceFilters,
   ReportFilters,
+  PdfReportFilters,
+  DashboardReport,
+  UserPayload,
 };
 
 
@@ -81,8 +102,32 @@ export type {
 export const apiClient = {
   ...baseClient,
 
+  async getUsers(): Promise<AuthUser[]> {
+    return users.getUsers();
+  },
+
+  async createUser(payload: UserPayload): Promise<AuthUser> {
+    return users.createUser(payload);
+  },
+
+  async updateUser(id: number, payload: Omit<UserPayload, 'password'>): Promise<AuthUser> {
+    return users.updateUser(id, payload);
+  },
+
+  async toggleUserActive(id: number): Promise<AuthUser> {
+    return users.toggleActive(id);
+  },
+
+  async resetUserPassword(id: number, password: string): Promise<AuthUser> {
+    return users.resetPassword(id, password);
+  },
+
   async getCategories(active?: boolean): Promise<Category[]> {
     return catalog.getCategories(active);
+  },
+
+  async getAreas(active?: boolean): Promise<Area[]> {
+    return catalog.getAreas(active);
   },
 
   async saveCategory(payload: CategoryPayload, id?: number): Promise<Category> {
@@ -135,8 +180,22 @@ export const apiClient = {
     return billing.voidInvoice(invoiceId, reason);
   },
 
+  async voidPayment(
+    invoiceId: number,
+    paymentId: number,
+    reason: string,
+  ): Promise<{ payment: Payment; invoice: Invoice }> {
+    return billing.voidPayment(invoiceId, paymentId, { reason });
+  },
+
   async getCurrentCashSession(): Promise<CashSession | null> {
     return cash.getCurrentCashSession();
+  },
+
+  async getCashSessions(
+    filters: { page?: number; perPage?: number; status?: CashSession['status'] } = {},
+  ): Promise<{ data: CashSession[]; meta: PaginatedMeta }> {
+    return cash.getCashSessions(filters);
   },
 
   async openCashSession(payload: { opening_amount: string; notes?: string | null }): Promise<CashSession> {
@@ -147,8 +206,16 @@ export const apiClient = {
     return cash.closeCashSession(id, payload);
   },
 
+  async getDashboardReport(): Promise<DashboardReport> {
+    return reports.getDashboardReport();
+  },
+
   async getDailyReport(date?: string): Promise<DailyReport> {
     return reports.getDailyReport(date);
+  },
+
+  async getMonthlyReport(month?: string): Promise<MonthlyReport> {
+    return reports.getMonthlyReport(month);
   },
 
   async getIncomeReport(filters: ReportFilters): Promise<IncomeReport> {
@@ -157,6 +224,10 @@ export const apiClient = {
 
   async getCategoryReport(filters: ReportFilters): Promise<CategoryReport> {
     return reports.getCategoryReport(filters);
+  },
+
+  async getAreaIncomeReport(filters: ReportFilters): Promise<AreaIncomeReport> {
+    return reports.getAreaIncomeReport(filters);
   },
 
   async getServiceSalesReport(filters: ReportFilters): Promise<ServiceSalesReport> {
@@ -179,6 +250,10 @@ export const apiClient = {
     return reports.downloadExport(filters);
   },
 
+  async downloadReportPdf(filters: PdfReportFilters): Promise<Blob> {
+    return reports.downloadPdf(filters);
+  },
+
   async getBackups(filters: { page?: number; perPage?: number; status?: BackupLog['status'] | 'all' } = {}): Promise<{ data: BackupLog[]; meta: PaginatedMeta }> {
     return backups.getBackups(filters);
   },
@@ -195,8 +270,20 @@ export const apiClient = {
     return backups.downloadBackup(id);
   },
 
+  async getSystemStatus(): Promise<SystemStatus> {
+    return system.getStatus();
+  },
+
+  async getSystemHealth(): Promise<OperationalHealth> {
+    return system.getHealth();
+  },
+
   async getFiscalSettings(): Promise<FiscalSettings | null> {
     return fiscal.getFiscalSettings();
+  },
+
+  async getPublicBranding(): Promise<PublicBranding | null> {
+    return fiscal.getPublicBranding();
   },
 
   async updateFiscalSettings(payload: FiscalSettings): Promise<FiscalSettings> {
@@ -209,6 +296,14 @@ export const apiClient = {
 
   async saveFiscalSequence(payload: FiscalSequence): Promise<FiscalSequence> {
     return fiscal.saveFiscalSequence(payload);
+  },
+
+  async getLogo(): Promise<string | null> {
+    return fiscal.getLogo();
+  },
+
+  async uploadLogo(file: File): Promise<string> {
+    return fiscal.uploadLogo(file);
   },
 
   async login(login: string, password: string): Promise<AuthUser> {

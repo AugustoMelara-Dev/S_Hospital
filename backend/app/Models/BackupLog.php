@@ -4,7 +4,24 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property string $filename
+ * @property string|null $path
+ * @property string $disk
+ * @property int|null $size_bytes
+ * @property string|null $checksum_sha256
+ * @property string $status
+ * @property string $type
+ * @property int|null $created_by
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $completed_at
+ * @property string|null $error_message
+ * @property-read User|null $creator
+ */
 class BackupLog extends Model
 {
     public const STATUS_PENDING = 'pending';

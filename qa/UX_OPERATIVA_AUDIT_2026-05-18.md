@@ -2,7 +2,7 @@
 
 Decision final de este tramo: **UX-1 APROBADA**.
 
-Estado de release recomendado: **DEMO_READY / PRODUCTION_CANDIDATE**. No declarar `PRODUCTION_READY` hasta validar cliente LAN fisico, impresora termica fisica 80mm/58mm y configuracion final del servidor.
+Estado de release recomendado: **PRODUCTION_CANDIDATE**. No declarar `PRODUCTION_READY` hasta validar cliente LAN fisico, impresora institucional fisica y configuracion final del servidor.
 
 ## Alcance de esta pasada
 
@@ -30,7 +30,7 @@ Archivos de validacion tocados:
 
 URL usada: `http://127.0.0.1:8000/billing/new`.
 
-Usuario/rol inicial: `cajero.demo / cajero`.
+Usuario/rol inicial: `cajero.validacion / cajero`.
 
 Estado de caja: `Caja #2 abierta`.
 
@@ -48,7 +48,7 @@ Resultado:
 - Al emitir, se genero `000-001-01-00000081`.
 - El modal de pago enfoco `payment-amount`.
 - Cerrar/abandonar pago podia dejar factura emitida sin una pantalla persistente de siguiente paso suficientemente obvia.
-- El intento de cobro con `cajero.demo` termino con `No tiene permiso para esta accion`; por eso la medicion completa de recibo se repitio con `admin.demo`.
+- El intento de cobro con `cajero.validacion` termino con `No tiene permiso para esta accion`; por eso la medicion completa de recibo se repitio con `admin.validacion`.
 - Clics observados para avanzar en la medicion antes: 2 clics manuales criticos (`Confirmar emision`, `Confirmar cobro`) cuando Enter no completo la interaccion en esa corrida.
 - Scroll: no hubo scroll operativo de pagina relevante; `window.scrollY` se mantuvo en 0 o muy bajo por ajuste del navegador.
 - Consola: sin `console.error` ni `pageerror` en la corrida observada.
@@ -74,7 +74,7 @@ Veredicto UX-0 antes: **REQUIERE CAMBIOS** por ambiguedad `emitir` vs `cobrar`, 
 
 URL usada: `http://127.0.0.1:8000/billing/new`.
 
-Usuario/rol: `admin.demo / admin`.
+Usuario/rol: `admin.validacion / admin`.
 
 Estado de caja: `Caja #1 abierta`.
 
@@ -156,8 +156,66 @@ Capturas regeneradas:
 - UX-3: historial, catalogo, backups y fiscal a profundidad.
 - UX-4: reportes/admin/permisos a profundidad.
 - UX-5: cierre final de todos los gates como frente completo.
-- Validacion fisica: impresora termica 80mm/58mm y cliente LAN real.
+- Validacion fisica: impresora institucional media carta/carta/A5/80mm/58mm y cliente LAN real.
 
 ## Commit sugerido
 
 `fix(pos): harden keyboard billing flow`
+
+---
+
+# UX-4 - Reportes, administracion y permisos
+
+Decision final de este tramo: **UX-4 APROBADA**.
+
+URL base usada: `http://127.0.0.1:8000`.
+
+Usuarios/roles usados: `admin.validacion / admin`, `supervisor.validacion / supervisor`, `cajero.validacion / cajero`.
+
+## Medicion antes
+
+- `AppShell` mostraba `Reportes` con `reports.view`, `reports.managerial.view` o `reports.cash_session.view`.
+- `AppRoutes` permitia `/reports` solo con `reports.view`.
+- Usuario con solo `reports.cash_session.view` podia ver acceso a reportes de caja pero quedaba bloqueado por ruta.
+- Las tabs Diario, Rango, Servicios, Auditoria y Caja generaban CSV local con `Blob` en frontend.
+- La UI condicionaba el boton por `reports.export`, pero la descarga no usaba `/api/reports/export`.
+
+Reportes revisados: diario, rango, servicios, auditoria y caja.
+Filtros revisados: fecha diaria, desde/hasta, categoria, metodo, estado, cajero ID y caja ID.
+Exportaciones probadas: CSV de reportes para admin/supervisor y ausencia de boton para cajero sin permiso.
+
+## Cambios realizados
+
+- `/reports` ahora permite `reports.view` o `reports.cash_session.view`.
+- Usuario con solo `reports.cash_session.view` entra a la tab `Caja` y no ve tabs gerenciales.
+- Las tabs gerenciales se ocultan si falta `reports.managerial.view`.
+- `Exportar CSV` usa `apiClient.downloadReportExport()` contra `/api/reports/export`.
+- Se elimino CSV local desde frontend en reportes.
+- Se agregaron tests frontend para export backend y rol con solo reporte de caja.
+
+## Medicion despues
+
+- Admin: ve reportes gerenciales, Caja y exporta CSV desde backend.
+- Supervisor: ve reportes y exporta si tiene `reports.export`; no ve Backups.
+- Cajero: no ve Reportes/Backups/Fiscal si no tiene permisos; con `reports.cash_session.view` ve solo Caja.
+- Ruta no permitida muestra pantalla humana, sin JSON crudo.
+- No se observaron 401/419/CORS/500 inesperados ni errores rojos de consola.
+
+## Seguridad y permisos
+
+Backend mantiene la fuente de verdad para `reports.export`, 403 sin permiso y 401 para invitado. Frontend ya no ofrece descarga CSV sensible generada localmente.
+
+## Validacion ejecutada
+
+- `php artisan test --colors=never`: **passed**.
+- `vendor/bin/pint --test`: **passed**.
+- `npm.cmd run typecheck`: **passed**.
+- `npm.cmd run lint`: **passed**.
+- `npm.cmd run test`: **passed**.
+- `npm.cmd run build`: **passed**.
+- `npm.cmd run e2e`: **passed**.
+- `VISUAL_SMOKE_BASE_URL=http://127.0.0.1:8000 node qa/visual-smoke/phase-12-visual-smoke.mjs`: **passed**.
+
+## Commit sugerido
+
+`fix(reports): harden admin permissions and exports UX`

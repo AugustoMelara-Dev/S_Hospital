@@ -1,4 +1,4 @@
-# Codex Skills Pack - Hospital Billing OS
+# Codex Skills Pack - Sistema de Caja Hospitalaria
 
 Estos no son skills de ChatGPT instalables; son habilidades operativas en Markdown para que Codex sepa cómo trabajar.
 

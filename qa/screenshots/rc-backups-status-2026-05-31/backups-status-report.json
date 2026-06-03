@@ -1,0 +1,21 @@
+{
+  "base": "http://127.0.0.1:8000",
+  "capturedAt": "2026-05-31T13:27:21.591Z",
+  "captures": [
+    {
+      "theme": "light",
+      "file": "backups-light.png",
+      "hasFriendlyStatus": true,
+      "hasOldStatus": false,
+      "textSample": "Omitir al contenido principal\n\nHospital San Isidro\n\nSin caja abierta\n\nInicio\nNueva factura\nCaja\nCatalogo\nHistorial\nReportes\nRespaldos\nConfiguracion\nUsuarios\nAyuda\n\nAdministrador Validacion\n\nadmin\n\nOperacion en red local\nInicio\n/\nBackups\nRed local\nA\nAdministrador Validacion\nRespaldos\n\nCopias de seguridad de facturación, caja y reportes\n\nActualizar\nCrear respaldo\nRespaldos del hospital\n\nLos respaldos protegen la información de facturación, caja y reportes. Cree uno antes de cambios importantes y confirme que quede protegido.\n\nESTADO OPERATIVO\n\nRequiere revisión\n\nEl sistema puede seguir en validacion controlada, pero faltan pruebas de campo, configuracion final o respaldo reciente.\n\nVer detalle avanzado\n\nPendientes antes de operar\n\nValidacion desde segunda PC LAN · Impresora institucional fisica media carta/carta/A5 · Servidor final pendiente de configuracion operativa\nNo hay respaldos\n\nTodavía no se ha creado ningún respaldo. Cree el primero para proteger los datos del hospital.\n\nCrear respaldo\n\nRespaldos locales cargados."
+    },
+    {
+      "theme": "dark",
+      "file": "backups-dark.png",
+      "hasFriendlyStatus": true,
+      "hasOldStatus": false,
+      "textSample": "Omitir al contenido principal\n\nHospital San Isidro\n\nSin caja abierta\n\nInicio\nNueva factura\nCaja\nCatalogo\nHistorial\nReportes\nRespaldos\nConfiguracion\nUsuarios\nAyuda\n\nAdministrador Validacion\n\nadmin\n\nOperacion en red local\nInicio\n/\nBackups\nRed local\nA\nAdministrador Validacion\nRespaldos\n\nCopias de seguridad de facturación, caja y reportes\n\nActualizar\nCrear respaldo\nRespaldos del hospital\n\nLos respaldos protegen la información de facturación, caja y reportes. Cree uno antes de cambios importantes y confirme que quede protegido.\n\nESTADO OPERATIVO\n\nRequiere revisión\n\nEl sistema puede seguir en validacion controlada, pero faltan pruebas de campo, configuracion final o respaldo reciente.\n\nVer detalle avanzado\n\nPendientes antes de operar\n\nValidacion desde segunda PC LAN · Impresora institucional fisica media carta/carta/A5 · Servidor final pendiente de configuracion operativa\nNo hay respaldos\n\nTodavía no se ha creado ningún respaldo. Cree el primero para proteger los datos del hospital.\n\nCrear respaldo\n\nRespaldos locales cargados."
+    }
+  ],
+  "consoleIssues": []
+}

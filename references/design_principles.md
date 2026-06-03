@@ -1,4 +1,4 @@
-# Principios de Diseño para Hospital Billing OS
+# Principios de Diseño para Sistema de Caja Hospitalaria
 
 1. Velocidad sobre complejidad.
 2. Caja siempre visible.

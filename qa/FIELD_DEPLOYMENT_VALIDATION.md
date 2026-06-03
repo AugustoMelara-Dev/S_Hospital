@@ -9,7 +9,7 @@ Entorno: Windows local en `C:\Projects\S_Hospital`, Laravel servido en `http://1
 - PRODUCTION_CANDIDATE: si.
 - PRODUCTION_READY: no.
 
-Fase 11 valida partes reales del entorno, pero no declara produccion final porque falta completar validacion fisica desde cliente LAN independiente, impresora termica real 80mm/58mm y configuracion final `APP_ENV=production` / `APP_DEBUG=false` con admin real.
+Fase 11 valida partes reales del entorno, pero no declara produccion final porque falta completar validacion fisica desde cliente LAN independiente, impresora institucional real media carta/carta/A5/80mm/58mm y configuracion final `APP_ENV=production` / `APP_DEBUG=false` con admin real.
 
 ## Entorno detectado
 
@@ -133,7 +133,19 @@ Pendiente para produccion final:
 - Confirmar IP fija o reserva DHCP.
 - Confirmar que los clientes usan `http://192.168.1.7:8000` o nombre local, nunca `localhost`.
 
-## Impresora termica
+Helper operativo agregado:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 `
+  -BaseUrl http://IP_DEL_SERVIDOR `
+  -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+```
+
+El helper solo automatiza `/up`, `/login`, `/verify-email` y asset JS. El
+operador debe completar en navegador real login, caja, factura, pago, recibo,
+historial, reportes y backup `pending` -> `success`.
+
+## Impresora institucional
 
 Estado: PENDING_HARDWARE_VALIDATION.
 
@@ -177,7 +189,7 @@ Antes de entregar como produccion:
 
 - Configurar `APP_ENV=production`.
 - Configurar `APP_DEBUG=false`.
-- Crear admin real con `php artisan auth:create-initial-admin`.
+- Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no pasar la contrasena como argumento CLI.
 - No ejecutar seeders demo.
 - Ejecutar migraciones aprobadas sin `migrate:fresh`.
 - Ejecutar `php artisan config:cache --no-ansi`.
@@ -192,4 +204,4 @@ Fase 11 eleva la evidencia tecnica de campo, pero el sistema queda:
 - PRODUCTION_CANDIDATE: si.
 - PRODUCTION_READY: no.
 
-Bloqueantes restantes para `PRODUCTION_READY`: cliente LAN fisico completo, impresora termica fisica 80mm/58mm y configuracion final de produccion con admin real.
+Bloqueantes restantes para `PRODUCTION_READY`: cliente LAN fisico completo, impresora institucional fisica media carta/carta/A5/80mm/58mm y configuracion final de produccion con admin real.

@@ -3,6 +3,7 @@ import { Button } from '../../../components/ui/button';
 import { Checkbox } from '../../../components/ui/checkbox';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
+import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
 export type CartItem = {
   service: import('../../../lib/api').Service;
@@ -13,6 +14,7 @@ export type CartItem = {
 type InvoiceCartProps = {
   items: CartItem[];
   preview: { subtotal: string; tax: string; total: string };
+  taxRate?: string;
   onUpdateQuantity: (index: number, quantity: string) => void;
   onUpdateDialysisPrescription: (index: number, checked: boolean) => void;
   onRemoveItem: (index: number) => void;
@@ -29,6 +31,7 @@ const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 export function InvoiceCart({
   items,
   preview,
+  taxRate,
   onUpdateQuantity,
   onUpdateDialysisPrescription,
   onRemoveItem,
@@ -40,6 +43,20 @@ export function InvoiceCart({
   submitting,
 }: InvoiceCartProps) {
   const isEmpty = items.length === 0;
+  const primaryBlockReason = disabledReasons[0];
+  const disabledActionLabel = isEmpty
+    ? emptyActionLabel
+    : primaryBlockReason
+    ? actionLabelForBlockReason(primaryBlockReason, emptyActionLabel)
+    : emptyActionLabel;
+  const disabledReasonId = disabledReasons.length > 0 ? 'invoice-submit-blockers' : undefined;
+  const displayActionLabel = submitting
+    ? 'Emitiendo...'
+    : disabled || isEmpty
+      ? disabledActionLabel
+      : actionLabel;
+  const actionAriaLabel = disabled || isEmpty ? `${actionLabel}: ${displayActionLabel}` : undefined;
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 mb-4">
@@ -57,7 +74,6 @@ export function InvoiceCart({
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <ShoppingCart className="h-10 w-10 mb-3 opacity-40" />
             <p className="text-sm font-medium">No hay servicios agregados</p>
-            <p className="text-xs mt-1">Haga clic en un servicio para agregarlo</p>
           </div>
         ) : (
           <div className="space-y-2 pr-1">
@@ -72,7 +88,7 @@ export function InvoiceCart({
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-sm truncate">{item.service.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        L. {item.service.price} {isFree && <span className="text-emerald-600 font-medium">(Gratis - Receta dialisis)</span>}
+                        {moneyLabel(item.service.price)} {isFree && <span className="text-emerald-600 font-medium">(Gratis - Receta dialisis)</span>}
                       </p>
                     </div>
                     <Button
@@ -143,15 +159,17 @@ export function InvoiceCart({
         <div className="space-y-2 mb-4">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Subtotal:</span>
-            <span>L. {preview.subtotal}</span>
+            <span>{moneyLabel(preview.subtotal)}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">ISV (15%):</span>
-            <span>L. {preview.tax}</span>
-          </div>
+          {taxRate && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">ISV ({taxRate}%):</span>
+              <span>{moneyLabel(preview.tax)}</span>
+            </div>
+          )}
           <div className="flex justify-between font-bold text-xl border-t border-border pt-2">
-            <span>Total:</span>
-            <span className="text-primary">L. {preview.total}</span>
+            <span>Total estimado:</span>
+            <span className="text-primary">{moneyLabel(preview.total)}</span>
           </div>
         </div>
 
@@ -160,6 +178,8 @@ export function InvoiceCart({
           size="lg"
           className="w-full font-semibold"
           disabled={disabled || isEmpty}
+          aria-describedby={disabledReasonId}
+          aria-label={actionAriaLabel}
           onClick={onConfirm}
         >
           {submitting ? (
@@ -167,14 +187,14 @@ export function InvoiceCart({
               <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
               Emitiendo...
             </>
-          ) : isEmpty ? (
-            emptyActionLabel
+          ) : disabled || isEmpty ? (
+            disabledActionLabel
           ) : (
             <>{actionLabel}</>
           )}
         </Button>
         {disabledReasons.length > 0 && (
-          <div className="mt-2 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
+          <div id="invoice-submit-blockers" className="mt-2 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
             {disabledReasons.map((reason) => (
               <p key={reason}>{reason}</p>
             ))}
@@ -183,6 +203,26 @@ export function InvoiceCart({
       </div>
     </div>
   );
+}
+
+function actionLabelForBlockReason(reason: string, emptyActionLabel: string): string {
+  if (reason.toLowerCase().includes('caja')) {
+    return 'Abra caja primero';
+  }
+
+  if (reason.toLowerCase().includes('paciente')) {
+    return 'Ingrese paciente';
+  }
+
+  if (reason.toLowerCase().includes('servicio')) {
+    return emptyActionLabel;
+  }
+
+  return 'Complete requisitos';
+}
+
+function moneyLabel(value: string | number | null | undefined): string {
+  return formatLempirasFromCents(parseCents(value));
 }
 
 function parseQuantityUnits(value: string): number {

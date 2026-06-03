@@ -2,12 +2,17 @@
 
 namespace App\Actions\Billing;
 
+use App\Events\InvoiceChanged;
+use App\Events\PaymentChanged;
 use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
+use App\Support\Money;
+use App\Support\ReceiptPaperSize;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -54,13 +59,29 @@ class CreateInvoiceAction
                 'fiscal_prefix' => $sequence->prefix,
                 'hospital_name' => $settings?->hospital_name,
                 'hospital_rtn' => $settings?->rtn,
+                'hospital_address' => $settings?->address,
+                'hospital_slogan' => $settings?->slogan,
+                'receipt_template_mode' => $settings?->receipt_template_mode ?? 'institutional',
+                'receipt_paper_size' => ReceiptPaperSize::normalize($settings?->receipt_paper_size),
+                'receipt_government_line' => $settings?->government_line ?? 'Gobierno de Honduras',
+                'receipt_secretariat_line' => $settings?->secretariat_line ?? 'Secretaria de Salud Publica',
+                'receipt_location' => $settings?->receipt_location ?? $settings?->address,
+                'receipt_footer_text' => $settings?->receipt_footer_text,
+                'tax_label' => 'ISV',
+                'tax_rate_snapshot' => $taxRate,
                 'patient_name' => trim($payload['patient_name']),
                 'subtotal' => $totals['subtotal'],
+                'subtotal_cents' => $totals['subtotal_cents'],
                 'tax_amount' => $totals['tax_amount'],
+                'tax_amount_cents' => $totals['tax_amount_cents'],
                 'discount_amount' => $totals['discount_amount'],
+                'discount_amount_cents' => $totals['discount_amount_cents'],
                 'total' => $totals['total'],
+                'total_cents' => $totals['total_cents'],
                 'paid_amount' => $isZeroTotal ? $totals['total'] : '0.00',
+                'paid_amount_cents' => $isZeroTotal ? $totals['total_cents'] : 0,
                 'balance_due' => $isZeroTotal ? '0.00' : $totals['total'],
+                'balance_due_cents' => $isZeroTotal ? 0 : $totals['total_cents'],
                 'status' => $isZeroTotal ? Invoice::STATUS_PAID : Invoice::STATUS_ISSUED,
                 'cash_session_id' => $cashSession->id,
                 'issued_by' => $issuer->id,
@@ -69,6 +90,41 @@ class CreateInvoiceAction
 
             foreach ($totals['items'] as $item) {
                 $invoice->items()->create($item);
+            }
+
+            if ($isZeroTotal) {
+                $payment = Payment::query()->create([
+                    'invoice_id' => $invoice->id,
+                    'cash_session_id' => $cashSession->id,
+                    'user_id' => $issuer->id,
+                    'method' => Payment::METHOD_OTHER,
+                    'amount' => '0.00',
+                    'amount_cents' => 0,
+                    'reference' => 'Factura sin cobro por regla autorizada',
+                    'status' => Payment::STATUS_POSTED,
+                    'paid_at' => now(),
+                ]);
+
+                DB::afterCommit(function () use ($payment) {
+                    PaymentChanged::dispatch($payment->fresh(), 'registered');
+                });
+
+                AuditLog::query()->create([
+                    'user_id' => $issuer->id,
+                    'action' => 'payment.registered',
+                    'entity_type' => Payment::class,
+                    'entity_id' => $payment->id,
+                    'new_values' => [
+                        'invoice_id' => $invoice->id,
+                        'invoice_number' => $invoice->invoice_number,
+                        'cash_session_id' => $cashSession->id,
+                        'method' => $payment->method,
+                        'amount' => $payment->amount,
+                        'reference' => $payment->reference,
+                        'invoice_status' => $invoice->status,
+                        'balance_due' => $invoice->balance_due,
+                    ],
+                ]);
             }
 
             AuditLog::query()->create([
@@ -86,6 +142,13 @@ class CreateInvoiceAction
                 ],
             ]);
 
+            // Broadcast after-commit so the websocket event only fires
+            // if the DB transaction actually committed. Listeners
+            // (other cashier PCs) get a fresh invoice they can refetch.
+            DB::afterCommit(function () use ($invoice) {
+                InvoiceChanged::dispatch($invoice->fresh(), 'created');
+            });
+
             return $invoice->load('items', 'issuer:id,name,username');
         });
     }
@@ -98,7 +161,7 @@ class CreateInvoiceAction
     {
         $serviceIds = collect($items)->pluck('service_id')->unique()->values();
         $services = Service::query()
-            ->with('category:id,name')
+            ->with(['category:id,name', 'area:id,name'])
             ->whereIn('id', $serviceIds)
             ->get()
             ->keyBy('id');
@@ -122,6 +185,18 @@ class CreateInvoiceAction
                 ]);
             }
 
+            if (! $service->visible_in_billing) {
+                throw ValidationException::withMessages([
+                    $field => 'El servicio seleccionado no esta visible para facturacion.',
+                ]);
+            }
+
+            if (! $service->is_billable) {
+                throw ValidationException::withMessages([
+                    $field => 'El servicio seleccionado no es facturable.',
+                ]);
+            }
+
             $prepared[] = [
                 'service' => $service,
                 'quantity' => $item['quantity'],
@@ -135,6 +210,6 @@ class CreateInvoiceAction
 
     private function isZeroAmount(string $amount): bool
     {
-        return (float) $amount === 0.0;
+        return Money::parseCents($amount, 'total') === 0;
     }
 }

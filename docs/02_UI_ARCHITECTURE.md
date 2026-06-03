@@ -1,4 +1,4 @@
-# 02 UI Architecture
+﻿# 02 UI Architecture
 
 ## Principio
 

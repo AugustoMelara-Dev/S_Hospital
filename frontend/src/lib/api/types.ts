@@ -14,8 +14,23 @@ export type FiscalSettings = {
   hospital_name: string;
   rtn: string;
   default_tax_rate: string;
-  receipt_width: '80mm' | '58mm';
+  receipt_paper_size?: InstitutionalReceiptPaperSize;
+  primary_color: 'teal' | 'blue' | 'indigo' | 'green' | 'rose';
+  address?: string;
+  slogan?: string;
+  scanner_enabled?: boolean;
+  partial_payments_enabled?: boolean;
+  receipt_template_mode?: 'institutional';
+  government_line?: string | null;
+  secretariat_line?: string | null;
+  receipt_location?: string | null;
+  receipt_footer_text?: string | null;
 };
+
+export type PublicBranding = Pick<
+  FiscalSettings,
+  'hospital_name' | 'primary_color' | 'slogan' | 'government_line' | 'secretariat_line' | 'receipt_location'
+>;
 
 export type FiscalSequence = {
   id?: number;
@@ -37,10 +52,19 @@ export type Category = {
   sort_order: number;
 };
 
+export type Area = {
+  id: number;
+  name: string;
+  slug: string;
+  active: boolean;
+};
+
 export type Service = {
   id: number;
   category_id: number;
+  area_id?: number | null;
   name: string;
+  aliases?: string | null;
   slug: string;
   scan_code?: string | null;
   barcode?: string | null;
@@ -48,8 +72,11 @@ export type Service = {
   price: string;
   taxable: boolean;
   active: boolean;
+  visible_in_billing?: boolean;
+  is_billable?: boolean;
   special_rule_code: string | null;
   category?: Category;
+  area?: Area | null;
 };
 
 export type CategoryPayload = {
@@ -60,13 +87,18 @@ export type CategoryPayload = {
 
 export type ServicePayload = {
   category_id: number;
+  area_id?: number | null;
   name: string;
+  aliases?: string | null;
   price: string;
+  price_change_reason?: string | null;
   scan_code: string | null;
   barcode: string | null;
   qr_code: string | null;
   taxable: boolean;
   active: boolean;
+  visible_in_billing?: boolean;
+  is_billable?: boolean;
   special_rule_code: string | null;
 };
 
@@ -88,6 +120,8 @@ export type InvoiceItem = {
   service_name: string;
   category_id: number;
   category_name: string;
+  area_id?: number | null;
+  area_name?: string | null;
   quantity: string;
   unit_price: string;
   tax_rate: string;
@@ -125,6 +159,7 @@ export type Invoice = {
 export type CashSession = {
   id: number;
   user_id: number;
+  user?: Pick<AuthUser, 'id' | 'name' | 'username'>;
   opening_amount: string;
   closing_amount: string | null;
   expected_amount: string | null;
@@ -138,6 +173,8 @@ export type CashSession = {
   payments_total?: string;
   payments_by_method?: MoneyByMethod;
   expected_cash_amount?: string;
+  pending_invoice_count?: number;
+  pending_amount?: string;
 };
 
 export type Payment = {
@@ -148,15 +185,33 @@ export type Payment = {
   method: 'cash' | 'transfer' | 'card' | 'other';
   amount: string;
   reference: string | null;
-  status: 'posted';
+  status: 'posted' | 'void';
+  voided_by?: number | Pick<AuthUser, 'id' | 'name' | 'username'> | null;
+  voided_at?: string | null;
+  void_reason?: string | null;
   paid_at: string;
 };
 
+export type InstitutionalReceiptPaperSize = 'letter' | 'half_letter' | 'a5' | '80mm' | '58mm';
+export type ReceiptPaperSize = InstitutionalReceiptPaperSize;
+
 export type ReceiptData = {
-  width: '80mm' | '58mm';
+  width: ReceiptPaperSize;
   hospital: {
     name: string;
     rtn: string | null;
+    address?: string | null;
+    slogan?: string | null;
+  };
+  institutional?: {
+    template_mode: 'institutional' | string;
+    paper_size: ReceiptPaperSize;
+    government_line: string | null;
+    secretariat_line: string | null;
+    location: string | null;
+    footer_text: string | null;
+    copy_label: string | null;
+    signature_label: string | null;
   };
   fiscal: {
     cai: string | null;
@@ -178,6 +233,8 @@ export type ReceiptData = {
   > & {
     issued_at: string;
     cashier: string | null;
+    tax_label?: string | null;
+    tax_rate?: string | null;
   };
   items: Array<
     Pick<
@@ -209,10 +266,38 @@ export type DailyReport = {
   date: string;
   total_billed: string;
   total_collected: string;
+  total_pending: string;
+  total_partial: string;
+  total_voided: string;
   invoice_count: number;
   payment_count: number;
   payments_by_method: MoneyByMethod;
   invoices_by_status: Record<'issued' | 'partial' | 'paid' | 'void', { count: number; total: string }>;
+};
+
+export type MonthlyReport = {
+  month: string;
+  date_from: string;
+  date_to: string;
+  total_billed: string;
+  total_collected: string;
+  total_pending: string;
+  total_partial: string;
+  total_voided: string;
+  invoice_count: number;
+  payment_count: number;
+  payments_by_method: MoneyByMethod;
+  invoices_by_status: Record<'issued' | 'partial' | 'paid' | 'void', { count: number; total: string }>;
+  daily_totals: Array<{
+    date: string;
+    total_billed: string;
+    total_collected: string;
+    total_pending: string;
+    total_partial: string;
+    total_voided: string;
+    invoice_count: number;
+    payment_count: number;
+  }>;
 };
 
 export type IncomeReport = {
@@ -221,7 +306,11 @@ export type IncomeReport = {
   cash_session_id: number | null;
   user_id: number | null;
   filters: ReportFilters;
+  total_billed: string;
   total_collected: string;
+  total_pending: string;
+  total_partial: string;
+  total_voided: string;
   payments_by_method: MoneyByMethod;
   payment_count: number;
   invoice_count: number;
@@ -230,6 +319,9 @@ export type IncomeReport = {
 export type CategoryReport = {
   date_from: string;
   date_to: string;
+  amount_basis: 'billed' | 'collected_prorated';
+  amount_label: string;
+  amount_source: string;
   filters: ReportFilters;
   categories: Array<{
     category: string;
@@ -244,10 +336,29 @@ export type CategoryReport = {
 export type ServiceSalesReport = {
   date_from: string;
   date_to: string;
+  amount_basis: 'billed' | 'collected_prorated';
+  amount_label: string;
+  amount_source: string;
   filters: ReportFilters;
   services: Array<{
     service: string;
     category: string;
+    item_count: number;
+    quantity: string;
+    total: string;
+  }>;
+};
+
+export type AreaIncomeReport = {
+  date_from: string;
+  date_to: string;
+  amount_basis: 'billed' | 'collected_prorated';
+  amount_label: string;
+  amount_source: string;
+  filters: ReportFilters;
+  areas: Array<{
+    area_id: number | null;
+    area: string;
     item_count: number;
     quantity: string;
     total: string;
@@ -261,12 +372,13 @@ export type OperationsReport = {
   summary: {
     void_count: number;
     reprint_count: number;
+    service_change_count?: number;
+    payment_void_count?: number;
     backup_count: number;
     failed_backup_count: number;
     cashier_count: number;
   };
   voids: Array<{
-    invoice_id: number;
     invoice_number: string;
     patient_name: string;
     total: string;
@@ -275,26 +387,40 @@ export type OperationsReport = {
     user: string | null;
   }>;
   reprints: Array<{
-    invoice_id: number | null;
     invoice_number: string | null;
     width: string | null;
     reason: string | null;
     created_at: string | null;
     user: string | null;
   }>;
+  payment_voids?: Array<{
+    invoice_number: string | null;
+    patient_name: string | null;
+    method: Payment['method'];
+    amount: string;
+    reason: string | null;
+    voided_at: string | null;
+    voided_by: string | null;
+    cashier: string | null;
+  }>;
+  catalog_changes?: Array<{
+    action: string;
+    service: string;
+    old_values: Record<string, string | number | boolean | null | string[]>;
+    new_values: Record<string, string | number | boolean | null | string[]>;
+    created_at: string | null;
+    user: string | null;
+  }>;
   backups: Array<{
-    id: number;
     filename: string;
     status: string;
     type: string;
     size_bytes: number | null;
-    checksum_sha256: string | null;
     created_at: string | null;
     completed_at: string | null;
     creator: string | null;
   }>;
   cashiers: Array<{
-    user_id: number;
     name: string;
     username: string;
     payment_count: number;
@@ -313,6 +439,11 @@ export type CashSessionReport = {
   total_transfer: string;
   total_card: string;
   total_other: string;
+  payments_count: number;
+  payments_total: string;
+  expected_cash_amount: string;
+  pending_invoice_count: number;
+  pending_amount: string;
   payments: Array<Payment & {
     invoice?: Pick<
       Invoice,
@@ -349,6 +480,117 @@ export type BackupLog = {
   creator?: Pick<AuthUser, 'id' | 'name' | 'username'> | null;
 };
 
+export type SystemStatus = {
+  environment: {
+    app_env: string;
+    app_debug: boolean;
+    app_url: string;
+    queue_connection: string;
+    filesystem_disk: string;
+    app_version: string;
+    php_version: string;
+    server_time: string;
+    timezone: string;
+  };
+  database: {
+    connection: string;
+    driver: string;
+    is_mysql_family: boolean;
+    connected: boolean;
+  };
+  frontend: {
+    dist_index_exists: boolean;
+    assets_present: boolean;
+    assets_count: number;
+    entry_label: string;
+  };
+  network: {
+    configured_host: string | null;
+    host_type: 'unknown' | 'loopback' | 'lan';
+    lan_ready: boolean;
+    client_url: string | null;
+    guidance: string;
+  };
+  backups: {
+    pending_count: number;
+    worker_recently_active: boolean;
+    last_success_at: string | null;
+    last_success_filename: string | null;
+    last_failure_at: string | null;
+    last_failure_message: string | null;
+    dump_binary: {
+      configured: boolean;
+      available: boolean;
+      name: string | null;
+    };
+    storage: {
+      writable: boolean;
+      free_bytes: number | null;
+    };
+    queue: {
+      connection: string;
+      jobs_table_available: boolean;
+      failed_jobs_table_available: boolean;
+      failed_jobs_count: number | null;
+      pending_backup_jobs: number | null;
+      worker_command: string;
+      scheduler_command: string;
+    };
+  };
+  runtime: {
+    logs_writable: boolean;
+    cache_writable: boolean;
+    laravel_log: {
+      exists: boolean;
+      size_bytes: number | null;
+      modified_at: string | null;
+    };
+    backup_automation_log: {
+      exists: boolean;
+      size_bytes: number | null;
+      modified_at: string | null;
+    };
+    latest_migration: string | null;
+    migration_count: number | null;
+    pending_migration_count: number | null;
+    pending_migrations: string[];
+  };
+  readiness: {
+    state: 'DEMO_READY' | 'PRODUCTION_CANDIDATE' | 'PRODUCTION_READY';
+    production_ready: boolean;
+    blockers: Array<{
+      code: string;
+      label: string;
+      status: 'pending' | 'partial' | 'validated';
+    }>;
+  };
+  preflight: {
+    production_checks: Array<{
+      code: string;
+      label: string;
+      status: 'pending' | 'partial' | 'validated' | 'manual_required';
+      detail: string;
+    }>;
+    public_routes: Array<{
+      path: string;
+      expected: string;
+      status: 'pending' | 'partial' | 'validated' | 'manual_required';
+    }>;
+    physical_proofs: Array<{
+      code: string;
+      label: string;
+      required_file: string;
+      status: 'pending' | 'partial' | 'validated' | 'manual_required';
+      detail: string;
+    }>;
+    commands: {
+      preflight: string;
+      backup_worker: string;
+      scheduler: string;
+    };
+  };
+};
+
 export type PaginatedMeta = {
   current_page: number;
   per_page: number;
@@ -359,6 +601,7 @@ export type ServiceFilters = {
   search?: string;
   code?: string;
   active?: boolean;
+  billing?: boolean;
   categoryId?: number;
   page?: number;
   perPage?: number;
@@ -382,6 +625,79 @@ export type ReportFilters = {
   cash_session_id?: string | number | null;
   user_id?: string | number | null;
   category_id?: string | number | null;
+  area_id?: string | number | null;
   method?: Payment['method'] | '' | null;
   status?: Invoice['status'] | '' | null;
+};
+
+export type PdfReportFilters = ReportFilters & { date?: string };
+
+export type DashboardReport = {
+  last_7_days: Array<{
+    date: string;
+    total_billed: string;
+    total_collected: string;
+    total_pending?: string;
+    total_partial?: string;
+    total_voided?: string;
+    invoice_count: number;
+    payment_count: number;
+  }>;
+  current_month: {
+    total_billed: string;
+    total_collected: string;
+    total_pending?: string;
+    total_partial?: string;
+    total_voided?: string;
+    invoice_count: number;
+    payment_count: number;
+  };
+  payments_by_method: MoneyByMethod;
+  top_services: Array<{
+    service_name: string;
+    category_name: string;
+    quantity: string;
+    total: string;
+  }>;
+  cashiers_summary: Array<{
+    user_id: number;
+    name: string;
+    username: string;
+    payment_count: number;
+    total_collected: string;
+  }>;
+};
+
+
+export type OperationalHealth = {
+  generated_at: string;
+  database: {
+    driver: string;
+    connected: boolean;
+    error?: string;
+  };
+  queue: {
+    connection: string;
+    pending: number;
+    failed: number;
+    error?: string;
+  };
+  backups: {
+    worker_recently_active: boolean;
+    pending: number;
+    success_last_24h: number;
+    failed_last_24h: number;
+    error?: string;
+  };
+  storage: {
+    backup_files: number;
+    backup_bytes: number;
+    error?: string;
+  };
+  recent_errors: Array<{
+    id: number;
+    action: string;
+    entity_type: string;
+    created_at: string;
+  }>;
 };

@@ -39,6 +39,27 @@ class FiscalSequenceTest extends TestCase
         ]);
     }
 
+    public function test_fiscal_sequence_index_requires_view_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $supervisor = User::factory()->create();
+        $supervisor->assignRole('supervisor');
+        $cashier = User::factory()->create();
+        $cashier->assignRole('cajero');
+
+        FiscalSequence::query()->create($this->validPayload());
+
+        $this->actingAs($supervisor)
+            ->getJson('/api/fiscal-sequences')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.document_type', 'invoice');
+
+        $this->actingAs($cashier)
+            ->getJson('/api/fiscal-sequences')
+            ->assertForbidden();
+    }
+
     public function test_rejects_invalid_sequence_range(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
