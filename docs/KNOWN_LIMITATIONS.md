@@ -21,6 +21,18 @@
 - ~~apiClient timeout + CSRF reset + Set handlers~~
   (Fase B4 v1.0.0)
 - ~~phpstan nivel 5~~ (Fase C5 v1.0.0)
+- ~~Installer legacy compatibility guarded~~: `setup.bat` delega al
+  instalador LAN soportado, `install_hospital_os.ps1` queda solo por
+  compatibilidad y `qa/INSTALLER_LEGACY_SAFETY_2026_06_03.md` lo valida.
+- ~~LAN/IP recovery guarded~~: `refresh_lan_ip.ps1` usa diagnostico de red
+  compartido, `Get-NetRoute` con metrica y modo `-WhatIf`; la evidencia queda
+  en `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`.
+- ~~Barcode/report SQL reference isolated~~:
+  `schema_extensions_for_barcode_reports.sql` vive en
+  `database/_reference_DO_NOT_EXECUTE/` y no queda como SQL ejecutable en la
+  raiz de `database/`.
+- ~~CSP report channel implemented~~: `/api/system/csp-report` existe con
+  controlador, rate limit y tests de feature.
 
 ### Pendientes para v1.1
 
@@ -38,17 +50,8 @@
   P95/P99, conexiones DB, espacio disco, ultimo backup.
 - **Comando `hospital:maintenance`**: para poner el sistema en
   estado de "en mantenimiento" durante incidentes.
-- **Deprecacion de `install_hospital_os.ps1`**: marcar como legacy;
-  el installer soportado es `deploy_hospital_lan.ps1`.
-- **IP detection robusta**: usar `Get-NetRoute` con metrica y
-  multiples adaptadores; eliminar placeholder `192.168.1.100`.
-- **`database/schema_extensions_for_barcode_reports.sql`**:
-  referencia a columna `source_hash` que no existe. Mover a
-  `_reference_DO_NOT_EXECUTE/` o convertir a migracion Laravel.
 - **ESLint warnings a error**: 28 warnings documentados en FASE B5
   para promover a error en v1.1.
-- **CSP report channel opcional**: validar que
-  `/api/system/csp-report` esta implementado y acepta reportes.
 
 ### Pendientes de entorno fisico (FASE G)
 

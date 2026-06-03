@@ -1,3 +1,10 @@
+## 2026-06-03 - Limitaciones conocidas como evidencia operativa
+
+Contexto: `docs/KNOWN_LIMITATIONS.md` es una guia de soporte y cierre. Si conserva pendientes ya resueltos, el personal tecnico puede perseguir problemas falsos o ignorar bloqueantes fisicos reales.
+
+Decision: se agrega `scripts/validate_known_limitations_safety.ps1` para verificar que limitaciones ya guardadas localmente pasen a cerradas con evidencia y que los bloqueantes finales sigan visibles antes de `PRODUCTION_READY`.
+
+Criterio de verificacion: el guard confirma deprecacion del instalador legacy, recuperacion LAN por metrica de ruta, SQL de referencia aislado, canal CSP implementado y final blockers conservados sin exponer secretos.
 ## 2026-06-03 - Autoarranque seguro del stack Windows
 
 Contexto: la continuidad operativa requiere que el servidor intente levantar el sistema despues de un reinicio sin esperar a que el desarrollador este presente. Ya existia acceso directo y reparacion segura, pero faltaba una tarea dedicada de arranque del stack con evidencia no destructiva.

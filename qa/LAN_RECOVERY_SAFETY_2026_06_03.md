@@ -18,6 +18,8 @@ Observed result:
 
 - `LAN_RECOVERY_SAFETY: YES`.
 - `refresh_lan_ip.ps1` imports `scripts\lib\env_helpers.ps1` and `scripts\lib\net_diagnostics.ps1`.
+- `scripts\lib\net_diagnostics.ps1` uses `Get-NetRoute` and route metrics to
+  prefer the active LAN path when multiple adapters are present.
 - `refresh_lan_ip.ps1` updates `SERVER_IP`, `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` and `CORS_ALLOWED_ORIGINS` through the ASCII-safe env helper.
 - A disposable fixture confirmed `-WhatIf` exits successfully and does not modify root or backend `.env` files.
 - The manuals tell staff not to invoice from client computers while LAN access is down and require validation from a second client after refresh.

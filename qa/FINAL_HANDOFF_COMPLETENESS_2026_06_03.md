@@ -26,6 +26,9 @@ Observed result:
 - The handoff includes files changed in this hardening front.
 - The handoff lists `scripts/assert_offline_release_clean.ps1` as a preserved safety guard.
 - The handoff lists `scripts/install_stack_autostart_windows.ps1` as a preserved startup/support script.
+- The handoff lists `scripts/validate_known_limitations_safety.ps1` and
+  `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md` as preserved support-handoff
+  evidence.
 - The handoff includes tests and gates run locally.
 - The handoff includes physical blockers for LAN client validation, printer proof, `SistemaCajaHospitalaria-StackAutostart`, Windows backup tasks, production environment, backup worker, restore, concurrency and offline release regeneration.
 - The handoff includes risks and limits.
