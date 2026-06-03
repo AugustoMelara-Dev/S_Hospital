@@ -11,7 +11,7 @@ import {
   TrendingUp,
   WalletCards,
 } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
@@ -66,7 +66,7 @@ export function DashboardView({
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
 
-  const fetchDashboard = () => {
+  const fetchDashboard = useCallback(() => {
     if (!canViewManagerialReports) {
       return;
     }
@@ -86,9 +86,9 @@ export function DashboardView({
       .finally(() => {
         setLoadingDashboard(false);
       });
-  };
+  }, [canViewManagerialReports, onStatus]);
 
-  const fetchSetupStatus = () => {
+  const fetchSetupStatus = useCallback(() => {
     if (!canViewFiscalSettings && !canViewManagerialReports) {
       return;
     }
@@ -100,12 +100,12 @@ export function DashboardView({
       .catch(() => {
         setSetupStatus(null);
       });
-  };
+  }, [canViewFiscalSettings, canViewManagerialReports]);
 
   useEffect(() => {
     fetchDashboard();
     fetchSetupStatus();
-  }, [canViewManagerialReports, canViewFiscalSettings]);
+  }, [fetchDashboard, fetchSetupStatus]);
 
   return (
     <>
