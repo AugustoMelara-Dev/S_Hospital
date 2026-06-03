@@ -32,6 +32,7 @@ export function App() {
 
 function HospitalApp() {
   const session = useHospitalSession();
+  const { setStatus } = session;
   const navigate = useNavigate();
   const [quickInvoiceOpen, setQuickInvoiceOpen] = useState(false);
   const [quickCashOpen, setQuickCashOpen] = useState(false);
@@ -42,7 +43,7 @@ function HospitalApp() {
   // continues to drive the topbar pill, but cashiers no longer miss
   // errors that were previously hidden in an sr-only footer.
   const handleStatus = useCallback((message: string) => {
-    session.setStatus(message);
+    setStatus(message);
     if (message && message !== 'Listo para iniciar sesión local.') {
       if (isErrorMessage(message)) {
         notify.error(message);
@@ -65,7 +66,7 @@ function HospitalApp() {
         notify.success(message);
       }
     }
-  }, [session.setStatus]);
+  }, [setStatus]);
 
   useEffect(() => {
     if (session.sessionExpired) {
