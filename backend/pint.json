@@ -1,11 +1,16 @@
 {
-    "preset": "project",
+    "preset": "laravel",
     "exclude": [
         "vendor",
         "node_modules",
         "storage",
         "bootstrap/cache",
-        "public",
-        "build"
-    ]
+        "tests"
+    ],
+    "notNode": [
+        "tests/fixtures"
+    ],
+    "rules": {
+        "declare_strict_types": true
+    }
 }

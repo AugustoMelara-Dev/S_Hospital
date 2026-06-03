@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Providers\AppServiceProvider;
 use Laravel\Sanctum\SanctumServiceProvider;
 use Spatie\Permission\PermissionServiceProvider;

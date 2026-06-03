@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Actions\Reports\Concerns;
 
 use App\Support\Money;
 
 trait FormatsReportMoney
 {
-    private function moneyToCents(int|string|null $amount): int
+    private function moneyToCents(int|float|string|null $amount): int
     {
         if ($amount === null) {
             return 0;
@@ -15,17 +17,17 @@ trait FormatsReportMoney
         return Money::parseCents((string) $amount, 'report_money');
     }
 
-    private function centsToMoney(int|string|null $cents): string
+    private function centsToMoney(int|float|string|null $cents): string
     {
         return Money::formatCents((int) ($cents ?? 0));
     }
 
-    private function decimalForSpreadsheet(int|string|null $amount): float
+    private function decimalForSpreadsheet(int|float|string|null $amount): float
     {
         return $this->moneyToCents($amount) / 100;
     }
 
-    private function formatMoneyForDisplay(int|string|null $amount): string
+    private function formatMoneyForDisplay(int|float|string|null $amount): string
     {
         return number_format($this->moneyToCents($amount) / 100, 2);
     }

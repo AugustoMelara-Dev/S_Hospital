@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Actions\Reports\OpenApiExporter;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AuthController;

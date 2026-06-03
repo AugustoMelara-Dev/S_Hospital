@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $defaultLocalOrigins = 'http://localhost:5173,http://127.0.0.1:5173';
 $configuredOrigins = env('CORS_ALLOWED_ORIGINS');
 $originSource = is_string($configuredOrigins) ? trim($configuredOrigins) : '';

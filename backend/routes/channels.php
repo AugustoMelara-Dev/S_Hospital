@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Models\Invoice;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Broadcast;
