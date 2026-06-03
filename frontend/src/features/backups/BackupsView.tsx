@@ -1,5 +1,5 @@
 import { Download, RefreshCw, Archive, CheckCircle, Clock, XCircle, HardDrive, Server, ShieldAlert } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { Alert } from '../../components/ui/alert';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
@@ -196,7 +196,6 @@ function saveBlob(blob: Blob, filename: string) {
 
 export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const [backupsState, setBackups] = useState<BackupLog[]>([]);
-  const backups = Array.isArray(backupsState) ? backupsState : [];
   const [meta, setMeta] = useState<PaginatedMeta | null>(null);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -210,7 +209,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const canCreate = user.permissions.includes('backups.create');
   const canDownload = user.permissions.includes('backups.download');
 
-  const backupsList = Array.isArray(backups) ? backups : [];
+  const backupsList = useMemo(
+    () => (Array.isArray(backupsState) ? backupsState : []),
+    [backupsState],
+  );
 
   const pendingCount = backupsList.filter(b => b.status === 'pending').length;
   const successCount = backupsList.filter(b => b.status === 'success').length;
@@ -220,27 +222,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const lastFailedBackup = backupsList.find(b => b.status === 'failed');
   const operationalStatus = systemStatus ? operationalSummary(systemStatus) : null;
 
-  useEffect(() => {
-    void loadBackups(page);
-  }, [page, statusFilter]);
-
-  useEffect(() => {
-    void loadSystemStatus();
-  }, []);
-
-  useEffect(() => {
-    if (!backupsList.some((backup) => backup.status === 'pending')) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      void loadBackups(page, false);
-    }, 5000);
-
-    return () => window.clearTimeout(timer);
-  }, [backups, page]);
-
-  async function loadBackups(nextPage: number, announce = true) {
+  const loadBackups = useCallback(async (nextPage: number, announce = true) => {
     setLoading(true);
     setError('');
     if (announce) {
@@ -261,9 +243,9 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [onStatus, statusFilter]);
 
-  async function loadSystemStatus() {
+  const loadSystemStatus = useCallback(async () => {
     setSystemStatusError('');
 
     try {
@@ -272,7 +254,27 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       const message = userSafeErrorMessage(error, 'No se pudo cargar el estado operativo del servidor.');
       setSystemStatusError(message);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    void loadBackups(page);
+  }, [loadBackups, page]);
+
+  useEffect(() => {
+    void loadSystemStatus();
+  }, [loadSystemStatus]);
+
+  useEffect(() => {
+    if (!backupsList.some((backup) => backup.status === 'pending')) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void loadBackups(page, false);
+    }, 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [backupsList, loadBackups, page]);
 
   function refreshOperationalStatus() {
     void loadBackups(page);
