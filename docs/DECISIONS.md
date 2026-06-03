@@ -3171,7 +3171,7 @@ Contexto: `scripts\make_offline_release.ps1` debe incluir plantillas vacias para
 
 Decision: `scripts\assert_offline_release_clean.ps1` distingue `qa\*.example.md` permitidos de evidencia real. Solo se permiten las cinco plantillas finales de campo; el resto de `qa\`, paquetes de soporte, logs, dumps SQL, archivos de base y `.env` no-ejemplo siguen bloqueados.
 
-Criterio de verificacion: el builder self-test conserva las cinco plantillas, el guard offline ya no debe marcar esas plantillas como contenido prohibido y `offline-release` sigue bloqueado hasta regenerarse desde el commit final con imagenes Docker reales y manifiesto actualizado.
+Criterio de verificacion: `scripts\assert_offline_release_clean.ps1 -SelfTest` confirma la allowlist de las cinco plantillas, el builder self-test conserva esas plantillas, el guard offline ya no debe marcarlas como contenido prohibido y `offline-release` sigue bloqueado hasta regenerarse desde el commit final con imagenes Docker reales y manifiesto actualizado.
 
 ## 2026-06-02 - Policies registradas para recursos criticos
 

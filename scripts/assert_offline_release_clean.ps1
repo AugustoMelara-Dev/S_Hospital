@@ -1,7 +1,8 @@
 param(
     [string] $ProjectRoot = "",
     [string] $ReleaseRoot = "",
-    [switch] $RequireCurrentCommit
+    [switch] $RequireCurrentCommit,
+    [switch] $SelfTest
 )
 
 $ErrorActionPreference = "Stop"
@@ -180,6 +181,41 @@ function Test-IsAllowedProofTemplate([string] $relativePath) {
     }
 
     return $false
+}
+
+if ($SelfTest) {
+    $allowedTemplates = @(
+        "qa\LAN_CLIENT_VALIDATION_PROOF.example.md",
+        "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md",
+        "qa\FINAL_RESTORE_PROOF.example.md",
+        "qa\FINAL_CONCURRENCY_PROOF.example.md",
+        "qa\TRAINING_ACCEPTANCE_PROOF.example.md"
+    )
+
+    foreach ($relativePath in $allowedTemplates) {
+        if (-not (Test-IsAllowedProofTemplate $relativePath)) {
+            Write-Host "[FAIL] SelfTest FAILED: expected allowed proof template $relativePath." -ForegroundColor Red
+            exit 1
+        }
+    }
+
+    $forbiddenQaPaths = @(
+        "qa\FINAL_RESTORE_PROOF.md",
+        "qa\LAN_CLIENT_VALIDATION_PROOF.md",
+        "qa\support-packets\MANIFIESTO.md",
+        "qa\random.example.md",
+        "qa\browser-smoke-2026-06-03\rc-e2e-mocked-report.json"
+    )
+
+    foreach ($relativePath in $forbiddenQaPaths) {
+        if (Test-IsAllowedProofTemplate $relativePath) {
+            Write-Host "[FAIL] SelfTest FAILED: expected forbidden QA path $relativePath." -ForegroundColor Red
+            exit 1
+        }
+    }
+
+    Write-Host "[OK] SelfTest passed. Only final-field qa/*.example.md templates are allowed in offline release." -ForegroundColor Green
+    return
 }
 
 try {
