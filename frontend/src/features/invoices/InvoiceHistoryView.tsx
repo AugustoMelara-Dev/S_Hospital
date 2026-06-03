@@ -383,8 +383,11 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
                           {openActionsId === invoice.id && (
                             <>
-                              <div
-                                className="fixed inset-0 z-40"
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                aria-label="Cerrar menu de acciones"
+                                className="fixed inset-0 z-40 h-auto min-h-0 w-auto cursor-default rounded-none bg-transparent p-0 hover:bg-transparent"
                                 onClick={() => setOpenActionsId(null)}
                               />
                               <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-md border border-border bg-card shadow-lg">
