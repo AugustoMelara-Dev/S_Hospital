@@ -21,6 +21,7 @@
 | System diagnostics | `qa/SYSTEM_STATUS_HEARTBEAT_SANITIZATION_2026_06_03.md` | Scheduler heartbeat messages in `/api/system/status` are sanitized before admin/support display |
 | Client support log | `qa/CLIENT_SUPPORT_SANITIZATION_2026_06_03.md` | Browser incident summaries and backend diagnostics redact standalone `.env.*` mentions |
 | Support packet | `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md` | Disposable fixture confirmed no `.env`, secrets or real local paths are copied into support artifacts |
+| Support packet env redaction | `qa/SUPPORT_PACKET_ENV_FILE_REDACTION_2026_06_03.md` | Support packet and repair diagnostic sanitizers redact standalone `.env.*` mentions in evidence logs |
 | Training safety | `qa/TRAINING_SAFETY_2026_06_03.md` | Manuals and in-app Help keep isolated-practice guidance and forbid training on production data |
 | Evidence index | `qa/OPS_EVIDENCE_INDEX_2026_06_03.md` | Handoff evidence references exist under `qa/` and physical blockers remain listed before `PRODUCTION_READY` |
 | Offline release guard | `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md` | Current local offline package is stale and correctly blocked until regenerated from the final commit |
@@ -35,7 +36,7 @@
 - Focused backend tests: `SecurityHeadersTest`, `BackupWorkflowTest`, `DatabaseDumpWriterTest`, `SystemStatusTest`, `CashPaymentsReceiptTest`, `ReportsTest`, `BroadcastingWiringTest`, `AuditLogTest`, `GenerateFiscalNumberActionTest`.
 - Frontend gates: `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run test -- --run`, `npm.cmd run build`, `scripts\check-branding.ps1`.
 - E2E/browser: mocked production readiness E2E with screenshots, real Laravel smoke without mutations.
-- Operational scripts: backup worker smoke, restore into disposable DB, concurrency validation, startup/repair/task dry-runs, system diagnostics sanitization, client support sanitization, support packet safety validation, startup/repair safety validation, training safety validation, evidence index validation, handoff self-check, offline release guard, production preflight.
+- Operational scripts: backup worker smoke, restore into disposable DB, concurrency validation, startup/repair/task dry-runs, system diagnostics sanitization, client support sanitization, support packet safety validation, support packet env-file redaction, startup/repair safety validation, training safety validation, evidence index validation, handoff self-check, offline release guard, production preflight.
 
 ## Operator documentation and in-app support
 

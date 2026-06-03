@@ -64,6 +64,7 @@ try {
         "APP_KEY=base64:THIS_VALUE_MUST_NOT_LEAK"
         "DB_PASSWORD=fixture_db_password"
         "TOKEN=fixture_token"
+        "Revise .env.production antes de reiniciar"
     ) -Encoding ASCII
 
     Set-Content -LiteralPath (Join-Path $fixtureRoot "backend\storage\logs\laravel.log") -Value @(
@@ -71,6 +72,7 @@ try {
         "MAIL_PASSWORD=fixture_mail_password"
         "C:\Hospital\Sistema\.env"
         "PDOException in /var/www/html/storage/logs/laravel.log and /var/www/html/.env"
+        "No comparta .env.local con soporte"
     ) -Encoding ASCII
 
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $collector `
@@ -104,7 +106,9 @@ try {
         "fixture_token",
         "fixture_mail_password",
         "C:\\Hospital\\Sistema",
-        "/var/www/html"
+        "/var/www/html",
+        "\.env\.production",
+        "\.env\.local"
     )
 
     foreach ($pattern in $forbidden) {
@@ -113,7 +117,7 @@ try {
         }
     }
 
-    if ($combined -notmatch "%PROJECT_ROOT%" -or $combined -notmatch "\[redacted\]" -or $combined -notmatch "\[ruta-local\]") {
+    if ($combined -notmatch "%PROJECT_ROOT%" -or $combined -notmatch "\[redacted\]" -or $combined -notmatch "\[ruta-local\]" -or $combined -notmatch "\[archivo-protegido\]") {
         Write-Fail "El paquete no incluyo los marcadores seguros esperados."
     }
 
