@@ -52,6 +52,7 @@ function Test-NoProfilePowerShellCommands([string] $content, [string] $label) {
 $installGuide = Read-RequiredFile "docs\manuales\GUIA_INSTALACION_OPERATIVA.md"
 $supportGuide = Read-RequiredFile "docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md"
 $backupGuide = Read-RequiredFile "docs\manuales\GUIA_RESPALDOS_Y_RESTAURACION.md"
+$offlineLanInstallGuide = Read-RequiredFile "docs\OFFLINE_LAN_INSTALL.md"
 $releaseChecklist = Read-RequiredFile "docs\RELEASE_CHECKLIST.md"
 
 if ($installGuide -ne "") {
@@ -118,7 +119,11 @@ if ($backupGuide -ne "") {
     Test-NoProfilePowerShellCommands $backupGuide "Backup and restore guide"
 }
 
-$combined = "$installGuide`n$supportGuide`n$backupGuide`n$releaseChecklist"
+if ($offlineLanInstallGuide -ne "") {
+    Test-NoProfilePowerShellCommands $offlineLanInstallGuide "Offline LAN install guide"
+}
+
+$combined = "$installGuide`n$supportGuide`n$backupGuide`n$offlineLanInstallGuide`n$releaseChecklist"
 foreach ($requiredText in @(
     'PRODUCTION_READY',
     'PRODUCTION_CANDIDATE',

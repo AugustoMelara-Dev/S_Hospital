@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 15:15:39
+- Generated at: 2026-06-03 15:20:41
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -208,7 +208,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] setup.bat avoids legacy/demo wording
 [ OK ] setup.bat uses institutional wording
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit ac5ff085 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 150bb7af before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
 OFFLINE_RELEASE_CLEAN: NO (43 blocking issue(s))
@@ -534,6 +534,7 @@ BACKUP_RESTORE_DOCS_SAFETY: YES
 [ OK ] Found docs\manuales\GUIA_INSTALACION_OPERATIVA.md
 [ OK ] Found docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md
 [ OK ] Found docs\manuales\GUIA_RESPALDOS_Y_RESTAURACION.md
+[ OK ] Found docs\OFFLINE_LAN_INSTALL.md
 [ OK ] Found docs\RELEASE_CHECKLIST.md
 [ OK ] Installation guide includes section: Antes De Instalar
 [ OK ] Installation guide includes section: Instalar
@@ -580,6 +581,7 @@ BACKUP_RESTORE_DOCS_SAFETY: YES
 [ OK ] Installation guide uses -NoProfile in documented PowerShell commands
 [ OK ] First-level support guide uses -NoProfile in documented PowerShell commands
 [ OK ] Backup and restore guide uses -NoProfile in documented PowerShell commands
+[ OK ] Offline LAN install guide uses -NoProfile in documented PowerShell commands
 [ OK ] Install/release docs include guardrail: PRODUCTION_READY
 [ OK ] Install/release docs include guardrail: PRODUCTION_CANDIDATE
 [ OK ] Install/release docs include guardrail: No ejecutar `migrate:fresh` en el servidor real
