@@ -3181,6 +3181,14 @@ Decision: `scripts\final_production_handoff.ps1` ejecuta `scripts\assert_offline
 
 Criterio de verificacion: el handoff con `-SkipPreflight` muestra `Offline release guard self-test exit code: 0` y conserva la salida `Only final-field qa/*.example.md templates are allowed in offline release` dentro del reporte de evidencia.
 
+## 2026-06-03 - Validador de completitud exige self-test offline
+
+Contexto: el handoff final ya ejecuta el self-test del guard offline, pero `scripts\validate_final_handoff_completeness.ps1` aun podia aprobar un reporte que omitiera ese bloque. Eso dejaba una regresion posible: el cierre podia perder la evidencia de que el paquete offline permite solo plantillas `qa\*.example.md` y bloquea evidencia real.
+
+Decision: `scripts\validate_final_handoff_completeness.ps1` exige que el handoff mencione `Offline release guard self-test`, conserve el comando `assert_offline_release_clean.ps1 -SelfTest` y mantenga la salida exacta de allowlist del self-test.
+
+Criterio de verificacion: `scripts\validate_final_handoff_completeness.ps1 -HandoffPath qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` reporta `FINAL_HANDOFF_COMPLETENESS: YES` solo si el bloque del self-test offline sigue presente en el handoff.
+
 ## 2026-06-02 - Policies registradas para recursos criticos
 
 Contexto: el frente operativo requiere permisos mantenibles y mensajes de error comprensibles. La auditoria interna ya habia senalado que `app/Policies/` no existia, aunque el sistema autorizaba con Form Requests y guards en Actions. Eso dejaba la matriz de permisos menos visible para soporte y futuras correcciones.

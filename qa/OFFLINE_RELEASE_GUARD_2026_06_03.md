@@ -71,6 +71,9 @@ Verification after correction:
 - `scripts\final_production_handoff.ps1 -SkipPreflight` now runs the same
   self-test, records `Offline release guard self-test exit code: 0` and embeds
   the self-test output in the handoff evidence report.
+- `scripts\validate_final_handoff_completeness.ps1` now requires the handoff
+  to mention the offline release guard self-test, the preserved command and
+  the exact allowlist output before it reports `FINAL_HANDOFF_COMPLETENESS: YES`.
 - Positive synthetic guard fixture:
   `scripts\make_offline_release.ps1 -ReleaseRoot C:\tmp\s_hospital_offline_guard_templates -Force -AllowDirty -SkipDockerBuild -SkipDockerSave -SkipGuard`
   plus checksum-only synthetic tar files allowed the guard to reach package

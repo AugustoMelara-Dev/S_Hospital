@@ -86,6 +86,8 @@ if ($failures.Count -eq 0) {
     Assert-Content '(?i)Risks and limits' "El handoff debe incluir riesgos y limites."
     Assert-Content '(?i)Safety notes' "El handoff debe incluir notas de seguridad."
     Assert-Content '(?i)Dependency manifest' "El handoff debe mencionar la validacion del manifest de dependencias."
+    Assert-Content '(?i)Offline release guard self-test' "El handoff debe mencionar el self-test del guard offline."
+    Assert-Content 'Only final-field qa/\*\.example\.md templates are allowed in offline release' "El handoff debe conservar la salida del self-test del guard offline."
 
     $requiredEvidence = @(
         'BROWSER_SMOKE_EVIDENCE_2026_06_03.md',
@@ -149,6 +151,7 @@ if ($failures.Count -eq 0) {
         'check-branding.ps1',
         'smoke:real',
         'validate_dependency_manifest.ps1',
+        'assert_offline_release_clean.ps1 -SelfTest',
         'production_readiness_preflight.ps1'
     )
 
