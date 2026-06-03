@@ -23,6 +23,7 @@ import { Palette, UploadCloud, Check, Sparkles, Building2 } from 'lucide-react';
 
 type FiscalSettingsViewProps = {
   canEdit: boolean;
+  initialTab?: 'resumen' | 'hospital' | 'secuencia' | 'branding';
   onStatus: (message: string) => void;
 };
 
@@ -63,7 +64,7 @@ function institutionalPaperSize(value: FiscalSettings['receipt_paper_size']): In
   return institutionalReceiptPaperSize(value);
 }
 
-export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProps) {
+export function FiscalSettingsView({ canEdit, initialTab = 'resumen', onStatus }: FiscalSettingsViewProps) {
   const { colorTheme, setColorTheme } = useTheme();
   const [settings, setSettings] = useState<FiscalSettings | null>(null);
   const [sequence, setSequence] = useState<FiscalSequence | null>(null);
@@ -298,7 +299,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         </Alert>
       ) : null}
 
-      <Tabs defaultValue="resumen" className="space-y-6">
+      <Tabs defaultValue={initialTab} className="space-y-6">
         <TabsList className="bg-muted/50">
           <TabsTrigger value="resumen">Resumen</TabsTrigger>
           <TabsTrigger value="hospital">Hospital</TabsTrigger>
@@ -436,28 +437,34 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
               </div>
 
               <div className="grid gap-3 rounded-md border border-border bg-muted/30 p-3">
-                <label className="flex items-start gap-3 text-sm">
+                <div className="flex items-start gap-3 text-sm">
                   <Checkbox
+                    id="scanner-enabled"
                     checked={hospitalForm.scanner_enabled}
                     onCheckedChange={(checked) => setHospitalForm(prev => ({ ...prev, scanner_enabled: checked === true }))}
                     disabled={!canEdit}
                   />
                   <span>
-                    <span className="block font-medium">Habilitar scanner/codigos en caja</span>
+                    <Label htmlFor="scanner-enabled" className="block cursor-pointer font-medium">
+                      Habilitar scanner/codigos en caja
+                    </Label>
                     <span className="text-muted-foreground">Si esta apagado, la pantalla de nueva factura oculta controles de scanner y codigos internos.</span>
                   </span>
-                </label>
-                <label className="flex items-start gap-3 text-sm">
+                </div>
+                <div className="flex items-start gap-3 text-sm">
                   <Checkbox
+                    id="partial-payments-enabled"
                     checked={hospitalForm.partial_payments_enabled}
                     onCheckedChange={(checked) => setHospitalForm(prev => ({ ...prev, partial_payments_enabled: checked === true }))}
                     disabled={!canEdit}
                   />
                   <span>
-                    <span className="block font-medium">Permitir abonos parciales</span>
+                    <Label htmlFor="partial-payments-enabled" className="block cursor-pointer font-medium">
+                      Permitir abonos parciales
+                    </Label>
                     <span className="text-muted-foreground">Si esta apagado, un monto menor al total no se registra como pago completo.</span>
                   </span>
-                </label>
+                </div>
               </div>
 
               <div className="flex justify-end">
