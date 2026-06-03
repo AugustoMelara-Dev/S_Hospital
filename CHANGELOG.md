@@ -2,11 +2,101 @@
 
 ## v1.0.0 - Production Hardening Audit (2026-06-02)
 
-### Resumen
+### Resumen (branch codex/audit-f1-config-hardening)
 
-Auditoría completa del proyecto v1.0.0-rc.3 + cierre de los bloqueantes
-de seguridad e infra + hardening técnico frontend/backend + observabilidad.
-El sistema pasa de `v1.0.0-rc.3` a `v1.0.0` con:
+Auditoría completa del proyecto v1.0.0-rc.3 + cierre de los 9
+bloqueantes CRITICAL detectados por la auditoría de 6 capas
+(backend, frontend, base de datos, infra, tests, docs) +
+hardening técnico adicional.
+
+**Nuevos CRITICAL cerrados (audit 2026-06-02):**
+
+- **CRIT-1** Pre-commit guard ampliado (HOSPITAL_LICENSE_SALT,
+  HOSPITAL_INITIAL_ADMIN_PASSWORD, .env, nginx/ssl/) + dev
+  APP_KEY rotado.
+- **CRIT-2** Plan documentado para regenerar `offline-release/`
+  con imágenes (D4) — el bundle actual sigue vacío.
+- **CRIT-3** Pipeline CI/CD con GitHub Actions (ci.yml +
+  release.yml) cubriendo backend-SQLite, backend-MariaDB,
+  frontend y e2e-mocked.
+- **CRIT-4** Índice `active_document_type` documentado y
+  probado con 3 tests nuevos (multi-NULL + activación
+  concurrente).
+- **CRIT-5** Flujo de reverso de factura implementado:
+  `POST /api/invoices/{id}/reverse` con permiso
+  `invoices.reverse` (admin/supervisor). 7 tests de feature.
+- **CRIT-6** Extensión `bcmath` agregada a `Dockerfile` y
+  `Dockerfile.prod`.
+- **CRIT-7** Scheduler real: sidecar `supercronic` en
+  `docker-compose.prod.yml` + `scripts/register_scheduler_cron.ps1`
+  para Windows bare-metal. Heartbeat en `/api/system/status`.
+- **CRIT-8** Plantillas `qa/FINAL_*_PROOF.md` listas para
+  llenar en el hospital; preflight falla el release si
+  alguna sigue PENDING.
+- **CRIT-9** `Update-DotEnv` y `env_helpers.ps1` siempre
+  escriben con `-Encoding ASCII`. 9 tests de PowerShell
+  verifican que ningún BOM UTF-16 se escriba.
+
+**Adicional al paquete CRITICAL:**
+
+- **A8** Real-time sync entre PCs: Soketi + laravel-echo.
+  Eventos `invoice.changed`, `payment.changed`,
+  `cash-session.changed` emitidos en `DB::afterCommit`.
+- **D6** PHP-FPM pool tuned para 5 cajeros: `pm=static`,
+  `pm.max_children=8`, `pm.max_requests=500`.
+- **B7** `App\Policies\InvoicePolicy` y `CashSessionPolicy`.
+  `Gate::policy()` registrado en `AppServiceProvider`.
+- **F1** `InvoiceHistoryView` migrado a TanStack Query.
+- **F2** Código muerto eliminado: `useClock`, `app-kicker`,
+  `needsBillingCashBootstrap`, `cashBootstrapLoading`.
+- **C6** Recompute defensivo `payments.amount_cents` a
+  `UNSIGNED` (prevención de truncamiento 32-bit).
+- **F5/F6** `docs/00_README.md` + `docs/TROUBLESHOOTING.md` +
+  `docs/OPERATIVE_NOTES_2026_06_02.md`.
+
+**Scripts nuevos:**
+
+- `scripts/register_scheduler_cron.ps1` - Windows scheduled task
+  para `php artisan schedule:run`.
+- `scripts/refresh_lan_ip.ps1` - Re-aplica IP LAN si cambia
+  el DHCP.
+- `scripts/smoke_test_post_install.ps1` - HTTP smoke test
+  post-instalación.
+
+### Métricas al cierre de v1.0.0 (branch)
+
+- 380/380 tests PHPUnit backend (+37 desde rc.3)
+- 217/217 tests Vitest frontend (+6 desde rc.3)
+- 0 errores de typecheck
+- 0 errores de ESLint
+- 0 errores de phpstan nivel 5 (basado rc.3; nivel 6 + burndown
+  baseline en v1.1)
+- 6/6 tests de broadcasting (Soketi)
+- 9/9 tests de env_helpers (PS1 ASCII)
+- 5/5 tests de scheduler heartbeat
+- 7/7 tests de reverse invoice flow
+- 15/15 tests de pre-commit guard
+- 3/3 tests de active_document_type
+- Bundle gzipped frontend: <250 kB
+- 27 warnings de ESLint (jsx-a11y + react-hooks) documentados
+  para v1.1
+- New docs: TROUBLESHOOTING.md, OPERATIVE_NOTES_2026_06_02.md,
+  CI.md, BRANDING_GUIDELINES.md deferred
+
+### Pendientes para v1.0.0 final (FASE G)
+
+Estos bloquean la entrega final al hospital. Requieren el
+servidor real con hardware y la presencia de un operador:
+
+- Validación desde una segunda PC LAN (qa/LAN_CLIENT_VALIDATION_PROOF.md)
+- Impresión física en 5 tamaños (qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md)
+- Restore real (qa/FINAL_RESTORE_PROOF.md)
+- Concurrencia real (qa/FINAL_CONCURRENCY_PROOF.md)
+- Tareas Windows de backup worker instaladas
+- `scripts/final_production_handoff.ps1` exit 0 con
+  PRODUCTION_READY=YES
+
+### v1.0.0-rc.3 (predecesor, base de este branch)
 
 - 3 bloqueantes de seguridad resueltos (secretos sin defaults dev,
   HTTPS opcional, CORS/SANCTUM endurecido)
@@ -19,7 +109,7 @@ El sistema pasa de `v1.0.0-rc.3` a `v1.0.0` con:
 - `docs/SECRETS.md` con procedimiento de rotación
 - `docs/HTTPS_OPTIONAL.md` con CA local y nginx con TLS opcional
 
-### Métricas al cierre de v1.0.0
+### Métricas al cierre de v1.0.0-rc.3
 
 - 340/340 tests PHPUnit backend
 - 211/211 tests Vitest frontend
@@ -28,6 +118,7 @@ El sistema pasa de `v1.0.0-rc.3` a `v1.0.0` con:
 - 0 errores de phpstan nivel 5
 - Bundle gzipped mas grande: charts 116.73 kB
 - 28 warnings de ESLint (react-hooks exhaustivo + jsx-a11y) documentados
+
   para promover a error en v1.1
 
 ### Bloqueantes cerrados (FASE A)
