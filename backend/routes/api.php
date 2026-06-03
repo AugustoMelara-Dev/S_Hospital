@@ -7,6 +7,7 @@ use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CashSessionController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CspReportController;
+use App\Http\Controllers\EchoConfigController;
 use App\Http\Controllers\FiscalSequenceController;
 use App\Http\Controllers\FiscalSettingsController;
 use App\Http\Controllers\HealthController;
@@ -33,6 +34,9 @@ Route::any('/system/csp-report', [CspReportController::class, 'store'])
 
 Route::get('/system/health', [HealthController::class, 'show'])
     ->middleware('throttle:120,1');
+
+Route::get('/system/echo-config', [EchoConfigController::class, 'show'])
+    ->middleware('throttle:30,1');
 
 Route::get('/system/openapi', function () {
     $document = app(OpenApiExporter::class)->document(app('router'));

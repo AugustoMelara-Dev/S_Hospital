@@ -2,6 +2,8 @@
 
 namespace App\Actions\Payments;
 
+use App\Events\InvoiceChanged;
+use App\Events\PaymentChanged;
 use App\Models\AuditLog;
 use App\Models\CashMovement;
 use App\Models\Invoice;
@@ -116,6 +118,11 @@ class VoidPaymentAction
                     'balance_due' => $lockedInvoice->balance_due,
                 ],
             ]);
+
+            DB::afterCommit(function () use ($lockedPayment, $lockedInvoice) {
+                PaymentChanged::dispatch($lockedPayment->fresh(), 'voided');
+                InvoiceChanged::dispatch($lockedInvoice->fresh(), 'updated');
+            });
 
             return $lockedPayment->load(
                 'user:id,name,username',

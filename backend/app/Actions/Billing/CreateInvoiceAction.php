@@ -2,6 +2,8 @@
 
 namespace App\Actions\Billing;
 
+use App\Events\InvoiceChanged;
+use App\Events\PaymentChanged;
 use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
@@ -103,6 +105,10 @@ class CreateInvoiceAction
                     'paid_at' => now(),
                 ]);
 
+                DB::afterCommit(function () use ($payment) {
+                    PaymentChanged::dispatch($payment->fresh(), 'registered');
+                });
+
                 AuditLog::query()->create([
                     'user_id' => $issuer->id,
                     'action' => 'payment.registered',
@@ -135,6 +141,13 @@ class CreateInvoiceAction
                     'cash_session_id' => $cashSession->id,
                 ],
             ]);
+
+            // Broadcast after-commit so the websocket event only fires
+            // if the DB transaction actually committed. Listeners
+            // (other cashier PCs) get a fresh invoice they can refetch.
+            DB::afterCommit(function () use ($invoice) {
+                InvoiceChanged::dispatch($invoice->fresh(), 'created');
+            });
 
             return $invoice->load('items', 'issuer:id,name,username');
         });

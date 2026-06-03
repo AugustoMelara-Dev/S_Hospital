@@ -2,6 +2,8 @@
 
 namespace App\Actions\Payments;
 
+use App\Events\InvoiceChanged;
+use App\Events\PaymentChanged;
 use App\Models\AuditLog;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
@@ -129,6 +131,11 @@ class RegisterPaymentAction
                     'balance_due' => $lockedInvoice->balance_due,
                 ],
             ]);
+
+            DB::afterCommit(function () use ($payment, $lockedInvoice) {
+                PaymentChanged::dispatch($payment->fresh(), 'registered');
+                InvoiceChanged::dispatch($lockedInvoice->fresh(), 'updated');
+            });
 
             return $payment->load('user:id,name,username', 'cashSession:id,user_id,status,opened_at');
         });

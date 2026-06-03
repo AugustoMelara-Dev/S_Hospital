@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { type AuthUser, type CashSession } from '../lib/api';
+import { useBroadcastSync } from '../lib/realtime/useBroadcastSync';
 import { GuidedTour, shouldAutoOpenGuidedTour } from '../features/onboarding/GuidedTour';
 import { MobileSidebar, SidebarContent, appNavigation } from './Sidebar';
 import { Topbar } from './Topbar';
@@ -29,6 +30,12 @@ export function AppShell({
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+
+  // Wire real-time sync (WebSocket/Soketi) when the user is logged in.
+  // Mounted once at the shell so every authenticated route benefits
+  // from cross-PC invalidations of ['invoices'], ['dashboard'] and
+  // ['cash-sessions'] queries.
+  useBroadcastSync();
 
   useEffect(() => {
     if (shouldAutoOpenGuidedTour()) {

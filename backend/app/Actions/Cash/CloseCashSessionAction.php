@@ -3,14 +3,15 @@
 namespace App\Actions\Cash;
 
 use App\Actions\Backups\CreateBackupAction;
+use App\Events\CashSessionChanged;
 use App\Jobs\RunBackupJob;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
+use App\Models\Invoice;
 use App\Models\User;
 use App\Support\Money;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -103,6 +104,10 @@ class CloseCashSessionAction
                     'pending_amount' => $reconciliation['pending_amount'],
                 ],
             ]);
+
+            DB::afterCommit(function () use ($lockedSession) {
+                CashSessionChanged::dispatch($lockedSession->fresh(), 'closed');
+            });
 
             DB::afterCommit(function () use ($user): void {
                 try {

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Billing;
 
+use App\Events\InvoiceChanged;
 use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -91,6 +92,10 @@ class VoidInvoiceAction
                 ],
                 'created_at' => now(),
             ]);
+
+            DB::afterCommit(function () use ($lockedInvoice) {
+                InvoiceChanged::dispatch($lockedInvoice->fresh(), 'voided');
+            });
 
             return $lockedInvoice->load([
                 'items',

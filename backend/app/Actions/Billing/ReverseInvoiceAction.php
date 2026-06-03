@@ -3,6 +3,7 @@
 namespace App\Actions\Billing;
 
 use App\Actions\Payments\VoidPaymentAction;
+use App\Events\InvoiceChanged;
 use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -114,6 +115,10 @@ class ReverseInvoiceAction
                 ],
                 'created_at' => now(),
             ]);
+
+            DB::afterCommit(function () use ($reloaded) {
+                InvoiceChanged::dispatch($reloaded->fresh(), 'reversed');
+            });
 
             return $reloaded->load([
                 'items',

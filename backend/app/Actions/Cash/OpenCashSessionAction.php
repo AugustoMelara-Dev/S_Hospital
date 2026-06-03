@@ -2,11 +2,13 @@
 
 namespace App\Actions\Cash;
 
+use App\Events\CashSessionChanged;
 use App\Models\AuditLog;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\User;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -60,6 +62,10 @@ class OpenCashSessionAction
                         'opened_at' => $session->opened_at->toISOString(),
                     ],
                 ]);
+
+                DB::afterCommit(function () use ($session) {
+                    CashSessionChanged::dispatch($session->fresh(), 'opened');
+                });
 
                 return $session->load('user:id,name,username');
             });
