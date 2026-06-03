@@ -147,7 +147,10 @@ El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
 `scripts\validate_installer_legacy_safety.ps1`,
 `scripts\validate_lan_recovery_safety.ps1`,
 `scripts\validate_shift_incident_recovery_safety.ps1` y
-`scripts\validate_training_safety.ps1`. Despues de escribir el reporte, ejecuta
+`scripts\validate_training_safety.ps1`. Despues de escribir el reporte, ejecute
+`scripts\validate_final_handoff_completeness.ps1` para confirmar que la entrega
+final conserva capturas, diagnostico, archivos modificados, pruebas, pendientes
+fisicos, riesgos y notas de seguridad. Despues de escribir el reporte, ejecuta
 `scripts\validate_ops_evidence_index.ps1` contra ese mismo archivo y bloquea
 `PRODUCTION_READY` si el paquete de soporte puede filtrar secretos, si
 la evidencia visual de navegador pierde capturas criticas, consola limpia o
@@ -165,7 +168,8 @@ por cambio de IP LAN pierde `-WhatIf`, validacion de cliente o proteccion de
 evidencia, si las guias de recuperacion de incidentes de turno pierden pasos
 para luz/reinicio/navegador, impresora, caja abierta, respaldo fallido,
 restauracion aislada o prohibicion de repetir facturas/cobros, si capacitacion
-segura falla, si el indice tiene referencias
+segura falla, si el handoff final pierde archivos modificados, pruebas, riesgos
+o notas de seguridad, si el indice tiene referencias
 rotas, rutas locales, secretos obvios o no mantiene los bloqueantes fisicos.
 Antes de entregar accesos directos o scripts de recuperacion, ejecute
 `scripts\validate_startup_repair_safety.ps1`; debe reportar
@@ -226,6 +230,13 @@ Antes de entregar material de capacitacion, ejecute
 `scripts\validate_training_safety.ps1`; debe reportar `TRAINING_SAFETY: YES`
 para confirmar que manuales y Ayuda siguen prohibiendo practicas sobre la base
 real de produccion.
+Antes de entregar el paquete final al hospital, ejecute
+`scripts\validate_final_handoff_completeness.ps1`; debe reportar
+`FINAL_HANDOFF_COMPLETENESS: YES` para confirmar que el reporte final conserva
+capturas antes/despues o smoke visual, diagnostico de problemas, archivos
+modificados, pruebas ejecutadas, pendientes fisicos, riesgos y las notas de
+seguridad de no borrar `.env`, no resetear datos, no hacer push, no filtrar
+secretos y no inventar cumplimiento fiscal.
 
 Este preflight falla si el servidor no usa `APP_ENV=production`, si `APP_DEBUG`
 no es `false`, si falta `frontend/dist`, si faltan `mysql`/`mysqldump` o

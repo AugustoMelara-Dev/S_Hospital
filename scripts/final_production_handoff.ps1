@@ -50,6 +50,7 @@ $doubleActionSafetyScript = Join-Path $scriptsDir "validate_double_action_safety
 $installerLegacySafetyScript = Join-Path $scriptsDir "validate_installer_legacy_safety.ps1"
 $lanRecoverySafetyScript = Join-Path $scriptsDir "validate_lan_recovery_safety.ps1"
 $shiftIncidentRecoverySafetyScript = Join-Path $scriptsDir "validate_shift_incident_recovery_safety.ps1"
+$finalHandoffCompletenessScript = Join-Path $scriptsDir "validate_final_handoff_completeness.ps1"
 $lanProofPath = Join-Path $qaDir "LAN_CLIENT_VALIDATION_PROOF.md"
 $printerProofPath = Join-Path $qaDir "INSTITUTIONAL_RECEIPT_PRINT_PROOF.md"
 $restoreProofPath = Join-Path $qaDir "FINAL_RESTORE_PROOF.md"
@@ -339,6 +340,18 @@ function Invoke-ShiftIncidentRecoverySafetyGuard {
     }
 }
 
+function Invoke-FinalHandoffCompletenessGuard([string] $handoffPath) {
+    Write-Section "Final handoff completeness validation"
+    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $finalHandoffCompletenessScript -ProjectRoot $ProjectRoot -HandoffPath $handoffPath 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
 function Add-ReportLine([System.Collections.Generic.List[string]] $lines, [string] $line = "") {
     $lines.Add($line) | Out-Null
 }
@@ -397,6 +410,8 @@ function Write-HandoffReport(
     [int] $shiftIncidentRecoverySafetyExit,
     [string[]] $trainingSafetyOutput,
     [int] $trainingSafetyExit,
+    [string[]] $finalHandoffCompletenessOutput,
+    [int] $finalHandoffCompletenessExit,
     [string[]] $evidenceIndexOutput,
     [int] $evidenceIndexExit,
     [string[]] $preflightOutput,
@@ -406,7 +421,7 @@ function Write-HandoffReport(
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
     $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted
-    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
+    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $finalHandoffCompletenessExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
 
     Add-ReportLine $lines "# Final production handoff result"
     Add-ReportLine $lines ""
@@ -436,6 +451,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- LAN recovery safety guard exit code: $lanRecoverySafetyExit"
     Add-ReportLine $lines "- Shift incident recovery safety guard exit code: $shiftIncidentRecoverySafetyExit"
     Add-ReportLine $lines "- Training safety guard exit code: $trainingSafetyExit"
+    Add-ReportLine $lines "- Final handoff completeness guard exit code: $finalHandoffCompletenessExit"
     Add-ReportLine $lines "- Evidence index guard exit code: $evidenceIndexExit"
     Add-ReportLine $lines "- Preflight skipped: $preflightSkipped"
     Add-ReportLine $lines "- Preflight exit code: $preflightExit"
@@ -511,12 +527,63 @@ function Write-HandoffReport(
     if ($trainingSafetyExit -ne 0) {
         Add-ReportLine $lines "- Training safety validation returned exit code $trainingSafetyExit."
     }
+    if ($finalHandoffCompletenessExit -ne 0) {
+        Add-ReportLine $lines "- Final handoff completeness validation returned exit code $finalHandoffCompletenessExit."
+    }
     if ($evidenceIndexExit -ne 0) {
         Add-ReportLine $lines "- Final handoff evidence index validation returned exit code $evidenceIndexExit."
     }
-    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
+    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $finalHandoffCompletenessExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
         Add-ReportLine $lines "- None reported by the handoff script."
     }
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## Evidence completed in this hardening front"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '- Browser smoke screenshots: `qa/browser-smoke-2026-06-03/rc-e2e-mocked-report.json` and `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md`.'
+    Add-ReportLine $lines '- System diagnostics and Help/support guards: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`.'
+    Add-ReportLine $lines '- Backup worker and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/FINAL_RESTORE_PROOF.md` and `qa/FINAL_RESTORE_PROOF_2026_06_03.md`.'
+    Add-ReportLine $lines '- Concurrency and double-action evidence: `qa/FINAL_CONCURRENCY_PROOF.md` and `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md`.'
+    Add-ReportLine $lines '- Startup, installation, LAN and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.'
+    Add-ReportLine $lines '- Operator and training evidence: `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md` and `qa/TRAINING_SAFETY_2026_06_03.md`.'
+    Add-ReportLine $lines '- Release and index evidence: `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`.'
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## Tests and gates to preserve"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '- Backend static/format: `docker compose exec -T backend ./vendor/bin/pint --test`.'
+    Add-ReportLine $lines '- Backend static analysis: `docker compose exec -T backend ./vendor/bin/phpstan analyse --memory-limit=1G`.'
+    Add-ReportLine $lines '- Backend suite: `docker compose exec -T backend php artisan test`.'
+    Add-ReportLine $lines '- Frontend gates: `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run test -- --run`, `npm.cmd run build`, `scripts\check-branding.ps1`.'
+    Add-ReportLine $lines '- Browser and operational smoke: mocked E2E screenshots, `npm.cmd run smoke:real`, backup worker smoke, disposable restore, concurrency validation and `scripts\production_readiness_preflight.ps1`.'
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## Files changed in this handoff front"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '- In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.'
+    Add-ReportLine $lines '- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/final_production_handoff.ps1`.'
+    Add-ReportLine $lines '- Evidence guards: `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.'
+    Add-ReportLine $lines '- Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.'
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## Risks and limits"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines "- Local Docker and mocked browser evidence do not replace final second-client LAN proof, real MariaDB/server proof or physical printer proof."
+    Add-ReportLine $lines "- The offline release package remains blocked until regenerated from the final commit with Docker image tar files and matching checksums."
+    Add-ReportLine $lines "- Final production environment must be verified with `APP_ENV=production` and `APP_DEBUG=false` before production handoff."
+    Add-ReportLine $lines '- Windows scheduled tasks `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup` must be installed or updated on the final server.'
+    Add-ReportLine $lines "- Fiscal sequences/settings require administrative validation in the real environment; fiscal compliance was not invented by this report."
+    Add-ReportLine $lines "- Any restore or concurrency validation must use a disposable target or explicitly approved validation database, never the active production database."
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## Safety notes"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '- No `.env` file was deleted.'
+    Add-ReportLine $lines '- No database volume was reset.'
+    Add-ReportLine $lines '- No production data was restored over.'
+    Add-ReportLine $lines '- No push was performed.'
+    Add-ReportLine $lines '- Secrets were not printed in evidence files.'
+    Add-ReportLine $lines '- Fiscal compliance was not invented; fiscal sequences/settings still require real administrative validation before production use.'
     Add-ReportLine $lines ""
 
     Add-ReportLine $lines "## Next commands"
@@ -541,6 +608,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_recovery_safety.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_shift_incident_recovery_safety.ps1"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_final_handoff_completeness.ps1 -HandoffPath $(Protect-HandoffText $path)"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath $(Protect-HandoffText $path)"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl $($BaseUrl.TrimEnd('/'))"
     Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -PhpPath $(Protect-HandoffText $PhpPath)"
@@ -682,6 +750,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
+    Add-ReportLine $lines "## Final handoff completeness validation output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $finalHandoffCompletenessOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
     Add-ReportLine $lines "## Evidence index validation output"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
@@ -726,6 +803,7 @@ Assert-ScriptExists $doubleActionSafetyScript
 Assert-ScriptExists $installerLegacySafetyScript
 Assert-ScriptExists $lanRecoverySafetyScript
 Assert-ScriptExists $shiftIncidentRecoverySafetyScript
+Assert-ScriptExists $finalHandoffCompletenessScript
 
 Write-Host "Sistema de Caja Hospitalaria final production handoff"
 Write-Host "ProjectRoot: $(Protect-HandoffText $ProjectRoot)"
@@ -829,12 +907,15 @@ if ($SkipPreflight) {
         -shiftIncidentRecoverySafetyExit $shiftIncidentRecoverySafety.ExitCode `
         -trainingSafetyOutput $trainingSafety.Output `
         -trainingSafetyExit $trainingSafety.ExitCode `
+        -finalHandoffCompletenessOutput @("Final handoff completeness validation pending until the handoff report is written.") `
+        -finalHandoffCompletenessExit 2 `
         -evidenceIndexOutput @("Evidence index validation pending until the handoff report is written.") `
         -evidenceIndexExit 2 `
         -preflightOutput @("Preflight skipped by -SkipPreflight.") `
         -preflightExit 2 `
         -preflightSkipped $true
 
+    $finalHandoffCompleteness = Invoke-FinalHandoffCompletenessGuard $ReportPath
     $evidenceIndex = Invoke-EvidenceIndexGuard $ReportPath
     Write-HandoffReport `
         -path $ReportPath `
@@ -871,6 +952,8 @@ if ($SkipPreflight) {
         -shiftIncidentRecoverySafetyExit $shiftIncidentRecoverySafety.ExitCode `
         -trainingSafetyOutput $trainingSafety.Output `
         -trainingSafetyExit $trainingSafety.ExitCode `
+        -finalHandoffCompletenessOutput $finalHandoffCompleteness.Output `
+        -finalHandoffCompletenessExit $finalHandoffCompleteness.ExitCode `
         -evidenceIndexOutput $evidenceIndex.Output `
         -evidenceIndexExit $evidenceIndex.ExitCode `
         -preflightOutput @("Preflight skipped by -SkipPreflight.") `
@@ -919,12 +1002,15 @@ Write-HandoffReport `
     -shiftIncidentRecoverySafetyExit $shiftIncidentRecoverySafety.ExitCode `
     -trainingSafetyOutput $trainingSafety.Output `
     -trainingSafetyExit $trainingSafety.ExitCode `
+    -finalHandoffCompletenessOutput @("Final handoff completeness validation pending until the handoff report is written.") `
+    -finalHandoffCompletenessExit 2 `
     -evidenceIndexOutput @("Evidence index validation pending until the handoff report is written.") `
     -evidenceIndexExit 2 `
     -preflightOutput $preflightOutput `
     -preflightExit $preflightExit `
     -preflightSkipped $false
 
+$finalHandoffCompleteness = Invoke-FinalHandoffCompletenessGuard $ReportPath
 $evidenceIndex = Invoke-EvidenceIndexGuard $ReportPath
 Write-HandoffReport `
     -path $ReportPath `
@@ -961,13 +1047,15 @@ Write-HandoffReport `
     -shiftIncidentRecoverySafetyExit $shiftIncidentRecoverySafety.ExitCode `
     -trainingSafetyOutput $trainingSafety.Output `
     -trainingSafetyExit $trainingSafety.ExitCode `
+    -finalHandoffCompletenessOutput $finalHandoffCompleteness.Output `
+    -finalHandoffCompletenessExit $finalHandoffCompleteness.ExitCode `
     -evidenceIndexOutput $evidenceIndex.Output `
     -evidenceIndexExit $evidenceIndex.ExitCode `
     -preflightOutput $preflightOutput `
     -preflightExit $preflightExit `
     -preflightSkipped $false
 
-if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
+if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $finalHandoffCompleteness.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
     Write-Host ""
     Write-Host "PRODUCTION_READY evidence gate passed." -ForegroundColor Green
     exit 0
@@ -975,7 +1063,7 @@ if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.
 
 Write-Host ""
 Write-Host "PRODUCTION_READY remains blocked. Keep status as PRODUCTION_CANDIDATE and close the missing evidence above." -ForegroundColor Yellow
-if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
+if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $finalHandoffCompleteness.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
     exit 1
 }
 if ($supportPacketSafety.ExitCode -ne 0) {
@@ -1016,6 +1104,9 @@ if ($shiftIncidentRecoverySafety.ExitCode -ne 0) {
 }
 if ($trainingSafety.ExitCode -ne 0) {
     exit $trainingSafety.ExitCode
+}
+if ($finalHandoffCompleteness.ExitCode -ne 0) {
+    exit $finalHandoffCompleteness.ExitCode
 }
 if ($evidenceIndex.ExitCode -ne 0) {
     exit $evidenceIndex.ExitCode

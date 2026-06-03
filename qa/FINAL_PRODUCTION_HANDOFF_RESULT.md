@@ -33,9 +33,10 @@
 | LAN recovery safety | `qa/LAN_RECOVERY_SAFETY_2026_06_03.md` | `refresh_lan_ip.ps1` uses real helper libraries, supports no-write `-WhatIf`, and manuals cover DHCP/IP-change recovery before second-client validation |
 | Shift incident recovery safety | `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md` | Ayuda, manuales, soporte y capacitacion keep safe steps for power/restart/browser, printer, open cashbox, failed backup, permissions and isolated restore |
 | Training safety | `qa/TRAINING_SAFETY_2026_06_03.md` | Manuals and in-app Help keep isolated-practice guidance and forbid training on production data |
+| Final handoff completeness | `qa/FINAL_HANDOFF_COMPLETENESS_2026_06_03.md` | Final report keeps captures, diagnostics, changed files, gates, physical blockers, risks and safety notes |
 | Evidence index | `qa/OPS_EVIDENCE_INDEX_2026_06_03.md` | Handoff evidence references exist under `qa/` and physical blockers remain listed before `PRODUCTION_READY` |
 | Offline release guard | `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md` | Current local offline package is stale and correctly blocked until regenerated from the final commit |
-| Handoff self-check | `qa/HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` | `final_production_handoff.ps1 -SkipPreflight` writes a report, runs support-packet, browser-smoke-evidence, startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, double-action, installer-legacy, LAN-recovery, shift-incident-recovery, training-safety and evidence-index validation, and keeps `PRODUCTION_CANDIDATE` |
+| Handoff self-check | `qa/HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` | `final_production_handoff.ps1 -SkipPreflight` writes a report, runs support-packet, browser-smoke-evidence, startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, double-action, installer-legacy, LAN-recovery, shift-incident-recovery, training-safety, final-handoff-completeness and evidence-index validation, and keeps `PRODUCTION_CANDIDATE` |
 | Preflight | `qa/PREFLIGHT_WITH_CONCURRENCY_2026_06_03.md` | Restore and concurrency evidence now pass preflight; production readiness still blocked |
 
 ## Tests and gates run locally
@@ -63,6 +64,13 @@
 
 The help screen covers opening the system, login, cashbox, invoicing, charging, printing, reprinting, reports, backups, shift close, support requests, incident responses, role checklists and delicate-action warnings.
 
+## Files changed in this hardening front
+
+- In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.
+- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/final_production_handoff.ps1`.
+- Safety guards and evidence helpers: `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
+- Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.
+
 ## Remaining blockers before production handoff
 
 The following items require the final installed hospital server, LAN client and printer hardware:
@@ -79,6 +87,14 @@ The following items require the final installed hospital server, LAN client and 
 ## Current preflight status
 
 The latest local preflight after restore and concurrency evidence still returned `PRODUCTION_READY: NO` with 10 blocking issues. This is correct for the local Docker development environment because it lacks final production settings, Windows scheduled tasks, second-client LAN proof and physical printer proof.
+
+## Risks and limits
+
+- Local Docker and mocked browser evidence do not replace the final installed hospital server, second-client LAN validation, real MariaDB deployment or physical printer proof.
+- The offline release package is intentionally blocked until regenerated from the final commit with Docker image tar files and matching checksums.
+- Windows scheduled tasks `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup` must be installed or updated on the final server and verified with a real backup worker smoke.
+- Restore and concurrency evidence must be repeated on a disposable final-server target or another explicitly approved validation database; never use the active production database for destructive restore testing.
+- Fiscal sequences/settings still require administrative validation in the real environment; this handoff does not invent fiscal compliance.
 
 ## Safety notes
 
