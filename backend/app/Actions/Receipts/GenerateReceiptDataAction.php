@@ -9,6 +9,9 @@ use App\Support\ReceiptPaperSize;
 
 class GenerateReceiptDataAction
 {
+    /**
+     * @return array<string, mixed>
+     */
     public function execute(Invoice $invoice, string $width): array
     {
         $paperSize = ReceiptPaperSize::normalize($width);

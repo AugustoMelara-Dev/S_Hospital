@@ -26,6 +26,9 @@ class UpdateCategoryRequest extends FormRequest
         ];
     }
 
+    /**
+     * @return array<int, callable>
+     */
     public function after(): array
     {
         return [

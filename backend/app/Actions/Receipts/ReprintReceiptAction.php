@@ -12,6 +12,9 @@ class ReprintReceiptAction
         private readonly GenerateReceiptDataAction $generateReceiptData,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function execute(Invoice $invoice, User $user, string $width, ?string $reason = null): array
     {
         $receipt = $this->generateReceiptData->execute($invoice, $width);

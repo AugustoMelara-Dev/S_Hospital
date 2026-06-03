@@ -51,16 +51,25 @@ class CashMovement extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<CashRegisterSession, $this>
+     */
     public function cashSession(): BelongsTo
     {
         return $this->belongsTo(CashRegisterSession::class, 'cash_session_id');
     }
 
+    /**
+     * @return BelongsTo<Payment, $this>
+     */
     public function payment(): BelongsTo
     {
         return $this->belongsTo(Payment::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

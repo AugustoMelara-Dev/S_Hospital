@@ -32,6 +32,13 @@ class PremiumExcelExportService
         return Money::parseCents((string) ($value ?? 0), 'amount') / 100;
     }
 
+    /**
+     * @param  array<string, mixed>  $income
+     * @param  array<string, mixed>  $categories
+     * @param  array<string, mixed>  $areas
+     * @param  array<string, mixed>  $services
+     * @param  array<string, mixed>  $operations
+     */
     public function generate(
         array $income,
         array $categories,

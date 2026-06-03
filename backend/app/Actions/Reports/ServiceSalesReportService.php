@@ -13,7 +13,8 @@ class ServiceSalesReportService
     use FormatsReportMoney;
 
     /**
-     * @param  array{date_from: string, date_to: string, cash_session_id?: int, user_id?: int, category_id?: int, method?: string, status?: string}  $filters
+     * @param  array{date_from: string, date_to: string, cash_session_id?: int, user_id?: int, category_id?: int, area_id?: int, method?: string, status?: string}  $filters
+     * @return array<string, mixed>
      */
     public function report(array $filters): array
     {

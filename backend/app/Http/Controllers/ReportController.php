@@ -25,6 +25,7 @@ use App\Models\FiscalSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
@@ -136,7 +137,7 @@ class ReportController extends Controller
         ServiceSalesReportService $servicesReports,
         OperationsReportService $operationsReports,
         PdfExportService $pdfService
-    ) {
+    ): Response {
         $fiscal = FiscalSetting::first() ?? new FiscalSetting([
             'hospital_name' => 'Hospital Local',
             'rtn' => 'N/A',

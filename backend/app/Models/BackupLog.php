@@ -21,6 +21,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $completed_at
  * @property string|null $error_message
  * @property-read User|null $creator
+ * @property-read string $name
+ * @property-read string $username
  */
 class BackupLog extends Model
 {
@@ -61,6 +63,9 @@ class BackupLog extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

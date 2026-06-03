@@ -25,6 +25,12 @@ use Illuminate\Support\Carbon;
  * @property-read Invoice|null $invoice
  * @property-read CashRegisterSession|null $cashSession
  * @property-read User|null $user
+ * @property-read int $payments_count
+ * @property-read int $total_cents
+ * @property-read int $payment_count
+ * @property-read int $collected_cents
+ * @property-read string $name
+ * @property-read string $username
  */
 class Payment extends Model
 {
@@ -72,21 +78,33 @@ class Payment extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Invoice, $this>
+     */
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
     }
 
+    /**
+     * @return BelongsTo<CashRegisterSession, $this>
+     */
     public function cashSession(): BelongsTo
     {
         return $this->belongsTo(CashRegisterSession::class, 'cash_session_id');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function voidedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'voided_by');

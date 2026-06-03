@@ -92,6 +92,8 @@ class UserController extends Controller
 
     /**
      * Helper to transform user and its roles/permissions to simple payload
+     *
+     * @return array<string, mixed>
      */
     private function transformUser(User $user): array
     {

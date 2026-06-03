@@ -11,6 +11,9 @@ class CashSessionReportService
 {
     public function __construct(private readonly BuildCashReconciliationAction $buildCashReconciliation) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function report(CashRegisterSession $session): array
     {
         $session->load('user:id,name,username');

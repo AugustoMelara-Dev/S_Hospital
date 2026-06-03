@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Reports;
 
+use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -159,10 +160,12 @@ class OperationalMetricsService
         }
     }
 
-    private function isConnected($connection): bool
+    private function isConnected(Connection $connection): bool
     {
         try {
-            return $connection->getPdo() !== null;
+            $connection->getPdo();
+
+            return true;
         } catch (Throwable) {
             return false;
         }

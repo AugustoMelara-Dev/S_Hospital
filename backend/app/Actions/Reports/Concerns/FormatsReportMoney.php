@@ -39,6 +39,9 @@ trait FormatsReportMoney
         return intdiv(($paymentCents * $categoryCents) + intdiv($invoiceCents, 2), $invoiceCents);
     }
 
+    /**
+     * @return array<string, string>
+     */
     private function zeroMethodTotals(): array
     {
         return [

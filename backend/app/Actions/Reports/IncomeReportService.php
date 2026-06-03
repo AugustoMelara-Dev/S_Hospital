@@ -11,6 +11,10 @@ class IncomeReportService
 {
     public function __construct(private readonly FinancialFactsService $financialFacts) {}
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
     public function report(array $filters): array
     {
         $start = Carbon::createFromFormat('Y-m-d', $filters['date_from'])->startOfDay();

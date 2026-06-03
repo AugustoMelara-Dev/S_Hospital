@@ -26,6 +26,9 @@ class ShowReceiptRequest extends FormRequest
             && $invoice->issued_at?->isToday() === true;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         return [

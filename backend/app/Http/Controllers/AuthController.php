@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\LoginAttempt;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -115,7 +116,7 @@ class AuthController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function userPayload($user): array
+    private function userPayload(User $user): array
     {
         return [
             'id' => $user->id,

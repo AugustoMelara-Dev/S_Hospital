@@ -24,6 +24,9 @@ class DateRangeReportRequest extends FormRequest
             && $this->user()?->can('reports.cash_session.view') === true;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         return [

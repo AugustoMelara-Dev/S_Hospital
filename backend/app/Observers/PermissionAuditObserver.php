@@ -98,6 +98,9 @@ class PermissionAuditObserver
         ]);
     }
 
+    /**
+     * @param  array<string, mixed>|null  $payload
+     */
     private function record(string $action, Model $model, ?array $payload = null): void
     {
         $this->write($action, $model::class, $model->getKey(), $payload);
@@ -122,6 +125,9 @@ class PermissionAuditObserver
         return $safe;
     }
 
+    /**
+     * @param  array<string, mixed>|null  $newValues
+     */
     private function write(string $action, string $entityType, mixed $entityId, ?array $newValues): void
     {
         try {

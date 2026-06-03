@@ -14,6 +14,9 @@ class DailyReportService
 
     public function __construct(private readonly FinancialFactsService $financialFacts) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function report(string $date): array
     {
         $day = Carbon::createFromFormat('Y-m-d', $date);

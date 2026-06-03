@@ -122,7 +122,9 @@ class DashboardReportService
         $start = $now->copy()->startOfMonth();
         $end = $now->copy()->endOfMonth();
 
-        return InvoiceItem::query()
+        $rows = [];
+
+        foreach (InvoiceItem::query()
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
             ->where('invoices.status', '!=', Invoice::STATUS_VOID)
             ->whereBetween('invoices.issued_at', [$start, $end])
@@ -135,15 +137,16 @@ class DashboardReportService
             ->selectRaw('COALESCE(SUM(invoice_items.line_total_cents), 0) as total_cents')
             ->orderByDesc('total_cents')
             ->limit(10)
-            ->get()
-            ->map(fn (object $row): array => [
+            ->get() as $row) {
+            $rows[] = [
                 'service_name' => $row->service_name,
                 'category_name' => $row->category_name,
                 'quantity' => Money::formatCents((int) $row->quantity_cents),
                 'total' => $this->centsToMoney($row->total_cents),
-            ])
-            ->values()
-            ->all();
+            ];
+        }
+
+        return $rows;
     }
 
     /**
@@ -153,7 +156,9 @@ class DashboardReportService
     {
         $end = $today->copy()->endOfDay();
 
-        return Payment::query()
+        $rows = [];
+
+        foreach (Payment::query()
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
             ->join('users', 'payments.user_id', '=', 'users.id')
             ->where('payments.status', Payment::STATUS_POSTED)
@@ -164,15 +169,16 @@ class DashboardReportService
             ->select('payments.user_id', 'users.name', 'users.username')
             ->selectRaw('COUNT(*) as payment_count')
             ->selectRaw('COALESCE(SUM(payments.amount_cents), 0) as collected_cents')
-            ->get()
-            ->map(fn (object $row): array => [
+            ->get() as $row) {
+            $rows[] = [
                 'user_id' => (int) $row->user_id,
                 'name' => $row->name,
                 'username' => $row->username,
                 'payment_count' => (int) $row->payment_count,
                 'total_collected' => $this->centsToMoney($row->collected_cents),
-            ])
-            ->values()
-            ->all();
+            ];
+        }
+
+        return $rows;
     }
 }

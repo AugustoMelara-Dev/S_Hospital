@@ -31,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $special_rule_code
  * @property bool $special_rule_applied
  * @property string|null $notes
+ * @property-read int|null $total_cents
  */
 class InvoiceItem extends Model
 {
@@ -79,16 +80,25 @@ class InvoiceItem extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Invoice, $this>
+     */
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
     }
 
+    /**
+     * @return BelongsTo<Service, $this>
+     */
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
     }
 
+    /**
+     * @return BelongsTo<Area, $this>
+     */
     public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class);

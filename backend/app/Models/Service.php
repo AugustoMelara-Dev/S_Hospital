@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\ServiceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,9 +33,14 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Category|null $category
  * @property-read Area|null $area
+ * @property-read string $category_name
+ * @property-read string $area_name
+ * @property-read int|null $quantity_cents
+ * @property-read int|null $line_total_cents
  */
 class Service extends Model
 {
+    /** @use HasFactory<ServiceFactory> */
     use HasFactory;
 
     public const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
@@ -71,16 +77,25 @@ class Service extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Category, $this>
+     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
+    /**
+     * @return BelongsTo<Area, $this>
+     */
     public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class);
     }
 
+    /**
+     * @return HasMany<ServicePriceHistory, $this>
+     */
     public function priceHistories(): HasMany
     {
         return $this->hasMany(ServicePriceHistory::class);

@@ -53,6 +53,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Collection<int, InvoiceItem> $items
  * @property-read Collection<int, Payment> $payments
+ * @property-read int|null $posted_payments_count
+ * @property-read int|null $count
  */
 class Invoice extends Model
 {
@@ -128,31 +130,49 @@ class Invoice extends Model
         ];
     }
 
+    /**
+     * @return HasMany<InvoiceItem, $this>
+     */
     public function items(): HasMany
     {
         return $this->hasMany(InvoiceItem::class);
     }
 
+    /**
+     * @return HasMany<Payment, $this>
+     */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function issuer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'issued_by');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function voidedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'voided_by');
     }
 
+    /**
+     * @return BelongsTo<CashRegisterSession, $this>
+     */
     public function cashSession(): BelongsTo
     {
         return $this->belongsTo(CashRegisterSession::class, 'cash_session_id');
     }
 
+    /**
+     * @return BelongsTo<FiscalSequence, $this>
+     */
     public function fiscalSequence(): BelongsTo
     {
         return $this->belongsTo(FiscalSequence::class);

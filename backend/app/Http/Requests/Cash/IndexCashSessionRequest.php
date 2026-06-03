@@ -11,6 +11,9 @@ class IndexCashSessionRequest extends FormRequest
         return $this->user()?->can('cash.view') === true;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         return [

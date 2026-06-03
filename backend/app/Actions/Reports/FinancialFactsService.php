@@ -221,6 +221,7 @@ class FinancialFactsService
     }
 
     /**
+     * @param  Builder<Invoice>  $query
      * @param  array<string, mixed>  $filters
      */
     private function applyInvoiceFilters(Builder $query, array $filters, bool $includeItemFilters = true): void
@@ -256,6 +257,7 @@ class FinancialFactsService
     }
 
     /**
+     * @param  Builder<Payment>  $query
      * @param  array<string, mixed>  $filters
      */
     private function applyPaymentFilters(Builder $query, array $filters, bool $includeItemFilters = true): void

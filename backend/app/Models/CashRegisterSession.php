@@ -28,6 +28,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User|null $user
+ * @property-read string $name
+ * @property-read string $username
  */
 class CashRegisterSession extends Model
 {
@@ -71,16 +73,25 @@ class CashRegisterSession extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return HasMany<Payment, $this>
+     */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'cash_session_id');
     }
 
+    /**
+     * @return HasMany<CashMovement, $this>
+     */
     public function movements(): HasMany
     {
         return $this->hasMany(CashMovement::class, 'cash_session_id');

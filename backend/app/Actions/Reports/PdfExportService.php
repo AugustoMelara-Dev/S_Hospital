@@ -26,6 +26,10 @@ class PdfExportService
         return Money::formatCents(Money::parseCents((string) ($value ?? 0), 'amount'));
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $fiscal
+     */
     public function buildDailyClosureHtml(array $data, array $fiscal): string
     {
         $hospitalName = HospitalName::display($fiscal['hospital_name'] ?? null);
@@ -303,11 +307,19 @@ class PdfExportService
         return $html;
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $fiscal
+     */
     public function generateDailyClosurePdf(array $data, array $fiscal): string
     {
         return Pdf::loadHTML($this->buildDailyClosureHtml($data, $fiscal))->output();
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $fiscal
+     */
     public function buildRangeClosureHtml(array $data, array $fiscal): string
     {
         $hospitalName = HospitalName::display($fiscal['hospital_name'] ?? null);
@@ -774,6 +786,10 @@ class PdfExportService
         return $html;
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $fiscal
+     */
     public function generateRangeClosurePdf(array $data, array $fiscal): string
     {
         return Pdf::loadHTML($this->buildRangeClosureHtml($data, $fiscal))->output();

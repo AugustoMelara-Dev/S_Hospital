@@ -16,6 +16,12 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed>|null $new_values
  * @property Carbon|null $created_at
  * @property-read User|null $user
+ * @property-read string $name
+ * @property-read string $username
+ * @property-read int|null $invoice_number
+ * @property-read int|null $items
+ * @property-read int|null $patient_name
+ * @property-read int|null $total
  */
 class AuditLog extends Model
 {
@@ -40,6 +46,9 @@ class AuditLog extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
