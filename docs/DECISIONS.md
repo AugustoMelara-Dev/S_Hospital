@@ -3128,3 +3128,11 @@ Contexto: el frente operativo requiere permisos mantenibles y mensajes de error 
 Decision: se agregan `InvoicePolicy` y `CashSessionPolicy`, y `AppServiceProvider` registra ambos mappings con `Gate::policy`. Las policies delegan en las reglas existentes (`InvoiceAccess`, permisos `cash.*` e `invoices.*`) para no cambiar comportamiento de endpoints en esta subfase.
 
 Criterio de verificacion: `AuthorizationStrategyTest` valida existencia y resolucion via `Gate::getPolicyFor`. Tambien pasan PHPStan completo, `InvoiceReverseTest`, `CashPaymentsReceiptTest`, `PermissionAuditTest`, PHPStan/Pint focales y branding check.
+
+## 2026-06-02 - Dockerfile productivo copia tuning PHP-FPM desde ruta versionada
+
+Contexto: el release guard offline fallo porque `backend/Dockerfile.prod` copiaba `docker/php-fpm.conf` con contexto de build en la raiz del repo, pero el archivo versionado vive en `backend/docker/php-fpm.conf`. Eso hacia que el paquete productivo no fuera reproducible.
+
+Decision: `backend/Dockerfile.prod` copia `backend/docker/php-fpm.conf` hacia `/usr/local/etc/php-fpm.d/zz-hospital-tuning.conf`. El Dockerfile de desarrollo mantiene su ruta porque su contexto es `backend/`.
+
+Criterio de verificacion: `scripts\make_offline_release.ps1 -Force -SkipDockerBuild` vuelve a encontrar todas las fuentes Docker productivas y debe reportar `OFFLINE_RELEASE_CLEAN: YES`.
