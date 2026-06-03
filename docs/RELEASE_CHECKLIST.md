@@ -218,6 +218,10 @@ Antes de entregar instalador o paquete offline, ejecute
 `INSTALLER_LEGACY_SAFETY: YES` para confirmar que `setup.bat` delega a
 `scripts\deploy_hospital_lan.ps1`, que `install_hospital_os.ps1` queda solo
 como compatibilidad deprecada y que el paquete offline exige el guard.
+Antes de regenerar el paquete offline final, ejecute
+`scripts\make_offline_release.ps1 -SelfTest`; debe reportar `SelfTest passed`
+para confirmar que el layout simulado incluye `setup.bat`, nginx, scripts
+operativos criticos y manuales sin tocar Docker ni `offline-release`.
 Antes de entregar red local, reparacion o procedimientos por cambio de IP,
 ejecute `scripts\validate_lan_recovery_safety.ps1`; debe reportar
 `LAN_RECOVERY_SAFETY: YES` para confirmar que `refresh_lan_ip.ps1` usa helpers

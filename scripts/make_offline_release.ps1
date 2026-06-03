@@ -10,6 +10,50 @@ param(
 )
 
 $script:NginxDefaultConfMinLines = 80
+$script:OfflineReleaseCriticalScripts = @(
+    "assert_offline_release_clean.ps1",
+    "collect_support_packet.ps1",
+    "deploy_hospital_lan.ps1",
+    "final_production_handoff.ps1",
+    "init_production_proofs.ps1",
+    "install_backup_tasks_windows.ps1",
+    "install_hospital_startup_shortcut.ps1",
+    "load_offline_images.ps1",
+    "open_hospital_system.ps1",
+    "production_readiness_preflight.ps1",
+    "refresh_lan_ip.ps1",
+    "repair_hospital_system.ps1",
+    "run_backup_worker.cmd",
+    "run_scheduled_backup.cmd",
+    "start_hospital_services.ps1",
+    "validate_backup_restore_docs_safety.ps1",
+    "validate_browser_smoke_evidence.ps1",
+    "validate_double_action_safety.ps1",
+    "validate_field_proof_templates.ps1",
+    "validate_final_handoff_completeness.ps1",
+    "validate_help_screen_safety.ps1",
+    "validate_installation_docs_safety.ps1",
+    "validate_installer_legacy_safety.ps1",
+    "validate_lan_client.ps1",
+    "validate_lan_recovery_safety.ps1",
+    "validate_operator_manuals_safety.ps1",
+    "validate_operations_objective_audit.ps1",
+    "validate_ops_evidence_index.ps1",
+    "validate_shift_incident_recovery_safety.ps1",
+    "validate_startup_repair_safety.ps1",
+    "validate_support_packet_safety.ps1",
+    "validate_system_diagnostics_safety.ps1",
+    "validate_training_safety.ps1"
+)
+$script:OfflineReleaseCriticalDocs = @(
+    "RELEASE_CHECKLIST.md",
+    "manuales\GUIA_INSTALACION_OPERATIVA.md",
+    "manuales\GUIA_RESPALDOS_Y_RESTAURACION.md",
+    "manuales\GUIA_SOPORTE_PRIMER_NIVEL.md",
+    "manuales\MANUAL_ADMINISTRADOR.md",
+    "manuales\MANUAL_CAJERO.md",
+    "manuales\MANUAL_SUPERVISOR.md"
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -37,6 +81,15 @@ if ($SelfTest) {
 
         Copy-Item -LiteralPath $sourceDefaultConf -Destination (Join-Path $tempNginx "default.conf") -Force
         Copy-Item -LiteralPath $sourceCrontab -Destination (Join-Path $tempNginx "crontab") -Force
+        Copy-Item -LiteralPath (Join-Path $ProjectRoot "scripts") -Destination (Join-Path $tempRoot "scripts") -Recurse -Force
+        Copy-Item -LiteralPath (Join-Path $ProjectRoot "docs") -Destination (Join-Path $tempRoot "docs") -Recurse -Force
+
+        $releaseSetup = Join-Path $ProjectRoot "scripts\release_setup.bat"
+        if (-not (Test-Path -LiteralPath $releaseSetup -PathType Leaf)) {
+            Write-Fail "SelfTest FAILED: scripts/release_setup.bat is missing."
+        }
+        Copy-Item -LiteralPath $releaseSetup -Destination (Join-Path $tempRoot "setup.bat") -Force
+        Remove-Item -LiteralPath (Join-Path $tempRoot "scripts\release_setup.bat") -Force
 
         $defaultConfLines = (Get-Content -LiteralPath (Join-Path $tempNginx "default.conf")).Count
         $crontabLines = (Get-Content -LiteralPath (Join-Path $tempNginx "crontab")).Count
@@ -54,7 +107,28 @@ if ($SelfTest) {
             Write-Fail "SelfTest FAILED: copied nginx/default.conf does not match source hash."
         }
 
-        Write-Host "[OK] SelfTest passed. default.conf=$defaultConfLines lines, crontab=$crontabLines lines, hash=$sourceHash" -ForegroundColor Green
+        foreach ($scriptName in $script:OfflineReleaseCriticalScripts) {
+            $bundledScript = Join-Path (Join-Path $tempRoot "scripts") $scriptName
+            if (-not (Test-Path -LiteralPath $bundledScript -PathType Leaf)) {
+                Write-Fail "SelfTest FAILED: bundled scripts/$scriptName is missing."
+            }
+        }
+
+        foreach ($docName in $script:OfflineReleaseCriticalDocs) {
+            $bundledDoc = Join-Path (Join-Path $tempRoot "docs") $docName
+            if (-not (Test-Path -LiteralPath $bundledDoc -PathType Leaf)) {
+                Write-Fail "SelfTest FAILED: bundled docs/$docName is missing."
+            }
+        }
+
+        if (-not (Test-Path -LiteralPath (Join-Path $tempRoot "setup.bat") -PathType Leaf)) {
+            Write-Fail "SelfTest FAILED: root setup.bat launcher was not created."
+        }
+        if (Test-Path -LiteralPath (Join-Path $tempRoot "scripts\release_setup.bat") -PathType Leaf) {
+            Write-Fail "SelfTest FAILED: scripts/release_setup.bat should be replaced by root setup.bat in the bundle."
+        }
+
+        Write-Host "[OK] SelfTest passed. default.conf=$defaultConfLines lines, crontab=$crontabLines lines, scripts=$($script:OfflineReleaseCriticalScripts.Count), docs=$($script:OfflineReleaseCriticalDocs.Count), hash=$sourceHash" -ForegroundColor Green
     } finally {
         if (Test-Path -LiteralPath $tempRoot) {
             Remove-Item -LiteralPath $tempRoot -Recurse -Force

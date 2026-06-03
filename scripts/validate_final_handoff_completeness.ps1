@@ -99,6 +99,7 @@ if ($failures.Count -eq 0) {
         'OPERATOR_MANUALS_SAFETY_2026_06_03.md',
         'TRAINING_SAFETY_2026_06_03.md',
         'FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md',
+        'OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md',
         'LAN_RECOVERY_SAFETY_2026_06_03.md',
         'SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md',
         'OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md',
@@ -123,6 +124,7 @@ if ($failures.Count -eq 0) {
         'scripts/validate_lan_recovery_safety.ps1',
         'scripts/validate_operations_objective_audit.ps1',
         'scripts/validate_field_proof_templates.ps1',
+        'scripts/make_offline_release.ps1',
         'docs/manuales'
     )
 

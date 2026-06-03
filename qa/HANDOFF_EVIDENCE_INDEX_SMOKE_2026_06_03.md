@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 12:15:15
+- Generated at: 2026-06-03 12:23:29
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -50,7 +50,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 - Concurrency and double-action evidence: `qa/FINAL_CONCURRENCY_PROOF.md` and `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md`.
 - Startup, installation, LAN and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.
 - Operator and training evidence: `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md` and `qa/TRAINING_SAFETY_2026_06_03.md`.
-- Field proof, objective, release and index evidence: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`.
+- Field proof, offline builder, objective, release and index evidence: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`.
 
 ## Tests and gates to preserve
 
@@ -63,7 +63,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 ## Files changed in this handoff front
 
 - In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.
-- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/final_production_handoff.ps1`.
+- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.
 - Evidence guards: `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
 - Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.
 
@@ -108,6 +108,7 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_recovery_safet
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_shift_incident_recovery_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_field_proof_templates.ps1
+powershell.exe -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1 -SelfTest
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_operations_objective_audit.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_final_handoff_completeness.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
@@ -143,6 +144,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found offline-images
 [ OK ] Found scripts\deploy_hospital_lan.ps1
 [ OK ] Found scripts\load_offline_images.ps1
+[ OK ] Found scripts\make_offline_release.ps1
 [ OK ] Found scripts\production_readiness_preflight.ps1
 [ OK ] Found scripts\final_production_handoff.ps1
 [ OK ] Found scripts\install_hospital_startup_shortcut.ps1
@@ -171,6 +173,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] nginx\default.conf in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\collect_support_packet.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\deploy_hospital_lan.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] scripts\make_offline_release.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\production_readiness_preflight.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\final_production_handoff.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\install_hospital_startup_shortcut.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
@@ -183,10 +186,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 77b3e7cf before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 3d74d607 before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
-OFFLINE_RELEASE_CLEAN: NO (34 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (35 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -842,7 +845,7 @@ SHIFT_INCIDENT_RECOVERY_SAFETY: YES
 
 ```text
 [OK] OPS_EVIDENCE_INDEX: YES
-[OK] Referencias qa/ verificadas: 23
+[OK] Referencias qa/ verificadas: 24
 [OK] El handoff conserva bloqueantes fisicos antes de PRODUCTION_READY.
 ```
 

@@ -25,7 +25,7 @@ Purpose:
 | Safe practice/training guidance without touching production data | `qa/TRAINING_SAFETY_2026_06_03.md`, `docs/manuales/GUIA_CAPACITACION_SEGURA.md` | `VALIDATED_LOCAL` | Use isolated practice database or approved disposable environment for training |
 | Final LAN client validation from a second computer by IP | `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`, `scripts/validate_lan_client.ps1`, `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md` | `PENDING_FINAL_FIELD` | Complete `qa/LAN_CLIENT_VALIDATION_PROOF.md` from a real second PC on the hospital LAN |
 | Physical institutional receipt proof for media carta, carta, A5, 80mm and 58mm | `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md`, `docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md`, `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md` | `PENDING_FINAL_FIELD` | Complete `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` with real cashier printer evidence |
-| Offline release package can be installed without internet and matches final commit | `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`, `scripts/assert_offline_release_clean.ps1` | `PENDING_FINAL_FIELD` | Regenerate `offline-release` from final commit with Docker image tar files and matching checksums |
+| Offline release package can be installed without internet and matches final commit | `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`, `scripts/make_offline_release.ps1`, `scripts/assert_offline_release_clean.ps1` | `PENDING_FINAL_FIELD` | Regenerate `offline-release` from final commit with Docker image tar files and matching checksums |
 | Final production environment and preflight | `qa/PREFLIGHT_WITH_CONCURRENCY_2026_06_03.md`, `scripts/production_readiness_preflight.ps1`, `scripts/final_production_handoff.ps1` | `PENDING_FINAL_FIELD` | Configure `APP_ENV=production`, `APP_DEBUG=false`, final LAN URL, scheduled tasks and run preflight without bypass flags; preflight now runs `scripts/validate_operations_objective_audit.ps1` first |
 
 ## Current blockers
@@ -34,7 +34,7 @@ Purpose:
 - `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` is not complete from the real cashier printer.
 - `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup` are not verified on the final server.
 - Final production environment values, final backup worker smoke, final restore/concurrency evidence and final preflight are still missing.
-- `offline-release` is stale and missing current guard scripts and Docker image tar files.
+- `offline-release` is stale and missing current guard scripts and Docker image tar files; the builder self-test now verifies the simulated bundle layout before final regeneration.
 
 ## Safety notes
 
