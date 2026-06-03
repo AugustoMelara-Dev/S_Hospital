@@ -1,0 +1,30 @@
+# Installer legacy safety evidence - 2026-06-03
+
+Decision: `PASS`.
+
+Scope:
+
+- Verify that the supported production installer remains `scripts\deploy_hospital_lan.ps1`.
+- Verify that root `setup.bat` delegates to the supported LAN installer.
+- Verify that `scripts\install_hospital_os.ps1` stays marked as deprecated compatibility only.
+- Verify that active operator docs do not point staff to the legacy installer as the normal path.
+
+Command run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installer_legacy_safety.ps1
+```
+
+Observed result:
+
+- `INSTALLER_LEGACY_SAFETY: YES`.
+- `scripts\release_setup.bat` delegates to `scripts\deploy_hospital_lan.ps1`.
+- `scripts\make_offline_release.ps1` copies `scripts\release_setup.bat` as root `setup.bat`.
+- `scripts\install_hospital_os.ps1` keeps a runtime `DEPRECATION NOTICE` and points operators to the supported installer.
+- Installation docs tell operators to use `setup.bat` and clarify that old shortcuts to `install_hospital_os.ps1` are compatibility only.
+
+Safety notes:
+
+- This check is read-only.
+- It does not start Docker, register tasks, modify `.env`, migrate data or open firewall rules.
+- The current local `offline-release` remains stale and must be regenerated before handoff.

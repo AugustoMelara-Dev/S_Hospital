@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 10:47:10
+- Generated at: 2026-06-03 11:01:02
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -21,6 +21,7 @@
 - Help screen safety guard exit code: 0
 - System diagnostics safety guard exit code: 0
 - Double-action safety guard exit code: 0
+- Installer legacy safety guard exit code: 0
 - Training safety guard exit code: 0
 - Evidence index guard exit code: 0
 - Preflight skipped: True
@@ -54,6 +55,7 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\validate_installation_docs_
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_help_screen_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_system_diagnostics_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_double_action_safety.ps1
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_installer_legacy_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
 powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000
@@ -100,6 +102,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] Missing required release file: scripts\validate_ops_evidence_index.ps1
 [FAIL] Missing required release file: scripts\validate_training_safety.ps1
 [FAIL] Missing required release file: scripts\validate_double_action_safety.ps1
+[FAIL] Missing required release file: scripts\validate_installer_legacy_safety.ps1
 [ OK ] Found scripts\run_backup_worker.cmd
 [ OK ] Found scripts\run_scheduled_backup.cmd
 [FAIL] docker-compose.prod.yml in offline release differs from versioned source. Regenerate offline-release before handoff.
@@ -117,10 +120,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 7fd4a75d before release handoff.
+[FAIL] MANIFEST.txt must reference current commit be1289a8 before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
-OFFLINE_RELEASE_CLEAN: NO (25 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (26 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -585,6 +588,48 @@ SYSTEM_DIAGNOSTICS_SAFETY: YES
 [ OK ] Administrator manual requires history/audit review before retrying
 
 DOUBLE_ACTION_SAFETY: YES
+```
+
+## Installer legacy safety validation output
+
+```text
+[ OK ] Found scripts\release_setup.bat
+[ OK ] Found scripts\deploy_hospital_lan.ps1
+[ OK ] Found scripts\install_hospital_os.ps1
+[ OK ] Found scripts\make_offline_release.ps1
+[ OK ] Found scripts\assert_offline_release_clean.ps1
+[ OK ] Found docs\manuales\GUIA_INSTALACION_OPERATIVA.md
+[ OK ] Found docs\OFFLINE_LAN_INSTALL.md
+[ OK ] Found docs\RELEASE_CHECKLIST.md
+[ OK ] Found docs\OPERATIVE_NOTES_2026_06_02.md
+[ OK ] setup.bat launcher delegates to supported LAN installer
+[ OK ] setup.bat launcher does not invoke legacy installer
+[ OK ] offline release builder uses release_setup.bat as root setup.bat
+[ OK ] offline release guard requires supported LAN installer
+[ OK ] offline release guard checks supported LAN installer source hash
+[ OK ] supported installer uses institutional name
+[ OK ] supported installer has diagnostics-only mode
+[ OK ] supported installer has self-test mode
+[ OK ] supported installer refuses missing backup task installer
+[ OK ] supported installer runs safe migrations
+[ OK ] supported installer does not run migrate:fresh
+[ OK ] supported installer creates explicit role/catalog seeders only
+[ OK ] legacy installer is marked deprecated at top of file
+[ OK ] legacy installer points operators to supported installer
+[ OK ] legacy installer explains backwards compatibility only
+[ OK ] legacy installer warns at runtime
+[ OK ] legacy installer says no new code paths should reference it
+[ OK ] operator install guide uses setup.bat for normal install
+[ OK ] operator install guide identifies supported LAN installer
+[ OK ] operator install guide limits legacy installer to compatibility
+[ OK ] operator install guide forbids clean destructive install
+[ OK ] operator install guide forbids demo seeders
+[ OK ] offline install guide prefers supported installer
+[ OK ] operative notes record legacy installer deprecation
+[ OK ] release checklist mentions installer legacy guard
+[ OK ] Active docs/scripts do not point operators to legacy installer
+
+INSTALLER_LEGACY_SAFETY: YES
 ```
 
 ## Evidence index validation output

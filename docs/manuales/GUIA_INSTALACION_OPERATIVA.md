@@ -27,6 +27,11 @@ del hospital.
 3. Espere a que los servicios levanten.
 4. Revise que el acceso directo **Abrir Sistema de Caja Hospitalaria** exista en el escritorio.
 
+`setup.bat` debe abrir el instalador LAN soportado
+`scripts\deploy_hospital_lan.ps1`. No use accesos directos antiguos hacia
+`scripts\install_hospital_os.ps1` salvo que soporte lo autorice para una
+instalacion vieja ya existente; ese script queda solo por compatibilidad.
+
 El instalador no debe cargar datos temporales en produccion.
 El instalador debe aplicar migraciones seguras sin borrar datos, sin ejecutar
 `migrate:fresh` y sin correr seeders de demostracion. Tambien debe dejar

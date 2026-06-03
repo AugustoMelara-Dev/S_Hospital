@@ -142,7 +142,8 @@ El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
 `scripts\validate_installation_docs_safety.ps1`,
 `scripts\validate_help_screen_safety.ps1`,
 `scripts\validate_system_diagnostics_safety.ps1`,
-`scripts\validate_double_action_safety.ps1` y
+`scripts\validate_double_action_safety.ps1`,
+`scripts\validate_installer_legacy_safety.ps1` y
 `scripts\validate_training_safety.ps1`. Despues de escribir el reporte, ejecuta
 `scripts\validate_ops_evidence_index.ps1` contra ese mismo archivo y bloquea
 `PRODUCTION_READY` si el paquete de soporte puede filtrar secretos, si
@@ -154,7 +155,8 @@ la pantalla de Ayuda pierde flujos criticos, incidentes reales o resumen seguro
 sin secretos, si el diagnostico local pierde resumen normal, detalle avanzado
 por permiso, checks de backend/base/frontend/respaldo/cola/hora/disco/LAN/version
 o sanitizacion, si las defensas contra doble accion pierden cobertura, si
-capacitacion segura falla, si el indice tiene referencias
+el instalador legacy vuelve a aparecer como flujo soportado, si capacitacion
+segura falla, si el indice tiene referencias
 rotas, rutas locales, secretos obvios o no mantiene los bloqueantes fisicos.
 Antes de entregar accesos directos o scripts de recuperacion, ejecute
 `scripts\validate_startup_repair_safety.ps1`; debe reportar
@@ -189,6 +191,11 @@ Antes de entregar flujos de caja, factura o pagos, ejecute
 `DOUBLE_ACTION_SAFETY: YES` para confirmar que doble click, recarga o repeticion
 de acciones no pierden las defensas de caja duplicada, numeracion concurrente,
 doble pago, mensajes seguros y advertencias en manuales.
+Antes de entregar instalador o paquete offline, ejecute
+`scripts\validate_installer_legacy_safety.ps1`; debe reportar
+`INSTALLER_LEGACY_SAFETY: YES` para confirmar que `setup.bat` delega a
+`scripts\deploy_hospital_lan.ps1`, que `install_hospital_os.ps1` queda solo
+como compatibilidad deprecada y que el paquete offline exige el guard.
 Antes de entregar material de capacitacion, ejecute
 `scripts\validate_training_safety.ps1`; debe reportar `TRAINING_SAFETY: YES`
 para confirmar que manuales y Ayuda siguen prohibiendo practicas sobre la base
