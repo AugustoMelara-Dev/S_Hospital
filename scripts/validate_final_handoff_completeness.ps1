@@ -133,6 +133,7 @@ if ($failures.Count -eq 0) {
         'scripts/validate_dependency_manifest.ps1',
         'scripts/init_production_proofs.ps1',
         'scripts/make_offline_release.ps1',
+        'scripts/assert_offline_release_clean.ps1',
         'docs/manuales'
     )
 

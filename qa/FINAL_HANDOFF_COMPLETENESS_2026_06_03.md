@@ -24,6 +24,7 @@ Observed result:
 - The handoff includes captures/browser smoke evidence.
 - The handoff includes system diagnostics, Help/support and support-packet evidence.
 - The handoff includes files changed in this hardening front.
+- The handoff lists `scripts/assert_offline_release_clean.ps1` as a preserved safety guard.
 - The handoff includes tests and gates run locally.
 - The handoff includes physical blockers for LAN client validation, printer proof, Windows backup tasks, production environment, backup worker, restore, concurrency and offline release regeneration.
 - The handoff includes risks and limits.

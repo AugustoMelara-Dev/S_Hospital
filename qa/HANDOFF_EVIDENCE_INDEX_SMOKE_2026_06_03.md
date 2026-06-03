@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 16:22:50
+- Generated at: 2026-06-03 16:34:36
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -70,7 +70,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 
 - In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.
 - Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.
-- Evidence guards: `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
+- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
 - Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.
 
 ## Risks and limits
@@ -210,7 +210,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] setup.bat avoids legacy/demo wording
 [ OK ] setup.bat uses institutional wording
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 2ba8d1c9 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit f632e7ae before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
 OFFLINE_RELEASE_CLEAN: NO (43 blocking issue(s))

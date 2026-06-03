@@ -3196,6 +3196,13 @@ Contexto: `scripts\validate_final_handoff_completeness.ps1` usa `qa\FINAL_PRODUC
 Decision: `qa\FINAL_PRODUCTION_HANDOFF_RESULT.md` conserva tambien el self-test del guard offline, el comando `assert_offline_release_clean.ps1 -SelfTest` y la salida de allowlist. Las menciones genericas de plantillas QA no se escriben como rutas `qa/` en backticks para no crear referencias falsas en el indice de evidencia.
 
 Criterio de verificacion: `scripts\validate_final_handoff_completeness.ps1` y `scripts\validate_ops_evidence_index.ps1` pasan tanto contra el handoff principal como contra `qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md`.
+## 2026-06-03 - Handoff lista el guard offline como artefacto critico
+
+Contexto: el handoff ya ejecutaba `assert_offline_release_clean.ps1 -SelfTest`, pero las secciones de archivos cambiados y el validador de completitud no exigian listar `scripts/assert_offline_release_clean.ps1` como guard preservado. Eso podia ocultar el archivo que protege el paquete offline contra evidencia real, secretos y artefactos desfasados.
+
+Decision: el handoff generado y el reporte principal listan `scripts/assert_offline_release_clean.ps1` dentro de los guards de evidencia. `scripts\validate_final_handoff_completeness.ps1` ahora falla si ese archivo no aparece en el handoff.
+
+Criterio de verificacion: `scripts\validate_final_handoff_completeness.ps1` pasa contra el handoff principal y contra `qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` solo si el guard offline queda listado como artefacto critico.
 ## 2026-06-02 - Policies registradas para recursos criticos
 
 Contexto: el frente operativo requiere permisos mantenibles y mensajes de error comprensibles. La auditoria interna ya habia senalado que `app/Policies/` no existia, aunque el sistema autorizaba con Form Requests y guards en Actions. Eso dejaba la matriz de permisos menos visible para soporte y futuras correcciones.
