@@ -1,4 +1,4 @@
-import { type FormEvent, type SyntheticEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
@@ -66,7 +66,7 @@ export function PaymentModal({
     }
   }, [open]);
 
-  function handleSubmit(e: FormEvent | SyntheticEvent) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const amountCents = parseMoneyCents(paymentAmount);
     if (amountCents === null || amountCents <= 0) {
@@ -168,11 +168,6 @@ export function PaymentModal({
               onChange={(e) => {
                 setError(null);
                 onPaymentAmountChange(e.target.value);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSubmit(e);
-                }
               }}
               placeholder="0.00"
               aria-invalid={error ? 'true' : 'false'}

@@ -27,11 +27,13 @@ type TooltipValue = string | number | readonly (string | number)[] | undefined;
 type TooltipName = string | number | undefined;
 
 function numericTooltipValue(value: TooltipValue): number {
-  if (Array.isArray(value)) {
-    return finiteNumber(value[0] ?? 0);
+  if (typeof value === 'string' || typeof value === 'number') {
+    return finiteNumber(value);
   }
 
-  return finiteNumber(value ?? 0);
+  const scalar = Array.isArray(value) ? value[0] : 0;
+
+  return finiteNumber(scalar ?? 0);
 }
 
 export function RevenueBarChart({ data }: RevenueBarChartProps) {
