@@ -1,6 +1,7 @@
 import {
   ChevronDown,
   HelpCircle,
+  KeyRound,
   LogOut,
   Menu,
   Moon,
@@ -25,6 +26,7 @@ interface TopbarProps {
   crumbs: Array<{ label: string; path: string }>;
   onOpenMobileMenu: () => void;
   onOpenGuide: () => void;
+  onOpenChangePassword: () => void;
   onLogout: () => void;
 }
 
@@ -35,6 +37,7 @@ export function Topbar({
   crumbs,
   onOpenMobileMenu,
   onOpenGuide,
+  onOpenChangePassword,
   onLogout,
 }: TopbarProps) {
   const { setTheme, isDark } = useTheme();
@@ -139,6 +142,16 @@ export function Topbar({
                   {hospitalName}
                 </p>
               </div>
+              <DropdownMenuPrimitive.Item
+                className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-foreground outline-none transition-colors hover:bg-muted focus:bg-muted"
+                onSelect={(event) => {
+                  event.preventDefault();
+                  onOpenChangePassword();
+                }}
+              >
+                <KeyRound data-icon="inline-start" aria-hidden="true" />
+                Cambiar mi contraseña
+              </DropdownMenuPrimitive.Item>
               <DropdownMenuPrimitive.Item
                 className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-destructive outline-none transition-colors hover:bg-destructive/10 focus:bg-destructive/10"
                 onClick={onLogout}

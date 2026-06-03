@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { type AuthUser, type CashSession } from '../lib/api';
 import { useBroadcastSync } from '../lib/realtime/useBroadcastSync';
 import { GuidedTour, shouldAutoOpenGuidedTour } from '../features/onboarding/GuidedTour';
+import { SelfChangePasswordDialog } from '../features/auth/SelfChangePasswordDialog';
 import { MobileSidebar, SidebarContent, appNavigation } from './Sidebar';
 import { Topbar } from './Topbar';
 
@@ -10,6 +11,7 @@ type AppShellProps = {
   cashSession: CashSession | null;
   children: React.ReactNode;
   onLogout: () => void;
+  onStatus: (message: string) => void;
   status: string;
   user: AuthUser;
   topbarVariant?: 'default' | 'minimal';
@@ -22,6 +24,7 @@ export function AppShell({
   cashSession,
   children,
   onLogout,
+  onStatus,
   status,
   user,
   topbarVariant = 'default',
@@ -30,6 +33,7 @@ export function AppShell({
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [selfChangePasswordOpen, setSelfChangePasswordOpen] = useState(false);
 
   // Wire real-time sync (WebSocket/Soketi) when the user is logged in.
   // Mounted once at the shell so every authenticated route benefits
@@ -96,6 +100,7 @@ export function AppShell({
           crumbs={crumbs}
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
           onOpenGuide={() => setGuideOpen(true)}
+          onOpenChangePassword={() => setSelfChangePasswordOpen(true)}
           onLogout={onLogout}
         />
 
@@ -108,6 +113,11 @@ export function AppShell({
         </footer>
       </div>
       <GuidedTour open={guideOpen} onOpenChange={setGuideOpen} />
+      <SelfChangePasswordDialog
+        open={selfChangePasswordOpen}
+        onOpenChange={setSelfChangePasswordOpen}
+        onStatus={onStatus}
+      />
     </div>
   );
 }

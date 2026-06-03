@@ -114,6 +114,7 @@ function HospitalApp() {
     <AppShell
       cashSession={session.cashSession}
       onLogout={session.handleLogout}
+      onStatus={handleStatus}
       status={session.status}
       user={session.user}
       logoUrl={logoUrl}
