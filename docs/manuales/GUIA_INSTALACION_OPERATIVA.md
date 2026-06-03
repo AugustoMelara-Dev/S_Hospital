@@ -171,12 +171,15 @@ El comando de cierre debe seguir reportando `PRODUCTION_CANDIDATE` hasta que
 esas cuatro evidencias existan y el preflight pase sin omisiones:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000
+powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000 -InitializeProofFiles
 ```
 
 El reporte de cierre se guarda en `qa\FINAL_PRODUCTION_HANDOFF_RESULT.md`.
 Si soporte usa `-ReportPath`, debe ser un archivo `.md` dentro de `qa\`; el
 script rechaza rutas fuera de esa carpeta antes de ejecutar el preflight.
+`-InitializeProofFiles` crea solo los borradores faltantes de evidencia; no
+reemplaza pruebas fisicas existentes salvo que soporte ejecute el inicializador
+por separado con `-Force` y autorizacion tecnica.
 
 Para crear el borrador inicial de la prueba LAN desde la segunda computadora:
 

@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 13:53:32
+- Generated at: 2026-06-03 13:58:48
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -201,7 +201,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit ae648e19 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit e5424a52 before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
 OFFLINE_RELEASE_CLEAN: NO (42 blocking issue(s))
@@ -364,6 +364,7 @@ Final-field proof templates match preflight-required labels, checks and safety i
 [ OK ] Found scripts\init_production_proofs.ps1
 [ OK ] Found docs\RELEASE_CHECKLIST.md
 [ OK ] Found docs\manuales\GUIA_INSTALACION_OPERATIVA.md
+[ OK ] Found scripts\final_production_handoff.ps1
 [ OK ] Found scripts\make_offline_release.ps1
 [ OK ] Found scripts\assert_offline_release_clean.ps1
 [ OK ] Initializer includes LAN_CLIENT_VALIDATION_PROOF example template
@@ -389,8 +390,11 @@ Final-field proof templates match preflight-required labels, checks and safety i
 [ OK ] Initializer supports WhatIfOnly
 [ OK ] Initializer protects existing evidence unless Force is passed
 [ OK ] Initializer sanitizes local paths in output
+[ OK ] Final handoff exposes InitializeProofFiles switch
+[ OK ] Final handoff calls proof initializer with ProjectRoot
 [ OK ] Release checklist documents proof initialization
 [ OK ] Install guide documents proof initialization dry-run
+[ OK ] Install guide documents guided handoff proof initialization
 [ OK ] Initializer does not run destructive database commands
 [ OK ] Proof initializer WhatIf succeeds against disposable fixture
 [ OK ] Proof initializer WhatIf does not create proof files

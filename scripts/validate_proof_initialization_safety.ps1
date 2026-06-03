@@ -85,6 +85,7 @@ function Assert-ExitCode([int] $expected, [hashtable] $result, [string] $message
 $initializerContent = Read-RequiredFile "scripts\init_production_proofs.ps1"
 $releaseChecklist = Read-RequiredFile "docs\RELEASE_CHECKLIST.md"
 $installGuide = Read-RequiredFile "docs\manuales\GUIA_INSTALACION_OPERATIVA.md"
+$finalHandoff = Read-RequiredFile "scripts\final_production_handoff.ps1"
 $offlineBuilder = Read-RequiredFile "scripts\make_offline_release.ps1"
 $offlineGuard = Read-RequiredFile "scripts\assert_offline_release_clean.ps1"
 
@@ -106,8 +107,11 @@ foreach ($name in $requiredTemplates) {
 Assert-Contains "Initializer supports WhatIfOnly" $initializerContent "WhatIfOnly"
 Assert-Contains "Initializer protects existing evidence unless Force is passed" $initializerContent "Use -Force solo si"
 Assert-Contains "Initializer sanitizes local paths in output" $initializerContent "%PROJECT_ROOT%"
+Assert-Contains "Final handoff exposes InitializeProofFiles switch" $finalHandoff "InitializeProofFiles"
+Assert-Contains "Final handoff calls proof initializer with ProjectRoot" $finalHandoff '-File\s+\$proofInitScript\s+-ProjectRoot\s+\$ProjectRoot'
 Assert-Contains "Release checklist documents proof initialization" $releaseChecklist "init_production_proofs\.ps1"
 Assert-Contains "Install guide documents proof initialization dry-run" $installGuide "init_production_proofs\.ps1 -WhatIfOnly"
+Assert-Contains "Install guide documents guided handoff proof initialization" $installGuide "final_production_handoff\.ps1.*-InitializeProofFiles"
 Assert-NotContains "Initializer does not run destructive database commands" $initializerContent "migrate:fresh|DROP DATABASE|docker\s+volume\s+rm|Remove-Item\s+.*qa"
 
 $fixtureRoot = Join-Path ([System.IO.Path]::GetTempPath()) "s-hospital-proof-init-$([Guid]::NewGuid().ToString('N'))"
