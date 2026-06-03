@@ -147,7 +147,13 @@ function safeJson(value) {
 }
 
 function safeEvidenceReference(path) {
-  return protectText(path || 'not requested');
+  if (!path) {
+    return 'not requested';
+  }
+
+  const relativePath = relative(process.cwd(), path).replace(/\\/g, '/');
+
+  return relativePath.startsWith('..') ? protectText(path) : relativePath;
 }
 
 function validateEvidencePath(value) {

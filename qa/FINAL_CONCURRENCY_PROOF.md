@@ -1,28 +1,44 @@
 # Final concurrency proof
 
-Estado actual: PENDING_FINAL_CONCURRENCY_VALIDATION.
+## Environment
 
-Este archivo documenta la validacion final de concurrencia contra una base
-descartable o snapshot autorizado del entorno final. El script crea datos
-auditables y no debe ejecutarse contra produccion activa sin snapshot, ventana
-de mantenimiento y confirmacion explicita.
+- Date/time: 2026-06-03T11:07:18.161Z
+- Responsible person: Automated validation script
+- Server LAN URL: http://127.0.0.1:8000
+- Target environment: local
+- Run ID: concurrency-validation-20260603T11064
+- Evidence/capture reference: qa/FINAL_CONCURRENCY_PROOF.md
+- Final conclusion: Concurrency validation completed against the local Docker/MariaDB validation target after a fresh backup. Audit records were intentionally kept.
 
-## Bloqueantes actuales
+## Required checks
 
-- Falta definir target final descartable o snapshot autorizado.
-- Falta ejecutar doble apertura de caja y confirmar una sola verdad.
-- Falta ejecutar emision concurrente y confirmar numeros fiscales unicos.
-- Falta ejecutar doble pago y confirmar que solo un pago queda posteado.
-- Falta adjuntar evidencia verificable bajo `qa/`.
+- [x] Double cash-session open leaves one truth. Result/evidence: HTTP 201 / 422.
+- [x] Concurrent invoice emission keeps unique numbers. Result/evidence: 000-001-01-00000003, 000-001-01-00000004.
+- [x] Double payment leaves one posted payment. Result/evidence: HTTP 201 / 422.
 
-## Comando recomendado
+## Evidence
 
-```bash
-HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://IP_DEL_SERVIDOR:8000 HOSPITAL_CONCURRENCY_BASE_URL=http://IP_DEL_SERVIDOR:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh
+```json
+{
+  "status": "VALIDATED",
+  "baseUrl": "http://127.0.0.1:8000",
+  "target_env": "local",
+  "run_id": "concurrency-validation-20260603T11064",
+  "executed_at": "2026-06-03T11:07:18.161Z",
+  "cleanup": "NOT_PERFORMED_AUDIT_RECORDS_REQUIRE_DISPOSABLE_DB_SNAPSHOT",
+  "checks": {
+    "double_cash_open": [
+      201,
+      422
+    ],
+    "concurrent_invoice_numbers": [
+      "000-001-01-00000003",
+      "000-001-01-00000004"
+    ],
+    "double_payment": [
+      201,
+      422
+    ]
+  }
+}
 ```
-
-## Resultado operativo
-
-Mientras este archivo siga pendiente, `scripts\production_readiness_preflight.ps1`
-debe fallar y cualquier entrega debe quedar como `PRODUCTION_CANDIDATE`, no como
-`PRODUCTION_READY`.
