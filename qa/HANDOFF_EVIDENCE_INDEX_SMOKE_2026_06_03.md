@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 10:18:46
+- Generated at: 2026-06-03 10:27:09
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -18,6 +18,7 @@
 - Operator manuals safety guard exit code: 0
 - Backup and restore docs safety guard exit code: 0
 - Installation docs safety guard exit code: 0
+- Help screen safety guard exit code: 0
 - Training safety guard exit code: 0
 - Evidence index guard exit code: 0
 - Preflight skipped: True
@@ -48,6 +49,7 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\validate_startup_repair_saf
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_backup_restore_docs_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_installation_docs_safety.ps1
+powershell.exe -ExecutionPolicy Bypass -File scripts\validate_help_screen_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
 powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md
 powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000
@@ -89,6 +91,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] Missing required release file: scripts\validate_operator_manuals_safety.ps1
 [FAIL] Missing required release file: scripts\validate_backup_restore_docs_safety.ps1
 [FAIL] Missing required release file: scripts\validate_installation_docs_safety.ps1
+[FAIL] Missing required release file: scripts\validate_help_screen_safety.ps1
 [FAIL] Missing required release file: scripts\validate_ops_evidence_index.ps1
 [FAIL] Missing required release file: scripts\validate_training_safety.ps1
 [ OK ] Found scripts\run_backup_worker.cmd
@@ -108,10 +111,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit aaa6d069 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 7096220f before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
-OFFLINE_RELEASE_CLEAN: NO (22 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (23 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -348,6 +351,86 @@ BACKUP_RESTORE_DOCS_SAFETY: YES
 [ OK ] Installation/support docs do not expose secret-like assignments
 
 INSTALLATION_DOCS_SAFETY: YES
+```
+
+## Help screen safety validation output
+
+```text
+[ OK ] Found frontend\src\features\help\HelpView.tsx
+[ OK ] Found frontend\src\features\help\HelpView.test.tsx
+[ OK ] Found frontend\src\lib\support\clientIssueLog.ts
+[ OK ] Found frontend\src\lib\support\clientIssueLog.test.ts
+[ OK ] Help screen includes required section/text: Ayuda institucional
+[ OK ] Help screen includes required section/text: Abrir el sistema
+[ OK ] Help screen includes required section/text: Iniciar sesion
+[ OK ] Help screen includes required section/text: Abrir caja
+[ OK ] Help screen includes required section/text: Nueva factura
+[ OK ] Help screen includes required section/text: Cobrar
+[ OK ] Help screen includes required section/text: Imprimir recibo
+[ OK ] Help screen includes required section/text: Reimprimir
+[ OK ] Help screen includes required section/text: Reportes
+[ OK ] Help screen includes required section/text: Respaldos
+[ OK ] Help screen includes required section/text: Cierre de turno
+[ OK ] Help screen includes required section/text: Pedir soporte
+[ OK ] Help screen includes required section/text: Evidencia local para soporte
+[ OK ] Help screen includes required section/text: Preparar resumen
+[ OK ] Help screen includes required section/text: Ver evidencia
+[ OK ] Help screen includes required section/text: Atajos de teclado
+[ OK ] Help screen includes required section/text: Responsabilidades por rol
+[ OK ] Help screen includes required section/text: Checklist diario por rol
+[ OK ] Help screen includes required section/text: Acciones delicadas
+[ OK ] Help screen includes required section/text: Capacitaci
+[ OK ] Help screen includes incident guidance: Servidor no disponible
+[ OK ] Help screen includes incident guidance: Impresora no responde
+[ OK ] Help screen includes incident guidance: Falla la red
+[ OK ] Help screen includes incident guidance: Se fue la luz
+[ OK ] Help screen includes incident guidance: Caja qued
+[ OK ] Help screen includes incident guidance: Diferencia de caja
+[ OK ] Help screen includes incident guidance: Respaldo fallido
+[ OK ] Help screen includes incident guidance: Base de datos necesita restaurarse
+[ OK ] Help screen includes incident guidance: Sin permiso
+[ OK ] Help screen includes incident guidance: Se cerro el navegador
+[ OK ] Help screen warns not to duplicate invoices/payments
+[ OK ] Help screen tells staff to check cashbox/history before retrying
+[ OK ] Help screen keeps safe practice/restore database warning
+[ OK ] Help support evidence explains secrets are not included
+[ OK ] Help screen prepares safe support summary
+[ OK ] Help screen reads local client issue evidence
+[ OK ] Help screen can copy support summary when browser allows it
+[ OK ] Client issue log includes safety behavior: safeClientMessage
+[ OK ] Client issue log includes safety behavior: hospital_client_issue_log
+[ OK ] Client issue log includes safety behavior: MAX_ISSUES = 20
+[ OK ] Client issue log includes safety behavior: PERMISSION_DENIED_MESSAGE
+[ OK ] Client issue log includes safety behavior: buildClientIssueSupportSummary
+[ OK ] Client issue log includes safety behavior: Resumen seguro para soporte
+[ OK ] Client issue log includes safety behavior: Acci
+[ OK ] Client issue log includes safety behavior: no repetir facturas ni cobros
+[ OK ] Client issue log includes safety behavior: [redacted]
+[ OK ] Client issue log includes safety behavior: [archivo-protegido]
+[ OK ] Client issue log includes safety behavior: [campo-interno]
+[ OK ] Client issue log includes safety behavior: [detalle-tecnico]
+[ OK ] Client issue log includes safety behavior: [ruta-local]
+[ OK ] Client issue log redacts technical pattern: DB_PASSWORD
+[ OK ] Client issue log redacts technical pattern: APP_KEY
+[ OK ] Client issue log redacts technical pattern: SQLSTATE
+[ OK ] Client issue log redacts technical pattern: \.env
+[ OK ] Client issue log redacts technical pattern: storage[\\/]+logs
+[ OK ] Client issue log redacts technical pattern: https?:\/\/
+[ OK ] Help/support tests cover: shows operational support guidance
+[ OK ] Help/support tests cover: servidor no disponible
+[ OK ] Help/support tests cover: impresora no responde
+[ OK ] Help/support tests cover: se fue la luz
+[ OK ] Help/support tests cover: caja qued
+[ OK ] Help/support tests cover: base de datos necesita restaurarse
+[ OK ] Help/support tests cover: se cerro el navegador
+[ OK ] Help/support tests cover: evidencia local para soporte
+[ OK ] Help/support tests cover: preparar resumen
+[ OK ] Help/support tests cover: redacts sensitive words
+[ OK ] Help/support tests cover: removes URL credentials
+[ OK ] Help/support tests cover: without secrets or local paths
+[ OK ] Help screen does not expose secret-like assignments
+
+HELP_SCREEN_SAFETY: YES
 ```
 
 ## Evidence index validation output
