@@ -1,3 +1,10 @@
+## 2026-06-02 - Diagnostico avanzado se habilita por permiso, no por rol fijo
+
+Contexto: `/api/system/status` ya esta protegido por `system.status.view`, pero la pantalla **Informacion del sistema** mostraba el diagnostico avanzado solo cuando el usuario tenia rol literal `admin`. Eso impedia asignar una cuenta de soporte local con permiso de diagnostico sin darle control administrativo completo.
+
+Decision: el frontend ahora muestra el diagnostico administrativo cuando el usuario tiene `system.status.view`. La UI mantiene el mismo resumen seguro para usuarios normales y no expone comandos, rutas locales ni variables crudas.
+
+Criterio de verificacion: `AboutView.test.tsx` cubre cajero sin diagnostico avanzado, admin con permiso y usuario de soporte con `system.status.view`; pasan el test focal, typecheck y lint sin errores.
 # Technical Decisions - Sistema de Caja Hospitalaria
 
 ## Registro de decisiones

@@ -27,7 +27,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [systemStatusError, setSystemStatusError] = useState('');
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
-  const canViewAdminDiagnostics = user.roles.includes('admin');
+  const canViewAdminDiagnostics = user.permissions.includes('system.status.view');
 
   useEffect(() => {
     async function fetchBackupCount() {

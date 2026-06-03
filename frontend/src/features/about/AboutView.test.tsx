@@ -39,10 +39,19 @@ describe('AboutView', () => {
     name: 'Admin Hospital',
     username: 'admin.hospital',
     roles: ['admin'],
-    permissions: ['backups.view'],
+    permissions: ['backups.view', 'system.status.view'],
+  };
+  const supportUser = {
+    ...cashierUser,
+    id: 3,
+    name: 'Soporte Hospital',
+    username: 'soporte.hospital',
+    roles: ['soporte'],
+    permissions: ['system.status.view'],
   };
 
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.mocked(useFiscalSettings).mockReturnValue({
       data: { hospital_name: 'Hospital San Isidro' },
     } as ReturnType<typeof useFiscalSettings>);
@@ -118,6 +127,26 @@ describe('AboutView', () => {
     expect(screen.getByText(/America\/Tegucigalpa/i)).toBeInTheDocument();
     expect(screen.getByText(/1\.0\.0-rc\.3/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/queue:work|APP_KEY|DB_PASSWORD|\.env|C:\\\\/i);
+    expect(apiClient.getSystemStatus).toHaveBeenCalledOnce();
+  });
+
+  it('allows support users with system status permission to see advanced diagnostics', async () => {
+    vi.mocked(useServerStatus).mockReturnValue({
+      checking: false,
+      isOnline: true,
+      lastCheck: new Date('2026-06-02T14:00:00.000Z'),
+      operationalHealth: null,
+      summary: {
+        description: 'Servidor local, base de datos y respaldos responden. Mantenga el cierre diario y los respaldos protegidos.',
+        label: 'Todo bien',
+        level: 'ok',
+      },
+    });
+
+    render(<AboutView user={supportUser} onStatus={vi.fn()} />);
+
+    expect(await screen.findByRole('heading', { name: /diagnostico administrativo/i })).toBeInTheDocument();
+    expect(screen.getByText('Servidor activo')).toBeInTheDocument();
     expect(apiClient.getSystemStatus).toHaveBeenCalledOnce();
   });
 });
