@@ -475,7 +475,7 @@ class SystemStatusController extends Controller
             'status' => $status,
             'last_tick_at' => $lastTickCarbon?->toIso8601String(),
             'last_result' => $lastResult,
-            'last_message' => $lastMessage,
+            'last_message' => OperationalMessageSanitizer::message(is_string($lastMessage) ? $lastMessage : null),
             'age_seconds' => $ageSeconds,
             'ticks_in_db' => $historyCount,
             'ticks_last_24h' => $ticksLast24h,

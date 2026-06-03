@@ -17,7 +17,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_ops_evidenc
 Observed result:
 
 - `OPS_EVIDENCE_INDEX: YES`.
-- `Referencias qa/ verificadas: 15`.
+- `Referencias qa/ verificadas: 16`.
 - The handoff preserved physical blockers before `PRODUCTION_READY`.
 
 Safety notes:

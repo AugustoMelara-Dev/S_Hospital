@@ -370,6 +370,34 @@ MARKDOWN;
             ->assertJsonPath('data.backups.queue.scheduler_heartbeat.last_result', 'ok');
     }
 
+    public function test_scheduler_heartbeat_message_is_sanitized_for_system_status(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        Cache::put('hospital:scheduler:last_tick', now()->subSeconds(30)->toIso8601String(), 60);
+        Cache::put('hospital:scheduler:last_result', 'fail', 60);
+        Cache::put(
+            'hospital:scheduler:last_message',
+            'SQLSTATE[HY000] DB_PASSWORD=supersecret failed at C:\Projects\S_Hospital\backend\.env',
+            60,
+        );
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath(
+                'data.backups.queue.scheduler_heartbeat.last_message',
+                'Error tecnico registrado. Revise el paquete de soporte.',
+            );
+
+        $payload = json_encode($response->json(), JSON_THROW_ON_ERROR);
+        $this->assertStringNotContainsString('supersecret', $payload);
+        $this->assertStringNotContainsString('DB_PASSWORD', $payload);
+        $this->assertStringNotContainsString('C:\Projects\S_Hospital', $payload);
+        $this->assertStringNotContainsString('SQLSTATE', $payload);
+    }
+
     public function test_scheduler_heartbeat_flags_stale_ticks(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);
