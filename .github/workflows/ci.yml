@@ -7,10 +7,12 @@ on:
     branches: [main, codex/**]
   workflow_dispatch:
 
-# Cancel superseded runs on the same branch.
+# Cancel superseded runs on the same branch, but never cancel the
+# main branch run (saves CI minutes on PRs/feature branches while
+# keeping the canonical main pipeline intact).
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   backend-sqlite:
