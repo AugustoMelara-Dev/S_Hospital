@@ -53,6 +53,10 @@ services:
     mem_limit: 512m
     cpus: "1.0"
     pids_limit: 200
+    labels:
+      - "org.opencontainers.image.source=https://github.com/hospital-san-isidro/s-hospital"
+      - "hospital.org=S_Hospital"
+      - "hospital.role=backend"
     logging:
       driver: json-file
       options:
@@ -85,6 +89,10 @@ services:
     mem_limit: 128m
     cpus: "0.5"
     pids_limit: 100
+    labels:
+      - "org.opencontainers.image.source=https://github.com/hospital-san-isidro/s-hospital"
+      - "hospital.org=S_Hospital"
+      - "hospital.role=nginx"
     logging:
       driver: json-file
       options:
@@ -101,6 +109,7 @@ services:
       - "--max_connections=200"
       - "--innodb_strict_mode=ON"
       - "--skip-name-resolve"
+      - "--binlog_expire_logs_seconds=604800"
     environment:
       MARIADB_DATABASE: ${DB_DATABASE:-hospital_billing}
       MARIADB_USER: ${DB_USERNAME:-hospital}
@@ -118,6 +127,10 @@ services:
     mem_limit: 1024m
     cpus: "1.5"
     pids_limit: 300
+    labels:
+      - "org.opencontainers.image.source=https://github.com/hospital-san-isidro/s-hospital"
+      - "hospital.org=S_Hospital"
+      - "hospital.role=mysql"
     logging:
       driver: json-file
       options:
@@ -165,6 +178,10 @@ services:
     mem_limit: 384m
     cpus: "0.5"
     pids_limit: 150
+    labels:
+      - "org.opencontainers.image.source=https://github.com/hospital-san-isidro/s-hospital"
+      - "hospital.org=S_Hospital"
+      - "hospital.role=queue-worker"
     logging:
       driver: json-file
       options:
@@ -216,6 +233,10 @@ services:
     mem_limit: 64m
     cpus: "0.25"
     pids_limit: 50
+    labels:
+      - "org.opencontainers.image.source=https://github.com/hospital-san-isidro/s-hospital"
+      - "hospital.org=S_Hospital"
+      - "hospital.role=scheduler"
     logging:
       driver: json-file
       options:
@@ -258,6 +279,10 @@ services:
     mem_limit: 96m
     cpus: "0.25"
     pids_limit: 100
+    labels:
+      - "org.opencontainers.image.source=https://github.com/hospital-san-isidro/s-hospital"
+      - "hospital.org=S_Hospital"
+      - "hospital.role=soketi"
     logging:
       driver: json-file
       options:
