@@ -21,6 +21,24 @@ describe('InvoiceCart', () => {
     expect(document.body.textContent).toContain('L. 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
+
+  it('exposes the dialysis prescription rule as a labeled checkbox', () => {
+    render(
+      <InvoiceCart
+        items={[cartItemFixture({
+          service: serviceFixture({ special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION' }),
+        })]}
+        preview={{ subtotal: '25.00', tax: '0.00', total: '25.00' }}
+        taxRate="15.00"
+        onUpdateQuantity={vi.fn()}
+        onUpdateDialysisPrescription={vi.fn()}
+        onRemoveItem={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText(/receta de dialisis/i)).toBeInTheDocument();
+  });
 });
 
 function cartItemFixture(overrides: Partial<CartItem> = {}): CartItem {

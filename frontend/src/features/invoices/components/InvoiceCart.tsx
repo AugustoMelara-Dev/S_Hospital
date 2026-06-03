@@ -139,14 +139,16 @@ export function InvoiceCart({
                   </div>
 
                   {item.service.special_rule_code === ERYTHROPOIETIN_RULE && (
-                    <label className="flex items-center gap-2 text-xs">
+                    <div className="flex items-center gap-2 text-xs">
                       <Checkbox
                         id={`dialysis-${index}`}
                         checked={item.dialysisPrescription}
                         onCheckedChange={(checked) => onUpdateDialysisPrescription(index, checked === true)}
                       />
-                      <span className="text-muted-foreground">Receta de dialisis (gratis)</span>
-                    </label>
+                      <label htmlFor={`dialysis-${index}`} className="cursor-pointer text-muted-foreground">
+                        Receta de dialisis (gratis)
+                      </label>
+                    </div>
                   )}
                 </div>
               );

@@ -61,4 +61,24 @@ describe('PaymentModal', () => {
     });
     expect(confirmSpy).toHaveBeenCalledWith('17.25');
   });
+
+  it('exposes the print preview option as a labeled checkbox', () => {
+    render(
+      <PaymentModal
+        open
+        onOpenChange={vi.fn()}
+        invoiceNumber="000-001-01-00000009"
+        patientName="Maria Lopez"
+        total="17.25"
+        balanceDue="17.25"
+        paymentMethod="cash"
+        paymentAmount="17.25"
+        onPaymentMethodChange={vi.fn()}
+        onPaymentAmountChange={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText(/ver preview antes de imprimir/i)).toBeInTheDocument();
+  });
 });
