@@ -179,7 +179,7 @@ function Assert-ScriptExists([string] $path) {
 
 function Invoke-EvidenceIndexGuard([string] $handoffPath) {
     Write-Section "Evidence index validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $evidenceIndexScript -ProjectRoot $ProjectRoot -HandoffPath $handoffPath 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $evidenceIndexScript -ProjectRoot $ProjectRoot -HandoffPath $handoffPath 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -191,7 +191,7 @@ function Invoke-EvidenceIndexGuard([string] $handoffPath) {
 
 function Invoke-TrainingSafetyGuard {
     Write-Section "Training safety validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $trainingSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $trainingSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -203,7 +203,7 @@ function Invoke-TrainingSafetyGuard {
 
 function Invoke-SupportPacketSafetyGuard {
     Write-Section "Support packet safety validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $supportPacketSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $supportPacketSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -215,7 +215,7 @@ function Invoke-SupportPacketSafetyGuard {
 
 function Invoke-FieldProofTemplatesSafetyGuard {
     Write-Section "Field proof templates safety validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $fieldProofTemplatesSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $fieldProofTemplatesSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -227,7 +227,7 @@ function Invoke-FieldProofTemplatesSafetyGuard {
 
 function Invoke-ProofInitializationSafetyGuard {
     Write-Section "Proof initialization safety validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $proofInitializationSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $proofInitializationSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -239,7 +239,7 @@ function Invoke-ProofInitializationSafetyGuard {
 
 function Invoke-OperationsObjectiveAuditGuard {
     Write-Section "Operations objective audit validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $operationsObjectiveAuditScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $operationsObjectiveAuditScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -251,7 +251,7 @@ function Invoke-OperationsObjectiveAuditGuard {
 
 function Invoke-OfflineReleaseBuilderSelfTestGuard {
     Write-Section "Offline release builder self-test"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $offlineReleaseBuilderScript -ProjectRoot $ProjectRoot -SelfTest 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $offlineReleaseBuilderScript -ProjectRoot $ProjectRoot -SelfTest 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -263,7 +263,7 @@ function Invoke-OfflineReleaseBuilderSelfTestGuard {
 
 function Invoke-DependencyManifestGuard {
     Write-Section "Dependency manifest validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $dependencyManifestScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $dependencyManifestScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -275,7 +275,7 @@ function Invoke-DependencyManifestGuard {
 
 function Invoke-BrowserSmokeEvidenceGuard {
     Write-Section "Browser smoke evidence validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $browserSmokeEvidenceScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $browserSmokeEvidenceScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -287,7 +287,7 @@ function Invoke-BrowserSmokeEvidenceGuard {
 
 function Invoke-StartupRepairSafetyGuard {
     Write-Section "Startup and repair safety validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $startupRepairSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $startupRepairSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -299,7 +299,7 @@ function Invoke-StartupRepairSafetyGuard {
 
 function Invoke-OperatorManualsSafetyGuard {
     Write-Section "Operator manuals safety validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $operatorManualsSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $operatorManualsSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -311,7 +311,7 @@ function Invoke-OperatorManualsSafetyGuard {
 
 function Invoke-BackupRestoreDocsSafetyGuard {
     Write-Section "Backup and restore docs safety validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $backupRestoreDocsSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $backupRestoreDocsSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -323,7 +323,7 @@ function Invoke-BackupRestoreDocsSafetyGuard {
 
 function Invoke-InstallationDocsSafetyGuard {
     Write-Section "Installation docs safety validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $installationDocsSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installationDocsSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -335,7 +335,7 @@ function Invoke-InstallationDocsSafetyGuard {
 
 function Invoke-HelpScreenSafetyGuard {
     Write-Section "Help screen safety validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $helpScreenSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $helpScreenSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -347,7 +347,7 @@ function Invoke-HelpScreenSafetyGuard {
 
 function Invoke-SystemDiagnosticsSafetyGuard {
     Write-Section "System diagnostics safety validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $systemDiagnosticsSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $systemDiagnosticsSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -359,7 +359,7 @@ function Invoke-SystemDiagnosticsSafetyGuard {
 
 function Invoke-DoubleActionSafetyGuard {
     Write-Section "Double-action safety validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $doubleActionSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $doubleActionSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -371,7 +371,7 @@ function Invoke-DoubleActionSafetyGuard {
 
 function Invoke-InstallerLegacySafetyGuard {
     Write-Section "Installer legacy safety validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $installerLegacySafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installerLegacySafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -383,7 +383,7 @@ function Invoke-InstallerLegacySafetyGuard {
 
 function Invoke-LanRecoverySafetyGuard {
     Write-Section "LAN recovery safety validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $lanRecoverySafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $lanRecoverySafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -395,7 +395,7 @@ function Invoke-LanRecoverySafetyGuard {
 
 function Invoke-ShiftIncidentRecoverySafetyGuard {
     Write-Section "Shift incident recovery safety validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $shiftIncidentRecoverySafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $shiftIncidentRecoverySafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -407,7 +407,7 @@ function Invoke-ShiftIncidentRecoverySafetyGuard {
 
 function Invoke-FinalHandoffCompletenessGuard([string] $handoffPath) {
     Write-Section "Final handoff completeness validation"
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $finalHandoffCompletenessScript -ProjectRoot $ProjectRoot -HandoffPath $handoffPath 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $finalHandoffCompletenessScript -ProjectRoot $ProjectRoot -HandoffPath $handoffPath 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -684,34 +684,34 @@ function Write-HandoffReport(
     Add-ReportLine $lines "## Next commands"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```powershell'
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $(Protect-HandoffText $PhpPath)"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $(Protect-HandoffText $PhpPath)"
     Add-ReportLine $lines "Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker"
     Add-ReportLine $lines 'bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"'
     Add-ReportLine $lines "# Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report."
     Add-ReportLine $lines "bash -lc `"HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_BASE_URL=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh`""
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_browser_smoke_evidence.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_startup_repair_safety.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_safety.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_backup_restore_docs_safety.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_installation_docs_safety.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_help_screen_safety.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_system_diagnostics_safety.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_double_action_safety.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_installer_legacy_safety.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_recovery_safety.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_shift_incident_recovery_safety.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_field_proof_templates.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_proof_initialization_safety.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1 -SelfTest"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_operations_objective_audit.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_dependency_manifest.ps1"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_final_handoff_completeness.ps1 -HandoffPath $(Protect-HandoffText $path)"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath $(Protect-HandoffText $path)"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl $($BaseUrl.TrimEnd('/'))"
-    Add-ReportLine $lines "powershell.exe -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -PhpPath $(Protect-HandoffText $PhpPath)"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_browser_smoke_evidence.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_startup_repair_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_backup_restore_docs_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installation_docs_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_help_screen_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_system_diagnostics_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_double_action_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installer_legacy_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_recovery_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_shift_incident_recovery_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_field_proof_templates.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_proof_initialization_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1 -SelfTest"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_operations_objective_audit.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_dependency_manifest.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_final_handoff_completeness.ps1 -HandoffPath $(Protect-HandoffText $path)"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath $(Protect-HandoffText $path)"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl $($BaseUrl.TrimEnd('/'))"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -PhpPath $(Protect-HandoffText $PhpPath)"
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
@@ -962,7 +962,7 @@ Write-Host "PhpPath: $(Protect-HandoffText $PhpPath)"
 
 Write-Section "Proof files"
 if ($InitializeProofFiles) {
-    & powershell.exe -ExecutionPolicy Bypass -File $proofInitScript -ProjectRoot $ProjectRoot
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $proofInitScript -ProjectRoot $ProjectRoot
 }
 
 $lanProofCompleted = Test-ProofLooksCompleted $lanProofPath
@@ -977,7 +977,7 @@ Write-Result $concurrencyProofCompleted "Final concurrency proof file has requir
 
 if (-not $lanProofCompleted) {
     Write-Host "Run from the second LAN client:"
-    Write-Host "powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md"
+    Write-Host "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md"
 }
 
 if (-not $printerProofCompleted) {
@@ -993,15 +993,15 @@ if (-not $concurrencyProofCompleted) {
 }
 
 Write-Section "Backup automation"
-$backupStatusOutput = @(& powershell.exe -ExecutionPolicy Bypass -File $backupTasksScript -ProjectRoot $ProjectRoot -PhpPath $PhpPath -Status 2>&1 | ForEach-Object { $_.ToString() })
+$backupStatusOutput = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $backupTasksScript -ProjectRoot $ProjectRoot -PhpPath $PhpPath -Status 2>&1 | ForEach-Object { $_.ToString() })
 $backupStatusOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 Write-Host "If tasks are missing or stale, run elevated PowerShell:"
-Write-Host "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $(Protect-HandoffText $PhpPath)"
+Write-Host "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $(Protect-HandoffText $PhpPath)"
 Write-Host "Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker"
-Write-Host "powershell.exe -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath $(Protect-HandoffText $PhpPath)"
+Write-Host "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath $(Protect-HandoffText $PhpPath)"
 
 Write-Section "Offline release artifact"
-$releaseGuardOutput = @(& powershell.exe -ExecutionPolicy Bypass -File $releaseGuardScript -ProjectRoot $ProjectRoot -RequireCurrentCommit 2>&1 | ForEach-Object { $_.ToString() })
+$releaseGuardOutput = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $releaseGuardScript -ProjectRoot $ProjectRoot -RequireCurrentCommit 2>&1 | ForEach-Object { $_.ToString() })
 $releaseGuardExit = $LASTEXITCODE
 $releaseGuardOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -1138,7 +1138,7 @@ if ($SkipPreflight) {
 }
 
 Write-Section "Production preflight"
-$preflightOutput = @(& powershell.exe -ExecutionPolicy Bypass -File $preflightScript -ProjectRoot $ProjectRoot -BaseUrl $BaseUrl 2>&1 | ForEach-Object { $_.ToString() })
+$preflightOutput = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $preflightScript -ProjectRoot $ProjectRoot -BaseUrl $BaseUrl 2>&1 | ForEach-Object { $_.ToString() })
 $preflightExit = $LASTEXITCODE
 $preflightOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 

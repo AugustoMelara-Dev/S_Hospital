@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-03 14:04:57
+- Generated at: 2026-06-03 14:52:34
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -201,7 +201,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 04729f29 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 66c4f74d before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
 OFFLINE_RELEASE_CLEAN: NO (42 blocking issue(s))
@@ -261,9 +261,13 @@ BROWSER_SMOKE_EVIDENCE: YES
 [ OK ] Found scripts\open_hospital_system.ps1
 [ OK ] Found scripts\install_hospital_startup_shortcut.ps1
 [ OK ] Found scripts\install_backup_tasks_windows.ps1
+[ OK ] Found scripts\final_production_handoff.ps1
+[ OK ] Found scripts\production_readiness_preflight.ps1
 [ OK ] scripts\start_hospital_services.ps1 includes human safety warning
 [ OK ] scripts\repair_hospital_system.ps1 includes human safety warning
 [ OK ] scripts\open_hospital_system.ps1 includes human safety warning
+[ OK ] scripts\final_production_handoff.ps1 uses -NoProfile for nested PowerShell calls
+[ OK ] scripts\production_readiness_preflight.ps1 uses -NoProfile for nested PowerShell calls
 Iniciando servicios locales del Sistema de Caja Hospitalaria...
 Carpeta del sistema: %PROJECT_ROOT%
 Validacion de arranque completada.
@@ -552,6 +556,7 @@ BACKUP_RESTORE_DOCS_SAFETY: YES
 [ OK ] Installation guide includes safety text: FINAL_RESTORE_PROOF.md
 [ OK ] Installation guide includes safety text: FINAL_CONCURRENCY_PROOF.md
 [ OK ] Installation guide includes safety text: final_production_handoff.ps1
+[ OK ] Installation guide includes safety text: -InitializeProofFiles
 [ OK ] Installation guide includes safety text: PRODUCTION_CANDIDATE
 [ OK ] Installation guide includes safety text: validate_lan_client.ps1
 [ OK ] Installation guide includes safety text: repair_hospital_system.ps1
@@ -575,6 +580,9 @@ BACKUP_RESTORE_DOCS_SAFETY: YES
 [ OK ] Install/release docs include guardrail: impresora institucional
 [ OK ] Install/release docs include guardrail: base descartable
 [ OK ] Install/release docs include guardrail: concurrencia
+[ OK ] Install/release docs include guardrail: make_offline_release.ps1 -SelfTest
+[ OK ] Install/release docs include guardrail: validate_dependency_manifest.ps1
+[ OK ] Install/release docs include guardrail: package_manifest.json
 [ OK ] Installation/support docs do not expose secret-like assignments
 
 INSTALLATION_DOCS_SAFETY: YES

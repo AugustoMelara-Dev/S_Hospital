@@ -85,7 +85,7 @@ function Test-ScriptDoesNotContainDestructiveOperations([string] $relativePath, 
 }
 
 function Invoke-SafeCheck([string] $label, [string[]] $arguments, [string[]] $requiredOutput) {
-    $output = @(& powershell.exe @arguments 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile @arguments 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-StartupSafetyText $_) }
 
@@ -109,10 +109,26 @@ $repairScript = Require-File "scripts\repair_hospital_system.ps1"
 $openScript = Require-File "scripts\open_hospital_system.ps1"
 $shortcutScript = Require-File "scripts\install_hospital_startup_shortcut.ps1"
 $backupTasksScript = Require-File "scripts\install_backup_tasks_windows.ps1"
+$handoffScript = Require-File "scripts\final_production_handoff.ps1"
+$preflightScript = Require-File "scripts\production_readiness_preflight.ps1"
 
 Test-ScriptDoesNotContainDestructiveOperations "scripts\start_hospital_services.ps1" $startupScript
 Test-ScriptDoesNotContainDestructiveOperations "scripts\repair_hospital_system.ps1" $repairScript
 Test-ScriptDoesNotContainDestructiveOperations "scripts\open_hospital_system.ps1" $openScript
+
+foreach ($scriptInfo in @(
+    @{ Relative = "scripts\final_production_handoff.ps1"; Path = $handoffScript },
+    @{ Relative = "scripts\production_readiness_preflight.ps1"; Path = $preflightScript }
+)) {
+    if ($null -ne $scriptInfo.Path) {
+        $content = Get-Content -LiteralPath $scriptInfo.Path -Raw
+        if ($content -match 'powershell\.exe\s+-ExecutionPolicy') {
+            Add-Failure "$($scriptInfo.Relative) invokes PowerShell without -NoProfile."
+        } else {
+            Add-Pass "$($scriptInfo.Relative) uses -NoProfile for nested PowerShell calls"
+        }
+    }
+}
 
 if ($failures.Count -eq 0) {
     Invoke-SafeCheck `

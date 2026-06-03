@@ -169,7 +169,7 @@ function Invoke-OperationsObjectiveAuditGuard {
         return
     }
 
-    $output = @(& powershell.exe -ExecutionPolicy Bypass -File $auditGuardScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $auditGuardScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     foreach ($line in $output) {
         Write-Host (Protect-PreflightText $line)
