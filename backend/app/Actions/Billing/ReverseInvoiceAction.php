@@ -9,7 +9,7 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
 use App\Support\InvoiceAccess;
-use App\Support\Money;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -46,7 +46,8 @@ class ReverseInvoiceAction
             ]);
         }
 
-        $result = DB::transaction(function () use ($invoice, $user, $reason): ?Invoice {
+        /** @var Invoice $result */
+        $result = DB::transaction(function () use ($invoice, $user, $reason): Invoice {
             $lockedInvoice = Invoice::query()
                 ->with(['payments' => fn ($query) => $query
                     ->where('status', Payment::STATUS_POSTED)
@@ -63,11 +64,14 @@ class ReverseInvoiceAction
                 ]);
             }
 
+            /** @var Collection<int, Payment> $postedPayments */
+            $postedPayments = $lockedInvoice->payments;
+
             $oldValues = [
                 'status' => $lockedInvoice->status,
                 'paid_amount' => (string) $lockedInvoice->paid_amount,
                 'balance_due' => (string) $lockedInvoice->balance_due,
-                'posted_payments' => $lockedInvoice->payments->map(fn (Payment $p) => [
+                'posted_payments' => $postedPayments->map(fn (Payment $p) => [
                     'id' => $p->id,
                     'amount' => (string) $p->amount,
                     'method' => $p->method,
@@ -75,7 +79,7 @@ class ReverseInvoiceAction
             ];
 
             $voidedPaymentIds = [];
-            foreach ($lockedInvoice->payments as $payment) {
+            foreach ($postedPayments as $payment) {
                 $voidedPayment = $this->voidPayment->execute(
                     $lockedInvoice,
                     $payment,
@@ -130,12 +134,6 @@ class ReverseInvoiceAction
                 'fiscalSequence',
             ]);
         });
-
-        if (! $result instanceof Invoice) {
-            throw ValidationException::withMessages([
-                'invoice' => 'No se pudo reversar la factura.',
-            ]);
-        }
 
         return $result;
     }

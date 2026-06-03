@@ -3112,3 +3112,11 @@ Contexto: el compose de desarrollo define los servicios `backend`, `frontend` y 
 Decision: los comandos base de backend en `AGENTS.md` ahora usan `docker compose exec backend ...`, alineados con `docker-compose.yml` y `docker-compose.prod.yml`. No se cambia la topologia Docker ni se agrega un alias de servicio para evitar ambiguedad.
 
 Criterio de verificacion: `docker compose ps` muestra `backend` como servicio activo y `docker compose exec backend php artisan test --filter=OpenApiExporterTest` pasa.
+
+## 2026-06-02 - PHPStan completo cubre modelos y flujos operativos criticos
+
+Contexto: al activar Larastan sobre todo el backend, el analisis estatico aun encontraba errores por relaciones Eloquent sin tipo, una excepcion de cierre de caja sin namespace real y configuracion Echo leida con `env()` en runtime. Eso dificultaba diagnosticar cambios de caja, reversos, realtime LAN y backups sin depender del desarrollador.
+
+Decision: se tipan relaciones Eloquent usadas por categorias/facturas, `ReverseInvoiceAction` trabaja con una coleccion de pagos tipada, `CloseCashSessionAction` usa `Illuminate\Auth\Access\AuthorizationException` y `EchoConfigController` lee configuracion desde `config()` para ser compatible con config cache. No se cambian reglas fiscales ni datos.
+
+Criterio de verificacion: `docker compose exec backend vendor/bin/phpstan analyse --memory-limit=1G --error-format=table` pasa sin errores. Tambien pasan `BroadcastingWiringTest`, `InvoiceReverseTest`, `CashPaymentsReceiptTest`, `BackupWorkflowTest`, Pint focal y `scripts\check-branding.ps1`.

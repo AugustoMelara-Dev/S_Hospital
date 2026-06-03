@@ -52,6 +52,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, InvoiceItem> $items
+ * @property-read Collection<int, Payment> $payments
  */
 class Invoice extends Model
 {

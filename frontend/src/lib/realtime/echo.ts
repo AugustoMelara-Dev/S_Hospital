@@ -6,7 +6,7 @@ import type { EchoConfig } from './types';
 
 let echoInstance: Echo<'pusher'> | null = null;
 let configCache: EchoConfig | null = null;
-let configPromise: Promise<EchoConfig> | null = null;
+let configPromise: Promise<EchoConfig | null> | null = null;
 
 declare global {
   interface Window {
@@ -20,7 +20,7 @@ async function fetchEchoConfig(): Promise<EchoConfig | null> {
   if (!configPromise) {
     configPromise = apiClient
       .request<{ data: EchoConfig }>('/api/system/echo-config')
-      .then((res) => res?.data ?? null)
+      .then((res) => (res?.data ?? null) as EchoConfig | null)
       .catch(() => null)
       .finally(() => {
         // Do not reset configPromise; we want concurrent callers to share.

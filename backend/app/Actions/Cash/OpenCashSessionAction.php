@@ -8,7 +8,6 @@ use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\User;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 

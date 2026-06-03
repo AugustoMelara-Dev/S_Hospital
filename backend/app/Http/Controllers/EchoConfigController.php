@@ -20,16 +20,20 @@ class EchoConfigController extends Controller
         $parsed = parse_url($appUrl);
         $scheme = (string) ($parsed['scheme'] ?? 'http');
 
-        $pusherScheme = (string) env('PUSHER_SCHEME', $scheme);
-        $pusherHost = (string) env('PUSHER_HOST', $parsed['host'] ?? '127.0.0.1');
-        $pusherPort = (int) env('PUSHER_PORT', 6001);
+        $pusherOptions = config('broadcasting.connections.pusher.options', []);
+        $pusherScheme = (string) ($pusherOptions['scheme'] ?? $scheme);
+        $configuredHost = (string) ($pusherOptions['host'] ?? '');
+        $pusherHost = $configuredHost !== '' && $configuredHost !== '127.0.0.1'
+            ? $configuredHost
+            : (string) ($parsed['host'] ?? '127.0.0.1');
+        $pusherPort = (int) ($pusherOptions['port'] ?? 6001);
 
         return response()->json([
             'data' => [
                 'driver' => 'pusher',
-                'enabled' => (string) env('BROADCAST_CONNECTION', 'log') === 'pusher',
-                'key' => (string) env('PUSHER_APP_KEY', 'hospital-key'),
-                'cluster' => (string) env('PUSHER_APP_CLUSTER', 'mt1'),
+                'enabled' => (string) config('broadcasting.default', 'log') === 'pusher',
+                'key' => (string) config('broadcasting.connections.pusher.key', 'hospital-key'),
+                'cluster' => (string) ($pusherOptions['cluster'] ?? 'mt1'),
                 'host' => $pusherHost,
                 'port' => $pusherPort,
                 'scheme' => $pusherScheme,
