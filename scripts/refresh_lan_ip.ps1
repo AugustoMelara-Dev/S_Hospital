@@ -214,4 +214,47 @@ Write-Host ""
 Write-Host "Done. Verify with:"
 Write-Host "  curl http://${ServerIp}:$AppPort/api/system/health"
 Write-Host "  curl http://${ServerIp}:$AppPort/api/system/echo-config"
+
+# -----------------------------------------------------------------------------
+# Notificar a las PCs cliente
+# -----------------------------------------------------------------------------
+# Cuando la IP del servidor cambia, los cajeros que tenian la URL
+# vieja guardada en el navegador reciben CORS / 419 hasta que la
+# actualicen. Generamos un archivo de aviso con instrucciones
+# puntuales que el operador puede pegar en el grupo del hospital
+# o entregar al personal.
+$noticeDir = Join-Path $ProjectRoot "qa"
+if (-not (Test-Path -LiteralPath $noticeDir)) {
+    New-Item -ItemType Directory -Path $noticeDir -Force | Out-Null
+}
+$noticePath = Join-Path $noticeDir "IP_CHANGE_NOTICE.txt"
+$timestamp = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+$noticeContent = @"
+S_Hospital - Aviso de cambio de IP del servidor
+Fecha:                 $timestamp
+Nueva IP:              $ServerIp
+Puerto HTTP:           $AppPort
+URL completa:          http://${ServerIp}:$AppPort
+
+Que deben hacer los cajeros en cada PC cliente:
+  1. Cerrar TODAS las pestañas del sistema.
+  2. Borrar la cache del navegador (Ctrl+Shift+Supr -> "Imagenes y
+     archivos en cache").
+  3. Abrir http://${ServerIp}:$AppPort y volver a iniciar sesion.
+
+Si la nueva IP no resuelve desde una PC cliente, verifique:
+  - Que las PCs cliente y el servidor esten en la misma subred.
+  - Que el Firewall de Windows del servidor permite TCP $AppPort en
+    el perfil Privado.
+  - Que el switch/router no esta aislando la nueva IP.
+
+No se requieren cambios en las PCs cliente: el navegador las
+redirige al nuevo host automaticamente despues de actualizar la
+cache.
+"@
+Set-Content -LiteralPath $noticePath -Value $noticeContent -Encoding UTF8
+Write-Host ""
+Write-Host "Aviso para PCs cliente guardado en:" -ForegroundColor Cyan
+Write-Host "  $noticePath"
+Write-Host "Comparta este archivo con los cajeros o pegue el contenido en el grupo del hospital." -ForegroundColor Cyan
 exit 0
