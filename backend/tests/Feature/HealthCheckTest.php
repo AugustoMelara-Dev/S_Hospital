@@ -87,4 +87,14 @@ class HealthCheckTest extends TestCase
         $this->assertContains('throttle:120,1', $healthRoute->middleware(), 'api/system/health must be rate limited without blocking normal operator polling');
         $this->assertContains('throttle:120,1', $upRoute->middleware(), 'api/health must be rate limited without blocking startup checks');
     }
+
+    public function test_system_health_endpoint_is_cached_for_fast_polling(): void
+    {
+        \Illuminate\Support\Facades\Cache::store('array')->forget('health:snapshot:v1');
+
+        $first = $this->getJson('/api/system/health')->assertOk();
+        $second = $this->getJson('/api/system/health')->assertOk();
+
+        $first->assertJsonPath('data.generated_at', $second->json('data.generated_at'));
+    }
 }
