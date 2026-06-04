@@ -28,9 +28,13 @@ class OperationalMetricsService
         return [
             'generated_at' => now()->toIso8601String(),
             'database' => $this->database(),
+            'database_lag' => $this->databaseLag(),
             'queue' => $this->queue(),
+            'queue_size' => $this->queueSize(),
             'backups' => $this->backups(),
             'storage' => $this->storage(),
+            'disk_free_gb' => $this->diskFreeGb(),
+            'app_uptime_s' => $this->appUptime(),
             'recent_errors' => $this->recentErrors(),
         ];
     }
@@ -169,6 +173,98 @@ class OperationalMetricsService
         } catch (Throwable) {
             return false;
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function databaseLag(): array
+    {
+        $result = ['status' => 'unknown'];
+
+        try {
+            $connection = DB::connection();
+            $driver = $connection->getDriverName();
+
+            if ($driver === 'mysql' || $driver === 'mariadb') {
+                $rows = $connection->select('SHOW STATUS LIKE "Seconds_Behind_Master"');
+                $seconds = isset($rows[0]) ? (int) $rows[0]->Value : null;
+                $result = [
+                    'status' => $seconds === null ? 'standalone' : ($seconds > 30 ? 'lagging' : 'ok'),
+                    'seconds' => $seconds,
+                ];
+            } else {
+                $result = ['status' => 'not_applicable', 'driver' => $driver];
+            }
+        } catch (Throwable $exception) {
+            Log::warning('OperationalMetricsService: db_lag probe failed', ['message' => $exception->getMessage()]);
+            $result = ['status' => 'error', 'error' => 'probe_failed'];
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function queueSize(): array
+    {
+        $sizes = ['backups' => 0, 'failed_last_hour' => 0];
+
+        try {
+            $sizes['backups'] = (int) DB::table('jobs')->where('queue', 'backups')->count();
+            $sizes['failed_last_hour'] = (int) DB::table('failed_jobs')
+                ->where('failed_at', '>=', now()->subHour())
+                ->count();
+        } catch (Throwable $exception) {
+            Log::warning('OperationalMetricsService: queue_size probe failed', ['message' => $exception->getMessage()]);
+            return ['error' => 'probe_failed'];
+        }
+
+        return $sizes;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function diskFreeGb(): array
+    {
+        $result = ['path' => storage_path(), 'free_gb' => null];
+
+        try {
+            $path = storage_path();
+            $total = @disk_total_space($path);
+            $free = @disk_free_space($path);
+
+            if (is_int($total) && is_int($free) && $total > 0) {
+                $result['total_gb'] = round($total / 1_073_741_824, 2);
+                $result['free_gb'] = round($free / 1_073_741_824, 2);
+                $result['used_pct'] = round((($total - $free) / $total) * 100, 1);
+            }
+        } catch (Throwable $exception) {
+            Log::warning('OperationalMetricsService: disk probe failed', ['message' => $exception->getMessage()]);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function appUptime(): array
+    {
+        $startedAt = defined('LARAVEL_START') ? LARAVEL_START : null;
+
+        if (! is_numeric($startedAt)) {
+            return ['seconds' => null];
+        }
+
+        $uptime = microtime(true) - (int) $startedAt;
+
+        return [
+            'seconds' => (int) $uptime,
+            'started_at' => gmdate('c', (int) $startedAt),
+        ];
     }
 
     private function workerRecentlyActive(): bool
