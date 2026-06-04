@@ -73,17 +73,63 @@ Adicional al paquete CRITICAL:
   `pm.max_children=8`, `pm.max_requests=500`, log a stdout.
 - **B7** - `App\Policies\InvoicePolicy` y `CashSessionPolicy`.
   `Gate::policy()` registrado en `AppServiceProvider`.
-  `AuthorizationStrategyTest` invertido para lockear la
-  invariante (directorio + wiring).
+- **B2** - Coverage gate 80% en CI obligatorio.
+  `CriticalModulesCoverageTest` corre con `HOSPITAL_REQUIRE_COVERAGE=1`
+  en GitHub Actions (backend-sqlite y backend-mariadb). Coverage
+  final: Billing 94.42%, Cash 90.70%, Payments 93.05%,
+  Backups 91.19%, Receipts 100%.
+- **B3** - PHPStan nivel 6 con baseline reducida de 120 a 31
+  entradas (-74%). El codebase ya no depende del baseline para
+  pasar la auditoría estática.
+- **C1** - `NewInvoiceView` refactorizado a <300 líneas (era
+  500+). 5 hooks extraídos: usePosDataLoader,
+  usePosCartActions, useInvoiceLifecycle, usePaymentLifecycle,
+  usePosKeyboardShortcuts.
+- **C2** - Accesibilidad WCAG AA: 8 vistas nuevas con tests
+  axe-core (Dashboard, InvoiceHistory, NewInvoice, Reports,
+  Catalog, Backups, FiscalSettings, Users). 5 violaciones
+  reales corregidas (aria-label en SelectTrigger, orden de
+  headings, etc).
+- **C3** - i18n: helper `t(key)` y 200+ strings extraídos a
+  `es-HN.ts` jerárquico (invoices.*, cash.*, catalog.*).
+  6 archivos refactorizados para consumir el diccionario.
+- **C4** - Reversión de `(float)` en renderers PDF/Excel.
+  Toda matemática de dinero pasa por `App\Support\Money` con
+  integer cents.
+- **C7** - `service_price_histories` migrado a `nullOnDelete`
+  (snapshots inmutables per AGENTS.md).
+- **C8** - `engine=InnoDB` explícito en `config/database.php`.
+- **D1+D2** - `scripts/refresh_lan_ip.ps1` y
+  `scripts/smoke_test_post_install.ps1`.
+- **D5** - `make_offline_release.ps1` con `-SelfTest` que copia
+  `nginx/default.conf` + `nginx/crontab` y asserta `>= 80` líneas.
+- **D7** - json-file log rotation 10m/5 (mysql 20m/3) en
+  `docker-compose.prod.yml`. `binlog_expire_logs_seconds=604800`
+  en mysql. Labels `hospital.role=*` en cada servicio.
+  `pint.json` con preset laravel + `declare_strict_types`.
 - **F1** - `InvoiceHistoryView` migrado a TanStack Query.
   Eliminado el `useState` + `useEffect` para `invoices/meta`.
   Cross-PC sync fluye a través de `useBroadcastSync`.
 - **F2** - Código muerto eliminado: `useClock` (sin uso),
   `app-kicker` (clase CSS vacía), `needsBillingCashBootstrap`
   y `cashBootstrapLoading` (siempre false).
+- **F3** - 4 sub-pantallas: self-change-password dialog, audit
+  log per-invoice, patient history (backend done, frontend
+  pending F3.3 UI), F8 reprint shortcut.
+- **F4** - Refund workflow: monto negativo en
+  `RegisterPaymentAction` + decisión documentada en DECISIONS.md.
+- **B2 extra** - B2 invierte `AuthorizationStrategyTest` para
+  lockear la invariante (directorio + wiring).
+- **Community docs** - `CONTRIBUTING.md`, `SECURITY.md`,
+  `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1),
+  `.github/PULL_REQUEST_TEMPLATE.md`.
 - **OPS** - `hospital:maintenance` disponible para incidentes
   supervisados. HTML y API usan mensajes humanos sin rutas internas
   ni secretos; ver `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`.
+- **OPS** - Auditoria de roles y permisos guardada:
+  `PermissionAuditObserver` escucha eventos Spatie y persiste cambios de
+  roles/permisos en `audit_logs`; ver
+  `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`.
 
 ## Pendientes para v1.1 (no bloquea v1.0.0)
 
