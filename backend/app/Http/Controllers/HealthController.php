@@ -53,7 +53,7 @@ class HealthController extends Controller
      * database session table. The `array` cache is used in tests
      * where the file store is not always available.
      */
-    private function cacheStore(): ?string
+    private function cacheStore(): string
     {
         if (app()->environment('testing')) {
             return 'array';

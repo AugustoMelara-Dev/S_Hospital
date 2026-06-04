@@ -39,6 +39,12 @@ Observed result:
   and `qa/screenshots/system-diagnostics-admin-pulse-2026-06-04/about-admin-pulse-report.json`
   were generated with mocked API data, no mutations, no forbidden text and no
   console issues.
+- Extended browser evidence:
+  `qa/screenshots/system-diagnostics-admin-health-2026-06-04/about-admin-health-light.png`
+  and
+  `qa/screenshots/system-diagnostics-admin-health-2026-06-04/about-admin-health-report.json`
+  confirm the admin panel renders the new operational health metrics with
+  mocked API data, no mutations, no forbidden text and no console issues.
 - Existing focused frontend/backend tests cover safe summaries, permission-gated
   diagnostics and secret/path sanitization.
 

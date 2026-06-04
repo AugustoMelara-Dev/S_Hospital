@@ -237,7 +237,9 @@ class OperationalMetricsService
             $total = @disk_total_space($path);
             $free = @disk_free_space($path);
 
-            if (is_int($total) && is_int($free) && $total > 0) {
+            if (is_numeric($total) && is_numeric($free) && $total > 0) {
+                $total = (float) $total;
+                $free = (float) $free;
                 $result['total_gb'] = round($total / 1_073_741_824, 2);
                 $result['free_gb'] = round($free / 1_073_741_824, 2);
                 $result['used_pct'] = round((($total - $free) / $total) * 100, 1);

@@ -185,3 +185,45 @@ parameters:
 			identifier: larastan.noEnvCallsOutsideOfConfig
 			count: 5
 			path: routes/console.php
+
+		-
+			message: '#^Parameter \#1 \$title of static method Illuminate\\Support\\Str::slug\(\) expects string, Illuminate\\Support\\Stringable given\.$#'
+			identifier: argument.type
+			count: 3
+			path: app/Http/Controllers/CategoryController.php
+
+		-
+			message: '#^Parameter \#1 \$title of static method Illuminate\\Support\\Str::slug\(\) expects string, Illuminate\\Support\\Stringable given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/ServiceController.php
+
+		-
+			message: '#^Parameter \#1 \$title of static method Illuminate\\Support\\Str::slug\(\) expects string, Illuminate\\Support\\Stringable given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Requests/Catalog/StoreCategoryRequest.php
+
+		-
+			message: '#^Parameter \#1 \$title of static method Illuminate\\Support\\Str::slug\(\) expects string, Illuminate\\Support\\Stringable given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Requests/Catalog/StoreServiceRequest.php
+
+		-
+			message: '#^Parameter \#1 \$title of static method Illuminate\\Support\\Str::slug\(\) expects string, Illuminate\\Support\\Stringable given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Requests/Catalog/UpdateCategoryRequest.php
+
+		-
+			message: '#^Parameter \#1 \$title of static method Illuminate\\Support\\Str::slug\(\) expects string, Illuminate\\Support\\Stringable given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Requests/Catalog/UpdateServiceRequest.php
+
+		-
+			message: '#^Parameter \#1 \$title of static method Illuminate\\Support\\Str::slug\(\) expects string, Illuminate\\Support\\Stringable given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Actions/Catalog/CategoryPersistenceAction.php

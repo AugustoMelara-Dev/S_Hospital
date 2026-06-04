@@ -45,6 +45,7 @@ $aboutView = Read-RequiredFile "frontend\src\features\about\AboutView.tsx"
 $aboutTest = Read-RequiredFile "frontend\src\features\about\AboutView.test.tsx"
 $serverStatusHook = Read-RequiredFile "frontend\src\hooks\useServerStatus.ts"
 $serverStatusHookTest = Read-RequiredFile "frontend\src\hooks\useServerStatus.test.tsx"
+$apiTypes = Read-RequiredFile "frontend\src\lib\api\types.ts"
 $systemStatusController = Read-RequiredFile "backend\app\Http\Controllers\SystemStatusController.php"
 $systemStatusTest = Read-RequiredFile "backend\tests\Feature\SystemStatusTest.php"
 $apiRoutes = Read-RequiredFile "backend\routes\api.php"
@@ -106,15 +107,22 @@ if ($serverStatusHook -ne "") {
         'Hay trabajos o respaldos con alerta',
         'revise respaldos',
         'worker_recently_active',
-        'database_lag',
-        'queue_size',
-        'disk_free_gb',
-        'app_uptime_s',
         'success_last_24h',
         'failed_last_24h',
         'storage'
     )) {
         Test-Contains $serverStatusHook ([regex]::Escape($requiredText)) "Server status hook includes safe summary behavior: $requiredText"
+    }
+}
+
+if ($apiTypes -ne "") {
+    foreach ($requiredText in @(
+        'database_lag',
+        'queue_size',
+        'disk_free_gb',
+        'app_uptime_s'
+    )) {
+        Test-Contains $apiTypes ([regex]::Escape($requiredText)) "Operational health type includes extended safe field: $requiredText"
     }
 }
 
