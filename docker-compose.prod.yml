@@ -274,13 +274,23 @@ services:
   soketi:
     image: soketi/soketi:1.6-16-alpine
     restart: unless-stopped
+    # --max-connections caps simultaneous WebSocket clients. Sized for
+    # 5 cashier PCs each running 2-3 tabs plus headroom for re-connect
+    # storms; raising it requires a Soketi license key.
+    # --websocket-max-message-size / --websocket-max-message-size-kb
+    # reject oversized client messages to prevent a runaway cashier
+    # tab from saturating the server with a 10MB event.
     command: >
       sh -c "
         soketi start \
           --port=6001 \
           --default-app-id=$${PUSHER_APP_ID:-hospital-app} \
           --default-app-key=$${PUSHER_APP_KEY:-hospital-key} \
-          --default-app-secret=$${PUSHER_APP_SECRET:-hospital-secret}
+          --default-app-secret=$${PUSHER_APP_SECRET:-hospital-secret} \
+          --max-connections=100 \
+          --websocket-max-message-size=10240 \
+          --metrics.enabled=true \
+          --metrics.port=9601
       "
     environment:
       PUSHER_APP_ID: ${PUSHER_APP_ID:-hospital-app}
@@ -294,7 +304,7 @@ services:
       start_period: 20s
     security_opt:
       - "no-new-privileges:true"
-    mem_limit: 96m
+    mem_limit: 128m
     cpus: "0.25"
     pids_limit: 100
     labels:
