@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
 import { Building2, Clock3, HardDrive, HeartHandshake, MonitorCheck, Network, ShieldCheck } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -9,9 +9,10 @@ import { useFiscalSettings } from '../../hooks/useFiscalSettings';
 import { useServerStatus } from '../../hooks/useServerStatus';
 import { type AuthUser, type SystemStatus, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { displayHospitalName } from '../../lib/hospital-name';
+import { useElementWidth } from '../dashboard/useElementWidth';
 
 type AboutViewProps = {
-  user: AuthUser;
+  user?: AuthUser;
   onStatus: (message: string) => void;
 };
 
@@ -36,7 +37,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [systemStatusError, setSystemStatusError] = useState('');
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
-  const canViewAdminDiagnostics = user.permissions.includes('system.status.view');
+  const canViewAdminDiagnostics = user?.permissions?.includes('system.status.view') ?? false;
 
   useEffect(() => {
     async function fetchBackupCount() {
@@ -243,6 +244,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
 
 function AdminHealthDashboard({ status }: { status: SystemStatus }) {
   const metrics = adminHealthMetrics(status);
+  const { ref, width } = useElementWidth();
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
@@ -252,12 +254,20 @@ function AdminHealthDashboard({ status }: { status: SystemStatus }) {
           <CardDescription>Lectura visual de respaldos, cola, disco y tareas locales.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[220px] min-w-px">
-            <ResponsiveContainer width="100%" height="100%" minWidth={280} minHeight={220}>
-              <BarChart data={metrics} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <div ref={ref} className="h-[220px] min-w-px">
+            {width > 0 ? (
+              <BarChart data={metrics} width={width} height={220} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" opacity={0.6} />
                 <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} interval={0} />
-                <YAxis tickLine={false} axisLine={false} fontSize={11} allowDecimals={false} width={36} />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={11}
+                  allowDecimals={false}
+                  width={36}
+                  domain={[0, 3]}
+                  ticks={[1, 2, 3]}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'var(--color-card)',
@@ -266,12 +276,12 @@ function AdminHealthDashboard({ status }: { status: SystemStatus }) {
                     color: 'var(--color-foreground)',
                     fontSize: '12px',
                   }}
-                  formatter={(value) => [value, 'Indicador']}
+                  formatter={(value) => [value, 'Nivel de atencion']}
                   labelFormatter={(label) => String(label)}
                 />
                 <Bar dataKey="chartValue" fill="var(--color-secondary)" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            ) : null}
           </div>
         </CardContent>
       </Card>
@@ -378,38 +388,44 @@ function adminHealthMetrics(status: SystemStatus): AdminHealthMetric[] {
       label: 'Respaldos',
       value: pendingBackups === 0 ? 'Sin respaldos pendientes' : `${pendingBackups} pendiente(s)`,
       level: pendingBackups === 0 ? 'ok' : 'review',
-      chartValue: pendingBackups,
+      chartValue: severityScore(pendingBackups === 0 ? 'ok' : 'review'),
       detail: 'Cuenta respaldos en espera o en proceso antes de cerrar caja.',
     },
     {
       label: 'Fallas',
       value: failedJobs === 0 ? 'Sin trabajos fallidos' : `${failedJobs} trabajo(s) fallidos`,
       level: failedJobs === 0 ? 'ok' : 'error',
-      chartValue: failedJobs,
+      chartValue: severityScore(failedJobs === 0 ? 'ok' : 'error'),
       detail: 'Si sube de cero, genere paquete de soporte antes de reintentar.',
     },
     {
       label: 'Scheduler',
       value: schedulerHeartbeatLabel(heartbeat.status, heartbeatAgeMinutes),
       level: schedulerHeartbeatLevel(heartbeat.status),
-      chartValue: heartbeat.age_seconds === null ? 0 : Math.min(heartbeat.age_seconds, 3600),
+      chartValue: severityScore(schedulerHeartbeatLevel(heartbeat.status)),
       detail: 'Indica si la tarea local que dispara respaldos sigue reportando actividad.',
     },
     {
       label: 'Disco',
       value: freeGb === null ? 'Sin dato de espacio' : `${freeGb.toFixed(1)} GB libres`,
       level: diskLevel(freeGb),
-      chartValue: freeGb === null ? 0 : Math.round(freeGb),
+      chartValue: severityScore(diskLevel(freeGb)),
       detail: 'Espacio disponible donde se guardan respaldos locales.',
     },
     {
       label: 'Base',
       value: pendingMigrations === 0 ? 'Base actualizada' : `${pendingMigrations} migracion(es) pendiente(s)`,
       level: pendingMigrations === 0 ? 'ok' : 'review',
-      chartValue: pendingMigrations,
+      chartValue: severityScore(pendingMigrations === 0 ? 'ok' : 'review'),
       detail: 'Si hay pendientes, haga respaldo y actualizacion segura antes de operar.',
     },
   ];
+}
+
+function severityScore(level: 'ok' | 'review' | 'error'): number {
+  if (level === 'error') return 3;
+  if (level === 'review') return 2;
+  return 1;
 }
 
 function schedulerHeartbeatLevel(status: SystemStatus['backups']['queue']['scheduler_heartbeat']['status']): 'ok' | 'review' | 'error' {

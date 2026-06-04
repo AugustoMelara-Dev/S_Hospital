@@ -31,6 +31,10 @@ Observed result:
 - Admin diagnostics now include `Pulso operativo administrativo` and
   `Lectura para soporte`; the focused UI test verifies the panel without raw
   queue commands, paths or secret-like values.
+- Browser evidence: `qa/screenshots/system-diagnostics-admin-pulse-2026-06-04/about-admin-pulse-light.png`
+  and `qa/screenshots/system-diagnostics-admin-pulse-2026-06-04/about-admin-pulse-report.json`
+  were generated with mocked API data, no mutations, no forbidden text and no
+  console issues.
 - Existing focused frontend/backend tests cover safe summaries, permission-gated
   diagnostics and secret/path sanitization.
 
