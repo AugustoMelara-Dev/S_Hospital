@@ -1,3 +1,10 @@
+## 2026-06-04 - Pulso admin mide latencia y conexiones DB sin exponer consultas
+
+Contexto: `docs/KNOWN_LIMITATIONS.md` conservaba el tablero de salud admin como pendiente porque faltaban metricas reales de latencia P50/P95/P99 y conexiones de base. Sin esas senales, soporte podia ver que el sistema estaba "conectado" pero no distinguir una base lenta o saturada antes de que caja se detuviera.
+
+Decision: `/api/system/health` agrega `database_perf` con una muestra local de latencia, percentiles P50/P95/P99 en cache corto y conexiones activas cuando MySQL/MariaDB reporta `Threads_connected`. La UI admin traduce esos datos a `Respuesta DB` y `Conexiones DB`; usuarios sin `system.status.view` no ven el panel avanzado. El payload publico deja de incluir la ruta local usada para medir espacio en disco.
+
+Criterio de verificacion: `OperationalMetricsExtendedTest` valida el contrato seguro sin consultas SQL visibles, `AboutView.test.tsx` valida las etiquetas humanas y `scripts\validate_system_diagnostics_safety.ps1` exige los campos y bloquea exposicion de rutas, comandos o secretos.
 ## 2026-06-03 - Rate limit operativo por usuario en LAN
 
 Contexto: varias computadoras de caja pueden compartir la misma IP o ruta LAN. Un throttle por IP en pagos o caja puede bloquear a cajeros distintos cuando solo una estacion repite una accion demasiadas veces.

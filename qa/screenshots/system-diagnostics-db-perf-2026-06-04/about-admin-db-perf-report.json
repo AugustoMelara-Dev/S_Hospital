@@ -1,0 +1,11 @@
+{
+  "generated_at": "2026-06-04T13:08:48.102Z",
+  "url": "http://127.0.0.1:5173/about",
+  "mode": "mocked-api-no-mutations",
+  "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\system-diagnostics-db-perf-2026-06-04\\about-admin-db-perf-light.png",
+  "has_admin_pulse": true,
+  "has_support_reading": true,
+  "has_extended_metrics": true,
+  "forbidden_text_found": false,
+  "console_issues": []
+}

@@ -11,8 +11,9 @@ Scope:
   disk space, LAN access, installed version and migrations.
 - Validate that the admin/support diagnostics include a Recharts-based
   operational pulse for backups, failed jobs, scheduler heartbeat, disk space
-  pending migrations, queue size, database lag and backend uptime, with a
-  textual support reading beside the chart.
+  pending migrations, queue size, database lag, database latency percentiles,
+  database connections and backend uptime, with a textual support reading
+  beside the chart.
 - Validate that `/api/system/status` keeps sanitized URLs/messages and does not
   expose secret-like assignments.
 
@@ -33,8 +34,9 @@ Observed result:
   `Lectura para soporte`; the focused UI test verifies the panel without raw
   queue commands, paths or secret-like values.
 - Admin diagnostics consume the public operational health snapshot for
-  `Cola LAN`, `Retardo DB`, `Disco` and `Actividad` labels without exposing
-  storage paths, SQL probes, queue commands or secret-like values.
+  `Cola LAN`, `Retardo DB`, `Respuesta DB`, `Conexiones DB`, `Disco` and
+  `Actividad` labels without exposing storage paths, SQL probes, queue commands
+  or secret-like values.
 - Browser evidence: `qa/screenshots/system-diagnostics-admin-pulse-2026-06-04/about-admin-pulse-light.png`
   and `qa/screenshots/system-diagnostics-admin-pulse-2026-06-04/about-admin-pulse-report.json`
   were generated with mocked API data, no mutations, no forbidden text and no
@@ -45,6 +47,12 @@ Observed result:
   `qa/screenshots/system-diagnostics-admin-health-2026-06-04/about-admin-health-report.json`
   confirm the admin panel renders the new operational health metrics with
   mocked API data, no mutations, no forbidden text and no console issues.
+- Database performance browser evidence:
+  `qa/screenshots/system-diagnostics-db-perf-2026-06-04/about-admin-db-perf-light.png`
+  and
+  `qa/screenshots/system-diagnostics-db-perf-2026-06-04/about-admin-db-perf-report.json`
+  confirm `Respuesta DB` and `Conexiones DB` render with mocked API data, no
+  mutations, no forbidden text and no console issues.
 - Existing focused frontend/backend tests cover safe summaries, permission-gated
   diagnostics and secret/path sanitization.
 
