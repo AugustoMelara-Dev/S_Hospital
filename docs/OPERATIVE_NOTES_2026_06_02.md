@@ -145,11 +145,12 @@ Adicional al paquete CRITICAL:
   solo en `--with-coverage`. Promover a obligatorio requiere
   instalar `pcov` en el runner y siempre invocar el perfil
   de coverage. Plan: FASE 12.2 de la auditoría.
-- **Dashboard avanzado con Recharts.** UI con
-  P50/P95/P99 de latencia, conexiones DB activas, espacio
-  en disco, último backup. Diferido a v1.1.
-- **ESLint warnings a error.** 27 warnings documentados en
-  FASE B5 para promover a error.
+- ~~Dashboard avanzado con Recharts.~~ Cerrado el 2026-06-04:
+  el pulso admin muestra P50/P95/P99 de latencia, conexiones DB
+  activas cuando MySQL/MariaDB lo permite, espacio en disco,
+  cola LAN, scheduler, migraciones y backup sin rutas ni claves.
+- ~~ESLint warnings a error.~~ Cerrado el 2026-06-04:
+  `npm run lint` usa `eslint . --max-warnings=0`.
 - **Deprecación de `install_hospital_os.ps1`.** Marcar como
   legacy. El instalador soportado es
   `scripts/deploy_hospital_lan.ps1`. El instalador deprecado

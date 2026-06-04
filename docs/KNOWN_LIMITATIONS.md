@@ -48,6 +48,9 @@
   P50/P95/P99, conexiones DB cuando MySQL/MariaDB lo permite, uptime, espacio
   en disco y migraciones sin exponer comandos, consultas, claves ni rutas
   locales.
+- ~~ESLint warnings a error~~: `frontend/package.json` ejecuta
+  `eslint . --max-warnings=0`; cualquier warning futuro falla el gate local y
+  el job CI que invoca `npm run lint`.
 
 ### Pendientes para v1.1
 
@@ -56,8 +59,6 @@
   Diferido por tamaño del cambio; cubierto por E2E.
 - **Cobertura >80% en modulos criticos**: gate opt-in via
   `--with-coverage`. Falta promover a obligatorio en CI.
-- **ESLint warnings a error**: 28 warnings documentados en FASE B5
-  para promover a error en v1.1.
 
 ### Pendientes de entorno fisico (FASE G)
 
