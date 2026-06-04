@@ -122,12 +122,37 @@ describe('AboutView', () => {
     expect(screen.getByText('Compilada y disponible')).toBeInTheDocument();
     expect(screen.getByText('Sin fallas registradas')).toBeInTheDocument();
     expect(screen.getByText('Direccion LAN configurada')).toBeInTheDocument();
-    expect(screen.getByText('Base actualizada')).toBeInTheDocument();
+    expect(screen.getAllByText('Base actualizada').length).toBeGreaterThan(0);
     expect(screen.getByText(/192\.168\.1\.10:8000/i)).toBeInTheDocument();
     expect(screen.getByText(/America\/Tegucigalpa/i)).toBeInTheDocument();
     expect(screen.getByText(/1\.0\.0-rc\.3/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/queue:work|APP_KEY|DB_PASSWORD|\.env|C:\\\\/i);
     expect(apiClient.getSystemStatus).toHaveBeenCalledOnce();
+  });
+
+  it('shows an admin operational pulse without raw commands or paths', async () => {
+    vi.mocked(useServerStatus).mockReturnValue({
+      checking: false,
+      isOnline: true,
+      lastCheck: new Date('2026-06-02T14:00:00.000Z'),
+      operationalHealth: null,
+      summary: {
+        description: 'Servidor local, base de datos y respaldos responden. Mantenga el cierre diario y los respaldos protegidos.',
+        label: 'Todo bien',
+        level: 'ok',
+      },
+    });
+
+    render(<AboutView user={adminUser} onStatus={vi.fn()} />);
+
+    expect(await screen.findByRole('heading', { name: /pulso operativo administrativo/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /lectura para soporte/i })).toBeInTheDocument();
+    expect(screen.getByText('Sin respaldos pendientes')).toBeInTheDocument();
+    expect(screen.getByText('Sin trabajos fallidos')).toBeInTheDocument();
+    expect(screen.getByText('Activo hace 2 min')).toBeInTheDocument();
+    expect(screen.getByText('2.0 GB libres')).toBeInTheDocument();
+    expect(screen.getAllByText('Base actualizada').length).toBeGreaterThan(0);
+    expect(document.body.textContent).not.toMatch(/queue:work|schedule:run|APP_KEY|DB_PASSWORD|\.env|C:\\\\/i);
   });
 
   it('allows support users with system status permission to see advanced diagnostics', async () => {
@@ -200,6 +225,16 @@ function mockSystemStatus(): SystemStatus {
         pending_backup_jobs: 0,
         worker_command: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
         scheduler_command: 'php artisan schedule:run',
+        scheduler_heartbeat: {
+          status: 'ok',
+          last_tick_at: '2026-06-02T13:58:00.000Z',
+          last_result: 'ok',
+          last_message: '',
+          age_seconds: 120,
+          ticks_in_db: 1200,
+          ticks_last_24h: 1200,
+          expected: 'ticks_last_24h >= 1400',
+        },
       },
     },
     runtime: {

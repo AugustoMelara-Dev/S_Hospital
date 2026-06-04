@@ -8,6 +8,7 @@ use App\Actions\Cash\BuildCashReconciliationAction;
 use App\Models\CashRegisterSession;
 use App\Models\Invoice;
 use App\Models\Payment;
+use Illuminate\Support\Facades\DB;
 
 class CashSessionReportService
 {
@@ -18,15 +19,73 @@ class CashSessionReportService
      */
     public function report(CashRegisterSession $session): array
     {
-        $session->load('user:id,name,username');
-        $reconciliation = $this->buildCashReconciliation->execute($session);
         $snapshot = $this->closedSnapshot($session);
-        $methods = $snapshot['payments_by_method'] ?? $reconciliation['payments_by_method'];
-        $paymentsCount = $snapshot['payments_count'] ?? $reconciliation['payments_count'];
-        $paymentsTotal = $snapshot['payments_total'] ?? $reconciliation['payments_total'];
-        $expectedCashAmount = $snapshot['expected_cash_amount'] ?? $reconciliation['expected_cash_amount'];
-        $pendingInvoiceCount = $snapshot['pending_invoice_count'] ?? $reconciliation['pending_invoice_count'];
-        $pendingAmount = $snapshot['pending_amount'] ?? $reconciliation['pending_amount'];
+
+        if ($snapshot !== null) {
+            $session->load('user:id,name,username');
+            $methods = $snapshot['payments_by_method'];
+            $paymentsCount = $snapshot['payments_count'];
+            $paymentsTotal = $snapshot['payments_total'];
+            $expectedCashAmount = $snapshot['expected_cash_amount'];
+            $pendingInvoiceCount = $snapshot['pending_invoice_count'];
+            $pendingAmount = $snapshot['pending_amount'];
+
+            $payments = Payment::query()
+                ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
+                ->with([
+                    'invoice:id,invoice_number,patient_name,status,total,paid_amount,balance_due',
+                    'user:id,name,username',
+                ])
+                ->where('payments.cash_session_id', $session->id)
+                ->where('payments.status', Payment::STATUS_POSTED)
+                ->where(function ($query) use ($session): void {
+                    $query->where('invoices.status', '!=', Invoice::STATUS_VOID);
+
+                    if ($session->closed_at !== null) {
+                        $query
+                            ->orWhere(function ($query) use ($session): void {
+                                $query
+                                    ->where('invoices.status', Invoice::STATUS_VOID)
+                                    ->where('invoices.voided_at', '>', $session->closed_at);
+                            });
+                    }
+                })
+                ->orderBy('payments.paid_at')
+                ->select('payments.*')
+                ->get();
+
+            $movements = $session->movements()
+                ->with('user:id,name,username')
+                ->orderBy('occurred_at')
+                ->get();
+
+            return $this->formatReport(
+                $session,
+                $methods,
+                $paymentsCount,
+                $paymentsTotal,
+                $expectedCashAmount,
+                $pendingInvoiceCount,
+                $pendingAmount,
+                $payments,
+                $movements,
+            );
+        }
+
+        $lockedSession = DB::transaction(function () use ($session): CashRegisterSession {
+            return CashRegisterSession::query()
+                ->whereKey($session->id)
+                ->sharedLock()
+                ->firstOrFail();
+        });
+
+        $reconciliation = $this->buildCashReconciliation->execute($lockedSession);
+        $methods = $reconciliation['payments_by_method'];
+        $paymentsCount = $reconciliation['payments_count'];
+        $paymentsTotal = $reconciliation['payments_total'];
+        $expectedCashAmount = $reconciliation['expected_cash_amount'];
+        $pendingInvoiceCount = $reconciliation['pending_invoice_count'];
+        $pendingAmount = $reconciliation['pending_amount'];
 
         $payments = Payment::query()
             ->join('invoices', 'payments.invoice_id', '=', 'invoices.id')
@@ -34,29 +93,48 @@ class CashSessionReportService
                 'invoice:id,invoice_number,patient_name,status,total,paid_amount,balance_due',
                 'user:id,name,username',
             ])
-            ->where('payments.cash_session_id', $session->id)
+            ->where('payments.cash_session_id', $lockedSession->id)
             ->where('payments.status', Payment::STATUS_POSTED)
-            ->where(function ($query) use ($session): void {
-                $query->where('invoices.status', '!=', Invoice::STATUS_VOID);
-
-                if ($session->closed_at !== null) {
-                    $query
-                        ->orWhere(function ($query) use ($session): void {
-                            $query
-                                ->where('invoices.status', Invoice::STATUS_VOID)
-                                ->where('invoices.voided_at', '>', $session->closed_at);
-                        });
-                }
-            })
+            ->where('invoices.status', '!=', Invoice::STATUS_VOID)
             ->orderBy('payments.paid_at')
             ->select('payments.*')
             ->get();
 
-        $movements = $session->movements()
+        $movements = $lockedSession->movements()
             ->with('user:id,name,username')
             ->orderBy('occurred_at')
             ->get();
 
+        return $this->formatReport(
+            $lockedSession,
+            $methods,
+            $paymentsCount,
+            $paymentsTotal,
+            $expectedCashAmount,
+            $pendingInvoiceCount,
+            $pendingAmount,
+            $payments,
+            $movements,
+        );
+    }
+
+    /**
+     * @param  array{cash: string, transfer: string, card: string, other: string}  $methods
+     * @param  \Illuminate\Support\Collection<int, Payment>  $payments
+     * @param  \Illuminate\Support\Collection<int, \App\Models\CashMovement>  $movements
+     * @return array<string, mixed>
+     */
+    private function formatReport(
+        CashRegisterSession $session,
+        array $methods,
+        int $paymentsCount,
+        string $paymentsTotal,
+        string $expectedCashAmount,
+        int $pendingInvoiceCount,
+        string $pendingAmount,
+        $payments,
+        $movements,
+    ): array {
         return [
             'cash_session' => [
                 'id' => $session->id,

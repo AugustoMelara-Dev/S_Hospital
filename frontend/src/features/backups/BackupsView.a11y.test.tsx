@@ -108,6 +108,16 @@ function mockSystemStatus(): SystemStatus {
         pending_backup_jobs: 0,
         worker_command: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
         scheduler_command: 'php artisan schedule:run',
+        scheduler_heartbeat: {
+          status: 'ok',
+          last_tick_at: '2026-06-01T07:59:00.000000Z',
+          last_result: 'ok',
+          last_message: '',
+          age_seconds: 60,
+          ticks_in_db: 1200,
+          ticks_last_24h: 1200,
+          expected: 'ticks_last_24h >= 1400',
+        },
       },
     },
     runtime: {

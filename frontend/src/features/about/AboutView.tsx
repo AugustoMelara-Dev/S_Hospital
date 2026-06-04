@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Building2, Clock3, HardDrive, HeartHandshake, MonitorCheck, Network, ShieldCheck } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -18,6 +19,14 @@ type AdminDiagnosticItem = {
   label: string;
   value: string;
   level: 'ok' | 'review' | 'error';
+};
+
+type AdminHealthMetric = {
+  label: string;
+  value: string;
+  level: 'ok' | 'review' | 'error';
+  chartValue: number;
+  detail: string;
 };
 
 export function AboutView({ user, onStatus }: AboutViewProps) {
@@ -198,6 +207,8 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
                     <span>Acceso LAN: {systemStatus.network.client_url ?? 'pendiente de configurar'}</span>
                   </div>
                 </div>
+
+                <AdminHealthDashboard status={systemStatus} />
               </>
             ) : (
               <div className="rounded-md border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
@@ -227,6 +238,65 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
         </CardContent>
       </Card>
     </section>
+  );
+}
+
+function AdminHealthDashboard({ status }: { status: SystemStatus }) {
+  const metrics = adminHealthMetrics(status);
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
+      <Card className="border-border bg-card shadow-none">
+        <CardHeader>
+          <CardTitle className="text-base font-bold">Pulso operativo administrativo</CardTitle>
+          <CardDescription>Lectura visual de respaldos, cola, disco y tareas locales.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[220px] min-w-px">
+            <ResponsiveContainer width="100%" height="100%" minWidth={280} minHeight={220}>
+              <BarChart data={metrics} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" opacity={0.6} />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} interval={0} />
+                <YAxis tickLine={false} axisLine={false} fontSize={11} allowDecimals={false} width={36} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--color-card)',
+                    borderColor: 'var(--color-border)',
+                    borderRadius: 'var(--radius-md)',
+                    color: 'var(--color-foreground)',
+                    fontSize: '12px',
+                  }}
+                  formatter={(value) => [value, 'Indicador']}
+                  labelFormatter={(label) => String(label)}
+                />
+                <Bar dataKey="chartValue" fill="var(--color-secondary)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border bg-muted/30 shadow-none">
+        <CardHeader>
+          <CardTitle className="text-base font-bold">Lectura para soporte</CardTitle>
+          <CardDescription>Revise estos puntos antes de cerrar una incidencia.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {metrics.map((metric) => (
+            <div key={metric.label} className="rounded-md border border-border bg-card p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{metric.label}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{metric.detail}</p>
+                </div>
+                <Badge variant={summaryBadgeVariant(metric.level)}>{diagnosticLevelLabel(metric.level)}</Badge>
+              </div>
+              <p className="mt-2 text-sm font-bold text-foreground">{metric.value}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -291,6 +361,79 @@ function adminDiagnosticItems(status: SystemStatus): AdminDiagnosticItem[] {
       level: (status.runtime.pending_migration_count ?? 0) === 0 ? 'ok' : 'review',
     },
   ];
+}
+
+function adminHealthMetrics(status: SystemStatus): AdminHealthMetric[] {
+  const failedJobs = status.backups.queue.failed_jobs_count ?? 0;
+  const pendingBackupJobs = status.backups.queue.pending_backup_jobs ?? 0;
+  const pendingBackups = status.backups.pending_count + pendingBackupJobs;
+  const pendingMigrations = status.runtime.pending_migration_count ?? 0;
+  const freeBytes = status.backups.storage.free_bytes;
+  const freeGb = freeBytes === null ? null : freeBytes / (1024 * 1024 * 1024);
+  const heartbeat = status.backups.queue.scheduler_heartbeat;
+  const heartbeatAgeMinutes = heartbeat.age_seconds === null ? null : Math.round(heartbeat.age_seconds / 60);
+
+  return [
+    {
+      label: 'Respaldos',
+      value: pendingBackups === 0 ? 'Sin respaldos pendientes' : `${pendingBackups} pendiente(s)`,
+      level: pendingBackups === 0 ? 'ok' : 'review',
+      chartValue: pendingBackups,
+      detail: 'Cuenta respaldos en espera o en proceso antes de cerrar caja.',
+    },
+    {
+      label: 'Fallas',
+      value: failedJobs === 0 ? 'Sin trabajos fallidos' : `${failedJobs} trabajo(s) fallidos`,
+      level: failedJobs === 0 ? 'ok' : 'error',
+      chartValue: failedJobs,
+      detail: 'Si sube de cero, genere paquete de soporte antes de reintentar.',
+    },
+    {
+      label: 'Scheduler',
+      value: schedulerHeartbeatLabel(heartbeat.status, heartbeatAgeMinutes),
+      level: schedulerHeartbeatLevel(heartbeat.status),
+      chartValue: heartbeat.age_seconds === null ? 0 : Math.min(heartbeat.age_seconds, 3600),
+      detail: 'Indica si la tarea local que dispara respaldos sigue reportando actividad.',
+    },
+    {
+      label: 'Disco',
+      value: freeGb === null ? 'Sin dato de espacio' : `${freeGb.toFixed(1)} GB libres`,
+      level: diskLevel(freeGb),
+      chartValue: freeGb === null ? 0 : Math.round(freeGb),
+      detail: 'Espacio disponible donde se guardan respaldos locales.',
+    },
+    {
+      label: 'Base',
+      value: pendingMigrations === 0 ? 'Base actualizada' : `${pendingMigrations} migracion(es) pendiente(s)`,
+      level: pendingMigrations === 0 ? 'ok' : 'review',
+      chartValue: pendingMigrations,
+      detail: 'Si hay pendientes, haga respaldo y actualizacion segura antes de operar.',
+    },
+  ];
+}
+
+function schedulerHeartbeatLevel(status: SystemStatus['backups']['queue']['scheduler_heartbeat']['status']): 'ok' | 'review' | 'error' {
+  if (status === 'ok') return 'ok';
+  if (status === 'stuck' || status === 'invalid') return 'error';
+  return 'review';
+}
+
+function schedulerHeartbeatLabel(
+  status: SystemStatus['backups']['queue']['scheduler_heartbeat']['status'],
+  ageMinutes: number | null,
+): string {
+  if (status === 'ok') return ageMinutes === null ? 'Actividad reciente' : `Activo hace ${ageMinutes} min`;
+  if (status === 'stale') return ageMinutes === null ? 'Requiere revision' : `Sin pulso reciente: ${ageMinutes} min`;
+  if (status === 'stuck') return ageMinutes === null ? 'Detenido' : `Posible detencion: ${ageMinutes} min`;
+  if (status === 'invalid') return 'Pulso invalido';
+  return 'Sin pulso registrado';
+}
+
+function diskLevel(freeGb: number | null): 'ok' | 'review' | 'error' {
+  if (freeGb === null) return 'review';
+  if (freeGb < 1) return 'error';
+  if (freeGb < 5) return 'review';
+  return 'ok';
 }
 
 function queueLabel(status: SystemStatus): string {
