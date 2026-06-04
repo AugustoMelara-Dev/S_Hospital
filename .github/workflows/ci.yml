@@ -76,6 +76,26 @@ jobs:
             echo "phpstan not installed; skipping"
           fi
 
+      - name: Validate package_manifest.json
+        shell: pwsh
+        run: |
+          if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+            powershell -ExecutionPolicy Bypass -File scripts/validate_dependency_manifest.ps1
+          else
+            echo "pwsh not available on ubuntu runner; skipping package_manifest validation"
+          fi
+
+      - name: Pre-commit guard smoke
+        shell: pwsh
+        run: |
+          if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+            powershell -ExecutionPolicy Bypass -File backend/tests/PowerShell/pre-commit-guard.tests.ps1
+            powershell -ExecutionPolicy Bypass -File backend/tests/PowerShell/cors-helpers.tests.ps1
+            powershell -ExecutionPolicy Bypass -File backend/tests/PowerShell/env-helpers.tests.ps1
+          else
+            echo "pwsh not available on ubuntu runner; skipping PowerShell tests"
+          fi
+
       - name: Pre-commit guard smoke
         shell: pwsh
         run: |
