@@ -1419,6 +1419,34 @@ try {
         }
 
         # ==============================================================
+        # POST-INSTALL QUICK CHECK
+        # ==============================================================
+        # Run a 7-check smoke that verifies the stack actually
+        # responded to HTTP and the basic security headers are in
+        # place. Failures here are non-fatal (we already lifted the
+        # stack) but they print a clear warning so the operator
+        # knows to re-check before walking away.
+        Write-Host ""
+        Write-Host "===================================================================" -ForegroundColor Cyan
+        Write-Host " [SMOKE] Verificacion rapida post-instalacion" -ForegroundColor Cyan
+        Write-Host "===================================================================" -ForegroundColor Cyan
+        $quickCheckScript = Join-Path $PSScriptRoot "post_install_quick_check.ps1"
+        if (Test-Path $quickCheckScript) {
+            try {
+                & $quickCheckScript -BaseUrl "http://localhost:${appPort}" -TimeoutSec 15
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "[WARN] Smoke rapido reporto fallas. Revise los checks arriba antes de entregar al hospital." -ForegroundColor Yellow
+                } else {
+                    Write-Host "[OK] Smoke rapido finalizo sin fallas." -ForegroundColor Green
+                }
+            } catch {
+                Write-Host "[WARN] No se pudo ejecutar post_install_quick_check.ps1: $($_.Exception.Message)" -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "[WARN] Script $quickCheckScript no encontrado; se omite smoke." -ForegroundColor Yellow
+        }
+
+        # ==============================================================
         # SUCCESS BANNER
         # ==============================================================
         Write-Host ""
