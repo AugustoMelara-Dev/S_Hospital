@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Payments;
 
+use App\Actions\Reports\DashboardReportService;
 use App\Events\InvoiceChanged;
 use App\Events\PaymentChanged;
 use App\Models\AuditLog;
@@ -161,6 +162,7 @@ class RegisterPaymentAction
             DB::afterCommit(function () use ($payment, $lockedInvoice, $user) {
                 PaymentChanged::dispatch($payment->fresh(), 'registered', $user->id);
                 InvoiceChanged::dispatch($lockedInvoice->fresh(), 'updated', $user->id);
+                DashboardReportService::forgetCache();
             });
 
             return $payment->load('user:id,name,username', 'cashSession:id,user_id,status,opened_at');

@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Actions\Billing\CreateInvoiceAction;
 use App\Actions\Cash\OpenCashSessionAction;
 use App\Actions\Payments\RegisterPaymentAction;
+use App\Actions\Payments\VoidPaymentAction;
 use App\Models\Area;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
@@ -113,6 +116,48 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.cashiers_summary.0.username', $cashier->username)
             ->assertJsonPath('data.cashiers_summary.0.payment_count', 1)
             ->assertJsonPath('data.cashiers_summary.0.total_collected', '17.25');
+    }
+
+    public function test_dashboard_report_cache_is_invalidated_after_payment_changes(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $firstInvoiceId = $this->createInvoice($cashier, 'Glucosa');
+        $secondInvoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->payInvoice($cashier, $firstInvoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        $admin = $this->admin();
+        $this->actingAs($admin)
+            ->getJson('/api/reports/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.payments_by_method.cash', '17.25');
+
+        $this->payInvoice($cashier, $secondInvoiceId, $sessionId, Payment::METHOD_CASH, '17.25');
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.payments_by_method.cash', '34.50');
+
+        $payment = Payment::query()
+            ->where('invoice_id', $secondInvoiceId)
+            ->where('status', Payment::STATUS_POSTED)
+            ->firstOrFail();
+
+        app(VoidPaymentAction::class)->execute(
+            Invoice::query()->findOrFail($secondInvoiceId),
+            $payment,
+            ['reason' => 'Pago duplicado en caja'],
+            $this->supervisor(),
+            app(InvoiceAccess::class),
+        );
+
+        $this->actingAs($admin)
+            ->getJson('/api/reports/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.payments_by_method.cash', '17.25');
     }
 
     public function test_daily_report_calculates_collected_totals_methods_and_statuses_without_void_income(): void

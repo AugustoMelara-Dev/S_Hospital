@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Billing;
 
+use App\Actions\Reports\DashboardReportService;
 use App\Events\InvoiceChanged;
 use App\Events\PaymentChanged;
 use App\Models\AuditLog;
@@ -155,6 +156,7 @@ class CreateInvoiceAction
             // (other cashier PCs) get a fresh invoice they can refetch.
             DB::afterCommit(function () use ($invoice, $issuer) {
                 InvoiceChanged::dispatch($invoice->fresh(), 'created', $issuer->id);
+                DashboardReportService::forgetCache();
             });
 
             return $invoice->load('items', 'issuer:id,name,username');

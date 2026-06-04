@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Payments;
 
+use App\Actions\Reports\DashboardReportService;
 use App\Events\InvoiceChanged;
 use App\Events\PaymentChanged;
 use App\Models\AuditLog;
@@ -124,6 +125,7 @@ class VoidPaymentAction
             DB::afterCommit(function () use ($lockedPayment, $lockedInvoice, $user) {
                 PaymentChanged::dispatch($lockedPayment->fresh(), 'voided', $user->id);
                 InvoiceChanged::dispatch($lockedInvoice->fresh(), 'updated', $user->id);
+                DashboardReportService::forgetCache();
             });
 
             return $lockedPayment->load(

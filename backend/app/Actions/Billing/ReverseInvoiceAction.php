@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Billing;
 
 use App\Actions\Payments\VoidPaymentAction;
+use App\Actions\Reports\DashboardReportService;
 use App\Events\InvoiceChanged;
 use App\Models\AuditLog;
 use App\Models\Invoice;
@@ -124,6 +125,7 @@ class ReverseInvoiceAction
 
             DB::afterCommit(function () use ($reloaded, $user) {
                 InvoiceChanged::dispatch($reloaded->fresh(), 'reversed', $user->id);
+                DashboardReportService::forgetCache();
             });
 
             return $reloaded->load([

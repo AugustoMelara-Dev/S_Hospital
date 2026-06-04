@@ -10,6 +10,7 @@ use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Support\Money;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -24,6 +25,14 @@ class DashboardReportService
 {
     use FormatsReportMoney;
 
+    /**
+     * Dashboard aggregation TTL. Short enough that a cashier opening
+     * the page after a payment sees the change within a minute, long
+     * enough that 5 cashier PCs polling simultaneously share the
+     * same result and don't hammer MariaDB.
+     */
+    public const CACHE_TTL_SECONDS = 30;
+
     public function __construct(private readonly FinancialFactsService $financialFacts) {}
 
     /**
@@ -32,15 +41,55 @@ class DashboardReportService
     public function report(): array
     {
         $now = Carbon::now();
-        $today = $now->copy()->startOfDay();
+        $cacheKey = $this->cacheKey($now);
 
-        return [
+        $cached = Cache::store($this->cacheStore())->get($cacheKey);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $today = $now->copy()->startOfDay();
+        $payload = [
             'last_7_days' => $this->last7Days($now),
             'current_month' => $this->currentMonth($now),
             'payments_by_method' => $this->paymentsByMethodToday($today),
             'top_services' => $this->topServices($now),
             'cashiers_summary' => $this->cashiersSummary($today),
         ];
+
+        Cache::store($this->cacheStore())->put($cacheKey, $payload, self::CACHE_TTL_SECONDS);
+
+        return $payload;
+    }
+
+    /**
+     * Drop the dashboard cache. Called by the cashier-side actions
+     * that emit InvoiceChanged or PaymentChanged so the next dashboard
+     * poll sees the new state immediately.
+     */
+    public static function forgetCache(): void
+    {
+        Cache::store(self::cacheStoreName())->forget(self::cacheKeyFor(Carbon::now()));
+    }
+
+    private function cacheKey(Carbon $now): string
+    {
+        return self::cacheKeyFor($now);
+    }
+
+    private function cacheStore(): string
+    {
+        return self::cacheStoreName();
+    }
+
+    private static function cacheKeyFor(Carbon $now): string
+    {
+        return 'dashboard:report:'.$now->copy()->startOfDay()->toDateString();
+    }
+
+    private static function cacheStoreName(): string
+    {
+        return app()->environment('testing') ? 'array' : 'file';
     }
 
     /**
