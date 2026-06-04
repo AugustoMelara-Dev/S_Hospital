@@ -178,6 +178,9 @@ El handoff tambien debe conservar `assert_offline_release_clean.ps1 -SelfTest`
 y `scripts\validate_handoff_guard_coverage.ps1`, para confirmar que cada
 script usado por el cierre final esta dentro del paquete offline y queda
 comparado contra la fuente versionada.
+Tambien debe conservar `scripts\validate_offline_release_staging_safety.ps1`
+para confirmar que `make_offline_release.ps1` publica por staging y conserva el
+paquete anterior si falla el guard, Docker o el swap final.
 Antes de entregar accesos directos o scripts de recuperacion, ejecute
 `scripts\validate_startup_repair_safety.ps1`; debe reportar
 `STARTUP_REPAIR_SAFETY: YES` para confirmar que los flujos de arranque,

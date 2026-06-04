@@ -1,3 +1,11 @@
+## 2026-06-04 - Release offline publica por staging verificado
+
+Contexto: `scripts\make_offline_release.ps1 -Force` reemplazaba `offline-release` durante el proceso de construccion. Si Docker, `docker save` o el guard final fallaban a mitad del flujo, soporte podia perder el ultimo paquete offline disponible.
+
+Decision: el builder ahora crea `offline-release.staging-<id>`, ejecuta el guard sobre staging y solo publica al destino final despues de pasar validacion. Durante el swap mueve el paquete anterior a backup temporal y lo restaura si la publicacion falla. Se agrega `scripts\validate_offline_release_staging_safety.ps1` para preservar este contrato en el handoff.
+
+Criterio de verificacion: `validate_offline_release_staging_safety.ps1` debe reportar `OFFLINE_RELEASE_STAGING_SAFETY: YES`; una prueba con `-SkipDockerBuild -SkipDockerSave` debe fallar por falta de imagenes pero conservar el marcador del release anterior. El handoff debe conservar `qa/OFFLINE_RELEASE_STAGING_SAFETY_2026_06_04.md`.
+
 ## 2026-06-04 - Cobertura handoff/offline para guards criticos
 
 Contexto: el handoff final depende de scripts operativos que deben viajar en el paquete offline. La revision post-commit encontro que era posible agregar un guard al handoff y olvidar incluirlo o compararlo en el release offline.

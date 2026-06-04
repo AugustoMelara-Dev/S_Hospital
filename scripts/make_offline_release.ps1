@@ -44,6 +44,7 @@ $script:OfflineReleaseCriticalScripts = @(
     "validate_maintenance_mode_safety.ps1",
     "validate_new_invoice_maintainability.ps1",
     "validate_operator_manuals_safety.ps1",
+    "validate_offline_release_staging_safety.ps1",
     "validate_operations_objective_audit.ps1",
     "validate_ops_evidence_index.ps1",
     "validate_permission_audit_safety.ps1",
@@ -194,7 +195,9 @@ if ($ReleaseRoot -eq "") {
 }
 
 $ReleaseRoot = [System.IO.Path]::GetFullPath($ReleaseRoot)
-$imagesDir = Join-Path $ReleaseRoot "offline-images"
+$script:ReleaseFinalRoot = $ReleaseRoot
+$script:ReleaseStagingRoot = $null
+$script:ReleaseCommitted = $false
 $composePath = Join-Path $ProjectRoot "docker-compose.prod.yml"
 $guardScript = Join-Path $ProjectRoot "scripts\assert_offline_release_clean.ps1"
 $dockerSourcesGuard = Join-Path $ProjectRoot "scripts\assert_production_docker_sources.ps1"
@@ -203,7 +206,26 @@ function Write-Step([string] $message) {
     Write-Host "[*] $message" -ForegroundColor Yellow
 }
 
+function Remove-StagingRelease {
+    if ([string]::IsNullOrWhiteSpace($script:ReleaseStagingRoot) -or $script:ReleaseCommitted) {
+        return
+    }
+
+    if ($script:ReleaseStagingRoot -eq $script:ReleaseFinalRoot) {
+        return
+    }
+
+    if ((Split-Path -Leaf $script:ReleaseStagingRoot) -notmatch '\.staging-[0-9a-f]{32}$') {
+        return
+    }
+
+    if (Test-Path -LiteralPath $script:ReleaseStagingRoot) {
+        Remove-Item -LiteralPath $script:ReleaseStagingRoot -Recurse -Force
+    }
+}
+
 function Write-Fail([string] $message) {
+    Remove-StagingRelease
     Write-Host "[FAIL] $message" -ForegroundColor Red
     exit 1
 }
@@ -275,13 +297,15 @@ if (-not $AllowDirty -and -not [string]::IsNullOrWhiteSpace($gitStatus)) {
     Write-Fail "El arbol Git tiene cambios sin commitear. Use -AllowDirty solo para pruebas de script, no para release final."
 }
 
-if ((Test-Path -LiteralPath $ReleaseRoot) -and -not $Force) {
+if ((Test-Path -LiteralPath $script:ReleaseFinalRoot) -and -not $Force) {
     Write-Fail "La carpeta de release ya existe. Use -Force para reemplazarla."
 }
 
-if (Test-Path -LiteralPath $ReleaseRoot) {
-    Remove-Item -LiteralPath $ReleaseRoot -Recurse -Force
-}
+$releaseParent = Split-Path -Parent $script:ReleaseFinalRoot
+$releaseLeaf = Split-Path -Leaf $script:ReleaseFinalRoot
+$script:ReleaseStagingRoot = Join-Path $releaseParent ("$releaseLeaf.staging-" + [Guid]::NewGuid().ToString("N"))
+$ReleaseRoot = $script:ReleaseStagingRoot
+$imagesDir = Join-Path $ReleaseRoot "offline-images"
 
 New-Item -ItemType Directory -Force -Path $ReleaseRoot, $imagesDir | Out-Null
 
@@ -395,4 +419,29 @@ if (-not $SkipGuard) {
     }
 }
 
-Write-Host "[OK] Paquete offline preparado en $ReleaseRoot" -ForegroundColor Green
+Write-Step "Publicando paquete offline verificado."
+$releaseBackupRoot = Join-Path $releaseParent ("$releaseLeaf.backup-" + [Guid]::NewGuid().ToString("N"))
+try {
+    if (Test-Path -LiteralPath $script:ReleaseFinalRoot) {
+        Move-Item -LiteralPath $script:ReleaseFinalRoot -Destination $releaseBackupRoot
+    }
+
+    Move-Item -LiteralPath $ReleaseRoot -Destination $script:ReleaseFinalRoot
+    $script:ReleaseCommitted = $true
+
+    if (Test-Path -LiteralPath $releaseBackupRoot) {
+        try {
+            Remove-Item -LiteralPath $releaseBackupRoot -Recurse -Force
+        } catch {
+            Write-Host "[WARN] Paquete offline publicado, pero no se pudo eliminar el backup temporal: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+    }
+} catch {
+    if ((Test-Path -LiteralPath $releaseBackupRoot) -and -not (Test-Path -LiteralPath $script:ReleaseFinalRoot)) {
+        Move-Item -LiteralPath $releaseBackupRoot -Destination $script:ReleaseFinalRoot
+    }
+
+    Write-Fail "No se pudo publicar el paquete offline verificado: $($_.Exception.Message)"
+}
+
+Write-Host "[OK] Paquete offline preparado en $script:ReleaseFinalRoot" -ForegroundColor Green
