@@ -54,6 +54,8 @@ $systemDiagnosticsSafetyScript = Join-Path $scriptsDir "validate_system_diagnost
 $doubleActionSafetyScript = Join-Path $scriptsDir "validate_double_action_safety.ps1"
 $installerLegacySafetyScript = Join-Path $scriptsDir "validate_installer_legacy_safety.ps1"
 $lanRecoverySafetyScript = Join-Path $scriptsDir "validate_lan_recovery_safety.ps1"
+$permissionAuditSafetyScript = Join-Path $scriptsDir "validate_permission_audit_safety.ps1"
+$rateLimitSafetyScript = Join-Path $scriptsDir "validate_rate_limit_safety.ps1"
 $shiftIncidentRecoverySafetyScript = Join-Path $scriptsDir "validate_shift_incident_recovery_safety.ps1"
 $finalHandoffCompletenessScript = Join-Path $scriptsDir "validate_final_handoff_completeness.ps1"
 $lanProofPath = Join-Path $qaDir "LAN_CLIENT_VALIDATION_PROOF.md"
@@ -405,6 +407,30 @@ function Invoke-LanRecoverySafetyGuard {
     }
 }
 
+function Invoke-PermissionAuditSafetyGuard {
+    Write-Section "Permission audit safety validation"
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $permissionAuditSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
+function Invoke-RateLimitSafetyGuard {
+    Write-Section "Rate-limit safety validation"
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $rateLimitSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
 function Invoke-ShiftIncidentRecoverySafetyGuard {
     Write-Section "Shift incident recovery safety validation"
     $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $shiftIncidentRecoverySafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
@@ -483,6 +509,10 @@ function Write-HandoffReport(
     [int] $installerLegacySafetyExit,
     [string[]] $lanRecoverySafetyOutput,
     [int] $lanRecoverySafetyExit,
+    [string[]] $permissionAuditSafetyOutput,
+    [int] $permissionAuditSafetyExit,
+    [string[]] $rateLimitSafetyOutput,
+    [int] $rateLimitSafetyExit,
     [string[]] $shiftIncidentRecoverySafetyOutput,
     [int] $shiftIncidentRecoverySafetyExit,
     [string[]] $trainingSafetyOutput,
@@ -510,7 +540,7 @@ function Write-HandoffReport(
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
     $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted
-    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $fieldProofTemplatesSafetyExit -eq 0 -and $proofInitializationSafetyExit -eq 0 -and $operationsObjectiveAuditExit -eq 0 -and $offlineReleaseBuilderSelfTestExit -eq 0 -and $offlineReleaseGuardSelfTestExit -eq 0 -and $dependencyManifestExit -eq 0 -and $finalHandoffCompletenessExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
+    $decision = if ($allProofsCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $permissionAuditSafetyExit -eq 0 -and $rateLimitSafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $fieldProofTemplatesSafetyExit -eq 0 -and $proofInitializationSafetyExit -eq 0 -and $operationsObjectiveAuditExit -eq 0 -and $offlineReleaseBuilderSelfTestExit -eq 0 -and $offlineReleaseGuardSelfTestExit -eq 0 -and $dependencyManifestExit -eq 0 -and $finalHandoffCompletenessExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
 
     Add-ReportLine $lines "# Final production handoff result"
     Add-ReportLine $lines ""
@@ -538,6 +568,8 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Double-action safety guard exit code: $doubleActionSafetyExit"
     Add-ReportLine $lines "- Installer legacy safety guard exit code: $installerLegacySafetyExit"
     Add-ReportLine $lines "- LAN recovery safety guard exit code: $lanRecoverySafetyExit"
+    Add-ReportLine $lines "- Permission audit safety guard exit code: $permissionAuditSafetyExit"
+    Add-ReportLine $lines "- Rate-limit safety guard exit code: $rateLimitSafetyExit"
     Add-ReportLine $lines "- Shift incident recovery safety guard exit code: $shiftIncidentRecoverySafetyExit"
     Add-ReportLine $lines "- Training safety guard exit code: $trainingSafetyExit"
     Add-ReportLine $lines "- Field proof templates safety guard exit code: $fieldProofTemplatesSafetyExit"
@@ -616,6 +648,12 @@ function Write-HandoffReport(
     if ($lanRecoverySafetyExit -ne 0) {
         Add-ReportLine $lines "- LAN recovery safety validation returned exit code $lanRecoverySafetyExit."
     }
+    if ($permissionAuditSafetyExit -ne 0) {
+        Add-ReportLine $lines "- Permission audit safety validation returned exit code $permissionAuditSafetyExit."
+    }
+    if ($rateLimitSafetyExit -ne 0) {
+        Add-ReportLine $lines "- Rate-limit safety validation returned exit code $rateLimitSafetyExit."
+    }
     if ($shiftIncidentRecoverySafetyExit -ne 0) {
         Add-ReportLine $lines "- Shift incident recovery safety validation returned exit code $shiftIncidentRecoverySafetyExit."
     }
@@ -646,7 +684,7 @@ function Write-HandoffReport(
     if ($evidenceIndexExit -ne 0) {
         Add-ReportLine $lines "- Final handoff evidence index validation returned exit code $evidenceIndexExit."
     }
-    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $fieldProofTemplatesSafetyExit -eq 0 -and $proofInitializationSafetyExit -eq 0 -and $operationsObjectiveAuditExit -eq 0 -and $offlineReleaseBuilderSelfTestExit -eq 0 -and $offlineReleaseGuardSelfTestExit -eq 0 -and $dependencyManifestExit -eq 0 -and $finalHandoffCompletenessExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
+    if ($lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $releaseGuardExit -eq 0 -and $supportPacketSafetyExit -eq 0 -and $browserSmokeEvidenceExit -eq 0 -and $startupRepairSafetyExit -eq 0 -and $operatorManualsSafetyExit -eq 0 -and $backupRestoreDocsSafetyExit -eq 0 -and $installationDocsSafetyExit -eq 0 -and $helpScreenSafetyExit -eq 0 -and $systemDiagnosticsSafetyExit -eq 0 -and $doubleActionSafetyExit -eq 0 -and $installerLegacySafetyExit -eq 0 -and $lanRecoverySafetyExit -eq 0 -and $permissionAuditSafetyExit -eq 0 -and $rateLimitSafetyExit -eq 0 -and $shiftIncidentRecoverySafetyExit -eq 0 -and $trainingSafetyExit -eq 0 -and $fieldProofTemplatesSafetyExit -eq 0 -and $proofInitializationSafetyExit -eq 0 -and $operationsObjectiveAuditExit -eq 0 -and $offlineReleaseBuilderSelfTestExit -eq 0 -and $offlineReleaseGuardSelfTestExit -eq 0 -and $dependencyManifestExit -eq 0 -and $finalHandoffCompletenessExit -eq 0 -and $evidenceIndexExit -eq 0 -and -not $preflightSkipped -and $preflightExit -eq 0) {
         Add-ReportLine $lines "- None reported by the handoff script."
     }
     Add-ReportLine $lines ""
@@ -918,6 +956,24 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
+    Add-ReportLine $lines "## Permission audit safety validation output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $permissionAuditSafetyOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## Rate-limit safety validation output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $rateLimitSafetyOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
     Add-ReportLine $lines "## Shift incident recovery safety validation output"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
@@ -984,6 +1040,8 @@ Assert-ScriptExists $systemDiagnosticsSafetyScript
 Assert-ScriptExists $doubleActionSafetyScript
 Assert-ScriptExists $installerLegacySafetyScript
 Assert-ScriptExists $lanRecoverySafetyScript
+Assert-ScriptExists $permissionAuditSafetyScript
+Assert-ScriptExists $rateLimitSafetyScript
 Assert-ScriptExists $shiftIncidentRecoverySafetyScript
 Assert-ScriptExists $finalHandoffCompletenessScript
 
@@ -1050,6 +1108,8 @@ $systemDiagnosticsSafety = Invoke-SystemDiagnosticsSafetyGuard
 $doubleActionSafety = Invoke-DoubleActionSafetyGuard
 $installerLegacySafety = Invoke-InstallerLegacySafetyGuard
 $lanRecoverySafety = Invoke-LanRecoverySafetyGuard
+$permissionAuditSafety = Invoke-PermissionAuditSafetyGuard
+$rateLimitSafety = Invoke-RateLimitSafetyGuard
 $shiftIncidentRecoverySafety = Invoke-ShiftIncidentRecoverySafetyGuard
 $trainingSafety = Invoke-TrainingSafetyGuard
 $fieldProofTemplatesSafety = Invoke-FieldProofTemplatesSafetyGuard
@@ -1093,6 +1153,10 @@ if ($SkipPreflight) {
         -installerLegacySafetyExit $installerLegacySafety.ExitCode `
         -lanRecoverySafetyOutput $lanRecoverySafety.Output `
         -lanRecoverySafetyExit $lanRecoverySafety.ExitCode `
+        -permissionAuditSafetyOutput $permissionAuditSafety.Output `
+        -permissionAuditSafetyExit $permissionAuditSafety.ExitCode `
+        -rateLimitSafetyOutput $rateLimitSafety.Output `
+        -rateLimitSafetyExit $rateLimitSafety.ExitCode `
         -shiftIncidentRecoverySafetyOutput $shiftIncidentRecoverySafety.Output `
         -shiftIncidentRecoverySafetyExit $shiftIncidentRecoverySafety.ExitCode `
         -trainingSafetyOutput $trainingSafety.Output `
@@ -1150,6 +1214,10 @@ if ($SkipPreflight) {
         -installerLegacySafetyExit $installerLegacySafety.ExitCode `
         -lanRecoverySafetyOutput $lanRecoverySafety.Output `
         -lanRecoverySafetyExit $lanRecoverySafety.ExitCode `
+        -permissionAuditSafetyOutput $permissionAuditSafety.Output `
+        -permissionAuditSafetyExit $permissionAuditSafety.ExitCode `
+        -rateLimitSafetyOutput $rateLimitSafety.Output `
+        -rateLimitSafetyExit $rateLimitSafety.ExitCode `
         -shiftIncidentRecoverySafetyOutput $shiftIncidentRecoverySafety.Output `
         -shiftIncidentRecoverySafetyExit $shiftIncidentRecoverySafety.ExitCode `
         -trainingSafetyOutput $trainingSafety.Output `
@@ -1212,6 +1280,10 @@ Write-HandoffReport `
     -installerLegacySafetyExit $installerLegacySafety.ExitCode `
     -lanRecoverySafetyOutput $lanRecoverySafety.Output `
     -lanRecoverySafetyExit $lanRecoverySafety.ExitCode `
+    -permissionAuditSafetyOutput $permissionAuditSafety.Output `
+    -permissionAuditSafetyExit $permissionAuditSafety.ExitCode `
+    -rateLimitSafetyOutput $rateLimitSafety.Output `
+    -rateLimitSafetyExit $rateLimitSafety.ExitCode `
     -shiftIncidentRecoverySafetyOutput $shiftIncidentRecoverySafety.Output `
     -shiftIncidentRecoverySafetyExit $shiftIncidentRecoverySafety.ExitCode `
     -trainingSafetyOutput $trainingSafety.Output `
@@ -1269,6 +1341,10 @@ Write-HandoffReport `
     -installerLegacySafetyExit $installerLegacySafety.ExitCode `
     -lanRecoverySafetyOutput $lanRecoverySafety.Output `
     -lanRecoverySafetyExit $lanRecoverySafety.ExitCode `
+    -permissionAuditSafetyOutput $permissionAuditSafety.Output `
+    -permissionAuditSafetyExit $permissionAuditSafety.ExitCode `
+    -rateLimitSafetyOutput $rateLimitSafety.Output `
+    -rateLimitSafetyExit $rateLimitSafety.ExitCode `
     -shiftIncidentRecoverySafetyOutput $shiftIncidentRecoverySafety.Output `
     -shiftIncidentRecoverySafetyExit $shiftIncidentRecoverySafety.ExitCode `
     -trainingSafetyOutput $trainingSafety.Output `
@@ -1293,7 +1369,7 @@ Write-HandoffReport `
     -preflightExit $preflightExit `
     -preflightSkipped $false
 
-if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $fieldProofTemplatesSafety.ExitCode -eq 0 -and $proofInitializationSafety.ExitCode -eq 0 -and $operationsObjectiveAudit.ExitCode -eq 0 -and $offlineReleaseBuilderSelfTest.ExitCode -eq 0 -and $offlineReleaseGuardSelfTest.ExitCode -eq 0 -and $dependencyManifest.ExitCode -eq 0 -and $finalHandoffCompleteness.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
+if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $permissionAuditSafety.ExitCode -eq 0 -and $rateLimitSafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $fieldProofTemplatesSafety.ExitCode -eq 0 -and $proofInitializationSafety.ExitCode -eq 0 -and $operationsObjectiveAudit.ExitCode -eq 0 -and $offlineReleaseBuilderSelfTest.ExitCode -eq 0 -and $offlineReleaseGuardSelfTest.ExitCode -eq 0 -and $dependencyManifest.ExitCode -eq 0 -and $finalHandoffCompleteness.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0 -and $allHandoffProofsCompleted) {
     Write-Host ""
     Write-Host "PRODUCTION_READY evidence gate passed." -ForegroundColor Green
     exit 0
@@ -1301,7 +1377,7 @@ if ($preflightExit -eq 0 -and $releaseGuardExit -eq 0 -and $supportPacketSafety.
 
 Write-Host ""
 Write-Host "PRODUCTION_READY remains blocked. Keep status as PRODUCTION_CANDIDATE and close the missing evidence above." -ForegroundColor Yellow
-if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $fieldProofTemplatesSafety.ExitCode -eq 0 -and $proofInitializationSafety.ExitCode -eq 0 -and $operationsObjectiveAudit.ExitCode -eq 0 -and $offlineReleaseBuilderSelfTest.ExitCode -eq 0 -and $offlineReleaseGuardSelfTest.ExitCode -eq 0 -and $dependencyManifest.ExitCode -eq 0 -and $finalHandoffCompleteness.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
+if ($preflightExit -eq 0 -and $supportPacketSafety.ExitCode -eq 0 -and $browserSmokeEvidence.ExitCode -eq 0 -and $startupRepairSafety.ExitCode -eq 0 -and $operatorManualsSafety.ExitCode -eq 0 -and $backupRestoreDocsSafety.ExitCode -eq 0 -and $installationDocsSafety.ExitCode -eq 0 -and $helpScreenSafety.ExitCode -eq 0 -and $systemDiagnosticsSafety.ExitCode -eq 0 -and $doubleActionSafety.ExitCode -eq 0 -and $installerLegacySafety.ExitCode -eq 0 -and $lanRecoverySafety.ExitCode -eq 0 -and $permissionAuditSafety.ExitCode -eq 0 -and $rateLimitSafety.ExitCode -eq 0 -and $shiftIncidentRecoverySafety.ExitCode -eq 0 -and $trainingSafety.ExitCode -eq 0 -and $fieldProofTemplatesSafety.ExitCode -eq 0 -and $proofInitializationSafety.ExitCode -eq 0 -and $operationsObjectiveAudit.ExitCode -eq 0 -and $offlineReleaseBuilderSelfTest.ExitCode -eq 0 -and $offlineReleaseGuardSelfTest.ExitCode -eq 0 -and $dependencyManifest.ExitCode -eq 0 -and $finalHandoffCompleteness.ExitCode -eq 0 -and $evidenceIndex.ExitCode -eq 0) {
     exit 1
 }
 if ($supportPacketSafety.ExitCode -ne 0) {
@@ -1336,6 +1412,12 @@ if ($installerLegacySafety.ExitCode -ne 0) {
 }
 if ($lanRecoverySafety.ExitCode -ne 0) {
     exit $lanRecoverySafety.ExitCode
+}
+if ($permissionAuditSafety.ExitCode -ne 0) {
+    exit $permissionAuditSafety.ExitCode
+}
+if ($rateLimitSafety.ExitCode -ne 0) {
+    exit $rateLimitSafety.ExitCode
 }
 if ($shiftIncidentRecoverySafety.ExitCode -ne 0) {
     exit $shiftIncidentRecoverySafety.ExitCode

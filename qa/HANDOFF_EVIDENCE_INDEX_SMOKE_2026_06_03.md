@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-04 00:02:00
+- Generated at: 2026-06-04 00:13:05
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -24,6 +24,8 @@
 - Double-action safety guard exit code: 0
 - Installer legacy safety guard exit code: 0
 - LAN recovery safety guard exit code: 0
+- Permission audit safety guard exit code: 0
+- Rate-limit safety guard exit code: 0
 - Shift incident recovery safety guard exit code: 0
 - Training safety guard exit code: 0
 - Field proof templates safety guard exit code: 0
@@ -219,7 +221,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] setup.bat avoids legacy/demo wording
 [ OK ] setup.bat uses institutional wording
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit d933a406 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 3427a271 before release handoff.
 [FAIL] offline-images contains no Docker image tar files.
 
 OFFLINE_RELEASE_CLEAN: NO (48 blocking issue(s))
@@ -973,6 +975,98 @@ INSTALLER_LEGACY_SAFETY: YES
 [ OK ] LAN refresh WhatIf does not modify env files
 
 LAN_RECOVERY_SAFETY: YES
+```
+
+## Permission audit safety validation output
+
+```text
+[ OK ] Found backend\app\Observers\PermissionAuditObserver.php
+[ OK ] Found backend\app\Providers\AppServiceProvider.php
+[ OK ] Found backend\config\permission.php
+[ OK ] Found backend\tests\Feature\PermissionAuditTest.php
+[ OK ] Found backend\app\Http\Controllers\UserController.php
+[ OK ] Found docs\KNOWN_LIMITATIONS.md
+[ OK ] Found docs\OPERATIVE_NOTES_2026_06_02.md
+[ OK ] Found docs\DECISIONS.md
+[ OK ] Permission audit observer exists
+[ OK ] Observer handles role attach events
+[ OK ] Observer handles role detach events
+[ OK ] Observer handles permission attach events
+[ OK ] Observer handles permission detach events
+[ OK ] Observer writes audit_logs records
+[ OK ] Observer records human role name
+[ OK ] Observer records human permission name
+[ OK ] Observer records current operator when available
+[ OK ] Observer cannot break business flow
+[ OK ] Observer does not downgrade permission audit to logs only
+[ OK ] Observer does not embed secret-like assignments
+[ OK ] Provider registers permission audit wiring
+[ OK ] Provider observes role model changes
+[ OK ] Provider observes permission model changes
+[ OK ] Provider listens for role attach events
+[ OK ] Provider listens for role detach events
+[ OK ] Provider listens for permission attach events
+[ OK ] Provider listens for permission detach events
+[ OK ] Spatie permission events are enabled
+[ OK ] Permission exception details stay hidden
+[ OK ] Role exception details stay hidden
+[ OK ] Role attach audit is covered by feature test
+[ OK ] Role sync detach/attach audit is covered by feature test
+[ OK ] Role creation audit is covered by feature test
+[ OK ] Permission attach audit is covered by feature test
+[ OK ] Permission audit action is asserted
+[ OK ] Permission audit tests check payload omits sensitive fields
+[ OK ] User updates avoid noisy role sync when unchanged
+[ OK ] User updates still audit real role changes
+[ OK ] Known limitations records permission audit as closed
+[ OK ] Known limitations no longer lists permission audit as pending
+[ OK ] Operative notes record permission audit status
+[ OK ] Operative notes no longer claim permission audit is log-only
+[ OK ] Decision log records permission audit decision
+[ OK ] Decision log records observer
+[ OK ] Decision log records durable audit target
+
+PERMISSION_AUDIT_SAFETY: YES
+```
+
+## Rate-limit safety validation output
+
+```text
+[ OK ] Found backend\routes\api.php
+[ OK ] Found backend\app\Http\Middleware\ThrottleByUser.php
+[ OK ] Found backend\bootstrap\app.php
+[ OK ] Found backend\tests\Feature\ThrottleByUserTest.php
+[ OK ] Found docs\KNOWN_LIMITATIONS.md
+[ OK ] Found docs\OPERATIVE_NOTES_2026_06_02.md
+[ OK ] Found qa\FINAL_PRODUCTION_HANDOFF_RESULT.md
+[ OK ] ThrottleByUser middleware exists
+[ OK ] ThrottleByUser keys authenticated users by user id
+[ OK ] ThrottleByUser has IP fallback for unauthenticated requests
+[ OK ] ThrottleByUser returns human Spanish message
+[ OK ] ThrottleByUser returns retry guidance
+[ OK ] ThrottleByUser avoids technical/secret details
+[ OK ] ThrottleByUser alias is registered
+[ OK ] Invoice creation uses per-user throttle
+[ OK ] Invoice void uses per-user throttle
+[ OK ] Invoice reverse uses per-user throttle
+[ OK ] Payment registration uses per-user throttle
+[ OK ] Payment void uses per-user throttle
+[ OK ] Cashbox open uses per-user throttle
+[ OK ] Cashbox close uses per-user throttle
+[ OK ] Payment registration no longer uses shared-IP throttle
+[ OK ] Payment void no longer uses shared-IP throttle
+[ OK ] Throttle safe 429 response is covered
+[ OK ] LAN same-IP isolation is covered
+[ OK ] Critical write route middleware is covered
+[ OK ] Test asserts 60/min per-user buckets
+[ OK ] Test asserts 30/min per-user buckets
+[ OK ] Known limitations records per-user rate limiting as closed
+[ OK ] Known limitations no longer lists per-user rate limit as pending
+[ OK ] Operative notes record per-user rate limit status
+[ OK ] Handoff records rate-limit evidence
+[ OK ] Handoff records rate-limit guard
+
+RATE_LIMIT_SAFETY: YES
 ```
 
 ## Shift incident recovery safety validation output
