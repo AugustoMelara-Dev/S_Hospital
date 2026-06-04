@@ -1,3 +1,11 @@
+## 2026-06-04 - Cobertura handoff/offline para guards criticos
+
+Contexto: el handoff final depende de scripts operativos que deben viajar en el paquete offline. La revision post-commit encontro que era posible agregar un guard al handoff y olvidar incluirlo o compararlo en el release offline.
+
+Decision: se agrega `scripts\validate_handoff_guard_coverage.ps1` para comparar las dependencias `Join-Path $scriptsDir` del handoff contra la lista critica de `make_offline_release.ps1`, los `Test-RequiredPath` y los `Test-ReleaseFileMatchesSource` de `assert_offline_release_clean.ps1`. El handoff final ejecuta este guard y conserva `HANDOFF_GUARD_COVERAGE: YES`.
+
+Criterio de verificacion: `validate_handoff_guard_coverage.ps1`, `make_offline_release.ps1 -SelfTest`, `assert_offline_release_clean.ps1 -SelfTest`, `validate_final_handoff_completeness.ps1` y `validate_ops_evidence_index.ps1` deben pasar; `offline-release` debe quedar bloqueado hasta regenerarse desde el commit final si falta cualquier script critico.
+
 ## 2026-06-04 - Handoff final ejecuta guards documentados
 
 Contexto: el handoff final listaba validadores de limitaciones conocidas y modo mantenimiento como evidencia preservada, pero no todos corrian dentro de `scripts\final_production_handoff.ps1`. Ademas, el nuevo guard de mantenibilidad de `NewInvoiceView` necesitaba quedar integrado para no depender de memoria del desarrollador.

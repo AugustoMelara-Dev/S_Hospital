@@ -174,6 +174,10 @@ restauracion aislada o prohibicion de repetir facturas/cobros, si capacitacion
 segura falla, si el handoff final pierde archivos modificados, pruebas, riesgos
 o notas de seguridad, si el indice tiene referencias
 rotas, rutas locales, secretos obvios o no mantiene los bloqueantes fisicos.
+El handoff tambien debe conservar `assert_offline_release_clean.ps1 -SelfTest`
+y `scripts\validate_handoff_guard_coverage.ps1`, para confirmar que cada
+script usado por el cierre final esta dentro del paquete offline y queda
+comparado contra la fuente versionada.
 Antes de entregar accesos directos o scripts de recuperacion, ejecute
 `scripts\validate_startup_repair_safety.ps1`; debe reportar
 `STARTUP_REPAIR_SAFETY: YES` para confirmar que los flujos de arranque,

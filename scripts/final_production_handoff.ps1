@@ -43,6 +43,7 @@ $trainingSafetyScript = Join-Path $scriptsDir "validate_training_safety.ps1"
 $fieldProofTemplatesSafetyScript = Join-Path $scriptsDir "validate_field_proof_templates.ps1"
 $proofInitializationSafetyScript = Join-Path $scriptsDir "validate_proof_initialization_safety.ps1"
 $operationsObjectiveAuditScript = Join-Path $scriptsDir "validate_operations_objective_audit.ps1"
+$handoffGuardCoverageScript = Join-Path $scriptsDir "validate_handoff_guard_coverage.ps1"
 $supportPacketSafetyScript = Join-Path $scriptsDir "validate_support_packet_safety.ps1"
 $browserSmokeEvidenceScript = Join-Path $scriptsDir "validate_browser_smoke_evidence.ps1"
 $startupRepairSafetyScript = Join-Path $scriptsDir "validate_startup_repair_safety.ps1"
@@ -245,6 +246,18 @@ function Invoke-ProofInitializationSafetyGuard {
 function Invoke-OperationsObjectiveAuditGuard {
     Write-Section "Operations objective audit validation"
     $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $operationsObjectiveAuditScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
+function Invoke-HandoffGuardCoverageGuard {
+    Write-Section "Handoff guard coverage validation"
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $handoffGuardCoverageScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -578,6 +591,8 @@ function Write-HandoffReport(
     [int] $proofInitializationSafetyExit,
     [string[]] $operationsObjectiveAuditOutput,
     [int] $operationsObjectiveAuditExit,
+    [string[]] $handoffGuardCoverageOutput,
+    [int] $handoffGuardCoverageExit,
     [string[]] $offlineReleaseBuilderSelfTestOutput,
     [int] $offlineReleaseBuilderSelfTestExit,
     [string[]] $offlineReleaseGuardSelfTestOutput,
@@ -618,6 +633,7 @@ function Write-HandoffReport(
         $fieldProofTemplatesSafetyExit,
         $proofInitializationSafetyExit,
         $operationsObjectiveAuditExit,
+        $handoffGuardCoverageExit,
         $offlineReleaseBuilderSelfTestExit,
         $offlineReleaseGuardSelfTestExit,
         $dependencyManifestExit,
@@ -662,6 +678,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Field proof templates safety guard exit code: $fieldProofTemplatesSafetyExit"
     Add-ReportLine $lines "- Proof initialization safety guard exit code: $proofInitializationSafetyExit"
     Add-ReportLine $lines "- Operations objective audit guard exit code: $operationsObjectiveAuditExit"
+    Add-ReportLine $lines "- Handoff guard coverage guard exit code: $handoffGuardCoverageExit"
     Add-ReportLine $lines "- Offline release builder self-test exit code: $offlineReleaseBuilderSelfTestExit"
     Add-ReportLine $lines "- Offline release guard self-test exit code: $offlineReleaseGuardSelfTestExit"
     Add-ReportLine $lines "- Dependency manifest guard exit code: $dependencyManifestExit"
@@ -765,6 +782,9 @@ function Write-HandoffReport(
     if ($operationsObjectiveAuditExit -ne 0) {
         Add-ReportLine $lines "- Operations objective audit validation returned exit code $operationsObjectiveAuditExit."
     }
+    if ($handoffGuardCoverageExit -ne 0) {
+        Add-ReportLine $lines "- Handoff guard coverage validation returned exit code $handoffGuardCoverageExit."
+    }
     if ($offlineReleaseBuilderSelfTestExit -ne 0) {
         Add-ReportLine $lines "- Offline release builder self-test returned exit code $offlineReleaseBuilderSelfTestExit."
     }
@@ -794,7 +814,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '- Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.'
     Add-ReportLine $lines '- New invoice maintainability guard: `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` and `scripts/validate_new_invoice_maintainability.ps1` preserve a short cashier-facing invoice flow.'
     Add-ReportLine $lines '- Operator and training evidence: `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md`, `qa/TRAINING_SAFETY_2026_06_03.md` and `qa/TRAINING_ACCEPTANCE_PROOF.example.md`.'
-    Add-ReportLine $lines '- Field proof, proof initialization, offline builder, offline release guard, objective, release and index evidence: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md`, `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`.'
+    Add-ReportLine $lines '- Field proof, proof initialization, handoff guard coverage, offline builder, offline release guard, objective, release and index evidence: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md`, `qa/HANDOFF_GUARD_COVERAGE_2026_06_04.md`, `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`.'
     Add-ReportLine $lines ""
 
     Add-ReportLine $lines "## Tests and gates to preserve"
@@ -810,7 +830,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '- In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.'
     Add-ReportLine $lines '- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.'
-    Add-ReportLine $lines '- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.'
+    Add-ReportLine $lines '- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.'
     Add-ReportLine $lines '- Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.'
     Add-ReportLine $lines ""
 
@@ -868,6 +888,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1 -SelfTest"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1 -SelfTest"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_operations_objective_audit.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_handoff_guard_coverage.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_dependency_manifest.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_final_handoff_completeness.ps1 -HandoffPath $(Protect-HandoffText $path)"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath $(Protect-HandoffText $path)"
@@ -952,6 +973,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $operationsObjectiveAuditOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## Handoff guard coverage validation output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $handoffGuardCoverageOutput) {
         Add-ReportLine $lines (Protect-HandoffText $line)
     }
     Add-ReportLine $lines '```'
@@ -1156,6 +1186,7 @@ Assert-ScriptExists $trainingSafetyScript
 Assert-ScriptExists $fieldProofTemplatesSafetyScript
 Assert-ScriptExists $proofInitializationSafetyScript
 Assert-ScriptExists $operationsObjectiveAuditScript
+Assert-ScriptExists $handoffGuardCoverageScript
 Assert-ScriptExists $supportPacketSafetyScript
 Assert-ScriptExists $browserSmokeEvidenceScript
 Assert-ScriptExists $startupRepairSafetyScript
@@ -1248,6 +1279,7 @@ $trainingSafety = Invoke-TrainingSafetyGuard
 $fieldProofTemplatesSafety = Invoke-FieldProofTemplatesSafetyGuard
 $proofInitializationSafety = Invoke-ProofInitializationSafetyGuard
 $operationsObjectiveAudit = Invoke-OperationsObjectiveAuditGuard
+$handoffGuardCoverage = Invoke-HandoffGuardCoverageGuard
 $offlineReleaseBuilderSelfTest = Invoke-OfflineReleaseBuilderSelfTestGuard
 $offlineReleaseGuardSelfTest = Invoke-OfflineReleaseGuardSelfTest
 $dependencyManifest = Invoke-DependencyManifestGuard
@@ -1306,6 +1338,8 @@ if ($SkipPreflight) {
         -proofInitializationSafetyExit $proofInitializationSafety.ExitCode `
         -operationsObjectiveAuditOutput $operationsObjectiveAudit.Output `
         -operationsObjectiveAuditExit $operationsObjectiveAudit.ExitCode `
+        -handoffGuardCoverageOutput $handoffGuardCoverage.Output `
+        -handoffGuardCoverageExit $handoffGuardCoverage.ExitCode `
         -offlineReleaseBuilderSelfTestOutput $offlineReleaseBuilderSelfTest.Output `
         -offlineReleaseBuilderSelfTestExit $offlineReleaseBuilderSelfTest.ExitCode `
         -offlineReleaseGuardSelfTestOutput $offlineReleaseGuardSelfTest.Output `
@@ -1373,6 +1407,8 @@ if ($SkipPreflight) {
         -proofInitializationSafetyExit $proofInitializationSafety.ExitCode `
         -operationsObjectiveAuditOutput $operationsObjectiveAudit.Output `
         -operationsObjectiveAuditExit $operationsObjectiveAudit.ExitCode `
+        -handoffGuardCoverageOutput $handoffGuardCoverage.Output `
+        -handoffGuardCoverageExit $handoffGuardCoverage.ExitCode `
         -offlineReleaseBuilderSelfTestOutput $offlineReleaseBuilderSelfTest.Output `
         -offlineReleaseBuilderSelfTestExit $offlineReleaseBuilderSelfTest.ExitCode `
         -offlineReleaseGuardSelfTestOutput $offlineReleaseGuardSelfTest.Output `
@@ -1445,6 +1481,8 @@ Write-HandoffReport `
     -proofInitializationSafetyExit $proofInitializationSafety.ExitCode `
     -operationsObjectiveAuditOutput $operationsObjectiveAudit.Output `
     -operationsObjectiveAuditExit $operationsObjectiveAudit.ExitCode `
+    -handoffGuardCoverageOutput $handoffGuardCoverage.Output `
+    -handoffGuardCoverageExit $handoffGuardCoverage.ExitCode `
     -offlineReleaseBuilderSelfTestOutput $offlineReleaseBuilderSelfTest.Output `
     -offlineReleaseBuilderSelfTestExit $offlineReleaseBuilderSelfTest.ExitCode `
     -offlineReleaseGuardSelfTestOutput $offlineReleaseGuardSelfTest.Output `
@@ -1512,6 +1550,8 @@ Write-HandoffReport `
     -proofInitializationSafetyExit $proofInitializationSafety.ExitCode `
     -operationsObjectiveAuditOutput $operationsObjectiveAudit.Output `
     -operationsObjectiveAuditExit $operationsObjectiveAudit.ExitCode `
+    -handoffGuardCoverageOutput $handoffGuardCoverage.Output `
+    -handoffGuardCoverageExit $handoffGuardCoverage.ExitCode `
     -offlineReleaseBuilderSelfTestOutput $offlineReleaseBuilderSelfTest.Output `
     -offlineReleaseBuilderSelfTestExit $offlineReleaseBuilderSelfTest.ExitCode `
     -offlineReleaseGuardSelfTestOutput $offlineReleaseGuardSelfTest.Output `
@@ -1550,6 +1590,7 @@ $allFinalAutomatedGuardsPassed = Test-GuardExitCodesPassed @(
     $fieldProofTemplatesSafety.ExitCode,
     $proofInitializationSafety.ExitCode,
     $operationsObjectiveAudit.ExitCode,
+    $handoffGuardCoverage.ExitCode,
     $offlineReleaseBuilderSelfTest.ExitCode,
     $offlineReleaseGuardSelfTest.ExitCode,
     $dependencyManifest.ExitCode,
@@ -1633,6 +1674,9 @@ if ($proofInitializationSafety.ExitCode -ne 0) {
 }
 if ($operationsObjectiveAudit.ExitCode -ne 0) {
     exit $operationsObjectiveAudit.ExitCode
+}
+if ($handoffGuardCoverage.ExitCode -ne 0) {
+    exit $handoffGuardCoverage.ExitCode
 }
 if ($offlineReleaseBuilderSelfTest.ExitCode -ne 0) {
     exit $offlineReleaseBuilderSelfTest.ExitCode

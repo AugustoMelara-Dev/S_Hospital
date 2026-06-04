@@ -9,6 +9,7 @@ Scope:
 - Confirm that the final report includes browser captures or visual smoke evidence, diagnostics, files changed, tests and gates, physical blockers, risks and safety notes.
 - Confirm that the report keeps the offline release guard self-test command and allowlist output.
 - Confirm that the report executes and preserves output for known-limitations, maintenance-mode and new-invoice maintainability guards.
+- Confirm that the report executes and preserves output for the handoff/offline guard coverage validator.
 - Keep the release state as `PRODUCTION_CANDIDATE` until the final hospital server evidence is complete.
 
 Command run:
@@ -37,6 +38,10 @@ Observed result:
   the report preserves `NEW_INVOICE_MAINTAINABILITY: YES` and
   `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` as cashier-flow
   maintainability evidence.
+- The handoff lists and executes `scripts/validate_handoff_guard_coverage.ps1`;
+  the report preserves `HANDOFF_GUARD_COVERAGE: YES` and
+  `qa/HANDOFF_GUARD_COVERAGE_2026_06_04.md` as handoff/offline coverage
+  evidence.
 - The handoff lists `scripts/validate_permission_audit_safety.ps1` and
   `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md` as preserved role/permission
   administration audit evidence.
