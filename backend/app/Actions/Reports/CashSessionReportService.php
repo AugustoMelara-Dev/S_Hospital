@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Actions\Reports;
 
 use App\Actions\Cash\BuildCashReconciliationAction;
+use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\Invoice;
 use App\Models\Payment;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class CashSessionReportService
@@ -120,8 +122,8 @@ class CashSessionReportService
 
     /**
      * @param  array{cash: string, transfer: string, card: string, other: string}  $methods
-     * @param  \Illuminate\Support\Collection<int, Payment>  $payments
-     * @param  \Illuminate\Support\Collection<int, \App\Models\CashMovement>  $movements
+     * @param  Collection<int, Payment>  $payments
+     * @param  Collection<int, CashMovement>  $movements
      * @return array<string, mixed>
      */
     private function formatReport(

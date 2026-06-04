@@ -11,7 +11,8 @@ Scope:
   disk space, LAN access, installed version and migrations.
 - Validate that the admin/support diagnostics include a Recharts-based
   operational pulse for backups, failed jobs, scheduler heartbeat, disk space
-  and pending migrations, with a textual support reading beside the chart.
+  pending migrations, queue size, database lag and backend uptime, with a
+  textual support reading beside the chart.
 - Validate that `/api/system/status` keeps sanitized URLs/messages and does not
   expose secret-like assignments.
 
@@ -31,6 +32,9 @@ Observed result:
 - Admin diagnostics now include `Pulso operativo administrativo` and
   `Lectura para soporte`; the focused UI test verifies the panel without raw
   queue commands, paths or secret-like values.
+- Admin diagnostics consume the public operational health snapshot for
+  `Cola LAN`, `Retardo DB`, `Disco` and `Actividad` labels without exposing
+  storage paths, SQL probes, queue commands or secret-like values.
 - Browser evidence: `qa/screenshots/system-diagnostics-admin-pulse-2026-06-04/about-admin-pulse-light.png`
   and `qa/screenshots/system-diagnostics-admin-pulse-2026-06-04/about-admin-pulse-report.json`
   were generated with mocked API data, no mutations, no forbidden text and no

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { PageHeader } from '../../components/ui/page-header';
 import { useFiscalSettings } from '../../hooks/useFiscalSettings';
 import { useServerStatus } from '../../hooks/useServerStatus';
-import { type AuthUser, type SystemStatus, apiClient, userSafeErrorMessage } from '../../lib/api';
+import { type AuthUser, type OperationalHealth, type SystemStatus, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { displayHospitalName } from '../../lib/hospital-name';
 import { useElementWidth } from '../dashboard/useElementWidth';
 
@@ -32,7 +32,7 @@ type AdminHealthMetric = {
 
 export function AboutView({ user, onStatus }: AboutViewProps) {
   const { data: fiscal } = useFiscalSettings();
-  const { checking, isOnline, lastCheck, summary } = useServerStatus();
+  const { checking, isOnline, lastCheck, operationalHealth, summary } = useServerStatus();
   const [backupCount, setBackupCount] = useState<number | string>('...');
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [systemStatusError, setSystemStatusError] = useState('');
@@ -209,7 +209,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
                   </div>
                 </div>
 
-                <AdminHealthDashboard status={systemStatus} />
+                <AdminHealthDashboard status={systemStatus} health={operationalHealth} />
               </>
             ) : (
               <div className="rounded-md border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
@@ -242,8 +242,8 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
   );
 }
 
-function AdminHealthDashboard({ status }: { status: SystemStatus }) {
-  const metrics = adminHealthMetrics(status);
+function AdminHealthDashboard({ status, health }: { status: SystemStatus; health: OperationalHealth | null }) {
+  const metrics = adminHealthMetrics(status, health);
   const { ref, width } = useElementWidth();
 
   return (
@@ -373,15 +373,20 @@ function adminDiagnosticItems(status: SystemStatus): AdminDiagnosticItem[] {
   ];
 }
 
-function adminHealthMetrics(status: SystemStatus): AdminHealthMetric[] {
+function adminHealthMetrics(status: SystemStatus, health: OperationalHealth | null): AdminHealthMetric[] {
   const failedJobs = status.backups.queue.failed_jobs_count ?? 0;
   const pendingBackupJobs = status.backups.queue.pending_backup_jobs ?? 0;
   const pendingBackups = status.backups.pending_count + pendingBackupJobs;
   const pendingMigrations = status.runtime.pending_migration_count ?? 0;
   const freeBytes = status.backups.storage.free_bytes;
-  const freeGb = freeBytes === null ? null : freeBytes / (1024 * 1024 * 1024);
+  const healthFreeGb = health?.disk_free_gb?.free_gb ?? null;
+  const freeGb = healthFreeGb ?? (freeBytes === null ? null : freeBytes / (1024 * 1024 * 1024));
   const heartbeat = status.backups.queue.scheduler_heartbeat;
   const heartbeatAgeMinutes = heartbeat.age_seconds === null ? null : Math.round(heartbeat.age_seconds / 60);
+  const queueBackups = health?.queue_size?.backups ?? pendingBackupJobs;
+  const queueFailedRecent = health?.queue_size?.failed_last_hour ?? 0;
+  const dbLagLevelValue = dbLagLevel(health?.database_lag);
+  const uptimeSeconds = health?.app_uptime_s?.seconds ?? null;
 
   return [
     {
@@ -399,6 +404,22 @@ function adminHealthMetrics(status: SystemStatus): AdminHealthMetric[] {
       detail: 'Si sube de cero, genere paquete de soporte antes de reintentar.',
     },
     {
+      label: 'Cola LAN',
+      value: queueBackups === 0 && queueFailedRecent === 0
+        ? 'Sin cola acumulada'
+        : `${queueBackups} respaldo(s), ${queueFailedRecent} falla(s) recientes`,
+      level: queueFailedRecent > 0 ? 'error' : queueBackups > 0 ? 'review' : 'ok',
+      chartValue: severityScore(queueFailedRecent > 0 ? 'error' : queueBackups > 0 ? 'review' : 'ok'),
+      detail: 'Indica si los trabajos locales se estan acumulando entre equipos.',
+    },
+    {
+      label: 'Retardo DB',
+      value: dbLagLabel(health?.database_lag),
+      level: dbLagLevelValue,
+      chartValue: severityScore(dbLagLevelValue),
+      detail: 'Senal segura de retardo de base de datos cuando el motor la reporta.',
+    },
+    {
       label: 'Scheduler',
       value: schedulerHeartbeatLabel(heartbeat.status, heartbeatAgeMinutes),
       level: schedulerHeartbeatLevel(heartbeat.status),
@@ -413,6 +434,13 @@ function adminHealthMetrics(status: SystemStatus): AdminHealthMetric[] {
       detail: 'Espacio disponible donde se guardan respaldos locales.',
     },
     {
+      label: 'Actividad',
+      value: uptimeSeconds === null ? 'Sin dato de actividad' : uptimeLabel(uptimeSeconds),
+      level: uptimeSeconds === null ? 'review' : 'ok',
+      chartValue: severityScore(uptimeSeconds === null ? 'review' : 'ok'),
+      detail: 'Tiempo aproximado desde que el backend local esta atendiendo solicitudes.',
+    },
+    {
       label: 'Base',
       value: pendingMigrations === 0 ? 'Base actualizada' : `${pendingMigrations} migracion(es) pendiente(s)`,
       level: pendingMigrations === 0 ? 'ok' : 'review',
@@ -420,6 +448,32 @@ function adminHealthMetrics(status: SystemStatus): AdminHealthMetric[] {
       detail: 'Si hay pendientes, haga respaldo y actualizacion segura antes de operar.',
     },
   ];
+}
+
+function dbLagLevel(lag: OperationalHealth['database_lag'] | undefined): 'ok' | 'review' | 'error' {
+  if (!lag) return 'review';
+  if (lag.status === 'lagging' || lag.status === 'error') return 'error';
+  if (lag.status === 'unknown') return 'review';
+  return 'ok';
+}
+
+function dbLagLabel(lag: OperationalHealth['database_lag'] | undefined): string {
+  if (!lag) return 'Sin dato de retardo';
+  if (lag.status === 'standalone') return 'Base local sin replica';
+  if (lag.status === 'not_applicable') return 'No aplica a este motor';
+  if (lag.status === 'error') return 'No se pudo medir';
+  if (lag.seconds === null || lag.seconds === undefined) return lag.status === 'ok' ? 'Sin retardo reportado' : 'Sin dato de retardo';
+  return lag.seconds <= 30 ? `Retardo ${lag.seconds}s` : `Retardo alto ${lag.seconds}s`;
+}
+
+function uptimeLabel(seconds: number): string {
+  if (seconds < 60) return 'Activo hace menos de 1 min';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `Activo hace ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Activo hace ${hours} h`;
+  const days = Math.floor(hours / 24);
+  return `Activo hace ${days} dia(s)`;
 }
 
 function severityScore(level: 'ok' | 'review' | 'error'): number {

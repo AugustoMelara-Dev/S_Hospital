@@ -51,8 +51,9 @@
 - **Cobertura >80% en modulos criticos**: gate opt-in via
   `--with-coverage`. Falta promover a obligatorio en CI.
 - **Health dashboard admin**: el pulso operativo admin con Recharts ya muestra
-  respaldos pendientes, trabajos fallidos, heartbeat del scheduler, espacio en
-  disco y migraciones sin exponer comandos ni rutas; faltan metricas reales de
+  respaldos pendientes, trabajos fallidos, heartbeat del scheduler, cola LAN,
+  retardo de base cuando el motor lo reporta, uptime, espacio en disco y
+  migraciones sin exponer comandos ni rutas; faltan metricas reales de
   latencia P50/P95/P99 y conexiones DB para cerrar el tablero completo.
 - **ESLint warnings a error**: 28 warnings documentados en FASE B5
   para promover a error en v1.1.

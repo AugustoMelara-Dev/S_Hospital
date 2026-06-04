@@ -686,10 +686,21 @@ export type OperationalHealth = {
     connected: boolean;
     error?: string;
   };
+  database_lag?: {
+    status: 'unknown' | 'standalone' | 'ok' | 'lagging' | 'not_applicable' | 'error';
+    seconds?: number | null;
+    driver?: string;
+    error?: string;
+  };
   queue: {
     connection: string;
     pending: number;
     failed: number;
+    error?: string;
+  };
+  queue_size?: {
+    backups?: number;
+    failed_last_hour?: number;
     error?: string;
   };
   backups: {
@@ -703,6 +714,16 @@ export type OperationalHealth = {
     backup_files: number;
     backup_bytes: number;
     error?: string;
+  };
+  disk_free_gb?: {
+    free_gb: number | null;
+    total_gb?: number;
+    used_pct?: number;
+    error?: string;
+  };
+  app_uptime_s?: {
+    seconds: number | null;
+    started_at?: string;
   };
   recent_errors: Array<{
     id: number;

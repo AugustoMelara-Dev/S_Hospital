@@ -218,6 +218,7 @@ class OperationalMetricsService
                 ->count();
         } catch (Throwable $exception) {
             Log::warning('OperationalMetricsService: queue_size probe failed', ['message' => $exception->getMessage()]);
+
             return ['error' => 'probe_failed'];
         }
 

@@ -67,6 +67,11 @@ if ($aboutView -ne "") {
         'Interfaz web',
         'Ultimo respaldo',
         'Cola de trabajos',
+        'Cola LAN',
+        'Retardo DB',
+        'Actividad',
+        'Sin cola acumulada',
+        'Base local sin replica',
         'Version instalada',
         'Red local',
         'Migraciones',
@@ -81,6 +86,9 @@ if ($aboutView -ne "") {
     Test-Contains $aboutView 'canViewAdminDiagnostics' "About diagnostics gate advanced details by permission"
     Test-Contains $aboutView 'adminDiagnosticItems' "About diagnostics centralize admin status labels"
     Test-Contains $aboutView 'adminHealthMetrics' "About diagnostics centralize admin health dashboard metrics"
+    Test-Contains $aboutView 'OperationalHealth' "About diagnostics consume operational health metrics"
+    Test-Contains $aboutView 'dbLagLabel' "About diagnostics translate database lag safely"
+    Test-Contains $aboutView 'uptimeLabel' "About diagnostics translate backend uptime safely"
     Test-Contains $aboutView 'schedulerHeartbeatLabel' "About diagnostics translate scheduler heartbeat for support"
     Test-Contains $aboutView 'summaryBadgeVariant' "About diagnostics render status levels consistently"
     Test-Contains $aboutView 'formatBytes' "About diagnostics format disk space for operators"
@@ -98,6 +106,10 @@ if ($serverStatusHook -ne "") {
         'Hay trabajos o respaldos con alerta',
         'revise respaldos',
         'worker_recently_active',
+        'database_lag',
+        'queue_size',
+        'disk_free_gb',
+        'app_uptime_s',
         'success_last_24h',
         'failed_last_24h',
         'storage'
@@ -149,6 +161,7 @@ foreach ($rule in @(
     @{ Pattern = 'without[_\s-]+secret[_\s-]+values'; Label = 'without secret values' },
     @{ Pattern = 'scheduler[_\s-]+heartbeat[_\s-]+message[_\s-]+is[_\s-]+sanitized|sanitizes[_\s-]+scheduler[_\s-]+heartbeat'; Label = 'sanitized scheduler heartbeat messages' },
     @{ Pattern = [regex]::Escape('admin operational pulse without raw commands or paths'); Label = 'admin operational pulse without raw commands or paths' },
+    @{ Pattern = [regex]::Escape('extended admin health metrics from the public health snapshot safely'); Label = 'extended admin health metrics safely' },
     @{ Pattern = [regex]::Escape('system.status.view'); Label = 'system.status.view' }
 )) {
     Test-Contains $combinedTests $rule.Pattern "Diagnostics tests cover: $($rule.Label)"

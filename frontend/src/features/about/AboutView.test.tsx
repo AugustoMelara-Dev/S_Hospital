@@ -4,7 +4,7 @@ import { AboutView } from './AboutView';
 import { useFiscalSettings } from '../../hooks/useFiscalSettings';
 import { useServerStatus } from '../../hooks/useServerStatus';
 import { apiClient } from '../../lib/api';
-import type { SystemStatus } from '../../lib/api';
+import type { OperationalHealth, SystemStatus } from '../../lib/api';
 
 vi.mock('../../hooks/useFiscalSettings', () => ({
   useFiscalSettings: vi.fn(),
@@ -155,6 +155,31 @@ describe('AboutView', () => {
     expect(document.body.textContent).not.toMatch(/queue:work|schedule:run|APP_KEY|DB_PASSWORD|\.env|C:\\\\/i);
   });
 
+  it('shows extended admin health metrics from the public health snapshot safely', async () => {
+    vi.mocked(useServerStatus).mockReturnValue({
+      checking: false,
+      isOnline: true,
+      lastCheck: new Date('2026-06-02T14:00:00.000Z'),
+      operationalHealth: mockOperationalHealth(),
+      summary: {
+        description: 'Servidor local, base de datos y respaldos responden. Mantenga el cierre diario y los respaldos protegidos.',
+        label: 'Todo bien',
+        level: 'ok',
+      },
+    });
+
+    render(<AboutView user={adminUser} onStatus={vi.fn()} />);
+
+    expect(await screen.findByText('Cola LAN')).toBeInTheDocument();
+    expect(screen.getByText('Retardo DB')).toBeInTheDocument();
+    expect(screen.getByText('Actividad')).toBeInTheDocument();
+    expect(screen.getByText('Sin cola acumulada')).toBeInTheDocument();
+    expect(screen.getByText('Base local sin replica')).toBeInTheDocument();
+    expect(screen.getByText('Activo hace 2 h')).toBeInTheDocument();
+    expect(screen.getByText('9.5 GB libres')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/storage_path|queue:work|SHOW STATUS|APP_KEY|DB_PASSWORD|\.env|C:\\\\/i);
+  });
+
   it('allows support users with system status permission to see advanced diagnostics', async () => {
     vi.mocked(useServerStatus).mockReturnValue({
       checking: false,
@@ -262,5 +287,48 @@ function mockSystemStatus(): SystemStatus {
         scheduler: 'php artisan schedule:run',
       },
     },
+  };
+}
+
+function mockOperationalHealth(): OperationalHealth {
+  return {
+    generated_at: '2026-06-02T14:00:00.000Z',
+    database: {
+      connected: true,
+      driver: 'mysql',
+    },
+    database_lag: {
+      status: 'standalone',
+      seconds: null,
+    },
+    queue: {
+      connection: 'database',
+      pending: 0,
+      failed: 0,
+    },
+    queue_size: {
+      backups: 0,
+      failed_last_hour: 0,
+    },
+    backups: {
+      worker_recently_active: true,
+      pending: 0,
+      success_last_24h: 1,
+      failed_last_24h: 0,
+    },
+    storage: {
+      backup_files: 2,
+      backup_bytes: 2048,
+    },
+    disk_free_gb: {
+      free_gb: 9.5,
+      total_gb: 32,
+      used_pct: 70.3,
+    },
+    app_uptime_s: {
+      seconds: 7_200,
+      started_at: '2026-06-02T12:00:00.000Z',
+    },
+    recent_errors: [],
   };
 }

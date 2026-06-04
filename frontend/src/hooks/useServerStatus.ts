@@ -1,32 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiClient } from '../lib/api/base';
-
-type OperationalHealth = {
-  generated_at: string;
-  database?: {
-    connected?: boolean;
-    driver?: string;
-  };
-  queue?: {
-    connection?: string;
-    failed?: number;
-    pending?: number;
-    error?: string;
-  };
-  backups?: {
-    failed_last_24h?: number;
-    pending?: number;
-    success_last_24h?: number;
-    worker_recently_active?: boolean;
-    error?: string;
-  };
-  storage?: {
-    backup_bytes?: number;
-    backup_files?: number;
-    error?: string;
-  };
-  recent_errors?: Array<{ action: string; created_at: string }>;
-};
+import type { OperationalHealth } from '../lib/api/types';
 
 export type ServerStatusSummary = {
   level: 'ok' | 'review' | 'error';
