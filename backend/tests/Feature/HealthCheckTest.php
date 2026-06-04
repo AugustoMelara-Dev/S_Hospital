@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class HealthCheckTest extends TestCase
@@ -90,7 +93,7 @@ class HealthCheckTest extends TestCase
 
     public function test_system_health_endpoint_is_cached_for_fast_polling(): void
     {
-        \Illuminate\Support\Facades\Cache::store('array')->forget('health:snapshot:v1');
+        Cache::store('array')->forget('health:snapshot:v1');
 
         $first = $this->getJson('/api/system/health')->assertOk();
         $second = $this->getJson('/api/system/health')->assertOk();

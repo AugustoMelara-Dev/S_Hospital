@@ -19,6 +19,7 @@ class HealthController extends Controller
      * scripts share a single snapshot.
      */
     private const CACHE_TTL_SECONDS = 10;
+
     private const CACHE_KEY = 'health:snapshot:v1';
 
     public function __construct(private readonly OperationalMetricsService $metrics) {}
