@@ -137,9 +137,9 @@ Adicional al paquete CRITICAL:
 
 ## Pendientes para v1.1 (no bloquea v1.0.0)
 
-- **Refactor NewInvoiceView a <300 líneas.** Diferido por tamaño
-  del cambio; cubierto por E2E. AGENTS.md no marca un
-  límite duro.
+- ~~Refactor NewInvoiceView a <300 lineas.~~ Cerrado el 2026-06-04:
+  `NewInvoiceView.tsx` mide 138 lineas, delega comportamiento en hooks/state/layout
+  y queda protegido por `scripts/validate_new_invoice_maintainability.ps1`.
 - ~~Coverage gate >80% en CI obligatorio.~~ Cerrado:
   `CriticalModulesCoverageTest` usa umbral 80% y GitHub Actions
   lo ejecuta con `HOSPITAL_REQUIRE_COVERAGE=1`, `coverage: pcov`

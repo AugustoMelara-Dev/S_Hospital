@@ -58,6 +58,8 @@ $cspTest = Read-RequiredFile "backend\tests\Feature\CspReportControllerTest.php"
 $cspController = Read-RequiredFile "backend\app\Http\Controllers\CspReportController.php"
 $ciWorkflow = Read-RequiredFile ".github\workflows\ci.yml"
 $coverageTest = Read-RequiredFile "backend\tests\Coverage\CriticalModulesCoverageTest.php"
+$newInvoiceGuard = Read-RequiredFile "scripts\validate_new_invoice_maintainability.ps1"
+$newInvoiceView = Read-RequiredFile "frontend\src\features\invoices\NewInvoiceView.tsx"
 $schemaReferencePath = Join-Path $ProjectRoot "database\_reference_DO_NOT_EXECUTE\schema_extensions_for_barcode_reports.sql"
 $schemaExecutablePath = Join-Path $ProjectRoot "database\schema_extensions_for_barcode_reports.sql"
 
@@ -70,6 +72,7 @@ if ($knownLimitations -ne "") {
     Test-DoesNotContain $knownLimitations '(?ms)### Pendientes para v1\.1.*\*\*Auditoria de cambios de permisos\*\*' "Known limitations no longer lists permission audit as pending"
     Test-DoesNotContain $knownLimitations '(?ms)### Pendientes para v1\.1.*\*\*Rate limit por usuario\*\*' "Known limitations no longer lists per-user rate limit as pending"
     Test-DoesNotContain $knownLimitations '(?ms)### Pendientes para v1\.1.*\*\*Cobertura >80% en modulos criticos\*\*' "Known limitations no longer lists critical coverage gate as pending"
+    Test-DoesNotContain $knownLimitations '(?ms)### Pendientes para v1\.1.*\*\*NewInvoiceView refactor\*\*' "Known limitations no longer lists NewInvoiceView refactor as pending"
 
     foreach ($closedItem in @(
         'Installer legacy compatibility guarded',
@@ -79,7 +82,8 @@ if ($knownLimitations -ne "") {
         'Maintenance mode guarded',
         'Permission audit guarded',
         'Per-user rate limit guarded',
-        'Cobertura >80% en modulos criticos'
+        'Cobertura >80% en modulos criticos',
+        'NewInvoiceView refactor'
     )) {
         Test-Contains $knownLimitations ([regex]::Escape($closedItem)) "Known limitations records closed item: $closedItem"
     }
@@ -141,6 +145,19 @@ if ($ciWorkflow -ne "" -and $coverageTest -ne "") {
     Test-Contains $coverageTest 'COVERAGE_THRESHOLD = 80\.0' "Critical coverage test enforces the 80 percent threshold"
     foreach ($criticalModule in @('Billing', 'Cash', 'Payments', 'Backups', 'Receipts')) {
         Test-Contains $coverageTest ([regex]::Escape("'$criticalModule'")) "Critical coverage test includes module: $criticalModule"
+    }
+}
+
+if ($newInvoiceGuard -ne "" -and $newInvoiceView -ne "") {
+    Test-Contains $newInvoiceGuard 'NEW_INVOICE_MAINTAINABILITY: YES' "NewInvoice maintainability guard reports a stable result marker"
+    Test-Contains $newInvoiceGuard 'NewInvoiceView stays under 200 lines' "NewInvoice maintainability guard enforces the view size limit"
+    Test-Contains $newInvoiceGuard 'useInvoiceLifecycle' "NewInvoice maintainability guard checks invoice lifecycle extraction"
+    $newInvoiceFullPath = Join-Path $ProjectRoot "frontend\src\features\invoices\NewInvoiceView.tsx"
+    $newInvoiceLineCount = (Get-Content -LiteralPath $newInvoiceFullPath | Measure-Object -Line).Lines
+    if ($newInvoiceLineCount -le 200) {
+        Add-Pass "NewInvoiceView source is currently under 200 lines ($newInvoiceLineCount)"
+    } else {
+        Add-Failure "NewInvoiceView source is currently $newInvoiceLineCount lines; expected <= 200."
     }
 }
 

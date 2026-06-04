@@ -1,3 +1,10 @@
+## 2026-06-04 - NewInvoiceView queda bajo guard de mantenibilidad
+
+Contexto: `docs/KNOWN_LIMITATIONS.md` aun describia `NewInvoiceView` como una vista de ~490 lineas pendiente de refactor. La fuente actual ya mide 138 lineas y delega carga de datos, carrito, emision, pagos, atajos, estado y layout a `hooks/`, `state/` y `components/`.
+
+Decision: se reclasifica el pendiente como cerrado y se agrega `scripts\validate_new_invoice_maintainability.ps1` para proteger que `NewInvoiceView.tsx` siga bajo 200 lineas y conserve las extracciones operativas que reducen errores humanos en caja.
+
+Criterio de verificacion: `scripts\validate_new_invoice_maintainability.ps1` reporta `NEW_INVOICE_MAINTAINABILITY: YES`, `scripts\validate_known_limitations_safety.ps1` exige que la deuda no vuelva a aparecer como pendiente y los tests focales de `NewInvoiceView` siguen pasando.
 ## 2026-06-04 - Coverage critico ya es gate obligatorio de CI
 
 Contexto: `docs/KNOWN_LIMITATIONS.md` y `docs/OPERATIVE_NOTES_2026_06_02.md` aun listaban la cobertura critica >80% como pendiente, aunque `.github/workflows/ci.yml` ya instala `pcov`, ejecuta `phpunit.coverage.xml` y define `HOSPITAL_REQUIRE_COVERAGE=1` en backend-sqlite y backend-mariadb.

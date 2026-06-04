@@ -55,12 +55,16 @@
   `backend/tests/Coverage/CriticalModulesCoverageTest.php` exige 80% en
   Actions criticas y GitHub Actions lo ejecuta con `HOSPITAL_REQUIRE_COVERAGE=1`
   y `coverage: pcov` en los jobs `backend-sqlite` y `backend-mariadb`.
+- ~~NewInvoiceView refactor~~: `frontend/src/features/invoices/NewInvoiceView.tsx`
+  queda en 138 lineas y delega estado, carga de datos, carrito, emision,
+  pagos, atajos y layout a `state/`, `hooks/` y `components/`; el guard
+  `scripts/validate_new_invoice_maintainability.ps1` protege el limite de
+  200 lineas y la separacion de responsabilidades.
 
 ### Pendientes para v1.1
 
-- **NewInvoiceView refactor**: ~490 lineas, objetivo <200 con
-  sub-reducers por paso (paciente / servicio / revision / pago).
-  Diferido por tamaño del cambio; cubierto por E2E.
+- No quedan pendientes automatizables de v1.1 registrados en este archivo.
+  Los bloqueantes restantes son de entorno fisico/final y siguen abajo.
 
 ### Pendientes de entorno fisico (FASE G)
 
