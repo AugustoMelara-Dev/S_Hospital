@@ -58,3 +58,16 @@ El stack LAN hospitalario no debe depender de infraestructura
 adicional. La tabla `sessions` de MariaDB cumple el mismo rol con
 un costo despreciable a la escala de 5 cajeros y soporta
 `SESSION_ENCRYPT=true` para confidencialidad en reposo.
+
+## Auto-recovery del queue-worker
+
+El servicio `queue-worker` del compose de produccion corre dentro
+de un bucle `while true` que reinicia el worker cada 200 jobs o 1
+hora. Esto evita que un proceso PHP de larga duracion acumule
+memoria y rompe cualquier deadlock colgante. Ademas:
+
+- `restart: unless-stopped` en Docker lo reinicia si el proceso
+  muere por un crash externo.
+- El healthcheck falla el contenedor si en la ultima hora hubo
+  mas de 5 jobs en `failed_jobs` de la cola `backups`, lo que
+  hace que Docker levante una instancia nueva.

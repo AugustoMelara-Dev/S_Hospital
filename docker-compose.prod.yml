@@ -143,7 +143,18 @@ services:
       context: .
       dockerfile: ./backend/Dockerfile.prod
     restart: unless-stopped
-    command: php artisan queue:work --queue=backups --tries=1 --timeout=600
+    # --max-jobs and --max-time force a clean restart of the worker
+    # every 200 jobs or 1 hour to avoid memory growth in the long
+    # running PHP process. Docker's restart policy (unless-stopped)
+    # then brings a fresh worker back up automatically.
+    command: >
+      sh -c "
+        while true; do
+          php artisan queue:work --queue=backups --tries=1 --timeout=600 --max-jobs=200 --max-time=3600 --sleep=3 --backoff=10;
+          echo 'queue-worker: restarting per max-jobs/max-time';
+          sleep 2;
+        done
+      "
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
@@ -168,11 +179,18 @@ services:
     volumes:
       - backup_data:/var/www/html/storage/app/private/backups
     healthcheck:
-      test: ["CMD-SHELL", "php artisan tinker --execute=\"DB::connection()->getPdo(); echo 'OK';\" 2>/dev/null || exit 1"]
-      interval: 30s
-      timeout: 10s
+      test:
+        - "CMD-SHELL"
+        - >
+          php artisan tinker --execute="DB::connection()->getPdo();
+          $worker = DB::table('jobs')->where('queue', 'backups')->count();
+          $failed = DB::table('failed_jobs')->where('queue', 'backups')->where('failed_at', '>=', now()->subHour())->count();
+          if ($failed > 5) { exit(1); }
+          echo 'OK pending=' . $worker;"
+      interval: 60s
+      timeout: 15s
       retries: 3
-      start_period: 60s
+      start_period: 90s
     security_opt:
       - "no-new-privileges:true"
     mem_limit: 384m
