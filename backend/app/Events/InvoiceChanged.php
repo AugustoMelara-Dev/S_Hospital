@@ -24,6 +24,7 @@ class InvoiceChanged implements ShouldBroadcast
     public function __construct(
         public readonly Invoice $invoice,
         public readonly string $change, // 'created' | 'voided' | 'reversed'
+        public readonly ?int $actorId = null,
     ) {}
 
     /**
@@ -49,6 +50,7 @@ class InvoiceChanged implements ShouldBroadcast
             'balance_due' => (string) $this->invoice->balance_due,
             'change' => $this->change,
             'at' => optional($this->invoice->getAttribute('updated_at'))?->toIso8601String(),
+            'actor_id' => $this->actorId,
         ];
     }
 

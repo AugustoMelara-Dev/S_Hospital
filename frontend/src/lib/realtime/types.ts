@@ -31,6 +31,7 @@ export interface InvoiceChangedEvent {
   balance_due: string;
   change: 'created' | 'updated' | 'voided' | 'reversed';
   at: string | null;
+  actor_id?: number | null;
 }
 
 export interface PaymentChangedEvent {
@@ -42,6 +43,7 @@ export interface PaymentChangedEvent {
   status: string;
   change: 'registered' | 'voided';
   at: string | null;
+  actor_id?: number | null;
 }
 
 export interface CashSessionChangedEvent {
@@ -51,4 +53,5 @@ export interface CashSessionChangedEvent {
   opened_at: string | null;
   closed_at: string | null;
   change: 'opened' | 'closed';
+  actor_id?: number | null;
 }

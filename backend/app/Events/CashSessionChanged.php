@@ -20,6 +20,7 @@ class CashSessionChanged implements ShouldBroadcast
     public function __construct(
         public readonly CashRegisterSession $session,
         public readonly string $change, // 'opened' | 'closed'
+        public readonly ?int $actorId = null,
     ) {}
 
     /**
@@ -42,6 +43,7 @@ class CashSessionChanged implements ShouldBroadcast
             'opened_at' => optional($this->session->opened_at)?->toIso8601String(),
             'closed_at' => optional($this->session->closed_at)?->toIso8601String(),
             'change' => $this->change,
+            'actor_id' => $this->actorId,
         ];
     }
 

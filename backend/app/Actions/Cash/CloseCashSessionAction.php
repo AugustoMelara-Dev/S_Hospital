@@ -107,8 +107,8 @@ class CloseCashSessionAction
                 ],
             ]);
 
-            DB::afterCommit(function () use ($lockedSession) {
-                CashSessionChanged::dispatch($lockedSession->fresh(), 'closed');
+            DB::afterCommit(function () use ($lockedSession, $user) {
+                CashSessionChanged::dispatch($lockedSession->fresh(), 'closed', $user->id);
             });
 
             DB::afterCommit(function () use ($user): void {

@@ -64,8 +64,8 @@ class OpenCashSessionAction
                     ],
                 ]);
 
-                DB::afterCommit(function () use ($session) {
-                    CashSessionChanged::dispatch($session->fresh(), 'opened');
+                DB::afterCommit(function () use ($session, $user) {
+                    CashSessionChanged::dispatch($session->fresh(), 'opened', $user->id);
                 });
 
                 return $session->load('user:id,name,username');

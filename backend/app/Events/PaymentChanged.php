@@ -20,6 +20,7 @@ class PaymentChanged implements ShouldBroadcast
     public function __construct(
         public readonly Payment $payment,
         public readonly string $change, // 'registered' | 'voided'
+        public readonly ?int $actorId = null,
     ) {}
 
     /**
@@ -47,6 +48,7 @@ class PaymentChanged implements ShouldBroadcast
             'status' => $this->payment->status,
             'change' => $this->change,
             'at' => optional($this->payment->getAttribute('updated_at'))?->toIso8601String(),
+            'actor_id' => $this->actorId,
         ];
     }
 

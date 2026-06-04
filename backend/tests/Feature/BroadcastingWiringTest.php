@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Actions\Billing\CreateInvoiceAction;
@@ -45,20 +47,22 @@ class BroadcastingWiringTest extends TestCase
 
     public function test_invoice_changed_event_broadcasts_on_invoices_channel(): void
     {
-        $event = new InvoiceChanged($this->makeInvoice(), 'created');
+        $event = new InvoiceChanged($this->makeInvoice(), 'created', 123);
         $channels = $event->broadcastOn();
+        $payload = $event->broadcastWith();
 
         $this->assertCount(1, $channels);
         $this->assertInstanceOf(Channel::class, $channels[0]);
         $this->assertSame('invoices', $channels[0]->name);
         $this->assertSame('invoice.changed', $event->broadcastAs());
-        $this->assertArrayHasKey('invoice_number', $event->broadcastWith());
+        $this->assertArrayHasKey('invoice_number', $payload);
+        $this->assertSame(123, $payload['actor_id']);
     }
 
     public function test_payment_changed_event_broadcasts_on_payments_and_invoices_channels(): void
     {
         $payment = $this->makePayment();
-        $event = new PaymentChanged($payment, 'registered');
+        $event = new PaymentChanged($payment, 'registered', 456);
 
         $channels = $event->broadcastOn();
         $this->assertCount(2, $channels);
@@ -66,16 +70,18 @@ class BroadcastingWiringTest extends TestCase
         $this->assertContains('payments', $names);
         $this->assertContains('invoices', $names);
         $this->assertSame('payment.changed', $event->broadcastAs());
+        $this->assertSame(456, $event->broadcastWith()['actor_id']);
     }
 
     public function test_cash_session_changed_event_broadcasts_on_cash_channel(): void
     {
-        $event = new CashSessionChanged($this->makeCashSession(), 'opened');
+        $event = new CashSessionChanged($this->makeCashSession(), 'opened', 789);
 
         $channels = $event->broadcastOn();
         $this->assertCount(1, $channels);
         $this->assertSame('cash', $channels[0]->name);
         $this->assertSame('cash-session.changed', $event->broadcastAs());
+        $this->assertSame(789, $event->broadcastWith()['actor_id']);
     }
 
     public function test_broadcasting_is_a_noop_when_driver_is_log(): void
@@ -98,8 +104,10 @@ class BroadcastingWiringTest extends TestCase
         $this->openSession($cashier);
         $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
 
-        Event::assertDispatched(InvoiceChanged::class, function (InvoiceChanged $e) use ($invoiceId) {
-            return $e->invoice->id === $invoiceId && $e->change === 'created';
+        Event::assertDispatched(InvoiceChanged::class, function (InvoiceChanged $e) use ($invoiceId, $cashier) {
+            return $e->invoice->id === $invoiceId
+                && $e->change === 'created'
+                && $e->actorId === $cashier->id;
         });
     }
 

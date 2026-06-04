@@ -113,8 +113,8 @@ class CreateInvoiceAction
                     'paid_at' => now(),
                 ]);
 
-                DB::afterCommit(function () use ($payment) {
-                    PaymentChanged::dispatch($payment->fresh(), 'registered');
+                DB::afterCommit(function () use ($payment, $issuer) {
+                    PaymentChanged::dispatch($payment->fresh(), 'registered', $issuer->id);
                 });
 
                 AuditLog::query()->create([
@@ -153,8 +153,8 @@ class CreateInvoiceAction
             // Broadcast after-commit so the websocket event only fires
             // if the DB transaction actually committed. Listeners
             // (other cashier PCs) get a fresh invoice they can refetch.
-            DB::afterCommit(function () use ($invoice) {
-                InvoiceChanged::dispatch($invoice->fresh(), 'created');
+            DB::afterCommit(function () use ($invoice, $issuer) {
+                InvoiceChanged::dispatch($invoice->fresh(), 'created', $issuer->id);
             });
 
             return $invoice->load('items', 'issuer:id,name,username');

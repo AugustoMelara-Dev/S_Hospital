@@ -122,8 +122,8 @@ class ReverseInvoiceAction
                 'created_at' => now(),
             ]);
 
-            DB::afterCommit(function () use ($reloaded) {
-                InvoiceChanged::dispatch($reloaded->fresh(), 'reversed');
+            DB::afterCommit(function () use ($reloaded, $user) {
+                InvoiceChanged::dispatch($reloaded->fresh(), 'reversed', $user->id);
             });
 
             return $reloaded->load([

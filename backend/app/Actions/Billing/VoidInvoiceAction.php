@@ -95,8 +95,8 @@ class VoidInvoiceAction
                 'created_at' => now(),
             ]);
 
-            DB::afterCommit(function () use ($lockedInvoice) {
-                InvoiceChanged::dispatch($lockedInvoice->fresh(), 'voided');
+            DB::afterCommit(function () use ($lockedInvoice, $user) {
+                InvoiceChanged::dispatch($lockedInvoice->fresh(), 'voided', $user->id);
             });
 
             return $lockedInvoice->load([

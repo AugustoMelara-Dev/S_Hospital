@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { getEcho } from './echo';
 import { notify } from '../../components/ui/toaster';
+import { getStoredUserId } from './session';
 import type {
   CashSessionChangedEvent,
   InvoiceChangedEvent,
@@ -50,6 +51,34 @@ function humanCash(payload: CashSessionChangedEvent): string {
 }
 
 /**
+ * Returns true when the event originated from the currently logged-in
+ * cashier. We still apply the query invalidation because the cashier's
+ * own UI may have missed a refetch in the meantime, but we suppress the
+ * toast to avoid telling them something they just did.
+ */
+function isOwnEvent(actorId: number | null | undefined, currentUserId: number | null): boolean {
+  if (actorId === null || actorId === undefined) {
+    return false;
+  }
+  if (currentUserId === null) {
+    return false;
+  }
+  return actorId === currentUserId;
+}
+
+/**
+ * Exposed for unit testing only. Determines whether a broadcast event
+ * originated from the current cashier.
+ */
+export const __test__isOwnEvent = isOwnEvent;
+
+function shouldNotifyBroadcast(actorId: number | null | undefined): boolean {
+  return !isOwnEvent(actorId, getStoredUserId());
+}
+
+export const __test__shouldNotifyBroadcast = shouldNotifyBroadcast;
+
+/**
  * Subscribe to the cashier-facing broadcast channels and invalidate
  * the relevant TanStack Query keys when an event arrives. Also emits
  * a toast for cashier situational awareness.
@@ -74,6 +103,9 @@ export function useBroadcastSync(): void {
         if (!isInvoiceChanged(payload)) return;
         queryClient.invalidateQueries({ queryKey: ['invoices'] });
         queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        if (!shouldNotifyBroadcast(payload.actor_id)) {
+          return;
+        }
         if (payload.change === 'voided' || payload.change === 'reversed') {
           notify.warning(humanInvoice(payload));
         } else if (payload.change === 'created') {
@@ -86,6 +118,9 @@ export function useBroadcastSync(): void {
         queryClient.invalidateQueries({ queryKey: ['invoices'] });
         queryClient.invalidateQueries({ queryKey: ['dashboard'] });
         queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
+        if (!shouldNotifyBroadcast(payload.actor_id)) {
+          return;
+        }
         if (payload.change === 'registered') {
           notify.success(humanPayment(payload));
         } else {
@@ -96,6 +131,9 @@ export function useBroadcastSync(): void {
       const onCash = (payload: unknown) => {
         if (!isCashChanged(payload)) return;
         queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
+        if (!shouldNotifyBroadcast(payload.actor_id)) {
+          return;
+        }
         if (payload.change === 'opened') {
           notify.info(humanCash(payload));
         } else {

@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { type AuthUser, type CashSession, apiClient, userSafeErrorMessage } from '../lib/api';
+import { setStoredUserId } from '../lib/realtime/session';
 import { type PasswordChangeForm } from '../features/auth/PasswordChangeView';
 
 export function useHospitalSession() {
@@ -43,6 +44,7 @@ export function useHospitalSession() {
   useEffect(() => {
     const unsubscribe = apiClient.onSessionExpired(() => {
       setUser(null);
+      setStoredUserId(null);
       setCashSession(null);
       setStatus('Sesión vencida. Redirigiendo al login...');
       setSessionExpired(true);
@@ -58,6 +60,7 @@ export function useHospitalSession() {
       .session()
       .then((currentUser) => {
         setUser(currentUser);
+        setStoredUserId(currentUser?.id ?? null);
         if (currentUser) {
           setStatus(
             currentUser.must_change_password
@@ -79,6 +82,7 @@ export function useHospitalSession() {
       })
       .catch(() => {
         setUser(null);
+        setStoredUserId(null);
         setSessionExpired(false);
         setStatus('Listo para iniciar sesión local.');
       })
@@ -93,6 +97,7 @@ export function useHospitalSession() {
       const loggedUser = await apiClient.login(login, password);
       setSessionExpired(false);
       setUser(loggedUser);
+      setStoredUserId(loggedUser.id);
       setPassword('');
       setStatus(
         loggedUser.must_change_password
@@ -110,6 +115,7 @@ export function useHospitalSession() {
     // the previous user's token.
     apiClient.invalidateSession();
     setUser(null);
+    setStoredUserId(null);
     setCashSession(null);
     setStatus('Sesión cerrada.');
   }
