@@ -130,6 +130,10 @@ Adicional al paquete CRITICAL:
   `PermissionAuditObserver` escucha eventos Spatie y persiste cambios de
   roles/permisos en `audit_logs`; ver
   `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`.
+- **OPS** - Rate limit por usuario guardado:
+  `ThrottleByUser` protege caja/pagos/facturas por usuario autenticado
+  para evitar bloqueos cruzados por IP LAN compartida; ver
+  `qa/RATE_LIMIT_SAFETY_2026_06_03.md`.
 
 ## Pendientes para v1.1 (no bloquea v1.0.0)
 

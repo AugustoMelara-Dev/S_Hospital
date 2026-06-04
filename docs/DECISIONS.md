@@ -1,3 +1,10 @@
+## 2026-06-03 - Rate limit operativo por usuario en LAN
+
+Contexto: varias computadoras de caja pueden compartir la misma IP o ruta LAN. Un throttle por IP en pagos o caja puede bloquear a cajeros distintos cuando solo una estacion repite una accion demasiadas veces.
+
+Decision: las escrituras sensibles de facturas, pagos y caja usan `throttle.user`, que se basa en el usuario autenticado y conserva fallback por IP para requests sin usuario. El mensaje `429` queda en espanol operativo y no expone detalles tecnicos.
+
+Criterio de verificacion: `ThrottleByUserTest` cubre el mensaje seguro, que un cajero no bloquee a otro en la misma IP LAN y que facturas, pagos y caja usen `throttle.user`; `scripts/validate_rate_limit_safety.ps1` guarda el contrato en el handoff.
 ## 2026-06-03 - Limitaciones conocidas como evidencia operativa
 
 Contexto: `docs/KNOWN_LIMITATIONS.md` es una guia de soporte y cierre. Si conserva pendientes ya resueltos, el personal tecnico puede perseguir problemas falsos o ignorar bloqueantes fisicos reales.

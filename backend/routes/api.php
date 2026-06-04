@@ -98,15 +98,17 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
             ->middleware('throttle.user:10,1');
 
         Route::get('/cash-sessions/current', [CashSessionController::class, 'current']);
-        Route::post('/cash-sessions/open', [CashSessionController::class, 'open']);
-        Route::post('/cash-sessions/{cashSession}/close', [CashSessionController::class, 'close']);
+        Route::post('/cash-sessions/open', [CashSessionController::class, 'open'])
+            ->middleware('throttle.user:30,1');
+        Route::post('/cash-sessions/{cashSession}/close', [CashSessionController::class, 'close'])
+            ->middleware('throttle.user:30,1');
         Route::get('/cash-sessions', [CashSessionController::class, 'index']);
 
         Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store'])
-            ->middleware('throttle:60,1');
+            ->middleware('throttle.user:60,1');
         Route::get('/invoices/{invoice}/payments', [PaymentController::class, 'index']);
         Route::post('/invoices/{invoice}/payments/{payment}/void', [PaymentController::class, 'void'])
-            ->middleware('throttle:30,1');
+            ->middleware('throttle.user:30,1');
         Route::get('/invoices/{invoice}/receipt', [ReceiptController::class, 'show']);
         Route::post('/invoices/{invoice}/reprint', [ReceiptController::class, 'reprint']);
 

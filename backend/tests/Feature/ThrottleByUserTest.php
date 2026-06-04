@@ -82,8 +82,16 @@ class ThrottleByUserTest extends TestCase
     {
         $invoiceStore = Route::getRoutes()->match(Request::create('/api/invoices', 'POST'));
         $invoiceVoid = Route::getRoutes()->match(Request::create('/api/invoices/1/void', 'POST'));
+        $paymentStore = Route::getRoutes()->match(Request::create('/api/invoices/1/payments', 'POST'));
+        $paymentVoid = Route::getRoutes()->match(Request::create('/api/invoices/1/payments/1/void', 'POST'));
+        $cashOpen = Route::getRoutes()->match(Request::create('/api/cash-sessions/open', 'POST'));
+        $cashClose = Route::getRoutes()->match(Request::create('/api/cash-sessions/1/close', 'POST'));
 
         $this->assertContains('throttle.user:60,1', $invoiceStore->gatherMiddleware());
         $this->assertContains('throttle.user:30,1', $invoiceVoid->gatherMiddleware());
+        $this->assertContains('throttle.user:60,1', $paymentStore->gatherMiddleware());
+        $this->assertContains('throttle.user:30,1', $paymentVoid->gatherMiddleware());
+        $this->assertContains('throttle.user:30,1', $cashOpen->gatherMiddleware());
+        $this->assertContains('throttle.user:30,1', $cashClose->gatherMiddleware());
     }
 }

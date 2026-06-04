@@ -39,6 +39,9 @@
 - ~~Permission audit guarded~~: Spatie permission events quedan activos,
   `PermissionAuditObserver` persiste cambios de roles/permisos en
   `audit_logs`, y `PermissionAuditTest` cubre roles y permisos sin secretos.
+- ~~Per-user rate limit guarded~~: `ThrottleByUser` protege escrituras de
+  facturas, pagos y caja por usuario autenticado para que una caja no bloquee
+  a otras en la misma IP LAN; `ThrottleByUserTest` cubre el contrato.
 
 ### Pendientes para v1.1
 
@@ -47,8 +50,6 @@
   Diferido por tamaño del cambio; cubierto por E2E.
 - **Cobertura >80% en modulos criticos**: gate opt-in via
   `--with-coverage`. Falta promover a obligatorio en CI.
-- **Rate limit por usuario**: middleware `ThrottleByUser` en
-  `/api/invoices`, `/api/payments`, `/api/cash-sessions`.
 - **Health dashboard admin**: UI con Recharts para latencia P50/
   P95/P99, conexiones DB, espacio disco, ultimo backup.
 - **ESLint warnings a error**: 28 warnings documentados en FASE B5

@@ -35,6 +35,9 @@ Observed result:
 - The handoff lists `scripts/validate_permission_audit_safety.ps1` and
   `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md` as preserved role/permission
   administration audit evidence.
+- The handoff lists `scripts/validate_rate_limit_safety.ps1` and
+  `qa/RATE_LIMIT_SAFETY_2026_06_03.md` as preserved cashier-operation
+  rate-limit evidence.
 - The handoff includes tests and gates run locally.
 - The handoff includes physical blockers for LAN client validation, printer proof, `SistemaCajaHospitalaria-StackAutostart`, Windows backup tasks, production environment, backup worker, restore, concurrency and offline release regeneration.
 - The handoff includes risks and limits.

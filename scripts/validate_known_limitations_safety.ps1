@@ -66,6 +66,7 @@ if ($knownLimitations -ne "") {
     Test-DoesNotContain $knownLimitations '(?ms)### Pendientes para v1\.1.*\*\*CSP report channel opcional\*\*' "Known limitations no longer lists CSP report channel as pending"
     Test-DoesNotContain $knownLimitations '(?ms)### Pendientes para v1\.1.*\*\*Comando `hospital:maintenance`\*\*' "Known limitations no longer lists maintenance command as pending"
     Test-DoesNotContain $knownLimitations '(?ms)### Pendientes para v1\.1.*\*\*Auditoria de cambios de permisos\*\*' "Known limitations no longer lists permission audit as pending"
+    Test-DoesNotContain $knownLimitations '(?ms)### Pendientes para v1\.1.*\*\*Rate limit por usuario\*\*' "Known limitations no longer lists per-user rate limit as pending"
 
     foreach ($closedItem in @(
         'Installer legacy compatibility guarded',
@@ -73,7 +74,8 @@ if ($knownLimitations -ne "") {
         'Barcode/report SQL reference isolated',
         'CSP report channel implemented',
         'Maintenance mode guarded',
-        'Permission audit guarded'
+        'Permission audit guarded',
+        'Per-user rate limit guarded'
     )) {
         Test-Contains $knownLimitations ([regex]::Escape($closedItem)) "Known limitations records closed item: $closedItem"
     }
