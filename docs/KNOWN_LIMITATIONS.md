@@ -33,6 +33,9 @@
   raiz de `database/`.
 - ~~CSP report channel implemented~~: `/api/system/csp-report` existe con
   controlador, rate limit y tests de feature.
+- ~~Maintenance mode guarded~~: `php artisan hospital:maintenance on/off`
+  escribe solo `storage/framework/down`, muestra HTML/JSON humano y queda
+  cubierto por `MaintenanceModeTest`.
 
 ### Pendientes para v1.1
 
@@ -48,8 +51,6 @@
   `/api/invoices`, `/api/payments`, `/api/cash-sessions`.
 - **Health dashboard admin**: UI con Recharts para latencia P50/
   P95/P99, conexiones DB, espacio disco, ultimo backup.
-- **Comando `hospital:maintenance`**: para poner el sistema en
-  estado de "en mantenimiento" durante incidentes.
 - **ESLint warnings a error**: 28 warnings documentados en FASE B5
   para promover a error en v1.1.
 

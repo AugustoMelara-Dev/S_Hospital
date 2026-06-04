@@ -81,6 +81,9 @@ Adicional al paquete CRITICAL:
 - **F2** - Código muerto eliminado: `useClock` (sin uso),
   `app-kicker` (clase CSS vacía), `needsBillingCashBootstrap`
   y `cashBootstrapLoading` (siempre false).
+- **OPS** - `hospital:maintenance` disponible para incidentes
+  supervisados. HTML y API usan mensajes humanos sin rutas internas
+  ni secretos; ver `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`.
 
 ## Pendientes para v1.1 (no bloquea v1.0.0)
 
@@ -103,8 +106,6 @@ Adicional al paquete CRITICAL:
   en disco, último backup. Diferido a v1.1.
 - **ESLint warnings a error.** 27 warnings documentados en
   FASE B5 para promover a error.
-- **Comando `hospital:maintenance` interactivo.** Para
-  poner el sistema en "en mantenimiento" durante incidentes.
 - **Deprecación de `install_hospital_os.ps1`.** Marcar como
   legacy. El instalador soportado es
   `scripts/deploy_hospital_lan.ps1`. El instalador deprecado

@@ -4,7 +4,7 @@ Decision: `BLOCKED_UNTIL_REGENERATED`.
 
 Scope:
 
-- Verify that `scripts\assert_offline_release_clean.ps1` rejects the current local `offline-release` package after the browser-smoke-evidence, startup/repair, stack-autostart, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, dependency-manifest, double-action, installer-legacy, LAN-recovery, known-limitations, shift-incident-recovery, final-handoff-completeness, operations-objective-audit, field-proof-template and evidence validators were added.
+- Verify that `scripts\assert_offline_release_clean.ps1` rejects the current local `offline-release` package after the browser-smoke-evidence, startup/repair, stack-autostart, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, dependency-manifest, double-action, installer-legacy, LAN-recovery, known-limitations, maintenance-mode, shift-incident-recovery, final-handoff-completeness, operations-objective-audit, field-proof-template and evidence validators were added.
 - Confirm that a stale offline package cannot be handed off as production-ready.
 
 Command run:
@@ -16,7 +16,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_relea
 Observed result:
 
 - `OFFLINE_RELEASE_CLEAN: NO`.
-- Blocking issue count: 45 in the latest direct guard run with
+- Blocking issue count: 46 in the latest direct guard run with
   `-RequireCurrentCommit`.
 - The guard detected missing `scripts\install_stack_autostart_windows.ps1` in
   `offline-release`.
@@ -34,6 +34,8 @@ Observed result:
 - The guard detected missing `scripts\validate_installer_legacy_safety.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_lan_recovery_safety.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_known_limitations_safety.ps1`
+  in `offline-release`.
+- The guard detected missing `scripts\validate_maintenance_mode_safety.ps1`
   in `offline-release`.
 - The guard detected missing `scripts\validate_shift_incident_recovery_safety.ps1` in `offline-release`.
 - The guard detected missing `scripts\validate_final_handoff_completeness.ps1` in `offline-release`.
@@ -90,9 +92,9 @@ Verification after correction:
   `OFFLINE_RELEASE_CLEAN: NO (1 blocking issue)` with
   `Forbidden file or directory in offline release: qa/FINAL_RESTORE_PROOF.md`.
 - Current real `offline-release` remains blocked with
-  `OFFLINE_RELEASE_CLEAN: NO (45 blocking issues)` until it is regenerated from
-  the final commit with real Docker image exports, the stack-autostart script
-  and the known-limitations guard.
+  `OFFLINE_RELEASE_CLEAN: NO (46 blocking issues)` until it is regenerated from
+  the final commit with real Docker image exports, the stack-autostart script,
+  the known-limitations guard and the maintenance-mode guard.
 
 Required next action before delivery:
 

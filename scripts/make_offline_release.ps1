@@ -39,6 +39,7 @@ $script:OfflineReleaseCriticalScripts = @(
     "validate_known_limitations_safety.ps1",
     "validate_lan_client.ps1",
     "validate_lan_recovery_safety.ps1",
+    "validate_maintenance_mode_safety.ps1",
     "validate_operator_manuals_safety.ps1",
     "validate_operations_objective_audit.ps1",
     "validate_ops_evidence_index.ps1",
