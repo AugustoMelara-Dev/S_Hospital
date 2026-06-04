@@ -1,7 +1,7 @@
 # S_Hospital - Release Notes v1.0.0
 
 > Release candidate final: 2026-06-04
-> Tag: `v1.0.0` (a crear desde el commit `27913989`)
+> Tag: `v1.0.0` (confirmar SHA final antes de crear el tag)
 > Estado: `PRODUCTION_CANDIDATE` (los 4 bloqueantes fisicos
 > finales siguen documentados en
 > `docs/OPERATIVE_NOTES_2026_06_02.md` y se cierran con las
@@ -112,7 +112,7 @@ en `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`.
 | ESLint | 0 errores |
 | Pint | 212 archivos, 0 style issues |
 | PHPStan | level 6, 0 errores (baseline existente) |
-| Frontend build | dist generado, chunks dentro de 500 KB |
+| Frontend build | dist generado; advertencia de chunk >500 KB documentada para v1.1 |
 | Offline release guard | `OFFLINE_RELEASE_CLEAN: YES` |
 | Dependency manifest | matches composer.json / package.json |
 | Production docker sources | `PRODUCTION_DOCKER_SOURCES: YES` |
