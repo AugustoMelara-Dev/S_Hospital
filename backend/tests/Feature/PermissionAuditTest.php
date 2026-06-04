@@ -9,6 +9,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -117,5 +118,38 @@ class PermissionAuditTest extends TestCase
             'action' => 'created',
             'entity_type' => Role::class,
         ]);
+    }
+
+    public function test_attaching_a_permission_to_a_role_creates_an_audit_log_entry(): void
+    {
+        $admin = User::factory()->create([
+            'username' => 'admin-permission',
+            'email' => 'admin-permission@hospital.local',
+            'password' => Hash::make('Password123!'),
+            'must_change_password' => false,
+            'active' => true,
+        ])->assignRole('admin');
+
+        $this->actingAs($admin, 'web');
+
+        $role = Role::create(['name' => 'soporte-auditoria', 'guard_name' => 'web']);
+        $permission = Permission::findByName('system.status.view');
+
+        $role->givePermissionTo($permission);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'permission.attached',
+            'entity_type' => Role::class,
+            'entity_id' => $role->id,
+        ]);
+
+        $payload = json_decode((string) DB::table('audit_logs')
+            ->where('action', 'permission.attached')
+            ->latest('id')
+            ->value('new_values'), true);
+        $this->assertIsArray($payload);
+        $this->assertSame('system.status.view', $payload['permission_name'] ?? null);
+        $this->assertArrayNotHasKey('password', $payload);
     }
 }

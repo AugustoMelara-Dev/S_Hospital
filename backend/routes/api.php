@@ -16,6 +16,7 @@ use App\Http\Controllers\HealthController;
 use App\Http\Controllers\InvoiceAuditController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LogoController;
+use App\Http\Controllers\PatientInvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\ReportController;
@@ -86,6 +87,8 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
 
         Route::get('/invoices', [InvoiceController::class, 'index']);
         Route::post('/invoices', [InvoiceController::class, 'store'])
+            ->middleware('throttle.user:60,1');
+        Route::get('/invoices/patient-summary', [PatientInvoiceController::class, 'summary'])
             ->middleware('throttle.user:60,1');
         Route::get('/invoices/{invoice}', [InvoiceController::class, 'show']);
         Route::get('/invoices/{invoice}/audit', [InvoiceAuditController::class, 'show']);

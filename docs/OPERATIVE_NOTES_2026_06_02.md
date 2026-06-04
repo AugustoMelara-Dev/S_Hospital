@@ -95,12 +95,6 @@ Adicional al paquete CRITICAL:
   solo en `--with-coverage`. Promover a obligatorio requiere
   instalar `pcov` en el runner y siempre invocar el perfil
   de coverage. Plan: FASE 12.2 de la auditoría.
-- **Auditoría de cambios de permisos.** El observer
-  `PermissionAuditObserver` ya escucha los eventos
-  `RoleAttached/Detached` y `PermissionAttached/Detached` de
-  Spatie. Falta: persistir los cambios en `audit_logs`
-  con la misma forma que las demás acciones del sistema
-  (hoy solo loguea a `Log::info`).
 - **Dashboard avanzado con Recharts.** UI con
   P50/P95/P99 de latencia, conexiones DB activas, espacio
   en disco, último backup. Diferido a v1.1.

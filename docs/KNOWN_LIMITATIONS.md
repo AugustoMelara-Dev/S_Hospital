@@ -36,6 +36,9 @@
 - ~~Maintenance mode guarded~~: `php artisan hospital:maintenance on/off`
   escribe solo `storage/framework/down`, muestra HTML/JSON humano y queda
   cubierto por `MaintenanceModeTest`.
+- ~~Permission audit guarded~~: Spatie permission events quedan activos,
+  `PermissionAuditObserver` persiste cambios de roles/permisos en
+  `audit_logs`, y `PermissionAuditTest` cubre roles y permisos sin secretos.
 
 ### Pendientes para v1.1
 
@@ -44,9 +47,6 @@
   Diferido por tamaño del cambio; cubierto por E2E.
 - **Cobertura >80% en modulos criticos**: gate opt-in via
   `--with-coverage`. Falta promover a obligatorio en CI.
-- **Auditoria de cambios de permisos**: Spatie Activitylog ya
-  registra; falta listener para `Role::attachPermission` /
-  `detachPermission` y `User::roleChanged`.
 - **Rate limit por usuario**: middleware `ThrottleByUser` en
   `/api/invoices`, `/api/payments`, `/api/cash-sessions`.
 - **Health dashboard admin**: UI con Recharts para latencia P50/
