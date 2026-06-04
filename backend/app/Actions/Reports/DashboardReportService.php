@@ -12,6 +12,7 @@ use App\Support\Money;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * Generates a dashboard overview report with:
@@ -69,7 +70,11 @@ class DashboardReportService
      */
     public static function forgetCache(): void
     {
-        Cache::store(self::cacheStoreName())->forget(self::cacheKeyFor(Carbon::now()));
+        try {
+            Cache::store(self::cacheStoreName())->forget(self::cacheKeyFor(Carbon::now()));
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     private function cacheKey(Carbon $now): string
