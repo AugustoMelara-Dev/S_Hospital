@@ -172,9 +172,13 @@ describe('AboutView', () => {
 
     expect(await screen.findByText('Cola LAN')).toBeInTheDocument();
     expect(screen.getByText('Retardo DB')).toBeInTheDocument();
+    expect(screen.getByText('Respuesta DB')).toBeInTheDocument();
+    expect(screen.getByText('Conexiones DB')).toBeInTheDocument();
     expect(screen.getByText('Actividad')).toBeInTheDocument();
     expect(screen.getByText('Sin cola acumulada')).toBeInTheDocument();
     expect(screen.getByText('Base local sin replica')).toBeInTheDocument();
+    expect(screen.getByText('P50 6.0 ms / P95 12.0 ms / P99 18.0 ms')).toBeInTheDocument();
+    expect(screen.getByText('3 conexiones activas / pico 8')).toBeInTheDocument();
     expect(screen.getByText('Activo hace 2 h')).toBeInTheDocument();
     expect(screen.getByText('9.5 GB libres')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/storage_path|queue:work|SHOW STATUS|APP_KEY|DB_PASSWORD|\.env|C:\\\\/i);
@@ -300,6 +304,21 @@ function mockOperationalHealth(): OperationalHealth {
     database_lag: {
       status: 'standalone',
       seconds: null,
+    },
+    database_perf: {
+      latency_ms: {
+        status: 'ok',
+        current_ms: 5.5,
+        p50_ms: 6,
+        p95_ms: 12,
+        p99_ms: 18,
+        sample_count: 12,
+      },
+      connections: {
+        status: 'ok',
+        active: 3,
+        max_used: 8,
+      },
     },
     queue: {
       connection: 'database',

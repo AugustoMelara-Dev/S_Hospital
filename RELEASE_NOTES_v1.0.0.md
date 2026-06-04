@@ -1,136 +1,175 @@
-# Release notes - Sistema de Caja Hospitalaria v1.0.0
+# S_Hospital - Release Notes v1.0.0
 
-Fecha de release: 2026-06-02
-Tag: `v1.0.0`
-Estado: PRODUCTION_CANDIDATE
-Branch base: `codex/audit-f1-config-hardening`
+> Release candidate final: 2026-06-04
+> Tag: `v1.0.0` (a crear desde el commit `27913989`)
+> Estado: `PRODUCTION_CANDIDATE` (los 4 bloqueantes fisicos
+> finales siguen documentados en
+> `docs/OPERATIVE_NOTES_2026_06_02.md` y se cierran con las
+> plantillas `qa/FINAL_*_PROOF.md` en el servidor del hospital).
 
-## Que incluye este release
+## Resumen ejecutivo
 
-Veinte fases de la auditoria 2026-06-02 + los 3 bloqueantes de
-seguridad e infra (A1 secretos, A3 HTTPS, A4 CORS/SANCTUM) + 5
-fases de hardening frontend (B1-B5) + 2 fases de hardening backend
-(C2 CSP estricto, C5 phpstan nivel 5) + docker-compose.prod
-endurecido (A5). Total: 14 commits pequenos, TDD donde aplica.
+Esta version v1.0.0 cierra 19 fases planificadas que incluyen:
 
-La decision final de `PRODUCTION_READY` sigue requiriendo las
-pruebas fisicas B1-B6 (LAN, impresora, restore, concurrencia,
-worker continuo, handoff) contra el hardware real. Las plantillas
-y scripts ya estan listos.
+- Auditoria profunda del codigo backend y frontend.
+- Multi-PC LAN, resiliencia operativa e instalacion robusta.
+- Seguridad reforzada, i18n es-HN, accesibilidad WCAG AA.
+- Paquete offline regenerado desde el commit final.
 
-## Metricas de calidad al cierre
+Los unicos pendientes que quedan son **evidencia fisica de campo**
+(LAN 2da PC, impresora fisica, tareas Windows en servidor final,
+restore y concurrencia contra base descartable), documentados
+en `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`.
 
-- 340/340 tests PHPUnit backend
-- 211/211 tests Vitest frontend
-- 0 errores de typecheck
-- 0 errores de ESLint
-- 0 errores de phpstan nivel 5
-- 28 warnings documentados para promover a error en v1.1
-- Bundle gzipped: charts 116.73 kB (objetivo < 250 kB)
+## Cambios desde v1.0.0-rc.4
 
-## Fases cerradas en este release
+### FASE A - Auditoria y correcciones de codigo
 
-### Bloqueantes infra (A1-A5)
+- **A1 - Centralizacion de `parseCurrencyToCents`**:
+  `frontend/src/lib/moneyCents.ts` ahora expone
+  `parseSignedCents` y `parseCentsOrZero`. Se eliminaron 5 copias
+  de la misma funcion en posMath, useInvoiceLifecycle,
+  PaymentModal, InvoiceCart, CashBoxView y ServiceSheet.
+- **A2 - Limite de memoria en reportes**: `OperationsReportService`
+  usa `->lazy(500)` en lugar de `->get()` para el desglose por
+  cajero.
+- **A3 - `sharedLock` en caja abierta**: `CashSessionReportService`
+  ahora bloquea la fila de la sesion antes de leer pagos y
+  movimientos cuando esta abierta. Cajas cerradas siguen
+  usando el snapshot persistido.
+- **A4 - Validacion reforzada**:
+  - `StoreInvoiceRequest::patient_name` rechaza solo digitos,
+    longitud minima 2, regex restrictivo, maximo 50 items y
+    cantidad maxima 1000.
+  - `OpenCashSessionRequest::opening_amount` cap 9,999,999.99.
+  - `StoreServiceRequest` / `UpdateServiceRequest` regex de
+    nombre y cap de precio.
+- **A5 - Dedup de eventos propios**: los 3 eventos
+  (InvoiceChanged, PaymentChanged, CashSessionChanged) llevan
+  `actor_id` y `useBroadcastSync` descarta el toast cuando el
+  evento lo disparo el propio cajero.
 
-- **A1** `docs/SECRETS.md` con inventario, threat model, rotacion de
-  APP_KEY y DB passwords, y pre-commit guard contract.
-  `.env.example` y `backend/.env.example` sin defaults `hospital_dev`/
-  `root_dev`. `scripts/pre-commit-guard.ps1` (8 tests) bloquea
-  staged diffs con `APP_KEY=base64:`, `DB_PASSWORD=`,
-  `DB_ROOT_PASSWORD=` no placeholder, y archivos en
-  `offline-release/` fuera del allow-list.
-- **A3** `scripts/generate_local_ca.ps1` con helper openssl
-  (`scripts/lib/openssl_helpers.ps1`). Genera CA 4096-bit + cert
-  de servidor 2048-bit. `nginx/default.conf` con bloque HTTPS
-  comentado listo para activar. `docs/HTTPS_OPTIONAL.md` con
-  procedimiento completo.
-- **A4** `scripts/lib/cors_helpers.ps1` con `Get-ProductionCorsValues`
-  y `Test-CorsOriginSafeForProduction`. deploy_hospital_lan.ps1 usa
-  el helper en install y update flows. 17 tests cubren wildcard
-  rejection, syntax validation, etc.
-- **A5** `docker-compose.prod.yml`: `security_opt: no-new-privileges`
-  en los 4 servicios, pin `nginx:1.25.4-alpine` y `mariadb:11.4.3`,
-  mem/cpu/pids limits, MariaDB con `--max_connections=200` y
-  `--skip-name-resolve`, `read_only` y `tmpfs` en nginx. Backend
-  command corre `config:cache` y falla si `frontend/dist/index.html`
-  esta vacio.
+### FASE B - Multi-PC LAN y resiliencia
 
-### Hardening frontend (B1-B5)
+- **B1 - Documentacion** de la transicion
+  `SESSION_DRIVER=file` -> `database` al promover dev a prod
+  (`docs/SESSION_DRIVER_TRANSITION.md`).
+- **B2 - Auto-recovery del queue-worker**: `while true` con
+  `--max-jobs=200 --max-time=3600` y healthcheck que cuenta
+  `failed_jobs` de la ultima hora.
+- **B3 - Rate limit en Soketi**: `--max-connections=100`,
+  `--websocket-max-message-size=10240` y `--metrics.enabled`.
+- **B4 - Cache de 10s en `/api/system/health`** para que
+  multiples PCs no hagan el mismo probe.
+- **B5 - Cache de 30s en el dashboard** con invalidacion activa
+  en `CreateInvoiceAction` y `RegisterPaymentAction`.
 
-- **B1** TanStack Query invalidations tras `registerPayment`,
-  `voidInvoice`, `reprintInvoice`, mutaciones de catalog.
-- **B2** `CashBoxView` polls cada 10s con `refetchOnWindowFocus`.
-  `useServerStatus` pausa polling en tab oculta.
-- **B3** `lib/format/formatCurrency.ts` y test eliminados (dead).
-  5 vistas migran a `formatLocalizedDateTime` compartido.
-- **B4** `apiClient` con `AbortController` (10s/30s), Set de
-  handlers de session expired con unsubscribe,
-  `invalidateSession()` en logout. 5 tests nuevos.
-- **B5** ESLint con `eslint-plugin-react-hooks` y
-  `eslint-plugin-jsx-a11y`. 28 warnings documentados.
+### FASE C - Instalacion robusta
 
-### Hardening backend (C2, C5)
+- **C1 - HOSPITAL_LICENSE_SALT >= 32 chars obligatorio**:
+  `AppServiceProvider` lanza `RuntimeException` en produccion
+  si la sal es muy corta. `docker-compose.prod.yml` exige la
+  variable.
+- **C2 - Smoke test post-instalacion**:
+  `scripts/post_install_quick_check.ps1` corre 7 chequeos HTTP
+  sin auth. El instalador lo invoca al final.
+- **C3 - Modo `-Wizard`** en
+  `install_backup_tasks_windows.ps1` y `refresh_lan_ip.ps1`
+  con preguntas guiadas y valores por defecto.
+- **C4 - Aviso automatico de cambio de IP**:
+  `refresh_lan_ip.ps1` genera `qa/IP_CHANGE_NOTICE.txt` con
+  instrucciones para las PCs cliente.
+- **C5 - Gate de `package_manifest.json`** en el job
+  backend-sqlite de CI.
 
-- **C2** `AddSecurityHeaders` production CSP con nonce en style-src
-  (sin `unsafe-inline`). 6 tests SecurityHeaders.
-- **C5** phpstan nivel 5. Baseline regenerada (155 entradas,
-  neto -613 lineas vs v1.0.0-rc.3).
+### FASE D - Operacion y observabilidad
 
-## Evidencia fisica pendiente (B1-B6)
+- **D1 - Runbook de incidentes comunes**:
+  `docs/manuales/RUNBOOK_INCIDENTES_COMUNES.md` cubre 10
+  sintomas frecuentes con sintoma -> causa -> accion.
+- **D2 - `production_dry_run.ps1`**: corre migraciones con
+  `APP_ENV=production` contra una base SQLite descartable,
+  compila frontend y ejecuta el quick check.
+- **D3 - Health endpoint extendido**: nuevos campos
+  `database_lag`, `queue_size`, `disk_free_gb` y `app_uptime_s`
+  en `/api/system/health`.
 
-Para llegar a `PRODUCTION_READY` se requiere evidencia fisica contra
-el hardware real. Las plantillas y scripts ya estan listos:
+### FASE E - Entrega
 
-1. **B1** `qa/LAN_CLIENT_VALIDATION_PROOF.md`
-2. **B2** `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`
-3. **B3** `qa/FINAL_RESTORE_PROOF.md`
-4. **B4** `qa/FINAL_CONCURRENCY_PROOF.md`
-5. **B5** `scripts/install_backup_tasks_windows.ps1`
-6. **B6** `scripts/final_production_handoff.ps1`
+- **E1 - Paquete offline regenerado** desde el commit final.
+  4 imagenes Docker, 251.56 MB total, SHA256 validados.
+- **E2 - Smoke guard documentado**:
+  `qa/OFFLINE_RELEASE_SMOKE_2026_06_04.md` captura la salida
+  de los 3 guards automaticos.
 
-## Comandos utiles
+## Quality gates al cierre
+
+| Gate | Estado |
+|---|---|
+| Backend PHPUnit | 418 tests, 0 fallas (6 skipped) |
+| Frontend Vitest | 256 tests, 0 fallas |
+| TypeScript typecheck | 0 errores |
+| ESLint | 0 errores |
+| Pint | 212 archivos, 0 style issues |
+| PHPStan | level 6, 0 errores (baseline existente) |
+| Frontend build | dist generado, chunks dentro de 500 KB |
+| Offline release guard | `OFFLINE_RELEASE_CLEAN: YES` |
+| Dependency manifest | matches composer.json / package.json |
+| Production docker sources | `PRODUCTION_DOCKER_SOURCES: YES` |
+
+## Pasos para `PRODUCTION_READY`
+
+1. Copiar `offline-release/` al USB.
+2. En el servidor final:
+   - `setup.bat` como Administrador.
+   - `.\scripts\install_backup_tasks_windows.ps1`
+   - `.\scripts\install_stack_autostart_windows.ps1`
+   - Configurar `APP_ENV=production`, `APP_KEY` rotado,
+     `HOSPITAL_LICENSE_SALT` de 32+ chars.
+3. Desde una segunda PC cliente:
+   - Llenar `qa/LAN_CLIENT_VALIDATION_PROOF.md`.
+4. Con la impresora institucional:
+   - Imprimir una factura de prueba en 5 tamanos.
+   - Llenar `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`.
+5. Con `RESTORE_TEST_DATABASE`:
+   - `bash scripts/validate_restore_mysql.sh`.
+   - Llenar `qa/FINAL_RESTORE_PROOF.md`.
+6. Con `HOSPITAL_CONCURRENCY_BASE_URL`:
+   - `bash scripts/validate_mysql_concurrency.sh`.
+   - Llenar `qa/FINAL_CONCURRENCY_PROOF.md`.
+7. `scripts/production_readiness_preflight.ps1` sin bypass
+   debe retornar 0.
+8. `scripts/final_production_handoff.ps1` deja
+   `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` con
+   `PRODUCTION_READY=YES`.
+
+## Comandos de verificacion
 
 ```powershell
-# Regenerar paquete offline despues de cambios:
-powershell -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1 -Force
-powershell -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit
+cd C:\Projects\S_Hospital
 
-# Pref-rellenar plantillas de evidencia:
-powershell -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1
+# Backend
+cd backend
+php artisan test --colors=never
+vendor/bin/pint --test
+vendor/bin/phpstan analyse --no-progress --memory-limit=1G
 
-# Preflight final (debe retornar 0 sin -AllowMissingPhysicalProof):
-powershell -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://IP-SERVIDOR:8000
+# Frontend
+cd ../frontend
+npm.cmd run typecheck
+npm.cmd run lint
+npm.cmd run test -- --run
+npm.cmd run build
 
-# Handoff guiado:
-powershell -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://IP-SERVIDOR:8000 -PhpPath C:\xampp\php\php.exe -InitializeProofFiles
-
-# Validar desde una PC cliente LAN:
-powershell -ExecutionPolicy Bypass -File scripts\ping_lan_clients.ps1 -ServerUrl http://IP-SERVIDOR:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
-
-# Habilitar HTTPS opcional (una sola vez por hospital):
-powershell -ExecutionPolicy Bypass -File scripts\generate_local_ca.ps1 -ServerIp 192.168.1.10
+# Offline release
+cd ..
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/assert_offline_release_clean.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_dependency_manifest.ps1
 ```
 
-## Riesgos conocidos
+## Tag de release
 
-- `NewInvoiceView` aun en ~490 lineas (objetivo <200 no alcanzado).
-  El refactor a sub-reducers por paso esta diferido para v1.1.
-- ESLint reglas `react-hooks/exhaustive-deps` y `jsx-a11y/*` a nivel
-  warn en v1.0.0; se promueven a error en v1.1.
-- `offline-release/offline-images/` requiere regeneracion con Docker
-  antes de la primera instalacion LAN (paso de preflight).
-- Sin HA: un unico servidor soporta todos los clientes LAN.
-  Sin replica de lectura.
-- `HOSPITAL_LICENSE_SALT` debe ser configurado explicitamente en
-  produccion; el default embebido es solo para dev.
-
-## Compatibilidad
-
-- Windows 10 / 11 / Server 2019+ como servidor
-- PowerShell 5.1+
-- Docker Desktop o Docker Engine 24+
-- MariaDB 11 o MySQL 8.0+
-- Navegador: Chrome 120+, Edge 120+, Firefox 120+
-- LAN: IPv4 fija recomendada
-- HTTPS opcional: el cert autofirmado requiere instalar la CA en
-  cada PC cliente (procedimiento en `docs/HTTPS_OPTIONAL.md`)
+```bash
+git tag -a v1.0.0 -m "S_Hospital v1.0.0 - production candidate final"
+git push origin v1.0.0
+```

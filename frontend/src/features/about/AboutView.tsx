@@ -30,6 +30,9 @@ type AdminHealthMetric = {
   detail: string;
 };
 
+type DatabaseLatency = NonNullable<OperationalHealth['database_perf']>['latency_ms'];
+type DatabaseConnections = NonNullable<OperationalHealth['database_perf']>['connections'];
+
 export function AboutView({ user, onStatus }: AboutViewProps) {
   const { data: fiscal } = useFiscalSettings();
   const { checking, isOnline, lastCheck, operationalHealth, summary } = useServerStatus();
@@ -386,6 +389,8 @@ function adminHealthMetrics(status: SystemStatus, health: OperationalHealth | nu
   const queueBackups = health?.queue_size?.backups ?? pendingBackupJobs;
   const queueFailedRecent = health?.queue_size?.failed_last_hour ?? 0;
   const dbLagLevelValue = dbLagLevel(health?.database_lag);
+  const dbLatency = health?.database_perf?.latency_ms;
+  const dbConnections = health?.database_perf?.connections;
   const uptimeSeconds = health?.app_uptime_s?.seconds ?? null;
 
   return [
@@ -420,6 +425,20 @@ function adminHealthMetrics(status: SystemStatus, health: OperationalHealth | nu
       detail: 'Senal segura de retardo de base de datos cuando el motor la reporta.',
     },
     {
+      label: 'Respuesta DB',
+      value: dbLatencyLabel(dbLatency),
+      level: dbLatencyLevel(dbLatency),
+      chartValue: severityScore(dbLatencyLevel(dbLatency)),
+      detail: 'Mide tiempos recientes de respuesta local sin mostrar consultas tecnicas.',
+    },
+    {
+      label: 'Conexiones DB',
+      value: dbConnectionsLabel(dbConnections),
+      level: dbConnectionsLevel(dbConnections),
+      chartValue: severityScore(dbConnectionsLevel(dbConnections)),
+      detail: 'Indica cuantas sesiones mantiene abierta la base local cuando el motor lo permite.',
+    },
+    {
       label: 'Scheduler',
       value: schedulerHeartbeatLabel(heartbeat.status, heartbeatAgeMinutes),
       level: schedulerHeartbeatLevel(heartbeat.status),
@@ -450,6 +469,23 @@ function adminHealthMetrics(status: SystemStatus, health: OperationalHealth | nu
   ];
 }
 
+function shortMetricLabel(label: string): string {
+  const labels: Record<string, string> = {
+    Respaldos: 'Resp.',
+    Fallas: 'Fallas',
+    'Cola LAN': 'Cola',
+    'Retardo DB': 'Ret.',
+    'Respuesta DB': 'Resp. DB',
+    'Conexiones DB': 'Conn.',
+    Scheduler: 'Tareas',
+    Disco: 'Disco',
+    Actividad: 'Act.',
+    Base: 'Base',
+  };
+
+  return labels[label] ?? label;
+}
+
 function dbLagLevel(lag: OperationalHealth['database_lag'] | undefined): 'ok' | 'review' | 'error' {
   if (!lag) return 'review';
   if (lag.status === 'lagging' || lag.status === 'error') return 'error';
@@ -464,6 +500,44 @@ function dbLagLabel(lag: OperationalHealth['database_lag'] | undefined): string 
   if (lag.status === 'error') return 'No se pudo medir';
   if (lag.seconds === null || lag.seconds === undefined) return lag.status === 'ok' ? 'Sin retardo reportado' : 'Sin dato de retardo';
   return lag.seconds <= 30 ? `Retardo ${lag.seconds}s` : `Retardo alto ${lag.seconds}s`;
+}
+
+function dbLatencyLevel(latency: DatabaseLatency | undefined): 'ok' | 'review' | 'error' {
+  if (!latency) return 'review';
+  if (latency.status === 'error' || latency.status === 'slow') return 'error';
+  if (latency.status === 'unknown' || latency.status === 'review') return 'review';
+  return 'ok';
+}
+
+function dbLatencyLabel(latency: DatabaseLatency | undefined): string {
+  if (!latency) return 'Sin muestra de respuesta';
+  if (latency.status === 'error') return 'No se pudo medir';
+  if (latency.p50_ms !== null && latency.p95_ms !== null && latency.p99_ms !== null) {
+    return `P50 ${formatMilliseconds(latency.p50_ms)} / P95 ${formatMilliseconds(latency.p95_ms)} / P99 ${formatMilliseconds(latency.p99_ms)}`;
+  }
+  if (latency.current_ms !== null) return `Actual ${formatMilliseconds(latency.current_ms)}`;
+  return 'Sin muestra de respuesta';
+}
+
+function dbConnectionsLevel(connections: DatabaseConnections | undefined): 'ok' | 'review' | 'error' {
+  if (!connections) return 'review';
+  if (connections.status === 'error' || connections.status === 'unknown') return 'review';
+  return 'ok';
+}
+
+function dbConnectionsLabel(connections: DatabaseConnections | undefined): string {
+  if (!connections) return 'Sin dato de conexiones';
+  if (connections.status === 'not_applicable') return 'No aplica a este motor';
+  if (connections.status === 'error') return 'No se pudo medir';
+  if (connections.active === null) return 'Sin dato de conexiones';
+
+  const activeLabel = connections.active === 1 ? '1 conexion activa' : `${connections.active} conexiones activas`;
+
+  return connections.max_used === null ? activeLabel : `${activeLabel} / pico ${connections.max_used}`;
+}
+
+function formatMilliseconds(value: number): string {
+  return `${value < 100 ? value.toFixed(1) : value.toFixed(0)} ms`;
 }
 
 function uptimeLabel(seconds: number): string {

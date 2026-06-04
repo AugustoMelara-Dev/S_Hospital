@@ -70,6 +70,8 @@ if ($aboutView -ne "") {
         'Cola de trabajos',
         'Cola LAN',
         'Retardo DB',
+        'Respuesta DB',
+        'Conexiones DB',
         'Actividad',
         'Sin cola acumulada',
         'Base local sin replica',
@@ -89,6 +91,8 @@ if ($aboutView -ne "") {
     Test-Contains $aboutView 'adminHealthMetrics' "About diagnostics centralize admin health dashboard metrics"
     Test-Contains $aboutView 'OperationalHealth' "About diagnostics consume operational health metrics"
     Test-Contains $aboutView 'dbLagLabel' "About diagnostics translate database lag safely"
+    Test-Contains $aboutView 'dbLatencyLabel' "About diagnostics translate database latency safely"
+    Test-Contains $aboutView 'dbConnectionsLabel' "About diagnostics translate database connections safely"
     Test-Contains $aboutView 'uptimeLabel' "About diagnostics translate backend uptime safely"
     Test-Contains $aboutView 'schedulerHeartbeatLabel' "About diagnostics translate scheduler heartbeat for support"
     Test-Contains $aboutView 'summaryBadgeVariant' "About diagnostics render status levels consistently"
@@ -118,6 +122,7 @@ if ($serverStatusHook -ne "") {
 if ($apiTypes -ne "") {
     foreach ($requiredText in @(
         'database_lag',
+        'database_perf',
         'queue_size',
         'disk_free_gb',
         'app_uptime_s'

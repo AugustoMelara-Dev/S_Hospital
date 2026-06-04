@@ -42,6 +42,12 @@
 - ~~Per-user rate limit guarded~~: `ThrottleByUser` protege escrituras de
   facturas, pagos y caja por usuario autenticado para que una caja no bloquee
   a otras en la misma IP LAN; `ThrottleByUserTest` cubre el contrato.
+- ~~Health dashboard admin completo para v1.1~~: el pulso operativo admin
+  muestra respaldos pendientes, trabajos fallidos, heartbeat del scheduler,
+  cola LAN, retardo de base cuando el motor lo reporta, latencia DB
+  P50/P95/P99, conexiones DB cuando MySQL/MariaDB lo permite, uptime, espacio
+  en disco y migraciones sin exponer comandos, consultas, claves ni rutas
+  locales.
 
 ### Pendientes para v1.1
 
@@ -50,11 +56,6 @@
   Diferido por tamaño del cambio; cubierto por E2E.
 - **Cobertura >80% en modulos criticos**: gate opt-in via
   `--with-coverage`. Falta promover a obligatorio en CI.
-- **Health dashboard admin**: el pulso operativo admin con Recharts ya muestra
-  respaldos pendientes, trabajos fallidos, heartbeat del scheduler, cola LAN,
-  retardo de base cuando el motor lo reporta, uptime, espacio en disco y
-  migraciones sin exponer comandos ni rutas; faltan metricas reales de
-  latencia P50/P95/P99 y conexiones DB para cerrar el tablero completo.
 - **ESLint warnings a error**: 28 warnings documentados en FASE B5
   para promover a error en v1.1.
 
