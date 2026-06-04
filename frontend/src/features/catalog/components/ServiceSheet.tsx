@@ -11,6 +11,7 @@ import { Alert } from '@/components/ui/alert';
 import { Sheet } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { parseCents } from '@/lib/moneyCents';
 
 const serviceSchema = z.object({
   category_id: z.number().min(1, 'Seleccione una categoria'),
@@ -421,11 +422,5 @@ function priceValuesDiffer(current: string, next: string): boolean {
 }
 
 function priceCents(value: string): number | null {
-  const match = value.trim().match(/^(\d+)(?:\.(\d{1,2}))?$/);
-
-  if (!match) {
-    return null;
-  }
-
-  return Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'));
+  return parseCents(value);
 }

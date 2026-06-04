@@ -228,9 +228,8 @@ function moneyLabel(value: string | number | null | undefined): string {
 }
 
 function parseQuantityUnits(value: string): number {
-  if (!/^\d+(\.\d{1,2})?$/.test(value)) return 100;
-  const [integer, decimal = '00'] = value.split('.');
-  return Number(integer) * 100 + Number(decimal.padEnd(2, '0').slice(0, 2));
+  const cents = parseCents(value);
+  return cents === null ? 100 : cents;
 }
 
 function formatQuantity(units: number): string {

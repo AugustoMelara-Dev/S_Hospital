@@ -1,6 +1,7 @@
 import { useCallback, type Dispatch, type RefObject } from 'react';
 import { apiClient, userSafeErrorMessage } from '../../../lib/api';
 import { isZeroMoney } from '../state/posMath';
+import { parseCentsOrZero } from '../../../lib/moneyCents';
 import { invoiceSchema } from '../../../schemas/invoice.schema';
 import type { NewInvoiceAction, NewInvoiceState } from '../state/types';
 
@@ -91,7 +92,7 @@ export function useInvoiceLifecycle({
       dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: false });
       dispatch({ type: 'SET_CART_ITEMS', payload: [] });
       dispatch({ type: 'SET_PATIENT_NAME', payload: '' });
-      if (state.loadedCashSession && parseLocalCents(invoice.balance_due) > 0) {
+      if (state.loadedCashSession && parseCentsOrZero(invoice.balance_due) > 0) {
         dispatch({ type: 'SET_SHOW_SUCCESS', payload: false });
         dispatch({ type: 'SET_SHOW_PAYMENT', payload: true });
         onStatus(`Factura emitida ${invoice.invoice_number}. Cobro abierto.`);
@@ -143,9 +144,4 @@ export function useInvoiceLifecycle({
     handleNuevaFactura,
     handleCobrarClick,
   };
-}
-
-function parseLocalCents(value: string): number {
-  const [integer, decimal = '00'] = value.split('.');
-  return Number(integer) * 100 + Number(decimal.padEnd(2, '0').slice(0, 2));
 }

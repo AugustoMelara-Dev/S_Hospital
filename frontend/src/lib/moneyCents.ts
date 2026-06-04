@@ -10,6 +10,7 @@
 import { finiteNumber, formatLempiras } from './money';
 
 const CENTS_REGEX = /^\d+(\.\d{1,2})?$/;
+const SIGNED_CENTS_REGEX = /^-?\d+(\.\d{1,2})?$/;
 
 export function parseCents(value: string | number | null | undefined): number | null {
   if (value === null || value === undefined) {
@@ -35,6 +36,36 @@ export function parseCents(value: string | number | null | undefined): number | 
   }
 
   return Math.round(Number(trimmed) * 100);
+}
+
+export function parseSignedCents(value: string | number | null | undefined): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      return null;
+    }
+
+    return Math.round(value * 100);
+  }
+
+  const trimmed = value.trim();
+
+  if (trimmed === '' || !SIGNED_CENTS_REGEX.test(trimmed)) {
+    return null;
+  }
+
+  return Math.round(Number(trimmed) * 100);
+}
+
+export function parseCentsOrZero(value: string | number | null | undefined): number {
+  return parseCents(value) ?? 0;
+}
+
+export function parseSignedCentsOrZero(value: string | number | null | undefined): number {
+  return parseSignedCents(value) ?? 0;
 }
 
 export function parsePositiveCents(value: string | number | null | undefined): number | null {

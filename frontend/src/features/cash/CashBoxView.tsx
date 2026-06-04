@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { formatLempiras } from '@/lib/money';
+import { parseSignedCents } from '@/lib/moneyCents';
 import { STRINGS, t } from '@/lib/i18n';
 import { SessionStatusCard } from './components/SessionStatusCard';
 import { OpenSessionForm } from './components/OpenSessionForm';
@@ -27,14 +28,7 @@ type CashBoxViewProps = {
 };
 
 function parseCents(value: string): number {
-  const normalized = value.trim();
-  if (!/^-?\d+(\.\d{1,2})?$/.test(normalized)) {
-    return 0;
-  }
-  const sign = normalized.startsWith('-') ? -1 : 1;
-  const unsigned = normalized.replace('-', '');
-  const [integer, decimal = '00'] = unsigned.split('.');
-  return sign * (Number(integer) * 100 + Number(decimal.padEnd(2, '0').slice(0, 2)));
+  return parseSignedCents(value) ?? 0;
 }
 
 function formatCents(cents: number): number {

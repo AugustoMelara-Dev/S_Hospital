@@ -4,8 +4,11 @@ import {
   formatLempirasFromCents,
   formatQuantity,
   parseCents,
+  parseCentsOrZero,
   parsePositiveCents,
   parseQuantityUnits,
+  parseSignedCents,
+  parseSignedCentsOrZero,
 } from './moneyCents';
 
 describe('moneyCents helpers', () => {
@@ -67,5 +70,27 @@ describe('moneyCents helpers', () => {
     expect(formatQuantity(1.5)).toBe('1.50');
     expect(formatQuantity(0)).toBe('0.00');
     expect(formatQuantity(null)).toBe('0.00');
+  });
+
+  it('parseSignedCents accepts negative values', () => {
+    expect(parseSignedCents('-1')).toBe(-100);
+    expect(parseSignedCents('-1.50')).toBe(-150);
+    expect(parseSignedCents('-0.01')).toBe(-1);
+    expect(parseSignedCents('1.00')).toBe(100);
+    expect(parseSignedCents('abc')).toBe(null);
+    expect(parseSignedCents('')).toBe(null);
+  });
+
+  it('parseCentsOrZero falls back to zero on invalid input', () => {
+    expect(parseCentsOrZero('15.50')).toBe(1550);
+    expect(parseCentsOrZero('abc')).toBe(0);
+    expect(parseCentsOrZero(null)).toBe(0);
+    expect(parseCentsOrZero(undefined)).toBe(0);
+  });
+
+  it('parseSignedCentsOrZero handles negatives safely', () => {
+    expect(parseSignedCentsOrZero('-1.50')).toBe(-150);
+    expect(parseSignedCentsOrZero('invalid')).toBe(0);
+    expect(parseSignedCentsOrZero(null)).toBe(0);
   });
 });

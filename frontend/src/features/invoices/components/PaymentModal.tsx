@@ -48,8 +48,8 @@ export function PaymentModal({
   const [error, setError] = useState<string | null>(null);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
 
-  const balanceCents = parseMoneyCents(balanceDue);
-  const paymentCents = parseMoneyCents(paymentAmount);
+  const balanceCents = parseCents(balanceDue) ?? 0;
+  const paymentCents = parseCents(paymentAmount) ?? 0;
   const changeCents = paymentCents !== null && balanceCents !== null && paymentCents > balanceCents
     ? paymentCents - balanceCents
     : null;
@@ -70,7 +70,7 @@ export function PaymentModal({
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const amountCents = parseMoneyCents(paymentAmount);
+    const amountCents = parseCents(paymentAmount) ?? 0;
     if (amountCents === null || amountCents <= 0) {
       setError(t('invoicePayment.invalidAmount'));
       amountInputRef.current?.focus();
@@ -220,16 +220,6 @@ export function PaymentModal({
       </form>
     </Dialog>
   );
-}
-
-function parseMoneyCents(value: string): number | null {
-  const normalized = value.trim();
-  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
-    return null;
-  }
-
-  const [integer, decimal = '00'] = normalized.split('.');
-  return Number(integer) * 100 + Number(decimal.padEnd(2, '0').slice(0, 2));
 }
 
 function formatMoneyCents(cents: number): string {
