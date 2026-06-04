@@ -51,14 +51,16 @@
 - ~~ESLint warnings a error~~: `frontend/package.json` ejecuta
   `eslint . --max-warnings=0`; cualquier warning futuro falla el gate local y
   el job CI que invoca `npm run lint`.
+- ~~Cobertura >80% en modulos criticos~~:
+  `backend/tests/Coverage/CriticalModulesCoverageTest.php` exige 80% en
+  Actions criticas y GitHub Actions lo ejecuta con `HOSPITAL_REQUIRE_COVERAGE=1`
+  y `coverage: pcov` en los jobs `backend-sqlite` y `backend-mariadb`.
 
 ### Pendientes para v1.1
 
 - **NewInvoiceView refactor**: ~490 lineas, objetivo <200 con
   sub-reducers por paso (paciente / servicio / revision / pago).
   Diferido por tamaño del cambio; cubierto por E2E.
-- **Cobertura >80% en modulos criticos**: gate opt-in via
-  `--with-coverage`. Falta promover a obligatorio en CI.
 
 ### Pendientes de entorno fisico (FASE G)
 

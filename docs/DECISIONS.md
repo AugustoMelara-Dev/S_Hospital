@@ -1,3 +1,10 @@
+## 2026-06-04 - Coverage critico ya es gate obligatorio de CI
+
+Contexto: `docs/KNOWN_LIMITATIONS.md` y `docs/OPERATIVE_NOTES_2026_06_02.md` aun listaban la cobertura critica >80% como pendiente, aunque `.github/workflows/ci.yml` ya instala `pcov`, ejecuta `phpunit.coverage.xml` y define `HOSPITAL_REQUIRE_COVERAGE=1` en backend-sqlite y backend-mariadb.
+
+Decision: se reclasifica el pendiente como cerrado y `scripts\validate_known_limitations_safety.ps1` verifica que el test `CriticalModulesCoverageTest` mantenga umbral 80%, que CI active coverage y que los modulos Billing, Cash, Payments, Backups y Receipts sigan cubiertos por el gate.
+
+Criterio de verificacion: `scripts\validate_known_limitations_safety.ps1` debe reportar `KNOWN_LIMITATIONS_SAFETY: YES` y `npm run lint` sigue fallando con warnings por `--max-warnings=0`.
 ## 2026-06-04 - Pulso admin mide latencia y conexiones DB sin exponer consultas
 
 Contexto: `docs/KNOWN_LIMITATIONS.md` conservaba el tablero de salud admin como pendiente porque faltaban metricas reales de latencia P50/P95/P99 y conexiones de base. Sin esas senales, soporte podia ver que el sistema estaba "conectado" pero no distinguir una base lenta o saturada antes de que caja se detuviera.

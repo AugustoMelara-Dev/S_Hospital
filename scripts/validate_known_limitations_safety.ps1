@@ -56,6 +56,8 @@ $netDiagnostics = Read-RequiredFile "scripts\lib\net_diagnostics.ps1"
 $handoff = Read-RequiredFile "qa\FINAL_PRODUCTION_HANDOFF_RESULT.md"
 $cspTest = Read-RequiredFile "backend\tests\Feature\CspReportControllerTest.php"
 $cspController = Read-RequiredFile "backend\app\Http\Controllers\CspReportController.php"
+$ciWorkflow = Read-RequiredFile ".github\workflows\ci.yml"
+$coverageTest = Read-RequiredFile "backend\tests\Coverage\CriticalModulesCoverageTest.php"
 $schemaReferencePath = Join-Path $ProjectRoot "database\_reference_DO_NOT_EXECUTE\schema_extensions_for_barcode_reports.sql"
 $schemaExecutablePath = Join-Path $ProjectRoot "database\schema_extensions_for_barcode_reports.sql"
 
@@ -67,6 +69,7 @@ if ($knownLimitations -ne "") {
     Test-DoesNotContain $knownLimitations '(?ms)### Pendientes para v1\.1.*\*\*Comando `hospital:maintenance`\*\*' "Known limitations no longer lists maintenance command as pending"
     Test-DoesNotContain $knownLimitations '(?ms)### Pendientes para v1\.1.*\*\*Auditoria de cambios de permisos\*\*' "Known limitations no longer lists permission audit as pending"
     Test-DoesNotContain $knownLimitations '(?ms)### Pendientes para v1\.1.*\*\*Rate limit por usuario\*\*' "Known limitations no longer lists per-user rate limit as pending"
+    Test-DoesNotContain $knownLimitations '(?ms)### Pendientes para v1\.1.*\*\*Cobertura >80% en modulos criticos\*\*' "Known limitations no longer lists critical coverage gate as pending"
 
     foreach ($closedItem in @(
         'Installer legacy compatibility guarded',
@@ -75,7 +78,8 @@ if ($knownLimitations -ne "") {
         'CSP report channel implemented',
         'Maintenance mode guarded',
         'Permission audit guarded',
-        'Per-user rate limit guarded'
+        'Per-user rate limit guarded',
+        'Cobertura >80% en modulos criticos'
     )) {
         Test-Contains $knownLimitations ([regex]::Escape($closedItem)) "Known limitations records closed item: $closedItem"
     }
@@ -128,6 +132,16 @@ if ($cspTest -ne "" -and $cspController -ne "") {
     Test-Contains $cspTest '/api/system/csp-report' "CSP report route is covered by feature test"
     Test-Contains $cspTest 'throttle:30,1' "CSP report route keeps rate limit test"
     Test-Contains $cspController 'Log::info\(' "CSP report controller records reports for support"
+}
+
+if ($ciWorkflow -ne "" -and $coverageTest -ne "") {
+    Test-Contains $ciWorkflow 'coverage:\s*pcov' "CI installs a coverage driver for backend jobs"
+    Test-Contains $ciWorkflow 'HOSPITAL_REQUIRE_COVERAGE:\s*''1''' "CI requires the critical coverage gate"
+    Test-Contains $ciWorkflow 'vendor/bin/phpunit -c phpunit\.coverage\.xml' "CI invokes the coverage phpunit profile"
+    Test-Contains $coverageTest 'COVERAGE_THRESHOLD = 80\.0' "Critical coverage test enforces the 80 percent threshold"
+    foreach ($criticalModule in @('Billing', 'Cash', 'Payments', 'Backups', 'Receipts')) {
+        Test-Contains $coverageTest ([regex]::Escape("'$criticalModule'")) "Critical coverage test includes module: $criticalModule"
+    }
 }
 
 if ($knownLimitations -match '(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+') {

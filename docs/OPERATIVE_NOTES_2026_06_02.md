@@ -140,11 +140,10 @@ Adicional al paquete CRITICAL:
 - **Refactor NewInvoiceView a <300 líneas.** Diferido por tamaño
   del cambio; cubierto por E2E. AGENTS.md no marca un
   límite duro.
-- **Coverage gate >80% en CI obligatorio.** Hoy el gate
-  `tests/Coverage/CriticalModulesCoverageTest.php` se ejecuta
-  solo en `--with-coverage`. Promover a obligatorio requiere
-  instalar `pcov` en el runner y siempre invocar el perfil
-  de coverage. Plan: FASE 12.2 de la auditoría.
+- ~~Coverage gate >80% en CI obligatorio.~~ Cerrado:
+  `CriticalModulesCoverageTest` usa umbral 80% y GitHub Actions
+  lo ejecuta con `HOSPITAL_REQUIRE_COVERAGE=1`, `coverage: pcov`
+  y `phpunit.coverage.xml` en backend-sqlite y backend-mariadb.
 - ~~Dashboard avanzado con Recharts.~~ Cerrado el 2026-06-04:
   el pulso admin muestra P50/P95/P99 de latencia, conexiones DB
   activas cuando MySQL/MariaDB lo permite, espacio en disco,
