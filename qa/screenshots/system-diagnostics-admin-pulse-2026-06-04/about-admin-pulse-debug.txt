@@ -1,0 +1,9 @@
+La pantalla no pudo cargarse
+
+El sistema siguio activo, pero esta vista tuvo un error de interfaz.
+
+Error controlado
+
+Recargue la pantalla. Si vuelve a ocurrir, abra Ayuda, prepare el resumen seguro y avise a supervisor o soporte. El detalle tecnico quedo guardado en este navegador.
+Recargar pantalla
+Abrir ayuda

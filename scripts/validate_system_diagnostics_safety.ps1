@@ -56,6 +56,11 @@ if ($aboutView -ne "") {
         'Todo bien',
         'Error',
         'Diagnostico administrativo',
+        'Pulso operativo administrativo',
+        'Lectura para soporte',
+        'ResponsiveContainer',
+        'BarChart',
+        'scheduler_heartbeat',
         'sin claves ni rutas internas',
         'Backend',
         'Base de datos',
@@ -75,6 +80,8 @@ if ($aboutView -ne "") {
 
     Test-Contains $aboutView 'canViewAdminDiagnostics' "About diagnostics gate advanced details by permission"
     Test-Contains $aboutView 'adminDiagnosticItems' "About diagnostics centralize admin status labels"
+    Test-Contains $aboutView 'adminHealthMetrics' "About diagnostics centralize admin health dashboard metrics"
+    Test-Contains $aboutView 'schedulerHeartbeatLabel' "About diagnostics translate scheduler heartbeat for support"
     Test-Contains $aboutView 'summaryBadgeVariant' "About diagnostics render status levels consistently"
     Test-Contains $aboutView 'formatBytes' "About diagnostics format disk space for operators"
 }
@@ -141,6 +148,7 @@ foreach ($rule in @(
     @{ Pattern = [regex]::Escape('database failures'); Label = 'database failures' },
     @{ Pattern = 'without[_\s-]+secret[_\s-]+values'; Label = 'without secret values' },
     @{ Pattern = 'scheduler[_\s-]+heartbeat[_\s-]+message[_\s-]+is[_\s-]+sanitized|sanitizes[_\s-]+scheduler[_\s-]+heartbeat'; Label = 'sanitized scheduler heartbeat messages' },
+    @{ Pattern = [regex]::Escape('admin operational pulse without raw commands or paths'); Label = 'admin operational pulse without raw commands or paths' },
     @{ Pattern = [regex]::Escape('system.status.view'); Label = 'system.status.view' }
 )) {
     Test-Contains $combinedTests $rule.Pattern "Diagnostics tests cover: $($rule.Label)"

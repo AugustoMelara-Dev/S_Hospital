@@ -9,6 +9,9 @@ Scope:
 - Validate that advanced diagnostics remain gated by `system.status.view` and
   cover backend, database, frontend build, last backup, queue, server time,
   disk space, LAN access, installed version and migrations.
+- Validate that the admin/support diagnostics include a Recharts-based
+  operational pulse for backups, failed jobs, scheduler heartbeat, disk space
+  and pending migrations, with a textual support reading beside the chart.
 - Validate that `/api/system/status` keeps sanitized URLs/messages and does not
   expose secret-like assignments.
 
@@ -25,6 +28,9 @@ Observed result:
   from normal users.
 - Backend diagnostics keep environment, database, frontend, network, backup,
   runtime, readiness and preflight sections with sanitized operational fields.
+- Admin diagnostics now include `Pulso operativo administrativo` and
+  `Lectura para soporte`; the focused UI test verifies the panel without raw
+  queue commands, paths or secret-like values.
 - Existing focused frontend/backend tests cover safe summaries, permission-gated
   diagnostics and secret/path sanitization.
 

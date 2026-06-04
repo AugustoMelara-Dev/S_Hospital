@@ -182,6 +182,77 @@ class InvoiceCreationTest extends TestCase
             ->assertJsonValidationErrors('items.0.quantity');
     }
 
+    public function test_invoice_rejects_patient_name_with_only_digits(): void
+    {
+        $this->seedBillingBase();
+
+        $this->actingAs($this->cashier())
+            ->postJson('/api/invoices', [
+                'patient_name' => '123456',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('patient_name');
+    }
+
+    public function test_invoice_rejects_patient_name_shorter_than_two_chars(): void
+    {
+        $this->seedBillingBase();
+
+        $this->actingAs($this->cashier())
+            ->postJson('/api/invoices', [
+                'patient_name' => 'M',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('patient_name');
+    }
+
+    public function test_invoice_rejects_quantity_above_one_thousand(): void
+    {
+        $this->seedBillingBase();
+
+        $this->actingAs($this->cashier())
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [$this->invoiceItem('Glucosa', '1001.00')],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('items.0.quantity');
+    }
+
+    public function test_invoice_rejects_more_than_fifty_items(): void
+    {
+        $this->seedBillingBase();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $items = [];
+        for ($i = 0; $i < 51; $i++) {
+            $items[] = ['service_id' => $service->id, 'quantity' => '1.00'];
+        }
+
+        $this->actingAs($this->cashier())
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => $items,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('items');
+    }
+
+    public function test_invoice_accepts_patient_name_with_accents_and_punctuation(): void
+    {
+        $this->seedBillingBase();
+        $service = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $this->actingAs($this->cashier())
+            ->postJson('/api/invoices', [
+                'patient_name' => "Maria Jose Lopez-Reyes",
+                'items' => [['service_id' => $service->id, 'quantity' => '1.00']],
+            ])
+            ->assertCreated();
+    }
+
     public function test_invoice_items_keep_snapshots_when_service_price_changes_later(): void
     {
         $this->seedBillingBase();

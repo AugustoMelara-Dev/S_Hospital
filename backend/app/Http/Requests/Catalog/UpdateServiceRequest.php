@@ -27,9 +27,9 @@ class UpdateServiceRequest extends FormRequest
         return [
             'category_id' => ['sometimes', 'required', 'integer', 'exists:categories,id'],
             'area_id' => ['sometimes', 'required', 'integer', 'exists:areas,id'],
-            'name' => ['sometimes', 'required', 'string', 'max:160'],
+            'name' => ['sometimes', 'required', 'string', 'min:2', 'max:160', 'regex:/^[\pL\pN\s\.\,\-\(\)\/]+$/u'],
             'aliases' => ['nullable', 'string', 'max:1000'],
-            'price' => ['sometimes', 'required', 'decimal:0,2', 'min:0'],
+            'price' => ['sometimes', 'required', 'decimal:0,2', 'min:0', 'max:9999999.99'],
             'price_change_reason' => ['nullable', 'string', 'max:500'],
             'scan_code' => ['nullable', 'string', 'max:120', Rule::unique('services', 'scan_code')->ignore($this->route('service'))],
             'barcode' => ['nullable', 'string', 'max:120', Rule::unique('services', 'barcode')->ignore($this->route('service'))],

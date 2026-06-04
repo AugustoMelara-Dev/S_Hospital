@@ -19,8 +19,8 @@ class OpenCashSessionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'opening_amount' => ['required', 'decimal:0,2', 'min:0'],
-            'notes' => ['nullable', 'string', 'max:255'],
+            'opening_amount' => ['required', 'decimal:0,2', 'min:0', 'max:9999999.99'],
+            'notes' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

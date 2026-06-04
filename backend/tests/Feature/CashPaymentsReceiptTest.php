@@ -51,6 +51,32 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonValidationErrors('cash_session');
     }
 
+    public function test_opening_amount_rejects_values_above_ten_million(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+
+        $this->actingAs($cashier)
+            ->postJson('/api/cash-sessions/open', [
+                'opening_amount' => '10000000.00',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('opening_amount');
+    }
+
+    public function test_opening_amount_rejects_more_than_two_decimals(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+
+        $this->actingAs($cashier)
+            ->postJson('/api/cash-sessions/open', [
+                'opening_amount' => '500.001',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('opening_amount');
+    }
+
     public function test_database_constraint_allows_only_one_open_cash_session_per_cashier(): void
     {
         $this->seedBillingBase();
