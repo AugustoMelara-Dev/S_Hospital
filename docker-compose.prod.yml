@@ -32,6 +32,7 @@ services:
       LOG_CHANNEL: daily
       LOG_LEVEL: warning
       HOSPITAL_DUMP_BINARY: /usr/bin/mariadb-dump
+      HOSPITAL_LICENSE_SALT: ${HOSPITAL_LICENSE_SALT:?HOSPITAL_LICENSE_SALT must be set to a 32+ char random string}
       RUN_MIGRATIONS: "true"
       SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
       SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
@@ -240,6 +241,7 @@ services:
       HOSPITAL_OPERATION_END: ${HOSPITAL_OPERATION_END:-18:00}
       HOSPITAL_AUDIT_RETENTION_DAYS: ${HOSPITAL_AUDIT_RETENTION_DAYS:-365}
       HOSPITAL_FAILED_JOBS_RETENTION_DAYS: ${HOSPITAL_FAILED_JOBS_RETENTION_DAYS:-30}
+      HOSPITAL_LICENSE_SALT: ${HOSPITAL_LICENSE_SALT:?HOSPITAL_LICENSE_SALT must be set to a 32+ char random string}
     healthcheck:
       test: ["CMD-SHELL", "test -f /tmp/supercronic.last && find /tmp/supercronic.last -mmin -3 || exit 1"]
       interval: 60s

@@ -12,6 +12,7 @@ use App\Policies\InvoicePolicy;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use RuntimeException;
 use Spatie\Permission\Events\PermissionAttached;
 use Spatie\Permission\Events\PermissionDetached;
 use Spatie\Permission\Events\RoleAttached;
@@ -21,6 +22,13 @@ use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
 {
+    /**
+     * Minimum length enforced for HOSPITAL_LICENSE_SALT in production.
+     * AGENTS.md mandates 32+ random characters; the embedded dev salt
+     * is intentionally rejected to force operators to rotate it.
+     */
+    private const MIN_PROD_SALT_LENGTH = 32;
+
     /**
      * Register any application services.
      */
@@ -34,8 +42,33 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->assertProductionLicenseSalt();
         $this->registerPermissionAudit();
         $this->registerPolicies();
+    }
+
+    /**
+     * Reject a missing or short HOSPITAL_LICENSE_SALT in production.
+     * In dev and testing the dev fallback is allowed so the test
+     * suite and `composer run` keep working without a real salt.
+     */
+    private function assertProductionLicenseSalt(): void
+    {
+        $environment = (string) ($_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? config('app.env'));
+
+        if ($environment !== 'production') {
+            return;
+        }
+
+        $configured = (string) config('app.license_salt');
+
+        if ($configured === '' || strlen($configured) < self::MIN_PROD_SALT_LENGTH) {
+            throw new RuntimeException(sprintf(
+                'HOSPITAL_LICENSE_SALT must be at least %d characters in production (AGENTS.md). '.
+                'Run `php -r "echo bin2hex(random_bytes(32));"` and update the .env file.',
+                self::MIN_PROD_SALT_LENGTH,
+            ));
+        }
     }
 
     private function registerPermissionAudit(): void
