@@ -307,7 +307,8 @@ class OperationsReportService
             })
             ->select('payments.*')
             ->with(['user', 'invoice.items'])
-            ->get();
+            ->orderBy('payments.id')
+            ->lazy(500);
 
         $grouped = [];
         foreach ($paymentsData as $payment) {
