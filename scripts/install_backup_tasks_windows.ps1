@@ -6,7 +6,8 @@ param(
     [switch] $WhatIfOnly,
     [switch] $UpdateExisting,
     [switch] $Uninstall,
-    [switch] $Status
+    [switch] $Status,
+    [switch] $Wizard
 )
 
 $ErrorActionPreference = "Stop"
@@ -45,6 +46,93 @@ try {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
 } catch {
     throw "No se pudo ubicar la carpeta del sistema. Ejecute este script desde la instalacion completa."
+}
+
+# -----------------------------------------------------------------------------
+# Modo Wizard
+# -----------------------------------------------------------------------------
+# Activado con -Wizard, hace preguntas secuenciales con valores por
+# defecto razonables. Pensado para operadores no tecnicos que no
+# conocen los flags del script. La opcion por defecto se muestra
+# entre corchetes y basta con presionar Enter para aceptarla.
+if ($Wizard) {
+    Write-Host "==================================================================="
+    Write-Host " S_Hospital - Asistente de tareas de respaldo"
+    Write-Host "==================================================================="
+    Write-Host "Responda las preguntas. Presione Enter para aceptar el valor por defecto."
+    Write-Host ""
+
+    $response = Read-Host "Carpeta del sistema [$ProjectRoot]"
+    if (-not [string]::IsNullOrWhiteSpace($response)) {
+        $ProjectRoot = $response
+        try {
+            $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+        } catch {
+            throw "Carpeta invalida: $ProjectRoot"
+        }
+    }
+
+    $response = Read-Host "Prefijo de tareas programadas [$TaskPrefix]"
+    if (-not [string]::IsNullOrWhiteSpace($response)) {
+        $TaskPrefix = $response
+    }
+
+    $response = Read-Host "Hora del respaldo diario (formato HH:MM) [$DailyBackupTime]"
+    if (-not [string]::IsNullOrWhiteSpace($response)) {
+        if ($response -notmatch '^\d{2}:\d{2}$') {
+            throw "Formato de hora invalido. Use HH:MM, por ejemplo 02:00."
+        }
+        $DailyBackupTime = $response
+    }
+
+    Write-Host ""
+    Write-Host "Accion a realizar:"
+    Write-Host "  1) Instalar tareas (predeterminado)"
+    Write-Host "  2) Simular (no hace cambios, solo muestra)"
+    Write-Host "  3) Ver estado actual"
+    Write-Host "  4) Desinstalar tareas"
+    $action = Read-Host "Opcion [1]"
+    switch ($action) {
+        "" { $action = "1" }
+        "2" {
+            $WhatIfOnly = $true
+            Write-Host "Modo simulacion activado."
+        }
+        "3" {
+            $Status = $true
+            $Uninstall = $false
+            $WhatIfOnly = $false
+        }
+        "4" {
+            $Uninstall = $true
+            $Status = $false
+            $WhatIfOnly = $false
+            Write-Host "Modo desinstalar activado."
+        }
+        default {
+            Write-Host "Opcion no valida. Continuando con instalacion."
+        }
+    }
+
+    if (-not $Status -and -not $Uninstall -and -not $WhatIfOnly) {
+        $response = Read-Host "Si las tareas ya existen, sobreescribirlas? (s/N)"
+        if ($response -match '^[sS]$') {
+            $UpdateExisting = $true
+        }
+    }
+
+    Write-Host ""
+    Write-Host "Resumen de la operacion:"
+    Write-Host "  Carpeta:       $ProjectRoot"
+    Write-Host "  Prefijo:       $TaskPrefix"
+    Write-Host "  Hora diaria:   $DailyBackupTime"
+    Write-Host "  Accion:        $(if ($Uninstall) { 'Desinstalar' } elseif ($Status) { 'Ver estado' } elseif ($WhatIfOnly) { 'Simular' } else { 'Instalar' })"
+    $confirm = Read-Host "Continuar? (S/n)"
+    if ($confirm -match '^[nN]$') {
+        Write-Host "Operacion cancelada por el operador."
+        exit 0
+    }
+    Write-Host ""
 }
 
 $backendDir = Join-Path $ProjectRoot "backend"

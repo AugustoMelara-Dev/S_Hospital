@@ -43,13 +43,68 @@
 param(
     [string] $ProjectRoot,
     [string] $ServerIp,
-    [int] $AppPort = 0
+    [int] $AppPort = 0,
+    [switch] $Wizard,
+    [switch] $WhatIf
 )
 
 $ErrorActionPreference = "Stop"
 
 if (-not $ProjectRoot) {
     $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+}
+
+# -----------------------------------------------------------------------------
+# Modo Wizard
+# -----------------------------------------------------------------------------
+# Activado con -Wizard, hace preguntas paso a paso para operadores
+# no tecnicos. Detecta la IP actual, la muestra y permite al
+# operador aceptar la sugerencia o escribir una distinta.
+if ($Wizard) {
+    Write-Host "==================================================================="
+    Write-Host " S_Hospital - Asistente de refresco de IP LAN"
+    Write-Host "==================================================================="
+
+    $autoIp = $null
+    if (Get-Command Get-LanIPv4Candidates -ErrorAction SilentlyContinue) {
+        try {
+            $candidates = Get-LanIPv4Candidates
+            $autoIp = $candidates | Select-Object -First 1
+        } catch { }
+    }
+
+    $ipPrompt = if ($autoIp) { $autoIp.ToString() } else { "192.168.1.10" }
+    $response = Read-Host "Nueva IP del servidor LAN [$ipPrompt]"
+    if (-not [string]::IsNullOrWhiteSpace($response)) {
+        if ($response -notmatch '^\d{1,3}(\.\d{1,3}){3}$') {
+            throw "Formato de IP invalido. Use el formato 192.168.1.10"
+        }
+        $ServerIp = $response
+    } elseif ($autoIp) {
+        $ServerIp = $autoIp.ToString()
+    }
+
+    $portPrompt = if ($AppPort -gt 0) { $AppPort } else { 8000 }
+    $response = Read-Host "Puerto HTTP [$portPrompt]"
+    if (-not [string]::IsNullOrWhiteSpace($response)) {
+        $AppPort = [int]$response
+    } elseif ($AppPort -le 0) {
+        $AppPort = 8000
+    }
+
+    Write-Host ""
+    Write-Host "Esta operacion actualizara:"
+    Write-Host "  - $ProjectRoot\backend\.env (APP_URL, SERVER_IP, SANCTUM, CORS)"
+    Write-Host "  - $ProjectRoot\.env (SERVER_IP)"
+    Write-Host "  - Regla del Firewall de Windows"
+    Write-Host "  - Reinicio del stack Docker para aplicar los cambios"
+    Write-Host ""
+    $confirm = Read-Host "Continuar con IP $ServerIp puerto $AppPort? (S/n)"
+    if ($confirm -match '^[nN]$') {
+        Write-Host "Operacion cancelada."
+        exit 0
+    }
+    Write-Host ""
 }
 
 $libDir = Join-Path $PSScriptRoot "lib"
