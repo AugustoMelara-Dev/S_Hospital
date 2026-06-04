@@ -44,8 +44,7 @@ param(
     [string] $ProjectRoot,
     [string] $ServerIp,
     [int] $AppPort = 0,
-    [switch] $Wizard,
-    [switch] $WhatIf
+    [switch] $Wizard
 )
 
 $ErrorActionPreference = "Stop"
@@ -224,9 +223,6 @@ Write-Host "  curl http://${ServerIp}:$AppPort/api/system/echo-config"
 # puntuales que el operador puede pegar en el grupo del hospital
 # o entregar al personal.
 $noticeDir = Join-Path $ProjectRoot "qa"
-if (-not (Test-Path -LiteralPath $noticeDir)) {
-    New-Item -ItemType Directory -Path $noticeDir -Force | Out-Null
-}
 $noticePath = Join-Path $noticeDir "IP_CHANGE_NOTICE.txt"
 $timestamp = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
 $noticeContent = @"
@@ -252,9 +248,14 @@ No se requieren cambios en las PCs cliente: el navegador las
 redirige al nuevo host automaticamente despues de actualizar la
 cache.
 "@
-Set-Content -LiteralPath $noticePath -Value $noticeContent -Encoding UTF8
-Write-Host ""
-Write-Host "Aviso para PCs cliente guardado en:" -ForegroundColor Cyan
-Write-Host "  $noticePath"
-Write-Host "Comparta este archivo con los cajeros o pegue el contenido en el grupo del hospital." -ForegroundColor Cyan
+if ($PSCmdlet.ShouldProcess($noticePath, "Write IP change notice for client PCs")) {
+    if (-not (Test-Path -LiteralPath $noticeDir)) {
+        New-Item -ItemType Directory -Path $noticeDir -Force | Out-Null
+    }
+    Set-Content -LiteralPath $noticePath -Value $noticeContent -Encoding UTF8
+    Write-Host ""
+    Write-Host "Aviso para PCs cliente guardado en:" -ForegroundColor Cyan
+    Write-Host "  $noticePath"
+    Write-Host "Comparta este archivo con los cajeros o pegue el contenido en el grupo del hospital." -ForegroundColor Cyan
+}
 exit 0

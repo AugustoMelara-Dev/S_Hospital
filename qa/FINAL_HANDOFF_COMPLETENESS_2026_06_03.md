@@ -8,6 +8,7 @@ Scope:
 - Verify that `qa\HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` keeps the same final evidence contract after the automated handoff smoke run.
 - Confirm that the final report includes browser captures or visual smoke evidence, diagnostics, files changed, tests and gates, physical blockers, risks and safety notes.
 - Confirm that the report keeps the offline release guard self-test command and allowlist output.
+- Confirm that the report executes and preserves output for known-limitations, maintenance-mode and new-invoice maintainability guards.
 - Keep the release state as `PRODUCTION_CANDIDATE` until the final hospital server evidence is complete.
 
 Command run:
@@ -32,6 +33,10 @@ Observed result:
 - The handoff lists `scripts/validate_maintenance_mode_safety.ps1` and
   `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md` as preserved incident-response
   evidence.
+- The handoff lists and executes `scripts/validate_new_invoice_maintainability.ps1`;
+  the report preserves `NEW_INVOICE_MAINTAINABILITY: YES` and
+  `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` as cashier-flow
+  maintainability evidence.
 - The handoff lists `scripts/validate_permission_audit_safety.ps1` and
   `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md` as preserved role/permission
   administration audit evidence.

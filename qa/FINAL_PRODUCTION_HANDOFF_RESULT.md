@@ -1,124 +1,92 @@
 # Final production handoff result
 
-- Updated at: 2026-06-03
-- Decision: `PRODUCTION_CANDIDATE`
-- Current branch: `codex/production-readiness-preflight`
-- Last local evidence check: 2026-06-03
-- Final conclusion: the system has stronger operational support, diagnostics, backup/restore evidence and browser smoke evidence, but it must not be called `PRODUCTION_READY` until the final-server LAN, printer and Windows task evidence is completed.
+- Generated at: 2026-06-04 08:01:32
+- Base URL: http://127.0.0.1:8000
+- Project root: %PROJECT_ROOT%
+- Decision: PRODUCTION_CANDIDATE
+- LAN client proof present without obvious placeholders: False
+- Institutional receipt print proof present without obvious placeholders: False
+- Final restore proof present without obvious placeholders: True
+- Final concurrency proof present without obvious placeholders: True
+- LAN client proof file: `qa/LAN_CLIENT_VALIDATION_PROOF.md`
+- Institutional receipt print proof file: `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`
+- Final restore proof file: `qa/FINAL_RESTORE_PROOF.md`
+- Final concurrency proof file: `qa/FINAL_CONCURRENCY_PROOF.md`
+- Offline release artifact guard exit code: 1
+- Support packet safety guard exit code: 0
+- Browser smoke evidence guard exit code: 0
+- Startup and repair safety guard exit code: 0
+- Operator manuals safety guard exit code: 0
+- Backup and restore docs safety guard exit code: 0
+- Installation docs safety guard exit code: 0
+- Help screen safety guard exit code: 0
+- System diagnostics safety guard exit code: 0
+- Double-action safety guard exit code: 0
+- Installer legacy safety guard exit code: 0
+- LAN recovery safety guard exit code: 0
+- Known limitations safety guard exit code: 0
+- Maintenance mode safety guard exit code: 0
+- Permission audit safety guard exit code: 0
+- Rate-limit safety guard exit code: 0
+- Shift incident recovery safety guard exit code: 0
+- New invoice maintainability guard exit code: 0
+- Training safety guard exit code: 0
+- Field proof templates safety guard exit code: 0
+- Proof initialization safety guard exit code: 0
+- Operations objective audit guard exit code: 0
+- Offline release builder self-test exit code: 0
+- Offline release guard self-test exit code: 0
+- Dependency manifest guard exit code: 0
+- Final handoff completeness guard exit code: 0
+- Evidence index guard exit code: 0
+- Preflight skipped: True
+- Preflight exit code: 2
+
+## Result
+
+Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until every blocker below is closed with real field evidence.
+
+## Blocking items
+
+- Missing or incomplete `qa/LAN_CLIENT_VALIDATION_PROOF.md` from a real second LAN client.
+- Missing or incomplete `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` from the real cashier printer.
+- Preflight was skipped in this handoff run.
+- Offline release artifact is missing, stale, or contains forbidden files.
 
 ## Evidence completed in this hardening front
 
-| Area | Evidence | Result |
-|---|---|---|
-| Browser smoke | `qa/browser-smoke-2026-06-03/rc-e2e-mocked-report.json` and screenshots | Passed with `console_issues: []` |
-| Browser smoke evidence guard | `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md` | Critical browser screenshots and Help/support captures exist, console issues are empty, and mocked evidence is not treated as physical LAN/printer proof |
-| Real Laravel smoke | `npm.cmd run smoke:real` against `http://127.0.0.1:8000` | Passed read-only route/navigation smoke; mutating smoke intentionally skipped |
-| CSP production serving | `b7d2ca72 fix(security): allow spa runtime styles in csp` | Real smoke no longer reports CSP style errors |
-| Backup worker | `qa/BACKUP_WORKER_SMOKE_2026_06_03.md` | Manual backup moved from pending to `success`, checksum present |
-| Restore | `qa/FINAL_RESTORE_PROOF.md` and `qa/FINAL_RESTORE_PROOF_2026_06_03.md` | Backup restored into disposable MariaDB database; active DB not overwritten |
-| Concurrency | `qa/FINAL_CONCURRENCY_PROOF.md` | Double cash open `201 / 422`, unique invoice numbers, double payment `201 / 422` |
-| Startup/repair | `qa/STARTUP_REPAIR_AUTOMATION_SMOKE_2026_06_03.md` | Startup, repair, open-system, stack-autostart and backup task scripts validated in safe modes |
-| Startup/repair gate | `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md` | Handoff now rechecks startup, repair, shortcut, stack-autostart and backup-task dry runs before production approval |
-| System diagnostics | `qa/SYSTEM_STATUS_HEARTBEAT_SANITIZATION_2026_06_03.md` | Scheduler heartbeat messages in `/api/system/status` are sanitized before admin/support display |
-| Client support log | `qa/CLIENT_SUPPORT_SANITIZATION_2026_06_03.md` | Browser incident summaries and backend diagnostics redact standalone `.env.*` mentions |
-| Support packet | `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md` | Disposable fixture confirmed no `.env`, secrets or real local paths are copied into support artifacts |
-| Support packet env redaction | `qa/SUPPORT_PACKET_ENV_FILE_REDACTION_2026_06_03.md` | Support packet and repair diagnostic sanitizers redact standalone `.env.*` mentions in evidence logs |
-| Operator manuals | `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md` | Cashier, supervisor and administrator manuals keep daily checklists and delicate-action warnings |
-| Backup/restore docs | `qa/BACKUP_RESTORE_DOCS_SAFETY_2026_06_03.md` | Backup/restore guide keeps worker smoke, retention and disposable-restore evidence requirements |
-| Installation docs | `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md` | Installation guide keeps conservative install, LAN URL, startup, backup-task, repair and support handoff requirements |
-| Help screen | `qa/HELP_SCREEN_SAFETY_2026_06_03.md` | In-app Help keeps critical workflows, real incident guidance, role checklists and sanitized support summaries |
-| System diagnostics | `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md` | Information/system status diagnostics keep normal summaries, permission-gated details and sanitized operational fields |
-| Double-action safety | `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md` | Code, tests, concurrency proof, Help and manuals keep duplicate-action safeguards for caja, facturas and pagos |
-| Installer legacy safety | `qa/INSTALLER_LEGACY_SAFETY_2026_06_03.md` | `setup.bat` stays on the supported LAN installer and the old installer remains deprecated compatibility only |
-| LAN recovery safety | `qa/LAN_RECOVERY_SAFETY_2026_06_03.md` | `refresh_lan_ip.ps1` uses real helper libraries, supports no-write `-WhatIf`, and manuals cover DHCP/IP-change recovery before second-client validation |
-| Known limitations safety | `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md` | Known limitations no longer list locally guarded safeguards as pending and still preserve final physical/server blockers |
-| Maintenance mode safety | `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md` | `hospital:maintenance` is tested, documented and keeps human HTML/API maintenance messages without exposing internals |
-| Permission audit safety | `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md` | Role and permission administration changes are written to `audit_logs` through Spatie events without exposing secrets |
-| Rate-limit safety | `qa/RATE_LIMIT_SAFETY_2026_06_03.md` | Critical invoice, payment and cashbox writes use per-user buckets so one cashier does not block another on the same LAN IP |
-| Shift incident recovery safety | `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md` | Ayuda, manuales, soporte y capacitacion keep safe steps for power/restart/browser, printer, open cashbox, failed backup, permissions and isolated restore |
-| Training safety | `qa/TRAINING_SAFETY_2026_06_03.md` and `qa/TRAINING_ACCEPTANCE_PROOF.example.md` | Manuals, in-app Help and anonymous acceptance template keep isolated-practice guidance and forbid training on production data |
-| Field proof templates safety | `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md` | Final LAN, printer, restore and concurrency proof templates keep preflight-required labels and safety instructions |
-| Proof initialization safety | `qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md` | `init_production_proofs.ps1` creates missing final-evidence files in a disposable fixture and preserves existing evidence without `-Force` |
-| Offline release builder self-test | `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md` | `make_offline_release.ps1 -SelfTest` verifies the simulated bundle includes root setup, nginx, critical operational scripts, operator docs and QA proof templates without touching the real package |
-| Offline release guard self-test | `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md` | `assert_offline_release_clean.ps1 -SelfTest` verifies that only final-field QA example templates are allowed in the offline release and completed QA evidence remains blocked |
-| Dependency manifest | `scripts/validate_dependency_manifest.ps1` | Local handoff now checks `package_manifest.json` against backend and frontend dependency declarations before production approval |
-| Operations objective audit | `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md` | Active objective requirements are traced to local evidence and remaining final-field blockers |
-| Final handoff completeness | `qa/FINAL_HANDOFF_COMPLETENESS_2026_06_03.md` | Final report keeps captures, diagnostics, changed files, gates, physical blockers, risks and safety notes |
-| Evidence index | `qa/OPS_EVIDENCE_INDEX_2026_06_03.md` | Handoff evidence references exist under `qa/` and physical blockers remain listed before `PRODUCTION_READY` |
-| Offline release guard | `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md` | Current local offline package is stale and correctly blocked until regenerated from the final commit |
-| Handoff self-check | `qa/HANDOFF_EVIDENCE_INDEX_SMOKE_2026_06_03.md` | `final_production_handoff.ps1 -SkipPreflight` writes a report, runs support-packet, browser-smoke-evidence, startup/repair, operator-manual, backup/restore-doc, installation-doc, help-screen, system-diagnostics, double-action, installer-legacy, LAN-recovery, permission-audit, rate-limit, shift-incident-recovery, training-safety, field-proof-template, proof-initialization-safety, objective-audit, offline-release-builder-self-test, offline-release-guard-self-test, dependency-manifest, final-handoff-completeness and evidence-index validation, and keeps `PRODUCTION_CANDIDATE` |
-| Preflight | `qa/PREFLIGHT_WITH_CONCURRENCY_2026_06_03.md` | Restore and concurrency evidence now pass preflight; production readiness still blocked |
+- Browser smoke screenshots: `qa/browser-smoke-2026-06-03/rc-e2e-mocked-report.json` and `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md`.
+- System diagnostics and Help/support guards: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`.
+- Backup worker and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/FINAL_RESTORE_PROOF.md` and `qa/FINAL_RESTORE_PROOF_2026_06_03.md`.
+- Concurrency and double-action evidence: `qa/FINAL_CONCURRENCY_PROOF.md` and `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md`.
+- Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.
+- New invoice maintainability guard: `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` and `scripts/validate_new_invoice_maintainability.ps1` preserve a short cashier-facing invoice flow.
+- Operator and training evidence: `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md`, `qa/TRAINING_SAFETY_2026_06_03.md` and `qa/TRAINING_ACCEPTANCE_PROOF.example.md`.
+- Field proof, proof initialization, offline builder, offline release guard, objective, release and index evidence: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md`, `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`.
 
-## Tests and gates run locally
+## Tests and gates to preserve
 
-- Backend static/format: `docker compose exec -T backend ./vendor/bin/pint --test`
-- Backend static analysis: `docker compose exec -T backend ./vendor/bin/phpstan analyse --memory-limit=1G`
-- Backend full suite: `docker compose exec -T backend php artisan test` passed with 384 tests and 6 expected skips during this front.
-- Focused backend tests: `SecurityHeadersTest`, `BackupWorkflowTest`, `DatabaseDumpWriterTest`, `SystemStatusTest`, `CashPaymentsReceiptTest`, `ReportsTest`, `BroadcastingWiringTest`, `AuditLogTest`, `GenerateFiscalNumberActionTest`.
+- Backend static/format: `docker compose exec -T backend ./vendor/bin/pint --test`.
+- Backend static analysis: `docker compose exec -T backend ./vendor/bin/phpstan analyse --memory-limit=1G`.
+- Backend suite: `docker compose exec -T backend php artisan test`.
 - Frontend gates: `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run test -- --run`, `npm.cmd run build`, `scripts\check-branding.ps1`.
-- E2E/browser: mocked production readiness E2E with screenshots, real Laravel smoke without mutations.
-- Operational scripts: backup worker smoke, restore into disposable DB, concurrency validation, startup/repair/task dry-runs, system diagnostics sanitization, client support sanitization, support packet safety validation, support packet env-file redaction, browser smoke evidence validation, startup/repair safety validation, operator manuals safety validation, backup/restore docs safety validation, installation docs safety validation, help screen safety validation, system diagnostics safety validation, double-action safety validation, installer legacy safety validation, LAN recovery safety validation, known-limitations safety validation, maintenance-mode safety validation, permission-audit safety validation, rate-limit safety validation, shift incident recovery safety validation, training safety validation, field proof templates validation, proof initialization safety validation, offline release builder self-test, offline release guard self-test, dependency manifest validation, operations objective audit validation, evidence index validation, handoff self-check, offline release guard, production preflight.
+- Browser and operational smoke: mocked E2E screenshots, `npm.cmd run smoke:real`, backup worker smoke, disposable restore, concurrency validation and `scripts\production_readiness_preflight.ps1`.
 
-Offline release guard self-test output preserved in the smoke handoff:
-
-```text
-[OK] SelfTest passed. Only final-field qa/*.example.md templates are allowed in offline release.
-```
-
-## Operator documentation and in-app support
-
-- Master manual: `docs/manuales/INDICE_OPERADOR.md`
-- Cashier manual: `docs/manuales/MANUAL_CAJERO.md`
-- Supervisor manual: `docs/manuales/MANUAL_SUPERVISOR.md`
-- Administrator manual: `docs/manuales/MANUAL_ADMINISTRADOR.md`
-- First-level support: `docs/manuales/GUIA_SOPORTE_PRIMER_NIVEL.md`
-- Safe training: `docs/manuales/GUIA_CAPACITACION_SEGURA.md`
-- Training checklist: `docs/manuales/CHECKLIST_CAPACITACION.md`
-- Anonymous training acceptance template: `qa/TRAINING_ACCEPTANCE_PROOF.example.md`
-- Backup and restore guide: `docs/manuales/GUIA_RESPALDOS_Y_RESTAURACION.md`
-- Installation guide: `docs/manuales/GUIA_INSTALACION_OPERATIVA.md`
-- In-app help: `frontend/src/features/help/HelpView.tsx`
-
-The help screen covers opening the system, login, cashbox, invoicing, charging, printing, reprinting, reports, backups, shift close, support requests, incident responses, role checklists and delicate-action warnings.
-
-## Files changed in this hardening front
+## Files changed in this handoff front
 
 - In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.
 - Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.
-- Safety guards and evidence helpers: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
+- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
 - Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.
-
-## Remaining blockers before production handoff
-
-The following items require the final installed hospital server, LAN client and printer hardware:
-
-- Complete `qa/LAN_CLIENT_VALIDATION_PROOF.md` from a second PC on the hospital LAN.
-- Complete `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` by printing media carta, carta, A5, 80mm and 58mm receipts on the real cashier printer.
-- Install or update `SistemaCajaHospitalaria-StackAutostart`,
-  `SistemaCajaHospitalaria-BackupWorker` and
-  `SistemaCajaHospitalaria-DailyBackup` Windows scheduled tasks on the final
-  server.
-- Configure final production environment: `APP_ENV=production`, `APP_DEBUG=false`, final LAN `APP_URL`, random DB passwords and root password.
-- Re-run backup worker smoke on the final server with the final dump binary/PATH.
-- Re-run restore and concurrency evidence on the final server or explicitly approved disposable final target.
-- Re-run `scripts/production_readiness_preflight.ps1 -BaseUrl http://SERVER_LAN_IP:8000` without `-AllowMissingPhysicalProof`; it must return 0.
-- Regenerate and verify the offline release package from the final commit if this becomes an installable delivery.
-
-## Current preflight status
-
-The latest local preflight after restore and concurrency evidence still returned `PRODUCTION_READY: NO` with 10 blocking issues. This is correct for the local Docker development environment because it lacks final production settings, Windows scheduled tasks, second-client LAN proof and physical printer proof.
 
 ## Risks and limits
 
-- Local Docker and mocked browser evidence do not replace the final installed hospital server, second-client LAN validation, real MariaDB deployment or physical printer proof.
-- The offline release package is intentionally blocked until regenerated from the final commit with Docker image tar files and matching checksums.
-- Windows scheduled tasks `SistemaCajaHospitalaria-StackAutostart`,
-  `SistemaCajaHospitalaria-BackupWorker` and
-  `SistemaCajaHospitalaria-DailyBackup` must be installed or updated on the
-  final server and verified with a reboot/startup check plus real backup worker
-  smoke.
-- Restore and concurrency evidence must be repeated on a disposable final-server target or another explicitly approved validation database; never use the active production database for destructive restore testing.
-- Fiscal sequences/settings still require administrative validation in the real environment; this handoff does not invent fiscal compliance.
+- Local Docker and mocked browser evidence do not replace final second-client LAN proof, real MariaDB/server proof or physical printer proof.
+- The offline release package remains blocked until regenerated from the final commit with Docker image tar files and matching checksums.
+- Final production environment must be verified with APP_ENV=production and APP_DEBUG=false before production handoff.
+- Windows scheduled tasks `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup` must be installed or updated on the final server.
+- Fiscal sequences/settings require administrative validation in the real environment; fiscal compliance was not invented by this report.
+- Any restore or concurrency validation must use a disposable target or explicitly approved validation database, never the active production database.
 
 ## Safety notes
 
@@ -129,6 +97,1263 @@ The latest local preflight after restore and concurrency evidence still returned
 - Secrets were not printed in evidence files.
 - Fiscal compliance was not invented; fiscal sequences/settings still require real administrative validation before production use.
 
-## Decision
+## Next commands
 
-Keep the release state as `PRODUCTION_CANDIDATE`. Promote to `PRODUCTION_READY` only after the final-server evidence above is complete and the preflight passes without bypass flags.
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://127.0.0.1:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -UpdateExisting
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -Status
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath php
+Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
+bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"
+# Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report.
+bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_BASE_URL=http://127.0.0.1:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_browser_smoke_evidence.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_startup_repair_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_backup_restore_docs_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installation_docs_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_help_screen_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_system_diagnostics_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_double_action_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installer_legacy_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_recovery_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_known_limitations_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_maintenance_mode_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_permission_audit_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_rate_limit_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_shift_incident_recovery_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_new_invoice_maintainability.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_field_proof_templates.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_proof_initialization_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1 -SelfTest
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1 -SelfTest
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_operations_objective_audit.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_dependency_manifest.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_final_handoff_completeness.ps1 -HandoffPath %PROJECT_ROOT%\qa\FINAL_PRODUCTION_HANDOFF_RESULT.md
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\FINAL_PRODUCTION_HANDOFF_RESULT.md
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:8000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://127.0.0.1:8000 -PhpPath php
+```
+
+## Backup task status output
+
+```text
+Preparando tareas programadas de respaldos para Sistema de Caja Hospitalaria.
+Instalacion: %PROJECT_ROOT%
+Modo: no requerido para esta accion
+Worker: %PROJECT_ROOT%\scripts\run_backup_worker.cmd
+Respaldo diario: %PROJECT_ROOT%\scripts\run_scheduled_backup.cmd
+Tarea worker: SistemaCajaHospitalaria-BackupWorker
+Tarea diaria: SistemaCajaHospitalaria-DailyBackup
+SistemaCajaHospitalaria-BackupWorker: no instalada
+SistemaCajaHospitalaria-DailyBackup: no instalada
+Confirme que el worker esta activo y que un respaldo creado desde la UI pasa de pendiente a completado.
+```
+
+## Offline release artifact guard output
+
+```text
+Checking offline release: %PROJECT_ROOT%\offline-release
+[ OK ] Found setup.bat
+[ OK ] Found docker-compose.prod.yml
+[ OK ] Found backend\Dockerfile.prod
+[ OK ] Found nginx\default.conf
+[ OK ] Found MANIFEST.txt
+[ OK ] Found checksums.sha256
+[ OK ] Found offline-images
+[ OK ] Found scripts\deploy_hospital_lan.ps1
+[ OK ] Found scripts\load_offline_images.ps1
+[ OK ] Found scripts\make_offline_release.ps1
+[ OK ] Found scripts\production_readiness_preflight.ps1
+[ OK ] Found scripts\final_production_handoff.ps1
+[ OK ] Found scripts\install_hospital_startup_shortcut.ps1
+[ OK ] Found scripts\install_stack_autostart_windows.ps1
+[ OK ] Found scripts\install_backup_tasks_windows.ps1
+[ OK ] Found scripts\validate_support_packet_safety.ps1
+[ OK ] Found scripts\validate_browser_smoke_evidence.ps1
+[ OK ] Found scripts\validate_dependency_manifest.ps1
+[ OK ] Found scripts\validate_startup_repair_safety.ps1
+[ OK ] Found scripts\validate_operator_manuals_safety.ps1
+[ OK ] Found scripts\validate_backup_restore_docs_safety.ps1
+[ OK ] Found scripts\validate_installation_docs_safety.ps1
+[ OK ] Found scripts\validate_help_screen_safety.ps1
+[ OK ] Found scripts\validate_system_diagnostics_safety.ps1
+[ OK ] Found scripts\validate_known_limitations_safety.ps1
+[ OK ] Found scripts\validate_ops_evidence_index.ps1
+[ OK ] Found scripts\validate_training_safety.ps1
+[ OK ] Found scripts\validate_double_action_safety.ps1
+[ OK ] Found scripts\validate_installer_legacy_safety.ps1
+[ OK ] Found scripts\validate_lan_recovery_safety.ps1
+[ OK ] Found scripts\validate_maintenance_mode_safety.ps1
+[FAIL] Missing required release file: scripts\validate_new_invoice_maintainability.ps1
+[ OK ] Found scripts\validate_shift_incident_recovery_safety.ps1
+[ OK ] Found scripts\validate_final_handoff_completeness.ps1
+[ OK ] Found scripts\validate_operations_objective_audit.ps1
+[ OK ] Found scripts\validate_permission_audit_safety.ps1
+[ OK ] Found scripts\validate_rate_limit_safety.ps1
+[ OK ] Found scripts\validate_field_proof_templates.ps1
+[ OK ] Found scripts\validate_proof_initialization_safety.ps1
+[ OK ] Found scripts\run_backup_worker.cmd
+[ OK ] Found scripts\run_scheduled_backup.cmd
+[ OK ] Found qa\LAN_CLIENT_VALIDATION_PROOF.example.md
+[ OK ] Found qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md
+[ OK ] Found qa\FINAL_RESTORE_PROOF.example.md
+[ OK ] Found qa\FINAL_CONCURRENCY_PROOF.example.md
+[ OK ] Found qa\TRAINING_ACCEPTANCE_PROOF.example.md
+[ OK ] docker-compose.prod.yml matches versioned source
+[ OK ] backend\Dockerfile.prod matches versioned source
+[ OK ] nginx\default.conf matches versioned source
+[ OK ] scripts\collect_support_packet.ps1 matches versioned source
+[ OK ] scripts\deploy_hospital_lan.ps1 matches versioned source
+[FAIL] scripts\make_offline_release.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\production_readiness_preflight.ps1 matches versioned source
+[FAIL] scripts\final_production_handoff.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\install_hospital_startup_shortcut.ps1 matches versioned source
+[ OK ] scripts\install_stack_autostart_windows.ps1 matches versioned source
+[ OK ] scripts\install_backup_tasks_windows.ps1 matches versioned source
+[ OK ] scripts\lib\operational_url_safety.ps1 matches versioned source
+[ OK ] scripts\open_hospital_system.ps1 matches versioned source
+[ OK ] scripts\repair_hospital_system.ps1 matches versioned source
+[ OK ] scripts\start_hospital_services.ps1 matches versioned source
+[ OK ] scripts\validate_support_packet_safety.ps1 matches versioned source
+[ OK ] scripts\validate_browser_smoke_evidence.ps1 matches versioned source
+[ OK ] scripts\validate_dependency_manifest.ps1 matches versioned source
+[ OK ] scripts\validate_startup_repair_safety.ps1 matches versioned source
+[ OK ] scripts\validate_operator_manuals_safety.ps1 matches versioned source
+[ OK ] scripts\validate_backup_restore_docs_safety.ps1 matches versioned source
+[ OK ] scripts\validate_installation_docs_safety.ps1 matches versioned source
+[ OK ] scripts\validate_help_screen_safety.ps1 matches versioned source
+[FAIL] scripts\validate_system_diagnostics_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_ops_evidence_index.ps1 matches versioned source
+[ OK ] scripts\validate_training_safety.ps1 matches versioned source
+[ OK ] scripts\validate_double_action_safety.ps1 matches versioned source
+[ OK ] scripts\validate_installer_legacy_safety.ps1 matches versioned source
+[FAIL] scripts\validate_lan_recovery_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_maintenance_mode_safety.ps1 matches versioned source
+[FAIL] scripts\validate_known_limitations_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_shift_incident_recovery_safety.ps1 matches versioned source
+[FAIL] scripts\validate_final_handoff_completeness.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_operations_objective_audit.ps1 matches versioned source
+[ OK ] scripts\validate_permission_audit_safety.ps1 matches versioned source
+[ OK ] scripts\validate_rate_limit_safety.ps1 matches versioned source
+[ OK ] scripts\validate_field_proof_templates.ps1 matches versioned source
+[ OK ] scripts\validate_proof_initialization_safety.ps1 matches versioned source
+[ OK ] scripts\run_backup_worker.cmd matches versioned source
+[ OK ] scripts\run_scheduled_backup.cmd matches versioned source
+[ OK ] setup.bat matches scripts\release_setup.bat
+[ OK ] setup.bat runs from its own folder
+[ OK ] setup.bat launches PowerShell with -NoProfile
+[ OK ] setup.bat delegates to supported LAN installer
+[ OK ] setup.bat does not invoke deprecated installer
+[ OK ] setup.bat avoids legacy/demo wording
+[ OK ] setup.bat uses institutional wording
+[ OK ] qa\LAN_CLIENT_VALIDATION_PROOF.example.md matches versioned source
+[ OK ] qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md matches versioned source
+[ OK ] qa\FINAL_RESTORE_PROOF.example.md matches versioned source
+[ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
+[ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
+[ OK ] MANIFEST.txt has no stale release wording
+[FAIL] MANIFEST.txt must reference current commit 65ed3aa5 before release handoff.
+[ OK ] offline-images contains 4 Docker image tar file(s)
+
+OFFLINE_RELEASE_CLEAN: NO (8 blocking issue(s))
+```
+
+## Support packet safety validation output
+
+```text
+Paquete seguro para soporte creado en: %PROJECT_ROOT%\qa\support-packets\validation
+Archivo principal: %PROJECT_ROOT%\qa\support-packets\validation\MANIFIESTO.md
+[OK] SUPPORT_PACKET_SAFETY: YES
+[OK] No se copiaron .env, secretos ni rutas locales reales.
+```
+
+## Browser smoke evidence validation output
+
+```text
+[ OK ] Found qa\browser-smoke-2026-06-03\rc-e2e-mocked-report.json
+[ OK ] Found qa\screenshots\rc-help-support-2026-05-31\help-support-report.json
+[ OK ] RC browser smoke declares mocked-e2e mode
+[ OK ] RC browser smoke states it does not replace LAN/printer proof
+[ OK ] RC browser smoke has no console issues
+[ OK ] RC browser smoke metadata matches dashboard-light
+[ OK ] RC browser smoke dashboard-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches dashboard-dark
+[ OK ] RC browser smoke dashboard-dark screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches cashbox-open-light
+[ OK ] RC browser smoke cashbox-open-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches billing-new-empty-light
+[ OK ] RC browser smoke billing-new-empty-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches billing-new-cart-light
+[ OK ] RC browser smoke billing-new-cart-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches receipt-preview-a5-light
+[ OK ] RC browser smoke receipt-preview-a5-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches receipt-preview-light
+[ OK ] RC browser smoke receipt-preview-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches receipt-preview-dark
+[ OK ] RC browser smoke receipt-preview-dark screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches reports-admin-light
+[ OK ] RC browser smoke reports-admin-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches backups-pending-light
+[ OK ] RC browser smoke backups-pending-light screenshot exists and is non-empty
+[ OK ] Help/support smoke has no console issues
+[ OK ] Help/support light capture records safe support evidence without secret words
+[ OK ] Help/support light screenshot exists and is non-empty
+[ OK ] Help/support dark capture records safe support evidence without secret words
+[ OK ] Help/support dark screenshot exists and is non-empty
+
+BROWSER_SMOKE_EVIDENCE: YES
+```
+
+## Startup and repair safety validation output
+
+```text
+[ OK ] Found scripts\start_hospital_services.ps1
+[ OK ] Found scripts\repair_hospital_system.ps1
+[ OK ] Found scripts\open_hospital_system.ps1
+[ OK ] Found scripts\install_hospital_startup_shortcut.ps1
+[ OK ] Found scripts\install_stack_autostart_windows.ps1
+[ OK ] Found scripts\install_backup_tasks_windows.ps1
+[ OK ] Found scripts\final_production_handoff.ps1
+[ OK ] Found scripts\production_readiness_preflight.ps1
+[ OK ] scripts\start_hospital_services.ps1 includes human safety warning
+[ OK ] scripts\repair_hospital_system.ps1 includes human safety warning
+[ OK ] scripts\open_hospital_system.ps1 includes human safety warning
+[ OK ] scripts\final_production_handoff.ps1 uses -NoProfile for nested PowerShell calls
+[ OK ] scripts\production_readiness_preflight.ps1 uses -NoProfile for nested PowerShell calls
+[ OK ] scripts\install_stack_autostart_windows.ps1 uses -NoProfile for nested PowerShell calls
+[ OK ] scripts\install_backup_tasks_windows.ps1 uses -NoProfile for nested PowerShell calls
+Iniciando servicios locales del Sistema de Caja Hospitalaria...
+Carpeta del sistema: %PROJECT_ROOT%
+Validacion de arranque completada.
+Modo Docker detectado: development-docker.
+Servicios que se solicitarian: backend, frontend, mysql.
+Modo WhatIf: no se levanta Docker y no se modifican contenedores.
+[ OK ] Startup dry run completed in safe mode
+Validacion de reparacion segura completada.
+Modo WhatIf: no se levanta Docker, no se abre navegador y no se escribe diagnostico.
+Ruta de diagnostico validada dentro del sistema instalado.
+Modo Docker detectado: development-docker.
+Servicios que se solicitarian: backend, frontend, mysql.
+URL que se revisaria: http://127.0.0.1:8000.
+[ OK ] Repair dry run completed in safe mode
+Validacion del acceso directo completada.
+Carpeta del sistema: %PROJECT_ROOT%
+Destino del acceso directo: %USERPROFILE%\OneDrive\Desktop\Abrir Sistema de Caja Hospitalaria.lnk
+Modo WhatIf: no se creo acceso directo ni tarea de inicio.
+[ OK ] Shortcut dry run completed in safe mode
+Preparando autoarranque del Sistema de Caja Hospitalaria.
+Instalacion: %PROJECT_ROOT%
+Tarea: SistemaCajaHospitalaria-StackAutostart
+Accion: powershell.exe -NoProfile -ExecutionPolicy Bypass -File %PROJECT_ROOT%\scripts\start_hospital_services.ps1
+Modo WhatIf: no se registro, actualizo ni elimino la tarea de autoarranque.
+Trigger previsto: AtStartup.
+Para instalar o actualizar use PowerShell como Administrador con: -UpdateExisting
+Para revisar estado use: -Status
+[ OK ] Stack autostart dry run completed in safe mode
+Preparando tareas programadas de respaldos para Sistema de Caja Hospitalaria.
+Instalacion: %PROJECT_ROOT%
+Modo: PATH del sistema
+Worker: %PROJECT_ROOT%\scripts\run_backup_worker.cmd
+Respaldo diario: %PROJECT_ROOT%\scripts\run_scheduled_backup.cmd
+Tarea worker: SistemaCajaHospitalaria-BackupWorker
+Tarea diaria: SistemaCajaHospitalaria-DailyBackup a las 23:30
+Modo WhatIf: no se registraron, actualizaron ni eliminaron tareas.
+Comando worker previsto: cmd.exe /c "%PROJECT_ROOT%\scripts\run_backup_worker.cmd" "[php-configurado]"
+Comando respaldo diario previsto: cmd.exe /c "%PROJECT_ROOT%\scripts\run_scheduled_backup.cmd" "[php-configurado]"
+Para actualizar tareas existentes use: -UpdateExisting
+Para remover tareas use: -Uninstall
+Para revisar estado use: -Status
+[ OK ] Backup task dry run completed in safe mode
+
+STARTUP_REPAIR_SAFETY: YES
+```
+
+## Training safety validation output
+
+```text
+[ OK ] Training docs forbid practicing in production
+[ OK ] Training docs require isolated environment or disposable database
+[ OK ] Training docs require cashier role practice
+[ OK ] Training docs require supervisor role practice
+[ OK ] Training docs require administrator role practice
+[ OK ] Training docs require support summary practice
+[ OK ] Training docs include scenario: servidor no disponible
+[ OK ] Training docs include scenario: red local
+[ OK ] Training docs include scenario: impresora no responde
+[ OK ] Training docs include scenario: caja qued
+[ OK ] Training docs include scenario: respaldo fallido
+[ OK ] Training docs include scenario: sesion vencida
+[ OK ] Training docs include scenario: error de permisos
+[ OK ] Training docs include scenario: navegador
+[ OK ] Training docs include scenario: energia
+[ OK ] Training docs forbid real production users
+[ OK ] Training docs forbid real patient data
+[ OK ] Training docs forbid migrate fresh in production
+[ OK ] Training docs forbid restoring over real database
+[ OK ] Training docs forbid sharing secrets
+[ OK ] Training acceptance template requires anonymous proof
+[ OK ] Training acceptance template requires final conclusion
+[ OK ] Training acceptance template records evidence reference
+[ OK ] Training acceptance template blocks production database practice
+[ OK ] Training acceptance template blocks real patient data
+[ OK ] Training acceptance template covers cashier workflow
+[ OK ] Training acceptance template covers supervisor incidents
+[ OK ] Training acceptance template covers administrator restore safety
+[ OK ] Training acceptance template preserves physical blockers
+[ OK ] Training acceptance template must not contain APP_KEY-like assignments
+[ OK ] Training acceptance template must not contain DB_PASSWORD-like assignments
+[ OK ] Training acceptance template must not contain secret-like assignments
+[ OK ] Training acceptance template must not contain absolute Windows paths
+[ OK ] Help screen exposes safe training section
+[ OK ] Help screen exposes practice mode warning
+[ OK ] Help screen warns not to use production database
+[ OK ] Help screen mentions isolated practice database
+[ OK ] HelpView test protects production database warning
+
+TRAINING_SAFETY: YES
+```
+
+## Field proof templates safety validation output
+
+```text
+[ OK ] qa\LAN_CLIENT_VALIDATION_PROOF.example.md keeps required fields, checks and safety instructions.
+[ OK ] qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md keeps required fields, checks and safety instructions.
+[ OK ] qa\FINAL_RESTORE_PROOF.example.md keeps required fields, checks and safety instructions.
+[ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md keeps required fields, checks and safety instructions.
+
+FIELD_PROOF_TEMPLATES: YES
+Final-field proof templates match preflight-required labels, checks and safety instructions.
+```
+
+## Proof initialization safety validation output
+
+```text
+[ OK ] Found scripts\init_production_proofs.ps1
+[ OK ] Found docs\RELEASE_CHECKLIST.md
+[ OK ] Found docs\manuales\GUIA_INSTALACION_OPERATIVA.md
+[ OK ] Found scripts\final_production_handoff.ps1
+[ OK ] Found scripts\make_offline_release.ps1
+[ OK ] Found scripts\assert_offline_release_clean.ps1
+[ OK ] Initializer includes LAN_CLIENT_VALIDATION_PROOF example template
+[ OK ] Initializer includes LAN_CLIENT_VALIDATION_PROOF target proof
+[ OK ] Offline builder includes LAN_CLIENT_VALIDATION_PROOF example template
+[ OK ] Offline guard requires LAN_CLIENT_VALIDATION_PROOF example template
+[ OK ] Initializer includes INSTITUTIONAL_RECEIPT_PRINT_PROOF example template
+[ OK ] Initializer includes INSTITUTIONAL_RECEIPT_PRINT_PROOF target proof
+[ OK ] Offline builder includes INSTITUTIONAL_RECEIPT_PRINT_PROOF example template
+[ OK ] Offline guard requires INSTITUTIONAL_RECEIPT_PRINT_PROOF example template
+[ OK ] Initializer includes FINAL_RESTORE_PROOF example template
+[ OK ] Initializer includes FINAL_RESTORE_PROOF target proof
+[ OK ] Offline builder includes FINAL_RESTORE_PROOF example template
+[ OK ] Offline guard requires FINAL_RESTORE_PROOF example template
+[ OK ] Initializer includes FINAL_CONCURRENCY_PROOF example template
+[ OK ] Initializer includes FINAL_CONCURRENCY_PROOF target proof
+[ OK ] Offline builder includes FINAL_CONCURRENCY_PROOF example template
+[ OK ] Offline guard requires FINAL_CONCURRENCY_PROOF example template
+[ OK ] Initializer includes TRAINING_ACCEPTANCE_PROOF example template
+[ OK ] Initializer includes TRAINING_ACCEPTANCE_PROOF target proof
+[ OK ] Offline builder includes TRAINING_ACCEPTANCE_PROOF example template
+[ OK ] Offline guard requires TRAINING_ACCEPTANCE_PROOF example template
+[ OK ] Initializer supports WhatIfOnly
+[ OK ] Initializer protects existing evidence unless Force is passed
+[ OK ] Initializer sanitizes local paths in output
+[ OK ] Final handoff exposes InitializeProofFiles switch
+[ OK ] Final handoff calls proof initializer with ProjectRoot
+[ OK ] Release checklist documents proof initialization
+[ OK ] Install guide documents proof initialization dry-run
+[ OK ] Install guide documents guided handoff proof initialization
+[ OK ] Initializer does not run destructive database commands
+[ OK ] Proof initializer WhatIf succeeds against disposable fixture
+[ OK ] Proof initializer WhatIf does not create proof files
+[ OK ] Proof initializer creates missing proof files in disposable fixture
+[ OK ] Proof initializer created qa\LAN_CLIENT_VALIDATION_PROOF.md
+[ OK ] Proof initializer created qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md
+[ OK ] Proof initializer created qa\FINAL_RESTORE_PROOF.md
+[ OK ] Proof initializer created qa\FINAL_CONCURRENCY_PROOF.md
+[ OK ] Proof initializer created qa\TRAINING_ACCEPTANCE_PROOF.md
+[ OK ] Proof initializer exits successfully when proof files already exist
+[ OK ] Proof initializer preserves existing proof files without Force
+[ OK ] Proof initializer output sanitizes local fixture paths
+
+PROOF_INITIALIZATION_SAFETY: YES
+Proof initialization creates missing final-evidence templates without overwriting existing evidence.
+```
+
+## Operations objective audit validation output
+
+```text
+[OK] OPERATIONS_OBJECTIVE_AUDIT: YES
+[OK] Objective requirements are traced to evidence and final-field blockers remain explicit.
+```
+
+## Offline release builder self-test output
+
+```text
+[OK] SelfTest passed. default.conf=108 lines, crontab=10 lines, scripts=41, docs=7, proofTemplates=5, hash=9A27BC9EC6BD8C54C693CAF302557C1B93F7EB37EEFA3D38D8F052CECD34EA60
+```
+
+## Offline release guard self-test output
+
+```text
+[OK] SelfTest passed. Only final-field qa/*.example.md templates are allowed in offline release.
+```
+
+## Dependency manifest validation output
+
+```text
+Manifest matches composer.json and package.json.
+  backend deps declared: 15
+  frontend deps declared: 48
+```
+
+## Operator manuals safety validation output
+
+```text
+[ OK ] Found docs\manuales\MANUAL_CAJERO.md
+[ OK ] Found docs\manuales\MANUAL_SUPERVISOR.md
+[ OK ] Found docs\manuales\MANUAL_ADMINISTRADOR.md
+[ OK ] Found docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md
+[ OK ] Found docs\manuales\GUIA_CAPACITACION_SEGURA.md
+[ OK ] Cashier manual has daily checklist section
+[ OK ] Cashier manual has delicate-action warning section
+[ OK ] Cashier manual checklist has actionable checkboxes
+[ OK ] Cashier manual warns before duplicate invoice/payment attempts
+[ OK ] Cashier manual includes Abrir El Sistema
+[ OK ] Cashier manual includes Iniciar Sesion
+[ OK ] Cashier manual includes Abrir Caja
+[ OK ] Cashier manual includes Crear Factura
+[ OK ] Cashier manual includes Cobrar
+[ OK ] Cashier manual includes Imprimir Recibo
+[ OK ] Cashier manual includes Cerrar Caja
+[ OK ] Cashier manual includes Si Algo Falla
+[ OK ] Cashier manual blocks charging without open cashbox
+[ OK ] Supervisor manual has daily checklist section
+[ OK ] Supervisor manual has delicate-action warning section
+[ OK ] Supervisor manual checklist has actionable checkboxes
+[ OK ] Supervisor manual warns before duplicate invoice/payment attempts
+[ OK ] Supervisor manual includes incident: Servidor No Disponible
+[ OK ] Supervisor manual includes incident: Red Local Caida
+[ OK ] Supervisor manual includes incident: Impresora No Responde
+[ OK ] Supervisor manual includes incident: Caja Quedo Abierta
+[ OK ] Supervisor manual includes incident: Respaldo Fallido
+[ OK ] Supervisor manual includes incident: Sesion Vencida O Sin Permiso
+[ OK ] Supervisor manual forbids deleting invoices
+[ OK ] Administrator manual has daily checklist section
+[ OK ] Administrator manual has delicate-action warning section
+[ OK ] Administrator manual checklist has actionable checkboxes
+[ OK ] Administrator manual warns before duplicate invoice/payment attempts
+[ OK ] Administrator manual includes Usuarios Y Permisos
+[ OK ] Administrator manual includes Respaldos
+[ OK ] Administrator manual includes Cambios Criticos
+[ OK ] Administrator manual includes Capacitacion Segura
+[ OK ] Administrator manual forbids invented fiscal compliance
+[ OK ] Administrator manual forbids destructive production commands
+[ OK ] Operator docs include safe training/support term: base real
+[ OK ] Operator docs include safe training/support term: produccion
+[ OK ] Operator docs include safe training/support term: base descartable
+[ OK ] Operator docs include safe training/support term: no use la base real
+[ OK ] Operator docs include safe training/support term: No restaure
+[ OK ] Operator docs include safe training/support term: No borre
+[ OK ] Operator manuals do not expose secret-like assignments
+
+OPERATOR_MANUALS_SAFETY: YES
+```
+
+## Backup and restore docs safety validation output
+
+```text
+[ OK ] Found docs\manuales\GUIA_RESPALDOS_Y_RESTAURACION.md
+[ OK ] Found docs\manuales\GUIA_INSTALACION_OPERATIVA.md
+[ OK ] Found docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md
+[ OK ] Backup/restore guide includes Crear Respaldo Manual
+[ OK ] Backup/restore guide includes Respaldos Automaticos
+[ OK ] Backup/restore guide includes Retencion de respaldos
+[ OK ] Backup/restore guide includes validate_backup_worker_smoke.ps1
+[ OK ] Backup/restore guide includes qa\BACKUP_WORKER_SMOKE_PROOF.md
+[ OK ] Backup/restore guide includes Restauracion
+[ OK ] Backup/restore guide includes qa\FINAL_RESTORE_PROOF.md
+[ OK ] Backup/restore guide includes validate_restore_mysql.sh
+[ OK ] Backup/restore guide includes HOSPITAL_VALIDATE_RESTORE_MYSQL=1
+[ OK ] Restore guide requires disposable/safe restore target
+[ OK ] Restore guide forbids restoring over production for testing
+[ OK ] Restore guide requires verifiable restore evidence fields
+[ OK ] Restore guide explains no normal UI restore
+[ OK ] Backup worker smoke avoids credentials in URL
+[ OK ] Backup/support docs include safety term: No borre
+[ OK ] Backup/support docs include safety term: No restaure
+[ OK ] Backup/support docs include safety term: No ejecute seeders
+[ OK ] Backup/support docs include safety term: no restaura backups automaticamente
+[ OK ] Backup/support docs include safety term: paquete de soporte
+[ OK ] Backup/support docs include safety term: No agregue archivos .env
+[ OK ] Backup/restore docs do not expose secret-like assignments
+
+BACKUP_RESTORE_DOCS_SAFETY: YES
+```
+
+## Installation docs safety validation output
+
+```text
+[ OK ] Found docs\manuales\GUIA_INSTALACION_OPERATIVA.md
+[ OK ] Found docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md
+[ OK ] Found docs\manuales\GUIA_RESPALDOS_Y_RESTAURACION.md
+[ OK ] Found docs\OFFLINE_LAN_INSTALL.md
+[ OK ] Found docs\BACKUP_RESTORE.md
+[ OK ] Found docs\DAILY_CLOSE_PROTOCOL.md
+[ OK ] Found docs\DISASTER_RECOVERY.md
+[ OK ] Found docs\TRAINING_ADMIN.md
+[ OK ] Found docs\Manual_Usuario.md
+[ OK ] Found docs\manuales\INDICE_OPERADOR.md
+[ OK ] Found docs\RELEASE_CHECKLIST.md
+[ OK ] Installation guide includes section: Antes De Instalar
+[ OK ] Installation guide includes section: Instalar
+[ OK ] Installation guide includes section: Abrir El Sistema
+[ OK ] Installation guide includes section: Arranque Automatico
+[ OK ] Installation guide includes section: Respaldos Automaticos
+[ OK ] Installation guide includes section: Validacion Inicial
+[ OK ] Installation guide includes section: Cierre Final Antes De Operar
+[ OK ] Installation guide includes section: Soporte
+[ OK ] Installation guide includes section: Paquete Seguro Para Soporte
+[ OK ] Installation guide includes safety text: No borre carpetas de datos ni volumenes de base de datos
+[ OK ] Installation guide includes safety text: no debe ofrecer una opcion de "instalacion limpia"
+[ OK ] Installation guide includes safety text: migrate:fresh
+[ OK ] Installation guide includes safety text: sin correr seeders de demostracion
+[ OK ] Installation guide includes safety text: APP_VERSION
+[ OK ] Installation guide includes safety text: http://IP-DEL-SERVIDOR:8000
+[ OK ] Installation guide includes safety text: APP_URL
+[ OK ] Installation guide includes safety text: install_hospital_startup_shortcut.ps1
+[ OK ] Installation guide includes safety text: install_stack_autostart_windows.ps1
+[ OK ] Installation guide includes safety text: SistemaCajaHospitalaria-StackAutostart
+[ OK ] Installation guide includes safety text: AtStartup
+[ OK ] Installation guide includes safety text: -WhatIfOnly
+[ OK ] Installation guide includes safety text: install_backup_tasks_windows.ps1
+[ OK ] Installation guide includes safety text: install_backup_startup_current_user.ps1
+[ OK ] Installation guide includes safety text: BackupWorker
+[ OK ] Installation guide includes safety text: DailyBackup
+[ OK ] Installation guide includes safety text: Pendiente
+[ OK ] Installation guide includes safety text: Protegido
+[ OK ] Installation guide includes safety text: LAN_CLIENT_VALIDATION_PROOF.md
+[ OK ] Installation guide includes safety text: INSTITUTIONAL_RECEIPT_PRINT_PROOF.md
+[ OK ] Installation guide includes safety text: FINAL_RESTORE_PROOF.md
+[ OK ] Installation guide includes safety text: FINAL_CONCURRENCY_PROOF.md
+[ OK ] Installation guide includes safety text: final_production_handoff.ps1
+[ OK ] Installation guide includes safety text: -InitializeProofFiles
+[ OK ] Installation guide includes safety text: PRODUCTION_CANDIDATE
+[ OK ] Installation guide includes safety text: validate_lan_client.ps1
+[ OK ] Installation guide includes safety text: repair_hospital_system.ps1
+[ OK ] Installation guide includes safety text: LOCAL_REPAIR_DIAGNOSTIC.md
+[ OK ] Installation guide includes safety text: collect_support_packet.ps1
+[ OK ] Installation guide includes safety text: support-packets
+[ OK ] Installation guide forbids credentials in URLs
+[ OK ] Installation guide keeps handoff reports inside qa
+[ OK ] Installation guide keeps LAN evidence inside qa
+[ OK ] Installation guide documents non-mutating dry runs
+[ OK ] Installation guide documents safe repair limits
+[ OK ] Installation guide protects .env files
+[ OK ] Installation guide uses -NoProfile in documented PowerShell commands
+[ OK ] First-level support guide uses -NoProfile in documented PowerShell commands
+[ OK ] Backup and restore guide uses -NoProfile in documented PowerShell commands
+[ OK ] Offline LAN install guide uses -NoProfile in documented PowerShell commands
+[ OK ] Release checklist uses -NoProfile in documented PowerShell commands
+[ OK ] Backup/restore reference uses -NoProfile in documented PowerShell commands
+[ OK ] Daily close protocol uses -NoProfile in documented PowerShell commands
+[ OK ] Disaster recovery guide uses -NoProfile in documented PowerShell commands
+[ OK ] Admin training guide uses -NoProfile in documented PowerShell commands
+[ OK ] General user manual uses -NoProfile in documented PowerShell commands
+[ OK ] Operator index uses -NoProfile in documented PowerShell commands
+[ OK ] Install/release docs include guardrail: PRODUCTION_READY
+[ OK ] Install/release docs include guardrail: PRODUCTION_CANDIDATE
+[ OK ] Install/release docs include guardrail: No ejecutar `migrate:fresh` en el servidor real
+[ OK ] Install/release docs include guardrail: no restaura backups automaticamente
+[ OK ] Install/release docs include guardrail: no reemplaza un archivo existente por accidente
+[ OK ] Install/release docs include guardrail: no sobrescribe
+[ OK ] Install/release docs include guardrail: No declare la instalacion lista para produccion
+[ OK ] Install/release docs include guardrail: segunda computadora
+[ OK ] Install/release docs include guardrail: impresora institucional
+[ OK ] Install/release docs include guardrail: base descartable
+[ OK ] Install/release docs include guardrail: concurrencia
+[ OK ] Install/release docs include guardrail: make_offline_release.ps1 -SelfTest
+[ OK ] Install/release docs include guardrail: validate_dependency_manifest.ps1
+[ OK ] Install/release docs include guardrail: package_manifest.json
+[ OK ] Installation/support docs do not expose secret-like assignments
+
+INSTALLATION_DOCS_SAFETY: YES
+```
+
+## Help screen safety validation output
+
+```text
+[ OK ] Found frontend\src\features\help\HelpView.tsx
+[ OK ] Found frontend\src\features\help\HelpView.test.tsx
+[ OK ] Found frontend\src\lib\support\clientIssueLog.ts
+[ OK ] Found frontend\src\lib\support\clientIssueLog.test.ts
+[ OK ] Help screen includes required section/text: Ayuda institucional
+[ OK ] Help screen includes required section/text: Abrir el sistema
+[ OK ] Help screen includes required section/text: Iniciar sesion
+[ OK ] Help screen includes required section/text: Abrir caja
+[ OK ] Help screen includes required section/text: Nueva factura
+[ OK ] Help screen includes required section/text: Cobrar
+[ OK ] Help screen includes required section/text: Imprimir recibo
+[ OK ] Help screen includes required section/text: Reimprimir
+[ OK ] Help screen includes required section/text: Reportes
+[ OK ] Help screen includes required section/text: Respaldos
+[ OK ] Help screen includes required section/text: Cierre de turno
+[ OK ] Help screen includes required section/text: Pedir soporte
+[ OK ] Help screen includes required section/text: Evidencia local para soporte
+[ OK ] Help screen includes required section/text: Preparar resumen
+[ OK ] Help screen includes required section/text: Ver evidencia
+[ OK ] Help screen includes required section/text: Atajos de teclado
+[ OK ] Help screen includes required section/text: Responsabilidades por rol
+[ OK ] Help screen includes required section/text: Checklist diario por rol
+[ OK ] Help screen includes required section/text: Acciones delicadas
+[ OK ] Help screen includes required section/text: Capacitaci
+[ OK ] Help screen includes incident guidance: Servidor no disponible
+[ OK ] Help screen includes incident guidance: Impresora no responde
+[ OK ] Help screen includes incident guidance: Falla la red
+[ OK ] Help screen includes incident guidance: Se fue la luz
+[ OK ] Help screen includes incident guidance: Caja qued
+[ OK ] Help screen includes incident guidance: Diferencia de caja
+[ OK ] Help screen includes incident guidance: Respaldo fallido
+[ OK ] Help screen includes incident guidance: Base de datos necesita restaurarse
+[ OK ] Help screen includes incident guidance: Sin permiso
+[ OK ] Help screen includes incident guidance: Se cerro el navegador
+[ OK ] Help screen warns not to duplicate invoices/payments
+[ OK ] Help screen tells staff to check cashbox/history before retrying
+[ OK ] Help screen keeps safe practice/restore database warning
+[ OK ] Help support evidence explains secrets are not included
+[ OK ] Help screen prepares safe support summary
+[ OK ] Help screen reads local client issue evidence
+[ OK ] Help screen can copy support summary when browser allows it
+[ OK ] Client issue log includes safety behavior: safeClientMessage
+[ OK ] Client issue log includes safety behavior: hospital_client_issue_log
+[ OK ] Client issue log includes safety behavior: MAX_ISSUES = 20
+[ OK ] Client issue log includes safety behavior: PERMISSION_DENIED_MESSAGE
+[ OK ] Client issue log includes safety behavior: buildClientIssueSupportSummary
+[ OK ] Client issue log includes safety behavior: Resumen seguro para soporte
+[ OK ] Client issue log includes safety behavior: Acci
+[ OK ] Client issue log includes safety behavior: no repetir facturas ni cobros
+[ OK ] Client issue log includes safety behavior: [redacted]
+[ OK ] Client issue log includes safety behavior: [archivo-protegido]
+[ OK ] Client issue log includes safety behavior: [campo-interno]
+[ OK ] Client issue log includes safety behavior: [detalle-tecnico]
+[ OK ] Client issue log includes safety behavior: [ruta-local]
+[ OK ] Client issue log redacts technical pattern: DB_PASSWORD
+[ OK ] Client issue log redacts technical pattern: APP_KEY
+[ OK ] Client issue log redacts technical pattern: SQLSTATE
+[ OK ] Client issue log redacts technical pattern: \.env
+[ OK ] Client issue log redacts technical pattern: storage[\\/]+logs
+[ OK ] Client issue log redacts technical pattern: https?:\/\/
+[ OK ] Help/support tests cover: shows operational support guidance
+[ OK ] Help/support tests cover: servidor no disponible
+[ OK ] Help/support tests cover: impresora no responde
+[ OK ] Help/support tests cover: se fue la luz
+[ OK ] Help/support tests cover: caja qued
+[ OK ] Help/support tests cover: base de datos necesita restaurarse
+[ OK ] Help/support tests cover: se cerro el navegador
+[ OK ] Help/support tests cover: evidencia local para soporte
+[ OK ] Help/support tests cover: preparar resumen
+[ OK ] Help/support tests cover: redacts sensitive words
+[ OK ] Help/support tests cover: removes URL credentials
+[ OK ] Help/support tests cover: without secrets or local paths
+[ OK ] Help screen does not expose secret-like assignments
+
+HELP_SCREEN_SAFETY: YES
+```
+
+## System diagnostics safety validation output
+
+```text
+[ OK ] Found frontend\src\features\about\AboutView.tsx
+[ OK ] Found frontend\src\features\about\AboutView.test.tsx
+[ OK ] Found frontend\src\hooks\useServerStatus.ts
+[ OK ] Found frontend\src\hooks\useServerStatus.test.tsx
+[ OK ] Found frontend\src\lib\api\types.ts
+[ OK ] Found backend\app\Http\Controllers\SystemStatusController.php
+[ OK ] Found backend\tests\Feature\SystemStatusTest.php
+[ OK ] Found backend\routes\api.php
+[ OK ] About diagnostics include required text: Informacion del sistema
+[ OK ] About diagnostics include required text: Resumen operativo
+[ OK ] About diagnostics include required text: Todo bien
+[ OK ] About diagnostics include required text: Error
+[ OK ] About diagnostics include required text: Diagnostico administrativo
+[ OK ] About diagnostics include required text: Pulso operativo administrativo
+[ OK ] About diagnostics include required text: Lectura para soporte
+[ OK ] About diagnostics include required text: BarChart
+[ OK ] About diagnostics include required text: useElementWidth
+[ OK ] About diagnostics include required text: scheduler_heartbeat
+[ OK ] About diagnostics include required text: sin claves ni rutas internas
+[ OK ] About diagnostics include required text: Backend
+[ OK ] About diagnostics include required text: Base de datos
+[ OK ] About diagnostics include required text: Interfaz web
+[ OK ] About diagnostics include required text: Ultimo respaldo
+[ OK ] About diagnostics include required text: Cola de trabajos
+[ OK ] About diagnostics include required text: Cola LAN
+[ OK ] About diagnostics include required text: Retardo DB
+[ OK ] About diagnostics include required text: Respuesta DB
+[ OK ] About diagnostics include required text: Conexiones DB
+[ OK ] About diagnostics include required text: Actividad
+[ OK ] About diagnostics include required text: Sin cola acumulada
+[ OK ] About diagnostics include required text: Base local sin replica
+[ OK ] About diagnostics include required text: Version instalada
+[ OK ] About diagnostics include required text: Red local
+[ OK ] About diagnostics include required text: Migraciones
+[ OK ] About diagnostics include required text: Hora del servidor
+[ OK ] About diagnostics include required text: Espacio libre para respaldos
+[ OK ] About diagnostics include required text: Acceso LAN
+[ OK ] About diagnostics include required text: system.status.view
+[ OK ] About diagnostics gate advanced details by permission
+[ OK ] About diagnostics centralize admin status labels
+[ OK ] About diagnostics centralize admin health dashboard metrics
+[ OK ] About diagnostics consume operational health metrics
+[ OK ] About diagnostics translate database lag safely
+[ OK ] About diagnostics translate database latency safely
+[ OK ] About diagnostics translate database connections safely
+[ OK ] About diagnostics translate backend uptime safely
+[ OK ] About diagnostics translate scheduler heartbeat for support
+[ OK ] About diagnostics render status levels consistently
+[ OK ] About diagnostics format disk space for operators
+[ OK ] Server status hook includes safe summary behavior: /api/system/health
+[ OK ] Server status hook includes safe summary behavior: Todo bien
+[ OK ] Server status hook includes safe summary behavior: Requiere revision
+[ OK ] Server status hook includes safe summary behavior: Error
+[ OK ] Server status hook includes safe summary behavior: No se pudo confirmar el servidor local
+[ OK ] Server status hook includes safe summary behavior: La base de datos local no responde
+[ OK ] Server status hook includes safe summary behavior: Detenga la facturacion
+[ OK ] Server status hook includes safe summary behavior: Hay trabajos o respaldos con alerta
+[ OK ] Server status hook includes safe summary behavior: revise respaldos
+[ OK ] Server status hook includes safe summary behavior: worker_recently_active
+[ OK ] Server status hook includes safe summary behavior: success_last_24h
+[ OK ] Server status hook includes safe summary behavior: failed_last_24h
+[ OK ] Server status hook includes safe summary behavior: storage
+[ OK ] Operational health type includes extended safe field: database_lag
+[ OK ] Operational health type includes extended safe field: database_perf
+[ OK ] Operational health type includes extended safe field: queue_size
+[ OK ] Operational health type includes extended safe field: disk_free_gb
+[ OK ] Operational health type includes extended safe field: app_uptime_s
+[ OK ] Backend system status includes safe field: environmentStatus
+[ OK ] Backend system status includes safe field: databaseStatus
+[ OK ] Backend system status includes safe field: frontendStatus
+[ OK ] Backend system status includes safe field: networkStatus
+[ OK ] Backend system status includes safe field: backupStatus
+[ OK ] Backend system status includes safe field: runtimeStatus
+[ OK ] Backend system status includes safe field: readinessStatus
+[ OK ] Backend system status includes safe field: preflightStatus
+[ OK ] Backend system status includes safe field: app_version
+[ OK ] Backend system status includes safe field: server_time
+[ OK ] Backend system status includes safe field: timezone
+[ OK ] Backend system status includes safe field: lan_ready
+[ OK ] Backend system status includes safe field: client_url
+[ OK ] Backend system status includes safe field: last_success_at
+[ OK ] Backend system status includes safe field: pending_backup_jobs
+[ OK ] Backend system status includes safe field: failed_jobs_count
+[ OK ] Backend system status includes safe field: free_bytes
+[ OK ] Backend system status includes safe field: pending_migration_count
+[ OK ] Backend system status includes safe field: PRODUCTION_CANDIDATE
+[ OK ] Backend system status includes safe field: OperationalMessageSanitizer::url
+[ OK ] Backend system status includes safe field: OperationalMessageSanitizer::message
+[ OK ] Backend system status route is registered
+[ OK ] Backend public health route is registered
+[ OK ] Diagnostics tests cover: non-technical language
+[ OK ] Diagnostics tests cover: without exposing raw technical details
+[ OK ] Diagnostics tests cover: protected administrative diagnostics
+[ OK ] Diagnostics tests cover: system status permission
+[ OK ] Diagnostics tests cover: reads the public operational health endpoint
+[ OK ] Diagnostics tests cover: cashier-safe language
+[ OK ] Diagnostics tests cover: database failures
+[ OK ] Diagnostics tests cover: without secret values
+[ OK ] Diagnostics tests cover: sanitized scheduler heartbeat messages
+[ OK ] Diagnostics tests cover: admin operational pulse without raw commands or paths
+[ OK ] Diagnostics tests cover: extended admin health metrics safely
+[ OK ] Diagnostics tests cover: system.status.view
+[ OK ] About diagnostics UI does not expose forbidden technical details
+[ OK ] System status controller does not expose secret-like assignments
+
+SYSTEM_DIAGNOSTICS_SAFETY: YES
+```
+
+## Double-action safety validation output
+
+```text
+[ OK ] Found scripts\validate_mysql_concurrency.mjs
+[ OK ] Found qa\FINAL_CONCURRENCY_PROOF.md
+[ OK ] Found backend\tests\Feature\InvoiceCreationTest.php
+[ OK ] Found backend\tests\Feature\CashPaymentsReceiptTest.php
+[ OK ] Found backend\app\Actions\Billing\CreateInvoiceAction.php
+[ OK ] Found backend\app\Actions\Cash\OpenCashSessionAction.php
+[ OK ] Found backend\app\Actions\Payments\RegisterPaymentAction.php
+[ OK ] Found frontend\src\lib\api\base.ts
+[ OK ] Found frontend\src\lib\api\base.test.ts
+[ OK ] Found frontend\src\features\help\HelpView.tsx
+[ OK ] Found docs\manuales\MANUAL_CAJERO.md
+[ OK ] Found docs\manuales\MANUAL_SUPERVISOR.md
+[ OK ] Found docs\manuales\MANUAL_ADMINISTRADOR.md
+[ OK ] Concurrency validator requires explicit real-MySQL opt-in
+[ OK ] Concurrency validator confirms target URL separately
+[ OK ] Concurrency validator requires target environment
+[ OK ] Concurrency validator rejects credentials in URLs
+[ OK ] Concurrency validator refuses production-like targets
+[ OK ] Concurrency validator requires disposable/local target wording
+[ OK ] Concurrency evidence path is constrained
+[ OK ] Concurrency evidence stays under qa
+[ OK ] Concurrency validator exercises double cash opening
+[ OK ] Concurrency validator exercises concurrent invoice emission
+[ OK ] Concurrency validator exercises double payment
+[ OK ] Concurrency validator accepts created status and conflict/validation statuses
+[ OK ] Concurrency validator documents audit limitation for disposable snapshots
+[ OK ] Final concurrency proof records double cash opening result
+[ OK ] Final concurrency proof records concurrent invoice result
+[ OK ] Final concurrency proof records double payment result
+[ OK ] Final concurrency proof records duplicate-action status split
+[ OK ] Final concurrency proof has a final conclusion
+[ OK ] Invoice feature test covers concurrent invoice number uniqueness
+[ OK ] Invoice feature test rejects duplicate invoice numbers
+[ OK ] Invoice feature test checks distinct invoice numbers
+[ OK ] Invoice creation uses a database transaction
+[ OK ] Invoice creation locks open cash session while issuing
+[ OK ] Invoice creation uses fiscal number action inside transaction
+[ OK ] Cash open action checks for already-open session
+[ OK ] Cash open action locks existing session check
+[ OK ] Cash open action returns operator-safe duplicate cashbox message
+[ OK ] Cash tests cover duplicate open request
+[ OK ] Cash tests cover database uniqueness guard
+[ OK ] Cash tests expect duplicate open validation
+[ OK ] Payment registration locks the invoice
+[ OK ] Payment registration locks the cash session
+[ OK ] Payment registration rejects already paid invoices
+[ OK ] Payment registration rejects overpayment
+[ OK ] Payment tests reject paid invoices and overpayment
+[ OK ] API maps duplicate billing operations to history guidance
+[ OK ] API maps cashbox conflicts to cashbox/history guidance
+[ OK ] API tests protect duplicate-operation guidance
+[ OK ] API tests avoid exposing raw internal conflict fields
+[ OK ] Help warns staff not to repeat invoices or payments
+[ OK ] Help tells staff to check cashbox/history before retrying
+[ OK ] Cashier manual warns before repeating invoice or payment
+[ OK ] Supervisor manual warns before repeating invoice or payment
+[ OK ] Administrator manual requires history/audit review before retrying
+
+DOUBLE_ACTION_SAFETY: YES
+```
+
+## Installer legacy safety validation output
+
+```text
+[ OK ] Found scripts\release_setup.bat
+[ OK ] Found scripts\deploy_hospital_lan.ps1
+[ OK ] Found scripts\install_hospital_os.ps1
+[ OK ] Found scripts\make_offline_release.ps1
+[ OK ] Found scripts\assert_offline_release_clean.ps1
+[ OK ] Found docs\manuales\GUIA_INSTALACION_OPERATIVA.md
+[ OK ] Found docs\OFFLINE_LAN_INSTALL.md
+[ OK ] Found docs\RELEASE_CHECKLIST.md
+[ OK ] Found docs\OPERATIVE_NOTES_2026_06_02.md
+[ OK ] setup.bat launcher delegates to supported LAN installer
+[ OK ] setup.bat launcher does not invoke legacy installer
+[ OK ] setup.bat launcher runs from its own folder
+[ OK ] setup.bat launcher disables PowerShell profiles
+[ OK ] setup.bat launcher gives administrator recovery instructions
+[ OK ] setup.bat launcher uses institutional wording
+[ OK ] setup.bat launcher does not use legacy branding
+[ OK ] setup.bat launcher does not describe the install as demo
+[ OK ] offline release builder uses release_setup.bat as root setup.bat
+[ OK ] offline release guard requires supported LAN installer
+[ OK ] offline release guard checks supported LAN installer source hash
+[ OK ] offline release guard checks root setup launcher source hash
+[ OK ] offline release guard checks setup launcher working directory
+[ OK ] offline release guard checks setup launcher NoProfile
+[ OK ] offline release guard rejects legacy setup launcher
+[ OK ] supported installer uses institutional name
+[ OK ] supported installer has diagnostics-only mode
+[ OK ] supported installer has self-test mode
+[ OK ] supported installer refuses missing backup task installer
+[ OK ] supported installer runs safe migrations
+[ OK ] supported installer does not run migrate:fresh
+[ OK ] supported installer creates explicit role/catalog seeders only
+[ OK ] legacy installer is marked deprecated at top of file
+[ OK ] legacy installer points operators to supported installer
+[ OK ] legacy installer explains backwards compatibility only
+[ OK ] legacy installer warns at runtime
+[ OK ] legacy installer says no new code paths should reference it
+[ OK ] operator install guide uses setup.bat for normal install
+[ OK ] operator install guide identifies supported LAN installer
+[ OK ] operator install guide limits legacy installer to compatibility
+[ OK ] operator install guide forbids clean destructive install
+[ OK ] operator install guide forbids demo seeders
+[ OK ] offline install guide prefers supported installer
+[ OK ] operative notes record legacy installer deprecation
+[ OK ] release checklist mentions installer legacy guard
+[ OK ] Active docs/scripts do not point operators to legacy installer
+
+INSTALLER_LEGACY_SAFETY: YES
+```
+
+## LAN recovery safety validation output
+
+```text
+[ OK ] Found scripts\refresh_lan_ip.ps1
+[ OK ] Found scripts\lib\net_diagnostics.ps1
+[ OK ] Found scripts\lib\env_helpers.ps1
+[ OK ] Found scripts\validate_lan_client.ps1
+[ OK ] Found scripts\test_validate_lan_client_safety.ps1
+[ OK ] Found scripts\repair_hospital_system.ps1
+[ OK ] Found docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md
+[ OK ] Found docs\manuales\GUIA_INSTALACION_OPERATIVA.md
+[ OK ] Found docs\manuales\MANUAL_SUPERVISOR.md
+[ OK ] Found docs\RELEASE_CHECKLIST.md
+[ OK ] LAN refresh script supports PowerShell WhatIf
+[ OK ] LAN refresh uses native WhatIf without a duplicate custom parameter
+[ OK ] LAN refresh script imports env helper library
+[ OK ] LAN refresh script imports network diagnostics library
+[ OK ] LAN refresh script does not reference removed helper files
+[ OK ] LAN refresh script reads existing env safely
+[ OK ] LAN refresh script writes env through ASCII-safe helper
+[ OK ] LAN refresh updates SERVER_IP
+[ OK ] LAN refresh updates APP_URL
+[ OK ] LAN refresh updates Sanctum stateful domains
+[ OK ] LAN refresh updates CORS allowed origins
+[ OK ] LAN refresh updates Windows firewall rule
+[ OK ] LAN refresh restarts affected services
+[ OK ] LAN refresh guards client IP notice with ShouldProcess
+[ OK ] LAN refresh does not run destructive database commands
+[ OK ] Network diagnostics use default route metrics
+[ OK ] Network diagnostics identify DHCP addresses
+[ OK ] Network diagnostics warn about localhost for clients
+[ OK ] Network diagnostics warn about APIPA addresses
+[ OK ] Env helper writes ASCII env files
+[ OK ] LAN validation rejects credentials in URLs
+[ OK ] LAN validation keeps evidence under qa
+[ OK ] LAN validation supports WhatIfOnly
+[ OK ] LAN validation safety test covers WhatIf no-write
+[ OK ] LAN validation safety test rejects credential URLs
+[ OK ] Repair diagnostics warn about localhost APP_URL
+[ OK ] Support guide documents IP refresh preview
+[ OK ] Support guide tells staff not to invoice while LAN is down
+[ OK ] Install guide documents IP refresh preview
+[ OK ] Install guide requires second-client validation after refresh
+[ OK ] Supervisor manual warns clients not to use localhost
+[ OK ] Release checklist mentions LAN recovery guard
+[ OK ] LAN refresh WhatIf exits successfully against disposable fixture
+[ OK ] LAN refresh WhatIf does not modify env files
+[ OK ] LAN refresh WhatIf does not write client IP notice
+
+LAN_RECOVERY_SAFETY: YES
+```
+
+## Known limitations safety validation output
+
+```text
+[ OK ] Found docs\KNOWN_LIMITATIONS.md
+[ OK ] Found qa\INSTALLER_LEGACY_SAFETY_2026_06_03.md
+[ OK ] Found qa\LAN_RECOVERY_SAFETY_2026_06_03.md
+[ OK ] Found scripts\lib\net_diagnostics.ps1
+[ OK ] Found qa\FINAL_PRODUCTION_HANDOFF_RESULT.md
+[ OK ] Found backend\tests\Feature\CspReportControllerTest.php
+[ OK ] Found backend\app\Http\Controllers\CspReportController.php
+[ OK ] Found .github\workflows\ci.yml
+[ OK ] Found backend\tests\Coverage\CriticalModulesCoverageTest.php
+[ OK ] Found scripts\validate_new_invoice_maintainability.ps1
+[ OK ] Found frontend\src\features\invoices\NewInvoiceView.tsx
+[ OK ] Known limitations no longer lists legacy installer deprecation as pending
+[ OK ] Known limitations no longer lists robust IP detection as pending
+[ OK ] Known limitations no longer lists barcode/report SQL relocation as pending
+[ OK ] Known limitations no longer lists CSP report channel as pending
+[ OK ] Known limitations no longer lists maintenance command as pending
+[ OK ] Known limitations no longer lists permission audit as pending
+[ OK ] Known limitations no longer lists per-user rate limit as pending
+[ OK ] Known limitations no longer lists critical coverage gate as pending
+[ OK ] Known limitations no longer lists NewInvoiceView refactor as pending
+[ OK ] Known limitations records closed item: Installer legacy compatibility guarded
+[ OK ] Known limitations records closed item: LAN/IP recovery guarded
+[ OK ] Known limitations records closed item: Barcode/report SQL reference isolated
+[ OK ] Known limitations records closed item: CSP report channel implemented
+[ OK ] Known limitations records closed item: Maintenance mode guarded
+[ OK ] Known limitations records closed item: Permission audit guarded
+[ OK ] Known limitations records closed item: Per-user rate limit guarded
+[ OK ] Known limitations records closed item: Cobertura >80% en modulos criticos
+[ OK ] Known limitations records closed item: NewInvoiceView refactor
+[ OK ] Known limitations preserves final blocker: LAN client validation
+[ OK ] Known limitations preserves final blocker: Impresora fisica
+[ OK ] Known limitations preserves final blocker: Restore real final
+[ OK ] Known limitations preserves final blocker: Concurrencia final
+[ OK ] Known limitations preserves final blocker: Worker continuo de backups
+[ OK ] Known limitations preserves final blocker: SistemaCajaHospitalaria-StackAutostart
+[ OK ] Known limitations preserves final blocker: Handoff final
+[ OK ] Installer legacy evidence passes
+[ OK ] LAN recovery evidence passes
+[ OK ] LAN evidence covers route metric based IP selection
+[ OK ] Network diagnostics use Get-NetRoute
+[ OK ] Network diagnostics sort LAN candidates by route metric
+[ OK ] Handoff stays production candidate
+[ OK ] Handoff preserves stack autostart final-server blocker
+[ OK ] Barcode/report SQL reference is isolated under database\_reference_DO_NOT_EXECUTE
+[ OK ] No executable barcode/report SQL extension remains at database root
+[ OK ] CSP report route is covered by feature test
+[ OK ] CSP report route keeps rate limit test
+[ OK ] CSP report controller records reports for support
+[ OK ] CI installs a coverage driver for backend jobs
+[ OK ] CI requires the critical coverage gate
+[ OK ] CI invokes the coverage phpunit profile
+[ OK ] Critical coverage test enforces the 80 percent threshold
+[ OK ] Critical coverage test includes module: Billing
+[ OK ] Critical coverage test includes module: Cash
+[ OK ] Critical coverage test includes module: Payments
+[ OK ] Critical coverage test includes module: Backups
+[ OK ] Critical coverage test includes module: Receipts
+[ OK ] NewInvoice maintainability guard reports a stable result marker
+[ OK ] NewInvoice maintainability guard enforces the view size limit
+[ OK ] NewInvoice maintainability guard checks invoice lifecycle extraction
+[ OK ] NewInvoiceView source is currently under 200 lines (138)
+[ OK ] Known limitations does not expose secret-like assignments
+
+KNOWN_LIMITATIONS_SAFETY: YES
+```
+
+## Maintenance mode safety validation output
+
+```text
+[ OK ] Found backend\app\Console\Commands\MaintenanceCommand.php
+[ OK ] Found backend\tests\Feature\MaintenanceModeTest.php
+[ OK ] Found backend\bootstrap\app.php
+[ OK ] Found backend\resources\views\maintenance.blade.php
+[ OK ] Found docs\manuales\INDICE_OPERADOR.md
+[ OK ] Found docs\KNOWN_LIMITATIONS.md
+[ OK ] Found docs\OPERATIVE_NOTES_2026_06_02.md
+[ OK ] Found docs\DECISIONS.md
+[ OK ] Maintenance command is registered
+[ OK ] Maintenance command requires explicit on/off action
+[ OK ] Maintenance command supports operator-facing message
+[ OK ] Maintenance command writes Laravel maintenance flag only
+[ OK ] Maintenance payload uses 503 status
+[ OK ] Maintenance payload keeps short retry guidance
+[ OK ] Maintenance payload is structured JSON
+[ OK ] Maintenance off removes only the maintenance flag
+[ OK ] Maintenance command avoids destructive operations
+[ OK ] Maintenance command does not embed secret-like assignments
+[ OK ] Maintenance command payload has feature test
+[ OK ] HTML maintenance page has feature test
+[ OK ] API maintenance JSON has feature test
+[ OK ] Maintenance test checks payload omits secrets
+[ OK ] Maintenance test hides internal down-file path
+[ OK ] Maintenance test rejects mojibake
+[ OK ] API maintenance response is human-readable
+[ OK ] HTML maintenance response uses institutional view
+[ OK ] Maintenance exception handler avoids exposing secrets/raw paths
+[ OK ] Maintenance view declares Spanish language
+[ OK ] Maintenance view has human heading
+[ OK ] Maintenance view tells staff who to contact
+[ OK ] Maintenance view avoids technical details
+[ OK ] Operator index documents enabling maintenance mode
+[ OK ] Operator index documents disabling maintenance mode
+[ OK ] Operator index explains maintenance message
+[ OK ] Known limitations records maintenance as closed
+[ OK ] Known limitations no longer lists maintenance command as pending
+[ OK ] Operative notes record maintenance mode status
+[ OK ] Decision log records maintenance command decision
+[ OK ] Decision log records maintenance safety invariant
+
+MAINTENANCE_MODE_SAFETY: YES
+```
+
+## Permission audit safety validation output
+
+```text
+[ OK ] Found backend\app\Observers\PermissionAuditObserver.php
+[ OK ] Found backend\app\Providers\AppServiceProvider.php
+[ OK ] Found backend\config\permission.php
+[ OK ] Found backend\tests\Feature\PermissionAuditTest.php
+[ OK ] Found backend\app\Http\Controllers\UserController.php
+[ OK ] Found docs\KNOWN_LIMITATIONS.md
+[ OK ] Found docs\OPERATIVE_NOTES_2026_06_02.md
+[ OK ] Found docs\DECISIONS.md
+[ OK ] Permission audit observer exists
+[ OK ] Observer handles role attach events
+[ OK ] Observer handles role detach events
+[ OK ] Observer handles permission attach events
+[ OK ] Observer handles permission detach events
+[ OK ] Observer writes audit_logs records
+[ OK ] Observer records human role name
+[ OK ] Observer records human permission name
+[ OK ] Observer records current operator when available
+[ OK ] Observer cannot break business flow
+[ OK ] Observer does not downgrade permission audit to logs only
+[ OK ] Observer does not embed secret-like assignments
+[ OK ] Provider registers permission audit wiring
+[ OK ] Provider observes role model changes
+[ OK ] Provider observes permission model changes
+[ OK ] Provider listens for role attach events
+[ OK ] Provider listens for role detach events
+[ OK ] Provider listens for permission attach events
+[ OK ] Provider listens for permission detach events
+[ OK ] Spatie permission events are enabled
+[ OK ] Permission exception details stay hidden
+[ OK ] Role exception details stay hidden
+[ OK ] Role attach audit is covered by feature test
+[ OK ] Role sync detach/attach audit is covered by feature test
+[ OK ] Role creation audit is covered by feature test
+[ OK ] Permission attach audit is covered by feature test
+[ OK ] Permission audit action is asserted
+[ OK ] Permission audit tests check payload omits sensitive fields
+[ OK ] User updates avoid noisy role sync when unchanged
+[ OK ] User updates still audit real role changes
+[ OK ] Known limitations records permission audit as closed
+[ OK ] Known limitations no longer lists permission audit as pending
+[ OK ] Operative notes record permission audit status
+[ OK ] Operative notes no longer claim permission audit is log-only
+[ OK ] Decision log records permission audit decision
+[ OK ] Decision log records observer
+[ OK ] Decision log records durable audit target
+
+PERMISSION_AUDIT_SAFETY: YES
+```
+
+## Rate-limit safety validation output
+
+```text
+[ OK ] Found backend\routes\api.php
+[ OK ] Found backend\app\Http\Middleware\ThrottleByUser.php
+[ OK ] Found backend\bootstrap\app.php
+[ OK ] Found backend\tests\Feature\ThrottleByUserTest.php
+[ OK ] Found docs\KNOWN_LIMITATIONS.md
+[ OK ] Found docs\OPERATIVE_NOTES_2026_06_02.md
+[ OK ] Found qa\FINAL_PRODUCTION_HANDOFF_RESULT.md
+[ OK ] ThrottleByUser middleware exists
+[ OK ] ThrottleByUser keys authenticated users by user id
+[ OK ] ThrottleByUser has IP fallback for unauthenticated requests
+[ OK ] ThrottleByUser returns human Spanish message
+[ OK ] ThrottleByUser returns retry guidance
+[ OK ] ThrottleByUser avoids technical/secret details
+[ OK ] ThrottleByUser alias is registered
+[ OK ] Invoice creation uses per-user throttle
+[ OK ] Invoice void uses per-user throttle
+[ OK ] Invoice reverse uses per-user throttle
+[ OK ] Payment registration uses per-user throttle
+[ OK ] Payment void uses per-user throttle
+[ OK ] Cashbox open uses per-user throttle
+[ OK ] Cashbox close uses per-user throttle
+[ OK ] Payment registration no longer uses shared-IP throttle
+[ OK ] Payment void no longer uses shared-IP throttle
+[ OK ] Throttle safe 429 response is covered
+[ OK ] LAN same-IP isolation is covered
+[ OK ] Critical write route middleware is covered
+[ OK ] Test asserts 60/min per-user buckets
+[ OK ] Test asserts 30/min per-user buckets
+[ OK ] Known limitations records per-user rate limiting as closed
+[ OK ] Known limitations no longer lists per-user rate limit as pending
+[ OK ] Operative notes record per-user rate limit status
+[ OK ] Handoff records rate-limit evidence
+[ OK ] Handoff records rate-limit guard
+
+RATE_LIMIT_SAFETY: YES
+```
+
+## Shift incident recovery safety validation output
+
+```text
+[ OK ] Found frontend\src\features\help\HelpView.tsx
+[ OK ] Found frontend\src\features\help\HelpView.test.tsx
+[ OK ] Found frontend\src\lib\support\clientIssueLog.ts
+[ OK ] Found docs\manuales\MANUAL_CAJERO.md
+[ OK ] Found docs\manuales\MANUAL_SUPERVISOR.md
+[ OK ] Found docs\manuales\MANUAL_ADMINISTRADOR.md
+[ OK ] Found docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md
+[ OK ] Found docs\manuales\GUIA_CAPACITACION_SEGURA.md
+[ OK ] Found docs\RELEASE_CHECKLIST.md
+[ OK ] Help and tests cover incident: Servidor no disponible
+[ OK ] Help and tests cover incident: Impresora no responde
+[ OK ] Help and tests cover incident: Falla la red|Red Local Caida|red local caida
+[ OK ] Help and tests cover incident: Se fue la luz|reinici
+[ OK ] Help and tests cover incident: Caja qued
+[ OK ] Help and tests cover incident: Respaldo fallido
+[ OK ] Help and tests cover incident: Base de datos necesita restaurarse
+[ OK ] Help and tests cover incident: Sesion Vencida|Sesi
+[ OK ] Help and tests cover incident: Sin permiso
+[ OK ] Help and tests cover incident: Se cerro el navegador|Navegador cerrado
+[ OK ] Help tells staff to review cashbox and history after power/browser incidents
+[ OK ] Help prevents duplicate printing/payment after printer failure
+[ OK ] Help directs database restore to isolated validation first
+[ OK ] Help tells staff not to use another account for permissions
+[ OK ] Help keeps safe support evidence workflow
+[ OK ] Help support summary warns not to repeat invoices or payments
+[ OK ] Cashier manual tells staff to prepare safe help summary on errors
+[ OK ] Cashier manual forbids retrying uncertain invoices or payments
+[ OK ] Cashier manual requires history review before repeating work
+[ OK ] Supervisor manual has real-failure section
+[ OK ] Supervisor manual covers browser close without duplicate work
+[ OK ] Supervisor manual covers open cashbox recovery
+[ OK ] Supervisor manual covers backup failure without self-restore
+[ OK ] Support guide gathers operational incident facts
+[ OK ] Support guide uses safe repair diagnostics
+[ OK ] Support guide uses safe support packet without secrets
+[ OK ] Support guide forbids destructive first-level actions
+[ OK ] Support guide requires closure checks before declaring incident resolved
+[ OK ] Training guide drills real incidents before production
+[ OK ] Training guide forbids production practice and destructive restore
+[ OK ] Administrator manual keeps restore as authorized isolated procedure
+[ OK ] Release checklist mentions shift incident recovery guard
+[ OK ] Incident recovery docs do not expose secret assignments
+[ OK ] Help incident guidance does not expose secret assignments
+
+SHIFT_INCIDENT_RECOVERY_SAFETY: YES
+```
+
+## New invoice maintainability validation output
+
+```text
+[ OK ] Found frontend\src\features\invoices\NewInvoiceView.tsx
+[ OK ] Found frontend\src\features\invoices\components\NewInvoiceViewLayout.tsx
+[ OK ] Found frontend\src\features\invoices\state\reducer.ts
+[ OK ] Found frontend\src\features\invoices\state\types.ts
+[ OK ] Found frontend\src\features\invoices\NewInvoiceView.test.tsx
+[ OK ] Found frontend\src\features\invoices\NewInvoiceView.a11y.test.tsx
+[ OK ] NewInvoiceView stays under 200 lines (138)
+[ OK ] NewInvoiceView keeps extracted dependency: useInvoiceLifecycle
+[ OK ] NewInvoiceView keeps extracted dependency: usePaymentLifecycle
+[ OK ] NewInvoiceView keeps extracted dependency: usePosCartActions
+[ OK ] NewInvoiceView keeps extracted dependency: usePosDataLoader
+[ OK ] NewInvoiceView keeps extracted dependency: usePosKeyboardShortcuts
+[ OK ] NewInvoiceView keeps extracted dependency: newInvoiceReducer
+[ OK ] NewInvoiceView keeps extracted dependency: NewInvoiceViewLayout
+[ OK ] NewInvoice layout composes expected UI block: PatientStep
+[ OK ] NewInvoice layout composes expected UI block: ServiceSearch
+[ OK ] NewInvoice layout composes expected UI block: InvoiceCart
+[ OK ] NewInvoice layout composes expected UI block: InvoiceConfirmation
+[ OK ] NewInvoice layout composes expected UI block: PaymentModal
+[ OK ] NewInvoice layout composes expected UI block: InvoiceSuccess
+[ OK ] NewInvoice layout composes expected UI block: ReceiptPreview
+[ OK ] Reducer owns reset behavior outside the view
+[ OK ] Reducer owns cart add behavior outside the view
+[ OK ] Reducer owns dialysis flag behavior outside the view
+[ OK ] State contract lives outside the view
+[ OK ] Action contract lives outside the view
+[ OK ] New invoice tests preserve coverage marker: NewInvoiceView
+[ OK ] New invoice tests preserve coverage marker: accessibility
+[ OK ] New invoice tests preserve coverage marker: emitir
+[ OK ] New invoice tests preserve coverage marker: cobrar
+[ OK ] New invoice tests preserve coverage marker: dialysis
+
+NEW_INVOICE_MAINTAINABILITY: YES
+```
+
+## Final handoff completeness validation output
+
+```text
+[OK] FINAL_HANDOFF_COMPLETENESS: YES
+[OK] Handoff evidence includes captures, diagnostics, changed files, gates, physical blockers, risks and safety notes.
+```
+
+## Evidence index validation output
+
+```text
+[OK] OPS_EVIDENCE_INDEX: YES
+[OK] Referencias qa/ verificadas: 31
+[OK] El handoff conserva bloqueantes fisicos antes de PRODUCTION_READY.
+```
+
+## Preflight output
+
+```text
+Preflight skipped by -SkipPreflight.
+```

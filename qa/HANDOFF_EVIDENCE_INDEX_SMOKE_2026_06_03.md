@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-04 00:13:05
+- Generated at: 2026-06-04 08:00:41
 - Base URL: http://127.0.0.1:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -24,9 +24,12 @@
 - Double-action safety guard exit code: 0
 - Installer legacy safety guard exit code: 0
 - LAN recovery safety guard exit code: 0
+- Known limitations safety guard exit code: 0
+- Maintenance mode safety guard exit code: 0
 - Permission audit safety guard exit code: 0
 - Rate-limit safety guard exit code: 0
 - Shift incident recovery safety guard exit code: 0
+- New invoice maintainability guard exit code: 0
 - Training safety guard exit code: 0
 - Field proof templates safety guard exit code: 0
 - Proof initialization safety guard exit code: 0
@@ -57,6 +60,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 - Backup worker and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/FINAL_RESTORE_PROOF.md` and `qa/FINAL_RESTORE_PROOF_2026_06_03.md`.
 - Concurrency and double-action evidence: `qa/FINAL_CONCURRENCY_PROOF.md` and `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md`.
 - Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.
+- New invoice maintainability guard: `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` and `scripts/validate_new_invoice_maintainability.ps1` preserve a short cashier-facing invoice flow.
 - Operator and training evidence: `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md`, `qa/TRAINING_SAFETY_2026_06_03.md` and `qa/TRAINING_ACCEPTANCE_PROOF.example.md`.
 - Field proof, proof initialization, offline builder, offline release guard, objective, release and index evidence: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md`, `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`.
 
@@ -72,7 +76,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 
 - In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.
 - Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.
-- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
+- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
 - Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.
 
 ## Risks and limits
@@ -115,9 +119,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_system_
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_double_action_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installer_legacy_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_recovery_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_known_limitations_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_maintenance_mode_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_permission_audit_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_rate_limit_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_shift_incident_recovery_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_new_invoice_maintainability.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_field_proof_templates.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_proof_initialization_safety.ps1
@@ -163,68 +170,96 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found scripts\production_readiness_preflight.ps1
 [ OK ] Found scripts\final_production_handoff.ps1
 [ OK ] Found scripts\install_hospital_startup_shortcut.ps1
-[FAIL] Missing required release file: scripts\install_stack_autostart_windows.ps1
+[ OK ] Found scripts\install_stack_autostart_windows.ps1
 [ OK ] Found scripts\install_backup_tasks_windows.ps1
 [ OK ] Found scripts\validate_support_packet_safety.ps1
-[FAIL] Missing required release file: scripts\validate_browser_smoke_evidence.ps1
+[ OK ] Found scripts\validate_browser_smoke_evidence.ps1
 [ OK ] Found scripts\validate_dependency_manifest.ps1
-[FAIL] Missing required release file: scripts\validate_startup_repair_safety.ps1
-[FAIL] Missing required release file: scripts\validate_operator_manuals_safety.ps1
-[FAIL] Missing required release file: scripts\validate_backup_restore_docs_safety.ps1
-[FAIL] Missing required release file: scripts\validate_installation_docs_safety.ps1
-[FAIL] Missing required release file: scripts\validate_help_screen_safety.ps1
-[FAIL] Missing required release file: scripts\validate_system_diagnostics_safety.ps1
-[FAIL] Missing required release file: scripts\validate_known_limitations_safety.ps1
-[FAIL] Missing required release file: scripts\validate_ops_evidence_index.ps1
-[FAIL] Missing required release file: scripts\validate_training_safety.ps1
-[FAIL] Missing required release file: scripts\validate_double_action_safety.ps1
-[FAIL] Missing required release file: scripts\validate_installer_legacy_safety.ps1
-[FAIL] Missing required release file: scripts\validate_lan_recovery_safety.ps1
-[FAIL] Missing required release file: scripts\validate_maintenance_mode_safety.ps1
-[FAIL] Missing required release file: scripts\validate_shift_incident_recovery_safety.ps1
-[FAIL] Missing required release file: scripts\validate_final_handoff_completeness.ps1
-[FAIL] Missing required release file: scripts\validate_operations_objective_audit.ps1
-[FAIL] Missing required release file: scripts\validate_permission_audit_safety.ps1
-[FAIL] Missing required release file: scripts\validate_rate_limit_safety.ps1
-[FAIL] Missing required release file: scripts\validate_field_proof_templates.ps1
-[FAIL] Missing required release file: scripts\validate_proof_initialization_safety.ps1
+[ OK ] Found scripts\validate_startup_repair_safety.ps1
+[ OK ] Found scripts\validate_operator_manuals_safety.ps1
+[ OK ] Found scripts\validate_backup_restore_docs_safety.ps1
+[ OK ] Found scripts\validate_installation_docs_safety.ps1
+[ OK ] Found scripts\validate_help_screen_safety.ps1
+[ OK ] Found scripts\validate_system_diagnostics_safety.ps1
+[ OK ] Found scripts\validate_known_limitations_safety.ps1
+[ OK ] Found scripts\validate_ops_evidence_index.ps1
+[ OK ] Found scripts\validate_training_safety.ps1
+[ OK ] Found scripts\validate_double_action_safety.ps1
+[ OK ] Found scripts\validate_installer_legacy_safety.ps1
+[ OK ] Found scripts\validate_lan_recovery_safety.ps1
+[ OK ] Found scripts\validate_maintenance_mode_safety.ps1
+[FAIL] Missing required release file: scripts\validate_new_invoice_maintainability.ps1
+[ OK ] Found scripts\validate_shift_incident_recovery_safety.ps1
+[ OK ] Found scripts\validate_final_handoff_completeness.ps1
+[ OK ] Found scripts\validate_operations_objective_audit.ps1
+[ OK ] Found scripts\validate_permission_audit_safety.ps1
+[ OK ] Found scripts\validate_rate_limit_safety.ps1
+[ OK ] Found scripts\validate_field_proof_templates.ps1
+[ OK ] Found scripts\validate_proof_initialization_safety.ps1
 [ OK ] Found scripts\run_backup_worker.cmd
 [ OK ] Found scripts\run_scheduled_backup.cmd
-[FAIL] Missing required release file: qa\LAN_CLIENT_VALIDATION_PROOF.example.md
-[FAIL] Missing required release file: qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md
-[FAIL] Missing required release file: qa\FINAL_RESTORE_PROOF.example.md
-[FAIL] Missing required release file: qa\FINAL_CONCURRENCY_PROOF.example.md
-[FAIL] Missing required release file: qa\TRAINING_ACCEPTANCE_PROOF.example.md
-[FAIL] docker-compose.prod.yml in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] backend\Dockerfile.prod in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] nginx\default.conf in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\collect_support_packet.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\deploy_hospital_lan.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] Found qa\LAN_CLIENT_VALIDATION_PROOF.example.md
+[ OK ] Found qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md
+[ OK ] Found qa\FINAL_RESTORE_PROOF.example.md
+[ OK ] Found qa\FINAL_CONCURRENCY_PROOF.example.md
+[ OK ] Found qa\TRAINING_ACCEPTANCE_PROOF.example.md
+[ OK ] docker-compose.prod.yml matches versioned source
+[ OK ] backend\Dockerfile.prod matches versioned source
+[ OK ] nginx\default.conf matches versioned source
+[ OK ] scripts\collect_support_packet.ps1 matches versioned source
+[ OK ] scripts\deploy_hospital_lan.ps1 matches versioned source
 [FAIL] scripts\make_offline_release.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\production_readiness_preflight.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\production_readiness_preflight.ps1 matches versioned source
 [FAIL] scripts\final_production_handoff.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\install_hospital_startup_shortcut.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\install_backup_tasks_windows.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\lib\operational_url_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\open_hospital_system.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\repair_hospital_system.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\start_hospital_services.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_support_packet_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_dependency_manifest.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\run_backup_worker.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\run_scheduled_backup.cmd in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] setup.bat in offline release differs from scripts\release_setup.bat. Regenerate offline-release before handoff.
+[ OK ] scripts\install_hospital_startup_shortcut.ps1 matches versioned source
+[ OK ] scripts\install_stack_autostart_windows.ps1 matches versioned source
+[ OK ] scripts\install_backup_tasks_windows.ps1 matches versioned source
+[ OK ] scripts\lib\operational_url_safety.ps1 matches versioned source
+[ OK ] scripts\open_hospital_system.ps1 matches versioned source
+[ OK ] scripts\repair_hospital_system.ps1 matches versioned source
+[ OK ] scripts\start_hospital_services.ps1 matches versioned source
+[ OK ] scripts\validate_support_packet_safety.ps1 matches versioned source
+[ OK ] scripts\validate_browser_smoke_evidence.ps1 matches versioned source
+[ OK ] scripts\validate_dependency_manifest.ps1 matches versioned source
+[ OK ] scripts\validate_startup_repair_safety.ps1 matches versioned source
+[ OK ] scripts\validate_operator_manuals_safety.ps1 matches versioned source
+[ OK ] scripts\validate_backup_restore_docs_safety.ps1 matches versioned source
+[ OK ] scripts\validate_installation_docs_safety.ps1 matches versioned source
+[ OK ] scripts\validate_help_screen_safety.ps1 matches versioned source
+[FAIL] scripts\validate_system_diagnostics_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_ops_evidence_index.ps1 matches versioned source
+[ OK ] scripts\validate_training_safety.ps1 matches versioned source
+[ OK ] scripts\validate_double_action_safety.ps1 matches versioned source
+[ OK ] scripts\validate_installer_legacy_safety.ps1 matches versioned source
+[FAIL] scripts\validate_lan_recovery_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_maintenance_mode_safety.ps1 matches versioned source
+[FAIL] scripts\validate_known_limitations_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_shift_incident_recovery_safety.ps1 matches versioned source
+[FAIL] scripts\validate_final_handoff_completeness.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_operations_objective_audit.ps1 matches versioned source
+[ OK ] scripts\validate_permission_audit_safety.ps1 matches versioned source
+[ OK ] scripts\validate_rate_limit_safety.ps1 matches versioned source
+[ OK ] scripts\validate_field_proof_templates.ps1 matches versioned source
+[ OK ] scripts\validate_proof_initialization_safety.ps1 matches versioned source
+[ OK ] scripts\run_backup_worker.cmd matches versioned source
+[ OK ] scripts\run_scheduled_backup.cmd matches versioned source
+[ OK ] setup.bat matches scripts\release_setup.bat
 [ OK ] setup.bat runs from its own folder
 [ OK ] setup.bat launches PowerShell with -NoProfile
 [ OK ] setup.bat delegates to supported LAN installer
 [ OK ] setup.bat does not invoke deprecated installer
 [ OK ] setup.bat avoids legacy/demo wording
 [ OK ] setup.bat uses institutional wording
+[ OK ] qa\LAN_CLIENT_VALIDATION_PROOF.example.md matches versioned source
+[ OK ] qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md matches versioned source
+[ OK ] qa\FINAL_RESTORE_PROOF.example.md matches versioned source
+[ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
+[ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 3427a271 before release handoff.
-[FAIL] offline-images contains no Docker image tar files.
+[FAIL] MANIFEST.txt must reference current commit 65ed3aa5 before release handoff.
+[ OK ] offline-images contains 4 Docker image tar file(s)
 
-OFFLINE_RELEASE_CLEAN: NO (48 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (8 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -458,7 +493,7 @@ Proof initialization creates missing final-evidence templates without overwritin
 ## Offline release builder self-test output
 
 ```text
-[OK] SelfTest passed. default.conf=108 lines, crontab=10 lines, scripts=40, docs=7, proofTemplates=5, hash=9A27BC9EC6BD8C54C693CAF302557C1B93F7EB37EEFA3D38D8F052CECD34EA60
+[OK] SelfTest passed. default.conf=108 lines, crontab=10 lines, scripts=41, docs=7, proofTemplates=5, hash=9A27BC9EC6BD8C54C693CAF302557C1B93F7EB37EEFA3D38D8F052CECD34EA60
 ```
 
 ## Offline release guard self-test output
@@ -735,6 +770,7 @@ HELP_SCREEN_SAFETY: YES
 [ OK ] Found frontend\src\features\about\AboutView.test.tsx
 [ OK ] Found frontend\src\hooks\useServerStatus.ts
 [ OK ] Found frontend\src\hooks\useServerStatus.test.tsx
+[ OK ] Found frontend\src\lib\api\types.ts
 [ OK ] Found backend\app\Http\Controllers\SystemStatusController.php
 [ OK ] Found backend\tests\Feature\SystemStatusTest.php
 [ OK ] Found backend\routes\api.php
@@ -743,12 +779,24 @@ HELP_SCREEN_SAFETY: YES
 [ OK ] About diagnostics include required text: Todo bien
 [ OK ] About diagnostics include required text: Error
 [ OK ] About diagnostics include required text: Diagnostico administrativo
+[ OK ] About diagnostics include required text: Pulso operativo administrativo
+[ OK ] About diagnostics include required text: Lectura para soporte
+[ OK ] About diagnostics include required text: BarChart
+[ OK ] About diagnostics include required text: useElementWidth
+[ OK ] About diagnostics include required text: scheduler_heartbeat
 [ OK ] About diagnostics include required text: sin claves ni rutas internas
 [ OK ] About diagnostics include required text: Backend
 [ OK ] About diagnostics include required text: Base de datos
 [ OK ] About diagnostics include required text: Interfaz web
 [ OK ] About diagnostics include required text: Ultimo respaldo
 [ OK ] About diagnostics include required text: Cola de trabajos
+[ OK ] About diagnostics include required text: Cola LAN
+[ OK ] About diagnostics include required text: Retardo DB
+[ OK ] About diagnostics include required text: Respuesta DB
+[ OK ] About diagnostics include required text: Conexiones DB
+[ OK ] About diagnostics include required text: Actividad
+[ OK ] About diagnostics include required text: Sin cola acumulada
+[ OK ] About diagnostics include required text: Base local sin replica
 [ OK ] About diagnostics include required text: Version instalada
 [ OK ] About diagnostics include required text: Red local
 [ OK ] About diagnostics include required text: Migraciones
@@ -758,6 +806,13 @@ HELP_SCREEN_SAFETY: YES
 [ OK ] About diagnostics include required text: system.status.view
 [ OK ] About diagnostics gate advanced details by permission
 [ OK ] About diagnostics centralize admin status labels
+[ OK ] About diagnostics centralize admin health dashboard metrics
+[ OK ] About diagnostics consume operational health metrics
+[ OK ] About diagnostics translate database lag safely
+[ OK ] About diagnostics translate database latency safely
+[ OK ] About diagnostics translate database connections safely
+[ OK ] About diagnostics translate backend uptime safely
+[ OK ] About diagnostics translate scheduler heartbeat for support
 [ OK ] About diagnostics render status levels consistently
 [ OK ] About diagnostics format disk space for operators
 [ OK ] Server status hook includes safe summary behavior: /api/system/health
@@ -773,6 +828,11 @@ HELP_SCREEN_SAFETY: YES
 [ OK ] Server status hook includes safe summary behavior: success_last_24h
 [ OK ] Server status hook includes safe summary behavior: failed_last_24h
 [ OK ] Server status hook includes safe summary behavior: storage
+[ OK ] Operational health type includes extended safe field: database_lag
+[ OK ] Operational health type includes extended safe field: database_perf
+[ OK ] Operational health type includes extended safe field: queue_size
+[ OK ] Operational health type includes extended safe field: disk_free_gb
+[ OK ] Operational health type includes extended safe field: app_uptime_s
 [ OK ] Backend system status includes safe field: environmentStatus
 [ OK ] Backend system status includes safe field: databaseStatus
 [ OK ] Backend system status includes safe field: frontendStatus
@@ -805,6 +865,8 @@ HELP_SCREEN_SAFETY: YES
 [ OK ] Diagnostics tests cover: database failures
 [ OK ] Diagnostics tests cover: without secret values
 [ OK ] Diagnostics tests cover: sanitized scheduler heartbeat messages
+[ OK ] Diagnostics tests cover: admin operational pulse without raw commands or paths
+[ OK ] Diagnostics tests cover: extended admin health metrics safely
 [ OK ] Diagnostics tests cover: system.status.view
 [ OK ] About diagnostics UI does not expose forbidden technical details
 [ OK ] System status controller does not expose secret-like assignments
@@ -942,6 +1004,7 @@ INSTALLER_LEGACY_SAFETY: YES
 [ OK ] Found docs\manuales\MANUAL_SUPERVISOR.md
 [ OK ] Found docs\RELEASE_CHECKLIST.md
 [ OK ] LAN refresh script supports PowerShell WhatIf
+[ OK ] LAN refresh uses native WhatIf without a duplicate custom parameter
 [ OK ] LAN refresh script imports env helper library
 [ OK ] LAN refresh script imports network diagnostics library
 [ OK ] LAN refresh script does not reference removed helper files
@@ -953,6 +1016,7 @@ INSTALLER_LEGACY_SAFETY: YES
 [ OK ] LAN refresh updates CORS allowed origins
 [ OK ] LAN refresh updates Windows firewall rule
 [ OK ] LAN refresh restarts affected services
+[ OK ] LAN refresh guards client IP notice with ShouldProcess
 [ OK ] LAN refresh does not run destructive database commands
 [ OK ] Network diagnostics use default route metrics
 [ OK ] Network diagnostics identify DHCP addresses
@@ -973,8 +1037,124 @@ INSTALLER_LEGACY_SAFETY: YES
 [ OK ] Release checklist mentions LAN recovery guard
 [ OK ] LAN refresh WhatIf exits successfully against disposable fixture
 [ OK ] LAN refresh WhatIf does not modify env files
+[ OK ] LAN refresh WhatIf does not write client IP notice
 
 LAN_RECOVERY_SAFETY: YES
+```
+
+## Known limitations safety validation output
+
+```text
+[ OK ] Found docs\KNOWN_LIMITATIONS.md
+[ OK ] Found qa\INSTALLER_LEGACY_SAFETY_2026_06_03.md
+[ OK ] Found qa\LAN_RECOVERY_SAFETY_2026_06_03.md
+[ OK ] Found scripts\lib\net_diagnostics.ps1
+[ OK ] Found qa\FINAL_PRODUCTION_HANDOFF_RESULT.md
+[ OK ] Found backend\tests\Feature\CspReportControllerTest.php
+[ OK ] Found backend\app\Http\Controllers\CspReportController.php
+[ OK ] Found .github\workflows\ci.yml
+[ OK ] Found backend\tests\Coverage\CriticalModulesCoverageTest.php
+[ OK ] Found scripts\validate_new_invoice_maintainability.ps1
+[ OK ] Found frontend\src\features\invoices\NewInvoiceView.tsx
+[ OK ] Known limitations no longer lists legacy installer deprecation as pending
+[ OK ] Known limitations no longer lists robust IP detection as pending
+[ OK ] Known limitations no longer lists barcode/report SQL relocation as pending
+[ OK ] Known limitations no longer lists CSP report channel as pending
+[ OK ] Known limitations no longer lists maintenance command as pending
+[ OK ] Known limitations no longer lists permission audit as pending
+[ OK ] Known limitations no longer lists per-user rate limit as pending
+[ OK ] Known limitations no longer lists critical coverage gate as pending
+[ OK ] Known limitations no longer lists NewInvoiceView refactor as pending
+[ OK ] Known limitations records closed item: Installer legacy compatibility guarded
+[ OK ] Known limitations records closed item: LAN/IP recovery guarded
+[ OK ] Known limitations records closed item: Barcode/report SQL reference isolated
+[ OK ] Known limitations records closed item: CSP report channel implemented
+[ OK ] Known limitations records closed item: Maintenance mode guarded
+[ OK ] Known limitations records closed item: Permission audit guarded
+[ OK ] Known limitations records closed item: Per-user rate limit guarded
+[ OK ] Known limitations records closed item: Cobertura >80% en modulos criticos
+[ OK ] Known limitations records closed item: NewInvoiceView refactor
+[ OK ] Known limitations preserves final blocker: LAN client validation
+[ OK ] Known limitations preserves final blocker: Impresora fisica
+[ OK ] Known limitations preserves final blocker: Restore real final
+[ OK ] Known limitations preserves final blocker: Concurrencia final
+[ OK ] Known limitations preserves final blocker: Worker continuo de backups
+[ OK ] Known limitations preserves final blocker: SistemaCajaHospitalaria-StackAutostart
+[ OK ] Known limitations preserves final blocker: Handoff final
+[ OK ] Installer legacy evidence passes
+[ OK ] LAN recovery evidence passes
+[ OK ] LAN evidence covers route metric based IP selection
+[ OK ] Network diagnostics use Get-NetRoute
+[ OK ] Network diagnostics sort LAN candidates by route metric
+[ OK ] Handoff stays production candidate
+[ OK ] Handoff preserves stack autostart final-server blocker
+[ OK ] Barcode/report SQL reference is isolated under database\_reference_DO_NOT_EXECUTE
+[ OK ] No executable barcode/report SQL extension remains at database root
+[ OK ] CSP report route is covered by feature test
+[ OK ] CSP report route keeps rate limit test
+[ OK ] CSP report controller records reports for support
+[ OK ] CI installs a coverage driver for backend jobs
+[ OK ] CI requires the critical coverage gate
+[ OK ] CI invokes the coverage phpunit profile
+[ OK ] Critical coverage test enforces the 80 percent threshold
+[ OK ] Critical coverage test includes module: Billing
+[ OK ] Critical coverage test includes module: Cash
+[ OK ] Critical coverage test includes module: Payments
+[ OK ] Critical coverage test includes module: Backups
+[ OK ] Critical coverage test includes module: Receipts
+[ OK ] NewInvoice maintainability guard reports a stable result marker
+[ OK ] NewInvoice maintainability guard enforces the view size limit
+[ OK ] NewInvoice maintainability guard checks invoice lifecycle extraction
+[ OK ] NewInvoiceView source is currently under 200 lines (138)
+[ OK ] Known limitations does not expose secret-like assignments
+
+KNOWN_LIMITATIONS_SAFETY: YES
+```
+
+## Maintenance mode safety validation output
+
+```text
+[ OK ] Found backend\app\Console\Commands\MaintenanceCommand.php
+[ OK ] Found backend\tests\Feature\MaintenanceModeTest.php
+[ OK ] Found backend\bootstrap\app.php
+[ OK ] Found backend\resources\views\maintenance.blade.php
+[ OK ] Found docs\manuales\INDICE_OPERADOR.md
+[ OK ] Found docs\KNOWN_LIMITATIONS.md
+[ OK ] Found docs\OPERATIVE_NOTES_2026_06_02.md
+[ OK ] Found docs\DECISIONS.md
+[ OK ] Maintenance command is registered
+[ OK ] Maintenance command requires explicit on/off action
+[ OK ] Maintenance command supports operator-facing message
+[ OK ] Maintenance command writes Laravel maintenance flag only
+[ OK ] Maintenance payload uses 503 status
+[ OK ] Maintenance payload keeps short retry guidance
+[ OK ] Maintenance payload is structured JSON
+[ OK ] Maintenance off removes only the maintenance flag
+[ OK ] Maintenance command avoids destructive operations
+[ OK ] Maintenance command does not embed secret-like assignments
+[ OK ] Maintenance command payload has feature test
+[ OK ] HTML maintenance page has feature test
+[ OK ] API maintenance JSON has feature test
+[ OK ] Maintenance test checks payload omits secrets
+[ OK ] Maintenance test hides internal down-file path
+[ OK ] Maintenance test rejects mojibake
+[ OK ] API maintenance response is human-readable
+[ OK ] HTML maintenance response uses institutional view
+[ OK ] Maintenance exception handler avoids exposing secrets/raw paths
+[ OK ] Maintenance view declares Spanish language
+[ OK ] Maintenance view has human heading
+[ OK ] Maintenance view tells staff who to contact
+[ OK ] Maintenance view avoids technical details
+[ OK ] Operator index documents enabling maintenance mode
+[ OK ] Operator index documents disabling maintenance mode
+[ OK ] Operator index explains maintenance message
+[ OK ] Known limitations records maintenance as closed
+[ OK ] Known limitations no longer lists maintenance command as pending
+[ OK ] Operative notes record maintenance mode status
+[ OK ] Decision log records maintenance command decision
+[ OK ] Decision log records maintenance safety invariant
+
+MAINTENANCE_MODE_SAFETY: YES
 ```
 
 ## Permission audit safety validation output
@@ -1119,6 +1299,44 @@ RATE_LIMIT_SAFETY: YES
 SHIFT_INCIDENT_RECOVERY_SAFETY: YES
 ```
 
+## New invoice maintainability validation output
+
+```text
+[ OK ] Found frontend\src\features\invoices\NewInvoiceView.tsx
+[ OK ] Found frontend\src\features\invoices\components\NewInvoiceViewLayout.tsx
+[ OK ] Found frontend\src\features\invoices\state\reducer.ts
+[ OK ] Found frontend\src\features\invoices\state\types.ts
+[ OK ] Found frontend\src\features\invoices\NewInvoiceView.test.tsx
+[ OK ] Found frontend\src\features\invoices\NewInvoiceView.a11y.test.tsx
+[ OK ] NewInvoiceView stays under 200 lines (138)
+[ OK ] NewInvoiceView keeps extracted dependency: useInvoiceLifecycle
+[ OK ] NewInvoiceView keeps extracted dependency: usePaymentLifecycle
+[ OK ] NewInvoiceView keeps extracted dependency: usePosCartActions
+[ OK ] NewInvoiceView keeps extracted dependency: usePosDataLoader
+[ OK ] NewInvoiceView keeps extracted dependency: usePosKeyboardShortcuts
+[ OK ] NewInvoiceView keeps extracted dependency: newInvoiceReducer
+[ OK ] NewInvoiceView keeps extracted dependency: NewInvoiceViewLayout
+[ OK ] NewInvoice layout composes expected UI block: PatientStep
+[ OK ] NewInvoice layout composes expected UI block: ServiceSearch
+[ OK ] NewInvoice layout composes expected UI block: InvoiceCart
+[ OK ] NewInvoice layout composes expected UI block: InvoiceConfirmation
+[ OK ] NewInvoice layout composes expected UI block: PaymentModal
+[ OK ] NewInvoice layout composes expected UI block: InvoiceSuccess
+[ OK ] NewInvoice layout composes expected UI block: ReceiptPreview
+[ OK ] Reducer owns reset behavior outside the view
+[ OK ] Reducer owns cart add behavior outside the view
+[ OK ] Reducer owns dialysis flag behavior outside the view
+[ OK ] State contract lives outside the view
+[ OK ] Action contract lives outside the view
+[ OK ] New invoice tests preserve coverage marker: NewInvoiceView
+[ OK ] New invoice tests preserve coverage marker: accessibility
+[ OK ] New invoice tests preserve coverage marker: emitir
+[ OK ] New invoice tests preserve coverage marker: cobrar
+[ OK ] New invoice tests preserve coverage marker: dialysis
+
+NEW_INVOICE_MAINTAINABILITY: YES
+```
+
 ## Final handoff completeness validation output
 
 ```text
@@ -1130,7 +1348,7 @@ SHIFT_INCIDENT_RECOVERY_SAFETY: YES
 
 ```text
 [OK] OPS_EVIDENCE_INDEX: YES
-[OK] Referencias qa/ verificadas: 30
+[OK] Referencias qa/ verificadas: 31
 [OK] El handoff conserva bloqueantes fisicos antes de PRODUCTION_READY.
 ```
 

@@ -61,6 +61,7 @@ $supervisorManual = Read-RequiredFile "docs\manuales\MANUAL_SUPERVISOR.md"
 $releaseChecklist = Read-RequiredFile "docs\RELEASE_CHECKLIST.md"
 
 Assert-Contains "LAN refresh script supports PowerShell WhatIf" $refreshScript 'SupportsShouldProcess\s*=\s*\$true'
+Assert-NotContains "LAN refresh uses native WhatIf without a duplicate custom parameter" $refreshScript '\[switch\]\s*\$WhatIf'
 Assert-Contains "LAN refresh script imports env helper library" $refreshScript "lib[\s\S]*env_helpers\.ps1"
 Assert-Contains "LAN refresh script imports network diagnostics library" $refreshScript "lib[\s\S]*net_diagnostics\.ps1"
 Assert-NotContains "LAN refresh script does not reference removed helper files" $refreshScript "_lib_env_helpers|_lib_lan_ip"
@@ -72,6 +73,7 @@ Assert-Contains "LAN refresh updates Sanctum stateful domains" $refreshScript "S
 Assert-Contains "LAN refresh updates CORS allowed origins" $refreshScript "CORS_ALLOWED_ORIGINS"
 Assert-Contains "LAN refresh updates Windows firewall rule" $refreshScript "New-NetFirewallRule"
 Assert-Contains "LAN refresh restarts affected services" $refreshScript "backend[\s\S]*queue-worker[\s\S]*scheduler"
+Assert-Contains "LAN refresh guards client IP notice with ShouldProcess" $refreshScript 'ShouldProcess\(\$noticePath'
 Assert-NotContains "LAN refresh does not run destructive database commands" $refreshScript "migrate:fresh|DROP DATABASE|Remove-Item\s+.*backend|docker\s+volume\s+rm|docker\s+compose\s+down\s+-v"
 
 Assert-Contains "Network diagnostics use default route metrics" $netDiagnostics "Get-NetRoute[\s\S]*RouteMetric"
@@ -127,6 +129,12 @@ try {
         Add-Pass "LAN refresh WhatIf does not modify env files"
     } else {
         Add-Failure "LAN refresh WhatIf modified env files"
+    }
+
+    if (-not (Test-Path -LiteralPath (Join-Path $fixtureRoot "qa\IP_CHANGE_NOTICE.txt"))) {
+        Add-Pass "LAN refresh WhatIf does not write client IP notice"
+    } else {
+        Add-Failure "LAN refresh WhatIf wrote client IP notice"
     }
 } finally {
     if (Test-Path -LiteralPath $fixtureRoot) {

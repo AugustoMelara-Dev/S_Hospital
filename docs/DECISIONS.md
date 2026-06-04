@@ -1,3 +1,11 @@
+## 2026-06-04 - Handoff final ejecuta guards documentados
+
+Contexto: el handoff final listaba validadores de limitaciones conocidas y modo mantenimiento como evidencia preservada, pero no todos corrian dentro de `scripts\final_production_handoff.ps1`. Ademas, el nuevo guard de mantenibilidad de `NewInvoiceView` necesitaba quedar integrado para no depender de memoria del desarrollador.
+
+Decision: `final_production_handoff.ps1` ejecuta y reporta los guards de known-limitations, maintenance mode y NewInvoice maintainability, y `validate_final_handoff_completeness.ps1` falla si el reporte no conserva sus salidas. Tambien se corrige `refresh_lan_ip.ps1` para usar el `-WhatIf` nativo de PowerShell sin parametro duplicado y sin escribir avisos de IP en modo vista previa. El builder y el guard del paquete offline incluyen `validate_new_invoice_maintainability.ps1` como script critico para que una instalacion desde USB no llegue al handoff sin ese validador.
+
+Criterio de verificacion: `validate_lan_recovery_safety.ps1`, `validate_final_handoff_completeness.ps1` y `validate_ops_evidence_index.ps1` deben pasar; el handoff con `-SkipPreflight` conserva `PRODUCTION_CANDIDATE` y los marcadores `KNOWN_LIMITATIONS_SAFETY: YES`, `MAINTENANCE_MODE_SAFETY: YES` y `NEW_INVOICE_MAINTAINABILITY: YES`.
+
 ## 2026-06-04 - NewInvoiceView queda bajo guard de mantenibilidad
 
 Contexto: `docs/KNOWN_LIMITATIONS.md` aun describia `NewInvoiceView` como una vista de ~490 lineas pendiente de refactor. La fuente actual ya mide 138 lineas y delega carga de datos, carrito, emision, pagos, atajos, estado y layout a `hooks/`, `state/` y `components/`.

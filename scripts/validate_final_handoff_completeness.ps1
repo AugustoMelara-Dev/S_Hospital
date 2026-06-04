@@ -87,6 +87,11 @@ if ($failures.Count -eq 0) {
     Assert-Content '(?i)Safety notes' "El handoff debe incluir notas de seguridad."
     Assert-Content '(?i)Dependency manifest' "El handoff debe mencionar la validacion del manifest de dependencias."
     Assert-Content '(?i)Offline release guard self-test' "El handoff debe mencionar el self-test del guard offline."
+    Assert-Content '(?i)Known limitations safety validation' "El handoff debe conservar la salida del guard de limitaciones conocidas."
+    Assert-Content '(?i)Maintenance mode safety validation' "El handoff debe conservar la salida del guard de modo mantenimiento."
+    Assert-Content '(?i)New invoice maintainability validation' "El handoff debe conservar la salida del guard de mantenibilidad de nueva factura."
+    Assert-Content 'KNOWN_LIMITATIONS_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de limitaciones conocidas."
+    Assert-Content 'NEW_INVOICE_MAINTAINABILITY:\s*YES' "El handoff debe conservar el resultado positivo de mantenibilidad de nueva factura."
     Assert-Content 'Only final-field qa/\*\.example\.md templates are allowed in offline release' "El handoff debe conservar la salida del self-test del guard offline."
 
     $requiredEvidence = @(
@@ -113,7 +118,8 @@ if ($failures.Count -eq 0) {
         'SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md',
         'OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md',
         'OPS_EVIDENCE_INDEX_2026_06_03.md',
-        'OFFLINE_RELEASE_GUARD_2026_06_03.md'
+        'OFFLINE_RELEASE_GUARD_2026_06_03.md',
+        'NEW_INVOICE_MAINTAINABILITY_2026_06_04.md'
     )
 
     foreach ($item in $requiredEvidence) {
@@ -137,6 +143,7 @@ if ($failures.Count -eq 0) {
         'scripts/validate_permission_audit_safety.ps1',
         'scripts/validate_rate_limit_safety.ps1',
         'scripts/validate_operations_objective_audit.ps1',
+        'scripts/validate_new_invoice_maintainability.ps1',
         'scripts/validate_field_proof_templates.ps1',
         'scripts/validate_proof_initialization_safety.ps1',
         'scripts/validate_dependency_manifest.ps1',
@@ -160,6 +167,9 @@ if ($failures.Count -eq 0) {
         'npm.cmd run build',
         'check-branding.ps1',
         'smoke:real',
+        'validate_known_limitations_safety.ps1',
+        'validate_maintenance_mode_safety.ps1',
+        'validate_new_invoice_maintainability.ps1',
         'validate_dependency_manifest.ps1',
         'assert_offline_release_clean.ps1 -SelfTest',
         'production_readiness_preflight.ps1'
