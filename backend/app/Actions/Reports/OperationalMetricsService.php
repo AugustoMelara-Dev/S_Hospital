@@ -20,6 +20,10 @@ use Throwable;
  */
 class OperationalMetricsService
 {
+    private const DATABASE_LATENCY_CACHE_KEY = 'operational-metrics:database-latency-ms';
+
+    private const DATABASE_LATENCY_SAMPLE_LIMIT = 60;
+
     /**
      * @return array<string, mixed>
      */
@@ -29,6 +33,7 @@ class OperationalMetricsService
             'generated_at' => now()->toIso8601String(),
             'database' => $this->database(),
             'database_lag' => $this->databaseLag(),
+            'database_perf' => $this->databasePerformance(),
             'queue' => $this->queue(),
             'queue_size' => $this->queueSize(),
             'backups' => $this->backups(),
@@ -207,6 +212,171 @@ class OperationalMetricsService
     /**
      * @return array<string, mixed>
      */
+    private function databasePerformance(): array
+    {
+        $result = [
+            'latency_ms' => [
+                'status' => 'unknown',
+                'current_ms' => null,
+                'p50_ms' => null,
+                'p95_ms' => null,
+                'p99_ms' => null,
+                'sample_count' => 0,
+            ],
+            'connections' => [
+                'status' => 'unknown',
+                'active' => null,
+                'max_used' => null,
+            ],
+        ];
+
+        try {
+            $connection = DB::connection();
+            $startedAt = microtime(true);
+            $connection->select('select 1');
+            $currentMs = round((microtime(true) - $startedAt) * 1000, 2);
+            $samples = $this->recordDatabaseLatencySample($currentMs);
+
+            $result['latency_ms'] = [
+                'status' => $this->databaseLatencyStatus($currentMs),
+                'current_ms' => $currentMs,
+                'p50_ms' => $this->percentile($samples, 50),
+                'p95_ms' => $this->percentile($samples, 95),
+                'p99_ms' => $this->percentile($samples, 99),
+                'sample_count' => count($samples),
+            ];
+            $result['connections'] = $this->databaseConnectionStats($connection);
+        } catch (Throwable $exception) {
+            Log::warning('OperationalMetricsService: db_perf probe failed', ['message' => $exception->getMessage()]);
+            $result['latency_ms']['status'] = 'error';
+            $result['latency_ms']['error'] = 'probe_failed';
+            $result['connections']['status'] = 'error';
+            $result['connections']['error'] = 'probe_failed';
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function databaseConnectionStats(Connection $connection): array
+    {
+        $driver = $connection->getDriverName();
+
+        if ($driver !== 'mysql' && $driver !== 'mariadb') {
+            return [
+                'status' => 'not_applicable',
+                'active' => null,
+                'max_used' => null,
+            ];
+        }
+
+        try {
+            $active = $this->databaseStatusValue($connection->select('SHOW STATUS LIKE "Threads_connected"'));
+            $maxUsed = $this->databaseStatusValue($connection->select('SHOW STATUS LIKE "Max_used_connections"'));
+
+            return [
+                'status' => $active === null ? 'unknown' : 'ok',
+                'active' => $active,
+                'max_used' => $maxUsed,
+            ];
+        } catch (Throwable $exception) {
+            Log::warning('OperationalMetricsService: db_connection_stats probe failed', ['message' => $exception->getMessage()]);
+
+            return [
+                'status' => 'error',
+                'active' => null,
+                'max_used' => null,
+                'error' => 'probe_failed',
+            ];
+        }
+    }
+
+    /**
+     * @param  array<int, object>  $rows
+     */
+    private function databaseStatusValue(array $rows): ?int
+    {
+        if (! isset($rows[0])) {
+            return null;
+        }
+
+        $row = (array) $rows[0];
+        $value = $row['Value'] ?? null;
+
+        return is_numeric($value) ? (int) $value : null;
+    }
+
+    /**
+     * @return list<float>
+     */
+    private function recordDatabaseLatencySample(float $currentMs): array
+    {
+        try {
+            $rawSamples = Cache::get(self::DATABASE_LATENCY_CACHE_KEY, []);
+            $samples = [];
+
+            if (is_array($rawSamples)) {
+                foreach ($rawSamples as $sample) {
+                    if (is_numeric($sample)) {
+                        $samples[] = (float) $sample;
+                    }
+                }
+            }
+
+            $samples[] = $currentMs;
+            $samples = array_slice($samples, -self::DATABASE_LATENCY_SAMPLE_LIMIT);
+            Cache::put(self::DATABASE_LATENCY_CACHE_KEY, $samples, now()->addHours(6));
+
+            return $samples;
+        } catch (Throwable $exception) {
+            Log::warning('OperationalMetricsService: db_latency_sample cache failed', ['message' => $exception->getMessage()]);
+
+            return [$currentMs];
+        }
+    }
+
+    /**
+     * @param  list<float>  $samples
+     */
+    private function percentile(array $samples, float $percentile): ?float
+    {
+        if ($samples === []) {
+            return null;
+        }
+
+        sort($samples, SORT_NUMERIC);
+        $lastIndex = count($samples) - 1;
+        $rank = ($percentile / 100) * $lastIndex;
+        $lowerIndex = (int) floor($rank);
+        $upperIndex = (int) ceil($rank);
+
+        if ($lowerIndex === $upperIndex) {
+            return round($samples[$lowerIndex], 2);
+        }
+
+        $weight = $rank - $lowerIndex;
+
+        return round($samples[$lowerIndex] + (($samples[$upperIndex] - $samples[$lowerIndex]) * $weight), 2);
+    }
+
+    private function databaseLatencyStatus(float $currentMs): string
+    {
+        if ($currentMs >= 1000) {
+            return 'slow';
+        }
+
+        if ($currentMs >= 250) {
+            return 'review';
+        }
+
+        return 'ok';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     private function queueSize(): array
     {
         $sizes = ['backups' => 0, 'failed_last_hour' => 0];
@@ -230,7 +400,7 @@ class OperationalMetricsService
      */
     private function diskFreeGb(): array
     {
-        $result = ['path' => storage_path(), 'free_gb' => null];
+        $result = ['free_gb' => null];
 
         try {
             $path = storage_path();
@@ -238,8 +408,8 @@ class OperationalMetricsService
             $free = @disk_free_space($path);
 
             if (is_numeric($total) && is_numeric($free) && $total > 0) {
-                $total = (float) $total;
-                $free = (float) $free;
+                $total = (int) $total;
+                $free = (int) $free;
                 $result['total_gb'] = round($total / 1_073_741_824, 2);
                 $result['free_gb'] = round($free / 1_073_741_824, 2);
                 $result['used_pct'] = round((($total - $free) / $total) * 100, 1);

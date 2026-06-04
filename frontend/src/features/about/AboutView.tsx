@@ -258,7 +258,7 @@ function AdminHealthDashboard({ status, health }: { status: SystemStatus; health
             {width > 0 ? (
               <BarChart data={metrics} width={width} height={220} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" opacity={0.6} />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} interval={0} />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={11} interval={0} tickFormatter={shortMetricLabel} />
                 <YAxis
                   tickLine={false}
                   axisLine={false}

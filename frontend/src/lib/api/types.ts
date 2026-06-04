@@ -692,6 +692,23 @@ export type OperationalHealth = {
     driver?: string;
     error?: string;
   };
+  database_perf?: {
+    latency_ms: {
+      status: 'unknown' | 'ok' | 'review' | 'slow' | 'error';
+      current_ms: number | null;
+      p50_ms: number | null;
+      p95_ms: number | null;
+      p99_ms: number | null;
+      sample_count: number;
+      error?: string;
+    };
+    connections: {
+      status: 'unknown' | 'ok' | 'not_applicable' | 'error';
+      active: number | null;
+      max_used: number | null;
+      error?: string;
+    };
+  };
   queue: {
     connection: string;
     pending: number;
