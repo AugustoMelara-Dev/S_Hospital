@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-$defaultLocalOrigins = 'http://localhost:5173,http://127.0.0.1:5173';
+$defaultLocalOrigins = 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000,https://localhost:8443,https://127.0.0.1:8443';
 $configuredOrigins = env('CORS_ALLOWED_ORIGINS');
 $originSource = is_string($configuredOrigins) ? trim($configuredOrigins) : '';
 

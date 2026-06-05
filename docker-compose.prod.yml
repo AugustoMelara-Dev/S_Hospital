@@ -18,7 +18,7 @@ services:
       APP_ENV: production
       APP_DEBUG: "false"
       APP_KEY: ${APP_KEY:?APP_KEY is required}
-      APP_URL: http://${SERVER_IP:?SERVER_IP is required}:${APP_PORT:-8000}
+      APP_URL: https://${SERVER_IP:?SERVER_IP is required}:${APP_HTTPS_PORT:-443}
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
@@ -29,14 +29,15 @@ services:
       QUEUE_CONNECTION: database
       SESSION_DRIVER: database
       SESSION_ENCRYPT: "true"
+      SESSION_SECURE_COOKIE: "true"
       LOG_CHANNEL: daily
       LOG_LEVEL: warning
       HOSPITAL_DUMP_BINARY: /usr/bin/mariadb-dump
       HOSPITAL_LICENSE_SALT: ${HOSPITAL_LICENSE_SALT:?HOSPITAL_LICENSE_SALT must be set to a 32+ char random string}
       RUN_MIGRATIONS: "true"
       SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
-      SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
-      CORS_ALLOWED_ORIGINS: http://${SERVER_IP}:${APP_PORT:-8000}
+      SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_HTTPS_PORT:-443}
+      CORS_ALLOWED_ORIGINS: https://${SERVER_IP},https://${SERVER_IP}:${APP_HTTPS_PORT:-443}
     volumes:
       - backup_data:/var/www/html/storage/app/private/backups
       - shared_public:/shared_public
@@ -71,12 +72,15 @@ services:
     image: nginx:1.25.4-alpine
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-8000}:80"
+      - "${APP_HTTP_PORT:-80}:80"
+      - "${APP_HTTPS_PORT:-443}:443"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/hospital-common.conf:/etc/nginx/snippets/hospital-common.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
       - shared_public:/var/www/html/public:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost/up >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget --no-check-certificate -qO- https://localhost/up >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -87,7 +91,7 @@ services:
     tmpfs:
       - /var/cache/nginx:size=32m
       - /var/run:size=8m
-    mem_limit: 128m
+    mem_limit: 192m
     cpus: "0.5"
     pids_limit: 100
     labels:
@@ -170,24 +174,25 @@ services:
       QUEUE_CONNECTION: database
       SESSION_DRIVER: database
       SESSION_ENCRYPT: "true"
+      SESSION_SECURE_COOKIE: "true"
       LOG_CHANNEL: daily
       LOG_LEVEL: warning
       HOSPITAL_DUMP_BINARY: /usr/bin/mariadb-dump
       RUN_MIGRATIONS: "false"
       SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
-      SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
-      CORS_ALLOWED_ORIGINS: http://${SERVER_IP}:${APP_PORT:-8000}
+      SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_HTTPS_PORT:-443}
+      CORS_ALLOWED_ORIGINS: https://${SERVER_IP},https://${SERVER_IP}:${APP_HTTPS_PORT:-443}
     volumes:
       - backup_data:/var/www/html/storage/app/private/backups
     healthcheck:
       test:
         - "CMD-SHELL"
         - >
-          php artisan tinker --execute="DB::connection()->getPdo();
-          $worker = DB::table('jobs')->where('queue', 'backups')->count();
-          $failed = DB::table('failed_jobs')->where('queue', 'backups')->where('failed_at', '>=', now()->subHour())->count();
-          if ($failed > 5) { exit(1); }
-          echo 'OK pending=' . $worker;"
+          php artisan tinker --execute='DB::connection()->getPdo();
+          $$worker = DB::table("jobs")->where("queue", "backups")->count();
+          $$failed = DB::table("failed_jobs")->where("queue", "backups")->where("failed_at", ">=", now()->subHour())->count();
+          if ($$failed > 5) { exit(1); }
+          echo "OK pending=" . $$worker;'
       interval: 60s
       timeout: 15s
       retries: 3
@@ -273,6 +278,12 @@ services:
   # CashSessionChanged). Eliminates the polling-tax on every cashier
   # PC and keeps every open invoice list, dashboard, and cash session
   # in sync within ~1.5s.
+  #
+  # In v1.0.0 PRODUCTION_READY the WebSocket is NOT exposed on the host.
+  # Cashier PCs reach it through nginx at https://$SERVER_IP/ws which
+  # proxies the Upgrade request to soketi:6001. This keeps Soketi
+  # inside the docker network (no second port to open in the firewall)
+  # and lets the same TLS cert cover the SPA and the WebSocket.
   soketi:
     image: soketi/soketi:1.6-16-alpine
     restart: unless-stopped
@@ -285,6 +296,7 @@ services:
     command: >
       sh -c "
         soketi start \
+          --host=0.0.0.0 \
           --port=6001 \
           --default-app-id=$${PUSHER_APP_ID:-hospital-app} \
           --default-app-key=$${PUSHER_APP_KEY:-hospital-key} \
@@ -298,6 +310,10 @@ services:
       PUSHER_APP_ID: ${PUSHER_APP_ID:-hospital-app}
       PUSHER_APP_KEY: ${PUSHER_APP_KEY:-hospital-key}
       PUSHER_APP_SECRET: ${PUSHER_APP_SECRET:-hospital-secret}
+    # Soketi listens on the internal docker network only. No `ports:`
+    # mapping here: cashier PCs reach it through nginx at /ws.
+    expose:
+      - "6001"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:6001/ >/dev/null 2>&1 || exit 1"]
       interval: 30s

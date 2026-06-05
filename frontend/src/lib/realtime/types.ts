@@ -11,6 +11,13 @@ export interface EchoConfig {
   port: number;
   scheme: 'http' | 'https';
   useTLS: boolean;
+  /**
+   * WebSocket path appended to wsHost:wsPort by pusher-js. Defaults
+   * to `/ws` (served by nginx which proxies to Soketi). In the rare
+   * case the operator mounts Soketi at a different path, the
+   * backend's /api/system/echo-config will override this.
+   */
+  path?: string;
   authEndpoint: string;
   channels: {
     invoices: 'invoices';

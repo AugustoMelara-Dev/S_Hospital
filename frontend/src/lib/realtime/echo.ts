@@ -53,9 +53,15 @@ export async function getEcho(): Promise<Echo<'pusher'> | null> {
     cluster: config.cluster,
     forceTLS: config.useTLS,
     enabledTransports: ['ws', 'wss'],
+    // Same-origin WebSocket: the cashier PC browser reaches Soketi
+    // through nginx at /ws on the APP_URL origin. The pusher-js
+    // client concatenates wsHost + ":" + wsPort + wsPath, so we set
+    // the path explicitly. We never expose the internal Soketi port
+    // (6001) to the cashier PC; the upgrade happens server-side.
     wsHost: config.host,
     wsPort: config.port,
     wssPort: config.port,
+    wsPath: config.path ?? '/ws',
     disableStats: true,
     authEndpoint: config.authEndpoint,
     auth: {

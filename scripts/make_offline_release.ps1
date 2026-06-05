@@ -9,7 +9,8 @@ param(
     [switch] $SelfTest
 )
 
-$script:NginxDefaultConfMinLines = 80
+$script:NginxDefaultConfMinLines = 70
+$script:NginxCommonConfMinLines = 50
 $script:OfflineReleaseCriticalScripts = @(
     "assert_offline_release_clean.ps1",
     "collect_support_packet.ps1",
@@ -103,15 +104,20 @@ if ($SelfTest) {
         New-Item -ItemType Directory -Force -Path $tempNginx | Out-Null
 
         $sourceDefaultConf = Join-Path $ProjectRoot "nginx/default.conf"
+        $sourceCommonConf = Join-Path $ProjectRoot "nginx/hospital-common.conf"
         $sourceCrontab = Join-Path $ProjectRoot "nginx/crontab"
         if (-not (Test-Path -LiteralPath $sourceDefaultConf -PathType Leaf)) {
             Write-Fail "SelfTest FAILED: source nginx/default.conf is missing at $sourceDefaultConf."
+        }
+        if (-not (Test-Path -LiteralPath $sourceCommonConf -PathType Leaf)) {
+            Write-Fail "SelfTest FAILED: source nginx/hospital-common.conf is missing at $sourceCommonConf."
         }
         if (-not (Test-Path -LiteralPath $sourceCrontab -PathType Leaf)) {
             Write-Fail "SelfTest FAILED: source nginx/crontab is missing at $sourceCrontab."
         }
 
         Copy-Item -LiteralPath $sourceDefaultConf -Destination (Join-Path $tempNginx "default.conf") -Force
+        Copy-Item -LiteralPath $sourceCommonConf -Destination (Join-Path $tempNginx "hospital-common.conf") -Force
         Copy-Item -LiteralPath $sourceCrontab -Destination (Join-Path $tempNginx "crontab") -Force
         Copy-Item -LiteralPath (Join-Path $ProjectRoot "scripts") -Destination (Join-Path $tempRoot "scripts") -Recurse -Force
         Copy-Item -LiteralPath (Join-Path $ProjectRoot "docs") -Destination (Join-Path $tempRoot "docs") -Recurse -Force
@@ -132,10 +138,14 @@ if ($SelfTest) {
         Remove-Item -LiteralPath (Join-Path $tempRoot "scripts\release_setup.bat") -Force
 
         $defaultConfLines = (Get-Content -LiteralPath (Join-Path $tempNginx "default.conf")).Count
+        $commonConfLines = (Get-Content -LiteralPath (Join-Path $tempNginx "hospital-common.conf")).Count
         $crontabLines = (Get-Content -LiteralPath (Join-Path $tempNginx "crontab")).Count
 
         if ($defaultConfLines -lt $script:NginxDefaultConfMinLines) {
             Write-Fail "SelfTest FAILED: nginx/default.conf is $defaultConfLines lines (>= $script:NginxDefaultConfMinLines required). The release bundle would ship a stripped-down config."
+        }
+        if ($commonConfLines -lt $script:NginxCommonConfMinLines) {
+            Write-Fail "SelfTest FAILED: nginx/hospital-common.conf is $commonConfLines lines (>= $script:NginxCommonConfMinLines required). The release bundle would ship a stripped-down shared config."
         }
         if ($crontabLines -lt 1) {
             Write-Fail "SelfTest FAILED: nginx/crontab is empty after copy."
@@ -145,6 +155,11 @@ if ($SelfTest) {
         $copiedHash = (Get-FileHash -LiteralPath (Join-Path $tempNginx "default.conf") -Algorithm SHA256).Hash
         if ($sourceHash -ne $copiedHash) {
             Write-Fail "SelfTest FAILED: copied nginx/default.conf does not match source hash."
+        }
+        $commonSourceHash = (Get-FileHash -LiteralPath $sourceCommonConf -Algorithm SHA256).Hash
+        $commonCopiedHash = (Get-FileHash -LiteralPath (Join-Path $tempNginx "hospital-common.conf") -Algorithm SHA256).Hash
+        if ($commonSourceHash -ne $commonCopiedHash) {
+            Write-Fail "SelfTest FAILED: copied nginx/hospital-common.conf does not match source hash."
         }
 
         foreach ($scriptName in $script:OfflineReleaseCriticalScripts) {
@@ -286,6 +301,10 @@ if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot "nginx\default.conf") -
     Write-Fail "Falta nginx\default.conf versionado."
 }
 
+if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot "nginx\hospital-common.conf") -PathType Leaf)) {
+    Write-Fail "Falta nginx\hospital-common.conf versionado."
+}
+
 if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot "nginx\crontab") -PathType Leaf)) {
     Write-Fail "Falta nginx\crontab versionado."
 }
@@ -325,12 +344,18 @@ Write-Step "Copiando archivos versionados de instalacion."
 Copy-RequiredFile "docker-compose.prod.yml"
 Copy-RequiredFile "backend\Dockerfile.prod"
 Copy-RequiredFile "nginx\default.conf"
+Copy-RequiredFile "nginx\hospital-common.conf"
 Copy-RequiredFile "nginx\crontab"
 
 $bundledDefaultConf = Join-Path $ReleaseRoot "nginx\default.conf"
 $bundledDefaultConfLines = (Get-Content -LiteralPath $bundledDefaultConf).Count
 if ($bundledDefaultConfLines -lt $script:NginxDefaultConfMinLines) {
     Write-Fail "nginx\default.conf en release tiene solo $bundledDefaultConfLines lineas (>= $script:NginxDefaultConfMinLines requeridas). Se rechaza empacar una config truncada."
+}
+$bundledCommonConf = Join-Path $ReleaseRoot "nginx\hospital-common.conf"
+$bundledCommonConfLines = (Get-Content -LiteralPath $bundledCommonConf).Count
+if ($bundledCommonConfLines -lt $script:NginxCommonConfMinLines) {
+    Write-Fail "nginx\hospital-common.conf en release tiene solo $bundledCommonConfLines lineas (>= $script:NginxCommonConfMinLines requeridas). Se rechaza empacar una config compartida truncada."
 }
 if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot "scripts\release_setup.bat") -PathType Leaf)) {
     Write-Fail "Falta scripts\release_setup.bat versionado."
