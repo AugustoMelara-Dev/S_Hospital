@@ -29,7 +29,24 @@ $scopedForbidden = @(
 
 $legacyReceiptPaperForbidden = @(
     'ticket termico',
-    'ticket de rollo'
+    'ticket de rollo',
+    'recibo termico',
+    'recibos termicos',
+    'recibo térmico',
+    'recibos térmicos',
+    'impresora termica',
+    'impresora térmica'
+)
+
+$visibleReceiptPaperForbidden = @(
+    'ticket termico',
+    'ticket de rollo',
+    'recibo termico',
+    'recibos termicos',
+    'recibo térmico',
+    'recibos térmicos',
+    'impresora termica',
+    'impresora térmica'
 )
 
 $deliveryReleaseForbidden = @(
@@ -142,6 +159,14 @@ try {
         ) `
         -AllowedLinePatterns @(
             'frontend/src/features\\invoices\\NewInvoiceView\.test\.tsx:\d+:\s*expect\(styles\)\.not\.toContain'
+        )
+
+    Invoke-ForbiddenSearch `
+        -Label 'Lenguaje heredado de recibo encontrado en superficies visibles instalables:' `
+        -Patterns $visibleReceiptPaperForbidden `
+        -Paths @(
+            'frontend/index.html',
+            'frontend/public/manifest.webmanifest'
         )
 
     Invoke-ForbiddenSearch `

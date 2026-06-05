@@ -1,7 +1,7 @@
 {
   "name": "Caja hospitalaria",
   "short_name": "Caja",
-  "description": "Sistema local para facturacion, caja, pagos, recibos termicos, reportes y respaldos en red LAN.",
+  "description": "Sistema local para facturacion, caja, pagos, recibos institucionales, reportes y respaldos en red LAN.",
   "start_url": "/login",
   "scope": "/",
   "display": "standalone",
