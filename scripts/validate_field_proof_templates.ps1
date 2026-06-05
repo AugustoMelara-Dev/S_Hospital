@@ -208,6 +208,35 @@ Test-Template `
     )
 
 Test-Template `
+    -relativePath "qa\FINAL_BACKUP_TASK_PROOF.example.md" `
+    -fields @(
+        "Date/time",
+        "Responsible person",
+        "Server computer name",
+        "Backup worker task status",
+        "Daily backup task status",
+        "Manual backup request time",
+        "Backup log id or filename",
+        "Backup size bytes",
+        "Evidence/capture reference",
+        "Final conclusion"
+    ) `
+    -checks @(
+        "SistemaCajaHospitalaria-BackupWorker",
+        "SistemaCajaHospitalaria-DailyBackup",
+        "Backup worker",
+        "Manual backup",
+        "pending to success",
+        "timestamp and size",
+        "Evidence does not include"
+    ) `
+    -safetyTerms @(
+        "final server",
+        "admin UI",
+        "Do not attach"
+    )
+
+Test-Template `
     -relativePath "qa\FINAL_CONCURRENCY_PROOF.example.md" `
     -fields @(
         "Date/time",

@@ -52,6 +52,7 @@ if ($guide -ne "") {
         "Retencion de respaldos",
         "validate_backup_worker_smoke.ps1",
         "qa\BACKUP_WORKER_SMOKE_PROOF.md",
+        "qa\FINAL_BACKUP_TASK_PROOF.md",
         "Restauracion",
         "qa\FINAL_RESTORE_PROOF.md",
         "validate_restore_mysql.sh",

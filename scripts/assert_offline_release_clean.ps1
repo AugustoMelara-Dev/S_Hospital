@@ -172,6 +172,7 @@ function Test-IsAllowedProofTemplate([string] $relativePath) {
         "LAN_CLIENT_VALIDATION_PROOF.example.md",
         "INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md",
         "FINAL_RESTORE_PROOF.example.md",
+        "FINAL_BACKUP_TASK_PROOF.example.md",
         "FINAL_CONCURRENCY_PROOF.example.md",
         "TRAINING_ACCEPTANCE_PROOF.example.md"
     )) {
@@ -188,6 +189,7 @@ if ($SelfTest) {
         "qa\LAN_CLIENT_VALIDATION_PROOF.example.md",
         "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md",
         "qa\FINAL_RESTORE_PROOF.example.md",
+        "qa\FINAL_BACKUP_TASK_PROOF.example.md",
         "qa\FINAL_CONCURRENCY_PROOF.example.md",
         "qa\TRAINING_ACCEPTANCE_PROOF.example.md"
     )
@@ -201,6 +203,7 @@ if ($SelfTest) {
 
     $forbiddenQaPaths = @(
         "qa\FINAL_RESTORE_PROOF.md",
+        "qa\FINAL_BACKUP_TASK_PROOF.md",
         "qa\LAN_CLIENT_VALIDATION_PROOF.md",
         "qa\support-packets\MANIFIESTO.md",
         "qa\random.example.md",
@@ -294,6 +297,7 @@ Test-RequiredPath "scripts\start_backup_automation.cmd" "file"
 Test-RequiredPath "qa\LAN_CLIENT_VALIDATION_PROOF.example.md" "file"
 Test-RequiredPath "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md" "file"
 Test-RequiredPath "qa\FINAL_RESTORE_PROOF.example.md" "file"
+Test-RequiredPath "qa\FINAL_BACKUP_TASK_PROOF.example.md" "file"
 Test-RequiredPath "qa\FINAL_CONCURRENCY_PROOF.example.md" "file"
 Test-RequiredPath "qa\TRAINING_ACCEPTANCE_PROOF.example.md" "file"
 
@@ -360,6 +364,7 @@ Test-ReleaseSetupLauncher
 Test-ReleaseFileMatchesSource "qa\LAN_CLIENT_VALIDATION_PROOF.example.md"
 Test-ReleaseFileMatchesSource "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md"
 Test-ReleaseFileMatchesSource "qa\FINAL_RESTORE_PROOF.example.md"
+Test-ReleaseFileMatchesSource "qa\FINAL_BACKUP_TASK_PROOF.example.md"
 Test-ReleaseFileMatchesSource "qa\FINAL_CONCURRENCY_PROOF.example.md"
 Test-ReleaseFileMatchesSource "qa\TRAINING_ACCEPTANCE_PROOF.example.md"
 

@@ -38,7 +38,7 @@ Validado durante el pase de arquitectura/mantenibilidad/UX/metadata:
 - E2E mockeado: `npm.cmd run e2e`.
 
 Estos gates no sustituyen validacion fisica de segunda PC LAN, impresora
-institucional, restore final, concurrencia final ni backup worker en el servidor real.
+institucional, backup final, restore final, concurrencia final ni backup worker en el servidor real.
 
 ## Gate E2E Fase 10
 
@@ -221,6 +221,11 @@ Antes de entregar instrucciones de respaldo/restauracion, ejecute
 `scripts\validate_backup_restore_docs_safety.ps1`; debe reportar
 `BACKUP_RESTORE_DOCS_SAFETY: YES` para confirmar que la guia conserva
 respaldo manual, worker, retencion, restore descartable y evidencia final.
+Despues de instalar tareas en el servidor final, crear un backup desde la UI y
+confirmar que cambia de `pending` a `success`, complete
+`qa\FINAL_BACKUP_TASK_PROOF.md` usando
+`qa\FINAL_BACKUP_TASK_PROOF.example.md`; no adjunte `.env`, dumps SQL,
+passwords, XML de tareas ni rutas absolutas.
 Antes de usar el helper Windows de restauracion en XAMPP, ejecute
 `scripts\restore_hospital_windows.ps1 -SelfTest` y despues
 `scripts\validate_restore_windows_safety.ps1`; debe reportar
@@ -305,8 +310,8 @@ contrasenas por defecto, no usan DNS publicos, no montan `docker.sock` y exigen
 `HOSPITAL_LOADTEST_TARGET_ENV`, `LAN_EMULATION_RUN_ID` y confirmacion exacta de
 URL antes de crear facturas de prueba. Estas pruebas son solo para base
 descartable o entorno de validacion; no sustituyen
-`qa\LAN_CLIENT_VALIDATION_PROOF.md`, prueba fisica de impresora ni evidencia
-fiscal real.
+`qa\LAN_CLIENT_VALIDATION_PROOF.md`, prueba fisica de impresora,
+`qa\FINAL_BACKUP_TASK_PROOF.md` ni evidencia fiscal real.
 Antes de inicializar archivos de evidencia en el servidor final, ejecute
 `scripts\validate_proof_initialization_safety.ps1`; debe reportar
 `PROOF_INITIALIZATION_SAFETY: YES` para confirmar que
@@ -327,7 +332,7 @@ evidencia o bloqueantes explicitos. Tambien falla si el servidor no usa
 `APP_ENV=production`, si `APP_DEBUG` no es `false`, si falta `frontend/dist`,
 si faltan `mysql`/`mysqldump` o `mariadb-dump`, si las rutas publicas no
 responden, o si no existen las pruebas documentadas de cliente LAN, impresora
-fisica, restore final y concurrencia final.
+fisica, backup final, restore final y concurrencia final.
 
 En Windows tambien falla si no existen `SistemaCajaHospitalaria-BackupWorker` y
 `SistemaCajaHospitalaria-DailyBackup`, o si el worker continuo no esta `Running`.
@@ -448,7 +453,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_t
 ```
 
 Usar `-WhatIfOnly` primero para revisar rutas. Despues de registrar las tareas,
-crear un backup desde la UI y confirmar que pasa de `pending` a `success`.
+crear un backup desde la UI, confirmar que pasa de `pending` a `success` y
+completar `qa\FINAL_BACKUP_TASK_PROOF.md`.
 Si las tareas ya existen, el script falla salvo que se use `-UpdateExisting`.
 Para removerlas: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Uninstall`.
 
@@ -472,6 +478,7 @@ debe quedar registrado en el handoff si se usa Startup/HKCU Run.
 - Probar impresora fisica media carta/carta/A5 desde la PC o cliente que imprimira.
 - Crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
 - Crear `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` usando `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md`.
+- Crear `qa/FINAL_BACKUP_TASK_PROOF.md` usando `qa/FINAL_BACKUP_TASK_PROOF.example.md`.
 - Crear `qa/FINAL_RESTORE_PROOF.md` usando `qa/FINAL_RESTORE_PROOF.example.md`.
 - Crear `qa/FINAL_CONCURRENCY_PROOF.md` usando `qa/FINAL_CONCURRENCY_PROOF.example.md`.
 - Para preparar ambos archivos sin escribir evidencia falsa:

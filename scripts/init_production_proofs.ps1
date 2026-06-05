@@ -48,6 +48,11 @@ $proofs = @(
         Name = "final restore proof"
     },
     @{
+        Source = Join-Path $qaDir "FINAL_BACKUP_TASK_PROOF.example.md"
+        Target = Join-Path $qaDir "FINAL_BACKUP_TASK_PROOF.md"
+        Name = "final backup task proof"
+    },
+    @{
         Source = Join-Path $qaDir "FINAL_CONCURRENCY_PROOF.example.md"
         Target = Join-Path $qaDir "FINAL_CONCURRENCY_PROOF.md"
         Name = "final concurrency proof"
@@ -89,6 +94,7 @@ Write-Host "Next steps:"
 Write-Host "1. Fill qa\LAN_CLIENT_VALIDATION_PROOF.md from a real second LAN client."
 Write-Host "2. Fill qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md from the real cashier printer, including media carta/carta/A5."
 Write-Host "3. Run restore validation into a disposable DB and fill qa\FINAL_RESTORE_PROOF.md."
-Write-Host "4. Run concurrency validation against a disposable target and fill qa\FINAL_CONCURRENCY_PROOF.md."
-Write-Host "5. Fill qa\TRAINING_ACCEPTANCE_PROOF.md after supervised role training, without names or patient data."
-Write-Host "6. Run scripts\production_readiness_preflight.ps1 without -AllowMissingPhysicalProof."
+Write-Host "4. Install/update backup tasks, create one manual UI backup and fill qa\FINAL_BACKUP_TASK_PROOF.md."
+Write-Host "5. Run concurrency validation against a disposable target and fill qa\FINAL_CONCURRENCY_PROOF.md."
+Write-Host "6. Fill qa\TRAINING_ACCEPTANCE_PROOF.md after supervised role training, without names or patient data."
+Write-Host "7. Run scripts\production_readiness_preflight.ps1 without -AllowMissingPhysicalProof."

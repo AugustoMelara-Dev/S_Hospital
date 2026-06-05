@@ -171,13 +171,15 @@ Despues de instalar:
 
 ## Cierre Final Antes De Operar
 
-No declare la instalacion lista para produccion hasta completar cuatro
+No declare la instalacion lista para produccion hasta completar cinco
 evidencias reales:
 
 - `qa\LAN_CLIENT_VALIDATION_PROOF.md`: una segunda computadora abre el sistema
   por IP o nombre LAN.
 - `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`: la impresora institucional imprime
   muestras fisicas media carta, carta, A5 y reimpresion.
+- `qa\FINAL_BACKUP_TASK_PROOF.md`: las tareas Windows de respaldo estan
+  instaladas/listas y un respaldo manual desde la UI pasa de pendiente a exito.
 - `qa\FINAL_RESTORE_PROOF.md`: un respaldo restaura correctamente en una base
   descartable, nunca sobre la base activa.
 - `qa\FINAL_CONCURRENCY_PROOF.md`: las pruebas de doble accion contra entorno

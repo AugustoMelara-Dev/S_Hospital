@@ -1,3 +1,10 @@
+## 2026-06-05 - Backup final exige proof de tarea y UI
+
+Contexto: el handoff ya bloqueaba produccion si las tareas `SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup` no estaban listas, pero la confirmacion de que un backup manual de la UI pasaba de `pending` a `success` quedaba como instruccion suelta y no como evidencia final estructurada.
+
+Decision: se agrega `qa\FINAL_BACKUP_TASK_PROOF.example.md` y un stub pendiente `qa\FINAL_BACKUP_TASK_PROOF.md`. El inicializador, preflight, handoff, paquete offline, diagnostico `/api/system/status` y validadores de evidencia lo tratan como proof final obligatorio. El archivo real solo debe completarse en el servidor final despues de instalar/actualizar tareas y confirmar un backup manual exitoso desde la UI, sin adjuntar `.env`, dumps SQL, passwords, XML de tareas ni rutas absolutas.
+
+Criterio de verificacion: `validate_field_proof_templates.ps1`, `validate_proof_initialization_safety.ps1`, `validate_production_ready_gate_safety.ps1`, `validate_final_field_blockers_safety.ps1`, `validate_backup_restore_docs_safety.ps1`, `validate_installation_docs_safety.ps1`, `validate_system_diagnostics_safety.ps1` y `validate_operations_objective_audit.ps1` deben pasar; el handoff debe conservar `PRODUCTION_CANDIDATE` mientras `qa\FINAL_BACKUP_TASK_PROOF.md` siga pendiente.
 ## 2026-06-05 - Capacitacion final queda bajo guard estricto
 
 Contexto: `qa\TRAINING_ACCEPTANCE_PROOF.md` bloquea `PRODUCTION_READY` hasta que cajero, supervisor y administrador practiquen en un ambiente aislado. Sin un guard independiente, soporte podia depender solo del preflight completo para detectar si la evidencia seguia pendiente, incompleta o exponia datos sensibles.

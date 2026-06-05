@@ -571,7 +571,7 @@ Invoke-RouteCheck "$($BaseUrl.TrimEnd('/'))/verify-email" "/verify-email" @(200,
 
 if ($AllowMissingPhysicalProof) {
     Add-Strong-Warning "AllowMissingPhysicalProof was used. This run is only an environment preflight and MUST NOT be called PRODUCTION_READY."
-    Add-Failure "Physical LAN/printer/training proof was bypassed. Re-run without -AllowMissingPhysicalProof before declaring PRODUCTION_READY."
+    Add-Failure "Physical LAN/printer/backup/training proof was bypassed. Re-run without -AllowMissingPhysicalProof before declaring PRODUCTION_READY."
 } else {
     Test-ProofFile `
         -path (Join-Path $ProjectRoot "qa\LAN_CLIENT_VALIDATION_PROOF.md") `
@@ -658,6 +658,31 @@ if ($AllowMissingPhysicalProof) {
         )
 
     Test-ProofFile `
+        -path (Join-Path $ProjectRoot "qa\FINAL_BACKUP_TASK_PROOF.md") `
+        -proofName "final backup task and manual UI backup" `
+        -requiredFields @(
+            "Date/time",
+            "Responsible person",
+            "Server computer name",
+            "Backup worker task status",
+            "Daily backup task status",
+            "Manual backup request time",
+            "Backup log id or filename",
+            "Backup size bytes",
+            "Evidence/capture reference",
+            "Final conclusion"
+        ) `
+        -requiredChecks @(
+            "SistemaCajaHospitalaria-BackupWorker",
+            "SistemaCajaHospitalaria-DailyBackup",
+            "Backup worker",
+            "Manual backup",
+            "pending to success",
+            "timestamp and size",
+            "Evidence does not include"
+        )
+
+    Test-ProofFile `
         -path (Join-Path $ProjectRoot "qa\FINAL_CONCURRENCY_PROOF.md") `
         -proofName "final concurrency" `
         -requiredFields @(
@@ -720,7 +745,7 @@ Write-Host ""
 if ($warnings.Count -gt 0) {
     Write-Host "PRODUCTION_PREFLIGHT_PASSED_WITH_WARNINGS: $($warnings.Count) warning(s)" -ForegroundColor Yellow
     if ($AllowMissingPhysicalProof) {
-        Write-Host "PRODUCTION_READY: NO. Physical LAN/printer/training proof was explicitly bypassed." -ForegroundColor Yellow
+        Write-Host "PRODUCTION_READY: NO. Physical LAN/printer/backup/training proof was explicitly bypassed." -ForegroundColor Yellow
     }
 } else {
     Write-Host "PRODUCTION_PREFLIGHT_PASSED" -ForegroundColor Green

@@ -131,12 +131,20 @@ la base activa. No use nombres como la base real de produccion.
 La validacion final se documenta en:
 
 ```text
+qa\FINAL_BACKUP_TASK_PROOF.md
 qa\FINAL_RESTORE_PROOF.md
 ```
 
-Debe incluir respaldo usado, SHA256, tamano, base origen, base descartable,
-conteos principales y conclusion. Si el archivo tiene placeholders, rutas
-locales no verificables o no prueba una base descartable, no sirve para entrega.
+`qa\FINAL_BACKUP_TASK_PROOF.md` debe confirmar que
+`SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup`
+estan instaladas/listas, que un respaldo manual creado desde la UI paso de
+pendiente a exito, y que la evidencia no adjunta `.env`, dumps SQL, passwords,
+XML de tareas ni rutas absolutas.
+
+`qa\FINAL_RESTORE_PROOF.md` debe incluir respaldo usado, SHA256, tamano, base
+origen, base descartable, conteos principales y conclusion. Si cualquier archivo
+tiene placeholders, rutas locales no verificables o no prueba una base
+descartable cuando corresponde, no sirve para entrega.
 
 Comando de referencia para Linux/Docker o Git Bash:
 
