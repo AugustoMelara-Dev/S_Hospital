@@ -3434,3 +3434,11 @@ Contexto: el recibo institucional no debe imprimir ni exponer codigos internos. 
 Decision: GenerateReceiptDataAction deja de enviar special_rule_code en items del recibo. El dominio y catalogo conservan el codigo para reglas de negocio, pero el recibo solo conserva special_rule_applied y los snapshots visibles del cobro.
 
 Criterio de verificacion: CashPaymentsReceiptTest valida que service_id, scan_code, barcode, qr_code y special_rule_code no aparecen en items del recibo; ReceiptPreview conserva la etiqueta humana sin depender del codigo interno.
+
+## 2026-06-05 - Diagnostico administrativo sin lenguaje de cola interna
+
+Contexto: la vista Acerca muestra diagnostico administrativo y pulso operativo. Aunque es una pantalla con permiso, el hospital necesita lenguaje accionable para personal no tecnico y soporte local, no terminos internos como cola o trabajos fallidos.
+
+Decision: AboutView cambia esos indicadores a respaldos en espera, respaldos con error y carga de respaldos. Los datos tecnicos del backend siguen existiendo en el contrato, pero la UI los traduce a estado operativo humano.
+
+Criterio de verificacion: AboutView.test valida que el pulso administrativo muestra respaldos con error/carga de respaldos y no expone queue:work, schedule:run, cola ni trabajo(s) fallidos.

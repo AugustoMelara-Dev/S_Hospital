@@ -254,7 +254,7 @@ function AdminHealthDashboard({ status, health }: { status: SystemStatus; health
       <Card className="border-border bg-card shadow-none">
         <CardHeader>
           <CardTitle className="text-base font-bold">Pulso operativo administrativo</CardTitle>
-          <CardDescription>Lectura visual de respaldos, cola, disco y tareas locales.</CardDescription>
+          <CardDescription>Lectura visual de respaldos, disco y actividad local.</CardDescription>
         </CardHeader>
         <CardContent>
           <div ref={ref} className="h-[220px] min-w-px">
@@ -354,7 +354,7 @@ function adminDiagnosticItems(status: SystemStatus): AdminDiagnosticItem[] {
       level: status.backups.last_success_at ? 'ok' : 'review',
     },
     {
-      label: 'Cola de trabajos',
+      label: 'Respaldos en espera',
       value: queueLabel(status),
       level: queueLevel(status),
     },
@@ -403,19 +403,19 @@ function adminHealthMetrics(status: SystemStatus, health: OperationalHealth | nu
     },
     {
       label: 'Fallas',
-      value: failedJobs === 0 ? 'Sin trabajos fallidos' : `${failedJobs} trabajo(s) fallidos`,
+      value: failedJobs === 0 ? 'Sin respaldos con error' : `${failedJobs} respaldo(s) con error`,
       level: failedJobs === 0 ? 'ok' : 'error',
       chartValue: severityScore(failedJobs === 0 ? 'ok' : 'error'),
       detail: 'Si sube de cero, genere paquete de soporte antes de reintentar.',
     },
     {
-      label: 'Cola LAN',
+      label: 'Carga de respaldos',
       value: queueBackups === 0 && queueFailedRecent === 0
-        ? 'Sin cola acumulada'
+        ? 'Sin respaldos acumulados'
         : `${queueBackups} respaldo(s), ${queueFailedRecent} falla(s) recientes`,
       level: queueFailedRecent > 0 ? 'error' : queueBackups > 0 ? 'review' : 'ok',
       chartValue: severityScore(queueFailedRecent > 0 ? 'error' : queueBackups > 0 ? 'review' : 'ok'),
-      detail: 'Indica si los trabajos locales se estan acumulando entre equipos.',
+      detail: 'Indica si los respaldos locales se estan acumulando entre equipos.',
     },
     {
       label: 'Retardo DB',
@@ -473,7 +473,7 @@ function shortMetricLabel(label: string): string {
   const labels: Record<string, string> = {
     Respaldos: 'Resp.',
     Fallas: 'Fallas',
-    'Cola LAN': 'Cola',
+    'Carga de respaldos': 'Carga',
     'Retardo DB': 'Ret.',
     'Respuesta DB': 'Resp. DB',
     'Conexiones DB': 'Conn.',
@@ -584,7 +584,7 @@ function queueLabel(status: SystemStatus): string {
   const failed = status.backups.queue.failed_jobs_count ?? 0;
   const pending = status.backups.queue.pending_backup_jobs ?? 0;
 
-  if (failed > 0) return `${failed} trabajo(s) fallidos`;
+  if (failed > 0) return `${failed} respaldo(s) con error`;
   if (pending > 0) return `${pending} respaldo(s) en espera`;
   return 'Sin fallas registradas';
 }

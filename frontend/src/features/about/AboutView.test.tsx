@@ -148,11 +148,11 @@ describe('AboutView', () => {
     expect(await screen.findByRole('heading', { name: /pulso operativo administrativo/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /lectura para soporte/i })).toBeInTheDocument();
     expect(screen.getByText('Sin respaldos pendientes')).toBeInTheDocument();
-    expect(screen.getByText('Sin trabajos fallidos')).toBeInTheDocument();
+    expect(screen.getByText('Sin respaldos con error')).toBeInTheDocument();
     expect(screen.getByText('Activo hace 2 min')).toBeInTheDocument();
     expect(screen.getByText('2.0 GB libres')).toBeInTheDocument();
     expect(screen.getAllByText('Base actualizada').length).toBeGreaterThan(0);
-    expect(document.body.textContent).not.toMatch(/queue:work|schedule:run|APP_KEY|DB_PASSWORD|\.env|C:\\\\/i);
+    expect(document.body.textContent).not.toMatch(/queue:work|schedule:run|trabajo\(s\)|cola|APP_KEY|DB_PASSWORD|\.env|C:\\\\/i);
   });
 
   it('shows extended admin health metrics from the public health snapshot safely', async () => {
@@ -170,12 +170,12 @@ describe('AboutView', () => {
 
     render(<AboutView user={adminUser} onStatus={vi.fn()} />);
 
-    expect(await screen.findByText('Cola LAN')).toBeInTheDocument();
+    expect(await screen.findByText('Carga de respaldos')).toBeInTheDocument();
     expect(screen.getByText('Retardo DB')).toBeInTheDocument();
     expect(screen.getByText('Respuesta DB')).toBeInTheDocument();
     expect(screen.getByText('Conexiones DB')).toBeInTheDocument();
     expect(screen.getByText('Actividad')).toBeInTheDocument();
-    expect(screen.getByText('Sin cola acumulada')).toBeInTheDocument();
+    expect(screen.getByText('Sin respaldos acumulados')).toBeInTheDocument();
     expect(screen.getByText('Base local sin replica')).toBeInTheDocument();
     expect(screen.getByText('P50 6.0 ms / P95 12.0 ms / P99 18.0 ms')).toBeInTheDocument();
     expect(screen.getByText('3 conexiones activas / pico 8')).toBeInTheDocument();
