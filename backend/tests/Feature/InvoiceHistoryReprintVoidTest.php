@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Actions\Billing\CreateInvoiceAction;
@@ -187,7 +189,10 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         ]);
 
         $this->actingAs($cashier)
-            ->postJson("/api/invoices/{$invoiceId}/reprint", ['width' => 'letter'])
+            ->postJson("/api/invoices/{$invoiceId}/reprint", [
+                'width' => 'letter',
+                'reason' => 'Copia fiscal solicitada',
+            ])
             ->assertOk()
             ->assertJsonPath('data.receipt.hospital.name', 'Hospital San Isidro')
             ->assertJsonPath('data.receipt.hospital.rtn', '08011999123456')
@@ -265,6 +270,26 @@ class InvoiceHistoryReprintVoidTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_reprint_requires_operational_reason(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/reprint", ['width' => 'half_letter'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/reprint", [
+                'width' => 'half_letter',
+                'reason' => '     ',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+    }
+
     public function test_supervisor_and_admin_can_reprint_with_permission(): void
     {
         $this->seedBillingBase();
@@ -273,25 +298,40 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         Invoice::query()->whereKey($oldId)->update(['issued_at' => now()->subDays(2)]);
 
         $this->actingAs($this->supervisor())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => 'letter'])
+            ->postJson("/api/invoices/{$oldId}/reprint", [
+                'width' => 'letter',
+                'reason' => 'Copia autorizada por supervisor',
+            ])
             ->assertOk();
 
         $this->actingAs($this->admin())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => 'a5'])
+            ->postJson("/api/invoices/{$oldId}/reprint", [
+                'width' => 'a5',
+                'reason' => 'Copia administrativa',
+            ])
             ->assertOk();
 
         $this->actingAs($this->admin())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => '80mm'])
+            ->postJson("/api/invoices/{$oldId}/reprint", [
+                'width' => '80mm',
+                'reason' => 'Formato no permitido',
+            ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('width');
 
         $this->actingAs($this->admin())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => '58mm'])
+            ->postJson("/api/invoices/{$oldId}/reprint", [
+                'width' => '58mm',
+                'reason' => 'Formato no permitido',
+            ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('width');
 
         $this->actingAs($this->admin())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => 'ticket-roll'])
+            ->postJson("/api/invoices/{$oldId}/reprint", [
+                'width' => 'ticket-roll',
+                'reason' => 'Formato no permitido',
+            ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('width');
     }

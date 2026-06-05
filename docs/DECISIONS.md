@@ -3394,3 +3394,11 @@ Decision: v1.0.0 no implementa un formulario dedicado de devolucion. La necesida
 Consecuencia: manuales/MANUAL_CAJERO.md se actualiza en v1.1 para apuntar a estos dos flujos en vez de un formulario separado. Una UI dedicada de 'Devolucion' queda en el roadmap de v1.1 si el feedback operacional del hospital lo justifica.
 
 Criterio de verificacion: el test unit 	ests/Unit/RefundPaymentTest.php (FASE F4) verifica que un pago positivo seguido de un pago negativo deja la factura con paid_amount_cents y balance_due_cents consistentes, y que el audit log contiene ambas entradas.
+
+## 2026-06-05 - Reimpresion exige motivo operativo
+
+Contexto: la reimpresion de recibos ya quedaba auditada con usuario, factura y formato, pero el endpoint aceptaba reimpresiones sin motivo aunque los manuales y la UI orientan a reimprimir con justificacion.
+
+Decision: ReprintReceiptRequest exige reason obligatorio entre 5 y 500 caracteres. La UI sigue compatible porque envia el motivo escrito por el operador o un motivo institucional por defecto para impresiones auditadas desde la vista de recibo.
+
+Criterio de verificacion: InvoiceHistoryReprintVoidTest cubre rechazo de motivo ausente o en blanco y confirma que supervisor/admin siguen reimprimiendo cuando envian motivo. InvoiceAuditControllerTest conserva la auditoria cronologica de reimpresion y anulacion.

@@ -11,6 +11,17 @@ use Illuminate\Validation\Rule;
 
 class ReprintReceiptRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $reason = $this->input('reason');
+
+        if (is_string($reason)) {
+            $this->merge([
+                'reason' => trim($reason),
+            ]);
+        }
+    }
+
     public function authorize(): bool
     {
         $user = $this->user();
@@ -35,7 +46,7 @@ class ReprintReceiptRequest extends FormRequest
     {
         return [
             'width' => ['required', Rule::in(ReceiptPaperSize::values())],
-            'reason' => ['nullable', 'string', 'max:500'],
+            'reason' => ['required', 'string', 'min:5', 'max:500'],
         ];
     }
 
@@ -44,10 +55,8 @@ class ReprintReceiptRequest extends FormRequest
         return ReceiptPaperSize::normalize((string) $this->validated('width'));
     }
 
-    public function reason(): ?string
+    public function reason(): string
     {
-        $reason = $this->validated('reason') ?? null;
-
-        return is_string($reason) && trim($reason) !== '' ? trim($reason) : null;
+        return (string) $this->validated('reason');
     }
 }
