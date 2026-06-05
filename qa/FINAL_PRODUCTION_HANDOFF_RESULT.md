@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-05 00:23:42
+- Generated at: 2026-06-05 00:40:27
 - Base URL: http://192.168.1.10:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -90,7 +90,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 
 - In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.
 - Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/restore_hospital_windows.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/install_backup_startup_current_user.ps1`, `scripts/start_backup_automation.cmd`, `scripts/run_backup_scheduler_loop.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.
-- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_backup_startup_current_user_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_support_packet_safety.ps1`, `scripts/validate_first_level_support_safety.ps1`, `scripts/validate_production_ready_gate_safety.ps1`, `scripts/validate_final_field_blockers_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_realtime_own_event_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_lan_loadtest_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_production_license_salt_guard.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
+- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_backup_startup_current_user_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_support_packet_safety.ps1`, `scripts/validate_first_level_support_safety.ps1`, `scripts/validate_production_ready_gate_safety.ps1`, `scripts/validate_final_field_blockers_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_realtime_own_event_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_lan_loadtest_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_training_acceptance_proof.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_production_license_salt_guard.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
 - Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.
 
 ## Risks and limits
@@ -150,6 +150,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_rate_li
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_shift_incident_recovery_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_new_invoice_maintainability.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_training_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_training_acceptance_proof.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_field_proof_templates.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_proof_initialization_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1 -SelfTest
@@ -216,6 +217,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found scripts\validate_system_diagnostics_safety.ps1
 [ OK ] Found scripts\validate_known_limitations_safety.ps1
 [ OK ] Found scripts\validate_ops_evidence_index.ps1
+[ OK ] Found scripts\validate_training_acceptance_proof.ps1
 [ OK ] Found scripts\validate_training_safety.ps1
 [ OK ] Found scripts\validate_double_action_safety.ps1
 [ OK ] Found scripts\validate_installer_legacy_safety.ps1
@@ -280,6 +282,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] scripts\validate_help_screen_safety.ps1 matches versioned source
 [ OK ] scripts\validate_system_diagnostics_safety.ps1 matches versioned source
 [ OK ] scripts\validate_ops_evidence_index.ps1 matches versioned source
+[ OK ] scripts\validate_training_acceptance_proof.ps1 matches versioned source
 [ OK ] scripts\validate_training_safety.ps1 matches versioned source
 [ OK ] scripts\validate_double_action_safety.ps1 matches versioned source
 [ OK ] scripts\validate_installer_legacy_safety.ps1 matches versioned source
@@ -318,7 +321,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[ OK ] MANIFEST.txt references current commit dc213d97
+[ OK ] MANIFEST.txt references current commit a6a43551
 [ OK ] offline-images contains 4 Docker image tar file(s)
 
 OFFLINE_RELEASE_CLEAN: YES
@@ -784,7 +787,7 @@ Proof initialization creates missing final-evidence templates without overwritin
 [ OK ] Found scripts\make_offline_release.ps1
 [ OK ] Found scripts\assert_offline_release_clean.ps1
 [ OK ] Found docs\RELEASE_CHECKLIST.md
-[ OK ] Final handoff declares 39 script dependency/dependencies
+[ OK ] Final handoff declares 40 script dependency/dependencies
 [ OK ] Handoff dependency exists: scripts\assert_offline_release_clean.ps1
 [ OK ] Offline builder critical scripts include assert_offline_release_clean.ps1
 [ OK ] Offline guard requires scripts\assert_offline_release_clean.ps1
@@ -937,6 +940,10 @@ Proof initialization creates missing final-evidence templates without overwritin
 [ OK ] Offline builder critical scripts include validate_system_diagnostics_safety.ps1
 [ OK ] Offline guard requires scripts\validate_system_diagnostics_safety.ps1
 [ OK ] Offline guard compares scripts\validate_system_diagnostics_safety.ps1 with versioned source
+[ OK ] Handoff dependency exists: scripts\validate_training_acceptance_proof.ps1
+[ OK ] Offline builder critical scripts include validate_training_acceptance_proof.ps1
+[ OK ] Offline guard requires scripts\validate_training_acceptance_proof.ps1
+[ OK ] Offline guard compares scripts\validate_training_acceptance_proof.ps1 with versioned source
 [ OK ] Handoff dependency exists: scripts\validate_training_safety.ps1
 [ OK ] Offline builder critical scripts include validate_training_safety.ps1
 [ OK ] Offline guard requires scripts\validate_training_safety.ps1
@@ -945,6 +952,7 @@ Proof initialization creates missing final-evidence templates without overwritin
 [ OK ] Release checklist mentions validate_offline_release_staging_safety.ps1
 [ OK ] Release checklist mentions validate_lan_loadtest_safety.ps1
 [ OK ] Release checklist mentions validate_realtime_own_event_safety.ps1
+[ OK ] Release checklist mentions validate_training_acceptance_proof.ps1
 [ OK ] Release checklist mentions validate_restore_windows_safety.ps1
 [ OK ] Release checklist mentions validate_production_license_salt_guard.ps1
 [ OK ] Release checklist mentions validate_final_handoff_completeness.ps1
@@ -978,7 +986,7 @@ OFFLINE_RELEASE_STAGING_SAFETY: YES
 ## Offline release builder self-test output
 
 ```text
-[OK] SelfTest passed. default.conf=79 lines, crontab=10 lines, scripts=56, docs=7, proofTemplates=5, hash=ED8CCC2747A4CC0197054B68E5A7059E0AC115BDF8B85113C80701EA77B54E79
+[OK] SelfTest passed. default.conf=79 lines, crontab=10 lines, scripts=57, docs=7, proofTemplates=5, hash=ED8CCC2747A4CC0197054B68E5A7059E0AC115BDF8B85113C80701EA77B54E79
 ```
 
 ## Offline release guard self-test output
