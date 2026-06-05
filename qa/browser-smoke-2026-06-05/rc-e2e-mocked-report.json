@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-05T19:18:43.211Z",
+  "generated_at": "2026-06-05T19:39:23.281Z",
   "mode": "mocked-e2e",
   "note": "Capturas con API mockeada; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.",
   "screenshots": [
@@ -34,6 +34,12 @@
       "theme": "light"
     },
     {
+      "name": "receipt-preview-light",
+      "path": "qa/browser-smoke-2026-06-05/receipt-preview-light.png",
+      "route": "/billing/new",
+      "theme": "light"
+    },
+    {
       "name": "receipt-preview-letter-light",
       "path": "qa/browser-smoke-2026-06-05/receipt-preview-letter-light.png",
       "route": "/billing/new",
@@ -42,12 +48,6 @@
     {
       "name": "receipt-preview-a5-light",
       "path": "qa/browser-smoke-2026-06-05/receipt-preview-a5-light.png",
-      "route": "/billing/new",
-      "theme": "light"
-    },
-    {
-      "name": "receipt-preview-light",
-      "path": "qa/browser-smoke-2026-06-05/receipt-preview-light.png",
       "route": "/billing/new",
       "theme": "light"
     },

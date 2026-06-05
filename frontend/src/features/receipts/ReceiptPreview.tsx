@@ -13,7 +13,7 @@ import {
 import { type ReceiptData } from '../../lib/api';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
-import { formatLocalizedDateTime } from '../../lib/format/formatDate';
+import { formatDate as formatCalendarDate, formatDateTime } from '../../lib/format/formatDate';
 
 type ReceiptPreviewProps = {
   autoPrint?: boolean;
@@ -123,13 +123,13 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
 
           <div className="receipt-meta">
             <Row label="Serie / No." value={receipt.invoice.invoice_number} />
-            <Row label="Fecha" value={formatDate(receipt.invoice.issued_at)} />
+            <Row label="Fecha" value={formatReceiptDateTime(receipt.invoice.issued_at)} />
             <Row label="Paciente / enterante" value={receipt.invoice.patient_name} />
             {receipt.invoice.cashier ? <Row label="Cajero" value={receipt.invoice.cashier} /> : null}
             <Row label="Estado" value={statusLabel(receipt.invoice.status)} />
             <Row label="CAI" value={receipt.fiscal.cai ?? 'Pendiente de configurar'} />
             {receipt.fiscal.authorized_range ? <Row label="Rango" value={receipt.fiscal.authorized_range} /> : null}
-            {receipt.fiscal.valid_until ? <Row label="Vence" value={formatDate(receipt.fiscal.valid_until)} /> : null}
+            {receipt.fiscal.valid_until ? <Row label="Vence" value={formatReceiptDate(receipt.fiscal.valid_until)} /> : null}
           </div>
 
           <div className="receipt-rule" aria-hidden="true" />
@@ -237,12 +237,19 @@ function moneyLabel(value: string | number | null | undefined): string {
   return formatLempirasFromCents(parseCents(value));
 }
 
-function formatDate(value: string): string {
+function normalizeReceiptDate(value: string): string {
   // The receipt sometimes shows calendar dates as YYYY-MM-DD (no time).
   // The shared helper would render them as midnight, so we lift them
   // back to local-noon to avoid the day rolling back in some timezones.
-  const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value;
-  return formatLocalizedDateTime(normalizedValue);
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value;
+}
+
+function formatReceiptDateTime(value: string): string {
+  return formatDateTime(normalizeReceiptDate(value));
+}
+
+function formatReceiptDate(value: string): string {
+  return formatCalendarDate(normalizeReceiptDate(value));
 }
 
 function paymentLabel(method?: ReceiptData['payments'][number]['method']): string {

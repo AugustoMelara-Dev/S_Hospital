@@ -161,6 +161,21 @@ describe('ReceiptPreview', () => {
     expect(screen.getByText('Original / Copia')).toBeInTheDocument();
   });
 
+  it('prints institutional dates with four-digit years and an unambiguous time', () => {
+    render(
+      <ReceiptPreview
+        receipt={receiptFixture()}
+        onPrint={vi.fn()}
+        onWidthChange={vi.fn()}
+      />,
+    );
+
+    const receiptText = screen.getByLabelText('Recibo institucional').textContent ?? '';
+    expect(receiptText).toContain('01/06/2026 12:00');
+    expect(receiptText).toContain('31/12/2026');
+    expect(receiptText).not.toMatch(/\b\d{1,2}\/\d{1,2}\/\d{2}\b|a\. m\.|p\. m\./i);
+  });
+
   it('shows the total written as lempiras for the manual receipt format', () => {
     render(
       <ReceiptPreview

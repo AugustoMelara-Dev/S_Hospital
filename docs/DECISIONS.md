@@ -3520,3 +3520,11 @@ Contexto: el objetivo de presentacion exige capturas de navegador y evidencia vi
 Decision: se genero una nueva evidencia mockeada en qa/browser-smoke-2026-06-05 y validate_browser_smoke_evidence.ps1 ahora valida ese reporte como la evidencia local vigente. La evidencia sigue declarando que no sustituye pruebas fisicas LAN, MySQL/MariaDB ni impresora.
 
 Criterio de verificacion: validate_browser_smoke_evidence.ps1 exige el JSON y capturas nuevas, sin console_issues y con nota de no sustitucion fisica; validate_operations_objective_audit.ps1 apunta al reporte 2026-06-05.
+
+## 2026-06-05 - Fechas institucionales completas en recibos impresos
+
+Contexto: la evidencia visual del recibo RC mostraba fecha con anio de dos digitos y formato corto regional, por ejemplo 5/6/26, que puede ser ambiguo para auditoria y archivo fisico.
+
+Decision: el recibo institucional imprime la fecha de emision como DD/MM/YYYY HH:mm y el vencimiento fiscal como DD/MM/YYYY. Las fechas sin hora se normalizan a mediodia local antes de formatear para evitar corrimientos por zona horaria.
+
+Criterio de verificacion: ReceiptPreview.test exige anio de cuatro digitos y hora no ambigua; la evidencia qa/browser-smoke-2026-06-05 muestra el recibo actualizado en media carta, carta, A5 y modo oscuro.
