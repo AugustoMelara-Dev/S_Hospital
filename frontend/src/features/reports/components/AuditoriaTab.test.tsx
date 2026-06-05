@@ -136,4 +136,74 @@ describe('AuditoriaTab', () => {
     expect(document.body.textContent).toContain('Eritropoyetina con receta de dialisis');
     expect(document.body.textContent).not.toMatch(/service\.price_updated|category_id|ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION/);
   });
+
+  it('renders reprint receipt formats as institutional labels', () => {
+    const operations = {
+      date_from: '2026-06-01',
+      date_to: '2026-06-01',
+      filters: { date_from: '2026-06-01', date_to: '2026-06-01' },
+      summary: {
+        void_count: 0,
+        reprint_count: 4,
+        payment_void_count: 0,
+        backup_count: 0,
+        failed_backup_count: 0,
+        cashier_count: 0,
+      },
+      voids: [],
+      reprints: [
+        {
+          invoice_number: '000-001-01-00000001',
+          width: 'half_letter',
+          reason: 'Copia para paciente',
+          created_at: '2026-06-01T10:00:00.000000Z',
+          user: 'Cajero Hospital',
+        },
+        {
+          invoice_number: '000-001-01-00000002',
+          width: 'letter',
+          reason: 'Copia para archivo',
+          created_at: '2026-06-01T10:10:00.000000Z',
+          user: 'Cajero Hospital',
+        },
+        {
+          invoice_number: '000-001-01-00000003',
+          width: 'a5',
+          reason: 'Copia solicitada',
+          created_at: '2026-06-01T10:20:00.000000Z',
+          user: 'Cajero Hospital',
+        },
+        {
+          invoice_number: '000-001-01-00000004',
+          width: '80mm',
+          reason: 'Registro historico normalizado',
+          created_at: '2026-06-01T10:30:00.000000Z',
+          user: 'Cajero Hospital',
+        },
+      ],
+      payment_voids: [],
+      backups: [],
+      cashiers: [],
+    } satisfies OperationsReport;
+
+    render(
+      <AuditoriaTab
+        canExport={false}
+        operations={operations}
+        dateFrom="2026-06-01"
+        dateTo="2026-06-01"
+        onDateFromChange={() => undefined}
+        onDateToChange={() => undefined}
+        onExport={() => undefined}
+        onExportPdf={() => undefined}
+        onSubmit={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText('Formato')).toBeInTheDocument();
+    expect(screen.getAllByText('Media carta')).toHaveLength(2);
+    expect(screen.getByText('Carta')).toBeInTheDocument();
+    expect(screen.getByText('A5')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/half_letter|80mm|58mm/);
+  });
 });

@@ -3499,3 +3499,8 @@ Criterio de verificacion: ServiceSearch.test cubre filtro y limpieza por area; r
 Contexto: el objetivo de entrega al Hospital San Isidro exige recibos institucionales tipo talonario en media carta, carta o A5, sin promover formatos de rollo ni 80mm/58mm en guias vigentes.
 Decision: los documentos operativos actuales y criterios de aceptacion listan solo media carta, carta y A5. Los valores heredados 80mm/58mm pueden seguir normalizandose internamente donde existan datos antiguos, pero no son formatos operativos promovidos al personal.
 Criterio de verificacion: check-branding.ps1 revisa documentos vigentes, guiones de validacion y pruebas de evidencia contra thermal printer, impresora de rollo, 80mm y 58mm.
+
+## 2026-06-05 - Auditoria muestra formatos de recibo con etiquetas institucionales
+Contexto: el reporte de Auditoria podia mostrar el valor tecnico del formato de reimpresion, por ejemplo half_letter, en una pantalla administrativa usada para supervision y auditoria.
+Decision: AuditoriaTab usa receiptPaperSizeLabel para mostrar Media carta, Carta o A5. Valores heredados o malformados se normalizan a Media carta en la UI, manteniendo compatibilidad historica sin promover formatos de rollo.
+Criterio de verificacion: AuditoriaTab.test cubre formatos half_letter, letter, a5 y un valor heredado, y verifica que no se rendericen half_letter, 80mm ni 58mm.

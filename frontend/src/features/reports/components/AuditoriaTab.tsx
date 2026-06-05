@@ -10,6 +10,7 @@ import { KPICard } from './KPICard';
 import type { OperationsReport } from '../../../lib/api/types';
 import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
+import { receiptPaperSizeLabel } from '../../../lib/institutionalReceiptPaper';
 
 interface AuditoriaTabProps {
   canExport: boolean;
@@ -141,7 +142,7 @@ export function AuditoriaTab({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Factura</TableHead>
-                      <TableHead>Ancho</TableHead>
+                      <TableHead>Formato</TableHead>
                       <TableHead>Motivo</TableHead>
                       <TableHead>Usuario</TableHead>
                       <TableHead>Fecha</TableHead>
@@ -151,7 +152,7 @@ export function AuditoriaTab({
                     {operations.reprints.map((reprint, index) => (
                       <TableRow key={`reprint-${reprint.invoice_number ?? index}-${reprint.created_at ?? 'sin-fecha'}`}>
                         <TableCell className="font-medium">{reprint.invoice_number ?? '-'}</TableCell>
-                        <TableCell>{reprint.width ?? '-'}</TableCell>
+                        <TableCell>{reprint.width ? receiptPaperSizeLabel(reprint.width) : '-'}</TableCell>
                         <TableCell>{reprint.reason ?? 'Sin motivo'}</TableCell>
                         <TableCell>{reprint.user ?? 'Sin usuario'}</TableCell>
                         <TableCell>{formatDate(reprint.created_at)}</TableCell>
