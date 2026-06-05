@@ -1,7 +1,7 @@
 # Final production handoff result
 
-- Generated at: 2026-06-04 20:53:47
-- Base URL: https://127.0.0.1
+- Generated at: 2026-06-04 21:28:50
+- Base URL: http://192.168.1.10:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
 - LAN client proof present without obvious placeholders: False
@@ -14,7 +14,7 @@
 - Final restore proof file: `qa/FINAL_RESTORE_PROOF.md`
 - Final concurrency proof file: `qa/FINAL_CONCURRENCY_PROOF.md`
 - Supervised training acceptance proof file: `qa/TRAINING_ACCEPTANCE_PROOF.md`
-- Offline release artifact guard exit code: 1
+- Offline release artifact guard exit code: 0
 - Support packet safety guard exit code: 0
 - First-level support safety guard exit code: 0
 - Production ready gate safety guard exit code: 0
@@ -61,7 +61,6 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 - Missing or incomplete `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` from the real cashier printer.
 - Missing or incomplete `qa/TRAINING_ACCEPTANCE_PROOF.md` from supervised role training in a safe practice environment.
 - Preflight was skipped in this handoff run.
-- Offline release artifact is missing, stale, or contains forbidden files.
 
 ## Evidence completed in this hardening front
 
@@ -92,7 +91,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 ## Risks and limits
 
 - Local Docker and mocked browser evidence do not replace final second-client LAN proof, real MariaDB/server proof or physical printer proof.
-- The offline release package remains blocked until regenerated from the final commit with Docker image tar files and matching checksums.
+- The offline release package must still be copied to the final server and verified there before production use.
 - Final production environment must be verified with APP_ENV=production and APP_DEBUG=false before production handoff.
 - Windows scheduled tasks `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup` must be installed or updated on the final server.
 - Fiscal sequences/settings require administrative validation in the real environment; fiscal compliance was not invented by this report.
@@ -110,7 +109,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 ## Next commands
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl https://127.0.0.1 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://192.168.1.10:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1 -WhatIfOnly
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -UpdateExisting
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -Status
@@ -118,7 +117,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_t
 Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"
 # Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report.
-bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=https://127.0.0.1 HOSPITAL_CONCURRENCY_BASE_URL=https://127.0.0.1 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
+bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://192.168.1.10:8000 HOSPITAL_CONCURRENCY_BASE_URL=http://192.168.1.10:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_first_level_support_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_production_ready_gate_safety.ps1
@@ -152,8 +151,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_offline
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_dependency_manifest.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_final_handoff_completeness.ps1 -HandoffPath %PROJECT_ROOT%\qa\FINAL_PRODUCTION_HANDOFF_RESULT.md
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\FINAL_PRODUCTION_HANDOFF_RESULT.md
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl https://127.0.0.1
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl https://127.0.0.1 -PhpPath php
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://192.168.1.10:8000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://192.168.1.10:8000 -PhpPath php
 ```
 
 ## Backup task status output
@@ -208,7 +207,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found scripts\validate_training_safety.ps1
 [ OK ] Found scripts\validate_double_action_safety.ps1
 [ OK ] Found scripts\validate_installer_legacy_safety.ps1
-[FAIL] Missing required release file: scripts\validate_lan_loadtest_safety.ps1
+[ OK ] Found scripts\validate_lan_loadtest_safety.ps1
 [ OK ] Found scripts\validate_lan_recovery_safety.ps1
 [ OK ] Found scripts\validate_maintenance_mode_safety.ps1
 [ OK ] Found scripts\validate_new_invoice_maintainability.ps1
@@ -220,11 +219,11 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found scripts\validate_permission_audit_safety.ps1
 [ OK ] Found scripts\validate_rate_limit_safety.ps1
 [ OK ] Found scripts\validate_restore_windows_safety.ps1
-[FAIL] Missing required release file: scripts\validate_production_ready_gate_safety.ps1
+[ OK ] Found scripts\validate_production_ready_gate_safety.ps1
 [ OK ] Found scripts\validate_field_proof_templates.ps1
-[FAIL] Missing required release file: scripts\validate_final_field_blockers_safety.ps1
+[ OK ] Found scripts\validate_final_field_blockers_safety.ps1
 [ OK ] Found scripts\validate_proof_initialization_safety.ps1
-[FAIL] Missing required release file: scripts\validate_first_level_support_safety.ps1
+[ OK ] Found scripts\validate_first_level_support_safety.ps1
 [ OK ] Found scripts\run_backup_worker.cmd
 [ OK ] Found scripts\run_scheduled_backup.cmd
 [ OK ] Found qa\LAN_CLIENT_VALIDATION_PROOF.example.md
@@ -232,52 +231,56 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found qa\FINAL_RESTORE_PROOF.example.md
 [ OK ] Found qa\FINAL_CONCURRENCY_PROOF.example.md
 [ OK ] Found qa\TRAINING_ACCEPTANCE_PROOF.example.md
-[FAIL] docker-compose.prod.yml in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] docker-compose.prod.yml matches versioned source
 [ OK ] backend\Dockerfile.prod matches versioned source
-[FAIL] nginx\default.conf in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] nginx\hospital-common.conf in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\assert_offline_release_clean.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\collect_support_packet.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\deploy_hospital_lan.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\init_production_proofs.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\make_offline_release.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\production_readiness_preflight.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\final_production_handoff.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\install_hospital_startup_shortcut.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\install_stack_autostart_windows.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\install_backup_tasks_windows.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\lib\operational_url_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\open_hospital_system.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\repair_hospital_system.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] nginx\default.conf matches versioned source
+[ OK ] nginx\hospital-common.conf matches versioned source
+[ OK ] scripts\assert_offline_release_clean.ps1 matches versioned source
+[ OK ] scripts\collect_support_packet.ps1 matches versioned source
+[ OK ] scripts\deploy_hospital_lan.ps1 matches versioned source
+[ OK ] scripts\init_production_proofs.ps1 matches versioned source
+[ OK ] scripts\make_offline_release.ps1 matches versioned source
+[ OK ] scripts\production_readiness_preflight.ps1 matches versioned source
+[ OK ] scripts\final_production_handoff.ps1 matches versioned source
+[ OK ] scripts\install_hospital_startup_shortcut.ps1 matches versioned source
+[ OK ] scripts\install_stack_autostart_windows.ps1 matches versioned source
+[ OK ] scripts\install_backup_tasks_windows.ps1 matches versioned source
+[ OK ] scripts\lib\operational_url_safety.ps1 matches versioned source
+[ OK ] scripts\open_hospital_system.ps1 matches versioned source
+[ OK ] scripts\repair_hospital_system.ps1 matches versioned source
 [ OK ] scripts\restore_hospital_windows.ps1 matches versioned source
 [ OK ] scripts\start_hospital_services.ps1 matches versioned source
-[FAIL] scripts\validate_support_packet_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_browser_smoke_evidence.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_support_packet_safety.ps1 matches versioned source
+[ OK ] scripts\validate_browser_smoke_evidence.ps1 matches versioned source
 [ OK ] scripts\validate_dependency_manifest.ps1 matches versioned source
-[FAIL] scripts\validate_startup_repair_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_operator_manuals_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_backup_restore_docs_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_installation_docs_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_help_screen_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_system_diagnostics_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_ops_evidence_index.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_training_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_double_action_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_installer_legacy_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_lan_recovery_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_maintenance_mode_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_new_invoice_maintainability.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_known_limitations_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_shift_incident_recovery_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_final_handoff_completeness.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_handoff_guard_coverage.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_offline_release_staging_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_operations_objective_audit.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_permission_audit_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_rate_limit_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_restore_windows_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_field_proof_templates.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_proof_initialization_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_startup_repair_safety.ps1 matches versioned source
+[ OK ] scripts\validate_operator_manuals_safety.ps1 matches versioned source
+[ OK ] scripts\validate_backup_restore_docs_safety.ps1 matches versioned source
+[ OK ] scripts\validate_installation_docs_safety.ps1 matches versioned source
+[ OK ] scripts\validate_help_screen_safety.ps1 matches versioned source
+[ OK ] scripts\validate_system_diagnostics_safety.ps1 matches versioned source
+[ OK ] scripts\validate_ops_evidence_index.ps1 matches versioned source
+[ OK ] scripts\validate_training_safety.ps1 matches versioned source
+[ OK ] scripts\validate_double_action_safety.ps1 matches versioned source
+[ OK ] scripts\validate_installer_legacy_safety.ps1 matches versioned source
+[ OK ] scripts\validate_lan_loadtest_safety.ps1 matches versioned source
+[ OK ] scripts\validate_lan_recovery_safety.ps1 matches versioned source
+[ OK ] scripts\validate_maintenance_mode_safety.ps1 matches versioned source
+[ OK ] scripts\validate_new_invoice_maintainability.ps1 matches versioned source
+[ OK ] scripts\validate_known_limitations_safety.ps1 matches versioned source
+[ OK ] scripts\validate_shift_incident_recovery_safety.ps1 matches versioned source
+[ OK ] scripts\validate_final_handoff_completeness.ps1 matches versioned source
+[ OK ] scripts\validate_handoff_guard_coverage.ps1 matches versioned source
+[ OK ] scripts\validate_offline_release_staging_safety.ps1 matches versioned source
+[ OK ] scripts\validate_operations_objective_audit.ps1 matches versioned source
+[ OK ] scripts\validate_permission_audit_safety.ps1 matches versioned source
+[ OK ] scripts\validate_rate_limit_safety.ps1 matches versioned source
+[ OK ] scripts\validate_restore_windows_safety.ps1 matches versioned source
+[ OK ] scripts\validate_production_ready_gate_safety.ps1 matches versioned source
+[ OK ] scripts\validate_field_proof_templates.ps1 matches versioned source
+[ OK ] scripts\validate_final_field_blockers_safety.ps1 matches versioned source
+[ OK ] scripts\validate_proof_initialization_safety.ps1 matches versioned source
+[ OK ] scripts\validate_first_level_support_safety.ps1 matches versioned source
 [ OK ] scripts\run_backup_worker.cmd matches versioned source
 [ OK ] scripts\run_scheduled_backup.cmd matches versioned source
 [ OK ] setup.bat matches scripts\release_setup.bat
@@ -288,15 +291,15 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] setup.bat avoids legacy/demo wording
 [ OK ] setup.bat uses institutional wording
 [ OK ] qa\LAN_CLIENT_VALIDATION_PROOF.example.md matches versioned source
-[FAIL] qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md matches versioned source
 [ OK ] qa\FINAL_RESTORE_PROOF.example.md matches versioned source
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
-[FAIL] qa\TRAINING_ACCEPTANCE_PROOF.example.md in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit ea99610c before release handoff.
+[ OK ] MANIFEST.txt references current commit 822d7106
 [ OK ] offline-images contains 4 Docker image tar file(s)
 
-OFFLINE_RELEASE_CLEAN: NO (49 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: YES
 ```
 
 ## Support packet safety validation output
@@ -939,7 +942,7 @@ OFFLINE_RELEASE_STAGING_SAFETY: YES
 ## Offline release builder self-test output
 
 ```text
-[OK] SelfTest passed. default.conf=76 lines, crontab=10 lines, scripts=50, docs=7, proofTemplates=5, hash=72B669163889EE95928F76B85B7E6B83E70672508DC6B5CCD340FADA6CE7B9A1
+[OK] SelfTest passed. default.conf=79 lines, crontab=10 lines, scripts=50, docs=7, proofTemplates=5, hash=ED8CCC2747A4CC0197054B68E5A7059E0AC115BDF8B85113C80701EA77B54E79
 ```
 
 ## Offline release guard self-test output
