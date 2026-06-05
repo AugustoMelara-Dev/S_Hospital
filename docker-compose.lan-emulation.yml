@@ -1,0 +1,125 @@
+# =============================================================================
+# LAN emulation overlay for S_Hospital.
+#
+# Levanta 5 navegadores Chromium headless en una sola maquina y los
+# conecta a la misma instancia de backend ya corriendo en
+# docker-compose.prod.yml. Sirve para validar login, realtime LAN y
+# aislamiento de sesiones con 5 clientes logicos.
+#
+# Esto NO reemplaza la prueba fisica con una segunda PC real
+# (qa/LAN_CLIENT_VALIDATION_PROOF.md), pero reduce el riesgo de
+# regresiones cuando los 5 clientes son del mismo host.
+#
+# Uso:
+#   $env:SERVER_IP="192.168.1.10"
+#   # Si APP_HTTPS_PORT esta definido, HOSPITAL_CONFIRM_LOADTEST_TARGET debe incluirlo.
+#   $env:LAN_EMULATION_RUN_ID="lan5-20260604-2030"
+#   $env:HOSPITAL_LOADTEST_TARGET_ENV="validation"
+#   $env:HOSPITAL_CONFIRM_LOADTEST_TARGET="https://192.168.1.10"
+#   $env:CASHIER_USER_1="validacion.caja1"; $env:CASHIER_PASSWORD_1="..."
+#   ...
+#   docker compose -f docker-compose.lan-emulation.yml --profile lan5 up
+#
+# Variables de entorno esperadas:
+#   SERVER_IP, APP_HTTPS_PORT opcional, HOSPITAL_LOADTEST_TARGET_ENV,
+#   HOSPITAL_CONFIRM_LOADTEST_TARGET, LAN_EMULATION_RUN_ID,
+#   CASHIER_USER_1..5, CASHIER_PASSWORD_1..5.
+#
+# Requisito previo: un stack de validacion o base descartable ya esta arriba
+# (backend en APP_HTTPS_PORT accesible desde la red bridge). Este overlay ignora
+# errores TLS dentro del contenedor para no reemplazar la prueba fisica de CA
+# confiable en Windows real. No ejecutar contra la base real de produccion.
+# =============================================================================
+
+x-cashier-base: &cashier-base
+  image: mcr.microsoft.com/playwright:v1.60.0-noble
+  init: true
+  restart: "no"
+  working_dir: /work
+  command: ["node", "/work/cashier.js"]
+  volumes:
+    - ./qa/lan-emulation:/work
+  environment: &cashier-env
+    BASE_URL: https://${SERVER_IP:?SERVER_IP is required}${APP_HTTPS_PORT:+:${APP_HTTPS_PORT}}
+    CASHIER_INDEX: "${CASHIER_INDEX:-0}"
+    SCENARIO: ${SCENARIO:-login_only}
+    LAN_EMULATION_RUN_ID: ${LAN_EMULATION_RUN_ID:?Set LAN_EMULATION_RUN_ID to a unique validation run id}
+    HOSPITAL_LOADTEST_TARGET_ENV: ${HOSPITAL_LOADTEST_TARGET_ENV:?Set to validation, disposable or training}
+    HOSPITAL_CONFIRM_LOADTEST_TARGET: ${HOSPITAL_CONFIRM_LOADTEST_TARGET:?Must exactly match BASE_URL}
+    HEADLESS: "true"
+  security_opt:
+    - "no-new-privileges:true"
+  mem_limit: 512m
+  cpus: "0.5"
+  pids_limit: 200
+  networks:
+    - hospital_default
+services:
+  cashier1:
+    <<: *cashier-base
+    container_name: hospital_cashier1
+    profiles: ["lan5"]
+    environment:
+      <<: *cashier-env
+      CASHIER_USER: ${CASHIER_USER_1:?CASHIER_USER_1 is required for a disposable validation account}
+      CASHIER_PASSWORD: ${CASHIER_PASSWORD_1:?CASHIER_PASSWORD_1 is required for a disposable validation account}
+      CASHIER_INDEX: "1"
+  cashier2:
+    <<: *cashier-base
+    container_name: hospital_cashier2
+    profiles: ["lan5"]
+    environment:
+      <<: *cashier-env
+      CASHIER_USER: ${CASHIER_USER_2:?CASHIER_USER_2 is required for a disposable validation account}
+      CASHIER_PASSWORD: ${CASHIER_PASSWORD_2:?CASHIER_PASSWORD_2 is required for a disposable validation account}
+      CASHIER_INDEX: "2"
+  cashier3:
+    <<: *cashier-base
+    container_name: hospital_cashier3
+    profiles: ["lan5"]
+    environment:
+      <<: *cashier-env
+      CASHIER_USER: ${CASHIER_USER_3:?CASHIER_USER_3 is required for a disposable validation account}
+      CASHIER_PASSWORD: ${CASHIER_PASSWORD_3:?CASHIER_PASSWORD_3 is required for a disposable validation account}
+      CASHIER_INDEX: "3"
+  cashier4:
+    <<: *cashier-base
+    container_name: hospital_cashier4
+    profiles: ["lan5"]
+    environment:
+      <<: *cashier-env
+      CASHIER_USER: ${CASHIER_USER_4:?CASHIER_USER_4 is required for a disposable validation account}
+      CASHIER_PASSWORD: ${CASHIER_PASSWORD_4:?CASHIER_PASSWORD_4 is required for a disposable validation account}
+      CASHIER_INDEX: "4"
+  cashier5:
+    <<: *cashier-base
+    container_name: hospital_cashier5
+    profiles: ["lan5"]
+    environment:
+      <<: *cashier-env
+      CASHIER_USER: ${CASHIER_USER_5:?CASHIER_USER_5 is required for a disposable validation account}
+      CASHIER_PASSWORD: ${CASHIER_PASSWORD_5:?CASHIER_PASSWORD_5 is required for a disposable validation account}
+      CASHIER_INDEX: "5"
+
+  # Orquestador: corre la suite de Playwright una vez por cashier
+  # y agrega los resultados en /work/lan-emulation-report.json.
+  orchestrator:
+    <<: *cashier-base
+    container_name: hospital_lan_orchestrator
+    command: ["node", "/work/orchestrator.js"]
+    profiles: ["lan5"]
+    environment:
+      <<: *cashier-env
+      RUN_ALL_CASHIERS: "true"
+      EXPECTED_CASHIERS: "5"
+    depends_on:
+      - cashier1
+      - cashier2
+      - cashier3
+      - cashier4
+      - cashier5
+
+networks:
+  hospital_default:
+    name: ${NETWORK_NAME:-s_hospital_default}
+    external: true

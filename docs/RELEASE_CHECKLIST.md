@@ -274,6 +274,15 @@ Antes de llevar plantillas al servidor final, ejecute
 `FIELD_PROOF_TEMPLATES: YES` para confirmar que las plantillas de cliente LAN,
 impresora fisica, restore descartable y concurrencia descartable conservan los
 labels y checks que exige el preflight.
+Antes de ejecutar emulacion LAN o loadtest, ejecute
+`scripts\validate_lan_loadtest_safety.ps1`; debe reportar
+`LAN_LOADTEST_SAFETY: YES` para confirmar que los runners no tienen
+contrasenas por defecto, no usan DNS publicos, no montan `docker.sock` y exigen
+`HOSPITAL_LOADTEST_TARGET_ENV`, `LAN_EMULATION_RUN_ID` y confirmacion exacta de
+URL antes de crear facturas de prueba. Estas pruebas son solo para base
+descartable o entorno de validacion; no sustituyen
+`qa\LAN_CLIENT_VALIDATION_PROOF.md`, prueba fisica de impresora ni evidencia
+fiscal real.
 Antes de inicializar archivos de evidencia en el servidor final, ejecute
 `scripts\validate_proof_initialization_safety.ps1`; debe reportar
 `PROOF_INITIALIZATION_SAFETY: YES` para confirmar que
@@ -327,6 +336,22 @@ Este script es mutante: abre caja, crea facturas y registra pagos con un `RUN_ID
 No ponga usuario o contrasena dentro de `HOSPITAL_CONCURRENCY_BASE_URL`; use siempre las variables de cuenta temporal. Para guardar evidencia sin editarla a mano, agregue `HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md` y luego revise que la conclusion corresponda al entorno descartable usado. Esa ruta debe ser un archivo `.md` dentro de `qa/`; el script no escribe evidencia fuera de la carpeta instalada.
 
 Evidencia Fase 11: ejecutado contra `http://192.168.1.7:8000` con `HOSPITAL_CONCURRENCY_TARGET_ENV=local` y `RUN_ID=concurrency-validation-20260517T20435`; valido doble apertura de caja, doble emision de factura y doble pago. Repetir en servidor/base final descartable antes de declarar produccion.
+
+Emulacion LAN/loadtest contra base descartable:
+
+```bash
+HOSPITAL_LOADTEST_TARGET_ENV=validation HOSPITAL_CONFIRM_LOADTEST_TARGET=https://192.168.1.10:8443 BASE_URL=https://192.168.1.10:8443 CASHIER_USER=validacion.caja1 CASHIER_PASSWORD=password-temporal bash scripts/loadtest_smoke.sh
+```
+
+Estos runners abren caja, crean facturas y pueden registrar pagos de prueba.
+Use solo usuarios temporales y una base de validacion, descartable o training.
+No usar contra la caja real de produccion. La evidencia resultante ayuda a
+detectar regresiones de concurrencia y latencia, pero no reemplaza la prueba LAN
+desde una segunda PC real ni la prueba de impresora fisica.
+Para emulacion LAN con cinco navegadores logicos, defina tambien un
+`LAN_EMULATION_RUN_ID` nuevo por corrida, por ejemplo
+`lan5-YYYYMMDD-HHMM`. No reutilice el identificador: el orquestador lo compara
+contra cada resultado para evitar evidencia vieja.
 
 LAN fisica:
 

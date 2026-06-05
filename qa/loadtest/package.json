@@ -1,0 +1,10 @@
+{
+  "name": "s-hospital-loadtest",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-cashier and fiscal-race load tests for S_Hospital",
+  "scripts": {
+    "cashiers": "k6 run multi-cashier.js",
+    "fiscal-race": "node fiscal-race.js"
+  }
+}

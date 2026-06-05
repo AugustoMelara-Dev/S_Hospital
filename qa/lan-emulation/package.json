@@ -1,0 +1,10 @@
+{
+  "name": "lan-emulation",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Per-cashier Playwright script for docker-compose.lan-emulation.yml",
+  "main": "cashier.js",
+  "scripts": {
+    "start": "node cashier.js"
+  }
+}
