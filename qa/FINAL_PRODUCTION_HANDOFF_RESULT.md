@@ -1,18 +1,20 @@
 # Final production handoff result
 
-- Generated at: 2026-06-05 00:40:27
+- Generated at: 2026-06-05 01:07:59
 - Base URL: http://192.168.1.10:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
 - LAN client proof present without obvious placeholders: False
 - Institutional receipt print proof present without obvious placeholders: False
 - Final restore proof present without obvious placeholders: True
+- Final backup task proof present without obvious placeholders: False
 - Final concurrency proof present without obvious placeholders: True
 - Supervised training acceptance proof present without obvious placeholders: False
 - Backup scheduled tasks ready in status output: False
 - LAN client proof file: `qa/LAN_CLIENT_VALIDATION_PROOF.md`
 - Institutional receipt print proof file: `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`
 - Final restore proof file: `qa/FINAL_RESTORE_PROOF.md`
+- Final backup task proof file: `qa/FINAL_BACKUP_TASK_PROOF.md`
 - Final concurrency proof file: `qa/FINAL_CONCURRENCY_PROOF.md`
 - Supervised training acceptance proof file: `qa/TRAINING_ACCEPTANCE_PROOF.md`
 - Offline release artifact guard exit code: 0
@@ -63,6 +65,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 
 - Missing or incomplete `qa/LAN_CLIENT_VALIDATION_PROOF.md` from a real second LAN client.
 - Missing or incomplete `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` from the real cashier printer.
+- Missing or incomplete `qa/FINAL_BACKUP_TASK_PROOF.md` after installing backup tasks and confirming a manual UI backup moves from pending to success.
 - Missing or incomplete `qa/TRAINING_ACCEPTANCE_PROOF.md` from supervised role training in a safe practice environment.
 - Install or update Windows scheduled backup tasks `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup`, then confirm a manual UI backup moves from pending to success.
 - Preflight was skipped in this handoff run.
@@ -71,7 +74,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 
 - Browser smoke screenshots: `qa/browser-smoke-2026-06-03/rc-e2e-mocked-report.json` and `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md`.
 - System diagnostics and Help/support guards: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`, `qa/FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md`.
-- Backup worker, current-user startup and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.
+- Backup worker, current-user startup, final backup task and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md`, `qa/FINAL_BACKUP_TASK_PROOF.example.md`, `qa/FINAL_BACKUP_TASK_PROOF.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.
 - Concurrency, double-action and realtime own-event evidence: `qa/FINAL_CONCURRENCY_PROOF.md`, `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md` and `qa/REALTIME_OWN_EVENT_SAFETY_2026_06_04.md`.
 - Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/LAN_LOADTEST_SAFETY_2026_06_04.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.
 - New invoice maintainability guard: `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` and `scripts/validate_new_invoice_maintainability.ps1` preserve a short cashier-facing invoice flow.
@@ -121,7 +124,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_au
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath php
 Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath php
-# Then create one manual backup from the admin UI and confirm it moves from pending to success.
+# Then create one manual backup from the admin UI, confirm it moves from pending to success, and complete qa\FINAL_BACKUP_TASK_PROOF.md.
 bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"
 # Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report.
 bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://192.168.1.10:8000 HOSPITAL_CONCURRENCY_BASE_URL=http://192.168.1.10:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
@@ -247,6 +250,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found qa\LAN_CLIENT_VALIDATION_PROOF.example.md
 [ OK ] Found qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md
 [ OK ] Found qa\FINAL_RESTORE_PROOF.example.md
+[ OK ] Found qa\FINAL_BACKUP_TASK_PROOF.example.md
 [ OK ] Found qa\FINAL_CONCURRENCY_PROOF.example.md
 [ OK ] Found qa\TRAINING_ACCEPTANCE_PROOF.example.md
 [ OK ] docker-compose.prod.yml matches versioned source
@@ -318,10 +322,11 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] qa\LAN_CLIENT_VALIDATION_PROOF.example.md matches versioned source
 [ OK ] qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md matches versioned source
 [ OK ] qa\FINAL_RESTORE_PROOF.example.md matches versioned source
+[ OK ] qa\FINAL_BACKUP_TASK_PROOF.example.md matches versioned source
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[ OK ] MANIFEST.txt references current commit a6a43551
+[ OK ] MANIFEST.txt references current commit 6ab8f551
 [ OK ] offline-images contains 4 Docker image tar file(s)
 
 OFFLINE_RELEASE_CLEAN: YES
@@ -512,6 +517,8 @@ FIRST_LEVEL_SUPPORT_SAFETY: YES
 [ OK ] Ops evidence index inspects qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md before PRODUCTION_READY
 [ OK ] Preflight requires qa\FINAL_RESTORE_PROOF.md
 [ OK ] Ops evidence index inspects qa\FINAL_RESTORE_PROOF.md before PRODUCTION_READY
+[ OK ] Preflight requires qa\FINAL_BACKUP_TASK_PROOF.md
+[ OK ] Ops evidence index inspects qa\FINAL_BACKUP_TASK_PROOF.md before PRODUCTION_READY
 [ OK ] Preflight requires qa\FINAL_CONCURRENCY_PROOF.md
 [ OK ] Ops evidence index inspects qa\FINAL_CONCURRENCY_PROOF.md before PRODUCTION_READY
 [ OK ] Preflight requires qa\TRAINING_ACCEPTANCE_PROOF.md
@@ -531,6 +538,7 @@ FIRST_LEVEL_SUPPORT_SAFETY: YES
 [ OK ] Preflight keeps required proof check: Payment
 [ OK ] Preflight keeps required proof check: Receipt
 [ OK ] Preflight keeps required proof check: Backup
+[ OK ] Preflight keeps required proof check: pending to success
 [ OK ] Preflight keeps required proof check: media carta
 [ OK ] Preflight keeps required proof check: carta
 [ OK ] Preflight keeps required proof check: A5
@@ -712,6 +720,7 @@ TRAINING_SAFETY: YES
 [ OK ] qa\LAN_CLIENT_VALIDATION_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\FINAL_RESTORE_PROOF.example.md keeps required fields, checks and safety instructions.
+[ OK ] qa\FINAL_BACKUP_TASK_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md keeps required fields, checks and safety instructions.
 
@@ -740,6 +749,10 @@ Final-field proof templates match preflight-required labels, checks and safety i
 [ OK ] Initializer includes FINAL_RESTORE_PROOF target proof
 [ OK ] Offline builder includes FINAL_RESTORE_PROOF example template
 [ OK ] Offline guard requires FINAL_RESTORE_PROOF example template
+[ OK ] Initializer includes FINAL_BACKUP_TASK_PROOF example template
+[ OK ] Initializer includes FINAL_BACKUP_TASK_PROOF target proof
+[ OK ] Offline builder includes FINAL_BACKUP_TASK_PROOF example template
+[ OK ] Offline guard requires FINAL_BACKUP_TASK_PROOF example template
 [ OK ] Initializer includes FINAL_CONCURRENCY_PROOF example template
 [ OK ] Initializer includes FINAL_CONCURRENCY_PROOF target proof
 [ OK ] Offline builder includes FINAL_CONCURRENCY_PROOF example template
@@ -763,6 +776,7 @@ Final-field proof templates match preflight-required labels, checks and safety i
 [ OK ] Proof initializer created qa\LAN_CLIENT_VALIDATION_PROOF.md
 [ OK ] Proof initializer created qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md
 [ OK ] Proof initializer created qa\FINAL_RESTORE_PROOF.md
+[ OK ] Proof initializer created qa\FINAL_BACKUP_TASK_PROOF.md
 [ OK ] Proof initializer created qa\FINAL_CONCURRENCY_PROOF.md
 [ OK ] Proof initializer created qa\TRAINING_ACCEPTANCE_PROOF.md
 [ OK ] Proof initializer exits successfully when proof files already exist
@@ -986,7 +1000,7 @@ OFFLINE_RELEASE_STAGING_SAFETY: YES
 ## Offline release builder self-test output
 
 ```text
-[OK] SelfTest passed. default.conf=79 lines, crontab=10 lines, scripts=57, docs=7, proofTemplates=5, hash=ED8CCC2747A4CC0197054B68E5A7059E0AC115BDF8B85113C80701EA77B54E79
+[OK] SelfTest passed. default.conf=79 lines, crontab=10 lines, scripts=57, docs=7, proofTemplates=6, hash=ED8CCC2747A4CC0197054B68E5A7059E0AC115BDF8B85113C80701EA77B54E79
 ```
 
 ## Offline release guard self-test output
@@ -1101,6 +1115,7 @@ OPERATOR_MANUALS_SAFETY: YES
 [ OK ] Backup/restore guide includes Retencion de respaldos
 [ OK ] Backup/restore guide includes validate_backup_worker_smoke.ps1
 [ OK ] Backup/restore guide includes qa\BACKUP_WORKER_SMOKE_PROOF.md
+[ OK ] Backup/restore guide includes qa\FINAL_BACKUP_TASK_PROOF.md
 [ OK ] Backup/restore guide includes Restauracion
 [ OK ] Backup/restore guide includes qa\FINAL_RESTORE_PROOF.md
 [ OK ] Backup/restore guide includes validate_restore_mysql.sh
@@ -1244,6 +1259,7 @@ RESTORE_WINDOWS_SAFETY: YES
 [ OK ] Installation guide includes safety text: Protegido
 [ OK ] Installation guide includes safety text: LAN_CLIENT_VALIDATION_PROOF.md
 [ OK ] Installation guide includes safety text: INSTITUTIONAL_RECEIPT_PRINT_PROOF.md
+[ OK ] Installation guide includes safety text: FINAL_BACKUP_TASK_PROOF.md
 [ OK ] Installation guide includes safety text: FINAL_RESTORE_PROOF.md
 [ OK ] Installation guide includes safety text: FINAL_CONCURRENCY_PROOF.md
 [ OK ] Installation guide includes safety text: final_production_handoff.ps1
@@ -2026,7 +2042,7 @@ NEW_INVOICE_MAINTAINABILITY: YES
 
 ```text
 [OK] OPS_EVIDENCE_INDEX: YES
-[OK] Referencias qa/ verificadas: 44
+[OK] Referencias qa/ verificadas: 46
 [OK] El handoff conserva bloqueantes fisicos antes de PRODUCTION_READY.
 ```
 
