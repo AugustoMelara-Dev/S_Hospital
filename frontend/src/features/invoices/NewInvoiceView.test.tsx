@@ -946,6 +946,31 @@ describe('NewInvoiceView', () => {
     expect(confirmSpy).toHaveBeenCalledWith('10.00');
   });
 
+  it('blocks partial payment locally when fiscal settings do not allow it', () => {
+    const confirmSpy = vi.fn();
+
+    render(
+      <PaymentModal
+        open
+        onOpenChange={vi.fn()}
+        invoiceNumber="000-001-01-00000007"
+        patientName="Maria Lopez"
+        total="17.25"
+        balanceDue="17.25"
+        paymentMethod="cash"
+        paymentAmount="10.00"
+        onPaymentMethodChange={vi.fn()}
+        onPaymentAmountChange={vi.fn()}
+        onConfirm={confirmSpy}
+      />,
+    );
+
+    expect(screen.getAllByText(/el monto recibido es menor al total/i).length).toBeGreaterThan(0);
+    expect(screen.getByText('L. 7.25')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
   it('scopes receipt print hiding to the explicit printing receipt state', () => {
     const styles = readFileSync('src/styles.css', 'utf8');
 

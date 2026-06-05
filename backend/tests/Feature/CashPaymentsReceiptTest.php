@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use App\Models\CashMovement;
@@ -508,6 +510,35 @@ class CashPaymentsReceiptTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('invoice');
+    }
+
+    public function test_partial_payment_is_rejected_when_fiscal_settings_disable_it(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => false]);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '10.00',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('amount');
+
+        $this->assertDatabaseMissing('payments', [
+            'invoice_id' => $invoiceId,
+            'amount_cents' => 1000,
+        ]);
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'status' => Invoice::STATUS_ISSUED,
+            'paid_amount_cents' => 0,
+            'balance_due_cents' => 1725,
+        ]);
     }
 
     public function test_voiding_payment_recalculates_invoice_and_excludes_payment_from_cash_and_reports(): void
