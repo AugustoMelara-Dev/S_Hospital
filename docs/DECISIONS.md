@@ -1,3 +1,11 @@
+## 2026-06-05 - Proof de autoarranque tiene guard focal
+
+Contexto: `qa\FINAL_STARTUP_TASK_PROOF.md` ya bloquea `PRODUCTION_READY`, pero soporte no tenia un comando focal para revisar solo ese proof sin correr todo el preflight u otros gates del handoff.
+
+Decision: se agrega `scripts\validate_final_startup_task_proof.ps1`. En modo candidato acepta `-AllowPendingFinalField` solo si el stub conserva `SistemaCajaHospitalaria-StackAutostart`, `AtStartup`, arranque/reinicio, `/up`, login y `PRODUCTION_CANDIDATE` sin secretos ni rutas locales. Sin banderas es estricto y falla hasta que la evidencia del servidor final este completa, marcada y referencie evidencia segura bajo `qa/` o una referencia fisica no local.
+
+Criterio de verificacion: `validate_final_startup_task_proof.ps1 -AllowPendingFinalField`, `validate_final_handoff_completeness.ps1`, `validate_operations_objective_audit.ps1`, `validate_handoff_guard_coverage.ps1`, `make_offline_release.ps1 -SelfTest` y `assert_offline_release_clean.ps1 -SelfTest` deben pasar; `validate_final_startup_task_proof.ps1` sin banderas debe seguir fallando mientras el proof sea pendiente.
+
 ## 2026-06-05 - Autoarranque final exige proof de servidor
 
 Contexto: el handoff y las limitaciones conocidas bloqueaban produccion si `SistemaCajaHospitalaria-StackAutostart` no estaba verificado en el servidor final, pero no existia una evidencia estructurada equivalente a LAN, impresora, restore, backup y capacitacion.

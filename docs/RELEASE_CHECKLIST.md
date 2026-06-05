@@ -152,6 +152,14 @@ El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
 `scripts\validate_lan_loadtest_safety.ps1`,
 `scripts\validate_shift_incident_recovery_safety.ps1` y
 `scripts\validate_training_safety.ps1`. Ejecute tambien
+`scripts\validate_final_startup_task_proof.ps1 -AllowPendingFinalField` antes
+del handoff candidato para confirmar que el pendiente de autoarranque conserva
+`SistemaCajaHospitalaria-StackAutostart`, `AtStartup`, `/up`, login y
+`PRODUCTION_CANDIDATE` sin secretos ni rutas locales. Para cierre final, ejecute
+`scripts\validate_final_startup_task_proof.ps1` sin banderas; debe fallar hasta
+que `qa\FINAL_STARTUP_TASK_PROOF.md` este completo con evidencia del servidor
+final.
+Ejecute tambien
 `scripts\validate_training_acceptance_proof.ps1 -AllowPendingFinalField` antes
 del handoff candidato para confirmar que el pendiente de capacitacion conserva
 sus bloqueantes y no expone secretos ni rutas locales. Para cierre final, ejecute
@@ -213,6 +221,9 @@ final, observe un arranque/reinicio o una ejecucion supervisada de la tarea,
 confirme `/up` y login, y complete `qa\FINAL_STARTUP_TASK_PROOF.md` usando
 `qa\FINAL_STARTUP_TASK_PROOF.example.md`; no adjunte `.env`, passwords, XML de
 tareas, dumps SQL ni rutas absolutas.
+Use `scripts\validate_final_startup_task_proof.ps1 -AllowPendingFinalField`
+durante el handoff candidato y `scripts\validate_final_startup_task_proof.ps1`
+sin banderas antes de cualquier declaracion final.
 Antes de entregar evidencia visual o de navegador, ejecute
 `scripts\validate_browser_smoke_evidence.ps1`; debe reportar
 `BROWSER_SMOKE_EVIDENCE: YES` para confirmar que existen capturas de dashboard,
