@@ -242,6 +242,8 @@ if ($failures.Count -eq 0) {
         'LAN_CLIENT_VALIDATION_PROOF.md',
         'INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
         'TRAINING_ACCEPTANCE_PROOF.md',
+        'Backup scheduled tasks ready in status output',
+        'Install or update Windows scheduled backup tasks',
         'SistemaCajaHospitalaria-StackAutostart',
         'SistemaCajaHospitalaria-BackupWorker',
         'SistemaCajaHospitalaria-DailyBackup',

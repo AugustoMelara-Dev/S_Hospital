@@ -658,6 +658,19 @@ function Protect-HandoffText([string] $value) {
     return $protected
 }
 
+function Test-BackupTasksReady([string[]] $backupStatusOutput) {
+    $statusText = ($backupStatusOutput -join "`n")
+    if ([string]::IsNullOrWhiteSpace($statusText)) {
+        return $false
+    }
+
+    $workerReady = $statusText -match 'SistemaCajaHospitalaria-BackupWorker:\s*estado=(Ready|Running)'
+    $dailyReady = $statusText -match 'SistemaCajaHospitalaria-DailyBackup:\s*estado=(Ready|Running)'
+    $missingTask = $statusText -match '(?i)no instalada|not installed|Get-ScheduledTask is not available'
+
+    return $workerReady -and $dailyReady -and -not $missingTask
+}
+
 function Write-HandoffReport(
     [string] $path,
     [bool] $lanProofCompleted,
@@ -747,6 +760,7 @@ function Write-HandoffReport(
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
     $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $trainingAcceptanceProofCompleted
+    $backupTasksReady = Test-BackupTasksReady $backupStatusOutput
     $allAutomatedGuardsPassed = Test-GuardExitCodesPassed @(
         $releaseGuardExit,
         $supportPacketSafetyExit,
@@ -786,7 +800,7 @@ function Write-HandoffReport(
         $finalHandoffCompletenessExit,
         $evidenceIndexExit
     )
-    $decision = if ($allProofsCompleted -and $allAutomatedGuardsPassed -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
+    $decision = if ($allProofsCompleted -and $backupTasksReady -and $allAutomatedGuardsPassed -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
 
     Add-ReportLine $lines "# Final production handoff result"
     Add-ReportLine $lines ""
@@ -799,6 +813,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Final restore proof present without obvious placeholders: $restoreProofCompleted"
     Add-ReportLine $lines "- Final concurrency proof present without obvious placeholders: $concurrencyProofCompleted"
     Add-ReportLine $lines "- Supervised training acceptance proof present without obvious placeholders: $trainingAcceptanceProofCompleted"
+    Add-ReportLine $lines "- Backup scheduled tasks ready in status output: $backupTasksReady"
     Add-ReportLine $lines '- LAN client proof file: `qa/LAN_CLIENT_VALIDATION_PROOF.md`'
     Add-ReportLine $lines '- Institutional receipt print proof file: `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`'
     Add-ReportLine $lines '- Final restore proof file: `qa/FINAL_RESTORE_PROOF.md`'
@@ -870,6 +885,9 @@ function Write-HandoffReport(
     }
     if (-not $trainingAcceptanceProofCompleted) {
         Add-ReportLine $lines '- Missing or incomplete `qa/TRAINING_ACCEPTANCE_PROOF.md` from supervised role training in a safe practice environment.'
+    }
+    if (-not $backupTasksReady) {
+        Add-ReportLine $lines '- Install or update Windows scheduled backup tasks `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup`, then confirm a manual UI backup moves from pending to success.'
     }
     if ($preflightSkipped) {
         Add-ReportLine $lines "- Preflight was skipped in this handoff run."

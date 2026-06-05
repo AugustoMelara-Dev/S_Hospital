@@ -318,6 +318,8 @@ fisica, restore final y concurrencia final.
 
 En Windows tambien falla si no existen `SistemaCajaHospitalaria-BackupWorker` y
 `SistemaCajaHospitalaria-DailyBackup`, o si el worker continuo no esta `Running`.
+El handoff final tambien debe elevar esas tareas faltantes a `Blocking items`,
+porque un backup manual que queda en `pending` no es aceptable para caja diaria.
 
 La evidencia fisica de LAN e impresora es obligatoria por defecto. El flag
 `-AllowMissingPhysicalProof` solo permite una corrida parcial de entorno y deja
