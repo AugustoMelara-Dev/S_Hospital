@@ -674,12 +674,13 @@ describe('ReportsView', () => {
     );
 
     expect(screen.getByText('000-001-01-00000001')).toBeInTheDocument();
-    expect(screen.getByText('hospital-backup-2026-06-01.sql')).toBeInTheDocument();
+    expect(screen.getByText('Respaldo manual', { exact: false })).toBeInTheDocument();
     expect(screen.getByText('cajero.validacion')).toBeInTheDocument();
     expect(screen.queryByText('918273')).not.toBeInTheDocument();
     expect(screen.queryByText('938475')).not.toBeInTheDocument();
     expect(screen.queryByText('948576')).not.toBeInTheDocument();
     expect(screen.queryByText('checksum-no-visible-1234567890')).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/hospital-backup|\.sql/);
   });
 
   it('allows cash-session-only report users to open the cash report tab without managerial reports', async () => {

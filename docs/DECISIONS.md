@@ -3553,3 +3553,7 @@ Criterio de verificacion: ReceiptPreview.test verifica que el recibo renderiza M
 - La evidencia local de Ayuda convierte acciones, modulos, rutas y referencias tecnicas a etiquetas humanas como Conexion local, Ayuda y Aviso del sistema.
 - El resumen seguro ya no rotula Codigo tecnico ni muestra rutas /api o pantallas crudas al operador.
 - clientIssueLog.test y HelpView.test protegen que el panel no exponga rutas internas, secretos ni detalles de runtime.
+
+## 2026-06-05 - Auditoria muestra respaldos sin nombres SQL
+La vista de Auditoria en Reportes ahora reutiliza etiquetas institucionales de respaldos para mostrar Respaldo manual o Respaldo automatico con estado Protegido, Pendiente o Error, sin exponer nombres de archivo .sql al personal. El nombre real del archivo queda reservado para descarga, auditoria interna y backend, mientras la interfaz normal mantiene lenguaje operativo verificable.
+Pruebas actualizadas: AuditoriaTab y ReportsView bloquean la aparicion visible de hospital-backup, .sql o filename; BackupsView conserva las mismas etiquetas mediante el helper compartido.

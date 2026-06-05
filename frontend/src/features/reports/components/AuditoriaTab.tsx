@@ -11,6 +11,7 @@ import type { OperationsReport } from '../../../lib/api/types';
 import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../../lib/format/formatDate';
 import { receiptPaperSizeLabel } from '../../../lib/institutionalReceiptPaper';
+import { backupDisplayName, backupStatusLabel, backupTypeLabel } from '../../../lib/backupLabels';
 
 interface AuditoriaTabProps {
   canExport: boolean;
@@ -248,7 +249,7 @@ export function AuditoriaTab({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Archivo</TableHead>
+                      <TableHead>Respaldo</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead>Tamaño</TableHead>
                       <TableHead>Tipo</TableHead>
@@ -259,7 +260,7 @@ export function AuditoriaTab({
                   <TableBody>
                     {operations.backups.map((backup, index) => (
                       <TableRow key={`backup-${backup.filename ?? index}-${backup.created_at ?? 'sin-fecha'}`}>
-                        <TableCell className="max-w-[200px] truncate font-medium">{backup.filename}</TableCell>
+                        <TableCell className="max-w-[220px] break-words font-medium">{backupDisplayName(backup)}</TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${backup.status === 'success' ? 'bg-green-100 text-green-800' : backup.status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
                             {backupStatusLabel(backup.status)}
@@ -344,14 +345,6 @@ export function AuditoriaTab({
 function formatDate(value: string | null): string {
   if (!value) return '-';
   return formatLocalizedDateTime(value);
-}
-
-function backupStatusLabel(status: string): string {
-  return { pending: 'Pendiente', success: 'Completado', failed: 'Fallido' }[status] ?? status;
-}
-
-function backupTypeLabel(type: string): string {
-  return { manual: 'Manual', scheduled: 'Automatico' }[type] ?? 'Operativo';
 }
 
 function paymentMethodLabel(method: string): string {

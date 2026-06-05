@@ -206,4 +206,65 @@ describe('AuditoriaTab', () => {
     expect(screen.getByText('A5')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/half_letter|80mm|58mm/);
   });
+
+  it('renders backup audit rows without technical filenames', () => {
+    const operations = {
+      date_from: '2026-06-01',
+      date_to: '2026-06-01',
+      filters: { date_from: '2026-06-01', date_to: '2026-06-01' },
+      summary: {
+        void_count: 0,
+        reprint_count: 0,
+        payment_void_count: 0,
+        backup_count: 2,
+        failed_backup_count: 1,
+        cashier_count: 0,
+      },
+      voids: [],
+      reprints: [],
+      payment_voids: [],
+      backups: [
+        {
+          filename: 'hospital-backup-2026-06-01.sql',
+          status: 'success',
+          type: 'manual',
+          size_bytes: 2048,
+          created_at: '2026-06-01T08:15:00.000Z',
+          completed_at: '2026-06-01T08:16:00.000Z',
+          creator: 'Admin Hospital',
+        },
+        {
+          filename: 'hospital-backup-2026-06-02-failed.sql',
+          status: 'failed',
+          type: 'scheduled',
+          size_bytes: null,
+          created_at: null,
+          completed_at: null,
+          creator: null,
+        },
+      ],
+      cashiers: [],
+    } satisfies OperationsReport;
+
+    render(
+      <AuditoriaTab
+        canExport={false}
+        operations={operations}
+        dateFrom="2026-06-01"
+        dateTo="2026-06-01"
+        onDateFromChange={() => undefined}
+        onDateToChange={() => undefined}
+        onExport={() => undefined}
+        onExportPdf={() => undefined}
+        onSubmit={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText('Respaldo manual', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText('Respaldo automatico', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText('fecha no disponible', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText('Protegido')).toBeInTheDocument();
+    expect(screen.getByText('Error')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/hospital-backup|\.sql|filename/i);
+  });
 });
