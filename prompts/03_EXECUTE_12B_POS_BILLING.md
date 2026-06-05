@@ -11,7 +11,7 @@ Implementa solo Fase 12B si 12A esta cerrado.
 - Carrito lateral.
 - Resumen de factura.
 - Pago claro.
-- Recibo institucional media carta/carta/A5/80mm/58mm.
+- Recibo institucional media carta/carta/A5.
 
 ## Bloqueos
 

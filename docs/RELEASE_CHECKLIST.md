@@ -38,7 +38,7 @@ Validado durante el pase de arquitectura/mantenibilidad/UX/metadata:
 - E2E mockeado: `npm.cmd run e2e`.
 
 Estos gates no sustituyen validacion fisica de segunda PC LAN, impresora
-termica, restore final, concurrencia final ni backup worker en el servidor real.
+institucional, restore final, concurrencia final ni backup worker en el servidor real.
 
 ## Gate E2E Fase 10
 
@@ -71,7 +71,7 @@ controlados de Playwright; ayuda a detectar rutas rotas, pantalla inicial,
 errores de navegador y regresiones de flujo. No reemplaza las pruebas fisicas
 de impresora, cliente LAN, MySQL/MariaDB real, restore o concurrencia.
 
-El E2E local usa ambiente seguro y API mockeada para cubrir login, caja, factura, eritropoyetina normal/gratis, pago, recibo media carta/carta/A5/80mm/58mm, historial, reimpresion, reportes y backup pending. No valida MySQL/MariaDB real ni hardware.
+El E2E local usa ambiente seguro y API mockeada para cubrir login, caja, factura, eritropoyetina normal/gratis, pago, recibo media carta/carta/A5, historial, reimpresion, reportes y backup pending. No valida MySQL/MariaDB real ni hardware.
 
 ## Reset dev/testing con base descartable
 
@@ -357,7 +357,7 @@ LAN fisica:
 - Eritropoyetina normal L.25.
 - Eritropoyetina con receta de dialisis L.0.
 - Cobrar factura.
-- Ver recibo media carta, carta, A5, 80mm y 58mm.
+- Ver recibo media carta, carta y A5.
 - Reimprimir desde historial.
 - Anular factura sin pagos con motivo.
 - Ver reportes.
@@ -402,7 +402,7 @@ Para removerlas: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File script
 
 - Probar restore real en una base descartable del servidor final y guardar checksum/conteos.
 - Probar desde una segunda PC en LAN usando la IP fija o dominio LAN, nunca `localhost`.
-- Probar impresora fisica media carta/carta/A5/80mm/58mm desde la PC o cliente que imprimira.
+- Probar impresora fisica media carta/carta/A5 desde la PC o cliente que imprimira.
 - Crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
 - Crear `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` usando `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md`.
 - Crear `qa/FINAL_RESTORE_PROOF.md` usando `qa/FINAL_RESTORE_PROOF.example.md`.

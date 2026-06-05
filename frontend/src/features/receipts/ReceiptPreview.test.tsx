@@ -96,7 +96,7 @@ describe('ReceiptPreview', () => {
   it('sets and clears the active print paper width', async () => {
     vi.useFakeTimers();
     const receipt = receiptFixture();
-    receipt.width = '80mm';
+    receipt.width = 'a5';
     printSpy.mockImplementation(() => undefined);
 
     render(
@@ -112,7 +112,7 @@ describe('ReceiptPreview', () => {
     await Promise.resolve();
 
     expect(printSpy).toHaveBeenCalledTimes(1);
-    expect(document.body.dataset.receiptWidth).toBe('80mm');
+    expect(document.body.dataset.receiptWidth).toBe('a5');
     expect(document.body.dataset.printingReceipt).toBe('true');
 
     await vi.advanceTimersByTimeAsync(1000);

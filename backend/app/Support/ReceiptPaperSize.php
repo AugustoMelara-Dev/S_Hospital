@@ -13,7 +13,7 @@ class ReceiptPaperSize
      */
     public static function values(): array
     {
-        return ['half_letter', 'letter', 'a5', '80mm', '58mm'];
+        return ['half_letter', 'letter', 'a5'];
     }
 
     public static function normalize(?string $value): string

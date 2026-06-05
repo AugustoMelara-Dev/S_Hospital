@@ -16,8 +16,7 @@ salida fisica.
 - Falta imprimir recibo media carta en el equipo real de caja.
 - Falta imprimir recibo carta en el equipo real de caja.
 - Falta imprimir recibo A5 en el equipo real de caja.
-- Falta imprimir recibo 80mm en el equipo real de caja.
-- Falta imprimir recibo 58mm en el equipo real de caja.
+- Falta imprimir recibo en media carta, carta y A5 en el equipo real de caja.
 - Falta validar reimpresion desde historial.
 - Falta confirmar escala 100%, margenes minimos y encabezados/pies del navegador desactivados.
 - Falta guardar evidencia local real: foto, muestra firmada o referencia fisica verificable.

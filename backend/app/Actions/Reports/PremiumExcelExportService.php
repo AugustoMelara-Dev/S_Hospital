@@ -949,10 +949,10 @@ class PremiumExcelExportService
     private function receiptWidthLabel(?string $width): string
     {
         return [
-            '58' => 'Termico 58mm',
-            '80' => 'Termico 80mm',
-            '58mm' => 'Termico 58mm',
-            '80mm' => 'Termico 80mm',
+            '58' => 'Media carta',
+            '80' => 'Media carta',
+            '58mm' => 'Media carta',
+            '80mm' => 'Media carta',
             'a5' => 'A5',
             'half_letter' => 'Media carta',
             'letter' => 'Carta',

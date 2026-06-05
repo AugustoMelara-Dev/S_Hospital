@@ -70,7 +70,7 @@
 
 - **LAN client validation**: probar `/up`, `/login`, `/verify-email`
   desde segunda PC por IP fija.
-- **Impresora fisica media carta/carta/A5/80mm/58mm**: imprimir
+- **Impresora fisica media carta/carta/A5**: imprimir
   factura pagada en los 5 tamanos y validar margenes.
 - **Restore real final**: backup desde UI -> restore en base
   descartable, validar SHA256 + conteos.

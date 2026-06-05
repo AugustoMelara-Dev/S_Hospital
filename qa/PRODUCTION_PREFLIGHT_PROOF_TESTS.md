@@ -19,7 +19,7 @@ rechaza evidencia incompleta.
 | Evidencia de impresora vacia | Falla por archivo demasiado corto. |
 | Evidencia de impresora copiada desde plantilla | Falla por campo obligatorio vacio o check sin resultado. |
 | Evidencia de impresora sin `Media carta result:` | Falla con `Complete 'Media carta result:'`. |
-| Evidencia de impresora sin `Carta result:`, `A5 result:`, `80mm result:` o `58mm result:` | Falla con el campo faltante. |
+| Evidencia de impresora sin `Media carta result:`, `Carta result:` o `A5 result:` | Falla con el campo faltante. |
 | Evidencia de impresora con `Evidence/photo reference:` apuntando a una ruta local inexistente | Falla con `references missing local evidence`. |
 | Evidencia de impresora con `Evidence/photo reference:` apuntando a una ruta absoluta local | Falla porque la evidencia final debe usar ruta relativa o referencia no local. |
 | Evidencia de impresora con `Evidence/photo reference:` apuntando a `backend/`, `docs/`, `scripts/`, `frontend/` o una ruta con `..` | Falla porque capturas/fotos locales deben vivir bajo `qa/` sin traversal. |
@@ -44,8 +44,6 @@ El proof real debe usar los mismos nombres que valida el preflight:
 - Media carta result:
 - Carta result:
 - A5 result:
-- 80mm result:
-- 58mm result:
 - Reprint result:
 - Margins result:
 - Browser headers/footers result:

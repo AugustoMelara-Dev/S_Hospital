@@ -110,7 +110,7 @@ describe('App', () => {
             },
             {
               code: 'PENDING_HARDWARE_VALIDATION',
-              label: 'Validacion fisica media carta/carta/A5/80mm/58mm',
+              label: 'Validacion fisica media carta/carta/A5',
               status: 'pending',
             },
           ],
@@ -163,7 +163,7 @@ describe('App', () => {
             },
             {
               code: 'INSTITUTIONAL_RECEIPT_PRINT_PROOF',
-              label: 'Impresora institucional media carta/carta/A5/80mm/58mm',
+              label: 'Impresora institucional media carta/carta/A5',
               required_file: 'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
               status: 'pending',
               detail: 'Archivo de evidencia no existe todavia.',
@@ -482,7 +482,7 @@ describe('App', () => {
     expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /requiere revisi/i })).toBeInTheDocument();
     expect(await screen.findByText(/completar modo de operaci[oÃ³]n final/i)).toBeInTheDocument();
-    expect(await screen.findByText(/validar recibo fisico media carta\/carta\/A5\/80mm\/58mm/i)).toBeInTheDocument();
+    expect(await screen.findByText(/validar recibo fisico media carta\/carta\/A5/i)).toBeInTheDocument();
     expect(screen.queryByText(/APP_ENV=production/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /^pendiente$/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver detalle avanzado/i }));

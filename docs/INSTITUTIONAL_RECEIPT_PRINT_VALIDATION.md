@@ -1,6 +1,6 @@
 # Validacion de impresion del recibo institucional
 
-Estado actual: PENDING_HARDWARE_VALIDATION hasta probar en impresora fisica media carta, carta, A5, 80mm y 58mm.
+Estado actual: PENDING_HARDWARE_VALIDATION hasta probar en impresora fisica media carta, carta y A5.
 
 El CSS de impresion debe permanecer aislado al recibo. Solo se activa cuando
 `body[data-printing-receipt="true"]` esta presente; imprimir otra vista del
@@ -11,7 +11,7 @@ sistema no debe ocultar sidebar/topbar/app completa ni dejar paginas en blanco.
 - PC de caja identificada.
 - Navegador que usara el cajero identificado.
 - Impresora instalada o compartida en la PC de caja.
-- Formatos habilitados en el driver: media carta, carta, A5, 80mm y 58mm segun decision del hospital.
+- Formatos habilitados en el driver: media carta, carta y A5 segun decision del hospital.
 - Impresora correcta seleccionada como predeterminada o elegida manualmente.
 
 ## Configuracion del navegador
@@ -19,7 +19,7 @@ sistema no debe ocultar sidebar/topbar/app completa ni dejar paginas en blanco.
 - Escala 100%.
 - Margenes minimos o ninguno.
 - Encabezados y pies desactivados cuando el navegador lo permita.
-- Tamano de papel del driver configurado como media carta, carta, A5, 80mm o 58mm segun la prueba.
+- Tamano de papel del driver configurado como media carta, carta o A5 segun la prueba.
 - Prueba realizada desde la PC real de caja, no solo desde desarrollo.
 
 ## Prueba A5
@@ -34,17 +34,13 @@ sistema no debe ocultar sidebar/topbar/app completa ni dejar paginas en blanco.
 8. Confirmar que muestra Gobierno, Secretaria, Hospital San Isidro, numero/serie, fecha, paciente, cajero, servicios, metodo de pago, total, pagado, saldo, firma y sello.
 9. Confirmar que no imprime QR, codigo de barras, codigos internos ni datos tecnicos.
 
-## Prueba carta, media carta y termica
+## Prueba carta y media carta
 
 1. Abrir la misma factura o reimpresion.
 2. Cambiar formato a carta.
 3. Imprimir y confirmar margenes, escala 100% y legibilidad.
 4. Cambiar formato a media carta si el hospital usara ese tamano.
 5. Imprimir y confirmar que no hay cortes de texto critico.
-6. Cambiar formato a 80mm.
-7. Imprimir y confirmar legibilidad de hospital, paciente, servicios, totales, firma y sello.
-8. Cambiar formato a 58mm.
-9. Imprimir y confirmar que no hay cortes de texto critico.
 
 ## Reimpresion
 
@@ -62,6 +58,6 @@ Registrar:
 - Operador.
 - PC de caja.
 - Modelo de impresora.
-- Formato probado: media carta, carta, A5, 80mm, 58mm o combinacion aprobada.
+- Formato probado: media carta, carta, A5 o combinacion aprobada.
 - Resultado: VALIDATED o FAILED.
 - Observaciones de margenes, escala o driver.

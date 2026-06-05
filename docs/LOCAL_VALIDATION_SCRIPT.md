@@ -31,7 +31,7 @@ Configuracion institucional:
 
 - Hospital: Hospital San Isidro.
 - RTN, CAI y secuencia: usar los datos autorizados por administracion o marcar la configuracion como pendiente mientras no se opere en produccion.
-- Recibo por defecto: media carta, con opciones carta, A5, 80mm y 58mm.
+- Recibo por defecto: media carta, con opciones carta y A5.
 
 ## Guion principal
 
@@ -71,7 +71,7 @@ Configuracion institucional:
 
 6. Ver recibo institucional
    - Confirmar vista previa institucional en media carta.
-   - Cambiar a carta, A5, 80mm y 58mm para validar margenes y ancho termico.
+   - Cambiar a carta y A5 para validar margenes y escala.
    - Usar Imprimir solo en entorno con impresora o impresora virtual autorizada.
    - Confirmar que el recibo no contiene QR, codigo de barras, codigos internos ni datos tecnicos.
 
@@ -79,7 +79,7 @@ Configuracion institucional:
    - Ir a Historial.
    - Abrir la factura pagada.
    - Agregar motivo de reimpresion.
-   - Reimprimir en media carta, carta, A5, 80mm o 58mm.
+   - Reimprimir en media carta, carta o A5.
    - Confirmar que usa snapshots historicos.
 
 8. Anular factura sin pagos
@@ -129,7 +129,7 @@ Configuracion institucional:
 ## Pendientes que no se deben presentar como cerrados
 
 - Restore real: pendiente hasta probar con MySQL/MariaDB real o Docker descartable.
-- Impresion fisica: pendiente hasta validar impresora media carta/carta/A5/80mm/58mm.
+- Impresion fisica: pendiente hasta validar impresora media carta/carta/A5.
 - Concurrencia real MySQL/MariaDB: validar antes de produccion final.
 - LAN fisica desde cliente: validar por IP fija/nombre servidor antes de produccion final.
 - E2E Playwright local: disponible con `npm.cmd run e2e`; no reemplaza restore/concurrencia/hardware real.

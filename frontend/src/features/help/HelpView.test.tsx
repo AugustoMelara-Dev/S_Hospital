@@ -33,7 +33,7 @@ describe('HelpView', () => {
     expect(screen.getByText(/no comparta contrasena ni cuenta de turno/i)).toBeInTheDocument();
     expect(screen.getByText(/servidor no disponible/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /impresora no responde/i })).toBeInTheDocument();
-    expect(screen.getByText(/media carta, carta, A5, 80mm o 58mm/i)).toBeInTheDocument();
+    expect(screen.getByText(/media carta, carta o A5/i)).toBeInTheDocument();
     expect(screen.getByText(/todo bien, requiere revisión o error/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /pedir soporte/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /atajos de teclado/i })).toBeInTheDocument();

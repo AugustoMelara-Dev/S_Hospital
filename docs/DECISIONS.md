@@ -265,7 +265,7 @@ Decision:
 - La unicidad real de caja abierta se defiende tambien en base de datos con `open_user_id` nullable y unico: solo las cajas abiertas llenan ese campo, y las cajas cerradas lo dejan `NULL` para permitir historico.
 - Registro de pago guarda `payments`, `cash_movements` y actualiza `invoices.paid_amount`, `invoices.balance_due` y `invoices.status` dentro de una sola transaccion.
 - `expected_amount` de cierre representa efectivo esperado: monto inicial mas pagos en efectivo registrados en la caja.
-- El recibo MVP devuelve datos renderizables para media carta/carta/A5/80mm/58mm y usa exclusivamente snapshots de `invoice_items` junto con datos fiscales persistidos.
+- El recibo MVP devuelve datos renderizables para media carta/carta/A5 y usa exclusivamente snapshots de `invoice_items` junto con datos fiscales persistidos.
 
 Motivo:
 
@@ -370,7 +370,7 @@ Decision:
 - Restore MySQL/MariaDB real se valida solo contra una base descartable confirmada.
 - Concurrencia HTTP/Laravel/MySQL se valida solo contra entorno local/descartable confirmado y deja `RUN_ID` visible en datos auditables.
 - LAN desde servidor por IP puede quedar validada, pero LAN fisica completa requiere otra computadora cliente.
-- impresora institucional media carta/carta/A5/80mm/58mm solo se marca validada con hardware real.
+- impresora institucional media carta/carta/A5 solo se marca validada con hardware real.
 
 Motivo:
 
@@ -1295,7 +1295,7 @@ Motivo:
 
 Consecuencia:
 
-- La configuracion fiscal, el wizard, la vista de recibo y los contratos API aceptan 80mm/58mm.
+- La configuracion fiscal, el wizard, la vista de recibo y los contratos API limitan el recibo a media carta/carta/A5.
 - La validacion final sigue pendiente de impresora fisica y driver real de caja.
 
 ### 2026-05-31 - Escaner factura solo servicios activos desde backend
@@ -1512,7 +1512,7 @@ Motivo:
 
 Consecuencia:
 
-- Las opciones 80mm/58mm quedan tratadas como tamanos institucionales soportados para impresoras termicas.
+- Las opciones 80mm/58mm quedan tratadas como valores heredados y se convierten a media carta.
 - La validacion fisica de impresora sigue pendiente del hardware real, pero el contrato visual/frontend queda uniforme y probado.
 
 ### 2026-05-31 - Branding check bloquea lenguaje de ticket heredado
@@ -1530,7 +1530,7 @@ Motivo:
 Consecuencia:
 
 - El gate de branding falla si UI, manuales o evidencia clave vuelven a promover tickets de rollo.
-- La compatibilidad CSS de 80mm/58mm queda cubierta como soporte institucional vigente.
+- El CSS visible queda limitado a formatos institucionales de pagina.
 
 ### 2026-05-31 - Documentos de entrega sin lenguaje de demostracion
 
@@ -1553,7 +1553,7 @@ Consecuencia:
 
 Decision:
 
-- Los prompts de planificacion, revision, ejecucion POS, review de commit y readiness revisan recibo institucional media carta/carta/A5/80mm/58mm.
+- Los prompts de planificacion, revision, ejecucion POS, review de commit y readiness revisan recibo institucional media carta/carta/A5.
 - `scripts/check-branding.ps1` incluye `prompts/` en las reglas que bloquean lenguaje de recibo heredado y entrega no institucional.
 - El prompt maestro deja de apuntar a documentos con nombre heredado y a referencias de impresion de rollo.
 
@@ -1572,7 +1572,7 @@ Consecuencia:
 Decision:
 
 - Backend valida recibos y reimpresiones con `half_letter`, `letter`, `a5`, `80mm` y `58mm`.
-- Configuracion fiscal rechaza `receipt_width` heredado y `receipt_paper_size` fuera de media carta/carta/A5/80mm/58mm.
+- Configuracion fiscal rechaza `receipt_width` heredado y `receipt_paper_size` fuera de media carta/carta/A5.
 - Snapshots antiguos con valores desconocidos se normalizan a media carta al generar recibo o reporte.
 - `FiscalSetting` deja de exponer `receipt_width` en respuestas JSON normales.
 
@@ -1679,7 +1679,7 @@ Decision:
 
 Motivo:
 
-- El sistema soporta 80mm/58mm y no debe dejar instrucciones antiguas que omitan esos dos formatos.
+- El sistema no debe reactivar instrucciones de ticket de rollo como formatos visibles.
 - El preflight final debe recibir evidencia completa en el mismo contrato que usa la UI y la configuracion fiscal.
 
 Consecuencia:
@@ -1870,13 +1870,13 @@ Consecuencia:
 Decision:
 
 - Las instrucciones y selectores deben presentar los formatos como media carta, carta, A5, 80mm y 58mm.
-- Los formatos termicos 80mm/58mm siguen soportados, pero no reemplazan ni preceden los formatos de pagina en el flujo operativo.
-- Los textos que solo mencionan media carta/carta/A5 se consideran incompletos hasta agregar 80mm/58mm.
+- Los valores heredados 80mm/58mm se normalizan a media carta y no reemplazan los formatos de pagina.
+- Los textos de entrega deben mencionar media carta/carta/A5 como formatos institucionales visibles.
 
 Motivo:
 
 - La validacion fisica pendiente debe cubrir los cinco formatos, y el orden debe coincidir con la instruccion operativa esperada por el hospital.
-- Presentar 80mm/58mm antes de carta/A5 invierte la prioridad de uso y confunde el alcance de validacion.
+- Presentar formatos de rollo como recibo institucional confunde el alcance de validacion.
 
 Consecuencia:
 

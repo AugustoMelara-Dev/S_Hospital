@@ -1294,7 +1294,7 @@ if (-not $lanProofCompleted) {
 }
 
 if (-not $printerProofCompleted) {
-    Write-Host "Print real media carta/carta/A5/80mm/58mm samples, then complete qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md with physical evidence."
+    Write-Host "Print real media carta/carta/A5 samples, then complete qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md with physical evidence."
 }
 
 if (-not $restoreProofCompleted) {
