@@ -160,6 +160,15 @@ del handoff candidato para confirmar que el pendiente de autoarranque conserva
 que `qa\FINAL_STARTUP_TASK_PROOF.md` este completo con evidencia del servidor
 final.
 Ejecute tambien
+`scripts\validate_final_backup_task_proof.ps1 -AllowPendingFinalField` antes
+del handoff candidato para confirmar que el pendiente de respaldos conserva
+`SistemaCajaHospitalaria-BackupWorker`, `SistemaCajaHospitalaria-DailyBackup`,
+worker observado, backup manual, cambio de `pending` a `success/completed` y
+`PRODUCTION_CANDIDATE` sin secretos ni rutas locales. Para cierre final, ejecute
+`scripts\validate_final_backup_task_proof.ps1` sin banderas; debe fallar hasta
+que `qa\FINAL_BACKUP_TASK_PROOF.md` este completo con evidencia del servidor
+final.
+Ejecute tambien
 `scripts\validate_training_acceptance_proof.ps1 -AllowPendingFinalField` antes
 del handoff candidato para confirmar que el pendiente de capacitacion conserva
 sus bloqueantes y no expone secretos ni rutas locales. Para cierre final, ejecute
@@ -243,6 +252,9 @@ confirmar que cambia de `pending` a `success`, complete
 `qa\FINAL_BACKUP_TASK_PROOF.md` usando
 `qa\FINAL_BACKUP_TASK_PROOF.example.md`; no adjunte `.env`, dumps SQL,
 passwords, XML de tareas ni rutas absolutas.
+Use `scripts\validate_final_backup_task_proof.ps1 -AllowPendingFinalField`
+durante el handoff candidato y `scripts\validate_final_backup_task_proof.ps1`
+sin banderas antes de cualquier declaracion final.
 Antes de usar el helper Windows de restauracion en XAMPP, ejecute
 `scripts\restore_hospital_windows.ps1 -SelfTest` y despues
 `scripts\validate_restore_windows_safety.ps1`; debe reportar

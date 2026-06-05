@@ -1,3 +1,11 @@
+## 2026-06-05 - Proof final de respaldos tiene guard focal
+
+Contexto: `qa\FINAL_BACKUP_TASK_PROOF.md` bloquea `PRODUCTION_READY`, pero soporte necesitaba un comando focal para revisar solo la evidencia final de tareas Windows y backup manual UI sin depender de todo el handoff.
+
+Decision: se agrega `scripts\validate_final_backup_task_proof.ps1`. En modo candidato acepta `-AllowPendingFinalField` solo si el stub conserva `SistemaCajaHospitalaria-BackupWorker`, `SistemaCajaHospitalaria-DailyBackup`, worker observado, backup manual, cambio de `pending` a `success/completed` y `PRODUCTION_CANDIDATE` sin secretos ni rutas locales. Sin banderas es estricto y falla hasta que la evidencia del servidor final este completa, marcada y referencie evidencia segura bajo `qa/` o una referencia fisica no local.
+
+Criterio de verificacion: `validate_final_backup_task_proof.ps1 -AllowPendingFinalField`, `validate_final_handoff_completeness.ps1`, `validate_operations_objective_audit.ps1`, `validate_handoff_guard_coverage.ps1`, `make_offline_release.ps1 -SelfTest` y `assert_offline_release_clean.ps1 -SelfTest` deben pasar; `validate_final_backup_task_proof.ps1` sin banderas debe seguir fallando mientras el proof sea pendiente.
+
 ## 2026-06-05 - Proof de autoarranque tiene guard focal
 
 Contexto: `qa\FINAL_STARTUP_TASK_PROOF.md` ya bloquea `PRODUCTION_READY`, pero soporte no tenia un comando focal para revisar solo ese proof sin correr todo el preflight u otros gates del handoff.
@@ -12,13 +20,16 @@ Contexto: el handoff y las limitaciones conocidas bloqueaban produccion si `Sist
 
 Decision: se agrega `qa\FINAL_STARTUP_TASK_PROOF.example.md` y un stub pendiente `qa\FINAL_STARTUP_TASK_PROOF.md`. El inicializador, preflight, handoff, paquete offline, diagnostico `/api/system/status` y validadores lo tratan como proof final obligatorio. La evidencia real solo debe completarse despues de instalar/actualizar la tarea `AtStartup`, observar arranque/reinicio o ejecucion supervisada, y confirmar `/up` y login sin internet ni intervencion del desarrollador.
 
-Criterio de verificacion: `validate_field_proof_templates.ps1`, `validate_proof_initialization_safety.ps1`, `validate_production_ready_gate_safety.ps1`, `validate_final_field_blockers_safety.ps1`, `validate_installation_docs_safety.ps1`, `validate_system_diagnostics_safety.ps1` y `validate_operations_objective_audit.ps1` deben pasar; el handoff debe conservar `PRODUCTION_CANDIDATE` mientras `qa\FINAL_STARTUP_TASK_PROOF.md` siga pendiente.## 2026-06-05 - Backup final exige proof de tarea y UI
+Criterio de verificacion: `validate_field_proof_templates.ps1`, `validate_proof_initialization_safety.ps1`, `validate_production_ready_gate_safety.ps1`, `validate_final_field_blockers_safety.ps1`, `validate_installation_docs_safety.ps1`, `validate_system_diagnostics_safety.ps1` y `validate_operations_objective_audit.ps1` deben pasar; el handoff debe conservar `PRODUCTION_CANDIDATE` mientras `qa\FINAL_STARTUP_TASK_PROOF.md` siga pendiente.
+
+## 2026-06-05 - Backup final exige proof de tarea y UI
 
 Contexto: el handoff ya bloqueaba produccion si las tareas `SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup` no estaban listas, pero la confirmacion de que un backup manual de la UI pasaba de `pending` a `success` quedaba como instruccion suelta y no como evidencia final estructurada.
 
 Decision: se agrega `qa\FINAL_BACKUP_TASK_PROOF.example.md` y un stub pendiente `qa\FINAL_BACKUP_TASK_PROOF.md`. El inicializador, preflight, handoff, paquete offline, diagnostico `/api/system/status` y validadores de evidencia lo tratan como proof final obligatorio. El archivo real solo debe completarse en el servidor final despues de instalar/actualizar tareas y confirmar un backup manual exitoso desde la UI, sin adjuntar `.env`, dumps SQL, passwords, XML de tareas ni rutas absolutas.
 
 Criterio de verificacion: `validate_field_proof_templates.ps1`, `validate_proof_initialization_safety.ps1`, `validate_production_ready_gate_safety.ps1`, `validate_final_field_blockers_safety.ps1`, `validate_backup_restore_docs_safety.ps1`, `validate_installation_docs_safety.ps1`, `validate_system_diagnostics_safety.ps1` y `validate_operations_objective_audit.ps1` deben pasar; el handoff debe conservar `PRODUCTION_CANDIDATE` mientras `qa\FINAL_BACKUP_TASK_PROOF.md` siga pendiente.
+
 ## 2026-06-05 - Capacitacion final queda bajo guard estricto
 
 Contexto: `qa\TRAINING_ACCEPTANCE_PROOF.md` bloquea `PRODUCTION_READY` hasta que cajero, supervisor y administrador practiquen en un ambiente aislado. Sin un guard independiente, soporte podia depender solo del preflight completo para detectar si la evidencia seguia pendiente, incompleta o exponia datos sensibles.
@@ -26,6 +37,7 @@ Contexto: `qa\TRAINING_ACCEPTANCE_PROOF.md` bloquea `PRODUCTION_READY` hasta que
 Decision: se agrega `scripts\validate_training_acceptance_proof.ps1`. El modo default es estricto y falla mientras la evidencia siga `PENDING_FINAL_FIELD`, tenga campos incompletos, checklists sin marcar, placeholders, rutas locales o secretos. El modo `-AllowPendingFinalField` solo se usa en handoff candidato para aceptar el stub pendiente si conserva bloqueantes explicitos y no expone secretos ni rutas locales.
 
 Criterio de verificacion: `validate_training_acceptance_proof.ps1 -AllowPendingFinalField` debe reportar `TRAINING_ACCEPTANCE_PROOF: YES` con el stub pendiente actual; `validate_training_acceptance_proof.ps1` sin banderas debe fallar hasta que exista evidencia anonimizada real. El handoff, release offline, checklist y auditoria operativa deben mencionar el guard.
+
 ## 2026-06-04 - Restore Windows queda bajo guard no destructivo
 
 Contexto: `scripts\restore_hospital_windows.ps1` es el helper local para restaurar en Windows/XAMPP, pero su contrato seguro dependia de recordar ejecutar `-SelfTest` y revisar la documentacion. Un restore equivocado puede sobrescribir datos reales.
@@ -33,6 +45,7 @@ Contexto: `scripts\restore_hospital_windows.ps1` es el helper local para restaur
 Decision: se agrega `scripts\validate_restore_windows_safety.ps1` y el handoff final lo ejecuta. El guard confirma que el helper conserva `-SelfTest`, solo permite nombres de base descartable, rechaza bases productivas, usa entrada segura para password, valida archivos `.sql` o `.tar.gz` y que las guias exigen `qa\FINAL_RESTORE_PROOF.md`.
 
 Criterio de verificacion: `validate_restore_windows_safety.ps1` debe reportar `RESTORE_WINDOWS_SAFETY: YES`; el paquete offline debe incluir `restore_hospital_windows.ps1` y `validate_restore_windows_safety.ps1`; el handoff debe conservar `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md` antes de considerar cualquier restore en Windows.
+
 ## 2026-06-04 - Release offline publica por staging verificado
 
 Contexto: `scripts\make_offline_release.ps1 -Force` reemplazaba `offline-release` durante el proceso de construccion. Si Docker, `docker save` o el guard final fallaban a mitad del flujo, soporte podia perder el ultimo paquete offline disponible.

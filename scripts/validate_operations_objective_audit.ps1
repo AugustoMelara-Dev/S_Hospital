@@ -149,6 +149,7 @@ if ($failures.Count -eq 0) {
         'scripts/validate_final_startup_task_proof.ps1',
         'qa/FINAL_BACKUP_TASK_PROOF.example.md',
         'qa/FINAL_BACKUP_TASK_PROOF.md',
+        'scripts/validate_final_backup_task_proof.ps1',
         'qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md',
         'qa/TRAINING_SAFETY_2026_06_03.md',
         'scripts/validate_training_acceptance_proof.ps1',
