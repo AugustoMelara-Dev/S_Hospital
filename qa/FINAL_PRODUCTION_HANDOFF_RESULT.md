@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-05 06:49:42
+- Generated at: 2026-06-05 06:59:37
 - Base URL: http://192.168.1.10:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -24,6 +24,7 @@
 - First-level support safety guard exit code: 0
 - Production ready gate safety guard exit code: 0
 - Final field blockers safety self-test exit code: 0
+- Final physical proof candidate guard suite exit code: 0
 - Browser smoke evidence guard exit code: 0
 - Startup and repair safety guard exit code: 0
 - Operator manuals safety guard exit code: 0
@@ -235,7 +236,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found scripts\validate_training_safety.ps1
 [ OK ] Found scripts\validate_double_action_safety.ps1
 [ OK ] Found scripts\validate_installer_legacy_safety.ps1
-[FAIL] Missing required release file: scripts\validate_lan_client_proof.ps1
+[ OK ] Found scripts\validate_lan_client_proof.ps1
 [ OK ] Found scripts\validate_lan_loadtest_safety.ps1
 [ OK ] Found scripts\validate_lan_recovery_safety.ps1
 [ OK ] Found scripts\validate_institutional_receipt_print_proof.ps1
@@ -271,11 +272,11 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] backend\Dockerfile.prod matches versioned source
 [ OK ] nginx\default.conf matches versioned source
 [ OK ] nginx\hospital-common.conf matches versioned source
-[FAIL] scripts\assert_offline_release_clean.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\assert_offline_release_clean.ps1 matches versioned source
 [ OK ] scripts\collect_support_packet.ps1 matches versioned source
 [ OK ] scripts\deploy_hospital_lan.ps1 matches versioned source
 [ OK ] scripts\init_production_proofs.ps1 matches versioned source
-[FAIL] scripts\make_offline_release.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\make_offline_release.ps1 matches versioned source
 [ OK ] scripts\production_readiness_preflight.ps1 matches versioned source
 [FAIL] scripts\final_production_handoff.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] scripts\install_hospital_startup_shortcut.ps1 matches versioned source
@@ -306,6 +307,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] scripts\validate_training_safety.ps1 matches versioned source
 [ OK ] scripts\validate_double_action_safety.ps1 matches versioned source
 [ OK ] scripts\validate_installer_legacy_safety.ps1 matches versioned source
+[ OK ] scripts\validate_lan_client_proof.ps1 matches versioned source
 [ OK ] scripts\validate_lan_loadtest_safety.ps1 matches versioned source
 [ OK ] scripts\validate_lan_recovery_safety.ps1 matches versioned source
 [ OK ] scripts\validate_institutional_receipt_print_proof.ps1 matches versioned source
@@ -314,9 +316,9 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] scripts\validate_known_limitations_safety.ps1 matches versioned source
 [ OK ] scripts\validate_shift_incident_recovery_safety.ps1 matches versioned source
 [FAIL] scripts\validate_final_handoff_completeness.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
-[FAIL] scripts\validate_handoff_guard_coverage.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_handoff_guard_coverage.ps1 matches versioned source
 [ OK ] scripts\validate_offline_release_staging_safety.ps1 matches versioned source
-[FAIL] scripts\validate_operations_objective_audit.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_operations_objective_audit.ps1 matches versioned source
 [ OK ] scripts\validate_permission_audit_safety.ps1 matches versioned source
 [ OK ] scripts\validate_rate_limit_safety.ps1 matches versioned source
 [ OK ] scripts\validate_realtime_own_event_safety.ps1 matches versioned source
@@ -344,10 +346,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[ OK ] MANIFEST.txt references current commit 7456a10f
+[ OK ] MANIFEST.txt references current commit 78b9324d
 [ OK ] offline-images contains 4 Docker image tar file(s)
 
-OFFLINE_RELEASE_CLEAN: NO (7 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (2 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -587,6 +589,77 @@ PRODUCTION_READY_GATE_SAFETY: YES
 [ OK ] SelfTest rejects printer proof missing required institutional paper blockers
 
 FINAL_FIELD_BLOCKERS_SAFETY_SELFTEST: YES
+```
+
+## Final physical proof candidate guard suite output
+
+```text
+== LAN client proof pending validation ==
+[ OK ] Found qa\LAN_CLIENT_VALIDATION_PROOF.md
+[ OK ] Pending LAN client proof keeps blocker: second client computer
+[ OK ] Pending LAN client proof keeps blocker: final LAN IP/name
+[ OK ] Pending LAN client proof keeps blocker: login without 419/session expiry
+[ OK ] Pending LAN client proof keeps blocker: cashbox/invoice/payment workflow
+[ OK ] Pending LAN client proof keeps blocker: receipt preview
+[ OK ] Pending LAN client proof keeps blocker: history/reprint
+[ OK ] Pending LAN client proof keeps blocker: reports
+[ OK ] Pending LAN client proof keeps blocker: backup from UI
+[ OK ] Pending LAN client proof keeps blocker: PRODUCTION_CANDIDATE
+
+LAN_CLIENT_PROOF: YES
+Exit code: 0
+
+== Institutional receipt print proof pending validation ==
+[ OK ] Found qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md
+[ OK ] Pending print proof keeps blocker: media carta
+[ OK ] Pending print proof keeps blocker: carta
+[ OK ] Pending print proof keeps blocker: A5
+[ OK ] Pending print proof keeps blocker: reprint/reimpresion
+[ OK ] Pending print proof keeps blocker: 100 percent scale
+[ OK ] Pending print proof keeps blocker: margins and headers/footers
+[ OK ] Pending print proof keeps blocker: physical evidence reference
+[ OK ] Pending print proof keeps blocker: PRODUCTION_CANDIDATE
+
+INSTITUTIONAL_RECEIPT_PRINT_PROOF: YES
+Exit code: 0
+
+== Final startup task proof pending validation ==
+[ OK ] Found qa\FINAL_STARTUP_TASK_PROOF.md
+[ OK ] Pending startup proof keeps blocker: SistemaCajaHospitalaria-StackAutostart
+[ OK ] Pending startup proof keeps blocker: AtStartup
+[ OK ] Pending startup proof keeps blocker: arranque/reinicio
+[ OK ] Pending startup proof keeps blocker: /up
+[ OK ] Pending startup proof keeps blocker: login
+[ OK ] Pending startup proof keeps blocker: PRODUCTION_CANDIDATE
+
+FINAL_STARTUP_TASK_PROOF: YES
+Exit code: 0
+
+== Final backup task proof pending validation ==
+[ OK ] Found qa\FINAL_BACKUP_TASK_PROOF.md
+[ OK ] Pending backup proof keeps blocker: SistemaCajaHospitalaria-BackupWorker
+[ OK ] Pending backup proof keeps blocker: SistemaCajaHospitalaria-DailyBackup
+[ OK ] Pending backup proof keeps blocker: worker running/observed
+[ OK ] Pending backup proof keeps blocker: manual backup
+[ OK ] Pending backup proof keeps blocker: pending to success/completed
+[ OK ] Pending backup proof keeps blocker: PRODUCTION_CANDIDATE
+
+FINAL_BACKUP_TASK_PROOF: YES
+Exit code: 0
+
+== Training acceptance proof pending validation ==
+[ OK ] Found qa\TRAINING_ACCEPTANCE_PROOF.md
+[ OK ] Pending training proof keeps blocker: Current blockers
+[ OK ] Pending training proof keeps blocker: Falta completar capacitacion supervisada del rol cajero
+[ OK ] Pending training proof keeps blocker: Falta completar capacitacion supervisada del rol supervisor
+[ OK ] Pending training proof keeps blocker: Falta completar capacitacion supervisada del rol administrador
+[ OK ] Pending training proof keeps blocker: no uso datos reales de pacientes
+[ OK ] Pending training proof keeps blocker: base de produccion
+[ OK ] Pending training proof keeps blocker: PRODUCTION_CANDIDATE
+
+TRAINING_ACCEPTANCE_PROOF: YES
+Exit code: 0
+
 ```
 
 ## Browser smoke evidence validation output

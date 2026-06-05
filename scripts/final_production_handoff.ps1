@@ -536,6 +536,68 @@ function Invoke-LanLoadtestSafetyGuard {
     }
 }
 
+function Invoke-FinalPhysicalProofCandidateGuardSuite {
+    Write-Section "Final physical proof candidate guard suite"
+    $combinedOutput = New-Object System.Collections.Generic.List[string]
+    $suiteExitCode = 0
+    $checks = @(
+        @{
+            Title = "LAN client proof pending validation"
+            Script = $lanClientProofGuardScript
+            Arguments = @("-AllowPendingFinalField")
+        },
+        @{
+            Title = "Institutional receipt print proof pending validation"
+            Script = $institutionalReceiptPrintProofGuardScript
+            Arguments = @("-AllowPendingHardwareValidation")
+        },
+        @{
+            Title = "Final startup task proof pending validation"
+            Script = $finalStartupTaskProofGuardScript
+            Arguments = @("-AllowPendingFinalField")
+        },
+        @{
+            Title = "Final backup task proof pending validation"
+            Script = $finalBackupTaskProofGuardScript
+            Arguments = @("-AllowPendingFinalField")
+        },
+        @{
+            Title = "Training acceptance proof pending validation"
+            Script = $trainingAcceptanceProofGuardScript
+            Arguments = @("-AllowPendingFinalField")
+        }
+    )
+
+    foreach ($check in $checks) {
+        $header = "== $($check.Title) =="
+        $combinedOutput.Add($header) | Out-Null
+        Write-Host $header
+
+        $arguments = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $check.Script, "-ProjectRoot", $ProjectRoot) + $check.Arguments
+        $output = @(& powershell.exe @arguments 2>&1 | ForEach-Object { $_.ToString() })
+        $exitCode = $LASTEXITCODE
+        $output | ForEach-Object {
+            $line = Protect-HandoffText $_
+            Write-Host $line
+            $combinedOutput.Add($line) | Out-Null
+        }
+
+        $exitLine = "Exit code: $exitCode"
+        Write-Host $exitLine
+        $combinedOutput.Add($exitLine) | Out-Null
+        $combinedOutput.Add("") | Out-Null
+
+        if ($exitCode -ne 0) {
+            $suiteExitCode = $exitCode
+        }
+    }
+
+    return @{
+        Output = @($combinedOutput)
+        ExitCode = $suiteExitCode
+    }
+}
+
 function Invoke-KnownLimitationsSafetyGuard {
     Write-Section "Known limitations safety validation"
     $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $knownLimitationsSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
@@ -698,6 +760,8 @@ function Write-HandoffReport(
     [int] $productionReadyGateSafetyExit,
     [string[]] $finalFieldBlockersSafetyOutput,
     [int] $finalFieldBlockersSafetyExit,
+    [string[]] $finalPhysicalProofCandidateGuardOutput,
+    [int] $finalPhysicalProofCandidateGuardExit,
     [string[]] $browserSmokeEvidenceOutput,
     [int] $browserSmokeEvidenceExit,
     [string[]] $startupRepairSafetyOutput,
@@ -776,6 +840,7 @@ function Write-HandoffReport(
         $firstLevelSupportSafetyExit,
         $productionReadyGateSafetyExit,
         $finalFieldBlockersSafetyExit,
+        $finalPhysicalProofCandidateGuardExit,
         $browserSmokeEvidenceExit,
         $startupRepairSafetyExit,
         $operatorManualsSafetyExit,
@@ -837,6 +902,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- First-level support safety guard exit code: $firstLevelSupportSafetyExit"
     Add-ReportLine $lines "- Production ready gate safety guard exit code: $productionReadyGateSafetyExit"
     Add-ReportLine $lines "- Final field blockers safety self-test exit code: $finalFieldBlockersSafetyExit"
+    Add-ReportLine $lines "- Final physical proof candidate guard suite exit code: $finalPhysicalProofCandidateGuardExit"
     Add-ReportLine $lines "- Browser smoke evidence guard exit code: $browserSmokeEvidenceExit"
     Add-ReportLine $lines "- Startup and repair safety guard exit code: $startupRepairSafetyExit"
     Add-ReportLine $lines "- Operator manuals safety guard exit code: $operatorManualsSafetyExit"
@@ -927,6 +993,9 @@ function Write-HandoffReport(
     }
     if ($finalFieldBlockersSafetyExit -ne 0) {
         Add-ReportLine $lines "- Final field blockers safety self-test returned exit code $finalFieldBlockersSafetyExit."
+    }
+    if ($finalPhysicalProofCandidateGuardExit -ne 0) {
+        Add-ReportLine $lines "- Final physical proof candidate guard suite returned exit code $finalPhysicalProofCandidateGuardExit."
     }
     if ($browserSmokeEvidenceExit -ne 0) {
         Add-ReportLine $lines "- Browser smoke evidence validation returned exit code $browserSmokeEvidenceExit."
@@ -1188,6 +1257,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $finalFieldBlockersSafetyOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## Final physical proof candidate guard suite output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $finalPhysicalProofCandidateGuardOutput) {
         Add-ReportLine $lines (Protect-HandoffText $line)
     }
     Add-ReportLine $lines '```'
@@ -1618,6 +1696,7 @@ $supportPacketSafety = Invoke-SupportPacketSafetyGuard
 $firstLevelSupportSafety = Invoke-FirstLevelSupportSafetyGuard
 $productionReadyGateSafety = Invoke-ProductionReadyGateSafetyGuard
 $finalFieldBlockersSafety = Invoke-FinalFieldBlockersSafetySelfTestGuard
+$finalPhysicalProofCandidateGuards = Invoke-FinalPhysicalProofCandidateGuardSuite
 $browserSmokeEvidence = Invoke-BrowserSmokeEvidenceGuard
 $startupRepairSafety = Invoke-StartupRepairSafetyGuard
 $operatorManualsSafety = Invoke-OperatorManualsSafetyGuard
@@ -1672,6 +1751,8 @@ if ($SkipPreflight) {
         -productionReadyGateSafetyExit $productionReadyGateSafety.ExitCode `
         -finalFieldBlockersSafetyOutput $finalFieldBlockersSafety.Output `
         -finalFieldBlockersSafetyExit $finalFieldBlockersSafety.ExitCode `
+        -finalPhysicalProofCandidateGuardOutput $finalPhysicalProofCandidateGuards.Output `
+        -finalPhysicalProofCandidateGuardExit $finalPhysicalProofCandidateGuards.ExitCode `
         -browserSmokeEvidenceOutput $browserSmokeEvidence.Output `
         -browserSmokeEvidenceExit $browserSmokeEvidence.ExitCode `
         -startupRepairSafetyOutput $startupRepairSafety.Output `
@@ -1762,6 +1843,8 @@ if ($SkipPreflight) {
         -productionReadyGateSafetyExit $productionReadyGateSafety.ExitCode `
         -finalFieldBlockersSafetyOutput $finalFieldBlockersSafety.Output `
         -finalFieldBlockersSafetyExit $finalFieldBlockersSafety.ExitCode `
+        -finalPhysicalProofCandidateGuardOutput $finalPhysicalProofCandidateGuards.Output `
+        -finalPhysicalProofCandidateGuardExit $finalPhysicalProofCandidateGuards.ExitCode `
         -browserSmokeEvidenceOutput $browserSmokeEvidence.Output `
         -browserSmokeEvidenceExit $browserSmokeEvidence.ExitCode `
         -startupRepairSafetyOutput $startupRepairSafety.Output `
@@ -1857,6 +1940,8 @@ Write-HandoffReport `
     -productionReadyGateSafetyExit $productionReadyGateSafety.ExitCode `
     -finalFieldBlockersSafetyOutput $finalFieldBlockersSafety.Output `
     -finalFieldBlockersSafetyExit $finalFieldBlockersSafety.ExitCode `
+    -finalPhysicalProofCandidateGuardOutput $finalPhysicalProofCandidateGuards.Output `
+    -finalPhysicalProofCandidateGuardExit $finalPhysicalProofCandidateGuards.ExitCode `
     -browserSmokeEvidenceOutput $browserSmokeEvidence.Output `
     -browserSmokeEvidenceExit $browserSmokeEvidence.ExitCode `
     -startupRepairSafetyOutput $startupRepairSafety.Output `
@@ -1947,6 +2032,8 @@ Write-HandoffReport `
     -productionReadyGateSafetyExit $productionReadyGateSafety.ExitCode `
     -finalFieldBlockersSafetyOutput $finalFieldBlockersSafety.Output `
     -finalFieldBlockersSafetyExit $finalFieldBlockersSafety.ExitCode `
+    -finalPhysicalProofCandidateGuardOutput $finalPhysicalProofCandidateGuards.Output `
+    -finalPhysicalProofCandidateGuardExit $finalPhysicalProofCandidateGuards.ExitCode `
     -browserSmokeEvidenceOutput $browserSmokeEvidence.Output `
     -browserSmokeEvidenceExit $browserSmokeEvidence.ExitCode `
     -startupRepairSafetyOutput $startupRepairSafety.Output `
@@ -2022,6 +2109,7 @@ $allFinalAutomatedGuardsPassed = Test-GuardExitCodesPassed @(
     $firstLevelSupportSafety.ExitCode,
     $productionReadyGateSafety.ExitCode,
     $finalFieldBlockersSafety.ExitCode,
+    $finalPhysicalProofCandidateGuards.ExitCode,
     $browserSmokeEvidence.ExitCode,
     $startupRepairSafety.ExitCode,
     $operatorManualsSafety.ExitCode,
@@ -2081,6 +2169,9 @@ if ($productionReadyGateSafety.ExitCode -ne 0) {
 }
 if ($finalFieldBlockersSafety.ExitCode -ne 0) {
     exit $finalFieldBlockersSafety.ExitCode
+}
+if ($finalPhysicalProofCandidateGuards.ExitCode -ne 0) {
+    exit $finalPhysicalProofCandidateGuards.ExitCode
 }
 if ($browserSmokeEvidence.ExitCode -ne 0) {
     exit $browserSmokeEvidence.ExitCode
