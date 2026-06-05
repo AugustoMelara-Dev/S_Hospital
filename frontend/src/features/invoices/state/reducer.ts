@@ -110,7 +110,7 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
         successMessage: null,
         search: '',
         scanCode: '',
-        selectedCategoryId: undefined,
+        selectedCategoryId: 'all',
       };
     case 'CLEAR_SUCCESS_MESSAGE':
       if (state.successMessage === action.payload) {

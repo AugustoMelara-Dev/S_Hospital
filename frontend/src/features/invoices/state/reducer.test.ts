@@ -16,6 +16,7 @@ describe('newInvoiceReducer', () => {
       cartItems: [],
       paymentMethod: 'cash',
       receiptWidth: 'half_letter',
+      selectedCategoryId: 'all',
       loadedCashSession: cashSession,
       loadingServices: true,
     });
@@ -128,7 +129,7 @@ describe('newInvoiceReducer', () => {
       patientName: '',
       search: '',
       scanCode: '',
-      selectedCategoryId: undefined,
+      selectedCategoryId: 'all',
       loadedCashSession: cashSession,
     });
   });

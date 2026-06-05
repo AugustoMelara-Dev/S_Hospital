@@ -164,7 +164,7 @@ export function ServiceSearch({
             size="sm"
             onClick={() => {
               onSearchChange('');
-              onCategoryChange(undefined);
+              onCategoryChange('all');
             }}
           >
             Limpiar

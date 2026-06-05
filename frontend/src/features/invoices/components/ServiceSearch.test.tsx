@@ -24,6 +24,27 @@ describe('ServiceSearch', () => {
     expect(document.body.textContent).toContain('L. 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|undefined/);
   });
+
+  it('shows active loaded services in Todos without requiring a search first', () => {
+    render(
+      <ServiceSearch
+        categories={[]}
+        services={[serviceFixture()]}
+        selectedCategoryId="all"
+        onCategoryChange={vi.fn()}
+        search=""
+        onSearchChange={vi.fn()}
+        scanCode=""
+        onScanCodeChange={vi.fn()}
+        onAddService={vi.fn()}
+        onAddByScanCode={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Servicios (1)')).toBeInTheDocument();
+    expect(screen.queryByText(/busque o elija una categoria/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /agregar glucosa por l\. 15\.00/i })).toBeInTheDocument();
+  });
 });
 
 function serviceFixture(overrides: Partial<Service> = {}): Service {

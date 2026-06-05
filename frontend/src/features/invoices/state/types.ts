@@ -82,7 +82,7 @@ export function getInitialNewInvoiceState(cashSession: CashSession | null): NewI
     categories: [],
     services: [],
     loadedCashSession: cashSession,
-    selectedCategoryId: undefined,
+    selectedCategoryId: 'all',
     cartItems: [],
     issuedInvoice: null,
     paymentMethod: 'cash',
