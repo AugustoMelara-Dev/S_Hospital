@@ -147,6 +147,8 @@ if ($failures.Count -eq 0) {
         'qa/FINAL_STARTUP_TASK_PROOF.example.md',
         'qa/FINAL_STARTUP_TASK_PROOF.md',
         'scripts/validate_final_startup_task_proof.ps1',
+        'scripts/validate_lan_client_proof.ps1',
+        'qa/LAN_CLIENT_PROOF_GUARD_2026_06_05.md',
         'qa/FINAL_BACKUP_TASK_PROOF.example.md',
         'qa/FINAL_BACKUP_TASK_PROOF.md',
         'scripts/validate_final_backup_task_proof.ps1',

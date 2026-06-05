@@ -152,6 +152,14 @@ El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
 `scripts\validate_lan_loadtest_safety.ps1`,
 `scripts\validate_shift_incident_recovery_safety.ps1` y
 `scripts\validate_training_safety.ps1`. Ejecute tambien
+`scripts\validate_lan_client_proof.ps1 -AllowPendingFinalField` antes del
+handoff candidato para confirmar que el pendiente LAN conserva segunda PC,
+IP/nombre LAN final, login sin 419, caja, factura, pago, recibo, historial,
+reportes, backup y `PRODUCTION_CANDIDATE` sin secretos ni rutas locales. Para
+cierre final, ejecute `scripts\validate_lan_client_proof.ps1` sin banderas;
+debe fallar hasta que `qa\LAN_CLIENT_VALIDATION_PROOF.md` este completo desde
+una PC cliente real del hospital.
+Ejecute tambien
 `scripts\validate_institutional_receipt_print_proof.ps1 -AllowPendingHardwareValidation`
 antes del handoff candidato para confirmar que el pendiente de impresion
 conserva media carta, carta, A5, reimpresion, escala 100%, margenes,
