@@ -3489,3 +3489,8 @@ Criterio de verificacion: check-branding.ps1 cubre estos documentos fuente y fro
 Contexto: el recibo impreso podia mostrar una insignia 'Regla' cuando una linea aplicaba una regla especial, aunque el comprobante del paciente no debe exponer codigos ni detalles tecnicos internos.
 Decision: GenerateReceiptDataAction ya no entrega special_rule_applied en items de recibo y ReceiptPreview no renderiza marcas de regla. La auditoria de factura conserva la regla en invoice_items y endpoints operativos donde corresponde.
 Criterio de verificacion: CashPaymentsReceiptTest exige ausencia de scan_code/barcode/qr_code/special_rule_code/special_rule_applied en items de recibo; ReceiptPreview.test simula campos tecnicos historicos y verifica que no se imprimen.
+
+## 2026-06-05 - Nueva factura filtra servicios por area
+Contexto: el flujo de caja necesita ubicar servicios cobrables por area como laboratorio o rayos X sin abrir modulos clinicos ni mezclar catalogo completo en cada busqueda.
+Decision: Nueva factura carga areas activas, permite seleccionar Todas o un area, filtra localmente los servicios visibles y envia area_id al endpoint de servicios cuando el cajero busca o cambia filtros. Limpiar vuelve busqueda, area y categoria a Todos.
+Criterio de verificacion: ServiceSearch.test cubre filtro y limpieza por area; reducer.test cubre carga de areas, seleccion y reset del filtro.

@@ -612,6 +612,7 @@ export type ServiceFilters = {
   active?: boolean;
   billing?: boolean;
   categoryId?: number;
+  areaId?: number;
   page?: number;
   perPage?: number;
 };

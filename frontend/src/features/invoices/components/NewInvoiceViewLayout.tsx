@@ -26,6 +26,7 @@ export type NewInvoiceLayoutProps = {
   onOpenCash?: () => void;
   onPatientNameChange: (value: string) => void;
   onPatientSubmit: () => void;
+  onAreaChange: (val: number | 'all' | undefined) => void;
   onCategoryChange: (val: number | 'all' | undefined) => void;
   onSearchChange: (val: string) => void;
   onScanCodeChange: (val: string) => void;
@@ -66,6 +67,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     onOpenCash,
     onPatientNameChange,
     onPatientSubmit,
+    onAreaChange,
     onCategoryChange,
     onSearchChange,
     onScanCodeChange,
@@ -168,9 +170,12 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           <Card className="lg:flex-1 lg:min-h-0 lg:flex lg:flex-col">
             <CardContent className="lg:flex-1 lg:min-h-0 lg:overflow-hidden">
               <ServiceSearch
+                areas={state.areas}
                 categories={state.categories}
                 services={state.services}
+                selectedAreaId={state.selectedAreaId}
                 selectedCategoryId={state.selectedCategoryId}
+                onAreaChange={onAreaChange}
                 onCategoryChange={onCategoryChange}
                 search={state.search}
                 onSearchChange={onSearchChange}

@@ -45,8 +45,9 @@ export function usePosDataLoader({
     }
     dispatch({ type: 'SET_LOADING_SERVICES', payload: true });
     try {
-      const [currentCashSession, nextCategories, nextServices] = await Promise.all([
+      const [currentCashSession, nextAreas, nextCategories, nextServices] = await Promise.all([
         apiClient.getCurrentCashSession(),
+        apiClient.getAreas(true),
         apiClient.getCategories(true),
         apiClient.getServices({ active: true, billing: true, perPage: POS_SERVICE_PAGE_SIZE }),
       ]);
@@ -54,6 +55,7 @@ export function usePosDataLoader({
         type: 'LOAD_DATA_SUCCESS',
         payload: {
           loadedCashSession: currentCashSession,
+          areas: Array.isArray(nextAreas) ? nextAreas : [],
           categories: Array.isArray(nextCategories) ? nextCategories : [],
           services: Array.isArray(nextServices) ? nextServices : [],
         },
@@ -73,6 +75,7 @@ export function usePosDataLoader({
         active: true,
         billing: true,
         search: state.search.trim() || undefined,
+        areaId: state.selectedAreaId && state.selectedAreaId !== 'all' ? state.selectedAreaId : undefined,
         categoryId: state.selectedCategoryId && state.selectedCategoryId !== 'all' ? state.selectedCategoryId : undefined,
         perPage: POS_SERVICE_PAGE_SIZE,
       });
@@ -82,7 +85,7 @@ export function usePosDataLoader({
     } finally {
       dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
     }
-  }, [onStatus, state.search, state.selectedCategoryId, dispatch]);
+  }, [onStatus, state.search, state.selectedAreaId, state.selectedCategoryId, dispatch]);
 
   useEffect(() => {
     void loadPointOfSaleData();

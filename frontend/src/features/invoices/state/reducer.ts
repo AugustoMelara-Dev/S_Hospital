@@ -12,12 +12,16 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       return { ...state, search: action.payload };
     case 'SET_SCAN_CODE':
       return { ...state, scanCode: action.payload };
+    case 'SET_AREAS':
+      return { ...state, areas: action.payload };
     case 'SET_CATEGORIES':
       return { ...state, categories: action.payload };
     case 'SET_SERVICES':
       return { ...state, services: action.payload };
     case 'SET_LOADED_CASH_SESSION':
       return { ...state, loadedCashSession: action.payload };
+    case 'SET_SELECTED_AREA_ID':
+      return { ...state, selectedAreaId: action.payload };
     case 'SET_SELECTED_CATEGORY_ID':
       return { ...state, selectedCategoryId: action.payload };
     case 'SET_CART_ITEMS':
@@ -66,6 +70,7 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       return {
         ...state,
         loadedCashSession: action.payload.loadedCashSession,
+        areas: action.payload.areas,
         categories: action.payload.categories,
         services: action.payload.services,
       };
@@ -110,6 +115,7 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
         successMessage: null,
         search: '',
         scanCode: '',
+        selectedAreaId: 'all',
         selectedCategoryId: 'all',
       };
     case 'CLEAR_SUCCESS_MESSAGE':

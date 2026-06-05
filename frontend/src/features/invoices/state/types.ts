@@ -1,4 +1,4 @@
-import type { Category, CashSession, Invoice, Payment, ReceiptData, Service } from '../../../lib/api';
+import type { Area, Category, CashSession, Invoice, Payment, ReceiptData, Service } from '../../../lib/api';
 import type { CartItem } from '../components/InvoiceCart';
 
 export interface NewInvoiceState {
@@ -6,9 +6,11 @@ export interface NewInvoiceState {
   patientError: string | undefined;
   search: string;
   scanCode: string;
+  areas: Area[];
   categories: Category[];
   services: Service[];
   loadedCashSession: CashSession | null;
+  selectedAreaId: number | 'all' | undefined;
   selectedCategoryId: number | 'all' | undefined;
   cartItems: CartItem[];
   issuedInvoice: Invoice | null;
@@ -38,9 +40,11 @@ export type NewInvoiceAction =
   | { type: 'SET_PATIENT_ERROR'; payload: string | undefined }
   | { type: 'SET_SEARCH'; payload: string }
   | { type: 'SET_SCAN_CODE'; payload: string }
+  | { type: 'SET_AREAS'; payload: Area[] }
   | { type: 'SET_CATEGORIES'; payload: Category[] }
   | { type: 'SET_SERVICES'; payload: Service[] }
   | { type: 'SET_LOADED_CASH_SESSION'; payload: CashSession | null }
+  | { type: 'SET_SELECTED_AREA_ID'; payload: number | 'all' | undefined }
   | { type: 'SET_SELECTED_CATEGORY_ID'; payload: number | 'all' | undefined }
   | { type: 'SET_CART_ITEMS'; payload: CartItem[] }
   | { type: 'SET_ISSUED_INVOICE'; payload: Invoice | null }
@@ -64,7 +68,7 @@ export type NewInvoiceAction =
   | { type: 'SET_SUBMITTING'; payload: boolean }
   | { type: 'SET_PAYING'; payload: boolean }
   | { type: 'RESET_FORM'; payload: { loadedCashSession: CashSession | null } }
-  | { type: 'LOAD_DATA_SUCCESS'; payload: { loadedCashSession: CashSession | null; categories: Category[]; services: Service[] } }
+  | { type: 'LOAD_DATA_SUCCESS'; payload: { loadedCashSession: CashSession | null; areas: Area[]; categories: Category[]; services: Service[] } }
   | { type: 'SEARCH_SERVICES_SUCCESS'; payload: Service[] }
   | { type: 'ADD_TO_CART'; payload: Service }
   | { type: 'UPDATE_QUANTITY'; payload: { index: number; quantity: string } }
@@ -79,9 +83,11 @@ export function getInitialNewInvoiceState(cashSession: CashSession | null): NewI
     patientError: undefined,
     search: '',
     scanCode: '',
+    areas: [],
     categories: [],
     services: [],
     loadedCashSession: cashSession,
+    selectedAreaId: 'all',
     selectedCategoryId: 'all',
     cartItems: [],
     issuedInvoice: null,

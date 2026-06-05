@@ -115,6 +115,7 @@ export function NewInvoiceView({
       onOpenCash={onOpenCash}
       onPatientNameChange={handlePatientNameChange}
       onPatientSubmit={handlePatientSubmit}
+      onAreaChange={(val) => dispatch({ type: 'SET_SELECTED_AREA_ID', payload: val })}
       onCategoryChange={(val) => dispatch({ type: 'SET_SELECTED_CATEGORY_ID', payload: val })}
       onSearchChange={(val) => dispatch({ type: 'SET_SEARCH', payload: val })}
       onScanCodeChange={(val) => dispatch({ type: 'SET_SCAN_CODE', payload: val })}

@@ -16,6 +16,7 @@ describe('newInvoiceReducer', () => {
       cartItems: [],
       paymentMethod: 'cash',
       receiptWidth: 'half_letter',
+      selectedAreaId: 'all',
       selectedCategoryId: 'all',
       loadedCashSession: cashSession,
       loadingServices: true,
@@ -44,6 +45,36 @@ describe('newInvoiceReducer', () => {
     const next = newInvoiceReducer(state, { type: 'CLEAR_SUCCESS_MESSAGE', payload: 'mensaje a borrar' });
 
     expect(next.successMessage).toBe('Otro mensaje');
+  });
+
+  it('loads cash session, areas, categories and services together', () => {
+    const area = { id: 2, name: 'Rayos X', slug: 'rayos-x', active: true };
+    const category = { id: 3, name: 'Imagenes', slug: 'imagenes', active: true, sort_order: 2 };
+    const service = { id: 4, name: 'Rayos X torax', category_id: 3, area_id: 2 } as never;
+    const state = getInitialNewInvoiceState(null);
+
+    const next = newInvoiceReducer(state, {
+      type: 'LOAD_DATA_SUCCESS',
+      payload: {
+        loadedCashSession: cashSession,
+        areas: [area],
+        categories: [category],
+        services: [service],
+      },
+    });
+
+    expect(next.loadedCashSession).toBe(cashSession);
+    expect(next.areas).toEqual([area]);
+    expect(next.categories).toEqual([category]);
+    expect(next.services).toEqual([service]);
+  });
+
+  it('updates the selected area filter', () => {
+    const state = getInitialNewInvoiceState(cashSession);
+
+    const next = newInvoiceReducer(state, { type: 'SET_SELECTED_AREA_ID', payload: 2 });
+
+    expect(next.selectedAreaId).toBe(2);
   });
 
   it('increments the existing service quantity when ADD_TO_CART finds a match', () => {
@@ -119,6 +150,7 @@ describe('newInvoiceReducer', () => {
       patientName: 'Juan',
       search: 'demo',
       scanCode: 'X-1',
+      selectedAreaId: 2,
       selectedCategoryId: 1,
     };
 
@@ -129,6 +161,7 @@ describe('newInvoiceReducer', () => {
       patientName: '',
       search: '',
       scanCode: '',
+      selectedAreaId: 'all',
       selectedCategoryId: 'all',
       loadedCashSession: cashSession,
     });

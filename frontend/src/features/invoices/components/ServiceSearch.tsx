@@ -3,7 +3,7 @@ import { type RefObject, useCallback, useEffect, useState } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
-import type { Category, Service } from '../../../lib/api';
+import type { Area, Category, Service } from '../../../lib/api';
 import { cn } from '../../../lib/utils';
 import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
@@ -11,9 +11,12 @@ const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
 const SERVICE_RESULT_LIMIT = 24;
 
 type ServiceSearchProps = {
+  areas: Area[];
   categories: Category[];
   services: Service[];
+  selectedAreaId: number | 'all' | undefined;
   selectedCategoryId: number | 'all' | undefined;
+  onAreaChange: (id: number | 'all' | undefined) => void;
   onCategoryChange: (id: number | 'all' | undefined) => void;
   search: string;
   onSearchChange: (value: string) => void;
@@ -28,9 +31,12 @@ type ServiceSearchProps = {
 };
 
 export function ServiceSearch({
+  areas,
   categories,
   services,
+  selectedAreaId,
   selectedCategoryId,
+  onAreaChange,
   onCategoryChange,
   search,
   onSearchChange,
@@ -45,14 +51,18 @@ export function ServiceSearch({
 }: ServiceSearchProps) {
   const [addFirstWhenReady, setAddFirstWhenReady] = useState(false);
   const filteredServices = services.filter((service) => {
+    const matchesArea =
+      selectedAreaId === undefined ||
+      selectedAreaId === 'all' ||
+      service.area_id === selectedAreaId;
     const matchesCategory =
       selectedCategoryId === undefined ||
       selectedCategoryId === 'all' ||
       service.category_id === selectedCategoryId;
 
-    return matchesCategory;
+    return matchesArea && matchesCategory;
   });
-  const hasIntent = Boolean(search.trim()) || selectedCategoryId !== undefined;
+  const hasIntent = Boolean(search.trim()) || selectedAreaId !== undefined || selectedCategoryId !== undefined;
   const visibleServices = hasIntent ? filteredServices.slice(0, SERVICE_RESULT_LIMIT) : [];
   const hiddenCount = Math.max(0, filteredServices.length - visibleServices.length);
   const firstVisibleService = visibleServices[0];
@@ -70,7 +80,7 @@ export function ServiceSearch({
 
   useEffect(() => {
     setAddFirstWhenReady(false);
-  }, [search, selectedCategoryId]);
+  }, [search, selectedAreaId, selectedCategoryId]);
 
   useEffect(() => {
     if (!loading && addFirstWhenReady && !firstVisibleService) {
@@ -131,6 +141,15 @@ export function ServiceSearch({
           ) : null}
         </div>
 
+        <FilterGroup
+          id="service-area-label"
+          label="Area"
+          options={areas.map((area) => ({ id: area.id, label: area.name }))}
+          selectedId={selectedAreaId}
+          onChange={onAreaChange}
+          columnsClassName="sm:grid-cols-3 xl:grid-cols-4"
+        />
+
         <div>
           <Label className="mb-2 block" id="service-category-label">Categoria</Label>
           <div
@@ -164,6 +183,7 @@ export function ServiceSearch({
             size="sm"
             onClick={() => {
               onSearchChange('');
+              onAreaChange('all');
               onCategoryChange('all');
             }}
           >
@@ -244,6 +264,47 @@ export function ServiceSearch({
 
 function moneyLabel(value: string | number | null | undefined): string {
   return formatLempirasFromCents(parseCents(value));
+}
+
+function FilterGroup({
+  id,
+  label,
+  options,
+  selectedId,
+  onChange,
+  columnsClassName,
+}: {
+  id: string;
+  label: string;
+  options: Array<{ id: number; label: string }>;
+  selectedId: number | 'all' | undefined;
+  onChange: (id: number | 'all' | undefined) => void;
+  columnsClassName: string;
+}) {
+  return (
+    <div>
+      <Label className="mb-2 block" id={id}>{label}</Label>
+      <div
+        aria-labelledby={id}
+        className={cn('grid max-h-28 grid-cols-2 gap-2 overflow-y-auto pr-1', columnsClassName)}
+        role="radiogroup"
+      >
+        <CategoryButton
+          active={selectedId === undefined || selectedId === 'all'}
+          label="Todos"
+          onClick={() => onChange('all')}
+        />
+        {options.map((option) => (
+          <CategoryButton
+            key={option.id}
+            active={selectedId === option.id}
+            label={option.label}
+            onClick={() => onChange(option.id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function CategoryButton({
