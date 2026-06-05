@@ -379,6 +379,7 @@ if (-not $SkipDockerBuild) {
     $env:APP_KEY = "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
     $env:DB_PASSWORD = "build_password"
     $env:DB_ROOT_PASSWORD = "build_root_password"
+    $env:HOSPITAL_LICENSE_SALT = "offline-release-build-salt-000000000000"
     & docker compose -f $composePath build
     if ($LASTEXITCODE -ne 0) {
         Write-Fail "Fallo docker compose build."
