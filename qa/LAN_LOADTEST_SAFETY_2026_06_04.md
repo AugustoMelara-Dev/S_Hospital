@@ -14,6 +14,11 @@
   rejects stale cashier result files from older runs.
 - Cashier passwords must be supplied explicitly from temporary validation users.
 - Docker LAN emulation must not mount `docker.sock` or use public DNS.
+- LAN emulation must fail hard when `/up` fails, login does not reach the
+  dashboard, the invoice scenario cannot reach the new-invoice form, or the
+  total wall-clock time exceeds the SLA.
+- Fiscal-race smoke must fail hard when the validation cashier cannot open or
+  reuse a cash session.
 - These tests do not replace second-client LAN proof, physical printer proof,
   final restore proof or final supervised training acceptance.
 
