@@ -31,6 +31,11 @@ function formatDate(value: string): string {
   return formatLocalizedDateTime(value);
 }
 
+function formatBackupDisplayName(backup: BackupLog): string {
+  const typeLabel = backup.type === 'scheduled' ? 'automatico' : 'manual';
+  return `Respaldo ${typeLabel} - ${formatDate(backup.completed_at ?? backup.created_at)}`;
+}
+
 function formatRelativeTime(value: string): string {
   const now = new Date();
   const date = new Date(value);
@@ -307,7 +312,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     try {
       const blob = await apiClient.downloadBackup(backup.id);
       saveBlob(blob, backup.filename);
-      onStatus(`Respaldo ${backup.filename} descargado.`);
+      onStatus(`${formatBackupDisplayName(backup)} descargado.`);
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo descargar el respaldo.');
       setError(message);
@@ -726,7 +731,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-40 whitespace-nowrap px-4 py-3">Fecha</TableHead>
-                  <TableHead className="min-w-72 px-4 py-3">Nombre</TableHead>
+                  <TableHead className="min-w-72 px-4 py-3">Respaldo</TableHead>
                   <TableHead className="w-24 whitespace-nowrap px-4 py-3">Tamaño</TableHead>
                   <TableHead className="px-4 py-3">Estado</TableHead>
                   <TableHead className="w-44 whitespace-nowrap px-4 py-3">Usuario</TableHead>
@@ -744,7 +749,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 {backupsList.map((backup) => (
                   <TableRow key={backup.id}>
                     <TableCell className="whitespace-nowrap px-4 py-3">{formatDate(backup.completed_at ?? backup.created_at)}</TableCell>
-                    <TableCell className="min-w-72 break-words px-4 py-3 text-sm">{backup.filename}</TableCell>
+                    <TableCell className="min-w-72 break-words px-4 py-3 text-sm">{formatBackupDisplayName(backup)}</TableCell>
                     <TableCell className="whitespace-nowrap px-4 py-3">{formatBytes(backup.size_bytes)}</TableCell>
                     <TableCell className="px-4 py-3">
                       <div className="flex flex-col gap-1">
@@ -766,7 +771,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                           type="button"
                           variant="ghost"
                           size="icon"
-                          aria-label={`Descargar respaldo ${backup.filename}`}
+                          aria-label={`Descargar ${formatBackupDisplayName(backup)}`}
                           onClick={() => setDownloadTarget(backup)}
                         >
                           <Download className="h-4 w-4" />
@@ -813,7 +818,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
         open={Boolean(downloadTarget)}
         title="¿Descargar respaldo?"
       >
-        Descargará el archivo {downloadTarget?.filename}. Esta acción queda auditada.
+        Descargara {downloadTarget ? formatBackupDisplayName(downloadTarget) : 'este respaldo'}. Esta accion queda auditada.
       </ConfirmDialog>
     </section>
   );

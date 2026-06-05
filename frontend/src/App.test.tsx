@@ -615,9 +615,10 @@ describe('App', () => {
         expect.objectContaining({ method: 'POST' }),
       );
     });
-    expect((await screen.findAllByText('hospital-backup-20260517-101500-test.sql')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/Respaldo manual/i)).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Pendiente').length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: /descargar respaldo hospital-backup/i })).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/hospital-backup|\.sql/i);
   });
 
   it('renders successful backups with accessible download and pagination controls', async () => {
@@ -682,12 +683,13 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByText('hospital-backup-20260517-101500-test.sql')).toBeInTheDocument();
+    expect(await screen.findByText(/Respaldo manual/i)).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
-        name: /descargar respaldo hospital-backup-20260517-101500-test\.sql/i,
+        name: /descargar respaldo manual/i,
       }),
     ).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/hospital-backup|\.sql/i);
     expect(screen.queryByRole('button', { name: /crear respaldo/i })).not.toBeInTheDocument();
     expect(screen.getByText(/p[aá]gina 1 de 2/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /siguiente/i })).toBeEnabled();
@@ -756,10 +758,10 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByText('hospital-backup-20260602-090000-failed.sql')).toBeInTheDocument();
+    expect(await screen.findByText(/Respaldo manual/i)).toBeInTheDocument();
     expect(screen.getByText(/1 con error - avise al administrador antes de crear otro respaldo/i)).toBeInTheDocument();
     expect(screen.queryByText(/cree un nuevo respaldo/i)).not.toBeInTheDocument();
-    expect(document.body.textContent).not.toMatch(/SQLSTATE|storage\/logs/i);
+    expect(document.body.textContent).not.toMatch(/hospital-backup|\.sql|SQLSTATE|storage\/logs/i);
   });
 
   it('lets a user with required password change submit a new password', async () => {

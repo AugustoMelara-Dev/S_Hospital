@@ -10,7 +10,7 @@ import {
 } from '../../lib/api';
 
 describe('BackupsView accessibility', () => {
-  it('has no axe-core violations on the view', async () => {
+  it('has no axe-core violations and hides technical filenames on the view', async () => {
     vi.spyOn(apiClient, 'getBackups').mockResolvedValue({
       data: [backupFixture()],
       meta: { current_page: 1, per_page: 15, total: 1 },
@@ -22,11 +22,13 @@ describe('BackupsView accessibility', () => {
     );
 
     await waitFor(() => {
-      expect(container.textContent).toContain('hospital-backup-2026-06-01.sql');
+      expect(container.textContent).toContain('Respaldo manual');
     });
 
-    expect(screen.getByLabelText(/respaldos automáticos activos/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/respaldos autom/i)).toBeInTheDocument();
     expect(container.textContent).not.toMatch(/\bworker\b/i);
+    expect(container.textContent).not.toContain('hospital-backup-2026-06-01.sql');
+    expect(container.textContent).not.toMatch(/\.sql\b/i);
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -46,6 +48,41 @@ describe('BackupsView accessibility', () => {
     expect(await screen.findByText('Respaldos con error')).toBeInTheDocument();
     expect(screen.getByText('No se completo. Revise con soporte local.')).toBeInTheDocument();
     expect(container.textContent).not.toMatch(/\btareas\b|\btrabajos\b|\bcola\b|\bqueue\b|\bworker\b|SQLSTATE/i);
+  });
+
+  it('keeps backup filenames out of normal download messaging', async () => {
+    vi.spyOn(apiClient, 'getBackups').mockResolvedValue({
+      data: [backupFixture()],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getSystemStatus').mockResolvedValue(mockSystemStatus());
+    vi.spyOn(apiClient, 'downloadBackup').mockResolvedValue(new Blob(['ok']));
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: vi.fn(() => 'blob:backup'),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: vi.fn(),
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    const onStatus = vi.fn();
+
+    const { container } = render(
+      <BackupsView user={backupsUser()} onStatus={onStatus} />,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /descargar respaldo manual/i }));
+    expect(screen.getByText(/descargar.*respaldo manual/i)).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/\.sql\b/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /^descargar$/i }));
+
+    await waitFor(() => {
+      expect(apiClient.downloadBackup).toHaveBeenCalledWith(1);
+    });
+    expect(onStatus).toHaveBeenLastCalledWith(expect.stringMatching(/^Respaldo manual .* descargado\.$/));
+    expect(onStatus.mock.calls.flat().join(' ')).not.toMatch(/hospital-backup|\.sql/i);
   });
 });
 

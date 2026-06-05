@@ -3541,3 +3541,9 @@ Criterio de verificacion: ReceiptPreview.test verifica que el recibo renderiza M
 
 - Las rutas internas pueden mantener nombres tecnicos como /backups para compatibilidad, pero el breadcrumb visible debe usar lenguaje institucional para personal no tecnico.
 - Se agrego cobertura unitaria para Respaldos, Configuracion/Datos fiscales y Nueva factura.
+
+## 2026-06-05 - Respaldos sin nombres SQL visibles
+
+- La pantalla normal de respaldos muestra etiquetas humanas como Respaldo manual o Respaldo automatico con fecha, no filenames .sql.
+- El filename real se conserva solo para la descarga del archivo y no se usa como mensaje operativo visible.
+- BackupsView.a11y.test protege que la lista, el dialogo y el mensaje de descarga no expongan .sql al operador.
