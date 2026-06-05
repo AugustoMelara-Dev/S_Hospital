@@ -151,6 +151,12 @@ El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
 `scripts\validate_lan_loadtest_safety.ps1`,
 `scripts\validate_shift_incident_recovery_safety.ps1` y
 `scripts\validate_training_safety.ps1`. Ejecute tambien
+`scripts\validate_training_acceptance_proof.ps1 -AllowPendingFinalField` antes
+del handoff candidato para confirmar que el pendiente de capacitacion conserva
+sus bloqueantes y no expone secretos ni rutas locales. Para cierre final, ejecute
+`scripts\validate_training_acceptance_proof.ps1` sin banderas; debe fallar hasta
+que `qa\TRAINING_ACCEPTANCE_PROOF.md` este completo con evidencia anonimizada.
+Ejecute tambien
 `scripts\validate_operations_objective_audit.ps1` para confirmar que los
 requisitos del objetivo operativo siguen trazados a evidencia local y
 bloqueantes finales. Despues de escribir el reporte, ejecute
@@ -274,6 +280,13 @@ Use `qa\TRAINING_ACCEPTANCE_PROOF.example.md` para documentar la capacitacion
 real sin nombres, pacientes, usuarios, contrasenas, respaldos SQL ni rutas de
 equipos; deje `PRODUCTION_CANDIDATE` si faltan LAN, impresora, respaldo final o
 preflight final.
+Durante handoff candidato, ejecute
+`scripts\validate_training_acceptance_proof.ps1 -AllowPendingFinalField` para
+comprobar que el archivo pendiente mantiene bloqueantes explicitos. Antes de
+pasar a `PRODUCTION_READY`, ejecute
+`scripts\validate_training_acceptance_proof.ps1` sin banderas; debe reportar
+`TRAINING_ACCEPTANCE_PROOF: YES` solo cuando cajero, supervisor y administrador
+esten practicados en ambiente aislado y la evidencia este anonimizada.
 Antes de cerrar el frente operativo, ejecute
 `scripts\validate_operations_objective_audit.ps1`; debe reportar
 `OPERATIONS_OBJECTIVE_AUDIT: YES` para confirmar que ayuda, diagnostico,

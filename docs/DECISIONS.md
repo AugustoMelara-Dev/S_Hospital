@@ -1,3 +1,10 @@
+## 2026-06-05 - Capacitacion final queda bajo guard estricto
+
+Contexto: `qa\TRAINING_ACCEPTANCE_PROOF.md` bloquea `PRODUCTION_READY` hasta que cajero, supervisor y administrador practiquen en un ambiente aislado. Sin un guard independiente, soporte podia depender solo del preflight completo para detectar si la evidencia seguia pendiente, incompleta o exponia datos sensibles.
+
+Decision: se agrega `scripts\validate_training_acceptance_proof.ps1`. El modo default es estricto y falla mientras la evidencia siga `PENDING_FINAL_FIELD`, tenga campos incompletos, checklists sin marcar, placeholders, rutas locales o secretos. El modo `-AllowPendingFinalField` solo se usa en handoff candidato para aceptar el stub pendiente si conserva bloqueantes explicitos y no expone secretos ni rutas locales.
+
+Criterio de verificacion: `validate_training_acceptance_proof.ps1 -AllowPendingFinalField` debe reportar `TRAINING_ACCEPTANCE_PROOF: YES` con el stub pendiente actual; `validate_training_acceptance_proof.ps1` sin banderas debe fallar hasta que exista evidencia anonimizada real. El handoff, release offline, checklist y auditoria operativa deben mencionar el guard.
 ## 2026-06-04 - Restore Windows queda bajo guard no destructivo
 
 Contexto: `scripts\restore_hospital_windows.ps1` es el helper local para restaurar en Windows/XAMPP, pero su contrato seguro dependia de recordar ejecutar `-SelfTest` y revisar la documentacion. Un restore equivocado puede sobrescribir datos reales.

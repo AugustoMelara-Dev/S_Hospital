@@ -92,6 +92,7 @@ foreach ($requiredChecklistText in @(
     'validate_offline_release_staging_safety.ps1',
     'validate_lan_loadtest_safety.ps1',
     'validate_realtime_own_event_safety.ps1',
+    'validate_training_acceptance_proof.ps1',
     'validate_restore_windows_safety.ps1',
     'validate_production_license_salt_guard.ps1',
     'validate_final_handoff_completeness.ps1',

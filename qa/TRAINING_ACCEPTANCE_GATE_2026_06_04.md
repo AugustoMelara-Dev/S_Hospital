@@ -25,6 +25,10 @@
   `scripts/validate_production_ready_gate_safety.ps1`,
   `scripts/validate_operations_objective_audit.ps1` and
   `scripts/validate_ops_evidence_index.ps1` guard the new contract.
+- `scripts/validate_training_acceptance_proof.ps1` gives support a standalone
+  check: `-AllowPendingFinalField` accepts the current candidate blocker stub,
+  while strict mode blocks final readiness until anonymized supervised evidence
+  is complete.
 - `qa/TRAINING_ACCEPTANCE_HANDOFF_RESULT_2026_06_04.md` confirms the current
   handoff remains blocked until real supervised training evidence exists.
 
@@ -32,6 +36,9 @@
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_production_ready_gate_safety.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_training_acceptance_proof.ps1 -AllowPendingFinalField
+# Final readiness only, after supervised training:
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_training_acceptance_proof.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_operations_objective_audit.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath qa\TRAINING_ACCEPTANCE_HANDOFF_RESULT_2026_06_04.md
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_final_handoff_completeness.ps1 -HandoffPath qa\TRAINING_ACCEPTANCE_HANDOFF_RESULT_2026_06_04.md

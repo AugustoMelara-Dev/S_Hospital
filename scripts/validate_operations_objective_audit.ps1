@@ -146,6 +146,7 @@ if ($failures.Count -eq 0) {
         'qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md',
         'qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md',
         'qa/TRAINING_SAFETY_2026_06_03.md',
+        'scripts/validate_training_acceptance_proof.ps1',
         'qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md',
         'qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md',
         'qa/OFFLINE_RELEASE_GUARD_2026_06_03.md',
