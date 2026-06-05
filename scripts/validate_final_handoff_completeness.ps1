@@ -94,12 +94,16 @@ if ($failures.Count -eq 0) {
     Assert-Content '(?i)Offline release staging safety validation' "El handoff debe conservar la salida del guard de staging del release offline."
     Assert-Content '(?i)Windows restore safety validation' "El handoff debe conservar la salida del guard de restore Windows seguro."
     Assert-Content '(?i)First-level support safety validation' "El handoff debe conservar la salida del guard de soporte de primer nivel."
+    Assert-Content '(?i)Production ready gate safety validation' "El handoff debe conservar la salida del guard del gate PRODUCTION_READY."
+    Assert-Content '(?i)Final field blockers safety self-test' "El handoff debe conservar la salida del self-test de bloqueantes fisicos finales."
     Assert-Content 'KNOWN_LIMITATIONS_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de limitaciones conocidas."
     Assert-Content 'NEW_INVOICE_MAINTAINABILITY:\s*YES' "El handoff debe conservar el resultado positivo de mantenibilidad de nueva factura."
     Assert-Content 'HANDOFF_GUARD_COVERAGE:\s*YES' "El handoff debe conservar el resultado positivo de cobertura handoff/offline."
     Assert-Content 'OFFLINE_RELEASE_STAGING_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de staging seguro del release offline."
     Assert-Content 'RESTORE_WINDOWS_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de restore Windows seguro."
     Assert-Content 'FIRST_LEVEL_SUPPORT_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de soporte de primer nivel."
+    Assert-Content 'PRODUCTION_READY_GATE_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo del gate PRODUCTION_READY."
+    Assert-Content 'FINAL_FIELD_BLOCKERS_SAFETY_SELFTEST:\s*YES' "El handoff debe conservar el self-test positivo de bloqueantes fisicos finales."
     Assert-Content 'Only final-field qa/\*\.example\.md templates are allowed in offline release' "El handoff debe conservar la salida del self-test del guard offline."
 
     $requiredEvidence = @(
@@ -121,6 +125,7 @@ if ($failures.Count -eq 0) {
         'TRAINING_SAFETY_2026_06_03.md',
         'TRAINING_ACCEPTANCE_PROOF.example.md',
         'FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md',
+        'FINAL_FIELD_BLOCKERS_SAFETY_2026_06_04.md',
         'PROOF_INITIALIZATION_SAFETY_2026_06_03.md',
         'OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md',
         'LAN_RECOVERY_SAFETY_2026_06_03.md',
@@ -132,7 +137,8 @@ if ($failures.Count -eq 0) {
         'HANDOFF_GUARD_COVERAGE_2026_06_04.md',
         'OFFLINE_RELEASE_STAGING_SAFETY_2026_06_04.md',
         'OFFLINE_RELEASE_REGEN_2026_06_04.md',
-        'RESTORE_WINDOWS_SAFETY_2026_06_04.md'
+        'RESTORE_WINDOWS_SAFETY_2026_06_04.md',
+        'PRODUCTION_READY_GATE_VALIDATOR_2026_06_04.md'
     )
 
     foreach ($item in $requiredEvidence) {
@@ -150,6 +156,8 @@ if ($failures.Count -eq 0) {
         'scripts/install_stack_autostart_windows.ps1',
         'scripts/validate_support_packet_safety.ps1',
         'scripts/validate_first_level_support_safety.ps1',
+        'scripts/validate_production_ready_gate_safety.ps1',
+        'scripts/validate_final_field_blockers_safety.ps1',
         'scripts/validate_browser_smoke_evidence.ps1',
         'scripts/validate_shift_incident_recovery_safety.ps1',
         'scripts/validate_lan_recovery_safety.ps1',
@@ -193,6 +201,8 @@ if ($failures.Count -eq 0) {
         'validate_offline_release_staging_safety.ps1',
         'validate_restore_windows_safety.ps1',
         'validate_first_level_support_safety.ps1',
+        'validate_production_ready_gate_safety.ps1',
+        'validate_final_field_blockers_safety.ps1 -SelfTest',
         'validate_dependency_manifest.ps1',
         'assert_offline_release_clean.ps1 -SelfTest',
         'production_readiness_preflight.ps1'
