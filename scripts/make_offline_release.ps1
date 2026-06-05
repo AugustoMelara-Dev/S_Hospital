@@ -36,6 +36,7 @@ $script:OfflineReleaseCriticalScripts = @(
     "validate_field_proof_templates.ps1",
     "validate_final_field_blockers_safety.ps1",
     "validate_final_handoff_completeness.ps1",
+    "validate_first_level_support_safety.ps1",
     "validate_handoff_guard_coverage.ps1",
     "validate_help_screen_safety.ps1",
     "validate_installation_docs_safety.ps1",

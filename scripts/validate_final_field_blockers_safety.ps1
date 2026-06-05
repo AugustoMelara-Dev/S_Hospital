@@ -82,22 +82,24 @@ Estado actual: PENDING_HARDWARE_VALIDATION.
 Falta imprimir recibo media carta.
 Falta imprimir recibo carta.
 Falta imprimir recibo A5.
+Falta imprimir recibo 80mm.
+Falta imprimir recibo 58mm.
 Falta validar reimpresion.
 Falta confirmar escala 100%, margenes minimos y encabezados/pies.
 Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
 "@
-    $printerMissingPageSize = $printerCompletePending -replace "Falta imprimir recibo A5.`r?`n", ""
+    $printerMissingRolls = $printerCompletePending -replace "Falta imprimir recibo 80mm.`r?`n", "" -replace "Falta imprimir recibo 58mm.`r?`n", ""
 
-    if (Test-ContainsAllTerms $printerCompletePending @("media carta", "carta", "A5")) {
-        Add-Pass "SelfTest accepts printer proof that preserves all required institutional paper blockers"
+    if (Test-ContainsAllTerms $printerCompletePending @("media carta", "carta", "A5", "80mm", "58mm")) {
+        Add-Pass "SelfTest accepts printer proof that preserves all required media blockers"
     } else {
         Add-Failure "SelfTest failed to accept a complete pending printer blocker list."
     }
 
-    if (Test-ContainsAllTerms $printerMissingPageSize @("media carta", "carta", "A5")) {
-        Add-Failure "SelfTest failed to reject printer proof missing A5 blocker."
+    if (Test-ContainsAllTerms $printerMissingRolls @("media carta", "carta", "A5", "80mm", "58mm")) {
+        Add-Failure "SelfTest failed to reject printer proof missing 80mm/58mm blockers."
     } else {
-        Add-Pass "SelfTest rejects printer proof missing required institutional paper blockers"
+        Add-Pass "SelfTest rejects printer proof missing 80mm/58mm blockers"
     }
 
     if ($failures.Count -gt 0) {
@@ -134,6 +136,8 @@ Assert-PendingProof "Institutional receipt print proof" $printerProof @(
     "media carta",
     "carta",
     "A5",
+    "80mm",
+    "58mm",
     "reimpresion",
     "escala 100%",
     "margenes",
