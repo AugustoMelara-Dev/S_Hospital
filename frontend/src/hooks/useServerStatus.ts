@@ -109,7 +109,7 @@ export function summarizeOperationalHealth(isOnline: boolean, health: Operationa
     return {
       level: 'review',
       label: 'Requiere revision',
-      description: 'Hay trabajos o respaldos con alerta. Revise Respaldos y pida soporte si el problema se repite.',
+      description: 'Hay respaldos en espera o con alerta. Revise Respaldos y pida soporte si el problema se repite.',
     };
   }
 

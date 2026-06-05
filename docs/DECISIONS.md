@@ -3450,3 +3450,11 @@ Contexto: el asistente de preparacion podia mostrar servicios precargados y plac
 Decision: SetupWizardDialog inicia el catalogo solo con el encabezado CSV y pide pegar el catalogo real aprobado por administracion. Los placeholders visibles se cambian a Hospital San Isidro, RTN del hospital y CAI autorizado, sin numeros o claves inventadas.
 
 Criterio de verificacion: SetupWizardDialog.test valida que el asistente no muestra Hospital General El Buen Pastor, CAI ficticio ni servicios precargados como Consulta General, Hemograma o Radiografia.
+
+## 2026-06-05 - Diagnostico sin terminologia de cola visible
+
+Contexto: el diagnostico administrativo ya traduce el estado tecnico de colas a respaldos en espera, respaldos con error y carga de respaldos. El guard de seguridad seguia exigiendo textos de cola/trabajos y podia bloquear el handoff aunque la UI estuviera mas clara para soporte local.
+
+Decision: useServerStatus y validate_system_diagnostics_safety.ps1 quedan alineados al lenguaje humano de respaldos. Los contratos tecnicos de queue_size permanecen en tipos/API para soporte, pero la lectura visible protege contra cola/trabajos/queue en pantalla normal.
+
+Criterio de verificacion: useServerStatus.test cubre alertas de respaldos sin terminologia de cola y validate_system_diagnostics_safety.ps1 debe reportar SYSTEM_DIAGNOSTICS_SAFETY: YES.

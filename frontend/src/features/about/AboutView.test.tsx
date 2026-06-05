@@ -87,7 +87,7 @@ describe('AboutView', () => {
       lastCheck: new Date('2026-06-02T14:00:00.000Z'),
       operationalHealth: null,
       summary: {
-        description: 'Hay trabajos o respaldos con alerta. Revise Respaldos y pida soporte si el problema se repite.',
+        description: 'Hay respaldos en espera o con alerta. Revise Respaldos y pida soporte si el problema se repite.',
         label: 'Requiere revision',
         level: 'review',
       },

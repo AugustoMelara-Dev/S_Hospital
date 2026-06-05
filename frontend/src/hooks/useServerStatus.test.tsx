@@ -52,6 +52,24 @@ describe('useServerStatus', () => {
     expect(await screen.findByText('Error')).toBeInTheDocument();
     expect(screen.getByText(/base de datos local no responde/i)).toBeInTheDocument();
   });
+
+  it('summarizes backup alerts without exposing queue terminology', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ data: healthySnapshot({ queue: { connection: 'database', failed: 1, pending: 0 } }) }), {
+          headers: { 'Content-Type': 'application/json' },
+          status: 200,
+        }),
+      ),
+    );
+
+    render(<ServerStatusProbe />);
+
+    expect(await screen.findByText('Requiere revision')).toBeInTheDocument();
+    expect(screen.getByText(/respaldos en espera o con alerta/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/trabajos|cola|queue/i);
+  });
 });
 
 function ServerStatusProbe() {
