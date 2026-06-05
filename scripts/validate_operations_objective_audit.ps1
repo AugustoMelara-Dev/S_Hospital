@@ -107,6 +107,7 @@ if ($failures.Count -eq 0) {
         'Per-user rate limiting protects LAN cashier writes',
         'Duplicate-action protection',
         'Automatic and manual backup',
+        'Backup startup without administrator rights',
         'Non-technical manuals',
         'Safe practice/training guidance',
         'Final LAN client validation',
@@ -139,6 +140,7 @@ if ($failures.Count -eq 0) {
         'qa/RATE_LIMIT_SAFETY_2026_06_03.md',
         'qa/DOUBLE_ACTION_SAFETY_2026_06_03.md',
         'qa/BACKUP_WORKER_SMOKE_2026_06_03.md',
+        'qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md',
         'qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md',
         'qa/TRAINING_SAFETY_2026_06_03.md',
         'qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md',
@@ -153,7 +155,8 @@ if ($failures.Count -eq 0) {
         'scripts/validate_lan_loadtest_safety.ps1',
         'scripts/validate_first_level_support_safety.ps1',
         'scripts/validate_production_ready_gate_safety.ps1',
-        'scripts/validate_final_field_blockers_safety.ps1'
+        'scripts/validate_final_field_blockers_safety.ps1',
+        'scripts/validate_backup_startup_current_user_safety.ps1'
     )
 
     foreach ($evidence in $requiredEvidence) {

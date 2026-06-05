@@ -65,7 +65,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_s
 ```
 
 La salida de estado no debe mostrar rutas locales crudas ni el contenido del
-archivo Startup.
+archivo Startup. Este fallback usa Startup/HKCU Run del usuario actual y no
+reemplaza la validacion final de las tareas Windows de respaldo.
 
 En paquete Docker offline, estas verificaciones requieren que `setup.bat` ya
 haya creado `.env`. Si `.env` falta, deben detenerse antes de tocar datos.

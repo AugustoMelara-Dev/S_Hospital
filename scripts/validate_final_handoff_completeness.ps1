@@ -92,6 +92,7 @@ if ($failures.Count -eq 0) {
     Assert-Content '(?i)New invoice maintainability validation' "El handoff debe conservar la salida del guard de mantenibilidad de nueva factura."
     Assert-Content '(?i)Handoff guard coverage validation' "El handoff debe conservar la salida del guard de cobertura handoff/offline."
     Assert-Content '(?i)Offline release staging safety validation' "El handoff debe conservar la salida del guard de staging del release offline."
+    Assert-Content '(?i)Backup startup current-user safety validation' "El handoff debe conservar la salida del guard de backup startup current-user."
     Assert-Content '(?i)Windows restore safety validation' "El handoff debe conservar la salida del guard de restore Windows seguro."
     Assert-Content '(?i)First-level support safety validation' "El handoff debe conservar la salida del guard de soporte de primer nivel."
     Assert-Content '(?i)Production ready gate safety validation' "El handoff debe conservar la salida del guard del gate PRODUCTION_READY."
@@ -103,6 +104,7 @@ if ($failures.Count -eq 0) {
     Assert-Content 'NEW_INVOICE_MAINTAINABILITY:\s*YES' "El handoff debe conservar el resultado positivo de mantenibilidad de nueva factura."
     Assert-Content 'HANDOFF_GUARD_COVERAGE:\s*YES' "El handoff debe conservar el resultado positivo de cobertura handoff/offline."
     Assert-Content 'OFFLINE_RELEASE_STAGING_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de staging seguro del release offline."
+    Assert-Content 'BACKUP_STARTUP_CURRENT_USER_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de backup startup current-user."
     Assert-Content 'RESTORE_WINDOWS_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de restore Windows seguro."
     Assert-Content 'FIRST_LEVEL_SUPPORT_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de soporte de primer nivel."
     Assert-Content 'PRODUCTION_READY_GATE_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo del gate PRODUCTION_READY."
@@ -116,6 +118,7 @@ if ($failures.Count -eq 0) {
         'SUPPORT_PACKET_SAFETY_2026_06_03.md',
         'FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md',
         'BACKUP_WORKER_SMOKE_2026_06_03.md',
+        'BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md',
         'FINAL_RESTORE_PROOF',
         'FINAL_CONCURRENCY_PROOF',
         'STARTUP_REPAIR_SAFETY_2026_06_03.md',
@@ -160,6 +163,9 @@ if ($failures.Count -eq 0) {
         'scripts/repair_hospital_system.ps1',
         'scripts/collect_support_packet.ps1',
         'scripts/install_stack_autostart_windows.ps1',
+        'scripts/install_backup_startup_current_user.ps1',
+        'scripts/start_backup_automation.cmd',
+        'scripts/run_backup_scheduler_loop.ps1',
         'scripts/validate_support_packet_safety.ps1',
         'scripts/validate_first_level_support_safety.ps1',
         'scripts/validate_production_ready_gate_safety.ps1',
@@ -177,6 +183,7 @@ if ($failures.Count -eq 0) {
         'scripts/validate_handoff_guard_coverage.ps1',
         'scripts/validate_offline_release_staging_safety.ps1',
         'scripts/validate_restore_windows_safety.ps1',
+        'scripts/validate_backup_startup_current_user_safety.ps1',
         'scripts/restore_hospital_windows.ps1',
         'scripts/validate_field_proof_templates.ps1',
         'scripts/validate_proof_initialization_safety.ps1',
@@ -207,6 +214,7 @@ if ($failures.Count -eq 0) {
         'validate_handoff_guard_coverage.ps1',
         'validate_offline_release_staging_safety.ps1',
         'validate_lan_loadtest_safety.ps1',
+        'validate_backup_startup_current_user_safety.ps1',
         'validate_restore_windows_safety.ps1',
         'validate_first_level_support_safety.ps1',
         'validate_production_ready_gate_safety.ps1',

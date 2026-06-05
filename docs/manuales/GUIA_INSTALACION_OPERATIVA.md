@@ -144,7 +144,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_s
 ```
 
 Ese modo valida hora y PHP sin crear archivo Startup, sin cambiar registro y sin
-iniciar worker. Para revisar estado sin exponer rutas locales:
+iniciar worker. Este fallback usa Startup/HKCU Run del usuario actual y solo se
+debe usar si las tareas Windows no pueden instalarse con administrador. Para
+revisar estado sin exponer rutas locales:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status

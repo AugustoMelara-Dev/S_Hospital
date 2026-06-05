@@ -140,6 +140,7 @@ El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
 `scripts\validate_startup_repair_safety.ps1`,
 `scripts\validate_operator_manuals_safety.ps1`,
 `scripts\validate_backup_restore_docs_safety.ps1`,
+`scripts\validate_backup_startup_current_user_safety.ps1`,
 `scripts\validate_restore_windows_safety.ps1`,
 `scripts\validate_installation_docs_safety.ps1`,
 `scripts\validate_help_screen_safety.ps1`,
@@ -423,6 +424,19 @@ Usar `-WhatIfOnly` primero para revisar rutas. Despues de registrar las tareas,
 crear un backup desde la UI y confirmar que pasa de `pending` a `success`.
 Si las tareas ya existen, el script falla salvo que se use `-UpdateExisting`.
 Para removerlas: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Uninstall`.
+
+Fallback sin derechos de administrador para soporte de primer nivel:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_backup_startup_current_user_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -WhatIfOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_startup_current_user.ps1 -Status
+```
+
+Usar este fallback solo si no se pueden crear tareas Windows con permisos de
+administrador. No reemplaza la validacion final de
+`SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup`;
+debe quedar registrado en el handoff si se usa Startup/HKCU Run.
 
 ## Antes de produccion final
 
