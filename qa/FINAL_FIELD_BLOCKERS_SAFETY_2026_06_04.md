@@ -6,8 +6,8 @@ Add a guard that checks the final-field proof files stay honest while the
 hospital still lacks real LAN, printer, restore and concurrency evidence.
 
 This phase does not complete field validation. It prevents support from losing
-the explicit blocker list, especially physical printer media requirements for
-media carta, carta, A5, 80mm and 58mm.
+the explicit blocker list, especially physical printer page-format requirements
+for media carta, carta and A5.
 
 ## Files changed
 
@@ -27,14 +27,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_relea
 ## Expected interpretation
 
 - `-SelfTest` must pass. It proves the guard rejects a printer proof that drops
-  80mm/58mm blockers.
+  any required institutional page-format blocker.
 - Live mode may fail in this shared worktree while
-  `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` is dirty and does not list 80mm/58mm
-  as pending physical blockers.
+  `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` is dirty or no longer preserves the
+  required media carta, carta and A5 physical blockers.
 - `scripts/validate_production_ready_gate_safety.ps1` may also fail in this
   shared worktree while `scripts/production_readiness_preflight.ps1` is dirty
-  and missing 80mm/58mm proof requirements. The versioned `HEAD` still contains
-  those requirements.
+  or missing institutional receipt proof requirements. The versioned `HEAD`
+  still contains those requirements.
 - A live failure is a useful safety signal, not permission to synthesize
   hardware evidence.
 
@@ -49,7 +49,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_relea
 ## Remaining blockers
 
 - Complete second-client LAN proof from a real hospital LAN workstation.
-- Complete physical printer proof for media carta, carta, A5, 80mm and 58mm.
+- Complete physical printer proof for media carta, carta and A5.
 - Complete final-server restore proof against a disposable database.
 - Complete final-field concurrency proof against a disposable target.
 - Run final preflight on the installed LAN URL without bypass flags.

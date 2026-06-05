@@ -3504,3 +3504,11 @@ Criterio de verificacion: check-branding.ps1 revisa documentos vigentes, guiones
 Contexto: el reporte de Auditoria podia mostrar el valor tecnico del formato de reimpresion, por ejemplo half_letter, en una pantalla administrativa usada para supervision y auditoria.
 Decision: AuditoriaTab usa receiptPaperSizeLabel para mostrar Media carta, Carta o A5. Valores heredados o malformados se normalizan a Media carta en la UI, manteniendo compatibilidad historica sin promover formatos de rollo.
 Criterio de verificacion: AuditoriaTab.test cubre formatos half_letter, letter, a5 y un valor heredado, y verifica que no se rendericen half_letter, 80mm ni 58mm.
+
+## 2026-06-05 - Evidencia final de impresora solo exige formatos institucionales de pagina
+
+Contexto: la meta de entrega al Hospital San Isidro pide recibos tipo talonario en media carta, carta o A5, y no promover papel de rollo como formato operativo. Algunas superficies de handoff y mocks E2E seguian mencionando 80mm/58mm como bloqueantes de impresora fisica.
+
+Decision: el contrato vigente de evidencia final de impresora queda alineado a media carta, carta y A5. Los valores heredados 80mm/58mm pueden seguir normalizandose internamente para datos antiguos, pero no son requisito operativo ni texto de cierre RC.
+
+Criterio de verificacion: check-branding.ps1 ahora cubre production-readiness E2E, OPERATIONS_OBJECTIVE_AUDIT, FINAL_FIELD_BLOCKERS_SAFETY y PRODUCTION_READINESS_GAP_REPORT contra impresora de rollo, thermal printer, 80mm y 58mm.

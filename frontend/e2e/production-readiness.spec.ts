@@ -185,6 +185,84 @@ async function installApiMocks(page: Page) {
 
   await page.route('**/api/settings/logo', (route) => json(route, { logo_url: null }));
   await page.route('**/api/health', (route) => json(route, { status: 'ok' }));
+  await page.route('**/api/system/health', (route) => json(route, {
+    data: {
+      generated_at: new Date().toISOString(),
+      database: {
+        driver: 'mysql',
+        connected: true,
+      },
+      database_lag: {
+        status: 'standalone',
+        seconds: null,
+      },
+      database_perf: {
+        latency_ms: {
+          status: 'ok',
+          current_ms: 5,
+          p50_ms: 6,
+          p95_ms: 12,
+          p99_ms: 18,
+          sample_count: 12,
+        },
+        connections: {
+          status: 'ok',
+          active: 2,
+          max_used: 8,
+        },
+      },
+      queue: {
+        connection: 'database',
+        pending: 0,
+        failed: 0,
+      },
+      queue_size: {
+        backups: 0,
+        failed_last_hour: 0,
+      },
+      backups: {
+        worker_recently_active: true,
+        pending: 0,
+        success_last_24h: 1,
+        failed_last_24h: 0,
+      },
+      storage: {
+        backup_files: 2,
+        backup_bytes: 2048,
+      },
+      disk_free_gb: {
+        free_gb: 25,
+        total_gb: 120,
+        used_pct: 79,
+      },
+      app_uptime_s: {
+        seconds: 7200,
+        started_at: operationalIssuedAt,
+      },
+      recent_errors: [],
+    },
+  }));
+  await page.route('**/api/system/echo-config', (route) => json(route, {
+    data: {
+      driver: 'log',
+      enabled: false,
+      key: '',
+      cluster: 'mt1',
+      host: '127.0.0.1',
+      port: 6001,
+      scheme: 'http',
+      path: '/ws',
+      useTLS: false,
+      authEndpoint: '/broadcasting/auth',
+      channels: {
+        invoices: 'invoices',
+        cash: 'cash',
+        payments: 'payments',
+        settings: 'settings',
+        backups: 'backups',
+      },
+    },
+  }));
   await page.route('**/api/system/client-errors', (route) => route.fulfill({ status: 204 }));
 
   await page.route('**/api/auth/login', async (route) => {
@@ -214,6 +292,10 @@ async function installApiMocks(page: Page) {
   await page.route('**/api/service-areas**', (route) => json(route, { data: [] }));
   await page.route('**/api/services**', (route) => json(route, { data: services, meta: { total: services.length } }));
   await page.route('**/api/cash-sessions/current', (route) => json(route, { data: currentCashSession }));
+  await page.route(/\/api\/cash-sessions(?:\?|$)/, (route) => json(route, {
+    data: currentCashSession ? [currentCashSession] : [],
+    meta: { current_page: 1, per_page: 50, total: currentCashSession ? 1 : 0 },
+  }));
   await page.route('**/api/cash-sessions/open', async (route) => {
     currentCashSession = {
       id: 7,
@@ -518,7 +600,7 @@ async function installApiMocks(page: Page) {
           },
           {
             code: 'PENDING_HARDWARE_VALIDATION',
-            label: 'Impresora institucional fisica media carta/carta/A5/80mm/58mm',
+            label: 'Impresora institucional fisica media carta/carta/A5',
             status: 'pending',
           },
         ],
@@ -570,7 +652,7 @@ async function installApiMocks(page: Page) {
           },
           {
             code: 'INSTITUTIONAL_RECEIPT_PRINT_PROOF',
-            label: 'Impresora institucional media carta/carta/A5/80mm/58mm',
+            label: 'Impresora institucional media carta/carta/A5',
             required_file: 'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
             status: 'pending',
           },
