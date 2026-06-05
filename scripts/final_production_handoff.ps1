@@ -71,6 +71,7 @@ $lanProofPath = Join-Path $qaDir "LAN_CLIENT_VALIDATION_PROOF.md"
 $printerProofPath = Join-Path $qaDir "INSTITUTIONAL_RECEIPT_PRINT_PROOF.md"
 $restoreProofPath = Join-Path $qaDir "FINAL_RESTORE_PROOF.md"
 $concurrencyProofPath = Join-Path $qaDir "FINAL_CONCURRENCY_PROOF.md"
+$trainingAcceptanceProofPath = Join-Path $qaDir "TRAINING_ACCEPTANCE_PROOF.md"
 
 if ($ReportPath -eq "") {
     $ReportPath = Join-Path $qaDir "FINAL_PRODUCTION_HANDOFF_RESULT.md"
@@ -611,6 +612,7 @@ function Write-HandoffReport(
     [bool] $printerProofCompleted,
     [bool] $restoreProofCompleted,
     [bool] $concurrencyProofCompleted,
+    [bool] $trainingAcceptanceProofCompleted,
     [string[]] $backupStatusOutput,
     [string[]] $releaseGuardOutput,
     [int] $releaseGuardExit,
@@ -684,7 +686,7 @@ function Write-HandoffReport(
 ) {
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
-    $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted
+    $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $trainingAcceptanceProofCompleted
     $allAutomatedGuardsPassed = Test-GuardExitCodesPassed @(
         $releaseGuardExit,
         $supportPacketSafetyExit,
@@ -732,10 +734,12 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Institutional receipt print proof present without obvious placeholders: $printerProofCompleted"
     Add-ReportLine $lines "- Final restore proof present without obvious placeholders: $restoreProofCompleted"
     Add-ReportLine $lines "- Final concurrency proof present without obvious placeholders: $concurrencyProofCompleted"
+    Add-ReportLine $lines "- Supervised training acceptance proof present without obvious placeholders: $trainingAcceptanceProofCompleted"
     Add-ReportLine $lines '- LAN client proof file: `qa/LAN_CLIENT_VALIDATION_PROOF.md`'
     Add-ReportLine $lines '- Institutional receipt print proof file: `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`'
     Add-ReportLine $lines '- Final restore proof file: `qa/FINAL_RESTORE_PROOF.md`'
     Add-ReportLine $lines '- Final concurrency proof file: `qa/FINAL_CONCURRENCY_PROOF.md`'
+    Add-ReportLine $lines '- Supervised training acceptance proof file: `qa/TRAINING_ACCEPTANCE_PROOF.md`'
     Add-ReportLine $lines "- Offline release artifact guard exit code: $releaseGuardExit"
     Add-ReportLine $lines "- Support packet safety guard exit code: $supportPacketSafetyExit"
     Add-ReportLine $lines "- First-level support safety guard exit code: $firstLevelSupportSafetyExit"
@@ -795,6 +799,9 @@ function Write-HandoffReport(
     }
     if (-not $concurrencyProofCompleted) {
         Add-ReportLine $lines '- Missing or incomplete `qa/FINAL_CONCURRENCY_PROOF.md` from a disposable concurrency target.'
+    }
+    if (-not $trainingAcceptanceProofCompleted) {
+        Add-ReportLine $lines '- Missing or incomplete `qa/TRAINING_ACCEPTANCE_PROOF.md` from supervised role training in a safe practice environment.'
     }
     if ($preflightSkipped) {
         Add-ReportLine $lines "- Preflight was skipped in this handoff run."
@@ -913,7 +920,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '- Concurrency and double-action evidence: `qa/FINAL_CONCURRENCY_PROOF.md` and `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md`.'
     Add-ReportLine $lines '- Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.'
     Add-ReportLine $lines '- New invoice maintainability guard: `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` and `scripts/validate_new_invoice_maintainability.ps1` preserve a short cashier-facing invoice flow.'
-    Add-ReportLine $lines '- Operator and training evidence: `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md`, `qa/TRAINING_SAFETY_2026_06_03.md` and `qa/TRAINING_ACCEPTANCE_PROOF.example.md`.'
+    Add-ReportLine $lines '- Operator and training evidence: `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md`, `qa/TRAINING_SAFETY_2026_06_03.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md` and `qa/TRAINING_ACCEPTANCE_PROOF.md`.'
     Add-ReportLine $lines '- Field proof, final blockers, proof initialization, handoff guard coverage, offline release staging, offline builder, offline release guard, offline regeneration, objective, release and index evidence: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/FINAL_FIELD_BLOCKERS_SAFETY_2026_06_04.md`, `qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md`, `qa/HANDOFF_GUARD_COVERAGE_2026_06_04.md`, `qa/OFFLINE_RELEASE_STAGING_SAFETY_2026_06_04.md`, `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`, `qa/OFFLINE_RELEASE_REGEN_2026_06_04.md`, `qa/PRODUCTION_READY_GATE_VALIDATOR_2026_06_04.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`.'
     Add-ReportLine $lines ""
 
@@ -958,6 +965,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```powershell'
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1 -WhatIfOnly"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -UpdateExisting"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -Status"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $(Protect-HandoffText $PhpPath)"
@@ -1375,11 +1383,13 @@ $lanProofCompleted = Test-ProofLooksCompleted $lanProofPath
 $printerProofCompleted = Test-ProofLooksCompleted $printerProofPath
 $restoreProofCompleted = Test-ProofLooksCompleted $restoreProofPath
 $concurrencyProofCompleted = Test-ProofLooksCompleted $concurrencyProofPath
-$allHandoffProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted
+$trainingAcceptanceProofCompleted = Test-ProofLooksCompleted $trainingAcceptanceProofPath
+$allHandoffProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $concurrencyProofCompleted -and $trainingAcceptanceProofCompleted
 Write-Result $lanProofCompleted "Second-client LAN proof file has required handoff fields; preflight performs strict validation." "Second-client LAN proof is missing, incomplete, has placeholders, or references missing evidence."
 Write-Result $printerProofCompleted "Physical printer proof file has required handoff fields; preflight performs strict validation." "Physical printer proof is missing, incomplete, has placeholders, or references missing evidence."
 Write-Result $restoreProofCompleted "Final restore proof file has required handoff fields; preflight performs strict validation." "Final restore proof is missing, incomplete, has placeholders, or references missing evidence."
 Write-Result $concurrencyProofCompleted "Final concurrency proof file has required handoff fields; preflight performs strict validation." "Final concurrency proof is missing, incomplete, has placeholders, or references missing evidence."
+Write-Result $trainingAcceptanceProofCompleted "Supervised training acceptance proof file has required handoff fields; preflight performs strict validation." "Training acceptance proof is missing, incomplete, has placeholders, or references missing evidence."
 
 if (-not $lanProofCompleted) {
     Write-Host "Run from the second LAN client:"
@@ -1396,6 +1406,10 @@ if (-not $restoreProofCompleted) {
 
 if (-not $concurrencyProofCompleted) {
     Write-Host "Run concurrency validation against a disposable target, then complete qa\FINAL_CONCURRENCY_PROOF.md."
+}
+
+if (-not $trainingAcceptanceProofCompleted) {
+    Write-Host "Run supervised role training in a safe practice environment, then complete qa\TRAINING_ACCEPTANCE_PROOF.md without names, patient data or secrets."
 }
 
 Write-Section "Backup automation"
@@ -1453,6 +1467,7 @@ if ($SkipPreflight) {
         -printerProofCompleted $printerProofCompleted `
         -restoreProofCompleted $restoreProofCompleted `
         -concurrencyProofCompleted $concurrencyProofCompleted `
+        -trainingAcceptanceProofCompleted $trainingAcceptanceProofCompleted `
         -backupStatusOutput $backupStatusOutput `
         -releaseGuardOutput $releaseGuardOutput `
         -releaseGuardExit $releaseGuardExit `
@@ -1532,6 +1547,7 @@ if ($SkipPreflight) {
         -printerProofCompleted $printerProofCompleted `
         -restoreProofCompleted $restoreProofCompleted `
         -concurrencyProofCompleted $concurrencyProofCompleted `
+        -trainingAcceptanceProofCompleted $trainingAcceptanceProofCompleted `
         -backupStatusOutput $backupStatusOutput `
         -releaseGuardOutput $releaseGuardOutput `
         -releaseGuardExit $releaseGuardExit `
@@ -1616,6 +1632,7 @@ Write-HandoffReport `
     -printerProofCompleted $printerProofCompleted `
     -restoreProofCompleted $restoreProofCompleted `
     -concurrencyProofCompleted $concurrencyProofCompleted `
+    -trainingAcceptanceProofCompleted $trainingAcceptanceProofCompleted `
     -backupStatusOutput $backupStatusOutput `
     -releaseGuardOutput $releaseGuardOutput `
     -releaseGuardExit $releaseGuardExit `
@@ -1695,6 +1712,7 @@ Write-HandoffReport `
     -printerProofCompleted $printerProofCompleted `
     -restoreProofCompleted $restoreProofCompleted `
     -concurrencyProofCompleted $concurrencyProofCompleted `
+    -trainingAcceptanceProofCompleted $trainingAcceptanceProofCompleted `
     -backupStatusOutput $backupStatusOutput `
     -releaseGuardOutput $releaseGuardOutput `
     -releaseGuardExit $releaseGuardExit `

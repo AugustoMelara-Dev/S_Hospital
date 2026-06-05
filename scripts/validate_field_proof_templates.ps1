@@ -52,24 +52,25 @@ function Assert-Field([string] $content, [string] $path, [string] $label) {
     }
 }
 
-function Assert-Check([string] $content, [string] $path, [string] $labelPattern) {
+function Assert-Check([string] $content, [string] $path, [string] $labelPattern, [bool] $RequireResultEvidence = $true) {
     $found = $false
     foreach ($line in ($content -split "`r?`n")) {
         $trimmed = $line.Trim()
-        if ($trimmed.StartsWith("- [ ]") -and
-            $trimmed.Contains($labelPattern) -and
-            $trimmed.EndsWith("Result/evidence:")) {
-            $found = $true
-            break
+        if ($trimmed.StartsWith("- [ ]") -and $trimmed.Contains($labelPattern)) {
+            if (-not $RequireResultEvidence -or $trimmed.EndsWith("Result/evidence:")) {
+                $found = $true
+                break
+            }
         }
     }
 
     if (-not $found) {
-        Add-Failure "Missing required unchecked check '$labelPattern' with Result/evidence in $path."
+        $suffix = if ($RequireResultEvidence) { " with Result/evidence" } else { "" }
+        Add-Failure "Missing required unchecked check '$labelPattern'$suffix in $path."
     }
 }
 
-function Test-Template([string] $relativePath, [string[]] $fields, [string[]] $checks, [string[]] $safetyTerms) {
+function Test-Template([string] $relativePath, [string[]] $fields, [string[]] $checks, [string[]] $safetyTerms, [bool] $RequireCheckResult = $true) {
     $failureCountBeforeTemplate = $failures.Count
     $path = Join-Path $ProjectRoot $relativePath
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
@@ -83,7 +84,7 @@ function Test-Template([string] $relativePath, [string[]] $fields, [string[]] $c
     }
 
     foreach ($check in $checks) {
-        Assert-Check $content $relativePath $check
+        Assert-Check $content $relativePath $check $RequireCheckResult
     }
 
     foreach ($term in $safetyTerms) {
@@ -227,6 +228,44 @@ Test-Template `
         "Do not run this against live production data",
         "do not include credentials"
     )
+
+Test-Template `
+    -relativePath "qa\TRAINING_ACCEPTANCE_PROOF.example.md" `
+    -fields @(
+        "Date/time",
+        "Responsible person",
+        "Training environment name",
+        "Training environment URL or location",
+        "Evidence/capture reference",
+        "Final conclusion"
+    ) `
+    -checks @(
+        "Training did not use the production database",
+        "Training did not use real patient data",
+        "Training did not use real cashier shift users",
+        "Training did not restore over the real database",
+        "Training did not print receipts that could be confused with real fiscal documents",
+        "Training did not expose",
+        "Cashier role practiced",
+        "Supervisor role practiced",
+        "Administrator role practiced",
+        "Server unavailable",
+        "LAN down",
+        "Printer not responding",
+        "Power loss",
+        "Browser closed",
+        "Cashbox left open",
+        "Backup failed",
+        "Session expired",
+        "Permission denied",
+        "Database requires restore"
+    ) `
+    -safetyTerms @(
+        "supervised training",
+        "Keep it anonymous",
+        'Do not mark `PRODUCTION_READY`'
+    ) `
+    -RequireCheckResult $false
 
 if ($failures.Count -gt 0) {
     foreach ($failure in $failures) {

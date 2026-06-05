@@ -57,7 +57,7 @@ $handoffCompleteness = Read-RequiredFile "scripts\validate_final_handoff_complet
 Assert-Contains "Preflight exposes AllowMissingPhysicalProof as an explicit switch" `
     $preflight '\[switch\]\s+\$AllowMissingPhysicalProof'
 Assert-Literal "Preflight fails when physical proof is bypassed" `
-    $preflight "Physical LAN/printer proof was bypassed. Re-run without -AllowMissingPhysicalProof before declaring PRODUCTION_READY."
+    $preflight "Physical LAN/printer/training proof was bypassed. Re-run without -AllowMissingPhysicalProof before declaring PRODUCTION_READY."
 Assert-Literal "Preflight warns that bypass cannot be PRODUCTION_READY" `
     $preflight "AllowMissingPhysicalProof was used. This run is only an environment preflight and MUST NOT be called PRODUCTION_READY."
 
@@ -65,7 +65,8 @@ foreach ($proofPath in @(
     "qa\LAN_CLIENT_VALIDATION_PROOF.md",
     "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md",
     "qa\FINAL_RESTORE_PROOF.md",
-    "qa\FINAL_CONCURRENCY_PROOF.md"
+    "qa\FINAL_CONCURRENCY_PROOF.md",
+    "qa\TRAINING_ACCEPTANCE_PROOF.md"
 )) {
     Assert-Literal "Preflight requires $proofPath" $preflight $proofPath
     Assert-Literal "Ops evidence index inspects $proofPath before PRODUCTION_READY" $evidenceIndex $proofPath
@@ -97,7 +98,9 @@ foreach ($requiredCheck in @(
     "carta",
     "A5",
     "Disposable restore database",
-    "Concurrent invoice emission"
+    "Concurrent invoice emission",
+    "supervised training acceptance",
+    "Training did not use the production database"
 )) {
     Assert-Literal "Preflight keeps required proof check: $requiredCheck" `
         $preflight $requiredCheck

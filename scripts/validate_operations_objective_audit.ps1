@@ -171,6 +171,7 @@ if ($failures.Count -eq 0) {
         'dependency manifest',
         'InitializeProofFiles',
         'bypass flags',
+        'TRAINING_ACCEPTANCE_PROOF.md',
         'final backup worker smoke',
         'final restore/concurrency evidence',
         'preflight'

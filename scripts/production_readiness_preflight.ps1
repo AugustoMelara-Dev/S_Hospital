@@ -284,7 +284,7 @@ function Test-ProofHasCompletedCheckedItem([string] $content, [string] $labelPat
     return -not (Test-ProofValueIsIncomplete $resultMatch.Groups["value"].Value)
 }
 
-function Test-ProofFile([string] $path, [string] $proofName, [string[]] $requiredFields, [string[]] $requiredChecks) {
+function Test-ProofFile([string] $path, [string] $proofName, [string[]] $requiredFields, [string[]] $requiredChecks, [bool] $RequireCheckResult = $true) {
     if (-not (Test-Path -LiteralPath $path)) {
         Add-Failure "Missing $path with real $proofName evidence."
         return
@@ -306,9 +306,17 @@ function Test-ProofFile([string] $path, [string] $proofName, [string[]] $require
     }
 
     foreach ($check in $requiredChecks) {
-        if (-not (Test-ProofHasCompletedCheckedItem $content $check)) {
-            Add-Failure "Complete a checked evidence item with a result for '$check' in $path."
-            return
+        if ($RequireCheckResult) {
+            if (-not (Test-ProofHasCompletedCheckedItem $content $check)) {
+                Add-Failure "Complete a checked evidence item with a result for '$check' in $path."
+                return
+            }
+        } else {
+            $escaped = [regex]::Escape($check)
+            if ($content -notmatch "(?im)^\s*-\s*\[[xX]\]\s*.*$escaped.*$") {
+                Add-Failure "Complete a checked evidence item for '$check' in $path."
+                return
+            }
         }
     }
 
@@ -563,7 +571,7 @@ Invoke-RouteCheck "$($BaseUrl.TrimEnd('/'))/verify-email" "/verify-email" @(200,
 
 if ($AllowMissingPhysicalProof) {
     Add-Strong-Warning "AllowMissingPhysicalProof was used. This run is only an environment preflight and MUST NOT be called PRODUCTION_READY."
-    Add-Failure "Physical LAN/printer proof was bypassed. Re-run without -AllowMissingPhysicalProof before declaring PRODUCTION_READY."
+    Add-Failure "Physical LAN/printer/training proof was bypassed. Re-run without -AllowMissingPhysicalProof before declaring PRODUCTION_READY."
 } else {
     Test-ProofFile `
         -path (Join-Path $ProjectRoot "qa\LAN_CLIENT_VALIDATION_PROOF.md") `
@@ -666,6 +674,40 @@ if ($AllowMissingPhysicalProof) {
             "Concurrent invoice emission",
             "Double payment"
         )
+
+    Test-ProofFile `
+        -path (Join-Path $ProjectRoot "qa\TRAINING_ACCEPTANCE_PROOF.md") `
+        -proofName "supervised training acceptance" `
+        -requiredFields @(
+            "Date/time",
+            "Responsible person",
+            "Training environment name",
+            "Training environment URL or location",
+            "Evidence/capture reference",
+            "Final conclusion"
+        ) `
+        -requiredChecks @(
+            "Training did not use the production database",
+            "Training did not use real patient data",
+            "Training did not use real cashier shift users",
+            "Training did not restore over the real database",
+            "Training did not print receipts that could be confused with real fiscal documents",
+            "Training did not expose",
+            "Cashier role practiced",
+            "Supervisor role practiced",
+            "Administrator role practiced",
+            "Server unavailable",
+            "LAN down",
+            "Printer not responding",
+            "Power loss",
+            "Browser closed",
+            "Cashbox left open",
+            "Backup failed",
+            "Session expired",
+            "Permission denied",
+            "Database requires restore"
+        ) `
+        -RequireCheckResult $false
 }
 
 if ($failures.Count -gt 0) {
@@ -678,7 +720,7 @@ Write-Host ""
 if ($warnings.Count -gt 0) {
     Write-Host "PRODUCTION_PREFLIGHT_PASSED_WITH_WARNINGS: $($warnings.Count) warning(s)" -ForegroundColor Yellow
     if ($AllowMissingPhysicalProof) {
-        Write-Host "PRODUCTION_READY: NO. Physical LAN/printer proof was explicitly bypassed." -ForegroundColor Yellow
+        Write-Host "PRODUCTION_READY: NO. Physical LAN/printer/training proof was explicitly bypassed." -ForegroundColor Yellow
     }
 } else {
     Write-Host "PRODUCTION_PREFLIGHT_PASSED" -ForegroundColor Green

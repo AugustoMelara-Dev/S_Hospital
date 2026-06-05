@@ -96,6 +96,7 @@ if ($failures.Count -eq 0) {
     Assert-Content '(?i)First-level support safety validation' "El handoff debe conservar la salida del guard de soporte de primer nivel."
     Assert-Content '(?i)Production ready gate safety validation' "El handoff debe conservar la salida del guard del gate PRODUCTION_READY."
     Assert-Content '(?i)Final field blockers safety self-test' "El handoff debe conservar la salida del self-test de bloqueantes fisicos finales."
+    Assert-Content '(?i)Supervised training acceptance proof' "El handoff debe conservar la prueba de aceptacion de capacitacion supervisada."
     Assert-Content 'KNOWN_LIMITATIONS_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de limitaciones conocidas."
     Assert-Content 'NEW_INVOICE_MAINTAINABILITY:\s*YES' "El handoff debe conservar el resultado positivo de mantenibilidad de nueva factura."
     Assert-Content 'HANDOFF_GUARD_COVERAGE:\s*YES' "El handoff debe conservar el resultado positivo de cobertura handoff/offline."
@@ -124,6 +125,7 @@ if ($failures.Count -eq 0) {
         'OPERATOR_MANUALS_SAFETY_2026_06_03.md',
         'TRAINING_SAFETY_2026_06_03.md',
         'TRAINING_ACCEPTANCE_PROOF.example.md',
+        'TRAINING_ACCEPTANCE_PROOF.md',
         'FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md',
         'FINAL_FIELD_BLOCKERS_SAFETY_2026_06_04.md',
         'PROOF_INITIALIZATION_SAFETY_2026_06_03.md',
@@ -215,6 +217,7 @@ if ($failures.Count -eq 0) {
     $requiredBlockers = @(
         'LAN_CLIENT_VALIDATION_PROOF.md',
         'INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
+        'TRAINING_ACCEPTANCE_PROOF.md',
         'SistemaCajaHospitalaria-StackAutostart',
         'SistemaCajaHospitalaria-BackupWorker',
         'SistemaCajaHospitalaria-DailyBackup',
