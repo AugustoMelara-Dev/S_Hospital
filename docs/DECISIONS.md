@@ -1,3 +1,11 @@
+## 2026-06-05 - Proof fisico de impresion institucional tiene guard focal
+
+Contexto: `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` bloquea `PRODUCTION_READY`, pero soporte no tenia un comando focal para revisar solo la evidencia de impresora fisica sin correr todo el preflight.
+
+Decision: se agrega `scripts\validate_institutional_receipt_print_proof.ps1`. En modo candidato acepta `-AllowPendingHardwareValidation` solo si el stub conserva media carta, carta, A5, reimpresion, escala 100%, margenes, headers/footers, evidencia fisica y `PRODUCTION_CANDIDATE` sin secretos ni rutas locales. Sin banderas es estricto y falla hasta que la evidencia de la impresora real este completa, marcada y referencie evidencia segura bajo `qa/` o una referencia fisica no local.
+
+Criterio de verificacion: `validate_institutional_receipt_print_proof.ps1 -AllowPendingHardwareValidation`, `validate_final_handoff_completeness.ps1`, `validate_operations_objective_audit.ps1`, `validate_handoff_guard_coverage.ps1`, `make_offline_release.ps1 -SelfTest` y `assert_offline_release_clean.ps1 -SelfTest` deben pasar; `validate_institutional_receipt_print_proof.ps1` sin banderas debe seguir fallando mientras el proof sea pendiente.
+
 ## 2026-06-05 - Proof final de respaldos tiene guard focal
 
 Contexto: `qa\FINAL_BACKUP_TASK_PROOF.md` bloquea `PRODUCTION_READY`, pero soporte necesitaba un comando focal para revisar solo la evidencia final de tareas Windows y backup manual UI sin depender de todo el handoff.

@@ -152,6 +152,15 @@ El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
 `scripts\validate_lan_loadtest_safety.ps1`,
 `scripts\validate_shift_incident_recovery_safety.ps1` y
 `scripts\validate_training_safety.ps1`. Ejecute tambien
+`scripts\validate_institutional_receipt_print_proof.ps1 -AllowPendingHardwareValidation`
+antes del handoff candidato para confirmar que el pendiente de impresion
+conserva media carta, carta, A5, reimpresion, escala 100%, margenes,
+headers/footers, evidencia fisica y `PRODUCTION_CANDIDATE` sin secretos ni
+rutas locales. Para cierre final, ejecute
+`scripts\validate_institutional_receipt_print_proof.ps1` sin banderas; debe
+fallar hasta que `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` este completo con
+evidencia de la impresora real.
+Ejecute tambien
 `scripts\validate_final_startup_task_proof.ps1 -AllowPendingFinalField` antes
 del handoff candidato para confirmar que el pendiente de autoarranque conserva
 `SistemaCajaHospitalaria-StackAutostart`, `AtStartup`, `/up`, login y
@@ -538,6 +547,11 @@ evidencia.
 
 Luego completar manualmente en ese mismo archivo login, caja, factura, pago,
 recibo, historial, reportes y backup `pending` -> `success`.
+Para la evidencia fisica de impresion, use
+`scripts\validate_institutional_receipt_print_proof.ps1 -AllowPendingHardwareValidation`
+durante el handoff candidato y
+`scripts\validate_institutional_receipt_print_proof.ps1` sin banderas antes de
+cualquier declaracion final.
 - Validar concurrencia real con MySQL/MariaDB.
 - Crear admin inicial real con password temporal, cambio obligatorio y contrasena entregada por entrada oculta/`HOSPITAL_INITIAL_ADMIN_PASSWORD`, no por argumento CLI.
 - Remover o no ejecutar seeders de validacion local fuera de `local`/`testing`.

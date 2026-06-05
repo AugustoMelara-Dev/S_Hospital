@@ -50,6 +50,7 @@ $script:OfflineReleaseCriticalScripts = @(
     "validate_lan_client.ps1",
     "validate_lan_loadtest_safety.ps1",
     "validate_lan_recovery_safety.ps1",
+    "validate_institutional_receipt_print_proof.ps1",
     "validate_maintenance_mode_safety.ps1",
     "validate_new_invoice_maintainability.ps1",
     "validate_operator_manuals_safety.ps1",

@@ -156,6 +156,7 @@ if ($failures.Count -eq 0) {
         'qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md',
         'qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md',
         'qa/OFFLINE_RELEASE_GUARD_2026_06_03.md',
+        'scripts/validate_institutional_receipt_print_proof.ps1',
         'qa/PRODUCTION_LICENSE_SALT_GUARD_2026_06_04.md',
         'qa/FINAL_FIELD_BLOCKERS_SAFETY_2026_06_04.md',
         'qa/PRODUCTION_READY_GATE_VALIDATOR_2026_06_04.md',
