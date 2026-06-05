@@ -231,6 +231,7 @@ if ($failures.Count -eq 0) {
         'validate_dependency_manifest.ps1',
         'validate_production_license_salt_guard.ps1',
         'assert_offline_release_clean.ps1 -SelfTest',
+        'install_backup_tasks_windows.ps1 -Status',
         'production_readiness_preflight.ps1'
     )
 
@@ -244,6 +245,7 @@ if ($failures.Count -eq 0) {
         'TRAINING_ACCEPTANCE_PROOF.md',
         'Backup scheduled tasks ready in status output',
         'Install or update Windows scheduled backup tasks',
+        'confirm it moves from pending to success',
         'SistemaCajaHospitalaria-StackAutostart',
         'SistemaCajaHospitalaria-BackupWorker',
         'SistemaCajaHospitalaria-DailyBackup',
