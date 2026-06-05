@@ -3512,3 +3512,11 @@ Contexto: la meta de entrega al Hospital San Isidro pide recibos tipo talonario 
 Decision: el contrato vigente de evidencia final de impresora queda alineado a media carta, carta y A5. Los valores heredados 80mm/58mm pueden seguir normalizandose internamente para datos antiguos, pero no son requisito operativo ni texto de cierre RC.
 
 Criterio de verificacion: check-branding.ps1 ahora cubre production-readiness E2E, OPERATIONS_OBJECTIVE_AUDIT, FINAL_FIELD_BLOCKERS_SAFETY y PRODUCTION_READINESS_GAP_REPORT contra impresora de rollo, thermal printer, 80mm y 58mm.
+
+## 2026-06-05 - Browser smoke evidence regenerada para la RC actual
+
+Contexto: el objetivo de presentacion exige capturas de navegador y evidencia visual para decidir y entregar la RC. La evidencia previa de browser smoke seguia apuntando a 2026-06-03, antes de las correcciones recientes de recibos y handoff.
+
+Decision: se genero una nueva evidencia mockeada en qa/browser-smoke-2026-06-05 y validate_browser_smoke_evidence.ps1 ahora valida ese reporte como la evidencia local vigente. La evidencia sigue declarando que no sustituye pruebas fisicas LAN, MySQL/MariaDB ni impresora.
+
+Criterio de verificacion: validate_browser_smoke_evidence.ps1 exige el JSON y capturas nuevas, sin console_issues y con nota de no sustitucion fisica; validate_operations_objective_audit.ps1 apunta al reporte 2026-06-05.

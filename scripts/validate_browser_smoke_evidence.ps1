@@ -69,7 +69,7 @@ function Test-RelativeEvidencePath([string] $relativePath, [int64] $minimumBytes
     Add-Pass "$label screenshot exists and is non-empty"
 }
 
-$rcReportPath = "qa\browser-smoke-2026-06-03\rc-e2e-mocked-report.json"
+$rcReportPath = "qa\browser-smoke-2026-06-05\rc-e2e-mocked-report.json"
 $helpReportPath = "qa\screenshots\rc-help-support-2026-05-31\help-support-report.json"
 $rcReport = Read-JsonFile $rcReportPath
 $helpReport = Read-JsonFile $helpReportPath
@@ -108,6 +108,7 @@ if ($null -ne $rcReport) {
         @{ Name = "cashbox-open-light"; Route = "/cashbox"; Theme = "light" },
         @{ Name = "billing-new-empty-light"; Route = "/billing/new"; Theme = "light" },
         @{ Name = "billing-new-cart-light"; Route = "/billing/new"; Theme = "light" },
+        @{ Name = "receipt-preview-letter-light"; Route = "/billing/new"; Theme = "light" },
         @{ Name = "receipt-preview-a5-light"; Route = "/billing/new"; Theme = "light" },
         @{ Name = "receipt-preview-light"; Route = "/billing/new"; Theme = "light" },
         @{ Name = "receipt-preview-dark"; Route = "/billing/new"; Theme = "dark" },

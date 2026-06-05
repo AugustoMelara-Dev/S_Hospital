@@ -117,11 +117,21 @@ async function captureScreen(page: Page, name: string, theme: 'light' | 'dark' =
     return;
   }
 
+  await waitForStableCapture(page);
   await mkdir(captureOutputDir, { recursive: true });
   const fileName = `${name}.png`;
   const file = path.join(captureOutputDir, fileName);
   await page.screenshot({ path: file, fullPage: true });
   capturedScreens.push({ name, path: path.posix.join(captureReportDir, fileName), route: new URL(page.url()).pathname, theme });
+}
+
+async function waitForStableCapture(page: Page) {
+  const transientText = page.getByText(
+    /Cargando servicios|Agregado:|Abriendo caja\.\.\.|Caja abierta\.|Factura emitida|Pago registrado/i,
+  ).first();
+
+  await transientText.waitFor({ state: 'hidden', timeout: 6_000 }).catch(() => {});
+  await page.waitForTimeout(250);
 }
 
 async function setVisualTheme(page: Page, theme: 'light' | 'dark') {
@@ -821,9 +831,16 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
   await expect(page.getByText('Media carta')).toBeVisible();
   await page.locator('[aria-label="Tamano del recibo"]').click();
+  await page.getByRole('option', { name: 'Carta', exact: true }).click();
+  await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-letter/);
+  await captureScreen(page, 'receipt-preview-letter-light', 'light');
+  await page.locator('[aria-label="Tamano del recibo"]').click();
   await page.getByRole('option', { name: 'A5', exact: true }).click();
   await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
   await captureScreen(page, 'receipt-preview-a5-light', 'light');
+  await page.locator('[aria-label="Tamano del recibo"]').click();
+  await page.getByRole('option', { name: 'Media carta', exact: true }).click();
+  await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-half_letter/);
   await captureScreen(page, 'receipt-preview-light', 'light');
   await setVisualTheme(page, 'dark');
   await captureScreen(page, 'receipt-preview-dark', 'dark');

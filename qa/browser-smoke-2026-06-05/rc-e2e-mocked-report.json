@@ -1,0 +1,74 @@
+{
+  "generated_at": "2026-06-05T19:18:43.211Z",
+  "mode": "mocked-e2e",
+  "note": "Capturas con API mockeada; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.",
+  "screenshots": [
+    {
+      "name": "dashboard-light",
+      "path": "qa/browser-smoke-2026-06-05/dashboard-light.png",
+      "route": "/dashboard",
+      "theme": "light"
+    },
+    {
+      "name": "dashboard-dark",
+      "path": "qa/browser-smoke-2026-06-05/dashboard-dark.png",
+      "route": "/dashboard",
+      "theme": "dark"
+    },
+    {
+      "name": "cashbox-open-light",
+      "path": "qa/browser-smoke-2026-06-05/cashbox-open-light.png",
+      "route": "/cashbox",
+      "theme": "light"
+    },
+    {
+      "name": "billing-new-empty-light",
+      "path": "qa/browser-smoke-2026-06-05/billing-new-empty-light.png",
+      "route": "/billing/new",
+      "theme": "light"
+    },
+    {
+      "name": "billing-new-cart-light",
+      "path": "qa/browser-smoke-2026-06-05/billing-new-cart-light.png",
+      "route": "/billing/new",
+      "theme": "light"
+    },
+    {
+      "name": "receipt-preview-letter-light",
+      "path": "qa/browser-smoke-2026-06-05/receipt-preview-letter-light.png",
+      "route": "/billing/new",
+      "theme": "light"
+    },
+    {
+      "name": "receipt-preview-a5-light",
+      "path": "qa/browser-smoke-2026-06-05/receipt-preview-a5-light.png",
+      "route": "/billing/new",
+      "theme": "light"
+    },
+    {
+      "name": "receipt-preview-light",
+      "path": "qa/browser-smoke-2026-06-05/receipt-preview-light.png",
+      "route": "/billing/new",
+      "theme": "light"
+    },
+    {
+      "name": "receipt-preview-dark",
+      "path": "qa/browser-smoke-2026-06-05/receipt-preview-dark.png",
+      "route": "/billing/new",
+      "theme": "dark"
+    },
+    {
+      "name": "reports-admin-light",
+      "path": "qa/browser-smoke-2026-06-05/reports-admin-light.png",
+      "route": "/reports",
+      "theme": "light"
+    },
+    {
+      "name": "backups-pending-light",
+      "path": "qa/browser-smoke-2026-06-05/backups-pending-light.png",
+      "route": "/backups",
+      "theme": "light"
+    }
+  ],
+  "console_issues": []
+}
