@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { apiClient } from './base';
 import { billing } from './billing';
-import type { Invoice, Payment } from './types';
+import type { Invoice, Payment, ReceiptData } from './types';
 
 vi.mock('./base', () => ({
   apiClient: {
@@ -28,6 +28,24 @@ describe('billing api client', () => {
     expect(mockedRequest).toHaveBeenCalledWith('/api/invoices/12/payments/34/void', {
       method: 'POST',
       body: JSON.stringify({ reason: 'Cobro duplicado por error' }),
+    });
+  });
+
+  it('posts reprint width with the required operational reason', async () => {
+    const receipt = { width: 'half_letter' } as ReceiptData;
+    mockedRequest.mockResolvedValueOnce({ data: { receipt } });
+
+    await expect(billing.reprintInvoice(12, {
+      width: 'half_letter',
+      reason: 'Copia solicitada por paciente',
+    })).resolves.toEqual(receipt);
+
+    expect(mockedRequest).toHaveBeenCalledWith('/api/invoices/12/reprint', {
+      method: 'POST',
+      body: JSON.stringify({
+        width: 'half_letter',
+        reason: 'Copia solicitada por paciente',
+      }),
     });
   });
 });

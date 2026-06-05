@@ -72,7 +72,7 @@ export const billing = {
 
   async reprintInvoice(
     invoiceId: number,
-    payload: { width: ReceiptData['width']; reason?: string | null },
+    payload: { width: ReceiptData['width']; reason: string },
   ): Promise<ReceiptData> {
     const response = await apiClient.request<{ data: { receipt: ReceiptData } }>(
       `/api/invoices/${invoiceId}/reprint`,

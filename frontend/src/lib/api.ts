@@ -171,7 +171,7 @@ export const apiClient = {
 
   async reprintInvoice(
     invoiceId: number,
-    payload: { width: ReceiptData['width']; reason?: string | null },
+    payload: { width: ReceiptData['width']; reason: string },
   ): Promise<ReceiptData> {
     return billing.reprintInvoice(invoiceId, payload);
   },
