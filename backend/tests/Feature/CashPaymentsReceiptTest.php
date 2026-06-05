@@ -815,6 +815,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.fiscal.cai', 'TEST-CAI')
             ->assertJsonPath('data.fiscal.authorized_range', '000-001-01-00000001 a 000-001-01-99999999')
             ->assertJsonPath('data.fiscal.valid_until', now()->addYear()->toDateString())
+            ->assertJsonPath('data.institutional.copy_label', 'Original / Copia')
             ->assertJsonPath('data.items.0.service_name', 'Glucosa')
             ->assertJsonPath('data.items.0.unit_price', '15.00')
             ->assertJsonPath('data.invoice.balance_due', '0.00')

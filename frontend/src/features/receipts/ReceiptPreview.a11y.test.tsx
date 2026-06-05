@@ -44,7 +44,7 @@ function buildReceipt(): ReceiptData {
       secretariat_line: 'Secretaria de Salud Publica',
       location: 'Tegucigalpa',
       footer_text: 'Gracias por su visita',
-      copy_label: 'Original',
+      copy_label: 'Original / Copia',
       signature_label: 'Firma autorizada',
     },
     items: [

@@ -45,7 +45,7 @@ class GenerateReceiptDataAction
                 'secretariat_line' => $invoice->receipt_secretariat_line ?? 'Secretaria de Salud Publica',
                 'location' => $invoice->receipt_location,
                 'footer_text' => $invoice->receipt_footer_text,
-                'copy_label' => 'Original',
+                'copy_label' => 'Original / Copia',
                 'signature_label' => 'Firma y sello del receptor de fondos',
             ],
             'fiscal' => [

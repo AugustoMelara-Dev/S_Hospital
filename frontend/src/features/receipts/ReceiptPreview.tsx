@@ -119,7 +119,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
 
           <div className="receipt-title-row">
             <h1 className="receipt-title">RECIBO INSTITUCIONAL</h1>
-            <span>{receipt.institutional?.copy_label ?? 'Original'}</span>
+            <span>{receipt.institutional?.copy_label ?? 'Original / Copia'}</span>
           </div>
 
           <div className="receipt-meta">

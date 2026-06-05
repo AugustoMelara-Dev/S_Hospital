@@ -3410,3 +3410,11 @@ Contexto: el objetivo de presentacion al Hospital San Isidro exige que soporte, 
 Decision: las guias actuales de troubleshooting, arquitectura y QA hablan de impresora institucional de oficina y validacion fisica en media carta, carta y A5. El archivo de prueba heredado queda marcado solo como compatibilidad historica y no como artefacto de handoff final.
 
 Criterio de verificacion: scripts/check-branding.ps1 falla si la documentacion actual vuelve a mencionar impresora de rollo, thermal printer, 80mm o 58mm en esas superficies de entrega.
+
+## 2026-06-05 - Recibo institucional marca original y copia
+
+Contexto: el talonario manual del hospital identifica la relacion entre original y copia. El recibo digital ya mostraba solo Original, pero el objetivo de presentacion requiere que el formato institucional haga visible Original / Copia sin agregar codigos tecnicos.
+
+Decision: GenerateReceiptDataAction y ReceiptPreview usan Original / Copia como marca institucional. La reimpresion conserva datos historicos de factura y el cambio no agrega QR, barcode, codigos internos ni campos tecnicos al recibo.
+
+Criterio de verificacion: CashPaymentsReceiptTest valida data.institutional.copy_label; ReceiptPreview.test valida que la marca Original / Copia se renderiza en el recibo.

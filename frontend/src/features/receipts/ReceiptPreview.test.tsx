@@ -147,6 +147,18 @@ describe('ReceiptPreview', () => {
     expect(document.body.textContent).toContain('L. 2.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
+
+  it('shows the institutional original and copy mark', () => {
+    render(
+      <ReceiptPreview
+        receipt={receiptFixture()}
+        onPrint={vi.fn()}
+        onWidthChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Original / Copia')).toBeInTheDocument();
+  });
 });
 
 function receiptFixture(): ReceiptData {
@@ -165,7 +177,7 @@ function receiptFixture(): ReceiptData {
       secretariat_line: 'Secretaria de Salud Publica',
       location: 'Tocoa, Colon',
       footer_text: null,
-      copy_label: 'Original',
+      copy_label: 'Original / Copia',
       signature_label: 'Firma y sello del receptor de fondos',
     },
     fiscal: {
