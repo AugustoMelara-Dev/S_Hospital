@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-04 22:20:43
+- Generated at: 2026-06-05 00:23:42
 - Base URL: http://192.168.1.10:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -120,6 +120,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_au
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -Status
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath php
 Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath php
+# Then create one manual backup from the admin UI and confirm it moves from pending to success.
 bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"
 # Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report.
 bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://192.168.1.10:8000 HOSPITAL_CONCURRENCY_BASE_URL=http://192.168.1.10:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
@@ -316,7 +318,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[ OK ] MANIFEST.txt references current commit f6a9129d
+[ OK ] MANIFEST.txt references current commit dc213d97
 [ OK ] offline-images contains 4 Docker image tar file(s)
 
 OFFLINE_RELEASE_CLEAN: YES
@@ -1021,7 +1023,7 @@ Manifest matches composer.json and package.json.
 [ OK ] Docs/evidence require 32+ character salt
 [ OK ] Docs/evidence warn not to commit or print real salt
 [ OK ] Production compose with placeholder salt completed with expected compose behavior
-error while interpolating services.backend.environment.HOSPITAL_LICENSE_SALT=[redacted] variable HOSPITAL_LICENSE_SALT is missing a value: HOSPITAL_LICENSE_SALT must be set to a 32+ char random string
+error while interpolating services.scheduler.environment.HOSPITAL_LICENSE_SALT=[redacted] variable HOSPITAL_LICENSE_SALT is missing a value: HOSPITAL_LICENSE_SALT must be set to a 32+ char random string
 [ OK ] Production compose without license salt completed with expected compose behavior
 
 PRODUCTION_LICENSE_SALT_GUARD: YES
