@@ -184,6 +184,10 @@ comparado contra la fuente versionada.
 Tambien debe conservar `scripts\validate_offline_release_staging_safety.ps1`
 para confirmar que `make_offline_release.ps1` publica por staging y conserva el
 paquete anterior si falla el guard, Docker o el swap final.
+Tambien debe conservar `scripts\validate_production_license_salt_guard.ps1`
+para confirmar que produccion no arranca con `HOSPITAL_LICENSE_SALT` ausente o
+debil, que Docker Compose falla cerrado sin esa variable y que no se imprime ni
+commitea un salt real.
 Tambien debe conservar `scripts\validate_restore_windows_safety.ps1` para
 confirmar que `scripts\restore_hospital_windows.ps1` mantiene `-SelfTest`,
 solo acepta bases descartables, rechaza nombres productivos, no expone password
@@ -374,6 +378,9 @@ LAN fisica:
 - Verificar que `must_change_password=true` solo permite `me`, cambio de password y logout.
 - Verificar que usuario inactivo no puede operar aunque exista sesion.
 - Confirmar que no hay secretos reales en frontend ni repositorio.
+- Ejecutar `scripts\validate_production_license_salt_guard.ps1`.
+- Generar `HOSPITAL_LICENSE_SALT` real de 32+ caracteres en el servidor final;
+  no imprimirlo en evidencia, no commitearlo y no reutilizar valores de prueba.
 
 ## Validacion operativa
 

@@ -39,6 +39,7 @@ $backupTasksScript = Join-Path $scriptsDir "install_backup_tasks_windows.ps1"
 $releaseGuardScript = Join-Path $scriptsDir "assert_offline_release_clean.ps1"
 $evidenceIndexScript = Join-Path $scriptsDir "validate_ops_evidence_index.ps1"
 $dependencyManifestScript = Join-Path $scriptsDir "validate_dependency_manifest.ps1"
+$productionLicenseSaltGuardScript = Join-Path $scriptsDir "validate_production_license_salt_guard.ps1"
 $trainingSafetyScript = Join-Path $scriptsDir "validate_training_safety.ps1"
 $fieldProofTemplatesSafetyScript = Join-Path $scriptsDir "validate_field_proof_templates.ps1"
 $proofInitializationSafetyScript = Join-Path $scriptsDir "validate_proof_initialization_safety.ps1"
@@ -587,6 +588,18 @@ function Invoke-NewInvoiceMaintainabilityGuard {
     }
 }
 
+function Invoke-ProductionLicenseSaltGuard {
+    Write-Section "Production license salt guard validation"
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $productionLicenseSaltGuardScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
 function Invoke-FinalHandoffCompletenessGuard([string] $handoffPath) {
     Write-Section "Final handoff completeness validation"
     $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $finalHandoffCompletenessScript -ProjectRoot $ProjectRoot -HandoffPath $handoffPath 2>&1 | ForEach-Object { $_.ToString() })
@@ -706,6 +719,8 @@ function Write-HandoffReport(
     [int] $offlineReleaseGuardSelfTestExit,
     [string[]] $dependencyManifestOutput,
     [int] $dependencyManifestExit,
+    [string[]] $productionLicenseSaltGuardOutput,
+    [int] $productionLicenseSaltGuardExit,
     [string[]] $finalHandoffCompletenessOutput,
     [int] $finalHandoffCompletenessExit,
     [string[]] $evidenceIndexOutput,
@@ -751,6 +766,7 @@ function Write-HandoffReport(
         $offlineReleaseBuilderSelfTestExit,
         $offlineReleaseGuardSelfTestExit,
         $dependencyManifestExit,
+        $productionLicenseSaltGuardExit,
         $finalHandoffCompletenessExit,
         $evidenceIndexExit
     )
@@ -805,6 +821,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Offline release builder self-test exit code: $offlineReleaseBuilderSelfTestExit"
     Add-ReportLine $lines "- Offline release guard self-test exit code: $offlineReleaseGuardSelfTestExit"
     Add-ReportLine $lines "- Dependency manifest guard exit code: $dependencyManifestExit"
+    Add-ReportLine $lines "- Production license salt guard exit code: $productionLicenseSaltGuardExit"
     Add-ReportLine $lines "- Final handoff completeness guard exit code: $finalHandoffCompletenessExit"
     Add-ReportLine $lines "- Evidence index guard exit code: $evidenceIndexExit"
     Add-ReportLine $lines "- Preflight skipped: $preflightSkipped"
@@ -941,6 +958,9 @@ function Write-HandoffReport(
     if ($dependencyManifestExit -ne 0) {
         Add-ReportLine $lines "- Dependency manifest validation returned exit code $dependencyManifestExit."
     }
+    if ($productionLicenseSaltGuardExit -ne 0) {
+        Add-ReportLine $lines "- Production license salt guard validation returned exit code $productionLicenseSaltGuardExit."
+    }
     if ($finalHandoffCompletenessExit -ne 0) {
         Add-ReportLine $lines "- Final handoff completeness validation returned exit code $finalHandoffCompletenessExit."
     }
@@ -961,7 +981,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '- Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/LAN_LOADTEST_SAFETY_2026_06_04.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.'
     Add-ReportLine $lines '- New invoice maintainability guard: `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` and `scripts/validate_new_invoice_maintainability.ps1` preserve a short cashier-facing invoice flow.'
     Add-ReportLine $lines '- Operator and training evidence: `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md`, `qa/TRAINING_SAFETY_2026_06_03.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md` and `qa/TRAINING_ACCEPTANCE_PROOF.md`.'
-    Add-ReportLine $lines '- Field proof, final blockers, LAN/loadtest, proof initialization, handoff guard coverage, offline release staging, offline builder, offline release guard, offline regeneration, objective, release and index evidence: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/FINAL_FIELD_BLOCKERS_SAFETY_2026_06_04.md`, `qa/LAN_LOADTEST_SAFETY_2026_06_04.md`, `qa/LAN_LOADTEST_HANDOFF_2026_06_04.md`, `qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md`, `qa/HANDOFF_GUARD_COVERAGE_2026_06_04.md`, `qa/OFFLINE_RELEASE_STAGING_SAFETY_2026_06_04.md`, `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`, `qa/OFFLINE_RELEASE_REGEN_2026_06_04.md`, `qa/PRODUCTION_READY_GATE_VALIDATOR_2026_06_04.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`.'
+    Add-ReportLine $lines '- Field proof, final blockers, LAN/loadtest, proof initialization, handoff guard coverage, offline release staging, offline builder, offline release guard, offline regeneration, objective, release and index evidence: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/FINAL_FIELD_BLOCKERS_SAFETY_2026_06_04.md`, `qa/LAN_LOADTEST_SAFETY_2026_06_04.md`, `qa/LAN_LOADTEST_HANDOFF_2026_06_04.md`, `qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md`, `qa/HANDOFF_GUARD_COVERAGE_2026_06_04.md`, `qa/OFFLINE_RELEASE_STAGING_SAFETY_2026_06_04.md`, `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`, `qa/OFFLINE_RELEASE_REGEN_2026_06_04.md`, `qa/PRODUCTION_READY_GATE_VALIDATOR_2026_06_04.md`, `qa/PRODUCTION_LICENSE_SALT_GUARD_2026_06_04.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`.'
     Add-ReportLine $lines ""
 
     Add-ReportLine $lines "## Tests and gates to preserve"
@@ -977,7 +997,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '- In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.'
     Add-ReportLine $lines '- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/restore_hospital_windows.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/install_backup_startup_current_user.ps1`, `scripts/start_backup_automation.cmd`, `scripts/run_backup_scheduler_loop.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.'
-    Add-ReportLine $lines '- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_backup_startup_current_user_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_support_packet_safety.ps1`, `scripts/validate_first_level_support_safety.ps1`, `scripts/validate_production_ready_gate_safety.ps1`, `scripts/validate_final_field_blockers_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_lan_loadtest_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.'
+    Add-ReportLine $lines '- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_backup_startup_current_user_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_support_packet_safety.ps1`, `scripts/validate_first_level_support_safety.ps1`, `scripts/validate_production_ready_gate_safety.ps1`, `scripts/validate_final_field_blockers_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_lan_loadtest_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_production_license_salt_guard.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.'
     Add-ReportLine $lines '- Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.'
     Add-ReportLine $lines ""
 
@@ -1045,6 +1065,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_handoff_guard_coverage.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_offline_release_staging_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_dependency_manifest.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_production_license_salt_guard.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_final_handoff_completeness.ps1 -HandoffPath $(Protect-HandoffText $path)"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath $(Protect-HandoffText $path)"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl $($BaseUrl.TrimEnd('/'))"
@@ -1200,6 +1221,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $dependencyManifestOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## Production license salt guard validation output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $productionLicenseSaltGuardOutput) {
         Add-ReportLine $lines (Protect-HandoffText $line)
     }
     Add-ReportLine $lines '```'
@@ -1400,6 +1430,7 @@ Assert-ScriptExists $backupTasksScript
 Assert-ScriptExists $releaseGuardScript
 Assert-ScriptExists $evidenceIndexScript
 Assert-ScriptExists $dependencyManifestScript
+Assert-ScriptExists $productionLicenseSaltGuardScript
 Assert-ScriptExists $trainingSafetyScript
 Assert-ScriptExists $fieldProofTemplatesSafetyScript
 Assert-ScriptExists $proofInitializationSafetyScript
@@ -1521,6 +1552,7 @@ $offlineReleaseStagingSafety = Invoke-OfflineReleaseStagingSafetyGuard
 $offlineReleaseBuilderSelfTest = Invoke-OfflineReleaseBuilderSelfTestGuard
 $offlineReleaseGuardSelfTest = Invoke-OfflineReleaseGuardSelfTest
 $dependencyManifest = Invoke-DependencyManifestGuard
+$productionLicenseSaltGuard = Invoke-ProductionLicenseSaltGuard
 
 if ($SkipPreflight) {
     Write-Section "Preflight skipped"
@@ -1599,6 +1631,8 @@ if ($SkipPreflight) {
         -offlineReleaseGuardSelfTestExit $offlineReleaseGuardSelfTest.ExitCode `
         -dependencyManifestOutput $dependencyManifest.Output `
         -dependencyManifestExit $dependencyManifest.ExitCode `
+        -productionLicenseSaltGuardOutput $productionLicenseSaltGuard.Output `
+        -productionLicenseSaltGuardExit $productionLicenseSaltGuard.ExitCode `
         -finalHandoffCompletenessOutput @("Final handoff completeness validation pending until the handoff report is written.") `
         -finalHandoffCompletenessExit 2 `
         -evidenceIndexOutput @("Evidence index validation pending until the handoff report is written.") `
@@ -1683,6 +1717,8 @@ if ($SkipPreflight) {
         -offlineReleaseGuardSelfTestExit $offlineReleaseGuardSelfTest.ExitCode `
         -dependencyManifestOutput $dependencyManifest.Output `
         -dependencyManifestExit $dependencyManifest.ExitCode `
+        -productionLicenseSaltGuardOutput $productionLicenseSaltGuard.Output `
+        -productionLicenseSaltGuardExit $productionLicenseSaltGuard.ExitCode `
         -finalHandoffCompletenessOutput $finalHandoffCompleteness.Output `
         -finalHandoffCompletenessExit $finalHandoffCompleteness.ExitCode `
         -evidenceIndexOutput $evidenceIndex.Output `
@@ -1772,6 +1808,8 @@ Write-HandoffReport `
     -offlineReleaseGuardSelfTestExit $offlineReleaseGuardSelfTest.ExitCode `
     -dependencyManifestOutput $dependencyManifest.Output `
     -dependencyManifestExit $dependencyManifest.ExitCode `
+    -productionLicenseSaltGuardOutput $productionLicenseSaltGuard.Output `
+    -productionLicenseSaltGuardExit $productionLicenseSaltGuard.ExitCode `
     -finalHandoffCompletenessOutput @("Final handoff completeness validation pending until the handoff report is written.") `
     -finalHandoffCompletenessExit 2 `
     -evidenceIndexOutput @("Evidence index validation pending until the handoff report is written.") `
@@ -1856,6 +1894,8 @@ Write-HandoffReport `
     -offlineReleaseGuardSelfTestExit $offlineReleaseGuardSelfTest.ExitCode `
     -dependencyManifestOutput $dependencyManifest.Output `
     -dependencyManifestExit $dependencyManifest.ExitCode `
+    -productionLicenseSaltGuardOutput $productionLicenseSaltGuard.Output `
+    -productionLicenseSaltGuardExit $productionLicenseSaltGuard.ExitCode `
     -finalHandoffCompletenessOutput $finalHandoffCompleteness.Output `
     -finalHandoffCompletenessExit $finalHandoffCompleteness.ExitCode `
     -evidenceIndexOutput $evidenceIndex.Output `
@@ -1899,6 +1939,7 @@ $allFinalAutomatedGuardsPassed = Test-GuardExitCodesPassed @(
     $offlineReleaseBuilderSelfTest.ExitCode,
     $offlineReleaseGuardSelfTest.ExitCode,
     $dependencyManifest.ExitCode,
+    $productionLicenseSaltGuard.ExitCode,
     $finalHandoffCompleteness.ExitCode,
     $evidenceIndex.ExitCode
 )
@@ -2012,6 +2053,9 @@ if ($offlineReleaseGuardSelfTest.ExitCode -ne 0) {
 }
 if ($dependencyManifest.ExitCode -ne 0) {
     exit $dependencyManifest.ExitCode
+}
+if ($productionLicenseSaltGuard.ExitCode -ne 0) {
+    exit $productionLicenseSaltGuard.ExitCode
 }
 if ($finalHandoffCompleteness.ExitCode -ne 0) {
     exit $finalHandoffCompleteness.ExitCode

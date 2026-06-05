@@ -113,6 +113,7 @@ if ($failures.Count -eq 0) {
         'Final LAN client validation',
         'Physical institutional receipt proof',
         'Offline release package',
+        'Production license salt cannot be missing or weak',
         '`PRODUCTION_READY` gate and final-field blockers cannot be bypassed silently',
         'Final production environment and preflight'
     )
@@ -146,6 +147,7 @@ if ($failures.Count -eq 0) {
         'qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md',
         'qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md',
         'qa/OFFLINE_RELEASE_GUARD_2026_06_03.md',
+        'qa/PRODUCTION_LICENSE_SALT_GUARD_2026_06_04.md',
         'qa/FINAL_FIELD_BLOCKERS_SAFETY_2026_06_04.md',
         'qa/PRODUCTION_READY_GATE_VALIDATOR_2026_06_04.md',
         'qa/PRODUCTION_READY_GATE_HANDOFF_2026_06_04.md',
@@ -156,7 +158,8 @@ if ($failures.Count -eq 0) {
         'scripts/validate_first_level_support_safety.ps1',
         'scripts/validate_production_ready_gate_safety.ps1',
         'scripts/validate_final_field_blockers_safety.ps1',
-        'scripts/validate_backup_startup_current_user_safety.ps1'
+        'scripts/validate_backup_startup_current_user_safety.ps1',
+        'scripts/validate_production_license_salt_guard.ps1'
     )
 
     foreach ($evidence in $requiredEvidence) {

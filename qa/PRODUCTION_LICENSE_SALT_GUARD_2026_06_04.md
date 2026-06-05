@@ -18,10 +18,14 @@ Observed result:
   without a real hospital salt.
 - `docker-compose.prod.yml` now fails closed if `HOSPITAL_LICENSE_SALT` is not
   provided.
+- `scripts/validate_production_license_salt_guard.ps1` verifies the Laravel
+  provider, unit-test coverage, production compose interpolation, docs and
+  pre-commit secret guard without printing a real salt.
 
 Commands run:
 
 ```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_production_license_salt_guard.ps1
 docker compose exec -T backend php artisan test --filter=LicenseSaltGuardTest
 docker compose exec -T backend ./vendor/bin/pint --test app/Providers/AppServiceProvider.php tests/Unit/LicenseSaltGuardTest.php
 powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:HOSPITAL_LICENSE_SALT='0123456789abcdef0123456789abcdef'; `$env:SERVER_IP='192.168.1.10'; docker compose -f docker-compose.prod.yml config --quiet"
@@ -29,6 +33,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "`$env:HOSPITAL_LICENSE_S
 
 The compose validation exited `0` with a disposable placeholder value; no real
 production salt was used or printed.
+
+Expected guard marker:
+
+```text
+PRODUCTION_LICENSE_SALT_GUARD: YES
+```
 
 Safety notes:
 

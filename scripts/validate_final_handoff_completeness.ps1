@@ -86,6 +86,7 @@ if ($failures.Count -eq 0) {
     Assert-Content '(?i)Risks and limits' "El handoff debe incluir riesgos y limites."
     Assert-Content '(?i)Safety notes' "El handoff debe incluir notas de seguridad."
     Assert-Content '(?i)Dependency manifest' "El handoff debe mencionar la validacion del manifest de dependencias."
+    Assert-Content '(?i)Production license salt guard validation' "El handoff debe conservar la salida del guard de salt de licencia."
     Assert-Content '(?i)Offline release guard self-test' "El handoff debe mencionar el self-test del guard offline."
     Assert-Content '(?i)Known limitations safety validation' "El handoff debe conservar la salida del guard de limitaciones conocidas."
     Assert-Content '(?i)Maintenance mode safety validation' "El handoff debe conservar la salida del guard de modo mantenimiento."
@@ -105,6 +106,7 @@ if ($failures.Count -eq 0) {
     Assert-Content 'HANDOFF_GUARD_COVERAGE:\s*YES' "El handoff debe conservar el resultado positivo de cobertura handoff/offline."
     Assert-Content 'OFFLINE_RELEASE_STAGING_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de staging seguro del release offline."
     Assert-Content 'BACKUP_STARTUP_CURRENT_USER_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de backup startup current-user."
+    Assert-Content 'PRODUCTION_LICENSE_SALT_GUARD:\s*YES' "El handoff debe conservar el resultado positivo del guard de salt de licencia."
     Assert-Content 'RESTORE_WINDOWS_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de restore Windows seguro."
     Assert-Content 'FIRST_LEVEL_SUPPORT_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de soporte de primer nivel."
     Assert-Content 'PRODUCTION_READY_GATE_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo del gate PRODUCTION_READY."
@@ -147,6 +149,7 @@ if ($failures.Count -eq 0) {
         'LAN_LOADTEST_SAFETY_2026_06_04.md',
         'LAN_LOADTEST_HANDOFF_2026_06_04.md',
         'RESTORE_WINDOWS_SAFETY_2026_06_04.md',
+        'PRODUCTION_LICENSE_SALT_GUARD_2026_06_04.md',
         'PRODUCTION_READY_GATE_VALIDATOR_2026_06_04.md'
     )
 
@@ -188,6 +191,7 @@ if ($failures.Count -eq 0) {
         'scripts/validate_field_proof_templates.ps1',
         'scripts/validate_proof_initialization_safety.ps1',
         'scripts/validate_dependency_manifest.ps1',
+        'scripts/validate_production_license_salt_guard.ps1',
         'scripts/init_production_proofs.ps1',
         'scripts/make_offline_release.ps1',
         'scripts/assert_offline_release_clean.ps1',
@@ -220,6 +224,7 @@ if ($failures.Count -eq 0) {
         'validate_production_ready_gate_safety.ps1',
         'validate_final_field_blockers_safety.ps1 -SelfTest',
         'validate_dependency_manifest.ps1',
+        'validate_production_license_salt_guard.ps1',
         'assert_offline_release_clean.ps1 -SelfTest',
         'production_readiness_preflight.ps1'
     )
