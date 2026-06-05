@@ -41,4 +41,4 @@ Acciones siguientes:
 - Preparar `.env` final con `APP_ENV=production`, `APP_DEBUG=false` y `APP_URL=http://IP-LAN:8000`.
 - Instalar tareas programadas de worker y backup diario en la PC servidor.
 - Ejecutar preflight usando la IP LAN real y sin `-AllowMissingPhysicalProof`.
-- Completar evidencia fisica LAN y recibo institucional en media carta horizontal, carta, A5, 80mm y 58mm.
+- Completar evidencia fisica LAN y recibo institucional en media carta, carta y A5.

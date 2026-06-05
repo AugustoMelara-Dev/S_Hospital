@@ -61,7 +61,7 @@ PRODUCTION_READY_GATE_TESTS: YES
 - Complete `qa/LAN_CLIENT_VALIDATION_PROOF.md` from a real second hospital LAN
   client.
 - Complete `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` on the real cashier
-  printer for media carta, carta, A5, 80mm and 58mm.
+  printer for media carta, carta and A5.
 - Re-run final restore and concurrency proof on the final server or an approved
   disposable final-field target.
 - Run `scripts/production_readiness_preflight.ps1` without bypass flags on the

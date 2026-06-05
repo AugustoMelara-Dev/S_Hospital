@@ -65,7 +65,7 @@ undefined `Write-Fail` PowerShell error.
 ## Remaining blockers
 
 - Real second-client LAN proof.
-- Real physical printer proof for media carta, carta, A5, 80mm and 58mm.
+- Real physical printer proof for media carta, carta and A5.
 - Final-server restore proof against a disposable database.
 - Final-field concurrency proof against a disposable target.
 - Final preflight without bypass flags on the installed LAN URL.

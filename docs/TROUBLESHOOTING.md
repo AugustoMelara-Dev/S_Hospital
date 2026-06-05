@@ -126,9 +126,8 @@ settings override the page CSS.
    thermal printer as the default**. Test print from Notepad.
 2. In the browser's print dialog (Ctrl+P), uncheck
    *Headers and footers* and set *Margins* to *None*.
-3. In the receipt preview, the page CSS already targets 80mm
-   and 58mm `@page` sizes. The cashier can change the paper
-   size in the dialog if the wrong size is selected.
+3. In the receipt preview, use media carta, carta or A5. The cashier can
+   change the paper size in the dialog if the wrong size is selected.
 
 ## "Respaldo pendiente" never finishes
 

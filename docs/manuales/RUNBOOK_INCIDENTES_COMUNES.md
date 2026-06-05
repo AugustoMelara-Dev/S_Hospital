@@ -79,15 +79,15 @@ en "Imprimir" no sale papel por la impresora o sale en blanco.
 - Impresora apagada, sin papel o sin tinta.
 - Impresora no es la predeterminada de Windows.
 - Tamano de papel incorrecto en la configuracion de la impresora.
-- Ancho de recibo (58mm / 80mm) no coincide con la impresora real.
+- Tamano de papel del recibo no coincide con la impresora real.
 
 **Accion inmediata:**
 1. Verificar que la impresora este encendida, con papel y sin
    error luminoso.
 2. Abrir `Impresoras y escaneres` de Windows y confirmar que la
    impresora del sistema sea la predeterminada.
-3. En el sistema, ir a `Configuracion fiscal` y verificar que el
-   ancho de recibo (80mm o 58mm) coincida con el papel instalado.
+3. En el sistema, ir a `Configuracion fiscal` y verificar que el tamano
+   del recibo (media carta, carta o A5) coincida con el papel instalado.
 4. Probar "Imprimir como PDF" del navegador para descartar problema
    del navegador.
 

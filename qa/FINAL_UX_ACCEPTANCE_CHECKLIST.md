@@ -1,8 +1,8 @@
 # Final UX Acceptance Checklist
 
-Estado: **APROBADO PARA DEMO / PRODUCTION_CANDIDATE** al 2026-05-18.
+Estado: **PRODUCTION_CANDIDATE** al 2026-05-18.
 
-Los bloqueos UX de `docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md` quedaron cerrados por las fases 12A0-12E. Este checklist no declara `PRODUCTION_READY`: siguen pendientes la validacion desde cliente LAN fisico, impresora institucional fisica media carta/carta/A5/80mm/58mm y configuracion final de produccion.
+Los bloqueos UX de `docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md` quedaron cerrados por las fases 12A0-12E. Este checklist no declara `PRODUCTION_READY`: siguen pendientes la validacion desde cliente LAN fisico, impresora institucional fisica media carta/carta/A5 y configuracion final de produccion.
 
 ## App shell
 - [x] Sidebar visible.
@@ -55,12 +55,12 @@ Los bloqueos UX de `docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md` quedaron cerrados p
 ## QA
 - [x] Unit/feature tests backend.
 - [x] Frontend tests.
-- [x] E2E mockeado de demo.
+- [x] E2E mockeado de validacion local.
 - [x] Smoke real contra Laravel/API definido como gate separado del mock.
 - [x] Smoke real mutacional apagado por defecto; requiere `E2E_REAL_ALLOW_MUTATIONS=1` para crear/cobrar una factura real contra DB.
 - [x] Browser smoke con cero `console.error`, `pageerror` y requests fallidas inesperadas.
 - [x] Build.
-- [x] Demo script actualizado con evidencia honesta.
+- [x] Guion de validacion actualizado con evidencia honesta.
 
 ## Evidencia de cierre Fase 12
 
@@ -75,5 +75,5 @@ Los bloqueos UX de `docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md` quedaron cerrados p
 ## Limites que siguen fuera del cierre UX
 
 - `PENDING_LAN_CLIENT_VALIDATION`: prueba completa desde otra computadora cliente en la LAN final.
-- `PENDING_HARDWARE_VALIDATION`: impresion real media carta/carta/A5/80mm/58mm en la impresora fisica.
+- `PENDING_HARDWARE_VALIDATION`: impresion real media carta/carta/A5 en la impresora fisica.
 - `PENDING_ENVIRONMENT_VALIDATION`: `.env` final con `APP_ENV=production`, `APP_DEBUG=false`, admin real, worker continuo de backups y `config:cache` en servidor.

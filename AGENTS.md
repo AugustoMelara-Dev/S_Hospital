@@ -1,7 +1,7 @@
 # AGENTS.md - S_Hospital Offline
 
 ## Identidad del proyecto
-Construir un sistema hospitalario local para facturación, caja, pagos, reportes, catálogo de servicios y emisión de recibos térmicos.
+Construir un sistema hospitalario local para facturación, caja, pagos, reportes, catálogo de servicios y emisión de recibos institucionales.
 El sistema debe funcionar sin internet, pero sí en red local LAN con una computadora servidor y varias computadoras cliente por navegador.
 Stack objetivo: React + TypeScript + Laravel API + MySQL/MariaDB.
 No usar Supabase cloud, SQLite multiusuario, Firebase, servicios SaaS obligatorios ni dependencias que requieran internet en producción.
@@ -27,7 +27,7 @@ No mezclar módulos no relacionados en el mismo commit.
 
 ## Convenciones de commits
 Usar Conventional Commits.
-Ejemplos: feat(billing): create invoice transaction flow; fix(cashbox): prevent closing with pending invoices; test(printing): add thermal receipt snapshots.
+Ejemplos: feat(billing): create invoice transaction flow; fix(cashbox): prevent closing with pending invoices; test(printing): add institutional receipt snapshots.
 Cada commit debe representar una fase o subfase coherente.
 No hacer commits gigantes con frontend, backend, DB y estilos mezclados salvo que la fase lo justifique.
 
@@ -65,7 +65,7 @@ Usar constraints y claves foráneas donde no interfieran con auditoría históri
 Paciente: solo nombre obligatorio en factura, no expediente clínico completo.
 Eritropoyetina: medicamento de L.25; gratis si se marca paciente con receta de diálisis.
 Facturas deben salir con nombre del paciente.
-Sistema debe soportar impresión térmica 80mm y opción 58mm configurable.
+Sistema debe soportar recibo institucional en media carta, carta y A5; no debe promover papel de rollo como formato operativo.
 Toda factura pagada debe quedar asociada a caja, cajero, método de pago y fecha.
 Anulación requiere permiso, motivo y auditoría; no borrar facturas.
 

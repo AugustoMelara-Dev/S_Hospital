@@ -94,8 +94,8 @@ foreach ($requiredCheck in @(
     "Receipt",
     "Backup",
     "media carta",
-    "80mm",
-    "58mm",
+    "carta",
+    "A5",
     "Disposable restore database",
     "Concurrent invoice emission"
 )) {

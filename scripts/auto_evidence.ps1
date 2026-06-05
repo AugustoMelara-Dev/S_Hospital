@@ -122,8 +122,6 @@ $printerTemplate = @"
 - Media carta result: [VALIDATED / PARTIAL / FAILED with notes]
 - Carta result: [VALIDATED / PARTIAL / FAILED with notes]
 - A5 result: [VALIDATED / PARTIAL / FAILED with notes]
-- 80mm result: [VALIDATED / PARTIAL / FAILED with notes]
-- 58mm result: [VALIDATED / PARTIAL / FAILED with notes]
 - Reprint result: [VALIDATED / PARTIAL / FAILED with notes]
 - Margins result: [VALIDATED / PARTIAL / FAILED with notes]
 - Browser headers/footers result: [VALIDATED / PARTIAL / FAILED with notes]
@@ -134,7 +132,7 @@ $printerTemplate = @"
 ## Pre-requisitos (auto-evidence.ps1)
 
 - Impresora encendida, driver instalado, papel cargado.
-- Tamano de papel configurado en el driver (media carta / carta / A5 / 80mm / 58mm).
+- Tamano de papel configurado en el driver (media carta / carta / A5).
 - Margenes del navegador desactivados, escala 100%, color en blanco/negro.
 
 ## Checklist fisico (operador)
@@ -142,8 +140,6 @@ $printerTemplate = @"
 - [ ] Media carta printed and background is white: [result]
 - [ ] Carta printed and background is white: [result]
 - [ ] A5 printed and background is white: [result]
-- [ ] 80mm printed and background is white: [result]
-- [ ] 58mm printed and background is white: [result]
 - [ ] Reprint from history printed the historical invoice: [result]
 - [ ] Browser headers/footers are off: [result]
 - [ ] No QR / barcode leaked into the institutional format: [result]
