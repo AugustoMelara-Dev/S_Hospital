@@ -169,6 +169,8 @@ la pantalla de Ayuda pierde flujos criticos, incidentes reales o resumen seguro
 sin secretos, si el diagnostico local pierde resumen normal, detalle avanzado
 por permiso, checks de backend/base/frontend/respaldo/cola/hora/disco/LAN/version
 o sanitizacion, si las defensas contra doble accion pierden cobertura, si
+realtime own-event deja de invalidar datos antes de ocultar notificaciones
+propias del cajero, si
 el instalador legacy vuelve a aparecer como flujo soportado, si la recuperacion
 por cambio de IP LAN pierde `-WhatIf`, validacion de cliente o proteccion de
 evidencia, si las guias de recuperacion de incidentes de turno pierden pasos
@@ -188,6 +190,9 @@ Tambien debe conservar `scripts\validate_production_license_salt_guard.ps1`
 para confirmar que produccion no arranca con `HOSPITAL_LICENSE_SALT` ausente o
 debil, que Docker Compose falla cerrado sin esa variable y que no se imprime ni
 commitea un salt real.
+Tambien debe conservar `scripts\validate_realtime_own_event_safety.ps1` para
+confirmar que eventos LAN de facturas, pagos y caja siempre invalidan datos,
+pero no muestran un aviso repetido al mismo usuario que ejecuto la accion.
 Tambien debe conservar `scripts\validate_restore_windows_safety.ps1` para
 confirmar que `scripts\restore_hospital_windows.ps1` mantiene `-SelfTest`,
 solo acepta bases descartables, rechaza nombres productivos, no expone password

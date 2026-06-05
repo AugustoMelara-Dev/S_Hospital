@@ -18,13 +18,23 @@ Observed result:
   behavior.
 - Legacy events without `actor_id` still notify the user instead of silently
   hiding remote changes.
+- `scripts/validate_realtime_own_event_safety.ps1` now guards the backend
+  actor payloads, frontend dynamic user cache, notification tests, AppShell
+  mounting and final-LAN-proof warning.
 
 Commands run:
 
 ```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_realtime_own_event_safety.ps1
 docker compose exec -T backend php artisan test --filter=BroadcastingWiringTest
 npm.cmd test -- useBroadcastSync session
 npm.cmd run typecheck
+```
+
+Expected guard marker:
+
+```text
+REALTIME_OWN_EVENT_SAFETY: YES
 ```
 
 Safety notes:

@@ -61,6 +61,7 @@ $script:OfflineReleaseCriticalScripts = @(
     "validate_production_ready_gate_safety.ps1",
     "validate_production_license_salt_guard.ps1",
     "validate_rate_limit_safety.ps1",
+    "validate_realtime_own_event_safety.ps1",
     "validate_restore_windows_safety.ps1",
     "validate_shift_incident_recovery_safety.ps1",
     "validate_startup_repair_safety.ps1",

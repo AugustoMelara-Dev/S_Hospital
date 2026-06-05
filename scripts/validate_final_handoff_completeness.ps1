@@ -95,6 +95,7 @@ if ($failures.Count -eq 0) {
     Assert-Content '(?i)Offline release staging safety validation' "El handoff debe conservar la salida del guard de staging del release offline."
     Assert-Content '(?i)Backup startup current-user safety validation' "El handoff debe conservar la salida del guard de backup startup current-user."
     Assert-Content '(?i)Windows restore safety validation' "El handoff debe conservar la salida del guard de restore Windows seguro."
+    Assert-Content '(?i)Realtime own-event safety validation' "El handoff debe conservar la salida del guard realtime own-event."
     Assert-Content '(?i)First-level support safety validation' "El handoff debe conservar la salida del guard de soporte de primer nivel."
     Assert-Content '(?i)Production ready gate safety validation' "El handoff debe conservar la salida del guard del gate PRODUCTION_READY."
     Assert-Content '(?i)Final field blockers safety self-test' "El handoff debe conservar la salida del self-test de bloqueantes fisicos finales."
@@ -108,6 +109,7 @@ if ($failures.Count -eq 0) {
     Assert-Content 'BACKUP_STARTUP_CURRENT_USER_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de backup startup current-user."
     Assert-Content 'PRODUCTION_LICENSE_SALT_GUARD:\s*YES' "El handoff debe conservar el resultado positivo del guard de salt de licencia."
     Assert-Content 'RESTORE_WINDOWS_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de restore Windows seguro."
+    Assert-Content 'REALTIME_OWN_EVENT_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo realtime own-event."
     Assert-Content 'FIRST_LEVEL_SUPPORT_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de soporte de primer nivel."
     Assert-Content 'PRODUCTION_READY_GATE_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo del gate PRODUCTION_READY."
     Assert-Content 'FINAL_FIELD_BLOCKERS_SAFETY_SELFTEST:\s*YES' "El handoff debe conservar el self-test positivo de bloqueantes fisicos finales."
@@ -123,6 +125,7 @@ if ($failures.Count -eq 0) {
         'BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md',
         'FINAL_RESTORE_PROOF',
         'FINAL_CONCURRENCY_PROOF',
+        'REALTIME_OWN_EVENT_SAFETY_2026_06_04.md',
         'STARTUP_REPAIR_SAFETY_2026_06_03.md',
         'INSTALLATION_DOCS_SAFETY_2026_06_03.md',
         'KNOWN_LIMITATIONS_SAFETY_2026_06_03.md',
@@ -179,6 +182,7 @@ if ($failures.Count -eq 0) {
         'scripts/validate_lan_loadtest_safety.ps1',
         'scripts/validate_known_limitations_safety.ps1',
         'scripts/validate_maintenance_mode_safety.ps1',
+        'scripts/validate_realtime_own_event_safety.ps1',
         'scripts/validate_permission_audit_safety.ps1',
         'scripts/validate_rate_limit_safety.ps1',
         'scripts/validate_operations_objective_audit.ps1',
@@ -218,6 +222,7 @@ if ($failures.Count -eq 0) {
         'validate_handoff_guard_coverage.ps1',
         'validate_offline_release_staging_safety.ps1',
         'validate_lan_loadtest_safety.ps1',
+        'validate_realtime_own_event_safety.ps1',
         'validate_backup_startup_current_user_safety.ps1',
         'validate_restore_windows_safety.ps1',
         'validate_first_level_support_safety.ps1',

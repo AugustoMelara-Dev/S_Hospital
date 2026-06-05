@@ -60,6 +60,7 @@ $installationDocsSafetyScript = Join-Path $scriptsDir "validate_installation_doc
 $helpScreenSafetyScript = Join-Path $scriptsDir "validate_help_screen_safety.ps1"
 $systemDiagnosticsSafetyScript = Join-Path $scriptsDir "validate_system_diagnostics_safety.ps1"
 $doubleActionSafetyScript = Join-Path $scriptsDir "validate_double_action_safety.ps1"
+$realtimeOwnEventSafetyScript = Join-Path $scriptsDir "validate_realtime_own_event_safety.ps1"
 $installerLegacySafetyScript = Join-Path $scriptsDir "validate_installer_legacy_safety.ps1"
 $lanRecoverySafetyScript = Join-Path $scriptsDir "validate_lan_recovery_safety.ps1"
 $lanLoadtestSafetyScript = Join-Path $scriptsDir "validate_lan_loadtest_safety.ps1"
@@ -480,6 +481,18 @@ function Invoke-DoubleActionSafetyGuard {
     }
 }
 
+function Invoke-RealtimeOwnEventSafetyGuard {
+    Write-Section "Realtime own-event safety validation"
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $realtimeOwnEventSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
 function Invoke-InstallerLegacySafetyGuard {
     Write-Section "Installer legacy safety validation"
     $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installerLegacySafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
@@ -683,6 +696,8 @@ function Write-HandoffReport(
     [int] $systemDiagnosticsSafetyExit,
     [string[]] $doubleActionSafetyOutput,
     [int] $doubleActionSafetyExit,
+    [string[]] $realtimeOwnEventSafetyOutput,
+    [int] $realtimeOwnEventSafetyExit,
     [string[]] $installerLegacySafetyOutput,
     [int] $installerLegacySafetyExit,
     [string[]] $lanRecoverySafetyOutput,
@@ -748,6 +763,7 @@ function Write-HandoffReport(
         $helpScreenSafetyExit,
         $systemDiagnosticsSafetyExit,
         $doubleActionSafetyExit,
+        $realtimeOwnEventSafetyExit,
         $installerLegacySafetyExit,
         $lanRecoverySafetyExit,
         $lanLoadtestSafetyExit,
@@ -803,6 +819,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Help screen safety guard exit code: $helpScreenSafetyExit"
     Add-ReportLine $lines "- System diagnostics safety guard exit code: $systemDiagnosticsSafetyExit"
     Add-ReportLine $lines "- Double-action safety guard exit code: $doubleActionSafetyExit"
+    Add-ReportLine $lines "- Realtime own-event safety guard exit code: $realtimeOwnEventSafetyExit"
     Add-ReportLine $lines "- Installer legacy safety guard exit code: $installerLegacySafetyExit"
     Add-ReportLine $lines "- LAN recovery safety guard exit code: $lanRecoverySafetyExit"
     Add-ReportLine $lines "- LAN loadtest safety guard exit code: $lanLoadtestSafetyExit"
@@ -904,6 +921,9 @@ function Write-HandoffReport(
     if ($doubleActionSafetyExit -ne 0) {
         Add-ReportLine $lines "- Double-action safety validation returned exit code $doubleActionSafetyExit."
     }
+    if ($realtimeOwnEventSafetyExit -ne 0) {
+        Add-ReportLine $lines "- Realtime own-event safety validation returned exit code $realtimeOwnEventSafetyExit."
+    }
     if ($installerLegacySafetyExit -ne 0) {
         Add-ReportLine $lines "- Installer legacy safety validation returned exit code $installerLegacySafetyExit."
     }
@@ -977,7 +997,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '- Browser smoke screenshots: `qa/browser-smoke-2026-06-03/rc-e2e-mocked-report.json` and `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md`.'
     Add-ReportLine $lines '- System diagnostics and Help/support guards: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`, `qa/FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md`.'
     Add-ReportLine $lines '- Backup worker, current-user startup and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.'
-    Add-ReportLine $lines '- Concurrency and double-action evidence: `qa/FINAL_CONCURRENCY_PROOF.md` and `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md`.'
+    Add-ReportLine $lines '- Concurrency, double-action and realtime own-event evidence: `qa/FINAL_CONCURRENCY_PROOF.md`, `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md` and `qa/REALTIME_OWN_EVENT_SAFETY_2026_06_04.md`.'
     Add-ReportLine $lines '- Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/LAN_LOADTEST_SAFETY_2026_06_04.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.'
     Add-ReportLine $lines '- New invoice maintainability guard: `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` and `scripts/validate_new_invoice_maintainability.ps1` preserve a short cashier-facing invoice flow.'
     Add-ReportLine $lines '- Operator and training evidence: `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md`, `qa/TRAINING_SAFETY_2026_06_03.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md` and `qa/TRAINING_ACCEPTANCE_PROOF.md`.'
@@ -997,7 +1017,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '- In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.'
     Add-ReportLine $lines '- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/restore_hospital_windows.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/install_backup_startup_current_user.ps1`, `scripts/start_backup_automation.cmd`, `scripts/run_backup_scheduler_loop.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.'
-    Add-ReportLine $lines '- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_backup_startup_current_user_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_support_packet_safety.ps1`, `scripts/validate_first_level_support_safety.ps1`, `scripts/validate_production_ready_gate_safety.ps1`, `scripts/validate_final_field_blockers_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_lan_loadtest_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_production_license_salt_guard.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.'
+    Add-ReportLine $lines '- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_backup_startup_current_user_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_support_packet_safety.ps1`, `scripts/validate_first_level_support_safety.ps1`, `scripts/validate_production_ready_gate_safety.ps1`, `scripts/validate_final_field_blockers_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_realtime_own_event_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_lan_loadtest_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_production_license_salt_guard.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.'
     Add-ReportLine $lines '- Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.'
     Add-ReportLine $lines ""
 
@@ -1047,6 +1067,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_help_screen_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_system_diagnostics_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_double_action_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_realtime_own_event_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installer_legacy_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_recovery_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_loadtest_safety.ps1"
@@ -1307,6 +1328,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
+    Add-ReportLine $lines "## Realtime own-event safety validation output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $realtimeOwnEventSafetyOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
     Add-ReportLine $lines "## Installer legacy safety validation output"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
@@ -1451,6 +1481,7 @@ Assert-ScriptExists $installationDocsSafetyScript
 Assert-ScriptExists $helpScreenSafetyScript
 Assert-ScriptExists $systemDiagnosticsSafetyScript
 Assert-ScriptExists $doubleActionSafetyScript
+Assert-ScriptExists $realtimeOwnEventSafetyScript
 Assert-ScriptExists $installerLegacySafetyScript
 Assert-ScriptExists $lanRecoverySafetyScript
 Assert-ScriptExists $lanLoadtestSafetyScript
@@ -1534,6 +1565,7 @@ $installationDocsSafety = Invoke-InstallationDocsSafetyGuard
 $helpScreenSafety = Invoke-HelpScreenSafetyGuard
 $systemDiagnosticsSafety = Invoke-SystemDiagnosticsSafetyGuard
 $doubleActionSafety = Invoke-DoubleActionSafetyGuard
+$realtimeOwnEventSafety = Invoke-RealtimeOwnEventSafetyGuard
 $installerLegacySafety = Invoke-InstallerLegacySafetyGuard
 $lanRecoverySafety = Invoke-LanRecoverySafetyGuard
 $lanLoadtestSafety = Invoke-LanLoadtestSafetyGuard
@@ -1595,6 +1627,8 @@ if ($SkipPreflight) {
         -systemDiagnosticsSafetyExit $systemDiagnosticsSafety.ExitCode `
         -doubleActionSafetyOutput $doubleActionSafety.Output `
         -doubleActionSafetyExit $doubleActionSafety.ExitCode `
+        -realtimeOwnEventSafetyOutput $realtimeOwnEventSafety.Output `
+        -realtimeOwnEventSafetyExit $realtimeOwnEventSafety.ExitCode `
         -installerLegacySafetyOutput $installerLegacySafety.Output `
         -installerLegacySafetyExit $installerLegacySafety.ExitCode `
         -lanRecoverySafetyOutput $lanRecoverySafety.Output `
@@ -1681,6 +1715,8 @@ if ($SkipPreflight) {
         -systemDiagnosticsSafetyExit $systemDiagnosticsSafety.ExitCode `
         -doubleActionSafetyOutput $doubleActionSafety.Output `
         -doubleActionSafetyExit $doubleActionSafety.ExitCode `
+        -realtimeOwnEventSafetyOutput $realtimeOwnEventSafety.Output `
+        -realtimeOwnEventSafetyExit $realtimeOwnEventSafety.ExitCode `
         -installerLegacySafetyOutput $installerLegacySafety.Output `
         -installerLegacySafetyExit $installerLegacySafety.ExitCode `
         -lanRecoverySafetyOutput $lanRecoverySafety.Output `
@@ -1772,6 +1808,8 @@ Write-HandoffReport `
     -systemDiagnosticsSafetyExit $systemDiagnosticsSafety.ExitCode `
     -doubleActionSafetyOutput $doubleActionSafety.Output `
     -doubleActionSafetyExit $doubleActionSafety.ExitCode `
+    -realtimeOwnEventSafetyOutput $realtimeOwnEventSafety.Output `
+    -realtimeOwnEventSafetyExit $realtimeOwnEventSafety.ExitCode `
     -installerLegacySafetyOutput $installerLegacySafety.Output `
     -installerLegacySafetyExit $installerLegacySafety.ExitCode `
     -lanRecoverySafetyOutput $lanRecoverySafety.Output `
@@ -1858,6 +1896,8 @@ Write-HandoffReport `
     -systemDiagnosticsSafetyExit $systemDiagnosticsSafety.ExitCode `
     -doubleActionSafetyOutput $doubleActionSafety.Output `
     -doubleActionSafetyExit $doubleActionSafety.ExitCode `
+    -realtimeOwnEventSafetyOutput $realtimeOwnEventSafety.Output `
+    -realtimeOwnEventSafetyExit $realtimeOwnEventSafety.ExitCode `
     -installerLegacySafetyOutput $installerLegacySafety.Output `
     -installerLegacySafetyExit $installerLegacySafety.ExitCode `
     -lanRecoverySafetyOutput $lanRecoverySafety.Output `
@@ -1921,6 +1961,7 @@ $allFinalAutomatedGuardsPassed = Test-GuardExitCodesPassed @(
     $helpScreenSafety.ExitCode,
     $systemDiagnosticsSafety.ExitCode,
     $doubleActionSafety.ExitCode,
+    $realtimeOwnEventSafety.ExitCode,
     $installerLegacySafety.ExitCode,
     $lanRecoverySafety.ExitCode,
     $lanLoadtestSafety.ExitCode,
@@ -1999,6 +2040,9 @@ if ($systemDiagnosticsSafety.ExitCode -ne 0) {
 }
 if ($doubleActionSafety.ExitCode -ne 0) {
     exit $doubleActionSafety.ExitCode
+}
+if ($realtimeOwnEventSafety.ExitCode -ne 0) {
+    exit $realtimeOwnEventSafety.ExitCode
 }
 if ($installerLegacySafety.ExitCode -ne 0) {
     exit $installerLegacySafety.ExitCode
