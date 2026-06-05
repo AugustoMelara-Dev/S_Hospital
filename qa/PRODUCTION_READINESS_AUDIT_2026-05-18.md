@@ -42,7 +42,7 @@ las pruebas fisicas y operativas.
 
 5. Admin real:
    - Crear admin con `php artisan auth:create-initial-admin`.
-   - No usar seeders demo ni usuarios demo en produccion.
+   - No usar seeders ni usuarios de validacion temporal en produccion.
 
 ## Preflight expectations
 

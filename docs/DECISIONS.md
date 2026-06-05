@@ -3479,3 +3479,8 @@ Criterio de verificacion: HelpView.test y validate_help_screen_safety.ps1 cubren
 Contexto: manuales de cajero/supervisor/administrador e indice de operador son superficies para personal no tecnico y aun usaban worker/trabajos/soporte tecnico.
 Decision: manuales normales usan soporte local, administrador del sistema, automatizacion de respaldos, respaldos pendientes/con error. La guia tecnica puede conservar detalles internos para soporte.
 Criterio de verificacion: validate_operator_manuals_safety.ps1 bloquea worker/cola/trabajos/soporte tecnico/responsable tecnico/comandos tecnicos en manuales normales.
+
+## 2026-06-05 - Documentos fuente sin lenguaje comercial de demo
+Contexto: algunos planes y reportes QA fuente aun describian el sistema como demo vendible, demo premium o con credenciales/seeders demo, aunque la entrega debe ser institucional.
+Decision: documentos de producto y QA actuales usan validacion institucional, validacion local, nucleo operativo y credenciales/seeders de validacion temporal. El tipo frontend de readiness ya no declara DEMO_READY.
+Criterio de verificacion: check-branding.ps1 cubre estos documentos fuente y frontend/src/lib/api/types.ts contra DEMO_READY, demo vendible, demo premium, demo tecnica, credenciales demo, seeders demo y producto vendible.

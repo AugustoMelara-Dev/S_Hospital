@@ -566,7 +566,7 @@ export type SystemStatus = {
     pending_migrations: string[];
   };
   readiness: {
-    state: 'DEMO_READY' | 'PRODUCTION_CANDIDATE' | 'PRODUCTION_READY';
+    state: 'LOCAL_VALIDATION_READY' | 'PRODUCTION_CANDIDATE' | 'PRODUCTION_READY';
     production_ready: boolean;
     blockers: Array<{
       code: string;

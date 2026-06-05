@@ -5,7 +5,7 @@ Entorno: Windows local en `C:\Projects\S_Hospital`, Laravel servido en `http://1
 
 ## Estado oficial
 
-- DEMO_READY: si.
+- LOCAL_VALIDATION_READY: si.
 - PRODUCTION_CANDIDATE: si.
 - PRODUCTION_READY: no.
 
@@ -81,7 +81,7 @@ HOSPITAL_VALIDATE_REAL_MYSQL=1 \
 HOSPITAL_CONCURRENCY_BASE_URL=http://192.168.1.7:8000 \
 HOSPITAL_CONCURRENCY_TARGET_ENV=local \
 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://192.168.1.7:8000 \
-HOSPITAL_ALLOW_DEMO_VALIDATION=1 \
+HOSPITAL_ALLOW_LOCAL_VALIDATION=1 \
 scripts/validate_mysql_concurrency.sh
 ```
 
@@ -190,7 +190,7 @@ Antes de entregar como produccion:
 - Configurar `APP_ENV=production`.
 - Configurar `APP_DEBUG=false`.
 - Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no pasar la contrasena como argumento CLI.
-- No ejecutar seeders demo.
+- No ejecutar seeders de validacion temporal.
 - Ejecutar migraciones aprobadas sin `migrate:fresh`.
 - Ejecutar `php artisan config:cache --no-ansi`.
 - Validar `php artisan route:list`.
@@ -200,7 +200,7 @@ Antes de entregar como produccion:
 
 Fase 11 eleva la evidencia tecnica de campo, pero el sistema queda:
 
-- DEMO_READY: si.
+- LOCAL_VALIDATION_READY: si.
 - PRODUCTION_CANDIDATE: si.
 - PRODUCTION_READY: no.
 

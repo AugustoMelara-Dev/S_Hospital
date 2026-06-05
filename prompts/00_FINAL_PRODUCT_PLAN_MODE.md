@@ -32,7 +32,7 @@ Divide Fase 12 en:
 - 12B POS Billing UX profesional.
 - 12C Catalogo + barcode/QR/scan_code.
 - 12D Reportes avanzados.
-- 12E QA UX final y demo premium.
+- 12E QA UX final e institucional.
 
 Para cada fase incluye alcance, archivos esperados, migraciones, pruebas, riesgos, criterios de aceptacion y commit sugerido.
 

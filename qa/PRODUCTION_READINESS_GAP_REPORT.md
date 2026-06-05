@@ -16,7 +16,7 @@ No declarar `PRODUCTION_READY` hasta cerrar todos los bloqueantes de entorno y h
 |---|---|---|---|
 | Cliente LAN fisico | PENDING_LAN_CLIENT_VALIDATION | Rutas por IP validadas desde servidor; operador mostro login cargando por IP, pero falta checklist completo desde otra PC | Probar desde cliente real `/up`, `/login`, `/verify-email`, assets, login, caja, factura, pago, recibo, historial, reportes y backup pending |
 | Impresora institucional fisica | PENDING_HARDWARE_VALIDATION | UI/recibo media carta/carta/A5/80mm/58mm y E2E local existen; no hay impresion fisica documentada | Probar media carta, carta, A5, 80mm y 58mm con escala 100%, margenes minimos y reimpresion desde historial |
-| Configuracion production real | PENDING_ENVIRONMENT_VALIDATION | `.env` actual es local/debug para validacion | Cambiar en servidor final a `APP_ENV=production`, `APP_DEBUG=false`, admin real, sin seeders demo, `config:cache` |
+| Configuracion production real | PENDING_ENVIRONMENT_VALIDATION | `.env` actual es local/debug para validacion | Cambiar en servidor final a `APP_ENV=production`, `APP_DEBUG=false`, admin real, sin seeders de validacion temporal, `config:cache` |
 | Worker continuo de backups | PENDING_ENVIRONMENT_VALIDATION | Worker `--once` proceso job; restore con PATH de XAMPP genero backup success | Crear tarea/servicio Windows con PATH correcto para `mysqldump`/`mariadb-dump` |
 | CORS/Sanctum LAN final | PENDING_ENVIRONMENT_VALIDATION | Validado localmente con host de desarrollo; falta IP/dominio final | Configurar `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` y CORS con IP fija/dominio LAN real |
 | Preflight final ejecutable | READY_TO_RUN | `scripts/production_readiness_preflight.ps1` verifica env production, build, rutas, herramientas de dump, backup writable y pruebas fisicas documentadas obligatorias por defecto | Ejecutarlo en el servidor final sin override de evidencia fisica |
@@ -35,7 +35,7 @@ No declarar `PRODUCTION_READY` hasta cerrar todos los bloqueantes de entorno y h
 
 - Sin cliente LAN fisico completo, podria haber firewall, DNS local, cache de navegador o ruta de assets fallando en cajas reales.
 - Sin impresora fisica, el recibo puede salir con escala incorrecta o como hoja carta.
-- Sin `APP_ENV=production` y admin real, se corre riesgo de entregar credenciales demo o debug activo.
+- Sin `APP_ENV=production` y admin real, se corre riesgo de entregar credenciales temporales o debug activo.
 - Sin worker continuo y PATH de dump correcto, backups manuales desde UI pueden quedarse en `pending` o `failed`.
 
 ## Acciones para pasar a PRODUCTION_READY

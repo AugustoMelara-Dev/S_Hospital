@@ -52,10 +52,17 @@ $visibleReceiptPaperForbidden = @(
 $deliveryReleaseForbidden = @(
     ($demoWord + '_READY'),
     ($demoWord + ' vendible'),
+    ($demoWord + ' premium'),
+    ($demoWord + ' tecnica'),
+    ($demoWord + ' tÃ©cnica'),
     ($demoWord + ' credentials'),
     ($demoWord + ' users'),
+    ('credenciales ' + $demoWord),
     ('seeders ' + $demoWord),
+    ('datos ' + $demoWord),
     ('usuarios ' + $demoWord),
+    ('parece ' + $demoWord),
+    ('para ' + $demoWord),
     'producto vendible',
     'vendible',
     'ticket termico',
@@ -185,11 +192,25 @@ try {
         -Patterns $deliveryReleaseForbidden `
         -Paths @(
             'docs/KNOWN_LIMITATIONS.md',
+            'docs/00_EXECUTIVE_RESET.md',
+            'docs/01_FINAL_PRODUCT_REQUIREMENTS.md',
+            'docs/02_UI_ARCHITECTURE.md',
+            'docs/07_FINAL_PHASES_ROADMAP.md',
+            'docs/09_FINAL_EXECUTION_PACK_INDEX.md',
+            'docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md',
+            'docs/API_CONTRACTS.md',
+            'docs/PERMISSIONS_MATRIX.md',
             'docs/RELEASE_CHECKLIST.md',
             'docs/TRAINING_ADMIN.md',
             'docs/TRAINING_CAJERO.md',
             'docs/manuales',
             'prompts',
+            'frontend/src/lib/api/types.ts',
+            'qa/AREAS_DE_MEJORA_CONSIDERADAS_2026-05-19.md',
+            'qa/FIELD_DEPLOYMENT_VALIDATION.md',
+            'qa/PRODUCTION_READINESS_AUDIT_2026-05-18.md',
+            'qa/PRODUCTION_READINESS_GAP_REPORT.md',
+            'qa/UX_UI_AUDIT_LIVE_2026-05-21.md',
             'qa/RELEASE_READINESS.md'
         )
 

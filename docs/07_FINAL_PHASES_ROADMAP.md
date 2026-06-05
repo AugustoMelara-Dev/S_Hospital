@@ -52,16 +52,16 @@ Alcance:
 
 Criterio:
 
-- Reportes sirven para gerencia, no solo para demo.
+- Reportes sirven para gerencia, no solo para validacion guiada.
 
-## 12E QA UX final y demo premium
+## 12E QA UX final e institucional
 
 Alcance:
 
 - Smoke de navegacion.
 - Flujo crear factura, cobrar, imprimir, reimprimir, anular y reportar.
 - Validacion visual contra criterios de bloqueo.
-- Demo script final.
+- Guion de validacion final.
 
 Criterio:
 

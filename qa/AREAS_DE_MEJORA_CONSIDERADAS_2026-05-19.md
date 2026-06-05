@@ -5,7 +5,7 @@ Alcance: consolidar las areas de mejora consideradas para el estado actual de `C
 
 ## Resumen ejecutivo
 
-El sistema esta en estado `PRODUCTION_CANDIDATE`: puede presentarse como demo vendible local/controlada, pero no debe declararse `PRODUCTION_READY` hasta cerrar evidencia fisica y operativa de campo.
+El sistema esta en estado `PRODUCTION_CANDIDATE`: puede presentarse en validacion institucional local/controlada, pero no debe declararse `PRODUCTION_READY` hasta cerrar evidencia fisica y operativa de campo.
 
 Actualizacion de cierre repo-local:
 
@@ -24,13 +24,13 @@ Las mejoras consideradas se agrupan en tres niveles:
 2. Mejoras de robustez operativa: automatizacion de respaldo, repeticion de restore/concurrencia en servidor final, smoke real, diagnostico visible y hardening de permisos.
 3. Mejoras futuras no bloqueantes: analisis estatico adicional, accesibilidad avanzada, exportaciones mas completas, manuales de entrenamiento y observabilidad local mas profunda.
 
-No se recomienda abrir modulos clinicos, inventario, cloud sync, restore UI destructivo ni PDF avanzado como parte del cierre actual. Esas areas aumentarian riesgo y desviarian el producto de su core vendible: facturacion, caja, pagos, recibos, historial, reportes y backups locales.
+No se recomienda abrir modulos clinicos, inventario, cloud sync, restore UI destructivo ni PDF avanzado como parte del cierre actual. Esas areas aumentarian riesgo y desviarian el producto de su nucleo operativo: facturacion, caja, pagos, recibos, historial, reportes y backups locales.
 
 ## Estado actual documentado
 
 | Dimension | Estado | Lectura operativa |
 |---|---|---|
-| Demo local | `DEMO_READY` | El flujo vendible local esta cubierto: login, caja, factura, eritropoyetina, cobro, recibo, historial, reimpresion, reportes y backup local. |
+| Validacion local | `LOCAL_VALIDATION_READY` | El flujo operativo local esta cubierto: login, caja, factura, eritropoyetina, cobro, recibo, historial, reimpresion, reportes y backup local. |
 | Candidato a produccion | `PRODUCTION_CANDIDATE` | Codigo, gates, scripts y runbooks estan listos para instalar y validar en servidor final. |
 | Produccion real | `NO PRODUCTION_READY` | Falta evidencia de segunda PC LAN, impresora fisica media carta/carta/A5/80mm/58mm y cierre completo del entorno production final. |
 | Worktree | Limpio al momento del reporte | `git status --short` no mostro cambios antes de crear este documento. |
@@ -87,7 +87,7 @@ Criterio de aceptacion:
 
 Riesgo si no se cierra:
 
-- La demo puede funcionar en navegador, pero la operacion real de caja falla en el punto mas visible: entregar comprobante.
+- La validacion en navegador puede funcionar, pero la operacion real de caja falla en el punto mas visible: entregar comprobante.
 
 ### 3. Entorno final de produccion
 
@@ -104,18 +104,18 @@ Mejora considerada:
 - Confirmar `.env` final fuera de Git.
 - Configurar `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` y CORS con IP fija o dominio LAN final.
 - Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no pasar la contrasena como argumento CLI.
-- No ejecutar seeders demo ni `migrate:fresh` en servidor real.
+- No ejecutar seeders de validacion temporal ni `migrate:fresh` en servidor real.
 - Ejecutar `php artisan migrate --force` solo con backup previo y migraciones aprobadas.
 
 Criterio de aceptacion:
 
 - Preflight final sin bypass.
 - Admin real creado y cambio de password obligatorio donde aplique.
-- No hay credenciales demo ni debug activo.
+- No hay credenciales de validacion temporal ni debug activo.
 
 Riesgo si no se cierra:
 
-- Exposicion de debug, credenciales demo, sesiones rotas por Sanctum/CORS o entregas que parecen produccion sin serlo.
+- Exposicion de debug, credenciales de validacion temporal, sesiones rotas por Sanctum/CORS o entregas que parecen produccion sin serlo.
 
 ### 4. Worker continuo y automatizacion de backups
 
@@ -259,7 +259,7 @@ Mejora considerada:
 
 - Mantener `npm.cmd` en Windows para evitar bloqueo de `npm.ps1`.
 - Ejecutar gates antes de push a main: `php artisan test --colors=never`, `npm run build`, `php artisan config:cache`.
-- Repetir smoke real con credenciales reales de demo/produccion controlada.
+- Repetir smoke real con credenciales temporales autorizadas o de produccion controlada.
 - Registrar evidencia de cada cierre en `qa/`.
 
 Criterio de aceptacion:
@@ -269,7 +269,7 @@ Criterio de aceptacion:
 
 Riesgo si no se disciplina:
 
-- El equipo puede confundir demo mockeada con produccion real validada.
+- El equipo puede confundir validacion mockeada con produccion real validada.
 
 ### 10. Observabilidad local y soporte
 
@@ -299,7 +299,7 @@ Prioridad: P2.
 
 Estado actual:
 
-- Hay checklist, demo script, install summary, backup/restore y docs de limitaciones.
+- Hay checklist, guion de validacion, install summary, backup/restore y docs de limitaciones.
 
 Mejora considerada:
 
@@ -364,8 +364,8 @@ El sistema solo debe pasar a `PRODUCTION_READY` cuando existan estas evidencias:
 - `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` completo, sin placeholders, con impresora fisica media carta/carta/A5/80mm/58mm.
 - `scripts/production_readiness_preflight.ps1` ejecutado sin bypass y con salida aprobada.
 - Backup worker continuo activo y backup manual validado desde UI.
-- Entorno final con `APP_ENV=production`, `APP_DEBUG=false`, admin real, `config:cache`, CORS/Sanctum LAN final y sin seeders demo.
+- Entorno final con `APP_ENV=production`, `APP_DEBUG=false`, admin real, `config:cache`, CORS/Sanctum LAN final y sin seeders de validacion temporal.
 
 Hasta entonces, la forma honesta de presentarlo es:
 
-> Sistema listo para demo vendible y candidato de produccion local. No es `PRODUCTION_READY` hasta completar la validacion fisica de LAN, impresora y entorno final.
+> Sistema listo para validacion institucional y candidato de produccion local. No es `PRODUCTION_READY` hasta completar la validacion fisica de LAN, impresora y entorno final.

@@ -79,7 +79,7 @@ Reportes tecnicos de captura:
 
 ## Riesgos restantes
 
-- La sesion del navegador compilado rechazo luego las credenciales demo disponibles; no se modificaron contrasenas ni datos de acceso para evitar tocar estado sensible.
+- La sesion del navegador compilado rechazo luego las credenciales de validacion disponibles; no se modificaron contrasenas ni datos de acceso para evitar tocar estado sensible.
 - La recaptura autenticada post-dashboard no pudo completarse en esta pasada: Browser integrado fallo al escribir en login por portapapeles virtual y la validacion Playwright local requirio permisos que el entorno rechazo por limite de uso. Queda pendiente recapturar `dashboard-clean-shell.png` y menu de usuario cuando el entorno permita automatizacion autenticada.
 - Existen respaldos pendientes anteriores en la base de datos de desarrollo. El cambio evita que nuevos respaldos manuales queden pendientes, pero los registros viejos siguen como evidencia historica.
 - La auditoria visual aun no esta cerrada como objetivo final: falta fase de rediseño sistematico por modulos, QA responsive, accesibilidad con teclado y limpieza de textos tecnicos en reportes/exportaciones backend.

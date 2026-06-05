@@ -270,4 +270,4 @@ Los filtros tecnicos `cash_session_id`, `user_id`, `category_id` y `area_id` sol
 | POST | `/api/backups` | `backups.create` | `{}` | Backup manual registrado en cola local | Responde `202` con `status=pending`; el worker local ejecuta el dump y actualiza `success/failed`. |
 | GET | `/api/backups/{id}/download` | `backups.download` | N/A | Archivo backup | Proteger acceso. |
 
-Restore no se expone como accion web en la primera version vendible. Debe documentarse en `docs/BACKUP_RESTORE.md` para evitar restauraciones accidentales desde UI.
+Restore no se expone como accion web en la primera version institucional. Debe documentarse en `docs/BACKUP_RESTORE.md` para evitar restauraciones accidentales desde UI.

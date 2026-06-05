@@ -2,7 +2,7 @@
 
 ## Principio
 
-La arquitectura visual debe comunicar sistema de caja hospitalaria, no demo tecnica. El usuario debe entrar y entender donde esta: Nueva factura, Caja, Catalogo, Historial, Reportes, Backups o Configuracion.
+La arquitectura visual debe comunicar sistema de caja hospitalaria, no prototipo tecnico. El usuario debe entrar y entender donde esta: Nueva factura, Caja, Catalogo, Historial, Reportes, Backups o Configuracion.
 
 ## App shell
 

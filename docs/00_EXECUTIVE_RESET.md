@@ -18,7 +18,7 @@ Fase 12 reconstruye la experiencia visible como aplicacion profesional:
 - POS de facturacion rapido, no formulario administrativo.
 - Catalogo administrable por categorias, servicios, estado y codigos de escaneo.
 - Reportes avanzados con metricas, filtros, tablas y exportaciones.
-- QA visual y funcional de demo premium.
+- QA visual y funcional institucional.
 
 ## Modulos obligatorios
 
@@ -33,4 +33,4 @@ Fase 12 reconstruye la experiencia visible como aplicacion profesional:
 
 ## Criterio ejecutivo
 
-Si el sistema sigue pareciendo demo tecnica, queda bloqueado aunque las pruebas de backend pasen.
+Si el sistema sigue pareciendo prototipo tecnico, queda bloqueado aunque las pruebas de backend pasen.

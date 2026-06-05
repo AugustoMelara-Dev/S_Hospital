@@ -6,7 +6,7 @@ Fecha: 2026-05-17
 
 El sistema esta tecnicamente avanzado: backend, auth, roles, catalogo, facturacion, caja, pagos, recibos, historial, reportes, backups y validaciones ya existen.
 
-La UX/UI sigue bloqueada como producto vendible. El problema no es solo compilar: el producto debe sentirse como sistema hospitalario profesional de caja. Una sola experiencia larga o pantallas con controles manuales inconsistentes quedan prohibidas para cierre final.
+La UX/UI sigue bloqueada como producto institucional. El problema no es solo compilar: el producto debe sentirse como sistema hospitalario profesional de caja. Una sola experiencia larga o pantallas con controles manuales inconsistentes quedan prohibidas para cierre final.
 
 La revision con seis roles queda en estado **BLOQUEADO**. No se debe declarar Fase 12 terminada hasta cerrar los bloqueos de seguridad, AppShell, POS/caja, arquitectura visual, reportes y QA.
 

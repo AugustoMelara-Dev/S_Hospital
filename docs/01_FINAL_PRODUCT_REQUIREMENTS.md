@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Convertir el sistema funcional actual en un producto hospitalario local, profesional y vendible. El sistema debe seguir funcionando offline en LAN y no debe depender de SaaS obligatorios para login, facturacion, reportes o impresion.
+Convertir el sistema funcional actual en un producto hospitalario local, profesional e institucional. El sistema debe seguir funcionando offline en LAN y no debe depender de SaaS obligatorios para login, facturacion, reportes o impresion.
 
 ## Requerimientos UX globales
 

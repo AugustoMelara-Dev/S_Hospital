@@ -8,7 +8,7 @@ No es cierto que el sistema actual este literalmente en una sola pagina: el repo
 
 ## Objetivo de esta fase final
 
-Convertir el sistema de un core tecnico funcional a un producto vendible, demostrable y operable en caja hospitalaria local.
+Convertir el sistema de un core tecnico funcional a un producto institucional, verificable y operable en caja hospitalaria local.
 
 El backend de facturacion, caja, pagos, historial, recibos, backups y reglas fiscales debe conservarse como fuente de verdad. La fase final reorganiza la experiencia visible, completa reportes avanzados, formaliza scanner/codigos y deja QA de entrega.
 
@@ -43,7 +43,7 @@ Alcance:
 
 Criterio:
 
-- La app deja de sentirse como demo tecnica.
+- La app deja de sentirse como prototipo tecnico.
 
 ### 12B POS de facturacion
 
@@ -79,7 +79,7 @@ Alcance:
 
 Criterio:
 
-- Reportes sirven para administracion real, no solo para demo.
+- Reportes sirven para administracion real, no solo para validacion guiada.
 
 ### 12E QA final y entrega
 
