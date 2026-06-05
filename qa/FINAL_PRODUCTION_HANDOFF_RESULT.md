@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-04 22:12:08
+- Generated at: 2026-06-04 22:20:43
 - Base URL: http://192.168.1.10:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -9,6 +9,7 @@
 - Final restore proof present without obvious placeholders: True
 - Final concurrency proof present without obvious placeholders: True
 - Supervised training acceptance proof present without obvious placeholders: False
+- Backup scheduled tasks ready in status output: False
 - LAN client proof file: `qa/LAN_CLIENT_VALIDATION_PROOF.md`
 - Institutional receipt print proof file: `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`
 - Final restore proof file: `qa/FINAL_RESTORE_PROOF.md`
@@ -63,6 +64,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 - Missing or incomplete `qa/LAN_CLIENT_VALIDATION_PROOF.md` from a real second LAN client.
 - Missing or incomplete `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` from the real cashier printer.
 - Missing or incomplete `qa/TRAINING_ACCEPTANCE_PROOF.md` from supervised role training in a safe practice environment.
+- Install or update Windows scheduled backup tasks `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup`, then confirm a manual UI backup moves from pending to success.
 - Preflight was skipped in this handoff run.
 
 ## Evidence completed in this hardening front
@@ -314,7 +316,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[ OK ] MANIFEST.txt references current commit 0c57fc11
+[ OK ] MANIFEST.txt references current commit f6a9129d
 [ OK ] offline-images contains 4 Docker image tar file(s)
 
 OFFLINE_RELEASE_CLEAN: YES
