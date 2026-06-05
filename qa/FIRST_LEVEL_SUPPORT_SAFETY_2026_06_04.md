@@ -35,8 +35,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_relea
 - Final-field proof live validation remains opt-in through `-IncludeFieldProofs`
   because it may correctly fail until the hospital has real LAN, printer,
   restore and concurrency evidence.
-- The final-field blocker self-test now explicitly preserves 80mm/58mm printer
-  blockers instead of only checking media carta/carta/A5.
+- The final-field blocker self-test explicitly preserves media carta, carta
+  and A5 printer blockers.
 
 ## Safety notes
 
