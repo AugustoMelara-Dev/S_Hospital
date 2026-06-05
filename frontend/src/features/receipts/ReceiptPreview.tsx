@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type React from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { Alert } from '../../components/ui/alert';
-import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import {
   Select,
@@ -226,9 +225,6 @@ function ItemName({ item }: { item: ReceiptData['items'][number] }) {
       {item.category_name ? <small className="category">{item.category_name}</small> : null}
       <span className="name">{item.service_name}</span>
       {Number(item.quantity) !== 1 ? <span className="qty"> x {item.quantity}</span> : null}
-      {item.special_rule_applied ? (
-        <Badge variant="secondary" className="special-rule-badge">Regla</Badge>
-      ) : null}
     </span>
   );
 }

@@ -174,6 +174,32 @@ describe('ReceiptPreview', () => {
     expect(screen.getByText('DIECISIETE LEMPIRAS CON VEINTICINCO CENTAVOS')).toBeInTheDocument();
   });
 
+  it('does not render technical catalog or rule fields on the printed receipt', () => {
+    const receipt = receiptFixture();
+    receipt.items = [
+      {
+        ...receipt.items[0],
+        scan_code: 'SCAN-INTERNO-123',
+        barcode: 'BARCODE-INTERNO-123',
+        qr_code: 'QR-INTERNO-123',
+        special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+        special_rule_applied: true,
+      } as ReceiptData['items'][number],
+    ];
+
+    render(
+      <ReceiptPreview
+        receipt={receipt}
+        onPrint={vi.fn()}
+        onWidthChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText('Recibo institucional').textContent).not.toMatch(
+      /SCAN-INTERNO|BARCODE-INTERNO|QR-INTERNO|ERYTHROPOIETIN|Regla/i,
+    );
+  });
+
   it('allows long receipt row values to wrap instead of overflowing the paper', () => {
     const styles = readFileSync('src/styles.css', 'utf8');
 
@@ -232,7 +258,6 @@ function receiptFixture(): ReceiptData {
         unit_price: '15.00',
         tax_amount: '2.25',
         line_total: '17.25',
-        special_rule_applied: false,
         notes: null,
       },
     ],

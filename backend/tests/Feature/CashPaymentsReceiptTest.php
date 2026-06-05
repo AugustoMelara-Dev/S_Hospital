@@ -823,7 +823,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonCount(1, 'data.payments');
 
         $receiptItem = $receipt->json('data.items.0');
-        foreach (['service_id', 'scan_code', 'barcode', 'qr_code', 'special_rule_code'] as $technicalField) {
+        foreach (['service_id', 'scan_code', 'barcode', 'qr_code', 'special_rule_code', 'special_rule_applied'] as $technicalField) {
             $this->assertArrayNotHasKey($technicalField, $receiptItem);
         }
 
@@ -883,7 +883,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.invoice.total', '0.00')
             ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID)
-            ->assertJsonPath('data.items.0.special_rule_applied', true)
+            ->assertJsonMissingPath('data.items.0.special_rule_applied')
             ->assertJsonCount(1, 'data.payments')
             ->assertJsonPath('data.payments.0.method', Payment::METHOD_OTHER)
             ->assertJsonPath('data.payments.0.amount', '0.00')

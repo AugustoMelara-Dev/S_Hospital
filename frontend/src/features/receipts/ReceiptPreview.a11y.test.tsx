@@ -56,7 +56,6 @@ function buildReceipt(): ReceiptData {
         unit_price: '15.00',
         tax_amount: '2.25',
         line_total: '17.25',
-        special_rule_applied: false,
         notes: null,
       },
     ],

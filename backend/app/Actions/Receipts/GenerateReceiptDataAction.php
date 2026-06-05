@@ -80,7 +80,6 @@ class GenerateReceiptDataAction
                 'unit_price' => $item->unit_price,
                 'tax_amount' => $item->tax_amount,
                 'line_total' => $item->line_total,
-                'special_rule_applied' => $item->special_rule_applied,
                 'notes' => $item->notes,
             ])->values(),
             'payments' => $postedPayments->map(fn ($payment): array => [

@@ -3484,3 +3484,8 @@ Criterio de verificacion: validate_operator_manuals_safety.ps1 bloquea worker/co
 Contexto: algunos planes y reportes QA fuente aun describian el sistema como demo vendible, demo premium o con credenciales/seeders demo, aunque la entrega debe ser institucional.
 Decision: documentos de producto y QA actuales usan validacion institucional, validacion local, nucleo operativo y credenciales/seeders de validacion temporal. El tipo frontend de readiness ya no declara DEMO_READY.
 Criterio de verificacion: check-branding.ps1 cubre estos documentos fuente y frontend/src/lib/api/types.ts contra DEMO_READY, demo vendible, demo premium, demo tecnica, credenciales demo, seeders demo y producto vendible.
+
+## 2026-06-05 - Recibo institucional sin marcas internas de reglas
+Contexto: el recibo impreso podia mostrar una insignia 'Regla' cuando una linea aplicaba una regla especial, aunque el comprobante del paciente no debe exponer codigos ni detalles tecnicos internos.
+Decision: GenerateReceiptDataAction ya no entrega special_rule_applied en items de recibo y ReceiptPreview no renderiza marcas de regla. La auditoria de factura conserva la regla en invoice_items y endpoints operativos donde corresponde.
+Criterio de verificacion: CashPaymentsReceiptTest exige ausencia de scan_code/barcode/qr_code/special_rule_code/special_rule_applied en items de recibo; ReceiptPreview.test simula campos tecnicos historicos y verifica que no se imprimen.
