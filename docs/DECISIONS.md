@@ -3458,3 +3458,11 @@ Contexto: el diagnostico administrativo ya traduce el estado tecnico de colas a 
 Decision: useServerStatus y validate_system_diagnostics_safety.ps1 quedan alineados al lenguaje humano de respaldos. Los contratos tecnicos de queue_size permanecen en tipos/API para soporte, pero la lectura visible protege contra cola/trabajos/queue en pantalla normal.
 
 Criterio de verificacion: useServerStatus.test cubre alertas de respaldos sin terminologia de cola y validate_system_diagnostics_safety.ps1 debe reportar SYSTEM_DIAGNOSTICS_SAFETY: YES.
+
+## 2026-06-05 - Respaldos avanzados sin tareas visibles
+
+Contexto: la pantalla Respaldos es usada por administracion y soporte local. Aunque puede leer datos tecnicos del backend, el detalle visible debe seguir hablando de respaldos, estados y soporte local, no de tareas internas o colas.
+
+Decision: BackupsView cambia el indicador avanzado de tareas con problema a respaldos con error y el mensaje de respaldo fallido a soporte local. El test a11y abre el detalle avanzado y verifica que no aparezcan tareas, trabajos, cola, queue, worker ni SQLSTATE en la lectura visible.
+
+Criterio de verificacion: BackupsView.a11y.test debe pasar y proteger que los estados visibles permanezcan en lenguaje institucional.

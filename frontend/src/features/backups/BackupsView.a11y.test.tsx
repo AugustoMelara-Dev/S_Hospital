@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { BackupsView } from './BackupsView';
 import {
@@ -29,6 +29,24 @@ describe('BackupsView accessibility', () => {
     expect(container.textContent).not.toMatch(/\bworker\b/i);
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  it('keeps advanced backup diagnostics in non-technical language', async () => {
+    vi.spyOn(apiClient, 'getBackups').mockResolvedValue({
+      data: [backupFixture({ status: 'failed', error_message: 'SQLSTATE hidden from UI' })],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getSystemStatus').mockResolvedValue(mockSystemStatus({ failedJobs: 1 }));
+
+    const { container } = render(
+      <BackupsView user={backupsUser()} onStatus={vi.fn()} />,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /ver detalle avanzado/i }));
+
+    expect(await screen.findByText('Respaldos con error')).toBeInTheDocument();
+    expect(screen.getByText('No se completo. Revise con soporte local.')).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/\btareas\b|\btrabajos\b|\bcola\b|\bqueue\b|\bworker\b|SQLSTATE/i);
+  });
 });
 
 function backupsUser(): AuthUser {
@@ -44,7 +62,7 @@ function backupsUser(): AuthUser {
   };
 }
 
-function backupFixture(): BackupLog {
+function backupFixture(overrides: Partial<BackupLog> = {}): BackupLog {
   return {
     id: 1,
     filename: 'hospital-backup-2026-06-01.sql',
@@ -58,10 +76,11 @@ function backupFixture(): BackupLog {
     updated_at: '2026-06-01T08:00:00.000000Z',
     error_message: null,
     creator: { id: 1, name: 'Admin Hospital', username: 'admin' },
+    ...overrides,
   };
 }
 
-function mockSystemStatus(): SystemStatus {
+function mockSystemStatus(options: { failedJobs?: number } = {}): SystemStatus {
   return {
     environment: {
       app_env: 'production',
@@ -106,7 +125,7 @@ function mockSystemStatus(): SystemStatus {
         connection: 'database',
         jobs_table_available: true,
         failed_jobs_table_available: true,
-        failed_jobs_count: 0,
+        failed_jobs_count: options.failedJobs ?? 0,
         pending_backup_jobs: 0,
         worker_command: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
         scheduler_command: 'php artisan schedule:run',

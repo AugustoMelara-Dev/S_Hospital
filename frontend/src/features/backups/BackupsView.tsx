@@ -552,7 +552,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                   </div>
                   <div className="rounded-md border border-border p-3">
                     <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-medium">Tareas con problema</p>
+                      <p className="text-sm font-medium">Respaldos con error</p>
                       <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.backups.queue.failed_jobs_count ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
                         {systemStatus.backups.queue.failed_jobs_count ?? 'Sin dato'}
                       </span>
@@ -754,7 +754,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                         </span>
                         {backup.status === 'failed' && backup.error_message && (
                           <span className="text-xs text-destructive max-w-[200px] truncate">
-                            No se completo. Revise con soporte tecnico.
+                            No se completo. Revise con soporte local.
                           </span>
                         )}
                       </div>
