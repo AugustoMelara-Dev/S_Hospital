@@ -113,6 +113,7 @@ Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
 
 $lanProof = Read-RequiredFile "qa\LAN_CLIENT_VALIDATION_PROOF.md"
 $printerProof = Read-RequiredFile "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md"
+$startupTaskProof = Read-RequiredFile "qa\FINAL_STARTUP_TASK_PROOF.md"
 $backupTaskProof = Read-RequiredFile "qa\FINAL_BACKUP_TASK_PROOF.md"
 $restoreProof = Read-RequiredFile "qa\FINAL_RESTORE_PROOF.md"
 $concurrencyProof = Read-RequiredFile "qa\FINAL_CONCURRENCY_PROOF.md"
@@ -139,6 +140,16 @@ Assert-PendingProof "Institutional receipt print proof" $printerProof @(
     "escala 100%",
     "margenes",
     "encabezados"
+)
+
+Assert-PendingProof "Final startup task proof" $startupTaskProof @(
+    "SistemaCajaHospitalaria-StackAutostart",
+    "AtStartup",
+    "arranque",
+    "reinicio",
+    "/up",
+    "login",
+    "PRODUCTION_CANDIDATE"
 )
 
 Assert-PendingProof "Final backup task proof" $backupTaskProof @(

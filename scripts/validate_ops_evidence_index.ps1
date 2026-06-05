@@ -74,6 +74,7 @@ if ($content -match '(?m)^\s*-\s*Decision:\s*`?PRODUCTION_READY`?\s*$') {
     $requiredPhysicalProofs = @(
         "qa\LAN_CLIENT_VALIDATION_PROOF.md",
         "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md",
+        "qa\FINAL_STARTUP_TASK_PROOF.md",
         "qa\FINAL_RESTORE_PROOF.md",
         "qa\FINAL_BACKUP_TASK_PROOF.md",
         "qa\FINAL_CONCURRENCY_PROOF.md",
@@ -95,10 +96,11 @@ if ($content -match '(?m)^\s*-\s*Decision:\s*`?PRODUCTION_READY`?\s*$') {
 
 if ($content -notmatch '(?i)LAN_CLIENT_VALIDATION_PROOF\.md' -or
     $content -notmatch '(?i)INSTITUTIONAL_RECEIPT_PRINT_PROOF\.md' -or
+    $content -notmatch '(?i)FINAL_STARTUP_TASK_PROOF\.md' -or
     $content -notmatch '(?i)FINAL_BACKUP_TASK_PROOF\.md' -or
     $content -notmatch '(?i)TRAINING_ACCEPTANCE_PROOF\.md' -or
     $content -notmatch '(?i)production_readiness_preflight\.ps1') {
-    Write-Fail "El handoff debe listar la prueba LAN, la prueba de impresora, backup final, la capacitacion supervisada y el preflight final como bloqueantes."
+    Write-Fail "El handoff debe listar la prueba LAN, la prueba de impresora, autoarranque final, backup final, la capacitacion supervisada y el preflight final como bloqueantes."
 }
 
 $references = New-Object System.Collections.Generic.HashSet[string]

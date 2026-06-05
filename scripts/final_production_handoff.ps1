@@ -74,6 +74,7 @@ $newInvoiceMaintainabilityScript = Join-Path $scriptsDir "validate_new_invoice_m
 $finalHandoffCompletenessScript = Join-Path $scriptsDir "validate_final_handoff_completeness.ps1"
 $lanProofPath = Join-Path $qaDir "LAN_CLIENT_VALIDATION_PROOF.md"
 $printerProofPath = Join-Path $qaDir "INSTITUTIONAL_RECEIPT_PRINT_PROOF.md"
+$startupTaskProofPath = Join-Path $qaDir "FINAL_STARTUP_TASK_PROOF.md"
 $restoreProofPath = Join-Path $qaDir "FINAL_RESTORE_PROOF.md"
 $backupTaskProofPath = Join-Path $qaDir "FINAL_BACKUP_TASK_PROOF.md"
 $concurrencyProofPath = Join-Path $qaDir "FINAL_CONCURRENCY_PROOF.md"
@@ -677,6 +678,7 @@ function Write-HandoffReport(
     [string] $path,
     [bool] $lanProofCompleted,
     [bool] $printerProofCompleted,
+    [bool] $startupTaskProofCompleted,
     [bool] $restoreProofCompleted,
     [bool] $backupTaskProofCompleted,
     [bool] $concurrencyProofCompleted,
@@ -762,7 +764,7 @@ function Write-HandoffReport(
 ) {
     $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $lines = New-Object System.Collections.Generic.List[string]
-    $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $backupTaskProofCompleted -and $concurrencyProofCompleted -and $trainingAcceptanceProofCompleted
+    $allProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $startupTaskProofCompleted -and $restoreProofCompleted -and $backupTaskProofCompleted -and $concurrencyProofCompleted -and $trainingAcceptanceProofCompleted
     $backupTasksReady = Test-BackupTasksReady $backupStatusOutput
     $allAutomatedGuardsPassed = Test-GuardExitCodesPassed @(
         $releaseGuardExit,
@@ -813,6 +815,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Decision: $decision"
     Add-ReportLine $lines "- LAN client proof present without obvious placeholders: $lanProofCompleted"
     Add-ReportLine $lines "- Institutional receipt print proof present without obvious placeholders: $printerProofCompleted"
+    Add-ReportLine $lines "- Final startup task proof present without obvious placeholders: $startupTaskProofCompleted"
     Add-ReportLine $lines "- Final restore proof present without obvious placeholders: $restoreProofCompleted"
     Add-ReportLine $lines "- Final backup task proof present without obvious placeholders: $backupTaskProofCompleted"
     Add-ReportLine $lines "- Final concurrency proof present without obvious placeholders: $concurrencyProofCompleted"
@@ -820,6 +823,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Backup scheduled tasks ready in status output: $backupTasksReady"
     Add-ReportLine $lines '- LAN client proof file: `qa/LAN_CLIENT_VALIDATION_PROOF.md`'
     Add-ReportLine $lines '- Institutional receipt print proof file: `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`'
+    Add-ReportLine $lines '- Final startup task proof file: `qa/FINAL_STARTUP_TASK_PROOF.md`'
     Add-ReportLine $lines '- Final restore proof file: `qa/FINAL_RESTORE_PROOF.md`'
     Add-ReportLine $lines '- Final backup task proof file: `qa/FINAL_BACKUP_TASK_PROOF.md`'
     Add-ReportLine $lines '- Final concurrency proof file: `qa/FINAL_CONCURRENCY_PROOF.md`'
@@ -881,6 +885,9 @@ function Write-HandoffReport(
     }
     if (-not $printerProofCompleted) {
         Add-ReportLine $lines '- Missing or incomplete `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` from the real cashier printer.'
+    }
+    if (-not $startupTaskProofCompleted) {
+        Add-ReportLine $lines '- Missing or incomplete `qa/FINAL_STARTUP_TASK_PROOF.md` after installing stack autostart and confirming the server opens `/up` and login after startup.'
     }
     if (-not $restoreProofCompleted) {
         Add-ReportLine $lines '- Missing or incomplete `qa/FINAL_RESTORE_PROOF.md` from a disposable restore database on the final server.'
@@ -1022,7 +1029,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '- Browser smoke screenshots: `qa/browser-smoke-2026-06-03/rc-e2e-mocked-report.json` and `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md`.'
     Add-ReportLine $lines '- System diagnostics and Help/support guards: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`, `qa/FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md`.'
-    Add-ReportLine $lines '- Backup worker, current-user startup, final backup task and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md`, `qa/FINAL_BACKUP_TASK_PROOF.example.md`, `qa/FINAL_BACKUP_TASK_PROOF.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.'
+    Add-ReportLine $lines '- Backup worker, startup, current-user startup, final backup task and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md`, `qa/FINAL_STARTUP_TASK_PROOF.example.md`, `qa/FINAL_STARTUP_TASK_PROOF.md`, `qa/FINAL_BACKUP_TASK_PROOF.example.md`, `qa/FINAL_BACKUP_TASK_PROOF.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.'
     Add-ReportLine $lines '- Concurrency, double-action and realtime own-event evidence: `qa/FINAL_CONCURRENCY_PROOF.md`, `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md` and `qa/REALTIME_OWN_EVENT_SAFETY_2026_06_04.md`.'
     Add-ReportLine $lines '- Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/LAN_LOADTEST_SAFETY_2026_06_04.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.'
     Add-ReportLine $lines '- New invoice maintainability guard: `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` and `scripts/validate_new_invoice_maintainability.ps1` preserve a short cashier-facing invoice flow.'
@@ -1074,6 +1081,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1 -WhatIfOnly"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -UpdateExisting"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -Status"
+    Add-ReportLine $lines "# Then observe a server startup/reboot or supervised manual task start, confirm /up and login, and complete qa\FINAL_STARTUP_TASK_PROOF.md."
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $(Protect-HandoffText $PhpPath)"
     Add-ReportLine $lines "Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath $(Protect-HandoffText $PhpPath)"
@@ -1535,13 +1543,15 @@ if ($InitializeProofFiles) {
 
 $lanProofCompleted = Test-ProofLooksCompleted $lanProofPath
 $printerProofCompleted = Test-ProofLooksCompleted $printerProofPath
+$startupTaskProofCompleted = Test-ProofLooksCompleted $startupTaskProofPath
 $restoreProofCompleted = Test-ProofLooksCompleted $restoreProofPath
 $backupTaskProofCompleted = Test-ProofLooksCompleted $backupTaskProofPath
 $concurrencyProofCompleted = Test-ProofLooksCompleted $concurrencyProofPath
 $trainingAcceptanceProofCompleted = Test-ProofLooksCompleted $trainingAcceptanceProofPath
-$allHandoffProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $restoreProofCompleted -and $backupTaskProofCompleted -and $concurrencyProofCompleted -and $trainingAcceptanceProofCompleted
+$allHandoffProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $startupTaskProofCompleted -and $restoreProofCompleted -and $backupTaskProofCompleted -and $concurrencyProofCompleted -and $trainingAcceptanceProofCompleted
 Write-Result $lanProofCompleted "Second-client LAN proof file has required handoff fields; preflight performs strict validation." "Second-client LAN proof is missing, incomplete, has placeholders, or references missing evidence."
 Write-Result $printerProofCompleted "Physical printer proof file has required handoff fields; preflight performs strict validation." "Physical printer proof is missing, incomplete, has placeholders, or references missing evidence."
+Write-Result $startupTaskProofCompleted "Final startup task proof file has required handoff fields; preflight performs strict validation." "Final startup task proof is missing, incomplete, has placeholders, or references missing evidence."
 Write-Result $restoreProofCompleted "Final restore proof file has required handoff fields; preflight performs strict validation." "Final restore proof is missing, incomplete, has placeholders, or references missing evidence."
 Write-Result $backupTaskProofCompleted "Final backup task proof file has required handoff fields; preflight performs strict validation." "Final backup task proof is missing, incomplete, has placeholders, or references missing evidence."
 Write-Result $concurrencyProofCompleted "Final concurrency proof file has required handoff fields; preflight performs strict validation." "Final concurrency proof is missing, incomplete, has placeholders, or references missing evidence."
@@ -1554,6 +1564,10 @@ if (-not $lanProofCompleted) {
 
 if (-not $printerProofCompleted) {
     Write-Host "Print real media carta/carta/A5 samples, then complete qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md with physical evidence."
+}
+
+if (-not $startupTaskProofCompleted) {
+    Write-Host "Install/update stack autostart, observe startup or reboot recovery, confirm /up and login, then complete qa\FINAL_STARTUP_TASK_PROOF.md."
 }
 
 if (-not $restoreProofCompleted) {
@@ -1578,6 +1592,7 @@ $backupStatusOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 Write-Host "If tasks are missing or stale, run elevated PowerShell:"
 Write-Host "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -UpdateExisting"
 Write-Host "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -Status"
+Write-Host "After stack autostart is installed, observe startup/reboot recovery and complete qa\FINAL_STARTUP_TASK_PROOF.md."
 Write-Host "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $(Protect-HandoffText $PhpPath)"
 Write-Host "Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker"
 Write-Host "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath $(Protect-HandoffText $PhpPath)"
@@ -1629,6 +1644,7 @@ if ($SkipPreflight) {
         -path $ReportPath `
         -lanProofCompleted $lanProofCompleted `
         -printerProofCompleted $printerProofCompleted `
+        -startupTaskProofCompleted $startupTaskProofCompleted `
         -restoreProofCompleted $restoreProofCompleted `
         -backupTaskProofCompleted $backupTaskProofCompleted `
         -concurrencyProofCompleted $concurrencyProofCompleted `
@@ -1718,6 +1734,7 @@ if ($SkipPreflight) {
         -path $ReportPath `
         -lanProofCompleted $lanProofCompleted `
         -printerProofCompleted $printerProofCompleted `
+        -startupTaskProofCompleted $startupTaskProofCompleted `
         -restoreProofCompleted $restoreProofCompleted `
         -backupTaskProofCompleted $backupTaskProofCompleted `
         -concurrencyProofCompleted $concurrencyProofCompleted `
@@ -1812,6 +1829,7 @@ Write-HandoffReport `
     -path $ReportPath `
     -lanProofCompleted $lanProofCompleted `
     -printerProofCompleted $printerProofCompleted `
+    -startupTaskProofCompleted $startupTaskProofCompleted `
     -restoreProofCompleted $restoreProofCompleted `
     -backupTaskProofCompleted $backupTaskProofCompleted `
     -concurrencyProofCompleted $concurrencyProofCompleted `
@@ -1901,6 +1919,7 @@ Write-HandoffReport `
     -path $ReportPath `
     -lanProofCompleted $lanProofCompleted `
     -printerProofCompleted $printerProofCompleted `
+    -startupTaskProofCompleted $startupTaskProofCompleted `
     -restoreProofCompleted $restoreProofCompleted `
     -backupTaskProofCompleted $backupTaskProofCompleted `
     -concurrencyProofCompleted $concurrencyProofCompleted `

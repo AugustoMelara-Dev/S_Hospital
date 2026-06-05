@@ -171,13 +171,16 @@ Despues de instalar:
 
 ## Cierre Final Antes De Operar
 
-No declare la instalacion lista para produccion hasta completar cinco
+No declare la instalacion lista para produccion hasta completar seis
 evidencias reales:
 
 - `qa\LAN_CLIENT_VALIDATION_PROOF.md`: una segunda computadora abre el sistema
   por IP o nombre LAN.
 - `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`: la impresora institucional imprime
   muestras fisicas media carta, carta, A5 y reimpresion.
+- `qa\FINAL_STARTUP_TASK_PROOF.md`: la tarea
+  `SistemaCajaHospitalaria-StackAutostart` queda lista con `AtStartup` y el
+  sistema abre `/up` y login despues de arranque o reinicio observado.
 - `qa\FINAL_BACKUP_TASK_PROOF.md`: las tareas Windows de respaldo estan
   instaladas/listas y un respaldo manual desde la UI pasa de pendiente a exito.
 - `qa\FINAL_RESTORE_PROOF.md`: un respaldo restaura correctamente en una base
@@ -200,7 +203,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\init_production_
 ```
 
 El comando de cierre debe seguir reportando `PRODUCTION_CANDIDATE` hasta que
-esas cuatro evidencias existan y el preflight pase sin omisiones:
+esas seis evidencias existan y el preflight pase sin omisiones:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl https://IP-DEL-SERVIDOR -InitializeProofFiles

@@ -144,6 +144,8 @@ if ($failures.Count -eq 0) {
         'qa/DOUBLE_ACTION_SAFETY_2026_06_03.md',
         'qa/BACKUP_WORKER_SMOKE_2026_06_03.md',
         'qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md',
+        'qa/FINAL_STARTUP_TASK_PROOF.example.md',
+        'qa/FINAL_STARTUP_TASK_PROOF.md',
         'qa/FINAL_BACKUP_TASK_PROOF.example.md',
         'qa/FINAL_BACKUP_TASK_PROOF.md',
         'qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md',
@@ -179,6 +181,9 @@ if ($failures.Count -eq 0) {
     $requiredBlockers = @(
         'qa/LAN_CLIENT_VALIDATION_PROOF.md',
         'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
+        'FINAL_STARTUP_TASK_PROOF.md',
+        'SistemaCajaHospitalaria-StackAutostart',
+        'AtStartup',
         'SistemaCajaHospitalaria-BackupWorker',
         'SistemaCajaHospitalaria-DailyBackup',
         'FINAL_BACKUP_TASK_PROOF.md',

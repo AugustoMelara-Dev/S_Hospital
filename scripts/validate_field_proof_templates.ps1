@@ -208,6 +208,35 @@ Test-Template `
     )
 
 Test-Template `
+    -relativePath "qa\FINAL_STARTUP_TASK_PROOF.example.md" `
+    -fields @(
+        "Date/time",
+        "Responsible person",
+        "Server computer name",
+        "Startup task status",
+        "Startup task trigger",
+        "Startup command check",
+        "Startup or reboot test time",
+        "Server URL after startup",
+        "Evidence/capture reference",
+        "Final conclusion"
+    ) `
+    -checks @(
+        "SistemaCajaHospitalaria-StackAutostart",
+        "AtStartup",
+        "supported hospital startup script",
+        "startup or a supervised manual task start",
+        "/up",
+        "Login page",
+        "Evidence does not include"
+    ) `
+    -safetyTerms @(
+        "final server",
+        "AtStartup",
+        "Do not attach"
+    )
+
+Test-Template `
     -relativePath "qa\FINAL_BACKUP_TASK_PROOF.example.md" `
     -fields @(
         "Date/time",

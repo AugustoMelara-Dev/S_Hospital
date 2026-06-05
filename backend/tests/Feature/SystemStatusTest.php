@@ -89,8 +89,10 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.preflight.physical_proofs.0.required_file', 'qa/LAN_CLIENT_VALIDATION_PROOF.md')
             ->assertJsonPath('data.preflight.physical_proofs.0.status', 'pending')
             ->assertJsonPath('data.preflight.physical_proofs.0.detail', 'Archivo de evidencia no existe todavia.')
-            ->assertJsonPath('data.preflight.physical_proofs.3.required_file', 'qa/FINAL_BACKUP_TASK_PROOF.md')
-            ->assertJsonPath('data.preflight.physical_proofs.3.status', 'pending')
+            ->assertJsonPath('data.preflight.physical_proofs.2.required_file', 'qa/FINAL_STARTUP_TASK_PROOF.md')
+            ->assertJsonPath('data.preflight.physical_proofs.2.status', 'pending')
+            ->assertJsonPath('data.preflight.physical_proofs.4.required_file', 'qa/FINAL_BACKUP_TASK_PROOF.md')
+            ->assertJsonPath('data.preflight.physical_proofs.4.status', 'pending')
             ->assertJsonPath('data.preflight.commands.backup_worker', 'php artisan queue:work --queue=backups --tries=1 --timeout=600')
             ->assertJsonMissingPath('data.database.password');
 

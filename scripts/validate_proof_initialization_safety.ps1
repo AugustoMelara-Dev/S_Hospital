@@ -92,6 +92,7 @@ $offlineGuard = Read-RequiredFile "scripts\assert_offline_release_clean.ps1"
 $requiredTemplates = @(
     "LAN_CLIENT_VALIDATION_PROOF",
     "INSTITUTIONAL_RECEIPT_PRINT_PROOF",
+    "FINAL_STARTUP_TASK_PROOF",
     "FINAL_RESTORE_PROOF",
     "FINAL_BACKUP_TASK_PROOF",
     "FINAL_CONCURRENCY_PROOF",

@@ -82,6 +82,7 @@ $script:OfflineReleaseCriticalDocs = @(
 $script:OfflineReleaseProofTemplates = @(
     "LAN_CLIENT_VALIDATION_PROOF.example.md",
     "INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md",
+    "FINAL_STARTUP_TASK_PROOF.example.md",
     "FINAL_RESTORE_PROOF.example.md",
     "FINAL_BACKUP_TASK_PROOF.example.md",
     "FINAL_CONCURRENCY_PROOF.example.md",

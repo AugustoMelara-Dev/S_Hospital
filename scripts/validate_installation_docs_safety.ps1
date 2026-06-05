@@ -97,6 +97,7 @@ if ($installGuide -ne "") {
         'Protegido',
         'LAN_CLIENT_VALIDATION_PROOF.md',
         'INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
+        'FINAL_STARTUP_TASK_PROOF.md',
         'FINAL_BACKUP_TASK_PROOF.md',
         'FINAL_RESTORE_PROOF.md',
         'FINAL_CONCURRENCY_PROOF.md',

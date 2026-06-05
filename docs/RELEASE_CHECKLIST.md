@@ -38,7 +38,8 @@ Validado durante el pase de arquitectura/mantenibilidad/UX/metadata:
 - E2E mockeado: `npm.cmd run e2e`.
 
 Estos gates no sustituyen validacion fisica de segunda PC LAN, impresora
-institucional, backup final, restore final, concurrencia final ni backup worker en el servidor real.
+institucional, autoarranque final, backup final, restore final, concurrencia
+final ni backup worker en el servidor real.
 
 ## Gate E2E Fase 10
 
@@ -207,6 +208,11 @@ Antes de entregar accesos directos o scripts de recuperacion, ejecute
 `scripts\validate_startup_repair_safety.ps1`; debe reportar
 `STARTUP_REPAIR_SAFETY: YES` para confirmar que los flujos de arranque,
 reparacion y tareas de respaldo siguen teniendo modo seguro sin borrar datos.
+Despues de instalar `SistemaCajaHospitalaria-StackAutostart` en el servidor
+final, observe un arranque/reinicio o una ejecucion supervisada de la tarea,
+confirme `/up` y login, y complete `qa\FINAL_STARTUP_TASK_PROOF.md` usando
+`qa\FINAL_STARTUP_TASK_PROOF.example.md`; no adjunte `.env`, passwords, XML de
+tareas, dumps SQL ni rutas absolutas.
 Antes de entregar evidencia visual o de navegador, ejecute
 `scripts\validate_browser_smoke_evidence.ps1`; debe reportar
 `BROWSER_SMOKE_EVIDENCE: YES` para confirmar que existen capturas de dashboard,
@@ -311,7 +317,8 @@ contrasenas por defecto, no usan DNS publicos, no montan `docker.sock` y exigen
 URL antes de crear facturas de prueba. Estas pruebas son solo para base
 descartable o entorno de validacion; no sustituyen
 `qa\LAN_CLIENT_VALIDATION_PROOF.md`, prueba fisica de impresora,
-`qa\FINAL_BACKUP_TASK_PROOF.md` ni evidencia fiscal real.
+`qa\FINAL_STARTUP_TASK_PROOF.md`, `qa\FINAL_BACKUP_TASK_PROOF.md` ni evidencia
+fiscal real.
 Antes de inicializar archivos de evidencia en el servidor final, ejecute
 `scripts\validate_proof_initialization_safety.ps1`; debe reportar
 `PROOF_INITIALIZATION_SAFETY: YES` para confirmar que
@@ -332,7 +339,7 @@ evidencia o bloqueantes explicitos. Tambien falla si el servidor no usa
 `APP_ENV=production`, si `APP_DEBUG` no es `false`, si falta `frontend/dist`,
 si faltan `mysql`/`mysqldump` o `mariadb-dump`, si las rutas publicas no
 responden, o si no existen las pruebas documentadas de cliente LAN, impresora
-fisica, backup final, restore final y concurrencia final.
+fisica, autoarranque final, backup final, restore final y concurrencia final.
 
 En Windows tambien falla si no existen `SistemaCajaHospitalaria-BackupWorker` y
 `SistemaCajaHospitalaria-DailyBackup`, o si el worker continuo no esta `Running`.
@@ -476,8 +483,10 @@ debe quedar registrado en el handoff si se usa Startup/HKCU Run.
 - Probar restore real en una base descartable del servidor final y guardar checksum/conteos.
 - Probar desde una segunda PC en LAN usando la IP fija o dominio LAN, nunca `localhost`.
 - Probar impresora fisica media carta/carta/A5 desde la PC o cliente que imprimira.
+- Probar autoarranque del stack en el servidor final y confirmar `/up` y login.
 - Crear `qa/LAN_CLIENT_VALIDATION_PROOF.md` usando `qa/LAN_CLIENT_VALIDATION_PROOF.example.md`.
 - Crear `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` usando `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md`.
+- Crear `qa/FINAL_STARTUP_TASK_PROOF.md` usando `qa/FINAL_STARTUP_TASK_PROOF.example.md`.
 - Crear `qa/FINAL_BACKUP_TASK_PROOF.md` usando `qa/FINAL_BACKUP_TASK_PROOF.example.md`.
 - Crear `qa/FINAL_RESTORE_PROOF.md` usando `qa/FINAL_RESTORE_PROOF.example.md`.
 - Crear `qa/FINAL_CONCURRENCY_PROOF.md` usando `qa/FINAL_CONCURRENCY_PROOF.example.md`.
