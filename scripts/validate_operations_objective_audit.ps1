@@ -97,6 +97,7 @@ if ($failures.Count -eq 0) {
         'Browser evidence for critical flows',
         'In-app institutional Help',
         'Human-safe support evidence',
+        'First-level support quick check stays executable from the final handoff',
         'Local diagnostics',
         'Institutional installer',
         'Recovery guidance for power loss',
@@ -111,6 +112,7 @@ if ($failures.Count -eq 0) {
         'Final LAN client validation',
         'Physical institutional receipt proof',
         'Offline release package',
+        '`PRODUCTION_READY` gate and final-field blockers cannot be bypassed silently',
         'Final production environment and preflight'
     )
 
@@ -122,6 +124,9 @@ if ($failures.Count -eq 0) {
         'qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md',
         'qa/HELP_SCREEN_SAFETY_2026_06_03.md',
         'qa/SUPPORT_PACKET_SAFETY_2026_06_03.md',
+        'qa/FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md',
+        'qa/FIRST_LEVEL_SUPPORT_HANDOFF_2026_06_04.md',
+        'qa/FIRST_LEVEL_SUPPORT_HANDOFF_RESULT_2026_06_04.md',
         'qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md',
         'qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md',
         'qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md',
@@ -136,8 +141,15 @@ if ($failures.Count -eq 0) {
         'qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md',
         'qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md',
         'qa/OFFLINE_RELEASE_GUARD_2026_06_03.md',
+        'qa/FINAL_FIELD_BLOCKERS_SAFETY_2026_06_04.md',
+        'qa/PRODUCTION_READY_GATE_VALIDATOR_2026_06_04.md',
+        'qa/PRODUCTION_READY_GATE_HANDOFF_2026_06_04.md',
+        'qa/PRODUCTION_READY_GATE_HANDOFF_RESULT_2026_06_04.md',
         'qa/PREFLIGHT_WITH_CONCURRENCY_2026_06_03.md',
-        'scripts/validate_dependency_manifest.ps1'
+        'scripts/validate_dependency_manifest.ps1',
+        'scripts/validate_first_level_support_safety.ps1',
+        'scripts/validate_production_ready_gate_safety.ps1',
+        'scripts/validate_final_field_blockers_safety.ps1'
     )
 
     foreach ($evidence in $requiredEvidence) {
@@ -158,6 +170,7 @@ if ($failures.Count -eq 0) {
         'offline-release',
         'dependency manifest',
         'InitializeProofFiles',
+        'bypass flags',
         'final backup worker smoke',
         'final restore/concurrency evidence',
         'preflight'
