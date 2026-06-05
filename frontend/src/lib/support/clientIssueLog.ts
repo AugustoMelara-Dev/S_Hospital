@@ -22,8 +22,23 @@ type SupportSummaryContext = {
 const STORAGE_KEY = 'hospital_client_issue_log';
 const MAX_ISSUES = 20;
 
+const SCREEN_LABELS: Array<[RegExp, string]> = [
+  [/^\/?$/i, 'Inicio'],
+  [/^\/dashboard\b/i, 'Inicio'],
+  [/^\/billing\b/i, 'Nueva factura'],
+  [/^\/cashbox\b/i, 'Caja'],
+  [/^\/catalog\b/i, 'Catalogo'],
+  [/^\/invoices\b/i, 'Historial'],
+  [/^\/reports\b/i, 'Reportes'],
+  [/^\/backups\b/i, 'Respaldos'],
+  [/^\/settings\/fiscal\b/i, 'Datos fiscales'],
+  [/^\/admin\/users\b/i, 'Usuarios'],
+  [/^\/help\b/i, 'Ayuda'],
+  [/^\/about\b/i, 'Estado del sistema'],
+];
+
 export const PERMISSION_DENIED_MESSAGE =
-  'Su usuario no tiene permiso para esta acción. Solicite a un supervisor que revise su rol; no repita la operación varias veces.';
+  'Su usuario no tiene permiso para esta accion. Solicite a un supervisor que revise su rol; no repita la operacion varias veces.';
 
 export function safeClientMessage(value: string): string {
   return value
@@ -51,13 +66,119 @@ function safeOptionalContext(value: string | undefined): string | undefined {
   return safeValue === '' ? undefined : safeValue;
 }
 
+function routePath(value: string | undefined): string {
+  if (!value) {
+    return '';
+  }
+
+  const safeValue = safeClientMessage(value);
+
+  try {
+    return new URL(safeValue, window.location.origin).pathname;
+  } catch {
+    return safeValue.split(/[?#]/)[0] ?? '';
+  }
+}
+
+function supportScreenLabel(value: string | undefined): string {
+  const safeValue = safeClientMessage(value ?? '');
+
+  if (SCREEN_LABELS.some(([, label]) => label.toLowerCase() === safeValue.toLowerCase())) {
+    return safeValue;
+  }
+
+  const path = routePath(value);
+  const match = SCREEN_LABELS.find(([pattern]) => pattern.test(path));
+
+  return match?.[1] ?? 'Pantalla no indicada';
+}
+
+function supportModuleLabel(value: string | undefined): string | undefined {
+  const safeValue = safeOptionalContext(value);
+
+  if (!safeValue) {
+    return undefined;
+  }
+
+  const normalized = safeValue.toLowerCase();
+
+  if (['conexion local', 'facturacion', 'caja', 'respaldos', 'reportes', 'catalogo', 'ingreso'].includes(normalized)) {
+    return safeValue;
+  }
+
+  if (normalized.includes('api') || normalized.includes('network')) return 'Conexion local';
+  if (normalized.includes('billing') || normalized.includes('invoice')) return 'Facturacion';
+  if (normalized.includes('cash')) return 'Caja';
+  if (normalized.includes('backup')) return 'Respaldos';
+  if (normalized.includes('report')) return 'Reportes';
+  if (normalized.includes('catalog')) return 'Catalogo';
+  if (normalized.includes('auth') || normalized.includes('login')) return 'Ingreso';
+
+  return safeValue;
+}
+
+function supportActionLabel(value: string | undefined): string | undefined {
+  const safeValue = safeOptionalContext(value);
+
+  if (!safeValue) {
+    return undefined;
+  }
+
+  const normalized = safeValue.toLowerCase();
+
+  if (
+    [
+      'revision de conexion local',
+      'registro de factura',
+      'registro de pago',
+      'consulta de historial',
+      'operacion de caja',
+      'operacion de respaldo',
+      'consulta de reportes',
+      'ingreso de usuario',
+      'consulta de catalogo',
+      'accion registrada',
+    ].includes(normalized)
+  ) {
+    return safeValue;
+  }
+
+  if (normalized.includes('/api/health') || normalized.includes('/api/system/status')) return 'Revision de conexion local';
+  if (normalized.includes('/api/invoices') && normalized.includes('post')) return 'Registro de factura';
+  if (normalized.includes('/api/invoices')) return 'Consulta de historial';
+  if (normalized.includes('/api/payments')) return 'Registro de pago';
+  if (normalized.includes('/api/cash-sessions')) return 'Operacion de caja';
+  if (normalized.includes('/api/backups')) return 'Operacion de respaldo';
+  if (normalized.includes('/api/reports')) return 'Consulta de reportes';
+  if (normalized.includes('/api/auth')) return 'Ingreso de usuario';
+  if (normalized.includes('/api/services') || normalized.includes('/api/categories') || normalized.includes('/api/areas')) return 'Consulta de catalogo';
+
+  return 'Accion registrada';
+}
+
+function supportReferenceLabel(value: string | undefined): string {
+  const safeValue = safeClientMessage(value || 'CLIENT_ERROR');
+  const normalized = safeValue.toLowerCase();
+
+  if (['caja cerrada', 'respaldo con error', 'aviso de conexion', 'aviso del sistema', 'aviso seguro'].includes(normalized)) {
+    return safeValue;
+  }
+
+  if (normalized.includes('cashsessionclosed')) return 'Caja cerrada';
+  if (normalized.includes('backupfailed')) return 'Respaldo con error';
+  if (normalized.includes('apierror')) return 'Aviso de conexion';
+  if (normalized.includes('error')) return 'Aviso del sistema';
+
+  return 'Aviso seguro';
+}
+
 function safeStoredIssue(issue: StoredClientIssue): StoredClientIssue {
   return {
-    action: safeOptionalContext(issue.action),
-    module: safeOptionalContext(issue.module),
-    route: safeClientMessage(issue.route || 'no indicada') || 'no indicada',
+    action: supportActionLabel(issue.action),
+    module: supportModuleLabel(issue.module),
+    route: supportScreenLabel(issue.route),
     safe_message: safeClientMessage(issue.safe_message),
-    technical_code: safeClientMessage(issue.technical_code || 'CLIENT_ERROR') || 'CLIENT_ERROR',
+    technical_code: supportReferenceLabel(issue.technical_code),
     occurred_at: safeClientMessage(issue.occurred_at),
   };
 }
@@ -82,33 +203,34 @@ export function logClientIssue(error: unknown, context: ClientIssueContext = {})
 
 export function buildClientIssueSupportSummary(issues: StoredClientIssue[], context: SupportSummaryContext = {}): string {
   const generatedAt = context.generated_at ?? new Date().toISOString();
+  const safeIssues = issues.map(safeStoredIssue);
   const lines = [
     'Resumen seguro para soporte',
     `Generado: ${safeClientMessage(generatedAt)}`,
-    `Pantalla: ${safeClientMessage(context.current_route ?? 'no indicada')}`,
-    `Dirección local: ${safeClientMessage(context.app_origin ?? 'no indicada')}`,
+    `Pantalla: ${supportScreenLabel(context.current_route)}`,
+    `Direccion local: ${safeClientMessage(context.app_origin ?? 'no indicada')}`,
     `Incidentes guardados en este navegador: ${issues.length}`,
     '',
-    'Últimos incidentes seguros:',
+    'Ultimos incidentes seguros:',
   ];
 
-  if (issues.length === 0) {
+  if (safeIssues.length === 0) {
     lines.push('- Sin incidentes guardados en este navegador.');
   } else {
-    issues.slice(0, 3).forEach((issue, index) => {
+    safeIssues.slice(0, 3).forEach((issue, index) => {
       lines.push(
         [
-          `${index + 1}. ${safeClientMessage(issue.module ?? 'sistema')} - ${safeClientMessage(issue.action ?? 'acción no indicada')}`,
+          `${index + 1}. ${safeClientMessage(issue.module ?? 'sistema')} - ${safeClientMessage(issue.action ?? 'accion no indicada')}`,
           `   Pantalla: ${safeClientMessage(issue.route)}`,
           `   Mensaje: ${safeClientMessage(issue.safe_message)}`,
-          `   Código técnico: ${safeClientMessage(issue.technical_code)}`,
+          `   Referencia: ${safeClientMessage(issue.technical_code)}`,
           `   Fecha: ${safeClientMessage(issue.occurred_at)}`,
         ].join('\n'),
       );
     });
   }
 
-  lines.push('', 'Acción segura: no repetir facturas ni cobros hasta que caja e historial confirmen el estado.');
+  lines.push('', 'Accion segura: no repetir facturas ni cobros hasta que caja e historial confirmen el estado.');
 
   return lines.join('\n');
 }

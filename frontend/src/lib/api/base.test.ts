@@ -124,8 +124,8 @@ describe('resolveApiBaseUrl', () => {
     }>;
 
     expect(stored[0]).toMatchObject({
-      action: 'GET /api/health',
-      module: 'api',
+      action: 'Revision de conexion local',
+      module: 'Conexion local',
     });
     expect(stored[0].safe_message).toMatch(/servidor LAN/i);
     expect(stored[0].safe_message).toMatch(/failed to fetch/i);
@@ -154,8 +154,8 @@ describe('resolveApiBaseUrl', () => {
     }>;
 
     expect(stored[0]).toMatchObject({
-      action: 'POST /api/payments',
-      module: 'api',
+      action: 'Registro de pago',
+      module: 'Conexion local',
     });
     expect(stored[0].safe_message).toMatch(/LAN apagada/i);
     expect(stored[0].safe_message).not.toMatch(/token|hidden/i);
@@ -322,8 +322,8 @@ describe('resolveApiBaseUrl', () => {
     }>;
 
     expect(stored[0]).toMatchObject({
-      action: 'POST /api/invoices',
-      module: 'api',
+      action: 'Registro de factura',
+      module: 'Conexion local',
     });
     expect(stored[0].safe_message).toMatch(/Revise los datos del formulario\./i);
   });

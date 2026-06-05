@@ -73,6 +73,6 @@ describe('HelpView', () => {
     expect(screen.getByText(/resumen copiado/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver evidencia/i }));
     expect(screen.getAllByText(/no se pudo conectar con el servidor lan/i).length).toBeGreaterThan(0);
-    expect(document.body.textContent).not.toMatch(/cola de trabajos|trabajos fallidos|queue|worker|soporte tecnico/i);
+    expect(document.body.textContent).not.toMatch(/cola de trabajos|trabajos fallidos|queue|worker|soporte tecnico|\/api|\/help|c[oó]digo t[eé]cnico/i);
   });
 });

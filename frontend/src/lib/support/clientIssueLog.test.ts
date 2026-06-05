@@ -40,10 +40,10 @@ describe('clientIssueLog', () => {
     });
 
     expect(getClientIssues()[0]).toMatchObject({
-      action: 'GET /api/health',
-      module: 'api',
-      route: '/help',
-      technical_code: 'Error',
+      action: 'Revision de conexion local',
+      module: 'Conexion local',
+      route: 'Ayuda',
+      technical_code: 'Aviso del sistema',
     });
     expect(getClientIssues()[0].safe_message).not.toMatch(/DB_PASSWORD|secret/i);
   });
@@ -62,8 +62,9 @@ describe('clientIssueLog', () => {
     expect(`${issue.action} ${issue.module} ${issue.route}`).not.toMatch(
       /soporte|clave-secreta|token=abc|DB_PASSWORD|secret|cash_session_id/i,
     );
-    expect(issue.action).toContain('http://192.168.1.10:8000/api/health');
-    expect(issue.route).toContain('/help');
+    expect(issue.action).toBe('Revision de conexion local');
+    expect(issue.route).toBe('Ayuda');
+    expect(`${issue.action} ${issue.route}`).not.toMatch(/\/api|\/help|http:\/\//i);
   });
 
   it('builds a limited support summary without secrets or local paths', () => {
@@ -109,7 +110,8 @@ describe('clientIssueLog', () => {
     expect(summary).toContain('Resumen seguro para soporte');
     expect(summary).toContain('Incidentes guardados en este navegador: 4');
     expect(summary).toContain('Caja cerrada');
-    expect(summary).not.toMatch(/DB_PASSWORD|secret|token|abc|C:\\Users|\.env|cash_session_id|SQLSTATE/i);
+    expect(summary).toContain('Referencia: Aviso seguro');
+    expect(summary).not.toMatch(/DB_PASSWORD|secret|token|abc|C:\\Users|\.env|cash_session_id|SQLSTATE|C[oó]digo t[eé]cnico|\/api|\/help|\/billing|\/backups/i);
     expect(summary).not.toContain('No debe aparecer');
   });
 });

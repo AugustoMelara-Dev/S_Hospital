@@ -3547,3 +3547,9 @@ Criterio de verificacion: ReceiptPreview.test verifica que el recibo renderiza M
 - La pantalla normal de respaldos muestra etiquetas humanas como Respaldo manual o Respaldo automatico con fecha, no filenames .sql.
 - El filename real se conserva solo para la descarga del archivo y no se usa como mensaje operativo visible.
 - BackupsView.a11y.test protege que la lista, el dialogo y el mensaje de descarga no expongan .sql al operador.
+
+## 2026-06-05 - Ayuda muestra evidencia de soporte sin rutas API
+
+- La evidencia local de Ayuda convierte acciones, modulos, rutas y referencias tecnicas a etiquetas humanas como Conexion local, Ayuda y Aviso del sistema.
+- El resumen seguro ya no rotula Codigo tecnico ni muestra rutas /api o pantallas crudas al operador.
+- clientIssueLog.test y HelpView.test protegen que el panel no exponga rutas internas, secretos ni detalles de runtime.

@@ -39,7 +39,7 @@ describe('AppErrorBoundary', () => {
 
     expect(stored[0]).toMatchObject({
       safe_message: 'render exploded',
-      technical_code: 'Error',
+      technical_code: 'Aviso del sistema',
     });
   });
 });
