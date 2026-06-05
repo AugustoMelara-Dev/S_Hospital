@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-04 21:28:50
+- Generated at: 2026-06-04 21:45:55
 - Base URL: http://192.168.1.10:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -23,6 +23,7 @@
 - Startup and repair safety guard exit code: 0
 - Operator manuals safety guard exit code: 0
 - Backup and restore docs safety guard exit code: 0
+- Backup startup current-user safety guard exit code: 0
 - Windows restore safety guard exit code: 0
 - Installation docs safety guard exit code: 0
 - Help screen safety guard exit code: 0
@@ -66,7 +67,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 
 - Browser smoke screenshots: `qa/browser-smoke-2026-06-03/rc-e2e-mocked-report.json` and `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md`.
 - System diagnostics and Help/support guards: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`, `qa/FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md`.
-- Backup worker and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.
+- Backup worker, current-user startup and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.
 - Concurrency and double-action evidence: `qa/FINAL_CONCURRENCY_PROOF.md` and `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md`.
 - Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/LAN_LOADTEST_SAFETY_2026_06_04.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.
 - New invoice maintainability guard: `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` and `scripts/validate_new_invoice_maintainability.ps1` preserve a short cashier-facing invoice flow.
@@ -84,8 +85,8 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 ## Files changed in this handoff front
 
 - In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.
-- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/restore_hospital_windows.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.
-- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_support_packet_safety.ps1`, `scripts/validate_first_level_support_safety.ps1`, `scripts/validate_production_ready_gate_safety.ps1`, `scripts/validate_final_field_blockers_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_lan_loadtest_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
+- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/restore_hospital_windows.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/install_backup_startup_current_user.ps1`, `scripts/start_backup_automation.cmd`, `scripts/run_backup_scheduler_loop.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.
+- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_backup_startup_current_user_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_support_packet_safety.ps1`, `scripts/validate_first_level_support_safety.ps1`, `scripts/validate_production_ready_gate_safety.ps1`, `scripts/validate_final_field_blockers_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_lan_loadtest_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
 - Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.
 
 ## Risks and limits
@@ -126,6 +127,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_browser
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_startup_repair_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_backup_restore_docs_safety.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_backup_startup_current_user_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_restore_windows_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installation_docs_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_help_screen_safety.ps1
@@ -191,6 +193,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found scripts\final_production_handoff.ps1
 [ OK ] Found scripts\install_hospital_startup_shortcut.ps1
 [ OK ] Found scripts\install_stack_autostart_windows.ps1
+[ OK ] Found scripts\install_backup_startup_current_user.ps1
 [ OK ] Found scripts\install_backup_tasks_windows.ps1
 [ OK ] Found scripts\restore_hospital_windows.ps1
 [ OK ] Found scripts\validate_support_packet_safety.ps1
@@ -199,6 +202,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found scripts\validate_startup_repair_safety.ps1
 [ OK ] Found scripts\validate_operator_manuals_safety.ps1
 [ OK ] Found scripts\validate_backup_restore_docs_safety.ps1
+[ OK ] Found scripts\validate_backup_startup_current_user_safety.ps1
 [ OK ] Found scripts\validate_installation_docs_safety.ps1
 [ OK ] Found scripts\validate_help_screen_safety.ps1
 [ OK ] Found scripts\validate_system_diagnostics_safety.ps1
@@ -226,6 +230,8 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] Found scripts\validate_first_level_support_safety.ps1
 [ OK ] Found scripts\run_backup_worker.cmd
 [ OK ] Found scripts\run_scheduled_backup.cmd
+[ OK ] Found scripts\run_backup_scheduler_loop.ps1
+[ OK ] Found scripts\start_backup_automation.cmd
 [ OK ] Found qa\LAN_CLIENT_VALIDATION_PROOF.example.md
 [ OK ] Found qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md
 [ OK ] Found qa\FINAL_RESTORE_PROOF.example.md
@@ -244,18 +250,22 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] scripts\final_production_handoff.ps1 matches versioned source
 [ OK ] scripts\install_hospital_startup_shortcut.ps1 matches versioned source
 [ OK ] scripts\install_stack_autostart_windows.ps1 matches versioned source
+[ OK ] scripts\install_backup_startup_current_user.ps1 matches versioned source
 [ OK ] scripts\install_backup_tasks_windows.ps1 matches versioned source
 [ OK ] scripts\lib\operational_url_safety.ps1 matches versioned source
 [ OK ] scripts\open_hospital_system.ps1 matches versioned source
 [ OK ] scripts\repair_hospital_system.ps1 matches versioned source
 [ OK ] scripts\restore_hospital_windows.ps1 matches versioned source
+[ OK ] scripts\run_backup_scheduler_loop.ps1 matches versioned source
 [ OK ] scripts\start_hospital_services.ps1 matches versioned source
+[ OK ] scripts\start_backup_automation.cmd matches versioned source
 [ OK ] scripts\validate_support_packet_safety.ps1 matches versioned source
 [ OK ] scripts\validate_browser_smoke_evidence.ps1 matches versioned source
 [ OK ] scripts\validate_dependency_manifest.ps1 matches versioned source
 [ OK ] scripts\validate_startup_repair_safety.ps1 matches versioned source
 [ OK ] scripts\validate_operator_manuals_safety.ps1 matches versioned source
 [ OK ] scripts\validate_backup_restore_docs_safety.ps1 matches versioned source
+[ OK ] scripts\validate_backup_startup_current_user_safety.ps1 matches versioned source
 [ OK ] scripts\validate_installation_docs_safety.ps1 matches versioned source
 [ OK ] scripts\validate_help_screen_safety.ps1 matches versioned source
 [ OK ] scripts\validate_system_diagnostics_safety.ps1 matches versioned source
@@ -296,7 +306,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[ OK ] MANIFEST.txt references current commit 822d7106
+[ OK ] MANIFEST.txt references current commit ae88acd7
 [ OK ] offline-images contains 4 Docker image tar file(s)
 
 OFFLINE_RELEASE_CLEAN: YES
@@ -762,7 +772,7 @@ Proof initialization creates missing final-evidence templates without overwritin
 [ OK ] Found scripts\make_offline_release.ps1
 [ OK ] Found scripts\assert_offline_release_clean.ps1
 [ OK ] Found docs\RELEASE_CHECKLIST.md
-[ OK ] Final handoff declares 36 script dependency/dependencies
+[ OK ] Final handoff declares 37 script dependency/dependencies
 [ OK ] Handoff dependency exists: scripts\assert_offline_release_clean.ps1
 [ OK ] Offline builder critical scripts include assert_offline_release_clean.ps1
 [ OK ] Offline guard requires scripts\assert_offline_release_clean.ps1
@@ -787,6 +797,10 @@ Proof initialization creates missing final-evidence templates without overwritin
 [ OK ] Offline builder critical scripts include validate_backup_restore_docs_safety.ps1
 [ OK ] Offline guard requires scripts\validate_backup_restore_docs_safety.ps1
 [ OK ] Offline guard compares scripts\validate_backup_restore_docs_safety.ps1 with versioned source
+[ OK ] Handoff dependency exists: scripts\validate_backup_startup_current_user_safety.ps1
+[ OK ] Offline builder critical scripts include validate_backup_startup_current_user_safety.ps1
+[ OK ] Offline guard requires scripts\validate_backup_startup_current_user_safety.ps1
+[ OK ] Offline guard compares scripts\validate_backup_startup_current_user_safety.ps1 with versioned source
 [ OK ] Handoff dependency exists: scripts\validate_browser_smoke_evidence.ps1
 [ OK ] Offline builder critical scripts include validate_browser_smoke_evidence.ps1
 [ OK ] Offline guard requires scripts\validate_browser_smoke_evidence.ps1
@@ -942,7 +956,7 @@ OFFLINE_RELEASE_STAGING_SAFETY: YES
 ## Offline release builder self-test output
 
 ```text
-[OK] SelfTest passed. default.conf=79 lines, crontab=10 lines, scripts=50, docs=7, proofTemplates=5, hash=ED8CCC2747A4CC0197054B68E5A7059E0AC115BDF8B85113C80701EA77B54E79
+[OK] SelfTest passed. default.conf=79 lines, crontab=10 lines, scripts=54, docs=7, proofTemplates=5, hash=ED8CCC2747A4CC0197054B68E5A7059E0AC115BDF8B85113C80701EA77B54E79
 ```
 
 ## Offline release guard self-test output
@@ -1041,6 +1055,58 @@ OPERATOR_MANUALS_SAFETY: YES
 [ OK ] Backup/restore docs do not expose secret-like assignments
 
 BACKUP_RESTORE_DOCS_SAFETY: YES
+```
+
+## Backup startup current-user safety validation output
+
+```text
+[ OK ] Found scripts\install_backup_startup_current_user.ps1
+[ OK ] Found scripts\start_backup_automation.cmd
+[ OK ] Found scripts\run_backup_scheduler_loop.ps1
+[ OK ] Found docs\manuales\GUIA_INSTALACION_OPERATIVA.md
+[ OK ] Found docs\manuales\GUIA_RESPALDOS_Y_RESTAURACION.md
+[ OK ] Found qa\OPERATIONAL_SUPPORT_EVIDENCE_2026-05-31.md
+[ OK ] Installer exposes WhatIfOnly
+[ OK ] Installer exposes Status
+[ OK ] Installer exposes Uninstall
+[ OK ] Installer exposes StartNow
+[ OK ] Installer uses current-user HKCU Run
+[ OK ] Installer uses current-user Startup folder
+[ OK ] Installer sanitizes operator output
+[ OK ] Installer dry run states no writes/process start
+[ OK ] Installer trap warns against destructive recovery
+[ OK ] Installer uninstall only removes Startup file
+[ OK ] Installer uninstall only removes HKCU Run value
+[ OK ] Installer does not write machine-wide Run keys
+[ OK ] Installer does not recursively delete files
+[ OK ] Installer avoids destructive database/container operations
+[ OK ] Launcher supports check-only mode
+[ OK ] Launcher uses NoProfile PowerShell
+[ OK ] Launcher starts background worker hidden
+[ OK ] Launcher has human failure message
+[ OK ] Launcher does not contain secret names
+[ OK ] Scheduler loop exposes WhatIfOnly
+[ OK ] Scheduler WhatIf states no worker, backup or writes
+[ OK ] Scheduler uses single-instance mutex
+[ OK ] Scheduler sanitizes log/output text
+[ OK ] Scheduler avoids destructive database/container operations
+[ OK ] Docs mention current-user backup startup installer
+[ OK ] Docs explain current-user dry run safety
+[ OK ] Docs mention Startup/HKCU fallback
+[ OK ] Docs keep backup startup safety warnings
+Validacion de arranque de backups completada.
+Modo WhatIf: no se crea archivo de inicio, no se cambia el registro y no se inicia el worker.
+Hora diaria validada: 23:30
+PHP: archivo configurado
+[ OK ] Current-user backup startup dry run completed with expected safety behavior
+DailyBackupTime debe usar formato HH:mm de 24 horas, por ejemplo 02:00 o 23:30.
+No borre respaldos, archivos .env, volumenes Docker ni carpetas de datos para corregir la automatizacion.
+[ OK ] Current-user backup startup invalid time completed with expected safety behavior
+Automatizacion en carpeta Startup: no instalada para el usuario actual.
+Automatizacion HKCU Run: no instalada para el usuario actual.
+[ OK ] Current-user backup startup status completed with expected safety behavior
+
+BACKUP_STARTUP_CURRENT_USER_SAFETY: YES
 ```
 
 ## Windows restore safety validation output
@@ -1838,7 +1904,7 @@ NEW_INVOICE_MAINTAINABILITY: YES
 
 ```text
 [OK] OPS_EVIDENCE_INDEX: YES
-[OK] Referencias qa/ verificadas: 41
+[OK] Referencias qa/ verificadas: 42
 [OK] El handoff conserva bloqueantes fisicos antes de PRODUCTION_READY.
 ```
 
