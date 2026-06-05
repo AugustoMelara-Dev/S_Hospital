@@ -57,9 +57,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
   });
 
   // Step 3: Catalog CSV
-  const [csvText, setCsvText] = useState(
-    `Categoría, Servicio, Precio, Grabado (S/N)\nConsulta, Consulta General, 250.00, N\nConsulta, Consulta Especialista, 600.00, N\nLaboratorio, Hemograma Completo, 180.00, S\nLaboratorio, Perfil Lipídico, 350.00, S\nImagenología, Radiografía Tórax AP, 450.00, N\nHospitalización, Eritropoyetina 4000 UI, 25.00, N`
-  );
+  const [csvText, setCsvText] = useState('Categoria, Area, Servicio, Precio, Gravado (S/N)');
   const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Load existing configuration if any
@@ -318,7 +316,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                   id="wiz-hosp-name"
                   value={hospitalForm.hospital_name}
                   onChange={(e) => setHospitalForm({ ...hospitalForm, hospital_name: e.target.value })}
-                  placeholder="Hospital General El Buen Pastor"
+                  placeholder="Hospital San Isidro"
                 />
               </div>
 
@@ -328,7 +326,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                   id="wiz-hosp-rtn"
                   value={hospitalForm.rtn}
                   onChange={(e) => setHospitalForm({ ...hospitalForm, rtn: e.target.value })}
-                  placeholder="0801-1990-123456"
+                  placeholder="RTN del hospital"
                 />
               </div>
 
@@ -401,7 +399,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                   id="wiz-seq-cai"
                   value={sequenceForm.cai}
                   onChange={(e) => setSequenceForm({ ...sequenceForm, cai: e.target.value.toUpperCase() })}
-                  placeholder="4D82C1-30AAFF-8C4212-..."
+                  placeholder="CAI autorizado"
                 />
               </div>
 
@@ -464,7 +462,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="wiz-cat-csv">Servicios: categoria, servicio, precio, impuesto</Label>
+                <Label htmlFor="wiz-cat-csv">Servicios: categoria, area, servicio, precio, impuesto</Label>
                 <span className="text-[10px] text-muted-foreground">Use S para impuesto o N para exento</span>
               </div>
               <Textarea
@@ -472,6 +470,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                 className="h-44 bg-card text-xs"
                 value={csvText}
                 onChange={(e) => setCsvText(e.target.value)}
+                placeholder="Pegue aqui el catalogo real aprobado por administracion."
                 disabled={loading}
               />
             </div>

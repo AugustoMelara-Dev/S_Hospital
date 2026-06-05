@@ -3442,3 +3442,11 @@ Contexto: la vista Acerca muestra diagnostico administrativo y pulso operativo. 
 Decision: AboutView cambia esos indicadores a respaldos en espera, respaldos con error y carga de respaldos. Los datos tecnicos del backend siguen existiendo en el contrato, pero la UI los traduce a estado operativo humano.
 
 Criterio de verificacion: AboutView.test valida que el pulso administrativo muestra respaldos con error/carga de respaldos y no expone queue:work, schedule:run, cola ni trabajo(s) fallidos.
+
+## 2026-06-05 - Asistente inicial sin catalogo de muestra
+
+Contexto: el asistente de preparacion podia mostrar servicios precargados y placeholders fiscales ficticios. En una instalacion real eso se percibe como dato demo y puede inducir importaciones accidentales.
+
+Decision: SetupWizardDialog inicia el catalogo solo con el encabezado CSV y pide pegar el catalogo real aprobado por administracion. Los placeholders visibles se cambian a Hospital San Isidro, RTN del hospital y CAI autorizado, sin numeros o claves inventadas.
+
+Criterio de verificacion: SetupWizardDialog.test valida que el asistente no muestra Hospital General El Buen Pastor, CAI ficticio ni servicios precargados como Consulta General, Hemograma o Radiografia.
