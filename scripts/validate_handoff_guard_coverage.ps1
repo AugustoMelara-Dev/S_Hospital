@@ -90,6 +90,7 @@ foreach ($scriptName in $handoffScripts) {
 foreach ($requiredChecklistText in @(
     'validate_handoff_guard_coverage.ps1',
     'validate_offline_release_staging_safety.ps1',
+    'validate_restore_windows_safety.ps1',
     'validate_final_handoff_completeness.ps1',
     'validate_ops_evidence_index.ps1',
     'assert_offline_release_clean.ps1 -SelfTest'

@@ -92,10 +92,12 @@ if ($failures.Count -eq 0) {
     Assert-Content '(?i)New invoice maintainability validation' "El handoff debe conservar la salida del guard de mantenibilidad de nueva factura."
     Assert-Content '(?i)Handoff guard coverage validation' "El handoff debe conservar la salida del guard de cobertura handoff/offline."
     Assert-Content '(?i)Offline release staging safety validation' "El handoff debe conservar la salida del guard de staging del release offline."
+    Assert-Content '(?i)Windows restore safety validation' "El handoff debe conservar la salida del guard de restore Windows seguro."
     Assert-Content 'KNOWN_LIMITATIONS_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de limitaciones conocidas."
     Assert-Content 'NEW_INVOICE_MAINTAINABILITY:\s*YES' "El handoff debe conservar el resultado positivo de mantenibilidad de nueva factura."
     Assert-Content 'HANDOFF_GUARD_COVERAGE:\s*YES' "El handoff debe conservar el resultado positivo de cobertura handoff/offline."
     Assert-Content 'OFFLINE_RELEASE_STAGING_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de staging seguro del release offline."
+    Assert-Content 'RESTORE_WINDOWS_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de restore Windows seguro."
     Assert-Content 'Only final-field qa/\*\.example\.md templates are allowed in offline release' "El handoff debe conservar la salida del self-test del guard offline."
 
     $requiredEvidence = @(
@@ -125,7 +127,8 @@ if ($failures.Count -eq 0) {
         'OFFLINE_RELEASE_GUARD_2026_06_03.md',
         'NEW_INVOICE_MAINTAINABILITY_2026_06_04.md',
         'HANDOFF_GUARD_COVERAGE_2026_06_04.md',
-        'OFFLINE_RELEASE_STAGING_SAFETY_2026_06_04.md'
+        'OFFLINE_RELEASE_STAGING_SAFETY_2026_06_04.md',
+        'RESTORE_WINDOWS_SAFETY_2026_06_04.md'
     )
 
     foreach ($item in $requiredEvidence) {
@@ -152,6 +155,8 @@ if ($failures.Count -eq 0) {
         'scripts/validate_new_invoice_maintainability.ps1',
         'scripts/validate_handoff_guard_coverage.ps1',
         'scripts/validate_offline_release_staging_safety.ps1',
+        'scripts/validate_restore_windows_safety.ps1',
+        'scripts/restore_hospital_windows.ps1',
         'scripts/validate_field_proof_templates.ps1',
         'scripts/validate_proof_initialization_safety.ps1',
         'scripts/validate_dependency_manifest.ps1',
@@ -180,6 +185,7 @@ if ($failures.Count -eq 0) {
         'validate_new_invoice_maintainability.ps1',
         'validate_handoff_guard_coverage.ps1',
         'validate_offline_release_staging_safety.ps1',
+        'validate_restore_windows_safety.ps1',
         'validate_dependency_manifest.ps1',
         'assert_offline_release_clean.ps1 -SelfTest',
         'production_readiness_preflight.ps1'

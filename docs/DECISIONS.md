@@ -1,3 +1,10 @@
+## 2026-06-04 - Restore Windows queda bajo guard no destructivo
+
+Contexto: `scripts\restore_hospital_windows.ps1` es el helper local para restaurar en Windows/XAMPP, pero su contrato seguro dependia de recordar ejecutar `-SelfTest` y revisar la documentacion. Un restore equivocado puede sobrescribir datos reales.
+
+Decision: se agrega `scripts\validate_restore_windows_safety.ps1` y el handoff final lo ejecuta. El guard confirma que el helper conserva `-SelfTest`, solo permite nombres de base descartable, rechaza bases productivas, usa entrada segura para password, valida archivos `.sql` o `.tar.gz` y que las guias exigen `qa\FINAL_RESTORE_PROOF.md`.
+
+Criterio de verificacion: `validate_restore_windows_safety.ps1` debe reportar `RESTORE_WINDOWS_SAFETY: YES`; el paquete offline debe incluir `restore_hospital_windows.ps1` y `validate_restore_windows_safety.ps1`; el handoff debe conservar `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md` antes de considerar cualquier restore en Windows.
 ## 2026-06-04 - Release offline publica por staging verificado
 
 Contexto: `scripts\make_offline_release.ps1 -Force` reemplazaba `offline-release` durante el proceso de construccion. Si Docker, `docker save` o el guard final fallaban a mitad del flujo, soporte podia perder el ultimo paquete offline disponible.

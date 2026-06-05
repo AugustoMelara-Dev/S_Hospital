@@ -50,6 +50,7 @@ $browserSmokeEvidenceScript = Join-Path $scriptsDir "validate_browser_smoke_evid
 $startupRepairSafetyScript = Join-Path $scriptsDir "validate_startup_repair_safety.ps1"
 $operatorManualsSafetyScript = Join-Path $scriptsDir "validate_operator_manuals_safety.ps1"
 $backupRestoreDocsSafetyScript = Join-Path $scriptsDir "validate_backup_restore_docs_safety.ps1"
+$restoreWindowsSafetyScript = Join-Path $scriptsDir "validate_restore_windows_safety.ps1"
 $installationDocsSafetyScript = Join-Path $scriptsDir "validate_installation_docs_safety.ps1"
 $helpScreenSafetyScript = Join-Path $scriptsDir "validate_help_screen_safety.ps1"
 $systemDiagnosticsSafetyScript = Join-Path $scriptsDir "validate_system_diagnostics_safety.ps1"
@@ -364,6 +365,18 @@ function Invoke-BackupRestoreDocsSafetyGuard {
     }
 }
 
+function Invoke-RestoreWindowsSafetyGuard {
+    Write-Section "Windows restore safety validation"
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $restoreWindowsSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
 function Invoke-InstallationDocsSafetyGuard {
     Write-Section "Installation docs safety validation"
     $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installationDocsSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
@@ -572,6 +585,8 @@ function Write-HandoffReport(
     [int] $operatorManualsSafetyExit,
     [string[]] $backupRestoreDocsSafetyOutput,
     [int] $backupRestoreDocsSafetyExit,
+    [string[]] $restoreWindowsSafetyOutput,
+    [int] $restoreWindowsSafetyExit,
     [string[]] $installationDocsSafetyOutput,
     [int] $installationDocsSafetyExit,
     [string[]] $helpScreenSafetyOutput,
@@ -632,6 +647,7 @@ function Write-HandoffReport(
         $startupRepairSafetyExit,
         $operatorManualsSafetyExit,
         $backupRestoreDocsSafetyExit,
+        $restoreWindowsSafetyExit,
         $installationDocsSafetyExit,
         $helpScreenSafetyExit,
         $systemDiagnosticsSafetyExit,
@@ -678,6 +694,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Startup and repair safety guard exit code: $startupRepairSafetyExit"
     Add-ReportLine $lines "- Operator manuals safety guard exit code: $operatorManualsSafetyExit"
     Add-ReportLine $lines "- Backup and restore docs safety guard exit code: $backupRestoreDocsSafetyExit"
+    Add-ReportLine $lines "- Windows restore safety guard exit code: $restoreWindowsSafetyExit"
     Add-ReportLine $lines "- Installation docs safety guard exit code: $installationDocsSafetyExit"
     Add-ReportLine $lines "- Help screen safety guard exit code: $helpScreenSafetyExit"
     Add-ReportLine $lines "- System diagnostics safety guard exit code: $systemDiagnosticsSafetyExit"
@@ -750,6 +767,9 @@ function Write-HandoffReport(
     }
     if ($backupRestoreDocsSafetyExit -ne 0) {
         Add-ReportLine $lines "- Backup and restore docs safety validation returned exit code $backupRestoreDocsSafetyExit."
+    }
+    if ($restoreWindowsSafetyExit -ne 0) {
+        Add-ReportLine $lines "- Windows restore safety validation returned exit code $restoreWindowsSafetyExit."
     }
     if ($installationDocsSafetyExit -ne 0) {
         Add-ReportLine $lines "- Installation docs safety validation returned exit code $installationDocsSafetyExit."
@@ -829,7 +849,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '- Browser smoke screenshots: `qa/browser-smoke-2026-06-03/rc-e2e-mocked-report.json` and `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md`.'
     Add-ReportLine $lines '- System diagnostics and Help/support guards: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`.'
-    Add-ReportLine $lines '- Backup worker and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/FINAL_RESTORE_PROOF.md` and `qa/FINAL_RESTORE_PROOF_2026_06_03.md`.'
+    Add-ReportLine $lines '- Backup worker and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.'
     Add-ReportLine $lines '- Concurrency and double-action evidence: `qa/FINAL_CONCURRENCY_PROOF.md` and `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md`.'
     Add-ReportLine $lines '- Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.'
     Add-ReportLine $lines '- New invoice maintainability guard: `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` and `scripts/validate_new_invoice_maintainability.ps1` preserve a short cashier-facing invoice flow.'
@@ -849,8 +869,8 @@ function Write-HandoffReport(
     Add-ReportLine $lines "## Files changed in this handoff front"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '- In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.'
-    Add-ReportLine $lines '- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.'
-    Add-ReportLine $lines '- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.'
+    Add-ReportLine $lines '- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/restore_hospital_windows.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.'
+    Add-ReportLine $lines '- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.'
     Add-ReportLine $lines '- Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.'
     Add-ReportLine $lines ""
 
@@ -890,6 +910,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_startup_repair_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_backup_restore_docs_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_restore_windows_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installation_docs_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_help_screen_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_system_diagnostics_safety.ps1"
@@ -1062,6 +1083,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
+    Add-ReportLine $lines "## Windows restore safety validation output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $restoreWindowsSafetyOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
     Add-ReportLine $lines "## Installation docs safety validation output"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
@@ -1223,6 +1253,7 @@ Assert-ScriptExists $browserSmokeEvidenceScript
 Assert-ScriptExists $startupRepairSafetyScript
 Assert-ScriptExists $operatorManualsSafetyScript
 Assert-ScriptExists $backupRestoreDocsSafetyScript
+Assert-ScriptExists $restoreWindowsSafetyScript
 Assert-ScriptExists $installationDocsSafetyScript
 Assert-ScriptExists $helpScreenSafetyScript
 Assert-ScriptExists $systemDiagnosticsSafetyScript
@@ -1294,6 +1325,7 @@ $browserSmokeEvidence = Invoke-BrowserSmokeEvidenceGuard
 $startupRepairSafety = Invoke-StartupRepairSafetyGuard
 $operatorManualsSafety = Invoke-OperatorManualsSafetyGuard
 $backupRestoreDocsSafety = Invoke-BackupRestoreDocsSafetyGuard
+$restoreWindowsSafety = Invoke-RestoreWindowsSafetyGuard
 $installationDocsSafety = Invoke-InstallationDocsSafetyGuard
 $helpScreenSafety = Invoke-HelpScreenSafetyGuard
 $systemDiagnosticsSafety = Invoke-SystemDiagnosticsSafetyGuard
@@ -1338,6 +1370,8 @@ if ($SkipPreflight) {
         -operatorManualsSafetyExit $operatorManualsSafety.ExitCode `
         -backupRestoreDocsSafetyOutput $backupRestoreDocsSafety.Output `
         -backupRestoreDocsSafetyExit $backupRestoreDocsSafety.ExitCode `
+        -restoreWindowsSafetyOutput $restoreWindowsSafety.Output `
+        -restoreWindowsSafetyExit $restoreWindowsSafety.ExitCode `
         -installationDocsSafetyOutput $installationDocsSafety.Output `
         -installationDocsSafetyExit $installationDocsSafety.ExitCode `
         -helpScreenSafetyOutput $helpScreenSafety.Output `
@@ -1409,6 +1443,8 @@ if ($SkipPreflight) {
         -operatorManualsSafetyExit $operatorManualsSafety.ExitCode `
         -backupRestoreDocsSafetyOutput $backupRestoreDocsSafety.Output `
         -backupRestoreDocsSafetyExit $backupRestoreDocsSafety.ExitCode `
+        -restoreWindowsSafetyOutput $restoreWindowsSafety.Output `
+        -restoreWindowsSafetyExit $restoreWindowsSafety.ExitCode `
         -installationDocsSafetyOutput $installationDocsSafety.Output `
         -installationDocsSafetyExit $installationDocsSafety.ExitCode `
         -helpScreenSafetyOutput $helpScreenSafety.Output `
@@ -1485,6 +1521,8 @@ Write-HandoffReport `
     -operatorManualsSafetyExit $operatorManualsSafety.ExitCode `
     -backupRestoreDocsSafetyOutput $backupRestoreDocsSafety.Output `
     -backupRestoreDocsSafetyExit $backupRestoreDocsSafety.ExitCode `
+    -restoreWindowsSafetyOutput $restoreWindowsSafety.Output `
+    -restoreWindowsSafetyExit $restoreWindowsSafety.ExitCode `
     -installationDocsSafetyOutput $installationDocsSafety.Output `
     -installationDocsSafetyExit $installationDocsSafety.ExitCode `
     -helpScreenSafetyOutput $helpScreenSafety.Output `
@@ -1556,6 +1594,8 @@ Write-HandoffReport `
     -operatorManualsSafetyExit $operatorManualsSafety.ExitCode `
     -backupRestoreDocsSafetyOutput $backupRestoreDocsSafety.Output `
     -backupRestoreDocsSafetyExit $backupRestoreDocsSafety.ExitCode `
+    -restoreWindowsSafetyOutput $restoreWindowsSafety.Output `
+    -restoreWindowsSafetyExit $restoreWindowsSafety.ExitCode `
     -installationDocsSafetyOutput $installationDocsSafety.Output `
     -installationDocsSafetyExit $installationDocsSafety.ExitCode `
     -helpScreenSafetyOutput $helpScreenSafety.Output `
@@ -1614,6 +1654,7 @@ $allFinalAutomatedGuardsPassed = Test-GuardExitCodesPassed @(
     $startupRepairSafety.ExitCode,
     $operatorManualsSafety.ExitCode,
     $backupRestoreDocsSafety.ExitCode,
+    $restoreWindowsSafety.ExitCode,
     $installationDocsSafety.ExitCode,
     $helpScreenSafety.ExitCode,
     $systemDiagnosticsSafety.ExitCode,
@@ -1667,6 +1708,9 @@ if ($operatorManualsSafety.ExitCode -ne 0) {
 }
 if ($backupRestoreDocsSafety.ExitCode -ne 0) {
     exit $backupRestoreDocsSafety.ExitCode
+}
+if ($restoreWindowsSafety.ExitCode -ne 0) {
+    exit $restoreWindowsSafety.ExitCode
 }
 if ($installationDocsSafety.ExitCode -ne 0) {
     exit $installationDocsSafety.ExitCode

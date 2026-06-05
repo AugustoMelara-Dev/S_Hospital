@@ -140,6 +140,7 @@ El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
 `scripts\validate_startup_repair_safety.ps1`,
 `scripts\validate_operator_manuals_safety.ps1`,
 `scripts\validate_backup_restore_docs_safety.ps1`,
+`scripts\validate_restore_windows_safety.ps1`,
 `scripts\validate_installation_docs_safety.ps1`,
 `scripts\validate_help_screen_safety.ps1`,
 `scripts\validate_system_diagnostics_safety.ps1`,
@@ -181,6 +182,10 @@ comparado contra la fuente versionada.
 Tambien debe conservar `scripts\validate_offline_release_staging_safety.ps1`
 para confirmar que `make_offline_release.ps1` publica por staging y conserva el
 paquete anterior si falla el guard, Docker o el swap final.
+Tambien debe conservar `scripts\validate_restore_windows_safety.ps1` para
+confirmar que `scripts\restore_hospital_windows.ps1` mantiene `-SelfTest`,
+solo acepta bases descartables, rechaza nombres productivos, no expone password
+en consola y conserva documentacion con `qa\FINAL_RESTORE_PROOF.md`.
 Antes de entregar accesos directos o scripts de recuperacion, ejecute
 `scripts\validate_startup_repair_safety.ps1`; debe reportar
 `STARTUP_REPAIR_SAFETY: YES` para confirmar que los flujos de arranque,
@@ -199,6 +204,13 @@ Antes de entregar instrucciones de respaldo/restauracion, ejecute
 `scripts\validate_backup_restore_docs_safety.ps1`; debe reportar
 `BACKUP_RESTORE_DOCS_SAFETY: YES` para confirmar que la guia conserva
 respaldo manual, worker, retencion, restore descartable y evidencia final.
+Antes de usar el helper Windows de restauracion en XAMPP, ejecute
+`scripts\restore_hospital_windows.ps1 -SelfTest` y despues
+`scripts\validate_restore_windows_safety.ps1`; debe reportar
+`RESTORE_WINDOWS_SAFETY: YES`. Use `scripts\restore_hospital_windows.ps1` solo
+contra una base descartable cuyo nombre contenga `test`, `restore`,
+`validation` o `disposable`; nunca contra la base activa de produccion. Al
+terminar la prueba segura, complete `qa\FINAL_RESTORE_PROOF.md`.
 Antes de entregar instalacion o mantenimiento, ejecute
 `scripts\validate_installation_docs_safety.ps1`; debe reportar
 `INSTALLATION_DOCS_SAFETY: YES` para confirmar que la guia conserva instalacion
