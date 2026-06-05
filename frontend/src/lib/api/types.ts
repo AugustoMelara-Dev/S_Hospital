@@ -235,6 +235,7 @@ export type ReceiptData = {
     cashier: string | null;
     tax_label?: string | null;
     tax_rate?: string | null;
+    total_in_words?: string | null;
   };
   items: Array<
     Pick<

@@ -7,6 +7,7 @@ namespace App\Actions\Receipts;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Support\HospitalName;
+use App\Support\LempiraAmountWords;
 use App\Support\ReceiptPaperSize;
 
 class GenerateReceiptDataAction
@@ -65,6 +66,7 @@ class GenerateReceiptDataAction
                 'tax_amount' => $invoice->tax_amount,
                 'discount_amount' => $invoice->discount_amount,
                 'total' => $invoice->total,
+                'total_in_words' => LempiraAmountWords::fromDecimal((string) $invoice->total),
                 'paid_amount' => $invoice->paid_amount,
                 'balance_due' => $invoice->balance_due,
                 'status' => $invoice->status,

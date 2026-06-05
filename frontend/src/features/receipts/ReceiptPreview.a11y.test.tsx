@@ -14,6 +14,7 @@ function buildReceipt(): ReceiptData {
       id: 1,
       invoice_number: '000-001-01-00000001',
       issued_at: '2026-06-02T08:00:00Z',
+      total_in_words: 'DIECISIETE LEMPIRAS CON VEINTICINCO CENTAVOS',
       patient_name: 'Paciente Validacion',
       cashier: 'Cajero Validacion',
       status: 'paid',

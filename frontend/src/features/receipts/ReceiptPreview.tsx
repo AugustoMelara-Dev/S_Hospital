@@ -155,6 +155,9 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
             <Row label="Subtotal" value={moneyLabel(receipt.invoice.subtotal)} />
             <Row label={taxLabel} value={moneyLabel(receipt.invoice.tax_amount)} />
             <Row label="TOTAL" value={moneyLabel(receipt.invoice.total)} strong />
+            {receipt.invoice.total_in_words ? (
+              <Row label="Valor en lempiras" value={receipt.invoice.total_in_words} />
+            ) : null}
             {(parseCents(receipt.invoice.paid_amount) ?? 0) > 0 ? (
               <Row label="Pagado" value={moneyLabel(receipt.invoice.paid_amount)} />
             ) : null}

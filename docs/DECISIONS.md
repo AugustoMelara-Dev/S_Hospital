@@ -3418,3 +3418,11 @@ Contexto: el talonario manual del hospital identifica la relacion entre original
 Decision: GenerateReceiptDataAction y ReceiptPreview usan Original / Copia como marca institucional. La reimpresion conserva datos historicos de factura y el cambio no agrega QR, barcode, codigos internos ni campos tecnicos al recibo.
 
 Criterio de verificacion: CashPaymentsReceiptTest valida data.institutional.copy_label; ReceiptPreview.test valida que la marca Original / Copia se renderiza en el recibo.
+
+## 2026-06-05 - Valor en lempiras del recibo institucional
+
+Contexto: el talonario manual del hospital incluye valor en lempiras. El recibo digital mostraba montos numericos, pero no el total escrito en palabras para lectura y comparacion manual.
+
+Decision: el backend calcula invoice.total_in_words desde el total snapshot de la factura usando centavos enteros y lo entrega al recibo. ReceiptPreview solo renderiza el texto recibido como Valor en lempiras, sin recalcular dinero en frontend.
+
+Criterio de verificacion: LempiraAmountWordsTest valida conversiones sin floats; CashPaymentsReceiptTest valida data.invoice.total_in_words; ReceiptPreview.test valida la fila visible Valor en lempiras.

@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ReceiptPreview } from './ReceiptPreview';
 import type { ReceiptData } from '../../lib/api';
@@ -159,6 +160,27 @@ describe('ReceiptPreview', () => {
 
     expect(screen.getByText('Original / Copia')).toBeInTheDocument();
   });
+
+  it('shows the total written as lempiras for the manual receipt format', () => {
+    render(
+      <ReceiptPreview
+        receipt={receiptFixture()}
+        onPrint={vi.fn()}
+        onWidthChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Valor en lempiras')).toBeInTheDocument();
+    expect(screen.getByText('DIECISIETE LEMPIRAS CON VEINTICINCO CENTAVOS')).toBeInTheDocument();
+  });
+
+  it('allows long receipt row values to wrap instead of overflowing the paper', () => {
+    const styles = readFileSync('src/styles.css', 'utf8');
+
+    expect(styles).toContain('.receipt-row > span');
+    expect(styles).toContain('min-width: 0;');
+    expect(styles).toContain('overflow-wrap: anywhere;');
+  });
 });
 
 function receiptFixture(): ReceiptData {
@@ -200,6 +222,7 @@ function receiptFixture(): ReceiptData {
       cashier: 'Cajero Validacion',
       tax_label: 'ISV',
       tax_rate: '15.00',
+      total_in_words: 'DIECISIETE LEMPIRAS CON VEINTICINCO CENTAVOS',
     },
     items: [
       {

@@ -567,6 +567,17 @@ html.dark {
     min-height: 22px;
   }
 
+  .receipt-row > span,
+  .receipt-row > strong {
+    min-width: 0;
+  }
+
+  .receipt-row > span:last-child,
+  .receipt-row > strong:last-child {
+    overflow-wrap: anywhere;
+    text-align: right;
+  }
+
   .receipt-row .strong {
     font-weight: bold;
   }
