@@ -8,7 +8,7 @@ al procedimiento correcto.
 ## Cómo usar este manual
 
 1. Identifica tu rol: Cajero, Supervisor, Administrador o
-   Soporte Tecnico de Primer Nivel.
+   Soporte Local de Primer Nivel.
 2. Salta a la seccion de tu rol.
 3. Sigue el procedimiento paso a paso.
 4. Si el problema escapa al procedimiento, escala al siguiente
@@ -37,7 +37,7 @@ al procedimiento correcto.
   areas, configuracion fiscal, mantenimiento programado,
   supervision de respaldos.
 
-### Soporte Tecnico de Primer Nivel
+### Soporte Local de Primer Nivel
 
 - Manual: `GUIA_SOPORTE_PRIMER_NIVEL.md`
 - Casos cubiertos: diagnosis de red, reinicio de servicios,
@@ -61,7 +61,7 @@ Cajero
        -> Supervisor (revisa la consola del cajero, valida la
                        transaccion en Historial)
             -> falla de sistema (caja no abre, error 5xx)
-                -> Soporte Tecnico
+                -> Soporte Local
                      -> necesita intervencion administrativa
                          -> Administrador
 ```
@@ -96,18 +96,18 @@ en PowerShell como Administrador.
 | "Caja esta cerrada o cambio de estado" | Verificar caja; pedir a supervisor si esta cerrada por otro cajero. |
 | "La factura o el pago ya cambio de estado" | Verificar en Historial; no repetir la operacion. |
 | "Sistema en mantenimiento" | Esperar el tiempo indicado. |
-| "No se pudo conectar con el servidor LAN" | Avisar a soporte tecnico. |
+| "No se pudo conectar con el servidor LAN" | Avisar a soporte local. |
 | "Permiso denegado" | Pedir al supervisor que asigne el permiso. |
 
 ## Contactos
 
 - Supervisor de turno: pegar en la pared del cuarto de caja.
 - Administrador del sistema: pegar en la pared.
-- Soporte tecnico: telefono del proveedor o del equipo interno.
+- Soporte local: telefono del proveedor o del equipo interno.
 
 ## Cambios respecto a la version anterior
 
-- v1.0.0 consolida 8 manuales sueltos + 3 documentos tecnicos en
+- v1.0.0 consolida 8 manuales sueltos + 3 documentos operativos en
   este indice unico.
 - v1.0.0 exige HTTPS local, secrets playbook, comando
   `hospital:maintenance`, throttle por usuario.

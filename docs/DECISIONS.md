@@ -3474,3 +3474,8 @@ Contexto: la pantalla Ayuda es una superficie normal para cajeros, supervisores 
 Decision: HelpView usa estado de respaldos, respaldos pendientes o con error y soporte local. El guard validate_help_screen_safety.ps1 bloquea cola de trabajos, trabajos fallidos, queue, worker y soporte tecnico en esa pantalla.
 
 Criterio de verificacion: HelpView.test y validate_help_screen_safety.ps1 cubren que Ayuda conserve lenguaje institucional sin terminos internos.
+
+## 2026-06-05 - Manuales de operador sin lenguaje interno de respaldo
+Contexto: manuales de cajero/supervisor/administrador e indice de operador son superficies para personal no tecnico y aun usaban worker/trabajos/soporte tecnico.
+Decision: manuales normales usan soporte local, administrador del sistema, automatizacion de respaldos, respaldos pendientes/con error. La guia tecnica puede conservar detalles internos para soporte.
+Criterio de verificacion: validate_operator_manuals_safety.ps1 bloquea worker/cola/trabajos/soporte tecnico/responsable tecnico/comandos tecnicos en manuales normales.

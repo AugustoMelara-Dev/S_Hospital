@@ -59,8 +59,8 @@ Antes de migraciones, actualizaciones o cambios de configuracion fiscal:
 - [ ] Revise que el sistema abra desde el servidor y una computadora cliente.
 - [ ] Revise **Informacion del sistema** o **Respaldos** para confirmar estado operativo.
 - [ ] Confirme que existe respaldo reciente completado.
-- [ ] Confirme que el worker o tarea de respaldos sigue activo.
-- [ ] Revise si hay respaldos fallidos, trabajos pendientes o espacio bajo.
+- [ ] Confirme que la automatizacion de respaldos sigue activa.
+- [ ] Revise si hay respaldos con error, respaldos pendientes o espacio bajo.
 - [ ] Revise usuarios activos y permisos solo cuando haya cambios de personal.
 - [ ] Confirme que no hay evidencia fisica pendiente si se esta preparando entrega final.
 - [ ] Documente incidentes o cambios importantes en el registro interno del hospital.
@@ -79,7 +79,7 @@ Antes de migraciones, actualizaciones o cambios de configuracion fiscal:
 
 El administrador prepara el entorno de entrenamiento. No use la base real para
 practicar anulaciones, restauraciones, cobros ficticios, cierres de caja ni
-comandos tecnicos.
+acciones internas del sistema.
 
 Use `docs\manuales\GUIA_CAPACITACION_SEGURA.md` para preparar la sesion. Si no
 existe un modo practica aislado dentro del producto, use una instalacion

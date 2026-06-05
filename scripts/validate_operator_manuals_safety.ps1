@@ -51,6 +51,7 @@ function Test-ManualChecklistAndWarnings([string] $role, [string] $content) {
 $cashier = Read-Manual "docs\manuales\MANUAL_CAJERO.md"
 $supervisor = Read-Manual "docs\manuales\MANUAL_SUPERVISOR.md"
 $administrator = Read-Manual "docs\manuales\MANUAL_ADMINISTRADOR.md"
+$operatorIndex = Read-Manual "docs\manuales\INDICE_OPERADOR.md"
 $support = Read-Manual "docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md"
 $training = Read-Manual "docs\manuales\GUIA_CAPACITACION_SEGURA.md"
 
@@ -77,11 +78,25 @@ if ($administrator -ne "") {
     }
     Test-Contains $administrator "(?i)No invente CAI|No invente cumplimiento fiscal" "Administrator manual forbids invented fiscal compliance"
     Test-Contains $administrator "(?i)migrate:fresh|seeders de prueba|borrado de volumenes" "Administrator manual forbids destructive production commands"
+    Test-Contains $administrator "(?i)automatizacion\s+de\s+respaldos" "Administrator manual uses operator-friendly backup automation wording"
+    Test-Contains $administrator "(?i)respaldos\s+con\s+error,\s+respaldos\s+pendientes" "Administrator manual uses operator-friendly backup status wording"
+}
+
+if ($operatorIndex -ne "") {
+    Test-Contains $operatorIndex "(?i)Soporte Local de Primer Nivel" "Operator index uses local support wording"
+    Test-Contains $operatorIndex "(?i)Avisar a soporte local" "Operator index routes LAN errors to local support"
 }
 
 $combined = "$cashier`n$supervisor`n$administrator`n$support`n$training"
+$operatorFacing = "$cashier`n$supervisor`n$administrator`n$operatorIndex"
 foreach ($pattern in @("base real", "produccion", "base descartable", "no use la base real", "No restaure", "No borre")) {
     Test-Contains $combined ([regex]::Escape($pattern)) "Operator docs include safe training/support term: $pattern"
+}
+
+if ($operatorFacing -match "(?i)\bworker\b|cola\s+de\s+trabajos|trabajos\s+pendientes|soporte\s+tecnico|responsable\s+tecnico|comandos\s+tecnicos|documentos\s+tecnicos") {
+    Add-Failure "Normal operator manuals expose internal or technical support wording."
+} else {
+    Add-Pass "Normal operator manuals avoid internal backup/support wording"
 }
 
 if ($combined -match "(?i)DB_PASSWORD\s*=|APP_KEY\s*=|TOKEN\s*=|SECRET\s*=") {

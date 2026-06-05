@@ -1,7 +1,7 @@
 # Manual Del Supervisor
 
 Este manual es para el responsable de turno que acompana al cajero, revisa
-incidentes y autoriza acciones delicadas sin reemplazar al administrador tecnico.
+incidentes y autoriza acciones delicadas sin reemplazar al administrador del sistema.
 
 ## Inicio Del Turno
 
@@ -85,7 +85,7 @@ ofrece reverso autorizado, detenga el caso y avise a administracion.
 
 - No restaure por cuenta propia.
 - Revise **Respaldos** y detalle avanzado si tiene permiso.
-- Avise al administrador para revisar espacio, worker y ultimo error.
+- Avise al administrador para revisar espacio, estado de respaldos y ultimo error visible.
 
 ### Sesion Vencida O Sin Permiso
 
