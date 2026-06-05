@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
 use App\Models\FiscalSetting;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -198,6 +201,17 @@ class FiscalSettingsTest extends TestCase
             ->assertJsonPath('logo_url', fn (string $url): bool => str_contains($url, '/storage/branding/logo.png?t='));
 
         Storage::disk('public')->assertExists('branding/logo.png');
+
+        $audit = AuditLog::query()
+            ->where('action', 'settings.logo.updated')
+            ->firstOrFail();
+
+        $this->assertSame($admin->id, $audit->user_id);
+        $this->assertSame(FiscalSetting::class, $audit->entity_type);
+        $this->assertSame(['logo_present' => false], $audit->old_values);
+        $this->assertSame(true, $audit->new_values['logo_present']);
+        $this->assertSame('hospital.png', $audit->new_values['original_name']);
+        $this->assertSame('image/png', $audit->new_values['mime_type']);
 
         $this->getJson('/api/settings/logo')
             ->assertOk()
