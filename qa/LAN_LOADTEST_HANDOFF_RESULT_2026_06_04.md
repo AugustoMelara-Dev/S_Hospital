@@ -1,7 +1,7 @@
 # Final production handoff result
 
-- Generated at: 2026-06-04 20:53:47
-- Base URL: https://127.0.0.1
+- Generated at: 2026-06-04 20:53:00
+- Base URL: http://192.168.1.10:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
 - LAN client proof present without obvious placeholders: False
@@ -110,7 +110,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 ## Next commands
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl https://127.0.0.1 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://192.168.1.10:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1 -WhatIfOnly
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -UpdateExisting
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -Status
@@ -118,7 +118,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_t
 Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"
 # Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report.
-bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=https://127.0.0.1 HOSPITAL_CONCURRENCY_BASE_URL=https://127.0.0.1 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
+bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://192.168.1.10:8000 HOSPITAL_CONCURRENCY_BASE_URL=http://192.168.1.10:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_first_level_support_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_production_ready_gate_safety.ps1
@@ -150,10 +150,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_operati
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_handoff_guard_coverage.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_offline_release_staging_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_dependency_manifest.ps1
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_final_handoff_completeness.ps1 -HandoffPath %PROJECT_ROOT%\qa\FINAL_PRODUCTION_HANDOFF_RESULT.md
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\FINAL_PRODUCTION_HANDOFF_RESULT.md
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl https://127.0.0.1
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl https://127.0.0.1 -PhpPath php
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_final_handoff_completeness.ps1 -HandoffPath %PROJECT_ROOT%\qa\LAN_LOADTEST_HANDOFF_RESULT_2026_06_04.md
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_ops_evidence_index.ps1 -HandoffPath %PROJECT_ROOT%\qa\LAN_LOADTEST_HANDOFF_RESULT_2026_06_04.md
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://192.168.1.10:8000
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://192.168.1.10:8000 -PhpPath php
 ```
 
 ## Backup task status output

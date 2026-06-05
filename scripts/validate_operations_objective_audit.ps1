@@ -130,6 +130,9 @@ if ($failures.Count -eq 0) {
         'qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md',
         'qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md',
         'qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md',
+        'qa/LAN_LOADTEST_SAFETY_2026_06_04.md',
+        'qa/LAN_LOADTEST_HANDOFF_2026_06_04.md',
+        'docs/DECISION_LAN_LOADTEST_HANDOFF_2026_06_04.md',
         'qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md',
         'qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md',
         'qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md',
@@ -147,6 +150,7 @@ if ($failures.Count -eq 0) {
         'qa/PRODUCTION_READY_GATE_HANDOFF_RESULT_2026_06_04.md',
         'qa/PREFLIGHT_WITH_CONCURRENCY_2026_06_03.md',
         'scripts/validate_dependency_manifest.ps1',
+        'scripts/validate_lan_loadtest_safety.ps1',
         'scripts/validate_first_level_support_safety.ps1',
         'scripts/validate_production_ready_gate_safety.ps1',
         'scripts/validate_final_field_blockers_safety.ps1'

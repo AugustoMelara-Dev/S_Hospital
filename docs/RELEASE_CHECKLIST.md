@@ -147,6 +147,7 @@ El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
 `scripts\validate_double_action_safety.ps1`,
 `scripts\validate_installer_legacy_safety.ps1`,
 `scripts\validate_lan_recovery_safety.ps1`,
+`scripts\validate_lan_loadtest_safety.ps1`,
 `scripts\validate_shift_incident_recovery_safety.ps1` y
 `scripts\validate_training_safety.ps1`. Ejecute tambien
 `scripts\validate_operations_objective_audit.ps1` para confirmar que los

@@ -97,7 +97,9 @@ if ($failures.Count -eq 0) {
     Assert-Content '(?i)Production ready gate safety validation' "El handoff debe conservar la salida del guard del gate PRODUCTION_READY."
     Assert-Content '(?i)Final field blockers safety self-test' "El handoff debe conservar la salida del self-test de bloqueantes fisicos finales."
     Assert-Content '(?i)Supervised training acceptance proof' "El handoff debe conservar la prueba de aceptacion de capacitacion supervisada."
+    Assert-Content '(?i)LAN loadtest safety validation' "El handoff debe conservar la salida del guard LAN/loadtest."
     Assert-Content 'KNOWN_LIMITATIONS_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de limitaciones conocidas."
+    Assert-Content 'LAN_LOADTEST_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo del guard LAN/loadtest."
     Assert-Content 'NEW_INVOICE_MAINTAINABILITY:\s*YES' "El handoff debe conservar el resultado positivo de mantenibilidad de nueva factura."
     Assert-Content 'HANDOFF_GUARD_COVERAGE:\s*YES' "El handoff debe conservar el resultado positivo de cobertura handoff/offline."
     Assert-Content 'OFFLINE_RELEASE_STAGING_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de staging seguro del release offline."
@@ -139,6 +141,8 @@ if ($failures.Count -eq 0) {
         'HANDOFF_GUARD_COVERAGE_2026_06_04.md',
         'OFFLINE_RELEASE_STAGING_SAFETY_2026_06_04.md',
         'OFFLINE_RELEASE_REGEN_2026_06_04.md',
+        'LAN_LOADTEST_SAFETY_2026_06_04.md',
+        'LAN_LOADTEST_HANDOFF_2026_06_04.md',
         'RESTORE_WINDOWS_SAFETY_2026_06_04.md',
         'PRODUCTION_READY_GATE_VALIDATOR_2026_06_04.md'
     )
@@ -163,6 +167,7 @@ if ($failures.Count -eq 0) {
         'scripts/validate_browser_smoke_evidence.ps1',
         'scripts/validate_shift_incident_recovery_safety.ps1',
         'scripts/validate_lan_recovery_safety.ps1',
+        'scripts/validate_lan_loadtest_safety.ps1',
         'scripts/validate_known_limitations_safety.ps1',
         'scripts/validate_maintenance_mode_safety.ps1',
         'scripts/validate_permission_audit_safety.ps1',
@@ -201,6 +206,7 @@ if ($failures.Count -eq 0) {
         'validate_new_invoice_maintainability.ps1',
         'validate_handoff_guard_coverage.ps1',
         'validate_offline_release_staging_safety.ps1',
+        'validate_lan_loadtest_safety.ps1',
         'validate_restore_windows_safety.ps1',
         'validate_first_level_support_safety.ps1',
         'validate_production_ready_gate_safety.ps1',

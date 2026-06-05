@@ -60,6 +60,7 @@ $systemDiagnosticsSafetyScript = Join-Path $scriptsDir "validate_system_diagnost
 $doubleActionSafetyScript = Join-Path $scriptsDir "validate_double_action_safety.ps1"
 $installerLegacySafetyScript = Join-Path $scriptsDir "validate_installer_legacy_safety.ps1"
 $lanRecoverySafetyScript = Join-Path $scriptsDir "validate_lan_recovery_safety.ps1"
+$lanLoadtestSafetyScript = Join-Path $scriptsDir "validate_lan_loadtest_safety.ps1"
 $knownLimitationsSafetyScript = Join-Path $scriptsDir "validate_known_limitations_safety.ps1"
 $maintenanceModeSafetyScript = Join-Path $scriptsDir "validate_maintenance_mode_safety.ps1"
 $permissionAuditSafetyScript = Join-Path $scriptsDir "validate_permission_audit_safety.ps1"
@@ -489,6 +490,18 @@ function Invoke-LanRecoverySafetyGuard {
     }
 }
 
+function Invoke-LanLoadtestSafetyGuard {
+    Write-Section "LAN loadtest safety validation"
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $lanLoadtestSafetyScript -Root $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
 function Invoke-KnownLimitationsSafetyGuard {
     Write-Section "Known limitations safety validation"
     $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $knownLimitationsSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
@@ -646,6 +659,8 @@ function Write-HandoffReport(
     [int] $installerLegacySafetyExit,
     [string[]] $lanRecoverySafetyOutput,
     [int] $lanRecoverySafetyExit,
+    [string[]] $lanLoadtestSafetyOutput,
+    [int] $lanLoadtestSafetyExit,
     [string[]] $knownLimitationsSafetyOutput,
     [int] $knownLimitationsSafetyExit,
     [string[]] $maintenanceModeSafetyOutput,
@@ -704,6 +719,7 @@ function Write-HandoffReport(
         $doubleActionSafetyExit,
         $installerLegacySafetyExit,
         $lanRecoverySafetyExit,
+        $lanLoadtestSafetyExit,
         $knownLimitationsSafetyExit,
         $maintenanceModeSafetyExit,
         $permissionAuditSafetyExit,
@@ -756,6 +772,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Double-action safety guard exit code: $doubleActionSafetyExit"
     Add-ReportLine $lines "- Installer legacy safety guard exit code: $installerLegacySafetyExit"
     Add-ReportLine $lines "- LAN recovery safety guard exit code: $lanRecoverySafetyExit"
+    Add-ReportLine $lines "- LAN loadtest safety guard exit code: $lanLoadtestSafetyExit"
     Add-ReportLine $lines "- Known limitations safety guard exit code: $knownLimitationsSafetyExit"
     Add-ReportLine $lines "- Maintenance mode safety guard exit code: $maintenanceModeSafetyExit"
     Add-ReportLine $lines "- Permission audit safety guard exit code: $permissionAuditSafetyExit"
@@ -856,6 +873,9 @@ function Write-HandoffReport(
     if ($lanRecoverySafetyExit -ne 0) {
         Add-ReportLine $lines "- LAN recovery safety validation returned exit code $lanRecoverySafetyExit."
     }
+    if ($lanLoadtestSafetyExit -ne 0) {
+        Add-ReportLine $lines "- LAN loadtest safety validation returned exit code $lanLoadtestSafetyExit."
+    }
     if ($knownLimitationsSafetyExit -ne 0) {
         Add-ReportLine $lines "- Known limitations safety validation returned exit code $knownLimitationsSafetyExit."
     }
@@ -918,10 +938,10 @@ function Write-HandoffReport(
     Add-ReportLine $lines '- System diagnostics and Help/support guards: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`, `qa/FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md`.'
     Add-ReportLine $lines '- Backup worker and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.'
     Add-ReportLine $lines '- Concurrency and double-action evidence: `qa/FINAL_CONCURRENCY_PROOF.md` and `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md`.'
-    Add-ReportLine $lines '- Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.'
+    Add-ReportLine $lines '- Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/LAN_LOADTEST_SAFETY_2026_06_04.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.'
     Add-ReportLine $lines '- New invoice maintainability guard: `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` and `scripts/validate_new_invoice_maintainability.ps1` preserve a short cashier-facing invoice flow.'
     Add-ReportLine $lines '- Operator and training evidence: `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md`, `qa/TRAINING_SAFETY_2026_06_03.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md` and `qa/TRAINING_ACCEPTANCE_PROOF.md`.'
-    Add-ReportLine $lines '- Field proof, final blockers, proof initialization, handoff guard coverage, offline release staging, offline builder, offline release guard, offline regeneration, objective, release and index evidence: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/FINAL_FIELD_BLOCKERS_SAFETY_2026_06_04.md`, `qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md`, `qa/HANDOFF_GUARD_COVERAGE_2026_06_04.md`, `qa/OFFLINE_RELEASE_STAGING_SAFETY_2026_06_04.md`, `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`, `qa/OFFLINE_RELEASE_REGEN_2026_06_04.md`, `qa/PRODUCTION_READY_GATE_VALIDATOR_2026_06_04.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`.'
+    Add-ReportLine $lines '- Field proof, final blockers, LAN/loadtest, proof initialization, handoff guard coverage, offline release staging, offline builder, offline release guard, offline regeneration, objective, release and index evidence: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/FINAL_FIELD_BLOCKERS_SAFETY_2026_06_04.md`, `qa/LAN_LOADTEST_SAFETY_2026_06_04.md`, `qa/LAN_LOADTEST_HANDOFF_2026_06_04.md`, `qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md`, `qa/HANDOFF_GUARD_COVERAGE_2026_06_04.md`, `qa/OFFLINE_RELEASE_STAGING_SAFETY_2026_06_04.md`, `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`, `qa/OFFLINE_RELEASE_REGEN_2026_06_04.md`, `qa/PRODUCTION_READY_GATE_VALIDATOR_2026_06_04.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`.'
     Add-ReportLine $lines ""
 
     Add-ReportLine $lines "## Tests and gates to preserve"
@@ -937,7 +957,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '- In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.'
     Add-ReportLine $lines '- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/restore_hospital_windows.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.'
-    Add-ReportLine $lines '- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_support_packet_safety.ps1`, `scripts/validate_first_level_support_safety.ps1`, `scripts/validate_production_ready_gate_safety.ps1`, `scripts/validate_final_field_blockers_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.'
+    Add-ReportLine $lines '- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_support_packet_safety.ps1`, `scripts/validate_first_level_support_safety.ps1`, `scripts/validate_production_ready_gate_safety.ps1`, `scripts/validate_final_field_blockers_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_lan_loadtest_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.'
     Add-ReportLine $lines '- Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.'
     Add-ReportLine $lines ""
 
@@ -988,6 +1008,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_double_action_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installer_legacy_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_recovery_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_loadtest_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_known_limitations_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_maintenance_mode_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_permission_audit_safety.ps1"
@@ -1244,6 +1265,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
+    Add-ReportLine $lines "## LAN loadtest safety validation output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $lanLoadtestSafetyOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
     Add-ReportLine $lines "## Known limitations safety validation output"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
@@ -1361,6 +1391,7 @@ Assert-ScriptExists $systemDiagnosticsSafetyScript
 Assert-ScriptExists $doubleActionSafetyScript
 Assert-ScriptExists $installerLegacySafetyScript
 Assert-ScriptExists $lanRecoverySafetyScript
+Assert-ScriptExists $lanLoadtestSafetyScript
 Assert-ScriptExists $knownLimitationsSafetyScript
 Assert-ScriptExists $maintenanceModeSafetyScript
 Assert-ScriptExists $permissionAuditSafetyScript
@@ -1442,6 +1473,7 @@ $systemDiagnosticsSafety = Invoke-SystemDiagnosticsSafetyGuard
 $doubleActionSafety = Invoke-DoubleActionSafetyGuard
 $installerLegacySafety = Invoke-InstallerLegacySafetyGuard
 $lanRecoverySafety = Invoke-LanRecoverySafetyGuard
+$lanLoadtestSafety = Invoke-LanLoadtestSafetyGuard
 $knownLimitationsSafety = Invoke-KnownLimitationsSafetyGuard
 $maintenanceModeSafety = Invoke-MaintenanceModeSafetyGuard
 $permissionAuditSafety = Invoke-PermissionAuditSafetyGuard
@@ -1501,6 +1533,8 @@ if ($SkipPreflight) {
         -installerLegacySafetyExit $installerLegacySafety.ExitCode `
         -lanRecoverySafetyOutput $lanRecoverySafety.Output `
         -lanRecoverySafetyExit $lanRecoverySafety.ExitCode `
+        -lanLoadtestSafetyOutput $lanLoadtestSafety.Output `
+        -lanLoadtestSafetyExit $lanLoadtestSafety.ExitCode `
         -knownLimitationsSafetyOutput $knownLimitationsSafety.Output `
         -knownLimitationsSafetyExit $knownLimitationsSafety.ExitCode `
         -maintenanceModeSafetyOutput $maintenanceModeSafety.Output `
@@ -1581,6 +1615,8 @@ if ($SkipPreflight) {
         -installerLegacySafetyExit $installerLegacySafety.ExitCode `
         -lanRecoverySafetyOutput $lanRecoverySafety.Output `
         -lanRecoverySafetyExit $lanRecoverySafety.ExitCode `
+        -lanLoadtestSafetyOutput $lanLoadtestSafety.Output `
+        -lanLoadtestSafetyExit $lanLoadtestSafety.ExitCode `
         -knownLimitationsSafetyOutput $knownLimitationsSafety.Output `
         -knownLimitationsSafetyExit $knownLimitationsSafety.ExitCode `
         -maintenanceModeSafetyOutput $maintenanceModeSafety.Output `
@@ -1666,6 +1702,8 @@ Write-HandoffReport `
     -installerLegacySafetyExit $installerLegacySafety.ExitCode `
     -lanRecoverySafetyOutput $lanRecoverySafety.Output `
     -lanRecoverySafetyExit $lanRecoverySafety.ExitCode `
+    -lanLoadtestSafetyOutput $lanLoadtestSafety.Output `
+    -lanLoadtestSafetyExit $lanLoadtestSafety.ExitCode `
     -knownLimitationsSafetyOutput $knownLimitationsSafety.Output `
     -knownLimitationsSafetyExit $knownLimitationsSafety.ExitCode `
     -maintenanceModeSafetyOutput $maintenanceModeSafety.Output `
@@ -1746,6 +1784,8 @@ Write-HandoffReport `
     -installerLegacySafetyExit $installerLegacySafety.ExitCode `
     -lanRecoverySafetyOutput $lanRecoverySafety.Output `
     -lanRecoverySafetyExit $lanRecoverySafety.ExitCode `
+    -lanLoadtestSafetyOutput $lanLoadtestSafety.Output `
+    -lanLoadtestSafetyExit $lanLoadtestSafety.ExitCode `
     -knownLimitationsSafetyOutput $knownLimitationsSafety.Output `
     -knownLimitationsSafetyExit $knownLimitationsSafety.ExitCode `
     -maintenanceModeSafetyOutput $maintenanceModeSafety.Output `
@@ -1802,6 +1842,7 @@ $allFinalAutomatedGuardsPassed = Test-GuardExitCodesPassed @(
     $doubleActionSafety.ExitCode,
     $installerLegacySafety.ExitCode,
     $lanRecoverySafety.ExitCode,
+    $lanLoadtestSafety.ExitCode,
     $knownLimitationsSafety.ExitCode,
     $maintenanceModeSafety.ExitCode,
     $permissionAuditSafety.ExitCode,
@@ -1879,6 +1920,9 @@ if ($installerLegacySafety.ExitCode -ne 0) {
 }
 if ($lanRecoverySafety.ExitCode -ne 0) {
     exit $lanRecoverySafety.ExitCode
+}
+if ($lanLoadtestSafety.ExitCode -ne 0) {
+    exit $lanLoadtestSafety.ExitCode
 }
 if ($knownLimitationsSafety.ExitCode -ne 0) {
     exit $knownLimitationsSafety.ExitCode
