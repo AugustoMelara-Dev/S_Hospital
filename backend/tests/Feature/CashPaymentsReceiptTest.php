@@ -823,7 +823,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonCount(1, 'data.payments');
 
         $receiptItem = $receipt->json('data.items.0');
-        foreach (['service_id', 'scan_code', 'barcode', 'qr_code'] as $technicalField) {
+        foreach (['service_id', 'scan_code', 'barcode', 'qr_code', 'special_rule_code'] as $technicalField) {
             $this->assertArrayNotHasKey($technicalField, $receiptItem);
         }
 

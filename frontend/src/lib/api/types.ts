@@ -246,7 +246,6 @@ export type ReceiptData = {
       | 'unit_price'
       | 'tax_amount'
       | 'line_total'
-      | 'special_rule_code'
       | 'special_rule_applied'
       | 'notes'
     >

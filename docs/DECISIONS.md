@@ -3426,3 +3426,11 @@ Contexto: el talonario manual del hospital incluye valor en lempiras. El recibo 
 Decision: el backend calcula invoice.total_in_words desde el total snapshot de la factura usando centavos enteros y lo entrega al recibo. ReceiptPreview solo renderiza el texto recibido como Valor en lempiras, sin recalcular dinero en frontend.
 
 Criterio de verificacion: LempiraAmountWordsTest valida conversiones sin floats; CashPaymentsReceiptTest valida data.invoice.total_in_words; ReceiptPreview.test valida la fila visible Valor en lempiras.
+
+## 2026-06-05 - Recibo sin codigos internos de reglas especiales
+
+Contexto: el recibo institucional no debe imprimir ni exponer codigos internos. El contrato de recibo todavia incluia special_rule_code, aunque la vista solo necesitaba saber si una regla fue aplicada para mostrar una etiqueta humana.
+
+Decision: GenerateReceiptDataAction deja de enviar special_rule_code en items del recibo. El dominio y catalogo conservan el codigo para reglas de negocio, pero el recibo solo conserva special_rule_applied y los snapshots visibles del cobro.
+
+Criterio de verificacion: CashPaymentsReceiptTest valida que service_id, scan_code, barcode, qr_code y special_rule_code no aparecen en items del recibo; ReceiptPreview conserva la etiqueta humana sin depender del codigo interno.
