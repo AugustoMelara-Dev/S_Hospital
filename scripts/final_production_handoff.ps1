@@ -46,6 +46,7 @@ $operationsObjectiveAuditScript = Join-Path $scriptsDir "validate_operations_obj
 $handoffGuardCoverageScript = Join-Path $scriptsDir "validate_handoff_guard_coverage.ps1"
 $offlineReleaseStagingSafetyScript = Join-Path $scriptsDir "validate_offline_release_staging_safety.ps1"
 $supportPacketSafetyScript = Join-Path $scriptsDir "validate_support_packet_safety.ps1"
+$firstLevelSupportSafetyScript = Join-Path $scriptsDir "validate_first_level_support_safety.ps1"
 $browserSmokeEvidenceScript = Join-Path $scriptsDir "validate_browser_smoke_evidence.ps1"
 $startupRepairSafetyScript = Join-Path $scriptsDir "validate_startup_repair_safety.ps1"
 $operatorManualsSafetyScript = Join-Path $scriptsDir "validate_operator_manuals_safety.ps1"
@@ -212,6 +213,18 @@ function Invoke-TrainingSafetyGuard {
 function Invoke-SupportPacketSafetyGuard {
     Write-Section "Support packet safety validation"
     $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $supportPacketSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
+    $exitCode = $LASTEXITCODE
+    $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
+
+    return @{
+        Output = $output
+        ExitCode = $exitCode
+    }
+}
+
+function Invoke-FirstLevelSupportSafetyGuard {
+    Write-Section "First-level support safety validation"
+    $output = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $firstLevelSupportSafetyScript -ProjectRoot $ProjectRoot 2>&1 | ForEach-Object { $_.ToString() })
     $exitCode = $LASTEXITCODE
     $output | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
@@ -577,6 +590,8 @@ function Write-HandoffReport(
     [int] $releaseGuardExit,
     [string[]] $supportPacketSafetyOutput,
     [int] $supportPacketSafetyExit,
+    [string[]] $firstLevelSupportSafetyOutput,
+    [int] $firstLevelSupportSafetyExit,
     [string[]] $browserSmokeEvidenceOutput,
     [int] $browserSmokeEvidenceExit,
     [string[]] $startupRepairSafetyOutput,
@@ -643,6 +658,7 @@ function Write-HandoffReport(
     $allAutomatedGuardsPassed = Test-GuardExitCodesPassed @(
         $releaseGuardExit,
         $supportPacketSafetyExit,
+        $firstLevelSupportSafetyExit,
         $browserSmokeEvidenceExit,
         $startupRepairSafetyExit,
         $operatorManualsSafetyExit,
@@ -690,6 +706,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '- Final concurrency proof file: `qa/FINAL_CONCURRENCY_PROOF.md`'
     Add-ReportLine $lines "- Offline release artifact guard exit code: $releaseGuardExit"
     Add-ReportLine $lines "- Support packet safety guard exit code: $supportPacketSafetyExit"
+    Add-ReportLine $lines "- First-level support safety guard exit code: $firstLevelSupportSafetyExit"
     Add-ReportLine $lines "- Browser smoke evidence guard exit code: $browserSmokeEvidenceExit"
     Add-ReportLine $lines "- Startup and repair safety guard exit code: $startupRepairSafetyExit"
     Add-ReportLine $lines "- Operator manuals safety guard exit code: $operatorManualsSafetyExit"
@@ -755,6 +772,9 @@ function Write-HandoffReport(
     }
     if ($supportPacketSafetyExit -ne 0) {
         Add-ReportLine $lines "- Support packet safety validation returned exit code $supportPacketSafetyExit."
+    }
+    if ($firstLevelSupportSafetyExit -ne 0) {
+        Add-ReportLine $lines "- First-level support safety validation returned exit code $firstLevelSupportSafetyExit."
     }
     if ($browserSmokeEvidenceExit -ne 0) {
         Add-ReportLine $lines "- Browser smoke evidence validation returned exit code $browserSmokeEvidenceExit."
@@ -848,7 +868,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "## Evidence completed in this hardening front"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '- Browser smoke screenshots: `qa/browser-smoke-2026-06-03/rc-e2e-mocked-report.json` and `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md`.'
-    Add-ReportLine $lines '- System diagnostics and Help/support guards: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`.'
+    Add-ReportLine $lines '- System diagnostics and Help/support guards: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`, `qa/FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md`.'
     Add-ReportLine $lines '- Backup worker and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.'
     Add-ReportLine $lines '- Concurrency and double-action evidence: `qa/FINAL_CONCURRENCY_PROOF.md` and `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md`.'
     Add-ReportLine $lines '- Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.'
@@ -870,7 +890,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '- In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.'
     Add-ReportLine $lines '- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/restore_hospital_windows.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.'
-    Add-ReportLine $lines '- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.'
+    Add-ReportLine $lines '- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_support_packet_safety.ps1`, `scripts/validate_first_level_support_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.'
     Add-ReportLine $lines '- Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.'
     Add-ReportLine $lines ""
 
@@ -906,6 +926,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "# Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report."
     Add-ReportLine $lines "bash -lc `"HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_BASE_URL=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh`""
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1"
+    Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_first_level_support_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_browser_smoke_evidence.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_startup_repair_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_operator_manuals_safety.ps1"
@@ -961,6 +982,15 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $supportPacketSafetyOutput) {
+        Add-ReportLine $lines (Protect-HandoffText $line)
+    }
+    Add-ReportLine $lines '```'
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## First-level support safety validation output"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '```text'
+    foreach ($line in $firstLevelSupportSafetyOutput) {
         Add-ReportLine $lines (Protect-HandoffText $line)
     }
     Add-ReportLine $lines '```'
@@ -1249,6 +1279,7 @@ Assert-ScriptExists $operationsObjectiveAuditScript
 Assert-ScriptExists $handoffGuardCoverageScript
 Assert-ScriptExists $offlineReleaseStagingSafetyScript
 Assert-ScriptExists $supportPacketSafetyScript
+Assert-ScriptExists $firstLevelSupportSafetyScript
 Assert-ScriptExists $browserSmokeEvidenceScript
 Assert-ScriptExists $startupRepairSafetyScript
 Assert-ScriptExists $operatorManualsSafetyScript
@@ -1321,6 +1352,7 @@ $releaseGuardExit = $LASTEXITCODE
 $releaseGuardOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
 
 $supportPacketSafety = Invoke-SupportPacketSafetyGuard
+$firstLevelSupportSafety = Invoke-FirstLevelSupportSafetyGuard
 $browserSmokeEvidence = Invoke-BrowserSmokeEvidenceGuard
 $startupRepairSafety = Invoke-StartupRepairSafetyGuard
 $operatorManualsSafety = Invoke-OperatorManualsSafetyGuard
@@ -1362,6 +1394,8 @@ if ($SkipPreflight) {
         -releaseGuardExit $releaseGuardExit `
         -supportPacketSafetyOutput $supportPacketSafety.Output `
         -supportPacketSafetyExit $supportPacketSafety.ExitCode `
+        -firstLevelSupportSafetyOutput $firstLevelSupportSafety.Output `
+        -firstLevelSupportSafetyExit $firstLevelSupportSafety.ExitCode `
         -browserSmokeEvidenceOutput $browserSmokeEvidence.Output `
         -browserSmokeEvidenceExit $browserSmokeEvidence.ExitCode `
         -startupRepairSafetyOutput $startupRepairSafety.Output `
@@ -1435,6 +1469,8 @@ if ($SkipPreflight) {
         -releaseGuardExit $releaseGuardExit `
         -supportPacketSafetyOutput $supportPacketSafety.Output `
         -supportPacketSafetyExit $supportPacketSafety.ExitCode `
+        -firstLevelSupportSafetyOutput $firstLevelSupportSafety.Output `
+        -firstLevelSupportSafetyExit $firstLevelSupportSafety.ExitCode `
         -browserSmokeEvidenceOutput $browserSmokeEvidence.Output `
         -browserSmokeEvidenceExit $browserSmokeEvidence.ExitCode `
         -startupRepairSafetyOutput $startupRepairSafety.Output `
@@ -1513,6 +1549,8 @@ Write-HandoffReport `
     -releaseGuardExit $releaseGuardExit `
     -supportPacketSafetyOutput $supportPacketSafety.Output `
     -supportPacketSafetyExit $supportPacketSafety.ExitCode `
+    -firstLevelSupportSafetyOutput $firstLevelSupportSafety.Output `
+    -firstLevelSupportSafetyExit $firstLevelSupportSafety.ExitCode `
     -browserSmokeEvidenceOutput $browserSmokeEvidence.Output `
     -browserSmokeEvidenceExit $browserSmokeEvidence.ExitCode `
     -startupRepairSafetyOutput $startupRepairSafety.Output `
@@ -1586,6 +1624,8 @@ Write-HandoffReport `
     -releaseGuardExit $releaseGuardExit `
     -supportPacketSafetyOutput $supportPacketSafety.Output `
     -supportPacketSafetyExit $supportPacketSafety.ExitCode `
+    -firstLevelSupportSafetyOutput $firstLevelSupportSafety.Output `
+    -firstLevelSupportSafetyExit $firstLevelSupportSafety.ExitCode `
     -browserSmokeEvidenceOutput $browserSmokeEvidence.Output `
     -browserSmokeEvidenceExit $browserSmokeEvidence.ExitCode `
     -startupRepairSafetyOutput $startupRepairSafety.Output `
@@ -1650,6 +1690,7 @@ $allFinalAutomatedGuardsPassed = Test-GuardExitCodesPassed @(
     $preflightExit,
     $releaseGuardExit,
     $supportPacketSafety.ExitCode,
+    $firstLevelSupportSafety.ExitCode,
     $browserSmokeEvidence.ExitCode,
     $startupRepairSafety.ExitCode,
     $operatorManualsSafety.ExitCode,
@@ -1696,6 +1737,9 @@ if ($releaseGuardExit -ne 0) {
 }
 if ($supportPacketSafety.ExitCode -ne 0) {
     exit $supportPacketSafety.ExitCode
+}
+if ($firstLevelSupportSafety.ExitCode -ne 0) {
+    exit $firstLevelSupportSafety.ExitCode
 }
 if ($browserSmokeEvidence.ExitCode -ne 0) {
     exit $browserSmokeEvidence.ExitCode

@@ -93,11 +93,13 @@ if ($failures.Count -eq 0) {
     Assert-Content '(?i)Handoff guard coverage validation' "El handoff debe conservar la salida del guard de cobertura handoff/offline."
     Assert-Content '(?i)Offline release staging safety validation' "El handoff debe conservar la salida del guard de staging del release offline."
     Assert-Content '(?i)Windows restore safety validation' "El handoff debe conservar la salida del guard de restore Windows seguro."
+    Assert-Content '(?i)First-level support safety validation' "El handoff debe conservar la salida del guard de soporte de primer nivel."
     Assert-Content 'KNOWN_LIMITATIONS_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de limitaciones conocidas."
     Assert-Content 'NEW_INVOICE_MAINTAINABILITY:\s*YES' "El handoff debe conservar el resultado positivo de mantenibilidad de nueva factura."
     Assert-Content 'HANDOFF_GUARD_COVERAGE:\s*YES' "El handoff debe conservar el resultado positivo de cobertura handoff/offline."
     Assert-Content 'OFFLINE_RELEASE_STAGING_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de staging seguro del release offline."
     Assert-Content 'RESTORE_WINDOWS_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de restore Windows seguro."
+    Assert-Content 'FIRST_LEVEL_SUPPORT_SAFETY:\s*YES' "El handoff debe conservar el resultado positivo de soporte de primer nivel."
     Assert-Content 'Only final-field qa/\*\.example\.md templates are allowed in offline release' "El handoff debe conservar la salida del self-test del guard offline."
 
     $requiredEvidence = @(
@@ -105,6 +107,7 @@ if ($failures.Count -eq 0) {
         'SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md',
         'HELP_SCREEN_SAFETY_2026_06_03.md',
         'SUPPORT_PACKET_SAFETY_2026_06_03.md',
+        'FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md',
         'BACKUP_WORKER_SMOKE_2026_06_03.md',
         'FINAL_RESTORE_PROOF',
         'FINAL_CONCURRENCY_PROOF',
@@ -145,6 +148,8 @@ if ($failures.Count -eq 0) {
         'scripts/repair_hospital_system.ps1',
         'scripts/collect_support_packet.ps1',
         'scripts/install_stack_autostart_windows.ps1',
+        'scripts/validate_support_packet_safety.ps1',
+        'scripts/validate_first_level_support_safety.ps1',
         'scripts/validate_browser_smoke_evidence.ps1',
         'scripts/validate_shift_incident_recovery_safety.ps1',
         'scripts/validate_lan_recovery_safety.ps1',
@@ -187,6 +192,7 @@ if ($failures.Count -eq 0) {
         'validate_handoff_guard_coverage.ps1',
         'validate_offline_release_staging_safety.ps1',
         'validate_restore_windows_safety.ps1',
+        'validate_first_level_support_safety.ps1',
         'validate_dependency_manifest.ps1',
         'assert_offline_release_clean.ps1 -SelfTest',
         'production_readiness_preflight.ps1'
