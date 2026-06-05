@@ -62,11 +62,11 @@ local o una URL LAN, usar el gate Windows sin iniciar Vite:
 cd C:\Projects\S_Hospital
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_gate.ps1 `
   -UseExistingServer `
-  -BaseUrl http://127.0.0.1:8000
+  -BaseUrl https://127.0.0.1
 ```
 
 Cambiar `-BaseUrl` por la IP LAN real cuando se valide desde la red, por
-ejemplo `http://192.168.1.10`. Este gate sigue usando los escenarios E2E
+ejemplo `https://192.168.1.10`. Este gate sigue usando los escenarios E2E
 controlados de Playwright; ayuda a detectar rutas rotas, pantalla inicial,
 errores de navegador y regresiones de flujo. No reemplaza las pruebas fisicas
 de impresora, cliente LAN, MySQL/MariaDB real, restore o concurrencia.
@@ -94,7 +94,7 @@ En produccion offline LAN no se borra la base. La validacion segura usa:
 - `.env` real de produccion creado en el servidor y fuera de Git.
 - `APP_ENV=production`.
 - `APP_DEBUG=false`.
-- `APP_URL` con la IP fija o dominio LAN final, por ejemplo `http://192.168.1.10`.
+- `APP_URL` con la IP fija o dominio LAN final, por ejemplo `https://192.168.1.10`.
 - `SANCTUM_STATEFUL_DOMAINS` y CORS/Sanctum alineados al host LAN real y a cualquier dominio local permitido.
 - Admin real creado con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no usar seeders de desarrollo ni `--password=...` en consola.
 - `composer validate`
@@ -113,7 +113,7 @@ Preflight ejecutable en el servidor final:
 ```powershell
 cd C:\Projects\S_Hospital
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 `
-  -BaseUrl http://IP_DEL_SERVIDOR
+  -BaseUrl https://IP_DEL_SERVIDOR
 ```
 
 Handoff guiado de cierre final:
@@ -121,7 +121,7 @@ Handoff guiado de cierre final:
 ```powershell
 cd C:\Projects\S_Hospital
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 `
-  -BaseUrl http://IP_DEL_SERVIDOR `
+  -BaseUrl https://IP_DEL_SERVIDOR `
   -PhpPath C:\xampp\php\php.exe `
   -InitializeProofFiles
 ```
@@ -330,7 +330,7 @@ Evidencia Fase 11: ejecutado contra `http://192.168.1.7:8000` con `HOSPITAL_CONC
 
 LAN fisica:
 
-- Desde otra computadora cliente, abrir `http://IP_DEL_SERVIDOR/login`.
+- Desde otra computadora cliente, abrir `https://IP_DEL_SERVIDOR/login`.
 - Validar `/up`, `/login` y `/verify-email`.
 - Confirmar que los clientes no usan `localhost`.
 - Crear factura, cobrar, ver recibo y reporte desde navegador cliente.
@@ -419,7 +419,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\init_production_
 ```powershell
 cd C:\Projects\S_Hospital
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 `
-  -BaseUrl http://IP_DEL_SERVIDOR `
+  -BaseUrl https://IP_DEL_SERVIDOR `
   -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
 ```
 

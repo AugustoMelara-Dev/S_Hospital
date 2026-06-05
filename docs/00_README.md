@@ -27,8 +27,8 @@ deployment, then jump to the appropriate section below.
   scenarios and the recovery runbook.
 - **[DAILY_CLOSE_PROTOCOL.md](DAILY_CLOSE_PROTOCOL.md)** - End-of-day
   close checklist.
-- **[HTTPS_OPTIONAL.md](HTTPS_OPTIONAL.md)** - Optional self-signed
-  CA + TLS termination in nginx.
+- **[HTTPS_OPTIONAL.md](HTTPS_OPTIONAL.md)** - Required local CA and
+  TLS termination in nginx.
 
 ## Product
 

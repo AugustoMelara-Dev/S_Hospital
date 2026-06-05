@@ -46,6 +46,11 @@ if (-not $ProjectRoot) {
 
 $ErrorActionPreference = "Stop"
 
+$corsHelperPath = Join-Path $ProjectRoot "scripts\lib\cors_helpers.ps1"
+if (Test-Path -LiteralPath $corsHelperPath -PathType Leaf) {
+    . $corsHelperPath
+}
+
 $envFile = Join-Path $ProjectRoot ".env"
 $envValues = @{}
 if (Test-Path -LiteralPath $envFile) {
@@ -60,8 +65,8 @@ if (Test-Path -LiteralPath $envFile) {
 }
 
 $serverIp = if ($envValues.ContainsKey("SERVER_IP") -and $envValues["SERVER_IP"] -ne "") { $envValues["SERVER_IP"] } else { "127.0.0.1" }
-$appPort = if ($envValues.ContainsKey("APP_PORT") -and $envValues["APP_PORT"] -ne "") { $envValues["APP_PORT"] } else { "8000" }
-$appUrl = "http://$serverIp`:$appPort"
+$appPort = if ($envValues.ContainsKey("APP_HTTPS_PORT") -and $envValues["APP_HTTPS_PORT"] -ne "") { $envValues["APP_HTTPS_PORT"] } elseif ($envValues.ContainsKey("APP_PORT") -and $envValues["APP_PORT"] -ne "") { $envValues["APP_PORT"] } else { "443" }
+$appUrl = if (Get-Command Get-HospitalLanUrl -ErrorAction SilentlyContinue) { Get-HospitalLanUrl -ServerIp $serverIp -HttpsPort ([int]$appPort) } else { "https://$serverIp" }
 $date = (Get-Date).ToString("yyyy-MM-dd HH:mm")
 $responsible = $env:USERNAME
 

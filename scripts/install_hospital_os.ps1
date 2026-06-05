@@ -36,6 +36,39 @@ $scriptPath = $MyInvocation.MyCommand.Path
 $scriptsDir = Split-Path $scriptPath -Parent
 $workspaceRoot = Split-Path $scriptsDir -Parent
 $backendRoot = Join-Path $workspaceRoot "backend"
+$corsHelperPath = Join-Path $scriptsDir "lib\cors_helpers.ps1"
+if (Test-Path -LiteralPath $corsHelperPath -PathType Leaf) {
+    . $corsHelperPath
+}
+
+function Get-InstallerLanUrl {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $LanIp
+    )
+
+    if (Get-Command Get-HospitalLanUrl -ErrorAction SilentlyContinue) {
+        return Get-HospitalLanUrl -ServerIp $LanIp -HttpsPort 443
+    }
+
+    return "https://$LanIp"
+}
+
+function Get-InstallerCorsValues {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $LanIp
+    )
+
+    if (Get-Command Get-ProductionCorsValues -ErrorAction SilentlyContinue) {
+        return Get-ProductionCorsValues -ServerIp $LanIp -AppPort 443
+    }
+
+    [pscustomobject]@{
+        SanctumStatefulDomains = "$LanIp,$($LanIp):443"
+        CorsAllowedOrigins     = "https://$LanIp,https://$($LanIp):443"
+    }
+}
 
 function Get-InstallerVersion {
     try {
@@ -389,12 +422,12 @@ if ($useGui) {
                     <TextBlock Text="Paso 5: Completar Instalacion de Red LAN" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
                     <TextBlock Text="El Sistema de Caja Hospitalaria esta configurado. Se puede habilitar la apertura de puerto en el Firewall de Windows para admitir conexiones entrantes en su LAN." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
                     
-                    <CheckBox Name="ChkOpenFirewall" Content="Abrir Puerto 8000 en el Firewall de Windows para clientes LAN" IsChecked="True" FontSize="13" FontWeight="SemiBold" Foreground="#0F172A" Margin="0,0,0,15"/>
+                    <CheckBox Name="ChkOpenFirewall" Content="Abrir puertos 80 y 443 en el Firewall de Windows para clientes LAN" IsChecked="True" FontSize="13" FontWeight="SemiBold" Foreground="#0F172A" Margin="0,0,0,15"/>
                     
                     <Border Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1" Padding="15" CornerRadius="8">
                         <StackPanel>
                             <TextBlock Text="Direccion Web LAN para Clientes:" FontWeight="Bold" Foreground="#0F172A" FontSize="12"/>
-                            <TextBlock Name="TxtLanUrl" Text="http://192.168.1.15:8000" FontSize="16" FontWeight="Bold" Foreground="#0D9488" Margin="0,6,0,0"/>
+                            <TextBlock Name="TxtLanUrl" Text="https://192.168.1.15" FontSize="16" FontWeight="Bold" Foreground="#0D9488" Margin="0,6,0,0"/>
                             <TextBlock Text="Copie y guarde este enlace. Desde cualquier tablet, PC o laptop en la misma red local LAN, ingrese esta URL en Chrome/Edge para facturar." FontSize="11" Foreground="#64748B" TextWrapping="Wrap" Margin="0,8,0,0"/>
                         </StackPanel>
                     </Border>
@@ -480,7 +513,7 @@ if ($useGui) {
             $PanelStep5.Visibility = [System.Windows.Visibility]::Visible
             $BtnBack.IsEnabled = $true
             $BtnNext.Content = "Terminar"
-            $TxtLanUrl.Text = "http://$($TxtLanIp.Text):8000"
+            $TxtLanUrl.Text = Get-InstallerLanUrl -LanIp $TxtLanIp.Text
         }
     }
 
@@ -508,12 +541,16 @@ if ($useGui) {
             # Finalize setup
             try {
                 $dbPassVal = $TxtDbPass.Password
+                $lanUrl = Get-InstallerLanUrl -LanIp $TxtLanIp.Text
+                $corsValues = Get-InstallerCorsValues -LanIp $TxtLanIp.Text
                 # Update backend/.env file
                 $vars = @{
                     "APP_VERSION" = $installedVersion
-                    "APP_URL" = "http://$($TxtLanIp.Text):8000"
-                    "SANCTUM_STATEFUL_DOMAINS" = "localhost,localhost:3000,localhost:5173,127.0.0.1,127.0.0.1:8000,127.0.0.1:5173,$($TxtLanIp.Text),$($TxtLanIp.Text):8000,$($TxtLanIp.Text):5173,::1"
-                    "CORS_ALLOWED_ORIGINS" = "http://localhost:5173,http://127.0.0.1:5173,http://$($TxtLanIp.Text):5173,http://$($TxtLanIp.Text):8000"
+                    "APP_URL" = $lanUrl
+                    "APP_HTTPS_PORT" = "443"
+                    "APP_PORT" = "443"
+                    "SANCTUM_STATEFUL_DOMAINS" = $corsValues.SanctumStatefulDomains
+                    "CORS_ALLOWED_ORIGINS" = $corsValues.CorsAllowedOrigins
                     "DB_HOST" = $TxtDbHost.Text
                     "DB_PORT" = $TxtDbPort.Text
                     "DB_DATABASE" = $TxtDbName.Text
@@ -532,11 +569,13 @@ if ($useGui) {
 
                 # Firewall port configuration
                 if ($ChkOpenFirewall.IsChecked) {
-                    netsh advfirewall firewall delete rule name="Sistema de Caja Hospitalaria LAN Port 8000" 2>$null
-                    netsh advfirewall firewall add rule name="Sistema de Caja Hospitalaria LAN Port 8000" dir=in action=allow protocol=TCP localport=8000 | Out-Null
+                    foreach ($port in @(80, 443)) {
+                        netsh advfirewall firewall delete rule name="Sistema de Caja Hospitalaria LAN Port $port" 2>$null
+                        netsh advfirewall firewall add rule name="Sistema de Caja Hospitalaria LAN Port $port" dir=in action=allow protocol=TCP localport=$port | Out-Null
+                    }
                 }
 
-                [System.Windows.MessageBox]::Show("Instalacion del Sistema de Caja Hospitalaria finalizada.`n`nEl servidor local LAN esta activo en: http://$($TxtLanIp.Text):8000", "Exito", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+                [System.Windows.MessageBox]::Show("Instalacion del Sistema de Caja Hospitalaria finalizada.`n`nEl servidor local LAN esta activo en: $lanUrl", "Exito", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
                 $window.Close()
             } catch {
                 [System.Windows.MessageBox]::Show("Ocurrio un error al guardar la configuracion: $_", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
@@ -719,11 +758,15 @@ function Run-SetupCli {
 
     # Save to env
     Write-Host "`nGuardando variables en archivo de configuracion .env..." -ForegroundColor DarkCyan
+    $lanUrl = Get-InstallerLanUrl -LanIp $lanIp
+    $corsValues = Get-InstallerCorsValues -LanIp $lanIp
     $vars = @{
         "APP_VERSION" = $installedVersion
-        "APP_URL" = "http://$lanIp:8000"
-        "SANCTUM_STATEFUL_DOMAINS" = "localhost,localhost:3000,localhost:5173,127.0.0.1,127.0.0.1:8000,127.0.0.1:5173,$lanIp,$lanIp:8000,$lanIp:5173,::1"
-        "CORS_ALLOWED_ORIGINS" = "http://localhost:5173,http://127.0.0.1:5173,http://$lanIp:5173,http://$lanIp:8000"
+        "APP_URL" = $lanUrl
+        "APP_HTTPS_PORT" = "443"
+        "APP_PORT" = "443"
+        "SANCTUM_STATEFUL_DOMAINS" = $corsValues.SanctumStatefulDomains
+        "CORS_ALLOWED_ORIGINS" = $corsValues.CorsAllowedOrigins
         "DB_HOST" = $dbHost
         "DB_PORT" = $dbPort
         "DB_DATABASE" = $dbName
@@ -765,16 +808,18 @@ function Run-SetupCli {
     }
 
     # Open Firewall
-    $openFirewall = Read-Host "Desea abrir el puerto 8000 en el Firewall de Windows para clientes LAN? (S/N)"
+    $openFirewall = Read-Host "Desea abrir los puertos 80 y 443 en el Firewall de Windows para clientes LAN? (S/N)"
     if ($openFirewall -eq "S" -or $openFirewall -eq "s") {
-        netsh advfirewall firewall delete rule name="Sistema de Caja Hospitalaria LAN Port 8000" 2>$null
-        netsh advfirewall firewall add rule name="Sistema de Caja Hospitalaria LAN Port 8000" dir=in action=allow protocol=TCP localport=8000 | Out-Null
+        foreach ($port in @(80, 443)) {
+            netsh advfirewall firewall delete rule name="Sistema de Caja Hospitalaria LAN Port $port" 2>$null
+            netsh advfirewall firewall add rule name="Sistema de Caja Hospitalaria LAN Port $port" dir=in action=allow protocol=TCP localport=$port | Out-Null
+        }
         Write-Host "Firewall de Windows configurado." -ForegroundColor Green
     }
 
     Write-Host "`n==========================================================" -ForegroundColor Green
     Write-Host " Instalacion de servidor del Sistema de Caja Hospitalaria finalizada " -ForegroundColor White -BackgroundColor Green
-    Write-Host " Servidor Web LAN disponible en: http://$lanIp:8000" -ForegroundColor Green
+    Write-Host " Servidor Web LAN disponible en: $lanUrl" -ForegroundColor Green
     Write-Host "==========================================================" -ForegroundColor Green
 }
 

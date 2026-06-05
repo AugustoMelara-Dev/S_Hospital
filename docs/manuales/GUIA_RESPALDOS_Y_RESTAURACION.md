@@ -74,14 +74,14 @@ El responsable tecnico puede validar que el worker procesa respaldos sin dejar
 la contrasena escrita en el historial de PowerShell:
 
 ```powershell
-$env:HOSPITAL_SMOKE_BASE_URL = "http://IP-DEL-SERVIDOR:8000"
+$env:HOSPITAL_SMOKE_BASE_URL = "https://IP-DEL-SERVIDOR"
 $env:HOSPITAL_SMOKE_LOGIN = "usuario.soporte"
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_backup_worker_smoke.ps1
 ```
 
 No escriba usuario, contrasena ni token dentro de `HOSPITAL_SMOKE_BASE_URL`.
-Use `http://IP-DEL-SERVIDOR:8000`; el script rechaza direcciones como
-`http://usuario:contrasena@IP-DEL-SERVIDOR:8000` para que la URL no quede en
+Use `https://IP-DEL-SERVIDOR`; el script rechaza direcciones como
+`https://usuario:contrasena@IP-DEL-SERVIDOR` para que la URL no quede en
 evidencia, consola ni historial.
 
 El script pedira la contrasena en pantalla segura si no se define

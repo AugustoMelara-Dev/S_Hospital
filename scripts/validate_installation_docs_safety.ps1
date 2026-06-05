@@ -82,7 +82,7 @@ if ($installGuide -ne "") {
         'migrate:fresh',
         'sin correr seeders de demostracion',
         'APP_VERSION',
-        'http://IP-DEL-SERVIDOR:8000',
+        'https://IP-DEL-SERVIDOR',
         'APP_URL',
         'install_hospital_startup_shortcut.ps1',
         'install_stack_autostart_windows.ps1',

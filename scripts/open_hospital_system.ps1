@@ -25,7 +25,7 @@ if ($ProjectRoot -eq "") {
 }
 
 if ([string]::IsNullOrWhiteSpace($Url)) {
-    $Url = 'http://127.0.0.1:8000'
+    $Url = 'https://127.0.0.1'
 }
 
 function Test-SystemUrl([string] $TargetUrl, [int] $Attempts, [int] $Delay) {

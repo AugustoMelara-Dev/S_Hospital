@@ -41,5 +41,5 @@ Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 5. Correr preflight sin bypass:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://IP_DEL_SERVIDOR
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl https://IP_DEL_SERVIDOR
 ```

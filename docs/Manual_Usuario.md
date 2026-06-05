@@ -12,7 +12,7 @@ cliente por navegador usando la direccion LAN indicada por administracion.
 1. Encienda la computadora servidor.
 2. Abra el sistema con el acceso directo **Abrir Sistema de Caja Hospitalaria**.
 3. Desde una computadora cliente use la direccion local del servidor, por
-   ejemplo `http://192.168.1.10:8000`.
+   ejemplo `https://192.168.1.10`.
 4. No use `localhost` desde una computadora cliente.
 5. Inicie sesion con su usuario asignado.
 

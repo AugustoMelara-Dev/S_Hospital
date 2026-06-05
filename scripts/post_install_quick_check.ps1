@@ -16,7 +16,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
-    [string] $BaseUrl = "http://127.0.0.1:8000",
+    [string] $BaseUrl = "https://127.0.0.1",
 
     [Parameter(Mandatory = $false)]
     [int] $TimeoutSec = 20

@@ -48,7 +48,7 @@ al procedimiento correcto.
 - Instalacion inicial: `GUIA_INSTALACION_OPERATIVA.md`
 - Respaldos y restauracion: `GUIA_RESPALDOS_Y_RESTAURACION.md`
 - Capacitacion segura: `GUIA_CAPACITACION_SEGURA.md`
-- HTTPS opcional: `../HTTPS_OPTIONAL.md`
+- HTTPS local obligatorio: `../HTTPS_OPTIONAL.md`
 - Secretos y rotacion: `../SECRETS.md`
 - Recuperacion de desastres: `../DISASTER_RECOVERY.md`
 
@@ -109,6 +109,6 @@ en PowerShell como Administrador.
 
 - v1.0.0 consolida 8 manuales sueltos + 3 documentos tecnicos en
   este indice unico.
-- v1.0.0 anade HTTPS opcional, secrets playbook, comando
+- v1.0.0 exige HTTPS local, secrets playbook, comando
   `hospital:maintenance`, throttle por usuario.
 - Ver `../KNOWN_LIMITATIONS.md` para lo que queda fuera de v1.0.0.

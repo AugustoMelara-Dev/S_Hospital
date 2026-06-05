@@ -24,7 +24,7 @@ cajero).
    levante los 4 servicios (backend, nginx, mysql, queue-worker). Use
    `docker compose ps` en la carpeta del proyecto.
 4. Cuando `mysql` este `healthy`, los demas arrancan solos. Espere 60-90
-   segundos y valide desde otra PC: `http://IP-SERVIDOR:8000/up` debe
+   segundos y valide desde otra PC: `https://IP-SERVIDOR/up` debe
    devolver 200 con `status: ok`.
 
 ## Escenario 2 - La PC servidor enciende pero la base no responde

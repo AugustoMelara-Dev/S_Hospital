@@ -46,18 +46,18 @@ despues de un reinicio de Windows.
 Servidor:
 
 ```text
-http://127.0.0.1:8000
+https://127.0.0.1
 ```
 
 Clientes de red:
 
 ```text
-http://IP-DEL-SERVIDOR:8000
+https://IP-DEL-SERVIDOR
 ```
 
 Nunca escriba usuario, contrasena ni token dentro de la direccion del sistema.
-Use `http://IP-DEL-SERVIDOR:8000`, no una direccion con formato
-`http://usuario:contrasena@IP-DEL-SERVIDOR:8000`. Los scripts operativos
+Use `https://IP-DEL-SERVIDOR`, no una direccion con formato
+`https://usuario:contrasena@IP-DEL-SERVIDOR`. Los scripts operativos
 rechazan ese formato para que no quede guardado en accesos directos, logs ni
 diagnosticos.
 
@@ -75,7 +75,7 @@ Antes de crear accesos, soporte puede validar la URL y la carpeta instalada sin
 tocar el escritorio ni registrar tareas:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_hospital_startup_shortcut.ps1 -Url http://IP-DEL-SERVIDOR:8000 -WhatIfOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_hospital_startup_shortcut.ps1 -Url https://IP-DEL-SERVIDOR -WhatIfOnly
 ```
 
 La salida de `-WhatIfOnly` usa marcadores como `%PROJECT_ROOT%`,
@@ -199,7 +199,7 @@ El comando de cierre debe seguir reportando `PRODUCTION_CANDIDATE` hasta que
 esas cuatro evidencias existan y el preflight pase sin omisiones:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000 -InitializeProofFiles
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\final_production_handoff.ps1 -BaseUrl https://IP-DEL-SERVIDOR -InitializeProofFiles
 ```
 
 El reporte de cierre se guarda en `qa\FINAL_PRODUCTION_HANDOFF_RESULT.md`.
@@ -212,11 +212,11 @@ por separado con `-Force` y autorizacion tecnica.
 Para crear el borrador inicial de la prueba LAN desde la segunda computadora:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md -WhatIfOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl https://IP-DEL-SERVIDOR -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md -WhatIfOnly
 ```
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://IP-DEL-SERVIDOR:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl https://IP-DEL-SERVIDOR -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
 ```
 
 Ese script no reemplaza un archivo existente por accidente. Use `-Force` solo

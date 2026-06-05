@@ -15,9 +15,9 @@
    1. Detects the current best LAN IPv4 (Get-LanIPv4Candidates).
    2. Replaces SERVER_IP in both .env files.
    3. Updates SANCTUM_STATEFUL_DOMAINS and CORS_ALLOWED_ORIGINS
-      in backend/.env to include the new IP (and :APP_PORT form).
+      in backend/.env to include the new IP and HTTPS port.
    4. Updates APP_URL in backend/.env.
-   5. Re-creates the Windows firewall inbound rule on APP_PORT.
+   5. Re-creates the Windows firewall inbound rules on 80 and HTTPS port.
    6. Re-runs the docker compose stack so the env changes take
       effect.
    7. Restarts the scheduler and queue-worker so the heartbeat
@@ -34,7 +34,7 @@
   candidate (highest metric LAN interface).
 
 .PARAMETER AppPort
-  Override APP_PORT (default 8000).
+  Override the public HTTPS port. APP_PORT is kept as a legacy alias.
 
 .PARAMETER WhatIf
   Print every change that WOULD be made without applying it.
@@ -83,8 +83,8 @@ if ($Wizard) {
         $ServerIp = $autoIp.ToString()
     }
 
-    $portPrompt = if ($AppPort -gt 0) { $AppPort } else { 8000 }
-    $response = Read-Host "Puerto HTTP [$portPrompt]"
+    $portPrompt = if ($AppPort -gt 0) { $AppPort } else { 443 }
+    $response = Read-Host "Puerto HTTPS [$portPrompt]"
     if (-not [string]::IsNullOrWhiteSpace($response)) {
         $AppPort = [int]$response
     } elseif ($AppPort -le 0) {
@@ -109,6 +109,7 @@ if ($Wizard) {
 $libDir = Join-Path $PSScriptRoot "lib"
 $envHelperPath = Join-Path $libDir "env_helpers.ps1"
 $netDiagPath = Join-Path $libDir "net_diagnostics.ps1"
+$corsHelperPath = Join-Path $libDir "cors_helpers.ps1"
 
 if (-not (Test-Path -LiteralPath $envHelperPath -PathType Leaf)) {
     Write-Error "No se encontro scripts\lib\env_helpers.ps1. No se puede refrescar la IP LAN con seguridad."
@@ -118,9 +119,14 @@ if (-not (Test-Path -LiteralPath $netDiagPath -PathType Leaf)) {
     Write-Error "No se encontro scripts\lib\net_diagnostics.ps1. No se puede detectar la IP LAN con seguridad."
     exit 2
 }
+if (-not (Test-Path -LiteralPath $corsHelperPath -PathType Leaf)) {
+    Write-Error "No se encontro scripts\lib\cors_helpers.ps1. No se puede regenerar la URL LAN con seguridad."
+    exit 2
+}
 
 . $envHelperPath
 . $netDiagPath
+. $corsHelperPath
 
 $rootEnv = Join-Path $ProjectRoot ".env"
 $backendEnv = Join-Path $ProjectRoot "backend/.env"
@@ -136,10 +142,12 @@ if (-not (Test-Path -LiteralPath $backendEnv)) {
 
 if (-not $AppPort) {
     $existing = Read-EnvFile $backendEnv
-    if ($existing.ContainsKey("APP_PORT") -and $existing["APP_PORT"] -match '^\d+$') {
+    if ($existing.ContainsKey("APP_HTTPS_PORT") -and $existing["APP_HTTPS_PORT"] -match '^\d+$') {
+        $AppPort = [int] $existing["APP_HTTPS_PORT"]
+    } elseif ($existing.ContainsKey("APP_PORT") -and $existing["APP_PORT"] -match '^\d+$') {
         $AppPort = [int] $existing["APP_PORT"]
     } else {
-        $AppPort = 8000
+        $AppPort = 443
     }
 }
 
@@ -156,12 +164,17 @@ if (-not $ServerIp) {
     $ServerIp = $candidates[0].IPAddress
 }
 
-Write-Host "Refreshing LAN IP to $ServerIp (port $AppPort)..."
+Write-Host "Refreshing LAN IP to $ServerIp (HTTPS port $AppPort)..."
 
 # 1. Update root .env
 if ($PSCmdlet.ShouldProcess($rootEnv, "Set SERVER_IP=$ServerIp")) {
-    Update-DotEnv -Path $rootEnv -Variables @{ "SERVER_IP" = $ServerIp }
-    Write-Host "  updated $rootEnv (SERVER_IP)"
+    Update-DotEnv -Path $rootEnv -Variables @{
+        "SERVER_IP" = $ServerIp
+        "APP_HTTP_PORT" = "80"
+        "APP_HTTPS_PORT" = $AppPort.ToString()
+        "APP_PORT" = $AppPort.ToString()
+    }
+    Write-Host "  updated $rootEnv (SERVER_IP, APP_HTTP_PORT, APP_HTTPS_PORT, APP_PORT)"
 }
 
 # 2. Update backend .env
@@ -173,34 +186,36 @@ if ($PSCmdlet.ShouldProcess($backendEnv, "Set LAN env vars")) {
     $stateful = $statefulValue.Split(",") | ForEach-Object { $_.Trim() } | Where-Object { $_ }
     $cors = $corsValue.Split(",") | ForEach-Object { $_.Trim() } | Where-Object { $_ }
 
-    $needHost = "$ServerIp"
-    $needHostPort = "$ServerIp`:$AppPort"
-    $statefulUpdated = ($stateful + @($needHost, $needHostPort)) | Select-Object -Unique
-    $corsUpdated = ($cors + @("http://$needHostPort", "https://$needHostPort")) | Select-Object -Unique
+    $corsValues = Get-ProductionCorsValues -ServerIp $ServerIp -AppPort $AppPort
+    $statefulUpdated = ($stateful + ($corsValues.SanctumStatefulDomains -split ",")) | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique
+    $corsUpdated = ($cors + ($corsValues.CorsAllowedOrigins -split ",")) | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique
 
     Update-DotEnv -Path $backendEnv -Variables @{
         "SERVER_IP" = $ServerIp
+        "APP_HTTPS_PORT" = $AppPort.ToString()
         "APP_PORT" = $AppPort.ToString()
         "SANCTUM_STATEFUL_DOMAINS" = ($statefulUpdated -join ",")
         "CORS_ALLOWED_ORIGINS" = ($corsUpdated -join ",")
-        "APP_URL" = "http://$ServerIp`:$AppPort"
+        "APP_URL" = Get-HospitalLanUrl -ServerIp $ServerIp -HttpsPort $AppPort
     }
-    Write-Host "  updated $backendEnv (SERVER_IP, APP_PORT, SANCTUM_STATEFUL_DOMAINS, CORS_ALLOWED_ORIGINS, APP_URL)"
+    Write-Host "  updated $backendEnv (SERVER_IP, APP_HTTPS_PORT, APP_PORT, SANCTUM_STATEFUL_DOMAINS, CORS_ALLOWED_ORIGINS, APP_URL)"
 }
 
 # 3. Re-create the firewall rule
-if ($PSCmdlet.ShouldProcess("Windows Firewall", "Allow inbound TCP $AppPort on Private profile")) {
-    $ruleName = "Sistema Caja Hospitalaria - LAN TCP $AppPort"
-    Remove-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue
-    New-NetFirewallRule `
-        -DisplayName $ruleName `
-        -Direction Inbound `
-        -Action Allow `
-        -Protocol TCP `
-        -LocalPort $AppPort `
-        -Profile Private `
-        -ErrorAction SilentlyContinue | Out-Null
-    Write-Host "  firewall rule: $ruleName"
+if ($PSCmdlet.ShouldProcess("Windows Firewall", "Allow inbound TCP 80 and $AppPort on Private profile")) {
+    foreach ($port in (@(80, $AppPort) | Select-Object -Unique)) {
+        $ruleName = "Sistema Caja Hospitalaria - LAN TCP $port"
+        Remove-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue
+        New-NetFirewallRule `
+            -DisplayName $ruleName `
+            -Direction Inbound `
+            -Action Allow `
+            -Protocol TCP `
+            -LocalPort $port `
+            -Profile Private `
+            -ErrorAction SilentlyContinue | Out-Null
+        Write-Host "  firewall rule: $ruleName"
+    }
 }
 
 # 4. Restart docker stack
@@ -211,8 +226,8 @@ if ($PSCmdlet.ShouldProcess("docker compose", "Restart stack so env changes appl
 
 Write-Host ""
 Write-Host "Done. Verify with:"
-Write-Host "  curl http://${ServerIp}:$AppPort/api/system/health"
-Write-Host "  curl http://${ServerIp}:$AppPort/api/system/echo-config"
+Write-Host "  curl -k $(Get-HospitalLanUrl -ServerIp $ServerIp -HttpsPort $AppPort -Path '/api/system/health')"
+Write-Host "  curl -k $(Get-HospitalLanUrl -ServerIp $ServerIp -HttpsPort $AppPort -Path '/api/system/echo-config')"
 
 # -----------------------------------------------------------------------------
 # Notificar a las PCs cliente
@@ -229,19 +244,19 @@ $noticeContent = @"
 S_Hospital - Aviso de cambio de IP del servidor
 Fecha:                 $timestamp
 Nueva IP:              $ServerIp
-Puerto HTTP:           $AppPort
-URL completa:          http://${ServerIp}:$AppPort
+Puerto HTTPS:          $AppPort
+URL completa:          $(Get-HospitalLanUrl -ServerIp $ServerIp -HttpsPort $AppPort)
 
 Que deben hacer los cajeros en cada PC cliente:
   1. Cerrar TODAS las pestañas del sistema.
   2. Borrar la cache del navegador (Ctrl+Shift+Supr -> "Imagenes y
      archivos en cache").
-  3. Abrir http://${ServerIp}:$AppPort y volver a iniciar sesion.
+  3. Abrir $(Get-HospitalLanUrl -ServerIp $ServerIp -HttpsPort $AppPort) y volver a iniciar sesion.
 
 Si la nueva IP no resuelve desde una PC cliente, verifique:
   - Que las PCs cliente y el servidor esten en la misma subred.
-  - Que el Firewall de Windows del servidor permite TCP $AppPort en
-    el perfil Privado.
+  - Que el Firewall de Windows del servidor permite TCP 80 y $AppPort
+    en el perfil Privado.
   - Que el switch/router no esta aislando la nueva IP.
 
 No se requieren cambios en las PCs cliente: el navegador las

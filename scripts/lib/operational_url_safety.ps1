@@ -24,7 +24,7 @@ function Protect-HospitalOperationalText([string] $Value, [string] $ProjectRoot 
 
 function Test-HospitalOperationalUrlInput([string] $TargetUrl) {
     if ([string]::IsNullOrWhiteSpace($TargetUrl)) {
-        throw "La direccion del sistema esta vacia. Use http://127.0.0.1:8000 en servidor o http://IP-DEL-SERVIDOR:8000 en clientes."
+        throw "La direccion del sistema esta vacia. Use https://IP-DEL-SERVIDOR en clientes."
     }
 
     $cleanUrl = $TargetUrl.Trim()
@@ -32,7 +32,7 @@ function Test-HospitalOperationalUrlInput([string] $TargetUrl) {
     try {
         $uri = [System.Uri] $cleanUrl
     } catch {
-        throw "La direccion del sistema no es valida. Use una direccion como http://IP-DEL-SERVIDOR:8000."
+        throw "La direccion del sistema no es valida. Use una direccion como https://IP-DEL-SERVIDOR."
     }
 
     if (-not $uri.IsAbsoluteUri -or $uri.Scheme -notin @("http", "https") -or [string]::IsNullOrWhiteSpace($uri.Host)) {
@@ -40,11 +40,11 @@ function Test-HospitalOperationalUrlInput([string] $TargetUrl) {
     }
 
     if (-not [string]::IsNullOrWhiteSpace($uri.UserInfo)) {
-        throw "La direccion del sistema no debe incluir usuario ni contrasena. Use solo http://IP-DEL-SERVIDOR:8000."
+        throw "La direccion del sistema no debe incluir usuario ni contrasena. Use solo https://IP-DEL-SERVIDOR."
     }
 
     if (-not [string]::IsNullOrWhiteSpace($uri.Query) -or -not [string]::IsNullOrWhiteSpace($uri.Fragment)) {
-        throw "La direccion del sistema no debe incluir parametros ni fragmentos. Use solo http://IP-DEL-SERVIDOR:8000."
+        throw "La direccion del sistema no debe incluir parametros ni fragmentos. Use solo https://IP-DEL-SERVIDOR."
     }
 
     return $cleanUrl.TrimEnd("/")

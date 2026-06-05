@@ -25,7 +25,7 @@
   a time.
 
 .PARAMETER BaseUrl
-  Base URL of the stack, e.g. http://192.168.1.10:8000.
+  Base URL of the stack, e.g. https://192.168.1.10.
 
 .PARAMETER Username
   Admin username for the auth round-trip. Default 'admin'.

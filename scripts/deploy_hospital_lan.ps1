@@ -766,11 +766,12 @@ try {
 
                 $currentIp = "127.0.0.1"
                 if ($existingEnv.ContainsKey("SERVER_IP")) { $currentIp = $existingEnv["SERVER_IP"] }
-                $currentPort = "8000"
-                if ($existingEnv.ContainsKey("APP_PORT")) { $currentPort = $existingEnv["APP_PORT"] }
+                $currentPort = "443"
+                if ($existingEnv.ContainsKey("APP_HTTPS_PORT")) { $currentPort = $existingEnv["APP_HTTPS_PORT"] }
+                elseif ($existingEnv.ContainsKey("APP_PORT")) { $currentPort = $existingEnv["APP_PORT"] }
 
                 Write-Host "  IP actual: $currentIp" -ForegroundColor White
-                Write-Host "  Puerto actual: $currentPort" -ForegroundColor White
+                Write-Host "  Puerto HTTPS actual: $currentPort" -ForegroundColor White
                 Write-Host ""
 
                 # IP change
@@ -785,7 +786,7 @@ try {
                 }
 
                 # Port change
-                $newPort = Read-Host "  Nuevo puerto (Enter para mantener $currentPort)"
+                $newPort = Read-Host "  Nuevo puerto HTTPS (Enter para mantener $currentPort)"
                 if ([string]::IsNullOrWhiteSpace($newPort)) { $newPort = $currentPort }
                 $portNum = 0
                 if (-not [int]::TryParse($newPort, [ref]$portNum) -or $portNum -lt 1 -or $portNum -gt 65535) {
@@ -795,18 +796,21 @@ try {
 
                 # Update .env
                 $updateVars = @{
-                    "SERVER_IP" = $newIp
-                    "APP_PORT"  = "$portNum"
+                    "SERVER_IP"       = $newIp
+                    "APP_HTTP_PORT"   = "80"
+                    "APP_HTTPS_PORT"  = "$portNum"
+                    "APP_PORT"        = "$portNum"
                 }
                 Update-DotEnv -Path $envPath -Variables $updateVars
-                Write-Host "  [OK] .env actualizado: IP=$newIp, Puerto=$portNum" -ForegroundColor Green
+                Write-Host "  [OK] .env actualizado: IP=$newIp, Puerto HTTPS=$portNum" -ForegroundColor Green
 
                 # Also update backend/.env if exists
                 $backendEnv = Join-Path $projectRoot "backend\.env"
                 if (Test-Path $backendEnv) {
                     $corsValues = Get-ProductionCorsValues -ServerIp $newIp -AppPort $portNum
                     $beVars = @{
-                        "APP_URL"                    = "http://${newIp}:${portNum}"
+                        "APP_URL"                    = Get-HospitalLanUrl -ServerIp $newIp -HttpsPort $portNum
+                        "APP_HTTPS_PORT"             = "$portNum"
                         "SANCTUM_STATEFUL_DOMAINS"   = $corsValues.SanctumStatefulDomains
                         "CORS_ALLOWED_ORIGINS"       = $corsValues.CorsAllowedOrigins
                     }
@@ -939,10 +943,17 @@ try {
 
         # ---- G. Ports ----
         Write-Host "[*] Verificando puertos..." -ForegroundColor Yellow
-        $appPort = 8000
+        $httpPort = 80
+        $appPort = 443
         $dbPort = 3306
 
-        $appPort = Resolve-PortConflict -Port $appPort -PortLabel "Servidor Web"
+        $httpPort = Resolve-PortConflict -Port $httpPort -PortLabel "Redireccion HTTP"
+        if ($httpPort -eq -1) {
+            Write-Host "[INFO] Instalacion cancelada para resolver conflicto de puerto." -ForegroundColor Gray
+            continue
+        }
+
+        $appPort = Resolve-PortConflict -Port $appPort -PortLabel "Servidor Web HTTPS"
         if ($appPort -eq -1) {
             Write-Host "[INFO] Instalacion cancelada para resolver conflicto de puerto." -ForegroundColor Gray
             continue
@@ -1064,6 +1075,8 @@ try {
             # Write .env
             $rootVars = @{
                 "SERVER_IP"        = $serverIp
+                "APP_HTTP_PORT"    = "$httpPort"
+                "APP_HTTPS_PORT"   = "$appPort"
                 "APP_PORT"         = "$appPort"
                 "APP_KEY"          = $currAppKey
                 "DB_PORT"          = "$dbPort"
@@ -1236,7 +1249,8 @@ try {
                 "APP_ENV"                    = "production"
                 "APP_DEBUG"                  = "false"
                 "APP_KEY"                    = $currAppKey
-                "APP_URL"                    = "http://${serverIp}:${appPort}"
+                "APP_URL"                    = Get-HospitalLanUrl -ServerIp $serverIp -HttpsPort $appPort
+                "APP_HTTPS_PORT"             = "$appPort"
                 "DB_CONNECTION"              = "mysql"
                 "DB_HOST"                    = $dbHost
                 "DB_PORT"                    = $dbPortInput
@@ -1387,9 +1401,11 @@ try {
         # FIREWALL RULE
         # ==============================================================
         try {
-            & netsh advfirewall firewall delete rule name="S_Hospital Server LAN Port $appPort" 2>$null
-            & netsh advfirewall firewall add rule name="S_Hospital Server LAN Port $appPort" dir=in action=allow protocol=TCP localport=$appPort | Out-Null
-            Write-Host "[OK] Regla de firewall para puerto $appPort habilitada." -ForegroundColor Green
+            foreach ($port in (@($httpPort, $appPort) | Select-Object -Unique)) {
+                & netsh advfirewall firewall delete rule name="S_Hospital Server LAN Port $port" 2>$null
+                & netsh advfirewall firewall add rule name="S_Hospital Server LAN Port $port" dir=in action=allow protocol=TCP localport=$port | Out-Null
+            }
+            Write-Host "[OK] Reglas de firewall para HTTP $httpPort y HTTPS $appPort habilitadas." -ForegroundColor Green
         }
         catch {
             [void]$warnings.Add("No se pudo crear la regla de firewall. Habilitela manualmente.")
@@ -1402,7 +1418,7 @@ try {
         Write-Host "[*] Verificacion final del servicio..." -ForegroundColor Yellow
         Start-Sleep -Seconds 5
 
-        $healthCheckUrl = "http://${serverIp}:${appPort}/up"
+        $healthCheckUrl = Get-HospitalLanUrl -ServerIp $serverIp -HttpsPort $appPort -Path "/up"
         try {
             $webResponse = Invoke-WebRequest -Uri $healthCheckUrl -UseBasicParsing -TimeoutSec 10 -ErrorAction SilentlyContinue
             if ($webResponse -and $webResponse.StatusCode -eq 200) {
@@ -1415,7 +1431,7 @@ try {
         catch {
             Write-Host "[WARN] No se pudo conectar a $healthCheckUrl." -ForegroundColor Yellow
             Write-Host "  Puede ser normal si la aplicacion aun esta iniciando." -ForegroundColor Gray
-            Write-Host "  Pruebe manualmente en el navegador: http://${serverIp}:${appPort}" -ForegroundColor White
+            Write-Host "  Pruebe manualmente en el navegador: $(Get-HospitalLanUrl -ServerIp $serverIp -HttpsPort $appPort)" -ForegroundColor White
         }
 
         # ==============================================================
@@ -1433,7 +1449,7 @@ try {
         $quickCheckScript = Join-Path $PSScriptRoot "post_install_quick_check.ps1"
         if (Test-Path $quickCheckScript) {
             try {
-                & $quickCheckScript -BaseUrl "http://localhost:${appPort}" -TimeoutSec 15
+                & $quickCheckScript -BaseUrl (Get-HospitalLanUrl -ServerIp "127.0.0.1" -HttpsPort $appPort) -TimeoutSec 15
                 if ($LASTEXITCODE -ne 0) {
                     Write-Host "[WARN] Smoke rapido reporto fallas. Revise los checks arriba antes de entregar al hospital." -ForegroundColor Yellow
                 } else {
@@ -1455,8 +1471,8 @@ try {
         Write-Host "======================================================================" -ForegroundColor Green
         Write-Host ""
         Write-Host " [RED] DIRECCIONES DE ACCESO:" -ForegroundColor Cyan
-        Write-Host "  -> Esta computadora:  http://localhost:$appPort" -ForegroundColor White
-        Write-Host "  -> Estaciones LAN:    http://${serverIp}:${appPort}" -ForegroundColor Yellow -BackgroundColor Black
+        Write-Host "  -> Esta computadora:  $(Get-HospitalLanUrl -ServerIp '127.0.0.1' -HttpsPort $appPort)" -ForegroundColor White
+        Write-Host "  -> Estaciones LAN:    $(Get-HospitalLanUrl -ServerIp $serverIp -HttpsPort $appPort)" -ForegroundColor Yellow -BackgroundColor Black
         Write-Host ""
         Write-Host " [ADMIN] CREDENCIALES:" -ForegroundColor Cyan
         Write-Host "  -> Usuario:    $adminUsername" -ForegroundColor White
@@ -1464,7 +1480,7 @@ try {
         Write-Host ""
         Write-Host " [INFO] INSTRUCCIONES:" -ForegroundColor Yellow
         Write-Host "  1. En las estaciones cliente, abra Chrome/Edge:" -ForegroundColor White
-        Write-Host "     http://${serverIp}:${appPort}" -ForegroundColor Yellow
+        Write-Host "     $(Get-HospitalLanUrl -ServerIp $serverIp -HttpsPort $appPort)" -ForegroundColor Yellow
         Write-Host "  2. Asegurese de que la IP $serverIp sea ESTATICA." -ForegroundColor White
         Write-Host "  3. Para apagar (Docker): docker compose -f docker-compose.prod.yml down" -ForegroundColor White
         Write-Host "======================================================================" -ForegroundColor Green

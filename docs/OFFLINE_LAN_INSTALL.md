@@ -9,7 +9,7 @@ Este documento separa el entorno Docker de desarrollo de una instalacion de prod
 - Una PC servidor ejecuta Laravel API, frontend compilado, MySQL/MariaDB y backups.
 - Clientes usan navegador en la red local.
 - Los clientes no deben usar `localhost` para entrar al sistema, porque `localhost` apunta a la computadora cliente.
-- Usar IP fija o nombre local del servidor, por ejemplo `http://192.168.1.10`.
+- Usar IP fija o nombre local del servidor, por ejemplo `https://192.168.1.10`.
 - El despliegue recomendado para produccion es same-origin: frontend compilado y API publicados bajo el mismo host/puerto o dominio LAN.
 
 ## Desarrollo con Docker
@@ -49,7 +49,7 @@ Antes de instalar en el hospital:
 4. Copiar backend, `vendor/`, frontend compilado y configuracion al servidor.
 5. Instalar MySQL/MariaDB local en el servidor.
 6. Configurar `.env` real fuera del repositorio con secretos locales, `APP_ENV=production` y `APP_DEBUG=false`.
-7. Configurar `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` y CORS con la IP fija o dominio LAN final, por ejemplo `192.168.1.10`.
+7. Configurar `APP_URL`, `SANCTUM_STATEFUL_DOMAINS` y CORS con la IP fija o dominio LAN final. En `PRODUCTION_READY`, `APP_URL` debe usar HTTPS, por ejemplo `https://192.168.1.10`.
 8. Generar `APP_KEY` en el servidor con `php artisan key:generate`.
 9. Ejecutar migraciones aprobadas sin `migrate:fresh`.
 10. Crear admin real con el instalador o con `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no ejecutar seeders de desarrollo.
@@ -113,16 +113,16 @@ ipconfig /all
 ping 192.168.1.1
 ```
 
-- Permitir HTTP/HTTPS en firewall local.
+- Permitir TCP 80 y 443 en firewall local. El puerto 80 solo redirige a HTTPS.
 - No abrir el sistema a internet salvo decision explicita posterior.
-- Si se configura HTTPS local, instalar certificado confiable para los clientes.
-- Los clientes deben entrar por la IP o nombre LAN del servidor, por ejemplo `http://192.168.1.10`.
+- Instalar el certificado de la CA local en las computadoras cliente antes de operar caja.
+- Los clientes deben entrar por la IP o nombre LAN del servidor, por ejemplo `https://192.168.1.10`.
 - No usar `localhost` en clientes; en una caja cliente, `localhost` apunta a esa misma caja, no al servidor.
 - Reservar la IP fija en el router o configurar IP estatica en Windows para evitar que cambie despues de reinicios.
 
 ## Firewall y puertos
 
-- Permitir solo el puerto publicado para HTTP/HTTPS dentro del perfil de red privada.
+- Permitir solo los puertos publicados para HTTP/HTTPS dentro del perfil de red privada.
 - No exponer MySQL/MariaDB a internet.
 - Si MySQL/MariaDB debe aceptar conexiones solo del backend local, mantenerlo escuchando en `127.0.0.1`.
 - Si se usa un servidor web local, validar que `/up`, `/login` y `/verify-email` respondan desde otra computadora LAN.
@@ -170,7 +170,7 @@ ping 192.168.1.1
 ## Validacion manual post-instalacion
 
 - Desde servidor: `/up` responde OK.
-- Desde cliente LAN: `/login` carga usando IP fija del servidor.
+- Desde cliente LAN: `/login` carga usando `https://` y la IP fija del servidor.
 - Desde cliente LAN: `/verify-email` responde con la SPA o la ruta esperada documentada.
 - Desde cliente LAN: un asset `/assets/*.js` responde como `text/javascript` y un asset `/assets/*.css` responde como `text/css`.
 - Desde cliente LAN: login local completa sin 419 CSRF usando el host/IP final configurado en `SANCTUM_STATEFUL_DOMAINS`.

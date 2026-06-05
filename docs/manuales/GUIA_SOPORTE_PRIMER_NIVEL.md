@@ -33,8 +33,8 @@ Si hay duda, detenga nuevas facturas desde clientes y recopile evidencia.
 4. Si no abre, espere dos minutos y vuelva a intentar. El acceso directo
    ejecutara reparacion segura automaticamente si el servidor no responde.
 5. No escriba usuario, contrasena ni token dentro de la direccion. Use solo
-   `http://IP-DEL-SERVIDOR:8000`; los scripts rechazan direcciones como
-   `http://usuario:contrasena@IP-DEL-SERVIDOR:8000` para proteger logs y
+   `https://IP-DEL-SERVIDOR`; los scripts rechazan direcciones como
+   `https://usuario:contrasena@IP-DEL-SERVIDOR` para proteger logs y
    accesos directos.
 6. Si soporte necesita repetir la revision de forma manual, ejecute:
 

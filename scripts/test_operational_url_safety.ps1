@@ -23,7 +23,7 @@ function Assert-Rejects([string] $Url, [string] $ExpectedMessagePart) {
     throw "Expected '$Url' to be rejected."
 }
 
-Assert-Equal "http://192.168.1.10:8000" (Test-HospitalOperationalUrlInput " http://192.168.1.10:8000/ ") "LAN URL should normalize trailing slash."
+Assert-Equal "https://192.168.1.10" (Test-HospitalOperationalUrlInput " https://192.168.1.10/ ") "LAN URL should normalize trailing slash."
 Assert-Equal "https://hospital.local" (Test-HospitalOperationalUrlInput "https://hospital.local") "Local domain URL should pass."
 
 Assert-Rejects "ftp://192.168.1.10:8000" "debe iniciar con http:// o https://"
@@ -31,7 +31,7 @@ Assert-Rejects "http://admin:secret@192.168.1.10:8000" "no debe incluir usuario 
 Assert-Rejects "http://192.168.1.10:8000?token=secret" "no debe incluir parametros ni fragmentos"
 Assert-Rejects "http://192.168.1.10:8000/#secret" "no debe incluir parametros ni fragmentos"
 
-$protectedText = Protect-HospitalOperationalText "Fallo contra http://soporte:clave-secreta@192.168.1.10:8000/login"
-Assert-Equal "Fallo contra http://192.168.1.10:8000/login" $protectedText "Operational text should redact URL credentials without hiding the LAN host."
+$protectedText = Protect-HospitalOperationalText "Fallo contra https://soporte:clave-secreta@192.168.1.10/login"
+Assert-Equal "Fallo contra https://192.168.1.10/login" $protectedText "Operational text should redact URL credentials without hiding the LAN host."
 
 Write-Host "[OK] operational_url_safety.ps1 validation passed."
