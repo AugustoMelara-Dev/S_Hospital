@@ -122,7 +122,7 @@ export function AppShell({
   );
 }
 
-function getBreadcrumbs(pathname: string) {
+export function getBreadcrumbs(pathname: string) {
   const paths = pathname.split('/').filter(Boolean);
   const crumbs = [{ label: 'Inicio', path: '/' }];
   let currentPath = '';
@@ -150,8 +150,12 @@ function getBreadcrumbs(pathname: string) {
       crumbs.push({ label: 'Caja', path: '/cashbox' });
     } else if (segment === 'reports') {
       crumbs.push({ label: 'Reportes', path: '/reports' });
+    } else if (segment === 'backups') {
+      crumbs.push({ label: 'Respaldos', path: '/backups' });
     } else if (segment === 'settings') {
       crumbs.push({ label: 'Configuracion', path: '/settings' });
+    } else if (segment === 'fiscal') {
+      crumbs.push({ label: 'Datos fiscales', path: '/settings/fiscal' });
     } else if (segment === 'admin') {
       crumbs.push({ label: 'Administracion', path: '/admin/users' });
     } else if (segment === 'users') {

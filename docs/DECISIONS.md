@@ -3536,3 +3536,8 @@ Contexto: el objetivo institucional exige que el recibo muestre el metodo de pag
 Decision: la seccion Pagos del recibo institucional incluye encabezados Metodo de pago y Monto antes de listar efectivo, transferencia, tarjeta u otro metodo con cajero/referencia cuando aplique.
 
 Criterio de verificacion: ReceiptPreview.test verifica que el recibo renderiza Metodo de pago y el metodo humano Efectivo junto al cajero.
+
+## 2026-06-05 - Breadcrumbs operativos institucionales
+
+- Las rutas internas pueden mantener nombres tecnicos como /backups para compatibilidad, pero el breadcrumb visible debe usar lenguaje institucional para personal no tecnico.
+- Se agrego cobertura unitaria para Respaldos, Configuracion/Datos fiscales y Nueva factura.
