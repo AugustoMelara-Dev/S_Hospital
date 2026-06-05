@@ -9,7 +9,7 @@ Covered flows:
 - Cashier login/session recovery through mocked local API.
 - Opening cashbox with keyboard-focused opening amount field.
 - POS invoice creation with labeled patient, service search, scanner, confirmation, payment and receipt preview controls.
-- Receipt width selection for 80mm/58mm preview.
+- Institutional receipt paper selection for media carta, carta and A5 preview.
 - Cashbox close flow with difference warning, required note, focus handling and cancel safety.
 - Responsive operational navigation at 1280x800, 768x1024 and 390x844.
 
@@ -17,7 +17,7 @@ Covered flows:
 
 - `CloseSessionDialog` reused `id="closing_notes"` from the underlying cashbox form, so the dialog label could point to the wrong textarea. The dialog now uses `closing_difference_notes`.
 - `CloseSessionDialog` rendered block `<div>` content inside Radix `AlertDialogDescription`, which produced React console errors for invalid HTML nesting. The description now renders as a semantic `<div>` container through `asChild`.
-- Existing E2E selectors were updated to current Spanish labels: `Nueva factura`, `Respaldos`, `Vista previa del recibo` and `Recibo térmico`.
+- Existing E2E selectors were updated to current Spanish labels: `Nueva factura`, `Respaldos` and `Vista previa del recibo`.
 
 ## Verification
 
@@ -42,5 +42,5 @@ Results:
 ## Residual Risk
 
 - This audit does not use axe because no new dev dependency was added.
-- Physical thermal printer validation remains manual and covered by the production evidence workflow.
+- Physical institutional receipt validation remains manual and covered by the production evidence workflow.
 - Real LAN/browser smoke remains separate from mocked Playwright E2E.

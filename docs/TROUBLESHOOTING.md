@@ -116,16 +116,18 @@ granted that permission. See `docs/PERMISSIONS_MATRIX.md`.
 **Symptom:** The receipt preview shows fine but `window.print()`
 fails or prints to the wrong device.
 
-**Cause:** The cashier's PC does not have the thermal printer
-installed as the system default, or the browser's print
+**Cause:** The cashier's PC does not have the institutional receipt
+printer installed as the system default, or the browser's print
 settings override the page CSS.
 
 **Fix:**
 
 1. In Windows: **Settings → Printers & scanners → set the
-   thermal printer as the default**. Test print from Notepad.
+   office printer used for institutional receipts as the default**.
+   Test print from Notepad.
 2. In the browser's print dialog (Ctrl+P), uncheck
-   *Headers and footers* and set *Margins* to *None*.
+   *Headers and footers* and use the margins recommended by the
+   selected paper size.
 3. In the receipt preview, use media carta, carta or A5. The cashier can
    change the paper size in the dialog if the wrong size is selected.
 

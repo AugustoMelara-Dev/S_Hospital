@@ -62,6 +62,17 @@ $deliveryReleaseForbidden = @(
     'ticket de rollo'
 )
 
+$currentDeliveryReceiptPaperForbidden = @(
+    'thermal printer',
+    'roll printer',
+    'roll-paper printer',
+    'impresora termica',
+    'impresora térmica',
+    'impresora de rollo',
+    '80mm',
+    '58mm'
+)
+
 $technicalProductBrandForbidden = @(
     'HOSPITAL OS'
 )
@@ -180,6 +191,17 @@ try {
             'docs/manuales',
             'prompts',
             'qa/RELEASE_READINESS.md'
+        )
+
+    Invoke-ForbiddenSearch `
+        -Label 'Lenguaje de impresora de rollo encontrado en documentacion actual:' `
+        -Patterns $currentDeliveryReceiptPaperForbidden `
+        -Paths @(
+            'docs/TROUBLESHOOTING.md',
+            'docs/ARCHITECTURE_CURRENT.md',
+            'qa/PROJECT_POLISH_FINAL_REPORT.md',
+            'qa/ACCESSIBILITY_UX_AUDIT.md',
+            'qa/THERMAL_PRINTER_PROOF.example.md'
         )
 
     Invoke-ForbiddenSearch `

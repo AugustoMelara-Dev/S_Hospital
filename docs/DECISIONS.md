@@ -3402,3 +3402,11 @@ Contexto: la reimpresion de recibos ya quedaba auditada con usuario, factura y f
 Decision: ReprintReceiptRequest exige reason obligatorio entre 5 y 500 caracteres. La UI sigue compatible porque envia el motivo escrito por el operador o un motivo institucional por defecto para impresiones auditadas desde la vista de recibo.
 
 Criterio de verificacion: InvoiceHistoryReprintVoidTest cubre rechazo de motivo ausente o en blanco y confirma que supervisor/admin siguen reimprimiendo cuando envian motivo. InvoiceAuditControllerTest conserva la auditoria cronologica de reimpresion y anulacion.
+
+## 2026-06-05 - Documentacion actual prioriza recibo institucional
+
+Contexto: el objetivo de presentacion al Hospital San Isidro exige que soporte, arquitectura y evidencia vigente no promuevan impresoras de rollo ni formatos 80mm/58mm como pendientes operativos de produccion.
+
+Decision: las guias actuales de troubleshooting, arquitectura y QA hablan de impresora institucional de oficina y validacion fisica en media carta, carta y A5. El archivo de prueba heredado queda marcado solo como compatibilidad historica y no como artefacto de handoff final.
+
+Criterio de verificacion: scripts/check-branding.ps1 falla si la documentacion actual vuelve a mencionar impresora de rollo, thermal printer, 80mm o 58mm en esas superficies de entrega.

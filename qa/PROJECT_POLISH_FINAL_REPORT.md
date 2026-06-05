@@ -58,7 +58,7 @@ Live local HTTP smoke against `http://127.0.0.1:8000`:
 
 - `composer validate` was not executed because Composer is not available in PATH in this shell.
 - Physical second PC LAN validation is still required before `PRODUCTION_READY`.
-- Physical thermal printer validation for 80mm/58mm is still required before `PRODUCTION_READY`.
+- Physical institutional receipt validation on media carta, carta and A5 is still required before `PRODUCTION_READY`.
 - Final restore proof and final concurrency proof must be repeated in the target server/final database environment.
 - A generated untracked cache directory appeared under `backend/public` during local commands and was left uncommitted after deletion was rejected by the execution environment.
 
