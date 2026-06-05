@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { BackupsView } from './BackupsView';
 import {
@@ -25,6 +25,8 @@ describe('BackupsView accessibility', () => {
       expect(container.textContent).toContain('hospital-backup-2026-06-01.sql');
     });
 
+    expect(screen.getByLabelText(/respaldos automáticos activos/i)).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/\bworker\b/i);
     expect(await axe(container)).toHaveNoViolations();
   });
 });

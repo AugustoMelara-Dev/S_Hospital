@@ -332,14 +332,14 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                       ? 'bg-emerald-100 text-emerald-900'
                       : 'bg-amber-100 text-amber-900'
                   }`}
-                  aria-label={systemStatus.backups.worker_recently_active ? 'Worker de respaldos activo' : 'Worker de respaldos inactivo'}
+                  aria-label={systemStatus.backups.worker_recently_active ? 'Respaldos automáticos activos' : 'Respaldos automáticos pendientes'}
                 >
                   <span
                     className={`inline-block size-1.5 rounded-full ${
                       systemStatus.backups.worker_recently_active ? 'bg-emerald-600' : 'bg-amber-600'
                     }`}
                   />
-                  Worker {systemStatus.backups.worker_recently_active ? 'activo' : 'inactivo'}
+                  Automáticos {systemStatus.backups.worker_recently_active ? 'activos' : 'pendientes'}
                 </span>
               )}
               <Button
