@@ -161,6 +161,20 @@ describe('ReceiptPreview', () => {
     expect(screen.getByText('Original / Copia')).toBeInTheDocument();
   });
 
+  it('labels the payment method section for cashier audit', () => {
+    render(
+      <ReceiptPreview
+        receipt={receiptFixture()}
+        onPrint={vi.fn()}
+        onWidthChange={vi.fn()}
+      />,
+    );
+
+    const receiptText = screen.getByLabelText('Recibo institucional').textContent ?? '';
+    expect(receiptText).toContain('Metodo de pago');
+    expect(receiptText).toContain('Efectivo / Cajero Validacion');
+  });
+
   it('prints institutional dates with four-digit years and an unambiguous time', () => {
     render(
       <ReceiptPreview

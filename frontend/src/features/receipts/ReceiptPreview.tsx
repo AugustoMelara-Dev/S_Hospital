@@ -169,6 +169,10 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
             <>
               <div className="receipt-rule" aria-hidden="true" />
               <h2 className="receipt-section-title">Pagos</h2>
+              <div className="receipt-table-head">
+                <span>Metodo de pago</span>
+                <span>Monto</span>
+              </div>
               <div className="receipt-items">
                 {receipt.payments.map((payment) => (
                   <Row key={payment.id}>

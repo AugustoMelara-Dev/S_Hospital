@@ -141,6 +141,16 @@ async function setVisualTheme(page: Page, theme: 'light' | 'dark') {
   }, theme);
 }
 
+async function selectReceiptPaper(page: Page, optionName: string) {
+  const preview = page.getByLabel('Vista previa del recibo');
+  const trigger = preview.locator('[aria-label="Tamano del recibo"]');
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+  const option = page.getByRole('option', { name: optionName, exact: true });
+  await expect(option).toBeVisible();
+  await option.click();
+}
+
 async function writeCaptureReport(consoleIssues: string[] = []) {
   if (!captureRcScreenshots) {
     return;
@@ -832,12 +842,10 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByText('Media carta')).toBeVisible();
   await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-half_letter/);
   await captureScreen(page, 'receipt-preview-light', 'light');
-  await page.locator('[aria-label="Tamano del recibo"]').click();
-  await page.getByRole('option', { name: 'Carta', exact: true }).click();
+  await selectReceiptPaper(page, 'Carta');
   await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-letter/);
   await captureScreen(page, 'receipt-preview-letter-light', 'light');
-  await page.locator('[aria-label="Tamano del recibo"]').click();
-  await page.getByRole('option', { name: 'A5', exact: true }).click();
+  await selectReceiptPaper(page, 'A5');
   await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
   await captureScreen(page, 'receipt-preview-a5-light', 'light');
   await setVisualTheme(page, 'dark');

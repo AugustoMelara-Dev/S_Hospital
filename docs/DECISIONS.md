@@ -3528,3 +3528,11 @@ Contexto: la evidencia visual del recibo RC mostraba fecha con anio de dos digit
 Decision: el recibo institucional imprime la fecha de emision como DD/MM/YYYY HH:mm y el vencimiento fiscal como DD/MM/YYYY. Las fechas sin hora se normalizan a mediodia local antes de formatear para evitar corrimientos por zona horaria.
 
 Criterio de verificacion: ReceiptPreview.test exige anio de cuatro digitos y hora no ambigua; la evidencia qa/browser-smoke-2026-06-05 muestra el recibo actualizado en media carta, carta, A5 y modo oscuro.
+
+## 2026-06-05 - Recibo rotula el metodo de pago
+
+Contexto: el objetivo institucional exige que el recibo muestre el metodo de pago para que caja, administracion y auditoria puedan leer una copia fisica sin inferir datos de la seccion de pagos.
+
+Decision: la seccion Pagos del recibo institucional incluye encabezados Metodo de pago y Monto antes de listar efectivo, transferencia, tarjeta u otro metodo con cajero/referencia cuando aplique.
+
+Criterio de verificacion: ReceiptPreview.test verifica que el recibo renderiza Metodo de pago y el metodo humano Efectivo junto al cajero.
