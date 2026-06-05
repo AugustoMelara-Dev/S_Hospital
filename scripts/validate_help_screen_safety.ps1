@@ -90,6 +90,9 @@ if ($helpView -ne "") {
     Test-Contains $helpView '(?i)no\s+repita\s+la\s+factura|No repita facturas ni cobros' "Help screen warns not to duplicate invoices/payments"
     Test-Contains $helpView '(?i)revise\s+Caja\s+e\s+Historial|revise\s+Historial' "Help screen tells staff to check cashbox/history before retrying"
     Test-Contains $helpView '(?i)No use la base de producci|base descartable|base aislada' "Help screen keeps safe practice/restore database warning"
+    Test-Contains $helpView '(?i)estado\s+de\s+respaldos' "Help screen uses backup-state language for failed backups"
+    Test-Contains $helpView '(?i)respaldos\s+pendientes\s+o\s+con\s+error' "Help screen uses backup pending/error language"
+    Test-Contains $helpView '(?i)soporte\s+local' "Help screen uses local support language"
     Test-Contains $helpView '(?i)contrase|tokens?|claves' "Help support evidence explains secrets are not included"
     Test-Contains $helpView 'buildClientIssueSupportSummary' "Help screen prepares safe support summary"
     Test-Contains $helpView 'getClientIssues' "Help screen reads local client issue evidence"
@@ -149,6 +152,12 @@ if ($helpView -match "(?i)DB_PASSWORD\s*=|APP_KEY\s*=|TOKEN\s*=|SECRET\s*=") {
     Add-Failure "Help screen exposes secret-like assignments."
 } else {
     Add-Pass "Help screen does not expose secret-like assignments"
+}
+
+if ($helpView -match "(?i)cola\s+de\s+trabajos|trabajos\s+fallidos|\bqueue\b|\bworker\b|soporte\s+tecnico") {
+    Add-Failure "Help screen exposes internal queue/worker or technical-support wording."
+} else {
+    Add-Pass "Help screen avoids internal queue/worker and technical-support wording"
 }
 
 if ($failures.Count -gt 0) {

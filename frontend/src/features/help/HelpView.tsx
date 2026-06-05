@@ -109,7 +109,7 @@ const incidentGuides = [
   },
   {
     title: 'Respaldo fallido',
-    answer: 'No borre archivos ni repita restauraciones. Pida al administrador revisar espacio, cola de trabajos y último error.',
+    answer: 'No borre archivos ni repita restauraciones. Pida al administrador revisar espacio, estado de respaldos y último error.',
   },
   {
     title: 'Base de datos necesita restaurarse',
@@ -177,7 +177,7 @@ const dailyChecklists = [
     items: [
       'Revisar Estado operativo en Respaldos.',
       'Confirmar ultimo respaldo protegido.',
-      'Revisar espacio en disco y cola de trabajos.',
+      'Revisar espacio en disco y respaldos pendientes o con error.',
       'Guardar evidencia si hubo fallas de red, impresion o energia.',
     ],
   },
@@ -419,7 +419,7 @@ export function HelpView() {
             <ClipboardCheck aria-hidden="true" className="size-5 text-secondary" />
             Checklist diario por rol
           </CardTitle>
-          <CardDescription>Pasos cortos para iniciar, cerrar y revisar el turno sin depender de soporte tecnico.</CardDescription>
+          <CardDescription>Pasos cortos para iniciar, cerrar y revisar el turno sin depender de soporte local.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3">
           {dailyChecklists.map((checklist) => (

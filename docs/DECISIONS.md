@@ -3466,3 +3466,11 @@ Contexto: la pantalla Respaldos es usada por administracion y soporte local. Aun
 Decision: BackupsView cambia el indicador avanzado de tareas con problema a respaldos con error y el mensaje de respaldo fallido a soporte local. El test a11y abre el detalle avanzado y verifica que no aparezcan tareas, trabajos, cola, queue, worker ni SQLSTATE en la lectura visible.
 
 Criterio de verificacion: BackupsView.a11y.test debe pasar y proteger que los estados visibles permanezcan en lenguaje institucional.
+
+## 2026-06-05 - Ayuda sin cola de trabajos visible
+
+Contexto: la pantalla Ayuda es una superficie normal para cajeros, supervisores y administradores. Aun conservaba lenguaje de cola de trabajos y soporte tecnico en guias visibles de respaldos.
+
+Decision: HelpView usa estado de respaldos, respaldos pendientes o con error y soporte local. El guard validate_help_screen_safety.ps1 bloquea cola de trabajos, trabajos fallidos, queue, worker y soporte tecnico en esa pantalla.
+
+Criterio de verificacion: HelpView.test y validate_help_screen_safety.ps1 cubren que Ayuda conserve lenguaje institucional sin terminos internos.

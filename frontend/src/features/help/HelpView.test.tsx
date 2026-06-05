@@ -57,6 +57,9 @@ describe('HelpView', () => {
     expect(screen.getByRole('heading', { name: /supervisor - revision diaria/i })).toBeInTheDocument();
     expect(screen.getByText(/comparar efectivo esperado contra efectivo contado/i)).toBeInTheDocument();
     expect(screen.getByText(/pedir resumen seguro de ayuda/i)).toBeInTheDocument();
+    expect(screen.getByText(/estado de respaldos/i)).toBeInTheDocument();
+    expect(screen.getByText(/respaldos pendientes o con error/i)).toBeInTheDocument();
+    expect(screen.getByText(/soporte local/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /acciones delicadas/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /restauracion de respaldo/i })).toBeInTheDocument();
     expect(screen.getByText(/nunca restaure sobre datos reales/i)).toBeInTheDocument();
@@ -70,5 +73,6 @@ describe('HelpView', () => {
     expect(screen.getByText(/resumen copiado/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver evidencia/i }));
     expect(screen.getAllByText(/no se pudo conectar con el servidor lan/i).length).toBeGreaterThan(0);
+    expect(document.body.textContent).not.toMatch(/cola de trabajos|trabajos fallidos|queue|worker|soporte tecnico/i);
   });
 });
