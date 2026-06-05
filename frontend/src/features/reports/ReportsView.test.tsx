@@ -631,7 +631,7 @@ describe('ReportsView', () => {
       reprints: [{
         invoice_id: 928374,
         invoice_number: '000-001-01-00000002',
-        width: '80mm',
+        width: 'half_letter',
         reason: 'Copia para paciente',
         created_at: '2026-06-01T08:10:00.000Z',
         user: 'Cajero Validacion',

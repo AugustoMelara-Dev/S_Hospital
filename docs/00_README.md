@@ -84,7 +84,7 @@ deployment, then jump to the appropriate section below.
   Current release snapshot (v1.0.0) with the CRITICAL and
   audit items closed in this branch.
 - **[LOCAL_VALIDATION_SCRIPT.md](LOCAL_VALIDATION_SCRIPT.md)** -
-  Local validation script for the 5 receipt paper sizes.
+  Local validation script for institutional receipt paper sizes.
 - **[OPERATIVE_VALIDATION_FLOW.md](OPERATIVE_VALIDATION_FLOW.md)** -
   End-to-end operator validation runbook.
 - **[RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)** - 267-line

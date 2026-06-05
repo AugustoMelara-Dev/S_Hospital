@@ -178,7 +178,7 @@ completar en este entorno de auditoría.
   `/verify-email` desde una segunda PC real (no del server).
   Llenar `qa/LAN_CLIENT_VALIDATION_PROOF.md`.
 - **Impresora física** - Imprimir una factura de prueba en
-  los 5 tamaños (media carta, carta, A5, 80mm, 58mm) y
+  los formatos institucionales vigentes (media carta, carta y A5) y
   validar márgenes y encabezados/pies del navegador.
   Llenar `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`.
 - **Restore real final** - Backup desde UI -> restore a base

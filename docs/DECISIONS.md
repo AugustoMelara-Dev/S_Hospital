@@ -3494,3 +3494,8 @@ Criterio de verificacion: CashPaymentsReceiptTest exige ausencia de scan_code/ba
 Contexto: el flujo de caja necesita ubicar servicios cobrables por area como laboratorio o rayos X sin abrir modulos clinicos ni mezclar catalogo completo en cada busqueda.
 Decision: Nueva factura carga areas activas, permite seleccionar Todas o un area, filtra localmente los servicios visibles y envia area_id al endpoint de servicios cuando el cajero busca o cambia filtros. Limpiar vuelve busqueda, area y categoria a Todos.
 Criterio de verificacion: ServiceSearch.test cubre filtro y limpieza por area; reducer.test cubre carga de areas, seleccion y reset del filtro.
+
+## 2026-06-05 - Documentacion vigente solo promueve recibo institucional de pagina
+Contexto: el objetivo de entrega al Hospital San Isidro exige recibos institucionales tipo talonario en media carta, carta o A5, sin promover formatos de rollo ni 80mm/58mm en guias vigentes.
+Decision: los documentos operativos actuales y criterios de aceptacion listan solo media carta, carta y A5. Los valores heredados 80mm/58mm pueden seguir normalizandose internamente donde existan datos antiguos, pero no son formatos operativos promovidos al personal.
+Criterio de verificacion: check-branding.ps1 revisa documentos vigentes, guiones de validacion y pruebas de evidencia contra thermal printer, impresora de rollo, 80mm y 58mm.

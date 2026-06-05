@@ -218,6 +218,16 @@ try {
         -Label 'Lenguaje de impresora de rollo encontrado en documentacion actual:' `
         -Patterns $currentDeliveryReceiptPaperForbidden `
         -Paths @(
+            'docs/08_CRITICAL_ACCEPTANCE_CRITERIA.md',
+            'docs/00_README.md',
+            'docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md',
+            'docs/AUDIT_2026_06_02.md',
+            'docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md',
+            'docs/LOCAL_VALIDATION_SCRIPT.md',
+            'docs/OPERATIVE_NOTES_2026_06_02.md',
+            'docs/OPERATIVE_VALIDATION_FLOW.md',
+            'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
+            'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md',
             'docs/TROUBLESHOOTING.md',
             'docs/ARCHITECTURE_CURRENT.md',
             'qa/PROJECT_POLISH_FINAL_REPORT.md',

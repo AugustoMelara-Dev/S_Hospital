@@ -18,7 +18,7 @@ Validar que el sistema puede operar sin internet en red local: el cajero inicia 
   - Hospital: `Hospital San Isidro`.
   - RTN: el RTN definido por administracion.
   - CAI y rango: los datos fiscales autorizados o valores temporales marcados como pendientes mientras no se opere en produccion.
-- Recibo: media carta como base, con opciones carta, A5, 80mm y 58mm.
+- Recibo: media carta como base, con opciones carta y A5.
 
 Las cuentas usadas para validar no deben quedar activas con contrasenas conocidas. Antes de uso real debe existir un administrador inicial con password temporal y cambio obligatorio en primer login, o un procedimiento local documentado equivalente.
 
@@ -148,7 +148,7 @@ Resultado esperado:
 Accion:
 
 - Abrir vista previa de recibo.
-- Seleccionar media carta, carta, A5, 80mm o 58mm.
+- Seleccionar media carta, carta o A5.
 - Imprimir una factura a la vez.
 
 Resultado esperado:
