@@ -50,6 +50,7 @@ $script:OfflineReleaseCriticalScripts = @(
     "validate_ops_evidence_index.ps1",
     "validate_permission_audit_safety.ps1",
     "validate_proof_initialization_safety.ps1",
+    "validate_production_ready_gate_safety.ps1",
     "validate_rate_limit_safety.ps1",
     "validate_restore_windows_safety.ps1",
     "validate_shift_incident_recovery_safety.ps1",
@@ -81,6 +82,15 @@ if ($ProjectRoot -eq "") {
     $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 } else {
     $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+}
+
+function Write-Fail([string] $message) {
+    if (Get-Command Remove-StagingRelease -CommandType Function -ErrorAction SilentlyContinue) {
+        Remove-StagingRelease
+    }
+
+    Write-Host "[FAIL] $message" -ForegroundColor Red
+    exit 1
 }
 
 if ($SelfTest) {
@@ -224,12 +234,6 @@ function Remove-StagingRelease {
     if (Test-Path -LiteralPath $script:ReleaseStagingRoot) {
         Remove-Item -LiteralPath $script:ReleaseStagingRoot -Recurse -Force
     }
-}
-
-function Write-Fail([string] $message) {
-    Remove-StagingRelease
-    Write-Host "[FAIL] $message" -ForegroundColor Red
-    exit 1
 }
 
 function Copy-RequiredFile([string] $relativePath) {
