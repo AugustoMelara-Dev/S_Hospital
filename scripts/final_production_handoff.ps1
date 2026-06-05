@@ -964,7 +964,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "## Risks and limits"
     Add-ReportLine $lines ""
     Add-ReportLine $lines "- Local Docker and mocked browser evidence do not replace final second-client LAN proof, real MariaDB/server proof or physical printer proof."
-    Add-ReportLine $lines "- The offline release package remains blocked until regenerated from the final commit with Docker image tar files and matching checksums."
+    Add-ReportLine $lines "- The offline release package must still be copied to the final server and verified there before production use."
     Add-ReportLine $lines "- Final production environment must be verified with `APP_ENV=production` and `APP_DEBUG=false` before production handoff."
     Add-ReportLine $lines '- Windows scheduled tasks `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup` must be installed or updated on the final server.'
     Add-ReportLine $lines "- Fiscal sequences/settings require administrative validation in the real environment; fiscal compliance was not invented by this report."
