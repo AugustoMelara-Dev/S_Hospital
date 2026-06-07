@@ -3635,3 +3635,8 @@ Validacion: check-branding.ps1, validate_dependency_manifest.ps1 y validate_inst
 qa/visual-smoke/field-qa-current-screenshots.mjs ahora captura login, pantallas operativas y vista de recibo en temas claro y oscuro cuando existe un objetivo local autorizado.
 El reporte JSON guarda rutas relativas y metadato theme por captura para que la evidencia pueda moverse con el repo sin exponer rutas locales de la maquina.
 scripts/validate_browser_smoke_evidence.ps1 valida estaticamente este contrato y sigue comprobando las capturas mocked existentes; no sustituye prueba fisica LAN ni impresora institucional.
+
+## 2026-06-07 - recibo impreso bloquea campos tecnicos aunque lleguen contaminados
+ReceiptPreview.test ahora simula un recibo con IDs internos, service_id, scan_code, barcode, qr_code, internal_code, regla especial, notas internas y codigos de auditoria de pago.
+El contrato de UI exige que el contenedor imprimible conserve paciente y servicio, pero no renderice esos valores ni etiquetas tecnicas en el recibo institucional.
+Validacion: npm.cmd test -- ReceiptPreview.test.tsx, check-branding.ps1 y validate_browser_smoke_evidence.ps1 pasaron sin hallazgos.

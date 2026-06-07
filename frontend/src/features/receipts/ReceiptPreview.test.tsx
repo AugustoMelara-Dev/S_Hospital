@@ -205,15 +205,30 @@ describe('ReceiptPreview', () => {
 
   it('does not render technical catalog or rule fields on the printed receipt', () => {
     const receipt = receiptFixture();
+    receipt.invoice = {
+      ...receipt.invoice,
+      internal_id: 'INV-ID-INTERNO-123',
+      fiscal_sequence_id: 'SEQ-INTERNA-456',
+    } as ReceiptData['invoice'];
     receipt.items = [
       {
         ...receipt.items[0],
+        service_id: 777,
         scan_code: 'SCAN-INTERNO-123',
         barcode: 'BARCODE-INTERNO-123',
         qr_code: 'QR-INTERNO-123',
+        internal_code: 'CODIGO-INTERNO-SERVICIO',
         special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
         special_rule_applied: true,
+        notes: 'Nota interna que no pertenece al recibo impreso',
       } as ReceiptData['items'][number],
+    ];
+    receipt.payments = [
+      {
+        ...receipt.payments[0],
+        internal_id: 'PAY-ID-INTERNO-789',
+        audit_code: 'AUDITORIA-INTERNA-PAGO',
+      } as ReceiptData['payments'][number],
     ];
 
     render(
@@ -224,8 +239,12 @@ describe('ReceiptPreview', () => {
       />,
     );
 
-    expect(screen.getByLabelText('Recibo institucional').textContent).not.toMatch(
-      /SCAN-INTERNO|BARCODE-INTERNO|QR-INTERNO|ERYTHROPOIETIN|Regla/i,
+    const receiptText = screen.getByLabelText('Recibo institucional').textContent ?? '';
+
+    expect(receiptText).toContain('Glucosa');
+    expect(receiptText).toContain('Maria Lopez');
+    expect(receiptText).not.toMatch(
+      /INV-ID-INTERNO|SEQ-INTERNA|service_id|scan_code|SCAN-INTERNO|barcode|BARCODE-INTERNO|qr_code|QR-INTERNO|CODIGO-INTERNO|special_rule|ERYTHROPOIETIN|Nota interna|PAY-ID-INTERNO|AUDITORIA-INTERNA|Regla/i,
     );
   });
 
