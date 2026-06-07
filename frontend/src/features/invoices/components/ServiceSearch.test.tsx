@@ -52,6 +52,57 @@ describe('ServiceSearch', () => {
     expect(screen.getByRole('button', { name: /agregar glucosa por l\. 15\.00/i })).toBeInTheDocument();
   });
 
+  it('keeps scanner wording hidden while scanner support is disabled', () => {
+    render(
+      <ServiceSearch
+        areas={areasFixture}
+        categories={[]}
+        services={[]}
+        selectedAreaId={undefined}
+        selectedCategoryId={undefined}
+        onAreaChange={vi.fn()}
+        onCategoryChange={vi.fn()}
+        search=""
+        onSearchChange={vi.fn()}
+        scanCode=""
+        onScanCodeChange={vi.fn()}
+        onAddService={vi.fn()}
+        onAddByScanCode={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText(/buscar por nombre o categoria/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/buscar por nombre\.\.\./i)).toBeInTheDocument();
+    expect(screen.getByText(/escriba el nombre del servicio o toque una categoria/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/escanee|scanner|codigo/i);
+  });
+
+  it('shows backend fuzzy and accent-tolerant search results without stricter local filtering', () => {
+    render(
+      <ServiceSearch
+        areas={areasFixture}
+        categories={[]}
+        services={[
+          serviceFixture({ id: 1, name: 'Eritropoyetina', price: '25.00' }),
+          serviceFixture({ id: 2, name: 'Ácido úrico especial', price: '30.00' }),
+        ]}
+        selectedAreaId="all"
+        selectedCategoryId="all"
+        onAreaChange={vi.fn()}
+        onCategoryChange={vi.fn()}
+        search="Eritropoytina acido urico"
+        onSearchChange={vi.fn()}
+        scanCode=""
+        onScanCodeChange={vi.fn()}
+        onAddService={vi.fn()}
+        onAddByScanCode={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /agregar eritropoyetina por l\. 25\.00/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /agregar ácido úrico especial por l\. 30\.00/i })).toBeInTheDocument();
+  });
+
   it('filters loaded services by selected area and clears area with the reset button', () => {
     const onAreaChange = vi.fn();
     const onCategoryChange = vi.fn();

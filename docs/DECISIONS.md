@@ -3668,3 +3668,8 @@ El browser smoke 2026-06-07 dejo de usar el marcador CAI de validacion heredado 
 El mock conserva CAI registrado como marcador neutral para probar la plantilla sin declarar cumplimiento fiscal real ni sustituir configuracion autorizada del hospital.
 check-branding ahora bloquea el marcador CAI de validacion heredado en superficies de entrega para evitar que vuelva a aparecer en seeders, pruebas visibles o evidencia QA.
 Validacion: vitest NewInvoiceView/shortcuts, php artisan test --filter=DevelopmentValidationSeederTest, check-branding y browser smoke mockeado con capturas.
+
+## 2026-06-07 - busqueda de servicios no muestra lector apagado ni descarta coincidencias tolerantes
+Nueva factura oculta referencias a escaneo o codigo cuando la opcion de lector esta deshabilitada, evitando instrucciones visibles que no aplican al puesto de caja.
+El frontend sigue filtrando solo por area/categoria localmente y muestra los servicios activos que la API devuelve para busquedas con tildes o errores, porque ServiceSearch del backend es la fuente de verdad para coincidencias tolerantes.
+Validacion: vitest ServiceSearch, typecheck, lint/build, branding, e2e y browser smoke de Nueva factura.

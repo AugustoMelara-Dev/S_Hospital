@@ -66,6 +66,15 @@ export function ServiceSearch({
   const visibleServices = hasIntent ? filteredServices.slice(0, SERVICE_RESULT_LIMIT) : [];
   const hiddenCount = Math.max(0, filteredServices.length - visibleServices.length);
   const firstVisibleService = visibleServices[0];
+  const searchInputLabel = scannerEnabled
+    ? 'Buscar por nombre, categoria o codigo'
+    : 'Buscar por nombre o categoria';
+  const searchPlaceholder = scannerEnabled
+    ? 'Buscar por nombre o codigo...'
+    : 'Buscar por nombre...';
+  const emptySearchHelp = scannerEnabled
+    ? 'Escriba el nombre del servicio, use el codigo escaneable o toque una categoria para ver opciones facturables.'
+    : 'Escriba el nombre del servicio o toque una categoria para ver opciones facturables.';
 
   const handleAddService = useCallback((service: Service) => {
     setAddFirstWhenReady(false);
@@ -96,8 +105,8 @@ export function ServiceSearch({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               ref={searchInputRef}
-              aria-label="Buscar por nombre, categoria o codigo"
-              placeholder="Buscar por nombre o codigo..."
+              aria-label={searchInputLabel}
+              placeholder={searchPlaceholder}
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyDown={(e) => {
@@ -199,7 +208,7 @@ export function ServiceSearch({
           <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-muted-foreground">
             <span className="font-medium text-foreground">Busque o elija una categoria</span>
             <span className="max-w-sm text-sm">
-              Escriba el nombre del servicio, escanee un codigo o toque una categoria para ver opciones facturables.
+              {emptySearchHelp}
             </span>
           </div>
         ) : filteredServices.length === 0 ? (
