@@ -76,7 +76,7 @@
   descartable, validar SHA256 + conteos.
 - **Concurrencia final**: doble apertura de caja, doble emision de
   factura, doble pago contra target descartable.
-- **Worker continuo de backups**: tareas Windows
+- **Tarea continua de respaldos**: tareas Windows
   `SistemaCajaHospitalaria-BackupWorker` y
   `SistemaCajaHospitalaria-DailyBackup` instaladas y activas.
 - **Handoff final**: `scripts/final_production_handoff.ps1` exit 0
@@ -93,7 +93,8 @@
 
 ### Operacion (documentado)
 
-- Backup manual desde UI requiere worker local de cola `backups`.
+- Backup manual desde UI requiere la automatizacion local de respaldos
+  instalada y activa en el servidor.
 - Autoarranque del stack al reiniciar Windows se instala con
   `scripts\install_stack_autostart_windows.ps1` y la tarea
   `SistemaCajaHospitalaria-StackAutostart` con trigger `AtStartup`; requiere

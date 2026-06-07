@@ -3753,3 +3753,8 @@ Criterio de verificacion: deploy_hospital_lan.ps1 -SelfTest, validate_installer_
 Contexto: el checklist de capacitacion para administracion aun pedia escalar un 'incidente tecnico' y llamar ante 'error tecnico', lenguaje que puede sonar ajeno para personal no tecnico.
 Decision: el checklist usa incidente operativo y error del sistema. validate_training_safety bloquea que el checklist vuelva a usar incidente tecnico o error tecnico.
 Criterio de verificacion: validate_training_safety, validate_operator_manuals_safety, check-branding y diff check.
+
+## 2026-06-07 - Limitaciones usan lenguaje operativo de respaldos
+Contexto: KNOWN_LIMITATIONS seguia describiendo el pendiente final como Worker continuo de backups y el backup manual como worker local de cola, lenguaje tecnico poco claro para entrega institucional.
+Decision: el pendiente fisico se presenta como Tarea continua de respaldos y la operacion de backup manual como automatizacion local de respaldos instalada y activa. validate_known_limitations_safety bloquea que vuelvan esas frases tecnicas en KNOWN_LIMITATIONS.
+Criterio de verificacion: validate_known_limitations_safety, check-branding y diff check.

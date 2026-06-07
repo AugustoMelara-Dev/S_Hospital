@@ -93,12 +93,15 @@ if ($knownLimitations -ne "") {
         'Impresora fisica',
         'Restore real final',
         'Concurrencia final',
-        'Worker continuo de backups',
+        'Tarea continua de respaldos',
         'SistemaCajaHospitalaria-StackAutostart',
         'Handoff final'
     )) {
         Test-Contains $knownLimitations ([regex]::Escape($finalBlocker)) "Known limitations preserves final blocker: $finalBlocker"
     }
+
+    Test-DoesNotContain $knownLimitations '(?i)Worker continuo de backups|worker local de cola' "Known limitations avoids technical backup worker wording"
+    Test-Contains $knownLimitations 'automatizacion local de respaldos' "Known limitations uses operational backup automation wording"
 }
 
 if ($installerEvidence -ne "") {
