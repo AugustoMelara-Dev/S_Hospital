@@ -87,6 +87,24 @@ Falta confirmar escala 100%, margenes minimos y encabezados/pies.
 Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
 "@
     $printerMissingPageSize = $printerCompletePending -replace "Falta imprimir recibo A5.`r?`n", ""
+    $backupCompletePending = @"
+Decision: PENDING_FINAL_FIELD.
+Falta instalar SistemaCajaHospitalaria-BackupWorker.
+Falta instalar SistemaCajaHospitalaria-DailyBackup.
+Falta observar la tarea continua de respaldos.
+Falta crear respaldo desde la UI administrativa.
+Falta confirmar Pendiente a Protegido.
+Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
+"@
+    $backupLegacyStatus = @"
+Decision: PENDING_FINAL_FIELD.
+Falta instalar SistemaCajaHospitalaria-BackupWorker.
+Falta instalar SistemaCajaHospitalaria-DailyBackup.
+Falta observar worker.
+Falta crear backup desde la UI administrativa.
+Falta confirmar pending to success.
+Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
+"@
 
     if (Test-ContainsAllTerms $printerCompletePending @("media carta", "carta", "A5")) {
         Add-Pass "SelfTest accepts printer proof that preserves all required institutional paper blockers"
@@ -98,6 +116,18 @@ Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
         Add-Failure "SelfTest failed to reject printer proof missing A5 blocker."
     } else {
         Add-Pass "SelfTest rejects printer proof missing required institutional paper blockers"
+    }
+
+    if (Test-ContainsAllTerms $backupCompletePending @("tarea continua de respaldos", "respaldo", "Pendiente", "Protegido")) {
+        Add-Pass "SelfTest accepts final backup proof that preserves visible backup-state blockers"
+    } else {
+        Add-Failure "SelfTest failed to accept current backup blocker wording."
+    }
+
+    if (Test-ContainsAllTerms $backupLegacyStatus @("tarea continua de respaldos", "respaldo", "Pendiente", "Protegido")) {
+        Add-Failure "SelfTest failed to reject legacy backup worker/status wording."
+    } else {
+        Add-Pass "SelfTest rejects legacy backup worker/status wording"
     }
 
     if ($failures.Count -gt 0) {
@@ -129,7 +159,9 @@ Assert-PendingProof "LAN client proof" $lanProof @(
     "recibo",
     "historial",
     "reportes",
-    "backup"
+    "respaldo",
+    "Pendiente",
+    "Protegido"
 )
 
 Assert-PendingProof "Institutional receipt print proof" $printerProof @(
@@ -155,10 +187,10 @@ Assert-PendingProof "Final startup task proof" $startupTaskProof @(
 Assert-PendingProof "Final backup task proof" $backupTaskProof @(
     "SistemaCajaHospitalaria-BackupWorker",
     "SistemaCajaHospitalaria-DailyBackup",
-    "worker",
+    "tarea continua de respaldos",
     "UI administrativa",
-    "pending",
-    "success",
+    "Pendiente",
+    "Protegido",
     "PRODUCTION_CANDIDATE"
 )
 

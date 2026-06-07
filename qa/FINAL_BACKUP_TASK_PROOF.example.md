@@ -24,7 +24,7 @@ physical/support reference.
 
 - [ ] `SistemaCajaHospitalaria-BackupWorker` is installed and Ready or Running. Result/evidence:
 - [ ] `SistemaCajaHospitalaria-DailyBackup` is installed and Ready or Running. Result/evidence:
-- [ ] Backup worker was started or observed running after task installation. Result/evidence:
+- [ ] Tarea continua de respaldos fue iniciada u observada despues de instalar las tareas. Result/evidence:
 - [ ] Manual backup was requested from the admin UI, not by editing the database. Result/evidence:
 - [ ] El respaldo manual cambio de Pendiente a Protegido en la UI administrativa. Result/evidence:
 - [ ] Backup file or backup log entry has timestamp and size. Result/evidence:

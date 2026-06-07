@@ -3808,3 +3808,10 @@ Criterio de verificacion: validate_final_handoff_completeness y validate_handoff
 Contexto: Las guias de soporte y respaldos aun hablaban de worker de respaldos, workers y pendiente a exito en instrucciones que puede seguir soporte de primer nivel.
 Decision: Las guias conservan nombres reales de scripts, pero las instrucciones operativas usan tarea continua, automatizacion, Protegido, Pendiente y Error.
 Criterio de verificacion: validate_backup_restore_docs_safety bloquea worker/status crudos en instrucciones operator-facing y valida Pendiente a Protegido.
+
+## 2026-06-07 - Bloqueantes finales validan estados visibles de respaldos
+Contexto: validate_final_field_blockers_safety seguia exigiendo los terminos backup, pending y success aunque la evidencia final y las pantallas operatorias ya usan respaldo, Pendiente y Protegido.
+Decision: El guard final conserva PRODUCTION_CANDIDATE y los nombres reales de tareas Windows, pero valida respaldo y la transicion Pendiente a Protegido como contrato visible.
+Criterio de verificacion: validate_final_field_blockers_safety debe pasar sin cerrar falsamente LAN, impresora, autoarranque, respaldo, restore ni concurrencia final.
+
+Nota de alcance: este criterio tambien cubre validate_final_backup_task_proof y la plantilla qa/FINAL_BACKUP_TASK_PROOF.example.md para mantener tarea continua de respaldos y Pendiente a Protegido.

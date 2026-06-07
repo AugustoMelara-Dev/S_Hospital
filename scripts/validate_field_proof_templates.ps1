@@ -253,7 +253,7 @@ Test-Template `
     -checks @(
         "SistemaCajaHospitalaria-BackupWorker",
         "SistemaCajaHospitalaria-DailyBackup",
-        "Backup worker",
+        "Tarea continua de respaldos",
         "Manual backup",
         "Pendiente a Protegido",
         "timestamp and size",

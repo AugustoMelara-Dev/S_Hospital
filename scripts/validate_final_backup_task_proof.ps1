@@ -131,7 +131,7 @@ if ([string]::IsNullOrWhiteSpace($ProofPath) -or -not (Test-Path -LiteralPath $P
             foreach ($pendingRequirement in @(
                 @{ Pattern = '(?i)SistemaCajaHospitalaria-BackupWorker'; Label = 'SistemaCajaHospitalaria-BackupWorker' },
                 @{ Pattern = '(?i)SistemaCajaHospitalaria-DailyBackup'; Label = 'SistemaCajaHospitalaria-DailyBackup' },
-                @{ Pattern = '(?i)worker.*(corriendo|running|activo|observ)'; Label = 'worker running/observed' },
+                @{ Pattern = '(?i)tarea continua de respaldos.*(activa|observ)|observ.*tarea continua de respaldos'; Label = 'tarea continua de respaldos activa/observada' },
                 @{ Pattern = '(?i)respaldo manual|manual backup'; Label = 'manual backup' },
                 @{ Pattern = '(?i)Pendiente.*Protegido|Protegido.*Pendiente'; Label = 'Pendiente a Protegido' },
                 @{ Pattern = '(?i)PRODUCTION_CANDIDATE'; Label = 'PRODUCTION_CANDIDATE' }
@@ -170,7 +170,7 @@ if ([string]::IsNullOrWhiteSpace($ProofPath) -or -not (Test-Path -LiteralPath $P
         foreach ($check in @(
             "SistemaCajaHospitalaria-BackupWorker",
             "SistemaCajaHospitalaria-DailyBackup",
-            "Backup worker was started or observed running",
+            "Tarea continua de respaldos fue iniciada u observada",
             "Manual backup was requested from the admin UI",
             "El respaldo manual cambio de Pendiente a Protegido",
             "Backup file or backup log entry has timestamp and size",

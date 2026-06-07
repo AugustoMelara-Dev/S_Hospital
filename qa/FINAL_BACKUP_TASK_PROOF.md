@@ -17,7 +17,8 @@ server validation.
   servidor final.
 - Falta instalar o actualizar `SistemaCajaHospitalaria-DailyBackup` en el
   servidor final.
-- Falta iniciar u observar el worker de respaldos corriendo en el servidor final.
+- Falta iniciar u observar la tarea continua de respaldos activa en el servidor
+  final.
 - Falta crear un respaldo manual desde la UI administrativa.
 - Falta confirmar que el respaldo manual pasa de **Pendiente** a **Protegido**
   en la UI administrativa.
