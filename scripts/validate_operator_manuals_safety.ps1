@@ -63,6 +63,8 @@ $operatorIndex = Read-Manual "docs\manuales\INDICE_OPERADOR.md"
 $support = Read-Manual "docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md"
 $training = Read-Manual "docs\manuales\GUIA_CAPACITACION_SEGURA.md"
 $commonIncidents = Read-Manual "docs\manuales\RUNBOOK_INCIDENTES_COMUNES.md"
+$generalUserManual = Read-Manual "docs\Manual_Usuario.md"
+$generalUserManualHtml = Read-Manual "docs\Manual_Usuario.html"
 
 if ($cashier -ne "") {
     Test-ManualChecklistAndWarnings "Cashier manual" $cashier
@@ -70,6 +72,8 @@ if ($cashier -ne "") {
         Test-Contains $cashier ([regex]::Escape($pattern)) "Cashier manual includes $pattern"
     }
     Test-Contains $cashier "(?i)no\s+se\s+debe\s+facturar\s+ni\s+cobrar\s+sin\s+caja\s+abierta" "Cashier manual blocks charging without open cashbox"
+    Test-Contains $cashier "(?i)motivo\s+de\s+la\s+reimpresion" "Cashier manual requires reprint reason"
+    Test-NotContains $cashier "(?i)motivo\s+si\s+el\s+sistema\s+lo\s+solicita|si\s+el\s+sistema\s+lo\s+solicita" "Cashier manual avoids optional audit-action wording"
 }
 
 if ($supervisor -ne "") {
@@ -78,6 +82,8 @@ if ($supervisor -ne "") {
         Test-Contains $supervisor ([regex]::Escape($pattern)) "Supervisor manual includes incident: $pattern"
     }
     Test-Contains $supervisor "(?i)no\s+borre\s+facturas|No borre facturas" "Supervisor manual forbids deleting invoices"
+    Test-Contains $supervisor "(?i)Protegido[\s\S]{0,80}Pendiente[\s\S]{0,80}Error" "Supervisor manual uses current backup status labels"
+    Test-NotContains $supervisor "(?i)Todo bien|Requiere revision" "Supervisor manual avoids obsolete backup status labels"
 }
 
 if ($administrator -ne "") {
@@ -94,6 +100,23 @@ if ($administrator -ne "") {
 if ($operatorIndex -ne "") {
     Test-Contains $operatorIndex "(?i)Soporte Local de Primer Nivel" "Operator index uses local support wording"
     Test-Contains $operatorIndex "(?i)Avisar a soporte local" "Operator index routes LAN errors to local support"
+}
+
+if ($support -ne "") {
+    Test-Contains $support "(?i)Protegido[\s\S]{0,80}Pendiente[\s\S]{0,80}Error" "First-level support guide uses current backup status labels"
+    Test-NotContains $support "(?i)Todo bien|Requiere revision" "First-level support guide avoids obsolete backup status labels"
+}
+
+if ($generalUserManual -ne "") {
+    Test-Contains $generalUserManual "(?i)reimpresion\s+debe\s+registrar\s+motivo\s+y\s+quedar\s+auditada" "General user manual requires audited reprint reason"
+    Test-Contains $generalUserManual "(?i)Protegido[\s\S]{0,80}Pendiente[\s\S]{0,80}Error" "General user manual uses current backup status labels"
+    Test-NotContains $generalUserManual "(?i)Todo bien|Requiere revision|si\s+el\s+sistema\s+lo\s+solicita" "General user manual avoids obsolete or optional audit wording"
+}
+
+if ($generalUserManualHtml -ne "") {
+    Test-Contains $generalUserManualHtml "(?i)reimpresion\s+debe\s+registrar\s+motivo\s+y\s+quedar\s+auditada" "General user manual HTML requires audited reprint reason"
+    Test-Contains $generalUserManualHtml "(?i)Protegido[\s\S]{0,80}Pendiente[\s\S]{0,80}Error" "General user manual HTML uses current backup status labels"
+    Test-NotContains $generalUserManualHtml "(?i)Todo bien|Requiere revision|si\s+el\s+sistema\s+lo\s+solicita" "General user manual HTML avoids obsolete or optional audit wording"
 }
 
 $backupIncident = ""
@@ -188,7 +211,7 @@ if ($commonIncidents -ne "") {
 }
 
 $combined = "$cashier`n$supervisor`n$administrator`n$support`n$training`n$commonIncidents"
-$operatorFacing = "$cashier`n$supervisor`n$administrator`n$operatorIndex"
+$operatorFacing = "$cashier`n$supervisor`n$administrator`n$operatorIndex`n$generalUserManual`n$generalUserManualHtml"
 foreach ($pattern in @("base real", "produccion", "base descartable", "no use la base real", "No restaure", "No borre")) {
     Test-Contains $combined ([regex]::Escape($pattern)) "Operator docs include safe training/support term: $pattern"
 }

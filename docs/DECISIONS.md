@@ -3703,3 +3703,8 @@ Validacion: check-branding, busqueda enfocada en SYSTEM_REQUIREMENTS y diff chec
 Contexto: una auditoria visual viva de UX aun describia Courier New como fuente usada solo para recibos termicos, aunque el contrato RC vigente exige recibos institucionales tipo talonario.
 Decision: qa/UX_UI_AUDIT_LIVE_2026-05-21.md queda alineado a recibos institucionales. check-branding ahora cubre esa evidencia contra lenguaje heredado de ticket o recibo termico.
 Validacion: check-branding y busqueda enfocada en la evidencia UX.
+
+## 2026-06-07 - manuales exigen motivo auditado en reimpresion
+Contexto: algunos manuales decian que la reimpresion debia tener motivo solo si el sistema lo solicitaba, y otros aun usaban estados viejos de Respaldos. Eso podia hacer que personal de caja o supervision tratara acciones auditables como opcionales.
+Decision: los manuales de usuario, cajero, supervisor y soporte indican motivo de reimpresion de forma explicita y usan los estados de Respaldos Protegido, Pendiente o Error. validate_operator_manuals_safety cubre esas reglas.
+Validacion: validate_operator_manuals_safety, validate_installation_docs_safety y busqueda enfocada sin coincidencias en manuales.

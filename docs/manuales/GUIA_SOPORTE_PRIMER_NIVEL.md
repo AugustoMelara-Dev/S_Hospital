@@ -98,8 +98,8 @@ Si puede iniciar sesion:
 4. Si el navegador lo permite, pegue el resumen en el mensaje de soporte. Si no,
    muestre esa pantalla o tome captura.
 5. Presione **Ver evidencia** solo si soporte necesita ver los ultimos incidentes.
-6. Abra **Respaldos** si tiene permiso y revise si dice **Todo bien**,
-   **Requiere revision** o **Error**.
+6. Abra **Respaldos** si tiene permiso y revise si dice **Protegido**,
+   **Pendiente** o **Error**.
 
 No copie datos de pacientes fuera de los canales autorizados.
 No copie `.env`, passwords, tokens, rutas locales del servidor ni mensajes tecnicos crudos.

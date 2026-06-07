@@ -57,7 +57,7 @@ El recibo institucional no debe llevar codigos internos ni QR.
 1. Entre a **Historial**.
 2. Busque por paciente, fecha o numero.
 3. Use **Reimprimir** si tiene permiso.
-4. Escriba el motivo si el sistema lo solicita.
+4. Escriba el motivo de la reimpresion.
 
 ## Cerrar Caja
 

@@ -51,7 +51,7 @@ Si el navegador se cierra o la computadora se reinicia, revise **Caja** e
 Las facturas no se borran de la base de datos.
 
 - Una anulacion requiere permiso, motivo y auditoria.
-- Una reimpresion debe tener motivo si el sistema lo solicita.
+- Una reimpresion debe registrar motivo y quedar auditada.
 - Si hay pago registrado, siga el flujo aprobado de reversion/anulacion; no
   intente corregir borrando datos.
 
@@ -77,7 +77,7 @@ operativos.
 El administrador debe:
 
 1. Entrar a **Respaldos**.
-2. Revisar si el estado dice **Todo bien**, **Requiere revision** o **Error**.
+2. Revisar si el estado dice **Protegido**, **Pendiente** o **Error**.
 3. Crear respaldo manual antes de cambios importantes.
 4. Confirmar que el respaldo pase de **Pendiente** a **Protegido**.
 5. Guardar copias externas segun la politica del hospital.

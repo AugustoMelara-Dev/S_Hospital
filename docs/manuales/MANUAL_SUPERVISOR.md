@@ -9,8 +9,8 @@ incidentes y autoriza acciones delicadas sin reemplazar al administrador del sis
 2. Verifique que cada cajero use su propia cuenta.
 3. Confirme que la caja del turno se abra con el monto inicial correcto.
 4. Revise que haya papel e impresora disponible antes de empezar a cobrar.
-5. Revise en **Respaldos** si el estado operativo dice **Todo bien** o
-   **Requiere revision**.
+5. Revise en **Respaldos** si el estado operativo dice **Protegido**,
+   **Pendiente** o **Error**.
 
 Si aparece **Error**, no lo ignore. Revise el detalle avanzado o avise al
 administrador antes de operar todo el turno.
