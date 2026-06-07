@@ -3597,3 +3597,7 @@ validate_installation_docs_safety bloquea que el manual general vuelva a exponer
 ## 2026-06-07 - Manual HTML de usuario sincronizado con flujo seguro
 Manual_Usuario.html ahora replica el flujo seguro de Manual_Usuario.md: sin comandos de PowerShell, BaseUrl local, 127.0.0.1, migrate:fresh, seeders, .env ni SQL para usuarios finales. Mantiene la ruta de Ayuda > Preparar resumen, soporte local y no repetir facturas ni cobros durante incidentes.
 validate_installation_docs_safety ahora lee tambien docs/Manual_Usuario.html y aplica las mismas barreras del manual general imprimible.
+
+## 2026-06-07 - Reporte QA sin formatos de rollo como bloqueante
+qa/AREAS_DE_MEJORA_CONSIDERADAS_2026-05-19.md ahora alinea los bloqueantes de impresora fisica a media carta, carta y A5, sin listar 80mm/58mm como requisito operativo de cierre.
+check-branding.ps1 incluye ese reporte en la revision de documentacion actual contra 80mm, 58mm e impresora de rollo para evitar regresiones de lenguaje heredado.
