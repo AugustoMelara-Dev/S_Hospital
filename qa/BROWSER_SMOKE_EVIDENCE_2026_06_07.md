@@ -26,6 +26,7 @@ Observed result:
 - Screenshots were captured for dashboard light/dark, cashbox open, new invoice empty/cart, receipt media carta/carta/A5/dark, reports and backups.
 - Visual review of `qa\browser-smoke-2026-06-07\billing-new-empty-light.png` confirmed the search placeholder no longer mentions code entry while scanner support is disabled, and active services remain visible in `Todos`.
 - Visual review of `qa\browser-smoke-2026-06-07\backups-pending-light.png` confirmed only one status notice remains visible and the primary backup actions are no longer covered.
+- Visual review of `qa\browser-smoke-2026-06-07\backups-pending-light.png` confirmed the normal backup summary uses `Error`, while the backup row uses `Pendiente`; it no longer shows `Todo bien` or `Requiere revision` as normal state labels.
 - Visual review of `qa\browser-smoke-2026-06-07\receipt-preview-dark.png` confirmed the mocked receipt no longer shows the old validation CAI marker, an invented fiscal range or an invented expiration date.
 
 Safety notes:

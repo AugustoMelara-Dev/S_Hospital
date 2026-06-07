@@ -899,6 +899,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /^respaldos$/i })).toBeVisible();
   await page.getByRole('button', { name: /crear respaldo/i }).first().click();
   await page.getByRole('button', { name: /^crear respaldo$/i }).click();
+  await expect(page.getByRole('heading', { name: /^(Protegido|Pendiente|Error)$/ })).toBeVisible();
+  await expect(page.getByText(/Todo bien|Requiere revisi[oó]n/i)).toHaveCount(0);
   await expect(page.getByRole('table').getByText('Pendiente', { exact: true })).toBeVisible();
   await captureScreen(page, 'backups-pending-light', 'light');
   await writeCaptureReport(consoleIssues);

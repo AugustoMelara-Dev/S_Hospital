@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { axe } from 'vitest-axe';
 import { BackupsView } from './BackupsView';
@@ -10,6 +10,10 @@ import {
 } from '../../lib/api';
 
 describe('BackupsView accessibility', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('has no axe-core violations and hides technical filenames on the view', async () => {
     vi.spyOn(apiClient, 'getBackups').mockResolvedValue({
       data: [backupFixture()],
@@ -30,6 +34,51 @@ describe('BackupsView accessibility', () => {
     expect(container.textContent).not.toContain('hospital-backup-2026-06-01.sql');
     expect(container.textContent).not.toMatch(/\.sql\b/i);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('uses Protegido, Pendiente or Error as the normal operational summary labels', async () => {
+    vi.spyOn(apiClient, 'getBackups').mockResolvedValue({
+      data: [backupFixture()],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getSystemStatus').mockResolvedValue(mockSystemStatus({ productionReady: false }));
+
+    const pending = render(
+      <BackupsView user={backupsUser()} onStatus={vi.fn()} />,
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Pendiente' })).toBeInTheDocument();
+    expect(pending.container.textContent).not.toMatch(/Todo bien|Requiere revisi[oó]n/i);
+    pending.unmount();
+    vi.restoreAllMocks();
+
+    vi.spyOn(apiClient, 'getBackups').mockResolvedValue({
+      data: [backupFixture()],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getSystemStatus').mockResolvedValue(mockSystemStatus({ productionReady: true }));
+
+    const protectedView = render(
+      <BackupsView user={backupsUser()} onStatus={vi.fn()} />,
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Protegido' })).toBeInTheDocument();
+    expect(protectedView.container.textContent).not.toMatch(/Todo bien|Requiere revisi[oó]n/i);
+    protectedView.unmount();
+    vi.restoreAllMocks();
+
+    vi.spyOn(apiClient, 'getBackups').mockResolvedValue({
+      data: [backupFixture({ status: 'failed', error_message: 'SQLSTATE hidden from UI' })],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getSystemStatus').mockResolvedValue(mockSystemStatus({ failedJobs: 1, productionReady: true }));
+
+    const errorView = render(
+      <BackupsView user={backupsUser()} onStatus={vi.fn()} />,
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Error' })).toBeInTheDocument();
+    expect(errorView.container.textContent).not.toMatch(/Todo bien|Requiere revisi[oó]n/i);
   });
 
   it('keeps advanced backup diagnostics in non-technical language', async () => {
@@ -117,7 +166,7 @@ function backupFixture(overrides: Partial<BackupLog> = {}): BackupLog {
   };
 }
 
-function mockSystemStatus(options: { failedJobs?: number } = {}): SystemStatus {
+function mockSystemStatus(options: { failedJobs?: number; productionReady?: boolean } = {}): SystemStatus {
   return {
     environment: {
       app_env: 'production',
@@ -189,8 +238,8 @@ function mockSystemStatus(options: { failedJobs?: number } = {}): SystemStatus {
       pending_migrations: [],
     },
     readiness: {
-      state: 'PRODUCTION_CANDIDATE',
-      production_ready: false,
+      state: options.productionReady ? 'PRODUCTION_READY' : 'PRODUCTION_CANDIDATE',
+      production_ready: options.productionReady ?? false,
       blockers: [],
     },
     preflight: {

@@ -3673,3 +3673,8 @@ Validacion: vitest NewInvoiceView/shortcuts, php artisan test --filter=Developme
 Nueva factura oculta referencias a escaneo o codigo cuando la opcion de lector esta deshabilitada, evitando instrucciones visibles que no aplican al puesto de caja.
 El frontend sigue filtrando solo por area/categoria localmente y muestra los servicios activos que la API devuelve para busquedas con tildes o errores, porque ServiceSearch del backend es la fuente de verdad para coincidencias tolerantes.
 Validacion: vitest ServiceSearch, typecheck, lint/build, branding, e2e y browser smoke de Nueva factura.
+
+## 2026-06-07 - respaldos usan estados operativos Protegido Pendiente Error
+La tarjeta principal de Respaldos deja de usar Todo bien o Requiere revision como estado normal y usa solo Protegido, Pendiente o Error, alineado con el lenguaje solicitado para administracion no tecnica.
+Si el entorno aun no esta production_ready, el resumen queda Pendiente aunque no haya bloqueantes detallados, evitando presentar el servidor como protegido antes de cerrar pruebas finales.
+Validacion: vitest BackupsView a11y, typecheck, lint/build, branding, e2e y browser smoke de Respaldos.

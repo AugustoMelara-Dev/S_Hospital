@@ -159,6 +159,7 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
   }
 
   const needsReview =
+    !status.readiness.production_ready ||
     !status.network.lan_ready ||
     status.backups.pending_count > 0 ||
     status.readiness.blockers.some((blocker) => blocker.status !== 'validated') ||
@@ -170,7 +171,7 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
   if (needsReview) {
     return {
       level: 'review',
-      label: 'Requiere revisi\u00f3n',
+      label: 'Pendiente',
       description: 'Falta completar respaldo reciente, validacion de red/impresora o configuracion final antes de operar sin supervision.',
       className: 'border-amber-200 bg-amber-50 text-amber-900',
     };
@@ -178,7 +179,7 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
 
   return {
     level: 'ok',
-    label: 'Todo bien',
+    label: 'Protegido',
     description: 'Respaldos y chequeos basicos estan al dia. Mantenga el cierre diario y los respaldos protegidos.',
     className: 'border-emerald-200 bg-emerald-50 text-emerald-900',
   };
