@@ -9,7 +9,7 @@ Entorno: Windows local en `C:\Projects\S_Hospital`, Laravel servido en `http://1
 - PRODUCTION_CANDIDATE: si.
 - PRODUCTION_READY: no.
 
-Fase 11 valida partes reales del entorno, pero no declara produccion final porque falta completar validacion fisica desde cliente LAN independiente, impresora institucional real media carta/carta/A5/80mm/58mm y configuracion final `APP_ENV=production` / `APP_DEBUG=false` con admin real.
+Fase 11 valida partes reales del entorno, pero no declara produccion final porque falta completar validacion fisica desde cliente LAN independiente, impresora institucional real media carta/carta/A5 y configuracion final `APP_ENV=production` / `APP_DEBUG=false` con admin real.
 
 ## Entorno detectado
 
@@ -151,12 +151,11 @@ Estado: PENDING_HARDWARE_VALIDATION.
 
 No se ejecuto impresion fisica porque no se confirmo hardware disponible. Checklist pendiente:
 
-- Impresion 80mm desde navegador real de caja.
-- Impresion 58mm desde navegador real de caja.
+- Impresion en media carta, carta o A5 desde navegador real de caja.
 - Escala 100%.
 - Margenes minimos o ninguno.
 - Reimpresion desde historial.
-- Confirmar que no sale como hoja carta.
+- Confirmar que el formato impreso coincide con la configuracion autorizada.
 
 ## Worker real de backups
 
@@ -204,4 +203,4 @@ Fase 11 eleva la evidencia tecnica de campo, pero el sistema queda:
 - PRODUCTION_CANDIDATE: si.
 - PRODUCTION_READY: no.
 
-Bloqueantes restantes para `PRODUCTION_READY`: cliente LAN fisico completo, impresora institucional fisica media carta/carta/A5/80mm/58mm y configuracion final de produccion con admin real.
+Bloqueantes restantes para `PRODUCTION_READY`: cliente LAN fisico completo, impresora institucional fisica media carta/carta/A5 y configuracion final de produccion con admin real.

@@ -3601,3 +3601,7 @@ validate_installation_docs_safety ahora lee tambien docs/Manual_Usuario.html y a
 ## 2026-06-07 - Reporte QA sin formatos de rollo como bloqueante
 qa/AREAS_DE_MEJORA_CONSIDERADAS_2026-05-19.md ahora alinea los bloqueantes de impresora fisica a media carta, carta y A5, sin listar 80mm/58mm como requisito operativo de cierre.
 check-branding.ps1 incluye ese reporte en la revision de documentacion actual contra 80mm, 58mm e impresora de rollo para evitar regresiones de lenguaje heredado.
+
+## 2026-06-07 - Field deployment valida impresora solo en formatos institucionales
+qa/FIELD_DEPLOYMENT_VALIDATION.md ahora lista la validacion fisica de impresora institucional en media carta, carta o A5, sin convertir 80mm/58mm en bloqueantes operativos de PRODUCTION_READY.
+check-branding.ps1 incluye FIELD_DEPLOYMENT_VALIDATION en la revision de documentacion actual contra 80mm, 58mm e impresora de rollo.

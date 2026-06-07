@@ -232,6 +232,7 @@ try {
             'docs/ARCHITECTURE_CURRENT.md',
             'frontend/e2e/production-readiness.spec.ts',
             'qa/AREAS_DE_MEJORA_CONSIDERADAS_2026-05-19.md',
+            'qa/FIELD_DEPLOYMENT_VALIDATION.md',
             'qa/FINAL_FIELD_BLOCKERS_SAFETY_2026_06_04.md',
             'qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md',
             'qa/PRODUCTION_READINESS_GAP_REPORT.md',
