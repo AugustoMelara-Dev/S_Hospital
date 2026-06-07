@@ -3630,3 +3630,8 @@ La evidencia sigue clasificada como validacion local y no reemplaza restore, con
 package_manifest.json ahora usa identidad s_hospital_offline_rc y regla institutional_receipt_half_letter_letter_a5 para que el paquete de entrega no conserve nombres internos ni requisitos 80mm/58mm como contrato operativo.
 devex/windows-server-install.md y CHANGELOG.md quedan alineados a recibo institucional en media carta, carta o A5; check-branding.ps1 cubre esas superficies para bloquear regresiones visibles de impresora de rollo o cuentas temporales de demostracion.
 Validacion: check-branding.ps1, validate_dependency_manifest.ps1 y validate_installation_docs_safety.ps1 pasaron sin hallazgos.
+
+## 2026-06-07 - field QA visual exige modo claro y oscuro
+qa/visual-smoke/field-qa-current-screenshots.mjs ahora captura login, pantallas operativas y vista de recibo en temas claro y oscuro cuando existe un objetivo local autorizado.
+El reporte JSON guarda rutas relativas y metadato theme por captura para que la evidencia pueda moverse con el repo sin exponer rutas locales de la maquina.
+scripts/validate_browser_smoke_evidence.ps1 valida estaticamente este contrato y sigue comprobando las capturas mocked existentes; no sustituye prueba fisica LAN ni impresora institucional.

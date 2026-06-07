@@ -38,6 +38,25 @@ function Read-JsonFile([string] $relativePath) {
     }
 }
 
+function Read-RequiredTextFile([string] $relativePath) {
+    $path = Join-Path $ProjectRoot $relativePath
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        Add-Failure "Missing browser evidence source: $relativePath"
+        return ""
+    }
+
+    Add-Pass "Found $relativePath"
+    return Get-Content -LiteralPath $path -Raw
+}
+
+function Assert-SourceContains([string] $content, [string] $needle, [string] $label) {
+    if ($content.Contains($needle)) {
+        Add-Pass $label
+    } else {
+        Add-Failure $label
+    }
+}
+
 function Test-RelativeEvidencePath([string] $relativePath, [int64] $minimumBytes, [string] $label) {
     if ([string]::IsNullOrWhiteSpace($relativePath)) {
         Add-Failure "$label has an empty path"
@@ -71,8 +90,21 @@ function Test-RelativeEvidencePath([string] $relativePath, [int64] $minimumBytes
 
 $rcReportPath = "qa\browser-smoke-2026-06-05\rc-e2e-mocked-report.json"
 $helpReportPath = "qa\screenshots\rc-help-support-2026-05-31\help-support-report.json"
+$fieldQaScriptPath = "qa\visual-smoke\field-qa-current-screenshots.mjs"
 $rcReport = Read-JsonFile $rcReportPath
 $helpReport = Read-JsonFile $helpReportPath
+$fieldQaScript = Read-RequiredTextFile $fieldQaScriptPath
+
+if (-not [string]::IsNullOrWhiteSpace($fieldQaScript)) {
+    Assert-SourceContains $fieldQaScript "const themes = ['light', 'dark'];" "Field QA smoke declares light and dark themes"
+    Assert-SourceContains $fieldQaScript "function evidencePath(filePath)" "Field QA smoke uses portable evidence paths"
+    Assert-SourceContains $fieldQaScript "screenshot: evidencePath(screenshot)" "Field QA smoke stores relative screenshot paths in JSON"
+    Assert-SourceContains $fieldQaScript "theme," "Field QA smoke records theme metadata per capture"
+    Assert-SourceContains $fieldQaScript '${String(index).padStart(2, ''0'')}-login-${theme}.png' "Field QA smoke captures login per theme"
+    Assert-SourceContains $fieldQaScript '${String(index).padStart(2, ''0'')}-${name}-${theme}.png' "Field QA smoke captures authenticated screens per theme"
+    Assert-SourceContains $fieldQaScript '${String(index).padStart(2, ''0'')}-receipt-preview-${theme}.png' "Field QA smoke captures receipt preview per theme when available"
+    Assert-SourceContains $fieldQaScript '${entry.screen}:${entry.theme}:${key}' "Field QA smoke reports blockers with theme context"
+}
 
 if ($null -ne $rcReport) {
     if ($rcReport.mode -eq "mocked-e2e") {

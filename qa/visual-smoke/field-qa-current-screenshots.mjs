@@ -7,7 +7,9 @@ const { chromium } = playwright;
 const baseUrl = process.env.FIELD_QA_BASE_URL ?? 'http://127.0.0.1:8000';
 const user = requiredEnv('FIELD_QA_USER');
 const password = requiredEnv('FIELD_QA_PASSWORD');
+const repoRoot = path.resolve(import.meta.dirname, '..', '..');
 const outputDir = path.resolve(import.meta.dirname, '..', 'screenshots', 'field-qa-2026-05-29-fixed');
+const themes = ['light', 'dark'];
 
 const screens = [
   ['login', '/', /sistema de caja hospitalaria|caja hospitalaria/i],
@@ -58,6 +60,25 @@ async function waitSettled(page) {
   await page.waitForLoadState('networkidle').catch(() => {});
 }
 
+function evidencePath(filePath) {
+  return path.relative(repoRoot, filePath).split(path.sep).join('/');
+}
+
+async function applyTheme(page, theme) {
+  await page.evaluate((themeName) => {
+    localStorage.setItem('hospital-billing-theme', themeName);
+    localStorage.setItem('hospital-billing-color-theme', 'teal');
+  }, theme);
+}
+
+async function gotoThemed(page, route, theme) {
+  await page.goto(`${baseUrl}${route}`);
+  await waitSettled(page);
+  await applyTheme(page, theme);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitSettled(page);
+}
+
 async function visibleTextAndValues(page) {
   return page.evaluate(() => {
     const inputs = Array.from(document.querySelectorAll('input, textarea, select'))
@@ -77,18 +98,13 @@ function collectFlags(text, route, isReceipt = false) {
   return Object.fromEntries(checks.map(([key, regex]) => [key, regex.test(text)]));
 }
 
-async function login(page) {
-  await page.goto(`${baseUrl}/`);
-  await waitSettled(page);
+async function login(page, theme = 'light') {
+  await gotoThemed(page, '/', theme);
 
   if (await page.getByRole('link', { name: /inicio|nueva factura|caja/i }).first().isVisible().catch(() => false)) {
     return;
   }
 
-  await page.evaluate(() => {
-    localStorage.setItem('hospital-billing-theme', 'light');
-    localStorage.setItem('hospital-billing-color-theme', 'teal');
-  });
   await page.getByLabel(/usuario|correo|email/i).fill(user);
   await page.getByRole('textbox', { name: /contrase/i }).fill(password);
   await page.getByRole('button', { name: /entrar|iniciar/i }).click();
@@ -103,62 +119,73 @@ const context = await browser.newContext({ viewport: { width: 1440, height: 1000
 const page = await context.newPage();
 const report = [];
 
-await page.goto(`${baseUrl}/`);
-await waitSettled(page);
-await page.screenshot({ path: path.join(outputDir, '01-login.png'), fullPage: false });
-report.push({
-  screen: 'login',
-  route: '/',
-  screenshot: path.join(outputDir, '01-login.png'),
-  flags: collectFlags(await visibleTextAndValues(page), '/'),
-});
-
-await login(page);
-
-let index = 2;
-for (const [name, route, expected] of screens.slice(1)) {
-  await page.goto(`${baseUrl}${route}`);
-  await waitSettled(page);
-  await page.getByRole('heading', { name: expected }).first().waitFor({ timeout: 12000 }).catch(() => {});
-  await page.waitForTimeout(300);
-
-  const fileName = `${String(index).padStart(2, '0')}-${name}.png`;
+let index = 1;
+for (const theme of themes) {
+  await gotoThemed(page, '/', theme);
+  const fileName = `${String(index).padStart(2, '0')}-login-${theme}.png`;
   const screenshot = path.join(outputDir, fileName);
   await page.screenshot({ path: screenshot, fullPage: false });
-  const text = await visibleTextAndValues(page);
-  report.push({ screen: name, route, screenshot, flags: collectFlags(text, route) });
+  report.push({
+    screen: 'login',
+    route: '/',
+    theme,
+    screenshot: evidencePath(screenshot),
+    flags: collectFlags(await visibleTextAndValues(page), '/'),
+  });
   index += 1;
 }
 
-await page.goto(`${baseUrl}/invoices`);
-await waitSettled(page);
-const viewReceipt = page.getByRole('button', { name: /ver recibo/i }).first();
-if (await viewReceipt.isVisible().catch(() => false)) {
-  await viewReceipt.click();
+await login(page, 'light');
+
+for (const theme of themes) {
+  for (const [name, route, expected] of screens.slice(1)) {
+    await gotoThemed(page, route, theme);
+    await page.getByRole('heading', { name: expected }).first().waitFor({ timeout: 12000 }).catch(() => {});
+    await page.waitForTimeout(300);
+
+    const fileName = `${String(index).padStart(2, '0')}-${name}-${theme}.png`;
+    const screenshot = path.join(outputDir, fileName);
+    await page.screenshot({ path: screenshot, fullPage: false });
+    const text = await visibleTextAndValues(page);
+    report.push({ screen: name, route, theme, screenshot: evidencePath(screenshot), flags: collectFlags(text, route) });
+    index += 1;
+  }
+}
+
+for (const theme of themes) {
+  await gotoThemed(page, '/invoices', theme);
+  const viewReceipt = page.getByRole('button', { name: /ver recibo/i }).first();
+  if (await viewReceipt.isVisible().catch(() => false)) {
+    await viewReceipt.click();
+    await waitSettled(page);
+    await page.waitForTimeout(500);
+    const screenshot = path.join(outputDir, `${String(index).padStart(2, '0')}-receipt-preview-${theme}.png`);
+    await page.screenshot({ path: screenshot, fullPage: false });
+    report.push({
+      screen: 'receipt-preview',
+      route: '/invoices',
+      theme,
+      screenshot: evidencePath(screenshot),
+      flags: collectFlags(await visibleTextAndValues(page), '/invoices', true),
+    });
+  } else {
+    report.push({
+      screen: 'receipt-preview',
+      route: '/invoices',
+      theme,
+      screenshot: null,
+      skipped: 'No se encontro un boton visible de Ver recibo en la base local actual.',
+      flags: {},
+    });
+  }
   await waitSettled(page);
-  await page.waitForTimeout(500);
-  const screenshot = path.join(outputDir, `${String(index).padStart(2, '0')}-receipt-preview.png`);
-  await page.screenshot({ path: screenshot, fullPage: false });
-  report.push({
-    screen: 'receipt-preview',
-    route: '/invoices',
-    screenshot,
-    flags: collectFlags(await visibleTextAndValues(page), '/invoices', true),
-  });
-} else {
-  report.push({
-    screen: 'receipt-preview',
-    route: '/invoices',
-    screenshot: null,
-    skipped: 'No se encontro un boton visible de Ver recibo en la base local actual.',
-    flags: {},
-  });
+  index += 1;
 }
 
 const failing = report.flatMap((entry) =>
   Object.entries(entry.flags ?? {})
     .filter(([, value]) => value)
-    .map(([key]) => `${entry.screen}:${key}`),
+    .map(([key]) => `${entry.screen}:${entry.theme}:${key}`),
 );
 
 await writeFile(path.join(outputDir, 'field-qa-fixed-report.json'), `${JSON.stringify({ baseUrl, report, failing }, null, 2)}\n`);
