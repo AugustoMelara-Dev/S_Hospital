@@ -156,7 +156,7 @@ if ([string]::IsNullOrWhiteSpace($ProofPath) -or -not (Test-Path -LiteralPath $P
             "Date/time",
             "Responsible person",
             "Server computer name",
-            "Backup worker task status",
+            "Tarea continua de respaldos status",
             "Daily backup task status",
             "Manual backup request time",
             "Backup log id or filename",
@@ -171,7 +171,7 @@ if ([string]::IsNullOrWhiteSpace($ProofPath) -or -not (Test-Path -LiteralPath $P
             "SistemaCajaHospitalaria-BackupWorker",
             "SistemaCajaHospitalaria-DailyBackup",
             "Tarea continua de respaldos fue iniciada u observada",
-            "Manual backup was requested from the admin UI",
+            "Respaldo manual fue solicitado desde la UI administrativa",
             "El respaldo manual cambio de Pendiente a Protegido",
             "Backup file or backup log entry has timestamp and size",
             "Evidence does not include"

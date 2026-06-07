@@ -242,7 +242,7 @@ Test-Template `
         "Date/time",
         "Responsible person",
         "Server computer name",
-        "Backup worker task status",
+        "Tarea continua de respaldos status",
         "Daily backup task status",
         "Manual backup request time",
         "Backup log id or filename",
@@ -254,7 +254,7 @@ Test-Template `
         "SistemaCajaHospitalaria-BackupWorker",
         "SistemaCajaHospitalaria-DailyBackup",
         "Tarea continua de respaldos",
-        "Manual backup",
+        "Respaldo manual",
         "Pendiente a Protegido",
         "timestamp and size",
         "Evidence does not include"

@@ -187,7 +187,7 @@ completar en este entorno de auditoría.
 - **Concurrencia final** - Doble apertura de caja, doble
   facturación, doble pago contra target descartable. Llenar
   `qa/FINAL_CONCURRENCY_PROOF.md`.
-- **Worker continuo de backups** - Tareas Windows
+- **Tarea continua de respaldos** - Tareas Windows
   `SistemaCajaHospitalaria-BackupWorker` y
   `SistemaCajaHospitalaria-DailyBackup` instaladas y activas.
 - **Handoff final** - `scripts/final_production_handoff.ps1`

@@ -216,6 +216,12 @@ if ($systemStatusController -match "(?i)DB_PASSWORD\s*=|APP_KEY\s*=|TOKEN\s*=|SE
     Add-Pass "System status controller does not expose secret-like assignments"
 }
 
+if ($systemStatusController -match "(?i)pending\s+to\s+success|pendiente\s+a\s+completado|Backup\s+worker\s+task\s+status") {
+    Add-Failure "System status controller exposes obsolete or technical backup proof wording."
+} else {
+    Add-Pass "System status controller uses visible backup proof wording"
+}
+
 if ($failures.Count -gt 0) {
     Write-Host ""
     Write-Host "SYSTEM_DIAGNOSTICS_SAFETY: NO ($($failures.Count) blocking issue(s))" -ForegroundColor Red

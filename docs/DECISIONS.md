@@ -3832,3 +3832,8 @@ Nota de guardrail: validate_operator_manuals_safety conserva el bloqueo general 
 Contexto: validate_backup_worker_smoke y la auditoria operativa todavia describian el resultado final con estados tecnicos obsoletos o backup worker smoke, aunque el cierre visible de respaldos debe hablar en terminos Pendiente y Protegido.
 Decision: La evidencia generada por el smoke de respaldos ahora reporta estado visible Protegido, conserva el status tecnico solo como dato de API y la auditoria pide backup automation smoke con transicion Pendiente a Protegido.
 Criterio de verificacion: validate_operations_objective_audit y validate_final_field_blockers_safety deben pasar, y el paquete offline no debe exponer transiciones tecnicas obsoletas en scripts operativos.
+
+## 2026-06-07 - Preflight final de respaldos usa contrato operativo
+Contexto: SystemStatusController, production_readiness_preflight y la plantilla final de respaldos todavia pedian campos/checks con nombres tecnicos de worker y estados crudos, aunque la evidencia final debe poder ser completada por soporte local con lenguaje visible.
+Decision: El contrato final mantiene los nombres reales de tareas Windows como identificadores, pero pide Tarea continua de respaldos status, Respaldo manual y Pendiente a Protegido como evidencia operativa.
+Criterio de verificacion: validate_field_proof_templates, validate_final_backup_task_proof -AllowPendingFinalField, validate_system_diagnostics_safety y SystemStatusTest deben pasar.

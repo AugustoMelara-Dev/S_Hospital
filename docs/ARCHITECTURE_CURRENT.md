@@ -98,4 +98,4 @@ Physical gates still required for final production:
 - Physical institutional receipt validation on media carta, carta and A5.
 - Restore proof against a disposable MySQL/MariaDB database.
 - Concurrency proof against the final MySQL/MariaDB/Laravel environment.
-- Backup worker proof that manual backups move from `pending` to `success`.
+- Backup automation proof that manual backups move from `Pendiente` to `Protegido`.

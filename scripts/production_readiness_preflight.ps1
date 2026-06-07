@@ -482,7 +482,7 @@ if (Test-IsWindowsHost) {
     Test-BackupScheduledTask "SistemaCajaHospitalaria-BackupWorker" @("Ready", "Running")
     Test-BackupScheduledTask "SistemaCajaHospitalaria-DailyBackup" @("Ready", "Running")
 } else {
-    Add-Warning "Non-Windows host detected. Validate an equivalent continuous backup worker/service before production handoff."
+    Add-Warning "Non-Windows host detected. Validate an equivalent continuous backup automation service before production handoff."
 }
 
 if ($isDockerProductionPackage) {
@@ -547,7 +547,7 @@ if ($isDockerProductionPackage) {
 }
 
 if ($isDockerProductionPackage) {
-    Test-BackupWrapperCheck (Join-Path $ProjectRoot "scripts\run_backup_worker.cmd") "Backup worker"
+    Test-BackupWrapperCheck (Join-Path $ProjectRoot "scripts\run_backup_worker.cmd") "Tarea continua de respaldos"
     Test-BackupWrapperCheck (Join-Path $ProjectRoot "scripts\run_scheduled_backup.cmd") "Scheduled backup"
 } else {
     $backupDir = Join-Path $backendDir "storage\app\private\backups"
@@ -689,7 +689,7 @@ if ($AllowMissingPhysicalProof) {
             "Date/time",
             "Responsible person",
             "Server computer name",
-            "Backup worker task status",
+            "Tarea continua de respaldos status",
             "Daily backup task status",
             "Manual backup request time",
             "Backup log id or filename",
@@ -700,8 +700,8 @@ if ($AllowMissingPhysicalProof) {
         -requiredChecks @(
             "SistemaCajaHospitalaria-BackupWorker",
             "SistemaCajaHospitalaria-DailyBackup",
-            "Backup worker",
-            "Manual backup",
+            "Tarea continua de respaldos",
+            "Respaldo manual",
             "Pendiente a Protegido",
             "timestamp and size",
             "Evidence does not include"

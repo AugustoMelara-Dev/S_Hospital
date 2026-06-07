@@ -12,7 +12,7 @@ physical/support reference.
 - Date/time:
 - Responsible person:
 - Server computer name:
-- Backup worker task status:
+- Tarea continua de respaldos status:
 - Daily backup task status:
 - Manual backup request time:
 - Backup log id or filename:
@@ -25,7 +25,7 @@ physical/support reference.
 - [ ] `SistemaCajaHospitalaria-BackupWorker` is installed and Ready or Running. Result/evidence:
 - [ ] `SistemaCajaHospitalaria-DailyBackup` is installed and Ready or Running. Result/evidence:
 - [ ] Tarea continua de respaldos fue iniciada u observada despues de instalar las tareas. Result/evidence:
-- [ ] Manual backup was requested from the admin UI, not by editing the database. Result/evidence:
+- [ ] Respaldo manual fue solicitado desde la UI administrativa, no editando la base de datos. Result/evidence:
 - [ ] El respaldo manual cambio de Pendiente a Protegido en la UI administrativa. Result/evidence:
 - [ ] Backup file or backup log entry has timestamp and size. Result/evidence:
 - [ ] Evidence does not include `.env`, SQL dumps, passwords, task XML exports or absolute local paths. Result/evidence:
