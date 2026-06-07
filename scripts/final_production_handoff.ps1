@@ -963,7 +963,7 @@ function Write-HandoffReport(
         Add-ReportLine $lines '- Missing or incomplete `qa/FINAL_RESTORE_PROOF.md` from a disposable restore database on the final server.'
     }
     if (-not $backupTaskProofCompleted) {
-        Add-ReportLine $lines '- Missing or incomplete `qa/FINAL_BACKUP_TASK_PROOF.md` after installing backup tasks and confirming a manual UI backup moves from pending to success.'
+        Add-ReportLine $lines '- Falta o esta incompleto `qa/FINAL_BACKUP_TASK_PROOF.md` despues de instalar tareas de respaldo y confirmar que un respaldo manual de la UI cambia de Pendiente a Protegido.'
     }
     if (-not $concurrencyProofCompleted) {
         Add-ReportLine $lines '- Missing or incomplete `qa/FINAL_CONCURRENCY_PROOF.md` from a disposable concurrency target.'
@@ -972,7 +972,7 @@ function Write-HandoffReport(
         Add-ReportLine $lines '- Missing or incomplete `qa/TRAINING_ACCEPTANCE_PROOF.md` from supervised role training in a safe practice environment.'
     }
     if (-not $backupTasksReady) {
-        Add-ReportLine $lines '- Install or update Windows scheduled backup tasks `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup`, then confirm a manual UI backup moves from pending to success.'
+        Add-ReportLine $lines '- Instalar o actualizar las tareas Windows `SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup`, luego confirmar que un respaldo manual de la UI cambia de Pendiente a Protegido.'
     }
     if ($preflightSkipped) {
         Add-ReportLine $lines "- Preflight was skipped in this handoff run."
@@ -1158,7 +1158,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $(Protect-HandoffText $PhpPath)"
     Add-ReportLine $lines "Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath $(Protect-HandoffText $PhpPath)"
-    Add-ReportLine $lines "# Then create one manual backup from the admin UI, confirm it moves from pending to success, and complete qa\FINAL_BACKUP_TASK_PROOF.md."
+    Add-ReportLine $lines "# Crear un respaldo manual desde la UI administrativa, confirmar que cambia de Pendiente a Protegido y completar qa\FINAL_BACKUP_TASK_PROOF.md."
     Add-ReportLine $lines 'bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"'
     Add-ReportLine $lines "# Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report."
     Add-ReportLine $lines "bash -lc `"HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_BASE_URL=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh`""
@@ -1665,7 +1665,7 @@ if (-not $restoreProofCompleted) {
 }
 
 if (-not $backupTaskProofCompleted) {
-    Write-Host "Install/update backup tasks, create one manual UI backup, confirm success, then complete qa\FINAL_BACKUP_TASK_PROOF.md."
+    Write-Host "Install/update backup tasks, create one manual UI backup, confirm Protegido in the admin UI, then complete qa\FINAL_BACKUP_TASK_PROOF.md."
 }
 
 if (-not $concurrencyProofCompleted) {

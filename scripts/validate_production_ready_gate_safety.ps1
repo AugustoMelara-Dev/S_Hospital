@@ -97,7 +97,7 @@ foreach ($requiredCheck in @(
     "Receipt",
     "AtStartup",
     "Backup",
-    "pending to success",
+    "Pendiente a Protegido",
     "media carta",
     "carta",
     "A5",

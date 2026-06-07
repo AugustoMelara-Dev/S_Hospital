@@ -255,7 +255,7 @@ Test-Template `
         "SistemaCajaHospitalaria-DailyBackup",
         "Backup worker",
         "Manual backup",
-        "pending to success",
+        "Pendiente a Protegido",
         "timestamp and size",
         "Evidence does not include"
     ) `

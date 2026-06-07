@@ -3783,3 +3783,8 @@ Criterio de verificacion: validate_installation_docs_safety, check-branding y di
 Contexto: El protocolo de cierre diario aun pedia esperar estados tecnicos como success, revisar worker y bloquear cierre por pending/failed, aunque el personal debe ver estados operativos simples.
 Decision: El cierre diario confirma respaldos con Protegido, Pendiente o Error, conserva la verificacion SHA256 como evidencia y usa tarea continua de respaldos para instrucciones de soporte local.
 Criterio de verificacion: validate_installation_docs_safety.ps1 bloquea que DAILY_CLOSE_PROTOCOL vuelva a usar estados crudos o lenguaje de worker en el flujo operativo.
+
+## 2026-06-07 - Prueba final de respaldos usa estados visibles
+Contexto: La plantilla y los gates de la prueba final de respaldos pedian demostrar pending to success/completed, aunque la UI operativa debe comunicar Respaldos como Pendiente, Protegido o Error.
+Decision: La evidencia final ahora pide confirmar que el respaldo manual cambia de Pendiente a Protegido en la UI administrativa, conservando tarea instalada, timestamp, tamano, referencia segura y bloqueo PRODUCTION_CANDIDATE hasta validar en servidor real.
+Criterio de verificacion: validate_final_backup_task_proof, validate_field_proof_templates, production_readiness_preflight y final_production_handoff esperan Pendiente a Protegido en vez de estados crudos.

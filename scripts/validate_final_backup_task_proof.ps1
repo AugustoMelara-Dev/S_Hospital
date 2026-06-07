@@ -133,7 +133,7 @@ if ([string]::IsNullOrWhiteSpace($ProofPath) -or -not (Test-Path -LiteralPath $P
                 @{ Pattern = '(?i)SistemaCajaHospitalaria-DailyBackup'; Label = 'SistemaCajaHospitalaria-DailyBackup' },
                 @{ Pattern = '(?i)worker.*(corriendo|running|activo|observ)'; Label = 'worker running/observed' },
                 @{ Pattern = '(?i)respaldo manual|manual backup'; Label = 'manual backup' },
-                @{ Pattern = '(?i)pending.*(success|completed)|success.*pending|completed.*pending'; Label = 'pending to success/completed' },
+                @{ Pattern = '(?i)Pendiente.*Protegido|Protegido.*Pendiente'; Label = 'Pendiente a Protegido' },
                 @{ Pattern = '(?i)PRODUCTION_CANDIDATE'; Label = 'PRODUCTION_CANDIDATE' }
             )) {
                 if ($content -match $pendingRequirement.Pattern) {
@@ -172,7 +172,7 @@ if ([string]::IsNullOrWhiteSpace($ProofPath) -or -not (Test-Path -LiteralPath $P
             "SistemaCajaHospitalaria-DailyBackup",
             "Backup worker was started or observed running",
             "Manual backup was requested from the admin UI",
-            "Manual backup moved from pending to success/completed",
+            "El respaldo manual cambio de Pendiente a Protegido",
             "Backup file or backup log entry has timestamp and size",
             "Evidence does not include"
         )) {

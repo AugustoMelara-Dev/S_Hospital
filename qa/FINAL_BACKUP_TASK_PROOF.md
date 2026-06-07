@@ -4,7 +4,7 @@ Decision: `PENDING_FINAL_FIELD`.
 
 This file is reserved for the final hospital server. It must stay pending until
 Windows backup tasks are installed or updated on that server and one manual
-backup created from the admin UI moves from pending to success/completed.
+backup created from the admin UI changes from Pendiente to Protegido.
 
 Do not write passwords, `.env` values, SQL dump contents, task XML exports,
 database credentials or absolute local machine paths. Use
@@ -19,8 +19,8 @@ server validation.
   servidor final.
 - Falta iniciar u observar el worker de respaldos corriendo en el servidor final.
 - Falta crear un respaldo manual desde la UI administrativa.
-- Falta confirmar que el respaldo manual pasa de `pending` a `success` o
-  `completed`.
+- Falta confirmar que el respaldo manual pasa de **Pendiente** a **Protegido**
+  en la UI administrativa.
 - Falta guardar evidencia anonima bajo `qa/` o una referencia fisica/verificable
   sin `.env`, dumps SQL, passwords, XML de tareas ni rutas absolutas.
 

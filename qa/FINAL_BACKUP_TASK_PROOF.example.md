@@ -26,7 +26,7 @@ physical/support reference.
 - [ ] `SistemaCajaHospitalaria-DailyBackup` is installed and Ready or Running. Result/evidence:
 - [ ] Backup worker was started or observed running after task installation. Result/evidence:
 - [ ] Manual backup was requested from the admin UI, not by editing the database. Result/evidence:
-- [ ] Manual backup moved from pending to success/completed. Result/evidence:
+- [ ] El respaldo manual cambio de Pendiente a Protegido en la UI administrativa. Result/evidence:
 - [ ] Backup file or backup log entry has timestamp and size. Result/evidence:
 - [ ] Evidence does not include `.env`, SQL dumps, passwords, task XML exports or absolute local paths. Result/evidence:
 
