@@ -82,6 +82,7 @@ Assert-Contains "supported installer runs safe migrations" $lanInstaller "migrat
 Assert-NotContains "supported installer does not run migrate:fresh" $lanInstaller "migrate:fresh"
 Assert-Contains "supported installer creates explicit role/catalog seeders only" $lanInstaller "RolesAndPermissionsSeeder[\s\S]*ServiceCatalogSeeder"
 Assert-Contains "supported installer explains production data preparation in operator wording" $lanInstaller "Preparando base institucional, roles y catalogo"
+Assert-NotContains "supported installer does not expose migrations as normal installer wording" $lanInstaller "Ejecutando migraciones"
 Assert-NotContains "supported installer does not expose seeders as normal installer wording" $lanInstaller "Ejecutando migraciones y seeders"
 
 Assert-Contains "legacy installer is marked deprecated at top of file" $legacyInstaller "DEPRECATED in v1\.0\.0"

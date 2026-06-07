@@ -1311,7 +1311,7 @@ try {
             Write-Host "[OK] Base de datos lista." -ForegroundColor Green
 
             # Migrations
-            Write-Host "[*] Ejecutando migraciones..." -ForegroundColor Yellow
+            Write-Host "[*] Preparando base institucional, roles y catalogo..." -ForegroundColor Yellow
             Push-Location (Join-Path $projectRoot "backend")
 
             if ($currAppKey -eq "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" -or $currAppKey -eq "") {

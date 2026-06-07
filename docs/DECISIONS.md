@@ -3743,3 +3743,8 @@ Criterio de verificacion: FiscalSettingsView.test cubre el nombre visible, check
 Contexto: el generador backend de Excel de reportes conservaba el nombre PremiumExcelExportService y comentarios de estilo premium. Aunque el archivo exportado ya era institucional, el codigo de una pieza de reportes seguia usando lenguaje comercial que podia reintroducir decisiones de producto equivocadas.
 Decision: el servicio se renombra a InstitutionalExcelExportService, el controlador usa el nuevo nombre y los comentarios de estilo describen acentos institucionales. check-branding ahora cubre frontend/src y backend/app contra ese lenguaje comercial.
 Criterio de verificacion: ReportsTest completo pasa, Pint pasa en los archivos tocados, check-branding no encuentra hallazgos y no quedan referencias Premium en backend/app ni backend/tests.
+
+## 2026-06-07 - Instalador bare-metal usa preparacion institucional
+Contexto: el flujo Docker del instalador ya mostraba preparacion institucional, pero el flujo PHP/bare-metal aun decia 'Ejecutando migraciones...', una frase tecnica visible durante una instalacion productiva.
+Decision: ambos flujos del instalador muestran 'Preparando base institucional, roles y catalogo...' mientras conservan los comandos seguros migrate --force y seeders explicitos de roles/catalogo. validate_installer_legacy_safety bloquea que vuelva 'Ejecutando migraciones' como texto normal del instalador.
+Criterio de verificacion: deploy_hospital_lan.ps1 -SelfTest, validate_installer_legacy_safety, check-branding y diff check.
