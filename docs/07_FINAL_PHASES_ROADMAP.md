@@ -65,4 +65,4 @@ Alcance:
 
 Criterio:
 
-- Producto demostrable sin disculpas por UX.
+- Producto institucional verificable sin disculpas por UX.

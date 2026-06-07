@@ -5,7 +5,7 @@ Optimizar rapidez y reducir errores humanos en caja.
 
 ## Referencias obligatorias
 - references/ui_ux_cashier_workflows.md
-- references/thermal_printing_80mm.md
+- references/institutional_receipt_printing.md
 
 ## Qué revisar en modo plan
 - Flujos rápidos.
@@ -20,7 +20,7 @@ Optimizar rapidez y reducir errores humanos en caja.
 - Responsive para pantallas de caja.
 
 ## Hallazgos bloqueantes típicos
-- Factura tamaño carta como única opción.
+- Recibo institucional limitado a un solo formato sin media carta/carta/A5 configurable.
 - Flujo lento para seleccionar servicios.
 - No hay confirmación de anulación.
 

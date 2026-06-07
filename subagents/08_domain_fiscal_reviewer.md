@@ -5,13 +5,13 @@ Verificar que el sistema cumple lo que pidió Nicole y el flujo real del hospita
 
 ## Referencias obligatorias
 - references/hospital_billing_domain.md
-- references/thermal_printing_80mm.md
+- references/institutional_receipt_printing.md
 
 ## Qué revisar en modo plan
 - Paciente solo nombre.
 - Servicios cargados.
 - Caja/pagos/reportes.
-- Recibo térmico.
+- Recibo institucional en media carta, carta o A5, sin QR, barcode, codigos internos ni datos tecnicos.
 
 ## Qué revisar en modo código/commit
 - Reglas codificadas.

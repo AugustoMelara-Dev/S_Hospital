@@ -3713,3 +3713,8 @@ Validacion: validate_operator_manuals_safety, validate_installation_docs_safety 
 Contexto: la vista Informacion del sistema aun mostraba Todo bien y Requiere revision en el resumen operativo y en badges administrativos, aunque Respaldos y capacitacion ya habian quedado alineados a Protegido, Pendiente y Error.
 Decision: useServerStatus, AboutView y los detalles visibles de Respaldos usan Protegido, Pendiente o Error para estados normales. validate_system_diagnostics_safety bloquea que esas superficies vuelvan a las etiquetas obsoletas, sin ocultar errores reales ni permisos de diagnostico administrativo.
 Validacion: vitest AboutView/useServerStatus/BackupsView a11y, typecheck, lint, build, check-branding, validate_system_diagnostics_safety, validate_operator_manuals_safety y diff check.
+
+## 2026-06-07 - Guias agenticas sin recibo de rollo ni demo
+Contexto: algunas fuentes internas para futuras fases todavia pedian recibo termico, referencia 80mm/58mm, demo premium o guion de demo. Aunque no fueran pantallas de usuario, podian reintroducir decisiones contrarias al contrato RC.
+Decision: codex-skills, subagents, UI specs y referencias de dominio/LAN quedan alineadas a recibo institucional en media carta, carta o A5 y validacion institucional. references/thermal_printing_80mm.md se reemplaza por references/institutional_receipt_printing.md.
+Criterio de verificacion: check-branding.ps1 cubre codex-skills, subagents, UI y referencias actuales contra lenguaje heredado de recibo de rollo, 80mm/58mm como requisito operativo, producto demostrable y guion de demo.

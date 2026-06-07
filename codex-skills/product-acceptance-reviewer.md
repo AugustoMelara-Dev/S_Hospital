@@ -2,7 +2,7 @@
 
 ## Mision
 
-Revisar si Fase 12 realmente deja el producto listo para demo premium.
+Revisar si Fase 12 realmente deja el producto listo para validacion institucional del hospital.
 
 ## Checklist de bloqueo
 

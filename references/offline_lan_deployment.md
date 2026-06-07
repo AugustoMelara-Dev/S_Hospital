@@ -15,7 +15,7 @@ Clientes:
 - Router o switch local.
 - IP fija para servidor.
 - Firewall permitiendo puerto HTTP/HTTPS local.
-- Impresora térmica instalada en la PC que imprimirá o compartida según soporte.
+- Impresora institucional instalada en la PC de caja o compartida segun soporte, con formato media carta, carta o A5 validado fisicamente.
 
 ## Backups
 - Backup automático diario.

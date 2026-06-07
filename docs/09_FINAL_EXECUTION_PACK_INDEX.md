@@ -91,7 +91,7 @@ Alcance:
 
 Criterio:
 
-- Producto demostrable hoy sin disculpas por UX.
+- Producto institucional verificable hoy sin disculpas por UX.
 
 ## Documentos de entrada por fase
 

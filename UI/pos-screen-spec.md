@@ -28,7 +28,7 @@
 - Carrito lateral siempre visible en escritorio.
 - Resumen de factura claro.
 - Pago claro.
-- Recibo termico.
+- Recibo institucional en media carta, carta o A5.
 
 ## Errores
 

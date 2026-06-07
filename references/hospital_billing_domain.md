@@ -21,7 +21,7 @@
 - Reportes.
 - Usuarios y permisos.
 - Configuración fiscal.
-- Impresión térmica/PDF.
+- Recibo institucional PDF/imprimible en media carta, carta o A5.
 - Offline LAN.
 - Backups.
 - Auditoría.

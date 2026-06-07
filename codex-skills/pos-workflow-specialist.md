@@ -13,7 +13,7 @@ Validar que Nueva factura funcione como POS/caja hospitalaria profesional.
 - Carrito lateral visible.
 - Resumen de factura.
 - Metodo de pago claro.
-- Recibo termico 80mm/58mm.
+- Recibo institucional en media carta, carta o A5, sin QR, barcode, codigos internos ni datos tecnicos.
 
 ## Bloqueos
 
