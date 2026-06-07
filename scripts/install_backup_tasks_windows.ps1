@@ -246,9 +246,9 @@ if (-not $Uninstall -and -not $Status) {
 Write-Host "Preparando tareas programadas de respaldos para Sistema de Caja Hospitalaria."
 Write-Host "Instalacion: %PROJECT_ROOT%"
 Write-Host "Modo: $runtimeSource"
-Write-Host "Worker: %PROJECT_ROOT%\scripts\run_backup_worker.cmd"
+Write-Host "Automatizacion continua: %PROJECT_ROOT%\scripts\run_backup_worker.cmd"
 Write-Host "Respaldo diario: %PROJECT_ROOT%\scripts\run_scheduled_backup.cmd"
-Write-Host "Tarea worker: $workerTaskName"
+Write-Host "Tarea continua: $workerTaskName"
 if ($Status -or $Uninstall) {
     Write-Host "Tarea diaria: $dailyTaskName"
 } else {
@@ -258,13 +258,13 @@ if ($Status -or $Uninstall) {
 if ($Status) {
     Show-TaskStatus $workerTaskName
     Show-TaskStatus $dailyTaskName
-    Write-Host "Confirme que el worker esta activo y que un respaldo creado desde la UI pasa de pendiente a completado."
+    Write-Host "Confirme que la tarea continua esta activa y que un respaldo creado desde la UI pasa de pendiente a completado."
     exit 0
 }
 
 if ($WhatIfOnly) {
     Write-Host "Modo WhatIf: no se registraron, actualizaron ni eliminaron tareas."
-    Write-Host "Comando worker previsto: cmd.exe $safeWorkerArgs"
+    Write-Host "Comando de tarea continua previsto: cmd.exe $safeWorkerArgs"
     Write-Host "Comando respaldo diario previsto: cmd.exe $safeBackupArgs"
     Write-Host "Para actualizar tareas existentes use: -UpdateExisting"
     Write-Host "Para remover tareas use: -Uninstall"
@@ -314,7 +314,7 @@ Register-ScheduledTask `
     -Action $workerAction `
     -Trigger $workerTrigger `
     -Settings $workerSettings `
-    -Description "Sistema de Caja Hospitalaria continuous backup queue worker." | Out-Null
+    -Description "Sistema de Caja Hospitalaria - tarea continua de respaldos." | Out-Null
 
 $dailyAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $backupArgs -WorkingDirectory $ProjectRoot
 $dailyTrigger = New-ScheduledTaskTrigger -Daily -At $dailyBackupAt
@@ -325,10 +325,10 @@ Register-ScheduledTask `
     -Action $dailyAction `
     -Trigger $dailyTrigger `
     -Settings $dailySettings `
-    -Description "Sistema de Caja Hospitalaria scheduled local database backup." | Out-Null
+    -Description "Sistema de Caja Hospitalaria - respaldo local diario." | Out-Null
 
 Write-Host "Tareas programadas registradas."
-Write-Host "Inicie el worker con: Start-ScheduledTask -TaskName '$workerTaskName'"
+Write-Host "Inicie la tarea continua con: Start-ScheduledTask -TaskName '$workerTaskName'"
 Write-Host "Revise estado con: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status"
 Write-Host "Actualice con: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting"
 Write-Host "Desinstale con: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Uninstall"

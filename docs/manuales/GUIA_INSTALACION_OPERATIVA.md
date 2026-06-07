@@ -114,7 +114,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_au
 El instalador debe registrar dos tareas de Windows si se ejecuta con permisos de
 administrador:
 
-- `SistemaCajaHospitalaria-BackupWorker`: worker continuo para procesar
+- `SistemaCajaHospitalaria-BackupWorker`: tarea continua para procesar
   respaldos solicitados desde la pantalla **Respaldos**.
 - `SistemaCajaHospitalaria-DailyBackup`: respaldo local diario a la hora
   configurada.

@@ -133,6 +133,15 @@ foreach ($scriptInfo in @(
     }
 }
 
+if ($null -ne $backupTasksScript) {
+    $backupTasksContent = Get-Content -LiteralPath $backupTasksScript -Raw
+    if ($backupTasksContent -match 'Write-Host\s+"(Worker:|Tarea worker:|Comando worker previsto:)') {
+        Add-Failure "scripts\install_backup_tasks_windows.ps1 exposes backup worker labels in operator output."
+    } else {
+        Add-Pass "scripts\install_backup_tasks_windows.ps1 uses operational backup labels in operator output"
+    }
+}
+
 if ($failures.Count -eq 0) {
     Invoke-SafeCheck `
         "Startup dry run" `
@@ -157,7 +166,12 @@ if ($failures.Count -eq 0) {
     Invoke-SafeCheck `
         "Backup task dry run" `
         @("-ExecutionPolicy", "Bypass", "-File", $backupTasksScript, "-ProjectRoot", $ProjectRoot, "-PhpPath", "php", "-DailyBackupTime", "23:30", "-WhatIfOnly") `
-        @("Modo WhatIf: no se registraron, actualizaron ni eliminaron tareas.")
+        @(
+            "Modo WhatIf: no se registraron, actualizaron ni eliminaron tareas.",
+            "Automatizacion continua: %PROJECT_ROOT%\scripts\run_backup_worker.cmd",
+            "Tarea continua: SistemaCajaHospitalaria-BackupWorker",
+            "Comando de tarea continua previsto: cmd.exe"
+        )
 }
 
 if ($failures.Count -gt 0) {

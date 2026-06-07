@@ -3758,3 +3758,8 @@ Criterio de verificacion: validate_training_safety, validate_operator_manuals_sa
 Contexto: KNOWN_LIMITATIONS seguia describiendo el pendiente final como Worker continuo de backups y el backup manual como worker local de cola, lenguaje tecnico poco claro para entrega institucional.
 Decision: el pendiente fisico se presenta como Tarea continua de respaldos y la operacion de backup manual como automatizacion local de respaldos instalada y activa. validate_known_limitations_safety bloquea que vuelvan esas frases tecnicas en KNOWN_LIMITATIONS.
 Criterio de verificacion: validate_known_limitations_safety, check-branding y diff check.
+
+## 2026-06-07 - Instalador de respaldos usa etiquetas operativas
+Contexto: install_backup_tasks_windows.ps1 aun mostraba Worker, Tarea worker y Comando worker previsto durante el dry-run o revision de estado, lenguaje tecnico visible para la configuracion del servidor final.
+Decision: la salida normal habla de automatizacion continua, tarea continua y respaldo diario. El nombre interno SistemaCajaHospitalaria-BackupWorker se conserva porque es contrato del preflight/handoff, pero la primera lectura del operador queda institucional. validate_startup_repair_safety bloquea que vuelvan esas etiquetas visibles.
+Criterio de verificacion: validate_startup_repair_safety, validate_installation_docs_safety, check-branding y diff check.
