@@ -47,7 +47,7 @@ React is organized by features, with shared UI primitives and API helpers:
 - `frontend/src/features/dashboard`: dashboard summaries and charts. The dashboard route is lazy-loaded.
 - `frontend/src/features/invoices`: POS, invoice history, receipt preview actions and invoice dialogs.
 - `frontend/src/features/cash`: cashbox open/close/session summary.
-- `frontend/src/features/catalog`: categories/services management and scanner codes.
+- `frontend/src/features/catalog`: categories/services management and service identifiers for billing search.
 - `frontend/src/features/reports`: report tabs, filters, tables, charts and export actions.
 - `frontend/src/features/backups`: backup list, operational readiness and manual backup request.
 - `frontend/src/features/settings`: fiscal identity, receipt width, logo and fiscal sequences.

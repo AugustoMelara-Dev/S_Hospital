@@ -1,4 +1,4 @@
-# 04 Execute 12C Catalog Barcode
+# 04 Execute 12C Catalog Service Identifier
 
 Implementa solo Fase 12C si 12B esta cerrado.
 
@@ -7,13 +7,14 @@ Implementa solo Fase 12C si 12B esta cerrado.
 - Catalogo profesional de categorias y servicios.
 - Precio.
 - Activo/inactivo.
-- `scan_code`, `barcode` o `qr_code` si no existe.
+- Identificador de servicio para escaneo, respaldado por los campos internos necesarios.
 - Regla especial Eritropoyetina.
-- Busqueda por codigo desde POS.
+- Busqueda por identificador desde POS.
 
 ## Reglas
 
-- Scanner USB primero; camara/QR es opcional.
+- El flujo visible habla de escaneo de servicios e identificador de servicio.
+- Los campos internos `scan_code`, `barcode` o `qr_code` no se muestran al cajero ni al recibo.
 - Si encuentra servicio activo, agregarlo al carrito.
 - Si no encuentra, mostrar error claro.
 - Backend decide precio.
@@ -21,8 +22,8 @@ Implementa solo Fase 12C si 12B esta cerrado.
 
 ## Pruebas
 
-- Codigo existente agrega servicio.
-- Codigo inexistente muestra error.
+- Identificador existente agrega servicio.
+- Identificador inexistente muestra error.
 - Inactivo no se agrega.
 - Precio se toma de backend.
 - Eritropoyetina respeta receta de dialisis.

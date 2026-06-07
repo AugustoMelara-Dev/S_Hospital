@@ -67,14 +67,21 @@ $disasterRecoveryGuide = Read-RequiredFile "docs\DISASTER_RECOVERY.md"
 $implementationPlan = Read-RequiredFile "docs\IMPLEMENTATION_PLAN.md"
 $troubleshootingGuide = Read-RequiredFile "docs\TROUBLESHOOTING.md"
 $docsIndex = Read-RequiredFile "docs\00_README.md"
+$finalProductRequirements = Read-RequiredFile "docs\01_FINAL_PRODUCT_REQUIREMENTS.md"
 $posBillingUxSpec = Read-RequiredFile "docs\03_POS_BILLING_UX_SPEC.md"
 $serviceScanWorkflow = Read-RequiredFile "docs\06_SERVICE_SCAN_WORKFLOW.md"
 $finalPhasesRoadmap = Read-RequiredFile "docs\07_FINAL_PHASES_ROADMAP.md"
+$criticalAcceptanceCriteria = Read-RequiredFile "docs\08_CRITICAL_ACCEPTANCE_CRITERIA.md"
 $finalExecutionPackIndex = Read-RequiredFile "docs\09_FINAL_EXECUTION_PACK_INDEX.md"
 $correctedFinalProductPlan = Read-RequiredFile "docs\12_CORRECTED_FINAL_PRODUCT_PLAN.md"
+$currentArchitecture = Read-RequiredFile "docs\ARCHITECTURE_CURRENT.md"
 $trainingAdminGuide = Read-RequiredFile "docs\TRAINING_ADMIN.md"
 $userManual = Read-RequiredFile "docs\Manual_Usuario.md"
 $userManualHtml = Read-RequiredFile "docs\Manual_Usuario.html"
+$finalProductPlanPrompt = Read-RequiredFile "prompts\00_FINAL_PRODUCT_PLAN_MODE.md"
+$finalProductPlanReviewPrompt = Read-RequiredFile "prompts\01_FINAL_PRODUCT_PLAN_REVIEW.md"
+$catalogServiceIdentifierPrompt = Read-RequiredFile "prompts\04_EXECUTE_12C_CATALOG_SERVICE_IDENTIFIER.md"
+$serviceIdentifierReference = Read-RequiredFile "references\service_identifier_reference.md"
 $operatorIndex = Read-RequiredFile "docs\manuales\INDICE_OPERADOR.md"
 $releaseChecklist = Read-RequiredFile "docs\RELEASE_CHECKLIST.md"
 $finalProductionHandoffScript = Read-RequiredFile "scripts\final_production_handoff.ps1"
@@ -217,6 +224,12 @@ if ($docsIndex -ne "") {
     Test-Contains $docsIndex 'Service identifier entry for billing' "Documentation index names service identifier entry"
 }
 
+if ($finalProductRequirements -ne "") {
+    Test-NotContains $finalProductRequirements '(?i)Barcode/QR/scan_code|barcode/QR/scan_code|Catalogo:.*scan_code|activo/inactivo,\s*scan_code|camara/QR|Scanner USB|Busqueda por codigo' "Final product requirements use service identifier wording"
+    Test-Contains $finalProductRequirements 'identificador de servicio para escaneo' "Final product requirements name service identifiers operationally"
+    Test-Contains $finalProductRequirements 'solo pertenecen al contrato de API' "Final product requirements keep technical fields internal"
+}
+
 if ($posBillingUxSpec -ne "") {
     Test-NotContains $posBillingUxSpec '(?i)scanner y mouse|campo scanner|texto, categoria o scanner|codigo interno' "POS UX spec avoids scanner/code as visible product wording"
     Test-Contains $posBillingUxSpec 'identificador de servicio' "POS UX spec uses service identifier wording"
@@ -234,6 +247,11 @@ if ($finalPhasesRoadmap -ne "") {
     Test-Contains $finalPhasesRoadmap 'identificadores de servicio' "Final phases roadmap names service identifiers"
 }
 
+if ($criticalAcceptanceCriteria -ne "") {
+    Test-NotContains $criticalAcceptanceCriteria '(?i)estado y scan_code|activo/inactivo,\s*scan_code|Barcode/QR|Scanner/QR|busqueda por codigo' "Critical acceptance criteria use service identifier wording"
+    Test-Contains $criticalAcceptanceCriteria 'identificador de servicio para escaneo' "Critical acceptance criteria name service identifiers operationally"
+}
+
 if ($releaseReadiness -ne "") {
     Test-NotContains $releaseReadiness '(?i)backup pending|backup manual `pending`|`pending`\s*->\s*`success`|Worker backups|Levantar worker de backups' "Release readiness avoids raw backup status/worker wording"
     Test-NotContains $releaseReadiness '(?i)scanner/c[o]digos|scanner/c[o]digo' "Release readiness uses operational service scanning wording"
@@ -245,8 +263,10 @@ if ($releaseReadiness -ne "") {
 }
 
 if ($finalExecutionPackIndex -ne "") {
-    Test-NotContains $finalExecutionPackIndex '(?i)scanner/c[o]digos|scanner/c[o]digo|codigo, scanner|barcode/QR|POS puede agregar por categoria, texto o scanner|codigos planificados' "Final execution pack index uses operational service scanning wording"
+    Test-NotContains $finalExecutionPackIndex '(?i)scanner/c[o]digos|scanner/c[o]digo|codigo, scanner|barcode/QR|barcode_qr_reference|database/schema_extensions_for_barcode_reports\.sql|POS puede agregar por categoria, texto o scanner|codigos planificados' "Final execution pack index uses operational service scanning wording"
     Test-Contains $finalExecutionPackIndex 'escaneo de servicios' "Final execution pack index names service scanning operationally"
+    Test-Contains $finalExecutionPackIndex 'references/service_identifier_reference.md' "Final execution pack index points to service identifier reference"
+    Test-Contains $finalExecutionPackIndex 'database/_reference_DO_NOT_EXECUTE/schema_extensions_for_barcode_reports.sql' "Final execution pack index keeps technical SQL reference isolated"
 }
 
 if ($correctedFinalProductPlan -ne "") {
@@ -254,6 +274,33 @@ if ($correctedFinalProductPlan -ne "") {
     Test-NotContains $correctedFinalProductPlan '(?i)mockeado|mockeada|con mocks' "Corrected final product plan uses controlled-evidence wording"
     Test-Contains $correctedFinalProductPlan 'identificador' "Corrected final product plan names service identifiers"
     Test-Contains $correctedFinalProductPlan 'E2E en ambiente controlado' "Corrected final product plan names controlled E2E evidence"
+}
+
+if ($currentArchitecture -ne "") {
+    Test-NotContains $currentArchitecture '(?i)scanner codes' "Current architecture avoids legacy scanner-code wording"
+    Test-Contains $currentArchitecture 'service identifiers for billing search' "Current architecture names service identifiers operationally"
+}
+
+if ($finalProductPlanPrompt -ne "") {
+    Test-NotContains $finalProductPlanPrompt '(?i)barcode/QR/scan_code|Catalog Barcode' "Final product plan prompt avoids legacy barcode phase naming"
+    Test-Contains $finalProductPlanPrompt 'identificadores de servicio para escaneo' "Final product plan prompt names service identifiers operationally"
+}
+
+if ($finalProductPlanReviewPrompt -ne "") {
+    Test-NotContains $finalProductPlanReviewPrompt '(?i)Scanner/QR/barcode|activo/inactivo,\s*scan_code' "Final product plan review prompt avoids legacy scanner/barcode wording"
+    Test-Contains $finalProductPlanReviewPrompt 'escaneo de servicios usa un identificador administrado' "Final product plan review prompt uses service identifier wording"
+}
+
+if ($catalogServiceIdentifierPrompt -ne "") {
+    Test-NotContains $catalogServiceIdentifierPrompt '(?i)Catalog Barcode|Scanner USB primero|camara/QR|Busqueda por codigo|Codigo inexistente|Codigo existente' "Catalog service identifier prompt avoids legacy scanner/barcode wording"
+    Test-Contains $catalogServiceIdentifierPrompt 'identificador de servicio' "Catalog service identifier prompt names service identifiers operationally"
+    Test-Contains $catalogServiceIdentifierPrompt 'no se muestran al cajero ni al recibo' "Catalog service identifier prompt keeps technical fields hidden"
+}
+
+if ($serviceIdentifierReference -ne "") {
+    Test-NotContains $serviceIdentifierReference '(?i)Scanner USB|camara/QR|Barcode QR Workflow|ticket termico' "Service identifier reference avoids legacy scanner/barcode product wording"
+    Test-Contains $serviceIdentifierReference 'identificador de servicio' "Service identifier reference uses operational identifier wording"
+    Test-Contains $serviceIdentifierReference 'no deben aparecer como texto visible' "Service identifier reference keeps technical fields internal"
 }
 
 if ($productionGapReport -ne "") {

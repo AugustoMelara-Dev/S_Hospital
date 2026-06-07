@@ -9,14 +9,14 @@
 - Si facturar no parece POS/caja, bloqueado.
 - Si reportes siguen basicos, bloqueado.
 - Si el escaneo de servicios permite confiar en precio del frontend, bloqueado.
-- Si catalogo no administra categorias, servicios, estado y scan_code, bloqueado.
+- Si catalogo no administra categorias, servicios, estado e identificador de servicio para escaneo, bloqueado.
 
 ## Criterios funcionales
 
 - App shell con sidebar izquierdo, topbar, rutas internas y layout persistente.
 - Modulos separados: Nueva factura/POS, Caja, Catalogo, Historial, Reportes avanzados, Backups, Configuracion fiscal y Usuarios/roles si existe.
 - POS con busqueda rapida, categorias, servicios compactos, carrito lateral, resumen, pago y recibo institucional media carta/carta/A5.
-- Catalogo con categorias, servicios, precio, activo/inactivo, scan_code y regla Eritropoyetina.
+- Catalogo con categorias, servicios, precio, activo/inactivo, identificador de servicio para escaneo y regla Eritropoyetina.
 - Reportes con filtros por fecha, cajero, categoria, metodo y estado.
 - Dashboard con metricas claras y tablas legibles.
 

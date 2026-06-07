@@ -3907,3 +3907,8 @@ Verificacion: validate_installation_docs_safety.ps1 bloquea los encabezados y pl
 Contexto: El smoke de handoff con salida en espanol encontro validadores que seguian buscando encabezados ingleses exactos para anexos y gate PRODUCTION_READY.
 Decision: Los validadores de completitud y gate aceptan los encabezados institucionales en espanol manteniendo los marcadores tecnicos obligatorios, resultados YES y bloqueo de PRODUCTION_READY sin evidencia fisica.
 Verificacion: validate_final_handoff_completeness.ps1 y validate_production_ready_gate_safety.ps1 deben pasar con el handoff localizado; el smoke con -SkipPreflight sigue sin aprobar produccion.
+
+## 2026-06-07 - Specs vivas usan identificador de servicio
+Contexto: Documentos y prompts activos de Fase 12 todavia nombraban el frente de catalogo como Barcode/QR/scan_code, aunque la UI y el recibo ya ocultan identificadores crudos al cajero.
+Decision: Las specs, criterios, prompts y referencia principal usan identificador de servicio y escaneo de servicios como lenguaje de producto; scan_code, barcode y qr_code quedan como campos tecnicos internos de API, migraciones y soporte de catalogo.
+Verificacion: validate_installation_docs_safety.ps1 lee estos documentos y prompts, bloquea la nomenclatura heredada en superficies vivas y exige references/service_identifier_reference.md como referencia principal.

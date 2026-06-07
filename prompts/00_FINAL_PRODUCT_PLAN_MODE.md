@@ -30,7 +30,7 @@ Divide Fase 12 en:
 
 - 12A App Shell + Sidebar + Design System.
 - 12B POS Billing UX profesional.
-- 12C Catalogo + barcode/QR/scan_code.
+- 12C Catalogo + identificadores de servicio para escaneo.
 - 12D Reportes avanzados.
 - 12E QA UX final e institucional.
 

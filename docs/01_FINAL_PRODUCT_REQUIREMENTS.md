@@ -17,7 +17,7 @@ Convertir el sistema funcional actual en un producto hospitalario local, profesi
 
 - Nueva factura / POS: flujo rapido para crear factura, seleccionar servicios, cobrar e imprimir.
 - Caja: apertura, movimientos, cierre, arqueo y caja activa.
-- Catalogo: categorias, servicios, precios, activo/inactivo, scan_code y reglas especiales.
+- Catalogo: categorias, servicios, precios, activo/inactivo, identificador de servicio para escaneo y reglas especiales.
 - Historial: facturas emitidas, pagadas, anuladas, reimpresiones y detalle.
 - Reportes avanzados: dashboard gerencial, ventas, ingresos, categorias, cajeros, anulaciones, backups.
 - Backups: estado, ejecucion manual, historial y validacion de restauracion.
@@ -28,13 +28,13 @@ Convertir el sistema funcional actual en un producto hospitalario local, profesi
 
 El POS no puede mostrar los 122 servicios como lista interminable. Debe incluir busqueda rapida, seleccion por categoria, tarjetas o tabla compacta, carrito lateral, resumen de factura, pago claro y recibo institucional.
 
-## Barcode/QR/scan_code
+## Identificador de servicio para escaneo
 
-Los servicios deben soportar un identificador escaneable si no existe: `scan_code`, `barcode` o `qr_code`. El frontend puede enviar el codigo escaneado, pero el backend decide servicio, precio, vigencia y reglas fiscales. Nunca se confia en el precio enviado por frontend.
+Los servicios deben soportar un identificador administrable para agregarlos rapidamente desde caja. La UI debe hablar de identificador de servicio o escaneo de servicios; los campos tecnicos internos (`scan_code`, `barcode` o `qr_code`) solo pertenecen al contrato de API, migraciones y soporte de catalogo. El frontend puede enviar el identificador capturado, pero el backend decide servicio, precio, vigencia y reglas fiscales. Nunca se confia en el precio enviado por frontend.
 
 ## Catalogo
 
-El catalogo debe administrar categorias, servicios, precio, activo/inactivo, scan_code y la regla especial de Eritropoyetina: medicamento de L.25 gratis si se marca paciente con receta de dialisis.
+El catalogo debe administrar categorias, servicios, precio, activo/inactivo, identificador de servicio para escaneo y la regla especial de Eritropoyetina: medicamento de L.25 gratis si se marca paciente con receta de dialisis.
 
 ## Reportes avanzados
 

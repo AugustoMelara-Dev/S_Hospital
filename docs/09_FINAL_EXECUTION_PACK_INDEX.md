@@ -99,7 +99,7 @@ Criterio:
 | --- | --- |
 | 12A | `docs/02_UI_ARCHITECTURE.md`, `docs/05_DESIGN_SYSTEM_AND_LIBRARIES.md`, `UI/sidebar-navigation-spec.md`, `UI/component_inventory.md` |
 | 12B | `docs/03_POS_BILLING_UX_SPEC.md`, `UI/pos-screen-spec.md`, `references/ui_ux_cashier_workflows.md` |
-| 12C | `docs/06_SERVICE_SCAN_WORKFLOW.md`, `database/schema_extensions_for_barcode_reports.sql`, `references/barcode_qr_reference.md` |
+| 12C | `docs/06_SERVICE_SCAN_WORKFLOW.md`, `database/_reference_DO_NOT_EXECUTE/schema_extensions_for_barcode_reports.sql`, `references/service_identifier_reference.md` |
 | 12D | `docs/04_ADVANCED_REPORTS_SPEC.md`, `UI/reports-screen-spec.md`, `references/advanced_reports_reference.md` |
 | 12E | `qa/FINAL_UX_ACCEPTANCE_CHECKLIST.md`, `qa/RELEASE_READINESS.md`, `docs/RELEASE_CHECKLIST.md` |
 
