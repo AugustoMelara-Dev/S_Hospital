@@ -69,9 +69,9 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 - Missing or incomplete `qa/LAN_CLIENT_VALIDATION_PROOF.md` from a real second LAN client.
 - Missing or incomplete `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` from the real cashier printer.
 - Missing or incomplete `qa/FINAL_STARTUP_TASK_PROOF.md` after installing stack autostart and confirming the server opens `/up` and login after startup.
-- Missing or incomplete `qa/FINAL_BACKUP_TASK_PROOF.md` after installing backup tasks and confirming a manual UI backup moves from pending to success.
+- Falta o esta incompleto `qa/FINAL_BACKUP_TASK_PROOF.md` despues de instalar tareas de respaldo y confirmar que un respaldo manual de la UI cambia de Pendiente a Protegido.
 - Missing or incomplete `qa/TRAINING_ACCEPTANCE_PROOF.md` from supervised role training in a safe practice environment.
-- Install or update Windows scheduled backup tasks `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup`, then confirm a manual UI backup moves from pending to success.
+- Instalar o actualizar las tareas Windows `SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup`, luego confirmar que un respaldo manual de la UI cambia de Pendiente a Protegido.
 - Preflight was skipped in this handoff run.
 - Offline release artifact is missing, stale, or contains forbidden files.
 
@@ -79,7 +79,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 
 - Browser smoke screenshots: `qa/browser-smoke-2026-06-03/rc-e2e-mocked-report.json` and `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md`.
 - System diagnostics and Help/support guards: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`, `qa/FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md`.
-- Backup worker, startup, current-user startup, final backup task and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md`, `qa/FINAL_STARTUP_TASK_PROOF.example.md`, `qa/FINAL_STARTUP_TASK_PROOF.md`, `qa/FINAL_BACKUP_TASK_PROOF.example.md`, `qa/FINAL_BACKUP_TASK_PROOF.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.
+- Tarea continua de respaldos, autoarranque, respaldo final y restore: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md`, `qa/FINAL_STARTUP_TASK_PROOF.example.md`, `qa/FINAL_STARTUP_TASK_PROOF.md`, `qa/FINAL_BACKUP_TASK_PROOF.example.md`, `qa/FINAL_BACKUP_TASK_PROOF.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.
 - Concurrency, double-action and realtime own-event evidence: `qa/FINAL_CONCURRENCY_PROOF.md`, `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md` and `qa/REALTIME_OWN_EVENT_SAFETY_2026_06_04.md`.
 - Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/LAN_LOADTEST_SAFETY_2026_06_04.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.
 - New invoice maintainability guard: `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` and `scripts/validate_new_invoice_maintainability.ps1` preserve a short cashier-facing invoice flow.
@@ -92,7 +92,7 @@ Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until e
 - Backend static analysis: `docker compose exec -T backend ./vendor/bin/phpstan analyse --memory-limit=1G`.
 - Backend suite: `docker compose exec -T backend php artisan test`.
 - Frontend gates: `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run test -- --run`, `npm.cmd run build`, `scripts\check-branding.ps1`.
-- Browser and operational smoke: mocked E2E screenshots, `npm.cmd run smoke:real`, backup worker smoke, disposable restore, concurrency validation and `scripts\production_readiness_preflight.ps1`.
+- Browser and operational smoke: mocked E2E screenshots, `npm.cmd run smoke:real`, smoke de tarea continua de respaldos, disposable restore, concurrency validation and `scripts\production_readiness_preflight.ps1`.
 
 ## Files changed in this handoff front
 
@@ -130,7 +130,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_au
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath php
 Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath php
-# Then create one manual backup from the admin UI, confirm it moves from pending to success, and complete qa\FINAL_BACKUP_TASK_PROOF.md.
+# Crear un respaldo manual desde la UI administrativa, confirmar que cambia de Pendiente a Protegido y completar qa\FINAL_BACKUP_TASK_PROOF.md.
 bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"
 # Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report.
 bash -lc "HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=http://192.168.1.10:8000 HOSPITAL_CONCURRENCY_BASE_URL=http://192.168.1.10:8000 HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh"
@@ -561,7 +561,7 @@ FIRST_LEVEL_SUPPORT_SAFETY: YES
 [ OK ] Preflight keeps required proof check: Receipt
 [ OK ] Preflight keeps required proof check: AtStartup
 [ OK ] Preflight keeps required proof check: Backup
-[ OK ] Preflight keeps required proof check: pending to success
+[ OK ] Preflight keeps required proof check: Pendiente a Protegido
 [ OK ] Preflight keeps required proof check: media carta
 [ OK ] Preflight keeps required proof check: carta
 [ OK ] Preflight keeps required proof check: A5
@@ -641,7 +641,7 @@ Exit code: 0
 [ OK ] Pending backup proof keeps blocker: SistemaCajaHospitalaria-DailyBackup
 [ OK ] Pending backup proof keeps blocker: worker running/observed
 [ OK ] Pending backup proof keeps blocker: manual backup
-[ OK ] Pending backup proof keeps blocker: pending to success/completed
+[ OK ] Pending backup proof keeps blocker: Pendiente a Protegido
 [ OK ] Pending backup proof keeps blocker: PRODUCTION_CANDIDATE
 
 FINAL_BACKUP_TASK_PROOF: YES
@@ -1241,7 +1241,7 @@ OPERATOR_MANUALS_SAFETY: YES
 [ OK ] Restore guide forbids restoring over production for testing
 [ OK ] Restore guide requires verifiable restore evidence fields
 [ OK ] Restore guide explains no normal UI restore
-[ OK ] Backup worker smoke avoids credentials in URL
+[ OK ] Backup automation smoke avoids credentials in URL
 [ OK ] Backup/support docs include safety term: No borre
 [ OK ] Backup/support docs include safety term: No restaure
 [ OK ] Backup/support docs include safety term: No ejecute seeders
@@ -1890,7 +1890,7 @@ LAN emulation and loadtest runners require disposable/validation targets and exp
 [ OK ] Known limitations preserves final blocker: Impresora fisica
 [ OK ] Known limitations preserves final blocker: Restore real final
 [ OK ] Known limitations preserves final blocker: Concurrencia final
-[ OK ] Known limitations preserves final blocker: Worker continuo de backups
+[ OK ] Known limitations preserves final blocker: Tarea continua de respaldos
 [ OK ] Known limitations preserves final blocker: SistemaCajaHospitalaria-StackAutostart
 [ OK ] Known limitations preserves final blocker: Handoff final
 [ OK ] Installer legacy evidence passes

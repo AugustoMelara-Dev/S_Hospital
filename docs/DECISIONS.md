@@ -3798,3 +3798,8 @@ Criterio de verificacion: validate_lan_client_proof, validate_field_proof_templa
 Contexto: RELEASE_CHECKLIST aun indicaba validar respaldos con pending/success y worker continuo/local, lenguaje tecnico para una guia de entrega que decide si el sistema puede operar en el hospital.
 Decision: El checklist de release usa Pendiente a Protegido y tarea continua/automatizacion de respaldos en instrucciones actuales de LAN, handoff, preflight y servidor final.
 Criterio de verificacion: validate_installation_docs_safety bloquea regresiones de pending/success y worker continuo/local en RELEASE_CHECKLIST.
+
+## 2026-06-07 - Handoff final espera estados visibles de respaldos
+Contexto: El validador de completitud del handoff final aun exigia la frase confirm it moves from pending to success y el reporte agrupaba evidencia bajo backup worker, aunque el cierre operativo ya usa Pendiente a Protegido.
+Decision: El handoff final y su guard usan Pendiente a Protegido y tarea continua de respaldos como lenguaje operativo, manteniendo los nombres de tareas y archivos tecnicos solo como referencias de evidencia.
+Criterio de verificacion: validate_final_handoff_completeness y validate_handoff_guard_coverage deben pasar con el contrato actualizado.

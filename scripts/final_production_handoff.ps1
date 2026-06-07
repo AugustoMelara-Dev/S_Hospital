@@ -1102,7 +1102,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines ""
     Add-ReportLine $lines '- Browser smoke screenshots: `qa/browser-smoke-2026-06-03/rc-e2e-mocked-report.json` and `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md`.'
     Add-ReportLine $lines '- System diagnostics and Help/support guards: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`, `qa/FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md`.'
-    Add-ReportLine $lines '- Backup worker, startup, current-user startup, final backup task and restore evidence: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md`, `qa/FINAL_STARTUP_TASK_PROOF.example.md`, `qa/FINAL_STARTUP_TASK_PROOF.md`, `qa/FINAL_BACKUP_TASK_PROOF.example.md`, `qa/FINAL_BACKUP_TASK_PROOF.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.'
+    Add-ReportLine $lines '- Tarea continua de respaldos, autoarranque, respaldo final y restore: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md`, `qa/FINAL_STARTUP_TASK_PROOF.example.md`, `qa/FINAL_STARTUP_TASK_PROOF.md`, `qa/FINAL_BACKUP_TASK_PROOF.example.md`, `qa/FINAL_BACKUP_TASK_PROOF.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.'
     Add-ReportLine $lines '- Concurrency, double-action and realtime own-event evidence: `qa/FINAL_CONCURRENCY_PROOF.md`, `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md` and `qa/REALTIME_OWN_EVENT_SAFETY_2026_06_04.md`.'
     Add-ReportLine $lines '- Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/LAN_LOADTEST_SAFETY_2026_06_04.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.'
     Add-ReportLine $lines '- New invoice maintainability guard: `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` and `scripts/validate_new_invoice_maintainability.ps1` preserve a short cashier-facing invoice flow.'
@@ -1116,7 +1116,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '- Backend static analysis: `docker compose exec -T backend ./vendor/bin/phpstan analyse --memory-limit=1G`.'
     Add-ReportLine $lines '- Backend suite: `docker compose exec -T backend php artisan test`.'
     Add-ReportLine $lines '- Frontend gates: `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run test -- --run`, `npm.cmd run build`, `scripts\check-branding.ps1`.'
-    Add-ReportLine $lines '- Browser and operational smoke: mocked E2E screenshots, `npm.cmd run smoke:real`, backup worker smoke, disposable restore, concurrency validation and `scripts\production_readiness_preflight.ps1`.'
+    Add-ReportLine $lines '- Browser and operational smoke: mocked E2E screenshots, `npm.cmd run smoke:real`, smoke de tarea continua de respaldos, disposable restore, concurrency validation and `scripts\production_readiness_preflight.ps1`.'
     Add-ReportLine $lines ""
 
     Add-ReportLine $lines "## Files changed in this handoff front"

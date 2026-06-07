@@ -66,7 +66,7 @@ if ($guide -ne "") {
     Test-Contains $guide "(?i)nunca\s+sobre\s+la\s+base\s+real|Nunca restaure\s+sobre\s+la\s+base\s+activa" "Restore guide forbids restoring over production for testing"
     Test-Contains $guide "(?i)SHA256|tamano|conteos principales|base origen" "Restore guide requires verifiable restore evidence fields"
     Test-Contains $guide "(?i)No existe restauracion por interfaz normal" "Restore guide explains no normal UI restore"
-    Test-Contains $guide "(?i)no escriba usuario, contrasena ni token dentro de .*HOSPITAL_SMOKE_BASE_URL" "Backup worker smoke avoids credentials in URL"
+    Test-Contains $guide "(?i)no escriba usuario, contrasena ni token dentro de .*HOSPITAL_SMOKE_BASE_URL" "Backup automation smoke avoids credentials in URL"
 }
 
 if ($backupRestoreReference -ne "") {
