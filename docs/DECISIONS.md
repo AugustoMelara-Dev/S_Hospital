@@ -3815,3 +3815,15 @@ Decision: El guard final conserva PRODUCTION_CANDIDATE y los nombres reales de t
 Criterio de verificacion: validate_final_field_blockers_safety debe pasar sin cerrar falsamente LAN, impresora, autoarranque, respaldo, restore ni concurrencia final.
 
 Nota de alcance: este criterio tambien cubre validate_final_backup_task_proof y la plantilla qa/FINAL_BACKUP_TASK_PROOF.example.md para mantener tarea continua de respaldos y Pendiente a Protegido.
+
+## 2026-06-07 - Instalador de tareas de respaldo usa Pendiente a Protegido
+Contexto: El estado de tareas Windows de respaldo ya usaba tarea continua, pero sus mensajes de status todavia indicaban que el respaldo pasaba de pendiente a completado.
+Decision: La salida del instalador y del status final pide verificar que el respaldo de la UI pasa de Pendiente a Protegido, conservando los nombres reales de las tareas Windows solo como identificadores.
+Criterio de verificacion: validate_startup_repair_safety bloquea pendiente a completado y pending to success en install_backup_tasks_windows.ps1.
+
+## 2026-06-07 - Indice operador conserva referencia de mantenimiento autorizado
+Contexto: El indice de operador ocultaba los comandos hospital:maintenance on/off, dejando sin referencia rapida a soporte local aunque el modo mantenimiento ya esta implementado y validado.
+Decision: El indice mantiene los comandos solo bajo Mantenimiento Autorizado, separado del trabajo diario de caja y con advertencia de avisar a caja antes de detener operacion.
+Criterio de verificacion: validate_maintenance_mode_safety debe confirmar hospital:maintenance on, hospital:maintenance off y el mensaje Sistema en mantenimiento en el indice.
+
+Nota de guardrail: validate_operator_manuals_safety conserva el bloqueo general de php artisan en manuales normales, excepto las dos referencias exactas hospital:maintenance on/off bajo Mantenimiento Autorizado.

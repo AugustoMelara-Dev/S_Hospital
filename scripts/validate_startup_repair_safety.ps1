@@ -140,6 +140,12 @@ if ($null -ne $backupTasksScript) {
     } else {
         Add-Pass "scripts\install_backup_tasks_windows.ps1 uses operational backup labels in operator output"
     }
+
+    if ($backupTasksContent -match '(?i)pendiente\s+a\s+completado|pending\s+(to|->)\s+success') {
+        Add-Failure "scripts\install_backup_tasks_windows.ps1 uses obsolete raw backup status transition wording."
+    } else {
+        Add-Pass "scripts\install_backup_tasks_windows.ps1 uses visible backup state transition wording"
+    }
 }
 
 if ($failures.Count -eq 0) {

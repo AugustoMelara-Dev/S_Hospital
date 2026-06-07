@@ -52,6 +52,19 @@ al procedimiento correcto.
 - Secretos y rotacion: `../SECRETS.md`
 - Recuperacion de desastres: `../DISASTER_RECOVERY.md`
 
+## Mantenimiento Autorizado
+
+Estas acciones no son parte del trabajo diario de caja. Solo las ejecuta
+soporte local o administracion cuando se necesita detener temporalmente el
+sistema para mantenimiento programado.
+
+- Activar pantalla **Sistema en mantenimiento**:
+  `php artisan hospital:maintenance on`
+- Desactivar mantenimiento y permitir operacion normal:
+  `php artisan hospital:maintenance off`
+- Antes de activar o desactivar, avise a caja y confirme que no haya cobros en
+  proceso.
+
 ## Diagrama de escalamiento
 
 ```

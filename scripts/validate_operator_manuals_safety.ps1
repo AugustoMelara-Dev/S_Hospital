@@ -212,11 +212,14 @@ if ($commonIncidents -ne "") {
 
 $combined = "$cashier`n$supervisor`n$administrator`n$support`n$training`n$commonIncidents"
 $operatorFacing = "$cashier`n$supervisor`n$administrator`n$operatorIndex`n$generalUserManual`n$generalUserManualHtml"
+$operatorFacingForTechnicalScan = $operatorFacing `
+    -replace [regex]::Escape('php artisan hospital:maintenance on'), '[maintenance-on]' `
+    -replace [regex]::Escape('php artisan hospital:maintenance off'), '[maintenance-off]'
 foreach ($pattern in @("base real", "produccion", "base descartable", "no use la base real", "No restaure", "No borre")) {
     Test-Contains $combined ([regex]::Escape($pattern)) "Operator docs include safe training/support term: $pattern"
 }
 
-if ($operatorFacing -match "(?i)\bworker\b|cola\s+de\s+trabajos|trabajos\s+pendientes|soporte\s+tecnico|responsable\s+tecnico|comandos\s+tecnicos|documentos\s+tecnicos|duda\s+tecnica|curl\s+http|/api/|php\s+artisan") {
+if ($operatorFacingForTechnicalScan -match "(?i)\bworker\b|cola\s+de\s+trabajos|trabajos\s+pendientes|soporte\s+tecnico|responsable\s+tecnico|comandos\s+tecnicos|documentos\s+tecnicos|duda\s+tecnica|curl\s+http|/api/|php\s+artisan") {
     Add-Failure "Normal operator manuals expose internal or technical support wording."
 } else {
     Add-Pass "Normal operator manuals avoid internal backup/support wording"

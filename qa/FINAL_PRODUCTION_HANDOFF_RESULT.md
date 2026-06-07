@@ -1,6 +1,6 @@
 # Final production handoff result
 
-- Generated at: 2026-06-05 06:59:37
+- Generated at: 2026-06-07 14:56:44
 - Base URL: http://192.168.1.10:8000
 - Project root: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -185,13 +185,13 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\final_production
 Preparando tareas programadas de respaldos para Sistema de Caja Hospitalaria.
 Instalacion: %PROJECT_ROOT%
 Modo: no requerido para esta accion
-Worker: %PROJECT_ROOT%\scripts\run_backup_worker.cmd
+Automatizacion continua: %PROJECT_ROOT%\scripts\run_backup_worker.cmd
 Respaldo diario: %PROJECT_ROOT%\scripts\run_scheduled_backup.cmd
-Tarea worker: SistemaCajaHospitalaria-BackupWorker
+Tarea continua: SistemaCajaHospitalaria-BackupWorker
 Tarea diaria: SistemaCajaHospitalaria-DailyBackup
 SistemaCajaHospitalaria-BackupWorker: no instalada
 SistemaCajaHospitalaria-DailyBackup: no instalada
-Confirme que el worker esta activo y que un respaldo creado desde la UI pasa de pendiente a completado.
+Confirme que la tarea continua esta activa y que un respaldo creado desde la UI pasa de Pendiente a Protegido.
 ```
 
 ## Offline release artifact guard output
@@ -278,11 +278,11 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] scripts\init_production_proofs.ps1 matches versioned source
 [ OK ] scripts\make_offline_release.ps1 matches versioned source
 [ OK ] scripts\production_readiness_preflight.ps1 matches versioned source
-[FAIL] scripts\final_production_handoff.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\final_production_handoff.ps1 matches versioned source
 [ OK ] scripts\install_hospital_startup_shortcut.ps1 matches versioned source
 [ OK ] scripts\install_stack_autostart_windows.ps1 matches versioned source
 [ OK ] scripts\install_backup_startup_current_user.ps1 matches versioned source
-[ OK ] scripts\install_backup_tasks_windows.ps1 matches versioned source
+[FAIL] scripts\install_backup_tasks_windows.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] scripts\lib\operational_url_safety.ps1 matches versioned source
 [ OK ] scripts\open_hospital_system.ps1 matches versioned source
 [ OK ] scripts\repair_hospital_system.ps1 matches versioned source
@@ -293,8 +293,8 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] scripts\validate_support_packet_safety.ps1 matches versioned source
 [ OK ] scripts\validate_browser_smoke_evidence.ps1 matches versioned source
 [ OK ] scripts\validate_dependency_manifest.ps1 matches versioned source
-[ OK ] scripts\validate_startup_repair_safety.ps1 matches versioned source
-[ OK ] scripts\validate_operator_manuals_safety.ps1 matches versioned source
+[FAIL] scripts\validate_startup_repair_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[FAIL] scripts\validate_operator_manuals_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] scripts\validate_backup_restore_docs_safety.ps1 matches versioned source
 [ OK ] scripts\validate_backup_startup_current_user_safety.ps1 matches versioned source
 [ OK ] scripts\validate_installation_docs_safety.ps1 matches versioned source
@@ -315,7 +315,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] scripts\validate_new_invoice_maintainability.ps1 matches versioned source
 [ OK ] scripts\validate_known_limitations_safety.ps1 matches versioned source
 [ OK ] scripts\validate_shift_incident_recovery_safety.ps1 matches versioned source
-[FAIL] scripts\validate_final_handoff_completeness.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_final_handoff_completeness.ps1 matches versioned source
 [ OK ] scripts\validate_handoff_guard_coverage.ps1 matches versioned source
 [ OK ] scripts\validate_offline_release_staging_safety.ps1 matches versioned source
 [ OK ] scripts\validate_operations_objective_audit.ps1 matches versioned source
@@ -346,10 +346,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[ OK ] MANIFEST.txt references current commit 78b9324d
+[ OK ] MANIFEST.txt references current commit 32d3ab38
 [ OK ] offline-images contains 4 Docker image tar file(s)
 
-OFFLINE_RELEASE_CLEAN: NO (2 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (3 blocking issue(s))
 ```
 
 ## Support packet safety validation output
@@ -369,8 +369,12 @@ Archivo principal: %PROJECT_ROOT%\qa\support-packets\validation\MANIFIESTO.md
 [ OK ] Found docs\manuales\MANUAL_CAJERO.md
 [ OK ] Found docs\manuales\MANUAL_SUPERVISOR.md
 [ OK ] Found docs\manuales\MANUAL_ADMINISTRADOR.md
+[ OK ] Found docs\manuales\INDICE_OPERADOR.md
 [ OK ] Found docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md
 [ OK ] Found docs\manuales\GUIA_CAPACITACION_SEGURA.md
+[ OK ] Found docs\manuales\RUNBOOK_INCIDENTES_COMUNES.md
+[ OK ] Found docs\Manual_Usuario.md
+[ OK ] Found docs\Manual_Usuario.html
 [ OK ] Cashier manual has daily checklist section
 [ OK ] Cashier manual has delicate-action warning section
 [ OK ] Cashier manual checklist has actionable checkboxes
@@ -384,6 +388,8 @@ Archivo principal: %PROJECT_ROOT%\qa\support-packets\validation\MANIFIESTO.md
 [ OK ] Cashier manual includes Cerrar Caja
 [ OK ] Cashier manual includes Si Algo Falla
 [ OK ] Cashier manual blocks charging without open cashbox
+[ OK ] Cashier manual requires reprint reason
+[ OK ] Cashier manual avoids optional audit-action wording
 [ OK ] Supervisor manual has daily checklist section
 [ OK ] Supervisor manual has delicate-action warning section
 [ OK ] Supervisor manual checklist has actionable checkboxes
@@ -395,6 +401,8 @@ Archivo principal: %PROJECT_ROOT%\qa\support-packets\validation\MANIFIESTO.md
 [ OK ] Supervisor manual includes incident: Respaldo Fallido
 [ OK ] Supervisor manual includes incident: Sesion Vencida O Sin Permiso
 [ OK ] Supervisor manual forbids deleting invoices
+[ OK ] Supervisor manual uses current backup status labels
+[ OK ] Supervisor manual avoids obsolete backup status labels
 [ OK ] Administrator manual has daily checklist section
 [ OK ] Administrator manual has delicate-action warning section
 [ OK ] Administrator manual checklist has actionable checkboxes
@@ -405,12 +413,63 @@ Archivo principal: %PROJECT_ROOT%\qa\support-packets\validation\MANIFIESTO.md
 [ OK ] Administrator manual includes Capacitacion Segura
 [ OK ] Administrator manual forbids invented fiscal compliance
 [ OK ] Administrator manual forbids destructive production commands
+[ OK ] Administrator manual uses operator-friendly backup automation wording
+[ OK ] Administrator manual uses operator-friendly backup status wording
+[ OK ] Operator index uses local support wording
+[ OK ] Operator index routes LAN errors to local support
+[ OK ] First-level support guide uses current backup status labels
+[ OK ] First-level support guide avoids obsolete backup status labels
+[ OK ] General user manual requires audited reprint reason
+[ OK ] General user manual uses current backup status labels
+[ OK ] General user manual avoids obsolete or optional audit wording
+[ OK ] General user manual HTML requires audited reprint reason
+[ OK ] General user manual HTML uses current backup status labels
+[ OK ] General user manual HTML avoids obsolete or optional audit wording
+[ OK ] Common incidents runbook uses operator backup incident title
+[ OK ] Common incidents runbook names protected backup state
+[ OK ] Common incidents runbook names pending backup state
+[ OK ] Common incidents runbook names error backup state
+[ OK ] Common incidents backup section avoids raw backup internals
+[ OK ] Common incidents blank screen section uses LAN wording
+[ OK ] Common incidents blank screen section routes to safe support summary
+[ OK ] Common incidents blank screen section avoids raw runtime checks
+[ OK ] Common incidents login section uses supervisor-safe lockout wording
+[ OK ] Common incidents login section uses temporary-password wording
+[ OK ] Common incidents login section avoids auth internals
+[ OK ] Common incidents cashbox section routes to authorized supervisor
+[ OK ] Common incidents cashbox section requires backup/audit wording
+[ OK ] Common incidents cashbox section avoids permission/database internals
+[ OK ] Common incidents runbook uses operator offline/LAN incident title
+[ OK ] Common incidents offline/LAN section uses LAN wording
+[ OK ] Common incidents offline/LAN section warns clients about localhost
+[ OK ] Common incidents offline/LAN section routes to safe support summary
+[ OK ] Common incidents offline/LAN section avoids dev/build internals
+[ OK ] Common incidents LAN client section uses LAN wording
+[ OK ] Common incidents LAN client section routes to local support
+[ OK ] Common incidents LAN client section distinguishes client computer
+[ OK ] Common incidents LAN client section avoids raw network probes
+[ OK ] Common incidents final checklist uses LAN wording
+[ OK ] Common incidents final checklist warns against repeating financial actions
+[ OK ] Common incidents final checklist avoids command/API checks
+[ OK ] Common incidents runbook uses operator backup-tool incident title
+[ OK ] Common incidents backup-tool section routes to safe support summary
+[ OK ] Common incidents backup-tool section names protected backup state
+[ OK ] Common incidents backup-tool section names pending backup state
+[ OK ] Common incidents backup-tool section names error backup state
+[ OK ] Common incidents backup-tool section avoids raw server internals
+[ OK ] Common incidents runbook uses operator duplicate-notice title
+[ OK ] Common incidents duplicate-notice section protects against duplicate financial actions
+[ OK ] Common incidents duplicate-notice section avoids frontend internals
+[ OK ] Common incidents session section routes to safe support summary
+[ OK ] Common incidents session section uses operator-safe session wording
+[ OK ] Common incidents session section avoids raw session internals
 [ OK ] Operator docs include safe training/support term: base real
 [ OK ] Operator docs include safe training/support term: produccion
 [ OK ] Operator docs include safe training/support term: base descartable
 [ OK ] Operator docs include safe training/support term: no use la base real
 [ OK ] Operator docs include safe training/support term: No restaure
 [ OK ] Operator docs include safe training/support term: No borre
+[ OK ] Normal operator manuals avoid internal backup/support wording
 [ OK ] Operator manuals do not expose secret-like assignments
 
 OPERATOR_MANUALS_SAFETY: YES
@@ -469,6 +528,16 @@ SHIFT_INCIDENT_RECOVERY_SAFETY: YES
 [ OK ] Training docs require supervisor role practice
 [ OK ] Training docs require administrator role practice
 [ OK ] Training docs require support summary practice
+[ OK ] Training checklist avoids technical incident wording for staff
+[ OK ] Quick administrator training uses protected backup status
+[ OK ] Quick administrator training uses pending backup status
+[ OK ] Quick administrator training uses error backup status
+[ OK ] User manual uses protected backup status
+[ OK ] User manual uses pending backup status
+[ OK ] User manual uses error backup status
+[ OK ] Quick administrator training avoids raw backup states and checksums
+[ OK ] Quick administrator training avoids raw route checks
+[ OK ] User manual avoids obsolete backup status labels
 [ OK ] Training docs include scenario: servidor no disponible
 [ OK ] Training docs include scenario: red local
 [ OK ] Training docs include scenario: impresora no responde
@@ -500,6 +569,8 @@ SHIFT_INCIDENT_RECOVERY_SAFETY: YES
 [ OK ] Help screen exposes practice mode warning
 [ OK ] Help screen warns not to use production database
 [ OK ] Help screen mentions isolated practice database
+[ OK ] Help screen teaches protected backup status
+[ OK ] Help screen avoids obsolete backup status labels
 [ OK ] HelpView test protects production database warning
 
 TRAINING_SAFETY: YES
@@ -513,6 +584,8 @@ Archivo principal: %PROJECT_ROOT%\qa\support-packets\validation\MANIFIESTO.md
 == scripts\validate_final_field_blockers_safety.ps1 ==
 [ OK ] SelfTest accepts printer proof that preserves all required institutional paper blockers
 [ OK ] SelfTest rejects printer proof missing required institutional paper blockers
+[ OK ] SelfTest accepts final backup proof that preserves visible backup-state blockers
+[ OK ] SelfTest rejects legacy backup worker/status wording
 
 FINAL_FIELD_BLOCKERS_SAFETY_SELFTEST: YES
 
@@ -587,6 +660,8 @@ PRODUCTION_READY_GATE_SAFETY: YES
 ```text
 [ OK ] SelfTest accepts printer proof that preserves all required institutional paper blockers
 [ OK ] SelfTest rejects printer proof missing required institutional paper blockers
+[ OK ] SelfTest accepts final backup proof that preserves visible backup-state blockers
+[ OK ] SelfTest rejects legacy backup worker/status wording
 
 FINAL_FIELD_BLOCKERS_SAFETY_SELFTEST: YES
 ```
@@ -604,6 +679,7 @@ FINAL_FIELD_BLOCKERS_SAFETY_SELFTEST: YES
 [ OK ] Pending LAN client proof keeps blocker: history/reprint
 [ OK ] Pending LAN client proof keeps blocker: reports
 [ OK ] Pending LAN client proof keeps blocker: backup from UI
+[ OK ] Pending LAN client proof keeps blocker: Pendiente a Protegido
 [ OK ] Pending LAN client proof keeps blocker: PRODUCTION_CANDIDATE
 
 LAN_CLIENT_PROOF: YES
@@ -639,7 +715,7 @@ Exit code: 0
 [ OK ] Found qa\FINAL_BACKUP_TASK_PROOF.md
 [ OK ] Pending backup proof keeps blocker: SistemaCajaHospitalaria-BackupWorker
 [ OK ] Pending backup proof keeps blocker: SistemaCajaHospitalaria-DailyBackup
-[ OK ] Pending backup proof keeps blocker: worker running/observed
+[ OK ] Pending backup proof keeps blocker: tarea continua de respaldos activa/observada
 [ OK ] Pending backup proof keeps blocker: manual backup
 [ OK ] Pending backup proof keeps blocker: Pendiente a Protegido
 [ OK ] Pending backup proof keeps blocker: PRODUCTION_CANDIDATE
@@ -665,8 +741,17 @@ Exit code: 0
 ## Browser smoke evidence validation output
 
 ```text
-[ OK ] Found qa\browser-smoke-2026-06-03\rc-e2e-mocked-report.json
+[ OK ] Found qa\browser-smoke-2026-06-07\rc-e2e-mocked-report.json
 [ OK ] Found qa\screenshots\rc-help-support-2026-05-31\help-support-report.json
+[ OK ] Found qa\visual-smoke\field-qa-current-screenshots.mjs
+[ OK ] Field QA smoke declares light and dark themes
+[ OK ] Field QA smoke uses portable evidence paths
+[ OK ] Field QA smoke stores relative screenshot paths in JSON
+[ OK ] Field QA smoke records theme metadata per capture
+[ OK ] Field QA smoke captures login per theme
+[ OK ] Field QA smoke captures authenticated screens per theme
+[ OK ] Field QA smoke captures receipt preview per theme when available
+[ OK ] Field QA smoke reports blockers with theme context
 [ OK ] RC browser smoke declares mocked-e2e mode
 [ OK ] RC browser smoke states it does not replace LAN/printer proof
 [ OK ] RC browser smoke has no console issues
@@ -680,6 +765,8 @@ Exit code: 0
 [ OK ] RC browser smoke billing-new-empty-light screenshot exists and is non-empty
 [ OK ] RC browser smoke metadata matches billing-new-cart-light
 [ OK ] RC browser smoke billing-new-cart-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches receipt-preview-letter-light
+[ OK ] RC browser smoke receipt-preview-letter-light screenshot exists and is non-empty
 [ OK ] RC browser smoke metadata matches receipt-preview-a5-light
 [ OK ] RC browser smoke receipt-preview-a5-light screenshot exists and is non-empty
 [ OK ] RC browser smoke metadata matches receipt-preview-light
@@ -688,6 +775,8 @@ Exit code: 0
 [ OK ] RC browser smoke receipt-preview-dark screenshot exists and is non-empty
 [ OK ] RC browser smoke metadata matches reports-admin-light
 [ OK ] RC browser smoke reports-admin-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches reports-admin-dark
+[ OK ] RC browser smoke reports-admin-dark screenshot exists and is non-empty
 [ OK ] RC browser smoke metadata matches backups-pending-light
 [ OK ] RC browser smoke backups-pending-light screenshot exists and is non-empty
 [ OK ] Help/support smoke has no console issues
@@ -717,6 +806,8 @@ BROWSER_SMOKE_EVIDENCE: YES
 [ OK ] scripts\production_readiness_preflight.ps1 uses -NoProfile for nested PowerShell calls
 [ OK ] scripts\install_stack_autostart_windows.ps1 uses -NoProfile for nested PowerShell calls
 [ OK ] scripts\install_backup_tasks_windows.ps1 uses -NoProfile for nested PowerShell calls
+[ OK ] scripts\install_backup_tasks_windows.ps1 uses operational backup labels in operator output
+[ OK ] scripts\install_backup_tasks_windows.ps1 uses visible backup state transition wording
 Iniciando servicios locales del Sistema de Caja Hospitalaria...
 Carpeta del sistema: %PROJECT_ROOT%
 Validacion de arranque completada.
@@ -748,12 +839,12 @@ Para revisar estado use: -Status
 Preparando tareas programadas de respaldos para Sistema de Caja Hospitalaria.
 Instalacion: %PROJECT_ROOT%
 Modo: PATH del sistema
-Worker: %PROJECT_ROOT%\scripts\run_backup_worker.cmd
+Automatizacion continua: %PROJECT_ROOT%\scripts\run_backup_worker.cmd
 Respaldo diario: %PROJECT_ROOT%\scripts\run_scheduled_backup.cmd
-Tarea worker: SistemaCajaHospitalaria-BackupWorker
+Tarea continua: SistemaCajaHospitalaria-BackupWorker
 Tarea diaria: SistemaCajaHospitalaria-DailyBackup a las 23:30
 Modo WhatIf: no se registraron, actualizaron ni eliminaron tareas.
-Comando worker previsto: cmd.exe /c "%PROJECT_ROOT%\scripts\run_backup_worker.cmd" "[php-configurado]"
+Comando de tarea continua previsto: cmd.exe /c "%PROJECT_ROOT%\scripts\run_backup_worker.cmd" "[php-configurado]"
 Comando respaldo diario previsto: cmd.exe /c "%PROJECT_ROOT%\scripts\run_scheduled_backup.cmd" "[php-configurado]"
 Para actualizar tareas existentes use: -UpdateExisting
 Para remover tareas use: -Uninstall
@@ -772,6 +863,16 @@ STARTUP_REPAIR_SAFETY: YES
 [ OK ] Training docs require supervisor role practice
 [ OK ] Training docs require administrator role practice
 [ OK ] Training docs require support summary practice
+[ OK ] Training checklist avoids technical incident wording for staff
+[ OK ] Quick administrator training uses protected backup status
+[ OK ] Quick administrator training uses pending backup status
+[ OK ] Quick administrator training uses error backup status
+[ OK ] User manual uses protected backup status
+[ OK ] User manual uses pending backup status
+[ OK ] User manual uses error backup status
+[ OK ] Quick administrator training avoids raw backup states and checksums
+[ OK ] Quick administrator training avoids raw route checks
+[ OK ] User manual avoids obsolete backup status labels
 [ OK ] Training docs include scenario: servidor no disponible
 [ OK ] Training docs include scenario: red local
 [ OK ] Training docs include scenario: impresora no responde
@@ -803,6 +904,8 @@ STARTUP_REPAIR_SAFETY: YES
 [ OK ] Help screen exposes practice mode warning
 [ OK ] Help screen warns not to use production database
 [ OK ] Help screen mentions isolated practice database
+[ OK ] Help screen teaches protected backup status
+[ OK ] Help screen avoids obsolete backup status labels
 [ OK ] HelpView test protects production database warning
 
 TRAINING_SAFETY: YES
@@ -1174,8 +1277,12 @@ PRODUCTION_LICENSE_SALT_GUARD: YES
 [ OK ] Found docs\manuales\MANUAL_CAJERO.md
 [ OK ] Found docs\manuales\MANUAL_SUPERVISOR.md
 [ OK ] Found docs\manuales\MANUAL_ADMINISTRADOR.md
+[ OK ] Found docs\manuales\INDICE_OPERADOR.md
 [ OK ] Found docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md
 [ OK ] Found docs\manuales\GUIA_CAPACITACION_SEGURA.md
+[ OK ] Found docs\manuales\RUNBOOK_INCIDENTES_COMUNES.md
+[ OK ] Found docs\Manual_Usuario.md
+[ OK ] Found docs\Manual_Usuario.html
 [ OK ] Cashier manual has daily checklist section
 [ OK ] Cashier manual has delicate-action warning section
 [ OK ] Cashier manual checklist has actionable checkboxes
@@ -1189,6 +1296,8 @@ PRODUCTION_LICENSE_SALT_GUARD: YES
 [ OK ] Cashier manual includes Cerrar Caja
 [ OK ] Cashier manual includes Si Algo Falla
 [ OK ] Cashier manual blocks charging without open cashbox
+[ OK ] Cashier manual requires reprint reason
+[ OK ] Cashier manual avoids optional audit-action wording
 [ OK ] Supervisor manual has daily checklist section
 [ OK ] Supervisor manual has delicate-action warning section
 [ OK ] Supervisor manual checklist has actionable checkboxes
@@ -1200,6 +1309,8 @@ PRODUCTION_LICENSE_SALT_GUARD: YES
 [ OK ] Supervisor manual includes incident: Respaldo Fallido
 [ OK ] Supervisor manual includes incident: Sesion Vencida O Sin Permiso
 [ OK ] Supervisor manual forbids deleting invoices
+[ OK ] Supervisor manual uses current backup status labels
+[ OK ] Supervisor manual avoids obsolete backup status labels
 [ OK ] Administrator manual has daily checklist section
 [ OK ] Administrator manual has delicate-action warning section
 [ OK ] Administrator manual checklist has actionable checkboxes
@@ -1210,12 +1321,63 @@ PRODUCTION_LICENSE_SALT_GUARD: YES
 [ OK ] Administrator manual includes Capacitacion Segura
 [ OK ] Administrator manual forbids invented fiscal compliance
 [ OK ] Administrator manual forbids destructive production commands
+[ OK ] Administrator manual uses operator-friendly backup automation wording
+[ OK ] Administrator manual uses operator-friendly backup status wording
+[ OK ] Operator index uses local support wording
+[ OK ] Operator index routes LAN errors to local support
+[ OK ] First-level support guide uses current backup status labels
+[ OK ] First-level support guide avoids obsolete backup status labels
+[ OK ] General user manual requires audited reprint reason
+[ OK ] General user manual uses current backup status labels
+[ OK ] General user manual avoids obsolete or optional audit wording
+[ OK ] General user manual HTML requires audited reprint reason
+[ OK ] General user manual HTML uses current backup status labels
+[ OK ] General user manual HTML avoids obsolete or optional audit wording
+[ OK ] Common incidents runbook uses operator backup incident title
+[ OK ] Common incidents runbook names protected backup state
+[ OK ] Common incidents runbook names pending backup state
+[ OK ] Common incidents runbook names error backup state
+[ OK ] Common incidents backup section avoids raw backup internals
+[ OK ] Common incidents blank screen section uses LAN wording
+[ OK ] Common incidents blank screen section routes to safe support summary
+[ OK ] Common incidents blank screen section avoids raw runtime checks
+[ OK ] Common incidents login section uses supervisor-safe lockout wording
+[ OK ] Common incidents login section uses temporary-password wording
+[ OK ] Common incidents login section avoids auth internals
+[ OK ] Common incidents cashbox section routes to authorized supervisor
+[ OK ] Common incidents cashbox section requires backup/audit wording
+[ OK ] Common incidents cashbox section avoids permission/database internals
+[ OK ] Common incidents runbook uses operator offline/LAN incident title
+[ OK ] Common incidents offline/LAN section uses LAN wording
+[ OK ] Common incidents offline/LAN section warns clients about localhost
+[ OK ] Common incidents offline/LAN section routes to safe support summary
+[ OK ] Common incidents offline/LAN section avoids dev/build internals
+[ OK ] Common incidents LAN client section uses LAN wording
+[ OK ] Common incidents LAN client section routes to local support
+[ OK ] Common incidents LAN client section distinguishes client computer
+[ OK ] Common incidents LAN client section avoids raw network probes
+[ OK ] Common incidents final checklist uses LAN wording
+[ OK ] Common incidents final checklist warns against repeating financial actions
+[ OK ] Common incidents final checklist avoids command/API checks
+[ OK ] Common incidents runbook uses operator backup-tool incident title
+[ OK ] Common incidents backup-tool section routes to safe support summary
+[ OK ] Common incidents backup-tool section names protected backup state
+[ OK ] Common incidents backup-tool section names pending backup state
+[ OK ] Common incidents backup-tool section names error backup state
+[ OK ] Common incidents backup-tool section avoids raw server internals
+[ OK ] Common incidents runbook uses operator duplicate-notice title
+[ OK ] Common incidents duplicate-notice section protects against duplicate financial actions
+[ OK ] Common incidents duplicate-notice section avoids frontend internals
+[ OK ] Common incidents session section routes to safe support summary
+[ OK ] Common incidents session section uses operator-safe session wording
+[ OK ] Common incidents session section avoids raw session internals
 [ OK ] Operator docs include safe training/support term: base real
 [ OK ] Operator docs include safe training/support term: produccion
 [ OK ] Operator docs include safe training/support term: base descartable
 [ OK ] Operator docs include safe training/support term: no use la base real
 [ OK ] Operator docs include safe training/support term: No restaure
 [ OK ] Operator docs include safe training/support term: No borre
+[ OK ] Normal operator manuals avoid internal backup/support wording
 [ OK ] Operator manuals do not expose secret-like assignments
 
 OPERATOR_MANUALS_SAFETY: YES
@@ -1225,6 +1387,7 @@ OPERATOR_MANUALS_SAFETY: YES
 
 ```text
 [ OK ] Found docs\manuales\GUIA_RESPALDOS_Y_RESTAURACION.md
+[ OK ] Found docs\BACKUP_RESTORE.md
 [ OK ] Found docs\manuales\GUIA_INSTALACION_OPERATIVA.md
 [ OK ] Found docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md
 [ OK ] Backup/restore guide includes Crear Respaldo Manual
@@ -1242,6 +1405,15 @@ OPERATOR_MANUALS_SAFETY: YES
 [ OK ] Restore guide requires verifiable restore evidence fields
 [ OK ] Restore guide explains no normal UI restore
 [ OK ] Backup automation smoke avoids credentials in URL
+[ OK ] Backup/restore guide uses visible backup state transition
+[ OK ] Backup/restore guide uses operational backup automation wording
+[ OK ] Backup/restore guide avoids raw worker/status wording in operator-facing instructions
+[ OK ] Backup/restore reference uses neutral installation path
+[ OK ] Backup/restore reference uses visible states in manual backup flow
+[ OK ] Backup/restore reference uses operational backup task wording
+[ OK ] Backup/restore reference avoids legacy billing path and raw worker wording in backup flow
+[ OK ] First-level support guide uses operational backup task wording
+[ OK ] First-level support guide avoids raw backup worker/status wording
 [ OK ] Backup/support docs include safety term: No borre
 [ OK ] Backup/support docs include safety term: No restaure
 [ OK ] Backup/support docs include safety term: No ejecute seeders
@@ -1345,8 +1517,11 @@ RESTORE_WINDOWS_SAFETY: YES
 [ OK ] Found docs\DISASTER_RECOVERY.md
 [ OK ] Found docs\TRAINING_ADMIN.md
 [ OK ] Found docs\Manual_Usuario.md
+[ OK ] Found docs\Manual_Usuario.html
 [ OK ] Found docs\manuales\INDICE_OPERADOR.md
 [ OK ] Found docs\RELEASE_CHECKLIST.md
+[ OK ] Found docs\INSTALL_SUMMARY.md
+[ OK ] Found qa\FIELD_DEPLOYMENT_VALIDATION.md
 [ OK ] Installation guide includes section: Antes De Instalar
 [ OK ] Installation guide includes section: Instalar
 [ OK ] Installation guide includes section: Abrir El Sistema
@@ -1398,13 +1573,42 @@ RESTORE_WINDOWS_SAFETY: YES
 [ OK ] First-level support guide uses -NoProfile in documented PowerShell commands
 [ OK ] Backup and restore guide uses -NoProfile in documented PowerShell commands
 [ OK ] Offline LAN install guide uses -NoProfile in documented PowerShell commands
+[ OK ] Offline LAN install guide avoids raw backup worker/status wording
+[ OK ] Offline LAN install guide uses operational backup automation wording
+[ OK ] Offline LAN install guide uses visible backup states
+[ OK ] Install summary uses -NoProfile in documented PowerShell commands
+[ OK ] Install summary avoids legacy backup path and raw worker/status wording
+[ OK ] Install summary uses operational backup automation wording
+[ OK ] Install summary uses visible backup states
+[ OK ] Field deployment validation uses -NoProfile in documented PowerShell commands
+[ OK ] Field deployment validation avoids legacy backup path and raw worker/status wording
+[ OK ] Field deployment validation uses operational backup task heading
+[ OK ] Field deployment validation uses visible backup state transition
+[ OK ] Daily close protocol avoids raw backup status/worker wording
+[ OK ] Daily close protocol uses visible backup states
+[ OK ] Daily close protocol uses operational backup task wording
 [ OK ] Release checklist uses -NoProfile in documented PowerShell commands
+[ OK ] Install summary uses -NoProfile in documented PowerShell commands
 [ OK ] Backup/restore reference uses -NoProfile in documented PowerShell commands
 [ OK ] Daily close protocol uses -NoProfile in documented PowerShell commands
 [ OK ] Disaster recovery guide uses -NoProfile in documented PowerShell commands
 [ OK ] Admin training guide uses -NoProfile in documented PowerShell commands
 [ OK ] General user manual uses -NoProfile in documented PowerShell commands
+[ OK ] General user manual HTML uses -NoProfile in documented PowerShell commands
 [ OK ] Operator index uses -NoProfile in documented PowerShell commands
+[ OK ] Release checklist avoids raw backup status/worker wording
+[ OK ] Release checklist uses visible backup state transition
+[ OK ] Release checklist uses operational backup task wording
+[ OK ] General user manual routes incidents to safe support summary
+[ OK ] General user manual routes unavailable system to local support
+[ OK ] General user manual warns against duplicate financial actions during incidents
+[ OK ] General user manual uses non-technical secret handling wording
+[ OK ] General user manual avoids support commands and raw technical terms
+[ OK ] General user manual HTML routes incidents to safe support summary
+[ OK ] General user manual HTML routes unavailable system to local support
+[ OK ] General user manual HTML warns against duplicate financial actions during incidents
+[ OK ] General user manual HTML uses non-technical secret handling wording
+[ OK ] General user manual HTML avoids support commands and raw technical terms
 [ OK ] Install/release docs include guardrail: PRODUCTION_READY
 [ OK ] Install/release docs include guardrail: PRODUCTION_CANDIDATE
 [ OK ] Install/release docs include guardrail: No ejecutar `migrate:fresh` en el servidor real
@@ -1429,6 +1633,8 @@ INSTALLATION_DOCS_SAFETY: YES
 ```text
 [ OK ] Found frontend\src\features\help\HelpView.tsx
 [ OK ] Found frontend\src\features\help\HelpView.test.tsx
+[ OK ] Found frontend\src\components\AppErrorBoundary.tsx
+[ OK ] Found frontend\src\components\AppErrorBoundary.test.tsx
 [ OK ] Found frontend\src\lib\support\clientIssueLog.ts
 [ OK ] Found frontend\src\lib\support\clientIssueLog.test.ts
 [ OK ] Help screen includes required section/text: Ayuda institucional
@@ -1464,6 +1670,9 @@ INSTALLATION_DOCS_SAFETY: YES
 [ OK ] Help screen warns not to duplicate invoices/payments
 [ OK ] Help screen tells staff to check cashbox/history before retrying
 [ OK ] Help screen keeps safe practice/restore database warning
+[ OK ] Help screen uses backup-state language for failed backups
+[ OK ] Help screen uses backup pending/error language
+[ OK ] Help screen uses local support language
 [ OK ] Help support evidence explains secrets are not included
 [ OK ] Help screen prepares safe support summary
 [ OK ] Help screen reads local client issue evidence
@@ -1499,7 +1708,11 @@ INSTALLATION_DOCS_SAFETY: YES
 [ OK ] Help/support tests cover: redacts sensitive words
 [ OK ] Help/support tests cover: removes URL credentials
 [ OK ] Help/support tests cover: without secrets or local paths
+[ OK ] Global error screen routes staff to safe support summary
+[ OK ] Global error screen uses non-technical evidence wording
+[ OK ] Global error screen avoids technical wording for operators
 [ OK ] Help screen does not expose secret-like assignments
+[ OK ] Help screen avoids internal queue/worker and technical-support wording
 
 HELP_SCREEN_SAFETY: YES
 ```
@@ -1517,7 +1730,8 @@ HELP_SCREEN_SAFETY: YES
 [ OK ] Found backend\routes\api.php
 [ OK ] About diagnostics include required text: Informacion del sistema
 [ OK ] About diagnostics include required text: Resumen operativo
-[ OK ] About diagnostics include required text: Todo bien
+[ OK ] About diagnostics include required text: Protegido
+[ OK ] About diagnostics include required text: Pendiente
 [ OK ] About diagnostics include required text: Error
 [ OK ] About diagnostics include required text: Diagnostico administrativo
 [ OK ] About diagnostics include required text: Pulso operativo administrativo
@@ -1530,13 +1744,13 @@ HELP_SCREEN_SAFETY: YES
 [ OK ] About diagnostics include required text: Base de datos
 [ OK ] About diagnostics include required text: Interfaz web
 [ OK ] About diagnostics include required text: Ultimo respaldo
-[ OK ] About diagnostics include required text: Cola de trabajos
-[ OK ] About diagnostics include required text: Cola LAN
+[ OK ] About diagnostics include required text: Respaldos en espera
+[ OK ] About diagnostics include required text: Carga de respaldos
 [ OK ] About diagnostics include required text: Retardo DB
 [ OK ] About diagnostics include required text: Respuesta DB
 [ OK ] About diagnostics include required text: Conexiones DB
 [ OK ] About diagnostics include required text: Actividad
-[ OK ] About diagnostics include required text: Sin cola acumulada
+[ OK ] About diagnostics include required text: Sin respaldos acumulados
 [ OK ] About diagnostics include required text: Base local sin replica
 [ OK ] About diagnostics include required text: Version instalada
 [ OK ] About diagnostics include required text: Red local
@@ -1557,13 +1771,13 @@ HELP_SCREEN_SAFETY: YES
 [ OK ] About diagnostics render status levels consistently
 [ OK ] About diagnostics format disk space for operators
 [ OK ] Server status hook includes safe summary behavior: /api/system/health
-[ OK ] Server status hook includes safe summary behavior: Todo bien
-[ OK ] Server status hook includes safe summary behavior: Requiere revision
+[ OK ] Server status hook includes safe summary behavior: Protegido
+[ OK ] Server status hook includes safe summary behavior: Pendiente
 [ OK ] Server status hook includes safe summary behavior: Error
 [ OK ] Server status hook includes safe summary behavior: No se pudo confirmar el servidor local
 [ OK ] Server status hook includes safe summary behavior: La base de datos local no responde
 [ OK ] Server status hook includes safe summary behavior: Detenga la facturacion
-[ OK ] Server status hook includes safe summary behavior: Hay trabajos o respaldos con alerta
+[ OK ] Server status hook includes safe summary behavior: Hay respaldos en espera o con alerta
 [ OK ] Server status hook includes safe summary behavior: revise respaldos
 [ OK ] Server status hook includes safe summary behavior: worker_recently_active
 [ OK ] Server status hook includes safe summary behavior: success_last_24h
@@ -1610,6 +1824,7 @@ HELP_SCREEN_SAFETY: YES
 [ OK ] Diagnostics tests cover: extended admin health metrics safely
 [ OK ] Diagnostics tests cover: system.status.view
 [ OK ] About diagnostics UI does not expose forbidden technical details
+[ OK ] System diagnostics UI uses final operational status labels
 [ OK ] System status controller does not expose secret-like assignments
 
 SYSTEM_DIAGNOSTICS_SAFETY: YES
@@ -1771,6 +1986,9 @@ REALTIME_OWN_EVENT_SAFETY: YES
 [ OK ] supported installer runs safe migrations
 [ OK ] supported installer does not run migrate:fresh
 [ OK ] supported installer creates explicit role/catalog seeders only
+[ OK ] supported installer explains production data preparation in operator wording
+[ OK ] supported installer does not expose migrations as normal installer wording
+[ OK ] supported installer does not expose seeders as normal installer wording
 [ OK ] legacy installer is marked deprecated at top of file
 [ OK ] legacy installer points operators to supported installer
 [ OK ] legacy installer explains backwards compatibility only
@@ -1893,6 +2111,8 @@ LAN emulation and loadtest runners require disposable/validation targets and exp
 [ OK ] Known limitations preserves final blocker: Tarea continua de respaldos
 [ OK ] Known limitations preserves final blocker: SistemaCajaHospitalaria-StackAutostart
 [ OK ] Known limitations preserves final blocker: Handoff final
+[ OK ] Known limitations avoids technical backup worker wording
+[ OK ] Known limitations uses operational backup automation wording
 [ OK ] Installer legacy evidence passes
 [ OK ] LAN recovery evidence passes
 [ OK ] LAN evidence covers route metric based IP selection
@@ -1917,7 +2137,7 @@ LAN emulation and loadtest runners require disposable/validation targets and exp
 [ OK ] NewInvoice maintainability guard reports a stable result marker
 [ OK ] NewInvoice maintainability guard enforces the view size limit
 [ OK ] NewInvoice maintainability guard checks invoice lifecycle extraction
-[ OK ] NewInvoiceView source is currently under 200 lines (138)
+[ OK ] NewInvoiceView source is currently under 200 lines (139)
 [ OK ] Known limitations does not expose secret-like assignments
 
 KNOWN_LIMITATIONS_SAFETY: YES
@@ -2120,7 +2340,7 @@ SHIFT_INCIDENT_RECOVERY_SAFETY: YES
 [ OK ] Found frontend\src\features\invoices\state\types.ts
 [ OK ] Found frontend\src\features\invoices\NewInvoiceView.test.tsx
 [ OK ] Found frontend\src\features\invoices\NewInvoiceView.a11y.test.tsx
-[ OK ] NewInvoiceView stays under 200 lines (138)
+[ OK ] NewInvoiceView stays under 200 lines (139)
 [ OK ] NewInvoiceView keeps extracted dependency: useInvoiceLifecycle
 [ OK ] NewInvoiceView keeps extracted dependency: usePaymentLifecycle
 [ OK ] NewInvoiceView keeps extracted dependency: usePosCartActions
@@ -2160,7 +2380,7 @@ NEW_INVOICE_MAINTAINABILITY: YES
 
 ```text
 [OK] OPS_EVIDENCE_INDEX: YES
-[OK] Referencias qa/ verificadas: 49
+[OK] Referencias qa/ verificadas: 50
 [OK] El handoff conserva bloqueantes fisicos antes de PRODUCTION_READY.
 ```
 

@@ -258,7 +258,7 @@ if ($Status -or $Uninstall) {
 if ($Status) {
     Show-TaskStatus $workerTaskName
     Show-TaskStatus $dailyTaskName
-    Write-Host "Confirme que la tarea continua esta activa y que un respaldo creado desde la UI pasa de pendiente a completado."
+    Write-Host "Confirme que la tarea continua esta activa y que un respaldo creado desde la UI pasa de Pendiente a Protegido."
     exit 0
 }
 
@@ -332,4 +332,4 @@ Write-Host "Inicie la tarea continua con: Start-ScheduledTask -TaskName '$worker
 Write-Host "Revise estado con: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status"
 Write-Host "Actualice con: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting"
 Write-Host "Desinstale con: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Uninstall"
-Write-Host "Antes de entrega final, valide que un respaldo en la UI pasa de pendiente a completado."
+Write-Host "Antes de entrega final, valide que un respaldo en la UI pasa de Pendiente a Protegido."
