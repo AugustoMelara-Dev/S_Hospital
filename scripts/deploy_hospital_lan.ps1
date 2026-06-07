@@ -1133,7 +1133,7 @@ try {
             Start-Sleep -Seconds 20
 
             # Migrations
-            Write-Host "[*] Ejecutando migraciones y seeders..." -ForegroundColor Yellow
+            Write-Host "[*] Preparando base institucional, roles y catalogo..." -ForegroundColor Yellow
             & docker compose -f $composeProdPath exec -T backend php artisan migrate --force
             & docker compose -f $composeProdPath exec -T backend php artisan db:seed --class=RolesAndPermissionsSeeder --force
             & docker compose -f $composeProdPath exec -T backend php artisan db:seed --class=ServiceCatalogSeeder --force

@@ -81,6 +81,8 @@ Assert-Contains "supported installer refuses missing backup task installer" $lan
 Assert-Contains "supported installer runs safe migrations" $lanInstaller "migrate --force"
 Assert-NotContains "supported installer does not run migrate:fresh" $lanInstaller "migrate:fresh"
 Assert-Contains "supported installer creates explicit role/catalog seeders only" $lanInstaller "RolesAndPermissionsSeeder[\s\S]*ServiceCatalogSeeder"
+Assert-Contains "supported installer explains production data preparation in operator wording" $lanInstaller "Preparando base institucional, roles y catalogo"
+Assert-NotContains "supported installer does not expose seeders as normal installer wording" $lanInstaller "Ejecutando migraciones y seeders"
 
 Assert-Contains "legacy installer is marked deprecated at top of file" $legacyInstaller "DEPRECATED in v1\.0\.0"
 Assert-Contains "legacy installer points operators to supported installer" $legacyInstaller "deploy_hospital_lan\.ps1"

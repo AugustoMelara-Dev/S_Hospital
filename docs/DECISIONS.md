@@ -3728,3 +3728,8 @@ Validacion: vitest AppErrorBoundary/HelpView, validate_help_screen_safety, typec
 Contexto: el self-test del instalador LAN y una prueba PowerShell de env_helpers usaban Hospital OS como dato ficticio para validar espacios en rutas y valores de .env. Aunque no era una pantalla operativa, conservaba una marca tecnica no institucional.
 Decision: los datos ficticios de pruebas usan Hospital Caja Test y Hospital San Isidro. check-branding.ps1 ahora cubre scripts/deploy_hospital_lan.ps1 y backend/tests/PowerShell contra HOSPITAL OS para evitar regresiones.
 Validacion: check-branding, deploy_hospital_lan.ps1 -SelfTest, env-helpers.tests.ps1, validate_installer_legacy_safety y diff check.
+
+## 2026-06-07 - Instalador explica preparacion institucional
+Contexto: el instalador LAN mostraba 'Ejecutando migraciones y seeders...' durante la preparacion productiva. Aunque los comandos son controlados y no destructivos, el texto visible sonaba a operacion tecnica de desarrollo.
+Decision: deploy_hospital_lan.ps1 ahora muestra 'Preparando base institucional, roles y catalogo...' y validate_installer_legacy_safety bloquea que el mensaje antiguo vuelva como texto normal del instalador.
+Validacion: deploy_hospital_lan.ps1 -SelfTest, validate_installer_legacy_safety, check-branding y diff check.
