@@ -297,7 +297,7 @@ if ($SelfTest) {
     }
 
     # Test 9: Path with spaces detection
-    Assert-Test "Detecta espacios en ruta" (Test-PathHasSpaces "C:\Hospital OS Test")
+    Assert-Test "Detecta espacios en ruta" (Test-PathHasSpaces "C:\Hospital Caja Test")
     Assert-Test "No detecta espacios en ruta limpia" (-not (Test-PathHasSpaces "C:\Hospital"))
 
     # Test 10: Database name validation

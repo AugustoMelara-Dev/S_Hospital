@@ -75,9 +75,9 @@ try {
     Assert-Equal "New var appended"            $true ($content -match 'NEW_VAR=newvalue')
 
     # 6. Quoted values are preserved as-is.
-    Update-DotEnv -Path $envFile -Variables @{ APP_NAME = "Hospital OS" }
+    Update-DotEnv -Path $envFile -Variables @{ APP_NAME = "Hospital San Isidro" }
     $content = Get-Content -LiteralPath $envFile -Raw
-    Assert-Equal "Spaces wrap in quotes"       $true ($content -match 'APP_NAME="Hospital OS"')
+    Assert-Equal "Spaces wrap in quotes"       $true ($content -match 'APP_NAME="Hospital San Isidro"')
 
     Write-Host ""
     if ($failures.Count -gt 0) {

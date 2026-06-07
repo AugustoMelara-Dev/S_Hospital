@@ -289,6 +289,8 @@ try {
             'docs/TRAINING_ADMIN.md',
             'docs/TRAINING_CAJERO.md',
             'docs/manuales',
+            'scripts/deploy_hospital_lan.ps1',
+            'backend/tests/PowerShell',
             'prompts',
             'qa/RELEASE_READINESS.md'
         )

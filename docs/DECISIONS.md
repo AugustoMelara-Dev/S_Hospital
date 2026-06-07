@@ -3723,3 +3723,8 @@ Criterio de verificacion: check-branding.ps1 cubre codex-skills, subagents, UI y
 Contexto: la pantalla global de error podia aparecer a un cajero y decia que el detalle tecnico quedaba guardado en el navegador. Aunque no exponia el stack, el texto seguia usando lenguaje tecnico visible.
 Decision: AppErrorBoundary conserva la ruta de recuperacion: recargar, abrir Ayuda, preparar resumen seguro y avisar a supervisor o soporte, pero ahora dice que la evidencia local quedo guardada. validate_help_screen_safety cubre la pantalla global contra detalle tecnico, consola, /api, queue y worker.
 Validacion: vitest AppErrorBoundary/HelpView, validate_help_screen_safety, typecheck, lint, build, check-branding y diff check.
+
+## 2026-06-07 - Self-tests sin marca tecnica Hospital OS
+Contexto: el self-test del instalador LAN y una prueba PowerShell de env_helpers usaban Hospital OS como dato ficticio para validar espacios en rutas y valores de .env. Aunque no era una pantalla operativa, conservaba una marca tecnica no institucional.
+Decision: los datos ficticios de pruebas usan Hospital Caja Test y Hospital San Isidro. check-branding.ps1 ahora cubre scripts/deploy_hospital_lan.ps1 y backend/tests/PowerShell contra HOSPITAL OS para evitar regresiones.
+Validacion: check-branding, deploy_hospital_lan.ps1 -SelfTest, env-helpers.tests.ps1, validate_installer_legacy_safety y diff check.
