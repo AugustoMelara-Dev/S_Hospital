@@ -3569,3 +3569,7 @@ El validador de manuales ahora lee RUNBOOK_INCIDENTES_COMUNES y bloquea la reapa
 ## 2026-06-07 - Runbook evita comandos crudos en pantalla blanca y checklist final
 Las secciones Pantalla blanca y Cuando todo falla del runbook de incidentes comunes ahora guian al operador por direccion LAN oficial, cache del navegador, resumen seguro de Ayuda y escalamiento a soporte local. Se retiraron comprobaciones visibles con /up, /api, docker ps, curl, JSON y localhost:8000 de esas secciones para no trasladar diagnostico tecnico a caja o supervision.
 El validador validate_operator_manuals_safety extrae ambas secciones y bloquea la reaparicion de rutas, comandos o checks de runtime crudos en esos pasos.
+
+## 2026-06-07 - Runbook humaniza error de herramienta local de respaldo
+El incidente de respaldo por driver o binario faltante ahora se presenta como Respaldo muestra Error por herramienta local. La guia evita docker exec, HOSPITAL_DUMP_BINARY, nombres de binarios y .env en la seccion para operador/supervisor, y dirige a revisar estado visible, espacio en disco, resumen seguro de Ayuda y escalamiento a soporte local.
+validate_operator_manuals_safety extrae esta seccion y bloquea la reaparicion de comandos, variables o rutas internas del servidor en ese incidente.

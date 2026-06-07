@@ -14,7 +14,7 @@
 6. [Internet requerido (NO deberia)](#6-internet-requerido)
 7. [PC cliente no carga la app](#7-pc-cliente-no-carga)
 8. [Cajero ve doble toast de su propia accion](#8-cajero-doble-toast)
-9. [Error "Driver no encontrado" en backup](#9-driver-backup)
+9. [Respaldo muestra Error por herramienta local](#9-respaldo-muestra-error-por-herramienta-local)
 10. [Sesion cerrada inesperadamente](#10-sesion-cerrada)
 
 ---
@@ -230,28 +230,31 @@ de proxy inverso.
 
 ---
 
-## 9. Error "Driver no encontrado" en backup
+## 9. Respaldo muestra Error por herramienta local
 
-**Sintoma:** El log del backup dice
-`Driver de base de datos no soportado para backup local` o
-`No se encontro mariadb-dump ni mysqldump`.
+**Sintoma:** En **Respaldos**, un respaldo aparece como **Error** y no
+se genera una copia **Protegida**.
 
 **Causa probable:**
-- El contenedor backend no tiene `mariadb-dump` o `mysqldump`
-  instalado.
-- La variable `HOSPITAL_DUMP_BINARY` apunta a un path incorrecto.
+- La herramienta local de respaldo de la base de datos no esta lista.
+- La tarea de respaldos no pudo usar la herramienta instalada.
+- El servidor no tiene espacio suficiente o permisos locales para crear
+  la copia.
 
 **Accion inmediata:**
-1. Entrar al contenedor backend: `docker exec -it s_hospital-backend bash`.
-2. Verificar la herramienta: `which mariadb-dump` o `which mysqldump`.
-3. Si no esta, instalar dentro del contenedor o montar un volumen
-   con la herramienta.
-4. Si esta, ajustar `HOSPITAL_DUMP_BINARY` en `.env` al path
-   correcto (por defecto `/usr/bin/mariadb-dump`).
+1. No repita respaldos muchas veces seguidas.
+2. Revisar **Respaldos** y confirmar si el estado visible es
+   **Error**, **Pendiente** o **Protegido**.
+3. Revisar espacio libre del servidor. Si queda menos de 5 GB,
+   liberar espacio antes de reintentar.
+4. Usar **Ayuda > Preparar resumen para soporte** y anotar la hora
+   del respaldo con **Error**.
+5. Soporte local debe revisar la herramienta de respaldo en el servidor
+   usando la guia de soporte.
 
-**Escalamiento:** Ninguno si el operador puede entrar al
-contenedor. Documentar en `qa/FINAL_RESTORE_PROOF.md` que se
-hizo restore con el binario real.
+**Escalamiento:** Si despues de la revision sigue apareciendo **Error**,
+soporte nivel 2 valida la herramienta local de copia de base de datos y
+documenta el resultado en la evidencia de respaldo/restauracion.
 
 ---
 

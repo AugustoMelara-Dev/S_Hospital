@@ -111,6 +111,11 @@ if ($commonIncidents -match "(?is)##\s+Cuando todo falla: lista de verificacion 
     $finalChecklist = $Matches.section
 }
 
+$backupToolIncident = ""
+if ($commonIncidents -match "(?is)##\s+9\.\s+Respaldo muestra Error por herramienta local(?<section>.*?)(?:\r?\n---|\z)") {
+    $backupToolIncident = $Matches.section
+}
+
 if ($commonIncidents -ne "") {
     Test-Contains $commonIncidents "(?i)Respaldo queda en Pendiente" "Common incidents runbook uses operator backup incident title"
     Test-Contains $backupIncident "(?i)Protegido" "Common incidents runbook names protected backup state"
@@ -123,6 +128,12 @@ if ($commonIncidents -ne "") {
     Test-Contains $finalChecklist "(?i)direccion LAN oficial" "Common incidents final checklist uses LAN wording"
     Test-Contains $finalChecklist "(?i)no\s+repita|no\s+repetir" "Common incidents final checklist warns against repeating financial actions"
     Test-NotContains $finalChecklist "(?i)curl\s+http|/api|docker\s+ps|localhost:8000|smoke_test_post_install|database\.connected|JSON" "Common incidents final checklist avoids command/API checks"
+    Test-Contains $commonIncidents "(?i)Respaldo muestra Error por herramienta local" "Common incidents runbook uses operator backup-tool incident title"
+    Test-Contains $backupToolIncident "(?i)Ayuda\s*>\s*Preparar resumen para soporte|resumen seguro" "Common incidents backup-tool section routes to safe support summary"
+    Test-Contains $backupToolIncident "(?i)Protegido|Protegida" "Common incidents backup-tool section names protected backup state"
+    Test-Contains $backupToolIncident "(?i)Pendiente" "Common incidents backup-tool section names pending backup state"
+    Test-Contains $backupToolIncident "(?i)Error" "Common incidents backup-tool section names error backup state"
+    Test-NotContains $backupToolIncident "(?i)docker\s+exec|HOSPITAL_DUMP_BINARY|mariadb-dump|mysqldump|\.env|/usr/bin|contenedor backend|which\s+" "Common incidents backup-tool section avoids raw server internals"
 }
 
 $combined = "$cashier`n$supervisor`n$administrator`n$support`n$training`n$commonIncidents"
