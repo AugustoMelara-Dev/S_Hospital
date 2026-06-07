@@ -129,6 +129,15 @@ class FiscalSettingsTest extends TestCase
             ->assertJsonValidationErrors('receipt_width');
     }
 
+    public function test_legacy_receipt_width_column_is_migrated_away_from_roll_printer_default(): void
+    {
+        $migration = (string) file_get_contents(database_path('migrations/2026_06_07_000001_normalize_legacy_receipt_width_column.php'));
+
+        $this->assertStringContainsString("MODIFY receipt_width VARCHAR(32) NOT NULL DEFAULT 'half_letter'", $migration);
+        $this->assertStringContainsString("->whereIn('receipt_width', ['80mm', '58mm'])", $migration);
+        $this->assertStringContainsString("->update(['receipt_width' => 'half_letter'])", $migration);
+    }
+
     public function test_guest_cannot_view_full_fiscal_settings_but_can_view_public_branding(): void
     {
         FiscalSetting::query()->create([

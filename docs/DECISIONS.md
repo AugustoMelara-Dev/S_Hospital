@@ -3609,3 +3609,7 @@ check-branding.ps1 incluye FIELD_DEPLOYMENT_VALIDATION en la revision de documen
 ## 2026-06-07 - QA vigente elimina formatos de rollo como prueba operativa
 Los informes QA vigentes de aceptacion, readiness, roles y auditoria UX quedan alineados a recibo institucional media carta, carta o A5 para la prueba fisica de impresora.
 check-branding.ps1 ahora cubre esos informes contra 80mm, 58mm e impresora de rollo como lenguaje operativo actual.
+
+## 2026-06-07 - receipt_width heredado deja de nacer como formato de rollo
+La columna heredada fiscal_settings.receipt_width se mantiene oculta y no actualizable por API, pero una migracion aditiva la cambia en MySQL/MariaDB a VARCHAR con default half_letter y normaliza filas antiguas 80mm/58mm a half_letter.
+FiscalSetting ya no permite asignacion masiva de receipt_width; la fuente operativa sigue siendo receipt_paper_size con valores half_letter, letter y a5.

@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
  * @property string $hospital_name
  * @property string $rtn
  * @property string $default_tax_rate
- * @property string $receipt_width
+ * @property string $receipt_width Legacy hidden field; use receipt_paper_size.
  * @property string $primary_color
  * @property string|null $address
  * @property string|null $slogan
@@ -39,7 +39,6 @@ class FiscalSetting extends Model
         'hospital_name',
         'rtn',
         'default_tax_rate',
-        'receipt_width',
         'primary_color',
         'address',
         'slogan',

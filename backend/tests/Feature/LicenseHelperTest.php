@@ -24,7 +24,6 @@ class LicenseHelperTest extends TestCase
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_width' => '80mm',
         ]);
 
         $status = LicenseHelper::checkLicense();
@@ -44,7 +43,6 @@ class LicenseHelperTest extends TestCase
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_width' => '80mm',
         ]);
 
         $licensee = 'Hospital Central';
@@ -73,7 +71,6 @@ class LicenseHelperTest extends TestCase
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_width' => '80mm',
         ]);
 
         Storage::disk('local')->put('license.json', json_encode([
@@ -95,7 +92,6 @@ class LicenseHelperTest extends TestCase
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_width' => '80mm',
         ]);
 
         $licensee = 'Hospital Central';
@@ -122,7 +118,6 @@ class LicenseHelperTest extends TestCase
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_width' => '80mm',
         ]);
 
         $licensee = 'Hospital Central';
@@ -152,7 +147,6 @@ class LicenseHelperTest extends TestCase
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_width' => '80mm',
         ]);
 
         $defaultSignature = LicenseHelper::generateSignature('Hospital Central', '08011999123456', '2030-12-31');
@@ -182,7 +176,6 @@ class LicenseHelperTest extends TestCase
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
-            'receipt_width' => '80mm',
         ]);
 
         config(['app.license_salt' => 'old-salt']);
