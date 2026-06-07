@@ -3867,3 +3867,8 @@ Criterio de verificacion: FiscalSettingsView.test valida el nuevo label y bloque
 Contexto: El catalogo mostraba etiquetas tecnicas de codificacion cuando el escaneo de servicios estaba activo. Para administracion y caja, la pantalla debe explicar el uso operativo sin exponer formatos internos.
 Decision: La UI del catalogo muestra identificador de escaneo, identificador alterno e identificador auxiliar; la API conserva sus campos tecnicos para compatibilidad y busqueda.
 Criterio de verificacion: ServiceSheet.test y CatalogView.test validan las etiquetas operativas y bloquean referencias visibles a formatos tecnicos de escaneo en esas superficies.
+
+## 2026-06-07 - Cobro usa lenguaje institucional para revisar recibo
+Contexto: El modal de cobro mostraba la palabra preview en el control visible antes de imprimir, justo en un flujo critico para caja.
+Decision: El copy visible usa ver recibo antes de imprimir y registrar cobro y ver recibo; los nombres internos de componentes y estado se conservan como implementacion tecnica.
+Criterio de verificacion: PaymentModal.test valida el nuevo label y bloquea preview en el texto visible del modal; el smoke visual y el manual de cajero usan la misma frase operativa.

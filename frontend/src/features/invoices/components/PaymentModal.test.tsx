@@ -62,7 +62,7 @@ describe('PaymentModal', () => {
     expect(confirmSpy).toHaveBeenCalledWith('17.25');
   });
 
-  it('exposes the print preview option as a labeled checkbox', () => {
+  it('exposes the receipt review option as a labeled checkbox', () => {
     render(
       <PaymentModal
         open
@@ -79,7 +79,8 @@ describe('PaymentModal', () => {
       />,
     );
 
-    expect(screen.getByLabelText(/ver preview antes de imprimir/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/ver recibo antes de imprimir/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/preview/i);
   });
 
   it('disables confirmation when received amount is below balance and partial payments are off', () => {

@@ -15,7 +15,7 @@
 4. Revisar carrito y total antes de emitir.
 5. Usar **Emitir y cobrar** como flujo normal.
 6. Registrar metodo y monto recibido.
-7. Abrir preview de recibo y mandar a imprimir.
+7. Abrir el recibo antes de imprimir y mandarlo a impresion.
 
 ## Reimpresion
 

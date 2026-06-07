@@ -393,14 +393,14 @@ async function main() {
     const paymentText = await paymentDialog.innerText();
     const balanceDue = paymentText.match(/Saldo pendiente:\s*L\.\s*([0-9,.]+)/i)?.[1]?.replace(',', '') ?? '1000.00';
     await page.getByLabel(/monto recibido/i).fill(balanceDue);
-    const previewCheckbox = page.getByRole('checkbox', { name: /ver preview antes de imprimir/i });
+    const previewCheckbox = page.getByRole('checkbox', { name: /ver recibo antes de imprimir/i });
     if (
       await previewCheckbox.isVisible().catch(() => false) &&
       (await previewCheckbox.getAttribute('aria-checked').catch(() => 'false')) !== 'true'
     ) {
       await previewCheckbox.click();
     }
-    await page.getByRole('button', { name: /registrar cobro y ver preview|confirmar cobro|registrar cobro e imprimir/i }).click();
+    await page.getByRole('button', { name: /registrar cobro y ver recibo|confirmar cobro|registrar cobro e imprimir/i }).click();
     await page.getByRole('dialog', { name: /vista previa del recibo/i }).waitFor({ state: 'visible', timeout: 15000 });
     await screenshot(page, 'receipt-preview');
     await closeOperationalDialogIfPresent(page);
