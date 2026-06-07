@@ -24,6 +24,7 @@ $scopedForbidden = @(
     ('cajero.' + $demoWord),
     ('hospital-' + $billingWord + '.local'),
     (($demoWord).ToUpperInvariant() + '-CAI'),
+    'VALIDACION-CAI',
     ('Development' + $demoWord.Substring(0, 1).ToUpperInvariant() + $demoWord.Substring(1) + 'Seeder')
 )
 

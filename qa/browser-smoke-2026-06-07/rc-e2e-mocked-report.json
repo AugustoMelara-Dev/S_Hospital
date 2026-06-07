@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-07T16:30:12.362Z",
+  "generated_at": "2026-06-07T16:50:44.305Z",
   "mode": "mocked-e2e",
   "note": "Capturas con API mockeada; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.",
   "screenshots": [

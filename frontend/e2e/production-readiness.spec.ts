@@ -692,9 +692,9 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
     width,
     hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
     fiscal: {
-      cai: 'VALIDACION-CAI',
-      authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
-      valid_until: '2027-05-17',
+      cai: 'CAI registrado',
+      authorized_range: null,
+      valid_until: null,
     },
     invoice: {
       id: invoice.id,

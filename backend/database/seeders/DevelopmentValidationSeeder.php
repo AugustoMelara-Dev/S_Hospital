@@ -80,7 +80,7 @@ class DevelopmentValidationSeeder extends Seeder
             [
                 'document_type' => 'invoice',
                 'prefix' => '000-001-01',
-                'cai' => 'VALIDACION-CAI',
+                'cai' => 'CAI registrado',
             ],
         );
 

@@ -3662,3 +3662,9 @@ La evidencia visual de Respaldos mostro que varios avisos de carga y exito podia
 El wrapper notify limita la cola general a tres avisos y App usa notify.status con un id fijo para que los mensajes operativos se reemplacen entre si.
 La captura qa/browser-smoke-2026-06-07/backups-pending-light.png confirma que queda un solo aviso visible y las acciones principales permanecen accesibles.
 Validacion: vitest toaster/App, typecheck, browser smoke mockeado con capturas y validate_browser_smoke_evidence.ps1.
+
+## 2026-06-07 - evidencia de recibo mockeado no muestra CAI ni rango inventado
+El browser smoke 2026-06-07 dejo de usar el marcador CAI de validacion heredado y ya no muestra rango fiscal ni vencimiento inventados en las capturas de recibo.
+El mock conserva CAI registrado como marcador neutral para probar la plantilla sin declarar cumplimiento fiscal real ni sustituir configuracion autorizada del hospital.
+check-branding ahora bloquea el marcador CAI de validacion heredado en superficies de entrega para evitar que vuelva a aparecer en seeders, pruebas visibles o evidencia QA.
+Validacion: vitest NewInvoiceView/shortcuts, php artisan test --filter=DevelopmentValidationSeederTest, check-branding y browser smoke mockeado con capturas.

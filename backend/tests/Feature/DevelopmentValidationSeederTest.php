@@ -50,7 +50,7 @@ class DevelopmentValidationSeederTest extends TestCase
             FiscalSequence::query()
                 ->where('document_type', 'invoice')
                 ->where('prefix', '000-001-01')
-                ->where('cai', 'VALIDACION-CAI')
+                ->where('cai', 'CAI registrado')
                 ->exists(),
         );
     }

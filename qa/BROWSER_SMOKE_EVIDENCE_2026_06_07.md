@@ -25,6 +25,7 @@ Observed result:
 - The JSON report records `mode: mocked-e2e`, `console_issues: []` and the explicit note that captures do not replace LAN, MySQL/MariaDB or physical printer proof.
 - Screenshots were captured for dashboard light/dark, cashbox open, new invoice empty/cart, receipt media carta/carta/A5/dark, reports and backups.
 - Visual review of `qa\browser-smoke-2026-06-07\backups-pending-light.png` confirmed only one status notice remains visible and the primary backup actions are no longer covered.
+- Visual review of `qa\browser-smoke-2026-06-07\receipt-preview-dark.png` confirmed the mocked receipt no longer shows the old validation CAI marker, an invented fiscal range or an invented expiration date.
 
 Safety notes:
 

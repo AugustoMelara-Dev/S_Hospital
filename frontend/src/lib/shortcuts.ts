@@ -41,7 +41,7 @@ export const KEYBOARD_SHORTCUTS: ShortcutEntry[] = [
   {
     key: 'F6',
     scope: 'pos',
-    description: 'Foco en el campo de escaneo de codigos de barra o QR.',
+    description: 'Foco en el campo de codigo escaneable cuando este habilitado por administracion.',
   },
   {
     key: 'Enter',
