@@ -3581,3 +3581,7 @@ validate_operator_manuals_safety extrae la seccion y bloquea la reaparicion de S
 ## 2026-06-07 - Runbook humaniza incidente de internet o direccion incorrecta
 La seccion Internet requerido ahora se presenta como Internet requerido o direccion incorrecta. El flujo evita localhost:5173, runtime.environment, frontend/dist, Vite, CORS y npm run build; guia al operador a confirmar direccion LAN oficial, no usar localhost en caja cliente, probar desde el servidor, limpiar cache, preparar resumen seguro y escalar a soporte local.
 validate_operator_manuals_safety extrae la seccion y bloquea la reaparicion de detalles de desarrollo o build en ese incidente.
+
+## 2026-06-07 - Runbook humaniza incidente de PC cliente sin acceso
+La seccion PC cliente no carga la app ahora evita ping, /up, tracert, IP_CHANGE_NOTICE, refresh_lan_ip, puerto 8000 y Firewall de Windows. El flujo guia a confirmar red local, direccion LAN oficial, prueba desde servidor, posible cambio de direccion y escalamiento a soporte local sin comandos crudos para caja.
+validate_operator_manuals_safety extrae la seccion y bloquea la reaparicion de pruebas de red crudas en ese incidente.

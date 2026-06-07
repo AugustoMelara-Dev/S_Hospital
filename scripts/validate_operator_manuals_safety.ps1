@@ -111,6 +111,11 @@ if ($commonIncidents -match "(?is)##\s+6\.\s+Internet requerido o direccion inco
     $offlineUrlIncident = $Matches.section
 }
 
+$lanClientIncident = ""
+if ($commonIncidents -match "(?is)##\s+7\.\s+PC cliente no carga la app(?<section>.*?)(?:\r?\n---|\z)") {
+    $lanClientIncident = $Matches.section
+}
+
 $finalChecklist = ""
 if ($commonIncidents -match "(?is)##\s+Cuando todo falla: lista de verificacion de 60 segundos(?<section>.*)\z") {
     $finalChecklist = $Matches.section
@@ -140,6 +145,10 @@ if ($commonIncidents -ne "") {
     Test-Contains $offlineUrlIncident "(?i)no use[\s\S]{0,80}localhost|localhost[\s\S]{0,80}computadora cliente" "Common incidents offline/LAN section warns clients about localhost"
     Test-Contains $offlineUrlIncident "(?i)Ayuda\s*>\s*Preparar resumen para soporte|resumen seguro" "Common incidents offline/LAN section routes to safe support summary"
     Test-NotContains $offlineUrlIncident "(?i)localhost:5173|runtime\.environment|frontend/dist|npm\s+run\s+build|bundle|vite|CORS|Failed to fetch|index\.html" "Common incidents offline/LAN section avoids dev/build internals"
+    Test-Contains $lanClientIncident "(?i)direccion LAN oficial" "Common incidents LAN client section uses LAN wording"
+    Test-Contains $lanClientIncident "(?i)soporte local" "Common incidents LAN client section routes to local support"
+    Test-Contains $lanClientIncident "(?i)no\s+en\s+la\s+caja\s+cliente|caja cliente|computadora cliente" "Common incidents LAN client section distinguishes client computer"
+    Test-NotContains $lanClientIncident "(?i)ping\s+IP_SERVIDOR|/up|tracert|IP_CHANGE_NOTICE|refresh_lan_ip|puerto\s+8000|Firewall de Windows|http://IP_SERVIDOR" "Common incidents LAN client section avoids raw network probes"
     Test-Contains $finalChecklist "(?i)direccion LAN oficial" "Common incidents final checklist uses LAN wording"
     Test-Contains $finalChecklist "(?i)no\s+repita|no\s+repetir" "Common incidents final checklist warns against repeating financial actions"
     Test-NotContains $finalChecklist "(?i)curl\s+http|/api|docker\s+ps|localhost:8000|smoke_test_post_install|database\.connected|JSON" "Common incidents final checklist avoids command/API checks"

@@ -192,23 +192,23 @@ sitio" o timeout.
 
 **Causa probable:**
 - La PC cliente no esta en la misma subred que el servidor.
-- El Firewall de Windows del servidor bloquea el puerto 8000
-  en el perfil Privado.
+- La seguridad local del servidor bloqueo la entrada desde la red.
 - La IP del servidor cambio y el cliente aun tiene la URL vieja.
 
 **Accion inmediata:**
-1. Desde la PC cliente, abrir una terminal y hacer
-   `ping IP_SERVIDOR`. Si no responde, revisar cable / WiFi.
-2. Si ping responde, abrir `http://IP_SERVIDOR:8000/up` en el
-   navegador. Si no carga, pedir a soporte revisar la regla de
-   firewall del servidor.
-3. Si la app cargo antes y dejo de cargar hoy, probablemente la
-   IP del servidor cambio. Revisar `qa/IP_CHANGE_NOTICE.txt` en
-   el servidor (lo genera `refresh_lan_ip.ps1`).
+1. Confirmar que la computadora cliente tenga red local activa.
+2. Confirmar que use la direccion LAN oficial entregada por
+   administracion.
+3. Probar la misma direccion desde el servidor. Si abre en el servidor
+   pero no en la caja cliente, tratarlo como problema de red local.
+4. Si la app cargo antes y dejo de cargar hoy, avisar a soporte local:
+   puede haber cambiado la direccion del servidor.
+5. Registrar hora, nombre de la computadora cliente y mensaje visible.
 
-**Escalamiento:** Si ping responde y el firewall esta abierto
-pero la app no carga, capturar un `tracert IP_SERVIDOR` desde la
-PC cliente y enviar a soporte nivel 2.
+**Escalamiento:** Si otra computadora cliente si carga el sistema,
+soporte local debe revisar red de esa caja. Si ninguna computadora
+cliente carga, soporte local debe revisar direccion LAN y seguridad de
+red del servidor.
 
 ---
 
