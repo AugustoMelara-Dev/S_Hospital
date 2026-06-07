@@ -3857,3 +3857,8 @@ Criterio de verificacion: validate_installation_docs_safety revisa VALIDATION_PR
 Contexto: IMPLEMENTATION_PLAN es historico, pero se incluye en el paquete offline y podia leerse como guia viva. Aun indicaba validar worker de backups en una fase final.
 Decision: El plan conserva el alcance historico, pero usa tarea continua de respaldos como wording operativo para superficies incluidas en release.
 Criterio de verificacion: validate_installation_docs_safety cubre IMPLEMENTATION_PLAN contra worker de backups, worker continuo y transiciones raw pending/success.
+
+## 2026-06-07 - Ajustes fiscales usa lenguaje operativo para escaneo
+Contexto: La pantalla de configuracion fiscal mostraba "scanner/codigos" y "codigos internos" en un control visible para administracion, aunque el operador debe leer el flujo como escaneo de servicios, no como detalle tecnico.
+Decision: El copy visible del control usa "escaneo de servicios en caja" y oculta la referencia a codigos internos; el contrato tecnico de scan_code, barcode y scanner_enabled se mantiene solo en catalogo, API y pruebas internas.
+Criterio de verificacion: FiscalSettingsView.test valida el nuevo label y bloquea scanner/codigos o codigos internos en la vista.

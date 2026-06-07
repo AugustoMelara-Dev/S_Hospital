@@ -446,9 +446,9 @@ export function FiscalSettingsView({ canEdit, initialTab = 'resumen', onStatus }
                   />
                   <span>
                     <Label htmlFor="scanner-enabled" className="block cursor-pointer font-medium">
-                      Habilitar scanner/codigos en caja
+                      Habilitar escaneo de servicios en caja
                     </Label>
-                    <span className="text-muted-foreground">Si esta apagado, la pantalla de nueva factura oculta controles de scanner y codigos internos.</span>
+                    <span className="text-muted-foreground">Si esta apagado, la pantalla de nueva factura oculta los controles para escanear servicios.</span>
                   </span>
                 </div>
                 <div className="flex items-start gap-3 text-sm">

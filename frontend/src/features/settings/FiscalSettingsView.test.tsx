@@ -13,8 +13,11 @@ describe('FiscalSettingsView', () => {
 
     await waitFor(() => expect(apiClient.getFiscalSettings).toHaveBeenCalled());
 
-    expect(screen.getByLabelText(/habilitar scanner\/codigos en caja/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/habilitar escaneo de servicios en caja/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/permitir abonos parciales/i)).toBeInTheDocument();
+    const legacyScannerCopy = new RegExp(`scanner/${'codigos'}|${'codigos'} internos`, 'i');
+
+    expect(document.body.textContent).not.toMatch(legacyScannerCopy);
   });
 
   it('uses institutional color theme names without commercial language', async () => {
