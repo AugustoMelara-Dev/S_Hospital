@@ -3617,3 +3617,7 @@ FiscalSetting ya no permite asignacion masiva de receipt_width; la fuente operat
 ## 2026-06-07 - migracion MySQL de historico de precios recuperable
 La validacion MariaDB en s_hospital_migration_validation mostro que service_price_histories necesitaba service_id nullable antes de cambiar la FK a SET NULL.
 Se agrego una migracion preparatoria aditiva y la migracion de cambio de FK ahora tolera reintentos si una corrida previa ya elimino la llave foranea antes de fallar.
+
+## 2026-06-07 - evidencia MariaDB limpia de migraciones actuales
+Se valido una base MariaDB descartable s_hospital_migration_clean_20260607 desde cero: 46 migraciones aplicaron correctamente, receipt_width quedo como VARCHAR default half_letter y service_price_histories.service_id quedo nullable con FK SET NULL.
+La evidencia se documento en qa/MARIADB_MIGRATION_VALIDATION_2026_06_07.md y no sustituye pruebas finales de servidor, restore, LAN, concurrencia ni impresora fisica.
