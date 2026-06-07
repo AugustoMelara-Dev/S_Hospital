@@ -3738,3 +3738,8 @@ Validacion: deploy_hospital_lan.ps1 -SelfTest, validate_installer_legacy_safety,
 Contexto: la configuracion de apariencia conservaba un nombre de tema con lenguaje de categoria comercial, visible para administracion al elegir colores.
 Decision: el tema de color rojo/vino se presenta como Vino institucional y el grafico usa comentario institucional. El guard de branding bloquea la reaparicion de ese lenguaje en frontend/src.
 Criterio de verificacion: FiscalSettingsView.test cubre el nombre visible, check-branding revisa frontend/src y los gates frontend typecheck, lint y build pasan.
+
+## 2026-06-07 - Exportacion Excel con nombre institucional
+Contexto: el generador backend de Excel de reportes conservaba el nombre PremiumExcelExportService y comentarios de estilo premium. Aunque el archivo exportado ya era institucional, el codigo de una pieza de reportes seguia usando lenguaje comercial que podia reintroducir decisiones de producto equivocadas.
+Decision: el servicio se renombra a InstitutionalExcelExportService, el controlador usa el nuevo nombre y los comentarios de estilo describen acentos institucionales. check-branding ahora cubre frontend/src y backend/app contra ese lenguaje comercial.
+Criterio de verificacion: ReportsTest completo pasa, Pint pasa en los archivos tocados, check-branding no encuentra hallazgos y no quedan referencias Premium en backend/app ni backend/tests.

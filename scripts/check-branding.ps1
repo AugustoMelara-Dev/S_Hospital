@@ -94,7 +94,7 @@ $technicalProductBrandForbidden = @(
     'HOSPITAL OS'
 )
 
-$commercialVisibleFrontendForbidden = @(
+$commercialProductSurfaceForbidden = @(
     'Premium'
 )
 
@@ -300,10 +300,11 @@ try {
         )
 
     Invoke-ForbiddenSearch `
-        -Label 'Lenguaje comercial visible encontrado en frontend:' `
-        -Patterns $commercialVisibleFrontendForbidden `
+        -Label 'Lenguaje comercial encontrado en superficies de producto:' `
+        -Patterns $commercialProductSurfaceForbidden `
         -Paths @(
-            'frontend/src'
+            'frontend/src',
+            'backend/app'
         )
 
     Write-Host 'Revision de branding completada sin hallazgos.'

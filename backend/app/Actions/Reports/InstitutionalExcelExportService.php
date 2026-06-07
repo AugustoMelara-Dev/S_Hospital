@@ -27,7 +27,7 @@ use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 
-class PremiumExcelExportService
+class InstitutionalExcelExportService
 {
     private function moneyFloat(mixed $value): float
     {
@@ -69,7 +69,7 @@ class PremiumExcelExportService
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => '0F766E'], // Premium Teal Accent
+                'startColor' => ['rgb' => '0F766E'], // Institutional teal accent
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -610,7 +610,7 @@ class PremiumExcelExportService
         $sheet3->freezePane('A6');
         $sheet3->setAutoFilter('B5:E'.$lastServiceRow);
 
-        // Premium Highlight: Top 5 Services Horizontal Bar Chart
+        // Institutional highlight: Top 5 services horizontal bar chart
         $topServices = array_slice($services['services'], 0, 5);
         $topCount = count($topServices);
 
@@ -776,7 +776,7 @@ class PremiumExcelExportService
         $sheet5->setCellValue('E4', 'Motivo de Anulación');
         $sheet5->setCellValue('F4', 'Anulado por');
         $sheet5->getStyle('B4:F4')->applyFromArray($headerStyle);
-        $sheet5->getStyle('B4:F4')->getFill()->setStartColor(new Color('BE123C')); // Premium Crimson/Red for Voids
+        $sheet5->getStyle('B4:F4')->getFill()->setStartColor(new Color('BE123C')); // Institutional red for voids
 
         $row = 5;
         foreach ($operations['voids'] as $void) {
@@ -809,7 +809,7 @@ class PremiumExcelExportService
         $sheet5->setCellValue('E'.$row, 'Motivo');
         $sheet5->setCellValue('F'.$row, 'Reimpreso por');
         $sheet5->getStyle("B{$row}:F{$row}")->applyFromArray($headerStyle);
-        $sheet5->getStyle("B{$row}:F{$row}")->getFill()->setStartColor(new Color('B45309')); // Premium Amber/Bronze for reprints
+        $sheet5->getStyle("B{$row}:F{$row}")->getFill()->setStartColor(new Color('B45309')); // Institutional amber for reprints
 
         $row++;
         foreach ($operations['reprints'] as $reprint) {

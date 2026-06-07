@@ -10,10 +10,10 @@ use App\Actions\Reports\CategoryReportService;
 use App\Actions\Reports\DailyReportService;
 use App\Actions\Reports\DashboardReportService;
 use App\Actions\Reports\IncomeReportService;
+use App\Actions\Reports\InstitutionalExcelExportService;
 use App\Actions\Reports\MonthlyReportService;
 use App\Actions\Reports\OperationsReportService;
 use App\Actions\Reports\PdfExportService;
-use App\Actions\Reports\PremiumExcelExportService;
 use App\Actions\Reports\ServiceSalesReportService;
 use App\Http\Requests\Reports\DailyReportRequest;
 use App\Http\Requests\Reports\DashboardReportRequest;
@@ -103,7 +103,7 @@ class ReportController extends Controller
         $services = $serviceReports->report($filters);
         $operations = $operationReports->report($filters, $request->user()->can('backups.view'));
 
-        $excelService = new PremiumExcelExportService;
+        $excelService = new InstitutionalExcelExportService;
         $spreadsheet = $excelService->generate(
             $income,
             $categories,
