@@ -3733,3 +3733,8 @@ Validacion: check-branding, deploy_hospital_lan.ps1 -SelfTest, env-helpers.tests
 Contexto: el instalador LAN mostraba 'Ejecutando migraciones y seeders...' durante la preparacion productiva. Aunque los comandos son controlados y no destructivos, el texto visible sonaba a operacion tecnica de desarrollo.
 Decision: deploy_hospital_lan.ps1 ahora muestra 'Preparando base institucional, roles y catalogo...' y validate_installer_legacy_safety bloquea que el mensaje antiguo vuelva como texto normal del instalador.
 Validacion: deploy_hospital_lan.ps1 -SelfTest, validate_installer_legacy_safety, check-branding y diff check.
+
+## 2026-06-07 - Tema visual sin lenguaje comercial
+Contexto: la configuracion de apariencia conservaba un nombre de tema con lenguaje de categoria comercial, visible para administracion al elegir colores.
+Decision: el tema de color rojo/vino se presenta como Vino institucional y el grafico usa comentario institucional. El guard de branding bloquea la reaparicion de ese lenguaje en frontend/src.
+Criterio de verificacion: FiscalSettingsView.test cubre el nombre visible, check-branding revisa frontend/src y los gates frontend typecheck, lint y build pasan.

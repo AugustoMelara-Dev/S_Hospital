@@ -16,6 +16,19 @@ describe('FiscalSettingsView', () => {
     expect(screen.getByLabelText(/habilitar scanner\/codigos en caja/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/permitir abonos parciales/i)).toBeInTheDocument();
   });
+
+  it('uses institutional color theme names without commercial language', async () => {
+    vi.spyOn(apiClient, 'getFiscalSettings').mockResolvedValue(fiscalSettingsFixture());
+    vi.spyOn(apiClient, 'getFiscalSequences').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getLogo').mockResolvedValue(null);
+
+    render(<FiscalSettingsView canEdit initialTab="branding" onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(apiClient.getFiscalSettings).toHaveBeenCalled());
+
+    expect(screen.getByText('Vino institucional')).toBeInTheDocument();
+    expect(screen.queryByText(new RegExp('prem' + 'ium', 'i'))).not.toBeInTheDocument();
+  });
 });
 
 function fiscalSettingsFixture(overrides: Partial<FiscalSettings> = {}): FiscalSettings {

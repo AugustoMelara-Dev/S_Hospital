@@ -94,6 +94,10 @@ $technicalProductBrandForbidden = @(
     'HOSPITAL OS'
 )
 
+$commercialVisibleFrontendForbidden = @(
+    'Premium'
+)
+
 function Invoke-ForbiddenSearch {
     param(
         [string] $Label,
@@ -293,6 +297,13 @@ try {
             'backend/tests/PowerShell',
             'prompts',
             'qa/RELEASE_READINESS.md'
+        )
+
+    Invoke-ForbiddenSearch `
+        -Label 'Lenguaje comercial visible encontrado en frontend:' `
+        -Patterns $commercialVisibleFrontendForbidden `
+        -Paths @(
+            'frontend/src'
         )
 
     Write-Host 'Revision de branding completada sin hallazgos.'

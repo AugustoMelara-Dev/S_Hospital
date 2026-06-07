@@ -32,7 +32,7 @@ export const COLOR_THEMES: Record<ColorTheme, {
     dark: { secondary: '#6366f1', ring: '#6366f1', accent: '#312e81', accentForeground: '#6366f1' },
   },
   rose: {
-    name: 'Vino Premium',
+    name: 'Vino institucional',
     light: { secondary: '#be123c', ring: '#be123c', accent: '#fff1f2', accentForeground: '#be123c' },
     dark: { secondary: '#fb7185', ring: '#fb7185', accent: '#4c0519', accentForeground: '#fb7185' },
   },

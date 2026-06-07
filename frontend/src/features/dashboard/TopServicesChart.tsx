@@ -52,7 +52,7 @@ export function TopServicesChart({ services }: TopServicesChartProps) {
               </div>
             </div>
             
-            {/* Custom Premium progress bar */}
+            {/* Institutional progress indicator */}
             <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
               <div
                 className="h-full rounded-full bg-primary/80 transition-all duration-500 group-hover:bg-primary"
