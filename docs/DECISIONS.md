@@ -3773,3 +3773,8 @@ Criterio de verificacion: validate_installation_docs_safety, check-branding y di
 Contexto: BACKUP_RESTORE todavia usaba una ruta de instalacion con marca heredada y describia el flujo manual con pending, success y worker local, lenguaje heredado o tecnico para una guia de respaldo/restauracion.
 Decision: la referencia usa una ruta neutral C:\Hospital\Sistema\backend, describe el flujo manual con Pendiente y Protegido, y presenta la tarea continua de respaldos como concepto operativo. validate_backup_restore_docs_safety bloquea la ruta heredada y el lenguaje crudo en esa guia.
 Criterio de verificacion: validate_backup_restore_docs_safety, validate_installation_docs_safety, check-branding y diff check.
+
+## 2026-06-07 - Resumen de instalacion sin residuos de respaldos
+Contexto: INSTALL_SUMMARY y FIELD_DEPLOYMENT_VALIDATION aun mostraban ruta heredada de instalacion, backup worker y estados crudos pending/success en instrucciones o evidencia de entrega.
+Decision: ambos documentos usan ruta neutral C:\Hospital\Sistema\backend, tarea continua/automatizacion local de respaldos y estados visibles Pendiente y Protegido. validate_installation_docs_safety cubre el resumen y la evidencia de campo contra esas regresiones.
+Criterio de verificacion: validate_installation_docs_safety, check-branding y diff check.

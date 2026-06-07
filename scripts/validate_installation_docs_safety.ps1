@@ -69,6 +69,8 @@ $userManual = Read-RequiredFile "docs\Manual_Usuario.md"
 $userManualHtml = Read-RequiredFile "docs\Manual_Usuario.html"
 $operatorIndex = Read-RequiredFile "docs\manuales\INDICE_OPERADOR.md"
 $releaseChecklist = Read-RequiredFile "docs\RELEASE_CHECKLIST.md"
+$installSummary = Read-RequiredFile "docs\INSTALL_SUMMARY.md"
+$fieldDeploymentValidation = Read-RequiredFile "qa\FIELD_DEPLOYMENT_VALIDATION.md"
 
 if ($installGuide -ne "") {
     foreach ($section in @(
@@ -146,8 +148,23 @@ if ($offlineLanInstallGuide -ne "") {
     Test-Contains $offlineLanInstallGuide '(?s)Backup manual.*Pendiente.*Protegido.*Error' "Offline LAN install guide uses visible backup states"
 }
 
+if ($installSummary -ne "") {
+    Test-NoProfilePowerShellCommands $installSummary "Install summary"
+    Test-NotContains $installSummary '(?i)C:\\HospitalBilling\\backend|backup worker|worker continuo|`pending`|`success`|`failed`' "Install summary avoids legacy backup path and raw worker/status wording"
+    Test-Contains $installSummary 'automatizacion local de respaldos' "Install summary uses operational backup automation wording"
+    Test-Contains $installSummary '(?s)backup manual.*Pendiente.*Protegido' "Install summary uses visible backup states"
+}
+
+if ($fieldDeploymentValidation -ne "") {
+    Test-NoProfilePowerShellCommands $fieldDeploymentValidation "Field deployment validation"
+    Test-NotContains $fieldDeploymentValidation '(?i)C:\\HospitalBilling\\backend|historial, reportes y backup `pending` -> `success`|Worker real de backups|worker continuo' "Field deployment validation avoids legacy backup path and raw worker/status wording"
+    Test-Contains $fieldDeploymentValidation 'Tarea continua real de respaldos' "Field deployment validation uses operational backup task heading"
+    Test-Contains $fieldDeploymentValidation '(?s)backup \*\*Pendiente\*\* -> \*\*Protegido\*\*' "Field deployment validation uses visible backup state transition"
+}
+
 foreach ($docInfo in @(
     @{ Content = $releaseChecklist; Label = "Release checklist" },
+    @{ Content = $installSummary; Label = "Install summary" },
     @{ Content = $backupRestoreReference; Label = "Backup/restore reference" },
     @{ Content = $dailyCloseProtocol; Label = "Daily close protocol" },
     @{ Content = $disasterRecoveryGuide; Label = "Disaster recovery guide" },
@@ -177,7 +194,7 @@ if ($userManualHtml -ne "") {
     Test-NotContains $userManualHtml '(?i)powershell|repair_hospital_system|collect_support_packet|127\.0\.0\.1|localhost:8000|migrate:fresh|seeders de prueba|\.env|SQL|BaseUrl' "General user manual HTML avoids support commands and raw technical terms"
 }
 
-$combined = "$installGuide`n$supportGuide`n$backupGuide`n$offlineLanInstallGuide`n$backupRestoreReference`n$dailyCloseProtocol`n$disasterRecoveryGuide`n$trainingAdminGuide`n$userManual`n$userManualHtml`n$operatorIndex`n$releaseChecklist"
+$combined = "$installGuide`n$supportGuide`n$backupGuide`n$offlineLanInstallGuide`n$backupRestoreReference`n$dailyCloseProtocol`n$disasterRecoveryGuide`n$trainingAdminGuide`n$userManual`n$userManualHtml`n$operatorIndex`n$releaseChecklist`n$installSummary`n$fieldDeploymentValidation"
 foreach ($requiredText in @(
     'PRODUCTION_READY',
     'PRODUCTION_CANDIDATE',

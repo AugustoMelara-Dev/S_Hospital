@@ -136,14 +136,14 @@ Pendiente para produccion final:
 Helper operativo agregado:
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 `
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 `
   -BaseUrl http://IP_DEL_SERVIDOR `
   -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
 ```
 
 El helper solo automatiza `/up`, `/login`, `/verify-email` y asset JS. El
 operador debe completar en navegador real login, caja, factura, pago, recibo,
-historial, reportes y backup `pending` -> `success`.
+historial, reportes y backup **Pendiente** -> **Protegido**.
 
 ## Impresora institucional
 
@@ -157,24 +157,24 @@ No se ejecuto impresion fisica porque no se confirmo hardware disponible. Checkl
 - Reimpresion desde historial.
 - Confirmar que el formato impreso coincide con la configuracion autorizada.
 
-## Worker real de backups
+## Tarea continua real de respaldos
 
 Estado: PARTIAL_VALIDATED.
 
 Validado:
 
-- `POST /api/backups` como admin creo backup `pending` con respuesta 202.
+- `POST /api/backups` como admin creo un respaldo mostrado como **Pendiente** con respuesta 202.
 - `php artisan queue:work --queue=backups --tries=1 --timeout=600 --once` proceso el job.
 - Primer intento sin `mysqldump` en PATH fallo controlado con mensaje operativo sin credenciales.
-- Al ejecutar restore con PATH incluyendo XAMPP, `php artisan hospital:backup --type=manual` creo backup `success`.
+- Al ejecutar restore con PATH incluyendo XAMPP, `php artisan hospital:backup --type=manual` creo un respaldo mostrado como **Protegido**.
 
 Pendiente para servidor real:
 
 - Dejar `C:\xampp\mysql\bin` o la ruta de MySQL/MariaDB real en PATH del servicio/tarea Windows.
-- Ejecutar el worker continuo:
+- Ejecutar la tarea continua:
 
 ```powershell
-cd C:\HospitalBilling\backend
+cd C:\Hospital\Sistema\backend
 php artisan queue:work --queue=backups --tries=1 --timeout=600
 ```
 
@@ -193,7 +193,7 @@ Antes de entregar como produccion:
 - Ejecutar migraciones aprobadas sin `migrate:fresh`.
 - Ejecutar `php artisan config:cache --no-ansi`.
 - Validar `php artisan route:list`.
-- Validar worker de backups como tarea/servicio Windows.
+- Validar la tarea continua de respaldos como tarea/servicio Windows.
 
 ## Resultado Fase 11
 

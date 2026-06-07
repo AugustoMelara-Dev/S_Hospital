@@ -13,9 +13,9 @@ No ejecutar `migrate:fresh` en el servidor real.
 6. Ejecutar `php artisan migrate --force`.
 7. Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no escribir la contrasena como `--password=...`.
 8. Ejecutar `php artisan config:cache --no-ansi`.
-9. Registrar tareas Windows para backup worker y scheduler con `scripts\install_backup_tasks_windows.ps1`.
-10. Abrir la app como admin, entrar a Backups y revisar el checklist operativo: `APP_ENV=production`, `APP_DEBUG=false`, MySQL/MariaDB, dump tool, storage local, worker continuo, rutas `/up`, `/login`, `/verify-email` y evidencias LAN/impresora.
-11. Crear un backup manual y confirmar que cambia de `pending` a `success`.
+9. Registrar tareas Windows para automatizacion local de respaldos con `scripts\install_backup_tasks_windows.ps1`.
+10. Abrir la app como admin, entrar a Backups y revisar el checklist operativo: `APP_ENV=production`, `APP_DEBUG=false`, MySQL/MariaDB, herramienta de respaldo, almacenamiento local, tarea continua, rutas `/up`, `/login`, `/verify-email` y evidencias LAN/impresora.
+11. Crear un backup manual y confirmar que cambia de **Pendiente** a **Protegido**.
 12. Preparar archivos de evidencia con `scripts\init_production_proofs.ps1`.
 13. Desde una segunda PC cliente, ejecutar `scripts\validate_lan_client.ps1 -BaseUrl https://IP_DEL_SERVIDOR -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md` y completar los checks manuales de login, caja, factura, pago, reportes y backup.
 14. Completar `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` con la impresora fisica media carta/carta/A5.
@@ -48,16 +48,16 @@ No entregar un servidor LAN real con `APP_ENV=local`. Produccion debe operar con
 - Si se publica same-origin desde Laravel, las rutas `/`, `/login` y `/verify-email` deben servir el build React generado en `frontend/dist`.
 - La ruta `/assets/*` debe servir los assets del build React; ejecutar `npm.cmd run build` antes de copiar artefactos.
 
-## Worker de backups
+## Tarea continua de respaldos
 
 Ejecutar como tarea al iniciar Windows o servicio supervisado:
 
 ```powershell
-cd C:\HospitalBilling\backend
+cd C:\Hospital\Sistema\backend
 php artisan queue:work --queue=backups --tries=1 --timeout=600
 ```
 
-En paquete Docker offline, el worker continuo es el servicio `queue-worker` y se
+En paquete Docker offline, la tarea continua corre con el servicio `queue-worker` y se
 valida con:
 
 ```powershell
