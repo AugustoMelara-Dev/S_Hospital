@@ -200,7 +200,7 @@ if ($failures.Count -eq 0) {
         'InitializeProofFiles',
         'bypass flags',
         'TRAINING_ACCEPTANCE_PROOF.md',
-        'final backup worker smoke',
+        'final backup automation smoke',
         'final restore/concurrency evidence',
         'preflight'
     )

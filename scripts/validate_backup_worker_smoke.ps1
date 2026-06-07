@@ -247,22 +247,23 @@ if (-not (Test-Path -LiteralPath $evidenceDir)) {
 
 $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 $lines = @(
-    "# Backup worker smoke proof",
+    "# Prueba de automatizacion de respaldos",
     "",
-    "- Date/time: $now",
+    "- Fecha/hora: $now",
     "- Base URL: $base",
-    "- Backup id: $backupId",
-    "- Filename: $($current.filename)",
-    "- Status: $($current.status)",
-    "- Size bytes: $($current.size_bytes)",
+    "- Respaldo id: $backupId",
+    "- Archivo: $($current.filename)",
+    "- Estado visible: Protegido",
+    "- Estado tecnico registrado por API: $($current.status)",
+    "- Tamano bytes: $($current.size_bytes)",
     "- SHA256: $($current.checksum_sha256)",
-    "- Final conclusion: Backup UI/API changed from pending to success with checksum and non-zero size.",
+    "- Conclusion final: La UI/API de respaldos cambio de Pendiente a Protegido con checksum y tamano mayor que cero.",
     "",
-    "## Required checks",
+    "## Checks requeridos",
     "",
-    "- [x] Manual backup request created a pending job. Result/evidence: backup id $backupId.",
-    "- [x] Worker processed backup to success. Result/evidence: status=$($current.status).",
-    "- [x] Backup has checksum and size. Result/evidence: sha256=$($current.checksum_sha256), size=$($current.size_bytes)."
+    "- [x] La solicitud manual creo un flujo de respaldo protegido. Resultado/evidencia: respaldo id $backupId.",
+    "- [x] La automatizacion protegio el respaldo. Resultado/evidencia: estado visible=Protegido, estado api=$($current.status).",
+    "- [x] El respaldo tiene checksum y tamano. Resultado/evidencia: sha256=$($current.checksum_sha256), size=$($current.size_bytes)."
 )
 
 Set-Content -LiteralPath $evidenceFullPath -Value $lines -Encoding ASCII

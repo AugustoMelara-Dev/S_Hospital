@@ -102,7 +102,7 @@ Falta instalar SistemaCajaHospitalaria-BackupWorker.
 Falta instalar SistemaCajaHospitalaria-DailyBackup.
 Falta observar worker.
 Falta crear backup desde la UI administrativa.
-Falta confirmar pending to success.
+Falta confirmar estado tecnico obsoleto.
 Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
 "@
 

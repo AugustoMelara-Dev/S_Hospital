@@ -3760,7 +3760,7 @@ Decision: el pendiente fisico se presenta como Tarea continua de respaldos y la 
 Criterio de verificacion: validate_known_limitations_safety, check-branding y diff check.
 
 ## 2026-06-07 - Instalador de respaldos usa etiquetas operativas
-Contexto: install_backup_tasks_windows.ps1 aun mostraba Worker, Tarea worker y Comando worker previsto durante el dry-run o revision de estado, lenguaje tecnico visible para la configuracion del servidor final.
+Contexto: install_backup_tasks_windows.ps1 aun mostraba etiquetas tecnicas de automatizacion durante el dry-run o revision de estado, lenguaje tecnico visible para la configuracion del servidor final.
 Decision: la salida normal habla de automatizacion continua, tarea continua y respaldo diario. El nombre interno SistemaCajaHospitalaria-BackupWorker se conserva porque es contrato del preflight/handoff, pero la primera lectura del operador queda institucional. validate_startup_repair_safety bloquea que vuelvan esas etiquetas visibles.
 Criterio de verificacion: validate_startup_repair_safety, validate_installation_docs_safety, check-branding y diff check.
 
@@ -3785,7 +3785,7 @@ Decision: El cierre diario confirma respaldos con Protegido, Pendiente o Error, 
 Criterio de verificacion: validate_installation_docs_safety.ps1 bloquea que DAILY_CLOSE_PROTOCOL vuelva a usar estados crudos o lenguaje de worker en el flujo operativo.
 
 ## 2026-06-07 - Prueba final de respaldos usa estados visibles
-Contexto: La plantilla y los gates de la prueba final de respaldos pedian demostrar pending to success/completed, aunque la UI operativa debe comunicar Respaldos como Pendiente, Protegido o Error.
+Contexto: La plantilla y los gates de la prueba final de respaldos pedian demostrar estados tecnicos de cola, aunque la UI operativa debe comunicar Respaldos como Pendiente, Protegido o Error.
 Decision: La evidencia final ahora pide confirmar que el respaldo manual cambia de Pendiente a Protegido en la UI administrativa, conservando tarea instalada, timestamp, tamano, referencia segura y bloqueo PRODUCTION_CANDIDATE hasta validar en servidor real.
 Criterio de verificacion: validate_final_backup_task_proof, validate_field_proof_templates, production_readiness_preflight y final_production_handoff esperan Pendiente a Protegido en vez de estados crudos.
 
@@ -3800,7 +3800,7 @@ Decision: El checklist de release usa Pendiente a Protegido y tarea continua/aut
 Criterio de verificacion: validate_installation_docs_safety bloquea regresiones de pending/success y worker continuo/local en RELEASE_CHECKLIST.
 
 ## 2026-06-07 - Handoff final espera estados visibles de respaldos
-Contexto: El validador de completitud del handoff final aun exigia la frase confirm it moves from pending to success y el reporte agrupaba evidencia bajo backup worker, aunque el cierre operativo ya usa Pendiente a Protegido.
+Contexto: El validador de completitud del handoff final aun exigia una frase tecnica de cambio de estado y el reporte agrupaba evidencia bajo automatizacion tecnica, aunque el cierre operativo ya usa Pendiente a Protegido.
 Decision: El handoff final y su guard usan Pendiente a Protegido y tarea continua de respaldos como lenguaje operativo, manteniendo los nombres de tareas y archivos tecnicos solo como referencias de evidencia.
 Criterio de verificacion: validate_final_handoff_completeness y validate_handoff_guard_coverage deben pasar con el contrato actualizado.
 
@@ -3817,9 +3817,9 @@ Criterio de verificacion: validate_final_field_blockers_safety debe pasar sin ce
 Nota de alcance: este criterio tambien cubre validate_final_backup_task_proof y la plantilla qa/FINAL_BACKUP_TASK_PROOF.example.md para mantener tarea continua de respaldos y Pendiente a Protegido.
 
 ## 2026-06-07 - Instalador de tareas de respaldo usa Pendiente a Protegido
-Contexto: El estado de tareas Windows de respaldo ya usaba tarea continua, pero sus mensajes de status todavia indicaban que el respaldo pasaba de pendiente a completado.
+Contexto: El estado de tareas Windows de respaldo ya usaba tarea continua, pero sus mensajes de status todavia indicaban una transicion visible obsoleta para respaldos.
 Decision: La salida del instalador y del status final pide verificar que el respaldo de la UI pasa de Pendiente a Protegido, conservando los nombres reales de las tareas Windows solo como identificadores.
-Criterio de verificacion: validate_startup_repair_safety bloquea pendiente a completado y pending to success en install_backup_tasks_windows.ps1.
+Criterio de verificacion: validate_startup_repair_safety bloquea transiciones visibles obsoletas en install_backup_tasks_windows.ps1.
 
 ## 2026-06-07 - Indice operador conserva referencia de mantenimiento autorizado
 Contexto: El indice de operador ocultaba los comandos hospital:maintenance on/off, dejando sin referencia rapida a soporte local aunque el modo mantenimiento ya esta implementado y validado.
@@ -3827,3 +3827,8 @@ Decision: El indice mantiene los comandos solo bajo Mantenimiento Autorizado, se
 Criterio de verificacion: validate_maintenance_mode_safety debe confirmar hospital:maintenance on, hospital:maintenance off y el mensaje Sistema en mantenimiento en el indice.
 
 Nota de guardrail: validate_operator_manuals_safety conserva el bloqueo general de php artisan en manuales normales, excepto las dos referencias exactas hospital:maintenance on/off bajo Mantenimiento Autorizado.
+
+## 2026-06-07 - Smoke de respaldos usa lenguaje visible de la UI
+Contexto: validate_backup_worker_smoke y la auditoria operativa todavia describian el resultado final con estados tecnicos obsoletos o backup worker smoke, aunque el cierre visible de respaldos debe hablar en terminos Pendiente y Protegido.
+Decision: La evidencia generada por el smoke de respaldos ahora reporta estado visible Protegido, conserva el status tecnico solo como dato de API y la auditoria pide backup automation smoke con transicion Pendiente a Protegido.
+Criterio de verificacion: validate_operations_objective_audit y validate_final_field_blockers_safety deben pasar, y el paquete offline no debe exponer transiciones tecnicas obsoletas en scripts operativos.

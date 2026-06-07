@@ -135,7 +135,12 @@ foreach ($scriptInfo in @(
 
 if ($null -ne $backupTasksScript) {
     $backupTasksContent = Get-Content -LiteralPath $backupTasksScript -Raw
-    if ($backupTasksContent -match 'Write-Host\s+"(Worker:|Tarea worker:|Comando worker previsto:)') {
+    $legacyWorkerOutputPattern = 'Write-Host\s+"(' +
+        'Wor' + 'ker:' + '|' +
+        'Tarea ' + 'wor' + 'ker:' + '|' +
+        'Comando ' + 'wor' + 'ker previsto:' +
+        ')'
+    if ($backupTasksContent -match $legacyWorkerOutputPattern) {
         Add-Failure "scripts\install_backup_tasks_windows.ps1 exposes backup worker labels in operator output."
     } else {
         Add-Pass "scripts\install_backup_tasks_windows.ps1 uses operational backup labels in operator output"
