@@ -3877,3 +3877,8 @@ Criterio de verificacion: PaymentModal.test valida el nuevo label y bloquea prev
 Contexto: El campo accesible de escaneo en Nueva factura todavia usaba copy heredado de hardware y los mensajes de error hablaban de codigo. Ese texto aparece en el flujo principal de caja y puede sonar tecnico para personal no especializado.
 Decision: La busqueda y el campo de escaneo usan identificador de servicio o identificador de escaneo en labels, placeholders, ayudas y errores; los nombres internos y la autoridad backend se conservan sin cambios.
 Criterio de verificacion: ServiceSearch.test y NewInvoiceView.test validan las nuevas etiquetas y el mensaje de identificador, y bloquean el copy heredado de hardware/codigo manual en la superficie visible.
+
+## 2026-06-07 - Nueva factura no expone identificadores crudos en tarjetas
+Contexto: Las tarjetas compactas de servicios en Nueva factura podian mostrar `scan_code`, `barcode` o `qr_code` cuando el escaneo estaba habilitado. Aunque esos campos son utiles para busqueda y catalogo, no aportan al cajero durante el cobro y contradicen la meta de no mostrar codigos internos o datos tecnicos en superficies normales.
+Decision: El POS conserva la busqueda por identificador y la autoridad backend, pero las tarjetas de servicios solo muestran nombre, categoria, precio y reglas operativas visibles; los identificadores crudos quedan fuera de la superficie de caja.
+Criterio de verificacion: ServiceSearch.test valida que un servicio con `scan_code`, `barcode` y `qr_code` se puede listar sin filtrar esos valores al texto visible del POS.

@@ -107,6 +107,36 @@ describe('ServiceSearch', () => {
     expect(document.body.textContent).not.toMatch(/scanner usb|codigo manual/i);
   });
 
+  it('does not expose raw service identifiers in billing results', () => {
+    render(
+      <ServiceSearch
+        areas={areasFixture}
+        categories={[]}
+        services={[
+          serviceFixture({
+            scan_code: 'LAB-GLU-001',
+            barcode: '7700000001001',
+            qr_code: 'QR-LAB-GLU-001',
+          }),
+        ]}
+        selectedAreaId="all"
+        selectedCategoryId="all"
+        onAreaChange={vi.fn()}
+        onCategoryChange={vi.fn()}
+        search="glu"
+        onSearchChange={vi.fn()}
+        scanCode=""
+        onScanCodeChange={vi.fn()}
+        onAddService={vi.fn()}
+        onAddByScanCode={vi.fn()}
+        scannerEnabled
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /agregar glucosa por l\. 15\.00/i })).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/LAB-GLU-001|7700000001001|QR-LAB-GLU-001/);
+  });
+
   it('shows backend fuzzy and accent-tolerant search results without stricter local filtering', () => {
     render(
       <ServiceSearch

@@ -236,11 +236,6 @@ export function ServiceSearch({
                       <span className="inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                         {service.category?.name ?? 'Sin categoria'}
                       </span>
-                      {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) && (
-                        <span className="text-[10px] text-muted-foreground">
-                          {service.scan_code ?? service.barcode ?? service.qr_code}
-                        </span>
-                      )}
                     </div>
                   </div>
                   <div className="absolute right-3 top-3">
