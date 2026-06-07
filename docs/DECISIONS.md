@@ -3613,3 +3613,7 @@ check-branding.ps1 ahora cubre esos informes contra 80mm, 58mm e impresora de ro
 ## 2026-06-07 - receipt_width heredado deja de nacer como formato de rollo
 La columna heredada fiscal_settings.receipt_width se mantiene oculta y no actualizable por API, pero una migracion aditiva la cambia en MySQL/MariaDB a VARCHAR con default half_letter y normaliza filas antiguas 80mm/58mm a half_letter.
 FiscalSetting ya no permite asignacion masiva de receipt_width; la fuente operativa sigue siendo receipt_paper_size con valores half_letter, letter y a5.
+
+## 2026-06-07 - migracion MySQL de historico de precios recuperable
+La validacion MariaDB en s_hospital_migration_validation mostro que service_price_histories necesitaba service_id nullable antes de cambiar la FK a SET NULL.
+Se agrego una migracion preparatoria aditiva y la migracion de cambio de FK ahora tolera reintentos si una corrida previa ya elimino la llave foranea antes de fallar.
