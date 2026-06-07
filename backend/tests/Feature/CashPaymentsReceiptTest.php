@@ -527,7 +527,8 @@ class CashPaymentsReceiptTest extends TestCase
                 'amount' => '10.00',
             ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors('amount');
+            ->assertJsonValidationErrors('amount')
+            ->assertJsonPath('errors.amount.0', 'El monto recibido es menor al saldo pendiente. No se puede registrar como pagado; active pagos parciales solo si administracion lo autoriza.');
 
         $this->assertDatabaseMissing('payments', [
             'invoice_id' => $invoiceId,

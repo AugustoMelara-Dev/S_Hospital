@@ -60,6 +60,7 @@ export function PaymentModal({
     ? balanceCents
     : paymentCents;
   const needsAmount = paymentCents === null || paymentCents <= 0;
+  const insufficientAmountBlocked = remainingBalanceCents !== null && !partialPaymentsEnabled;
 
   useEffect(() => {
     if (open) {
@@ -207,7 +208,7 @@ export function PaymentModal({
           <Button
             type="submit"
             className="flex-1"
-            disabled={submitting}
+            disabled={submitting || needsAmount || insufficientAmountBlocked}
             aria-label={previewBeforePrint ? t('invoicePayment.ariaConfirmPreview') : t('invoicePayment.ariaConfirmPrint')}
           >
             {submitting

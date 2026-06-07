@@ -26,7 +26,7 @@ la base real de produccion.
 - [ ] Revisa total antes de emitir.
 - [ ] Cobra con efectivo.
 - [ ] Identifica cambio/vuelto.
-- [ ] Reconoce el bloqueo si el monto recibido es menor al total.
+- [ ] Reconoce el bloqueo si el monto recibido es menor al saldo pendiente.
 - [ ] Imprime recibo institucional.
 - [ ] Reimprime desde historial si tiene permiso.
 - [ ] Cierra caja y revisa diferencia.

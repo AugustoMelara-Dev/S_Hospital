@@ -94,7 +94,7 @@ export const STRINGS = {
     balanceDueLabel: 'Saldo pendiente:',
     changeLabel: 'Cambio:',
     appliedLabel: 'Pago aplicado:',
-    amountLessThanTotal: 'El monto recibido es menor al total.',
+    amountLessThanTotal: 'El monto recibido es menor al saldo pendiente. No se puede registrar como pagado; active pagos parciales solo si administracion lo autoriza.',
     partialNotice: 'Este pago quedara como abono parcial y mantendra saldo pendiente.',
     needsAmountWarning: 'Ingrese el monto recibido para registrar el cobro.',
     invalidAmount: 'Ingrese un monto valido',

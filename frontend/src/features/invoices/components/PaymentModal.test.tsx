@@ -81,4 +81,31 @@ describe('PaymentModal', () => {
 
     expect(screen.getByLabelText(/ver preview antes de imprimir/i)).toBeInTheDocument();
   });
+
+  it('disables confirmation when received amount is below balance and partial payments are off', () => {
+    const confirmSpy = vi.fn();
+
+    render(
+      <PaymentModal
+        open
+        onOpenChange={vi.fn()}
+        invoiceNumber="000-001-01-00000010"
+        patientName="Maria Lopez"
+        total="17.25"
+        balanceDue="17.25"
+        paymentMethod="cash"
+        paymentAmount="10.00"
+        onPaymentMethodChange={vi.fn()}
+        onPaymentAmountChange={vi.fn()}
+        onConfirm={confirmSpy}
+      />,
+    );
+
+    expect(screen.getByText(/menor al saldo pendiente/i)).toBeInTheDocument();
+    expect(screen.getByText('L. 7.25')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /confirmar cobro/i })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
 });

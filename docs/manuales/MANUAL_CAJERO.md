@@ -42,7 +42,7 @@ Si se equivoca antes de emitir, quite el servicio del carrito o limpie la factur
 2. Escriba el monto recibido.
 3. Confirme el cobro.
 
-Si el monto recibido es menor al total, el sistema no lo marcara como pagado completo. Si la administracion permite abonos parciales, el sistema mostrara el saldo pendiente.
+Si el monto recibido es menor al saldo pendiente, el sistema no lo marcara como pagado completo. Si la administracion permite abonos parciales, el sistema mostrara el saldo pendiente.
 
 ## Imprimir Recibo
 

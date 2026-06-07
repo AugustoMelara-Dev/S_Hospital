@@ -3645,3 +3645,9 @@ Validacion: npm.cmd test -- ReceiptPreview.test.tsx, check-branding.ps1 y valida
 ReceiptPreview.test ahora valida que styles.css mantenga el recibo institucional con fondo blanco y texto negro tanto en vista normal como bajo body[data-printing-receipt=true].
 El contrato protege la impresion en carta, media carta o A5 contra regresiones de tema oscuro sin declarar prueba fisica completada.
 Validacion: npm.cmd test -- ReceiptPreview.test.tsx, check-branding.ps1 y validate_institutional_receipt_print_proof.ps1 -AllowPendingHardwareValidation pasaron sin hallazgos.
+
+## 2026-06-07 - pago insuficiente sin parciales queda bloqueado antes de confirmar
+PaymentModal ahora deshabilita Confirmar cobro cuando el monto recibido es menor al saldo pendiente y partial_payments_enabled esta apagado, mostrando el saldo restante y un mensaje operativo claro.
+RegisterPaymentAction usa el mismo mensaje para el bloqueo backend, evitando que una peticion directa deje la factura como pagada o parcialmente cobrada sin configuracion autorizada.
+Manual de cajero y checklist de capacitacion hablan de saldo pendiente para que caja entienda que el bloqueo depende del saldo real, no del total original.
+Validacion: vitest PaymentModal/NewInvoiceView/FiscalSettingsView, php artisan test --filter=CashPaymentsReceiptTest, check-branding, validate_training_safety y validate_operator_manuals_safety pasaron.

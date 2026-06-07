@@ -963,8 +963,9 @@ describe('NewInvoiceView', () => {
       />,
     );
 
-    expect(screen.getAllByText(/el monto recibido es menor al total/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/el monto recibido es menor al saldo pendiente/i).length).toBeGreaterThan(0);
     expect(screen.getByText('L. 7.25')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /confirmar cobro/i })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
     expect(confirmSpy).not.toHaveBeenCalled();
   });

@@ -104,7 +104,7 @@ class RegisterPaymentAction
 
             if ($amountCents > 0 && $amountCents < $balanceCents && ! $partialPaymentsEnabled) {
                 throw ValidationException::withMessages([
-                    'amount' => 'El monto recibido es menor al total.',
+                    'amount' => 'El monto recibido es menor al saldo pendiente. No se puede registrar como pagado; active pagos parciales solo si administracion lo autoriza.',
                 ]);
             }
 

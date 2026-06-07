@@ -462,7 +462,7 @@ export function FiscalSettingsView({ canEdit, initialTab = 'resumen', onStatus }
                     <Label htmlFor="partial-payments-enabled" className="block cursor-pointer font-medium">
                       Permitir abonos parciales
                     </Label>
-                    <span className="text-muted-foreground">Si esta apagado, un monto menor al total no se registra como pago completo.</span>
+                    <span className="text-muted-foreground">Si esta apagado, un monto menor al saldo pendiente no se registra como pago completo.</span>
                   </span>
                 </div>
               </div>
