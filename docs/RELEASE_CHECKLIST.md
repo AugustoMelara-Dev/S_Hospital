@@ -39,7 +39,7 @@ Validado durante el pase de arquitectura/mantenibilidad/UX/metadata:
 
 Estos gates no sustituyen validacion fisica de segunda PC LAN, impresora
 institucional, autoarranque final, backup final, restore final, concurrencia
-final ni backup worker en el servidor real.
+final ni tarea continua de respaldos en el servidor real.
 
 ## Gate E2E Fase 10
 
@@ -72,7 +72,7 @@ controlados de Playwright; ayuda a detectar rutas rotas, pantalla inicial,
 errores de navegador y regresiones de flujo. No reemplaza las pruebas fisicas
 de impresora, cliente LAN, MySQL/MariaDB real, restore o concurrencia.
 
-El E2E local usa ambiente seguro y API mockeada para cubrir login, caja, factura, eritropoyetina normal/gratis, pago, recibo media carta/carta/A5, historial, reimpresion, reportes y backup pending. No valida MySQL/MariaDB real ni hardware.
+El E2E local usa ambiente seguro y API mockeada para cubrir login, caja, factura, eritropoyetina normal/gratis, pago, recibo media carta/carta/A5, historial, reimpresion, reportes y respaldo Pendiente. No valida MySQL/MariaDB real ni hardware.
 
 ## Reset dev/testing con base descartable
 
@@ -155,7 +155,7 @@ El helper tambien ejecuta `scripts\validate_support_packet_safety.ps1`,
 `scripts\validate_lan_client_proof.ps1 -AllowPendingFinalField` antes del
 handoff candidato para confirmar que el pendiente LAN conserva segunda PC,
 IP/nombre LAN final, login sin 419, caja, factura, pago, recibo, historial,
-reportes, backup y `PRODUCTION_CANDIDATE` sin secretos ni rutas locales. Para
+reportes, respaldo Pendiente a Protegido y `PRODUCTION_CANDIDATE` sin secretos ni rutas locales. Para
 cierre final, ejecute `scripts\validate_lan_client_proof.ps1` sin banderas;
 debe fallar hasta que `qa\LAN_CLIENT_VALIDATION_PROOF.md` este completo desde
 una PC cliente real del hospital.
@@ -180,7 +180,7 @@ Ejecute tambien
 `scripts\validate_final_backup_task_proof.ps1 -AllowPendingFinalField` antes
 del handoff candidato para confirmar que el pendiente de respaldos conserva
 `SistemaCajaHospitalaria-BackupWorker`, `SistemaCajaHospitalaria-DailyBackup`,
-worker observado, backup manual, cambio de `pending` a `success/completed` y
+automatizacion observada, respaldo manual, cambio de Pendiente a Protegido y
 `PRODUCTION_CANDIDATE` sin secretos ni rutas locales. Para cierre final, ejecute
 `scripts\validate_final_backup_task_proof.ps1` sin banderas; debe fallar hasta
 que `qa\FINAL_BACKUP_TASK_PROOF.md` este completo con evidencia del servidor
@@ -263,9 +263,9 @@ administrador conservan checklist diario, advertencias y reglas de soporte.
 Antes de entregar instrucciones de respaldo/restauracion, ejecute
 `scripts\validate_backup_restore_docs_safety.ps1`; debe reportar
 `BACKUP_RESTORE_DOCS_SAFETY: YES` para confirmar que la guia conserva
-respaldo manual, worker, retencion, restore descartable y evidencia final.
+respaldo manual, automatizacion de respaldos, retencion, restore descartable y evidencia final.
 Despues de instalar tareas en el servidor final, crear un backup desde la UI y
-confirmar que cambia de `pending` a `success`, complete
+confirmar que cambia de Pendiente a Protegido, complete
 `qa\FINAL_BACKUP_TASK_PROOF.md` usando
 `qa\FINAL_BACKUP_TASK_PROOF.example.md`; no adjunte `.env`, dumps SQL,
 passwords, XML de tareas ni rutas absolutas.
@@ -382,9 +382,9 @@ responden, o si no existen las pruebas documentadas de cliente LAN, impresora
 fisica, autoarranque final, backup final, restore final y concurrencia final.
 
 En Windows tambien falla si no existen `SistemaCajaHospitalaria-BackupWorker` y
-`SistemaCajaHospitalaria-DailyBackup`, o si el worker continuo no esta `Running`.
+`SistemaCajaHospitalaria-DailyBackup`, o si la tarea continua de respaldos no esta en ejecucion.
 El handoff final tambien debe elevar esas tareas faltantes a `Blocking items`,
-porque un backup manual que queda en `pending` no es aceptable para caja diaria.
+porque un respaldo manual que queda en Pendiente no es aceptable para caja diaria.
 
 La evidencia fisica de LAN e impresora es obligatoria por defecto. El flag
 `-AllowMissingPhysicalProof` solo permite una corrida parcial de entorno y deja
@@ -478,16 +478,16 @@ LAN fisica:
 - Confirmar que no se ejecutaron seeders de validacion local en el servidor real.
 - Confirmar que `.env` production queda fuera de Git y no reemplaza secretos durante actualizaciones.
 - Confirmar dominios/IP LAN explicitos para `APP_URL`, CORS y `SANCTUM_STATEFUL_DOMAINS`.
-- Confirmar worker local de backups:
+- Confirmar tarea continua local de respaldos:
 
 ```powershell
 php artisan queue:work --queue=backups --tries=1 --timeout=600
 ```
 
-En Windows, asegurar que la tarea/servicio del worker herede la ruta de `mysqldump.exe` o `mariadb-dump.exe` en PATH. En Fase 11 el worker `--once` proceso jobs; sin dump en PATH fallo de forma controlada, y con PATH de XAMPP el backup usado para restore fue `success`.
+En Windows, asegurar que la tarea/servicio de respaldos herede la ruta de `mysqldump.exe` o `mariadb-dump.exe` en PATH. En Fase 11 la ejecucion de validacion proceso jobs; sin dump en PATH fallo de forma controlada, y con PATH de XAMPP el respaldo usado para restore quedo Protegido.
 
-El worker debe quedar como servicio o tarea continua, no como comando manual
-temporal. Validar que un backup manual cambie de `pending` a `success`.
+La automatizacion debe quedar como servicio o tarea continua, no como comando manual
+temporal. Validar que un respaldo manual cambie de Pendiente a Protegido.
 
 Helper para crear tareas Windows en el servidor final:
 
@@ -500,7 +500,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_t
 ```
 
 Usar `-WhatIfOnly` primero para revisar rutas. Despues de registrar las tareas,
-crear un backup desde la UI, confirmar que pasa de `pending` a `success` y
+crear un respaldo desde la UI, confirmar que pasa de Pendiente a Protegido y
 completar `qa\FINAL_BACKUP_TASK_PROOF.md`.
 Si las tareas ya existen, el script falla salvo que se use `-UpdateExisting`.
 Para removerlas: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Uninstall`.
@@ -554,7 +554,7 @@ esa carpeta o sin extension Markdown fallan antes de consultar la red o escribir
 evidencia.
 
 Luego completar manualmente en ese mismo archivo login, caja, factura, pago,
-recibo, historial, reportes y backup `pending` -> `success`.
+recibo, historial, reportes y respaldo Pendiente a Protegido.
 Para la evidencia fisica de impresion, use
 `scripts\validate_institutional_receipt_print_proof.ps1 -AllowPendingHardwareValidation`
 durante el handoff candidato y

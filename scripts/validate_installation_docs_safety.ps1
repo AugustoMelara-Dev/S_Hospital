@@ -184,6 +184,12 @@ foreach ($docInfo in @(
     }
 }
 
+if ($releaseChecklist -ne "") {
+    Test-NotContains $releaseChecklist '(?i)backup pending|backup `pending`|cambio de `pending`|cambia de `pending`|pasa de `pending`|`pending`\s*->\s*`success`|worker continuo|worker local de backups|Confirmar worker local de backups' "Release checklist avoids raw backup status/worker wording"
+    Test-Contains $releaseChecklist 'Pendiente a Protegido' "Release checklist uses visible backup state transition"
+    Test-Contains $releaseChecklist 'tarea continua de respaldos|automatizacion de respaldos' "Release checklist uses operational backup task wording"
+}
+
 if ($userManual -ne "") {
     Test-Contains $userManual '(?i)Ayuda\s*>\s*Preparar resumen|Preparar resumen' "General user manual routes incidents to safe support summary"
     Test-Contains $userManual '(?i)avise a soporte local|soporte local' "General user manual routes unavailable system to local support"

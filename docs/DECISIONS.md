@@ -3793,3 +3793,8 @@ Criterio de verificacion: validate_final_backup_task_proof, validate_field_proof
 Contexto: La plantilla y el generador de evidencia LAN pedian confirmar backup de pending a success, aunque la prueba la ejecuta personal/soporte desde una segunda PC y debe observar estados visibles.
 Decision: La validacion LAN ahora pide que el respaldo solicitado desde la UI cambie de Pendiente a Protegido, y el comando recomendado usa PowerShell con -NoProfile.
 Criterio de verificacion: validate_lan_client_proof, validate_field_proof_templates y production_readiness_preflight exigen Pendiente a Protegido para la evidencia LAN.
+
+## 2026-06-07 - Checklist de release usa estados visibles de respaldos
+Contexto: RELEASE_CHECKLIST aun indicaba validar respaldos con pending/success y worker continuo/local, lenguaje tecnico para una guia de entrega que decide si el sistema puede operar en el hospital.
+Decision: El checklist de release usa Pendiente a Protegido y tarea continua/automatizacion de respaldos en instrucciones actuales de LAN, handoff, preflight y servidor final.
+Criterio de verificacion: validate_installation_docs_safety bloquea regresiones de pending/success y worker continuo/local en RELEASE_CHECKLIST.
