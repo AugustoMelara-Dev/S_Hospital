@@ -3621,3 +3621,7 @@ Se agrego una migracion preparatoria aditiva y la migracion de cambio de FK ahor
 ## 2026-06-07 - evidencia MariaDB limpia de migraciones actuales
 Se valido una base MariaDB descartable s_hospital_migration_clean_20260607 desde cero: 46 migraciones aplicaron correctamente, receipt_width quedo como VARCHAR default half_letter y service_price_histories.service_id quedo nullable con FK SET NULL.
 La evidencia se documento en qa/MARIADB_MIGRATION_VALIDATION_2026_06_07.md y no sustituye pruebas finales de servidor, restore, LAN, concurrencia ni impresora fisica.
+
+## 2026-06-07 - handoff traza evidencia MariaDB limpia
+final_production_handoff.ps1, FINAL_PRODUCTION_HANDOFF_RESULT y los validadores de handoff/auditoria ahora mencionan qa/MARIADB_MIGRATION_VALIDATION_2026_06_07.md como evidencia local de migraciones limpias MariaDB.
+La evidencia sigue clasificada como validacion local y no reemplaza restore, concurrencia, LAN, impresora ni servidor final.

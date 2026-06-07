@@ -12,7 +12,7 @@ Purpose:
 
 | Requirement from objective | Current evidence | Status | Remaining proof before completion |
 |---|---|---|---|
-| Repository, backend, installer, database, migrations, logs, backups, manuals and tests audited before broad refactor | `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`, `qa/FINAL_HANDOFF_COMPLETENESS_2026_06_03.md` | `VALIDATED_LOCAL` | Keep evidence current after each new phase |
+| Repository, backend, installer, database, migrations, logs, backups, manuals and tests audited before broad refactor | `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`, `qa/FINAL_HANDOFF_COMPLETENESS_2026_06_03.md`, `qa/MARIADB_MIGRATION_VALIDATION_2026_06_07.md` | `VALIDATED_LOCAL` | Keep evidence current after each new phase |
 | Browser evidence for critical flows with console issues captured | `qa/browser-smoke-2026-06-05/rc-e2e-mocked-report.json`, `qa/BROWSER_SMOKE_EVIDENCE_2026_06_05.md` | `VALIDATED_LOCAL` | Repeat smoke on final server/LAN after production install |
 | In-app institutional Help for cashier workflows, failures and support summary | `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `frontend/src/features/help/HelpView.tsx` | `VALIDATED_LOCAL` | Verify with real cashier/supervisor during training |
 | Human-safe support evidence that redacts secrets and local paths | `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_ENV_FILE_REDACTION_2026_06_03.md`, `qa/CLIENT_SUPPORT_SANITIZATION_2026_06_03.md` | `VALIDATED_LOCAL` | Confirm staff know not to attach `.env`, SQL dumps or passwords |
