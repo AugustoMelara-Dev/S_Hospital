@@ -3585,3 +3585,7 @@ validate_operator_manuals_safety extrae la seccion y bloquea la reaparicion de d
 ## 2026-06-07 - Runbook humaniza incidente de PC cliente sin acceso
 La seccion PC cliente no carga la app ahora evita ping, /up, tracert, IP_CHANGE_NOTICE, refresh_lan_ip, puerto 8000 y Firewall de Windows. El flujo guia a confirmar red local, direccion LAN oficial, prueba desde servidor, posible cambio de direccion y escalamiento a soporte local sin comandos crudos para caja.
 validate_operator_manuals_safety extrae la seccion y bloquea la reaparicion de pruebas de red crudas en ese incidente.
+
+## 2026-06-07 - Runbook elimina detalles internos de login, caja y avisos
+El runbook de incidentes comunes ahora reemplaza codigos de bloqueo, flags internos de contrasena, permisos tecnicos de caja, campos de base de datos, hooks de frontend y proxy inverso por instrucciones operativas para cajero, supervisor y soporte local.
+validate_operator_manuals_safety extrae las secciones de login, caja y doble aviso para bloquear regresiones de lenguaje tecnico visible al operador.

@@ -106,6 +106,16 @@ if ($commonIncidents -match "(?is)##\s+1\.\s+Pantalla blanca(?<section>.*?)(?:\r
     $blankScreenIncident = $Matches.section
 }
 
+$loginIncident = ""
+if ($commonIncidents -match "(?is)##\s+2\.\s+Login no acepta contrasena(?<section>.*?)(?:\r?\n---|\z)") {
+    $loginIncident = $Matches.section
+}
+
+$cashboxIncident = ""
+if ($commonIncidents -match "(?is)##\s+4\.\s+Caja no abre(?<section>.*?)(?:\r?\n---|\z)") {
+    $cashboxIncident = $Matches.section
+}
+
 $offlineUrlIncident = ""
 if ($commonIncidents -match "(?is)##\s+6\.\s+Internet requerido o direccion incorrecta(?<section>.*?)(?:\r?\n---|\z)") {
     $offlineUrlIncident = $Matches.section
@@ -126,6 +136,11 @@ if ($commonIncidents -match "(?is)##\s+9\.\s+Respaldo muestra Error por herramie
     $backupToolIncident = $Matches.section
 }
 
+$duplicateNoticeIncident = ""
+if ($commonIncidents -match "(?is)##\s+8\.\s+Cajero ve doble aviso de su propia accion(?<section>.*?)(?:\r?\n---|\z)") {
+    $duplicateNoticeIncident = $Matches.section
+}
+
 $sessionIncident = ""
 if ($commonIncidents -match "(?is)##\s+10\.\s+Sesion cerrada inesperadamente(?<section>.*?)(?:\r?\n---|\z)") {
     $sessionIncident = $Matches.section
@@ -139,7 +154,13 @@ if ($commonIncidents -ne "") {
     Test-NotContains $backupIncident "(?i)\b(pending|success|failed|worker_recently_active|HOSPITAL_DUMP_BINARY|/usr/bin/mariadb-dump)\b" "Common incidents backup section avoids raw backup internals"
     Test-Contains $blankScreenIncident "(?i)direccion LAN oficial" "Common incidents blank screen section uses LAN wording"
     Test-Contains $blankScreenIncident "(?i)Ayuda\s*>\s*Preparar resumen para soporte|resumen seguro" "Common incidents blank screen section routes to safe support summary"
-    Test-NotContains $blankScreenIncident "(?i)/up|/api|docker\s+ps|frontend/dist|nginx|F12|consola del navegador" "Common incidents blank screen section avoids raw runtime checks"
+    Test-NotContains $blankScreenIncident "(?i)http://IP_SERVIDOR|/up|/api|docker\s+ps|frontend/dist|nginx|F12|consola del navegador" "Common incidents blank screen section avoids raw runtime checks"
+    Test-Contains $loginIncident "(?i)cuenta aparece bloqueada|supervisor" "Common incidents login section uses supervisor-safe lockout wording"
+    Test-Contains $loginIncident "(?i)contrasena temporal" "Common incidents login section uses temporary-password wording"
+    Test-NotContains $loginIncident "(?i)\b423\b|lockout|must_change_password|base de datos" "Common incidents login section avoids auth internals"
+    Test-Contains $cashboxIncident "(?i)supervisor autorizado" "Common incidents cashbox section routes to authorized supervisor"
+    Test-Contains $cashboxIncident "(?i)backup previo|auditoria" "Common incidents cashbox section requires backup/audit wording"
+    Test-NotContains $cashboxIncident "(?i)cash\.close_any|\bBD\b|opened_at|closed_at|null|script que" "Common incidents cashbox section avoids permission/database internals"
     Test-Contains $commonIncidents "(?i)Internet requerido o direccion incorrecta" "Common incidents runbook uses operator offline/LAN incident title"
     Test-Contains $offlineUrlIncident "(?i)direccion LAN oficial" "Common incidents offline/LAN section uses LAN wording"
     Test-Contains $offlineUrlIncident "(?i)no use[\s\S]{0,80}localhost|localhost[\s\S]{0,80}computadora cliente" "Common incidents offline/LAN section warns clients about localhost"
@@ -158,6 +179,9 @@ if ($commonIncidents -ne "") {
     Test-Contains $backupToolIncident "(?i)Pendiente" "Common incidents backup-tool section names pending backup state"
     Test-Contains $backupToolIncident "(?i)Error" "Common incidents backup-tool section names error backup state"
     Test-NotContains $backupToolIncident "(?i)docker\s+exec|HOSPITAL_DUMP_BINARY|mariadb-dump|mysqldump|\.env|/usr/bin|contenedor backend|which\s+" "Common incidents backup-tool section avoids raw server internals"
+    Test-Contains $commonIncidents "(?i)Cajero ve doble aviso de su propia accion" "Common incidents runbook uses operator duplicate-notice title"
+    Test-Contains $duplicateNoticeIncident "(?i)no\s+repetir\s+la\s+factura|Historial" "Common incidents duplicate-notice section protects against duplicate financial actions"
+    Test-NotContains $duplicateNoticeIncident "(?i)toast|useBroadcastSync|actor_id|proxy inverso|hook|evento a nivel" "Common incidents duplicate-notice section avoids frontend internals"
     Test-Contains $sessionIncident "(?i)Ayuda\s*>\s*Preparar resumen para soporte|resumen seguro" "Common incidents session section routes to safe support summary"
     Test-Contains $sessionIncident "(?i)configuracion local de sesiones" "Common incidents session section uses operator-safe session wording"
     Test-NotContains $sessionIncident "(?i)SESSION_DRIVER|SESSION_ENCRYPT|SANCTUM_STATEFUL_DOMAINS|php\s+artisan|session:clear|\.env|session_driver|runtime|backend|file\s+a\s+database" "Common incidents session section avoids raw session internals"

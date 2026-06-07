@@ -11,18 +11,18 @@
 3. [No imprime la factura](#3-no-imprime-la-factura)
 4. [Caja no abre / caja duplicada](#4-caja-no-abre)
 5. [Respaldo queda en Pendiente](#5-respaldo-queda-en-pendiente)
-6. [Internet requerido (NO deberia)](#6-internet-requerido)
-7. [PC cliente no carga la app](#7-pc-cliente-no-carga)
-8. [Cajero ve doble toast de su propia accion](#8-cajero-doble-toast)
+6. [Internet requerido (NO deberia)](#6-internet-requerido-o-direccion-incorrecta)
+7. [PC cliente no carga la app](#7-pc-cliente-no-carga-la-app)
+8. [Cajero ve doble aviso de su propia accion](#8-cajero-ve-doble-aviso-de-su-propia-accion)
 9. [Respaldo muestra Error por herramienta local](#9-respaldo-muestra-error-por-herramienta-local)
-10. [Sesion cerrada inesperadamente](#10-sesion-cerrada)
+10. [Sesion cerrada inesperadamente](#10-sesion-cerrada-inesperadamente)
 
 ---
 
 ## 1. Pantalla blanca
 
 **Sintoma:** El navegador muestra pagina en blanco o un circulo
-girando indefinido al abrir `http://IP_SERVIDOR`.
+girando indefinido al abrir la direccion LAN oficial del sistema.
 
 **Causa probable:**
 - La aplicacion del servidor no termino de iniciar.
@@ -53,19 +53,19 @@ tomar captura de pantalla y enviar el resumen seguro a soporte nivel 2.
 
 **Causa probable:**
 - Contrasena mal escrita (caps lock).
-- 5 intentos fallidos en 15 min -> lockout de 423.
-- Usuario inactivo en la base de datos.
-- Cambio obligatorio de contrasena no completado.
+- Demasiados intentos fallidos recientes.
+- Usuario inactivo.
+- Cambio obligatorio de contrasena pendiente.
 
 **Accion inmediata:**
 1. Verificar caps lock. Pedir al usuario que escriba su usuario y
    contrasena en un editor de texto plano primero.
-2. Si el error es 423, esperar 15 minutos desde el ultimo intento
-   o pedir a un supervisor que reactive el usuario desde
+2. Si la cuenta aparece bloqueada, esperar el tiempo indicado por el
+   sistema o pedir a un supervisor que reactive el usuario desde
    `Usuarios` -> seleccionar -> `Activar`.
-3. Si el usuario es nuevo y nunca entro, verificar que tenga
-   `must_change_password=true` (es lo correcto) y que conozca la
-   contrasena temporal.
+3. Si el usuario es nuevo y nunca entro, confirmar con el supervisor
+   que tenga una contrasena temporal vigente y que complete el cambio
+   de contrasena al primer ingreso.
 
 **Escalamiento:** Ninguno si la contrasena es correcta. Si no se
 recupera, generar nueva contrasena temporal desde
@@ -116,13 +116,13 @@ driver del fabricante.
    caja abierta para este cajero.
 2. Si la caja existe pero la app no la muestra, refrescar el navegador
    (F5). Si persiste, cerrar sesion y volver a entrar.
-3. Si la caja quedo "fantasma" (cajero cerro sesion y se fue),
-   pedir a un supervisor con `cash.close_any` que la cierre.
+3. Si la caja quedo abierta porque el cajero cerro sesion y se fue,
+   pedir a un supervisor autorizado que la revise y cierre con motivo.
 
-**Escalamiento:** Solo si la BD tiene la sesion en estado raro
-(`opened_at` valido pero `closed_at=null` y sin pagos). En ese
-caso, soporte nivel 2 la corrige con un script que **no se
-incluye en este runbook** y que requiere backup previo.
+**Escalamiento:** Solo si el sistema muestra informacion contradictoria
+entre la pantalla de caja, historial y reportes. En ese caso, soporte
+nivel 2 debe tomar un backup previo y corregir la sesion con un
+procedimiento controlado que deje auditoria.
 
 ---
 
@@ -212,24 +212,25 @@ red del servidor.
 
 ---
 
-## 8. Cajero ve doble toast de su propia accion
+## 8. Cajero ve doble aviso de su propia accion
 
-**Sintoma:** El cajero emite una factura y ve el toast
+**Sintoma:** El cajero emite una factura y ve el aviso
 "Factura emitida 000-001-01-00000001" cuando el ya sabe que la
 emitio.
 
-**Causa probable:** Este incidente estaba reportado y se corrigio
-en v1.0.0. El hook `useBroadcastSync` ahora descarta eventos
-cuyo `actor_id` coincide con el usuario actual.
+**Causa probable:** La computadora cliente esta usando una version vieja
+de la pantalla o recibio dos avisos del mismo evento.
 
 **Accion inmediata:**
 1. Verificar que la version desplegada sea v1.0.0 o superior.
-2. Si la version es correcta y aun se ve el doble toast, pedir
-   al cajero que recargue con `Ctrl+Shift+R` (recarga sin cache).
+2. Si la version es correcta y aun se ve el doble aviso, pedir al cajero
+   que recargue la pagina sin repetir la factura ni el cobro.
+3. Revisar en `Historial` que exista una sola factura emitida para esa
+   accion.
 
-**Escalamiento:** Solo si es un cliente con version vieja que
-no se puede actualizar. En ese caso, suprimir el evento a nivel
-de proxy inverso.
+**Escalamiento:** Solo si el aviso doble se repite despues de recargar o
+si Historial muestra mas de una factura. En ese caso, soporte local debe
+recopilar hora, usuario, numero de factura y pantalla afectada.
 
 ---
 
@@ -274,7 +275,7 @@ login. La app dice "Sesion vencida".
 
 **Accion inmediata:**
 1. Intentar iniciar sesion de nuevo con la misma contrasena.
-2. Si la contrasena no funciona, ver seccion 2 (lockout).
+2. Si la contrasena no funciona, ver seccion 2.
 3. Si funciona, continuar el turno y avisar al supervisor si vuelve a
    ocurrir.
 4. Si la sesion se cierra cada pocos minutos, usar
