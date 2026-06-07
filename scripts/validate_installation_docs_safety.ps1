@@ -41,6 +41,14 @@ function Test-Contains([string] $content, [string] $pattern, [string] $label) {
     }
 }
 
+function Test-NotContains([string] $content, [string] $pattern, [string] $label) {
+    if ($content -match $pattern) {
+        Add-Failure $label
+    } else {
+        Add-Pass $label
+    }
+}
+
 function Test-NoProfilePowerShellCommands([string] $content, [string] $label) {
     if ($content -match 'powershell(?:\.exe)?\s+-ExecutionPolicy') {
         Add-Failure "$label uses PowerShell without -NoProfile."
@@ -146,6 +154,14 @@ foreach ($docInfo in @(
     if ($docInfo.Content -ne "") {
         Test-NoProfilePowerShellCommands $docInfo.Content $docInfo.Label
     }
+}
+
+if ($userManual -ne "") {
+    Test-Contains $userManual '(?i)Ayuda\s*>\s*Preparar resumen|Preparar resumen' "General user manual routes incidents to safe support summary"
+    Test-Contains $userManual '(?i)avise a soporte local|soporte local' "General user manual routes unavailable system to local support"
+    Test-Contains $userManual '(?i)no repita facturas ni cobros|no repita.*cobro' "General user manual warns against duplicate financial actions during incidents"
+    Test-Contains $userManual '(?i)archivos de configuracion|respaldos de base de datos|contrasenas' "General user manual uses non-technical secret handling wording"
+    Test-NotContains $userManual '(?i)powershell|repair_hospital_system|collect_support_packet|127\.0\.0\.1|localhost:8000|migrate:fresh|seeders de prueba|\.env|SQL|BaseUrl' "General user manual avoids support commands and raw technical terms"
 }
 
 $combined = "$installGuide`n$supportGuide`n$backupGuide`n$offlineLanInstallGuide`n$backupRestoreReference`n$dailyCloseProtocol`n$disasterRecoveryGuide`n$trainingAdminGuide`n$userManual`n$operatorIndex`n$releaseChecklist"

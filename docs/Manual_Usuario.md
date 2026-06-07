@@ -91,21 +91,13 @@ Use **Ayuda** dentro del sistema.
 1. Abra **Ayuda**.
 2. Presione **Preparar resumen**.
 3. Entregue ese resumen al supervisor o responsable de soporte.
-4. Si el sistema no abre, ejecute la reparacion segura desde la computadora
-   servidor:
+4. Si el sistema no abre, avise a soporte local desde la computadora servidor
+   y no repita facturas ni cobros mientras se revisa el incidente.
+5. Si soporte necesita mas evidencia, use solo la opcion indicada por soporte
+   local o **Ayuda > Preparar resumen** cuando la pantalla lo permita.
 
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -BaseUrl http://127.0.0.1:8000
-```
-
-Si soporte necesita mas evidencia, genere un paquete seguro:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\collect_support_packet.ps1 -RunRepairDiagnostic -SkipDockerStart
-```
-
-No envie `.env`, respaldos SQL, passwords, tokens ni logs completos por canales
-no autorizados.
+No envie archivos de configuracion, respaldos de base de datos, contrasenas,
+tokens ni mensajes tecnicos completos por canales no autorizados.
 
 ## 8. Capacitacion Segura
 
@@ -121,8 +113,8 @@ Para preparar una sesion de entrenamiento, use
 
 ## 9. Acciones Prohibidas En Produccion
 
-- Ejecutar `migrate:fresh`.
-- Ejecutar seeders de prueba.
+- Ejecutar comandos de limpieza o reinicio de base de datos.
+- Cargar datos de prueba en la base real.
 - Borrar facturas, pagos o carpetas de datos.
 - Borrar volumenes de base de datos.
 - Usar cuentas compartidas.

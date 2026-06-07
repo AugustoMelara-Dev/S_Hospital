@@ -3589,3 +3589,7 @@ validate_operator_manuals_safety extrae la seccion y bloquea la reaparicion de p
 ## 2026-06-07 - Runbook elimina detalles internos de login, caja y avisos
 El runbook de incidentes comunes ahora reemplaza codigos de bloqueo, flags internos de contrasena, permisos tecnicos de caja, campos de base de datos, hooks de frontend y proxy inverso por instrucciones operativas para cajero, supervisor y soporte local.
 validate_operator_manuals_safety extrae las secciones de login, caja y doble aviso para bloquear regresiones de lenguaje tecnico visible al operador.
+
+## 2026-06-07 - Manual de usuario deriva soporte sin comandos
+Manual_Usuario.md ahora evita comandos de PowerShell, BaseUrl local, 127.0.0.1, migrate:fresh, seeders, .env y SQL en el flujo general de usuario. La ruta de incidente indica usar Ayuda > Preparar resumen o soporte local, y advierte no repetir facturas ni cobros.
+validate_installation_docs_safety bloquea que el manual general vuelva a exponer comandos de soporte o terminos tecnicos crudos para usuarios finales.
