@@ -90,6 +90,8 @@ Assert-Contains "legacy installer points operators to supported installer" $lega
 Assert-Contains "legacy installer explains backwards compatibility only" $legacyInstaller "backwards compatibility"
 Assert-Contains "legacy installer warns at runtime" $legacyInstaller "DEPRECATION NOTICE"
 Assert-Contains "legacy installer says no new code paths should reference it" $legacyInstaller "no new[\s\S]*code paths reference it"
+Assert-Contains "legacy installer uses visible backup task wording" $legacyInstaller "tarea continua de respaldos"
+Assert-NotContains "legacy installer avoids raw backup worker wording" $legacyInstaller "(?i)worker continuo|Worker de respaldos|Cola de Trabajos|cola de trabajos"
 
 Assert-Contains "operator install guide uses setup.bat for normal install" $installGuide 'Ejecute `setup\.bat`'
 Assert-Contains "operator install guide identifies supported LAN installer" $installGuide "deploy_hospital_lan\.ps1"
@@ -111,6 +113,7 @@ foreach ($root in $scanRoots) {
     $files = Get-ChildItem -LiteralPath $rootPath -Recurse -File | Where-Object {
         $_.FullName -notmatch '\\docs\\KNOWN_LIMITATIONS\.md$' -and
         $_.FullName -notmatch '\\docs\\OPERATIVE_NOTES_2026_06_02\.md$' -and
+        $_.FullName -notmatch '\\docs\\DECISIONS\.md$' -and
         $_.FullName -notmatch '\\docs\\superpowers\\' -and
         $_.FullName -notmatch '\\scripts\\install_hospital_os\.ps1$' -and
         $_.FullName -notmatch '\\scripts\\validate_installer_legacy_safety\.ps1$'

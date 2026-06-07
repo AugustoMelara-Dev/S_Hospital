@@ -3842,3 +3842,8 @@ Criterio de verificacion: validate_field_proof_templates, validate_final_backup_
 Contexto: README, RELEASE_READINESS, PRODUCTION_READINESS_GAP_REPORT, TROUBLESHOOTING y DISASTER_RECOVERY conservaban frases como backup pending, pending -> success o worker de backups en superficies de entrega, aunque la UI y la evidencia final deben guiar al personal con Pendiente, Protegido y Error.
 Decision: Los documentos de entrega y soporte inicial hablan de respaldo, tarea continua de respaldos y transicion Pendiente a Protegido; los estados internos quedan reservados para contratos API o comandos tecnicos cuando sean necesarios.
 Criterio de verificacion: validate_installation_docs_safety bloquea regresiones en README, release readiness, gap report y troubleshooting; los guards de instalacion/respaldo deben seguir pasando.
+
+## 2026-06-07 - Instalador heredado conserva lenguaje visible de respaldos
+Contexto: El paquete offline incluye install_hospital_os.ps1 solo por compatibilidad deprecada. Aunque setup.bat no lo invoca, sus textos visibles aun mencionaban worker continuo y cola de trabajos en la seccion de respaldos.
+Decision: El instalador heredado mantiene su aviso de deprecacion y nombres internos cuando son identificadores, pero la experiencia visible habla de tarea continua de respaldos, respaldo diario y solicitudes desde Respaldos.
+Criterio de verificacion: validate_installer_legacy_safety bloquea worker continuo, Worker de respaldos y Cola de Trabajos en el instalador heredado, y el paquete offline no debe exponer esas frases visibles en scripts de entrega.

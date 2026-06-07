@@ -407,10 +407,10 @@ if ($useGui) {
 
                 <!-- STEP 4: Scheduler Backups -->
                 <StackPanel Name="PanelStep4" Visibility="Collapsed">
-                    <TextBlock Text="Paso 4: Respaldos Locales y Cola de Trabajos" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
-                    <TextBlock Text="El sistema necesita un worker continuo para procesar respaldos solicitados desde la pantalla Respaldos, y una tarea diaria para crear copia local automatica." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
+                    <TextBlock Text="Paso 4: Respaldos Locales" FontSize="14" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,10"/>
+                    <TextBlock Text="El sistema necesita una tarea continua de respaldos para procesar solicitudes desde la pantalla Respaldos, y una tarea diaria para crear copia local automatica." TextWrapping="Wrap" Margin="0,0,0,15" Foreground="#475569"/>
                     
-                    <CheckBox Name="ChkEnableBackup" Content="Registrar worker continuo y respaldo diario automatico" IsChecked="True" FontSize="13" FontWeight="SemiBold" Foreground="#0F172A" Margin="0,0,0,15"/>
+                    <CheckBox Name="ChkEnableBackup" Content="Registrar tarea continua de respaldos y respaldo diario automatico" IsChecked="True" FontSize="13" FontWeight="SemiBold" Foreground="#0F172A" Margin="0,0,0,15"/>
                     
                     <Label Content="Hora de Ejecucion Diaria (Ejemplo: 23:00):" Foreground="#334155" Margin="0,0,0,5"/>
                     <TextBox Name="TxtBackupTime" Text="23:00" Padding="8" Width="120" HorizontalAlignment="Left" FontSize="14" BorderBrush="#CBD5E1" BorderThickness="1" Margin="0,0,0,10"/>
@@ -793,14 +793,14 @@ function Run-SetupCli {
     }
 
     # Backup Task Scheduler
-    $enableBackup = Read-Host "Habilitar worker continuo y respaldo diario programado? (S/N)"
+    $enableBackup = Read-Host "Habilitar tarea continua de respaldos y respaldo diario programado? (S/N)"
     if ($enableBackup -eq "S" -or $enableBackup -eq "s") {
         $bTime = Read-Host "Hora del respaldo (por defecto 23:00)"
         if ([string]::IsNullOrWhiteSpace($bTime)) { $bTime = "23:00" }
 
         try {
             Install-BackupAutomation -PhpPath $php -DailyBackupTime $bTime | Out-Host
-            Write-Host "Worker de respaldos y respaldo diario registrados exitosamente." -ForegroundColor Green
+            Write-Host "Tarea continua de respaldos y respaldo diario registrados exitosamente." -ForegroundColor Green
         } catch {
             Write-Host "No se pudieron registrar las tareas de respaldo: $_" -ForegroundColor Red
             Write-Host "Ejecute PowerShell como Administrador o use scripts\install_backup_tasks_windows.ps1 cuando el tecnico lo autorice." -ForegroundColor Yellow
