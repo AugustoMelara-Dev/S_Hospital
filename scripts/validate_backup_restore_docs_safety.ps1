@@ -42,6 +42,7 @@ function Test-Contains([string] $content, [string] $pattern, [string] $label) {
 }
 
 $guide = Require-File "docs\manuales\GUIA_RESPALDOS_Y_RESTAURACION.md"
+$backupRestoreReference = Require-File "docs\BACKUP_RESTORE.md"
 $installGuide = Require-File "docs\manuales\GUIA_INSTALACION_OPERATIVA.md"
 $supportGuide = Require-File "docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md"
 
@@ -68,7 +69,19 @@ if ($guide -ne "") {
     Test-Contains $guide "(?i)no escriba usuario, contrasena ni token dentro de .*HOSPITAL_SMOKE_BASE_URL" "Backup worker smoke avoids credentials in URL"
 }
 
-$combined = "$guide`n$installGuide`n$supportGuide"
+if ($backupRestoreReference -ne "") {
+    Test-Contains $backupRestoreReference 'C:\\Hospital\\Sistema\\backend' "Backup/restore reference uses neutral installation path"
+    Test-Contains $backupRestoreReference '(?s)Crear backup manual.*Pendiente.*Protegido' "Backup/restore reference uses visible states in manual backup flow"
+    Test-Contains $backupRestoreReference 'tarea continua de respaldos activa' "Backup/restore reference uses operational backup task wording"
+
+    if ($backupRestoreReference -match 'C:\\HospitalBilling\\backend|worker de cola local|worker local lo cambie|cola `backups`') {
+        Add-Failure "Backup/restore reference keeps legacy billing path or raw worker wording in operator-facing backup flow."
+    } else {
+        Add-Pass "Backup/restore reference avoids legacy billing path and raw worker wording in backup flow"
+    }
+}
+
+$combined = "$guide`n$backupRestoreReference`n$installGuide`n$supportGuide"
 foreach ($pattern in @(
     "No borre",
     "No restaure",

@@ -11,15 +11,15 @@ Desde el panel:
 1. Entrar como usuario admin.
 2. Abrir Backups locales.
 3. Presionar Crear backup.
-4. Confirmar que el registro quede en `pending`.
-5. Confirmar que el worker local lo cambie a `success`.
+4. Confirmar que el registro quede en **Pendiente**.
+5. Confirmar que la tarea continua lo cambie a **Protegido**.
 6. Descargar el archivo y copiarlo a una carpeta local protegida o USB.
 
-El servidor debe tener un worker de cola local activo. En instalacion
+El servidor debe tener la tarea continua de respaldos activa. En instalacion
 bare-metal/XAMPP:
 
 ```powershell
-cd C:\HospitalBilling\backend
+cd C:\Hospital\Sistema\backend
 php artisan queue:work --queue=backups --tries=1 --timeout=600
 ```
 
@@ -33,7 +33,7 @@ docker compose -f docker-compose.prod.yml --env-file .env up -d queue-worker
 Desde consola del servidor bare-metal:
 
 ```powershell
-cd C:\HospitalBilling\backend
+cd C:\Hospital\Sistema\backend
 php artisan hospital:backup --type=scheduled
 ```
 
@@ -43,7 +43,7 @@ Desde paquete offline con Docker:
 docker compose -f docker-compose.prod.yml --env-file .env exec -T backend php artisan hospital:backup --type=scheduled
 ```
 
-El comando crea y ejecuta el backup en el mismo proceso; se recomienda para tareas programadas fuera del horario de caja. La UI registra el backup y lo deja a la cola `backups` para evitar que el navegador espere el dump completo.
+El comando crea y ejecuta el backup en el mismo proceso; se recomienda para tareas programadas fuera del horario de caja. La UI registra el backup y lo deja a la automatizacion local para evitar que el navegador espere el dump completo.
 
 Los archivos quedan bajo `storage/app/private/backups`. El API solo descarga archivos registrados en `backup_logs`, existentes y dentro de esa carpeta.
 
@@ -68,7 +68,7 @@ HOSPITAL_DUMP_BINARY=C:\ruta\mysql\bin\mysqldump.exe
 El backend registra una tarea Laravel diaria:
 
 ```powershell
-cd C:\HospitalBilling\backend
+cd C:\Hospital\Sistema\backend
 php artisan schedule:list
 php artisan schedule:run
 ```
@@ -89,15 +89,15 @@ Crear una tarea del Programador de tareas:
 
 - Programa: `php`
 - Argumentos: `artisan hospital:backup --type=scheduled`
-- Iniciar en: `C:\HospitalBilling\backend`
+- Iniciar en: `C:\Hospital\Sistema\backend`
 - Frecuencia: diario, fuera del horario de caja.
 - Usuario: cuenta local con permisos sobre la carpeta del sistema y destino USB si aplica.
 
-Crear otra tarea o servicio local para el worker:
+Crear otra tarea continua o servicio local para procesar respaldos:
 
 - Programa: `php`
 - Argumentos: `artisan queue:work --queue=backups --tries=1 --timeout=600`
-- Iniciar en: `C:\HospitalBilling\backend`
+- Iniciar en: `C:\Hospital\Sistema\backend`
 - Frecuencia: al iniciar Windows o como servicio supervisado.
 
 Helper para registrar las tareas de Windows:
@@ -109,7 +109,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_t
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
 ```
 
-El helper crea una tarea de worker al iniciar Windows y una tarea diaria de
+El helper crea una tarea continua al iniciar Windows y una tarea diaria de
 backup programado. Primero ejecutar `-WhatIfOnly` para confirmar rutas y el
 runtime real: `PHP local` o `Docker Compose`.
 La salida de `-WhatIfOnly` oculta rutas locales como `%PROJECT_ROOT%` y
@@ -138,7 +138,7 @@ En modo PHP local, por defecto usan `C:\xampp\php\php.exe`. Si PHP esta en otra
 ruta, definir `HOSPITAL_PHP_PATH` antes de ejecutarlos o al crear la tarea
 programada. En modo Docker offline no requieren PHP host; usan
 `docker-compose.prod.yml` y `.env`.
-Antes de dejarlos activos, soporte puede validarlos sin iniciar workers ni crear
+Antes de dejarlos activos, soporte puede validarlos sin iniciar tareas ni crear
 respaldos:
 
 ```powershell
@@ -162,10 +162,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_s
 scripts\start_backup_automation.cmd
 ```
 
-Esta alternativa arranca el worker y un scheduler local al iniciar sesion del usuario Windows. No sustituye una tarea de sistema para produccion final, pero deja backup diario automatico sin permisos de administrador mientras ese usuario permanezca iniciado.
+Esta alternativa arranca la tarea continua y un programador local al iniciar sesion del usuario Windows. No sustituye una tarea de sistema para produccion final, pero deja backup diario automatico sin permisos de administrador mientras ese usuario permanezca iniciado.
 El instalador registra tanto un archivo en la carpeta Startup como una entrada `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` para tolerar politicas locales donde uno de los dos mecanismos este restringido.
 Primero use `-WhatIfOnly`: valida hora y PHP sin crear archivo Startup, sin
-cambiar registro y sin iniciar el worker. El modo `-Status` no imprime el
+cambiar registro y sin iniciar la tarea continua. El modo `-Status` no imprime el
 contenido crudo del archivo Startup; muestra solo estado y rutas protegidas para
 evitar exponer carpetas locales en capturas de soporte.
 El log operativo queda en `backend/storage/logs/backup-automation.log`.

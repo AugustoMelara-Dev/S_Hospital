@@ -3768,3 +3768,8 @@ Criterio de verificacion: validate_startup_repair_safety, validate_installation_
 Contexto: OFFLINE_LAN_INSTALL aun explicaba respaldos con worker local, cola backups y estados crudos pending/success/failed, aunque la entrega debe hablar en terminos operativos para instalacion y administracion.
 Decision: la guia LAN describe automatizacion local y tarea continua de respaldos, conserva nombres tecnicos solo como identificadores de servicio/script y expresa el respaldo manual como Pendiente, Protegido o Error. validate_installation_docs_safety bloquea que la guia vuelva a esas frases crudas.
 Criterio de verificacion: validate_installation_docs_safety, check-branding y diff check.
+
+## 2026-06-07 - Referencia de respaldos sin ruta heredada
+Contexto: BACKUP_RESTORE todavia usaba una ruta de instalacion con marca heredada y describia el flujo manual con pending, success y worker local, lenguaje heredado o tecnico para una guia de respaldo/restauracion.
+Decision: la referencia usa una ruta neutral C:\Hospital\Sistema\backend, describe el flujo manual con Pendiente y Protegido, y presenta la tarea continua de respaldos como concepto operativo. validate_backup_restore_docs_safety bloquea la ruta heredada y el lenguaje crudo en esa guia.
+Criterio de verificacion: validate_backup_restore_docs_safety, validate_installation_docs_safety, check-branding y diff check.
