@@ -894,6 +894,9 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /^reportes$/i })).toBeVisible();
   await expect(page.getByRole('heading', { name: /cobrado/i })).toBeVisible();
   await captureScreen(page, 'reports-admin-light', 'light');
+  await setVisualTheme(page, 'dark');
+  await captureScreen(page, 'reports-admin-dark', 'dark');
+  await setVisualTheme(page, 'light');
 
   await page.getByRole('link', { name: /respaldos/i }).click();
   await expect(page.getByRole('heading', { name: /^respaldos$/i })).toBeVisible();

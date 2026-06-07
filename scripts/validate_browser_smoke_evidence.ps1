@@ -145,6 +145,7 @@ if ($null -ne $rcReport) {
         @{ Name = "receipt-preview-light"; Route = "/billing/new"; Theme = "light" },
         @{ Name = "receipt-preview-dark"; Route = "/billing/new"; Theme = "dark" },
         @{ Name = "reports-admin-light"; Route = "/reports"; Theme = "light" },
+        @{ Name = "reports-admin-dark"; Route = "/reports"; Theme = "dark" },
         @{ Name = "backups-pending-light"; Route = "/backups"; Theme = "light" }
     )
 

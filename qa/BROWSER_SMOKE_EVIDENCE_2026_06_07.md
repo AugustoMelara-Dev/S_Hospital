@@ -6,7 +6,7 @@ Scope:
 
 - Regenerate mocked browser evidence for dashboard, cashbox, new invoice, receipt previews, reports and backups against the current RC branch tip.
 - Verify the backups screen no longer has a stack of status notices covering the `Actualizar` and `Crear respaldo` actions.
-- Verify receipt previews still include light/dark evidence and the mocked report records no console issues.
+- Verify reports and receipt previews still include light/dark evidence and the mocked report records no console issues.
 - Keep the warning that mocked browser evidence does not replace final LAN, MySQL/MariaDB or physical printer validation.
 
 Command run:
@@ -23,9 +23,10 @@ Observed result:
 - Playwright reported both `production-readiness.spec.ts` tests as OK and wrote `qa\browser-smoke-2026-06-07\rc-e2e-mocked-report.json`.
 - The shell command timed out after screenshots were written, so the clean executable gate remains the regular non-capture Playwright run plus `scripts\validate_browser_smoke_evidence.ps1`.
 - The JSON report records `mode: mocked-e2e`, `console_issues: []` and the explicit note that captures do not replace LAN, MySQL/MariaDB or physical printer proof.
-- Screenshots were captured for dashboard light/dark, cashbox open, new invoice empty/cart, receipt media carta/carta/A5/dark, reports and backups.
+- Screenshots were captured for dashboard light/dark, cashbox open, new invoice empty/cart, receipt media carta/carta/A5/dark, reports light/dark and backups.
 - Visual review of `qa\browser-smoke-2026-06-07\billing-new-empty-light.png` confirmed the search placeholder no longer mentions code entry while scanner support is disabled, and active services remain visible in `Todos`.
 - Visual review of `qa\browser-smoke-2026-06-07\reports-admin-light.png` confirmed financial report tables now use full-width rows with separated headers, amounts and status counts for easier administrative review.
+- Visual review of `qa\browser-smoke-2026-06-07\reports-admin-dark.png` confirmed report cards, tables and charts remain readable in dark mode after the shared table spacing change.
 - Visual review of `qa\browser-smoke-2026-06-07\backups-pending-light.png` confirmed only one status notice remains visible and the primary backup actions are no longer covered.
 - Visual review of `qa\browser-smoke-2026-06-07\backups-pending-light.png` confirmed the normal backup summary uses `Error`, while the backup row uses `Pendiente`; it no longer shows `Todo bien` or `Requiere revision` as normal state labels.
 - Visual review of `qa\browser-smoke-2026-06-07\receipt-preview-dark.png` confirmed the mocked receipt no longer shows the old validation CAI marker, an invented fiscal range or an invented expiration date.

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-07T17:37:54.327Z",
+  "generated_at": "2026-06-07T17:48:46.893Z",
   "mode": "mocked-e2e",
   "note": "Capturas con API mockeada; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.",
   "screenshots": [
@@ -62,6 +62,12 @@
       "path": "qa/browser-smoke-2026-06-07/reports-admin-light.png",
       "route": "/reports",
       "theme": "light"
+    },
+    {
+      "name": "reports-admin-dark",
+      "path": "qa/browser-smoke-2026-06-07/reports-admin-dark.png",
+      "route": "/reports",
+      "theme": "dark"
     },
     {
       "name": "backups-pending-light",

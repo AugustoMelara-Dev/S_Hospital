@@ -3683,3 +3683,8 @@ Validacion: vitest BackupsView a11y, typecheck, lint/build, branding, e2e y brow
 La captura de Reportes mostro tablas de lectura financiera, metodos de pago y estados de factura con columnas demasiado apretadas para revision administrativa.
 Se agregan estilos base a data-table para ancho completo, padding de encabezados/celdas y separacion de filas, de modo que reportes, caja, auditoria y listados compartan una lectura mas clara sin recalcular datos ni tocar backend.
 Validacion: vitest ReportsView, typecheck, lint/build, branding, e2e y browser smoke de Reportes.
+
+## 2026-06-07 - browser smoke exige Reportes en modo oscuro
+Despues de mejorar las tablas financieras, el smoke RC conserva evidencia clara de Reportes y ahora tambien captura Reportes en modo oscuro.
+validate_browser_smoke_evidence exige reports-admin-dark con ruta /reports y theme dark para que la evidencia de administracion no quede solo en modo claro.
+Validacion: e2e con capturas, validate_browser_smoke_evidence, typecheck, lint/build y branding.
