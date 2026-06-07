@@ -202,7 +202,7 @@ Prioridad: P1 para venta y entrenamiento.
 
 Estado actual:
 
-- AppShell, POS, caja, scanner/codigos, carrito, confirmaciones y recibo fueron considerados como cierre de Fase 12.
+- AppShell, POS, caja, escaneo de servicios, carrito, confirmaciones y recibo fueron considerados como cierre de Fase 12.
 - Se evita el catalogo completo interminable en POS.
 - El flujo principal exige caja abierta.
 

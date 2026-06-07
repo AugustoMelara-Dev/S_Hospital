@@ -7,7 +7,7 @@ Alcance: preparacion local del producto institucional, con evidencia de QA real 
 
 Estado general: PRODUCTION_CANDIDATE; NO PRODUCTION_READY hasta cerrar validacion completa desde cliente LAN fisico, impresora institucional fisica, restore/concurrencia final, tarea continua de respaldos y configuracion final de produccion con admin real.
 
-La preparacion local cubre login, caja, factura, regla de eritropoyetina, scanner/codigos, cobro, recibo institucional, historial, reimpresion, anulacion sin pagos, reportes avanzados y respaldo local. El cierre conserva evidencia de restore, concurrencia y rutas LAN. Los pendientes de hardware/entorno quedan documentados como limitaciones y no se presentan como validados.
+La preparacion local cubre login, caja, factura, regla de eritropoyetina, escaneo de servicios, cobro, recibo institucional, historial, reimpresion, anulacion sin pagos, reportes avanzados y respaldo local. El cierre conserva evidencia de restore, concurrencia y rutas LAN. Los pendientes de hardware/entorno quedan documentados como limitaciones y no se presentan como validados.
 
 ## Definiciones de estado
 
@@ -31,7 +31,7 @@ Resultado Fase 12:
 Cobertura Fase 12 cerrada:
 
 - AppShell profesional con sidebar, topbar, caja, usuario, hora local y estado LAN.
-- POS con categorias, busqueda, scanner/codigo, carrito lateral, confirmacion, caja obligatoria y recibo institucional media carta/carta/A5.
+- POS con categorias, busqueda, escaneo de servicios, carrito lateral, confirmacion, caja obligatoria y recibo institucional media carta/carta/A5.
 - Catalogo con tabla compartida, filtros, estado activo/inactivo y `scan_code`, `barcode`, `qr_code`.
 - Reportes gerenciales con KPIs, filtros, servicios mas vendidos, auditoria operativa, backups y exportacion autorizada.
 - QA separado entre E2E mockeado, smoke real no destructivo y smoke mutacional opt-in.

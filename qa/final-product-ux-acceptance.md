@@ -8,7 +8,7 @@
 - Servicios se muestran como lista interminable.
 - Facturar no parece POS/caja.
 - Reportes siguen basicos.
-- Scanner/codigo confia en precio frontend.
+- El escaneo de servicios confia en precio frontend.
 
 ## Smoke de navegacion
 
@@ -25,7 +25,7 @@
 ## Evidencia visual requerida
 
 - Captura desktop de app shell con sidebar/topbar visibles.
-- Captura de POS donde se vea categoria, busqueda, scanner/codigo, servicios compactos y carrito.
+- Captura de POS donde se vea categoria, busqueda, escaneo de servicios, servicios compactos y carrito.
 - Captura de reportes con filtros, metricas y tabla/grafica.
 - Evidencia de que no existe una sola pagina interminable como experiencia principal.
 - Revision minima de tablet o viewport mediano para confirmar que la UI no se rompe.

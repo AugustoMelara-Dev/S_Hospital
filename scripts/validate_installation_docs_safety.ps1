@@ -67,6 +67,7 @@ $disasterRecoveryGuide = Read-RequiredFile "docs\DISASTER_RECOVERY.md"
 $implementationPlan = Read-RequiredFile "docs\IMPLEMENTATION_PLAN.md"
 $troubleshootingGuide = Read-RequiredFile "docs\TROUBLESHOOTING.md"
 $docsIndex = Read-RequiredFile "docs\00_README.md"
+$finalExecutionPackIndex = Read-RequiredFile "docs\09_FINAL_EXECUTION_PACK_INDEX.md"
 $trainingAdminGuide = Read-RequiredFile "docs\TRAINING_ADMIN.md"
 $userManual = Read-RequiredFile "docs\Manual_Usuario.md"
 $userManualHtml = Read-RequiredFile "docs\Manual_Usuario.html"
@@ -209,8 +210,14 @@ if ($docsIndex -ne "") {
 
 if ($releaseReadiness -ne "") {
     Test-NotContains $releaseReadiness '(?i)backup pending|backup manual `pending`|`pending`\s*->\s*`success`|Worker backups|Levantar worker de backups' "Release readiness avoids raw backup status/worker wording"
+    Test-NotContains $releaseReadiness '(?i)scanner/c[o]digos|scanner/c[o]digo' "Release readiness uses operational service scanning wording"
     Test-Contains $releaseReadiness 'respaldo manual de Pendiente a Protegido' "Release readiness uses visible backup state transition"
     Test-Contains $releaseReadiness 'Tarea de respaldos|tarea continua de respaldos' "Release readiness uses operational backup task wording"
+}
+
+if ($finalExecutionPackIndex -ne "") {
+    Test-NotContains $finalExecutionPackIndex '(?i)scanner/c[o]digos|scanner/c[o]digo' "Final execution pack index uses operational service scanning wording"
+    Test-Contains $finalExecutionPackIndex 'escaneo de servicios' "Final execution pack index names service scanning operationally"
 }
 
 if ($productionGapReport -ne "") {

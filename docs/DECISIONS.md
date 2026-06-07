@@ -3859,6 +3859,6 @@ Decision: El plan conserva el alcance historico, pero usa tarea continua de resp
 Criterio de verificacion: validate_installation_docs_safety cubre IMPLEMENTATION_PLAN contra worker de backups, worker continuo y transiciones raw pending/success.
 
 ## 2026-06-07 - Ajustes fiscales usa lenguaje operativo para escaneo
-Contexto: La pantalla de configuracion fiscal mostraba "scanner/codigos" y "codigos internos" en un control visible para administracion, aunque el operador debe leer el flujo como escaneo de servicios, no como detalle tecnico.
+Contexto: La pantalla de configuracion fiscal mostraba una etiqueta heredada de escaneo y referencias a codigos tecnicos en un control visible para administracion, aunque el operador debe leer el flujo como escaneo de servicios.
 Decision: El copy visible del control usa "escaneo de servicios en caja" y oculta la referencia a codigos internos; el contrato tecnico de scan_code, barcode y scanner_enabled se mantiene solo en catalogo, API y pruebas internas.
-Criterio de verificacion: FiscalSettingsView.test valida el nuevo label y bloquea scanner/codigos o codigos internos en la vista.
+Criterio de verificacion: FiscalSettingsView.test valida el nuevo label y bloquea el copy heredado o referencias a codigos internos en la vista.

@@ -10,7 +10,7 @@ No es cierto que el sistema actual este literalmente en una sola pagina: el repo
 
 Convertir el sistema de un core tecnico funcional a un producto institucional, verificable y operable en caja hospitalaria local.
 
-El backend de facturacion, caja, pagos, historial, recibos, backups y reglas fiscales debe conservarse como fuente de verdad. La fase final reorganiza la experiencia visible, completa reportes avanzados, formaliza scanner/codigos y deja QA de entrega.
+El backend de facturacion, caja, pagos, historial, recibos, backups y reglas fiscales debe conservarse como fuente de verdad. La fase final reorganiza la experiencia visible, completa reportes avanzados, formaliza escaneo de servicios y deja QA de entrega.
 
 ## Carpetas canonicas
 
@@ -50,7 +50,7 @@ Criterio:
 Alcance:
 
 - Redisenar nueva factura como flujo POS.
-- Paciente, busqueda, categorias, scanner/codigo, servicios compactos, carrito, cobro y recibo.
+- Paciente, busqueda, categorias, escaneo de servicios, servicios compactos, carrito, cobro y recibo.
 - Mantener backend como fuente final de totales, precios y reglas.
 
 Criterio:

@@ -8,7 +8,7 @@
 - Si los servicios son lista interminable, bloqueado.
 - Si facturar no parece POS/caja, bloqueado.
 - Si reportes siguen basicos, bloqueado.
-- Si scanner/codigo permite confiar en precio del frontend, bloqueado.
+- Si el escaneo de servicios permite confiar en precio del frontend, bloqueado.
 - Si catalogo no administra categorias, servicios, estado y scan_code, bloqueado.
 
 ## Criterios funcionales
