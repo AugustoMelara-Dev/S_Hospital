@@ -3887,3 +3887,8 @@ Criterio de verificacion: ServiceSearch.test valida que un servicio con `scan_co
 Contexto: Varias specs activas de POS, catalogo y presentacion todavia nombraban el flujo como Barcode/QR, scanner USB o codigo, aunque la UI ya usa identificador de servicio y evita exponer codigos internos al cajero.
 Decision: La documentacion activa de producto usa escaneo de servicios e identificador; los nombres tecnicos `scan_code`, `barcode` y `qr_code` quedan solo como contrato interno de backend/catalogo/migraciones.
 Criterio de verificacion: validate_installation_docs_safety.ps1 ahora revisa las specs activas, el indice, roadmap, execution pack y checklists contra lenguaje heredado de scanner/barcode/codigo en superficies de producto.
+
+## 2026-06-07 - Evidencia de entrega usa lenguaje controlado y no demo
+Contexto: Documentos de checklist, presentacion y handoff todavia usaban mockeado/mocked o mostraban identificadores auxiliares tipo QR en el guion. Ese lenguaje puede sonar a demo tecnica o exponer datos que no necesita ver el personal durante validacion operativa.
+Decision: Los documentos de entrega nombran esos checks como evidencia controlada; el guion de presentacion conserva solo identificadores primarios y advierte no mostrar alternos/auxiliares salvo administracion de catalogo.
+Criterio de verificacion: validate_installation_docs_safety.ps1 bloquea mockeado/mocked en superficies de entrega, bloquea valores QR auxiliares en el guion de presentacion y exige el texto de evidencia controlada.

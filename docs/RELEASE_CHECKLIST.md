@@ -35,7 +35,7 @@ Validado durante el pase de arquitectura/mantenibilidad/UX/metadata:
 - Frontend tipos: `npm.cmd run typecheck`.
 - Frontend lint: `npm.cmd run lint`.
 - Frontend build: `npm.cmd run build`.
-- E2E mockeado: `npm.cmd run e2e`.
+- E2E en ambiente controlado: `npm.cmd run e2e`.
 
 Estos gates no sustituyen validacion fisica de segunda PC LAN, impresora
 institucional, autoarranque final, backup final, restore final, concurrencia
@@ -72,7 +72,7 @@ controlados de Playwright; ayuda a detectar rutas rotas, pantalla inicial,
 errores de navegador y regresiones de flujo. No reemplaza las pruebas fisicas
 de impresora, cliente LAN, MySQL/MariaDB real, restore o concurrencia.
 
-El E2E local usa ambiente seguro y API mockeada para cubrir login, caja, factura, eritropoyetina normal/gratis, pago, recibo media carta/carta/A5, historial, reimpresion, reportes y respaldo Pendiente. No valida MySQL/MariaDB real ni hardware.
+El E2E local usa un ambiente seguro de Playwright para cubrir login, caja, factura, eritropoyetina normal/gratis, pago, recibo media carta/carta/A5, historial, reimpresion, reportes y respaldo Pendiente. No valida MySQL/MariaDB real ni hardware.
 
 ## Reset dev/testing con base descartable
 
@@ -254,7 +254,7 @@ Antes de entregar evidencia visual o de navegador, ejecute
 `scripts\validate_browser_smoke_evidence.ps1`; debe reportar
 `BROWSER_SMOKE_EVIDENCE: YES` para confirmar que existen capturas de dashboard,
 caja, nueva factura, recibos, reportes, respaldos y Ayuda/soporte, que la
-consola no reporta errores y que la evidencia mockeada no se confunde con la
+consola no reporta errores y que la evidencia controlada no se confunde con la
 validacion fisica de LAN e impresora.
 Antes de entregar manuales por rol, ejecute
 `scripts\validate_operator_manuals_safety.ps1`; debe reportar

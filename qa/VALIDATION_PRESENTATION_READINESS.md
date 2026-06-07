@@ -16,9 +16,10 @@ No declarar **PRODUCTION_READY** hasta cerrar con evidencia real: cliente LAN fi
 - Catalogo base: servicios activos desde `backend/database/seeders/data/catalogo_servicios_inicial.csv`.
 - Areas y categorias: laboratorio, radiologia, hospitalizacion/emergencia, odontologia y medicamentos.
 - Regla critica: `Eritropoyetina` cuesta L.25.00 y aplica regla especial de dialisis desde backend.
-- Identificadores de validacion para escaneo de servicios:
-  - Acido Urico: `LAB-ACIDO-URICO`, alterno `7700000001001`, auxiliar `QR-LAB-ACIDO-URICO`.
-  - Abdomen Simple: `RX-ABDOMEN`, alterno `7700000002001`, auxiliar `QR-RX-ABDOMEN`.
+- Identificadores primarios de validacion para escaneo de servicios:
+  - Acido Urico: `LAB-ACIDO-URICO`.
+  - Abdomen Simple: `RX-ABDOMEN`.
+- No mostrar identificadores alternos o auxiliares durante la presentacion; solo explicar que administracion puede mantenerlos en catalogo si el hospital los usa.
 - Configuracion fiscal local de validacion: Hospital San Isidro, RTN local de prueba, prefijo `000-001-01` y recibo institucional.
 
 ## Guion recomendado

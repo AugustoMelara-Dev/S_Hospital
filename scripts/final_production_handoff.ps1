@@ -1100,7 +1100,7 @@ function Write-HandoffReport(
 
     Add-ReportLine $lines "## Evidence completed in this hardening front"
     Add-ReportLine $lines ""
-    Add-ReportLine $lines '- Browser smoke screenshots: `qa/browser-smoke-2026-06-03/rc-e2e-mocked-report.json` and `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md`.'
+    Add-ReportLine $lines '- Controlled browser smoke screenshots: `qa/browser-smoke-2026-06-03/` and `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md`.'
     Add-ReportLine $lines '- System diagnostics and Help/support guards: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`, `qa/FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md`.'
     Add-ReportLine $lines '- Tarea continua de respaldos, autoarranque, respaldo final y restore: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md`, `qa/FINAL_STARTUP_TASK_PROOF.example.md`, `qa/FINAL_STARTUP_TASK_PROOF.md`, `qa/FINAL_BACKUP_TASK_PROOF.example.md`, `qa/FINAL_BACKUP_TASK_PROOF.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.'
     Add-ReportLine $lines '- Concurrency, double-action and realtime own-event evidence: `qa/FINAL_CONCURRENCY_PROOF.md`, `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md` and `qa/REALTIME_OWN_EVENT_SAFETY_2026_06_04.md`.'
@@ -1116,7 +1116,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '- Backend static analysis: `docker compose exec -T backend ./vendor/bin/phpstan analyse --memory-limit=1G`.'
     Add-ReportLine $lines '- Backend suite: `docker compose exec -T backend php artisan test`.'
     Add-ReportLine $lines '- Frontend gates: `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run test -- --run`, `npm.cmd run build`, `scripts\check-branding.ps1`.'
-    Add-ReportLine $lines '- Browser and operational smoke: mocked E2E screenshots, `npm.cmd run smoke:real`, smoke de tarea continua de respaldos, disposable restore, concurrency validation and `scripts\production_readiness_preflight.ps1`.'
+    Add-ReportLine $lines '- Browser and operational smoke: controlled browser screenshots, `npm.cmd run smoke:real`, smoke de tarea continua de respaldos, disposable restore, concurrency validation and `scripts\production_readiness_preflight.ps1`.'
     Add-ReportLine $lines ""
 
     Add-ReportLine $lines "## Files changed in this handoff front"
@@ -1129,7 +1129,7 @@ function Write-HandoffReport(
 
     Add-ReportLine $lines "## Risks and limits"
     Add-ReportLine $lines ""
-    Add-ReportLine $lines "- Local Docker and mocked browser evidence do not replace final second-client LAN proof, real MariaDB/server proof or physical printer proof."
+    Add-ReportLine $lines "- Local Docker and controlled browser evidence do not replace final second-client LAN proof, real MariaDB/server proof or physical printer proof."
     Add-ReportLine $lines "- The offline release package must still be copied to the final server and verified there before production use."
     Add-ReportLine $lines "- Final production environment must be verified with `APP_ENV=production` and `APP_DEBUG=false` before production handoff."
     Add-ReportLine $lines '- Windows scheduled tasks `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup` must be installed or updated on the final server.'

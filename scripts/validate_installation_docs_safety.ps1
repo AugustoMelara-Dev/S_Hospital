@@ -77,6 +77,7 @@ $userManual = Read-RequiredFile "docs\Manual_Usuario.md"
 $userManualHtml = Read-RequiredFile "docs\Manual_Usuario.html"
 $operatorIndex = Read-RequiredFile "docs\manuales\INDICE_OPERADOR.md"
 $releaseChecklist = Read-RequiredFile "docs\RELEASE_CHECKLIST.md"
+$finalProductionHandoffScript = Read-RequiredFile "scripts\final_production_handoff.ps1"
 $installSummary = Read-RequiredFile "docs\INSTALL_SUMMARY.md"
 $fieldDeploymentValidation = Read-RequiredFile "qa\FIELD_DEPLOYMENT_VALIDATION.md"
 $releaseReadiness = Read-RequiredFile "qa\RELEASE_READINESS.md"
@@ -203,8 +204,10 @@ foreach ($docInfo in @(
 
 if ($releaseChecklist -ne "") {
     Test-NotContains $releaseChecklist '(?i)backup pending|backup `pending`|cambio de `pending`|cambia de `pending`|pasa de `pending`|`pending`\s*->\s*`success`|worker continuo|worker local de backups|Confirmar worker local de backups' "Release checklist avoids raw backup status/worker wording"
+    Test-NotContains $releaseChecklist '(?i)mockeado|mockeada|mocked|API mockeada|evidencia mockeada' "Release checklist uses controlled-evidence wording instead of mocked wording"
     Test-Contains $releaseChecklist 'Pendiente a Protegido' "Release checklist uses visible backup state transition"
     Test-Contains $releaseChecklist 'tarea continua de respaldos|automatizacion de respaldos' "Release checklist uses operational backup task wording"
+    Test-Contains $releaseChecklist 'E2E en ambiente controlado' "Release checklist names controlled E2E evidence"
 }
 
 if ($docsIndex -ne "") {
@@ -234,8 +237,11 @@ if ($finalPhasesRoadmap -ne "") {
 if ($releaseReadiness -ne "") {
     Test-NotContains $releaseReadiness '(?i)backup pending|backup manual `pending`|`pending`\s*->\s*`success`|Worker backups|Levantar worker de backups' "Release readiness avoids raw backup status/worker wording"
     Test-NotContains $releaseReadiness '(?i)scanner/c[o]digos|scanner/c[o]digo' "Release readiness uses operational service scanning wording"
+    Test-NotContains $releaseReadiness '(?i)E2E mockeado|API mockeada|`scan_code`, `barcode`, `qr_code`' "Release readiness uses controlled evidence and operational identifier wording"
     Test-Contains $releaseReadiness 'respaldo manual de Pendiente a Protegido' "Release readiness uses visible backup state transition"
     Test-Contains $releaseReadiness 'Tarea de respaldos|tarea continua de respaldos' "Release readiness uses operational backup task wording"
+    Test-Contains $releaseReadiness 'E2E en ambiente controlado' "Release readiness names controlled E2E evidence"
+    Test-Contains $releaseReadiness 'identificadores administrables' "Release readiness names manageable service identifiers"
 }
 
 if ($finalExecutionPackIndex -ne "") {
@@ -244,8 +250,10 @@ if ($finalExecutionPackIndex -ne "") {
 }
 
 if ($correctedFinalProductPlan -ne "") {
-    Test-NotContains $correctedFinalProductPlan '(?i)Catalogo, codigos|estado y codigo|inactivo/codigo|soporte de codigo|Codigo existente|Codigo inexistente' "Corrected final product plan uses service identifier wording"
+    Test-NotContains $correctedFinalProductPlan '(?i)Catalogo, codigos|estado y codigo|inactivo/codigo|soporte de codigo|Codigo existente|Codigo inexistente|busqueda/codigo|nombre/categoria/codigo' "Corrected final product plan uses service identifier wording"
+    Test-NotContains $correctedFinalProductPlan '(?i)mockeado|mockeada|con mocks' "Corrected final product plan uses controlled-evidence wording"
     Test-Contains $correctedFinalProductPlan 'identificador' "Corrected final product plan names service identifiers"
+    Test-Contains $correctedFinalProductPlan 'E2E en ambiente controlado' "Corrected final product plan names controlled E2E evidence"
 }
 
 if ($productionGapReport -ne "") {
@@ -256,16 +264,24 @@ if ($productionGapReport -ne "") {
 
 if ($validationPresentationReadiness -ne "") {
     Test-NotContains $validationPresentationReadiness '(?i)worker continuo|worker de backups|backup pending|`pending`\s*->\s*`success`' "Validation presentation readiness avoids raw backup worker/status wording"
-    Test-NotContains $validationPresentationReadiness '(?i)Codigos de validacion para scanner|codigo de validacion en scanner|barcode `|Catalogo:.*codigos' "Validation presentation readiness uses operational identifier wording"
+    Test-NotContains $validationPresentationReadiness '(?i)Codigos de validacion para scanner|codigo de validacion en scanner|barcode `|Catalogo:.*codigos|QR-LAB|QR-RX|alterno `|auxiliar `' "Validation presentation readiness uses operational identifier wording"
     Test-Contains $validationPresentationReadiness 'tarea continua de respaldos' "Validation presentation readiness uses operational backup task wording"
-    Test-Contains $validationPresentationReadiness 'Identificadores de validacion para escaneo de servicios' "Validation presentation readiness names validation identifiers operationally"
+    Test-Contains $validationPresentationReadiness 'Identificadores primarios de validacion para escaneo de servicios' "Validation presentation readiness names primary validation identifiers operationally"
+    Test-Contains $validationPresentationReadiness 'No mostrar identificadores alternos o auxiliares durante la presentacion' "Validation presentation readiness keeps auxiliary identifiers out of presentation"
 }
 
 if ($finalUxAcceptanceChecklist -ne "") {
     Test-NotContains $finalUxAcceptanceChecklist '(?i)worker continuo|worker de backups|backup pending|`pending`\s*->\s*`success`' "Final UX acceptance checklist avoids raw backup worker/status wording"
     Test-NotContains $finalUxAcceptanceChecklist '(?i)Scanner input visible|Barcode/QR fields' "Final UX acceptance checklist avoids legacy scanner/barcode wording"
+    Test-NotContains $finalUxAcceptanceChecklist '(?i)mockeado|mockeada|mocked|gate separado del mock' "Final UX acceptance checklist uses controlled-evidence wording"
     Test-Contains $finalUxAcceptanceChecklist 'tarea continua de respaldos' "Final UX acceptance checklist uses operational backup task wording"
     Test-Contains $finalUxAcceptanceChecklist 'Campo de identificador de servicio' "Final UX acceptance checklist names service identifier field"
+    Test-Contains $finalUxAcceptanceChecklist 'E2E en ambiente controlado' "Final UX acceptance checklist names controlled E2E evidence"
+}
+
+if ($finalProductionHandoffScript -ne "") {
+    Test-NotContains $finalProductionHandoffScript '(?i)mocked E2E screenshots|mocked browser evidence|rc-e2e-mocked-report\.json' "Final production handoff script uses controlled browser evidence wording"
+    Test-Contains $finalProductionHandoffScript 'Controlled browser smoke screenshots' "Final production handoff script names controlled browser screenshots"
 }
 
 if ($troubleshootingGuide -ne "") {

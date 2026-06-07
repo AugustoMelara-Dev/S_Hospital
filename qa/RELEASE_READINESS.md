@@ -32,9 +32,9 @@ Cobertura Fase 12 cerrada:
 
 - AppShell profesional con sidebar, topbar, caja, usuario, hora local y estado LAN.
 - POS con categorias, busqueda, escaneo de servicios, carrito lateral, confirmacion, caja obligatoria y recibo institucional media carta/carta/A5.
-- Catalogo con tabla compartida, filtros, estado activo/inactivo y `scan_code`, `barcode`, `qr_code`.
+- Catalogo con tabla compartida, filtros, estado activo/inactivo e identificadores administrables.
 - Reportes gerenciales con KPIs, filtros, servicios mas vendidos, auditoria operativa, backups y exportacion autorizada.
-- QA separado entre E2E mockeado, smoke real no destructivo y smoke mutacional opt-in.
+- QA separado entre E2E en ambiente controlado, smoke real no destructivo y smoke mutacional opt-in.
 
 Resultado local:
 
@@ -48,7 +48,7 @@ Resultado local:
 - `npm.cmd run lint`: OK.
 - `npm.cmd run test`: OK, 18 tests.
 - `npm.cmd run build`: OK.
-- `npm.cmd run e2e`: OK, 1 Playwright test / flujo cajero-admin con login, caja, factura, eritropoyetina normal y gratis, pago, recibo institucional, historial, reimpresion, reportes y respaldo en Pendiente. Usa API mockeada local/testing; no toca produccion.
+- `npm.cmd run e2e`: OK, 1 Playwright test / flujo cajero-admin con login, caja, factura, eritropoyetina normal y gratis, pago, recibo institucional, historial, reimpresion, reportes y respaldo en Pendiente. Usa ambiente controlado local/testing; no toca produccion.
 - `bash scripts/quality_gate.sh`: el `bash` por defecto de Windows apunta a WSL y fallo porque no hay distro instalada.
 - `C:\Program Files\Git\usr\bin\bash.exe scripts/quality_gate.sh`: OK como gate seguro/no destructivo. `phpstan` no esta instalado y no forma parte del gate requerido actual.
 - `C:\Program Files\Git\usr\bin\bash.exe scripts/e2e_gate.sh`: OK; usa wrapper PowerShell controlado para arrancar Vite, ejecutar Playwright y detener el servidor.

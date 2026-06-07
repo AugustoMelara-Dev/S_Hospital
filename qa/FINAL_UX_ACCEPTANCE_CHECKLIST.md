@@ -55,8 +55,8 @@ Los bloqueos UX de `docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md` quedaron cerrados p
 ## QA
 - [x] Unit/feature tests backend.
 - [x] Frontend tests.
-- [x] E2E mockeado de validacion local.
-- [x] Smoke real contra Laravel/API definido como gate separado del mock.
+- [x] E2E en ambiente controlado de validacion local.
+- [x] Smoke real contra Laravel/API definido como gate separado de la evidencia controlada.
 - [x] Smoke real mutacional apagado por defecto; requiere `E2E_REAL_ALLOW_MUTATIONS=1` para crear/cobrar una factura real contra DB.
 - [x] Browser smoke con cero `console.error`, `pageerror` y requests fallidas inesperadas.
 - [x] Build.

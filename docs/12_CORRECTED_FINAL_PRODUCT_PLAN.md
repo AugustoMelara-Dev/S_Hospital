@@ -193,7 +193,7 @@ Migraciones:
 Pruebas:
 
 - Paciente requerido enfoca campo y muestra error inline.
-- Buscar por nombre/categoria/codigo no muestra lista interminable.
+- Buscar por nombre/categoria/identificador no muestra lista interminable.
 - Confirmar y cancelar emision no crean factura al cancelar.
 - Sin caja abierta, POS muestra accion directa a caja.
 - Registrar pago genera recibo.
@@ -310,7 +310,7 @@ Commit sugerido:
 Alcance:
 
 - Separar gates:
-  - E2E mockeado de validacion controlada.
+  - E2E en ambiente controlado de validacion.
   - Smoke real contra Laravel/API.
 - Browser smoke con consola limpia.
 - Validar rutas: dashboard, POS, caja, catalogo, historial, reportes, backups, fiscal.
@@ -338,17 +338,17 @@ Pruebas:
 - `npm run test`
 - `npm run build`
 - `php artisan config:cache`
-- E2E mockeado sin console errors.
+- E2E en ambiente controlado sin console errors.
 - Smoke real `/up`, `/login`, `/verify-email` y rutas principales.
 
 Riesgos:
 
-- E2E con mocks puede dar falsa confianza si no se separa del smoke real.
+- E2E en ambiente controlado puede dar falsa confianza si no se separa del smoke real.
 
 Criterios de aceptacion:
 
 - Cero errores de consola en flujo principal.
-- Flujo completo probado: login, dashboard, nueva factura, busqueda/codigo, paciente requerido, confirmar, cobrar, recibo, imprimir solo recibo, historial, reimprimir, anular si aplica, reportes, exportar, backups.
+- Flujo completo probado: login, dashboard, nueva factura, busqueda/identificador, paciente requerido, confirmar, cobrar, recibo, imprimir solo recibo, historial, reimprimir, anular si aplica, reportes, exportar, backups.
 - Subagentes no bloquean cierre.
 
 Commit sugerido:
