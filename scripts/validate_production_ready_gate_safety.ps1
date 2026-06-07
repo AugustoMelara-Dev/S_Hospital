@@ -49,6 +49,17 @@ function Assert-Literal([string] $label, [string] $content, [string] $needle) {
     }
 }
 
+function Assert-AnyLiteral([string] $label, [string] $content, [string[]] $needles) {
+    foreach ($needle in $needles) {
+        if ($content.Contains($needle)) {
+            Add-Pass $label
+            return
+        }
+    }
+
+    Add-Failure $label
+}
+
 $preflight = Read-RequiredFile "scripts\production_readiness_preflight.ps1"
 $handoff = Read-RequiredFile "scripts\final_production_handoff.ps1"
 $evidenceIndex = Read-RequiredFile "scripts\validate_ops_evidence_index.ps1"
@@ -115,11 +126,15 @@ foreach ($gateTerm in @(
     '$allAutomatedGuardsPassed',
     '-not $preflightSkipped',
     '$preflightExit -eq 0',
-    'PRODUCTION_READY evidence gate passed',
-    'PRODUCTION_READY remains blocked'
+    'PRODUCTION_READY evidence gate passed'
 )) {
     Assert-Literal "Final handoff keeps gate term: $gateTerm" $handoff $gateTerm
 }
+
+Assert-AnyLiteral "Final handoff keeps blocked PRODUCTION_READY term" $handoff @(
+    'PRODUCTION_READY remains blocked',
+    'PRODUCTION_READY sigue bloqueado'
+)
 
 Assert-Contains "Ops evidence index blocks PRODUCTION_READY with incomplete proof markers" `
     $evidenceIndex 'TODO\|PENDING\|PENDING_'

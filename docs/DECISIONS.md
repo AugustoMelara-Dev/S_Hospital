@@ -3897,3 +3897,13 @@ Criterio de verificacion: validate_installation_docs_safety.ps1 bloquea mockeado
 Contexto: El generador activo de handoff final aun producia encabezados y bullets principales en ingles, aunque el reporte puede ser leido por administracion, soporte local o auditoria del hospital.
 Decision: final_production_handoff.ps1 genera las secciones de evidencia, pruebas, archivos, riesgos, seguridad y proximos comandos con lenguaje institucional en espanol; los nombres tecnicos quedan solo como rutas o identificadores de scripts/tareas.
 Criterio de verificacion: validate_installation_docs_safety.ps1 bloquea los encabezados antiguos en ingles en el generador activo y validate_final_handoff_completeness.ps1 acepta los nuevos encabezados sin romper handoffs historicos.
+
+## 2026-06-07 - Consola de handoff final usa lenguaje institucional
+Contexto: El generador de handoff final todavia conservaba encabezados de consola, anexos y mensajes de validacion en ingles, aunque el reporte principal ya estaba localizado.
+Decision: La salida visible de consola y del reporte de handoff final usa espanol operativo institucional; los nombres de scripts, variables y guards se conservan como identificadores tecnicos verificables.
+Verificacion: validate_installation_docs_safety.ps1 bloquea los encabezados y placeholders anteriores en ingles, y el smoke con -SkipPreflight debe mantener PRODUCTION_CANDIDATE sin presentar PRODUCTION_READY como aprobado.
+
+## 2026-06-07 - Validadores de handoff aceptan encabezados localizados
+Contexto: El smoke de handoff con salida en espanol encontro validadores que seguian buscando encabezados ingleses exactos para anexos y gate PRODUCTION_READY.
+Decision: Los validadores de completitud y gate aceptan los encabezados institucionales en espanol manteniendo los marcadores tecnicos obligatorios, resultados YES y bloqueo de PRODUCTION_READY sin evidencia fisica.
+Verificacion: validate_final_handoff_completeness.ps1 y validate_production_ready_gate_safety.ps1 deben pasar con el handoff localizado; el smoke con -SkipPreflight sigue sin aprobar produccion.

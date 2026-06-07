@@ -282,11 +282,17 @@ if ($finalUxAcceptanceChecklist -ne "") {
 if ($finalProductionHandoffScript -ne "") {
     Test-NotContains $finalProductionHandoffScript '(?i)mocked E2E screenshots|mocked browser evidence|rc-e2e-mocked-report\.json' "Final production handoff script uses controlled browser evidence wording"
     Test-NotContains $finalProductionHandoffScript '(?i)Final production handoff result|Generated at|Project root|Proof present without obvious placeholders|proof file:|## Result\b|## Blocking items\b|Evidence completed in this hardening front|Files changed in this handoff front|Tests and gates to preserve|Risks and limits|Safety notes|Browser and operational smoke|Controlled browser smoke screenshots|Local Docker and controlled browser evidence' "Final production handoff script uses Spanish institutional handoff wording"
+    Test-NotContains $finalProductionHandoffScript '(?i)Sistema de Caja Hospitalaria final production handoff|ProjectRoot:|BaseUrl:|PhpPath:|Proof files|Second-client LAN proof|Physical printer proof|Run from the second LAN client|Print real media|Install/update stack autostart|Run supervised role training|If tasks are missing or stale|Preflight skipped|SkipPreflight was used|This run cannot approve PRODUCTION_READY|Wrote handoff report|Final handoff completeness validation pending|Evidence index validation pending|Preflight skipped by -SkipPreflight|PRODUCTION_READY remains blocked|Keep status as PRODUCTION_CANDIDATE|returned exit code|Production preflight' "Final production handoff script avoids English console and annex wording"
     Test-Contains $finalProductionHandoffScript 'Capturas controladas de navegador' "Final production handoff script names controlled browser screenshots operationally"
     Test-Contains $finalProductionHandoffScript 'Resultado de handoff final de produccion' "Final production handoff script uses Spanish title"
     Test-Contains $finalProductionHandoffScript 'Pendientes bloqueantes' "Final production handoff script uses Spanish blocker heading"
     Test-Contains $finalProductionHandoffScript 'Evidencia completada en este frente de endurecimiento' "Final production handoff script uses Spanish evidence heading"
     Test-Contains $finalProductionHandoffScript 'Notas de seguridad' "Final production handoff script uses Spanish safety heading"
+    Test-Contains $finalProductionHandoffScript 'Sistema de Caja Hospitalaria - handoff final de produccion' "Final production handoff script uses Spanish console title"
+    Test-Contains $finalProductionHandoffScript 'Archivos de evidencia' "Final production handoff script uses Spanish proof section"
+    Test-Contains $finalProductionHandoffScript 'Preflight omitido' "Final production handoff script uses Spanish skipped-preflight wording"
+    Test-Contains $finalProductionHandoffScript 'Reporte de handoff escrito en' "Final production handoff script uses Spanish report-written wording"
+    Test-Contains $finalProductionHandoffScript 'PRODUCTION_READY sigue bloqueado' "Final production handoff script uses Spanish blocked-gate wording"
 }
 
 if ($troubleshootingGuide -ne "") {

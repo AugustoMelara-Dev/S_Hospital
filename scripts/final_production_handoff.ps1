@@ -983,115 +983,115 @@ function Write-HandoffReport(
         Add-ReportLine $lines "- El artefacto de release offline falta, esta desactualizado o contiene archivos no permitidos."
     }
     if ($supportPacketSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Support packet safety validation returned exit code $supportPacketSafetyExit."
+        Add-ReportLine $lines "- La validacion de paquete seguro de soporte devolvio codigo de salida $supportPacketSafetyExit."
     }
     if ($firstLevelSupportSafetyExit -ne 0) {
-        Add-ReportLine $lines "- First-level support safety validation returned exit code $firstLevelSupportSafetyExit."
+        Add-ReportLine $lines "- La validacion de soporte de primer nivel devolvio codigo de salida $firstLevelSupportSafetyExit."
     }
     if ($productionReadyGateSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Production ready gate safety validation returned exit code $productionReadyGateSafetyExit."
+        Add-ReportLine $lines "- La validacion del gate PRODUCTION_READY devolvio codigo de salida $productionReadyGateSafetyExit."
     }
     if ($finalFieldBlockersSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Final field blockers safety self-test returned exit code $finalFieldBlockersSafetyExit."
+        Add-ReportLine $lines "- El self-test de bloqueantes finales de campo devolvio codigo de salida $finalFieldBlockersSafetyExit."
     }
     if ($finalPhysicalProofCandidateGuardExit -ne 0) {
-        Add-ReportLine $lines "- Final physical proof candidate guard suite returned exit code $finalPhysicalProofCandidateGuardExit."
+        Add-ReportLine $lines "- La suite de guards candidatos de evidencia fisica final devolvio codigo de salida $finalPhysicalProofCandidateGuardExit."
     }
     if ($browserSmokeEvidenceExit -ne 0) {
-        Add-ReportLine $lines "- Browser smoke evidence validation returned exit code $browserSmokeEvidenceExit."
+        Add-ReportLine $lines "- La validacion de evidencia de navegador devolvio codigo de salida $browserSmokeEvidenceExit."
     }
     if ($startupRepairSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Startup and repair safety validation returned exit code $startupRepairSafetyExit."
+        Add-ReportLine $lines "- La validacion de arranque y reparacion segura devolvio codigo de salida $startupRepairSafetyExit."
     }
     if ($operatorManualsSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Operator manuals safety validation returned exit code $operatorManualsSafetyExit."
+        Add-ReportLine $lines "- La validacion de manuales de operador devolvio codigo de salida $operatorManualsSafetyExit."
     }
     if ($backupRestoreDocsSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Backup and restore docs safety validation returned exit code $backupRestoreDocsSafetyExit."
+        Add-ReportLine $lines "- La validacion de documentos de respaldo y restore devolvio codigo de salida $backupRestoreDocsSafetyExit."
     }
     if ($backupStartupCurrentUserSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Backup startup current-user safety validation returned exit code $backupStartupCurrentUserSafetyExit."
+        Add-ReportLine $lines "- La validacion de arranque de respaldos por usuario devolvio codigo de salida $backupStartupCurrentUserSafetyExit."
     }
     if ($restoreWindowsSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Windows restore safety validation returned exit code $restoreWindowsSafetyExit."
+        Add-ReportLine $lines "- La validacion de restore seguro en Windows devolvio codigo de salida $restoreWindowsSafetyExit."
     }
     if ($installationDocsSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Installation docs safety validation returned exit code $installationDocsSafetyExit."
+        Add-ReportLine $lines "- La validacion de documentos de instalacion devolvio codigo de salida $installationDocsSafetyExit."
     }
     if ($helpScreenSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Help screen safety validation returned exit code $helpScreenSafetyExit."
+        Add-ReportLine $lines "- La validacion de pantalla de ayuda devolvio codigo de salida $helpScreenSafetyExit."
     }
     if ($systemDiagnosticsSafetyExit -ne 0) {
-        Add-ReportLine $lines "- System diagnostics safety validation returned exit code $systemDiagnosticsSafetyExit."
+        Add-ReportLine $lines "- La validacion de diagnostico del sistema devolvio codigo de salida $systemDiagnosticsSafetyExit."
     }
     if ($doubleActionSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Double-action safety validation returned exit code $doubleActionSafetyExit."
+        Add-ReportLine $lines "- La validacion contra doble accion devolvio codigo de salida $doubleActionSafetyExit."
     }
     if ($realtimeOwnEventSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Realtime own-event safety validation returned exit code $realtimeOwnEventSafetyExit."
+        Add-ReportLine $lines "- La validacion de eventos propios en tiempo real devolvio codigo de salida $realtimeOwnEventSafetyExit."
     }
     if ($installerLegacySafetyExit -ne 0) {
-        Add-ReportLine $lines "- Installer legacy safety validation returned exit code $installerLegacySafetyExit."
+        Add-ReportLine $lines "- La validacion del instalador heredado devolvio codigo de salida $installerLegacySafetyExit."
     }
     if ($lanRecoverySafetyExit -ne 0) {
-        Add-ReportLine $lines "- LAN recovery safety validation returned exit code $lanRecoverySafetyExit."
+        Add-ReportLine $lines "- La validacion de recuperacion LAN devolvio codigo de salida $lanRecoverySafetyExit."
     }
     if ($lanLoadtestSafetyExit -ne 0) {
-        Add-ReportLine $lines "- LAN loadtest safety validation returned exit code $lanLoadtestSafetyExit."
+        Add-ReportLine $lines "- La validacion de carga LAN devolvio codigo de salida $lanLoadtestSafetyExit."
     }
     if ($knownLimitationsSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Known limitations safety validation returned exit code $knownLimitationsSafetyExit."
+        Add-ReportLine $lines "- La validacion de limitaciones conocidas devolvio codigo de salida $knownLimitationsSafetyExit."
     }
     if ($maintenanceModeSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Maintenance mode safety validation returned exit code $maintenanceModeSafetyExit."
+        Add-ReportLine $lines "- La validacion de modo mantenimiento devolvio codigo de salida $maintenanceModeSafetyExit."
     }
     if ($permissionAuditSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Permission audit safety validation returned exit code $permissionAuditSafetyExit."
+        Add-ReportLine $lines "- La validacion de auditoria de permisos devolvio codigo de salida $permissionAuditSafetyExit."
     }
     if ($rateLimitSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Rate-limit safety validation returned exit code $rateLimitSafetyExit."
+        Add-ReportLine $lines "- La validacion de limites de uso devolvio codigo de salida $rateLimitSafetyExit."
     }
     if ($shiftIncidentRecoverySafetyExit -ne 0) {
-        Add-ReportLine $lines "- Shift incident recovery safety validation returned exit code $shiftIncidentRecoverySafetyExit."
+        Add-ReportLine $lines "- La validacion de recuperacion de incidentes de turno devolvio codigo de salida $shiftIncidentRecoverySafetyExit."
     }
     if ($newInvoiceMaintainabilityExit -ne 0) {
-        Add-ReportLine $lines "- New invoice maintainability validation returned exit code $newInvoiceMaintainabilityExit."
+        Add-ReportLine $lines "- La validacion de mantenibilidad de nueva factura devolvio codigo de salida $newInvoiceMaintainabilityExit."
     }
     if ($trainingSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Training safety validation returned exit code $trainingSafetyExit."
+        Add-ReportLine $lines "- La validacion de capacitacion segura devolvio codigo de salida $trainingSafetyExit."
     }
     if ($fieldProofTemplatesSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Field proof templates safety validation returned exit code $fieldProofTemplatesSafetyExit."
+        Add-ReportLine $lines "- La validacion de plantillas de evidencia de campo devolvio codigo de salida $fieldProofTemplatesSafetyExit."
     }
     if ($proofInitializationSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Proof initialization safety validation returned exit code $proofInitializationSafetyExit."
+        Add-ReportLine $lines "- La validacion de inicializacion de evidencias devolvio codigo de salida $proofInitializationSafetyExit."
     }
     if ($operationsObjectiveAuditExit -ne 0) {
-        Add-ReportLine $lines "- Operations objective audit validation returned exit code $operationsObjectiveAuditExit."
+        Add-ReportLine $lines "- La auditoria del objetivo operativo devolvio codigo de salida $operationsObjectiveAuditExit."
     }
     if ($handoffGuardCoverageExit -ne 0) {
-        Add-ReportLine $lines "- Handoff guard coverage validation returned exit code $handoffGuardCoverageExit."
+        Add-ReportLine $lines "- La validacion de cobertura de guards de handoff devolvio codigo de salida $handoffGuardCoverageExit."
     }
     if ($offlineReleaseStagingSafetyExit -ne 0) {
-        Add-ReportLine $lines "- Offline release staging safety validation returned exit code $offlineReleaseStagingSafetyExit."
+        Add-ReportLine $lines "- La validacion de staging del release offline devolvio codigo de salida $offlineReleaseStagingSafetyExit."
     }
     if ($offlineReleaseBuilderSelfTestExit -ne 0) {
-        Add-ReportLine $lines "- Offline release builder self-test returned exit code $offlineReleaseBuilderSelfTestExit."
+        Add-ReportLine $lines "- El self-test del constructor offline devolvio codigo de salida $offlineReleaseBuilderSelfTestExit."
     }
     if ($offlineReleaseGuardSelfTestExit -ne 0) {
-        Add-ReportLine $lines "- Offline release guard self-test returned exit code $offlineReleaseGuardSelfTestExit."
+        Add-ReportLine $lines "- El self-test del guard del release offline devolvio codigo de salida $offlineReleaseGuardSelfTestExit."
     }
     if ($dependencyManifestExit -ne 0) {
-        Add-ReportLine $lines "- Dependency manifest validation returned exit code $dependencyManifestExit."
+        Add-ReportLine $lines "- La validacion del manifiesto de dependencias devolvio codigo de salida $dependencyManifestExit."
     }
     if ($productionLicenseSaltGuardExit -ne 0) {
-        Add-ReportLine $lines "- Production license salt guard validation returned exit code $productionLicenseSaltGuardExit."
+        Add-ReportLine $lines "- El guard de secreto de licencia de produccion devolvio codigo de salida $productionLicenseSaltGuardExit."
     }
     if ($finalHandoffCompletenessExit -ne 0) {
-        Add-ReportLine $lines "- Final handoff completeness validation returned exit code $finalHandoffCompletenessExit."
+        Add-ReportLine $lines "- La validacion de completitud de handoff final devolvio codigo de salida $finalHandoffCompletenessExit."
     }
     if ($evidenceIndexExit -ne 0) {
-        Add-ReportLine $lines "- Final handoff evidence index validation returned exit code $evidenceIndexExit."
+        Add-ReportLine $lines "- La validacion del indice de evidencias de handoff final devolvio codigo de salida $evidenceIndexExit."
     }
     if ($allProofsCompleted -and $allAutomatedGuardsPassed -and -not $preflightSkipped -and $preflightExit -eq 0) {
         Add-ReportLine $lines "- Ninguno reportado por el script de handoff."
@@ -1154,13 +1154,13 @@ function Write-HandoffReport(
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\init_production_proofs.ps1 -WhatIfOnly"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -UpdateExisting"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -Status"
-    Add-ReportLine $lines "# Then observe a server startup/reboot or supervised manual task start, confirm /up and login, and complete qa\FINAL_STARTUP_TASK_PROOF.md."
+    Add-ReportLine $lines "# Luego observe un arranque/reinicio del servidor o un inicio manual supervisado de la tarea, confirme /up y login, y complete qa\FINAL_STARTUP_TASK_PROOF.md."
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $(Protect-HandoffText $PhpPath)"
     Add-ReportLine $lines "Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath $(Protect-HandoffText $PhpPath)"
     Add-ReportLine $lines "# Crear un respaldo manual desde la UI administrativa, confirmar que cambia de Pendiente a Protegido y completar qa\FINAL_BACKUP_TASK_PROOF.md."
     Add-ReportLine $lines 'bash -lc "HOSPITAL_VALIDATE_RESTORE_MYSQL=1 RESTORE_TEST_DATABASE=hospital_restore_validation_test HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation_test scripts/validate_restore_mysql.sh"'
-    Add-ReportLine $lines "# Set HOSPITAL_CONCURRENCY_LOGIN and HOSPITAL_CONCURRENCY_PASSWORD for a temporary validation account outside this report."
+    Add-ReportLine $lines "# Defina HOSPITAL_CONCURRENCY_LOGIN y HOSPITAL_CONCURRENCY_PASSWORD para una cuenta temporal de validacion fuera de este reporte."
     Add-ReportLine $lines "bash -lc `"HOSPITAL_VALIDATE_REAL_MYSQL=1 HOSPITAL_CONFIRM_CONCURRENCY_TARGET=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_BASE_URL=$($BaseUrl.TrimEnd('/')) HOSPITAL_CONCURRENCY_TARGET_ENV=validation HOSPITAL_CONCURRENCY_EVIDENCE_PATH=qa/FINAL_CONCURRENCY_PROOF.md scripts/validate_mysql_concurrency.sh`""
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_support_packet_safety.ps1"
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_first_level_support_safety.ps1"
@@ -1208,7 +1208,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Backup task status output"
+    Add-ReportLine $lines "## Salida de estado de tareas de respaldo"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $backupStatusOutput) {
@@ -1217,7 +1217,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Offline release artifact guard output"
+    Add-ReportLine $lines "## Salida del guard del artefacto offline"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $releaseGuardOutput) {
@@ -1226,7 +1226,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Support packet safety validation output"
+    Add-ReportLine $lines "## Salida de validacion del paquete seguro de soporte"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $supportPacketSafetyOutput) {
@@ -1235,7 +1235,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## First-level support safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de soporte de primer nivel"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $firstLevelSupportSafetyOutput) {
@@ -1244,7 +1244,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Production ready gate safety validation output"
+    Add-ReportLine $lines "## Salida de validacion del gate PRODUCTION_READY"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $productionReadyGateSafetyOutput) {
@@ -1253,7 +1253,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Final field blockers safety self-test output"
+    Add-ReportLine $lines "## Salida del self-test de bloqueantes finales de campo"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $finalFieldBlockersSafetyOutput) {
@@ -1262,7 +1262,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Final physical proof candidate guard suite output"
+    Add-ReportLine $lines "## Salida de guards candidatos de evidencia fisica final"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $finalPhysicalProofCandidateGuardOutput) {
@@ -1271,7 +1271,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Browser smoke evidence validation output"
+    Add-ReportLine $lines "## Salida de validacion de evidencia de navegador"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $browserSmokeEvidenceOutput) {
@@ -1280,7 +1280,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Startup and repair safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de arranque y reparacion segura"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $startupRepairSafetyOutput) {
@@ -1289,7 +1289,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Training safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de capacitacion segura"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $trainingSafetyOutput) {
@@ -1298,7 +1298,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Field proof templates safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de plantillas de evidencia de campo"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $fieldProofTemplatesSafetyOutput) {
@@ -1307,7 +1307,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Proof initialization safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de inicializacion de evidencias"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $proofInitializationSafetyOutput) {
@@ -1316,7 +1316,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Operations objective audit validation output"
+    Add-ReportLine $lines "## Salida de auditoria del objetivo operativo"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $operationsObjectiveAuditOutput) {
@@ -1325,7 +1325,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Handoff guard coverage validation output"
+    Add-ReportLine $lines "## Salida de cobertura de guards de handoff"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $handoffGuardCoverageOutput) {
@@ -1334,7 +1334,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Offline release staging safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de staging del release offline"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $offlineReleaseStagingSafetyOutput) {
@@ -1343,7 +1343,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Offline release builder self-test output"
+    Add-ReportLine $lines "## Salida del self-test del constructor offline"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $offlineReleaseBuilderSelfTestOutput) {
@@ -1352,7 +1352,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Offline release guard self-test output"
+    Add-ReportLine $lines "## Salida del self-test del guard del release offline"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $offlineReleaseGuardSelfTestOutput) {
@@ -1361,7 +1361,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Dependency manifest validation output"
+    Add-ReportLine $lines "## Salida de validacion del manifiesto de dependencias"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $dependencyManifestOutput) {
@@ -1370,7 +1370,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Production license salt guard validation output"
+    Add-ReportLine $lines "## Salida del guard de secreto de licencia de produccion"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $productionLicenseSaltGuardOutput) {
@@ -1379,7 +1379,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Operator manuals safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de manuales de operador"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $operatorManualsSafetyOutput) {
@@ -1388,7 +1388,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Backup and restore docs safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de documentos de respaldo y restore"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $backupRestoreDocsSafetyOutput) {
@@ -1397,7 +1397,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Backup startup current-user safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de arranque de respaldos por usuario"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $backupStartupCurrentUserSafetyOutput) {
@@ -1406,7 +1406,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Windows restore safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de restore seguro en Windows"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $restoreWindowsSafetyOutput) {
@@ -1415,7 +1415,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Installation docs safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de documentos de instalacion"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $installationDocsSafetyOutput) {
@@ -1424,7 +1424,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Help screen safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de pantalla de ayuda"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $helpScreenSafetyOutput) {
@@ -1433,7 +1433,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## System diagnostics safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de diagnostico del sistema"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $systemDiagnosticsSafetyOutput) {
@@ -1442,7 +1442,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Double-action safety validation output"
+    Add-ReportLine $lines "## Salida de validacion contra doble accion"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $doubleActionSafetyOutput) {
@@ -1451,7 +1451,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Realtime own-event safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de eventos propios en tiempo real"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $realtimeOwnEventSafetyOutput) {
@@ -1460,7 +1460,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Installer legacy safety validation output"
+    Add-ReportLine $lines "## Salida de validacion del instalador heredado"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $installerLegacySafetyOutput) {
@@ -1469,7 +1469,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## LAN recovery safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de recuperacion LAN"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $lanRecoverySafetyOutput) {
@@ -1478,7 +1478,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## LAN loadtest safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de carga LAN"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $lanLoadtestSafetyOutput) {
@@ -1487,7 +1487,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Known limitations safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de limitaciones conocidas"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $knownLimitationsSafetyOutput) {
@@ -1496,7 +1496,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Maintenance mode safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de modo mantenimiento"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $maintenanceModeSafetyOutput) {
@@ -1505,7 +1505,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Permission audit safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de auditoria de permisos"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $permissionAuditSafetyOutput) {
@@ -1514,7 +1514,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Rate-limit safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de limites de uso"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $rateLimitSafetyOutput) {
@@ -1523,7 +1523,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Shift incident recovery safety validation output"
+    Add-ReportLine $lines "## Salida de validacion de recuperacion de incidentes de turno"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $shiftIncidentRecoverySafetyOutput) {
@@ -1532,7 +1532,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## New invoice maintainability validation output"
+    Add-ReportLine $lines "## Salida de validacion de mantenibilidad de nueva factura"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $newInvoiceMaintainabilityOutput) {
@@ -1541,7 +1541,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Final handoff completeness validation output"
+    Add-ReportLine $lines "## Salida de validacion de completitud de handoff final"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $finalHandoffCompletenessOutput) {
@@ -1550,7 +1550,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Evidence index validation output"
+    Add-ReportLine $lines "## Salida de validacion del indice de evidencias"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $evidenceIndexOutput) {
@@ -1559,7 +1559,7 @@ function Write-HandoffReport(
     Add-ReportLine $lines '```'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Preflight output"
+    Add-ReportLine $lines "## Salida de preflight"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```text'
     foreach ($line in $preflightOutput) {
@@ -1573,7 +1573,7 @@ function Write-HandoffReport(
     }
 
     Set-Content -LiteralPath $path -Value $lines -Encoding ASCII
-    Write-Host "Wrote handoff report: $(Protect-HandoffText $path)"
+    Write-Host "Reporte de handoff escrito en: $(Protect-HandoffText $path)"
 }
 
 Assert-ScriptExists $preflightScript
@@ -1621,12 +1621,12 @@ Assert-ScriptExists $shiftIncidentRecoverySafetyScript
 Assert-ScriptExists $newInvoiceMaintainabilityScript
 Assert-ScriptExists $finalHandoffCompletenessScript
 
-Write-Host "Sistema de Caja Hospitalaria final production handoff"
-Write-Host "ProjectRoot: $(Protect-HandoffText $ProjectRoot)"
-Write-Host "BaseUrl: $($BaseUrl.TrimEnd('/'))"
-Write-Host "PhpPath: $(Protect-HandoffText $PhpPath)"
+Write-Host "Sistema de Caja Hospitalaria - handoff final de produccion"
+Write-Host "Carpeta del sistema: $(Protect-HandoffText $ProjectRoot)"
+Write-Host "URL base: $($BaseUrl.TrimEnd('/'))"
+Write-Host "Ruta de PHP: $(Protect-HandoffText $PhpPath)"
 
-Write-Section "Proof files"
+Write-Section "Archivos de evidencia"
 if ($InitializeProofFiles) {
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $proofInitScript -ProjectRoot $ProjectRoot
 }
@@ -1639,55 +1639,55 @@ $backupTaskProofCompleted = Test-ProofLooksCompleted $backupTaskProofPath
 $concurrencyProofCompleted = Test-ProofLooksCompleted $concurrencyProofPath
 $trainingAcceptanceProofCompleted = Test-ProofLooksCompleted $trainingAcceptanceProofPath
 $allHandoffProofsCompleted = $lanProofCompleted -and $printerProofCompleted -and $startupTaskProofCompleted -and $restoreProofCompleted -and $backupTaskProofCompleted -and $concurrencyProofCompleted -and $trainingAcceptanceProofCompleted
-Write-Result $lanProofCompleted "Second-client LAN proof file has required handoff fields; preflight performs strict validation." "Second-client LAN proof is missing, incomplete, has placeholders, or references missing evidence."
-Write-Result $printerProofCompleted "Physical printer proof file has required handoff fields; preflight performs strict validation." "Physical printer proof is missing, incomplete, has placeholders, or references missing evidence."
-Write-Result $startupTaskProofCompleted "Final startup task proof file has required handoff fields; preflight performs strict validation." "Final startup task proof is missing, incomplete, has placeholders, or references missing evidence."
-Write-Result $restoreProofCompleted "Final restore proof file has required handoff fields; preflight performs strict validation." "Final restore proof is missing, incomplete, has placeholders, or references missing evidence."
-Write-Result $backupTaskProofCompleted "Final backup task proof file has required handoff fields; preflight performs strict validation." "Final backup task proof is missing, incomplete, has placeholders, or references missing evidence."
-Write-Result $concurrencyProofCompleted "Final concurrency proof file has required handoff fields; preflight performs strict validation." "Final concurrency proof is missing, incomplete, has placeholders, or references missing evidence."
-Write-Result $trainingAcceptanceProofCompleted "Supervised training acceptance proof file has required handoff fields; preflight performs strict validation." "Training acceptance proof is missing, incomplete, has placeholders, or references missing evidence."
+Write-Result $lanProofCompleted "La evidencia de segunda computadora LAN tiene los campos requeridos; preflight hara validacion estricta." "La evidencia de segunda computadora LAN falta, esta incompleta, conserva marcadores o referencia evidencia inexistente."
+Write-Result $printerProofCompleted "La evidencia de impresora fisica tiene los campos requeridos; preflight hara validacion estricta." "La evidencia de impresora fisica falta, esta incompleta, conserva marcadores o referencia evidencia inexistente."
+Write-Result $startupTaskProofCompleted "La evidencia final de autoarranque tiene los campos requeridos; preflight hara validacion estricta." "La evidencia final de autoarranque falta, esta incompleta, conserva marcadores o referencia evidencia inexistente."
+Write-Result $restoreProofCompleted "La evidencia final de restore tiene los campos requeridos; preflight hara validacion estricta." "La evidencia final de restore falta, esta incompleta, conserva marcadores o referencia evidencia inexistente."
+Write-Result $backupTaskProofCompleted "La evidencia final de respaldos tiene los campos requeridos; preflight hara validacion estricta." "La evidencia final de respaldos falta, esta incompleta, conserva marcadores o referencia evidencia inexistente."
+Write-Result $concurrencyProofCompleted "La evidencia final de concurrencia tiene los campos requeridos; preflight hara validacion estricta." "La evidencia final de concurrencia falta, esta incompleta, conserva marcadores o referencia evidencia inexistente."
+Write-Result $trainingAcceptanceProofCompleted "La evidencia de capacitacion supervisada tiene los campos requeridos; preflight hara validacion estricta." "La evidencia de capacitacion supervisada falta, esta incompleta, conserva marcadores o referencia evidencia inexistente."
 
 if (-not $lanProofCompleted) {
-    Write-Host "Run from the second LAN client:"
+    Write-Host "Ejecute desde la segunda computadora en LAN:"
     Write-Host "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md"
 }
 
 if (-not $printerProofCompleted) {
-    Write-Host "Print real media carta/carta/A5 samples, then complete qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md with physical evidence."
+    Write-Host "Imprima muestras reales en media carta/carta/A5 y complete qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md con evidencia fisica."
 }
 
 if (-not $startupTaskProofCompleted) {
-    Write-Host "Install/update stack autostart, observe startup or reboot recovery, confirm /up and login, then complete qa\FINAL_STARTUP_TASK_PROOF.md."
+    Write-Host "Instale o actualice el autoarranque, observe inicio o recuperacion tras reinicio, confirme /up y login, y complete qa\FINAL_STARTUP_TASK_PROOF.md."
 }
 
 if (-not $restoreProofCompleted) {
-    Write-Host "Run restore validation into a disposable database, then complete qa\FINAL_RESTORE_PROOF.md."
+    Write-Host "Ejecute validacion de restore en una base descartable y complete qa\FINAL_RESTORE_PROOF.md."
 }
 
 if (-not $backupTaskProofCompleted) {
-    Write-Host "Install/update backup tasks, create one manual UI backup, confirm Protegido in the admin UI, then complete qa\FINAL_BACKUP_TASK_PROOF.md."
+    Write-Host "Instale o actualice tareas de respaldo, cree un respaldo manual desde la UI, confirme Protegido en administracion y complete qa\FINAL_BACKUP_TASK_PROOF.md."
 }
 
 if (-not $concurrencyProofCompleted) {
-    Write-Host "Run concurrency validation against a disposable target, then complete qa\FINAL_CONCURRENCY_PROOF.md."
+    Write-Host "Ejecute validacion de concurrencia contra un destino descartable y complete qa\FINAL_CONCURRENCY_PROOF.md."
 }
 
 if (-not $trainingAcceptanceProofCompleted) {
-    Write-Host "Run supervised role training in a safe practice environment, then complete qa\TRAINING_ACCEPTANCE_PROOF.md without names, patient data or secrets."
+    Write-Host "Ejecute capacitacion supervisada por rol en un ambiente seguro de practica y complete qa\TRAINING_ACCEPTANCE_PROOF.md sin nombres, datos de pacientes ni secretos."
 }
 
 Write-Section "Backup automation"
 $backupStatusOutput = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $backupTasksScript -ProjectRoot $ProjectRoot -PhpPath $PhpPath -Status 2>&1 | ForEach-Object { $_.ToString() })
 $backupStatusOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
-Write-Host "If tasks are missing or stale, run elevated PowerShell:"
+Write-Host "Si faltan tareas o estan desactualizadas, ejecute PowerShell elevado:"
 Write-Host "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -UpdateExisting"
 Write-Host "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_stack_autostart_windows.ps1 -Status"
-Write-Host "After stack autostart is installed, observe startup/reboot recovery and complete qa\FINAL_STARTUP_TASK_PROOF.md."
+Write-Host "Despues de instalar autoarranque, observe inicio o recuperacion tras reinicio y complete qa\FINAL_STARTUP_TASK_PROOF.md."
 Write-Host "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -UpdateExisting -PhpPath $(Protect-HandoffText $PhpPath)"
 Write-Host "Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker"
 Write-Host "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status -PhpPath $(Protect-HandoffText $PhpPath)"
 
-Write-Section "Offline release artifact"
+Write-Section "Artefacto de release offline"
 $releaseGuardOutput = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $releaseGuardScript -ProjectRoot $ProjectRoot -RequireCurrentCommit 2>&1 | ForEach-Object { $_.ToString() })
 $releaseGuardExit = $LASTEXITCODE
 $releaseGuardOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
@@ -1729,8 +1729,8 @@ $dependencyManifest = Invoke-DependencyManifestGuard
 $productionLicenseSaltGuard = Invoke-ProductionLicenseSaltGuard
 
 if ($SkipPreflight) {
-    Write-Section "Preflight skipped"
-    Write-Host "SkipPreflight was used. This run cannot approve PRODUCTION_READY."
+    Write-Section "Preflight omitido"
+    Write-Host "Se uso SkipPreflight. Esta ejecucion no puede aprobar PRODUCTION_READY."
     Write-HandoffReport `
         -path $ReportPath `
         -lanProofCompleted $lanProofCompleted `
@@ -1813,11 +1813,11 @@ if ($SkipPreflight) {
         -dependencyManifestExit $dependencyManifest.ExitCode `
         -productionLicenseSaltGuardOutput $productionLicenseSaltGuard.Output `
         -productionLicenseSaltGuardExit $productionLicenseSaltGuard.ExitCode `
-        -finalHandoffCompletenessOutput @("Final handoff completeness validation pending until the handoff report is written.") `
+        -finalHandoffCompletenessOutput @("Validacion de completitud de handoff final pendiente hasta escribir el reporte de handoff.") `
         -finalHandoffCompletenessExit 2 `
-        -evidenceIndexOutput @("Evidence index validation pending until the handoff report is written.") `
+        -evidenceIndexOutput @("Validacion del indice de evidencias pendiente hasta escribir el reporte de handoff.") `
         -evidenceIndexExit 2 `
-        -preflightOutput @("Preflight skipped by -SkipPreflight.") `
+        -preflightOutput @("Preflight omitido por -SkipPreflight.") `
         -preflightExit 2 `
         -preflightSkipped $true
 
@@ -1909,13 +1909,13 @@ if ($SkipPreflight) {
         -finalHandoffCompletenessExit $finalHandoffCompleteness.ExitCode `
         -evidenceIndexOutput $evidenceIndex.Output `
         -evidenceIndexExit $evidenceIndex.ExitCode `
-        -preflightOutput @("Preflight skipped by -SkipPreflight.") `
+        -preflightOutput @("Preflight omitido por -SkipPreflight.") `
         -preflightExit 2 `
         -preflightSkipped $true
     exit 2
 }
 
-Write-Section "Production preflight"
+Write-Section "Preflight de produccion"
 $preflightOutput = @(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $preflightScript -ProjectRoot $ProjectRoot -BaseUrl $BaseUrl 2>&1 | ForEach-Object { $_.ToString() })
 $preflightExit = $LASTEXITCODE
 $preflightOutput | ForEach-Object { Write-Host (Protect-HandoffText $_) }
@@ -2002,9 +2002,9 @@ Write-HandoffReport `
     -dependencyManifestExit $dependencyManifest.ExitCode `
     -productionLicenseSaltGuardOutput $productionLicenseSaltGuard.Output `
     -productionLicenseSaltGuardExit $productionLicenseSaltGuard.ExitCode `
-    -finalHandoffCompletenessOutput @("Final handoff completeness validation pending until the handoff report is written.") `
+    -finalHandoffCompletenessOutput @("Validacion de completitud de handoff final pendiente hasta escribir el reporte de handoff.") `
     -finalHandoffCompletenessExit 2 `
-    -evidenceIndexOutput @("Evidence index validation pending until the handoff report is written.") `
+    -evidenceIndexOutput @("Validacion del indice de evidencias pendiente hasta escribir el reporte de handoff.") `
     -evidenceIndexExit 2 `
     -preflightOutput $preflightOutput `
     -preflightExit $preflightExit `
@@ -2151,7 +2151,7 @@ if ($allFinalAutomatedGuardsPassed -and $allHandoffProofsCompleted) {
 }
 
 Write-Host ""
-Write-Host "PRODUCTION_READY remains blocked. Keep status as PRODUCTION_CANDIDATE and close the missing evidence above." -ForegroundColor Yellow
+Write-Host "PRODUCTION_READY sigue bloqueado. Mantenga el estado PRODUCTION_CANDIDATE y cierre las evidencias faltantes indicadas arriba." -ForegroundColor Yellow
 if ($allFinalAutomatedGuardsPassed) {
     exit 1
 }
