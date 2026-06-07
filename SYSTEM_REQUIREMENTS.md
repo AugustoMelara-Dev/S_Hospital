@@ -1,7 +1,7 @@
 # System Requirements - S_Hospital Offline
 
 ## Objetivo
-Sistema para facturación hospitalaria local con caja, pagos, reportes, catálogo editable, usuarios, permisos, impresión térmica y backups.
+Sistema para facturación hospitalaria local con caja, pagos, reportes, catálogo editable, usuarios, permisos, recibo institucional imprimible y backups.
 
 ## Stack
 - Frontend: React + TypeScript.
@@ -18,7 +18,7 @@ Sistema para facturación hospitalaria local con caja, pagos, reportes, catálog
 - E2E: Playwright.
 
 ## Módulos obligatorios
-Dashboard, facturación, catálogo, medicamentos/reglas, paciente simple, caja, pagos, facturas/historial, reportes, usuarios/permisos, configuración fiscal, impresión térmica/PDF, offline LAN, backups, auditoría.
+Dashboard, facturación, catálogo, medicamentos/reglas, paciente simple, caja, pagos, facturas/historial, reportes, usuarios/permisos, configuración fiscal, recibo institucional PDF/imprimible en media carta, carta o A5, offline LAN, backups, auditoría.
 
 ## Regla del paciente
 Solo nombre obligatorio. No implementar expediente clínico completo.

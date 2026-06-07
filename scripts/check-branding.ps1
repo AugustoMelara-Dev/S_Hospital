@@ -35,6 +35,8 @@ $legacyReceiptPaperForbidden = @(
     'recibos termicos',
     'recibo térmico',
     'recibos térmicos',
+    'impresion termica',
+    'impresión térmica',
     'impresora termica',
     'impresora térmica'
 )
@@ -46,6 +48,8 @@ $visibleReceiptPaperForbidden = @(
     'recibos termicos',
     'recibo térmico',
     'recibos térmicos',
+    'impresion termica',
+    'impresión térmica',
     'impresora termica',
     'impresora térmica'
 )
@@ -74,6 +78,8 @@ $currentDeliveryReceiptPaperForbidden = @(
     'thermal printer',
     'roll printer',
     'roll-paper printer',
+    'impresion termica',
+    'impresión térmica',
     'impresora termica',
     'impresora térmica',
     'impresora de rollo',
@@ -164,6 +170,7 @@ try {
             'frontend/src/components',
             'frontend/src/layout',
             'frontend/src/lib/institutionalReceiptPaper.ts',
+            'SYSTEM_REQUIREMENTS.md',
             'prompts',
             'docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md',
             'docs/LOCAL_VALIDATION_SCRIPT.md',
@@ -223,6 +230,7 @@ try {
         -Paths @(
             'docs/08_CRITICAL_ACCEPTANCE_CRITERIA.md',
             'docs/00_README.md',
+            'SYSTEM_REQUIREMENTS.md',
             'docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md',
             'docs/AUDIT_2026_06_02.md',
             'docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md',

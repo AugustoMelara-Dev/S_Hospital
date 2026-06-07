@@ -3693,3 +3693,8 @@ Validacion: e2e con capturas, validate_browser_smoke_evidence, typecheck, lint/b
 Contexto: la pantalla de Respaldos ya muestra Protegido, Pendiente o Error para operadores no tecnicos, pero Ayuda y el manual de usuario todavia ensenaban Todo bien o Requiere revision.
 Decision: Ayuda institucional y Manual de Usuario quedan alineados a Protegido, Pendiente o Error. validate_training_safety ahora protege el manual y la ayuda contra esos estados obsoletos.
 Validacion: HelpView test, validate_training_safety y busqueda enfocada de etiquetas obsoletas en ayuda/manual.
+
+## 2026-06-07 - requisitos fuente sin impresion termica
+Contexto: SYSTEM_REQUIREMENTS.md aun describia impresion termica como modulo obligatorio, aunque el contrato RC vigente exige recibo institucional en media carta, carta o A5 y no promover papel de rollo.
+Decision: SYSTEM_REQUIREMENTS.md queda alineado a recibo institucional PDF/imprimible en media carta, carta o A5. check-branding ahora cubre ese archivo y bloquea impresion termica como lenguaje heredado en superficies actuales.
+Validacion: check-branding, busqueda enfocada en SYSTEM_REQUIREMENTS y diff check.
