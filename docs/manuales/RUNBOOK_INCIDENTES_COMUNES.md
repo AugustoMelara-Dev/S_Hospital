@@ -10,7 +10,7 @@
 2. [Login no acepta contrasena](#2-login-no-acepta-contrasena)
 3. [No imprime la factura](#3-no-imprime-la-factura)
 4. [Caja no abre / caja duplicada](#4-caja-no-abre)
-5. [Respaldo queda en "pending"](#5-respaldo-pending)
+5. [Respaldo queda en Pendiente](#5-respaldo-queda-en-pendiente)
 6. [Internet requerido (NO deberia)](#6-internet-requerido)
 7. [PC cliente no carga la app](#7-pc-cliente-no-carga)
 8. [Cajero ve doble toast de su propia accion](#8-cajero-doble-toast)
@@ -123,35 +123,33 @@ incluye en este runbook** y que requiere backup previo.
 
 ---
 
-## 5. Respaldo "pending"
+## 5. Respaldo queda en Pendiente
 
-**Sintoma:** Un backup manual o automatico queda en estado
-`pending` indefinidamente sin pasar a `success` ni `failed`.
+**Sintoma:** Un respaldo manual o automatico queda en **Pendiente**
+por mucho tiempo y no cambia a **Protegido** ni a **Error**.
 
 **Causa probable:**
-- El worker de cola `backups` no esta corriendo.
-- La herramienta de dump (`mysqldump` o `mariadb-dump`) no esta
-  en el PATH del contenedor backend.
+- La tarea local que procesa respaldos no esta activa.
+- La herramienta local de copia de la base de datos no esta disponible
+  en el servidor.
 - Disco duro sin espacio.
 
 **Accion inmediata:**
-1. Abrir `Respaldos` -> `Informacion del sistema` y revisar el
-   estado del worker. Si dice `worker_recently_active: false`,
-   reiniciarlo.
-2. Si esta en Windows, abrir `Programador de tareas` y verificar
-   que `SistemaCajaHospitalaria-BackupWorker` este `Running`.
-   Si no, `Iniciar`.
-3. Si no aparece la tarea, ejecutar como Administrador
-   `.\scripts\install_backup_tasks_windows.ps1 -UpdateExisting`.
-4. Revisar disco en el servidor: `Get-PSDrive C | Select Free`.
-   Si esta < 5 GB, liberar espacio o ampliar disco.
-5. Revisar el log del worker: `backend\storage\logs\worker.log`
-   (o el equivalente diario).
+1. Abrir **Respaldos** y confirmar el estado visible:
+   **Protegido**, **Pendiente** o **Error**.
+2. Si sigue **Pendiente** despues de varios minutos, avisar a
+   soporte local. No cierre el navegador ni repita respaldos muchas
+   veces seguidas.
+3. Revisar espacio disponible en el servidor. Si queda menos de 5 GB,
+   liberar espacio o ampliar disco antes de intentar otro respaldo.
+4. Usar **Ayuda > Preparar resumen para soporte** y anotar la hora del
+   ultimo respaldo pendiente.
+5. Soporte local puede revisar la tarea de respaldos del servidor y
+   reiniciarla segun la guia de soporte.
 
-**Escalamiento:** Si el worker arranca pero el dump sigue
-fallando, soporte nivel 2 verifica que `HOSPITAL_DUMP_BINARY`
-este bien configurado y que el PATH del contenedor incluya
-`/usr/bin/mariadb-dump`.
+**Escalamiento:** Si al reintentar aparece **Error** o no se genera un
+respaldo **Protegido**, soporte nivel 2 valida la herramienta de respaldo
+en el servidor y documenta el incidente.
 
 ---
 

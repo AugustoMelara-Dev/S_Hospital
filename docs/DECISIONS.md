@@ -3561,3 +3561,7 @@ Pruebas actualizadas: AuditoriaTab y ReportsView bloquean la aparicion visible d
 ## 2026-06-07 - Capacitacion y manual de operador sin estados internos de respaldo
 La guia rapida de administrador y el indice de operador ahora usan lenguaje visible de producto para respaldos: Protegido, Pendiente y Error. Se removieron rutas de verificacion, comandos de API y comandos de mantenimiento del indice normal para que caja y administracion trabajen desde UI o escalen a soporte local.
 Validadores actualizados: validate_training_safety bloquea pending, success, failed, checksum, SHA256 y rutas crudas en TRAINING_ADMIN; validate_operator_manuals_safety bloquea curl, /api/, php artisan y duda tecnica en manuales normales.
+
+## 2026-06-07 - Runbook de incidentes usa estados visibles para respaldos pendientes
+El incidente comun de respaldos pendientes ahora habla en terminos de producto: Pendiente, Protegido y Error. Se retiro de esa seccion el lenguaje interno pending, success, failed, worker_recently_active y HOSPITAL_DUMP_BINARY para que supervisor y soporte de primer nivel indiquen acciones claras sin exponer detalles de implementacion al operador.
+El validador de manuales ahora lee RUNBOOK_INCIDENTES_COMUNES y bloquea la reaparicion de esos estados internos en la seccion de respaldo pendiente.

@@ -41,6 +41,14 @@ function Test-Contains([string] $content, [string] $pattern, [string] $label) {
     }
 }
 
+function Test-NotContains([string] $content, [string] $pattern, [string] $label) {
+    if ($content -match $pattern) {
+        Add-Failure $label
+    } else {
+        Add-Pass $label
+    }
+}
+
 function Test-ManualChecklistAndWarnings([string] $role, [string] $content) {
     Test-Contains $content "(?im)^##\s+Checklist Diario" "$role has daily checklist section"
     Test-Contains $content "(?im)^##\s+Advertencias Antes De Acciones Delicadas" "$role has delicate-action warning section"
@@ -54,6 +62,7 @@ $administrator = Read-Manual "docs\manuales\MANUAL_ADMINISTRADOR.md"
 $operatorIndex = Read-Manual "docs\manuales\INDICE_OPERADOR.md"
 $support = Read-Manual "docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md"
 $training = Read-Manual "docs\manuales\GUIA_CAPACITACION_SEGURA.md"
+$commonIncidents = Read-Manual "docs\manuales\RUNBOOK_INCIDENTES_COMUNES.md"
 
 if ($cashier -ne "") {
     Test-ManualChecklistAndWarnings "Cashier manual" $cashier
@@ -87,7 +96,20 @@ if ($operatorIndex -ne "") {
     Test-Contains $operatorIndex "(?i)Avisar a soporte local" "Operator index routes LAN errors to local support"
 }
 
-$combined = "$cashier`n$supervisor`n$administrator`n$support`n$training"
+$backupIncident = ""
+if ($commonIncidents -match "(?is)##\s+5\.\s+Respaldo queda en Pendiente(?<section>.*?)(?:\r?\n---|\z)") {
+    $backupIncident = $Matches.section
+}
+
+if ($commonIncidents -ne "") {
+    Test-Contains $commonIncidents "(?i)Respaldo queda en Pendiente" "Common incidents runbook uses operator backup incident title"
+    Test-Contains $backupIncident "(?i)Protegido" "Common incidents runbook names protected backup state"
+    Test-Contains $backupIncident "(?i)Pendiente" "Common incidents runbook names pending backup state"
+    Test-Contains $backupIncident "(?i)Error" "Common incidents runbook names error backup state"
+    Test-NotContains $backupIncident "(?i)\b(pending|success|failed|worker_recently_active|HOSPITAL_DUMP_BINARY|/usr/bin/mariadb-dump)\b" "Common incidents backup section avoids raw backup internals"
+}
+
+$combined = "$cashier`n$supervisor`n$administrator`n$support`n$training`n$commonIncidents"
 $operatorFacing = "$cashier`n$supervisor`n$administrator`n$operatorIndex"
 foreach ($pattern in @("base real", "produccion", "base descartable", "no use la base real", "No restaure", "No borre")) {
     Test-Contains $combined ([regex]::Escape($pattern)) "Operator docs include safe training/support term: $pattern"
