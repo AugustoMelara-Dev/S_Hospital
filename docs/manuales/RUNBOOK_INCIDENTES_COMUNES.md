@@ -25,21 +25,24 @@
 girando indefinido al abrir `http://IP_SERVIDOR`.
 
 **Causa probable:**
-- El frontend compilado no esta en `frontend/dist/`.
-- nginx o el backend no esta corriendo.
+- La aplicacion del servidor no termino de iniciar.
+- El servicio web o la base de datos no estan respondiendo.
 - El navegador tiene cache de una version vieja.
 
 **Accion inmediata:**
-1. Abrir `/up` en el navegador. Si responde, el backend esta vivo.
-2. Abrir `/api/health` y verificar que devuelva `{"status":"ok"}`.
+1. Confirmar que la direccion en el navegador sea la direccion LAN
+   oficial del servidor, no una direccion de pruebas.
+2. Probar la misma direccion desde el servidor. Si abre en el servidor
+   pero no en la caja cliente, tratarlo como problema de red local.
 3. Presionar `Ctrl+Shift+Supr` y borrar cache del navegador.
-4. Si `/up` no responde, en el servidor abrir una terminal
-   Administrador y correr `docker ps`. Si los contenedores
-   no estan activos, ejecutar `.\scripts\start_hospital_services.ps1`.
+4. Si sigue en blanco, usar **Ayuda > Preparar resumen para soporte**
+   cuando la pantalla lo permita, o avisar a soporte local con la hora
+   exacta y la direccion LAN oficial usada.
+5. Soporte local debe revisar el estado de servicios con su guia de
+   mantenimiento; el cajero no debe ejecutar comandos en el servidor.
 
 **Escalamiento:** Si despues de 5 minutos la pantalla sigue blanca,
-capturar el error de la consola del navegador (F12) y enviar a
-soporte nivel 2.
+tomar captura de pantalla y enviar el resumen seguro a soporte nivel 2.
 
 ---
 
@@ -281,14 +284,14 @@ revisar `SESSION_ENCRYPT` y `SANCTUM_STATEFUL_DOMAINS` en `.env`.
 
 ## Cuando todo falla: lista de verificacion de 60 segundos
 
-1. `docker ps` -> todos los servicios "Up".
-2. `curl http://localhost:8000/up` -> 200.
-3. `curl http://localhost:8000/api/health` -> status:ok.
-4. `curl http://localhost:8000/api/system/health` -> responde
-   JSON con `database.connected: true`.
-5. `.\scripts\smoke_test_post_install.ps1 -BaseUrl http://localhost:8000`
-   -> todos los checks PASS.
+1. Confirmar que el servidor este encendido y conectado a la red local.
+2. Confirmar que la direccion LAN oficial abre desde el servidor.
+3. Confirmar que una computadora cliente use la direccion LAN oficial,
+   no `localhost`.
+4. Confirmar que caja no repita facturas ni cobros mientras el sistema
+   no este estable.
+5. Preparar resumen seguro desde **Ayuda** o registrar hora, usuario,
+   pantalla y mensaje visible si Ayuda no abre.
 
-Si alguno falla, abrir `docs/RELEASE_CHECKLIST.md` y
-`docs/RELEASE_NOTES_v1.0.0.md` y seguir las secciones
-correspondientes al chequeo que fallo.
+Si alguno falla, soporte local debe seguir su guia de mantenimiento y
+adjuntar la evidencia al registro interno del hospital.

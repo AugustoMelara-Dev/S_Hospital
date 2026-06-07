@@ -101,12 +101,28 @@ if ($commonIncidents -match "(?is)##\s+5\.\s+Respaldo queda en Pendiente(?<secti
     $backupIncident = $Matches.section
 }
 
+$blankScreenIncident = ""
+if ($commonIncidents -match "(?is)##\s+1\.\s+Pantalla blanca(?<section>.*?)(?:\r?\n---|\z)") {
+    $blankScreenIncident = $Matches.section
+}
+
+$finalChecklist = ""
+if ($commonIncidents -match "(?is)##\s+Cuando todo falla: lista de verificacion de 60 segundos(?<section>.*)\z") {
+    $finalChecklist = $Matches.section
+}
+
 if ($commonIncidents -ne "") {
     Test-Contains $commonIncidents "(?i)Respaldo queda en Pendiente" "Common incidents runbook uses operator backup incident title"
     Test-Contains $backupIncident "(?i)Protegido" "Common incidents runbook names protected backup state"
     Test-Contains $backupIncident "(?i)Pendiente" "Common incidents runbook names pending backup state"
     Test-Contains $backupIncident "(?i)Error" "Common incidents runbook names error backup state"
     Test-NotContains $backupIncident "(?i)\b(pending|success|failed|worker_recently_active|HOSPITAL_DUMP_BINARY|/usr/bin/mariadb-dump)\b" "Common incidents backup section avoids raw backup internals"
+    Test-Contains $blankScreenIncident "(?i)direccion LAN oficial" "Common incidents blank screen section uses LAN wording"
+    Test-Contains $blankScreenIncident "(?i)Ayuda\s*>\s*Preparar resumen para soporte|resumen seguro" "Common incidents blank screen section routes to safe support summary"
+    Test-NotContains $blankScreenIncident "(?i)/up|/api|docker\s+ps|frontend/dist|nginx|F12|consola del navegador" "Common incidents blank screen section avoids raw runtime checks"
+    Test-Contains $finalChecklist "(?i)direccion LAN oficial" "Common incidents final checklist uses LAN wording"
+    Test-Contains $finalChecklist "(?i)no\s+repita|no\s+repetir" "Common incidents final checklist warns against repeating financial actions"
+    Test-NotContains $finalChecklist "(?i)curl\s+http|/api|docker\s+ps|localhost:8000|smoke_test_post_install|database\.connected|JSON" "Common incidents final checklist avoids command/API checks"
 }
 
 $combined = "$cashier`n$supervisor`n$administrator`n$support`n$training`n$commonIncidents"

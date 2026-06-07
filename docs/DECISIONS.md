@@ -3565,3 +3565,7 @@ Validadores actualizados: validate_training_safety bloquea pending, success, fai
 ## 2026-06-07 - Runbook de incidentes usa estados visibles para respaldos pendientes
 El incidente comun de respaldos pendientes ahora habla en terminos de producto: Pendiente, Protegido y Error. Se retiro de esa seccion el lenguaje interno pending, success, failed, worker_recently_active y HOSPITAL_DUMP_BINARY para que supervisor y soporte de primer nivel indiquen acciones claras sin exponer detalles de implementacion al operador.
 El validador de manuales ahora lee RUNBOOK_INCIDENTES_COMUNES y bloquea la reaparicion de esos estados internos en la seccion de respaldo pendiente.
+
+## 2026-06-07 - Runbook evita comandos crudos en pantalla blanca y checklist final
+Las secciones Pantalla blanca y Cuando todo falla del runbook de incidentes comunes ahora guian al operador por direccion LAN oficial, cache del navegador, resumen seguro de Ayuda y escalamiento a soporte local. Se retiraron comprobaciones visibles con /up, /api, docker ps, curl, JSON y localhost:8000 de esas secciones para no trasladar diagnostico tecnico a caja o supervision.
+El validador validate_operator_manuals_safety extrae ambas secciones y bloquea la reaparicion de rutas, comandos o checks de runtime crudos en esos pasos.
