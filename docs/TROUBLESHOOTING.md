@@ -131,14 +131,14 @@ settings override the page CSS.
 3. In the receipt preview, use media carta, carta or A5. The cashier can
    change the paper size in the dialog if the wrong size is selected.
 
-## "Respaldo pendiente" never finishes
+## "Respaldo pendiente" nunca termina
 
-**Symptom:** The backups view shows a backup entry in `pending`
-state for hours.
+**Symptom:** La pantalla de Respaldos muestra una solicitud en
+**Pendiente** durante horas.
 
-**Cause:** The `queue-worker` service is down, the queue is
-backed up, or `mysqldump` is missing from the PATH of the
-backend container.
+**Cause:** La automatizacion local de respaldos no esta procesando
+solicitudes, la cola esta atrasada o la herramienta de dump no esta
+disponible para el servicio backend.
 
 **Fix:**
 

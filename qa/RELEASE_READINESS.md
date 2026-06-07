@@ -7,7 +7,7 @@ Alcance: preparacion local del producto institucional, con evidencia de QA real 
 
 Estado general: PRODUCTION_CANDIDATE; NO PRODUCTION_READY hasta cerrar validacion completa desde cliente LAN fisico, impresora institucional fisica, restore/concurrencia final, tarea continua de respaldos y configuracion final de produccion con admin real.
 
-La preparacion local cubre login, caja, factura, regla de eritropoyetina, scanner/codigos, cobro, recibo institucional, historial, reimpresion, anulacion sin pagos, reportes avanzados y backup local. El cierre conserva evidencia de restore, concurrencia y rutas LAN. Los pendientes de hardware/entorno quedan documentados como limitaciones y no se presentan como validados.
+La preparacion local cubre login, caja, factura, regla de eritropoyetina, scanner/codigos, cobro, recibo institucional, historial, reimpresion, anulacion sin pagos, reportes avanzados y respaldo local. El cierre conserva evidencia de restore, concurrencia y rutas LAN. Los pendientes de hardware/entorno quedan documentados como limitaciones y no se presentan como validados.
 
 ## Definiciones de estado
 
@@ -48,7 +48,7 @@ Resultado local:
 - `npm.cmd run lint`: OK.
 - `npm.cmd run test`: OK, 18 tests.
 - `npm.cmd run build`: OK.
-- `npm.cmd run e2e`: OK, 1 Playwright test / flujo cajero-admin con login, caja, factura, eritropoyetina normal y gratis, pago, recibo institucional, historial, reimpresion, reportes y backup pending. Usa API mockeada local/testing; no toca produccion.
+- `npm.cmd run e2e`: OK, 1 Playwright test / flujo cajero-admin con login, caja, factura, eritropoyetina normal y gratis, pago, recibo institucional, historial, reimpresion, reportes y respaldo en Pendiente. Usa API mockeada local/testing; no toca produccion.
 - `bash scripts/quality_gate.sh`: el `bash` por defecto de Windows apunta a WSL y fallo porque no hay distro instalada.
 - `C:\Program Files\Git\usr\bin\bash.exe scripts/quality_gate.sh`: OK como gate seguro/no destructivo. `phpstan` no esta instalado y no forma parte del gate requerido actual.
 - `C:\Program Files\Git\usr\bin\bash.exe scripts/e2e_gate.sh`: OK; usa wrapper PowerShell controlado para arrancar Vite, ejecutar Playwright y detener el servidor.
@@ -110,7 +110,7 @@ En servidor real del hospital:
 - Configurar `APP_URL`, CORS y `SANCTUM_STATEFUL_DOMAINS` con la IP fija o dominio LAN real.
 - Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no pasar la contrasena como argumento CLI.
 - Ejecutar `php artisan config:cache --no-ansi`.
-- Levantar worker de backups como servicio/tarea continua y validar backup manual `pending` -> `success`.
+- Levantar la tarea continua de respaldos como servicio/tarea Windows y validar respaldo manual de Pendiente a Protegido.
 - Probar restore real en base descartable, no en la base activa.
 - Probar desde segunda PC en LAN.
 - Probar impresora institucional fisica con media carta/carta/A5.
@@ -157,7 +157,7 @@ Esta evidencia solo es vigente para el HEAD usado al generar el paquete. Si se c
 - Conteos restore: users 3, roles 3, permissions 27, services 122, invoices 1, payments 1, cash_register_sessions 1, backup_logs 5.
 - Concurrencia real MySQL/MariaDB local: VALIDATED con `scripts/validate_mysql_concurrency.sh`, `RUN_ID=concurrency-validation-20260517T20435`, doble apertura 201/422, facturas concurrentes `000-001-01-00000002` y `000-001-01-00000003`, doble pago 201/422.
 - LAN por IP desde servidor: `/up`, `/login`, `/verify-email` y asset JS respondieron 200 en `http://192.168.1.7:8000`.
-- Worker backups: `POST /api/backups` creo `pending`; `php artisan queue:work --queue=backups --tries=1 --timeout=600 --once` proceso el job. Sin dump en PATH fallo controlado; con PATH de XAMPP el backup de restore fue `success`.
+- Tarea de respaldos: la UI creo un respaldo manual en Pendiente; `php artisan queue:work --queue=backups --tries=1 --timeout=600 --once` proceso el trabajo. Sin dump en PATH fallo controlado; con PATH de XAMPP el respaldo de restore quedo Protegido.
 - Reportes nuevos: `qa/FIELD_DEPLOYMENT_VALIDATION.md` y `qa/PRODUCTION_READINESS_GAP_REPORT.md`.
 
 ## Pendientes honestos

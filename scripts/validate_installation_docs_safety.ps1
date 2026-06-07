@@ -64,6 +64,8 @@ $offlineLanInstallGuide = Read-RequiredFile "docs\OFFLINE_LAN_INSTALL.md"
 $backupRestoreReference = Read-RequiredFile "docs\BACKUP_RESTORE.md"
 $dailyCloseProtocol = Read-RequiredFile "docs\DAILY_CLOSE_PROTOCOL.md"
 $disasterRecoveryGuide = Read-RequiredFile "docs\DISASTER_RECOVERY.md"
+$troubleshootingGuide = Read-RequiredFile "docs\TROUBLESHOOTING.md"
+$docsIndex = Read-RequiredFile "docs\00_README.md"
 $trainingAdminGuide = Read-RequiredFile "docs\TRAINING_ADMIN.md"
 $userManual = Read-RequiredFile "docs\Manual_Usuario.md"
 $userManualHtml = Read-RequiredFile "docs\Manual_Usuario.html"
@@ -71,6 +73,8 @@ $operatorIndex = Read-RequiredFile "docs\manuales\INDICE_OPERADOR.md"
 $releaseChecklist = Read-RequiredFile "docs\RELEASE_CHECKLIST.md"
 $installSummary = Read-RequiredFile "docs\INSTALL_SUMMARY.md"
 $fieldDeploymentValidation = Read-RequiredFile "qa\FIELD_DEPLOYMENT_VALIDATION.md"
+$releaseReadiness = Read-RequiredFile "qa\RELEASE_READINESS.md"
+$productionGapReport = Read-RequiredFile "qa\PRODUCTION_READINESS_GAP_REPORT.md"
 
 if ($installGuide -ne "") {
     foreach ($section in @(
@@ -188,6 +192,29 @@ if ($releaseChecklist -ne "") {
     Test-NotContains $releaseChecklist '(?i)backup pending|backup `pending`|cambio de `pending`|cambia de `pending`|pasa de `pending`|`pending`\s*->\s*`success`|worker continuo|worker local de backups|Confirmar worker local de backups' "Release checklist avoids raw backup status/worker wording"
     Test-Contains $releaseChecklist 'Pendiente a Protegido' "Release checklist uses visible backup state transition"
     Test-Contains $releaseChecklist 'tarea continua de respaldos|automatizacion de respaldos' "Release checklist uses operational backup task wording"
+}
+
+if ($docsIndex -ne "") {
+    Test-NotContains $docsIndex '(?i)backup pending forever' "Documentation index avoids raw backup pending wording"
+    Test-Contains $docsIndex 'respaldo que queda en Pendiente' "Documentation index uses visible backup status wording"
+}
+
+if ($releaseReadiness -ne "") {
+    Test-NotContains $releaseReadiness '(?i)backup pending|backup manual `pending`|`pending`\s*->\s*`success`|Worker backups|Levantar worker de backups' "Release readiness avoids raw backup status/worker wording"
+    Test-Contains $releaseReadiness 'respaldo manual de Pendiente a Protegido' "Release readiness uses visible backup state transition"
+    Test-Contains $releaseReadiness 'Tarea de respaldos|tarea continua de respaldos' "Release readiness uses operational backup task wording"
+}
+
+if ($productionGapReport -ne "") {
+    Test-NotContains $productionGapReport '(?i)backup pending|worker continuo|`pending`|`failed`|Levantar worker de backups' "Production gap report avoids raw backup status/worker wording"
+    Test-Contains $productionGapReport 'respaldos manuales desde UI pueden quedarse en Pendiente o Error' "Production gap report uses visible backup risk wording"
+    Test-Contains $productionGapReport 'tarea continua de respaldos' "Production gap report uses operational backup task wording"
+}
+
+if ($troubleshootingGuide -ne "") {
+    Test-NotContains $troubleshootingGuide '(?i)backup entry in `pending`|`pending`\s*state for hours|Respaldo pendiente" never finishes' "Troubleshooting guide avoids raw backup pending wording"
+    Test-Contains $troubleshootingGuide 'Respaldo pendiente" nunca termina' "Troubleshooting guide uses Spanish operator backup title"
+    Test-Contains $troubleshootingGuide 'Pendiente' "Troubleshooting guide uses visible backup state"
 }
 
 if ($userManual -ne "") {

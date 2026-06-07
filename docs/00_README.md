@@ -13,7 +13,7 @@ deployment, then jump to the appropriate section below.
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Symptom →
   cause → fix for the recurring operator failures (port 8000 in
   use, "sesión vencida", "el servidor LAN no pudo completar la
-  operación", backup pending forever, etc).
+  operación", respaldo que queda en Pendiente, etc).
 - **[SECRETS.md](SECRETS.md)** - APP_KEY, DB_PASSWORD, the
   pre-commit guard, the rotation log.
 - **[CI.md](CI.md)** - What the GitHub Actions workflow checks and

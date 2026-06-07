@@ -10,7 +10,8 @@ cajero).
   Si el ultimo respaldo tiene mas de 24 horas, **primero** cree un respaldo
   manual antes de seguir.
 - Confirme que la tarea `SistemaCajaHospitalaria-BackupWorker` esta
-  `Running`. Si no lo esta, no hay worker procesando respaldos en cola.
+  `Running`. Si no lo esta, la tarea continua de respaldos no esta procesando
+  solicitudes.
 - Tenga a mano: contrasena del admin inicial, ruta al paquete `offline-release`
   y la IP LAN del servidor.
 
@@ -90,9 +91,9 @@ cajero).
 6. Documente el incidente en `qa/INCIDENT-YYYY-MM-DD.md` con el SHA256,
    tamano, fecha de backup y motivo del restore.
 
-## Escenario 6 - La cola de respaldos esta llena de jobs fallidos
+## Escenario 6 - Respaldos con Error se acumulan
 
-1. Vaya a la UI de Respaldos. Si ve badges rojos en "fallido", revise
+1. Vaya a la UI de Respaldos. Si ve respaldos en **Error**, revise
    el error_message. Si dice "No se encontro mariadb-dump ni
    mysqldump", instale la herramienta en el servidor.
 2. Para vaciar la cola sin afectar datos:
@@ -122,8 +123,8 @@ cajero).
 
 ## Escenario 8 - Disco del servidor lleno
 
-1. Los sintomas: `pending_count` sube, `last_failure_at` aparece en la
-   UI de Respaldos, no se emiten facturas nuevas.
+1. Los sintomas: Respaldos muestra solicitudes en **Pendiente** o
+   **Error**, y no se emiten facturas nuevas.
 2. Libere espacio borrando respaldos antiguos que ya esten copiados a
    USB o disco externo. NO borre respaldos sin confirmar primero que
    existe una copia externa.

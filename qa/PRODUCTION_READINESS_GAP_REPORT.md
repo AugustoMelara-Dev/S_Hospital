@@ -14,7 +14,7 @@ No declarar `PRODUCTION_READY` hasta cerrar todos los bloqueantes de entorno y h
 
 | Gap | Estado | Evidencia actual | Accion obligatoria |
 |---|---|---|---|
-| Cliente LAN fisico | PENDING_LAN_CLIENT_VALIDATION | Rutas por IP validadas desde servidor; operador mostro login cargando por IP, pero falta checklist completo desde otra PC | Probar desde cliente real `/up`, `/login`, `/verify-email`, assets, login, caja, factura, pago, recibo, historial, reportes y backup pending |
+| Cliente LAN fisico | PENDING_LAN_CLIENT_VALIDATION | Rutas por IP validadas desde servidor; operador mostro login cargando por IP, pero falta checklist completo desde otra PC | Probar desde cliente real `/up`, `/login`, `/verify-email`, assets, login, caja, factura, pago, recibo, historial, reportes y respaldo visible |
 | Impresora institucional fisica | PENDING_HARDWARE_VALIDATION | UI/recibo media carta/carta/A5 y E2E local existen; no hay impresion fisica documentada | Probar media carta, carta y A5 con escala 100%, margenes minimos y reimpresion desde historial |
 | Configuracion production real | PENDING_ENVIRONMENT_VALIDATION | `.env` actual es local/debug para validacion | Cambiar en servidor final a `APP_ENV=production`, `APP_DEBUG=false`, admin real, sin seeders de validacion temporal, `config:cache` |
 | Tarea continua de respaldos | PENDING_ENVIRONMENT_VALIDATION | Validacion local proceso un respaldo puntual; restore con PATH de XAMPP genero backup Protegido | Crear tarea/servicio Windows con PATH correcto para `mysqldump`/`mariadb-dump` |
@@ -36,7 +36,7 @@ No declarar `PRODUCTION_READY` hasta cerrar todos los bloqueantes de entorno y h
 - Sin cliente LAN fisico completo, podria haber firewall, DNS local, cache de navegador o ruta de assets fallando en cajas reales.
 - Sin impresora fisica, el recibo puede salir con escala incorrecta o como hoja carta.
 - Sin `APP_ENV=production` y admin real, se corre riesgo de entregar credenciales temporales o debug activo.
-- Sin worker continuo y PATH de dump correcto, backups manuales desde UI pueden quedarse en `pending` o `failed`.
+- Sin tarea continua de respaldos y PATH de dump correcto, respaldos manuales desde UI pueden quedarse en Pendiente o Error.
 
 ## Acciones para pasar a PRODUCTION_READY
 
@@ -45,7 +45,7 @@ No declarar `PRODUCTION_READY` hasta cerrar todos los bloqueantes de entorno y h
 3. Crear admin real con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no pasar la contrasena como argumento CLI.
 4. Ejecutar `php artisan migrate --force` solo con migraciones aprobadas; no usar `migrate:fresh`.
 5. Ejecutar `php artisan config:cache --no-ansi`.
-6. Levantar worker de backups como tarea/servicio Windows.
+6. Levantar la tarea continua de respaldos como tarea/servicio Windows.
 7. Configurar CORS/Sanctum con IP fija/dominio LAN real.
 8. Validar restore en base descartable del servidor final y guardar checksum/conteos.
 9. Validar concurrencia en base descartable/snapshot del servidor final.

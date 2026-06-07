@@ -3837,3 +3837,8 @@ Criterio de verificacion: validate_operations_objective_audit y validate_final_f
 Contexto: SystemStatusController, production_readiness_preflight y la plantilla final de respaldos todavia pedian campos/checks con nombres tecnicos de worker y estados crudos, aunque la evidencia final debe poder ser completada por soporte local con lenguaje visible.
 Decision: El contrato final mantiene los nombres reales de tareas Windows como identificadores, pero pide Tarea continua de respaldos status, Respaldo manual y Pendiente a Protegido como evidencia operativa.
 Criterio de verificacion: validate_field_proof_templates, validate_final_backup_task_proof -AllowPendingFinalField, validate_system_diagnostics_safety y SystemStatusTest deben pasar.
+
+## 2026-06-07 - Documentos de entrega usan estados visibles de respaldos
+Contexto: README, RELEASE_READINESS, PRODUCTION_READINESS_GAP_REPORT, TROUBLESHOOTING y DISASTER_RECOVERY conservaban frases como backup pending, pending -> success o worker de backups en superficies de entrega, aunque la UI y la evidencia final deben guiar al personal con Pendiente, Protegido y Error.
+Decision: Los documentos de entrega y soporte inicial hablan de respaldo, tarea continua de respaldos y transicion Pendiente a Protegido; los estados internos quedan reservados para contratos API o comandos tecnicos cuando sean necesarios.
+Criterio de verificacion: validate_installation_docs_safety bloquea regresiones en README, release readiness, gap report y troubleshooting; los guards de instalacion/respaldo deben seguir pasando.
