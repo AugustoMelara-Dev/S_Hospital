@@ -517,7 +517,7 @@ Alcance:
 - Ejecutar restore MySQL/MariaDB solo con guardas explicitas contra base descartable.
 - Ejecutar concurrencia real solo contra target local/descartable confirmado.
 - Validar rutas LAN por IP y documentar si falta computadora cliente fisica.
-- Validar worker de backups y documentar como dejarlo corriendo en Windows.
+- Validar la tarea continua de respaldos y documentar como dejarla corriendo en Windows.
 - Documentar pendientes reales de impresora institucional y configuracion final de produccion.
 
 Archivos probables:

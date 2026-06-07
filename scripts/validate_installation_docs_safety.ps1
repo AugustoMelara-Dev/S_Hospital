@@ -64,6 +64,7 @@ $offlineLanInstallGuide = Read-RequiredFile "docs\OFFLINE_LAN_INSTALL.md"
 $backupRestoreReference = Read-RequiredFile "docs\BACKUP_RESTORE.md"
 $dailyCloseProtocol = Read-RequiredFile "docs\DAILY_CLOSE_PROTOCOL.md"
 $disasterRecoveryGuide = Read-RequiredFile "docs\DISASTER_RECOVERY.md"
+$implementationPlan = Read-RequiredFile "docs\IMPLEMENTATION_PLAN.md"
 $troubleshootingGuide = Read-RequiredFile "docs\TROUBLESHOOTING.md"
 $docsIndex = Read-RequiredFile "docs\00_README.md"
 $trainingAdminGuide = Read-RequiredFile "docs\TRAINING_ADMIN.md"
@@ -172,6 +173,11 @@ if ($dailyCloseProtocol -ne "") {
     Test-NotContains $dailyCloseProtocol '(?i)`pending`|`success`|`failed`|revisar worker' "Daily close protocol avoids raw backup status/worker wording"
     Test-Contains $dailyCloseProtocol '(?s)Backup.*Protegido.*Pendiente.*Error' "Daily close protocol uses visible backup states"
     Test-Contains $dailyCloseProtocol 'tarea continua de respaldos' "Daily close protocol uses operational backup task wording"
+}
+
+if ($implementationPlan -ne "") {
+    Test-NotContains $implementationPlan '(?i)worker de backups|worker continuo|backup pending|`pending`\s*->\s*`success`' "Implementation plan avoids raw backup worker/status wording"
+    Test-Contains $implementationPlan 'tarea continua de respaldos' "Implementation plan uses operational backup task wording"
 }
 
 foreach ($docInfo in @(

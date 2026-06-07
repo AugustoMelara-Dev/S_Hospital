@@ -3852,3 +3852,8 @@ Criterio de verificacion: validate_installer_legacy_safety bloquea worker contin
 Contexto: VALIDATION_PRESENTATION_READINESS y FINAL_UX_ACCEPTANCE_CHECKLIST son evidencia viva para presentar el RC, pero aun describian el pendiente final como worker continuo de backups.
 Decision: Los documentos QA de presentacion y aceptacion usan tarea continua de respaldos como wording operativo; los nombres tecnicos quedan en scripts o identificadores donde sean necesarios.
 Criterio de verificacion: validate_installation_docs_safety revisa VALIDATION_PRESENTATION_READINESS y FINAL_UX_ACCEPTANCE_CHECKLIST contra worker continuo, worker de backups y transiciones raw pending/success.
+
+## 2026-06-07 - Plan incluido en release evita wording tecnico de respaldos
+Contexto: IMPLEMENTATION_PLAN es historico, pero se incluye en el paquete offline y podia leerse como guia viva. Aun indicaba validar worker de backups en una fase final.
+Decision: El plan conserva el alcance historico, pero usa tarea continua de respaldos como wording operativo para superficies incluidas en release.
+Criterio de verificacion: validate_installation_docs_safety cubre IMPLEMENTATION_PLAN contra worker de backups, worker continuo y transiciones raw pending/success.
