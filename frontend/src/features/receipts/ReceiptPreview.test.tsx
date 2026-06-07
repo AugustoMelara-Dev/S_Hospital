@@ -248,6 +248,20 @@ describe('ReceiptPreview', () => {
     );
   });
 
+  it('keeps the institutional receipt white with black text in print mode', () => {
+    const styles = readFileSync('src/styles.css', 'utf8');
+
+    expect(styles).toMatch(/\.institutional-receipt\s*{[\s\S]*background:\s*white;/);
+    expect(styles).toMatch(/\.institutional-receipt\s*{[\s\S]*color:\s*#000;/);
+    expect(styles).toMatch(/body\[data-printing-receipt="true"\]\s*{[\s\S]*background:\s*#fff\s*!important;/);
+    expect(styles).toMatch(
+      /body\[data-printing-receipt="true"\]\s+\.institutional-receipt\s*{[\s\S]*background:\s*white;/,
+    );
+    expect(styles).toMatch(
+      /body\[data-printing-receipt="true"\]\s+\.institutional-receipt\s*{[\s\S]*color:\s*black;/,
+    );
+  });
+
   it('allows long receipt row values to wrap instead of overflowing the paper', () => {
     const styles = readFileSync('src/styles.css', 'utf8');
 

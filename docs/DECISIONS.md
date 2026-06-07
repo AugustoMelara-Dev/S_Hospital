@@ -3640,3 +3640,8 @@ scripts/validate_browser_smoke_evidence.ps1 valida estaticamente este contrato y
 ReceiptPreview.test ahora simula un recibo con IDs internos, service_id, scan_code, barcode, qr_code, internal_code, regla especial, notas internas y codigos de auditoria de pago.
 El contrato de UI exige que el contenedor imprimible conserve paciente y servicio, pero no renderice esos valores ni etiquetas tecnicas en el recibo institucional.
 Validacion: npm.cmd test -- ReceiptPreview.test.tsx, check-branding.ps1 y validate_browser_smoke_evidence.ps1 pasaron sin hallazgos.
+
+## 2026-06-07 - recibo conserva papel blanco aunque la app este en modo oscuro
+ReceiptPreview.test ahora valida que styles.css mantenga el recibo institucional con fondo blanco y texto negro tanto en vista normal como bajo body[data-printing-receipt=true].
+El contrato protege la impresion en carta, media carta o A5 contra regresiones de tema oscuro sin declarar prueba fisica completada.
+Validacion: npm.cmd test -- ReceiptPreview.test.tsx, check-branding.ps1 y validate_institutional_receipt_print_proof.ps1 -AllowPendingHardwareValidation pasaron sin hallazgos.
