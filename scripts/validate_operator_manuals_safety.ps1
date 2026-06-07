@@ -116,6 +116,11 @@ if ($commonIncidents -match "(?is)##\s+9\.\s+Respaldo muestra Error por herramie
     $backupToolIncident = $Matches.section
 }
 
+$sessionIncident = ""
+if ($commonIncidents -match "(?is)##\s+10\.\s+Sesion cerrada inesperadamente(?<section>.*?)(?:\r?\n---|\z)") {
+    $sessionIncident = $Matches.section
+}
+
 if ($commonIncidents -ne "") {
     Test-Contains $commonIncidents "(?i)Respaldo queda en Pendiente" "Common incidents runbook uses operator backup incident title"
     Test-Contains $backupIncident "(?i)Protegido" "Common incidents runbook names protected backup state"
@@ -134,6 +139,9 @@ if ($commonIncidents -ne "") {
     Test-Contains $backupToolIncident "(?i)Pendiente" "Common incidents backup-tool section names pending backup state"
     Test-Contains $backupToolIncident "(?i)Error" "Common incidents backup-tool section names error backup state"
     Test-NotContains $backupToolIncident "(?i)docker\s+exec|HOSPITAL_DUMP_BINARY|mariadb-dump|mysqldump|\.env|/usr/bin|contenedor backend|which\s+" "Common incidents backup-tool section avoids raw server internals"
+    Test-Contains $sessionIncident "(?i)Ayuda\s*>\s*Preparar resumen para soporte|resumen seguro" "Common incidents session section routes to safe support summary"
+    Test-Contains $sessionIncident "(?i)configuracion local de sesiones" "Common incidents session section uses operator-safe session wording"
+    Test-NotContains $sessionIncident "(?i)SESSION_DRIVER|SESSION_ENCRYPT|SANCTUM_STATEFUL_DOMAINS|php\s+artisan|session:clear|\.env|session_driver|runtime|backend|file\s+a\s+database" "Common incidents session section avoids raw session internals"
 }
 
 $combined = "$cashier`n$supervisor`n$administrator`n$support`n$training`n$commonIncidents"

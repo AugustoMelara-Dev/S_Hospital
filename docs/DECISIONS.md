@@ -3573,3 +3573,7 @@ El validador validate_operator_manuals_safety extrae ambas secciones y bloquea l
 ## 2026-06-07 - Runbook humaniza error de herramienta local de respaldo
 El incidente de respaldo por driver o binario faltante ahora se presenta como Respaldo muestra Error por herramienta local. La guia evita docker exec, HOSPITAL_DUMP_BINARY, nombres de binarios y .env en la seccion para operador/supervisor, y dirige a revisar estado visible, espacio en disco, resumen seguro de Ayuda y escalamiento a soporte local.
 validate_operator_manuals_safety extrae esta seccion y bloquea la reaparicion de comandos, variables o rutas internas del servidor en ese incidente.
+
+## 2026-06-07 - Runbook humaniza sesion cerrada inesperadamente
+La seccion Sesion cerrada inesperadamente ahora evita variables de sesion, comandos artisan, backend y .env. El flujo guia al cajero a reintentar ingreso, avisar al supervisor si se repite, preparar resumen seguro desde Ayuda y escalar a soporte local para revisar configuracion de sesiones sin exponer secretos.
+validate_operator_manuals_safety extrae la seccion y bloquea la reaparicion de SESSION_DRIVER, SESSION_ENCRYPT, SANCTUM_STATEFUL_DOMAINS, session:clear, php artisan, runtime y .env en ese incidente.

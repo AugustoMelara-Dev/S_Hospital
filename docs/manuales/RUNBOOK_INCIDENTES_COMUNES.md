@@ -267,21 +267,22 @@ login. La app dice "Sesion vencida".
 - Cambio de contrasena obligatorio no completado.
 - Usuario desactivado por un administrador.
 - El servidor reinicio y las cookies expiraron.
-- `SESSION_DRIVER` cambio de `file` a `database` (promocion dev->prod).
+- La configuracion local de sesiones cambio durante mantenimiento.
 
 **Accion inmediata:**
 1. Intentar iniciar sesion de nuevo con la misma contrasena.
 2. Si la contrasena no funciona, ver seccion 2 (lockout).
-3. Si funciona, revisar `Informacion del sistema` -> `runtime`
-   para ver `session_driver` y `environment` (debe decir
-   `production`).
-4. Si la sesion se sigue cerrando cada pocos minutos, pedir a
-   soporte revisar `php artisan session:clear` y luego reiniciar
-   el backend.
+3. Si funciona, continuar el turno y avisar al supervisor si vuelve a
+   ocurrir.
+4. Si la sesion se cierra cada pocos minutos, usar
+   **Ayuda > Preparar resumen para soporte** y anotar hora, usuario y
+   pantalla donde ocurrio.
+5. Soporte local debe revisar la configuracion de sesiones y reiniciar
+   servicios solo si su guia de mantenimiento lo indica.
 
 **Escalamiento:** Ninguno en operacion normal. Si la sesion se
-cierra inmediatamente despues de iniciar, soporte nivel 2 debe
-revisar `SESSION_ENCRYPT` y `SANCTUM_STATEFUL_DOMAINS` en `.env`.
+cierra inmediatamente despues de iniciar, soporte nivel 2 debe validar
+la configuracion local de sesiones sin exponer secretos al personal.
 
 ---
 
