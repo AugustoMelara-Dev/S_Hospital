@@ -3625,3 +3625,8 @@ La evidencia se documento en qa/MARIADB_MIGRATION_VALIDATION_2026_06_07.md y no 
 ## 2026-06-07 - handoff traza evidencia MariaDB limpia
 final_production_handoff.ps1, FINAL_PRODUCTION_HANDOFF_RESULT y los validadores de handoff/auditoria ahora mencionan qa/MARIADB_MIGRATION_VALIDATION_2026_06_07.md como evidencia local de migraciones limpias MariaDB.
 La evidencia sigue clasificada como validacion local y no reemplaza restore, concurrencia, LAN, impresora ni servidor final.
+
+## 2026-06-07 - manifiesto y guia devex sin formato termico heredado
+package_manifest.json ahora usa identidad s_hospital_offline_rc y regla institutional_receipt_half_letter_letter_a5 para que el paquete de entrega no conserve nombres internos ni requisitos 80mm/58mm como contrato operativo.
+devex/windows-server-install.md y CHANGELOG.md quedan alineados a recibo institucional en media carta, carta o A5; check-branding.ps1 cubre esas superficies para bloquear regresiones visibles de impresora de rollo o cuentas temporales de demostracion.
+Validacion: check-branding.ps1, validate_dependency_manifest.ps1 y validate_installation_docs_safety.ps1 pasaron sin hallazgos.

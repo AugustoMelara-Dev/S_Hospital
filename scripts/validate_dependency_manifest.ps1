@@ -127,8 +127,8 @@ foreach ($dep in $expectedFrontend) {
 }
 
 $manifestName = [string] $manifest.name
-if ($manifestName -notmatch '^hospital_billing') {
-    $failures.Add("package_manifest.json name is '$manifestName', expected to start with 'hospital_billing'") | Out-Null
+if ($manifestName -notmatch '^s_hospital') {
+    $failures.Add("package_manifest.json name is '$manifestName', expected to start with 's_hospital'") | Out-Null
 }
 
 if ($manifest.PSObject.Properties.Name -notcontains "stack") {

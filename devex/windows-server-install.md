@@ -28,12 +28,12 @@ Guia inicial para instalar Sistema de Caja Hospitalaria en una PC servidor Windo
 5. Configurar base de datos `hospital_billing` en MySQL/MariaDB.
 6. Ejecutar `php artisan key:generate` si no existe `APP_KEY`.
 7. Ejecutar migraciones aprobadas sin `migrate:fresh`.
-8. Crear admin real con `php artisan auth:create-initial-admin`; no ejecutar seeders demo.
+8. Crear admin real con `php artisan auth:create-initial-admin`; no ejecutar seeders de prueba o desarrollo.
 9. Ejecutar `php artisan config:cache`.
 10. Configurar el servidor web para publicar el frontend y enrutar API Laravel.
 11. Configurar un worker local: `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
 
-No entregar servidor LAN real con `APP_ENV=local`. `admin.demo`, `supervisor.demo` y `cajero.demo` son solo para desarrollo/testing.
+No entregar servidor LAN real con `APP_ENV=local`. Las cuentas temporales de desarrollo o validacion no deben quedar habilitadas en el servidor del hospital.
 
 ## Acceso de clientes
 
@@ -78,10 +78,10 @@ Programar worker local para backups manuales desde UI:
 
 Despues de generar backup, copiar el archivo reciente desde `storage\app\private\backups` hacia `C:\HospitalBillingBackups` y una unidad USB del hospital. No guardar backups en servicios cloud como requisito de produccion.
 
-## Impresora termica
+## Impresora institucional
 
-- Instalar driver local de la impresora 80mm o 58mm.
-- Configurar tamano de papel en Windows.
+- Instalar driver local de la impresora destinada al recibo institucional.
+- Configurar en Windows el papel operativo aprobado: media carta, carta o A5.
 - Probar impresion desde el navegador de caja.
 - Si la impresora esta compartida, validar permisos de impresion por usuario Windows.
 

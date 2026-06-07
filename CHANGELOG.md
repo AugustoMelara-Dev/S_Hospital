@@ -91,7 +91,7 @@ Estos bloquean la entrega final al hospital. Requieren el
 servidor real con hardware y la presencia de un operador:
 
 - Validación desde una segunda PC LAN (qa/LAN_CLIENT_VALIDATION_PROOF.md)
-- Impresión física en 5 tamaños (qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md)
+- Impresión física en formato institucional: media carta, carta o A5 (qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md)
 - Restore real (qa/FINAL_RESTORE_PROOF.md)
 - Concurrencia real (qa/FINAL_CONCURRENCY_PROOF.md)
 - Tareas Windows de backup worker instaladas
@@ -265,7 +265,7 @@ tecnico.
 evidencia fisica con hardware real:
 
 - B1 LAN cliente (`qa/LAN_CLIENT_VALIDATION_PROOF.md`)
-- B2 Impresora institucional 5 tamanos
+- B2 Impresora institucional en media carta, carta o A5
   (`qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`)
 - B3 Restore final (`qa/FINAL_RESTORE_PROOF.md`)
 - B4 Concurrencia final (`qa/FINAL_CONCURRENCY_PROOF.md`)
@@ -359,7 +359,7 @@ Las fases 1 a 6 del plan original dependen de evidencia física que
 solo puede recolectarse en el servidor final con hardware real:
 
 - **FASE 1** Evidencia física LAN cliente (segunda PC, 12 checks)
-- **FASE 2** Evidencia física impresora (5 tamaños, márgenes)
+- **FASE 2** Evidencia física impresora (media carta, carta o A5, márgenes)
 - **FASE 3** Evidencia de restore final (SHA256, conteos)
 - **FASE 4** Evidencia de concurrencia final (RUN_ID, doble pago)
 - **FASE 5** Worker continuo de backups (tareas Windows activas)
@@ -725,7 +725,7 @@ Commit. Highlights:
 
 ### Known Limitations
 
-- Print hardware validation (80mm/58mm) pending physical testing
+- Print hardware validation for institutional paper sizes pending physical testing
 - LAN client validation pending from another PC
 - Production environment validation pending final server setup
 
