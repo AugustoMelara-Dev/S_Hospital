@@ -54,7 +54,8 @@ if ($aboutView -ne "") {
     foreach ($requiredText in @(
         'Informacion del sistema',
         'Resumen operativo',
-        'Todo bien',
+        'Protegido',
+        'Pendiente',
         'Error',
         'Diagnostico administrativo',
         'Pulso operativo administrativo',
@@ -102,8 +103,8 @@ if ($aboutView -ne "") {
 if ($serverStatusHook -ne "") {
     foreach ($requiredText in @(
         '/api/system/health',
-        'Todo bien',
-        'Requiere revision',
+        'Protegido',
+        'Pendiente',
         'Error',
         'No se pudo confirmar el servidor local',
         'La base de datos local no responde',
@@ -201,6 +202,12 @@ if ($uiHasForbiddenText) {
     Add-Failure "About diagnostics UI exposes forbidden technical details or secret-like text."
 } else {
     Add-Pass "About diagnostics UI does not expose forbidden technical details"
+}
+
+if ($aboutView -match "(?i)Todo bien|Requiere revisi[oó]n" -or $serverStatusHook -match "(?i)Todo bien|Requiere revisi[oó]n") {
+    Add-Failure "System diagnostics UI must use Protegido, Pendiente or Error instead of obsolete status labels."
+} else {
+    Add-Pass "System diagnostics UI uses final operational status labels"
 }
 
 if ($systemStatusController -match "(?i)DB_PASSWORD\s*=|APP_KEY\s*=|TOKEN\s*=|SECRET\s*=") {

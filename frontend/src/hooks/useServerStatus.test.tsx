@@ -32,7 +32,7 @@ describe('useServerStatus', () => {
 
     render(<ServerStatusProbe />);
 
-    expect(await screen.findByText('Todo bien')).toBeInTheDocument();
+    expect(await screen.findByText('Protegido')).toBeInTheDocument();
     expect(screen.getByText(/servidor local, base de datos y respaldos responden/i)).toBeInTheDocument();
   });
 
@@ -66,9 +66,9 @@ describe('useServerStatus', () => {
 
     render(<ServerStatusProbe />);
 
-    expect(await screen.findByText('Requiere revision')).toBeInTheDocument();
+    expect(await screen.findByText('Pendiente')).toBeInTheDocument();
     expect(screen.getByText(/respaldos en espera o con alerta/i)).toBeInTheDocument();
-    expect(document.body.textContent).not.toMatch(/trabajos|cola|queue/i);
+    expect(document.body.textContent).not.toMatch(/Todo bien|Requiere revisi[oó]n|trabajos|cola|queue/i);
   });
 });
 

@@ -3708,3 +3708,8 @@ Validacion: check-branding y busqueda enfocada en la evidencia UX.
 Contexto: algunos manuales decian que la reimpresion debia tener motivo solo si el sistema lo solicitaba, y otros aun usaban estados viejos de Respaldos. Eso podia hacer que personal de caja o supervision tratara acciones auditables como opcionales.
 Decision: los manuales de usuario, cajero, supervisor y soporte indican motivo de reimpresion de forma explicita y usan los estados de Respaldos Protegido, Pendiente o Error. validate_operator_manuals_safety cubre esas reglas.
 Validacion: validate_operator_manuals_safety, validate_installation_docs_safety y busqueda enfocada sin coincidencias en manuales.
+
+## 2026-06-07 - Diagnostico usa estados operativos finales
+Contexto: la vista Informacion del sistema aun mostraba Todo bien y Requiere revision en el resumen operativo y en badges administrativos, aunque Respaldos y capacitacion ya habian quedado alineados a Protegido, Pendiente y Error.
+Decision: useServerStatus, AboutView y los detalles visibles de Respaldos usan Protegido, Pendiente o Error para estados normales. validate_system_diagnostics_safety bloquea que esas superficies vuelvan a las etiquetas obsoletas, sin ocultar errores reales ni permisos de diagnostico administrativo.
+Validacion: vitest AboutView/useServerStatus/BackupsView a11y, typecheck, lint, build, check-branding, validate_system_diagnostics_safety, validate_operator_manuals_safety y diff check.

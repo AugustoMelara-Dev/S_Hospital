@@ -67,14 +67,14 @@ describe('AboutView', () => {
       operationalHealth: null,
       summary: {
         description: 'Servidor local, base de datos y respaldos responden. Mantenga el cierre diario y los respaldos protegidos.',
-        label: 'Todo bien',
+        label: 'Protegido',
         level: 'ok',
       },
     });
 
     render(<AboutView user={cashierUser} onStatus={vi.fn()} />);
 
-    expect(screen.getAllByText('Todo bien')).toHaveLength(2);
+    expect(screen.getAllByText('Protegido').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/base de datos y respaldos responden/i)).toBeInTheDocument();
     await waitFor(() => expect(apiClient.getBackups).toHaveBeenCalled());
     expect(apiClient.getSystemStatus).not.toHaveBeenCalled();
@@ -88,16 +88,16 @@ describe('AboutView', () => {
       operationalHealth: null,
       summary: {
         description: 'Hay respaldos en espera o con alerta. Revise Respaldos y pida soporte si el problema se repite.',
-        label: 'Requiere revision',
+        label: 'Pendiente',
         level: 'review',
       },
     });
 
     render(<AboutView user={cashierUser} onStatus={vi.fn()} />);
 
-    expect(screen.getAllByText('Requiere revision')).toHaveLength(2);
+    expect(screen.getAllByText('Pendiente').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/pida soporte/i)).toBeInTheDocument();
-    expect(document.body.textContent).not.toMatch(/queue:work|App\\\\|DB_PASSWORD|\.env|C:\\\\/i);
+    expect(document.body.textContent).not.toMatch(/Todo bien|Requiere revisi[oó]n|queue:work|App\\\\|DB_PASSWORD|\.env|C:\\\\/i);
     await waitFor(() => expect(apiClient.getBackups).toHaveBeenCalled());
   });
 
@@ -109,7 +109,7 @@ describe('AboutView', () => {
       operationalHealth: null,
       summary: {
         description: 'Servidor local, base de datos y respaldos responden. Mantenga el cierre diario y los respaldos protegidos.',
-        label: 'Todo bien',
+        label: 'Protegido',
         level: 'ok',
       },
     });
@@ -138,7 +138,7 @@ describe('AboutView', () => {
       operationalHealth: null,
       summary: {
         description: 'Servidor local, base de datos y respaldos responden. Mantenga el cierre diario y los respaldos protegidos.',
-        label: 'Todo bien',
+        label: 'Protegido',
         level: 'ok',
       },
     });
@@ -163,7 +163,7 @@ describe('AboutView', () => {
       operationalHealth: mockOperationalHealth(),
       summary: {
         description: 'Servidor local, base de datos y respaldos responden. Mantenga el cierre diario y los respaldos protegidos.',
-        label: 'Todo bien',
+        label: 'Protegido',
         level: 'ok',
       },
     });
@@ -192,7 +192,7 @@ describe('AboutView', () => {
       operationalHealth: null,
       summary: {
         description: 'Servidor local, base de datos y respaldos responden. Mantenga el cierre diario y los respaldos protegidos.',
-        label: 'Todo bien',
+        label: 'Protegido',
         level: 'ok',
       },
     });

@@ -326,8 +326,8 @@ function summaryBadgeVariant(level: 'ok' | 'review' | 'error'): 'success' | 'war
 }
 
 function diagnosticLevelLabel(level: 'ok' | 'review' | 'error'): string {
-  if (level === 'ok') return 'Todo bien';
-  if (level === 'review') return 'Revisar';
+  if (level === 'ok') return 'Protegido';
+  if (level === 'review') return 'Pendiente';
   return 'Error';
 }
 
@@ -567,7 +567,7 @@ function schedulerHeartbeatLabel(
   ageMinutes: number | null,
 ): string {
   if (status === 'ok') return ageMinutes === null ? 'Actividad reciente' : `Activo hace ${ageMinutes} min`;
-  if (status === 'stale') return ageMinutes === null ? 'Requiere revision' : `Sin pulso reciente: ${ageMinutes} min`;
+  if (status === 'stale') return ageMinutes === null ? 'Pendiente' : `Sin pulso reciente: ${ageMinutes} min`;
   if (status === 'stuck') return ageMinutes === null ? 'Detenido' : `Posible detencion: ${ageMinutes} min`;
   if (status === 'invalid') return 'Pulso invalido';
   return 'Sin pulso registrado';

@@ -115,7 +115,7 @@ function friendlyProductionDetail(code: string, fallback: string): string {
   }
 
   if (code === 'SERVER_LOGS_WRITABLE' || code === 'APP_CACHE_WRITABLE') {
-    return fallback.includes('disponible') ? 'Listo para operar.' : 'Requiere revision tecnica.';
+    return fallback.includes('disponible') ? 'Listo para operar.' : 'Pendiente de soporte.';
   }
 
   return sanitizeTechnicalText(fallback);
@@ -540,7 +540,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                         {systemStatus.runtime.pending_migration_count === null
                           ? 'Sin dato'
                           : systemStatus.runtime.pending_migration_count > 0
-                            ? 'Requiere revision'
+                            ? 'Pendiente'
                             : 'Actualizada'}
                       </span>
                     </div>

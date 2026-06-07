@@ -4,13 +4,13 @@ import type { OperationalHealth } from '../lib/api/types';
 
 export type ServerStatusSummary = {
   level: 'ok' | 'review' | 'error';
-  label: 'Todo bien' | 'Requiere revision' | 'Error';
+  label: 'Protegido' | 'Pendiente' | 'Error';
   description: string;
 };
 
 const WAITING_SUMMARY: ServerStatusSummary = {
   level: 'review',
-  label: 'Requiere revision',
+  label: 'Pendiente',
   description: 'Esperando diagnostico del servidor local.',
 };
 
@@ -108,7 +108,7 @@ export function summarizeOperationalHealth(isOnline: boolean, health: Operationa
   ) {
     return {
       level: 'review',
-      label: 'Requiere revision',
+      label: 'Pendiente',
       description: 'Hay respaldos en espera o con alerta. Revise Respaldos y pida soporte si el problema se repite.',
     };
   }
@@ -121,14 +121,14 @@ export function summarizeOperationalHealth(isOnline: boolean, health: Operationa
   ) {
     return {
       level: 'review',
-      label: 'Requiere revision',
+      label: 'Pendiente',
       description: 'El sistema responde, pero conviene revisar respaldos y tareas automaticas antes del cierre diario.',
     };
   }
 
   return {
     level: 'ok',
-    label: 'Todo bien',
+    label: 'Protegido',
     description: 'Servidor local, base de datos y respaldos responden. Mantenga el cierre diario y los respaldos protegidos.',
   };
 }
