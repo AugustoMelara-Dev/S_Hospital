@@ -3557,3 +3557,7 @@ Criterio de verificacion: ReceiptPreview.test verifica que el recibo renderiza M
 ## 2026-06-05 - Auditoria muestra respaldos sin nombres SQL
 La vista de Auditoria en Reportes ahora reutiliza etiquetas institucionales de respaldos para mostrar Respaldo manual o Respaldo automatico con estado Protegido, Pendiente o Error, sin exponer nombres de archivo .sql al personal. El nombre real del archivo queda reservado para descarga, auditoria interna y backend, mientras la interfaz normal mantiene lenguaje operativo verificable.
 Pruebas actualizadas: AuditoriaTab y ReportsView bloquean la aparicion visible de hospital-backup, .sql o filename; BackupsView conserva las mismas etiquetas mediante el helper compartido.
+
+## 2026-06-07 - Capacitacion y manual de operador sin estados internos de respaldo
+La guia rapida de administrador y el indice de operador ahora usan lenguaje visible de producto para respaldos: Protegido, Pendiente y Error. Se removieron rutas de verificacion, comandos de API y comandos de mantenimiento del indice normal para que caja y administracion trabajen desde UI o escalen a soporte local.
+Validadores actualizados: validate_training_safety bloquea pending, success, failed, checksum, SHA256 y rutas crudas en TRAINING_ADMIN; validate_operator_manuals_safety bloquea curl, /api/, php artisan y duda tecnica en manuales normales.

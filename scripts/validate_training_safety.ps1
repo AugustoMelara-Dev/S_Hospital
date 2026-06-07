@@ -69,13 +69,23 @@ function Assert-Contains([string] $label, [string] $content, [string] $pattern) 
     }
 }
 
+function Assert-NotContains([string] $label, [string] $content, [string] $pattern) {
+    $normalizedContent = Normalize-TrainingText $content
+    if ($normalizedContent -match $pattern) {
+        Add-Failure $label
+    } else {
+        Add-Pass $label
+    }
+}
+
 $safeTraining = Read-RequiredText "docs\manuales\GUIA_CAPACITACION_SEGURA.md"
 $trainingChecklist = Read-RequiredText "docs\manuales\CHECKLIST_CAPACITACION.md"
 $trainingAcceptanceTemplate = Read-RequiredText "qa\TRAINING_ACCEPTANCE_PROOF.example.md"
+$quickAdminTraining = Read-RequiredText "docs\TRAINING_ADMIN.md"
 $helpView = Read-RequiredText "frontend\src\features\help\HelpView.tsx"
 $helpViewTest = Read-RequiredText "frontend\src\features\help\HelpView.test.tsx"
 
-$combinedDocs = "$safeTraining`n$trainingChecklist`n$trainingAcceptanceTemplate"
+$combinedDocs = "$safeTraining`n$trainingChecklist`n$trainingAcceptanceTemplate`n$quickAdminTraining"
 $combinedUi = "$helpView`n$helpViewTest"
 
 Assert-Contains "Training docs forbid practicing in production" $combinedDocs 'no use la base de produccion para practicar|no en\s+la base real de produccion'
@@ -84,6 +94,11 @@ Assert-Contains "Training docs require cashier role practice" $combinedDocs '(?i
 Assert-Contains "Training docs require supervisor role practice" $combinedDocs '(?i)supervisor'
 Assert-Contains "Training docs require administrator role practice" $combinedDocs '(?i)administrador'
 Assert-Contains "Training docs require support summary practice" $combinedDocs '(?i)ayuda\s*>\s*preparar resumen|resumen seguro'
+Assert-Contains "Quick administrator training uses protected backup status" $quickAdminTraining 'protegido'
+Assert-Contains "Quick administrator training uses pending backup status" $quickAdminTraining 'pendiente'
+Assert-Contains "Quick administrator training uses error backup status" $quickAdminTraining 'error'
+Assert-NotContains "Quick administrator training avoids raw backup states and checksums" $quickAdminTraining '(^|[^a-z])(pending|success|failed|checksum|sha256)([^a-z]|$)'
+Assert-NotContains "Quick administrator training avoids raw route checks" $quickAdminTraining '/up|/login|/verify-email'
 
 foreach ($scenario in @(
     'servidor no disponible',

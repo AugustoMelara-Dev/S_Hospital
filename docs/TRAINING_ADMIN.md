@@ -3,9 +3,9 @@
 ## Inicio de servidor
 
 1. Confirmar que el servidor usa la IP LAN final.
-2. Validar `/up`, `/login` y `/verify-email` desde el servidor.
+2. Validar que la pantalla de inicio abra desde el servidor y desde una computadora cliente.
 3. Entrar como admin y revisar **Backups**.
-4. Confirmar que `APP_ENV=production`, `APP_DEBUG=false`, MySQL/MariaDB y dump tool aparezcan correctos.
+4. Confirmar que el panel muestre sistema en produccion, base de datos lista y respaldos disponibles.
 
 ## Backups
 
@@ -22,8 +22,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_t
 Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 ```
 
-3. Crear backup manual desde UI.
-4. Confirmar que cambie de `pending` a `success`, con checksum y tamano.
+3. Crear respaldo manual desde UI.
+4. Confirmar que el respaldo cambie de **Pendiente** a **Protegido**. Si aparece **Error**, preparar resumen seguro desde Ayuda y avisar a soporte local.
 
 ## Catalogo y fiscal
 

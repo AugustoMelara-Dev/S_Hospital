@@ -57,35 +57,30 @@ al procedimiento correcto.
 ```
 Cajero
   -> cierra caja / reimprime / anula con motivo
-  -> duda tecnica
+  -> duda del sistema
        -> Supervisor (revisa la consola del cajero, valida la
                        transaccion en Historial)
-            -> falla de sistema (caja no abre, error 5xx)
+            -> falla de sistema (caja no abre o aparece mensaje de error)
                 -> Soporte Local
                      -> necesita intervencion administrativa
                          -> Administrador
 ```
 
-## Comandos del operador
+## Acciones Rapidas Del Operador
 
-Los siguientes comandos se ejecutan desde `C:\Projects\S_Hospital`
-en PowerShell como Administrador.
+Estas acciones se hacen desde el navegador o se escalan al rol indicado. Los
+comandos de mantenimiento quedan en las guias de soporte local y no deben ser
+parte del trabajo diario de caja.
 
-| Accion | Comando |
+| Necesidad | Accion segura |
 |---|---|
-| Ver salud del sistema | `curl http://IP-SERVIDOR/api/system/health` |
-| Iniciar sesion interactiva | Abrir `http://IP-SERVIDOR` en el navegador |
-| Reiniciar el sistema | `scripts\start_hospital_services.ps1` |
-| Hacer backup manual | UI > Respaldos > Crear respaldo local |
-| Ver ultimos respaldos | UI > Respaldos |
-| Activar mantenimiento | `php artisan hospital:maintenance on --message="..."` |
-| Desactivar mantenimiento | `php artisan hospital:maintenance off` |
-| Generar CA local (HTTPS) | `scripts\generate_local_ca.ps1 -ServerIp <ip>` |
-| Validar LAN cliente | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://IP-SERVIDOR -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md` |
-| Reparar tras reboot | `scripts\open_hospital_system.ps1` |
-| Diagnosticar problema | `scripts\repair_hospital_system.ps1` |
-| Recolectar soporte | `scripts\collect_support_packet.ps1` |
-| Validar todo antes de produccion | `scripts\production_readiness_preflight.ps1 -BaseUrl http://IP-SERVIDOR` |
+| Entrar al sistema | Abrir la direccion LAN entregada por administracion. |
+| Revisar si el sistema responde | Intentar abrir la pantalla de inicio y avisar a soporte local si no carga. |
+| Hacer respaldo manual | Administrador: **Respaldos > Crear respaldo local**. |
+| Ver ultimos respaldos | Administrador: **Respaldos** y confirmar **Protegido**, **Pendiente** o **Error**. |
+| Reparar tras reinicio | Avisar a soporte local; no repetir facturas ni cobros mientras el sistema no abra. |
+| Diagnosticar problema | Usar **Ayuda > Preparar resumen para soporte**. |
+| Validar antes de entrega | Completar evidencia LAN, impresora, restore, concurrencia y preflight final con soporte local. |
 
 ## Errores comunes del cajero (mensaje -> accion)
 
@@ -109,6 +104,5 @@ en PowerShell como Administrador.
 
 - v1.0.0 consolida 8 manuales sueltos + 3 documentos operativos en
   este indice unico.
-- v1.0.0 exige HTTPS local, secrets playbook, comando
-  `hospital:maintenance`, throttle por usuario.
+- v1.0.0 separa acciones normales de caja de tareas de mantenimiento y soporte.
 - Ver `../KNOWN_LIMITATIONS.md` para lo que queda fuera de v1.0.0.
