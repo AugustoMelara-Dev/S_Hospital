@@ -75,6 +75,8 @@ $installSummary = Read-RequiredFile "docs\INSTALL_SUMMARY.md"
 $fieldDeploymentValidation = Read-RequiredFile "qa\FIELD_DEPLOYMENT_VALIDATION.md"
 $releaseReadiness = Read-RequiredFile "qa\RELEASE_READINESS.md"
 $productionGapReport = Read-RequiredFile "qa\PRODUCTION_READINESS_GAP_REPORT.md"
+$validationPresentationReadiness = Read-RequiredFile "qa\VALIDATION_PRESENTATION_READINESS.md"
+$finalUxAcceptanceChecklist = Read-RequiredFile "qa\FINAL_UX_ACCEPTANCE_CHECKLIST.md"
 
 if ($installGuide -ne "") {
     foreach ($section in @(
@@ -209,6 +211,16 @@ if ($productionGapReport -ne "") {
     Test-NotContains $productionGapReport '(?i)backup pending|worker continuo|`pending`|`failed`|Levantar worker de backups' "Production gap report avoids raw backup status/worker wording"
     Test-Contains $productionGapReport 'respaldos manuales desde UI pueden quedarse en Pendiente o Error' "Production gap report uses visible backup risk wording"
     Test-Contains $productionGapReport 'tarea continua de respaldos' "Production gap report uses operational backup task wording"
+}
+
+if ($validationPresentationReadiness -ne "") {
+    Test-NotContains $validationPresentationReadiness '(?i)worker continuo|worker de backups|backup pending|`pending`\s*->\s*`success`' "Validation presentation readiness avoids raw backup worker/status wording"
+    Test-Contains $validationPresentationReadiness 'tarea continua de respaldos' "Validation presentation readiness uses operational backup task wording"
+}
+
+if ($finalUxAcceptanceChecklist -ne "") {
+    Test-NotContains $finalUxAcceptanceChecklist '(?i)worker continuo|worker de backups|backup pending|`pending`\s*->\s*`success`' "Final UX acceptance checklist avoids raw backup worker/status wording"
+    Test-Contains $finalUxAcceptanceChecklist 'tarea continua de respaldos' "Final UX acceptance checklist uses operational backup task wording"
 }
 
 if ($troubleshootingGuide -ne "") {

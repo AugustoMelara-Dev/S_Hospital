@@ -76,4 +76,4 @@ Los bloqueos UX de `docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md` quedaron cerrados p
 
 - `PENDING_LAN_CLIENT_VALIDATION`: prueba completa desde otra computadora cliente en la LAN final.
 - `PENDING_HARDWARE_VALIDATION`: impresion real media carta/carta/A5 en la impresora fisica.
-- `PENDING_ENVIRONMENT_VALIDATION`: `.env` final con `APP_ENV=production`, `APP_DEBUG=false`, admin real, worker continuo de backups y `config:cache` en servidor.
+- `PENDING_ENVIRONMENT_VALIDATION`: `.env` final con `APP_ENV=production`, `APP_DEBUG=false`, admin real, tarea continua de respaldos y `config:cache` en servidor.

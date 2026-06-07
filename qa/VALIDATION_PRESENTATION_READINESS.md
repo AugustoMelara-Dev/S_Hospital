@@ -50,7 +50,7 @@ No declarar **PRODUCTION_READY** hasta cerrar con evidencia real: cliente LAN fi
 - Impresora institucional fisica: pendiente hasta probar hardware real.
 - LAN desde otra PC: pendiente hasta validar desde cliente fisico por IP/nombre del servidor.
 - Restore real: hacerlo solo en base descartable y documentar resultado.
-- Configuracion final de produccion: pendiente hasta preparar servidor con `APP_ENV=production`, `APP_DEBUG=false`, admin real, worker continuo de respaldos y `config:cache`.
+- Configuracion final de produccion: pendiente hasta preparar servidor con `APP_ENV=production`, `APP_DEBUG=false`, admin real, tarea continua de respaldos y `config:cache`.
 
 ## Frase honesta para presentacion
 

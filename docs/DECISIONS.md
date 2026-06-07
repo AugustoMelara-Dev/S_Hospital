@@ -3847,3 +3847,8 @@ Criterio de verificacion: validate_installation_docs_safety bloquea regresiones 
 Contexto: El paquete offline incluye install_hospital_os.ps1 solo por compatibilidad deprecada. Aunque setup.bat no lo invoca, sus textos visibles aun mencionaban worker continuo y cola de trabajos en la seccion de respaldos.
 Decision: El instalador heredado mantiene su aviso de deprecacion y nombres internos cuando son identificadores, pero la experiencia visible habla de tarea continua de respaldos, respaldo diario y solicitudes desde Respaldos.
 Criterio de verificacion: validate_installer_legacy_safety bloquea worker continuo, Worker de respaldos y Cola de Trabajos en el instalador heredado, y el paquete offline no debe exponer esas frases visibles en scripts de entrega.
+
+## 2026-06-07 - QA de presentacion usa lenguaje operativo de respaldos
+Contexto: VALIDATION_PRESENTATION_READINESS y FINAL_UX_ACCEPTANCE_CHECKLIST son evidencia viva para presentar el RC, pero aun describian el pendiente final como worker continuo de backups.
+Decision: Los documentos QA de presentacion y aceptacion usan tarea continua de respaldos como wording operativo; los nombres tecnicos quedan en scripts o identificadores donde sean necesarios.
+Criterio de verificacion: validate_installation_docs_safety revisa VALIDATION_PRESENTATION_READINESS y FINAL_UX_ACCEPTANCE_CHECKLIST contra worker continuo, worker de backups y transiciones raw pending/success.
