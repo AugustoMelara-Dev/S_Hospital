@@ -57,7 +57,7 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <Alert variant="destructive" title="Error controlado">
-              Recargue la pantalla. Si vuelve a ocurrir, abra Ayuda, prepare el resumen seguro y avise a supervisor o soporte. El detalle tecnico quedo guardado en este navegador.
+              Recargue la pantalla. Si vuelve a ocurrir, abra Ayuda, prepare el resumen seguro y avise a supervisor o soporte. La evidencia local quedo guardada en este navegador.
             </Alert>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button type="button" onClick={() => window.location.reload()}>

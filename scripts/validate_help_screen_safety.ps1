@@ -43,6 +43,8 @@ function Test-Contains([string] $content, [string] $pattern, [string] $label) {
 
 $helpView = Read-RequiredFile "frontend\src\features\help\HelpView.tsx"
 $helpTest = Read-RequiredFile "frontend\src\features\help\HelpView.test.tsx"
+$appErrorBoundary = Read-RequiredFile "frontend\src\components\AppErrorBoundary.tsx"
+$appErrorBoundaryTest = Read-RequiredFile "frontend\src\components\AppErrorBoundary.test.tsx"
 $clientIssueLog = Read-RequiredFile "frontend\src\lib\support\clientIssueLog.ts"
 $clientIssueLogTest = Read-RequiredFile "frontend\src\lib\support\clientIssueLog.test.ts"
 
@@ -130,7 +132,7 @@ if ($clientIssueLog -ne "") {
     }
 }
 
-$combinedTests = "$helpTest`n$clientIssueLogTest"
+$combinedTests = "$helpTest`n$appErrorBoundaryTest`n$clientIssueLogTest"
 foreach ($requiredText in @(
     'shows operational support guidance',
     'servidor no disponible',
@@ -146,6 +148,16 @@ foreach ($requiredText in @(
     'without secrets or local paths'
 )) {
     Test-Contains $combinedTests ([regex]::Escape($requiredText)) "Help/support tests cover: $requiredText"
+}
+
+if ($appErrorBoundary -ne "") {
+    Test-Contains $appErrorBoundary '(?i)prepare\s+el\s+resumen\s+seguro' "Global error screen routes staff to safe support summary"
+    Test-Contains $appErrorBoundary '(?i)evidencia\s+local\s+quedo\s+guardada' "Global error screen uses non-technical evidence wording"
+    if ($appErrorBoundary -match "(?i)detalle\s+t[eé]cnico|consola\s+del\s+navegador|/api|queue|worker|soporte\s+tecnico") {
+        Add-Failure "Global error screen exposes technical wording to operators."
+    } else {
+        Add-Pass "Global error screen avoids technical wording for operators"
+    }
 }
 
 if ($helpView -match "(?i)DB_PASSWORD\s*=|APP_KEY\s*=|TOKEN\s*=|SECRET\s*=") {

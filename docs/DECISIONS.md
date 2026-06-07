@@ -3718,3 +3718,8 @@ Validacion: vitest AboutView/useServerStatus/BackupsView a11y, typecheck, lint, 
 Contexto: algunas fuentes internas para futuras fases todavia pedian recibo termico, referencia 80mm/58mm, demo premium o guion de demo. Aunque no fueran pantallas de usuario, podian reintroducir decisiones contrarias al contrato RC.
 Decision: codex-skills, subagents, UI specs y referencias de dominio/LAN quedan alineadas a recibo institucional en media carta, carta o A5 y validacion institucional. references/thermal_printing_80mm.md se reemplaza por references/institutional_receipt_printing.md.
 Criterio de verificacion: check-branding.ps1 cubre codex-skills, subagents, UI y referencias actuales contra lenguaje heredado de recibo de rollo, 80mm/58mm como requisito operativo, producto demostrable y guion de demo.
+
+## 2026-06-07 - Error global usa evidencia local no tecnica
+Contexto: la pantalla global de error podia aparecer a un cajero y decia que el detalle tecnico quedaba guardado en el navegador. Aunque no exponia el stack, el texto seguia usando lenguaje tecnico visible.
+Decision: AppErrorBoundary conserva la ruta de recuperacion: recargar, abrir Ayuda, preparar resumen seguro y avisar a supervisor o soporte, pero ahora dice que la evidencia local quedo guardada. validate_help_screen_safety cubre la pantalla global contra detalle tecnico, consola, /api, queue y worker.
+Validacion: vitest AppErrorBoundary/HelpView, validate_help_screen_safety, typecheck, lint, build, check-branding y diff check.

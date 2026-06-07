@@ -28,9 +28,10 @@ describe('AppErrorBoundary', () => {
 
     expect(screen.getByRole('heading', { name: /la pantalla no pudo cargarse/i })).toBeInTheDocument();
     expect(screen.getByText(/prepare el resumen seguro/i)).toBeInTheDocument();
+    expect(screen.getByText(/evidencia local quedo guardada/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /recargar pantalla/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /abrir ayuda/i })).toHaveAttribute('href', '/help');
-    expect(screen.queryByText(/consola del navegador/i)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/detalle t[eé]cnico|consola del navegador|\/api|queue|worker/i);
 
     const stored = JSON.parse(window.localStorage.getItem('hospital_client_issue_log') ?? '[]') as Array<{
       safe_message: string;
