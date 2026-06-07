@@ -74,7 +74,37 @@ describe('ServiceSearch', () => {
     expect(screen.getByLabelText(/buscar por nombre o categoria/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/buscar por nombre\.\.\./i)).toBeInTheDocument();
     expect(screen.getByText(/escriba el nombre del servicio o toque una categoria/i)).toBeInTheDocument();
-    expect(document.body.textContent).not.toMatch(/escanee|scanner|codigo/i);
+    expect(document.body.textContent).not.toMatch(/escanee|scanner|codigo|identificador/i);
+  });
+
+  it('uses operational scanning labels while scanner support is enabled', () => {
+    render(
+      <ServiceSearch
+        areas={areasFixture}
+        categories={[]}
+        services={[]}
+        selectedAreaId={undefined}
+        selectedCategoryId={undefined}
+        onAreaChange={vi.fn()}
+        onCategoryChange={vi.fn()}
+        search=""
+        onSearchChange={vi.fn()}
+        scanCode=""
+        onScanCodeChange={vi.fn()}
+        onAddService={vi.fn()}
+        onAddByScanCode={vi.fn()}
+        scannerEnabled
+      />,
+    );
+
+    expect(screen.getByLabelText(/buscar por nombre, categoria o identificador/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/buscar por nombre o identificador/i)).toBeInTheDocument();
+    const scanInput = screen.getByLabelText(/identificador de servicio/i);
+
+    expect(scanInput).toBeInTheDocument();
+    expect(scanInput).toHaveAttribute('placeholder', 'Identificador');
+    expect(screen.getByText(/use el identificador de escaneo/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/scanner usb|codigo manual/i);
   });
 
   it('shows backend fuzzy and accent-tolerant search results without stricter local filtering', () => {

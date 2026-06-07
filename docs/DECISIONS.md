@@ -434,14 +434,14 @@ Consecuencia:
 Decision:
 
 - Servicios ahora soportan `scan_code`, `barcode` y `qr_code` como campos opcionales, unicos y buscables.
-- La busqueda de servicios incluye nombre, categoria y codigos de escaneo; el POS puede agregar por scanner USB/codigo manual sin confiar en precio o nombre enviados desde React.
+- La busqueda de servicios incluye nombre, categoria e identificadores de escaneo; el POS puede agregar por identificador sin confiar en precio o nombre enviados desde React.
 - La pantalla de Nueva factura no muestra el catalogo completo por defecto; el cajero debe elegir categoria, buscar o escanear.
 - Reportes avanzan con un endpoint de top servicios vendidos basado en snapshots de `invoice_items`, y React exporta CSV desde datos ya calculados por backend.
 
 Motivo:
 
 - La entrega no puede sentirse como una demo con lista interminable de servicios.
-- Scanner/codigo es parte del flujo operativo esperado en caja.
+- El escaneo de servicios es parte del flujo operativo esperado en caja.
 - Gerencia necesita ver servicios mas vendidos y exportar datos sin recalcular hechos financieros en frontend.
 
 Consecuencia:
@@ -3872,3 +3872,8 @@ Criterio de verificacion: ServiceSheet.test y CatalogView.test validan las etiqu
 Contexto: El modal de cobro mostraba la palabra preview en el control visible antes de imprimir, justo en un flujo critico para caja.
 Decision: El copy visible usa ver recibo antes de imprimir y registrar cobro y ver recibo; los nombres internos de componentes y estado se conservan como implementacion tecnica.
 Criterio de verificacion: PaymentModal.test valida el nuevo label y bloquea preview en el texto visible del modal; el smoke visual y el manual de cajero usan la misma frase operativa.
+
+## 2026-06-07 - Nueva factura usa identificador de servicio para escaneo
+Contexto: El campo accesible de escaneo en Nueva factura todavia usaba copy heredado de hardware y los mensajes de error hablaban de codigo. Ese texto aparece en el flujo principal de caja y puede sonar tecnico para personal no especializado.
+Decision: La busqueda y el campo de escaneo usan identificador de servicio o identificador de escaneo en labels, placeholders, ayudas y errores; los nombres internos y la autoridad backend se conservan sin cambios.
+Criterio de verificacion: ServiceSearch.test y NewInvoiceView.test validan las nuevas etiquetas y el mensaje de identificador, y bloquean el copy heredado de hardware/codigo manual en la superficie visible.

@@ -64,7 +64,7 @@ export function usePosCartActions({
     try {
       const [service] = await apiClient.getServices({ code, active: true, billing: true, perPage: 1 });
       if (!service) {
-        const message = 'No se encontro servicio activo para este codigo.';
+        const message = 'No se encontro servicio activo para este identificador.';
         dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
         onStatus(message);
         refocusScanner();

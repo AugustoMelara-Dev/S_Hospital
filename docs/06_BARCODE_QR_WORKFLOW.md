@@ -41,7 +41,7 @@ Puede planificarse con `@zxing/browser`, pero debe quedar detras de boton y no s
 
 ## Errores claros
 
-- "No se encontro servicio activo para este codigo."
+- "No se encontro servicio activo para este identificador."
 - "El servicio esta inactivo y no puede facturarse."
 - "Codigo duplicado: revise el catalogo."
 

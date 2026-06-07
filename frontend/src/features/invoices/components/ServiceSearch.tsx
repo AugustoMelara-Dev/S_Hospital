@@ -67,13 +67,13 @@ export function ServiceSearch({
   const hiddenCount = Math.max(0, filteredServices.length - visibleServices.length);
   const firstVisibleService = visibleServices[0];
   const searchInputLabel = scannerEnabled
-    ? 'Buscar por nombre, categoria o codigo'
+    ? 'Buscar por nombre, categoria o identificador'
     : 'Buscar por nombre o categoria';
   const searchPlaceholder = scannerEnabled
-    ? 'Buscar por nombre o codigo...'
+    ? 'Buscar por nombre o identificador...'
     : 'Buscar por nombre...';
   const emptySearchHelp = scannerEnabled
-    ? 'Escriba el nombre del servicio, use el codigo escaneable o toque una categoria para ver opciones facturables.'
+    ? 'Escriba el nombre del servicio, use el identificador de escaneo o toque una categoria para ver opciones facturables.'
     : 'Escriba el nombre del servicio o toque una categoria para ver opciones facturables.';
 
   const handleAddService = useCallback((service: Service) => {
@@ -130,8 +130,8 @@ export function ServiceSearch({
               <div className="relative w-36">
                 <Input
                   ref={scannerInputRef}
-                  aria-label="Scanner USB o codigo manual"
-                  placeholder="Codigo"
+                  aria-label="Identificador de servicio"
+                  placeholder="Identificador"
                   value={scanCode}
                   onChange={(e) => onScanCodeChange(e.target.value)}
                   onKeyDown={(e) => {
