@@ -287,7 +287,17 @@ html.dark {
     @apply overflow-x-auto rounded-xl border border-border bg-card;
   }
 
+  .data-table {
+    @apply w-full border-collapse text-sm;
+  }
 
+  .data-table th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-muted-foreground;
+  }
+
+  .data-table td {
+    @apply border-t border-border px-4 py-3 align-middle;
+  }
 
   .history-filters,
   .range-filters {

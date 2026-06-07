@@ -1,4 +1,5 @@
 /// <reference types="node" />
+import { readFileSync } from 'node:fs';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../App';
@@ -31,6 +32,14 @@ describe('ReportsView', () => {
   afterEach(() => {
     cleanup();
     queryClient.clear();
+  });
+
+  it('keeps shared report tables readable with default spacing', () => {
+    const styles = readFileSync('src/styles.css', 'utf8');
+
+    expect(styles).toMatch(/\.data-table\s*{[\s\S]*@apply[\s\S]*w-full[\s\S]*text-sm/);
+    expect(styles).toMatch(/\.data-table th\s*{[\s\S]*@apply[\s\S]*px-4[\s\S]*py-3[\s\S]*text-left/);
+    expect(styles).toMatch(/\.data-table td\s*{[\s\S]*@apply[\s\S]*border-t[\s\S]*px-4[\s\S]*py-3/);
   });
 
   it('renders reports view for a user with reports view permission', async () => {

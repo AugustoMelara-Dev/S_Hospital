@@ -3678,3 +3678,8 @@ Validacion: vitest ServiceSearch, typecheck, lint/build, branding, e2e y browser
 La tarjeta principal de Respaldos deja de usar Todo bien o Requiere revision como estado normal y usa solo Protegido, Pendiente o Error, alineado con el lenguaje solicitado para administracion no tecnica.
 Si el entorno aun no esta production_ready, el resumen queda Pendiente aunque no haya bloqueantes detallados, evitando presentar el servidor como protegido antes de cerrar pruebas finales.
 Validacion: vitest BackupsView a11y, typecheck, lint/build, branding, e2e y browser smoke de Respaldos.
+
+## 2026-06-07 - tablas financieras usan espaciado compartido legible
+La captura de Reportes mostro tablas de lectura financiera, metodos de pago y estados de factura con columnas demasiado apretadas para revision administrativa.
+Se agregan estilos base a data-table para ancho completo, padding de encabezados/celdas y separacion de filas, de modo que reportes, caja, auditoria y listados compartan una lectura mas clara sin recalcular datos ni tocar backend.
+Validacion: vitest ReportsView, typecheck, lint/build, branding, e2e y browser smoke de Reportes.
