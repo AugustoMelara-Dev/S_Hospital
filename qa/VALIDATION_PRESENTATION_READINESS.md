@@ -16,9 +16,9 @@ No declarar **PRODUCTION_READY** hasta cerrar con evidencia real: cliente LAN fi
 - Catalogo base: servicios activos desde `backend/database/seeders/data/catalogo_servicios_inicial.csv`.
 - Areas y categorias: laboratorio, radiologia, hospitalizacion/emergencia, odontologia y medicamentos.
 - Regla critica: `Eritropoyetina` cuesta L.25.00 y aplica regla especial de dialisis desde backend.
-- Codigos de validacion para scanner:
-  - Acido Urico: `LAB-ACIDO-URICO`, barcode `7700000001001`, QR `QR-LAB-ACIDO-URICO`.
-  - Abdomen Simple: `RX-ABDOMEN`, barcode `7700000002001`, QR `QR-RX-ABDOMEN`.
+- Identificadores de validacion para escaneo de servicios:
+  - Acido Urico: `LAB-ACIDO-URICO`, alterno `7700000001001`, auxiliar `QR-LAB-ACIDO-URICO`.
+  - Abdomen Simple: `RX-ABDOMEN`, alterno `7700000002001`, auxiliar `QR-RX-ABDOMEN`.
 - Configuracion fiscal local de validacion: Hospital San Isidro, RTN local de prueba, prefijo `000-001-01` y recibo institucional.
 
 ## Guion recomendado
@@ -28,12 +28,12 @@ No declarar **PRODUCTION_READY** hasta cerrar con evidencia real: cliente LAN fi
 3. Caja: abrir o confirmar caja abierta con el efectivo real autorizado.
 4. Nueva factura: mostrar que no se puede emitir sin paciente, servicio y caja abierta.
 5. Buscar servicio por categoria o texto: `Glucosa`, `Hemograma`, `Eritropoyetina`.
-6. Buscar codigo de validacion en scanner: `LAB-ACIDO-URICO`.
+6. Buscar identificador de validacion: `LAB-ACIDO-URICO`.
 7. Agregar servicios y emitir factura.
 8. Cobrar con efectivo y mostrar cambio si aplica.
 9. Mostrar recibo institucional en media carta/carta/A5. No prometer impresora fisica validada si no hay prueba real.
 10. Historial: buscar la factura emitida, abrir detalle y reimprimir con motivo.
-11. Catalogo: mostrar categorias, areas, estado activo/inactivo y codigos.
+11. Catalogo: mostrar categorias, areas, estado activo/inactivo e identificadores administrables.
 12. Reportes: mostrar diario, mensual, rango, areas, servicios, caja y auditoria.
 13. Respaldos: mostrar estado `Protegido`, `Pendiente` o `Error`; crear respaldo manual solo si el entorno esta autorizado.
 14. Configuracion fiscal: mostrar datos institucionales y formato de recibo.

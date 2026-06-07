@@ -37,13 +37,13 @@ deployment, then jump to the appropriate section below.
 - **[02_UI_ARCHITECTURE.md](02_UI_ARCHITECTURE.md)** - React feature
   layout, design tokens, accessibility rules.
 - **[03_POS_BILLING_UX_SPEC.md](03_POS_BILLING_UX_SPEC.md)** - The
-  cashier POS flow (open box, scan, pay, print, close).
+  cashier POS flow (open box, service lookup, pay, print, close).
 - **[04_ADVANCED_REPORTS_SPEC.md](04_ADVANCED_REPORTS_SPEC.md)** -
   Reports catalog.
 - **[05_DESIGN_SYSTEM_AND_LIBRARIES.md](05_DESIGN_SYSTEM_AND_LIBRARIES.md)** -
   Tailwind/shadcn tokens, allowed libraries.
-- **[06_BARCODE_QR_WORKFLOW.md](06_BARCODE_QR_WORKFLOW.md)** -
-  Scanner-driven service entry.
+- **[06_SERVICE_SCAN_WORKFLOW.md](06_SERVICE_SCAN_WORKFLOW.md)** -
+  Service identifier entry for billing.
 - **[07_FINAL_PHASES_ROADMAP.md](07_FINAL_PHASES_ROADMAP.md)** -
   Phase-by-phase roadmap (historical; current state in
   AUDIT_2026_06_02.md and KNOWN_LIMITATIONS.md).

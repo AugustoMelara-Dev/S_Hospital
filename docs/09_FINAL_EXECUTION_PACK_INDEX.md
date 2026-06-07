@@ -4,7 +4,7 @@
 
 La critica de UX/UI es parcialmente cierta y comercialmente importante.
 
-No es cierto que el sistema actual este literalmente en una sola pagina: el repo ya tiene `AppShell`, sidebar izquierdo, topbar, rutas por modulo y componentes base. Si es cierto que la experiencia de facturacion todavia no se siente como producto final de caja hospitalaria. La pantalla de nueva factura sigue dependiendo de una lista filtrable de servicios, no de un POS rapido por categorias, codigo, scanner, carrito y cobro guiado.
+No es cierto que el sistema actual este literalmente en una sola pagina: el repo ya tiene `AppShell`, sidebar izquierdo, topbar, rutas por modulo y componentes base. Si es cierto que la experiencia de facturacion todavia no se siente como producto final de caja hospitalaria. La pantalla de nueva factura sigue dependiendo de una lista filtrable de servicios, no de un POS rapido por categorias, identificador de servicio, carrito y cobro guiado.
 
 ## Objetivo de esta fase final
 
@@ -57,17 +57,17 @@ Criterio:
 
 - La cajera puede facturar rapido sin recorrer los 122 servicios.
 
-### 12C Catalogo, categorias y codigos
+### 12C Catalogo, categorias e identificadores
 
 Alcance:
 
 - Administrar categorias y servicios con busqueda/filtros reales.
-- Agregar `scan_code`/barcode/QR si el backend todavia no lo soporta.
+- Agregar identificadores tecnicos de servicio si el backend todavia no los soporta.
 - Validar unicidad, servicios activos y permisos.
 
 Criterio:
 
-- El catalogo es administrable y el POS puede agregar por categoria, texto o scanner.
+- El catalogo es administrable y el POS puede agregar por categoria, texto o identificador.
 
 ### 12D Reportes avanzados
 
@@ -99,7 +99,7 @@ Criterio:
 | --- | --- |
 | 12A | `docs/02_UI_ARCHITECTURE.md`, `docs/05_DESIGN_SYSTEM_AND_LIBRARIES.md`, `UI/sidebar-navigation-spec.md`, `UI/component_inventory.md` |
 | 12B | `docs/03_POS_BILLING_UX_SPEC.md`, `UI/pos-screen-spec.md`, `references/ui_ux_cashier_workflows.md` |
-| 12C | `docs/06_BARCODE_QR_WORKFLOW.md`, `database/schema_extensions_for_barcode_reports.sql`, `references/barcode_qr_reference.md` |
+| 12C | `docs/06_SERVICE_SCAN_WORKFLOW.md`, `database/schema_extensions_for_barcode_reports.sql`, `references/barcode_qr_reference.md` |
 | 12D | `docs/04_ADVANCED_REPORTS_SPEC.md`, `UI/reports-screen-spec.md`, `references/advanced_reports_reference.md` |
 | 12E | `qa/FINAL_UX_ACCEPTANCE_CHECKLIST.md`, `qa/RELEASE_READINESS.md`, `docs/RELEASE_CHECKLIST.md` |
 
@@ -120,5 +120,5 @@ Criterio:
 - No cerrar una fase si el boton visible no ejecuta un flujo real.
 - No cerrar reportes sin filtros por fecha.
 - No cerrar POS si requiere recorrer lista interminable.
-- No cerrar catalogo sin categorias dominantes y codigos planificados o implementados.
+- No cerrar catalogo sin categorias dominantes e identificadores planificados o implementados.
 - No cerrar entrega si no hay evidencia en `worklogs/` y `qa/`.

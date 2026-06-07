@@ -213,14 +213,14 @@ Commit sugerido:
 
 - `feat(billing): guide pos billing and cash confirmation`
 
-### 12C Catalogo, codigos y tablas administrativas
+### 12C Catalogo, identificadores y tablas administrativas
 
 Alcance:
 
-- Catalogo con `DataTable`, filtros, paginacion, busqueda, estado y codigo.
-- Administrar categorias, servicios, precios, activo/inactivo, `scan_code`, `barcode`, `qr_code`.
+- Catalogo con `DataTable`, filtros, paginacion, busqueda, estado e identificador.
+- Administrar categorias, servicios, precios, activo/inactivo e identificadores tecnicos de servicio.
 - Mantener regla Eritropoyetina.
-- Validar UI de inactivo/codigo inexistente con error claro.
+- Validar UI de inactivo/identificador inexistente con error claro.
 
 Archivos esperados:
 
@@ -232,12 +232,12 @@ Archivos esperados:
 
 Migraciones:
 
-- Solo si falta soporte de codigo. En el estado actual ya existen `scan_code`, `barcode`, `qr_code`.
+- Solo si falta soporte de identificador. En el estado actual ya existen los campos tecnicos requeridos.
 
 Pruebas:
 
-- Codigo existente agrega servicio activo.
-- Codigo inexistente muestra error claro.
+- Identificador existente agrega servicio activo.
+- Identificador inexistente muestra error claro.
 - Servicio inactivo no se factura.
 - Precio se toma de backend al emitir.
 - Edicion de servicio no cambia snapshots historicos.

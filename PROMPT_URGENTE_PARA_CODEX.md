@@ -31,7 +31,7 @@ Fase 12 existe para convertir el core funcional en una aplicacion profesional, n
 - `docs/03_POS_BILLING_UX_SPEC.md`
 - `docs/04_ADVANCED_REPORTS_SPEC.md`
 - `docs/05_DESIGN_SYSTEM_AND_LIBRARIES.md`
-- `docs/06_BARCODE_QR_WORKFLOW.md`
+- `docs/06_SERVICE_SCAN_WORKFLOW.md`
 - `docs/07_FINAL_PHASES_ROADMAP.md`
 - `docs/08_CRITICAL_ACCEPTANCE_CRITERIA.md`
 - `UI/final-product-wireframe.md`
@@ -51,8 +51,8 @@ Planificar Fase 12 en fases pequenas, verificables y commiteables:
 
 - 12A App Shell + Sidebar + Design System.
 - 12B POS Billing UX profesional.
-- 12C Catalogo + barcode/QR/scan_code.
+- 12C Catalogo + identificadores de servicio.
 - 12D Reportes avanzados.
 - 12E QA UX final y demo premium.
 
-La entrega final debe verse como producto hospitalario serio: app shell con sidebar izquierdo, topbar, rutas internas, layout persistente, POS profesional, catalogo ordenado, scanner/codigo, reportes gerenciales y criterios de bloqueo estrictos.
+La entrega final debe verse como producto hospitalario serio: app shell con sidebar izquierdo, topbar, rutas internas, layout persistente, POS profesional, catalogo ordenado, escaneo de servicios por identificador, reportes gerenciales y criterios de bloqueo estrictos.

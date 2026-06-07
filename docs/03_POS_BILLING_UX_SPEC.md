@@ -2,19 +2,19 @@
 
 ## Objetivo
 
-La pantalla de Nueva factura debe sentirse como POS/caja profesional: rapida, clara, operable con teclado, scanner y mouse. No debe parecer formulario administrativo ni lista interminable.
+La pantalla de Nueva factura debe sentirse como POS/caja profesional: rapida, clara, operable con teclado, lector de servicios y mouse. No debe parecer formulario administrativo ni lista interminable.
 
 ## Layout recomendado
 
 - Columna izquierda: categorias y filtros.
-- Centro: busqueda rapida, campo scanner y servicios filtrados.
+- Centro: busqueda rapida, campo de identificador de servicio y servicios filtrados.
 - Derecha: carrito, resumen, paciente, pago y acciones.
 
 ## Flujo principal
 
 1. Cajero abre Nueva factura.
 2. Ingresa nombre del paciente.
-3. Busca servicio por texto, categoria o scanner.
+3. Busca servicio por texto, categoria o identificador de servicio.
 4. Selecciona servicio activo.
 5. El servicio entra al carrito con snapshot de nombre y precio desde backend.
 6. Ajusta cantidad si aplica.
@@ -25,7 +25,7 @@ La pantalla de Nueva factura debe sentirse como POS/caja profesional: rapida, cl
 
 ## Busqueda rapida
 
-- Buscar por nombre, categoria, codigo interno, scan_code, barcode o qr_code.
+- Buscar por nombre, categoria o identificador de servicio; el backend puede resolver `scan_code`, `barcode` o `qr_code` sin mostrar esos valores al cajero.
 - Debe responder rapido y mantener foco de teclado.
 - Debe mostrar estado "sin resultados" claro.
 - Debe permitir limpiar filtros con una accion visible.

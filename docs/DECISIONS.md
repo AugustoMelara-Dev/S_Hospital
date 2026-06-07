@@ -3882,3 +3882,8 @@ Criterio de verificacion: ServiceSearch.test y NewInvoiceView.test validan las n
 Contexto: Las tarjetas compactas de servicios en Nueva factura podian mostrar `scan_code`, `barcode` o `qr_code` cuando el escaneo estaba habilitado. Aunque esos campos son utiles para busqueda y catalogo, no aportan al cajero durante el cobro y contradicen la meta de no mostrar codigos internos o datos tecnicos en superficies normales.
 Decision: El POS conserva la busqueda por identificador y la autoridad backend, pero las tarjetas de servicios solo muestran nombre, categoria, precio y reglas operativas visibles; los identificadores crudos quedan fuera de la superficie de caja.
 Criterio de verificacion: ServiceSearch.test valida que un servicio con `scan_code`, `barcode` y `qr_code` se puede listar sin filtrar esos valores al texto visible del POS.
+
+## 2026-06-07 - Specs activas usan escaneo de servicios e identificadores
+Contexto: Varias specs activas de POS, catalogo y presentacion todavia nombraban el flujo como Barcode/QR, scanner USB o codigo, aunque la UI ya usa identificador de servicio y evita exponer codigos internos al cajero.
+Decision: La documentacion activa de producto usa escaneo de servicios e identificador; los nombres tecnicos `scan_code`, `barcode` y `qr_code` quedan solo como contrato interno de backend/catalogo/migraciones.
+Criterio de verificacion: validate_installation_docs_safety.ps1 ahora revisa las specs activas, el indice, roadmap, execution pack y checklists contra lenguaje heredado de scanner/barcode/codigo en superficies de producto.

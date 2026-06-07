@@ -29,18 +29,18 @@ Criterio:
 
 - Facturar se siente como caja rapida.
 
-## 12C Catalogo + barcode/QR/scan_code
+## 12C Catalogo + identificadores de servicio
 
 Alcance:
 
 - Administrar categorias y servicios.
-- Editar precio, activo/inactivo, scan_code.
-- Agregar migracion/API si no existe soporte de codigo.
-- Soportar busqueda por codigo desde POS.
+- Editar precio, activo/inactivo e identificador de escaneo.
+- Agregar migracion/API si no existe soporte de identificador.
+- Soportar busqueda por identificador desde POS.
 
 Criterio:
 
-- No hay lista interminable; servicios se administran y facturan por categoria/codigo.
+- No hay lista interminable; servicios se administran y facturan por categoria o identificador.
 
 ## 12D Reportes avanzados
 

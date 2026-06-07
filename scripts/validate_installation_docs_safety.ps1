@@ -67,7 +67,11 @@ $disasterRecoveryGuide = Read-RequiredFile "docs\DISASTER_RECOVERY.md"
 $implementationPlan = Read-RequiredFile "docs\IMPLEMENTATION_PLAN.md"
 $troubleshootingGuide = Read-RequiredFile "docs\TROUBLESHOOTING.md"
 $docsIndex = Read-RequiredFile "docs\00_README.md"
+$posBillingUxSpec = Read-RequiredFile "docs\03_POS_BILLING_UX_SPEC.md"
+$serviceScanWorkflow = Read-RequiredFile "docs\06_SERVICE_SCAN_WORKFLOW.md"
+$finalPhasesRoadmap = Read-RequiredFile "docs\07_FINAL_PHASES_ROADMAP.md"
 $finalExecutionPackIndex = Read-RequiredFile "docs\09_FINAL_EXECUTION_PACK_INDEX.md"
+$correctedFinalProductPlan = Read-RequiredFile "docs\12_CORRECTED_FINAL_PRODUCT_PLAN.md"
 $trainingAdminGuide = Read-RequiredFile "docs\TRAINING_ADMIN.md"
 $userManual = Read-RequiredFile "docs\Manual_Usuario.md"
 $userManualHtml = Read-RequiredFile "docs\Manual_Usuario.html"
@@ -206,6 +210,25 @@ if ($releaseChecklist -ne "") {
 if ($docsIndex -ne "") {
     Test-NotContains $docsIndex '(?i)backup pending forever' "Documentation index avoids raw backup pending wording"
     Test-Contains $docsIndex 'respaldo que queda en Pendiente' "Documentation index uses visible backup status wording"
+    Test-NotContains $docsIndex '(?i)Barcode QR|Barcode/QR|Scanner-driven|scanner-driven' "Documentation index uses operational service identifier wording"
+    Test-Contains $docsIndex 'Service identifier entry for billing' "Documentation index names service identifier entry"
+}
+
+if ($posBillingUxSpec -ne "") {
+    Test-NotContains $posBillingUxSpec '(?i)scanner y mouse|campo scanner|texto, categoria o scanner|codigo interno' "POS UX spec avoids scanner/code as visible product wording"
+    Test-Contains $posBillingUxSpec 'identificador de servicio' "POS UX spec uses service identifier wording"
+    Test-Contains $posBillingUxSpec 'sin mostrar esos valores al cajero' "POS UX spec keeps technical identifiers hidden from cashier"
+}
+
+if ($serviceScanWorkflow -ne "") {
+    Test-NotContains $serviceScanWorkflow '(?i)Barcode QR Workflow|scanner USB|codigo escrito|QR/barcode|Flujo scanner|campo de scanner|codigo equivalente|Codigo duplicado|Buscar por codigo|Codigo inexistente' "Service scan workflow avoids legacy barcode/scanner/code wording"
+    Test-Contains $serviceScanWorkflow 'identificador de servicio' "Service scan workflow uses service identifier wording"
+    Test-Contains $serviceScanWorkflow 'No mostrar identificadores crudos' "Service scan workflow forbids raw identifiers in normal cashier surfaces"
+}
+
+if ($finalPhasesRoadmap -ne "") {
+    Test-NotContains $finalPhasesRoadmap '(?i)barcode/QR/scan_code|soporte de codigo|busqueda por codigo|categoria/codigo' "Final phases roadmap uses operational service identifier wording"
+    Test-Contains $finalPhasesRoadmap 'identificadores de servicio' "Final phases roadmap names service identifiers"
 }
 
 if ($releaseReadiness -ne "") {
@@ -216,8 +239,13 @@ if ($releaseReadiness -ne "") {
 }
 
 if ($finalExecutionPackIndex -ne "") {
-    Test-NotContains $finalExecutionPackIndex '(?i)scanner/c[o]digos|scanner/c[o]digo' "Final execution pack index uses operational service scanning wording"
+    Test-NotContains $finalExecutionPackIndex '(?i)scanner/c[o]digos|scanner/c[o]digo|codigo, scanner|barcode/QR|POS puede agregar por categoria, texto o scanner|codigos planificados' "Final execution pack index uses operational service scanning wording"
     Test-Contains $finalExecutionPackIndex 'escaneo de servicios' "Final execution pack index names service scanning operationally"
+}
+
+if ($correctedFinalProductPlan -ne "") {
+    Test-NotContains $correctedFinalProductPlan '(?i)Catalogo, codigos|estado y codigo|inactivo/codigo|soporte de codigo|Codigo existente|Codigo inexistente' "Corrected final product plan uses service identifier wording"
+    Test-Contains $correctedFinalProductPlan 'identificador' "Corrected final product plan names service identifiers"
 }
 
 if ($productionGapReport -ne "") {
@@ -228,12 +256,16 @@ if ($productionGapReport -ne "") {
 
 if ($validationPresentationReadiness -ne "") {
     Test-NotContains $validationPresentationReadiness '(?i)worker continuo|worker de backups|backup pending|`pending`\s*->\s*`success`' "Validation presentation readiness avoids raw backup worker/status wording"
+    Test-NotContains $validationPresentationReadiness '(?i)Codigos de validacion para scanner|codigo de validacion en scanner|barcode `|Catalogo:.*codigos' "Validation presentation readiness uses operational identifier wording"
     Test-Contains $validationPresentationReadiness 'tarea continua de respaldos' "Validation presentation readiness uses operational backup task wording"
+    Test-Contains $validationPresentationReadiness 'Identificadores de validacion para escaneo de servicios' "Validation presentation readiness names validation identifiers operationally"
 }
 
 if ($finalUxAcceptanceChecklist -ne "") {
     Test-NotContains $finalUxAcceptanceChecklist '(?i)worker continuo|worker de backups|backup pending|`pending`\s*->\s*`success`' "Final UX acceptance checklist avoids raw backup worker/status wording"
+    Test-NotContains $finalUxAcceptanceChecklist '(?i)Scanner input visible|Barcode/QR fields' "Final UX acceptance checklist avoids legacy scanner/barcode wording"
     Test-Contains $finalUxAcceptanceChecklist 'tarea continua de respaldos' "Final UX acceptance checklist uses operational backup task wording"
+    Test-Contains $finalUxAcceptanceChecklist 'Campo de identificador de servicio' "Final UX acceptance checklist names service identifier field"
 }
 
 if ($troubleshootingGuide -ne "") {

@@ -15,7 +15,7 @@ Los bloqueos UX de `docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md` quedaron cerrados p
 ## Facturacion
 - [x] Categorias visibles.
 - [x] Buscador visible.
-- [x] Scanner input visible.
+- [x] Campo de identificador de servicio visible cuando corresponde.
 - [x] Carrito visible.
 - [x] No lista interminable por defecto.
 - [x] Eritropoyetina clara.
@@ -33,7 +33,7 @@ Los bloqueos UX de `docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md` quedaron cerrados p
 - [x] Tabla profesional basada en componente compartido.
 - [x] Filtros.
 - [x] Crear/editar por permisos.
-- [x] Barcode/QR fields.
+- [x] Identificadores de servicio administrables por permisos.
 - [x] Estados de error/empty/loading consistentes.
 
 ## Reportes
