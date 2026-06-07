@@ -156,29 +156,32 @@ en el servidor y documenta el incidente.
 
 ---
 
-## 6. Internet requerido (NO deberia)
+## 6. Internet requerido o direccion incorrecta
 
-**Sintoma:** La app muestra mensajes de "Failed to fetch" o
-errores de CORS al cargar scripts externos.
+**Sintoma:** La app no carga, muestra que no puede conectarse o parece
+pedir internet para abrir.
 
 **Causa probable:**
-- El navegador del cliente intenta cargar el bundle de Vite dev
-  (no el bundle compilado de produccion).
-- La URL apunta a un dominio externo en vez de la IP del servidor.
+- La computadora cliente abrio una direccion de pruebas o una direccion
+  externa.
+- La direccion del servidor cambio.
+- El navegador guardo una version vieja de la pagina.
 
 **Accion inmediata:**
-1. Verificar la URL en la barra de direcciones: debe ser
-   `http://IP_DEL_SERVIDOR:8000`, no `http://localhost:5173`.
-2. Si accidentalmente se abrio `localhost:5173`, cerrarlo y abrir
-   la IP real.
-3. Si la URL ya es la IP del servidor, abrir
-   `Informacion del sistema` y verificar el campo
-   `runtime.environment.app_url`.
-4. Confirmar que `frontend/dist/` existe en el servidor
-   (debe haber un `index.html` dentro).
+1. Confirmar que la direccion en la barra del navegador sea la
+   direccion LAN oficial entregada por administracion.
+2. No use direcciones de pruebas ni direcciones que digan
+   `localhost` en una computadora cliente.
+3. Si la direccion LAN oficial no abre, probar desde el servidor. Si
+   abre en el servidor pero no en la caja cliente, tratarlo como red
+   local.
+4. Borrar cache del navegador y volver a abrir la direccion LAN oficial.
+5. Preparar resumen seguro desde **Ayuda** si la pantalla lo permite, o
+   registrar hora, computadora y direccion usada.
 
-**Escalamiento:** Si `frontend/dist/` falta en el servidor,
-reconstruir con `npm run build` dentro de la carpeta `frontend/`.
+**Escalamiento:** Soporte local debe revisar la direccion publicada del
+sistema y confirmar que la instalacion offline este completa antes de
+volver a poner cajas a operar.
 
 ---
 

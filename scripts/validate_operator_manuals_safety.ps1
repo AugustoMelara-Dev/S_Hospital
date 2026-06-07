@@ -106,6 +106,11 @@ if ($commonIncidents -match "(?is)##\s+1\.\s+Pantalla blanca(?<section>.*?)(?:\r
     $blankScreenIncident = $Matches.section
 }
 
+$offlineUrlIncident = ""
+if ($commonIncidents -match "(?is)##\s+6\.\s+Internet requerido o direccion incorrecta(?<section>.*?)(?:\r?\n---|\z)") {
+    $offlineUrlIncident = $Matches.section
+}
+
 $finalChecklist = ""
 if ($commonIncidents -match "(?is)##\s+Cuando todo falla: lista de verificacion de 60 segundos(?<section>.*)\z") {
     $finalChecklist = $Matches.section
@@ -130,6 +135,11 @@ if ($commonIncidents -ne "") {
     Test-Contains $blankScreenIncident "(?i)direccion LAN oficial" "Common incidents blank screen section uses LAN wording"
     Test-Contains $blankScreenIncident "(?i)Ayuda\s*>\s*Preparar resumen para soporte|resumen seguro" "Common incidents blank screen section routes to safe support summary"
     Test-NotContains $blankScreenIncident "(?i)/up|/api|docker\s+ps|frontend/dist|nginx|F12|consola del navegador" "Common incidents blank screen section avoids raw runtime checks"
+    Test-Contains $commonIncidents "(?i)Internet requerido o direccion incorrecta" "Common incidents runbook uses operator offline/LAN incident title"
+    Test-Contains $offlineUrlIncident "(?i)direccion LAN oficial" "Common incidents offline/LAN section uses LAN wording"
+    Test-Contains $offlineUrlIncident "(?i)no use[\s\S]{0,80}localhost|localhost[\s\S]{0,80}computadora cliente" "Common incidents offline/LAN section warns clients about localhost"
+    Test-Contains $offlineUrlIncident "(?i)Ayuda\s*>\s*Preparar resumen para soporte|resumen seguro" "Common incidents offline/LAN section routes to safe support summary"
+    Test-NotContains $offlineUrlIncident "(?i)localhost:5173|runtime\.environment|frontend/dist|npm\s+run\s+build|bundle|vite|CORS|Failed to fetch|index\.html" "Common incidents offline/LAN section avoids dev/build internals"
     Test-Contains $finalChecklist "(?i)direccion LAN oficial" "Common incidents final checklist uses LAN wording"
     Test-Contains $finalChecklist "(?i)no\s+repita|no\s+repetir" "Common incidents final checklist warns against repeating financial actions"
     Test-NotContains $finalChecklist "(?i)curl\s+http|/api|docker\s+ps|localhost:8000|smoke_test_post_install|database\.connected|JSON" "Common incidents final checklist avoids command/API checks"

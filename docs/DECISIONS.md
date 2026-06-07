@@ -3577,3 +3577,7 @@ validate_operator_manuals_safety extrae esta seccion y bloquea la reaparicion de
 ## 2026-06-07 - Runbook humaniza sesion cerrada inesperadamente
 La seccion Sesion cerrada inesperadamente ahora evita variables de sesion, comandos artisan, backend y .env. El flujo guia al cajero a reintentar ingreso, avisar al supervisor si se repite, preparar resumen seguro desde Ayuda y escalar a soporte local para revisar configuracion de sesiones sin exponer secretos.
 validate_operator_manuals_safety extrae la seccion y bloquea la reaparicion de SESSION_DRIVER, SESSION_ENCRYPT, SANCTUM_STATEFUL_DOMAINS, session:clear, php artisan, runtime y .env en ese incidente.
+
+## 2026-06-07 - Runbook humaniza incidente de internet o direccion incorrecta
+La seccion Internet requerido ahora se presenta como Internet requerido o direccion incorrecta. El flujo evita localhost:5173, runtime.environment, frontend/dist, Vite, CORS y npm run build; guia al operador a confirmar direccion LAN oficial, no usar localhost en caja cliente, probar desde el servidor, limpiar cache, preparar resumen seguro y escalar a soporte local.
+validate_operator_manuals_safety extrae la seccion y bloquea la reaparicion de detalles de desarrollo o build en ese incidente.
