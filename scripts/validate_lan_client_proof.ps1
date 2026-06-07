@@ -137,6 +137,7 @@ if ([string]::IsNullOrWhiteSpace($ProofPath) -or -not (Test-Path -LiteralPath $P
                 @{ Pattern = '(?i)historial|reprint|reimpresion'; Label = 'history/reprint' },
                 @{ Pattern = '(?i)reportes|reports'; Label = 'reports' },
                 @{ Pattern = '(?i)backup|respaldo'; Label = 'backup from UI' },
+                @{ Pattern = '(?is)Pendiente.*Protegido|Protegido.*Pendiente'; Label = 'Pendiente a Protegido' },
                 @{ Pattern = '(?i)PRODUCTION_CANDIDATE'; Label = 'PRODUCTION_CANDIDATE' }
             )) {
                 if ($content -match $pendingRequirement.Pattern) {
@@ -181,7 +182,7 @@ if ([string]::IsNullOrWhiteSpace($ProofPath) -or -not (Test-Path -LiteralPath $P
             "Receipt preview opens",
             "Invoice history and reprint work",
             "Reports load",
-            'Backup request from UI changes from `pending` to `success`'
+            'Respaldo solicitado desde la UI cambia de Pendiente a Protegido'
         )) {
             Test-ProofHasCheckedItem $content $check
         }

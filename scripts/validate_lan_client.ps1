@@ -216,7 +216,7 @@ if ($EvidencePath -ne "") {
     $lines.Add("- [ ] Receipt preview opens. Result/evidence:") | Out-Null
     $lines.Add("- [ ] Invoice history and reprint work. Result/evidence:") | Out-Null
     $lines.Add("- [ ] Reports load. Result/evidence:") | Out-Null
-    $lines.Add("- [ ] Backup request from UI changes from `pending` to `success`. Result/evidence:") | Out-Null
+    $lines.Add("- [ ] Respaldo solicitado desde la UI cambia de Pendiente a Protegido. Result/evidence:") | Out-Null
     $lines.Add("") | Out-Null
     $lines.Add("## Evidence") | Out-Null
     $lines.Add("") | Out-Null

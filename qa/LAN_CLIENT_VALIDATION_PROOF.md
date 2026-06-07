@@ -11,14 +11,16 @@ evidencia que no existan en `qa/`.
 - Falta ejecutar la validacion desde una PC cliente distinta al servidor.
 - Falta confirmar acceso por IP fija o nombre LAN final, no `localhost`.
 - Falta login real sin 419 ni sesion vencida desde el cliente.
-- Falta recorrer caja, factura, pago, recibo, historial, reportes y backup desde
-  esa PC cliente.
+- Falta recorrer caja, factura, pago, recibo, historial, reportes y respaldo
+  desde esa PC cliente.
+- Falta confirmar que el respaldo solicitado desde la UI cambia de **Pendiente**
+  a **Protegido**.
 - Falta adjuntar evidencia verificable bajo `qa/`.
 
 ## Comando recomendado
 
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://IP_DEL_SERVIDOR:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl http://IP_DEL_SERVIDOR:8000 -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
 ```
 
 ## Resultado operativo

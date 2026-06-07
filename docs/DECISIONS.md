@@ -3788,3 +3788,8 @@ Criterio de verificacion: validate_installation_docs_safety.ps1 bloquea que DAIL
 Contexto: La plantilla y los gates de la prueba final de respaldos pedian demostrar pending to success/completed, aunque la UI operativa debe comunicar Respaldos como Pendiente, Protegido o Error.
 Decision: La evidencia final ahora pide confirmar que el respaldo manual cambia de Pendiente a Protegido en la UI administrativa, conservando tarea instalada, timestamp, tamano, referencia segura y bloqueo PRODUCTION_CANDIDATE hasta validar en servidor real.
 Criterio de verificacion: validate_final_backup_task_proof, validate_field_proof_templates, production_readiness_preflight y final_production_handoff esperan Pendiente a Protegido en vez de estados crudos.
+
+## 2026-06-07 - Prueba LAN usa estado visible de respaldo
+Contexto: La plantilla y el generador de evidencia LAN pedian confirmar backup de pending a success, aunque la prueba la ejecuta personal/soporte desde una segunda PC y debe observar estados visibles.
+Decision: La validacion LAN ahora pide que el respaldo solicitado desde la UI cambie de Pendiente a Protegido, y el comando recomendado usa PowerShell con -NoProfile.
+Criterio de verificacion: validate_lan_client_proof, validate_field_proof_templates y production_readiness_preflight exigen Pendiente a Protegido para la evidencia LAN.

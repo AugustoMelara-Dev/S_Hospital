@@ -33,7 +33,7 @@ exact labels and the checked items below.
 - [ ] Receipt preview opens. Result/evidence:
 - [ ] Invoice history and reprint work. Result/evidence:
 - [ ] Reports load. Result/evidence:
-- [ ] Backup request from UI changes from `pending` to `success`. Result/evidence:
+- [ ] Respaldo solicitado desde la UI cambia de Pendiente a Protegido. Result/evidence:
 
 ## Evidence
 

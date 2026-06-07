@@ -599,7 +599,7 @@ if ($AllowMissingPhysicalProof) {
             "Receipt",
             "history",
             "Reports",
-            "Backup"
+            "Pendiente a Protegido"
         )
 
     Test-ProofFile `

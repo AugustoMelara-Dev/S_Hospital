@@ -136,7 +136,7 @@ Test-Template `
         "Receipt",
         "history",
         "Reports",
-        "Backup"
+        "Pendiente a Protegido"
     ) `
     -safetyTerms @(
         'second computer',
