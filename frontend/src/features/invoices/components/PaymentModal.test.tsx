@@ -103,9 +103,16 @@ describe('PaymentModal', () => {
 
     expect(screen.getByText(/menor al saldo pendiente/i)).toBeInTheDocument();
     expect(screen.getByText('L. 7.25')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /confirmar cobro/i })).toBeDisabled();
+    const blockedAlert = screen.getByRole('alert');
+    const amountInput = screen.getByLabelText(/monto recibido/i);
+    const confirmButton = screen.getByRole('button', { name: /confirmar cobro/i });
 
-    fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
+    expect(blockedAlert).toHaveAttribute('id', 'payment-amount-blocked');
+    expect(amountInput).toHaveAttribute('aria-describedby', 'payment-amount-blocked');
+    expect(confirmButton).toBeDisabled();
+    expect(confirmButton).toHaveAttribute('aria-describedby', 'payment-amount-blocked');
+
+    fireEvent.click(confirmButton);
     expect(confirmSpy).not.toHaveBeenCalled();
   });
 });

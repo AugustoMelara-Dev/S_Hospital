@@ -61,6 +61,11 @@ export function PaymentModal({
     : paymentCents;
   const needsAmount = paymentCents === null || paymentCents <= 0;
   const insufficientAmountBlocked = remainingBalanceCents !== null && !partialPaymentsEnabled;
+  const blockedPaymentMessageId = insufficientAmountBlocked ? 'payment-amount-blocked' : undefined;
+  const needsAmountMessageId = needsAmount && !error ? 'payment-amount-required' : undefined;
+  const amountDescribedBy = [error ? 'payment-amount-error' : null, blockedPaymentMessageId, needsAmountMessageId]
+    .filter(Boolean)
+    .join(' ') || undefined;
 
   useEffect(() => {
     if (open) {
@@ -119,8 +124,12 @@ export function PaymentModal({
               <span className="font-bold">{moneyLabelFromCents(remainingBalanceCents)}</span>
             </div>
           )}
-          {remainingBalanceCents !== null && !partialPaymentsEnabled ? (
-            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive" role="alert">
+          {insufficientAmountBlocked ? (
+            <div
+              id="payment-amount-blocked"
+              className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive"
+              role="alert"
+            >
               {t('invoicePayment.amountLessThanTotal')}
             </div>
           ) : null}
@@ -139,7 +148,11 @@ export function PaymentModal({
 
         <div className="space-y-3">
           {needsAmount && !error ? (
-            <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="alert">
+            <div
+              id="payment-amount-required"
+              className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+              role="alert"
+            >
               {t('invoicePayment.needsAmountWarning')}
             </div>
           ) : null}
@@ -174,7 +187,7 @@ export function PaymentModal({
               }}
               placeholder={t('invoicePayment.amountPlaceholder')}
               aria-invalid={error ? 'true' : 'false'}
-              aria-describedby={error ? 'payment-amount-error' : undefined}
+              aria-describedby={amountDescribedBy}
             />
             {error && <p id="payment-amount-error" className="mt-1 text-sm text-destructive" role="alert">{error}</p>}
           </div>
@@ -210,6 +223,7 @@ export function PaymentModal({
             className="flex-1"
             disabled={submitting || needsAmount || insufficientAmountBlocked}
             aria-label={previewBeforePrint ? t('invoicePayment.ariaConfirmPreview') : t('invoicePayment.ariaConfirmPrint')}
+            aria-describedby={blockedPaymentMessageId ?? needsAmountMessageId}
           >
             {submitting
               ? t('invoicePayment.submitting')

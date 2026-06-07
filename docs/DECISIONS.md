@@ -3651,3 +3651,8 @@ PaymentModal ahora deshabilita Confirmar cobro cuando el monto recibido es menor
 RegisterPaymentAction usa el mismo mensaje para el bloqueo backend, evitando que una peticion directa deje la factura como pagada o parcialmente cobrada sin configuracion autorizada.
 Manual de cajero y checklist de capacitacion hablan de saldo pendiente para que caja entienda que el bloqueo depende del saldo real, no del total original.
 Validacion: vitest PaymentModal/NewInvoiceView/FiscalSettingsView, php artisan test --filter=CashPaymentsReceiptTest, check-branding, validate_training_safety y validate_operator_manuals_safety pasaron.
+
+## 2026-06-07 - bloqueo de pago insuficiente queda descrito para accesibilidad
+PaymentModal ahora vincula el aviso visible de pago insuficiente o monto requerido con el campo de monto y el boton de confirmar mediante aria-describedby.
+La intencion es que el cajero que usa teclado o lector de pantalla entienda por que Confirmar cobro esta deshabilitado sin intentar repetir la accion ni asumir que el sistema fallo.
+Validacion: npm.cmd test -- PaymentModal.test.tsx paso con contrato de ids accesibles para el aviso de bloqueo.
