@@ -3605,3 +3605,7 @@ check-branding.ps1 incluye ese reporte en la revision de documentacion actual co
 ## 2026-06-07 - Field deployment valida impresora solo en formatos institucionales
 qa/FIELD_DEPLOYMENT_VALIDATION.md ahora lista la validacion fisica de impresora institucional en media carta, carta o A5, sin convertir 80mm/58mm en bloqueantes operativos de PRODUCTION_READY.
 check-branding.ps1 incluye FIELD_DEPLOYMENT_VALIDATION en la revision de documentacion actual contra 80mm, 58mm e impresora de rollo.
+
+## 2026-06-07 - QA vigente elimina formatos de rollo como prueba operativa
+Los informes QA vigentes de aceptacion, readiness, roles y auditoria UX quedan alineados a recibo institucional media carta, carta o A5 para la prueba fisica de impresora.
+check-branding.ps1 ahora cubre esos informes contra 80mm, 58mm e impresora de rollo como lenguaje operativo actual.

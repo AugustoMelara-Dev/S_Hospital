@@ -233,10 +233,16 @@ try {
             'frontend/e2e/production-readiness.spec.ts',
             'qa/AREAS_DE_MEJORA_CONSIDERADAS_2026-05-19.md',
             'qa/FIELD_DEPLOYMENT_VALIDATION.md',
+            'qa/final-product-ux-acceptance.md',
             'qa/FINAL_FIELD_BLOCKERS_SAFETY_2026_06_04.md',
             'qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md',
+            'qa/PRODUCTION_READINESS_AUDIT_2026-05-18.md',
             'qa/PRODUCTION_READINESS_GAP_REPORT.md',
             'qa/PROJECT_POLISH_FINAL_REPORT.md',
+            'qa/PRODUCTION_PRIORITY_HIGH_EXECUTION_2026-05-19.md',
+            'qa/ROLE_MODULE_AUDIT_2026-05-19.md',
+            'qa/UX_2_CASH_RECEIPT_AUDIT_2026-05-18.md',
+            'qa/UX_OPERATIVA_AUDIT_2026-05-18.md',
             'qa/ACCESSIBILITY_UX_AUDIT.md',
             'qa/THERMAL_PRINTER_PROOF.example.md'
         )
