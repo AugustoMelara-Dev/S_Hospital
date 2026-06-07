@@ -182,6 +182,7 @@ try {
             'qa/ACCEPTANCE_CRITERIA.md',
             'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
             'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md',
+            'qa/UX_UI_AUDIT_LIVE_2026-05-21.md',
             'qa/RELEASE_READINESS.md'
         ) `
         -AllowedLinePatterns @(

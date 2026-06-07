@@ -3698,3 +3698,8 @@ Validacion: HelpView test, validate_training_safety y busqueda enfocada de etiqu
 Contexto: SYSTEM_REQUIREMENTS.md aun describia impresion termica como modulo obligatorio, aunque el contrato RC vigente exige recibo institucional en media carta, carta o A5 y no promover papel de rollo.
 Decision: SYSTEM_REQUIREMENTS.md queda alineado a recibo institucional PDF/imprimible en media carta, carta o A5. check-branding ahora cubre ese archivo y bloquea impresion termica como lenguaje heredado en superficies actuales.
 Validacion: check-branding, busqueda enfocada en SYSTEM_REQUIREMENTS y diff check.
+
+## 2026-06-07 - evidencia UX sin recibos termicos
+Contexto: una auditoria visual viva de UX aun describia Courier New como fuente usada solo para recibos termicos, aunque el contrato RC vigente exige recibos institucionales tipo talonario.
+Decision: qa/UX_UI_AUDIT_LIVE_2026-05-21.md queda alineado a recibos institucionales. check-branding ahora cubre esa evidencia contra lenguaje heredado de ticket o recibo termico.
+Validacion: check-branding y busqueda enfocada en la evidencia UX.

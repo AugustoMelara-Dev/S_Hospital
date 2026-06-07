@@ -55,7 +55,7 @@ Reportes tecnicos de captura:
 - Catalogo: se oculto el identificador interno del servicio y se simplificaron etiquetas de acciones visibles.
 - Usuarios: titulos y acciones se redujeron a lenguaje operativo (`Usuarios`, `Crear usuario`, `Rol`, `Restablecer clave`).
 - Respaldos: se redujo lenguaje tecnico visible en checklist, estado operativo y confirmaciones.
-- Tipografia: la app mantiene dos familias como maximo: `Inter` para interfaz y `Courier New` solo para recibos termicos; se quitaron usos visuales de monoespaciada en catalogo, historial, usuarios, respaldos y setup.
+- Tipografia: la app mantiene dos familias como maximo: `Inter` para interfaz y `Courier New` solo para recibos institucionales; se quitaron usos visuales de monoespaciada en catalogo, historial, usuarios, respaldos y setup.
 - Reportes de auditoria: el tipo de respaldo ya muestra etiquetas operativas (`Manual`, `Automatico`) en vez del valor interno.
 - Configuracion: se redujo de cinco a cuatro secciones (`Resumen`, `Hospital`, `Numeracion`, `Apariencia`) para bajar carga visual.
 - Configuracion: se unieron datos del hospital y ancho de recibo en una sola seccion operativa, con una sola accion `Guardar hospital y recibo`.
