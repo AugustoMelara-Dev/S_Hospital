@@ -38,15 +38,13 @@ function HospitalApp() {
   const [quickCashOpen, setQuickCashOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
-  // Augment the onStatus callback: any message that features dispatch
-  // is also surfaced as a real toast (top-right). The status string
-  // continues to drive the topbar pill, but cashiers no longer miss
-  // errors that were previously hidden in an sr-only footer.
+  // Surface operational status without stacking notices over cashier/admin actions.
+  // The status string still drives the topbar pill and screen-reader updates.
   const handleStatus = useCallback((message: string) => {
     setStatus(message);
     if (message && message !== 'Listo para iniciar sesión local.') {
       if (isErrorMessage(message)) {
-        notify.error(message);
+        notify.status(message, 'error');
       } else if (
         message.startsWith('Cargando') ||
         message.startsWith('Preparando') ||
@@ -61,9 +59,9 @@ function HospitalApp() {
         message.startsWith('Cambiando') ||
         message.startsWith('Revisando')
       ) {
-        notify.info(message);
+        notify.status(message, 'info');
       } else {
-        notify.success(message);
+        notify.status(message, 'success');
       }
     }
   }, [setStatus]);

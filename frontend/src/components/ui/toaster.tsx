@@ -2,6 +2,42 @@ import toast, { Toaster as HotToaster } from 'react-hot-toast';
 
 export { toast };
 
+const MAX_VISIBLE_TOASTS = 3;
+const STATUS_TOAST_ID = 'hospital-status-toast';
+const activeToastIds: string[] = [];
+
+function trackToast(id: string) {
+  const existingIndex = activeToastIds.indexOf(id);
+  if (existingIndex >= 0) {
+    activeToastIds.splice(existingIndex, 1);
+  }
+
+  activeToastIds.push(id);
+
+  while (activeToastIds.length > MAX_VISIBLE_TOASTS) {
+    const staleId = activeToastIds.shift();
+    if (staleId) {
+      toast.dismiss(staleId);
+    }
+  }
+
+  return id;
+}
+
+function dismissTrackedToast(id?: string) {
+  if (id) {
+    const existingIndex = activeToastIds.indexOf(id);
+    if (existingIndex >= 0) {
+      activeToastIds.splice(existingIndex, 1);
+    }
+    toast.dismiss(id);
+    return;
+  }
+
+  activeToastIds.splice(0, activeToastIds.length);
+  toast.dismiss();
+}
+
 /**
  * Preconfigured application toaster.
  * Dark-mode aware, positioned top-right, with professional styling.
@@ -46,12 +82,23 @@ export function Toaster() {
 
 /** Convenience helpers */
 export const notify = {
-  success: (message: string) => toast.success(message),
-  error: (message: string) => toast.error(message),
-  info: (message: string) => toast(message, { icon: 'ℹ️' }),
-  warning: (message: string) => toast(message, { icon: '⚠️' }),
-  loading: (message: string) => toast.loading(message),
-  dismiss: (id?: string) => toast.dismiss(id),
+  success: (message: string) => trackToast(toast.success(message)),
+  error: (message: string) => trackToast(toast.error(message)),
+  info: (message: string) => trackToast(toast(message, { icon: 'i' })),
+  warning: (message: string) => trackToast(toast(message, { icon: '!' })),
+  loading: (message: string) => trackToast(toast.loading(message)),
+  status: (message: string, level: 'success' | 'error' | 'info' = 'info') => {
+    if (level === 'success') {
+      return trackToast(toast.success(message, { id: STATUS_TOAST_ID }));
+    }
+
+    if (level === 'error') {
+      return trackToast(toast.error(message, { id: STATUS_TOAST_ID }));
+    }
+
+    return trackToast(toast(message, { id: STATUS_TOAST_ID, icon: 'i' }));
+  },
+  dismiss: (id?: string) => dismissTrackedToast(id),
   promise: <T,>(
     promise: Promise<T>,
     msgs: { loading: string; success: string; error: string },

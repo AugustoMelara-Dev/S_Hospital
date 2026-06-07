@@ -88,7 +88,7 @@ function Test-RelativeEvidencePath([string] $relativePath, [int64] $minimumBytes
     Add-Pass "$label screenshot exists and is non-empty"
 }
 
-$rcReportPath = "qa\browser-smoke-2026-06-05\rc-e2e-mocked-report.json"
+$rcReportPath = "qa\browser-smoke-2026-06-07\rc-e2e-mocked-report.json"
 $helpReportPath = "qa\screenshots\rc-help-support-2026-05-31\help-support-report.json"
 $fieldQaScriptPath = "qa\visual-smoke\field-qa-current-screenshots.mjs"
 $rcReport = Read-JsonFile $rcReportPath

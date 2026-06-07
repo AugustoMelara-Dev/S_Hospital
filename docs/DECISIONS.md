@@ -3656,3 +3656,9 @@ Validacion: vitest PaymentModal/NewInvoiceView/FiscalSettingsView, php artisan t
 PaymentModal ahora vincula el aviso visible de pago insuficiente o monto requerido con el campo de monto y el boton de confirmar mediante aria-describedby.
 La intencion es que el cajero que usa teclado o lector de pantalla entienda por que Confirmar cobro esta deshabilitado sin intentar repetir la accion ni asumir que el sistema fallo.
 Validacion: npm.cmd test -- PaymentModal.test.tsx paso con contrato de ids accesibles para el aviso de bloqueo.
+
+## 2026-06-07 - avisos operativos se reemplazan para no tapar acciones criticas
+La evidencia visual de Respaldos mostro que varios avisos de carga y exito podian apilarse sobre Actualizar y Crear respaldo.
+El wrapper notify limita la cola general a tres avisos y App usa notify.status con un id fijo para que los mensajes operativos se reemplacen entre si.
+La captura qa/browser-smoke-2026-06-07/backups-pending-light.png confirma que queda un solo aviso visible y las acciones principales permanecen accesibles.
+Validacion: vitest toaster/App, typecheck, browser smoke mockeado con capturas y validate_browser_smoke_evidence.ps1.
