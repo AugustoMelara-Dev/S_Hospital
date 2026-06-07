@@ -60,8 +60,8 @@ la base real de produccion.
 - [ ] Crea respaldo manual.
 - [ ] Verifica ultimo respaldo.
 - [ ] Conoce la guia de soporte de primer nivel.
-- [ ] Revisa un resumen seguro antes de escalar un incidente tecnico.
-- [ ] Sabe a quien llamar ante error tecnico.
+- [ ] Revisa un resumen seguro antes de escalar un incidente operativo.
+- [ ] Sabe a quien llamar ante error del sistema.
 - [ ] Sabe preparar capacitacion sin tocar la base real.
 - [ ] Sabe restaurar solo en base descartable autorizada.
 

@@ -3748,3 +3748,8 @@ Criterio de verificacion: ReportsTest completo pasa, Pint pasa en los archivos t
 Contexto: el flujo Docker del instalador ya mostraba preparacion institucional, pero el flujo PHP/bare-metal aun decia 'Ejecutando migraciones...', una frase tecnica visible durante una instalacion productiva.
 Decision: ambos flujos del instalador muestran 'Preparando base institucional, roles y catalogo...' mientras conservan los comandos seguros migrate --force y seeders explicitos de roles/catalogo. validate_installer_legacy_safety bloquea que vuelva 'Ejecutando migraciones' como texto normal del instalador.
 Criterio de verificacion: deploy_hospital_lan.ps1 -SelfTest, validate_installer_legacy_safety, check-branding y diff check.
+
+## 2026-06-07 - Checklist de capacitacion usa incidentes operativos
+Contexto: el checklist de capacitacion para administracion aun pedia escalar un 'incidente tecnico' y llamar ante 'error tecnico', lenguaje que puede sonar ajeno para personal no tecnico.
+Decision: el checklist usa incidente operativo y error del sistema. validate_training_safety bloquea que el checklist vuelva a usar incidente tecnico o error tecnico.
+Criterio de verificacion: validate_training_safety, validate_operator_manuals_safety, check-branding y diff check.

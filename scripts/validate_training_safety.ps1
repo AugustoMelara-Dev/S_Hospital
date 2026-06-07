@@ -95,6 +95,7 @@ Assert-Contains "Training docs require cashier role practice" $combinedDocs '(?i
 Assert-Contains "Training docs require supervisor role practice" $combinedDocs '(?i)supervisor'
 Assert-Contains "Training docs require administrator role practice" $combinedDocs '(?i)administrador'
 Assert-Contains "Training docs require support summary practice" $combinedDocs '(?i)ayuda\s*>\s*preparar resumen|resumen seguro'
+Assert-NotContains "Training checklist avoids technical incident wording for staff" $trainingChecklist 'incidente tecnico|error tecnico'
 Assert-Contains "Quick administrator training uses protected backup status" $quickAdminTraining 'protegido'
 Assert-Contains "Quick administrator training uses pending backup status" $quickAdminTraining 'pendiente'
 Assert-Contains "Quick administrator training uses error backup status" $quickAdminTraining 'error'
