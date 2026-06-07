@@ -3862,3 +3862,8 @@ Criterio de verificacion: validate_installation_docs_safety cubre IMPLEMENTATION
 Contexto: La pantalla de configuracion fiscal mostraba una etiqueta heredada de escaneo y referencias a codigos tecnicos en un control visible para administracion, aunque el operador debe leer el flujo como escaneo de servicios.
 Decision: El copy visible del control usa "escaneo de servicios en caja" y oculta la referencia a codigos internos; el contrato tecnico de scan_code, barcode y scanner_enabled se mantiene solo en catalogo, API y pruebas internas.
 Criterio de verificacion: FiscalSettingsView.test valida el nuevo label y bloquea el copy heredado o referencias a codigos internos en la vista.
+
+## 2026-06-07 - Catalogo usa lenguaje operativo para identificadores de escaneo
+Contexto: El catalogo mostraba etiquetas tecnicas de codificacion cuando el escaneo de servicios estaba activo. Para administracion y caja, la pantalla debe explicar el uso operativo sin exponer formatos internos.
+Decision: La UI del catalogo muestra identificador de escaneo, identificador alterno e identificador auxiliar; la API conserva sus campos tecnicos para compatibilidad y busqueda.
+Criterio de verificacion: ServiceSheet.test y CatalogView.test validan las etiquetas operativas y bloquean referencias visibles a formatos tecnicos de escaneo en esas superficies.

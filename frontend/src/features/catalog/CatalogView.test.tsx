@@ -43,6 +43,34 @@ describe('CatalogView', () => {
 
     await waitFor(() => expect(apiClient.getServicesPage).toHaveBeenCalled());
   });
+
+  it('uses operational labels for visible service scanning values', async () => {
+    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getFiscalSettings').mockResolvedValue({
+      scanner_enabled: true,
+    } as Awaited<ReturnType<typeof apiClient.getFiscalSettings>>);
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [
+        serviceFixture({
+          scan_code: 'LAB-GLU-001',
+          barcode: 'ALT-GLU-001',
+          qr_code: 'AUX-GLU-001',
+        }),
+      ],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Glucosa')).toBeInTheDocument());
+
+    expect(screen.getByText('Escaneo')).toBeInTheDocument();
+    expect(document.body.textContent).toContain('Principal: LAB-GLU-001');
+    expect(document.body.textContent).toContain('Alterno: ALT-GLU-001');
+    expect(document.body.textContent).toContain('Auxiliar: AUX-GLU-001');
+    expect(document.body.textContent).not.toMatch(/barra|codigo qr|código qr|\bqr\b/i);
+  });
 });
 
 function catalogUser(): AuthUser {

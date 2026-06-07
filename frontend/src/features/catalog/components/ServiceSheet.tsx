@@ -286,10 +286,10 @@ export function ServiceSheet({
         {scannerEnabled && (
           <>
             <div className="space-y-2">
-              <Label htmlFor="scan_code">Codigo de scanner</Label>
+              <Label htmlFor="scan_code">Identificador de escaneo</Label>
               <Input
                 id="scan_code"
-                placeholder="LAB-GLU-001"
+                placeholder="Ejemplo: LAB-GLU-001"
                 {...register('scan_code')}
                 aria-invalid={Boolean(errors.scan_code)}
                 aria-describedby={errors.scan_code ? 'service-scan-code-error' : undefined}
@@ -303,10 +303,10 @@ export function ServiceSheet({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="barcode">Codigo de barra</Label>
+              <Label htmlFor="barcode">Identificador alterno</Label>
               <Input
                 id="barcode"
-                placeholder="Codigo de barra opcional"
+                placeholder="Opcional para equipos de escaneo"
                 {...register('barcode')}
                 aria-invalid={Boolean(errors.barcode)}
                 aria-describedby={errors.barcode ? 'service-barcode-error' : undefined}
@@ -320,10 +320,10 @@ export function ServiceSheet({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="qr_code">Codigo QR</Label>
+              <Label htmlFor="qr_code">Identificador auxiliar</Label>
               <Input
                 id="qr_code"
-                placeholder="Codigo QR opcional"
+                placeholder="Opcional para integraciones locales"
                 {...register('qr_code')}
                 aria-invalid={Boolean(errors.qr_code)}
                 aria-describedby={errors.qr_code ? 'service-qr-code-error' : undefined}

@@ -94,4 +94,22 @@ describe('ServiceSheet', () => {
     expect(screen.getByLabelText(/aplica isv/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/servicio activo/i)).toBeInTheDocument();
   });
+
+  it('uses operational labels for service scanning identifiers', () => {
+    render(
+      <ServiceSheet
+        open
+        onOpenChange={vi.fn()}
+        categories={[{ id: 1, name: 'Laboratorio' }]}
+        areas={[{ id: 1, name: 'Laboratorio' }]}
+        scannerEnabled
+        onSuccess={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText(/identificador de escaneo/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/identificador alterno/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/identificador auxiliar/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/codigo de barra|código de barra|codigo qr|código qr|\bqr\b/i);
+  });
 });
