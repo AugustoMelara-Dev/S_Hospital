@@ -141,6 +141,9 @@ if ($backupGuide -ne "") {
 
 if ($offlineLanInstallGuide -ne "") {
     Test-NoProfilePowerShellCommands $offlineLanInstallGuide "Offline LAN install guide"
+    Test-NotContains $offlineLanInstallGuide '(?i)Levantar worker local|worker local de cola|worker local de backups|cuando el worker corre|`pending`|`success`|`failed`' "Offline LAN install guide avoids raw backup worker/status wording"
+    Test-Contains $offlineLanInstallGuide 'automatizacion local de respaldos' "Offline LAN install guide uses operational backup automation wording"
+    Test-Contains $offlineLanInstallGuide '(?s)Backup manual.*Pendiente.*Protegido.*Error' "Offline LAN install guide uses visible backup states"
 }
 
 foreach ($docInfo in @(

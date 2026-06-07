@@ -3763,3 +3763,8 @@ Criterio de verificacion: validate_known_limitations_safety, check-branding y di
 Contexto: install_backup_tasks_windows.ps1 aun mostraba Worker, Tarea worker y Comando worker previsto durante el dry-run o revision de estado, lenguaje tecnico visible para la configuracion del servidor final.
 Decision: la salida normal habla de automatizacion continua, tarea continua y respaldo diario. El nombre interno SistemaCajaHospitalaria-BackupWorker se conserva porque es contrato del preflight/handoff, pero la primera lectura del operador queda institucional. validate_startup_repair_safety bloquea que vuelvan esas etiquetas visibles.
 Criterio de verificacion: validate_startup_repair_safety, validate_installation_docs_safety, check-branding y diff check.
+
+## 2026-06-07 - Guia LAN usa estados visibles de respaldos
+Contexto: OFFLINE_LAN_INSTALL aun explicaba respaldos con worker local, cola backups y estados crudos pending/success/failed, aunque la entrega debe hablar en terminos operativos para instalacion y administracion.
+Decision: la guia LAN describe automatizacion local y tarea continua de respaldos, conserva nombres tecnicos solo como identificadores de servicio/script y expresa el respaldo manual como Pendiente, Protegido o Error. validate_installation_docs_safety bloquea que la guia vuelva a esas frases crudas.
+Criterio de verificacion: validate_installation_docs_safety, check-branding y diff check.

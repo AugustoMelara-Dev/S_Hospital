@@ -55,7 +55,7 @@ Antes de instalar en el hospital:
 10. Crear admin real con el instalador o con `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no ejecutar seeders de desarrollo.
 11. Ejecutar `php artisan config:cache`.
 12. Publicar por IP fija LAN o nombre local.
-13. Levantar worker local de backups: en Docker offline queda como servicio `queue-worker`; en bare-metal queda como tarea/servicio PHP con `php artisan queue:work --queue=backups --tries=1 --timeout=600`.
+13. Activar la automatizacion local de respaldos: en Docker offline queda como servicio `queue-worker`; en bare-metal queda como tarea continua instalada con `scripts\install_backup_tasks_windows.ps1` o servicio PHP equivalente.
 14. Validar `/up`, `/login` y `/verify-email`.
 
 Antes de entregar un paquete offline regenerado, ejecutar el guard de artefacto:
@@ -140,7 +140,7 @@ ping 192.168.1.1
 
 - Programar backup diario con `scripts\install_backup_tasks_windows.ps1`; el helper detecta Docker offline o PHP local.
 - Permitir backup manual desde admin.
-- Mantener un worker local de cola `backups` para ejecutar backups pedidos desde la UI sin bloquear el request HTTP. En `docker-compose.prod.yml` ese worker es el servicio `queue-worker`.
+- Mantener la tarea continua de respaldos activa para procesar los respaldos pedidos desde la UI sin bloquear el navegador. En `docker-compose.prod.yml` esa tarea corre mediante el servicio `queue-worker`.
 - Guardar archivos en carpeta local protegida y copiar una version a USB o disco externo.
 - No usar cloud backups como dependencia de produccion.
 - Ver `docs/BACKUP_RESTORE.md` para restore manual y checklist de validacion.
@@ -163,7 +163,7 @@ ping 192.168.1.1
 4. Revisar `.env` real sin reemplazar secretos.
 5. Ejecutar migraciones aprobadas sin `php artisan migrate:fresh`.
 6. Ejecutar `php artisan config:cache`.
-7. Reiniciar o validar el worker local de backups. En Docker offline use `scripts\run_backup_worker.cmd --check`; en bare-metal use el mismo wrapper o la tarea PHP instalada.
+7. Reiniciar o validar la tarea continua de respaldos. En Docker offline use `scripts\run_backup_worker.cmd --check`; en bare-metal use el mismo wrapper o la tarea PHP instalada.
 8. Validar `/up`, `/login`, `/verify-email`.
 9. Entrar como admin y revisar facturas, caja, reportes y backups.
 
@@ -177,7 +177,7 @@ ping 192.168.1.1
 - Admin inicia sesion y ve configuracion/backups.
 - Cajero inicia sesion, abre caja, crea factura de prueba y puede imprimir recibo.
 - Supervisor/admin ve reporte diario.
-- Backup manual queda `pending` y luego `success` cuando el worker corre; si falta herramienta de dump en servidor, queda `failed` con causa operativa sin credenciales.
+- Backup manual se muestra como **Pendiente** y luego **Protegido** cuando la tarea continua lo procesa; si falta la herramienta de respaldo en el servidor, queda en **Error** con causa operativa sin credenciales.
 - En paquete Docker offline, `scripts\run_scheduled_backup.cmd --check` debe pasar despues de que `setup.bat` cree `.env`; sin `.env` debe fallar antes de registrar tareas.
 - Restore de prueba documentado antes de operar datos reales.
 
