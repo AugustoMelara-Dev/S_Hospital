@@ -281,7 +281,12 @@ if ($finalUxAcceptanceChecklist -ne "") {
 
 if ($finalProductionHandoffScript -ne "") {
     Test-NotContains $finalProductionHandoffScript '(?i)mocked E2E screenshots|mocked browser evidence|rc-e2e-mocked-report\.json' "Final production handoff script uses controlled browser evidence wording"
-    Test-Contains $finalProductionHandoffScript 'Controlled browser smoke screenshots' "Final production handoff script names controlled browser screenshots"
+    Test-NotContains $finalProductionHandoffScript '(?i)Final production handoff result|Generated at|Project root|Proof present without obvious placeholders|proof file:|## Result\b|## Blocking items\b|Evidence completed in this hardening front|Files changed in this handoff front|Tests and gates to preserve|Risks and limits|Safety notes|Browser and operational smoke|Controlled browser smoke screenshots|Local Docker and controlled browser evidence' "Final production handoff script uses Spanish institutional handoff wording"
+    Test-Contains $finalProductionHandoffScript 'Capturas controladas de navegador' "Final production handoff script names controlled browser screenshots operationally"
+    Test-Contains $finalProductionHandoffScript 'Resultado de handoff final de produccion' "Final production handoff script uses Spanish title"
+    Test-Contains $finalProductionHandoffScript 'Pendientes bloqueantes' "Final production handoff script uses Spanish blocker heading"
+    Test-Contains $finalProductionHandoffScript 'Evidencia completada en este frente de endurecimiento' "Final production handoff script uses Spanish evidence heading"
+    Test-Contains $finalProductionHandoffScript 'Notas de seguridad' "Final production handoff script uses Spanish safety heading"
 }
 
 if ($troubleshootingGuide -ne "") {

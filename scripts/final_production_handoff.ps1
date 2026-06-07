@@ -876,27 +876,27 @@ function Write-HandoffReport(
     )
     $decision = if ($allProofsCompleted -and $backupTasksReady -and $allAutomatedGuardsPassed -and -not $preflightSkipped -and $preflightExit -eq 0) { "PRODUCTION_READY" } else { "PRODUCTION_CANDIDATE" }
 
-    Add-ReportLine $lines "# Final production handoff result"
+    Add-ReportLine $lines "# Resultado de handoff final de produccion"
     Add-ReportLine $lines ""
-    Add-ReportLine $lines "- Generated at: $now"
-    Add-ReportLine $lines "- Base URL: $($BaseUrl.TrimEnd('/'))"
-    Add-ReportLine $lines "- Project root: $(Protect-HandoffText $ProjectRoot)"
+    Add-ReportLine $lines "- Generado: $now"
+    Add-ReportLine $lines "- URL base: $($BaseUrl.TrimEnd('/'))"
+    Add-ReportLine $lines "- Carpeta del sistema: $(Protect-HandoffText $ProjectRoot)"
     Add-ReportLine $lines "- Decision: $decision"
-    Add-ReportLine $lines "- LAN client proof present without obvious placeholders: $lanProofCompleted"
-    Add-ReportLine $lines "- Institutional receipt print proof present without obvious placeholders: $printerProofCompleted"
-    Add-ReportLine $lines "- Final startup task proof present without obvious placeholders: $startupTaskProofCompleted"
-    Add-ReportLine $lines "- Final restore proof present without obvious placeholders: $restoreProofCompleted"
-    Add-ReportLine $lines "- Final backup task proof present without obvious placeholders: $backupTaskProofCompleted"
-    Add-ReportLine $lines "- Final concurrency proof present without obvious placeholders: $concurrencyProofCompleted"
-    Add-ReportLine $lines "- Supervised training acceptance proof present without obvious placeholders: $trainingAcceptanceProofCompleted"
-    Add-ReportLine $lines "- Backup scheduled tasks ready in status output: $backupTasksReady"
-    Add-ReportLine $lines '- LAN client proof file: `qa/LAN_CLIENT_VALIDATION_PROOF.md`'
-    Add-ReportLine $lines '- Institutional receipt print proof file: `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`'
-    Add-ReportLine $lines '- Final startup task proof file: `qa/FINAL_STARTUP_TASK_PROOF.md`'
-    Add-ReportLine $lines '- Final restore proof file: `qa/FINAL_RESTORE_PROOF.md`'
-    Add-ReportLine $lines '- Final backup task proof file: `qa/FINAL_BACKUP_TASK_PROOF.md`'
-    Add-ReportLine $lines '- Final concurrency proof file: `qa/FINAL_CONCURRENCY_PROOF.md`'
-    Add-ReportLine $lines '- Supervised training acceptance proof file: `qa/TRAINING_ACCEPTANCE_PROOF.md`'
+    Add-ReportLine $lines "- Evidencia de cliente LAN sin marcadores obvios: $lanProofCompleted"
+    Add-ReportLine $lines "- Evidencia de impresion institucional sin marcadores obvios: $printerProofCompleted"
+    Add-ReportLine $lines "- Evidencia final de autoarranque sin marcadores obvios: $startupTaskProofCompleted"
+    Add-ReportLine $lines "- Evidencia final de restore sin marcadores obvios: $restoreProofCompleted"
+    Add-ReportLine $lines "- Evidencia final de respaldos sin marcadores obvios: $backupTaskProofCompleted"
+    Add-ReportLine $lines "- Evidencia final de concurrencia sin marcadores obvios: $concurrencyProofCompleted"
+    Add-ReportLine $lines "- Evidencia de capacitacion supervisada sin marcadores obvios: $trainingAcceptanceProofCompleted"
+    Add-ReportLine $lines "- Tareas programadas de respaldo listas segun status: $backupTasksReady"
+    Add-ReportLine $lines '- Archivo de evidencia de cliente LAN: `qa/LAN_CLIENT_VALIDATION_PROOF.md`'
+    Add-ReportLine $lines '- Archivo de evidencia de impresion institucional: `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`'
+    Add-ReportLine $lines '- Archivo de evidencia final de autoarranque: `qa/FINAL_STARTUP_TASK_PROOF.md`'
+    Add-ReportLine $lines '- Archivo de evidencia final de restore: `qa/FINAL_RESTORE_PROOF.md`'
+    Add-ReportLine $lines '- Archivo de evidencia final de respaldos: `qa/FINAL_BACKUP_TASK_PROOF.md`'
+    Add-ReportLine $lines '- Archivo de evidencia final de concurrencia: `qa/FINAL_CONCURRENCY_PROOF.md`'
+    Add-ReportLine $lines '- Archivo de evidencia de capacitacion supervisada: `qa/TRAINING_ACCEPTANCE_PROOF.md`'
     Add-ReportLine $lines "- Offline release artifact guard exit code: $releaseGuardExit"
     Add-ReportLine $lines "- Support packet safety guard exit code: $supportPacketSafetyExit"
     Add-ReportLine $lines "- First-level support safety guard exit code: $firstLevelSupportSafetyExit"
@@ -935,52 +935,52 @@ function Write-HandoffReport(
     Add-ReportLine $lines "- Production license salt guard exit code: $productionLicenseSaltGuardExit"
     Add-ReportLine $lines "- Final handoff completeness guard exit code: $finalHandoffCompletenessExit"
     Add-ReportLine $lines "- Evidence index guard exit code: $evidenceIndexExit"
-    Add-ReportLine $lines "- Preflight skipped: $preflightSkipped"
-    Add-ReportLine $lines "- Preflight exit code: $preflightExit"
+    Add-ReportLine $lines "- Preflight omitido: $preflightSkipped"
+    Add-ReportLine $lines "- Codigo de salida de preflight: $preflightExit"
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Result"
+    Add-ReportLine $lines "## Resultado"
     Add-ReportLine $lines ""
     if ($decision -eq "PRODUCTION_READY") {
-        Add-ReportLine $lines "The preflight passed without bypass flags. Keep this report with the completed physical evidence files."
+        Add-ReportLine $lines "El preflight paso sin banderas de omision. Conserve este reporte junto con las evidencias fisicas completadas."
     } else {
-        Add-ReportLine $lines "Do not declare PRODUCTION_READY. Keep the system as PRODUCTION_CANDIDATE until every blocker below is closed with real field evidence."
+        Add-ReportLine $lines "No declare PRODUCTION_READY. Mantenga el sistema como PRODUCTION_CANDIDATE hasta cerrar cada pendiente con evidencia real de campo."
     }
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Blocking items"
+    Add-ReportLine $lines "## Pendientes bloqueantes"
     Add-ReportLine $lines ""
     if (-not $lanProofCompleted) {
-        Add-ReportLine $lines '- Missing or incomplete `qa/LAN_CLIENT_VALIDATION_PROOF.md` from a real second LAN client.'
+        Add-ReportLine $lines '- Falta o esta incompleto `qa/LAN_CLIENT_VALIDATION_PROOF.md` desde una segunda computadora real en LAN.'
     }
     if (-not $printerProofCompleted) {
-        Add-ReportLine $lines '- Missing or incomplete `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` from the real cashier printer.'
+        Add-ReportLine $lines '- Falta o esta incompleto `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` desde la impresora real de caja.'
     }
     if (-not $startupTaskProofCompleted) {
-        Add-ReportLine $lines '- Missing or incomplete `qa/FINAL_STARTUP_TASK_PROOF.md` after installing stack autostart and confirming the server opens `/up` and login after startup.'
+        Add-ReportLine $lines '- Falta o esta incompleto `qa/FINAL_STARTUP_TASK_PROOF.md` despues de instalar autoarranque y confirmar que el servidor abre `/up` y login al iniciar.'
     }
     if (-not $restoreProofCompleted) {
-        Add-ReportLine $lines '- Missing or incomplete `qa/FINAL_RESTORE_PROOF.md` from a disposable restore database on the final server.'
+        Add-ReportLine $lines '- Falta o esta incompleto `qa/FINAL_RESTORE_PROOF.md` desde una base descartable de restore en el servidor final.'
     }
     if (-not $backupTaskProofCompleted) {
         Add-ReportLine $lines '- Falta o esta incompleto `qa/FINAL_BACKUP_TASK_PROOF.md` despues de instalar tareas de respaldo y confirmar que un respaldo manual de la UI cambia de Pendiente a Protegido.'
     }
     if (-not $concurrencyProofCompleted) {
-        Add-ReportLine $lines '- Missing or incomplete `qa/FINAL_CONCURRENCY_PROOF.md` from a disposable concurrency target.'
+        Add-ReportLine $lines '- Falta o esta incompleto `qa/FINAL_CONCURRENCY_PROOF.md` desde un destino descartable de concurrencia.'
     }
     if (-not $trainingAcceptanceProofCompleted) {
-        Add-ReportLine $lines '- Missing or incomplete `qa/TRAINING_ACCEPTANCE_PROOF.md` from supervised role training in a safe practice environment.'
+        Add-ReportLine $lines '- Falta o esta incompleto `qa/TRAINING_ACCEPTANCE_PROOF.md` desde capacitacion supervisada por rol en un ambiente seguro de practica.'
     }
     if (-not $backupTasksReady) {
         Add-ReportLine $lines '- Instalar o actualizar las tareas Windows `SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup`, luego confirmar que un respaldo manual de la UI cambia de Pendiente a Protegido.'
     }
     if ($preflightSkipped) {
-        Add-ReportLine $lines "- Preflight was skipped in this handoff run."
+        Add-ReportLine $lines "- El preflight fue omitido en esta ejecucion de handoff."
     } elseif ($preflightExit -ne 0) {
-        Add-ReportLine $lines "- Production preflight returned exit code $preflightExit."
+        Add-ReportLine $lines "- El preflight de produccion devolvio codigo de salida $preflightExit."
     }
     if ($releaseGuardExit -ne 0) {
-        Add-ReportLine $lines "- Offline release artifact is missing, stale, or contains forbidden files."
+        Add-ReportLine $lines "- El artefacto de release offline falta, esta desactualizado o contiene archivos no permitidos."
     }
     if ($supportPacketSafetyExit -ne 0) {
         Add-ReportLine $lines "- Support packet safety validation returned exit code $supportPacketSafetyExit."
@@ -1094,60 +1094,60 @@ function Write-HandoffReport(
         Add-ReportLine $lines "- Final handoff evidence index validation returned exit code $evidenceIndexExit."
     }
     if ($allProofsCompleted -and $allAutomatedGuardsPassed -and -not $preflightSkipped -and $preflightExit -eq 0) {
-        Add-ReportLine $lines "- None reported by the handoff script."
+        Add-ReportLine $lines "- Ninguno reportado por el script de handoff."
     }
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Evidence completed in this hardening front"
+    Add-ReportLine $lines "## Evidencia completada en este frente de endurecimiento"
     Add-ReportLine $lines ""
-    Add-ReportLine $lines '- Controlled browser smoke screenshots: `qa/browser-smoke-2026-06-03/` and `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md`.'
-    Add-ReportLine $lines '- System diagnostics and Help/support guards: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`, `qa/FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md`.'
-    Add-ReportLine $lines '- Tarea continua de respaldos, autoarranque, respaldo final y restore: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md`, `qa/FINAL_STARTUP_TASK_PROOF.example.md`, `qa/FINAL_STARTUP_TASK_PROOF.md`, `qa/FINAL_BACKUP_TASK_PROOF.example.md`, `qa/FINAL_BACKUP_TASK_PROOF.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` and `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.'
-    Add-ReportLine $lines '- Concurrency, double-action and realtime own-event evidence: `qa/FINAL_CONCURRENCY_PROOF.md`, `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md` and `qa/REALTIME_OWN_EVENT_SAFETY_2026_06_04.md`.'
-    Add-ReportLine $lines '- Startup, installation, LAN, known-limitations, maintenance, permission audit, rate-limit and shift incident recovery guards: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/LAN_LOADTEST_SAFETY_2026_06_04.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.'
-    Add-ReportLine $lines '- New invoice maintainability guard: `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` and `scripts/validate_new_invoice_maintainability.ps1` preserve a short cashier-facing invoice flow.'
-    Add-ReportLine $lines '- Operator and training evidence: `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md`, `qa/TRAINING_SAFETY_2026_06_03.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md` and `qa/TRAINING_ACCEPTANCE_PROOF.md`.'
-    Add-ReportLine $lines '- Field proof, final blockers, LAN client, LAN/loadtest, proof initialization, MariaDB migration, handoff guard coverage, offline release staging, offline builder, offline release guard, offline regeneration, objective, release and index evidence: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/FINAL_FIELD_BLOCKERS_SAFETY_2026_06_04.md`, `qa/LAN_CLIENT_PROOF_GUARD_2026_06_05.md`, `qa/LAN_LOADTEST_SAFETY_2026_06_04.md`, `qa/LAN_LOADTEST_HANDOFF_2026_06_04.md`, `qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md`, `qa/MARIADB_MIGRATION_VALIDATION_2026_06_07.md`, `qa/HANDOFF_GUARD_COVERAGE_2026_06_04.md`, `qa/OFFLINE_RELEASE_STAGING_SAFETY_2026_06_04.md`, `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`, `qa/OFFLINE_RELEASE_REGEN_2026_06_04.md`, `qa/PRODUCTION_READY_GATE_VALIDATOR_2026_06_04.md`, `qa/PRODUCTION_LICENSE_SALT_GUARD_2026_06_04.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`.'
-    Add-ReportLine $lines ""
-
-    Add-ReportLine $lines "## Tests and gates to preserve"
-    Add-ReportLine $lines ""
-    Add-ReportLine $lines '- Backend static/format: `docker compose exec -T backend ./vendor/bin/pint --test`.'
-    Add-ReportLine $lines '- Backend static analysis: `docker compose exec -T backend ./vendor/bin/phpstan analyse --memory-limit=1G`.'
-    Add-ReportLine $lines '- Backend suite: `docker compose exec -T backend php artisan test`.'
-    Add-ReportLine $lines '- Frontend gates: `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run test -- --run`, `npm.cmd run build`, `scripts\check-branding.ps1`.'
-    Add-ReportLine $lines '- Browser and operational smoke: controlled browser screenshots, `npm.cmd run smoke:real`, smoke de tarea continua de respaldos, disposable restore, concurrency validation and `scripts\production_readiness_preflight.ps1`.'
+    Add-ReportLine $lines '- Capturas controladas de navegador: `qa/browser-smoke-2026-06-03/` y `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md`.'
+    Add-ReportLine $lines '- Diagnostico del sistema y guardas de Ayuda/soporte: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`, `qa/FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md`.'
+    Add-ReportLine $lines '- Tarea continua de respaldos, autoarranque, respaldo final y restore: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md`, `qa/FINAL_STARTUP_TASK_PROOF.example.md`, `qa/FINAL_STARTUP_TASK_PROOF.md`, `qa/FINAL_BACKUP_TASK_PROOF.example.md`, `qa/FINAL_BACKUP_TASK_PROOF.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` y `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.'
+    Add-ReportLine $lines '- Concurrencia, doble accion y eventos propios en tiempo real: `qa/FINAL_CONCURRENCY_PROOF.md`, `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md` y `qa/REALTIME_OWN_EVENT_SAFETY_2026_06_04.md`.'
+    Add-ReportLine $lines '- Guardas de arranque, instalacion, LAN, limitaciones conocidas, mantenimiento, auditoria de permisos, limites de uso y recuperacion de incidentes de turno: `qa/STARTUP_REPAIR_SAFETY_2026_06_03.md`, `qa/INSTALLATION_DOCS_SAFETY_2026_06_03.md`, `qa/LAN_RECOVERY_SAFETY_2026_06_03.md`, `qa/LAN_LOADTEST_SAFETY_2026_06_04.md`, `qa/KNOWN_LIMITATIONS_SAFETY_2026_06_03.md`, `qa/MAINTENANCE_MODE_SAFETY_2026_06_03.md`, `qa/PERMISSION_AUDIT_SAFETY_2026_06_03.md`, `qa/RATE_LIMIT_SAFETY_2026_06_03.md`, `qa/SHIFT_INCIDENT_RECOVERY_SAFETY_2026_06_03.md`.'
+    Add-ReportLine $lines '- Guarda de mantenibilidad de nueva factura: `qa/NEW_INVOICE_MAINTAINABILITY_2026_06_04.md` y `scripts/validate_new_invoice_maintainability.ps1` conservan un flujo corto para caja.'
+    Add-ReportLine $lines '- Evidencia de operador y capacitacion: `qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md`, `qa/TRAINING_SAFETY_2026_06_03.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md` y `qa/TRAINING_ACCEPTANCE_PROOF.md`.'
+    Add-ReportLine $lines '- Evidencia de campo, bloqueantes finales, cliente LAN, carga LAN, inicializacion de evidencias, migracion MariaDB, cobertura de handoff, staging del release offline, constructor offline, guard del release offline, regeneracion offline, objetivo, release e indice: `qa/FIELD_PROOF_TEMPLATES_SAFETY_2026_06_03.md`, `qa/FINAL_FIELD_BLOCKERS_SAFETY_2026_06_04.md`, `qa/LAN_CLIENT_PROOF_GUARD_2026_06_05.md`, `qa/LAN_LOADTEST_SAFETY_2026_06_04.md`, `qa/LAN_LOADTEST_HANDOFF_2026_06_04.md`, `qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md`, `qa/MARIADB_MIGRATION_VALIDATION_2026_06_07.md`, `qa/HANDOFF_GUARD_COVERAGE_2026_06_04.md`, `qa/OFFLINE_RELEASE_STAGING_SAFETY_2026_06_04.md`, `qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md`, `qa/OFFLINE_RELEASE_GUARD_2026_06_03.md`, `qa/OFFLINE_RELEASE_REGEN_2026_06_04.md`, `qa/PRODUCTION_READY_GATE_VALIDATOR_2026_06_04.md`, `qa/PRODUCTION_LICENSE_SALT_GUARD_2026_06_04.md`, `qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md`, `qa/OPS_EVIDENCE_INDEX_2026_06_03.md`.'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Files changed in this handoff front"
+    Add-ReportLine $lines "## Pruebas y gates a preservar"
     Add-ReportLine $lines ""
-    Add-ReportLine $lines '- In-app support and diagnostics: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.'
-    Add-ReportLine $lines '- Startup, installer and support scripts: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/restore_hospital_windows.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/install_backup_startup_current_user.ps1`, `scripts/start_backup_automation.cmd`, `scripts/run_backup_scheduler_loop.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.'
-    Add-ReportLine $lines '- Evidence guards: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_backup_startup_current_user_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_support_packet_safety.ps1`, `scripts/validate_first_level_support_safety.ps1`, `scripts/validate_production_ready_gate_safety.ps1`, `scripts/validate_final_field_blockers_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_realtime_own_event_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_lan_client_proof.ps1`, `scripts/validate_lan_loadtest_safety.ps1`, `scripts/validate_institutional_receipt_print_proof.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_final_startup_task_proof.ps1`, `scripts/validate_final_backup_task_proof.ps1`, `scripts/validate_training_acceptance_proof.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_production_license_salt_guard.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.'
-    Add-ReportLine $lines '- Operator material and evidence: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, QA evidence files dated 2026-06-03 and `qa/browser-smoke-2026-06-03`.'
-    Add-ReportLine $lines ""
-
-    Add-ReportLine $lines "## Risks and limits"
-    Add-ReportLine $lines ""
-    Add-ReportLine $lines "- Local Docker and controlled browser evidence do not replace final second-client LAN proof, real MariaDB/server proof or physical printer proof."
-    Add-ReportLine $lines "- The offline release package must still be copied to the final server and verified there before production use."
-    Add-ReportLine $lines "- Final production environment must be verified with `APP_ENV=production` and `APP_DEBUG=false` before production handoff."
-    Add-ReportLine $lines '- Windows scheduled tasks `SistemaCajaHospitalaria-BackupWorker` and `SistemaCajaHospitalaria-DailyBackup` must be installed or updated on the final server.'
-    Add-ReportLine $lines "- Fiscal sequences/settings require administrative validation in the real environment; fiscal compliance was not invented by this report."
-    Add-ReportLine $lines "- Any restore or concurrency validation must use a disposable target or explicitly approved validation database, never the active production database."
+    Add-ReportLine $lines '- Formato backend: `docker compose exec -T backend ./vendor/bin/pint --test`.'
+    Add-ReportLine $lines '- Analisis estatico backend: `docker compose exec -T backend ./vendor/bin/phpstan analyse --memory-limit=1G`.'
+    Add-ReportLine $lines '- Pruebas backend: `docker compose exec -T backend php artisan test`.'
+    Add-ReportLine $lines '- Gates frontend: `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run test -- --run`, `npm.cmd run build`, `scripts\check-branding.ps1`.'
+    Add-ReportLine $lines '- Smoke de navegador y operacion: capturas controladas de navegador, `npm.cmd run smoke:real`, smoke de tarea continua de respaldos, restore descartable, validacion de concurrencia y `scripts\production_readiness_preflight.ps1`.'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Safety notes"
+    Add-ReportLine $lines "## Archivos modificados en este frente de handoff"
     Add-ReportLine $lines ""
-    Add-ReportLine $lines '- No `.env` file was deleted.'
-    Add-ReportLine $lines '- No database volume was reset.'
-    Add-ReportLine $lines '- No production data was restored over.'
-    Add-ReportLine $lines '- No push was performed.'
-    Add-ReportLine $lines '- Secrets were not printed in evidence files.'
-    Add-ReportLine $lines '- Fiscal compliance was not invented; fiscal sequences/settings still require real administrative validation before production use.'
+    Add-ReportLine $lines '- Soporte y diagnostico dentro del sistema: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.'
+    Add-ReportLine $lines '- Scripts de arranque, instalacion y soporte: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/restore_hospital_windows.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/install_backup_startup_current_user.ps1`, `scripts/start_backup_automation.cmd`, `scripts/run_backup_scheduler_loop.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.'
+    Add-ReportLine $lines '- Guardas de evidencia: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_backup_startup_current_user_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_support_packet_safety.ps1`, `scripts/validate_first_level_support_safety.ps1`, `scripts/validate_production_ready_gate_safety.ps1`, `scripts/validate_final_field_blockers_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_realtime_own_event_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_lan_client_proof.ps1`, `scripts/validate_lan_loadtest_safety.ps1`, `scripts/validate_institutional_receipt_print_proof.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_final_startup_task_proof.ps1`, `scripts/validate_final_backup_task_proof.ps1`, `scripts/validate_training_acceptance_proof.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_production_license_salt_guard.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.'
+    Add-ReportLine $lines '- Material y evidencia de operacion: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, evidencias QA fechadas 2026-06-03 y `qa/browser-smoke-2026-06-03`.'
     Add-ReportLine $lines ""
 
-    Add-ReportLine $lines "## Next commands"
+    Add-ReportLine $lines "## Riesgos y limites"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines "- Docker local y la evidencia controlada de navegador no sustituyen la prueba final desde segunda PC LAN, MariaDB/servidor real ni impresora fisica."
+    Add-ReportLine $lines "- El paquete offline todavia debe copiarse al servidor final y verificarse alli antes de uso productivo."
+    Add-ReportLine $lines "- El entorno final de produccion debe verificarse con `APP_ENV=production` y `APP_DEBUG=false` antes del handoff productivo."
+    Add-ReportLine $lines '- Las tareas Windows `SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup` deben instalarse o actualizarse en el servidor final.'
+    Add-ReportLine $lines "- Las secuencias/configuraciones fiscales requieren validacion administrativa en el entorno real; este reporte no inventa cumplimiento fiscal."
+    Add-ReportLine $lines "- Cualquier validacion de restore o concurrencia debe usar un destino descartable o una base de validacion aprobada explicitamente, nunca la base activa de produccion."
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## Notas de seguridad"
+    Add-ReportLine $lines ""
+    Add-ReportLine $lines '- No se borro ningun archivo `.env`.'
+    Add-ReportLine $lines '- No se reinicio ningun volumen de base de datos.'
+    Add-ReportLine $lines '- No se sobrescribieron datos de produccion con un restore.'
+    Add-ReportLine $lines '- No se hizo push.'
+    Add-ReportLine $lines '- No se imprimieron secretos en archivos de evidencia.'
+    Add-ReportLine $lines '- No se invento cumplimiento fiscal; las secuencias/configuraciones fiscales todavia requieren validacion administrativa real antes de operar en produccion.'
+    Add-ReportLine $lines ""
+
+    Add-ReportLine $lines "## Proximos comandos"
     Add-ReportLine $lines ""
     Add-ReportLine $lines '```powershell'
     Add-ReportLine $lines "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_lan_client.ps1 -BaseUrl $($BaseUrl.TrimEnd('/')) -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md"

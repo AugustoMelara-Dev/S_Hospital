@@ -3892,3 +3892,8 @@ Criterio de verificacion: validate_installation_docs_safety.ps1 ahora revisa las
 Contexto: Documentos de checklist, presentacion y handoff todavia usaban mockeado/mocked o mostraban identificadores auxiliares tipo QR en el guion. Ese lenguaje puede sonar a demo tecnica o exponer datos que no necesita ver el personal durante validacion operativa.
 Decision: Los documentos de entrega nombran esos checks como evidencia controlada; el guion de presentacion conserva solo identificadores primarios y advierte no mostrar alternos/auxiliares salvo administracion de catalogo.
 Criterio de verificacion: validate_installation_docs_safety.ps1 bloquea mockeado/mocked en superficies de entrega, bloquea valores QR auxiliares en el guion de presentacion y exige el texto de evidencia controlada.
+
+## 2026-06-07 - Handoff final usa encabezados institucionales en espanol
+Contexto: El generador activo de handoff final aun producia encabezados y bullets principales en ingles, aunque el reporte puede ser leido por administracion, soporte local o auditoria del hospital.
+Decision: final_production_handoff.ps1 genera las secciones de evidencia, pruebas, archivos, riesgos, seguridad y proximos comandos con lenguaje institucional en espanol; los nombres tecnicos quedan solo como rutas o identificadores de scripts/tareas.
+Criterio de verificacion: validate_installation_docs_safety.ps1 bloquea los encabezados antiguos en ingles en el generador activo y validate_final_handoff_completeness.ps1 acepta los nuevos encabezados sin romper handoffs historicos.

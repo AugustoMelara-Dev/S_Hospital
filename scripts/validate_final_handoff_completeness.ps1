@@ -80,11 +80,11 @@ if ($failures.Count -eq 0) {
     Assert-Content '(?m)^-\s*Decision:\s*`?PRODUCTION_CANDIDATE`?\s*$' "El handoff debe conservar decision PRODUCTION_CANDIDATE hasta cerrar evidencia fisica."
     Assert-Content '(?i)capturas|screenshots|Browser smoke' "El handoff debe mencionar capturas o browser smoke."
     Assert-Content '(?i)diagnostic|diagnostico|System diagnostics' "El handoff debe mencionar diagnostico del sistema."
-    Assert-Content '(?i)Files changed in this hardening front|Files changed in this handoff front' "El handoff debe incluir archivos modificados."
-    Assert-Content '(?i)Tests and gates run locally|Tests and gates to preserve' "El handoff debe incluir pruebas y gates ejecutados o a preservar."
-    Assert-Content '(?i)Remaining blockers before production handoff|Blocking items' "El handoff debe incluir pendientes fisicos/bloqueantes."
-    Assert-Content '(?i)Risks and limits' "El handoff debe incluir riesgos y limites."
-    Assert-Content '(?i)Safety notes' "El handoff debe incluir notas de seguridad."
+    Assert-Content '(?i)Files changed in this hardening front|Files changed in this handoff front|Archivos modificados en este frente de handoff' "El handoff debe incluir archivos modificados."
+    Assert-Content '(?i)Tests and gates run locally|Tests and gates to preserve|Pruebas y gates a preservar' "El handoff debe incluir pruebas y gates ejecutados o a preservar."
+    Assert-Content '(?i)Remaining blockers before production handoff|Blocking items|Pendientes bloqueantes' "El handoff debe incluir pendientes fisicos/bloqueantes."
+    Assert-Content '(?i)Risks and limits|Riesgos y limites' "El handoff debe incluir riesgos y limites."
+    Assert-Content '(?i)Safety notes|Notas de seguridad' "El handoff debe incluir notas de seguridad."
     Assert-Content '(?i)Dependency manifest' "El handoff debe mencionar la validacion del manifest de dependencias."
     Assert-Content '(?i)Production license salt guard validation' "El handoff debe conservar la salida del guard de salt de licencia."
     Assert-Content '(?i)Offline release guard self-test' "El handoff debe mencionar el self-test del guard offline."
@@ -100,7 +100,7 @@ if ($failures.Count -eq 0) {
     Assert-Content '(?i)Production ready gate safety validation' "El handoff debe conservar la salida del guard del gate PRODUCTION_READY."
     Assert-Content '(?i)Final field blockers safety self-test' "El handoff debe conservar la salida del self-test de bloqueantes fisicos finales."
     Assert-Content '(?i)Final physical proof candidate guard suite' "El handoff debe conservar la salida de los guards candidatos de evidencia fisica."
-    Assert-Content '(?i)Supervised training acceptance proof' "El handoff debe conservar la prueba de aceptacion de capacitacion supervisada."
+    Assert-Content '(?i)Supervised training acceptance proof|Evidencia de capacitacion supervisada|Archivo de evidencia de capacitacion supervisada' "El handoff debe conservar la prueba de aceptacion de capacitacion supervisada."
     Assert-Content '(?i)LAN loadtest safety validation' "El handoff debe conservar la salida del guard LAN/loadtest."
     Assert-Content 'LAN_CLIENT_PROOF:\s*YES' "El handoff debe conservar el resultado positivo del guard candidato de LAN cliente."
     Assert-Content 'INSTITUTIONAL_RECEIPT_PRINT_PROOF:\s*YES' "El handoff debe conservar el resultado positivo del guard candidato de impresion fisica."
@@ -265,7 +265,6 @@ if ($failures.Count -eq 0) {
         'TRAINING_ACCEPTANCE_PROOF.md',
         'FINAL_STARTUP_TASK_PROOF.md',
         'FINAL_BACKUP_TASK_PROOF.md',
-        'Backup scheduled tasks ready in status output',
         'Instalar o actualizar las tareas Windows',
         'Pendiente a Protegido',
         'SistemaCajaHospitalaria-StackAutostart',
@@ -283,18 +282,37 @@ if ($failures.Count -eq 0) {
     foreach ($blocker in $requiredBlockers) {
         Assert-Content ([regex]::Escape($blocker)) "El handoff no conserva bloqueante requerido: $blocker."
     }
+    Assert-Content '(?i)Backup scheduled tasks ready in status output|Tareas programadas de respaldo listas segun status' "El handoff no conserva bloqueante requerido: estado de tareas programadas de respaldo."
 
     $requiredSafety = @(
-        'No `.env` file was deleted',
-        'No database volume was reset',
-        'No production data was restored over',
-        'No push was performed',
-        'Secrets were not printed',
-        'Fiscal compliance was not invented'
+        @{
+            Pattern = '(?i)No `?\.env`? file was deleted|No se borro ningun archivo `?\.env`?'
+            Label = 'no .env deleted'
+        },
+        @{
+            Pattern = '(?i)No database volume was reset|No se reinicio ningun volumen de base de datos'
+            Label = 'no database volume reset'
+        },
+        @{
+            Pattern = '(?i)No production data was restored over|No se sobrescribieron datos de produccion con un restore'
+            Label = 'no production data overwritten by restore'
+        },
+        @{
+            Pattern = '(?i)No push was performed|No se hizo push'
+            Label = 'no push performed'
+        },
+        @{
+            Pattern = '(?i)Secrets were not printed|No se imprimieron secretos'
+            Label = 'secrets not printed'
+        },
+        @{
+            Pattern = '(?i)Fiscal compliance was not invented|No se invento cumplimiento fiscal'
+            Label = 'fiscal compliance not invented'
+        }
     )
 
     foreach ($safety in $requiredSafety) {
-        Assert-Content ([regex]::Escape($safety)) "El handoff no conserva nota de seguridad: $safety."
+        Assert-Content $safety.Pattern "El handoff no conserva nota de seguridad: $($safety.Label)."
     }
 }
 
