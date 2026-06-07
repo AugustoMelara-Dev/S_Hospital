@@ -3593,3 +3593,7 @@ validate_operator_manuals_safety extrae las secciones de login, caja y doble avi
 ## 2026-06-07 - Manual de usuario deriva soporte sin comandos
 Manual_Usuario.md ahora evita comandos de PowerShell, BaseUrl local, 127.0.0.1, migrate:fresh, seeders, .env y SQL en el flujo general de usuario. La ruta de incidente indica usar Ayuda > Preparar resumen o soporte local, y advierte no repetir facturas ni cobros.
 validate_installation_docs_safety bloquea que el manual general vuelva a exponer comandos de soporte o terminos tecnicos crudos para usuarios finales.
+
+## 2026-06-07 - Manual HTML de usuario sincronizado con flujo seguro
+Manual_Usuario.html ahora replica el flujo seguro de Manual_Usuario.md: sin comandos de PowerShell, BaseUrl local, 127.0.0.1, migrate:fresh, seeders, .env ni SQL para usuarios finales. Mantiene la ruta de Ayuda > Preparar resumen, soporte local y no repetir facturas ni cobros durante incidentes.
+validate_installation_docs_safety ahora lee tambien docs/Manual_Usuario.html y aplica las mismas barreras del manual general imprimible.

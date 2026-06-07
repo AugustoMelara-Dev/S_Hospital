@@ -66,6 +66,7 @@ $dailyCloseProtocol = Read-RequiredFile "docs\DAILY_CLOSE_PROTOCOL.md"
 $disasterRecoveryGuide = Read-RequiredFile "docs\DISASTER_RECOVERY.md"
 $trainingAdminGuide = Read-RequiredFile "docs\TRAINING_ADMIN.md"
 $userManual = Read-RequiredFile "docs\Manual_Usuario.md"
+$userManualHtml = Read-RequiredFile "docs\Manual_Usuario.html"
 $operatorIndex = Read-RequiredFile "docs\manuales\INDICE_OPERADOR.md"
 $releaseChecklist = Read-RequiredFile "docs\RELEASE_CHECKLIST.md"
 
@@ -149,6 +150,7 @@ foreach ($docInfo in @(
     @{ Content = $disasterRecoveryGuide; Label = "Disaster recovery guide" },
     @{ Content = $trainingAdminGuide; Label = "Admin training guide" },
     @{ Content = $userManual; Label = "General user manual" },
+    @{ Content = $userManualHtml; Label = "General user manual HTML" },
     @{ Content = $operatorIndex; Label = "Operator index" }
 )) {
     if ($docInfo.Content -ne "") {
@@ -164,7 +166,15 @@ if ($userManual -ne "") {
     Test-NotContains $userManual '(?i)powershell|repair_hospital_system|collect_support_packet|127\.0\.0\.1|localhost:8000|migrate:fresh|seeders de prueba|\.env|SQL|BaseUrl' "General user manual avoids support commands and raw technical terms"
 }
 
-$combined = "$installGuide`n$supportGuide`n$backupGuide`n$offlineLanInstallGuide`n$backupRestoreReference`n$dailyCloseProtocol`n$disasterRecoveryGuide`n$trainingAdminGuide`n$userManual`n$operatorIndex`n$releaseChecklist"
+if ($userManualHtml -ne "") {
+    Test-Contains $userManualHtml '(?i)Ayuda\s*&gt;\s*Preparar resumen|Preparar resumen' "General user manual HTML routes incidents to safe support summary"
+    Test-Contains $userManualHtml '(?i)avise a soporte local|soporte local' "General user manual HTML routes unavailable system to local support"
+    Test-Contains $userManualHtml '(?i)no repita facturas ni cobros|no repita.*cobro' "General user manual HTML warns against duplicate financial actions during incidents"
+    Test-Contains $userManualHtml '(?i)archivos de configuracion|respaldos de base de datos|contrasenas' "General user manual HTML uses non-technical secret handling wording"
+    Test-NotContains $userManualHtml '(?i)powershell|repair_hospital_system|collect_support_packet|127\.0\.0\.1|localhost:8000|migrate:fresh|seeders de prueba|\.env|SQL|BaseUrl' "General user manual HTML avoids support commands and raw technical terms"
+}
+
+$combined = "$installGuide`n$supportGuide`n$backupGuide`n$offlineLanInstallGuide`n$backupRestoreReference`n$dailyCloseProtocol`n$disasterRecoveryGuide`n$trainingAdminGuide`n$userManual`n$userManualHtml`n$operatorIndex`n$releaseChecklist"
 foreach ($requiredText in @(
     'PRODUCTION_READY',
     'PRODUCTION_CANDIDATE',

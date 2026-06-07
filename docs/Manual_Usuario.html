@@ -189,12 +189,10 @@
         <li>Abra Ayuda dentro del sistema.</li>
         <li>Presione Preparar resumen.</li>
         <li>Entregue ese resumen al supervisor o responsable de soporte.</li>
+        <li>Si el sistema no abre, avise a soporte local desde la computadora servidor y no repita facturas ni cobros mientras se revisa el incidente.</li>
+        <li>Si soporte necesita mas evidencia, use solo la opcion indicada por soporte local o Ayuda &gt; Preparar resumen cuando la pantalla lo permita.</li>
       </ol>
-      <p>Si el sistema no abre, use la reparacion segura:</p>
-      <pre>powershell.exe -ExecutionPolicy Bypass -File scripts\repair_hospital_system.ps1 -BaseUrl http://127.0.0.1:8000</pre>
-      <p>Si soporte necesita mas evidencia, genere un paquete seguro:</p>
-      <pre>powershell.exe -ExecutionPolicy Bypass -File scripts\collect_support_packet.ps1 -RunRepairDiagnostic -SkipDockerStart</pre>
-      <div class="note">No envie .env, respaldos SQL, passwords, tokens ni logs completos por canales no autorizados.</div>
+      <div class="note">No envie archivos de configuracion, respaldos de base de datos, contrasenas, tokens ni mensajes tecnicos completos por canales no autorizados.</div>
     </section>
 
     <section>
@@ -205,8 +203,8 @@
     <section>
       <h2>9. Acciones Prohibidas En Produccion</h2>
       <ul>
-        <li>Ejecutar <code>migrate:fresh</code>.</li>
-        <li>Ejecutar seeders de prueba.</li>
+        <li>Ejecutar comandos de limpieza o reinicio de base de datos.</li>
+        <li>Cargar datos de prueba en la base real.</li>
         <li>Borrar facturas, pagos o carpetas de datos.</li>
         <li>Borrar volumenes de base de datos.</li>
         <li>Usar cuentas compartidas.</li>
