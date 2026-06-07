@@ -68,7 +68,7 @@ const guides = [
   {
     title: 'Respaldos',
     icon: Archive,
-    steps: ['Entre a Respaldos', 'Revise si dice Todo bien, Requiere revisión o Error', 'Cree respaldo antes de cambios grandes', 'Avise si aparece Error'],
+    steps: ['Entre a Respaldos', 'Revise si dice Protegido, Pendiente o Error', 'Cree respaldo antes de cambios grandes', 'Avise si aparece Error'],
   },
   {
     title: 'Cierre de turno',

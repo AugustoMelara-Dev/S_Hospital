@@ -3688,3 +3688,8 @@ Validacion: vitest ReportsView, typecheck, lint/build, branding, e2e y browser s
 Despues de mejorar las tablas financieras, el smoke RC conserva evidencia clara de Reportes y ahora tambien captura Reportes en modo oscuro.
 validate_browser_smoke_evidence exige reports-admin-dark con ruta /reports y theme dark para que la evidencia de administracion no quede solo en modo claro.
 Validacion: e2e con capturas, validate_browser_smoke_evidence, typecheck, lint/build y branding.
+
+## 2026-06-07 - capacitacion de Respaldos usa estados operativos finales
+Contexto: la pantalla de Respaldos ya muestra Protegido, Pendiente o Error para operadores no tecnicos, pero Ayuda y el manual de usuario todavia ensenaban Todo bien o Requiere revision.
+Decision: Ayuda institucional y Manual de Usuario quedan alineados a Protegido, Pendiente o Error. validate_training_safety ahora protege el manual y la ayuda contra esos estados obsoletos.
+Validacion: HelpView test, validate_training_safety y busqueda enfocada de etiquetas obsoletas en ayuda/manual.

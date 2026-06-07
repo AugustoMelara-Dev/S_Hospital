@@ -82,10 +82,11 @@ $safeTraining = Read-RequiredText "docs\manuales\GUIA_CAPACITACION_SEGURA.md"
 $trainingChecklist = Read-RequiredText "docs\manuales\CHECKLIST_CAPACITACION.md"
 $trainingAcceptanceTemplate = Read-RequiredText "qa\TRAINING_ACCEPTANCE_PROOF.example.md"
 $quickAdminTraining = Read-RequiredText "docs\TRAINING_ADMIN.md"
+$userManual = Read-RequiredText "docs\Manual_Usuario.html"
 $helpView = Read-RequiredText "frontend\src\features\help\HelpView.tsx"
 $helpViewTest = Read-RequiredText "frontend\src\features\help\HelpView.test.tsx"
 
-$combinedDocs = "$safeTraining`n$trainingChecklist`n$trainingAcceptanceTemplate`n$quickAdminTraining"
+$combinedDocs = "$safeTraining`n$trainingChecklist`n$trainingAcceptanceTemplate`n$quickAdminTraining`n$userManual"
 $combinedUi = "$helpView`n$helpViewTest"
 
 Assert-Contains "Training docs forbid practicing in production" $combinedDocs 'no use la base de produccion para practicar|no en\s+la base real de produccion'
@@ -97,8 +98,12 @@ Assert-Contains "Training docs require support summary practice" $combinedDocs '
 Assert-Contains "Quick administrator training uses protected backup status" $quickAdminTraining 'protegido'
 Assert-Contains "Quick administrator training uses pending backup status" $quickAdminTraining 'pendiente'
 Assert-Contains "Quick administrator training uses error backup status" $quickAdminTraining 'error'
+Assert-Contains "User manual uses protected backup status" $userManual 'protegido'
+Assert-Contains "User manual uses pending backup status" $userManual 'pendiente'
+Assert-Contains "User manual uses error backup status" $userManual 'error'
 Assert-NotContains "Quick administrator training avoids raw backup states and checksums" $quickAdminTraining '(^|[^a-z])(pending|success|failed|checksum|sha256)([^a-z]|$)'
 Assert-NotContains "Quick administrator training avoids raw route checks" $quickAdminTraining '/up|/login|/verify-email'
+Assert-NotContains "User manual avoids obsolete backup status labels" $userManual 'todo bien|requiere revision'
 
 foreach ($scenario in @(
     'servidor no disponible',
@@ -147,6 +152,8 @@ Assert-Contains "Help screen exposes safe training section" $combinedUi 'capacit
 Assert-Contains "Help screen exposes practice mode warning" $combinedUi 'modo practica'
 Assert-Contains "Help screen warns not to use production database" $combinedUi 'no use la base de produccion'
 Assert-Contains "Help screen mentions isolated practice database" $combinedUi 'base aislada|base descartable'
+Assert-Contains "Help screen teaches protected backup status" $combinedUi 'protegido, pendiente o error'
+Assert-NotContains "Help screen avoids obsolete backup status labels" $combinedUi 'todo bien|requiere revision'
 Assert-Contains "HelpView test protects production database warning" $helpViewTest 'no use la base de produccion'
 
 if ($failures.Count -gt 0) {

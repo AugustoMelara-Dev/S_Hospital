@@ -135,9 +135,9 @@ describe('NewInvoiceView', () => {
 
     expect(await screen.findByRole('heading', { name: /nueva factura/i })).toBeInTheDocument();
     expect(await screen.findByLabelText(/nombre del paciente/i)).toBeInTheDocument();
-    expect(await screen.findByLabelText(/buscar por nombre, categoria o codigo/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/buscar por nombre o categoria/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/scanner usb o codigo manual/i)).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/buscar por nombre, categoria o codigo/i), {
+    fireEvent.change(screen.getByLabelText(/buscar por nombre o categoria/i), {
       target: { value: 'eritropoyetina' },
     });
     expect(await screen.findByRole('button', { name: /eritropoyetina/i })).toBeInTheDocument();

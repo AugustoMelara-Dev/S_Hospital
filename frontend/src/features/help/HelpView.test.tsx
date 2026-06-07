@@ -34,11 +34,11 @@ describe('HelpView', () => {
     expect(screen.getByText(/servidor no disponible/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /impresora no responde/i })).toBeInTheDocument();
     expect(screen.getByText(/media carta, carta o A5/i)).toBeInTheDocument();
-    expect(screen.getByText(/todo bien, requiere revisión o error/i)).toBeInTheDocument();
+    expect(screen.getByText(/protegido, pendiente o error/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /pedir soporte/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /atajos de teclado/i })).toBeInTheDocument();
     expect(screen.getByText('F6')).toBeInTheDocument();
-    expect(screen.getByText(/escaneo de codigos/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/codigo escaneable/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Ctrl+K').length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: /se fue la luz o reinició la pc/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /caja quedó abierta/i })).toBeInTheDocument();
