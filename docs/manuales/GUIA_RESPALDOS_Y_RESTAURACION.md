@@ -15,7 +15,7 @@ Los respaldos protegen la informacion de caja, facturas, pagos y configuracion.
 1. Entre a **Respaldos**.
 2. Revise el estado general.
 3. Presione **Crear respaldo ahora**.
-4. Espere estado **Completado**.
+4. Espere estado **Protegido**.
 5. Copie el archivo a un medio seguro si corresponde.
 
 ## Respaldos Automaticos
@@ -26,7 +26,7 @@ El sistema puede programar respaldos:
 - Al cerrar caja.
 - Una vez al dia.
 
-Si un respaldo queda en pendiente mucho tiempo, avise al responsable tecnico.
+Si un respaldo queda en **Pendiente** mucho tiempo, avise al responsable tecnico.
 
 La hora del respaldo diario debe escribirse en formato de 24 horas `HH:mm`, por
 ejemplo `02:00` o `23:30`. Si el tecnico actualiza las tareas con una hora
@@ -35,7 +35,7 @@ El loop de automatizacion tambien se detiene al inicio si la hora esta mal
 escrita, dejando el motivo en `backend\storage\logs\backup-automation.log`.
 
 Antes de activar respaldos en una PC instalada, soporte puede ejecutar estas
-verificaciones sin iniciar workers ni crear respaldos. Funcionan tanto en
+verificaciones sin iniciar procesos de respaldo ni crear respaldos. Funcionan tanto en
 instalacion PHP local como en paquete Docker offline:
 
 ```powershell
@@ -46,9 +46,9 @@ scripts\start_backup_automation.cmd --check
 
 ## Retencion de respaldos
 
-El sistema conserva por defecto los 30 respaldos exitosos mas recientes. Ajuste
+El sistema conserva por defecto los 30 respaldos protegidos mas recientes. Ajuste
 `HOSPITAL_BACKUP_KEEP_SUCCESSFUL=30` en `.env` solo si el responsable tecnico
-aprueba otra politica. Los respaldos fallidos o pendientes no se podan, porque
+aprueba otra politica. Los respaldos en **Error** o **Pendiente** no se podan, porque
 sirven como evidencia de operacion y diagnostico.
 
 Si una verificacion falla, no reintente muchas veces. Revise primero el mensaje:
@@ -71,7 +71,7 @@ reemplaza la validacion final de las tareas Windows de respaldo.
 En paquete Docker offline, estas verificaciones requieren que `setup.bat` ya
 haya creado `.env`. Si `.env` falta, deben detenerse antes de tocar datos.
 
-El responsable tecnico puede validar que el worker procesa respaldos sin dejar
+El responsable tecnico puede validar que la automatizacion procesa respaldos sin dejar
 la contrasena escrita en el historial de PowerShell:
 
 ```powershell
@@ -138,7 +138,7 @@ qa\FINAL_RESTORE_PROOF.md
 `qa\FINAL_BACKUP_TASK_PROOF.md` debe confirmar que
 `SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup`
 estan instaladas/listas, que un respaldo manual creado desde la UI paso de
-pendiente a exito, y que la evidencia no adjunta `.env`, dumps SQL, passwords,
+Pendiente a Protegido, y que la evidencia no adjunta `.env`, dumps SQL, passwords,
 XML de tareas ni rutas absolutas.
 
 `qa\FINAL_RESTORE_PROOF.md` debe incluir respaldo usado, SHA256, tamano, base
@@ -169,7 +169,7 @@ evidencia recortada y segura.
 Avise si ve:
 
 - Estado **Error**.
-- Muchos respaldos pendientes.
+- Muchos respaldos en **Pendiente**.
 - Archivo con tamano cero.
 - Falta de respaldo reciente.
 - Mensajes de permisos o disco lleno.

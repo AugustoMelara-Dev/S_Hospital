@@ -67,6 +67,14 @@ if ($guide -ne "") {
     Test-Contains $guide "(?i)SHA256|tamano|conteos principales|base origen" "Restore guide requires verifiable restore evidence fields"
     Test-Contains $guide "(?i)No existe restauracion por interfaz normal" "Restore guide explains no normal UI restore"
     Test-Contains $guide "(?i)no escriba usuario, contrasena ni token dentro de .*HOSPITAL_SMOKE_BASE_URL" "Backup automation smoke avoids credentials in URL"
+    Test-Contains $guide "(?i)Pendiente.*Protegido|Protegido.*Pendiente" "Backup/restore guide uses visible backup state transition"
+    Test-Contains $guide "(?i)tarea continua de respaldos|automatizacion procesa respaldos" "Backup/restore guide uses operational backup automation wording"
+
+    if ($guide -match '(?i)sin iniciar workers|worker procesa respaldos|pendiente a exito|worker de respaldos') {
+        Add-Failure "Backup/restore guide keeps raw worker/status wording in operator-facing instructions."
+    } else {
+        Add-Pass "Backup/restore guide avoids raw worker/status wording in operator-facing instructions"
+    }
 }
 
 if ($backupRestoreReference -ne "") {
@@ -78,6 +86,16 @@ if ($backupRestoreReference -ne "") {
         Add-Failure "Backup/restore reference keeps legacy billing path or raw worker wording in operator-facing backup flow."
     } else {
         Add-Pass "Backup/restore reference avoids legacy billing path and raw worker wording in backup flow"
+    }
+}
+
+if ($supportGuide -ne "") {
+    Test-Contains $supportGuide "(?i)tarea continua de respaldos" "First-level support guide uses operational backup task wording"
+
+    if ($supportGuide -match '(?i)worker de respaldos|pendiente a exito') {
+        Add-Failure "First-level support guide keeps raw backup worker/status wording."
+    } else {
+        Add-Pass "First-level support guide avoids raw backup worker/status wording"
     }
 }
 

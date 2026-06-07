@@ -3803,3 +3803,8 @@ Criterio de verificacion: validate_installation_docs_safety bloquea regresiones 
 Contexto: El validador de completitud del handoff final aun exigia la frase confirm it moves from pending to success y el reporte agrupaba evidencia bajo backup worker, aunque el cierre operativo ya usa Pendiente a Protegido.
 Decision: El handoff final y su guard usan Pendiente a Protegido y tarea continua de respaldos como lenguaje operativo, manteniendo los nombres de tareas y archivos tecnicos solo como referencias de evidencia.
 Criterio de verificacion: validate_final_handoff_completeness y validate_handoff_guard_coverage deben pasar con el contrato actualizado.
+
+## 2026-06-07 - Manuales de soporte usan estados visibles de respaldos
+Contexto: Las guias de soporte y respaldos aun hablaban de worker de respaldos, workers y pendiente a exito en instrucciones que puede seguir soporte de primer nivel.
+Decision: Las guias conservan nombres reales de scripts, pero las instrucciones operativas usan tarea continua, automatizacion, Protegido, Pendiente y Error.
+Criterio de verificacion: validate_backup_restore_docs_safety bloquea worker/status crudos en instrucciones operator-facing y valida Pendiente a Protegido.

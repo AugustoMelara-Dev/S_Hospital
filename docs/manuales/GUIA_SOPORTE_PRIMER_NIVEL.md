@@ -147,7 +147,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\refresh_lan_ip.p
 - No restaure.
 - Revise **Respaldos** y el estado operativo.
 - Confirme si hay espacio en disco.
-- Confirme si el worker de respaldos esta activo.
+- Confirme si la tarea continua de respaldos esta activa.
 - Escale con el mensaje visible y el diagnostico.
 
 ### Sesion Vencida O Sin Permiso
