@@ -162,6 +162,12 @@ if ($fieldDeploymentValidation -ne "") {
     Test-Contains $fieldDeploymentValidation '(?s)backup \*\*Pendiente\*\* -> \*\*Protegido\*\*' "Field deployment validation uses visible backup state transition"
 }
 
+if ($dailyCloseProtocol -ne "") {
+    Test-NotContains $dailyCloseProtocol '(?i)`pending`|`success`|`failed`|revisar worker' "Daily close protocol avoids raw backup status/worker wording"
+    Test-Contains $dailyCloseProtocol '(?s)Backup.*Protegido.*Pendiente.*Error' "Daily close protocol uses visible backup states"
+    Test-Contains $dailyCloseProtocol 'tarea continua de respaldos' "Daily close protocol uses operational backup task wording"
+}
+
 foreach ($docInfo in @(
     @{ Content = $releaseChecklist; Label = "Release checklist" },
     @{ Content = $installSummary; Label = "Install summary" },

@@ -3778,3 +3778,8 @@ Criterio de verificacion: validate_backup_restore_docs_safety, validate_installa
 Contexto: INSTALL_SUMMARY y FIELD_DEPLOYMENT_VALIDATION aun mostraban ruta heredada de instalacion, backup worker y estados crudos pending/success en instrucciones o evidencia de entrega.
 Decision: ambos documentos usan ruta neutral C:\Hospital\Sistema\backend, tarea continua/automatizacion local de respaldos y estados visibles Pendiente y Protegido. validate_installation_docs_safety cubre el resumen y la evidencia de campo contra esas regresiones.
 Criterio de verificacion: validate_installation_docs_safety, check-branding y diff check.
+
+## 2026-06-07 - Cierre diario usa estados visibles de respaldos
+Contexto: El protocolo de cierre diario aun pedia esperar estados tecnicos como success, revisar worker y bloquear cierre por pending/failed, aunque el personal debe ver estados operativos simples.
+Decision: El cierre diario confirma respaldos con Protegido, Pendiente o Error, conserva la verificacion SHA256 como evidencia y usa tarea continua de respaldos para instrucciones de soporte local.
+Criterio de verificacion: validate_installation_docs_safety.ps1 bloquea que DAILY_CLOSE_PROTOCOL vuelva a usar estados crudos o lenguaje de worker en el flujo operativo.

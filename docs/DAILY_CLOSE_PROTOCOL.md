@@ -17,10 +17,10 @@
 ## Backup
 
 1. Abrir **Backups**.
-2. Confirmar ultimo backup exitoso del dia.
+2. Confirmar que el ultimo respaldo del dia este **Protegido**.
 3. Si no existe, crear backup manual.
-4. Esperar `success`, checksum y tamano mayor a cero.
-5. Si queda `pending`, revisar worker:
+4. Esperar estado **Protegido**, codigo SHA256 visible y tamano mayor a cero.
+5. Si queda **Pendiente**, revisar la tarea continua de respaldos:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install_backup_tasks_windows.ps1 -Status
@@ -31,4 +31,4 @@ Start-ScheduledTask -TaskName SistemaCajaHospitalaria-BackupWorker
 
 1. Guardar CSV diario si administracion lo requiere.
 2. Registrar cualquier diferencia de caja.
-3. No declarar cierre correcto si backup queda `pending` o `failed`.
+3. No declarar cierre correcto si el respaldo queda **Pendiente** o **Error**.
