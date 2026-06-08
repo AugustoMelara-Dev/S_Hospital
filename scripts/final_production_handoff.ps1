@@ -695,7 +695,7 @@ function Invoke-FinalHandoffCompletenessGuard([string] $handoffPath) {
 }
 
 function Add-ReportLine([System.Collections.Generic.List[string]] $lines, [string] $line = "") {
-    $lines.Add($line) | Out-Null
+    $lines.Add($line.TrimEnd()) | Out-Null
 }
 
 function Test-GuardExitCodesPassed([int[]] $exitCodes) {
@@ -1572,7 +1572,7 @@ function Write-HandoffReport(
         New-Item -ItemType Directory -Path $reportDir -Force | Out-Null
     }
 
-    Set-Content -LiteralPath $path -Value $lines -Encoding ASCII
+    [System.IO.File]::WriteAllText($path, (($lines -join "`n") + "`n"), [System.Text.Encoding]::ASCII)
     Write-Host "Reporte de handoff escrito en: $(Protect-HandoffText $path)"
 }
 

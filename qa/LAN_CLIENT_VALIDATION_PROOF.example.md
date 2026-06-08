@@ -30,7 +30,7 @@ exact labels and the checked items below.
 - [ ] Cashbox opens. Result/evidence:
 - [ ] Invoice is created with patient name. Result/evidence:
 - [ ] Payment is registered. Result/evidence:
-- [ ] Institutional receipt opens. Result/evidence:
+- [ ] Institutional Receipt opens. Result/evidence:
 - [ ] Invoice history and reprint work. Result/evidence:
 - [ ] Reports load. Result/evidence:
 - [ ] Respaldo solicitado desde la UI cambia de Pendiente a Protegido. Result/evidence:
