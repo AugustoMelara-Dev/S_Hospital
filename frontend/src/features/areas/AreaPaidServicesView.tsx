@@ -185,7 +185,7 @@ export function AreaPaidServicesView({ user, onStatus }: AreaPaidServicesViewPro
                   <TableHead>Factura</TableHead>
                   <TableHead>Paciente</TableHead>
                   <TableHead>Servicio</TableHead>
-                  <TableHead>Categoria</TableHead>
+                  <TableHead>Categoría</TableHead>
                   <TableHead>Pagado</TableHead>
                   <TableHead>Metodo</TableHead>
                   <TableHead className="text-right">Cantidad</TableHead>

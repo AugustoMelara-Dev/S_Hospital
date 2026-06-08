@@ -6,6 +6,18 @@ import { cspNoncePlugin } from './vite-plugins/csp-nonce';
 
 const apiProxyTarget = process.env.VITE_DEV_API_PROXY_TARGET ?? 'http://localhost:8000';
 
+/**
+ * Manual chunks strategy (v1.0.0.1):
+ * - `vendor.router`   -> react-router-dom (always loaded)
+ * - `vendor.query`     -> @tanstack/react-query (used by every view)
+ * - `vendor.echo`      -> laravel-echo + pusher-js (loaded when WS is up)
+ * - `vendor.charts`    -> recharts (only Dashboard / Reports)
+ * - `vendor.forms`     -> RHF + zod + hookform/resolvers (forms only)
+ * - `vendor.ui`        -> lucide-react + Radix primitives
+ *
+ * The split keeps the entry chunk below the 500 KB warning limit and isolates heavy
+ * deps (recharts ~400 KB) to the views that need them.
+ */
 export default defineConfig({
   plugins: [react(), tailwindcss(), cspNoncePlugin()],
   resolve: {
@@ -14,13 +26,16 @@ export default defineConfig({
     },
   },
   build: {
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
         manualChunks: {
-          charts: ['recharts'],
-          forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
-          query: ['@tanstack/react-query'],
-          ui: [
+          'vendor.router': ['react-router-dom'],
+          'vendor.query': ['@tanstack/react-query'],
+          'vendor.echo': ['laravel-echo', 'pusher-js'],
+          'vendor.charts': ['recharts'],
+          'vendor.forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
+          'vendor.ui': [
             'lucide-react',
             '@radix-ui/react-alert-dialog',
             '@radix-ui/react-avatar',
@@ -35,7 +50,6 @@ export default defineConfig({
             '@radix-ui/react-tabs',
             '@radix-ui/react-tooltip',
           ],
-          vendor: ['react', 'react-dom', 'react-router-dom'],
         },
       },
     },

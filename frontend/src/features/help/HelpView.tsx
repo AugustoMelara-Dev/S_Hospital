@@ -31,7 +31,7 @@ const guides = [
     steps: ['Use el acceso institucional del escritorio', 'Espere a que cargue Hospital San Isidro', 'Confirme que no aparezca error de servidor', 'Si no abre, avise antes de intentar cambios'],
   },
   {
-    title: 'Iniciar sesion',
+    title: 'Iniciar sesión',
     icon: LogIn,
     steps: ['Use su propio usuario', 'No comparta contraseña ni cuenta de turno', 'Si la sesión vence, ingrese de nuevo', 'Si falta permiso, pida revision de rol'],
   },
@@ -113,7 +113,7 @@ const incidentGuides = [
   },
   {
     title: 'Base de datos necesita restaurarse',
-    answer: 'Detenga la facturacion nueva, conserve el respaldo mas reciente y pida al administrador validar primero en una base aislada. Nunca restaure produccion sin autorizacion y evidencia.',
+    answer: 'Detenga la facturación nueva, conserve el respaldo más reciente y pida al administrador validar primero en una base aislada. Nunca restaure produccion sin autorizacion y evidencia.',
   },
   {
     title: 'Sesión vencida',

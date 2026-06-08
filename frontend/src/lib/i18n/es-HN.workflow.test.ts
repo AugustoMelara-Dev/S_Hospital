@@ -40,7 +40,7 @@ describe('i18n surface for the cashier workflow', () => {
 
   it('keeps invoice history receipt copy institutional', () => {
     expect(STRINGS.invoiceHistory.receiptModalDescription).toBe(
-      'Recibo institucional listo para revisar. Cambiar el tamano no registra reimpresion.',
+      'Recibo institucional listo para revisar. Cambiar el tamano no registra reimpresión.',
     );
     expect(STRINGS.invoiceHistory.sizeAria).toBe('Tamano del recibo institucional');
     expect(STRINGS.invoiceHistory.confirmReprintBody).not.toMatch(/vista previa/i);

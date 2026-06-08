@@ -97,7 +97,7 @@ export function summarizeOperationalHealth(isOnline: boolean, health: Operationa
     return {
       level: 'error',
       label: 'Error',
-      description: 'La base de datos local no responde. Detenga la facturacion y pida soporte antes de repetir cobros o facturas.',
+      description: 'La base de datos local no responde. Detenga la facturación y pida soporte antes de repetir cobros o facturas.',
     };
   }
 

@@ -333,7 +333,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                 </TableHeader>
                 <TableBody>
                   {invoicesList.map((invoice) => (
-                    <TableRow key={invoice.id}>
+                    <TableRow key={invoice.id} data-testid="invoice-row" data-invoice-number={invoice.invoice_number}>
                       <TableCell className="text-sm font-medium">{invoice.invoice_number}</TableCell>
                       <TableCell>{formatDate(invoice.issued_at)}</TableCell>
                       <TableCell className="font-medium">{invoice.patient_name}</TableCell>
