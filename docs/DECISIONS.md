@@ -4,6 +4,22 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Guard realtime protege salida
+
+Contexto: `validate_realtime_own_event_safety.ps1` se ejecuta durante
+el handoff final para demostrar que los eventos propios no distraen a
+caja, y su salida puede quedar dentro del reporte de evidencia.
+
+Decision: `Protect-RealtimeGuardText` reemplaza rutas locales Unix y
+XML crudo de tareas por marcadores seguros. El guard se autoverifica y
+rechaza evidencia realtime que incluya rutas locales Unix o XML de
+tareas.
+
+Criterio de verificacion: `validate_realtime_own_event_safety.ps1`,
+`validate_final_handoff_completeness.ps1`,
+`validate_production_ready_gate_safety.ps1`, `check-branding.ps1` y
+`git diff --check` deben pasar antes de regenerar el paquete offline.
+
 ## 2026-06-08 - Guard de capacitacion protege salida
 
 Contexto: `validate_training_safety.ps1` valida manuales, pantalla de

@@ -28,6 +28,9 @@ function Protect-RealtimeGuardText([string] $value) {
 
     $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD|HOSPITAL_LICENSE_SALT)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
     $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?i)/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?is)<(Task|Actions|Principals|Triggers|Settings)\b.*?</\1>", "[xml-protegido]"
+    $protected = $protected -replace "(?is)<(Task|Actions|Principals|Triggers|Settings)\b[^>]*>", "[xml-protegido]"
 
     return $protected
 }
@@ -97,6 +100,13 @@ $appShell = Read-RequiredText "frontend\src\layout\AppShell.tsx"
 $broadcastingTest = Read-RequiredText "backend\tests\Feature\BroadcastingWiringTest.php"
 $runbook = Read-RequiredText "docs\manuales\RUNBOOK_INCIDENTES_COMUNES.md"
 $evidence = Read-RequiredText "qa\REALTIME_OWN_EVENT_SAFETY_2026_06_04.md"
+$realtimeGuard = Read-RequiredText "scripts\validate_realtime_own_event_safety.ps1"
+
+if ($realtimeGuard -ne "") {
+    Test-Content $realtimeGuard '\(\?i\)/\(var\|home\|srv\|opt\|tmp\|usr\|mnt\)/' "Realtime guard redacts Unix local paths"
+    Test-Content $realtimeGuard '\(\?is\)<\(Task\|Actions\|Principals\|Triggers\|Settings\)\\b' "Realtime guard redacts raw task XML"
+    Test-Content $realtimeGuard '\[xml-protegido\]' "Realtime guard uses protected XML marker"
+}
 
 Test-EventClassActorPayload "backend\app\Events\InvoiceChanged.php" "invoices" "invoice.changed" "InvoiceChanged"
 Test-EventClassActorPayload "backend\app\Events\PaymentChanged.php" "payments" "payment.changed" "PaymentChanged"
@@ -158,6 +168,8 @@ $allSource = "$syncHook`n$syncTest`n$sessionCache`n$types`n$broadcastingTest`n$c
 Test-DoesNotContain $allSource '(?i)APP_KEY\s*[:=]\s*[^\s`]+' "Realtime own-event evidence does not expose APP_KEY"
 Test-DoesNotContain $allSource '(?i)DB_PASSWORD\s*[:=]\s*[^\s`]+' "Realtime own-event evidence does not expose DB_PASSWORD"
 Test-DoesNotContain $allSource '(?i)(TOKEN|SECRET|MAIL_PASSWORD|HOSPITAL_LICENSE_SALT)\s*[:=]\s*[^\s`]+' "Realtime own-event evidence does not expose secret-like values"
+Test-DoesNotContain $allSource '(?i)/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"'' ]+' "Realtime own-event evidence does not expose Unix local paths"
+Test-DoesNotContain $allSource '(?is)<(Task|Actions|Principals|Triggers|Settings)\b' "Realtime own-event evidence does not expose raw task XML"
 
 if ($failures.Count -gt 0) {
     Write-Host ""
