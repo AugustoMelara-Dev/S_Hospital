@@ -53,7 +53,14 @@ $observer = Read-RequiredFile "backend\app\Observers\PermissionAuditObserver.php
 $provider = Read-RequiredFile "backend\app\Providers\AppServiceProvider.php"
 $permissionConfig = Read-RequiredFile "backend\config\permission.php"
 $test = Read-RequiredFile "backend\tests\Feature\PermissionAuditTest.php"
+$cashPaymentsReceiptTest = Read-RequiredFile "backend\tests\Feature\CashPaymentsReceiptTest.php"
+$invoiceCreationTest = Read-RequiredFile "backend\tests\Feature\InvoiceCreationTest.php"
+$invoiceHistoryTest = Read-RequiredFile "backend\tests\Feature\InvoiceHistoryReprintVoidTest.php"
+$fiscalSettingsTest = Read-RequiredFile "backend\tests\Feature\FiscalSettingsTest.php"
+$serviceCatalogTest = Read-RequiredFile "backend\tests\Feature\ServiceCatalogTest.php"
+$backupWorkflowTest = Read-RequiredFile "backend\tests\Feature\BackupWorkflowTest.php"
 $userController = Read-RequiredFile "backend\app\Http\Controllers\UserController.php"
+$permissionsMatrix = Read-RequiredFile "docs\PERMISSIONS_MATRIX.md"
 $knownLimitations = Read-RequiredFile "docs\KNOWN_LIMITATIONS.md"
 $operativeNotes = Read-RequiredFile "docs\OPERATIVE_NOTES_2026_06_02.md"
 $decisionLog = Read-RequiredFile "docs\DECISIONS.md"
@@ -98,9 +105,55 @@ if ($test -ne "") {
     Test-Contains $test 'assertArrayNotHasKey\(' "Permission audit tests check payload omits sensitive fields"
 }
 
+if ($cashPaymentsReceiptTest -ne "") {
+    Test-Contains $cashPaymentsReceiptTest 'cash_session\.opened' "Cash opening audit is covered by feature test"
+    Test-Contains $cashPaymentsReceiptTest 'cash_session\.closed' "Cash closing audit is covered by feature test"
+    Test-Contains $cashPaymentsReceiptTest 'payment\.registered' "Payment registration audit is covered by feature test"
+    Test-Contains $cashPaymentsReceiptTest 'payment\.voided' "Payment void audit is covered by feature test"
+}
+
+if ($invoiceCreationTest -ne "") {
+    Test-Contains $invoiceCreationTest 'invoice\.issued' "Invoice issue audit is covered by feature test"
+}
+
+if ($invoiceHistoryTest -ne "") {
+    Test-Contains $invoiceHistoryTest 'invoice\.reprinted' "Invoice reprint audit is covered by feature test"
+    Test-Contains $invoiceHistoryTest 'invoice\.voided' "Invoice void audit is covered by feature test"
+}
+
+if ($fiscalSettingsTest -ne "") {
+    Test-Contains $fiscalSettingsTest 'fiscal_settings\.created' "Fiscal settings creation audit is covered by feature test"
+    Test-Contains $fiscalSettingsTest 'fiscal_settings\.updated' "Fiscal settings update audit is covered by feature test"
+    Test-Contains $fiscalSettingsTest 'settings\.logo\.updated' "Institutional logo update audit is covered by feature test"
+}
+
+if ($serviceCatalogTest -ne "") {
+    Test-Contains $serviceCatalogTest 'service\.price_updated' "Service price audit is covered by feature test"
+    Test-Contains $serviceCatalogTest 'service\.active_updated' "Service active-state audit is covered by feature test"
+    Test-Contains $serviceCatalogTest 'service\.visibility_updated' "Service visibility audit is covered by feature test"
+    Test-Contains $serviceCatalogTest 'service\.billability_updated' "Service billability audit is covered by feature test"
+    Test-Contains $serviceCatalogTest 'service\.updated' "Service metadata audit is covered by feature test"
+    Test-Contains $serviceCatalogTest 'test_service_change_rolls_back_when_audit_log_fails' "Service changes roll back when audit cannot be written"
+}
+
+if ($backupWorkflowTest -ne "") {
+    Test-Contains $backupWorkflowTest 'backup\.requested' "Manual backup request audit is covered by feature test"
+    Test-Contains $backupWorkflowTest 'backup\.created' "Backup success audit is covered by feature test"
+    Test-Contains $backupWorkflowTest 'backup\.failed' "Backup failure audit is covered by feature test"
+    Test-Contains $backupWorkflowTest 'backup\.downloaded' "Backup download audit is covered by feature test"
+}
+
 if ($userController -ne "") {
     Test-Contains $userController 'if \(! \$user->hasRole\(\$validated\[''role''\]\)\)' "User updates avoid noisy role sync when unchanged"
     Test-Contains $userController '\$user->syncRoles\(\[\$validated\[''role''\]\]\)' "User updates still audit real role changes"
+}
+
+if ($permissionsMatrix -ne "") {
+    Test-Contains $permissionsMatrix 'Apertura de caja\.' "Permissions matrix lists cash opening as critical audited action"
+    Test-Contains $permissionsMatrix 'Cierre de caja\.' "Permissions matrix lists cash closing as critical audited action"
+    Test-Contains $permissionsMatrix 'Creacion de factura\.' "Permissions matrix lists invoice issue as critical audited action"
+    Test-Contains $permissionsMatrix 'Registro o anulacion de pago\.' "Permissions matrix lists payment registration/void as critical audited action"
+    Test-Contains $permissionsMatrix 'Creacion/descarga de backup\.' "Permissions matrix lists backup request/download as critical audited action"
 }
 
 if ($knownLimitations -ne "") {
@@ -117,6 +170,7 @@ if ($decisionLog -ne "") {
     Test-Contains $decisionLog 'Auditoria de roles y permisos usa eventos Spatie' "Decision log records permission audit decision"
     Test-Contains $decisionLog 'PermissionAuditObserver' "Decision log records observer"
     Test-Contains $decisionLog 'audit_logs' "Decision log records durable audit target"
+    Test-Contains $decisionLog 'Guard de auditoria critica cubre acciones operativas' "Decision log records critical audit guard decision"
 }
 
 if ($failures.Count -gt 0) {

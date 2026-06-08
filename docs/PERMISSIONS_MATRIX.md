@@ -80,6 +80,7 @@ El backend debe validar todos los permisos con Policies/Gates o middleware equiv
 - Creacion de factura.
 - Registro o anulacion de pago.
 - Anulacion de factura.
+- Apertura de caja.
 - Cierre de caja.
 - Reimpresion de factura.
 - Creacion/descarga de backup.

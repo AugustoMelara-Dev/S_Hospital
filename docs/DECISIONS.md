@@ -4181,3 +4181,8 @@ Criterio de verificacion: validate_backup_startup_current_user_safety.ps1 exige 
 Contexto: la impresion fisica del recibo sigue pendiente de equipo real, pero el guard de esa evidencia no exigia que permanecieran las pruebas automatizadas de plantilla, snapshot historico, tamanos institucionales y ausencia de QR/barcode/codigos internos.
 Decision: validate_institutional_receipt_print_proof.ps1 valida tambien los archivos fuente y pruebas de recibo antes de revisar la evidencia fisica; el pendiente fisico sigue bloqueando PRODUCTION_READY cuando no se usa AllowPendingHardwareValidation.
 Criterio de verificacion: el guard debe pasar en modo pendiente solo si conserva pruebas de ReceiptPreview, CSS de impresion, CashPaymentsReceiptTest y rechazo de formatos heredados 80mm/58mm.
+
+## 2026-06-08 - Guard de auditoria critica cubre acciones operativas
+Contexto: el objetivo institucional exige saber quien abrio caja, quien cobro, quien emitio, quien anulo, quien reimprimio, quien cambio configuracion y quien creo o descargo respaldos. El guard existente protegia auditoria durable de roles/permisos, pero no fallaba si una prueba futura dejaba de cubrir esos eventos operativos.
+Decision: validate_permission_audit_safety.ps1 ahora exige cobertura de pruebas para apertura/cierre de caja, emision de factura, pagos registrados/anulados, reimpresion/anulacion de factura, configuracion fiscal/logo, cambios de catalogo y flujo de respaldos. PERMISSIONS_MATRIX tambien lista la apertura de caja como accion critica auditada.
+Criterio de verificacion: validate_permission_audit_safety.ps1 debe pasar junto con PermissionAuditTest y check-branding.ps1; el paquete offline se regenera despues del commit para incluir el guard actualizado.
