@@ -4,6 +4,22 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Inicializador de evidencias protege salida
+
+Contexto: `init_production_proofs.ps1` prepara los siete archivos de
+evidencia fisica final y puede ejecutarse durante handoff o soporte,
+pero su salida y sus errores solo ocultaban la ruta del proyecto y
+rutas Windows.
+
+Decision: `Protect-ProofText` reemplaza secretos, `%USERPROFILE%`, rutas
+locales Unix y XML crudo de tareas por marcadores seguros, y el `trap`
+usa esa sanitizacion antes de imprimir errores. `validate_proof_initialization_safety.ps1`
+protege esta cobertura junto con sus fixtures desechables.
+
+Criterio de verificacion: `validate_proof_initialization_safety.ps1`,
+`validate_production_ready_gate_safety.ps1`, `check-branding.ps1` y
+`git diff --check` deben pasar antes de regenerar el paquete offline.
+
 ## 2026-06-08 - Diagnostico de reparacion protege salida
 
 Contexto: `repair_hospital_system.ps1` genera un diagnostico local para

@@ -25,6 +25,9 @@ function Protect-ProofInitText([string] $value) {
     }
     $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
     $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?i)/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?is)<(Task|Actions|Principals|Triggers|Settings)\b.*?</\1>", "[xml-protegido]"
+    $protected = $protected -replace "(?is)<(Task|Actions|Principals|Triggers|Settings)\b[^>]*>", "[xml-protegido]"
     return $protected
 }
 
@@ -111,6 +114,11 @@ foreach ($name in $requiredTemplates) {
 Assert-Contains "Initializer supports WhatIfOnly" $initializerContent "WhatIfOnly"
 Assert-Contains "Initializer protects existing evidence unless Force is passed" $initializerContent "Use -Force solo si"
 Assert-Contains "Initializer sanitizes local paths in output" $initializerContent "%PROJECT_ROOT%"
+Assert-Contains "Initializer sanitizes user profile paths in output" $initializerContent "%USERPROFILE%"
+Assert-Contains "Initializer sanitizes secrets in output" $initializerContent "\[redacted\]"
+Assert-Contains "Initializer sanitizes Unix paths in output" $initializerContent '\(\?i\)/\(var\|home\|srv\|opt\|tmp\|usr\|mnt\)/'
+Assert-Contains "Initializer sanitizes task XML in output" $initializerContent "\[xml-protegido\]"
+Assert-Contains "Initializer trap sanitizes exception messages" $initializerContent 'Write-Host\s+\(Protect-ProofText\s+\$_\.Exception\.Message\)'
 Assert-Contains "Final handoff exposes InitializeProofFiles switch" $finalHandoff "InitializeProofFiles"
 Assert-Contains "Final handoff calls proof initializer with ProjectRoot" $finalHandoff '-File\s+\$proofInitScript\s+-ProjectRoot\s+\$ProjectRoot'
 Assert-Contains "Release checklist documents proof initialization" $releaseChecklist "init_production_proofs\.ps1"

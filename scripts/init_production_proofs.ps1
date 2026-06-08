@@ -6,12 +6,6 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-trap {
-    Write-Host $_.Exception.Message
-    Write-Host "No reemplace evidencia fisica real sin autorizacion del responsable tecnico."
-    exit 1
-}
-
 if ($ProjectRoot -eq "") {
     $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
     $ProjectRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
@@ -26,8 +20,22 @@ function Protect-ProofText([string] $value) {
 
     $protected = $value -replace [regex]::Escape($ProjectRoot), "%PROJECT_ROOT%"
     $protected = $protected -replace [regex]::Escape(($ProjectRoot -replace "\\", "/")), "%PROJECT_ROOT%"
+    if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
+        $protected = $protected -replace [regex]::Escape($env:USERPROFILE), "%USERPROFILE%"
+        $protected = $protected -replace [regex]::Escape(($env:USERPROFILE -replace "\\", "/")), "%USERPROFILE%"
+    }
+    $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
     $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?i)/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?is)<(Task|Actions|Principals|Triggers|Settings)\b.*?</\1>", "[xml-protegido]"
+    $protected = $protected -replace "(?is)<(Task|Actions|Principals|Triggers|Settings)\b[^>]*>", "[xml-protegido]"
     return $protected
+}
+
+trap {
+    Write-Host (Protect-ProofText $_.Exception.Message)
+    Write-Host "No reemplace evidencia fisica real sin autorizacion del responsable tecnico."
+    exit 1
 }
 
 $qaDir = Join-Path $ProjectRoot "qa"
