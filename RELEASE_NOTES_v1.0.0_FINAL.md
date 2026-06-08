@@ -1,10 +1,11 @@
 # S_Hospital - Release Notes v1.0.0 FINAL
 
 > Release final: 2026-06-07
-> Tag: `v1.0.0` (ready)
-> Estado: **PRODUCTION_READY** (todos los gates de codigo y quality
-> pasan; las 4 evidencias fisicas pendientes se completan en el
-> servidor final con hardware real usando `qa/FINAL_*_PROOF.md`)
+> Tag: `v1.0.0` (pendiente de evidencia fisica final)
+> Estado: **PRODUCTION_CANDIDATE** (los gates de codigo y quality
+> pasan; `PRODUCTION_READY` solo puede declararse despues de completar
+> las evidencias fisicas en el servidor final con hardware real usando
+> `qa/FINAL_*_PROOF.md`)
 
 ## Resumen ejecutivo
 
@@ -42,6 +43,55 @@ v1.0.0-rc.4 son:
 | APP_KEY rotation | Script + test `AppKeyRotationTest` |
 | Loadtest smoke | `bash scripts/loadtest_smoke.sh` exit 0 |
 | LAN emulation | `e2e/lan-emulation.spec.ts` exit 0 |
+
+## Estado del paquete offline
+
+Las imagenes Docker (`backend.tar`, `mariadb.tar`, `nginx.tar`,
+`queue-worker.tar`) incluidas en `offline-release/offline-images/`
+deben corresponder al mismo commit que se entrega al hospital. Antes de
+copiar el paquete al servidor final, confirme que `offline-release/MANIFEST.txt`
+apunta al commit entregado y que el guard del paquete offline pasa con
+`-RequireCurrentCommit`.
+
+Razon: la composicion del codigo de v1.0.0-FINAL queda embebida en las
+imagenes productivas:
+
+- `docker-compose.prod.yml` ahora publica 80+443 con HTTPS
+  obligatorio, monta `nginx/hospital-common.conf` y `nginx/ssl/`.
+- `nginx/default.conf` ahora hace redirect HTTP->HTTPS y reenvia
+  `/ws` a Soketi.
+- `EchoConfigController` ahora devuelve host/port/scheme del
+  APP_URL (same-origin).
+- Cambios en codigo PHP backend (`backend/app/...`) que se bakean
+  dentro de la imagen backend.
+
+Procedimiento (elegir uno):
+
+1. **Build box con Docker funcional**:
+   ```powershell
+   cd C:\Projects\S_Hospital
+   powershell -NoProfile -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1 -Force
+   ```
+   Tarda 15-30 min. Reconstruye las 4 imagenes contra el codigo
+   actual y regenera `MANIFEST.txt` + `checksums.sha256`.
+
+2. **Build box Linux con docker-compose**:
+   ```bash
+   docker compose -f docker-compose.build.yml build
+   docker save -o offline-images/backend.tar s_hospital-backend:latest
+   docker save -o offline-images/queue-worker.tar s_hospital-queue-worker:latest
+   docker save -o offline-images/nginx.tar s_hospital-nginx:latest
+   docker save -o offline-images/mariadb.tar s_hospital-mariadb:latest
+   sha256sum offline-images/*.tar > offline-images/checksums.sha256
+   ```
+
+Tras regenerar:
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit
+```
+
+Si el guard falla, no instale ese paquete; regenere `offline-release/`
+desde una build box con Docker funcional.
 
 ## Cambios desde v1.0.0-rc.4
 
@@ -123,7 +173,7 @@ v1.0.0-rc.4 son:
    - Instalar la CA local (raices de confianza).
    - Llenar `qa/LAN_CLIENT_VALIDATION_PROOF.md`.
 4. Con la impresora institucional:
-   - Imprimir una factura de prueba en 5 tamanos.
+   - Imprimir una factura de prueba en media carta, carta y A5.
    - Llenar `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`.
 5. Con `RESTORE_TEST_DATABASE`:
    - `bash scripts/validate_restore_mysql.sh`.
@@ -134,8 +184,9 @@ v1.0.0-rc.4 son:
 7. `scripts/production_readiness_preflight.ps1` sin bypass
    debe retornar 0.
 8. `scripts/final_production_handoff.ps1` deja
-   `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` con
-   `PRODUCTION_READY=YES`.
+   `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` con decision
+   `PRODUCTION_READY` solo si todas las evidencias y el preflight final
+   pasan sin bypass.
 
 ## Comandos de verificacion
 
@@ -169,8 +220,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/rotate-app-key.ps1 -
 
 ## Tag de release
 
+No crear ni empujar el tag `v1.0.0` hasta que el handoff final declare
+`PRODUCTION_READY` con evidencias fisicas completas.
+
 ```bash
-git tag -a v1.0.0 -m "S_Hospital v1.0.0 - PRODUCTION_READY (HTTPS mandatory, LAN emulation, loadtest, encoding fix)"
+git tag -a v1.0.0 -m "S_Hospital v1.0.0 - PRODUCTION_READY con evidencia fisica final"
 git push origin v1.0.0
 ```
 

@@ -41,6 +41,14 @@ function Assert-Contains([string] $label, [string] $content, [string] $pattern) 
     }
 }
 
+function Assert-NotContains([string] $label, [string] $content, [string] $pattern) {
+    if ($content -match $pattern) {
+        Add-Failure $label
+    } else {
+        Add-Pass $label
+    }
+}
+
 function Assert-Literal([string] $label, [string] $content, [string] $needle) {
     if (-not $content.Contains($needle)) {
         Add-Failure $label
@@ -64,6 +72,7 @@ $preflight = Read-RequiredFile "scripts\production_readiness_preflight.ps1"
 $handoff = Read-RequiredFile "scripts\final_production_handoff.ps1"
 $evidenceIndex = Read-RequiredFile "scripts\validate_ops_evidence_index.ps1"
 $handoffCompleteness = Read-RequiredFile "scripts\validate_final_handoff_completeness.ps1"
+$releaseNotes = Read-RequiredFile "RELEASE_NOTES_v1.0.0_FINAL.md"
 
 Assert-Contains "Preflight exposes AllowMissingPhysicalProof as an explicit switch" `
     $preflight '\[switch\]\s+\$AllowMissingPhysicalProof'
@@ -142,6 +151,14 @@ Assert-Literal "Ops evidence index requires the preflight in the handoff" `
     $evidenceIndex "production_readiness_preflight\.ps1"
 Assert-Contains "Handoff completeness requires PRODUCTION_CANDIDATE until field proof is complete" `
     $handoffCompleteness 'PRODUCTION_CANDIDATE'
+Assert-Contains "Release notes keep candidate status before field evidence" `
+    $releaseNotes '(?m)^>\s*Estado:\s*\*\*PRODUCTION_CANDIDATE\*\*'
+Assert-NotContains "Release notes must not declare PRODUCTION_READY in the status header" `
+    $releaseNotes '(?m)^>\s*Estado:\s*\*\*PRODUCTION_READY\*\*'
+Assert-Contains "Release notes require final handoff before tagging v1.0.0" `
+    $releaseNotes 'No crear ni empujar el tag `v1\.0\.0` hasta que el handoff final declare\s+`PRODUCTION_READY`'
+Assert-NotContains "Release notes tag command must not claim PRODUCTION_READY without field evidence" `
+    $releaseNotes 'git tag[^\r\n]+PRODUCTION_READY \(HTTPS mandatory'
 
 if ($failures.Count -gt 0) {
     Write-Host ""
