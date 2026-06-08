@@ -76,7 +76,7 @@ No declare PRODUCTION_READY. Mantenga el sistema como PRODUCTION_CANDIDATE hasta
 
 ## Evidencia completada en este frente de endurecimiento
 
-- Capturas controladas de navegador vigentes: `qa/browser-smoke-2026-06-08/` y `qa/BROWSER_SMOKE_EVIDENCE_2026_06_08.md`.
+- Capturas controladas de navegador vigentes: `qa/browser-smoke-2026-06-08/` y `qa/BROWSER_SMOKE_EVIDENCE_2026_06_08.md`; incluyen el flujo `area-services-light/dark` para confirmar consulta de servicios pagados por usuarios de area sin acceso a reportes administrativos.
 - Diagnostico del sistema y guardas de Ayuda/soporte: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`, `qa/FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md`.
 - Tarea continua de respaldos, autoarranque, respaldo final y restore: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md`, `qa/FINAL_STARTUP_TASK_PROOF.example.md`, `qa/FINAL_STARTUP_TASK_PROOF.md`, `qa/FINAL_BACKUP_TASK_PROOF.example.md`, `qa/FINAL_BACKUP_TASK_PROOF.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` y `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.
 - Concurrencia, doble accion y eventos propios en tiempo real: `qa/FINAL_CONCURRENCY_PROOF.md`, `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md` y `qa/REALTIME_OWN_EVENT_SAFETY_2026_06_04.md`.
