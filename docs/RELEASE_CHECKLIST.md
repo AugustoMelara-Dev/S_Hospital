@@ -129,9 +129,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\final_production
 
 Este helper no aprueba produccion por si solo: crea o muestra archivos de
 evidencia pendientes, muestra el estado de tareas de backup y ejecuta el
-preflight sin `-AllowMissingPhysicalProof`. Si faltan `qa/LAN_CLIENT_VALIDATION_PROOF.md`
-o `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` completos, el resultado correcto sigue siendo
-`PRODUCTION_CANDIDATE`. Tambien deja un resumen operativo en
+preflight sin `-AllowMissingPhysicalProof`. Si falta cualquier evidencia final
+requerida (`qa/LAN_CLIENT_VALIDATION_PROOF.md`,
+`qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`, `qa/FINAL_STARTUP_TASK_PROOF.md`,
+`qa/FINAL_BACKUP_TASK_PROOF.md`, `qa/FINAL_RESTORE_PROOF.md`,
+`qa/FINAL_CONCURRENCY_PROOF.md` o `qa/TRAINING_ACCEPTANCE_PROOF.md`), el
+resultado correcto sigue siendo `PRODUCTION_CANDIDATE`. Tambien deja un resumen operativo en
 `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` con la decision, bloqueantes y comandos
 siguientes. Si usa `-ReportPath`, debe ser un archivo `.md` dentro de `qa/`;
 el helper rechaza rutas fuera de la carpeta de evidencia antes de ejecutar
@@ -336,8 +339,9 @@ Durante handoff candidato, ejecute
 comprobar que el archivo pendiente mantiene bloqueantes explicitos. Antes de
 pasar a `PRODUCTION_READY`, ejecute
 `scripts\validate_training_acceptance_proof.ps1` sin banderas; debe reportar
-`TRAINING_ACCEPTANCE_PROOF: YES` solo cuando cajero, supervisor y administrador
-esten practicados en ambiente aislado y la evidencia este anonimizada.
+`TRAINING_ACCEPTANCE_PROOF: YES` solo cuando cajero, supervisor, administrador
+y usuario de area esten practicados en ambiente aislado y la evidencia este
+anonimizada.
 Antes de cerrar el frente operativo, ejecute
 `scripts\validate_operations_objective_audit.ps1`; debe reportar
 `OPERATIONS_OBJECTIVE_AUDIT: YES` para confirmar que ayuda, diagnostico,
@@ -535,7 +539,8 @@ debe quedar registrado en el handoff si se usa Startup/HKCU Run.
 - Crear `qa/FINAL_BACKUP_TASK_PROOF.md` usando `qa/FINAL_BACKUP_TASK_PROOF.example.md`.
 - Crear `qa/FINAL_RESTORE_PROOF.md` usando `qa/FINAL_RESTORE_PROOF.example.md`.
 - Crear `qa/FINAL_CONCURRENCY_PROOF.md` usando `qa/FINAL_CONCURRENCY_PROOF.example.md`.
-- Para preparar ambos archivos sin escribir evidencia falsa:
+- Crear `qa/TRAINING_ACCEPTANCE_PROOF.md` usando `qa/TRAINING_ACCEPTANCE_PROOF.example.md`.
+- Para preparar todos los archivos sin escribir evidencia falsa:
 
 ```powershell
 cd C:\Projects\S_Hospital

@@ -76,6 +76,7 @@ $releaseWorkflow = Read-RequiredFile ".github\workflows\release.yml"
 $ciDocs = Read-RequiredFile "docs\CI.md"
 $operativeNotes = Read-RequiredFile "docs\OPERATIVE_NOTES_2026_06_02.md"
 $auditPlan = Read-RequiredFile "docs\AUDIT_2026_06_02.md"
+$releaseChecklist = Read-RequiredFile "docs\RELEASE_CHECKLIST.md"
 $releaseNotes = Read-RequiredFile "RELEASE_NOTES_v1.0.0_FINAL.md"
 
 $finalProofPaths = @(
@@ -105,6 +106,7 @@ foreach ($proofPath in $finalProofPaths) {
     Assert-Literal "CI docs name final proof file $proofFileName" $ciDocs $proofFileName
     Assert-Literal "Operative notes name final proof file $proofFileName" $operativeNotes $proofFileName
     Assert-Literal "Current audit plan names final proof file $proofFileName" $auditPlan $proofFileName
+    Assert-Literal "Release checklist names final proof file $proofFileName" $releaseChecklist $proofFileName
     Assert-Literal "Final release notes name final proof file $proofFileName" $releaseNotes $proofFileName
 }
 
@@ -122,6 +124,8 @@ Assert-NotContains "Operative notes must not describe the stale four-proof gate"
     $operativeNotes '(four|cuatro)\s+(physical evidence|PROOF|proof|evidencias|comprobantes)'
 Assert-NotContains "Current audit plan must not describe the stale four-proof gate" `
     $auditPlan '(four|cuatro)\s+(physical evidence|PROOF|proof|evidencias|comprobantes)'
+Assert-NotContains "Release checklist must not describe the stale four-proof gate" `
+    $releaseChecklist '(four|cuatro)\s+(physical evidence|PROOF|proof|evidencias|comprobantes)'
 Assert-NotContains "Final release notes must not describe the stale four-proof gate" `
     $releaseNotes '(four|cuatro)\s+(physical evidence|PROOF|proof|evidencias|comprobantes)'
 Assert-Literal "CI docs describe required final field evidence files" `
@@ -130,6 +134,8 @@ Assert-Literal "Operative notes describe any required final proof file generical
     $operativeNotes "cualquier archivo de evidencia final requerido sigue PENDING"
 Assert-Literal "Current audit plan tracks seven final physical evidences" `
     $auditPlan "siete evidencias"
+Assert-Literal "Release checklist treats any missing final proof as PRODUCTION_CANDIDATE" `
+    $releaseChecklist "Si falta cualquier evidencia final"
 
 foreach ($placeholderPattern in @(
     '\bTODO\b',

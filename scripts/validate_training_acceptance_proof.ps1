@@ -133,6 +133,7 @@ if ([string]::IsNullOrWhiteSpace($ProofPath) -or -not (Test-Path -LiteralPath $P
                 @{ Pattern = '(?i)Falta completar capacitacion supervisada del rol cajero'; Label = 'Falta completar capacitacion supervisada del rol cajero' },
                 @{ Pattern = '(?i)Falta completar capacitacion supervisada del rol supervisor'; Label = 'Falta completar capacitacion supervisada del rol supervisor' },
                 @{ Pattern = '(?i)Falta completar capacitacion supervisada del rol administrador'; Label = 'Falta completar capacitacion supervisada del rol administrador' },
+                @{ Pattern = '(?i)Falta completar capacitacion supervisada del rol usuario de area'; Label = 'Falta completar capacitacion supervisada del rol usuario de area' },
                 @{ Pattern = '(?i)no uso datos reales de pacientes'; Label = 'no uso datos reales de pacientes' },
                 @{ Pattern = '(?i)base\s+de\s+produccion'; Label = 'base de produccion' },
                 @{ Pattern = '(?i)PRODUCTION_CANDIDATE'; Label = 'PRODUCTION_CANDIDATE' }
@@ -174,6 +175,7 @@ if ([string]::IsNullOrWhiteSpace($ProofPath) -or -not (Test-Path -LiteralPath $P
             "Cashier role practiced",
             "Supervisor role practiced",
             "Administrator role practiced",
+            "Area-user role practiced",
             "Server unavailable",
             "LAN down",
             "Printer not responding",

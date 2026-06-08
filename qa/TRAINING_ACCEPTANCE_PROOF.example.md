@@ -29,6 +29,7 @@ passwords, `.env` values, backup SQL filenames or local machine paths.
 - [ ] Cashier role practiced opening the system, login, opening cashbox, invoicing, charging, printing, reprinting, closing cashbox and preparing safe support summary.
 - [ ] Supervisor role practiced shift review, printer failure, LAN failure, permission issue, open cashbox recovery and incident escalation.
 - [ ] Administrator role practiced system diagnostics, manual backup, backup status review, safe support packet and restore-only-on-disposable-database procedure.
+- [ ] Area-user role practiced paid-service consultation for the assigned area, without opening cashbox, invoicing, charging, voiding, reprinting or accessing clinical-record workflows.
 
 ## Incident drills
 

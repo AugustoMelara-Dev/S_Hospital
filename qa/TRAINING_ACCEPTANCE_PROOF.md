@@ -16,6 +16,7 @@ after real supervised training.
 - Falta completar capacitacion supervisada del rol cajero en un ambiente seguro.
 - Falta completar capacitacion supervisada del rol supervisor en un ambiente seguro.
 - Falta completar capacitacion supervisada del rol administrador en un ambiente seguro.
+- Falta completar capacitacion supervisada del rol usuario de area en un ambiente seguro.
 - Falta practicar incidentes de servidor, red LAN, impresora, energia, caja,
   respaldo, sesion, permisos y restauracion solo en una base descartable.
 - Falta guardar evidencia anonima bajo `qa/` o referencia fisica verificable.

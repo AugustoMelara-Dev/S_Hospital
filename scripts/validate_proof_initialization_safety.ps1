@@ -104,6 +104,8 @@ foreach ($name in $requiredTemplates) {
     Assert-Contains "Initializer includes $name target proof" $initializerContent "$name\.md"
     Assert-Contains "Offline builder includes $name example template" $offlineBuilder "$name\.example\.md"
     Assert-Contains "Offline guard requires $name example template" $offlineGuard "$name\.example\.md"
+    Assert-Contains "Release checklist lists $name target proof" $releaseChecklist "$name\.md"
+    Assert-Contains "Release checklist lists $name example template" $releaseChecklist "$name\.example\.md"
 }
 
 Assert-Contains "Initializer supports WhatIfOnly" $initializerContent "WhatIfOnly"
