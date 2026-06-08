@@ -190,6 +190,7 @@ No se adjuntan passwords, tokens, archivos .env, dumps completos ni rutas locale
 "@
     $proofWithSecretAssignment = $safeProofContent + "`nDB_PASSWORD=super-secret-value"
     $proofWithLocalPath = $safeProofContent + "`nC:\Hospital\Sistema\backend\.env"
+    $proofWithUnixLocalPath = $safeProofContent + "`n/var/backups/s_hospital/.env"
     $proofWithTaskXml = $safeProofContent + "`n<Task><Triggers></Triggers></Task>"
     $backupCompletePending = @"
 Decision: PENDING_FINAL_FIELD.
@@ -254,9 +255,10 @@ Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
     $safeFinding = Get-SensitiveProofFinding $safeProofContent
     $secretFinding = Get-SensitiveProofFinding $proofWithSecretAssignment
     $pathFinding = Get-SensitiveProofFinding $proofWithLocalPath
+    $unixPathFinding = Get-SensitiveProofFinding $proofWithUnixLocalPath
     $xmlFinding = Get-SensitiveProofFinding $proofWithTaskXml
-    if ($safeFinding -eq "" -and $secretFinding -ne "" -and $pathFinding -ne "" -and $xmlFinding -ne "") {
-        Add-Pass "SelfTest rejects proof content with secret assignments, local paths and task XML"
+    if ($safeFinding -eq "" -and $secretFinding -ne "" -and $pathFinding -ne "" -and $unixPathFinding -ne "" -and $xmlFinding -ne "") {
+        Add-Pass "SelfTest rejects proof content with secret assignments, Windows/Unix local paths and task XML"
     } else {
         Add-Failure "SelfTest failed to accept safe proof content and reject unsafe proof content samples."
     }

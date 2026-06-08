@@ -4,6 +4,21 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Self-test final cubre rutas locales Unix
+
+Contexto: `validate_final_field_blockers_safety.ps1` ya rechazaba
+rutas absolutas Unix en la evidencia final, pero su `-SelfTest`
+solo demostraba la deteccion con una ruta Windows.
+
+Decision: el self-test del guard final ahora incluye una muestra
+`/var/backups/s_hospital/.env` y exige que se detecte como ruta local
+insegura junto con secretos, rutas Windows y XML crudo de tareas.
+
+Criterio de verificacion: `validate_final_field_blockers_safety.ps1 -SelfTest`,
+`validate_final_field_blockers_safety.ps1`,
+`validate_production_ready_gate_safety.ps1` y `check-branding.ps1`
+deben pasar antes de regenerar el paquete offline.
+
 ## 2026-06-08 - Guards candidatos bloquean rutas Unix y XML crudo
 
 Contexto: los guards finales ya rechazaban rutas locales tipo Unix
