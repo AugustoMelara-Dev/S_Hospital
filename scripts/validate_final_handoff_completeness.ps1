@@ -254,6 +254,7 @@ if ($failures.Count -eq 0) {
         'validate_dependency_manifest.ps1',
         'validate_production_license_salt_guard.ps1',
         'assert_offline_release_clean.ps1 -SelfTest',
+        'assert_offline_release_clean.ps1 -RequireCurrentCommit',
         'install_backup_tasks_windows.ps1 -Status',
         'production_readiness_preflight.ps1'
     )
@@ -286,6 +287,8 @@ if ($failures.Count -eq 0) {
         Assert-Content ([regex]::Escape($blocker)) "El handoff no conserva bloqueante requerido: $blocker."
     }
     Assert-Content '(?i)Backup scheduled tasks ready in status output|Tareas programadas de respaldo listas segun status' "El handoff no conserva bloqueante requerido: estado de tareas programadas de respaldo."
+    Assert-Content '(?i)despues del ultimo commit|despu[eé]s del [uú]ltimo commit' "El handoff debe aclarar que el paquete offline se verifica contra el ultimo commit despues de versionar la evidencia."
+    Assert-Content '(?i)prueba autoritativa del paquete|authoritative package proof' "El handoff debe identificar la prueba autoritativa del paquete offline."
 
     $requiredSafety = @(
         @{

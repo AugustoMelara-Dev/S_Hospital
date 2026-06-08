@@ -4146,3 +4146,8 @@ Criterio de verificacion: validate_final_handoff_completeness.ps1 debe aceptar u
 Contexto: el handoff operativo indica ejecutar scripts\validate_lan_client.ps1 desde una segunda PC real en la LAN, pero el guard principal del paquete solo exigia el validador del proof final.
 Decision: assert_offline_release_clean.ps1 ahora exige y compara scripts\validate_lan_client.ps1 contra la fuente versionada; validate_handoff_guard_coverage.ps1 cubre tambien los scripts mencionados como comandos de campo, no solo los declarados como dependencias internas del handoff.
 Criterio de verificacion: validate_handoff_guard_coverage.ps1, validate_final_handoff_completeness.ps1, test_validate_lan_client_safety.ps1 y assert_offline_release_clean.ps1 -RequireCurrentCommit deben pasar despues de regenerar el paquete offline limpio.
+
+## 2026-06-08 - handoff versionado aclara prueba autoritativa del paquete
+Contexto: `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` es evidencia versionada; al commitearlo cambia el HEAD y puede dejar una linea historica del guard offline con el commit vigente al momento de generar el reporte.
+Decision: el handoff debe explicar que la prueba autoritativa del paquete offline es ejecutar `scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit` despues del ultimo commit versionado y antes del handoff fisico.
+Criterio de verificacion: validate_final_handoff_completeness.ps1 exige la nota anti-ambiguedad y el comando `assert_offline_release_clean.ps1 -RequireCurrentCommit`; el paquete en disco debe validarse nuevamente despues del ultimo commit.
