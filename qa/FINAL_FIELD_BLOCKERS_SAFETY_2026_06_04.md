@@ -3,11 +3,13 @@
 ## Scope
 
 Add a guard that checks the final-field proof files stay honest while the
-hospital still lacks real LAN, printer, restore and concurrency evidence.
+hospital still lacks real LAN, printer, startup, backup, restore, concurrency
+and training evidence.
 
 This phase does not complete field validation. It prevents support from losing
 the explicit blocker list, especially physical printer page-format requirements
-for media carta, carta and A5.
+for media carta, carta and A5, backup status wording and supervised role
+training including area-user paid-service consultation.
 
 ## Files changed
 
@@ -50,6 +52,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_relea
 
 - Complete second-client LAN proof from a real hospital LAN workstation.
 - Complete physical printer proof for media carta, carta and A5.
+- Complete final-server startup/autostart proof.
+- Complete final-server backup task proof and manual backup UI transition.
 - Complete final-server restore proof against a disposable database.
 - Complete final-field concurrency proof against a disposable target.
+- Complete supervised training proof for cashier, supervisor, administrator and
+  area-user roles without names, patient data or secrets.
 - Run final preflight on the installed LAN URL without bypass flags.

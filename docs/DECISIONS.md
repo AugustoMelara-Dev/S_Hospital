@@ -4251,3 +4251,8 @@ Criterio de verificacion: `scripts\validate_training_acceptance_proof.ps1 -Allow
 Contexto: `docs\manuales\CHECKLIST_CAPACITACION.md` ya cubria el usuario de area, pero la guia narrativa de capacitacion y dos evidencias QA seguian describiendo solo cajero, supervisor y administrador.
 Decision: la guia segura, el stub de aceptacion, la evidencia del gate y `validate_training_safety.ps1` incluyen el rol de area y su consulta de servicios pagados sin operar caja, facturacion, anulaciones ni reportes administrativos.
 Criterio de verificacion: `scripts\validate_training_safety.ps1`, `scripts\validate_training_acceptance_proof.ps1 -AllowPendingFinalField`, `scripts\validate_operator_manuals_safety.ps1` y `scripts\check-branding.ps1` deben pasar.
+
+## 2026-06-08 - Bloqueantes finales cubren capacitacion supervisada
+Contexto: `validate_final_field_blockers_safety.ps1` protegia LAN, impresora, autoarranque, respaldo, restore y concurrencia, pero no leia `qa\TRAINING_ACCEPTANCE_PROOF.md`, aunque la capacitacion supervisada es uno de los siete proofs finales.
+Decision: el guard de bloqueantes finales lee la evidencia de capacitacion, exige que siga pendiente con cajero, supervisor, administrador, usuario de area, datos reales de pacientes y base de produccion como bloqueantes, y su self-test rechaza omitir el rol de area.
+Criterio de verificacion: `scripts\validate_final_field_blockers_safety.ps1 -SelfTest`, `scripts\validate_final_field_blockers_safety.ps1`, `scripts\validate_production_ready_gate_safety.ps1` y `scripts\check-branding.ps1` deben pasar.

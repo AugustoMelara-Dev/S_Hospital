@@ -105,6 +105,23 @@ Falta crear backup desde la UI administrativa.
 Falta confirmar estado tecnico obsoleto.
 Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
 "@
+    $trainingCompletePending = @"
+Decision: PENDING_FINAL_FIELD.
+Falta completar capacitacion supervisada del rol cajero.
+Falta completar capacitacion supervisada del rol supervisor.
+Falta completar capacitacion supervisada del rol administrador.
+Falta completar capacitacion supervisada del rol usuario de area.
+Falta confirmar que la capacitacion no uso datos reales de pacientes ni la base de produccion.
+Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
+"@
+    $trainingMissingAreaRole = @"
+Decision: PENDING_FINAL_FIELD.
+Falta completar capacitacion supervisada del rol cajero.
+Falta completar capacitacion supervisada del rol supervisor.
+Falta completar capacitacion supervisada del rol administrador.
+Falta confirmar que la capacitacion no uso datos reales de pacientes ni la base de produccion.
+Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
+"@
 
     if (Test-ContainsAllTerms $printerCompletePending @("media carta", "carta", "A5")) {
         Add-Pass "SelfTest accepts printer proof that preserves all required institutional paper blockers"
@@ -130,6 +147,18 @@ Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
         Add-Pass "SelfTest rejects legacy backup worker/status wording"
     }
 
+    if (Test-ContainsAllTerms $trainingCompletePending @("rol cajero", "rol supervisor", "rol administrador", "rol usuario de area", "base de produccion")) {
+        Add-Pass "SelfTest accepts training proof that preserves all required role blockers"
+    } else {
+        Add-Failure "SelfTest failed to accept current training blocker wording."
+    }
+
+    if (Test-ContainsAllTerms $trainingMissingAreaRole @("rol cajero", "rol supervisor", "rol administrador", "rol usuario de area", "base de produccion")) {
+        Add-Failure "SelfTest failed to reject training proof missing area-user blocker."
+    } else {
+        Add-Pass "SelfTest rejects training proof missing area-user blocker"
+    }
+
     if ($failures.Count -gt 0) {
         Write-Host ""
         Write-Host "FINAL_FIELD_BLOCKERS_SAFETY_SELFTEST: NO ($($failures.Count) blocking issue(s))" -ForegroundColor Red
@@ -147,6 +176,7 @@ $startupTaskProof = Read-RequiredFile "qa\FINAL_STARTUP_TASK_PROOF.md"
 $backupTaskProof = Read-RequiredFile "qa\FINAL_BACKUP_TASK_PROOF.md"
 $restoreProof = Read-RequiredFile "qa\FINAL_RESTORE_PROOF.md"
 $concurrencyProof = Read-RequiredFile "qa\FINAL_CONCURRENCY_PROOF.md"
+$trainingProof = Read-RequiredFile "qa\TRAINING_ACCEPTANCE_PROOF.md"
 
 Assert-PendingProof "LAN client proof" $lanProof @(
     "segunda computadora",
@@ -191,6 +221,17 @@ Assert-PendingProof "Final backup task proof" $backupTaskProof @(
     "UI administrativa",
     "Pendiente",
     "Protegido",
+    "PRODUCTION_CANDIDATE"
+)
+
+Assert-PendingProof "Training acceptance proof" $trainingProof @(
+    "rol cajero",
+    "rol supervisor",
+    "rol administrador",
+    "rol usuario de area",
+    "datos reales de pacientes",
+    "base",
+    "produccion",
     "PRODUCTION_CANDIDATE"
 )
 
