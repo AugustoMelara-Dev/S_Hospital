@@ -4256,3 +4256,8 @@ Criterio de verificacion: `scripts\validate_training_safety.ps1`, `scripts\valid
 Contexto: `validate_final_field_blockers_safety.ps1` protegia LAN, impresora, autoarranque, respaldo, restore y concurrencia, pero no leia `qa\TRAINING_ACCEPTANCE_PROOF.md`, aunque la capacitacion supervisada es uno de los siete proofs finales.
 Decision: el guard de bloqueantes finales lee la evidencia de capacitacion, exige que siga pendiente con cajero, supervisor, administrador, usuario de area, datos reales de pacientes y base de produccion como bloqueantes, y su self-test rechaza omitir el rol de area.
 Criterio de verificacion: `scripts\validate_final_field_blockers_safety.ps1 -SelfTest`, `scripts\validate_final_field_blockers_safety.ps1`, `scripts\validate_production_ready_gate_safety.ps1` y `scripts\check-branding.ps1` deben pasar.
+
+## 2026-06-08 - Audit operativo nombra siete proofs finales
+Contexto: `qa\OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md` ya bloqueaba `PRODUCTION_READY`, pero algunas filas aun resumian manuales en tres roles y la evidencia final como restore/concurrencia.
+Decision: el audit operativo y `validate_operations_objective_audit.ps1` exigen manual de usuario de area y nombran los siete proofs finales: LAN, impresion institucional, autoarranque, respaldo final, restore, concurrencia y capacitacion.
+Criterio de verificacion: `scripts\validate_operations_objective_audit.ps1`, `scripts\validate_production_ready_gate_safety.ps1`, `scripts\validate_operator_manuals_safety.ps1` y `scripts\check-branding.ps1` deben pasar.

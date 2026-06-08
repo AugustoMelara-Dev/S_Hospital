@@ -109,7 +109,7 @@ if ($failures.Count -eq 0) {
         'Duplicate-action protection',
         'Automatic and manual backup',
         'Backup startup without administrator rights',
-        'Non-technical manuals',
+        'Non-technical manuals and role checklists for cashier, supervisor, administrator and area users',
         'Safe practice/training guidance',
         'Final LAN client validation',
         'Physical institutional receipt proof',
@@ -154,7 +154,10 @@ if ($failures.Count -eq 0) {
         'qa/FINAL_BACKUP_TASK_PROOF.md',
         'scripts/validate_final_backup_task_proof.ps1',
         'qa/OPERATOR_MANUALS_SAFETY_2026_06_03.md',
+        'docs/manuales/MANUAL_USUARIO_AREA.md',
         'qa/TRAINING_SAFETY_2026_06_03.md',
+        'qa/TRAINING_ACCEPTANCE_PROOF.example.md',
+        'qa/TRAINING_ACCEPTANCE_PROOF.md',
         'scripts/validate_training_acceptance_proof.ps1',
         'qa/PROOF_INITIALIZATION_SAFETY_2026_06_03.md',
         'qa/OFFLINE_RELEASE_BUILDER_SELFTEST_2026_06_03.md',
@@ -201,9 +204,23 @@ if ($failures.Count -eq 0) {
         'bypass flags',
         'TRAINING_ACCEPTANCE_PROOF.md',
         'final backup automation smoke',
-        'final restore/concurrency evidence',
+        'FINAL_RESTORE_PROOF.md',
+        'FINAL_CONCURRENCY_PROOF.md',
+        'final training proof',
         'preflight'
     )
+
+    foreach ($finalProof in @(
+        'qa/LAN_CLIENT_VALIDATION_PROOF.md',
+        'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md',
+        'qa/FINAL_STARTUP_TASK_PROOF.md',
+        'qa/FINAL_BACKUP_TASK_PROOF.md',
+        'qa/FINAL_RESTORE_PROOF.md',
+        'qa/FINAL_CONCURRENCY_PROOF.md',
+        'qa/TRAINING_ACCEPTANCE_PROOF.md'
+    )) {
+        Assert-Content ([regex]::Escape($finalProof)) "La auditoria debe nombrar el proof final requerido: $finalProof."
+    }
 
     foreach ($blocker in $requiredBlockers) {
         Assert-Content ([regex]::Escape($blocker)) "Falta bloqueante requerido en la auditoria: $blocker."
