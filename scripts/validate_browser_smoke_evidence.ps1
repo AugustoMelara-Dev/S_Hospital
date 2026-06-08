@@ -88,12 +88,29 @@ function Test-RelativeEvidencePath([string] $relativePath, [int64] $minimumBytes
     Add-Pass "$label screenshot exists and is non-empty"
 }
 
+function Assert-NoObsoleteReceiptPreviewEvidence([string] $relativeDirectory) {
+    $directory = Join-Path $ProjectRoot $relativeDirectory
+    if (-not (Test-Path -LiteralPath $directory -PathType Container)) {
+        Add-Failure "Missing browser evidence directory: $relativeDirectory"
+        return
+    }
+
+    $obsolete = @(Get-ChildItem -LiteralPath $directory -File -Filter "*receipt-preview*" -ErrorAction SilentlyContinue)
+    if ($obsolete.Count -gt 0) {
+        Add-Failure "Browser smoke evidence must use institutional-receipt filenames, not receipt-preview: $($obsolete.Name -join ', ')"
+        return
+    }
+
+    Add-Pass "Browser smoke evidence uses institutional receipt filenames"
+}
+
 $rcReportPath = "qa\browser-smoke-2026-06-07\rc-e2e-mocked-report.json"
 $helpReportPath = "qa\screenshots\rc-help-support-2026-05-31\help-support-report.json"
 $fieldQaScriptPath = "qa\visual-smoke\field-qa-current-screenshots.mjs"
 $rcReport = Read-JsonFile $rcReportPath
 $helpReport = Read-JsonFile $helpReportPath
 $fieldQaScript = Read-RequiredTextFile $fieldQaScriptPath
+Assert-NoObsoleteReceiptPreviewEvidence "qa\browser-smoke-2026-06-07"
 
 if (-not [string]::IsNullOrWhiteSpace($fieldQaScript)) {
     Assert-SourceContains $fieldQaScript "const themes = ['light', 'dark'];" "Field QA smoke declares light and dark themes"
@@ -102,7 +119,7 @@ if (-not [string]::IsNullOrWhiteSpace($fieldQaScript)) {
     Assert-SourceContains $fieldQaScript "theme," "Field QA smoke records theme metadata per capture"
     Assert-SourceContains $fieldQaScript '${String(index).padStart(2, ''0'')}-login-${theme}.png' "Field QA smoke captures login per theme"
     Assert-SourceContains $fieldQaScript '${String(index).padStart(2, ''0'')}-${name}-${theme}.png' "Field QA smoke captures authenticated screens per theme"
-    Assert-SourceContains $fieldQaScript '${String(index).padStart(2, ''0'')}-receipt-preview-${theme}.png' "Field QA smoke captures receipt preview per theme when available"
+    Assert-SourceContains $fieldQaScript '${String(index).padStart(2, ''0'')}-institutional-receipt-${theme}.png' "Field QA smoke captures institutional receipt per theme when available"
     Assert-SourceContains $fieldQaScript '${entry.screen}:${entry.theme}:${key}' "Field QA smoke reports blockers with theme context"
 }
 
@@ -140,10 +157,10 @@ if ($null -ne $rcReport) {
         @{ Name = "cashbox-open-light"; Route = "/cashbox"; Theme = "light" },
         @{ Name = "billing-new-empty-light"; Route = "/billing/new"; Theme = "light" },
         @{ Name = "billing-new-cart-light"; Route = "/billing/new"; Theme = "light" },
-        @{ Name = "receipt-preview-letter-light"; Route = "/billing/new"; Theme = "light" },
-        @{ Name = "receipt-preview-a5-light"; Route = "/billing/new"; Theme = "light" },
-        @{ Name = "receipt-preview-light"; Route = "/billing/new"; Theme = "light" },
-        @{ Name = "receipt-preview-dark"; Route = "/billing/new"; Theme = "dark" },
+        @{ Name = "institutional-receipt-letter-light"; Route = "/billing/new"; Theme = "light" },
+        @{ Name = "institutional-receipt-a5-light"; Route = "/billing/new"; Theme = "light" },
+        @{ Name = "institutional-receipt-light"; Route = "/billing/new"; Theme = "light" },
+        @{ Name = "institutional-receipt-dark"; Route = "/billing/new"; Theme = "dark" },
         @{ Name = "reports-admin-light"; Route = "/reports"; Theme = "light" },
         @{ Name = "reports-admin-dark"; Route = "/reports"; Theme = "dark" },
         @{ Name = "backups-pending-light"; Route = "/backups"; Theme = "light" }

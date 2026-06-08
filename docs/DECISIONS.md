@@ -4121,3 +4121,8 @@ Criterio de verificacion: validate_training_safety.ps1, validate_installation_do
 Contexto: los E2E y smoke visuales seguian buscando o nombrando el modal como vista previa del recibo, aunque la UI actual y la capacitacion ya exigen recibo institucional.
 Decision: los selectores y capturas activas usan Recibo institucional o Panel de recibo institucional; check-branding bloquea que la automatizacion/evidencia activa vuelva a usar receipt preview o vista previa del recibo.
 Criterio de verificacion: check-branding.ps1, production-readiness.spec.ts, real-smoke.spec.ts y phase-12-visual-smoke.mjs quedan alineados con los labels accesibles actuales del recibo.
+
+## 2026-06-07 - evidencia activa usa identificador de servicio
+Contexto: el smoke visual y el reporte RC todavia podian describir el flujo de busqueda como scanner, aunque caja y capacitacion ya usan identificador de servicio para no exponer detalles tecnicos.
+Decision: la evidencia activa usa identificador/busqueda o service identifier entry; check-branding bloquea frases heredadas como scanner support y scanner/busqueda en reportes/smoke activos.
+Criterio de verificacion: check-branding.ps1 pasa y la busqueda focalizada no encuentra lenguaje heredado de scanner en evidencia activa fuera de guardas tecnicas.

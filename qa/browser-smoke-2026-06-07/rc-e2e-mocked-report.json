@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-07T17:48:46.893Z",
+  "generated_at": "2026-06-08T05:29:44.516Z",
   "mode": "mocked-e2e",
   "note": "Capturas con API mockeada; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.",
   "screenshots": [
@@ -34,26 +34,26 @@
       "theme": "light"
     },
     {
-      "name": "receipt-preview-light",
-      "path": "qa/browser-smoke-2026-06-07/receipt-preview-light.png",
+      "name": "institutional-receipt-light",
+      "path": "qa/browser-smoke-2026-06-07/institutional-receipt-light.png",
       "route": "/billing/new",
       "theme": "light"
     },
     {
-      "name": "receipt-preview-letter-light",
-      "path": "qa/browser-smoke-2026-06-07/receipt-preview-letter-light.png",
+      "name": "institutional-receipt-letter-light",
+      "path": "qa/browser-smoke-2026-06-07/institutional-receipt-letter-light.png",
       "route": "/billing/new",
       "theme": "light"
     },
     {
-      "name": "receipt-preview-a5-light",
-      "path": "qa/browser-smoke-2026-06-07/receipt-preview-a5-light.png",
+      "name": "institutional-receipt-a5-light",
+      "path": "qa/browser-smoke-2026-06-07/institutional-receipt-a5-light.png",
       "route": "/billing/new",
       "theme": "light"
     },
     {
-      "name": "receipt-preview-dark",
-      "path": "qa/browser-smoke-2026-06-07/receipt-preview-dark.png",
+      "name": "institutional-receipt-dark",
+      "path": "qa/browser-smoke-2026-06-07/institutional-receipt-dark.png",
       "route": "/billing/new",
       "theme": "dark"
     },

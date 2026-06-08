@@ -106,6 +106,12 @@ $receiptPreviewAutomationForbidden = @(
     'receipt-preview'
 )
 
+$serviceIdentifierAutomationForbidden = @(
+    'scanner support',
+    'scanner/busqueda',
+    'scanner/búsqueda'
+)
+
 $forbiddenPathNamePatterns = @(
     ('Bill' + 'ing_OS'),
     ('Hospital_Bill' + 'ing_OS'),
@@ -365,6 +371,15 @@ try {
         -Patterns $receiptPreviewAutomationForbidden `
         -Paths @(
             'frontend/e2e',
+            'qa/visual-smoke',
+            'qa/browser-smoke-2026-06-07',
+            'qa/BROWSER_SMOKE_EVIDENCE_2026_06_07.md'
+        )
+
+    Invoke-ForbiddenSearch `
+        -Label 'Lenguaje obsoleto de identificador de servicio encontrado en evidencia activa:' `
+        -Patterns $serviceIdentifierAutomationForbidden `
+        -Paths @(
             'qa/visual-smoke',
             'qa/BROWSER_SMOKE_EVIDENCE_2026_06_07.md'
         )

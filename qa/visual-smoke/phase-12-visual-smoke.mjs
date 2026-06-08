@@ -347,7 +347,7 @@ async function main() {
       }
     }
     if ((await cartItemCount(page)) < 1) {
-      findings.push(`billing-new-with-services: scanner/busqueda no agrego ${serviceName} al carrito.`);
+      findings.push(`billing-new-with-services: identificador/busqueda no agrego ${serviceName} al carrito.`);
     }
     await screenshot(page, 'billing-new-with-services');
 
