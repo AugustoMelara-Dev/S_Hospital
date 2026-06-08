@@ -23,6 +23,8 @@ function Protect-StartupText([string] $value) {
         $protected = $protected -replace [regex]::Escape(($env:USERPROFILE -replace "\\", "/")), "%USERPROFILE%"
     }
     $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?i)/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace '(?is)<(Task|Actions|Principals|Triggers|Settings)\b[^>]*>', "[xml-protegido]"
     return $protected
 }
 

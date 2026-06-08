@@ -74,6 +74,14 @@ function Invoke-InstallerCheck([string] $label, [string[]] $arguments, [int] $ex
         Add-Failure "$label exposed a local user profile path."
     }
 
+    if ($joined -match "(?i)/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"']+") {
+        Add-Failure "$label exposed an absolute local Unix path."
+    }
+
+    if ($joined -match '(?is)<(Task|Actions|Principals|Triggers|Settings)\b') {
+        Add-Failure "$label exposed raw scheduled-task XML."
+    }
+
     Add-Pass "$label completed with expected safety behavior"
 }
 
@@ -92,6 +100,9 @@ if ($installer -ne "") {
     Test-Contains $installer 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' "Installer uses current-user HKCU Run"
     Test-Contains $installer 'GetFolderPath\("Startup"\)' "Installer uses current-user Startup folder"
     Test-Contains $installer 'Protect-StartupText' "Installer sanitizes operator output"
+    Test-Contains $installer '\(\?i\)/\(var\|home\|srv\|opt\|tmp\|usr\|mnt\)/' "Installer redacts Unix local paths"
+    Test-Contains $installer '\(\?is\)<\(Task\|Actions\|Principals\|Triggers\|Settings\)\\b' "Installer redacts raw task XML"
+    Test-Contains $installer '\[xml-protegido\]' "Installer uses protected XML marker"
     Test-Contains $installer 'Modo WhatIf: no se crea archivo de inicio, no se cambia el registro y no se inicia la automatizacion de respaldos.' "Installer dry run states no writes/process start"
     Test-Contains $installer 'No borre respaldos, archivos \.env, volumenes Docker ni carpetas de datos' "Installer trap warns against destructive recovery"
     Test-Contains $installer 'Remove-Item\s+-LiteralPath\s+\$startupFile\s+-Force' "Installer uninstall only removes Startup file"
