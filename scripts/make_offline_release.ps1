@@ -75,6 +75,7 @@ $script:OfflineReleaseCriticalScripts = @(
     "validate_training_safety.ps1"
 )
 $script:OfflineReleaseCriticalDocs = @(
+    "00_README.md",
     "RELEASE_CHECKLIST.md",
     "manuales\GUIA_INSTALACION_OPERATIVA.md",
     "manuales\GUIA_RESPALDOS_Y_RESTAURACION.md",

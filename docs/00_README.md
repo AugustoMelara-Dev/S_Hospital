@@ -104,6 +104,8 @@ Under `manuales/`:
   Supervisor manual.
 - **[manuales/MANUAL_ADMINISTRADOR.md](manuales/MANUAL_ADMINISTRADOR.md)** -
   Administrator manual.
+- **[manuales/MANUAL_USUARIO_AREA.md](manuales/MANUAL_USUARIO_AREA.md)** -
+  Area-user manual for paid-service consultation.
 - **[manuales/GUIA_INSTALACION_OPERATIVA.md](manuales/GUIA_INSTALACION_OPERATIVA.md)** -
   Operational installation guide.
 - **[manuales/GUIA_RESPALDOS_Y_RESTAURACION.md](manuales/GUIA_RESPALDOS_Y_RESTAURACION.md)** -
@@ -125,7 +127,8 @@ old printed handouts still resolve.
 Under `qa/`:
 
 - **[qa/FINAL_PRODUCTION_HANDOFF_RESULT.md](../qa/FINAL_PRODUCTION_HANDOFF_RESULT.md)** -
-  the final handoff doc with `PRODUCTION_READY=YES`.
+  the final handoff doc. It remains `PRODUCTION_CANDIDATE` until LAN,
+  printer, startup, backup and training evidence are complete.
 - **[qa/FINAL_RESTORE_PROOF.md](../qa/FINAL_RESTORE_PROOF.md)** -
   restore evidence (PENDING until physical hardware).
 - **[qa/FINAL_CONCURRENCY_PROOF.md](../qa/FINAL_CONCURRENCY_PROOF.md)** -

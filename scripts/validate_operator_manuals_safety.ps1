@@ -61,6 +61,7 @@ $areaUser = Read-Manual "docs\manuales\MANUAL_USUARIO_AREA.md"
 $supervisor = Read-Manual "docs\manuales\MANUAL_SUPERVISOR.md"
 $administrator = Read-Manual "docs\manuales\MANUAL_ADMINISTRADOR.md"
 $operatorIndex = Read-Manual "docs\manuales\INDICE_OPERADOR.md"
+$docsIndex = Read-Manual "docs\00_README.md"
 $support = Read-Manual "docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md"
 $training = Read-Manual "docs\manuales\GUIA_CAPACITACION_SEGURA.md"
 $commonIncidents = Read-Manual "docs\manuales\RUNBOOK_INCIDENTES_COMUNES.md"
@@ -113,6 +114,13 @@ if ($operatorIndex -ne "") {
     Test-Contains $operatorIndex "(?i)Avisar a soporte local" "Operator index routes LAN errors to local support"
     Test-Contains $operatorIndex "MANUAL_USUARIO_AREA\.md" "Operator index links area-user manual"
     Test-Contains $operatorIndex "(?i)consulta de servicios pagados" "Operator index documents area-user workflow"
+}
+
+if ($docsIndex -ne "") {
+    Test-Contains $docsIndex "manuales/MANUAL_USUARIO_AREA\.md" "Docs index links area-user manual"
+    Test-Contains $docsIndex "(?i)Area-user manual|usuario de area|paid-service consultation" "Docs index explains area-user manual purpose"
+    Test-Contains $docsIndex "PRODUCTION_CANDIDATE" "Docs index preserves candidate handoff status"
+    Test-NotContains $docsIndex "PRODUCTION_READY=YES" "Docs index does not claim production ready before field evidence"
 }
 
 if ($support -ne "") {
