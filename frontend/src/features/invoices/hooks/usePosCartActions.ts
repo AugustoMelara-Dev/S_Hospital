@@ -55,7 +55,7 @@ export function usePosCartActions({
     const code = state.scanCode.trim();
     const refocusScanner = () => window.setTimeout(() => scannerInputRef.current?.focus(), 0);
     if (code === '') {
-      const message = 'Ingrese o escanee un codigo.';
+      const message = 'Ingrese o escanee un identificador de servicio.';
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
       onStatus(message);
       refocusScanner();
@@ -80,10 +80,10 @@ export function usePosCartActions({
       addToCart(service);
       dispatch({ type: 'SET_SCAN_CODE', payload: '' });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
-      onStatus(`Servicio agregado por codigo: ${service.name}.`);
+      onStatus(`Servicio agregado por identificador: ${service.name}.`);
       refocusScanner();
     } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudo buscar el codigo escaneado.');
+      const message = userSafeErrorMessage(error, 'No se pudo buscar el identificador de servicio.');
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
       onStatus(message);
       refocusScanner();

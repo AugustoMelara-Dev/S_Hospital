@@ -4106,3 +4106,8 @@ Criterio de verificacion: NewInvoiceView.test valida el estado visible de cobro 
 Contexto: Historial todavia describia el recibo como vista previa y el selector como tamano de vista previa, aunque la operacion real es revisar o reimprimir un recibo institucional con auditoria al imprimir.
 Decision: el diccionario de Historial habla de recibo institucional listo para revisar, el selector accesible usa tamano del recibo institucional y ReceiptPreview expone un panel de recibo institucional a tecnologias asistivas.
 Criterio de verificacion: InvoiceHistoryView.test cubre el modal de recibo en Historial, ReceiptPreview.a11y.test valida el label accesible y es-HN.workflow.test bloquea que el copy de reimpresion vuelva a usar vista previa.
+
+## 2026-06-07 - busqueda por identificador no usa codigo en caja
+Contexto: el flujo de identificador de servicio en Nueva factura todavia podia mostrar mensajes de caja con la palabra codigo al validar entrada vacia, confirmar agregado o manejar fallos de busqueda.
+Decision: usePosCartActions conserva el contrato tecnico de busqueda por `code`, pero todos los mensajes visibles del flujo hablan de identificador de servicio o identificador.
+Criterio de verificacion: usePosCartActions.test cubre entrada vacia, agregado correcto y error tecnico filtrado, y bloquea que los mensajes de operador vuelvan a mencionar codigo o detalles tecnicos.
