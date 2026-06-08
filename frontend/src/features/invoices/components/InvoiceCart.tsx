@@ -139,15 +139,26 @@ export function InvoiceCart({
                   </div>
 
                   {item.service.special_rule_code === ERYTHROPOIETIN_RULE && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <Checkbox
-                        id={`dialysis-${index}`}
-                        checked={item.dialysisPrescription}
-                        onCheckedChange={(checked) => onUpdateDialysisPrescription(index, checked === true)}
-                      />
-                      <label htmlFor={`dialysis-${index}`} className="cursor-pointer text-muted-foreground">
-                        Receta de dialisis (gratis)
-                      </label>
+                    <div className="flex flex-col gap-1 rounded-md bg-muted/50 px-2 py-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id={`dialysis-${index}`}
+                          checked={item.dialysisPrescription}
+                          onCheckedChange={(checked) => onUpdateDialysisPrescription(index, checked === true)}
+                          aria-describedby={`dialysis-help-${index}`}
+                        />
+                        <label htmlFor={`dialysis-${index}`} className="cursor-pointer font-medium text-foreground">
+                          Marcar receta de diálisis: total L. 0.00
+                        </label>
+                      </div>
+                      <p id={`dialysis-help-${index}`} className="pl-6 text-muted-foreground">
+                        Use esta opción solo cuando el paciente presente receta de diálisis.
+                      </p>
+                      {isFree && (
+                        <p className="pl-6 font-medium text-emerald-700">
+                          Aplicado: este servicio queda gratis.
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>

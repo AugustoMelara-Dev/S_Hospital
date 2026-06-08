@@ -1,0 +1,80 @@
+{
+  "generated_at": "2026-06-08T06:40:14.813Z",
+  "mode": "mocked-e2e",
+  "note": "Capturas con API mockeada; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.",
+  "screenshots": [
+    {
+      "name": "dashboard-light",
+      "path": "qa/browser-smoke-2026-06-08/dashboard-light.png",
+      "route": "/dashboard",
+      "theme": "light"
+    },
+    {
+      "name": "dashboard-dark",
+      "path": "qa/browser-smoke-2026-06-08/dashboard-dark.png",
+      "route": "/dashboard",
+      "theme": "dark"
+    },
+    {
+      "name": "cashbox-open-light",
+      "path": "qa/browser-smoke-2026-06-08/cashbox-open-light.png",
+      "route": "/cashbox",
+      "theme": "light"
+    },
+    {
+      "name": "billing-new-empty-light",
+      "path": "qa/browser-smoke-2026-06-08/billing-new-empty-light.png",
+      "route": "/billing/new",
+      "theme": "light"
+    },
+    {
+      "name": "billing-new-cart-light",
+      "path": "qa/browser-smoke-2026-06-08/billing-new-cart-light.png",
+      "route": "/billing/new",
+      "theme": "light"
+    },
+    {
+      "name": "institutional-receipt-light",
+      "path": "qa/browser-smoke-2026-06-08/institutional-receipt-light.png",
+      "route": "/billing/new",
+      "theme": "light"
+    },
+    {
+      "name": "institutional-receipt-letter-light",
+      "path": "qa/browser-smoke-2026-06-08/institutional-receipt-letter-light.png",
+      "route": "/billing/new",
+      "theme": "light"
+    },
+    {
+      "name": "institutional-receipt-a5-light",
+      "path": "qa/browser-smoke-2026-06-08/institutional-receipt-a5-light.png",
+      "route": "/billing/new",
+      "theme": "light"
+    },
+    {
+      "name": "institutional-receipt-dark",
+      "path": "qa/browser-smoke-2026-06-08/institutional-receipt-dark.png",
+      "route": "/billing/new",
+      "theme": "dark"
+    },
+    {
+      "name": "reports-admin-light",
+      "path": "qa/browser-smoke-2026-06-08/reports-admin-light.png",
+      "route": "/reports",
+      "theme": "light"
+    },
+    {
+      "name": "reports-admin-dark",
+      "path": "qa/browser-smoke-2026-06-08/reports-admin-dark.png",
+      "route": "/reports",
+      "theme": "dark"
+    },
+    {
+      "name": "backups-pending-light",
+      "path": "qa/browser-smoke-2026-06-08/backups-pending-light.png",
+      "route": "/backups",
+      "theme": "light"
+    }
+  ],
+  "console_issues": []
+}

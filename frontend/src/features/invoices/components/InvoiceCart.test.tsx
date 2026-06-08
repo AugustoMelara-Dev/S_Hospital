@@ -27,8 +27,9 @@ describe('InvoiceCart', () => {
       <InvoiceCart
         items={[cartItemFixture({
           service: serviceFixture({ special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION' }),
+          dialysisPrescription: true,
         })]}
-        preview={{ subtotal: '25.00', tax: '0.00', total: '25.00' }}
+        preview={{ subtotal: '0.00', tax: '0.00', total: '0.00' }}
         taxRate="15.00"
         onUpdateQuantity={vi.fn()}
         onUpdateDialysisPrescription={vi.fn()}
@@ -37,7 +38,9 @@ describe('InvoiceCart', () => {
       />,
     );
 
-    expect(screen.getByLabelText(/receta de dialisis/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/marcar receta de diálisis: total l\. 0\.00/i)).toBeInTheDocument();
+    expect(screen.getByText(/use esta opción solo cuando el paciente presente receta de diálisis/i)).toBeInTheDocument();
+    expect(screen.getByText(/aplicado: este servicio queda gratis/i)).toBeInTheDocument();
   });
 });
 

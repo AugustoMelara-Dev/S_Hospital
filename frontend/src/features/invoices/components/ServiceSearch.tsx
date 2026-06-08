@@ -246,7 +246,7 @@ export function ServiceSearch({
                   {isErythropoietin && (
                     <div className="absolute bottom-1 right-3">
                       <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                        Con receta dialisis = Gratis
+                        Gratis solo con receta de diálisis
                       </span>
                     </div>
                   )}
