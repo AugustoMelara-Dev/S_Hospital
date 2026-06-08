@@ -20,8 +20,11 @@ function Protect-TrainingText([string] $value) {
         $protected = $protected -replace [regex]::Escape($env:USERPROFILE), "%USERPROFILE%"
         $protected = $protected -replace [regex]::Escape(($env:USERPROFILE -replace "\\", "/")), "%USERPROFILE%"
     }
-    $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
+    $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD|HOSPITAL_LICENSE_SALT)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
     $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?i)/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?is)<(Task|Actions|Principals|Triggers|Settings)\b.*?</\1>", "[xml-protegido]"
+    $protected = $protected -replace "(?is)<(Task|Actions|Principals|Triggers|Settings)\b[^>]*>", "[xml-protegido]"
 
     return $protected
 }
@@ -89,9 +92,15 @@ $quickAdminTraining = Read-RequiredText "docs\TRAINING_ADMIN.md"
 $userManual = Read-RequiredText "docs\Manual_Usuario.html"
 $helpView = Read-RequiredText "frontend\src\features\help\HelpView.tsx"
 $helpViewTest = Read-RequiredText "frontend\src\features\help\HelpView.test.tsx"
+$trainingSafetyScript = Read-RequiredText "scripts\validate_training_safety.ps1"
 
 $combinedDocs = "$safeTraining`n$trainingChecklist`n$areaUserManual`n$localValidationScript`n$operativeValidationFlow`n$lanClientProofTemplate`n$trainingAcceptanceTemplate`n$quickAdminTraining`n$userManual"
 $combinedUi = "$helpView`n$helpViewTest"
+
+Assert-Contains "Training safety output redacts license salt assignments" $trainingSafetyScript 'hospital_license_salt'
+Assert-Contains "Training safety output redacts Unix local paths" $trainingSafetyScript '\(\?i\)/\(var\|home\|srv\|opt\|tmp\|usr\|mnt\)/'
+Assert-Contains "Training safety output redacts raw task XML" $trainingSafetyScript '\(\?is\)<\(task\|actions\|principals\|triggers\|settings\)\\b'
+Assert-Contains "Training safety output uses protected XML marker" $trainingSafetyScript '\[xml-protegido\]'
 
 Assert-Contains "Training docs forbid practicing in production" $combinedDocs 'no use la base de produccion para practicar|no en\s+la base real de produccion'
 Assert-Contains "Training docs require isolated environment or disposable database" $combinedDocs '(entorno|instalacion).{0,60}(separad|aislad)|base descartable'
@@ -148,7 +157,7 @@ Assert-Contains "Training acceptance template preserves physical blockers" $trai
 foreach ($item in @(
     @{ Pattern = '(?i)APP_KEY\s*[:=]\s*[^\s`]+'; Message = 'Training acceptance template must not contain APP_KEY-like assignments' },
     @{ Pattern = '(?i)DB_PASSWORD\s*[:=]\s*[^\s`]+'; Message = 'Training acceptance template must not contain DB_PASSWORD-like assignments' },
-    @{ Pattern = '(?i)(TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^\s`]+'; Message = 'Training acceptance template must not contain secret-like assignments' },
+    @{ Pattern = '(?i)(TOKEN|SECRET|MAIL_PASSWORD|HOSPITAL_LICENSE_SALT)\s*[:=]\s*[^\s`]+'; Message = 'Training acceptance template must not contain secret-like assignments' },
     @{ Pattern = '(?i)[A-Z]:\\(?![\\])'; Message = 'Training acceptance template must not contain absolute Windows paths' }
 )) {
     if ($trainingAcceptanceTemplate -match $item.Pattern) {

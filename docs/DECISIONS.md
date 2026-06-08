@@ -4,6 +4,23 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Guard de capacitacion protege salida
+
+Contexto: `validate_training_safety.ps1` valida manuales, pantalla de
+Ayuda y plantilla de aceptacion para que la capacitacion no toque la
+base real ni exponga datos de pacientes, pero su salida solo cubria
+secretos comunes y rutas Windows.
+
+Decision: `Protect-TrainingText` tambien redacta
+`HOSPITAL_LICENSE_SALT`, rutas locales Unix y XML crudo de tareas antes
+de imprimir hallazgos. El guard se autoverifica para conservar esos
+marcadores seguros.
+
+Criterio de verificacion: `validate_training_safety.ps1`,
+`validate_training_acceptance_proof.ps1 -AllowPendingFinalField`,
+`validate_production_ready_gate_safety.ps1`, `check-branding.ps1` y
+`git diff --check` deben pasar antes de regenerar el paquete offline.
+
 ## 2026-06-08 - Guard de license salt protege salida
 
 Contexto: `validate_production_license_salt_guard.ps1` ejecuta `docker
