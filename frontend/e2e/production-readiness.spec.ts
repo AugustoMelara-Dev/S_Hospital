@@ -142,8 +142,8 @@ async function setVisualTheme(page: Page, theme: 'light' | 'dark') {
 }
 
 async function selectReceiptPaper(page: Page, optionName: string) {
-  const preview = page.getByLabel('Vista previa del recibo');
-  const trigger = preview.locator('[aria-label="Tamano del recibo"]');
+  const receiptPanel = page.getByLabel('Panel de recibo institucional');
+  const trigger = receiptPanel.locator('[aria-label="Tamano del recibo"]');
   await expect(trigger).toBeVisible();
   await trigger.click();
   const option = page.getByRole('option', { name: optionName, exact: true });
@@ -838,18 +838,20 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByLabel(/monto recibido/i).fill('25.00');
   await expect(page.getByText(/ingrese el monto recibido/i)).toBeHidden();
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
-  await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
+  const receiptDialog = page.getByRole('dialog', { name: 'Recibo institucional' });
+  const receiptDocument = receiptDialog.locator('.institutional-receipt');
+  await expect(receiptDialog).toBeVisible();
   await expect(page.getByText('Media carta')).toBeVisible();
-  await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-half_letter/);
-  await captureScreen(page, 'receipt-preview-light', 'light');
+  await expect(receiptDocument).toHaveClass(/receipt-half_letter/);
+  await captureScreen(page, 'institutional-receipt-light', 'light');
   await selectReceiptPaper(page, 'Carta');
-  await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-letter/);
-  await captureScreen(page, 'receipt-preview-letter-light', 'light');
+  await expect(receiptDocument).toHaveClass(/receipt-letter/);
+  await captureScreen(page, 'institutional-receipt-letter-light', 'light');
   await selectReceiptPaper(page, 'A5');
-  await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
-  await captureScreen(page, 'receipt-preview-a5-light', 'light');
+  await expect(receiptDocument).toHaveClass(/receipt-a5/);
+  await captureScreen(page, 'institutional-receipt-a5-light', 'light');
   await setVisualTheme(page, 'dark');
-  await captureScreen(page, 'receipt-preview-dark', 'dark');
+  await captureScreen(page, 'institutional-receipt-dark', 'dark');
   await setVisualTheme(page, 'light');
   await page.getByRole('button', { name: /cerrar modal/i }).click();
   await page.getByRole('button', { name: /crear otra factura/i }).click();
@@ -862,7 +864,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByLabel(/receta de dialisis/i)).toHaveAttribute('aria-checked', 'true');
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await page.getByRole('button', { name: /confirmar emisi.n/i }).click();
-  await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Recibo institucional' })).toBeVisible();
   await expect(page.getByText('L. 0.00').first()).toBeVisible();
   await page.getByRole('button', { name: /cerrar modal/i }).click();
   await page.getByRole('button', { name: /crear otra factura/i }).click();
@@ -878,7 +880,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /recibo - 000-001-01-00000001/i })).toBeVisible();
   await page.locator('[aria-label="Tamano del recibo"]').click();
   await page.getByRole('option', { name: 'A5', exact: true }).click();
-  await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
+  await expect(page.locator('.institutional-receipt')).toHaveClass(/receipt-a5/);
 
   await page.getByRole('button', { name: /cerrar modal/i }).click();
   await page.getByRole('button', { name: /abrir menu de usuario/i }).click();

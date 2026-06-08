@@ -4116,3 +4116,8 @@ Criterio de verificacion: usePosCartActions.test cubre entrada vacia, agregado c
 Contexto: guiones de validacion, checklist de capacitacion y plantilla LAN todavia usaban lenguaje de revision previa, aunque caja debe confirmar un recibo institucional listo para imprimir o reimprimir.
 Decision: documentos activos de capacitacion/validacion y plantilla LAN usan recibo institucional; validate_training_safety cubre esos documentos y validate_lan_client_proof exige el check Institutional receipt opens.
 Criterio de verificacion: validate_training_safety.ps1, validate_installation_docs_safety.ps1 y la busqueda de frases heredadas pasan sin textos operativos obsoletos fuera de aserciones negativas.
+
+## 2026-06-07 - evidencia automatizada nombra recibo institucional
+Contexto: los E2E y smoke visuales seguian buscando o nombrando el modal como vista previa del recibo, aunque la UI actual y la capacitacion ya exigen recibo institucional.
+Decision: los selectores y capturas activas usan Recibo institucional o Panel de recibo institucional; check-branding bloquea que la automatizacion/evidencia activa vuelva a usar receipt preview o vista previa del recibo.
+Criterio de verificacion: check-branding.ps1, production-readiness.spec.ts, real-smoke.spec.ts y phase-12-visual-smoke.mjs quedan alineados con los labels accesibles actuales del recibo.

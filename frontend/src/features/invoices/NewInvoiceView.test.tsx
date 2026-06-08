@@ -154,7 +154,7 @@ describe('NewInvoiceView', () => {
     expect(screen.queryByRole('heading', { name: /reportes/i })).not.toBeInTheDocument();
   });
 
-  it('shows receipt preview after registering payment', async () => {
+  it('shows the institutional receipt after registering payment', async () => {
     window.history.pushState({}, '', '/billing/new');
     const service = {
       id: 11,

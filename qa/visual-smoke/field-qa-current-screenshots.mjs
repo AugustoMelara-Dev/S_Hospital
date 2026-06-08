@@ -159,10 +159,10 @@ for (const theme of themes) {
     await viewReceipt.click();
     await waitSettled(page);
     await page.waitForTimeout(500);
-    const screenshot = path.join(outputDir, `${String(index).padStart(2, '0')}-receipt-preview-${theme}.png`);
+    const screenshot = path.join(outputDir, `${String(index).padStart(2, '0')}-institutional-receipt-${theme}.png`);
     await page.screenshot({ path: screenshot, fullPage: false });
     report.push({
-      screen: 'receipt-preview',
+      screen: 'institutional-receipt',
       route: '/invoices',
       theme,
       screenshot: evidencePath(screenshot),
@@ -170,7 +170,7 @@ for (const theme of themes) {
     });
   } else {
     report.push({
-      screen: 'receipt-preview',
+      screen: 'institutional-receipt',
       route: '/invoices',
       theme,
       screenshot: null,

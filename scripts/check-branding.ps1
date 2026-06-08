@@ -98,6 +98,14 @@ $commercialProductSurfaceForbidden = @(
     'Premium'
 )
 
+$receiptPreviewAutomationForbidden = @(
+    'Vista previa del recibo',
+    'vista previa del recibo',
+    'receipt preview',
+    'receipt previews',
+    'receipt-preview'
+)
+
 $forbiddenPathNamePatterns = @(
     ('Bill' + 'ing_OS'),
     ('Hospital_Bill' + 'ing_OS'),
@@ -350,6 +358,15 @@ try {
         -Paths @(
             'frontend/src',
             'backend/app'
+        )
+
+    Invoke-ForbiddenSearch `
+        -Label 'Lenguaje obsoleto de recibo encontrado en automatizacion/evidencia activa:' `
+        -Patterns $receiptPreviewAutomationForbidden `
+        -Paths @(
+            'frontend/e2e',
+            'qa/visual-smoke',
+            'qa/BROWSER_SMOKE_EVIDENCE_2026_06_07.md'
         )
 
     Write-Host 'Revision de branding completada sin hallazgos.'

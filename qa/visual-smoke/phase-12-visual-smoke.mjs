@@ -20,7 +20,7 @@ const routeScreens = {
   'billing-new-empty': '/billing/new',
   'billing-new-with-services': '/billing/new',
   'billing-confirm-modal': '/billing/new',
-  'receipt-preview': '/billing/new',
+  'institutional-receipt': '/billing/new',
   cashbox: '/cashbox',
   catalog: '/catalog',
   'invoices-history': '/invoices',
@@ -401,8 +401,8 @@ async function main() {
       await previewCheckbox.click();
     }
     await page.getByRole('button', { name: /registrar cobro y ver recibo|confirmar cobro|registrar cobro e imprimir/i }).click();
-    await page.getByRole('dialog', { name: /vista previa del recibo/i }).waitFor({ state: 'visible', timeout: 15000 });
-    await screenshot(page, 'receipt-preview');
+    await page.getByRole('dialog', { name: /recibo institucional/i }).waitFor({ state: 'visible', timeout: 15000 });
+    await screenshot(page, 'institutional-receipt');
     await closeOperationalDialogIfPresent(page);
 
     await navigate(page, routeScreens.cashbox, 'cashbox');
@@ -435,7 +435,7 @@ async function main() {
       await page.getByRole('button', { name: /reimprimir/i }).click();
     }
     await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
-    await page.getByLabel(/vista previa del recibo/i).waitFor({ state: 'visible', timeout: 15000 });
+    await page.getByLabel(/panel de recibo institucional/i).waitFor({ state: 'visible', timeout: 15000 });
     await closeOperationalDialogIfPresent(page);
 
     await navigate(page, routeScreens.catalog, 'catalog');
