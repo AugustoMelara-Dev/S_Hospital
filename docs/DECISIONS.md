@@ -4,6 +4,24 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Validador LAN protege salida
+
+Contexto: `validate_lan_client.ps1` se ejecuta desde una segunda
+computadora de la LAN final y puede crear la evidencia que bloquea
+`PRODUCTION_READY`, pero su sanitizacion solo ocultaba rutas Windows.
+
+Decision: `Protect-LanText` reemplaza secretos, rutas locales Unix y XML
+crudo de tareas por marcadores seguros antes de imprimir errores o rutas
+de evidencia. `test_validate_lan_client_safety.ps1` protege esa cobertura
+junto con las pruebas de `WhatIfOnly`, URL con credenciales y evidencia
+confinada a `qa/`.
+
+Criterio de verificacion: `test_validate_lan_client_safety.ps1`,
+`validate_lan_recovery_safety.ps1`, `validate_lan_client_proof.ps1
+-AllowPendingFinalField`, `validate_production_ready_gate_safety.ps1`,
+`check-branding.ps1` y `git diff --check` deben pasar antes de
+regenerar el paquete offline.
+
 ## 2026-06-08 - Inicializador de evidencias protege salida
 
 Contexto: `init_production_proofs.ps1` prepara los siete archivos de

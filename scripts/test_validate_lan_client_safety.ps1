@@ -7,6 +7,13 @@ if (-not (Test-Path -LiteralPath $validator -PathType Leaf)) {
     throw "No se encontro scripts\validate_lan_client.ps1."
 }
 
+$validatorContent = Get-Content -LiteralPath $validator -Raw
+if ($validatorContent -notmatch '\[redacted\]' -or
+    $validatorContent -notmatch '\(\?i\)/\(var\|home\|srv\|opt\|tmp\|usr\|mnt\)/' -or
+    $validatorContent -notmatch '\[xml-protegido\]') {
+    throw "validate_lan_client.ps1 debe redactar secretos, rutas Unix locales y XML de tareas."
+}
+
 $fixtureRoot = Join-Path ([System.IO.Path]::GetTempPath()) "s-hospital-lan-validation-$([System.Guid]::NewGuid().ToString('N'))"
 
 function Invoke-Validator([string[]] $Arguments) {
