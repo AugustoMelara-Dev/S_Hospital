@@ -307,6 +307,7 @@ Test-Template `
         "Cashier role practiced",
         "Supervisor role practiced",
         "Administrator role practiced",
+        "Area-user role practiced",
         "Server unavailable",
         "LAN down",
         "Printer not responding",

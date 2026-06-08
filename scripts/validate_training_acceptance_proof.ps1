@@ -24,6 +24,18 @@ if ($resolvedProofPath) {
 
 $failures = New-Object System.Collections.Generic.List[string]
 
+function Read-RequiredRepositoryFile {
+    param([string] $RelativePath)
+
+    $path = Join-Path $ProjectRoot $RelativePath
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        Add-Failure "Missing required repository file: $RelativePath"
+        return ""
+    }
+
+    return Get-Content -LiteralPath $path -Raw -Encoding UTF8
+}
+
 function Protect-TrainingAcceptanceText([string] $value) {
     if ([string]::IsNullOrWhiteSpace($value)) {
         return $value
@@ -88,6 +100,19 @@ function Test-ProofHasCheckedItem([string] $content, [string] $checkLabel) {
         Add-Pass "Checked evidence item: $checkLabel"
     } else {
         Add-Failure "Complete a checked evidence item for '$checkLabel' in qa\TRAINING_ACCEPTANCE_PROOF.md."
+    }
+}
+
+function Test-RepositoryGuardIncludesAreaRole {
+    param(
+        [string] $GuardName,
+        [string] $Content
+    )
+
+    if ($Content -match [regex]::Escape("Area-user role practiced")) {
+        Add-Pass "$GuardName requires area-user role training"
+    } else {
+        Add-Failure "$GuardName must require area-user role training."
     }
 }
 
@@ -224,6 +249,14 @@ if ([string]::IsNullOrWhiteSpace($ProofPath) -or -not (Test-Path -LiteralPath $P
         }
     }
 }
+
+Test-RepositoryGuardIncludesAreaRole `
+    -GuardName "production_readiness_preflight.ps1" `
+    -Content (Read-RequiredRepositoryFile "scripts\production_readiness_preflight.ps1")
+
+Test-RepositoryGuardIncludesAreaRole `
+    -GuardName "validate_field_proof_templates.ps1" `
+    -Content (Read-RequiredRepositoryFile "scripts\validate_field_proof_templates.ps1")
 
 if ($failures.Count -gt 0) {
     Write-Host ""

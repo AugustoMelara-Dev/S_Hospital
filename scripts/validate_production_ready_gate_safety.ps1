@@ -167,7 +167,8 @@ foreach ($requiredCheck in @(
     "Disposable restore database",
     "Concurrent invoice emission",
     "supervised training acceptance",
-    "Training did not use the production database"
+    "Training did not use the production database",
+    "Area-user role practiced"
 )) {
     Assert-Literal "Preflight keeps required proof check: $requiredCheck" `
         $preflight $requiredCheck
