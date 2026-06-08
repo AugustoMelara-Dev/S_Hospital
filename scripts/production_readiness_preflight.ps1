@@ -304,7 +304,14 @@ function Test-ProofDoesNotExposeSensitiveEvidence([string] $path, [string] $proo
     return $true
 }
 
-function Test-ProofFile([string] $path, [string] $proofName, [string[]] $requiredFields, [string[]] $requiredChecks, [bool] $RequireCheckResult = $true) {
+function Test-ProofFile(
+    [string] $path,
+    [string] $proofName,
+    [string[]] $requiredFields,
+    [string[]] $requiredChecks,
+    [bool] $RequireCheckResult = $true,
+    [string[]] $ForbiddenFinalProofPatterns = @()
+) {
     if (-not (Test-Path -LiteralPath $path)) {
         Add-Failure "Missing $path with real $proofName evidence."
         return
@@ -315,6 +322,13 @@ function Test-ProofFile([string] $path, [string] $proofName, [string[]] $require
 
     if (-not (Test-ProofDoesNotExposeSensitiveEvidence $path $proofName $content)) {
         return
+    }
+
+    foreach ($pattern in $ForbiddenFinalProofPatterns) {
+        if ($content -match $pattern) {
+            Add-Failure "$path contains local/development evidence markers and cannot be used as final $proofName evidence."
+            return
+        }
     }
 
     if ($normalized.Trim().Length -lt 300) {
@@ -704,6 +718,12 @@ if ($AllowMissingPhysicalProof) {
             "Migration table",
             "Services table",
             "Core counts"
+        ) `
+        -ForbiddenFinalProofPatterns @(
+            '(?i)Docker/MariaDB development',
+            '(?i)current Docker/MariaDB development environment only',
+            '(?i)Final-server restore validation.*still required',
+            '(?i)installed hospital PC is still required'
         )
 
     Test-ProofFile `
@@ -747,6 +767,13 @@ if ($AllowMissingPhysicalProof) {
             "Double cash-session open",
             "Concurrent invoice emission",
             "Double payment"
+        ) `
+        -ForbiddenFinalProofPatterns @(
+            '(?i)http://127\.0\.0\.1:8000',
+            '(?i)Target environment:\s*local',
+            '(?i)"target_env"\s*:\s*"local"',
+            '(?i)local Docker/MariaDB',
+            '(?i)local validation target'
         )
 
     Test-ProofFile `

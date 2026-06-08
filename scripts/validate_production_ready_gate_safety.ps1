@@ -187,6 +187,22 @@ foreach ($requiredCheck in @(
         $preflight $requiredCheck
 }
 
+foreach ($finalProofLocalMarker in @(
+    "ForbiddenFinalProofPatterns",
+    "Docker/MariaDB development",
+    "current Docker/MariaDB development environment only",
+    "Final-server restore validation.*still required",
+    "installed hospital PC is still required",
+    "http://127\.0\.0\.1:8000",
+    "Target environment:\s*local",
+    '"target_env"\s*:\s*"local"',
+    "local Docker/MariaDB",
+    "local validation target"
+)) {
+    Assert-Literal "Preflight rejects local-only final proof marker: $finalProofLocalMarker" `
+        $preflight $finalProofLocalMarker
+}
+
 foreach ($gateTerm in @(
     '$allProofsCompleted',
     '$allAutomatedGuardsPassed',
