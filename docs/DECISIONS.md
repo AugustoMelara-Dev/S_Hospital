@@ -4196,3 +4196,8 @@ Criterio de verificacion: ReportsTest cubre consulta por area propia, bloqueo de
 Contexto: el backend ya permitia que un usuario de area consultara servicios pagados de su propia area, pero sin pantalla dedicada el flujo quedaba invisible o podia confundirse con reportes gerenciales.
 Decision: el frontend agrega la ruta `/area/services` y la navegacion "Servicios pagados" protegida por `areas.paid_services.view`. El usuario con solo ese permiso entra directo a esa pantalla; la vista muestra rango de fechas, servicios pagados, paciente, factura, metodo y valor desde snapshots, sin IDs internos ni acciones clinicas.
 Criterio de verificacion: AreaPaidServicesView.test cubre carga de servicios del area asignada, estado de usuario sin area, bloqueo de rangos mayores a 31 dias y ausencia de identificadores internos visibles.
+
+## 2026-06-08 - Evidencia controlada cubre consulta de area
+Contexto: la pantalla `/area/services` ya existia, pero la evidencia visual vigente no la recorria en navegador ni en modo oscuro. Eso dejaba sin prueba visual el flujo de usuarios de laboratorio/rayos X que consultan servicios pagados.
+Decision: production-readiness.spec.ts entra con un usuario de area, valida que no vea reportes gerenciales y captura `area-services-light` y `area-services-dark`. validate_browser_smoke_evidence.ps1 exige ambas capturas con ruta `/area/services`, tema correcto y archivo no vacio.
+Criterio de verificacion: `npm.cmd exec playwright test e2e/production-readiness.spec.ts --project=chromium` debe pasar; al generar capturas en `qa/browser-smoke-2026-06-08`, `validate_browser_smoke_evidence.ps1` debe reportar `BROWSER_SMOKE_EVIDENCE: YES` incluyendo las dos capturas de area.

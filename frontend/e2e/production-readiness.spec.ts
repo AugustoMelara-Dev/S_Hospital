@@ -67,6 +67,21 @@ const adminUser = {
   must_change_password: false,
 };
 
+const areaUser = {
+  id: 3,
+  name: 'Tecnico Laboratorio',
+  email: 'laboratorio.validacion@hospital-san-isidro.local',
+  username: 'area.laboratorio',
+  active: true,
+  area_id: 1,
+  area: { id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true },
+  roles: ['area'],
+  permissions: [
+    'areas.paid_services.view',
+  ],
+  must_change_password: false,
+};
+
 const services = [
   {
     id: 10,
@@ -145,10 +160,22 @@ async function selectReceiptPaper(page: Page, optionName: string) {
   const receiptPanel = page.getByLabel('Panel de recibo institucional');
   const trigger = receiptPanel.locator('[aria-label="Tamano del recibo"]');
   await expect(trigger).toBeVisible();
-  await trigger.click();
-  const option = page.getByRole('option', { name: optionName, exact: true });
-  await expect(option).toBeVisible();
-  await option.click();
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await trigger.click({ timeout: 3_000 });
+      const option = page.getByRole('option', { name: optionName, exact: true }).last();
+      await expect(option).toBeVisible({ timeout: 3_000 });
+      await option.click({ timeout: 3_000 });
+      await expect(trigger).toContainText(optionName);
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
 }
 
 async function writeCaptureReport(consoleIssues: string[] = []) {
@@ -170,7 +197,7 @@ async function writeCaptureReport(consoleIssues: string[] = []) {
 }
 
 async function installApiMocks(page: Page) {
-  let currentUser = cashierUser;
+  let currentUser: typeof cashierUser | typeof adminUser | typeof areaUser | null = cashierUser;
   let currentCashSession: Record<string, unknown> | null = null;
   let invoiceCounter = 1;
   const invoices: Record<number, Record<string, unknown>> = {};
@@ -292,14 +319,20 @@ async function installApiMocks(page: Page) {
     } catch {
       payload = {};
     }
-    currentUser = payload.login === 'admin.validacion' ? adminUser : cashierUser;
+    if (payload.login === 'admin.validacion') {
+      currentUser = adminUser;
+    } else if (payload.login === 'area.laboratorio') {
+      currentUser = areaUser;
+    } else {
+      currentUser = cashierUser;
+    }
     return json(route, { data: currentUser });
   });
 
   await page.route('**/api/auth/me', (route) => json(route, { data: currentUser }));
   await page.route('**/api/auth/session', (route) => json(route, { data: currentUser }));
   await page.route('**/api/auth/logout', (route) => {
-    currentUser = cashierUser;
+    currentUser = null;
     return json(route, { ok: true });
   });
   await page.route('**/api/categories**', (route) => json(route, {
@@ -308,7 +341,29 @@ async function installApiMocks(page: Page) {
       { id: 2, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 2 },
     ],
   }));
-  await page.route('**/api/areas**', (route) => json(route, { data: [] }));
+  await page.route('**/api/areas/1/paid-services**', (route) => json(route, {
+    data: {
+      area: 'Laboratorio',
+      date_from: operationalDate,
+      date_to: operationalDate,
+      services: [
+        {
+          invoice_number: '000-001-01-00000077',
+          patient_name: 'Maria Lopez',
+          issued_at: operationalIssuedAt,
+          paid_at: operationalPaidAt,
+          service_name: 'Glucosa',
+          category_name: 'Laboratorio',
+          area_name: 'Laboratorio',
+          quantity: '1.00',
+          amount: '15.00',
+          payment_methods: ['cash'],
+        },
+      ],
+      meta: { page: 1, per_page: 15, total: 1 },
+    },
+  }));
+  await page.route(/\/api\/areas(?:\?|$)/, (route) => json(route, { data: [{ id: 1, name: 'Laboratorio', slug: 'laboratorio', active: true }] }));
   await page.route('**/api/service-areas**', (route) => json(route, { data: [] }));
   await page.route('**/api/services**', (route) => json(route, { data: services, meta: { total: services.length } }));
   await page.route('**/api/cash-sessions/current', (route) => json(route, { data: currentCashSession }));
@@ -319,7 +374,7 @@ async function installApiMocks(page: Page) {
   await page.route('**/api/cash-sessions/open', async (route) => {
     currentCashSession = {
       id: 7,
-      user_id: currentUser.id,
+      user_id: currentUser?.id ?? cashierUser.id,
       opening_amount: '500.00',
       closing_amount: null,
       expected_amount: null,
@@ -397,7 +452,7 @@ async function installApiMocks(page: Page) {
           id: 50,
           invoice_id: invoiceId,
           cash_session_id: 7,
-          user_id: currentUser.id,
+          user_id: currentUser?.id ?? cashierUser.id,
           method: 'cash',
           amount: invoice.total,
           reference: null,
@@ -526,7 +581,7 @@ async function installApiMocks(page: Page) {
         checksum_sha256: null,
         status: 'pending',
         type: 'manual',
-        created_by: currentUser.id,
+        created_by: currentUser?.id ?? null,
         completed_at: null,
         created_at: '2026-05-17T10:15:00-06:00',
         updated_at: '2026-05-17T10:15:00-06:00',
@@ -860,8 +915,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByLabel(/nombre del paciente/i).fill('Jose Perez');
   await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
-  await page.getByLabel(/receta de dialisis/i).click();
-  await expect(page.getByLabel(/receta de dialisis/i)).toHaveAttribute('aria-checked', 'true');
+  await page.getByLabel(/receta de di[aá]lisis/i).click();
+  await expect(page.getByLabel(/receta de di[aá]lisis/i)).toHaveAttribute('aria-checked', 'true');
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await page.getByRole('button', { name: /confirmar emisi.n/i }).click();
   await expect(page.getByRole('dialog', { name: 'Recibo institucional' })).toBeVisible();
@@ -908,6 +963,21 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await expect(page.getByText(/Todo bien|Requiere revisi[oó]n/i)).toHaveCount(0);
   await expect(page.getByRole('table').getByText('Pendiente', { exact: true })).toBeVisible();
   await captureScreen(page, 'backups-pending-light', 'light');
+
+  await page.getByRole('button', { name: /abrir menu de usuario/i }).click();
+  await page.getByText(/cerrar sesi.n/i).click();
+  await loginAs(page, 'area.laboratorio');
+  await expect(page.getByRole('heading', { name: /^servicios pagados$/i })).toBeVisible();
+  await expect(page.getByLabel('Navegacion principal').getByRole('link', { name: /servicios pagados/i })).toBeVisible();
+  await expect(page.getByLabel('Navegacion principal').getByRole('link', { name: /reportes/i })).toHaveCount(0);
+  await expect(page.getByText('000-001-01-00000077')).toBeVisible();
+  await expect(page.getByText('Maria Lopez')).toBeVisible();
+  await expect(page.getByText('Glucosa')).toBeVisible();
+  await expect(page.getByText('L. 15.00')).toBeVisible();
+  await captureScreen(page, 'area-services-light', 'light');
+  await setVisualTheme(page, 'dark');
+  await captureScreen(page, 'area-services-dark', 'dark');
+
   await writeCaptureReport(consoleIssues);
   expect(consoleIssues).toEqual([]);
 });

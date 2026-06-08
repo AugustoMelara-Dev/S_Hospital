@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-08T06:40:14.813Z",
+  "generated_at": "2026-06-08T15:24:02.301Z",
   "mode": "controlled-e2e",
   "note": "Capturas en ambiente controlado; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.",
   "screenshots": [
@@ -74,6 +74,18 @@
       "path": "qa/browser-smoke-2026-06-08/backups-pending-light.png",
       "route": "/backups",
       "theme": "light"
+    },
+    {
+      "name": "area-services-light",
+      "path": "qa/browser-smoke-2026-06-08/area-services-light.png",
+      "route": "/area/services",
+      "theme": "light"
+    },
+    {
+      "name": "area-services-dark",
+      "path": "qa/browser-smoke-2026-06-08/area-services-dark.png",
+      "route": "/area/services",
+      "theme": "dark"
     }
   ],
   "console_issues": []

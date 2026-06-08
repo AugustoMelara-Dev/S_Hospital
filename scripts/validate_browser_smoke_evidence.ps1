@@ -228,7 +228,9 @@ if ($null -ne $rcReport) {
         @{ Name = "institutional-receipt-dark"; Route = "/billing/new"; Theme = "dark" },
         @{ Name = "reports-admin-light"; Route = "/reports"; Theme = "light" },
         @{ Name = "reports-admin-dark"; Route = "/reports"; Theme = "dark" },
-        @{ Name = "backups-pending-light"; Route = "/backups"; Theme = "light" }
+        @{ Name = "backups-pending-light"; Route = "/backups"; Theme = "light" },
+        @{ Name = "area-services-light"; Route = "/area/services"; Theme = "light" },
+        @{ Name = "area-services-dark"; Route = "/area/services"; Theme = "dark" }
     )
 
     foreach ($required in $requiredScreens) {
