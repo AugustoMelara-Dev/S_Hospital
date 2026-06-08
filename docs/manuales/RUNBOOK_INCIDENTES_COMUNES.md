@@ -294,6 +294,109 @@ la configuracion local de sesiones sin exponer secretos al personal.
 
 ---
 
+## 11. Conexion no es privada
+
+**Sintoma:** El navegador muestra "Su conexion no es privada" al
+abrir la direccion segura del sistema.
+
+**Causa probable:**
+- La PC cliente no reconoce todavia el certificado local del hospital.
+- La fecha u hora de la PC cliente esta incorrecta.
+- La direccion usada no es la direccion LAN oficial del sistema.
+
+**Accion inmediata:**
+1. Verificar fecha y hora de la PC cliente.
+2. Confirmar que se esta usando la direccion LAN oficial entregada
+   por administracion, no una direccion escrita de memoria.
+3. Cerrar y volver a abrir el navegador.
+4. Si el aviso continua, no ingresar usuario ni contrasena en esa PC.
+5. Pedir a soporte local que revise el certificado instalado para esa
+   computadora y deje evidencia del resultado.
+
+**Escalamiento:** Si otras computadoras entran con candado cerrado
+pero una PC mantiene el aviso, soporte local debe corregir la confianza
+del certificado en esa PC. Si todas fallan, suspender cobros nuevos
+hasta que soporte nivel 2 confirme la direccion segura oficial.
+
+---
+
+## 12. WebSocket no conecta desde PC cliente
+
+**Sintoma:** El cajero carga el dashboard pero no recibe avisos
+"Factura emitida" cuando otro cajero cobra. El icono de conexion
+en la esquina inferior aparece en gris o amarillo.
+
+**Causa probable:**
+- La red local esta intermitente.
+- El navegador de esa PC bloquea actualizaciones en vivo.
+- El servicio de avisos internos requiere revision de soporte.
+
+**Accion inmediata:**
+1. No repetir facturas, cobros ni anulaciones para "probar" el aviso.
+2. Refrescar la pantalla una vez y confirmar si el historial o el
+   reporte se actualiza con la operacion reciente.
+3. Confirmar que la PC usa la direccion LAN oficial.
+4. Pedir a otro puesto o al supervisor que confirme si ve la misma
+   operacion despues de refrescar su pantalla.
+5. Preparar resumen seguro desde **Ayuda** con hora, usuario, puesto
+   afectado y mensaje visible.
+
+**Escalamiento:** Si solo falla una PC, soporte local revisa red y
+navegador de esa computadora. Si fallan varios puestos, soporte nivel 2
+debe validar el servicio interno de avisos usando su guia tecnica.
+
+---
+
+## 13. HTTPS OK pero puerto 80 abierto
+
+**Sintoma:** Una herramienta de seguridad o firewall reporta un puerto
+no seguro abierto en el servidor, aunque el sistema abre con candado.
+
+**Causa probable:** Esto es **esperado**. El puerto 80 existe
+solo para enviar al usuario hacia la direccion segura. No debe usarse
+para trabajar en caja.
+
+**Accion inmediata:**
+1. Confirmar que el enlace oficial abre con candado cerrado.
+2. Confirmar que caja usa siempre la direccion segura oficial.
+3. No cambiar accesos directos ni favoritos sin autorizacion de
+   administracion.
+4. Si el navegador queda en una direccion no segura o muestra una
+   pantalla distinta al sistema, detener el uso de esa PC y avisar a
+   soporte.
+
+**Escalamiento:** Soporte nivel 2 debe confirmar la redireccion segura
+en su guia tecnica. Operacion normal puede continuar si los puestos
+trabajan con candado cerrado y direccion oficial.
+
+---
+
+## 14. Pantalla redirige de https a http y se cierra la sesion
+
+**Sintoma:** El cajero entra con la direccion segura, inicia sesion
+y despues de un click el navegador cambia a una direccion no segura o
+vuelve al login.
+
+**Causa probable:**
+- La PC esta usando un enlace viejo.
+- El servidor tiene pendiente una revision de direccion segura.
+- El certificado local o la configuracion de red fue modificada.
+
+**Accion inmediata:**
+1. No continuar cobrando en esa PC hasta corregir el enlace.
+2. Abrir nuevamente usando la direccion LAN oficial entregada por
+   administracion.
+3. Si vuelve a ocurrir, cerrar sesion y avisar al supervisor.
+4. Preparar resumen seguro desde **Ayuda** o registrar hora, usuario,
+   PC afectada y direccion visible en la barra del navegador.
+5. El supervisor debe validar si otra PC entra correctamente con la
+   direccion oficial.
+
+**Escalamiento:** Soporte nivel 2 debe revisar la configuracion segura
+del servidor sin exponer archivos internos ni secretos al personal.
+
+---
+
 ## Cuando todo falla: lista de verificacion de 60 segundos
 
 1. Confirmar que el servidor este encendido y conectado a la red local.
@@ -307,122 +410,3 @@ la configuracion local de sesiones sin exponer secretos al personal.
 
 Si alguno falla, soporte local debe seguir su guia de mantenimiento y
 adjuntar la evidencia al registro interno del hospital.
-
----
-
-## 11. Conexion no es privada
-
-**Sintoma:** El navegador muestra `NET::ERR_CERT_AUTHORITY_INVALID`
-o "Su conexion no es privada" al abrir `https://IP-DEL-SERVIDOR`.
-
-**Causa probable:**
-- La PC cliente no tiene la CA local instalada en su almacen de
-  confianza.
-- El operador copio la CA del servidor pero la guardo en
-  "Descargas" y el navegador no la reconoce.
-- El servidor cambio de IP y la PC cliente tiene la CA antigua.
-
-**Accion inmediata:**
-1. Verificar la fecha y hora de la PC cliente. Un reloj atrasado
-   o adelantado invalida la firma.
-2. Re-importar la CA:
-   ```powershell
-   Import-Certificate -FilePath "\\SERVIDOR\share\hospital-ca.crt.pem" `
-     -CertStoreLocation Cert:\LocalMachine\Root
-   ```
-3. Cerrar y volver a abrir el navegador.
-4. Probar `https://IP-DEL-SERVIDOR:8443/up` y confirmar candado
-   cerrado.
-
-**Escalamiento:** Si la PC del servidor tiene el candado cerrado
-pero la PC cliente sigue mostrando el error, el problema es el
-almacen de confianza de la PC cliente. Soporte nivel 1 debe
-revisar GPO o directivas locales que bloqueen la instalacion de
-CA.
-
----
-
-## 12. WebSocket no conecta desde PC cliente
-
-**Sintoma:** El cajero carga el dashboard pero no recibe avisos
-"Factura emitida" cuando otro cajero cobra. El icono de conexion
-en la esquina inferior aparece en gris o amarillo.
-
-**Causa probable:**
-- Soketi no esta corriendo dentro de la red docker.
-- El firewall de Windows bloquea el upgrade HTTPS al endpoint `/ws`.
-- La PC cliente es un kiosk browser que bloquea WebSockets.
-
-**Accion inmediata:**
-1. Abrir `https://IP:8443/api/system/echo-config` desde la PC
-   cliente y confirmar que el JSON tiene `data.enabled: true`.
-2. En el servidor, validar que el contenedor soketi este arriba:
-   `docker compose -f docker-compose.prod.yml ps soketi`.
-3. Probar manualmente el WebSocket:
-   ```
-   curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" \
-     -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGVzdA==" \
-     https://IP:8443/ws
-   ```
-   Debe responder `HTTP/1.1 101 Switching Protocols`.
-4. Si la PC cliente es un kiosk, pedir a soporte nivel 2 que
-   agregue `wss://*` a la lista permitida del navegador.
-
-**Escalamiento:** Si `curl` da 200 en lugar de 101, el proxy
-nginx no esta reenviando la actualizacion correctamente. Revisar
-`nginx/default.conf` y `nginx/hospital-common.conf`.
-
----
-
-## 13. HTTPS OK pero puerto 80 abierto
-
-**Sintoma:** `nmap` o el firewall corporativo reporta el puerto 80
-abierto en el servidor.
-
-**Causa probable:** Esto es **esperado**. El puerto 80 existe
-exclusivamente para redirigir (301) a HTTPS. No es una exposicion
-accidental.
-
-**Accion inmediata:**
-1. Verificar que responde con 301:
-   ```
-   curl -I http://IP:8000/
-   ```
-   Debe devolver `Location: https://IP:8443/`.
-2. Si responde 200, alguien descomento el bloque HTTP original
-   del nginx. Volver a sacar el bloque del `default.conf`.
-
-**Escalamiento:** Ninguno en operacion normal. Es parte del
-diseno.
-
----
-
-## 14. Pantalla redirige de https a http y se cierra la sesion
-
-**Sintoma:** El cajero carga `https://IP/login`, inicia sesion,
-y al cabo de un click la URL cambia a `http://IP/...` y la sesion
-se invalida.
-
-**Causa probable:**
-- `APP_URL` en `backend/.env` empieza con `http://` en lugar de
-  `https://`.
-- `SANCTUM_STATEFUL_DOMAINS` o `CORS_ALLOWED_ORIGINS` no
-  coinciden con la URL HTTPS.
-- El certificado expiro.
-
-**Accion inmediata:**
-1. En el servidor, ejecutar:
-   ```
-   docker compose -f docker-compose.prod.yml exec backend grep APP_URL .env
-   ```
-   Debe empezar con `https://`.
-2. Revisar el certificado:
-   ```
-   openssl x509 -in nginx/ssl/hospital-server.crt.pem -noout -dates
-   ```
-3. Si la fecha de expiracion ya paso, regenerar la CA con
-   `scripts/generate_local_ca.ps1 -ServerIp IP`.
-
-**Escalamiento:** Si el problema es `CORS`, revisar
-`backend/config/cors.php` y el archivo `.env`. La regla de
-produccion exige origen explicito, sin `*` ni patrones.

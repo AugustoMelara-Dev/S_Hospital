@@ -1,6 +1,6 @@
 # Resultado de handoff final de produccion
 
-- Generado: 2026-06-07 17:55:41
+- Generado: 2026-06-07 20:55:36
 - URL base: http://192.168.1.10:8000
 - Carpeta del sistema: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -345,7 +345,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[ OK ] MANIFEST.txt references current commit cdc9ea47
+[ OK ] MANIFEST.txt references current commit 03f6af7a
 [ OK ] offline-images contains 4 Docker image tar file(s)
 
 OFFLINE_RELEASE_CLEAN: YES

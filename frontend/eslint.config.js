@@ -53,6 +53,17 @@ export default tseslint.config(
     },
   },
   {
+    files: ['**/*.cjs'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'commonjs',
+      globals: globals.node,
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
     // Relax a11y on test files; the a11y assertions live in *.a11y.test.tsx.
     files: ['**/*.test.{ts,tsx}', '**/test/**/*.{ts,tsx}'],
     rules: {

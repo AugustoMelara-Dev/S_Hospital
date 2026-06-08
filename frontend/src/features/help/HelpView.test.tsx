@@ -28,7 +28,7 @@ describe('HelpView', () => {
 
     expect(screen.getByRole('heading', { name: /ayuda institucional/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /abrir el sistema/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument();
     expect(screen.getByText(/use el acceso institucional del escritorio/i)).toBeInTheDocument();
     expect(screen.getByText(/no comparta contraseña ni cuenta de turno/i)).toBeInTheDocument();
     expect(screen.getByText(/servidor no disponible/i)).toBeInTheDocument();
