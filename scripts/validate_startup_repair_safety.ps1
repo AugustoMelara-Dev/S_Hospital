@@ -161,6 +161,17 @@ if ($null -ne $backupTasksScript) {
     }
 }
 
+if ($null -ne $stackAutostartScript) {
+    $stackAutostartContent = Get-Content -LiteralPath $stackAutostartScript -Raw
+    if ($stackAutostartContent -match '\(\?i\)/\(var\|home\|srv\|opt\|tmp\|usr\|mnt\)/' -and
+        $stackAutostartContent -match '\(\?is\)<\(Task\|Actions\|Principals\|Triggers\|Settings\)\\b' -and
+        $stackAutostartContent -match '\[xml-protegido\]') {
+        Add-Pass "scripts\install_stack_autostart_windows.ps1 redacts Unix paths and task XML"
+    } else {
+        Add-Failure "scripts\install_stack_autostart_windows.ps1 must redact Unix local paths and raw task XML in operator output."
+    }
+}
+
 if ($failures.Count -eq 0) {
     Invoke-SafeCheck `
         "Startup dry run" `
