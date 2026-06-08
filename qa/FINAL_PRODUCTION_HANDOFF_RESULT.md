@@ -1,6 +1,6 @@
 # Resultado de handoff final de produccion
 
-- Generado: 2026-06-08 01:47:15
+- Generado: 2026-06-08 02:06:08
 - URL base: http://192.168.1.10:8000
 - Carpeta del sistema: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -104,6 +104,7 @@ No declare PRODUCTION_READY. Mantenga el sistema como PRODUCTION_CANDIDATE hasta
 
 - Docker local y la evidencia controlada de navegador no sustituyen la prueba final desde segunda PC LAN, MariaDB/servidor real ni impresora fisica.
 - El paquete offline todavia debe copiarse al servidor final y verificarse alli antes de uso productivo.
+- Si este reporte se commitea, el commit cambia despues de generar la evidencia; la prueba autoritativa del paquete es ejecutar scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit despues del ultimo commit y antes del handoff fisico.
 - El entorno final de produccion debe verificarse con APP_ENV=production y APP_DEBUG=false antes del handoff productivo.
 - Las tareas Windows `SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup` deben instalarse o actualizarse en el servidor final.
 - Las secuencias/configuraciones fiscales requieren validacion administrativa en el entorno real; este reporte no inventa cumplimiento fiscal.
@@ -167,6 +168,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_field_p
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_proof_initialization_safety.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\make_offline_release.ps1 -SelfTest
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1 -SelfTest
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_operations_objective_audit.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_handoff_guard_coverage.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\validate_offline_release_staging_safety.ps1
@@ -347,7 +349,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[ OK ] MANIFEST.txt references current commit 36ee747b
+[ OK ] MANIFEST.txt references current commit 5747c9ad
 [ OK ] offline-images contains 4 Docker image tar file(s)
 
 OFFLINE_RELEASE_CLEAN: YES
@@ -1282,7 +1284,7 @@ Manifest matches composer.json and package.json.
 [ OK ] Docs/evidence require 32+ character salt
 [ OK ] Docs/evidence warn not to commit or print real salt
 [ OK ] Production compose with placeholder salt completed with expected compose behavior
-error while interpolating services.backend.environment.HOSPITAL_LICENSE_SALT=[redacted] variable HOSPITAL_LICENSE_SALT is missing a value: HOSPITAL_LICENSE_SALT must be set to a 32+ char random string
+error while interpolating services.scheduler.environment.HOSPITAL_LICENSE_SALT=[redacted] variable HOSPITAL_LICENSE_SALT is missing a value: HOSPITAL_LICENSE_SALT must be set to a 32+ char random string
 [ OK ] Production compose without license salt completed with expected compose behavior
 
 PRODUCTION_LICENSE_SALT_GUARD: YES
