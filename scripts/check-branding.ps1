@@ -98,6 +98,21 @@ $commercialProductSurfaceForbidden = @(
     'Premium'
 )
 
+$forbiddenPathNamePatterns = @(
+    ('Bill' + 'ing_OS'),
+    ('Hospital_Bill' + 'ing_OS'),
+    ('Bill' + 'ing OS'),
+    'THERMAL_PRINTER_PROOF',
+    'receipt-preview-80mm',
+    'receipt-preview-58mm',
+    'thermal-printer',
+    'thermal_printer',
+    'impresora-termica',
+    'impresora_termica',
+    'recibo-termico',
+    'recibo_termico'
+)
+
 function Invoke-ForbiddenSearch {
     param(
         [string] $Label,
@@ -139,8 +154,27 @@ function Invoke-ForbiddenSearch {
     }
 }
 
+function Invoke-ForbiddenPathSearch {
+    param(
+        [string] $Label,
+        [string[]] $Patterns
+    )
+
+    $pattern = ($Patterns | ForEach-Object { [regex]::Escape($_) }) -join '|'
+    $matches = & git ls-files | Where-Object { $_ -match $pattern }
+    if ($matches -and $matches.Count -gt 0) {
+        Write-Host $Label
+        $matches | ForEach-Object { Write-Host $_ }
+        exit 1
+    }
+}
+
 Push-Location $Root
 try {
+    Invoke-ForbiddenPathSearch `
+        -Label 'Nombres de archivo heredados encontrados:' `
+        -Patterns $forbiddenPathNamePatterns
+
     Invoke-ForbiddenSearch `
         -Label 'Branding prohibido encontrado:' `
         -Patterns $forbidden `

@@ -4086,3 +4086,8 @@ Contexto: el log completo docs/DECISIONS.md conserva historial tecnico util para
 Decision: make_offline_release.ps1 reemplaza docs/DECISIONS.md dentro de offline-release por un resumen operativo minimo con mantenimiento seguro, auditoria de permisos y contrato del paquete. El archivo fuente completo permanece versionado para desarrollo.
 Criterio de verificacion: assert_offline_release_clean.ps1 escanea la documentacion del release contra lenguaje heredado y falla si reaparecen nombres, formatos o referencias obsoletas.
 
+
+## 2026-06-07 - nombres versionados sin branding heredado
+Contexto: algunos artefactos internos versionados conservaban nombres de archivo antiguos o capturas historicas con formatos de recibo no vigentes. Aunque no se empaquetaban para el hospital, esos nombres podian confundir revisiones de RC y futuras automatizaciones.
+Decision: los artefactos internos se renombran con lenguaje institucional y las capturas historicas se identifican como recibo institucional. El guard de branding revisa tambien nombres versionados, ademas del contenido textual.
+Criterio de verificacion: check-branding.ps1 falla si reaparecen nombres de archivo con marca antigua, prueba termica heredada o capturas de recibo nombradas por ancho de rollo.

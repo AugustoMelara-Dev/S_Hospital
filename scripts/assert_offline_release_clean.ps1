@@ -220,7 +220,7 @@ if ($SelfTest) {
         }
     }
 
-    foreach ($relativePath in @("docs/superpowers/plans/old.md", "docs/00_Flujo_Agentic_Codex_Hospital_Billing_OS.docx")) {
+    foreach ($relativePath in @("docs/superpowers/plans/old.md", "docs/documento_interno.docx")) {
         $isForbiddenReleaseDoc = $relativePath -match '(^|/)docs/superpowers(/|$)' -or
             $relativePath -match '(^|/)docs/[^/]+\.docx$'
         if (-not $isForbiddenReleaseDoc) {
