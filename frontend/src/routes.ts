@@ -11,6 +11,7 @@ export const routes: AppRoute[] = [
   { label: 'Caja', path: '/cashbox', phase: 'Fase 12A', permission: 'cash.view' },
   { label: 'Catálogo', path: '/catalog', phase: 'Fase 12A', permission: 'catalog.view' },
   { label: 'Historial', path: '/invoices', phase: 'Fase 12A', permission: 'invoices.view' },
+  { label: 'Servicios pagados', path: '/area/services', phase: 'Fase 12 área', permission: 'areas.paid_services.view' },
   { label: 'Reportes', path: '/reports', phase: 'Fase 12A', permission: 'reports.view' },
   { label: 'Respaldos', path: '/backups', phase: 'Fase 12A', permission: 'backups.view' },
   {

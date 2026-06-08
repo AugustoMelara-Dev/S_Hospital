@@ -21,6 +21,7 @@ export const STRINGS = {
     cashbox: 'Caja',
     catalog: 'Catálogo',
     invoices: 'Historial',
+    areaServices: 'Servicios pagados',
     reports: 'Reportes',
     backups: 'Respaldos',
     users: 'Usuarios',

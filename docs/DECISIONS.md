@@ -4191,3 +4191,8 @@ Criterio de verificacion: validate_permission_audit_safety.ps1 debe pasar junto 
 Contexto: el flujo objetivo prepara areas como laboratorio o rayos X asociadas a servicios cobrables, con usuarios de area que consulten servicios pagados, sin convertir el sistema en expediente clinico ni agregar modulos grandes de laboratorio o citas.
 Decision: se agrega `area_id` opcional a usuarios, rol `area` y permiso `areas.paid_services.view`. El endpoint `GET /api/areas/{area}/paid-services` devuelve solo servicios de facturas pagadas para el area asignada del usuario, usando snapshots historicos de `invoice_items` y sin exponer IDs internos de factura o servicio.
 Criterio de verificacion: ReportsTest cubre consulta por area propia, bloqueo de otra area, exclusión de facturas parciales y permanencia del snapshot aunque cambie el catalogo; UserManagementTest cubre que el rol `area` requiere area asignada.
+
+## 2026-06-08 - Consulta de area vive fuera de reportes gerenciales
+Contexto: el backend ya permitia que un usuario de area consultara servicios pagados de su propia area, pero sin pantalla dedicada el flujo quedaba invisible o podia confundirse con reportes gerenciales.
+Decision: el frontend agrega la ruta `/area/services` y la navegacion "Servicios pagados" protegida por `areas.paid_services.view`. El usuario con solo ese permiso entra directo a esa pantalla; la vista muestra rango de fechas, servicios pagados, paciente, factura, metodo y valor desde snapshots, sin IDs internos ni acciones clinicas.
+Criterio de verificacion: AreaPaidServicesView.test cubre carga de servicios del area asignada, estado de usuario sin area, bloqueo de rangos mayores a 31 dias y ausencia de identificadores internos visibles.

@@ -136,6 +136,10 @@ export function getBreadcrumbs(pathname: string) {
 
     if (segment === 'billing') {
       crumbs.push({ label: 'Facturación', path: '/billing/new' });
+    } else if (segment === 'area') {
+      crumbs.push({ label: 'Area', path: '/area/services' });
+    } else if (segment === 'services' && currentPath.startsWith('/area')) {
+      crumbs.push({ label: 'Servicios pagados', path: '/area/services' });
     } else if (segment === 'new') {
       crumbs.push({ label: 'Nueva factura', path: '/billing/new' });
     } else if (segment === 'invoices') {

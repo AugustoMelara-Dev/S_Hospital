@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { PermissionGate } from './components/PermissionGate';
 import { EmptyState, LoadingState } from './components/ui/states';
 import { AboutView } from './features/about/AboutView';
+import { AreaPaidServicesView } from './features/areas/AreaPaidServicesView';
 import { BackupsView } from './features/backups/BackupsView';
 import { CashBoxView } from './features/cash/CashBoxView';
 import { CatalogView } from './features/catalog/CatalogView';
@@ -34,6 +35,7 @@ type AppRoutesProps = {
   canExportReports: boolean;
   canViewUsers: boolean;
   canCreateUsers: boolean;
+  canViewAreaPaidServices: boolean;
   cashSession: CashSession | null;
   defaultAuthenticatedRoute: string;
   onQuickCash: () => void;
@@ -61,6 +63,7 @@ export function AppRoutes({
   canExportReports,
   canViewUsers,
   canCreateUsers,
+  canViewAreaPaidServices,
   cashSession,
   defaultAuthenticatedRoute,
   onQuickCash,
@@ -71,7 +74,7 @@ export function AppRoutes({
 }: AppRoutesProps) {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Navigate to={defaultAuthenticatedRoute} replace />} />
       <Route path="/login" element={<Navigate to={defaultAuthenticatedRoute} replace />} />
       <Route
         path="/dashboard"
@@ -141,6 +144,17 @@ export function AppRoutes({
         element={
           <PermissionGate allowed={canViewInvoices} reason="Requiere permiso para consultar historial de facturas y recibos.">
             <InvoiceHistoryView user={user} onStatus={onStatus} />
+          </PermissionGate>
+        }
+      />
+      <Route
+        path="/area/services"
+        element={
+          <PermissionGate
+            allowed={canViewAreaPaidServices}
+            reason="Requiere permiso para consultar servicios pagados del área asignada."
+          >
+            <AreaPaidServicesView user={user} onStatus={onStatus} />
           </PermissionGate>
         }
       />

@@ -40,6 +40,7 @@ export function useHospitalSession() {
   const canViewBackups = permissions.has('backups.view');
   const canViewUsers = permissions.has('users.view');
   const canCreateUsers = permissions.has('users.create');
+  const canViewAreaPaidServices = permissions.has('areas.paid_services.view');
 
   useEffect(() => {
     const unsubscribe = apiClient.onSessionExpired(() => {
@@ -187,6 +188,7 @@ export function useHospitalSession() {
     canViewBackups,
     canViewUsers,
     canCreateUsers,
+    canViewAreaPaidServices,
     hasAnyOperationalPermission:
       canViewFiscalSettings ||
       canViewCatalog ||
@@ -195,8 +197,9 @@ export function useHospitalSession() {
       canViewInvoices ||
       canViewReports ||
       canViewBackups ||
-      canViewUsers,
-    defaultAuthenticatedRoute: '/dashboard',
+      canViewUsers ||
+      canViewAreaPaidServices,
+    defaultAuthenticatedRoute: canViewAreaPaidServices && permissions.size === 1 ? '/area/services' : '/dashboard',
     sessionExpired,
     handleLogin,
     handleLogout,
