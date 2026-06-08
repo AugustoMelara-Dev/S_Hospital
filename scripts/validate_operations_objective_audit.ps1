@@ -164,6 +164,7 @@ if ($failures.Count -eq 0) {
         'qa/OFFLINE_RELEASE_GUARD_2026_06_03.md',
         'scripts/validate_institutional_receipt_print_proof.ps1',
         'qa/PRODUCTION_LICENSE_SALT_GUARD_2026_06_04.md',
+        'docs/FINAL_FIELD_BLOCKERS.md',
         'qa/FINAL_FIELD_BLOCKERS_SAFETY_2026_06_04.md',
         'qa/PRODUCTION_READY_GATE_VALIDATOR_2026_06_04.md',
         'qa/PRODUCTION_READY_GATE_HANDOFF_2026_06_04.md',
@@ -207,6 +208,8 @@ if ($failures.Count -eq 0) {
         'FINAL_RESTORE_PROOF.md',
         'FINAL_CONCURRENCY_PROOF.md',
         'final training proof',
+        'docs/FINAL_FIELD_BLOCKERS.md',
+        'operator-facing index',
         'preflight'
     )
 

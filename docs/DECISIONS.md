@@ -4271,3 +4271,8 @@ Criterio de verificacion: `scripts\validate_final_field_blockers_safety.ps1`, `s
 Contexto: el indice `docs\FINAL_FIELD_BLOCKERS.md` ya existia y viajaba en el paquete offline, pero el reporte final de handoff podia seguir citando solo la evidencia QA historica de bloqueantes sin dirigir al operador al resumen unico.
 Decision: `final_production_handoff.ps1` lista `docs\FINAL_FIELD_BLOCKERS.md` dentro de la evidencia de campo y del material operativo, y `validate_final_handoff_completeness.ps1` falla si el reporte generado lo omite.
 Criterio de verificacion: `scripts\final_production_handoff.ps1 -SkipPreflight`, `scripts\validate_final_handoff_completeness.ps1`, `scripts\validate_ops_evidence_index.ps1`, `scripts\validate_final_field_blockers_safety.ps1` y `scripts\check-branding.ps1` deben pasar antes de regenerar el paquete offline.
+
+## 2026-06-08 - Audit operativo exige indice de bloqueantes
+Contexto: el indice `docs\FINAL_FIELD_BLOCKERS.md` ya estaba en el paquete offline y en el handoff, pero la auditoria principal del objetivo podia aprobar sin nombrarlo como evidencia del gate `PRODUCTION_READY`.
+Decision: `qa\OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md` y `validate_operations_objective_audit.ps1` tratan `docs\FINAL_FIELD_BLOCKERS.md` como evidencia requerida y como indice operativo de los siete proofs finales.
+Criterio de verificacion: `scripts\validate_operations_objective_audit.ps1`, `scripts\validate_final_field_blockers_safety.ps1`, `scripts\validate_final_handoff_completeness.ps1` y `scripts\check-branding.ps1` deben pasar antes de regenerar el paquete offline.
