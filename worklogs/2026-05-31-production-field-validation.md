@@ -22,8 +22,8 @@ Estado: PRODUCTION_CANDIDATE.
   ni exportar imagenes reales en este turno.
 - PENDING_LAN_CLIENT_VALIDATION: validar desde una segunda PC fisica por IP fija
   o nombre LAN final.
-- PENDING_HARDWARE_VALIDATION: imprimir y revisar recibos 80mm y 58mm en la
-  impresora real de caja.
+- PENDING_HARDWARE_VALIDATION: imprimir y revisar recibos institucionales en
+  media carta, carta o A5 en la impresora real de caja.
 - PENDING_FINAL_RESTORE_VALIDATION: restaurar un backup final en una base
   descartable y capturar conteos.
 - PENDING_FINAL_CONCURRENCY_VALIDATION: repetir prueba de caja/factura/pago

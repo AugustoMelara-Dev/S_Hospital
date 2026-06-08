@@ -2,7 +2,7 @@
 
 ## Contexto
 
-El usuario cuestiono si el producto esta mal planteado por UX/UI: una sola pagina, falta de dashboard/secciones, falta de sidebar, lista interminable de servicios, falta de categorias dominantes, falta de scanner/QR, reportes basicos y apariencia no vendible.
+El usuario cuestiono si el producto esta mal planteado por UX/UI: una sola pagina, falta de dashboard/secciones, falta de sidebar, lista interminable de servicios, falta de categorias dominantes, falta de identificadores de servicio, reportes basicos y apariencia no institucional.
 
 ## Verificacion rapida del repo
 
@@ -39,17 +39,17 @@ Pero el problema comercial de UX sigue vivo:
 
 ## Decision
 
-Fase 12 queda como cierre final obligatorio antes de enviar el producto como version vendible:
+Fase 12 queda como cierre final obligatorio antes de enviar el producto como version institucional:
 
 1. 12A App shell y design system.
 2. 12B POS de facturacion profesional.
 3. 12C Catalogo, categorias e identificadores de servicio.
 4. 12D Reportes avanzados.
-5. 12E QA final y demo premium.
+5. 12E QA final y validacion institucional.
 
 ## Riesgo
 
-Si se entrega solo con backend funcional, el cliente puede percibir el sistema como prototipo. Para venta, entrenamiento y confianza operativa, el criterio visual/operativo es parte del cierre tecnico.
+Si se entrega solo con backend funcional, el hospital puede percibir el sistema como prototipo. Para capacitacion y confianza operativa, el criterio visual/operativo es parte del cierre tecnico.
 
 ## Siguiente accion
 

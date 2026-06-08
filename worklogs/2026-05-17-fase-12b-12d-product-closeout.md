@@ -37,8 +37,8 @@
 ## Riesgos abiertos
 
 - Reportes usan barras CSS para top servicios; Recharts puede agregarse despues si se aprueba dependencia.
-- Falta validar impresora termica fisica y cliente LAN desde otra computadora para `PRODUCTION_READY` real.
+- Falta validar impresora fisica institucional y cliente LAN desde otra computadora para `PRODUCTION_READY` real.
 
 ## Siguiente paso
 
-Revisar diff completo, decidir si se commitea esta fase y ejecutar validacion fisica en el sitio: cliente LAN real e impresora termica 80mm/58mm.
+Revisar diff completo, decidir si se commitea esta fase y ejecutar validacion fisica en el sitio: cliente LAN real e impresora institucional media carta, carta o A5.

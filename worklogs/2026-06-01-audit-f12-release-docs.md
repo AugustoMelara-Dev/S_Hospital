@@ -75,4 +75,4 @@ tsc          → passed
 - Decisiones arquitectónicas en `docs/DECISIONS.md`
 - CHANGELOG actualizado a `v1.0.0-rc.2`
 
-El sistema está listo para `PRODUCTION_READY` desde la perspectiva del audit automatizado. Las validaciones físicas finales (LAN real, impresora 80mm/58mm, restore manual, concurrencia Linux) están documentadas en `qa/` y deben ejecutarse en el entorno final antes de producción.
+El audit automatizado queda completo, pero `PRODUCTION_READY` real depende de las validaciones físicas finales: LAN real, impresora institucional en media carta/carta/A5, restore manual y concurrencia Linux. Esas validaciones están documentadas en `qa/` y deben ejecutarse en el entorno final antes de producción.

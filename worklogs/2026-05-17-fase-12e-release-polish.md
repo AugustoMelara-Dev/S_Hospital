@@ -1,4 +1,4 @@
-# Fase 12E - Release polish vendible
+# Fase 12E - Release polish institucional
 
 Fecha: 2026-05-17
 
@@ -7,7 +7,7 @@ Fecha: 2026-05-17
 - Reducir `frontend/src/App.tsx` para que sea orquestador y no contenedor monolitico de pantallas.
 - Extraer login, cambio obligatorio de contrasena, dashboard y rutas privadas a modulos separados.
 - Integrar Recharts en reportes para visual gerencial de servicios mas vendidos.
-- Actualizar checklist final y guion premium con scanner, categorias, reportes, backups y limites fisicos.
+- Actualizar checklist final y guia de validacion con identificadores de servicio, categorias, reportes, backups y limites fisicos.
 
 ## Archivos principales
 
@@ -18,7 +18,7 @@ Fecha: 2026-05-17
 - `frontend/src/features/dashboard/DashboardView.tsx`
 - `frontend/src/features/reports/ReportsView.tsx`
 - `frontend/src/styles.css`
-- `docs/DEMO_SCRIPT.md`
+- `docs/OPERATIVE_VALIDATION_FLOW.md`
 - `docs/05_DESIGN_SYSTEM_AND_LIBRARIES.md`
 - `qa/FINAL_UX_ACCEPTANCE_CHECKLIST.md`
 
@@ -28,11 +28,11 @@ Fecha: 2026-05-17
 - Login y cambio de contrasena conservan comportamiento probado.
 - Dashboard ya no vive dentro de `App.tsx`.
 - Reportes muestran grafico real con datos calculados por backend.
-- Documentacion de demo no vende como validado lo que requiere impresora fisica o cliente LAN real.
+- Documentacion de validacion no declara como aprobado lo que requiere impresora fisica o cliente LAN real.
 
 ## Riesgos
 
-- Prueba fisica de impresora 80mm/58mm depende del sitio.
+- Prueba fisica de impresora institucional en media carta, carta o A5 depende del sitio.
 - Validacion desde segunda PC LAN depende de red/servidor final.
 - TanStack Query/Table y React Hook Form/Zod quedan como adopcion gradual para no inflar la entrega sin necesidad inmediata.
 
@@ -50,7 +50,7 @@ Fecha: 2026-05-17
 ## Continuacion posterior
 
 - AppShell muestra topbar con caja, rol, usuario, hora local y estado LAN derivado del status.
-- Sidebar/topbar/footer se ocultan al imprimir para que el recibo termico no arrastre navegacion.
+- Sidebar/topbar/footer se ocultan al imprimir para que el recibo institucional no arrastre navegacion.
 - POS agrega confirmacion antes de emitir y antes de cobrar.
 - POS muestra CTA a Caja cuando no hay caja abierta.
 - Caja agrega confirmacion antes de cierre.
@@ -59,7 +59,7 @@ Fecha: 2026-05-17
 - Exportacion CSV de reportes pasa por backend y exige `reports.export`.
 - Reportes incluyen auditoria operativa: anulaciones, reimpresiones, backups, cajeros con ingreso y filtros por caja/cajero/categoria/metodo/estado.
 - POS principal exige caja abierta antes de emitir para evitar ambiguedad entre factura pendiente y cobrada.
-- Demo script actualizado con flujo de caja abierta, reportes avanzados y smoke real separado.
+- Guia de validacion actualizada con flujo de caja abierta, reportes avanzados y smoke real separado.
 - `App.tsx` reducido de 217 a 83 lineas; sesion, permisos y caja bootstrap viven en `useHospitalSession`.
 - Reportes muestran errores inline por diario/rango/caja, no solo en el status global.
 - E2E Playwright mockeado falla si hay `console.error`, `pageerror` o request fallida inesperada.

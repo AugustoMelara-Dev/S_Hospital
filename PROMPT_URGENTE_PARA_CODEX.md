@@ -8,11 +8,11 @@ git rev-parse --show-toplevel
 
 Debe responder `C:/Projects/S_Hospital`. No trabajes dentro de `C:\Projects\S_Hospital\S_Hospital`.
 
-## Diagnostico brutal
+## Diagnostico operativo
 
-El sistema actual esta tecnicamente avanzado: backend, facturacion, caja, pagos, recibos, historial, anulaciones, backups y reglas fiscales ya tienen una base real. Pero la UX/UI esta bloqueada porque todavia parece prototipo. Un producto vendible de caja hospitalaria no puede sentirse como una pagina larga con secciones apiladas.
+El sistema actual esta tecnicamente avanzado: backend, facturacion, caja, pagos, recibos, historial, anulaciones, backups y reglas fiscales ya tienen una base real. Pero la UX/UI esta bloqueada porque todavia parece prototipo. Un sistema institucional de caja hospitalaria no puede sentirse como una pagina larga con secciones apiladas.
 
-Fase 12 existe para convertir el core funcional en una aplicacion profesional, navegable y demostrable.
+Fase 12 existe para convertir el core funcional en una aplicacion profesional, navegable y lista para validacion institucional.
 
 ## Prohibiciones
 
@@ -53,6 +53,6 @@ Planificar Fase 12 en fases pequenas, verificables y commiteables:
 - 12B POS Billing UX profesional.
 - 12C Catalogo + identificadores de servicio.
 - 12D Reportes avanzados.
-- 12E QA UX final y demo premium.
+- 12E QA UX final y validacion institucional.
 
-La entrega final debe verse como producto hospitalario serio: app shell con sidebar izquierdo, topbar, rutas internas, layout persistente, POS profesional, catalogo ordenado, escaneo de servicios por identificador, reportes gerenciales y criterios de bloqueo estrictos.
+La entrega final debe verse como sistema hospitalario serio: app shell con sidebar izquierdo, topbar, rutas internas, layout persistente, POS profesional, catalogo ordenado, seleccion de servicios por identificador, reportes gerenciales y criterios de bloqueo estrictos.
