@@ -51,6 +51,8 @@ function Protect-TrainingAcceptanceText([string] $value) {
 
     $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD|HOSPITAL_LICENSE_SALT)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
     $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?i)/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace '(?is)<(Task|Actions|Principals|Triggers|Settings)\b[^>]*>', "[xml-protegido]"
 
     return $protected
 }
@@ -241,10 +243,12 @@ if ([string]::IsNullOrWhiteSpace($ProofPath) -or -not (Test-Path -LiteralPath $P
         '(?i)APP_KEY\s*[:=]\s*[^\s`]+',
         '(?i)DB_PASSWORD\s*[:=]\s*[^\s`]+',
         '(?i)(TOKEN|SECRET|MAIL_PASSWORD|HOSPITAL_LICENSE_SALT)\s*[:=]\s*[^\s`]+',
-        '(?i)[A-Z]:\\(?![\\])'
+        '(?i)[A-Z]:\\(?![\\])',
+        '(?i)/(var|home|srv|opt|tmp|usr|mnt)/',
+        '(?is)<(Task|Actions|Principals|Triggers|Settings)\b'
     )) {
         if ($content -match $secretPattern) {
-            Add-Failure "qa\TRAINING_ACCEPTANCE_PROOF.md must not expose secrets or local machine paths."
+            Add-Failure "qa\TRAINING_ACCEPTANCE_PROOF.md must not expose secrets, local machine paths or task XML."
             break
         }
     }

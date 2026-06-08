@@ -4,6 +4,27 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Guards candidatos bloquean rutas Unix y XML crudo
+
+Contexto: los guards finales ya rechazaban rutas locales tipo Unix
+y XML crudo de tareas Windows en los proofs finales, pero los
+validadores focales usados durante handoff candidato solo cubrian
+secretos y rutas locales Windows.
+
+Decision: `validate_lan_client_proof.ps1`,
+`validate_institutional_receipt_print_proof.ps1`,
+`validate_final_startup_task_proof.ps1`,
+`validate_final_backup_task_proof.ps1` y
+`validate_training_acceptance_proof.ps1` ahora redactan y rechazan
+rutas absolutas Unix (`/var`, `/home`, `/srv`, `/opt`, `/tmp`,
+`/usr`, `/mnt`) y XML crudo de tareas Windows en la evidencia.
+
+Criterio de verificacion: los cinco validadores focales deben pasar
+en modo candidato con sus banderas permitidas, y
+`validate_final_field_blockers_safety.ps1`,
+`validate_production_ready_gate_safety.ps1` y `check-branding.ps1`
+deben seguir en verde antes de regenerar el paquete offline.
+
 ## 2026-06-07 - HTTPS es obligatorio en PRODUCTION_READY
 
 Contexto: la release v1.0.0-rc.4 documentaba HTTPS como opcional

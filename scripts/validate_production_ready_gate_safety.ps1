@@ -89,6 +89,14 @@ $finalProofPaths = @(
     "qa\TRAINING_ACCEPTANCE_PROOF.md"
 )
 
+$candidateProofValidators = @(
+    "scripts\validate_lan_client_proof.ps1",
+    "scripts\validate_institutional_receipt_print_proof.ps1",
+    "scripts\validate_final_startup_task_proof.ps1",
+    "scripts\validate_final_backup_task_proof.ps1",
+    "scripts\validate_training_acceptance_proof.ps1"
+)
+
 Assert-Contains "Preflight exposes AllowMissingPhysicalProof as an explicit switch" `
     $preflight '\[switch\]\s+\$AllowMissingPhysicalProof'
 Assert-Literal "Preflight fails when physical proof is bypassed" `
@@ -163,6 +171,16 @@ foreach ($sensitiveEvidenceGuard in @(
 )) {
     Assert-Literal "Preflight rejects sensitive proof evidence: $sensitiveEvidenceGuard" `
         $preflight $sensitiveEvidenceGuard
+}
+
+foreach ($candidateProofValidator in $candidateProofValidators) {
+    $candidateProofValidatorContent = Read-RequiredFile $candidateProofValidator
+    Assert-Literal "Candidate proof validator rejects Unix local paths: $candidateProofValidator" `
+        $candidateProofValidatorContent '(?i)/(var|home|srv|opt|tmp|usr|mnt)/'
+    Assert-Literal "Candidate proof validator rejects raw task XML: $candidateProofValidator" `
+        $candidateProofValidatorContent '(?is)<(Task|Actions|Principals|Triggers|Settings)\b'
+    Assert-Literal "Candidate proof validator failure message names task XML: $candidateProofValidator" `
+        $candidateProofValidatorContent 'task XML'
 }
 
 foreach ($requiredCheck in @(
