@@ -4,6 +4,22 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Smoke de respaldos protege salida
+
+Contexto: `validate_backup_worker_smoke.ps1` valida un respaldo manual
+por API y escribe evidencia para soporte, pero su sanitizacion solo
+ocultaba rutas Windows y usaba un marcador distinto para secretos.
+
+Decision: `Protect-SmokeText` reemplaza secretos con `[redacted]`, rutas
+locales Unix y XML crudo de tareas por marcadores seguros antes de
+mostrar errores o rutas de evidencia. `validate_backup_restore_docs_safety.ps1`
+protege esta cobertura sin ejecutar respaldos reales.
+
+Criterio de verificacion: `validate_backup_restore_docs_safety.ps1`,
+`validate_final_backup_task_proof.ps1 -AllowPendingFinalField`,
+`validate_production_ready_gate_safety.ps1`, `check-branding.ps1` y
+`git diff --check` deben pasar antes de regenerar el paquete offline.
+
 ## 2026-06-08 - Validador LAN protege salida
 
 Contexto: `validate_lan_client.ps1` se ejecuta desde una segunda

@@ -45,6 +45,7 @@ $guide = Require-File "docs\manuales\GUIA_RESPALDOS_Y_RESTAURACION.md"
 $backupRestoreReference = Require-File "docs\BACKUP_RESTORE.md"
 $installGuide = Require-File "docs\manuales\GUIA_INSTALACION_OPERATIVA.md"
 $supportGuide = Require-File "docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md"
+$backupWorkerSmoke = Require-File "scripts\validate_backup_worker_smoke.ps1"
 
 if ($guide -ne "") {
     foreach ($pattern in @(
@@ -97,6 +98,14 @@ if ($supportGuide -ne "") {
     } else {
         Add-Pass "First-level support guide avoids raw backup worker/status wording"
     }
+}
+
+if ($backupWorkerSmoke -ne "") {
+    Test-Contains $backupWorkerSmoke 'Protect-SmokeText' "Backup worker smoke sanitizes output"
+    Test-Contains $backupWorkerSmoke '\[redacted\]' "Backup worker smoke redacts secret-like assignments"
+    Test-Contains $backupWorkerSmoke '\(\?i\)/\(var\|home\|srv\|opt\|tmp\|usr\|mnt\)/' "Backup worker smoke redacts Unix local paths"
+    Test-Contains $backupWorkerSmoke '\(\?is\)<\(Task\|Actions\|Principals\|Triggers\|Settings\)\\b' "Backup worker smoke redacts raw task XML"
+    Test-Contains $backupWorkerSmoke '\[xml-protegido\]' "Backup worker smoke uses protected XML marker"
 }
 
 $combined = "$guide`n$backupRestoreReference`n$installGuide`n$supportGuide"

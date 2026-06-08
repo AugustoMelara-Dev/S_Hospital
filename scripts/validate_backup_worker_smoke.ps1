@@ -58,8 +58,11 @@ function Protect-SmokeText([string] $value) {
         $protected = $protected -replace [regex]::Escape(($env:USERPROFILE -replace "\\", "/")), "%USERPROFILE%"
     }
 
-    $protected = $protected -replace "(?i)(PASSWORD|TOKEN|SECRET|APP_KEY|DB_PASSWORD)=\S+", '$1=[oculto]'
+    $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD|HOSPITAL_LICENSE_SALT)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
     $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?i)/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?is)<(Task|Actions|Principals|Triggers|Settings)\b.*?</\1>", "[xml-protegido]"
+    $protected = $protected -replace "(?is)<(Task|Actions|Principals|Triggers|Settings)\b[^>]*>", "[xml-protegido]"
 
     return $protected
 }
