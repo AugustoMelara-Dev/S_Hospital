@@ -11,39 +11,39 @@ El backend debe validar todos los permisos con Policies/Gates o middleware equiv
 
 ## Matriz por modulo
 
-| Modulo / Accion | Permiso | admin | supervisor | cajero |
-|---|---|---:|---:|---:|
-| Ver configuracion fiscal | `settings.fiscal.view` | Si | Si | No |
-| Editar configuracion fiscal | `settings.fiscal.update` | Si | No | No |
-| Ver catalogo | `catalog.view` | Si | Si | Si |
-| Crear/editar categorias | `catalog.manage` | Si | Configurable | No |
-| Crear/editar servicios/precios | `catalog.manage` | Si | Configurable | No |
-| Ver facturas | `invoices.view` | Si | Si | Si, propias/dia por defecto |
-| Crear facturas | `invoices.create` | Si | Si | Si |
-| Operar cualquier factura para cobro/reversion | `invoices.operate_any` | Si | Si | No |
-| Anular facturas | `invoices.void` | Si | Si | No |
-| Ver caja | `cash.view` | Si | Si | Si, caja propia |
-| Abrir caja | `cash.open` | Si | Si | Si |
-| Cerrar caja | `cash.close` | Si | Si | Si, caja propia |
-| Cerrar caja de otro usuario | `cash.close_any` | Si | Si | No |
-| Registrar pagos | `payments.create` | Si | Si | Si |
-| Ver pagos | `payments.view` | Si | Si | Si, propios/dia por defecto |
-| Anular pagos | `payments.void` | Si | Si | No |
-| Ver recibos | `receipts.view` | Si | Si | Si |
-| Reimprimir recibos | `receipts.reprint` | Si | Si | Si, propias/dia por defecto |
-| Reimprimir facturas antiguas/de otros | `receipts.reprint_any` | Si | Si | No |
-| Ver navegacion de reportes | `reports.view` | Si | Si | No |
-| Ver reportes gerenciales | `reports.managerial.view` | Si | Si | No |
-| Ver reporte de caja propia | `reports.cash_session.view` | Si | Si | Configurable |
-| Exportar reportes | `reports.export` | Si | Si | No |
-| Ver usuarios/roles | `users.view` | Si | No | No |
-| Crear usuarios | `users.create` | Si | No | No |
-| Editar usuarios/roles | `users.update` | Si | No | No |
-| Desactivar usuarios | `users.disable` | Si | No | No |
-| Ver backups | `backups.view` | Si | No | No |
-| Crear backup manual | `backups.create` | Si | No | No |
-| Descargar backup | `backups.download` | Si | No | No |
-| Ver auditoria | `audit.view` | Si | Si | No |
+| Modulo / Accion | Permiso | admin | supervisor | cajero | area |
+|---|---|---:|---:|---:|---:|
+| Ver configuracion fiscal | `settings.fiscal.view` | Si | Si | No | No |
+| Editar configuracion fiscal | `settings.fiscal.update` | Si | No | No | No |
+| Ver catalogo | `catalog.view` | Si | Si | Si | No |
+| Crear/editar categorias | `catalog.manage` | Si | Configurable | No | No |
+| Crear/editar servicios/precios | `catalog.manage` | Si | Configurable | No | No |
+| Ver facturas | `invoices.view` | Si | Si | Si, propias/dia por defecto | No |
+| Crear facturas | `invoices.create` | Si | Si | Si | No |
+| Operar cualquier factura para cobro/reversion | `invoices.operate_any` | Si | Si | No | No |
+| Anular facturas | `invoices.void` | Si | Si | No | No |
+| Ver caja | `cash.view` | Si | Si | Si, caja propia | No |
+| Abrir caja | `cash.open` | Si | Si | Si | No |
+| Cerrar caja | `cash.close` | Si | Si | Si, caja propia | No |
+| Cerrar caja de otro usuario | `cash.close_any` | Si | Si | No | No |
+| Registrar pagos | `payments.create` | Si | Si | Si | No |
+| Ver pagos | `payments.view` | Si | Si | Si, propios/dia por defecto | No |
+| Anular pagos | `payments.void` | Si | Si | No | No |
+| Ver recibos | `receipts.view` | Si | Si | Si | No |
+| Reimprimir recibos | `receipts.reprint` | Si | Si | Si, propias/dia por defecto | No |
+| Reimprimir facturas antiguas/de otros | `receipts.reprint_any` | Si | Si | No | No |
+| Ver navegacion de reportes | `reports.view` | Si | Si | No | No |
+| Ver reportes gerenciales | `reports.managerial.view` | Si | Si | No | No |
+| Ver reporte de caja propia | `reports.cash_session.view` | Si | Si | Configurable | No |
+| Exportar reportes | `reports.export` | Si | Si | No | No |
+| Ver usuarios/roles | `users.view` | Si | No | No | No |
+| Crear usuarios | `users.create` | Si | No | No | No |
+| Editar usuarios/roles | `users.update` | Si | No | No | No |
+| Desactivar usuarios | `users.disable` | Si | No | No | No |
+| Ver backups | `backups.view` | Si | No | No | No |
+| Crear backup manual | `backups.create` | Si | No | No | No |
+| Descargar backup | `backups.download` | Si | No | No | No |
+| Ver auditoria | `audit.view` | Si | Si | No | No |
 
 ## Consulta por area
 
@@ -79,6 +79,13 @@ El backend debe validar todos los permisos con Policies/Gates o middleware equiv
 - No puede editar precios, configuracion fiscal ni usuarios.
 - No puede anular facturas/pagos.
 - No puede ver reportes gerenciales.
+
+### Area
+
+- Puede consultar servicios pagados solo de su area asignada mediante `areas.paid_services.view`.
+- No puede abrir caja, crear facturas, registrar pagos, anular, reimprimir, ver reportes gerenciales, administrar usuarios ni gestionar respaldos.
+- Requiere `area_id` asignado por administracion antes de operar.
+- No debe usarse como modulo clinico ni expediente; solo confirma servicios cobrados.
 
 ## Acciones criticas que siempre requieren auditoria
 

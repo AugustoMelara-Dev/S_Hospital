@@ -60,6 +60,7 @@ $fiscalSettingsTest = Read-RequiredFile "backend\tests\Feature\FiscalSettingsTes
 $serviceCatalogTest = Read-RequiredFile "backend\tests\Feature\ServiceCatalogTest.php"
 $backupWorkflowTest = Read-RequiredFile "backend\tests\Feature\BackupWorkflowTest.php"
 $userController = Read-RequiredFile "backend\app\Http\Controllers\UserController.php"
+$rolesSeeder = Read-RequiredFile "backend\database\seeders\RolesAndPermissionsSeeder.php"
 $permissionsMatrix = Read-RequiredFile "docs\PERMISSIONS_MATRIX.md"
 $knownLimitations = Read-RequiredFile "docs\KNOWN_LIMITATIONS.md"
 $operativeNotes = Read-RequiredFile "docs\OPERATIVE_NOTES_2026_06_02.md"
@@ -148,12 +149,41 @@ if ($userController -ne "") {
     Test-Contains $userController '\$user->syncRoles\(\[\$validated\[''role''\]\]\)' "User updates still audit real role changes"
 }
 
+if ($rolesSeeder -ne "") {
+    Test-Contains $rolesSeeder "Role::findOrCreate\('area', 'web'\)" "Roles seeder creates area role"
+
+    $areaRoleBlock = ""
+    $areaRoleMatch = [regex]::Match(
+        $rolesSeeder,
+        "Role::findOrCreate\('area', 'web'\)->syncPermissions\(\`$permissions->whereIn\('name', \[(?<block>.*?)\]\)\);",
+        [System.Text.RegularExpressions.RegexOptions]::Singleline
+    )
+    if ($areaRoleMatch.Success) {
+        $areaRoleBlock = $areaRoleMatch.Groups['block'].Value
+        Add-Pass "Roles seeder keeps area role permissions in a scoped block"
+    } else {
+        Add-Failure "Roles seeder must assign area role permissions with a scoped syncPermissions block."
+    }
+
+    if ($areaRoleBlock -ne "") {
+        Test-Contains $areaRoleBlock "'areas\.paid_services\.view'" "Area role receives paid-services permission"
+        Test-DoesNotContain $areaRoleBlock "'(cash|invoices|payments|receipts|reports|users|backups|settings|catalog|audit)\." "Area role does not receive cashier, report, admin or backup permissions"
+    }
+}
+
 if ($permissionsMatrix -ne "") {
     Test-Contains $permissionsMatrix 'Apertura de caja\.' "Permissions matrix lists cash opening as critical audited action"
     Test-Contains $permissionsMatrix 'Cierre de caja\.' "Permissions matrix lists cash closing as critical audited action"
     Test-Contains $permissionsMatrix 'Creacion de factura\.' "Permissions matrix lists invoice issue as critical audited action"
     Test-Contains $permissionsMatrix 'Registro o anulacion de pago\.' "Permissions matrix lists payment registration/void as critical audited action"
     Test-Contains $permissionsMatrix 'Creacion/descarga de backup\.' "Permissions matrix lists backup request/download as critical audited action"
+    Test-Contains $permissionsMatrix '\|\s*Modulo / Accion\s*\|\s*Permiso\s*\|\s*admin\s*\|\s*supervisor\s*\|\s*cajero\s*\|\s*area\s*\|' "Permissions matrix exposes area role in the main module table"
+    Test-Contains $permissionsMatrix '\|\s*Abrir caja\s*\|\s*`cash\.open`\s*\|\s*Si\s*\|\s*Si\s*\|\s*Si\s*\|\s*No\s*\|' "Permissions matrix denies cash opening to area role"
+    Test-Contains $permissionsMatrix '\|\s*Crear facturas\s*\|\s*`invoices\.create`\s*\|\s*Si\s*\|\s*Si\s*\|\s*Si\s*\|\s*No\s*\|' "Permissions matrix denies invoice creation to area role"
+    Test-Contains $permissionsMatrix '\|\s*Ver reportes gerenciales\s*\|\s*`reports\.managerial\.view`\s*\|\s*Si\s*\|\s*Si\s*\|\s*No\s*\|\s*No\s*\|' "Permissions matrix denies managerial reports to area role"
+    Test-Contains $permissionsMatrix '\|\s*Crear backup manual\s*\|\s*`backups\.create`\s*\|\s*Si\s*\|\s*No\s*\|\s*No\s*\|\s*No\s*\|' "Permissions matrix denies manual backups to area role"
+    Test-Contains $permissionsMatrix '\|\s*Consultar servicios pagados de su area\s*\|\s*`areas\.paid_services\.view`\s*\|\s*Si\s*\|\s*Si\s*\|\s*No\s*\|\s*Si, solo area asignada\s*\|' "Permissions matrix allows area role only for assigned paid services"
+    Test-Contains $permissionsMatrix '(?s)### Area.*No puede abrir caja, crear facturas, registrar pagos, anular, reimprimir, ver reportes gerenciales, administrar usuarios ni gestionar respaldos' "Permissions matrix documents area role limitations"
 }
 
 if ($knownLimitations -ne "") {
