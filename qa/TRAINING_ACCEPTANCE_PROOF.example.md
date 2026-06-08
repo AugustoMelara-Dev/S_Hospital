@@ -5,6 +5,8 @@ Decision: `PENDING_FINAL_FIELD`.
 Use this template after supervised training. Keep it anonymous: do not write
 participant names, patient names, phone numbers, identity numbers, usernames,
 passwords, `.env` values, backup SQL filenames or local machine paths.
+Use role, position or initials in `Responsible person`; do not write full staff
+names.
 
 ## Training context
 

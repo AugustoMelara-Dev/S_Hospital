@@ -6,6 +6,9 @@ backup from the admin UI.
 Do not attach `.env` files, SQL dumps, database passwords, task XML exports or
 absolute local paths. Use only a relative `qa/` evidence reference or a short
 physical/support reference.
+Keep evidence anonymous. Use role, position or initials in `Responsible person`;
+do not write full staff names, patient names, usernames, passwords, `.env`
+values or local paths.
 
 ## Environment
 

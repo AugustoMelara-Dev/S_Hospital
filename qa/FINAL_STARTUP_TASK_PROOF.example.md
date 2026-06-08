@@ -7,6 +7,9 @@ system comes back after startup without a developer present.
 Do not attach `.env`, passwords, task XML exports, screenshots with secrets,
 SQL dumps or absolute local paths. Evidence must be a safe relative file under
 `qa/` or a physical support reference.
+Keep evidence anonymous. Use role, position or initials in `Responsible person`;
+do not write full staff names, patient names, usernames, passwords, `.env`
+values or local paths.
 
 ## Required fields
 

@@ -8,6 +8,10 @@ evidence is complete.
 Do not rename required field labels. The production preflight validates these
 exact labels and the checked items below.
 
+Keep evidence anonymous. Use role, position or initials in `Responsible person`;
+do not write full staff names, patient names, usernames, passwords, `.env`
+values or local paths.
+
 ## Environment
 
 - Date/time:

@@ -55,6 +55,7 @@ function Assert-FieldBlockersIndex([string] $content) {
         "qa\FINAL_RESTORE_PROOF.md",
         "qa\FINAL_CONCURRENCY_PROOF.md",
         "qa\TRAINING_ACCEPTANCE_PROOF.md",
+        "anonima",
         "segunda computadora",
         "media carta",
         "carta",
@@ -72,6 +73,7 @@ function Assert-FieldBlockersIndex([string] $content) {
         "barcode",
         "codigos internos",
         "datos tecnicos",
+        "nombres de personal",
         "-AllowMissingPhysicalProof",
         "-AllowPendingFinalField",
         "-SkipPreflight"
@@ -165,6 +167,7 @@ qa\FINAL_BACKUP_TASK_PROOF.md
 qa\FINAL_RESTORE_PROOF.md
 qa\FINAL_CONCURRENCY_PROOF.md
 qa\TRAINING_ACCEPTANCE_PROOF.md
+evidencia anonima
 Impresion fisica de una factura por vez en media carta, carta y A5, con fondo blanco y sin QR, barcode, codigos internos ni datos tecnicos.
 segunda computadora
 SistemaCajaHospitalaria-StackAutostart
@@ -174,6 +177,7 @@ SistemaCajaHospitalaria-DailyBackup
 base descartable
 ambiente aislado
 usuario de area
+nombres de personal
 -AllowMissingPhysicalProof
 -AllowPendingFinalField
 -SkipPreflight

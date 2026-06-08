@@ -8,6 +8,11 @@ physical printer or exact printer configuration used by the hospital.
 Do not rename required field labels. The production preflight validates these
 exact labels.
 
+Keep evidence anonymous. Use role, position or initials in `Responsible person`;
+do not write full staff names, patient names, usernames, passwords, `.env`
+values or local paths. For `Invoice used`, record only a safe invoice reference
+or anonymized test reference, not a patient name.
+
 ## Environment
 
 - Date/time:

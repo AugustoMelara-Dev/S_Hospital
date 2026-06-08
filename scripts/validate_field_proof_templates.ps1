@@ -140,6 +140,8 @@ Test-Template `
     ) `
     -safetyTerms @(
         'second computer',
+        'Keep evidence anonymous',
+        'do not write full staff names',
         'Do not mark `PRODUCTION_READY`',
         'Do not rename required field labels'
     )
@@ -176,6 +178,8 @@ Test-Template `
     ) `
     -safetyTerms @(
         "physical printer",
+        "Keep evidence anonymous",
+        "do not write full staff names",
         "Do not mark",
         "Do not rename required field labels"
     )
@@ -203,6 +207,8 @@ Test-Template `
     ) `
     -safetyTerms @(
         "disposable database",
+        "Keep evidence anonymous",
+        "do not write full staff names",
         "Do not restore into",
         "must stay under"
     )
@@ -232,6 +238,8 @@ Test-Template `
     ) `
     -safetyTerms @(
         "final server",
+        "Keep evidence anonymous",
+        "do not write full staff names",
         "AtStartup",
         "Do not attach"
     )
@@ -261,6 +269,8 @@ Test-Template `
     ) `
     -safetyTerms @(
         "final server",
+        "Keep evidence anonymous",
+        "do not write full staff names",
         "admin UI",
         "Do not attach"
     )
@@ -283,6 +293,8 @@ Test-Template `
     ) `
     -safetyTerms @(
         "disposable server/database snapshot",
+        "Keep evidence anonymous",
+        "do not write full staff names",
         "Do not run this against live production data",
         "do not include credentials"
     )
@@ -322,6 +334,7 @@ Test-Template `
     -safetyTerms @(
         "supervised training",
         "Keep it anonymous",
+        "do not write full staff",
         'Do not mark `PRODUCTION_READY`'
     ) `
     -RequireCheckResult $false
