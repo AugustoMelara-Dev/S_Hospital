@@ -89,6 +89,8 @@ deployment, then jump to the appropriate section below.
   End-to-end operator validation runbook.
 - **[RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)** - 267-line
   release validation checklist.
+- **[FINAL_FIELD_BLOCKERS.md](FINAL_FIELD_BLOCKERS.md)** - Single-page
+  summary of the seven final proofs that still block `PRODUCTION_READY`.
 - **[INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md](INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md)** -
   Receipt print validation.
 

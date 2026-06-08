@@ -4261,3 +4261,8 @@ Criterio de verificacion: `scripts\validate_final_field_blockers_safety.ps1 -Sel
 Contexto: `qa\OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md` ya bloqueaba `PRODUCTION_READY`, pero algunas filas aun resumian manuales en tres roles y la evidencia final como restore/concurrencia.
 Decision: el audit operativo y `validate_operations_objective_audit.ps1` exigen manual de usuario de area y nombran los siete proofs finales: LAN, impresion institucional, autoarranque, respaldo final, restore, concurrencia y capacitacion.
 Criterio de verificacion: `scripts\validate_operations_objective_audit.ps1`, `scripts\validate_production_ready_gate_safety.ps1`, `scripts\validate_operator_manuals_safety.ps1` y `scripts\check-branding.ps1` deben pasar.
+
+## 2026-06-08 - Bloqueantes finales tienen indice operativo unico
+Contexto: los siete proofs finales estaban protegidos por varios validadores y reportes, pero no habia una pagina unica para soporte que resumiera que falta y que no puede aceptarse como evidencia final.
+Decision: se agrega `docs\FINAL_FIELD_BLOCKERS.md`, se enlaza desde `docs\00_README.md`, se incluye como documento critico del paquete offline y `validate_final_field_blockers_safety.ps1` falla si el indice omite cualquiera de los siete proofs, los roles de capacitacion, las tareas Windows, el bloqueo de bypass o el estado `PRODUCTION_CANDIDATE`.
+Criterio de verificacion: `scripts\validate_final_field_blockers_safety.ps1`, `scripts\make_offline_release.ps1 -SelfTest`, `scripts\assert_offline_release_clean.ps1 -SelfTest`, `scripts\validate_operations_objective_audit.ps1` y `scripts\check-branding.ps1` deben pasar antes de regenerar el paquete offline.

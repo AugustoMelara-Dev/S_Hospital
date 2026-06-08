@@ -9,6 +9,7 @@ $ErrorActionPreference = "Stop"
 
 $script:OfflineReleaseCriticalDocs = @(
     "docs\00_README.md",
+    "docs\FINAL_FIELD_BLOCKERS.md",
     "docs\RELEASE_CHECKLIST.md",
     "docs\manuales\GUIA_INSTALACION_OPERATIVA.md",
     "docs\manuales\GUIA_RESPALDOS_Y_RESTAURACION.md",

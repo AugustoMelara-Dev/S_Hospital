@@ -76,6 +76,7 @@ $script:OfflineReleaseCriticalScripts = @(
 )
 $script:OfflineReleaseCriticalDocs = @(
     "00_README.md",
+    "FINAL_FIELD_BLOCKERS.md",
     "RELEASE_CHECKLIST.md",
     "manuales\GUIA_INSTALACION_OPERATIVA.md",
     "manuales\GUIA_RESPALDOS_Y_RESTAURACION.md",

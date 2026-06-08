@@ -44,6 +44,42 @@ function Read-RequiredFile([string] $relativePath) {
     return Get-Content -LiteralPath $path -Raw
 }
 
+function Assert-FieldBlockersIndex([string] $content) {
+    Assert-ContainsTerms "Final field blockers index" $content @(
+        "PRODUCTION_CANDIDATE",
+        "PRODUCTION_READY",
+        "qa\LAN_CLIENT_VALIDATION_PROOF.md",
+        "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md",
+        "qa\FINAL_STARTUP_TASK_PROOF.md",
+        "qa\FINAL_BACKUP_TASK_PROOF.md",
+        "qa\FINAL_RESTORE_PROOF.md",
+        "qa\FINAL_CONCURRENCY_PROOF.md",
+        "qa\TRAINING_ACCEPTANCE_PROOF.md",
+        "segunda computadora",
+        "media carta",
+        "carta",
+        "A5",
+        "SistemaCajaHospitalaria-StackAutostart",
+        "AtStartup",
+        "SistemaCajaHospitalaria-BackupWorker",
+        "SistemaCajaHospitalaria-DailyBackup",
+        "base descartable",
+        "ambiente aislado",
+        "usuario de area",
+        "sin QR",
+        "barcode",
+        "-AllowMissingPhysicalProof",
+        "-AllowPendingFinalField",
+        "-SkipPreflight"
+    )
+
+    if ($content -match '(?im)^Estado actual:\s*`?PRODUCTION_READY`?') {
+        Add-Failure "Final field blockers index must not declare PRODUCTION_READY while field evidence is pending."
+    } else {
+        Add-Pass "Final field blockers index keeps candidate status"
+    }
+}
+
 function Assert-ContainsTerms([string] $label, [string] $content, [string[]] $terms) {
     foreach ($term in $terms) {
         if ($content -notmatch [regex]::Escape($term)) {
@@ -177,6 +213,7 @@ $backupTaskProof = Read-RequiredFile "qa\FINAL_BACKUP_TASK_PROOF.md"
 $restoreProof = Read-RequiredFile "qa\FINAL_RESTORE_PROOF.md"
 $concurrencyProof = Read-RequiredFile "qa\FINAL_CONCURRENCY_PROOF.md"
 $trainingProof = Read-RequiredFile "qa\TRAINING_ACCEPTANCE_PROOF.md"
+$fieldBlockersIndex = Read-RequiredFile "docs\FINAL_FIELD_BLOCKERS.md"
 
 Assert-PendingProof "LAN client proof" $lanProof @(
     "segunda computadora",
@@ -246,6 +283,8 @@ Assert-LocalProofScope "Final concurrency proof" $concurrencyProof @(
     "Target environment: local",
     "local Docker/MariaDB"
 )
+
+Assert-FieldBlockersIndex $fieldBlockersIndex
 
 if ($failures.Count -gt 0) {
     Write-Host ""
