@@ -4141,3 +4141,8 @@ Criterio de verificacion: validate_browser_smoke_evidence.ps1 debe mostrar Lates
 Contexto: final_production_handoff.ps1 ya ejecutaba el guard de evidencia de navegador, pero el resumen visible del reporte seguia nombrando qa/browser-smoke-2026-06-03 y BROWSER_SMOKE_EVIDENCE_2026_06_03. Eso podia confundir la entrega aunque el guard validara capturas mas nuevas.
 Decision: el handoff generado lista qa/browser-smoke-2026-06-08 y qa/BROWSER_SMOKE_EVIDENCE_2026_06_08.md como evidencia controlada vigente; validate_final_handoff_completeness.ps1 exige esas referencias sin reescribir reportes historicos.
 Criterio de verificacion: validate_final_handoff_completeness.ps1 debe aceptar un handoff regenerado con las rutas 2026-06-08 y seguir bloqueando un cierre PRODUCTION_READY sin evidencia fisica completa.
+
+## 2026-06-08 - helper de cliente LAN protegido en paquete offline
+Contexto: el handoff operativo indica ejecutar scripts\validate_lan_client.ps1 desde una segunda PC real en la LAN, pero el guard principal del paquete solo exigia el validador del proof final.
+Decision: assert_offline_release_clean.ps1 ahora exige y compara scripts\validate_lan_client.ps1 contra la fuente versionada; validate_handoff_guard_coverage.ps1 cubre tambien los scripts mencionados como comandos de campo, no solo los declarados como dependencias internas del handoff.
+Criterio de verificacion: validate_handoff_guard_coverage.ps1, validate_final_handoff_completeness.ps1, test_validate_lan_client_safety.ps1 y assert_offline_release_clean.ps1 -RequireCurrentCommit deben pasar despues de regenerar el paquete offline limpio.

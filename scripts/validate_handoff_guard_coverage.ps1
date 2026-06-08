@@ -53,13 +53,11 @@ $handoffScripts = @(
         Sort-Object -Unique
 )
 
-if ($handoffScripts.Count -gt 0) {
-    Add-Pass "Final handoff declares $($handoffScripts.Count) script dependency/dependencies"
-} else {
-    Add-Failure "Final handoff does not expose script dependencies in the expected Join-Path pattern."
-}
+$fieldCommandScripts = @(
+    'validate_lan_client.ps1'
+)
 
-foreach ($scriptName in $handoffScripts) {
+function Test-HandoffScriptCoverage([string] $scriptName) {
     $relativeScript = "scripts\$scriptName"
 
     if (Test-Path -LiteralPath (Join-Path $ProjectRoot $relativeScript) -PathType Leaf) {
@@ -85,6 +83,26 @@ foreach ($scriptName in $handoffScripts) {
     } else {
         Add-Failure "Offline guard does not compare $relativeScript with versioned source."
     }
+}
+
+if ($handoffScripts.Count -gt 0) {
+    Add-Pass "Final handoff declares $($handoffScripts.Count) script dependency/dependencies"
+} else {
+    Add-Failure "Final handoff does not expose script dependencies in the expected Join-Path pattern."
+}
+
+foreach ($scriptName in $handoffScripts) {
+    Test-HandoffScriptCoverage $scriptName
+}
+
+foreach ($scriptName in $fieldCommandScripts) {
+    if (Test-ContainsLiteral $finalHandoff $scriptName) {
+        Add-Pass "Final handoff field command mentions $scriptName"
+    } else {
+        Add-Failure "Final handoff field command does not mention $scriptName."
+    }
+
+    Test-HandoffScriptCoverage $scriptName
 }
 
 foreach ($requiredChecklistText in @(
