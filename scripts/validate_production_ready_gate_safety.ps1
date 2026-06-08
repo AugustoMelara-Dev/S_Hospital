@@ -74,6 +74,7 @@ $evidenceIndex = Read-RequiredFile "scripts\validate_ops_evidence_index.ps1"
 $handoffCompleteness = Read-RequiredFile "scripts\validate_final_handoff_completeness.ps1"
 $releaseWorkflow = Read-RequiredFile ".github\workflows\release.yml"
 $ciDocs = Read-RequiredFile "docs\CI.md"
+$operativeNotes = Read-RequiredFile "docs\OPERATIVE_NOTES_2026_06_02.md"
 $releaseNotes = Read-RequiredFile "RELEASE_NOTES_v1.0.0_FINAL.md"
 
 $finalProofPaths = @(
@@ -101,6 +102,8 @@ foreach ($proofPath in $finalProofPaths) {
     Assert-Literal "Ops evidence index inspects $proofPath before PRODUCTION_READY" $evidenceIndex $proofPath
     Assert-Literal "Release workflow blocks $releasePath before release" $releaseWorkflow $releasePath
     Assert-Literal "CI docs name final proof file $proofFileName" $ciDocs $proofFileName
+    Assert-Literal "Operative notes name final proof file $proofFileName" $operativeNotes $proofFileName
+    Assert-Literal "Final release notes name final proof file $proofFileName" $releaseNotes $proofFileName
 }
 
 Assert-Literal "Release workflow checks final field evidence before release" `
@@ -113,8 +116,14 @@ Assert-NotContains "Release workflow must not describe the stale four-proof gate
     $releaseWorkflow 'four (physical evidence|PROOF|proof)'
 Assert-NotContains "CI docs must not describe the stale four-proof gate" `
     $ciDocs 'four (physical evidence|PROOF|proof)'
+Assert-NotContains "Operative notes must not describe the stale four-proof gate" `
+    $operativeNotes '(four|cuatro)\s+(physical evidence|PROOF|proof|evidencias|comprobantes)'
+Assert-NotContains "Final release notes must not describe the stale four-proof gate" `
+    $releaseNotes '(four|cuatro)\s+(physical evidence|PROOF|proof|evidencias|comprobantes)'
 Assert-Literal "CI docs describe required final field evidence files" `
     $ciDocs 'All required final field evidence files under `qa/`'
+Assert-Literal "Operative notes describe any required final proof file generically" `
+    $operativeNotes "cualquier archivo de evidencia final requerido sigue PENDING"
 
 foreach ($placeholderPattern in @(
     '\bTODO\b',

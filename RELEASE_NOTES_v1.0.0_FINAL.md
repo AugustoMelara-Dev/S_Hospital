@@ -175,15 +175,26 @@ desde una build box con Docker funcional.
 4. Con la impresora institucional:
    - Imprimir una factura de prueba en media carta, carta y A5.
    - Llenar `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`.
-5. Con `RESTORE_TEST_DATABASE`:
+5. Con autoarranque en el servidor final:
+   - Instalar o actualizar el arranque del sistema.
+   - Observar inicio/reinicio del servidor, confirmar `/up` y login.
+   - Llenar `qa/FINAL_STARTUP_TASK_PROOF.md`.
+6. Con `RESTORE_TEST_DATABASE`:
    - `bash scripts/validate_restore_mysql.sh`.
    - Llenar `qa/FINAL_RESTORE_PROOF.md`.
-6. Con `HOSPITAL_CONCURRENCY_BASE_URL`:
+7. Con tareas de respaldo en el servidor final:
+   - Instalar o actualizar tareas de respaldo.
+   - Crear un respaldo manual desde la UI y confirmar Protegido.
+   - Llenar `qa/FINAL_BACKUP_TASK_PROOF.md`.
+8. Con `HOSPITAL_CONCURRENCY_BASE_URL`:
    - `bash scripts/validate_mysql_concurrency.sh`.
    - Llenar `qa/FINAL_CONCURRENCY_PROOF.md`.
-7. `scripts/production_readiness_preflight.ps1` sin bypass
+9. Con capacitacion supervisada por rol:
+   - Ejecutar practica segura sin datos reales de pacientes.
+   - Llenar `qa/TRAINING_ACCEPTANCE_PROOF.md`.
+10. `scripts/production_readiness_preflight.ps1` sin bypass
    debe retornar 0.
-8. `scripts/final_production_handoff.ps1` deja
+11. `scripts/final_production_handoff.ps1` deja
    `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` con decision
    `PRODUCTION_READY` solo si todas las evidencias y el preflight final
    pasan sin bypass.

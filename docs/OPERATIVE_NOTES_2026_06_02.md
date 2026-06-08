@@ -181,22 +181,30 @@ completar en este entorno de auditoría.
   los formatos institucionales vigentes (media carta, carta y A5) y
   validar márgenes y encabezados/pies del navegador.
   Llenar `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`.
+- **Autoarranque final** - Instalar o actualizar el arranque del
+  sistema, observar inicio/reinicio del servidor, confirmar `/up`
+  y login. Llenar `qa/FINAL_STARTUP_TASK_PROOF.md`.
 - **Restore real final** - Backup desde UI -> restore a base
   descartable, validar SHA256 + conteos. Llenar
   `qa/FINAL_RESTORE_PROOF.md`.
+- **Respaldo final** - Tareas Windows
+  `SistemaCajaHospitalaria-BackupWorker` y
+  `SistemaCajaHospitalaria-DailyBackup` instaladas y activas; crear
+  un respaldo manual desde UI y confirmar Protegido.
+  Llenar `qa/FINAL_BACKUP_TASK_PROOF.md`.
 - **Concurrencia final** - Doble apertura de caja, doble
   facturación, doble pago contra target descartable. Llenar
   `qa/FINAL_CONCURRENCY_PROOF.md`.
-- **Tarea continua de respaldos** - Tareas Windows
-  `SistemaCajaHospitalaria-BackupWorker` y
-  `SistemaCajaHospitalaria-DailyBackup` instaladas y activas.
+- **Capacitacion supervisada** - Recorrer roles de cajero,
+  supervisor, administrador y usuario de area en ambiente seguro de
+  practica. Llenar `qa/TRAINING_ACCEPTANCE_PROOF.md`.
 - **Handoff final** - `scripts/final_production_handoff.ps1`
   ejecutado sin `-AllowMissingPhysicalProof`. Llenar
   `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` con
   `PRODUCTION_READY=YES`.
 
 `production_readiness_preflight.ps1` falla el release si
-cualquiera de los cuatro PROOF files sigue PENDING.
+cualquier archivo de evidencia final requerido sigue PENDING.
 
 ## Alcance del producto (no se cierra)
 
