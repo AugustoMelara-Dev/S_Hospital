@@ -4,6 +4,23 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Paquete de soporte redacta XML de tareas
+
+Contexto: el paquete de soporte ya removia `.env`, secretos y rutas
+locales, pero un log o diagnostico podia incluir XML crudo de tareas
+programadas antes de enviarse a soporte.
+
+Decision: `collect_support_packet.ps1` reemplaza fragmentos XML de
+tareas (`Task`, `Actions`, `Principals`, `Triggers`, `Settings`) por
+`[xml-protegido]`. `validate_support_packet_safety.ps1` inyecta una
+muestra de XML de tarea en el fixture y falla si el paquete conserva
+tags crudos.
+
+Criterio de verificacion: `validate_support_packet_safety.ps1`,
+`validate_final_handoff_completeness.ps1`,
+`validate_production_ready_gate_safety.ps1` y `check-branding.ps1`
+deben pasar antes de regenerar el paquete offline.
+
 ## 2026-06-08 - Handoff final sanitiza rutas Unix y XML crudo
 
 Contexto: los proof files finales ya bloquean rutas locales Unix y

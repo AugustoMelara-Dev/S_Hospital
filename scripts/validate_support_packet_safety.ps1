@@ -72,6 +72,7 @@ try {
         "MAIL_PASSWORD=fixture_mail_password"
         "C:\Hospital\Sistema\.env"
         "PDOException in /var/www/html/storage/logs/laravel.log and /var/www/html/.env"
+        "<Task><Actions><Exec><Command>C:\Hospital\run.cmd</Command></Exec></Actions></Task>"
         "No comparta .env.local con soporte"
     ) -Encoding ASCII
 
@@ -107,6 +108,8 @@ try {
         "fixture_mail_password",
         "C:\\Hospital\\Sistema",
         "/var/www/html",
+        "<Task",
+        "<Actions",
         "\.env\.production",
         "\.env\.local"
     )
@@ -117,12 +120,16 @@ try {
         }
     }
 
-    if ($combined -notmatch "%PROJECT_ROOT%" -or $combined -notmatch "\[redacted\]" -or $combined -notmatch "\[ruta-local\]" -or $combined -notmatch "\[archivo-protegido\]") {
+    if ($combined -notmatch "%PROJECT_ROOT%" -or
+        $combined -notmatch "\[redacted\]" -or
+        $combined -notmatch "\[ruta-local\]" -or
+        $combined -notmatch "\[archivo-protegido\]" -or
+        $combined -notmatch "\[xml-protegido\]") {
         Write-Fail "El paquete no incluyo los marcadores seguros esperados."
     }
 
     Write-Host "[OK] SUPPORT_PACKET_SAFETY: YES" -ForegroundColor Green
-    Write-Host "[OK] No se copiaron .env, secretos ni rutas locales reales." -ForegroundColor Green
+    Write-Host "[OK] No se copiaron .env, secretos, rutas locales reales ni XML crudo de tareas." -ForegroundColor Green
 } finally {
     Remove-Fixture
 }
