@@ -1,6 +1,6 @@
 ﻿# Checklist De Capacitacion
 
-Use esta lista para capacitar a personal de caja, supervision y administracion.
+Use esta lista para capacitar a personal de caja, areas, supervision y administracion.
 
 Antes de empezar, revise `docs\manuales\GUIA_CAPACITACION_SEGURA.md`. La
 capacitacion debe hacerse en una instalacion separada o base descartable; no en
@@ -48,6 +48,18 @@ la base real de produccion.
 - [ ] Documenta diferencias de caja.
 - [ ] No restaura backups ni borra datos por cuenta propia.
 
+## Usuario De Area
+
+- [ ] Inicia sesion con usuario propio del area.
+- [ ] Confirma que la pantalla muestra **Servicios pagados**.
+- [ ] Confirma que el area asignada es correcta.
+- [ ] Filtra por fecha del dia o turno.
+- [ ] Identifica paciente, servicio, fecha, cajero, metodo de pago y total.
+- [ ] Sabe que no puede cobrar, facturar, anular ni ver reportes administrativos.
+- [ ] Sabe que hacer si un servicio pagado no aparece.
+- [ ] Sabe no pedir repetir facturas ni cobros sin verificacion en Historial.
+- [ ] Cierra sesion al terminar el turno.
+
 ## Administrador
 
 - [ ] Configura datos del hospital.
@@ -55,6 +67,7 @@ la base real de produccion.
 - [ ] Revisa recibo institucional en media carta, carta y A5.
 - [ ] Revisa reporte diario.
 - [ ] Revisa pagos por metodo.
+- [ ] Asigna area correcta a usuarios de laboratorio, rayos X u otras areas.
 - [ ] Identifica facturas parciales y anuladas.
 - [ ] Autoriza anulaciones con motivo.
 - [ ] Crea respaldo manual.

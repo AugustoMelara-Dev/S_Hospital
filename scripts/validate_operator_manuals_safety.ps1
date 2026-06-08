@@ -57,6 +57,7 @@ function Test-ManualChecklistAndWarnings([string] $role, [string] $content) {
 }
 
 $cashier = Read-Manual "docs\manuales\MANUAL_CAJERO.md"
+$areaUser = Read-Manual "docs\manuales\MANUAL_USUARIO_AREA.md"
 $supervisor = Read-Manual "docs\manuales\MANUAL_SUPERVISOR.md"
 $administrator = Read-Manual "docs\manuales\MANUAL_ADMINISTRADOR.md"
 $operatorIndex = Read-Manual "docs\manuales\INDICE_OPERADOR.md"
@@ -74,6 +75,16 @@ if ($cashier -ne "") {
     Test-Contains $cashier "(?i)no\s+se\s+debe\s+facturar\s+ni\s+cobrar\s+sin\s+caja\s+abierta" "Cashier manual blocks charging without open cashbox"
     Test-Contains $cashier "(?i)motivo\s+de\s+la\s+reimpresion" "Cashier manual requires reprint reason"
     Test-NotContains $cashier "(?i)motivo\s+si\s+el\s+sistema\s+lo\s+solicita|si\s+el\s+sistema\s+lo\s+solicita" "Cashier manual avoids optional audit-action wording"
+}
+
+if ($areaUser -ne "") {
+    Test-ManualChecklistAndWarnings "Area-user manual" $areaUser
+    foreach ($pattern in @("Abrir El Sistema", "Consultar Servicios Pagados", "Que Hacer Si No Aparece Un Servicio", "Que No Debe Hacer Este Rol")) {
+        Test-Contains $areaUser ([regex]::Escape($pattern)) "Area-user manual includes $pattern"
+    }
+    Test-Contains $areaUser "(?i)no\s+abre\s+caja|no\s+crea\s+facturas|no\s+registra\s+pagos|no\s+ve\s+reportes\s+administrativos" "Area-user manual limits operational scope"
+    Test-Contains $areaUser "(?i)no\s+pida\s+repetir\s+la\s+factura|no\s+pida\s+repetir\s+facturas" "Area-user manual prevents duplicate invoice requests"
+    Test-Contains $areaUser "(?i)no\s+use\s+esta\s+pantalla\s+como\s+expediente\s+clinico" "Area-user manual avoids clinical-record scope creep"
 }
 
 if ($supervisor -ne "") {
@@ -100,6 +111,8 @@ if ($administrator -ne "") {
 if ($operatorIndex -ne "") {
     Test-Contains $operatorIndex "(?i)Soporte Local de Primer Nivel" "Operator index uses local support wording"
     Test-Contains $operatorIndex "(?i)Avisar a soporte local" "Operator index routes LAN errors to local support"
+    Test-Contains $operatorIndex "MANUAL_USUARIO_AREA\.md" "Operator index links area-user manual"
+    Test-Contains $operatorIndex "(?i)consulta de servicios pagados" "Operator index documents area-user workflow"
 }
 
 if ($support -ne "") {
@@ -210,8 +223,8 @@ if ($commonIncidents -ne "") {
     Test-NotContains $sessionIncident "(?i)SESSION_DRIVER|SESSION_ENCRYPT|SANCTUM_STATEFUL_DOMAINS|php\s+artisan|session:clear|\.env|session_driver|runtime|backend|file\s+a\s+database" "Common incidents session section avoids raw session internals"
 }
 
-$combined = "$cashier`n$supervisor`n$administrator`n$support`n$training`n$commonIncidents"
-$operatorFacing = "$cashier`n$supervisor`n$administrator`n$operatorIndex`n$generalUserManual`n$generalUserManualHtml"
+$combined = "$cashier`n$areaUser`n$supervisor`n$administrator`n$support`n$training`n$commonIncidents"
+$operatorFacing = "$cashier`n$areaUser`n$supervisor`n$administrator`n$operatorIndex`n$generalUserManual`n$generalUserManualHtml"
 $operatorFacingForTechnicalScan = $operatorFacing `
     -replace [regex]::Escape('php artisan hospital:maintenance on'), '[maintenance-on]' `
     -replace [regex]::Escape('php artisan hospital:maintenance off'), '[maintenance-off]'

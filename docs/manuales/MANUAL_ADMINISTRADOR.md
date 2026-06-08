@@ -21,6 +21,8 @@ No invente CAI, serie, rango o fecha de vencimiento. Estos datos deben validarse
 Use cuentas separadas para cada persona.
 
 - Cajero: abre caja, factura, cobra e imprime.
+- Usuario de area: consulta servicios pagados de su area asignada, sin caja,
+  facturacion ni reportes administrativos.
 - Supervisor/Admin: configura, revisa reportes, autoriza anulaciones y respaldos.
 - Auditor: consulta reportes e historial sin modificar.
 

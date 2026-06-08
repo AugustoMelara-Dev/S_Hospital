@@ -7,7 +7,7 @@ al procedimiento correcto.
 
 ## Cómo usar este manual
 
-1. Identifica tu rol: Cajero, Supervisor, Administrador o
+1. Identifica tu rol: Cajero, Usuario de Area, Supervisor, Administrador o
    Soporte Local de Primer Nivel.
 2. Salta a la seccion de tu rol.
 3. Sigue el procedimiento paso a paso.
@@ -29,6 +29,12 @@ al procedimiento correcto.
 - Casos cubiertos: cierre diario, anulacion supervisada,
   conciliacion de caja, escalamiento a administrador, gestion de
   permisos del cajero.
+
+### Usuario de Area
+
+- Manual: `MANUAL_USUARIO_AREA.md`
+- Casos cubiertos: consulta de servicios pagados del area asignada,
+  filtros por fecha, que hacer si un servicio no aparece y limites del rol.
 
 ### Administrador
 
@@ -89,6 +95,13 @@ Cajero
                 -> Soporte Local
                      -> necesita intervencion administrativa
                          -> Administrador
+
+Usuario de Area
+  -> consulta servicios pagados
+  -> servicio no aparece
+       -> Caja / Supervisor (revisa Historial y pago)
+            -> usuario sin area o permiso
+                -> Administrador
 ```
 
 ## Acciones Rapidas Del Operador
@@ -105,6 +118,7 @@ parte del trabajo diario de caja.
 | Ver ultimos respaldos | Administrador: **Respaldos** y confirmar **Protegido**, **Pendiente** o **Error**. |
 | Reparar tras reinicio | Avisar a soporte local; no repetir facturas ni cobros mientras el sistema no abra. |
 | Diagnosticar problema | Usar **Ayuda > Preparar resumen para soporte**. |
+| Consultar servicios pagados por area | Usuario de Area: abrir **Servicios pagados** y filtrar por fecha. |
 | Validar antes de entrega | Completar evidencia LAN, impresora, restore, concurrencia y preflight final con soporte local. |
 
 ## Errores comunes del cajero (mensaje -> accion)
