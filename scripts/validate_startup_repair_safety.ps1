@@ -151,6 +151,14 @@ if ($null -ne $backupTasksScript) {
     } else {
         Add-Pass "scripts\install_backup_tasks_windows.ps1 uses visible backup state transition wording"
     }
+
+    if ($backupTasksContent -match '\(\?i\)/\(var\|home\|srv\|opt\|tmp\|usr\|mnt\)/' -and
+        $backupTasksContent -match '\(\?is\)<\(Task\|Actions\|Principals\|Triggers\|Settings\)\\b' -and
+        $backupTasksContent -match '\[xml-protegido\]') {
+        Add-Pass "scripts\install_backup_tasks_windows.ps1 redacts Unix paths and task XML"
+    } else {
+        Add-Failure "scripts\install_backup_tasks_windows.ps1 must redact Unix local paths and raw task XML in operator output."
+    }
 }
 
 if ($failures.Count -eq 0) {

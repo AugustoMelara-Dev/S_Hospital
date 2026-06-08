@@ -4,6 +4,23 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Tareas Windows de respaldo protegen salida
+
+Contexto: `install_backup_tasks_windows.ps1` es el helper principal
+para registrar respaldos automaticos en Windows y su salida puede
+guardarse como evidencia de soporte, pero su sanitizacion solo cubria
+secretos y rutas Windows.
+
+Decision: `Protect-TaskText` tambien reemplaza rutas locales Unix y
+fragmentos XML de tareas por `[ruta-local]` y `[xml-protegido]`.
+`validate_startup_repair_safety.ps1` falla si el helper deja de cubrir
+esos patrones, ademas de sus checks no destructivos existentes.
+
+Criterio de verificacion: `validate_startup_repair_safety.ps1`,
+`validate_final_handoff_completeness.ps1`,
+`validate_production_ready_gate_safety.ps1`, `check-branding.ps1` y
+`git diff --check` deben pasar antes de regenerar el paquete offline.
+
 ## 2026-06-08 - Loop de respaldos protege logs tecnicos
 
 Contexto: `run_backup_scheduler_loop.ps1` escribe
