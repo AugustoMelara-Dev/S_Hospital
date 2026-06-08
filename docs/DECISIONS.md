@@ -4136,3 +4136,8 @@ Criterio de verificacion: validate_production_ready_gate_safety.ps1 protege el e
 Contexto: validate_browser_smoke_evidence.ps1 seguia validando una ruta fija de capturas RC del 2026-06-07 aunque el smoke vigente se regenero en qa/browser-smoke-2026-06-08. Ese desfase podia hacer que el handoff aprobara evidencia visual vieja y no la pantalla realmente revisada.
 Decision: el guard selecciona automaticamente el rc-e2e-mocked-report.json mas reciente bajo qa/browser-smoke-* y reporta la ruta elegida antes de validar capturas, consola limpia, recibo institucional y advertencia de que no sustituye LAN/impresora fisica. El branding check tambien escanea la evidencia activa del 2026-06-08.
 Criterio de verificacion: validate_browser_smoke_evidence.ps1 debe mostrar Latest RC browser smoke report: qa\browser-smoke-2026-06-08\rc-e2e-mocked-report.json y BROWSER_SMOKE_EVIDENCE: YES; check-branding.ps1 debe pasar con la evidencia activa nueva.
+
+## 2026-06-08 - handoff final referencia capturas RC vigentes
+Contexto: final_production_handoff.ps1 ya ejecutaba el guard de evidencia de navegador, pero el resumen visible del reporte seguia nombrando qa/browser-smoke-2026-06-03 y BROWSER_SMOKE_EVIDENCE_2026_06_03. Eso podia confundir la entrega aunque el guard validara capturas mas nuevas.
+Decision: el handoff generado lista qa/browser-smoke-2026-06-08 y qa/BROWSER_SMOKE_EVIDENCE_2026_06_08.md como evidencia controlada vigente; validate_final_handoff_completeness.ps1 exige esas referencias sin reescribir reportes historicos.
+Criterio de verificacion: validate_final_handoff_completeness.ps1 debe aceptar un handoff regenerado con las rutas 2026-06-08 y seguir bloqueando un cierre PRODUCTION_READY sin evidencia fisica completa.

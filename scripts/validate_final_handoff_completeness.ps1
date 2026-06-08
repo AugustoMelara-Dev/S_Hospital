@@ -122,7 +122,7 @@ if ($failures.Count -eq 0) {
     Assert-Content 'Only final-field qa/\*\.example\.md templates are allowed in offline release' "El handoff debe conservar la salida del self-test del guard offline."
 
     $requiredEvidence = @(
-        'BROWSER_SMOKE_EVIDENCE_2026_06_03.md',
+        'BROWSER_SMOKE_EVIDENCE_2026_06_08.md',
         'SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md',
         'HELP_SCREEN_SAFETY_2026_06_03.md',
         'SUPPORT_PACKET_SAFETY_2026_06_03.md',
@@ -161,6 +161,7 @@ if ($failures.Count -eq 0) {
         'LAN_LOADTEST_SAFETY_2026_06_04.md',
         'LAN_LOADTEST_HANDOFF_2026_06_04.md',
         'MARIADB_MIGRATION_VALIDATION_2026_06_07.md',
+        'browser-smoke-2026-06-08',
         'RESTORE_WINDOWS_SAFETY_2026_06_04.md',
         'PRODUCTION_LICENSE_SALT_GUARD_2026_06_04.md',
         'PRODUCTION_READY_GATE_VALIDATOR_2026_06_04.md'

@@ -1,6 +1,6 @@
 # Resultado de handoff final de produccion
 
-- Generado: 2026-06-07 23:48:19
+- Generado: 2026-06-08 01:03:56
 - URL base: http://192.168.1.10:8000
 - Carpeta del sistema: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -46,7 +46,7 @@
 - Shift incident recovery safety guard exit code: 0
 - New invoice maintainability guard exit code: 0
 - Training safety guard exit code: 0
-- Field proof templates safety guard exit code: 1
+- Field proof templates safety guard exit code: 0
 - Proof initialization safety guard exit code: 0
 - Operations objective audit guard exit code: 0
 - Handoff guard coverage guard exit code: 0
@@ -74,11 +74,10 @@ No declare PRODUCTION_READY. Mantenga el sistema como PRODUCTION_CANDIDATE hasta
 - Instalar o actualizar las tareas Windows `SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup`, luego confirmar que un respaldo manual de la UI cambia de Pendiente a Protegido.
 - El preflight fue omitido en esta ejecucion de handoff.
 - El artefacto de release offline falta, esta desactualizado o contiene archivos no permitidos.
-- La validacion de plantillas de evidencia de campo devolvio codigo de salida 1.
 
 ## Evidencia completada en este frente de endurecimiento
 
-- Capturas controladas de navegador: `qa/browser-smoke-2026-06-03/` y `qa/BROWSER_SMOKE_EVIDENCE_2026_06_03.md`.
+- Capturas controladas de navegador vigentes: `qa/browser-smoke-2026-06-08/` y `qa/BROWSER_SMOKE_EVIDENCE_2026_06_08.md`.
 - Diagnostico del sistema y guardas de Ayuda/soporte: `qa/SYSTEM_DIAGNOSTICS_SAFETY_2026_06_03.md`, `qa/HELP_SCREEN_SAFETY_2026_06_03.md`, `qa/SUPPORT_PACKET_SAFETY_2026_06_03.md`, `qa/FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md`.
 - Tarea continua de respaldos, autoarranque, respaldo final y restore: `qa/BACKUP_WORKER_SMOKE_2026_06_03.md`, `qa/BACKUP_STARTUP_CURRENT_USER_SAFETY_2026_06_04.md`, `qa/FINAL_STARTUP_TASK_PROOF.example.md`, `qa/FINAL_STARTUP_TASK_PROOF.md`, `qa/FINAL_BACKUP_TASK_PROOF.example.md`, `qa/FINAL_BACKUP_TASK_PROOF.md`, `qa/FINAL_RESTORE_PROOF.md`, `qa/FINAL_RESTORE_PROOF_2026_06_03.md` y `qa/RESTORE_WINDOWS_SAFETY_2026_06_04.md`.
 - Concurrencia, doble accion y eventos propios en tiempo real: `qa/FINAL_CONCURRENCY_PROOF.md`, `qa/DOUBLE_ACTION_SAFETY_2026_06_03.md` y `qa/REALTIME_OWN_EVENT_SAFETY_2026_06_04.md`.
@@ -100,7 +99,7 @@ No declare PRODUCTION_READY. Mantenga el sistema como PRODUCTION_CANDIDATE hasta
 - Soporte y diagnostico dentro del sistema: `frontend/src/features/help/HelpView.tsx`, `frontend/src/features/about/AboutView.tsx`, `frontend/src/hooks/useServerStatus.ts`, `frontend/src/lib/support/clientIssueLog.ts`, `backend/app/Http/Controllers/SystemStatusController.php`.
 - Scripts de arranque, instalacion y soporte: `scripts/deploy_hospital_lan.ps1`, `scripts/start_hospital_services.ps1`, `scripts/open_hospital_system.ps1`, `scripts/repair_hospital_system.ps1`, `scripts/restore_hospital_windows.ps1`, `scripts/collect_support_packet.ps1`, `scripts/install_hospital_startup_shortcut.ps1`, `scripts/install_stack_autostart_windows.ps1`, `scripts/install_backup_tasks_windows.ps1`, `scripts/install_backup_startup_current_user.ps1`, `scripts/start_backup_automation.cmd`, `scripts/run_backup_scheduler_loop.ps1`, `scripts/init_production_proofs.ps1`, `scripts/refresh_lan_ip.ps1`, `scripts/make_offline_release.ps1`, `scripts/final_production_handoff.ps1`.
 - Guardas de evidencia: `scripts/assert_offline_release_clean.ps1`, `scripts/validate_browser_smoke_evidence.ps1`, `scripts/validate_startup_repair_safety.ps1`, `scripts/validate_operator_manuals_safety.ps1`, `scripts/validate_backup_restore_docs_safety.ps1`, `scripts/validate_backup_startup_current_user_safety.ps1`, `scripts/validate_restore_windows_safety.ps1`, `scripts/validate_installation_docs_safety.ps1`, `scripts/validate_help_screen_safety.ps1`, `scripts/validate_system_diagnostics_safety.ps1`, `scripts/validate_support_packet_safety.ps1`, `scripts/validate_first_level_support_safety.ps1`, `scripts/validate_production_ready_gate_safety.ps1`, `scripts/validate_final_field_blockers_safety.ps1`, `scripts/validate_double_action_safety.ps1`, `scripts/validate_realtime_own_event_safety.ps1`, `scripts/validate_installer_legacy_safety.ps1`, `scripts/validate_lan_recovery_safety.ps1`, `scripts/validate_lan_client_proof.ps1`, `scripts/validate_lan_loadtest_safety.ps1`, `scripts/validate_institutional_receipt_print_proof.ps1`, `scripts/validate_known_limitations_safety.ps1`, `scripts/validate_maintenance_mode_safety.ps1`, `scripts/validate_permission_audit_safety.ps1`, `scripts/validate_rate_limit_safety.ps1`, `scripts/validate_shift_incident_recovery_safety.ps1`, `scripts/validate_new_invoice_maintainability.ps1`, `scripts/validate_training_safety.ps1`, `scripts/validate_final_startup_task_proof.ps1`, `scripts/validate_final_backup_task_proof.ps1`, `scripts/validate_training_acceptance_proof.ps1`, `scripts/validate_field_proof_templates.ps1`, `scripts/validate_proof_initialization_safety.ps1`, `scripts/validate_operations_objective_audit.ps1`, `scripts/validate_handoff_guard_coverage.ps1`, `scripts/validate_offline_release_staging_safety.ps1`, `scripts/validate_dependency_manifest.ps1`, `scripts/validate_production_license_salt_guard.ps1`, `scripts/validate_ops_evidence_index.ps1`, `scripts/validate_final_handoff_completeness.ps1`.
-- Material y evidencia de operacion: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, evidencias QA fechadas 2026-06-03 y `qa/browser-smoke-2026-06-03`.
+- Material y evidencia de operacion: `docs/manuales`, `docs/RELEASE_CHECKLIST.md`, `qa/TRAINING_ACCEPTANCE_PROOF.example.md`, evidencias QA de seguridad historicas y capturas RC vigentes en `qa/browser-smoke-2026-06-08`.
 
 ## Riesgos y limites
 
@@ -279,7 +278,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] scripts\init_production_proofs.ps1 matches versioned source
 [ OK ] scripts\make_offline_release.ps1 matches versioned source
 [ OK ] scripts\production_readiness_preflight.ps1 matches versioned source
-[ OK ] scripts\final_production_handoff.ps1 matches versioned source
+[FAIL] scripts\final_production_handoff.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] scripts\install_hospital_startup_shortcut.ps1 matches versioned source
 [ OK ] scripts\install_stack_autostart_windows.ps1 matches versioned source
 [ OK ] scripts\install_backup_startup_current_user.ps1 matches versioned source
@@ -292,7 +291,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] scripts\start_hospital_services.ps1 matches versioned source
 [ OK ] scripts\start_backup_automation.cmd matches versioned source
 [ OK ] scripts\validate_support_packet_safety.ps1 matches versioned source
-[ OK ] scripts\validate_browser_smoke_evidence.ps1 matches versioned source
+[FAIL] scripts\validate_browser_smoke_evidence.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] scripts\validate_dependency_manifest.ps1 matches versioned source
 [ OK ] scripts\validate_startup_repair_safety.ps1 matches versioned source
 [ OK ] scripts\validate_operator_manuals_safety.ps1 matches versioned source
@@ -316,15 +315,15 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] scripts\validate_new_invoice_maintainability.ps1 matches versioned source
 [ OK ] scripts\validate_known_limitations_safety.ps1 matches versioned source
 [ OK ] scripts\validate_shift_incident_recovery_safety.ps1 matches versioned source
-[ OK ] scripts\validate_final_handoff_completeness.ps1 matches versioned source
+[FAIL] scripts\validate_final_handoff_completeness.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] scripts\validate_handoff_guard_coverage.ps1 matches versioned source
 [ OK ] scripts\validate_offline_release_staging_safety.ps1 matches versioned source
-[ OK ] scripts\validate_operations_objective_audit.ps1 matches versioned source
+[FAIL] scripts\validate_operations_objective_audit.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] scripts\validate_permission_audit_safety.ps1 matches versioned source
 [ OK ] scripts\validate_rate_limit_safety.ps1 matches versioned source
 [ OK ] scripts\validate_realtime_own_event_safety.ps1 matches versioned source
 [ OK ] scripts\validate_restore_windows_safety.ps1 matches versioned source
-[FAIL] scripts\validate_production_ready_gate_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_production_ready_gate_safety.ps1 matches versioned source
 [ OK ] scripts\validate_production_license_salt_guard.ps1 matches versioned source
 [ OK ] scripts\validate_field_proof_templates.ps1 matches versioned source
 [ OK ] scripts\validate_final_field_blockers_safety.ps1 matches versioned source
@@ -347,10 +346,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 9590f557 before release handoff.
+[FAIL] MANIFEST.txt must reference current commit 2044d1db before release handoff.
 [ OK ] offline-images contains 4 Docker image tar file(s)
 
-OFFLINE_RELEASE_CLEAN: NO (2 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: NO (5 blocking issue(s))
 ```
 
 ## Salida de validacion del paquete seguro de soporte
@@ -749,7 +748,8 @@ Exit code: 0
 ## Salida de validacion de evidencia de navegador
 
 ```text
-[ OK ] Found qa\browser-smoke-2026-06-07\rc-e2e-mocked-report.json
+[ OK ] Latest RC browser smoke report: qa\browser-smoke-2026-06-08\rc-e2e-mocked-report.json
+[ OK ] Found qa\browser-smoke-2026-06-08\rc-e2e-mocked-report.json
 [ OK ] Found qa\screenshots\rc-help-support-2026-05-31\help-support-report.json
 [ OK ] Found qa\visual-smoke\field-qa-current-screenshots.mjs
 [ OK ] Browser smoke evidence uses institutional receipt filenames
@@ -925,15 +925,16 @@ TRAINING_SAFETY: YES
 ## Salida de validacion de plantillas de evidencia de campo
 
 ```text
+[ OK ] qa\LAN_CLIENT_VALIDATION_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\FINAL_RESTORE_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\FINAL_STARTUP_TASK_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\FINAL_BACKUP_TASK_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md keeps required fields, checks and safety instructions.
-[FAIL] Missing required unchecked check 'Receipt' with Result/evidence in qa\LAN_CLIENT_VALIDATION_PROOF.example.md.
 
-FIELD_PROOF_TEMPLATES: NO (1 blocking issue(s))
+FIELD_PROOF_TEMPLATES: YES
+Final-field proof templates match preflight-required labels, checks and safety instructions.
 ```
 
 ## Salida de validacion de inicializacion de evidencias
@@ -1275,7 +1276,7 @@ Manifest matches composer.json and package.json.
 [ OK ] Docs/evidence require 32+ character salt
 [ OK ] Docs/evidence warn not to commit or print real salt
 [ OK ] Production compose with placeholder salt completed with expected compose behavior
-error while interpolating services.scheduler.environment.HOSPITAL_LICENSE_SALT=[redacted] variable HOSPITAL_LICENSE_SALT is missing a value: HOSPITAL_LICENSE_SALT must be set to a 32+ char random string
+error while interpolating services.backend.environment.HOSPITAL_LICENSE_SALT=[redacted] variable HOSPITAL_LICENSE_SALT is missing a value: HOSPITAL_LICENSE_SALT must be set to a 32+ char random string
 [ OK ] Production compose without license salt completed with expected compose behavior
 
 PRODUCTION_LICENSE_SALT_GUARD: YES
