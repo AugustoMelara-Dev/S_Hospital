@@ -92,7 +92,7 @@ if ($installer -ne "") {
     Test-Contains $installer 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' "Installer uses current-user HKCU Run"
     Test-Contains $installer 'GetFolderPath\("Startup"\)' "Installer uses current-user Startup folder"
     Test-Contains $installer 'Protect-StartupText' "Installer sanitizes operator output"
-    Test-Contains $installer 'Modo WhatIf: no se crea archivo de inicio, no se cambia el registro y no se inicia el worker.' "Installer dry run states no writes/process start"
+    Test-Contains $installer 'Modo WhatIf: no se crea archivo de inicio, no se cambia el registro y no se inicia la automatizacion de respaldos.' "Installer dry run states no writes/process start"
     Test-Contains $installer 'No borre respaldos, archivos \.env, volumenes Docker ni carpetas de datos' "Installer trap warns against destructive recovery"
     Test-Contains $installer 'Remove-Item\s+-LiteralPath\s+\$startupFile\s+-Force' "Installer uninstall only removes Startup file"
     Test-Contains $installer 'Remove-ItemProperty\s+-Path\s+\$runKeyPath\s+-Name\s+\$runKeyName' "Installer uninstall only removes HKCU Run value"
@@ -104,14 +104,14 @@ if ($installer -ne "") {
 if ($launcher -ne "") {
     Test-Contains $launcher '--check' "Launcher supports check-only mode"
     Test-Contains $launcher 'powershell\.exe -NoProfile -ExecutionPolicy Bypass' "Launcher uses NoProfile PowerShell"
-    Test-Contains $launcher '-WindowStyle Hidden' "Launcher starts background worker hidden"
+    Test-Contains $launcher '-WindowStyle Hidden' "Launcher starts background automation hidden"
     Test-Contains $launcher 'No se pudo iniciar la automatizacion de respaldos' "Launcher has human failure message"
     Test-DoesNotContain $launcher '(?i)APP_KEY|DB_PASSWORD|TOKEN|SECRET|MAIL_PASSWORD' "Launcher does not contain secret names"
 }
 
 if ($loop -ne "") {
     Test-Contains $loop '\[switch\]\s*\$WhatIfOnly' "Scheduler loop exposes WhatIfOnly"
-    Test-Contains $loop 'No se inicio worker, no se ejecuto respaldo y no se escribieron archivos' "Scheduler WhatIf states no worker, backup or writes"
+    Test-Contains $loop 'No se inicio la automatizacion de respaldos, no se ejecuto respaldo y no se escribieron archivos' "Scheduler WhatIf states no automation, backup or writes"
     Test-Contains $loop 'Local\\SistemaCajaHospitalariaBackupAutomation' "Scheduler uses single-instance mutex"
     Test-Contains $loop 'Get-SafeAutomationText' "Scheduler sanitizes log/output text"
     Test-DoesNotContain $loop '(?i)docker\s+compose\b.*\bdown\b.*\s-v(\s|$)|docker\s+volume\s+rm|migrate:fresh|db:wipe|DROP\s+DATABASE' "Scheduler avoids destructive database/container operations"
@@ -120,7 +120,8 @@ if ($loop -ne "") {
 $combinedDocs = "$installGuide`n$backupGuide`n$supportEvidence"
 if ($combinedDocs -ne "") {
     Test-Contains $combinedDocs 'install_backup_startup_current_user\.ps1' "Docs mention current-user backup startup installer"
-    Test-Contains $combinedDocs 'sin crear archivo Startup, sin cambiar registro y sin\s+iniciar worker' "Docs explain current-user dry run safety"
+    Test-Contains $combinedDocs 'sin crear archivo Startup, sin cambiar registro y sin\s+iniciar la automatizacion de respaldos' "Docs explain current-user dry run safety"
+    Test-DoesNotContain $combinedDocs '(?i)sin\s+iniciar\s+worker|no\s+inicia\s+worker|no\s+inicio\s+worker' "Docs avoid raw worker wording for current-user dry run"
     Test-Contains $combinedDocs 'Startup/HKCU Run' "Docs mention Startup/HKCU fallback"
     Test-Contains $combinedDocs 'No borre|No restaure|No agregue archivos .*\.env' "Docs keep backup startup safety warnings"
 }
@@ -133,7 +134,7 @@ if ($failures.Count -eq 0) {
         0 `
         @(
             "Validacion de arranque de backups completada.",
-            "Modo WhatIf: no se crea archivo de inicio, no se cambia el registro y no se inicia el worker.",
+            "Modo WhatIf: no se crea archivo de inicio, no se cambia el registro y no se inicia la automatizacion de respaldos.",
             "Hora diaria validada: 23:30"
         )
 

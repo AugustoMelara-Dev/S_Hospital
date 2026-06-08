@@ -122,7 +122,7 @@ try {
 }
 
 if ($WhatIfOnly) {
-    Write-Host "Verificacion completada. No se inicio worker, no se ejecuto respaldo y no se escribieron archivos."
+    Write-Host "Verificacion completada. No se inicio la automatizacion de respaldos, no se ejecuto respaldo y no se escribieron archivos."
     Write-Host "Modo de respaldos: $runtimeSource"
     Write-Host "Hora diaria validada: $DailyBackupTime"
     exit 0

@@ -182,7 +182,7 @@ Resultado observado:
 | `repair_hospital_system.ps1` smoke sanitizado | Paso: genero diagnostico temporal sin `C:\Projects\S_Hospital`, rutas de usuario ni valores crudos tipo `APP_KEY`, `DB_PASSWORD`, `TOKEN` o `SECRET`; evidencia temporal eliminada. |
 | Consola de `repair_hospital_system.ps1` | Paso: los mensajes `ERROR` y `REVISION` usan el mismo detalle sanitizado que el archivo de diagnostico. |
 | Parser PowerShell de `run_backup_scheduler_loop.ps1` | Paso. |
-| `run_backup_scheduler_loop.ps1 -DailyBackupTime 99:99` | Falla al inicio con mensaje y log humano; no inicia worker ni ciclo diario. |
+| `run_backup_scheduler_loop.ps1 -DailyBackupTime 99:99` | Falla al inicio con mensaje y log humano; no inicia la automatizacion de respaldos ni ciclo diario. |
 | Parser PowerShell de `start_hospital_services.ps1` | Paso. |
 | `start_hospital_services.ps1` con carpeta sin Compose | Falla antes de llamar Docker, muestra mensaje humano y recuerda no borrar datos, volumenes, respaldos ni `.env`. |
 | `start_hospital_services.ps1 -ProjectRoot C:\tmp\does-not-exist-shospital` | Falla antes de llamar Docker y muestra `%PROJECT_ROOT%` en lugar de ruta local cruda. |
@@ -206,14 +206,14 @@ Resultado observado:
 | `init_production_proofs.ps1 -WhatIfOnly` | Paso: muestra acciones previstas sin copiar ni reemplazar archivos; consola no expone rutas locales crudas. |
 | `production_readiness_preflight.ps1 -BaseUrl http://127.0.0.1:1 -AllowMissingPhysicalProof` | Paso esperado con fallos: consola no expone `C:\Projects\S_Hospital` ni rutas de usuario. |
 | `install_backup_startup_current_user.ps1 -WhatIfOnly -DailyBackupTime 99:99` | Falla antes de tocar inicio/registro con mensaje humano de formato HH:mm. |
-| `install_backup_startup_current_user.ps1 -WhatIfOnly -DailyBackupTime 23:30` | Paso: no crea archivo de inicio, no cambia registro y no inicia worker. |
+| `install_backup_startup_current_user.ps1 -WhatIfOnly -DailyBackupTime 23:30` | Paso: no crea archivo de inicio, no cambia registro y no inicia la automatizacion de respaldos. |
 | `install_backup_startup_current_user.ps1 -WhatIfOnly -PhpPath C:\tmp\does-not-exist-php.exe` | Falla antes de tocar inicio/registro con mensaje humano de PHP faltante, sin ruta local cruda. |
 | `install_backup_startup_current_user.ps1 -ProjectRoot C:\tmp\does-not-exist-shospital -WhatIfOnly` | Falla antes de tocar inicio/registro con mensaje humano de carpeta del sistema, sin ruta local cruda. |
 | `install_backup_startup_current_user.ps1 -Status -PhpPath C:\tmp\does-not-exist-php.exe -DailyBackupTime 99:99` | Paso: revisa estado sin validar hora/PHP irrelevantes y no imprime contenido crudo de Startup. |
 | Parser PowerShell de `run_backup_scheduler_loop.ps1` despues de `-WhatIfOnly` | Paso. |
-| `run_backup_worker.cmd --check` | Paso: valida backend, PHP y carpeta de logs sin iniciar worker ni tocar datos. |
+| `run_backup_worker.cmd --check` | Paso: valida backend, PHP y carpeta de logs sin iniciar procesos de respaldo ni tocar datos. |
 | `run_scheduled_backup.cmd --check` | Paso: valida backend, PHP y carpeta de logs sin crear respaldo. |
-| `start_backup_automation.cmd --check` | Paso: valida hora/PHP a traves del loop y confirma que no inicia worker, no ejecuta respaldo y no escribe archivos. |
+| `start_backup_automation.cmd --check` | Paso: valida hora/PHP a traves del loop y confirma que no inicia la automatizacion de respaldos, no ejecuta respaldo y no escribe archivos. |
 | `start_backup_automation.cmd --check` con `HOSPITAL_DAILY_BACKUP_TIME=99:99` | Falla con mensaje humano de formato HH:mm antes de iniciar automatizacion. |
 | `run_backup_scheduler_loop.ps1 -ProjectRoot C:\tmp\does-not-exist-shospital -WhatIfOnly` | Falla con mensaje humano sin traza tecnica ni ruta sensible. |
 | Parser PowerShell de `collect_support_packet.ps1` despues de rutas de logs de backup | Paso. |

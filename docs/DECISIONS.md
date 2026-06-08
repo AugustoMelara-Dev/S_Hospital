@@ -4171,3 +4171,8 @@ Criterio de verificacion: check-branding.ps1 debe pasar sin literales mojibake e
 Contexto: la prueba de busqueda ya demostraba que servicios activos aparecen en Todos sin escribir primero, y la prueba de pago bloqueaba montos menores cuando pagos parciales estan apagados, pero validate_new_invoice_maintainability.ps1 no protegia esas reglas criticas.
 Decision: el guard de mantenibilidad exige las pruebas de ServiceSearch y PaymentModal que cubren Todos, resultados tolerantes a tildes/errores, monto recibido, saldo pendiente y bloqueo accesible del cobro parcial no permitido.
 Criterio de verificacion: validate_new_invoice_maintainability.ps1 debe fallar si se retiran esas pruebas o si dejan de probar servicios visibles en Todos y confirmacion bloqueada para pagos parciales deshabilitados.
+
+## 2026-06-08 - arranque de respaldos usa lenguaje operativo
+Contexto: el fallback de respaldos para usuario actual y la verificacion del ciclo diario imprimian "worker" en mensajes visibles, aunque soporte y administracion deben ver acciones operativas comprensibles.
+Decision: los mensajes de WhatIf, instalacion y evidencia hablan de automatizacion de respaldos; los nombres tecnicos quedan solo como identificadores de tareas, servicios o logs internos.
+Criterio de verificacion: validate_backup_startup_current_user_safety.ps1 exige el nuevo lenguaje y bloquea que la guia del fallback vuelva a decir "iniciar worker".

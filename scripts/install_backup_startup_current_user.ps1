@@ -87,7 +87,7 @@ $phpSource = if ($Status -or $Uninstall) {
 
 if ($WhatIfOnly) {
     Write-Host "Validacion de arranque de backups completada."
-    Write-Host "Modo WhatIf: no se crea archivo de inicio, no se cambia el registro y no se inicia el worker."
+    Write-Host "Modo WhatIf: no se crea archivo de inicio, no se cambia el registro y no se inicia la automatizacion de respaldos."
     Write-Host "Hora diaria validada: $DailyBackupTime"
     Write-Host "PHP: $phpSource"
     exit 0
@@ -148,7 +148,7 @@ Set-ItemProperty -Path $runKeyPath -Name $runKeyName -Value $runKeyValue
 
 Write-Host "Automatizacion Startup instalada: $(Protect-StartupText $startupFile)"
 Write-Host "Automatizacion HKCU Run instalada: $runKeyName"
-Write-Host "Cuando este usuario inicie sesion, se iniciara el worker de respaldos y el respaldo diario."
+Write-Host "Cuando este usuario inicie sesion, se iniciara la automatizacion de respaldos y el respaldo diario."
 
 if ($StartNow) {
     $env:HOSPITAL_PHP_PATH = $PhpPath
