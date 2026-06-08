@@ -300,7 +300,7 @@ export function ReportsView({
     <section id="reportes" aria-labelledby="reports-title">
       <PageHeader
         title="Reportes"
-        description="Facturacion, cobros, caja y auditoria en una vista clara."
+        description="Facturación, cobros, caja y auditoria en una vista clara."
       />
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ReportTab)} className="space-y-6">

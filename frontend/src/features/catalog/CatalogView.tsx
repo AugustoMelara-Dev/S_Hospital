@@ -203,7 +203,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   }
 
   return (
-    <section id="catalogo" className="flex flex-col gap-5" aria-labelledby="catalog-title">
+    <section id="catálogo" className="flex flex-col gap-5" aria-labelledby="catalog-title">
       <div className="flex items-center justify-between">
         <div>
           <h1 id="catalog-title" className="text-2xl font-bold tracking-tight">{t('catalog.title')}</h1>

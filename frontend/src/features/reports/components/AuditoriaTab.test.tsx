@@ -48,7 +48,7 @@ describe('AuditoriaTab', () => {
           payment_count: 2,
           cash_session_count: 1,
           invoice_count: 2,
-          total_collected: 'no-numero',
+          total_collected: 'no-número',
         },
       ],
     } satisfies OperationsReport;
@@ -71,7 +71,7 @@ describe('AuditoriaTab', () => {
     expect(screen.getByText('Paciente Reverso')).toBeInTheDocument();
     expect(screen.getByText('caja.principal')).toBeInTheDocument();
     expect(document.body.textContent).toContain('L. 0.00');
-    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-número|undefined/);
   });
 
   it('renders catalog audit changes with human labels and without technical fields', () => {
@@ -128,7 +128,7 @@ describe('AuditoriaTab', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: /cambios de catalogo/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /cambios de catálogo/i })).toBeInTheDocument();
     expect(screen.getByText('Glucosa')).toBeInTheDocument();
     expect(screen.getByText('Precio actualizado')).toBeInTheDocument();
     expect(screen.getByText('Ajuste aprobado por administracion')).toBeInTheDocument();

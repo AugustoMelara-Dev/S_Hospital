@@ -1,3 +1,166 @@
+﻿# DECISIONS - S_Hospital v1.0.0
+
+> Log cronologico de decisiones tecnicas y operativas. Cada entrada
+sigue el patron: **Contexto** -> **Decision** -> **Criterio de
+verificacion**. Las fechas son UTC.
+
+## 2026-06-07 - HTTPS es obligatorio en PRODUCTION_READY
+
+Contexto: la release v1.0.0-rc.4 documentaba HTTPS como opcional
+en docs/HTTPS_OPTIONAL.md. La auditoria final encontro que el
+hospital LAN transporta credenciales, numeros fiscales y nombres
+de pacientes, por lo que el cifrado end-to-end es necesario aun
+sin internet.
+
+Decision:
+- nginx/default.conf se reescribe: HTTP (puerto 80) solo redirige
+  301 a HTTPS (puerto 443 / 8443 en LAN). El bloque HTTPS es
+  mandatorio.
+- nginx/hospital-common.conf se extrae como snippet compartido
+  para que ambos server blocks (HTTP redirector y HTTPS app)
+  compartan location blocks, headers, gzip, CSP fallback y
+  forwarding de IP.
+- backend/.env define APP_URL=https, SESSION_SECURE_COOKIE=true,
+  CORS_ALLOWED_ORIGINS y SANCTUM_STATEFUL_DOMAINS apuntan al
+  origen HTTPS.
+- EchoConfigController devuelve host/port/scheme/path del APP_URL
+  (same-origin) en vez del soketi interno. Metadata interna queda
+  en data._internal para CLI y tests.
+- Frontend echo.ts usa wsPath: '/ws' para que pusher-js conecte a
+  wss://APP_URL/ws (proxy nginx -> soketi:6001).
+- Soketi se declara solo expose: 6001 (no ports:), de modo que
+  no sea alcanzable directamente desde una PC cliente.
+
+Criterio de verificacion:
+- curl -I http://IP:8000/ -> 301 Location: https://IP:8443/
+- curl -I https://IP:8443/up -> 200, headers HSTS y CSP
+- wss://IP:8443/ws -> 101 Switching Protocols
+- phpunit SoketiProxyConfigTest y HttpsConfigTest pasan
+- qa/HTTPS_MIGRATION.md describe la instalacion manual de la CA
+
+Riesgo: si una PC cliente no instala la CA, el navegador bloquea
+la app. Mitigacion: el instalador deja la CA accesible en una
+ruta de red compartida; el manual explica la importacion en 3
+sistemas operativos.
+
+## 2026-06-07 - docker-compose.lan-emulation.yml valida multi-PC sin hardware
+
+Contexto: la prueba final de "5 PCs de caja simultaneas" requiere
+hardware fisico. En auditoria sin 5 PCs reales, el riesgo de
+regresiones cross-PC no se puede mitigar.
+
+Decision: se agrega docker-compose.lan-emulation.yml como overlay
+que levanta 5 contenedores Playwright headless contra el mismo
+backend. Cada "cashier" corre qa/lan-emulation/cashier.js que
+valida /up, /login, dashboard y conexion WebSocket.
+qa/lan-emulation/orchestrator.js agrega los resultados y emite
+qa/lan-emulation-report.json.
+
+Criterio de verificacion:
+- npm run e2e -- e2e/lan-emulation.spec.ts pasa (smoke del
+  reporte JSON sin necesidad de Playwright real)
+- En el servidor del hospital: docker compose -f
+  docker-compose.lan-emulation.yml --profile lan5 up -d ejercita
+  la red bridge s_hospital_default ya creada por el stack
+  principal
+
+Riesgo: la emulacion corre en una sola maquina, por lo que el
+test fisico de "2 PCs reales en LAN" sigue siendo obligatorio.
+Mitigacion: qa/LAN_CLIENT_VALIDATION_PROOF.md debe completarse
+desde una segunda PC fisica antes de PRODUCTION_READY.
+
+## 2026-06-07 - Tests de carga multi-cliente con k6 + node
+
+Contexto: la release v1.0.0-rc.4 tenia tests/Feature/Concurrent/
+pero no habia un runner reproducible para validar concurrencia
+HTTP desde N clientes reales.
+
+Decision: se agrega qa/loadtest/ con:
+- multi-cashier.js (k6) - 5 VUs, login + factura + pago, SLA p95
+  < 1.5s, p99 < 3s
+- fiscal-race.js (node, sin k6) - 8 paralelos, 80 facturas,
+  assert no-duplicados y p99 < 3s
+- README.md con pre-requisitos y umbral de exit
+- scripts/loadtest_smoke.sh que corre el fiscal-race desde CI con
+  umbral reducido (4 paralelos, 20 facturas)
+
+Criterio de verificacion:
+- bash scripts/loadtest_smoke.sh retorna 0 contra el stack de
+  produccion
+- k6 run qa/loadtest/multi-cashier.js retorna 0 con 5 VUs y exit
+  en menos de 60s
+
+## 2026-06-07 - Encoding espanol en frontend
+
+Contexto: la auditoria inicial reporto 1024 matches con
+caracteres mojibake (Sesin, mdulo, Nmero, etc.) en archivos
+frontend. Investigacion revelo que el problema es mixto: (a)
+typos ortograficos (palabras sin acento que deberian tenerlo) y
+(b) display artefact de PowerShell (los archivos son UTF-8
+valido, pero el display de consola los muestra mal).
+
+Decision: se agrega frontend/scripts/fix-encoding.mjs que aplica
+dos categorias de fixes:
+1. Mojibake verdadero: secuencias A3, A1, etc. -> a, e, etc.
+2. Typos ortograficos: \bSesion\b -> Sesion, \bModulo\b ->
+   Modulo, etc. (solo cuando el patron es palabra completa)
+
+El script respeta \b para no romper palabras que ya estan
+correctas y corre en modo --dry-run por defecto.
+
+Criterio de verificacion:
+- node frontend/scripts/fix-encoding.mjs --dry-run reporta 0
+  reemplazos pendientes
+- npm.cmd run typecheck, lint, test --run y build pasan en verde
+
+## 2026-06-07 - APP_KEY rotation script
+
+Contexto: la rotacion de APP_KEY invalida sesiones activas y
+tokens firmados. Antes era un procedimiento manual con riesgo de
+olvidar config:cache o el reinicio de contenedores.
+
+Decision: se agrega scripts/rotate-app-key.ps1 que:
+1. Genera nuevo APP_KEY con
+   [System.Security.Cryptography.RandomNumberGenerator]
+2. Respalda .env a .env.bak.<timestamp> antes de modificar
+3. Escribe el nuevo key atomicamente (tmp + Move-Item)
+4. Ejecuta php artisan config:cache dentro del contenedor backend
+5. Reinicia backend, queue-worker y scheduler (Docker) o
+   refresca config cache (bare-metal)
+6. Hace ping a /up y reporta codigo de respuesta
+7. Soporta -WhatIf para preview sin aplicar
+
+Criterio de verificacion:
+- powershell -File scripts/rotate-app-key.ps1 -WhatIf muestra el
+  nuevo key truncado y los pasos planeados
+- phpunit AppKeyRotationTest verifica que el script existe, usa
+  RandomNumberGenerator, contiene base64:, y referencia
+  config:cache y WhatIf
+
+Riesgo: la rotacion invalida sesiones. Mitigacion: ejecutar
+durante ventana de mantenimiento, notificar a cajeros para
+re-login. Documentado en docs/SECRETS.md.
+
+## 2026-06-07 - Puertos APP_PORT/APP_HTTP_PORT/APP_HTTPS_PORT
+
+Contexto: el .env raiz historico tenia DB_PORT=3307 mientras
+docker-compose.yml publicaba 3306. Tambien mezclaba APP_PORT=8000
+con la URL de produccion.
+
+Decision:
+- .env raiz ahora tiene DB_PORT=3306 (coincide con
+  docker-compose.prod.yml)
+- .env.example documenta APP_HTTP_PORT=8000 (redirector HTTP) y
+  APP_HTTPS_PORT=8443 (app principal). APP_PORT se conserva por
+  compatibilidad pero apunta al HTTP redirector
+- docker-compose.prod.yml publica 80 y 443 (mapeados a
+  APP_HTTP_PORT y APP_HTTPS_PORT)
+
+Criterio de verificacion:
+- git diff .env muestra el cambio de 3307 a 3306
+- docker-compose -f docker-compose.prod.yml config muestra 80:80
+  y 443:443 mapeados a las variables
+
 ## 2026-06-05 - Proof fisico de impresion institucional tiene guard focal
 
 Contexto: `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` bloquea `PRODUCTION_READY`, pero soporte no tenia un comando focal para revisar solo la evidencia de impresora fisica sin correr todo el preflight.
@@ -621,7 +784,7 @@ Consecuencia:
 - El responsable tecnico debe usar rutas como `qa\LAN_CLIENT_VALIDATION_PROOF.md`.
 - Las capturas/fotos reales siguen siendo fisicas/manuales; el script solo genera el borrador seguro de evidencia LAN.
 
-### 2026-05-31 - GET concurrente y errores visibles en cambio de contraseña
+### 2026-05-31 - GET concurrente y errores visibles en cambio de contraseÃ±a
 
 Decision:
 
@@ -632,12 +795,12 @@ Decision:
 Motivo:
 
 - Dashboard y reportes hacen varias lecturas independientes que no deben bloquearse entre si.
-- Los usuarios con contraseña temporal necesitan ver errores de validacion sin depender solo de la barra de estado del shell.
+- Los usuarios con contraseÃ±a temporal necesitan ver errores de validacion sin depender solo de la barra de estado del shell.
 
 Consecuencia:
 
 - La carga de vistas con varias consultas mejora sin relajar seguridad de mutaciones.
-- Errores 422 de cambio de contraseña se muestran en la pantalla activa.
+- Errores 422 de cambio de contraseÃ±a se muestran en la pantalla activa.
 
 ### 2026-05-31 - Retencion conservadora de backups exitosos
 
@@ -786,7 +949,7 @@ Decision:
 
 Motivo:
 
-- El usuario reporto recargas que quedaban en blanco e imposibilidad de iniciar sesion; el primer rescate debe proteger el flujo de acceso antes de ampliar el rediseño.
+- El usuario reporto recargas que quedaban en blanco e imposibilidad de iniciar sesion; el primer rescate debe proteger el flujo de acceso antes de ampliar el rediseÃ±o.
 - Un sistema de caja vendible no puede depender de que cada componente renderice perfecto para no dejar al operador sin pantalla.
 - La UI debe sentirse como herramienta de caja hospitalaria, no como demo con texto de uso y controles decorativos.
 
@@ -995,25 +1158,25 @@ Consecuencia:
 - La migracion es aditiva y nullable para preservar instalaciones existentes.
 - El detalle vivo de pagos puede seguir reflejando el estado actual, pero los totales principales del cierre cerrado permanecen historicos.
 
-### 2026-05-31 - Reversión auditable de pagos
+### 2026-05-31 - ReversiÃ³n auditable de pagos
 
 Decision:
 
-- Los pagos se corrigen mediante reversión auditable (`status=void`) y no se borran.
-- Cada reversión exige permiso `payments.void`, motivo de servidor, usuario, fecha y auditoría.
-- La factura se recalcula dentro de la misma transacción desde pagos `posted`, dejando `paid_amount`, `balance_due` y `status` consistentes.
+- Los pagos se corrigen mediante reversiÃ³n auditable (`status=void`) y no se borran.
+- Cada reversiÃ³n exige permiso `payments.void`, motivo de servidor, usuario, fecha y auditorÃ­a.
+- La factura se recalcula dentro de la misma transacciÃ³n desde pagos `posted`, dejando `paid_amount`, `balance_due` y `status` consistentes.
 
 Motivo:
 
-- Caja y reportes deben excluir pagos reversados sin perder la evidencia de que el pago existió.
-- Una corrección de método o monto no debe depender de edición manual ni de memoria humana.
+- Caja y reportes deben excluir pagos reversados sin perder la evidencia de que el pago existiÃ³.
+- Una correcciÃ³n de mÃ©todo o monto no debe depender de ediciÃ³n manual ni de memoria humana.
 - El arqueo debe conservar la huella del reverso con un movimiento negativo asociado al pago original.
 
 Consecuencia:
 
-- Los reportes existentes, que ya filtran pagos `posted`, excluyen reversos automáticamente.
-- El detalle de movimientos de caja puede mostrar `payment_void` para explicar por qué el efectivo esperado bajó.
-- La UI puede consumir el nuevo endpoint de reversión sin crear una fuente secundaria de verdad para estados de pago.
+- Los reportes existentes, que ya filtran pagos `posted`, excluyen reversos automÃ¡ticamente.
+- El detalle de movimientos de caja puede mostrar `payment_void` para explicar por quÃ© el efectivo esperado bajÃ³.
+- La UI puede consumir el nuevo endpoint de reversiÃ³n sin crear una fuente secundaria de verdad para estados de pago.
 
 ### 2026-05-31 - Reporte mensual administrativo desde hechos financieros
 
@@ -1021,17 +1184,17 @@ Decision:
 
 - El reporte mensual administrativo se expone como contrato backend en `/api/reports/monthly`.
 - Sus totales salen de `FinancialFactsService`, la misma fuente de verdad usada por reportes diarios y de rango.
-- La evolución por fecha se limita a días con actividad financiera para evitar llenar la respuesta con filas vacías sin contexto operativo.
+- La evoluciÃ³n por fecha se limita a dÃ­as con actividad financiera para evitar llenar la respuesta con filas vacÃ­as sin contexto operativo.
 
 Motivo:
 
-- Administración necesita lectura mensual de facturado, cobrado, pendiente, parcial, anulado y métodos de pago sin sumar manualmente reportes diarios.
-- El mensual debe excluir cobros de facturas anuladas y mantener la misma semántica que los reportes existentes.
+- AdministraciÃ³n necesita lectura mensual de facturado, cobrado, pendiente, parcial, anulado y mÃ©todos de pago sin sumar manualmente reportes diarios.
+- El mensual debe excluir cobros de facturas anuladas y mantener la misma semÃ¡ntica que los reportes existentes.
 
 Consecuencia:
 
 - La UI puede consumir un contrato mensual estable sin recalcular dinero en frontend.
-- Las pruebas comparan días activos, métodos y estados para detectar divergencias entre lectura diaria y mensual.
+- Las pruebas comparan dÃ­as activos, mÃ©todos y estados para detectar divergencias entre lectura diaria y mensual.
 
 ### 2026-05-31 - Export financiero con fuente explicita
 
@@ -1186,7 +1349,7 @@ Decision:
 - Los graficos por metodo de pago usan "Cobros" porque su fuente es `payments_by_method`, no facturacion por items.
 - Las secciones por area usan "Facturacion por Area" y "Monto Facturado" mientras no exista una asignacion cobrada explicita.
 - El Excel premium usa "Facturacion" y "Monto Facturado" en hojas de categoria, area y servicio para mantener el mismo vocabulario que el PDF y la UI.
-- La pestaña frontend de servicios usa "facturado" para sus KPI, tablas, graficas y estados vacios cuando consume reportes de servicios/categorias.
+- La pestaÃ±a frontend de servicios usa "facturado" para sus KPI, tablas, graficas y estados vacios cuando consume reportes de servicios/categorias.
 
 Motivo:
 
@@ -1213,7 +1376,7 @@ Motivo:
 
 Consecuencia:
 
-- La señal ayuda al diagnostico local, pero no sustituye la prueba fisica desde una segunda PC LAN.
+- La seÃ±al ayuda al diagnostico local, pero no sustituye la prueba fisica desde una segunda PC LAN.
 - `PRODUCTION_READY` sigue bloqueado hasta completar evidencia LAN, impresora, restore y concurrencia final.
 
 ### 2026-05-31 - Dashboard diferencia facturacion y cobros
@@ -2342,7 +2505,7 @@ Consecuencia:
 
 Decision:
 
-- payments a�ade columna mount_cents bigInteger (migration 2026_06_01_000001).
+- payments añade columna mount_cents bigInteger (migration 2026_06_01_000001).
 - RegisterPaymentAction, VoidPaymentAction, BuildCashReconciliationAction y los reportes con ROUND(payments.amount * 100) se cambian a SUM(payments.amount_cents).
 
 Motivo:
@@ -2352,7 +2515,7 @@ Motivo:
 
 Consecuencia:
 
-- invoices y invoice_items aun usan decimal(12,2) sin columna cents. Sus ROUND(total * 100) y ROUND(line_total * 100) en report services quedan. Migrarlos requiere a�adir *_cents a las dos tablas y backfill, que es scope de una iteracion futura.
+- invoices y invoice_items aun usan decimal(12,2) sin columna cents. Sus ROUND(total * 100) y ROUND(line_total * 100) en report services quedan. Migrarlos requiere añadir *_cents a las dos tablas y backfill, que es scope de una iteracion futura.
 - Nueva regression test PaymentCentsSqlGuardTest parsea el codigo fuente de los report services y falla si alguien reintroduce ROUND(payments.amount * 100).
 
 ### 2026-06-01 - Autorizacion solo via Form Requests (F4)
@@ -2399,7 +2562,7 @@ Decision:
 
 Motivo:
 
-- parseCents, formatCents, parseQuantityUnits estaban duplicados en NewInvoiceView, InvoiceCart, PaymentModal, CashBoxView, OpenSessionForm. Cada copia tenia peque�as variaciones de regex/precision, lo que hacia que el redondeo de UI difiriera entre vistas.
+- parseCents, formatCents, parseQuantityUnits estaban duplicados en NewInvoiceView, InvoiceCart, PaymentModal, CashBoxView, OpenSessionForm. Cada copia tenia pequeñas variaciones de regex/precision, lo que hacia que el redondeo de UI difiriera entre vistas.
 - Money en el backend (PHP) ya define la politica de redondeo (HALF_AWAY_FROM_ZERO). Los helpers del frontend reflejan esa misma politica.
 
 Consecuencia:
@@ -2411,14 +2574,14 @@ Consecuencia:
 
 Decision:
 
-- docker-compose.prod.yml a�ade healthcheck al backend (DB::connection()->getPdo() via tinker) y a nginx (wget http://localhost/up).
+- docker-compose.prod.yml añade healthcheck al backend (DB::connection()->getPdo() via tinker) y a nginx (wget http://localhost/up).
 - nginx cambia de depender de backend: service_started a backend: service_healthy, garantizando que el paso cp /var/www/html/public del entrypoint haya terminado antes de que nginx intente servir.
 - client_max_body_size de nginx baja de 100M a 32M para coincidir con upload_max_filesize=32M y post_max_size=32M de backend/Dockerfile.prod.
 
 Motivo:
 
 - Sin healthchecks, un PHP-FPM trabado o un nginx sirviendo 404 (porque el cp aun no termino) pasaban desapercibidos.
-- El limite de 100M era enga�oso: nginx aceptaba el body pero PHP lo rechazaba con un 413/500 silencioso.
+- El limite de 100M era engañoso: nginx aceptaba el body pero PHP lo rechazaba con un 413/500 silencioso.
 
 Consecuencia:
 
@@ -2697,7 +2860,7 @@ Validacion:
 
 Decision:
 
-- La pesta�a de Auditoria muestra `catalog_changes` con etiquetas humanas: servicio, tipo de cambio, antes, despues, motivo, usuario y fecha.
+- La pestaña de Auditoria muestra `catalog_changes` con etiquetas humanas: servicio, tipo de cambio, antes, despues, motivo, usuario y fecha.
 - La UI traduce acciones como `service.price_updated` a texto administrativo y no renderiza `category_id`, codigos internos ni valores crudos de reglas especiales.
 
 Motivo:
@@ -3922,3 +4085,4 @@ Criterio de verificacion: make_offline_release.ps1 -SelfTest, assert_offline_rel
 Contexto: el log completo docs/DECISIONS.md conserva historial tecnico util para desarrollo, pero contiene criterios antiguos que no deben viajar como documentacion de handoff al hospital.
 Decision: make_offline_release.ps1 reemplaza docs/DECISIONS.md dentro de offline-release por un resumen operativo minimo con mantenimiento seguro, auditoria de permisos y contrato del paquete. El archivo fuente completo permanece versionado para desarrollo.
 Criterio de verificacion: assert_offline_release_clean.ps1 escanea la documentacion del release contra lenguaje heredado y falla si reaparecen nombres, formatos o referencias obsoletas.
+

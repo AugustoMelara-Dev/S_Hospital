@@ -25,9 +25,9 @@ vi.mock('../../lib/api', () => ({
 describe('AboutView', () => {
   const cashierUser = {
     id: 2,
-    name: 'Cajero Validacion',
-    email: 'cajero.validacion@hospital-san-isidro.local',
-    username: 'cajero.validacion',
+    name: 'Cajero Validación',
+    email: 'cajero.validación@hospital-san-isidro.local',
+    username: 'cajero.validación',
     active: true,
     roles: ['cajero'],
     permissions: ['cash.view'],

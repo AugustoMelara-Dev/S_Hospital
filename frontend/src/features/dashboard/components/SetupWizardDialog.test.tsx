@@ -58,9 +58,9 @@ describe('SetupWizardDialog', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /siguiente/i }));
 
-    const catalogInput = await screen.findByLabelText(/Servicios: categoria, area, servicio, precio, impuesto/i);
-    expect(catalogInput).toHaveValue('Categoria, Area, Servicio, Precio, Gravado (S/N)');
-    expect(catalogInput).toHaveAttribute('placeholder', 'Pegue aqui el catalogo real aprobado por administracion.');
+    const catalogInput = await screen.findByLabelText(/Servicios: categoría, area, servicio, precio, impuesto/i);
+    expect(catalogInput).toHaveValue('Categoría, Area, Servicio, Precio, Gravado (S/N)');
+    expect(catalogInput).toHaveAttribute('placeholder', 'Pegue aqui el catálogo real aprobado por administracion.');
     expect(catalogInput).not.toHaveValue(expect.stringMatching(/Consulta General|Consulta Especialista|Hemograma|Radiografia|Eritropoyetina 4000 UI/i));
     expect(document.body.textContent).not.toMatch(/Buen Pastor|4D82C1|Consulta General|Consulta Especialista|Hemograma|Radiografia Torax/i);
   });

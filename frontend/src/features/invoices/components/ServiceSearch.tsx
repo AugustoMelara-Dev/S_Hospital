@@ -67,14 +67,14 @@ export function ServiceSearch({
   const hiddenCount = Math.max(0, filteredServices.length - visibleServices.length);
   const firstVisibleService = visibleServices[0];
   const searchInputLabel = scannerEnabled
-    ? 'Buscar por nombre, categoria o identificador'
-    : 'Buscar por nombre o categoria';
+    ? 'Buscar por nombre, categoría o identificador'
+    : 'Buscar por nombre o categoría';
   const searchPlaceholder = scannerEnabled
     ? 'Buscar por nombre o identificador...'
     : 'Buscar por nombre...';
   const emptySearchHelp = scannerEnabled
-    ? 'Escriba el nombre del servicio, use el identificador de escaneo o toque una categoria para ver opciones facturables.'
-    : 'Escriba el nombre del servicio o toque una categoria para ver opciones facturables.';
+    ? 'Escriba el nombre del servicio, use el identificador de escaneo o toque una categoría para ver opciones facturables.'
+    : 'Escriba el nombre del servicio o toque una categoría para ver opciones facturables.';
 
   const handleAddService = useCallback((service: Service) => {
     setAddFirstWhenReady(false);
@@ -160,7 +160,7 @@ export function ServiceSearch({
         />
 
         <div>
-          <Label className="mb-2 block" id="service-category-label">Categoria</Label>
+          <Label className="mb-2 block" id="service-category-label">Categoría</Label>
           <div
             aria-labelledby="service-category-label"
             className="grid max-h-28 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-4"
@@ -206,7 +206,7 @@ export function ServiceSearch({
           </div>
         ) : !hasIntent ? (
           <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-muted-foreground">
-            <span className="font-medium text-foreground">Busque o elija una categoria</span>
+            <span className="font-medium text-foreground">Busque o elija una categoría</span>
             <span className="max-w-sm text-sm">
               {emptySearchHelp}
             </span>
@@ -214,7 +214,7 @@ export function ServiceSearch({
         ) : filteredServices.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-muted-foreground">
             <span className="font-medium text-foreground">Sin servicios encontrados</span>
-            <span className="max-w-sm text-sm">Revise la busqueda o quite filtros para consultar todo el catalogo activo.</span>
+            <span className="max-w-sm text-sm">Revise la busqueda o quite filtros para consultar todo el catálogo activo.</span>
           </div>
         ) : (
           <>
@@ -234,7 +234,7 @@ export function ServiceSearch({
                     <p className="pr-20 text-sm font-semibold leading-tight text-foreground">{service.name}</p>
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                        {service.category?.name ?? 'Sin categoria'}
+                        {service.category?.name ?? 'Sin categoría'}
                       </span>
                     </div>
                   </div>

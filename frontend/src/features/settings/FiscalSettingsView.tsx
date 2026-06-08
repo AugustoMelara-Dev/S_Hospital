@@ -289,7 +289,7 @@ export function FiscalSettingsView({ canEdit, initialTab = 'resumen', onStatus }
   return (
     <>
       <PageHeader
-        title="Configuracion"
+        title="Configuración"
         description="Datos del hospital, numeracion, recibos y apariencia."
       />
 
@@ -515,7 +515,7 @@ export function FiscalSettingsView({ canEdit, initialTab = 'resumen', onStatus }
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="min_number">Desde el numero *</Label>
+                  <Label htmlFor="min_number">Desde el número *</Label>
                   <Input
                     id="min_number"
                     type="number"
@@ -527,7 +527,7 @@ export function FiscalSettingsView({ canEdit, initialTab = 'resumen', onStatus }
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="max_number">Hasta el numero *</Label>
+                  <Label htmlFor="max_number">Hasta el número *</Label>
                   <Input
                     id="max_number"
                     type="number"

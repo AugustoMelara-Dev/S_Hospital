@@ -16,6 +16,10 @@
 8. [Cajero ve doble aviso de su propia accion](#8-cajero-ve-doble-aviso-de-su-propia-accion)
 9. [Respaldo muestra Error por herramienta local](#9-respaldo-muestra-error-por-herramienta-local)
 10. [Sesion cerrada inesperadamente](#10-sesion-cerrada-inesperadamente)
+11. [Navegador dice "Conexion no es privada"](#11-conexion-no-es-privada)
+12. [WebSocket no conecta desde PC cliente](#12-websocket-no-conecta)
+13. [HTTPS responde pero el puerto 80 esta abierto](#13-https-ok-pero-puerto-80-abierto)
+14. [Pantalla redirige de https a http y se cierra la sesion](#14-redirige-http)
 
 ---
 
@@ -303,3 +307,122 @@ la configuracion local de sesiones sin exponer secretos al personal.
 
 Si alguno falla, soporte local debe seguir su guia de mantenimiento y
 adjuntar la evidencia al registro interno del hospital.
+
+---
+
+## 11. Conexion no es privada
+
+**Sintoma:** El navegador muestra `NET::ERR_CERT_AUTHORITY_INVALID`
+o "Su conexion no es privada" al abrir `https://IP-DEL-SERVIDOR`.
+
+**Causa probable:**
+- La PC cliente no tiene la CA local instalada en su almacen de
+  confianza.
+- El operador copio la CA del servidor pero la guardo en
+  "Descargas" y el navegador no la reconoce.
+- El servidor cambio de IP y la PC cliente tiene la CA antigua.
+
+**Accion inmediata:**
+1. Verificar la fecha y hora de la PC cliente. Un reloj atrasado
+   o adelantado invalida la firma.
+2. Re-importar la CA:
+   ```powershell
+   Import-Certificate -FilePath "\\SERVIDOR\share\hospital-ca.crt.pem" `
+     -CertStoreLocation Cert:\LocalMachine\Root
+   ```
+3. Cerrar y volver a abrir el navegador.
+4. Probar `https://IP-DEL-SERVIDOR:8443/up` y confirmar candado
+   cerrado.
+
+**Escalamiento:** Si la PC del servidor tiene el candado cerrado
+pero la PC cliente sigue mostrando el error, el problema es el
+almacen de confianza de la PC cliente. Soporte nivel 1 debe
+revisar GPO o directivas locales que bloqueen la instalacion de
+CA.
+
+---
+
+## 12. WebSocket no conecta desde PC cliente
+
+**Sintoma:** El cajero carga el dashboard pero no recibe avisos
+"Factura emitida" cuando otro cajero cobra. El icono de conexion
+en la esquina inferior aparece en gris o amarillo.
+
+**Causa probable:**
+- Soketi no esta corriendo dentro de la red docker.
+- El firewall de Windows bloquea el upgrade HTTPS al endpoint `/ws`.
+- La PC cliente es un kiosk browser que bloquea WebSockets.
+
+**Accion inmediata:**
+1. Abrir `https://IP:8443/api/system/echo-config` desde la PC
+   cliente y confirmar que el JSON tiene `data.enabled: true`.
+2. En el servidor, validar que el contenedor soketi este arriba:
+   `docker compose -f docker-compose.prod.yml ps soketi`.
+3. Probar manualmente el WebSocket:
+   ```
+   curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" \
+     -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGVzdA==" \
+     https://IP:8443/ws
+   ```
+   Debe responder `HTTP/1.1 101 Switching Protocols`.
+4. Si la PC cliente es un kiosk, pedir a soporte nivel 2 que
+   agregue `wss://*` a la lista permitida del navegador.
+
+**Escalamiento:** Si `curl` da 200 en lugar de 101, el proxy
+nginx no esta reenviando la actualizacion correctamente. Revisar
+`nginx/default.conf` y `nginx/hospital-common.conf`.
+
+---
+
+## 13. HTTPS OK pero puerto 80 abierto
+
+**Sintoma:** `nmap` o el firewall corporativo reporta el puerto 80
+abierto en el servidor.
+
+**Causa probable:** Esto es **esperado**. El puerto 80 existe
+exclusivamente para redirigir (301) a HTTPS. No es una exposicion
+accidental.
+
+**Accion inmediata:**
+1. Verificar que responde con 301:
+   ```
+   curl -I http://IP:8000/
+   ```
+   Debe devolver `Location: https://IP:8443/`.
+2. Si responde 200, alguien descomento el bloque HTTP original
+   del nginx. Volver a sacar el bloque del `default.conf`.
+
+**Escalamiento:** Ninguno en operacion normal. Es parte del
+diseno.
+
+---
+
+## 14. Pantalla redirige de https a http y se cierra la sesion
+
+**Sintoma:** El cajero carga `https://IP/login`, inicia sesion,
+y al cabo de un click la URL cambia a `http://IP/...` y la sesion
+se invalida.
+
+**Causa probable:**
+- `APP_URL` en `backend/.env` empieza con `http://` en lugar de
+  `https://`.
+- `SANCTUM_STATEFUL_DOMAINS` o `CORS_ALLOWED_ORIGINS` no
+  coinciden con la URL HTTPS.
+- El certificado expiro.
+
+**Accion inmediata:**
+1. En el servidor, ejecutar:
+   ```
+   docker compose -f docker-compose.prod.yml exec backend grep APP_URL .env
+   ```
+   Debe empezar con `https://`.
+2. Revisar el certificado:
+   ```
+   openssl x509 -in nginx/ssl/hospital-server.crt.pem -noout -dates
+   ```
+3. Si la fecha de expiracion ya paso, regenerar la CA con
+   `scripts/generate_local_ca.ps1 -ServerIp IP`.
+
+**Escalamiento:** Si el problema es `CORS`, revisar
+`backend/config/cors.php` y el archivo `.env`. La regla de
+produccion exige origen explicito, sin `*` ni patrones.

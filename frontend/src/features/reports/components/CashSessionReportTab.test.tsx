@@ -151,7 +151,7 @@ describe('CashSessionReportTab', () => {
         status: 'closed',
         opening_amount: 'monto-danado',
         closing_amount: 'NaN',
-        expected_amount: 'no-numero',
+        expected_amount: 'no-número',
         difference_amount: '1.25',
         opening_notes: null,
         closing_notes: null,
@@ -159,14 +159,14 @@ describe('CashSessionReportTab', () => {
         closed_at: '2026-05-31T16:00:00.000000Z',
         user: { id: 7, name: 'Caja Principal', username: 'caja' },
       },
-      totals_by_method: { cash: 'monto-danado', transfer: '', card: 'NaN', other: 'no-numero' },
+      totals_by_method: { cash: 'monto-danado', transfer: '', card: 'NaN', other: 'no-número' },
       total_cash: 'monto-danado',
       total_transfer: '',
       total_card: 'NaN',
-      total_other: 'no-numero',
+      total_other: 'no-número',
       payments_count: 1,
       payments_total: 'monto-danado',
-      expected_cash_amount: 'no-numero',
+      expected_cash_amount: 'no-número',
       pending_invoice_count: 1,
       pending_amount: 'NaN',
       payments: [
@@ -187,7 +187,7 @@ describe('CashSessionReportTab', () => {
             status: 'partial',
             total: 'monto-danado',
             paid_amount: 'NaN',
-            balance_due: 'no-numero',
+            balance_due: 'no-número',
           },
         },
       ],
@@ -199,7 +199,7 @@ describe('CashSessionReportTab', () => {
           user_id: 7,
           type: 'adjustment',
           method: 'cash',
-          amount: 'no-numero',
+          amount: 'no-número',
           notes: null,
           occurred_at: '2026-05-31T13:00:00.000000Z',
           user: { id: 7, name: 'Caja Principal', username: 'caja' },
@@ -223,6 +223,6 @@ describe('CashSessionReportTab', () => {
     expect(screen.getAllByText('Caja Principal').length).toBeGreaterThan(0);
     expect(document.body.textContent).toContain('L. 1.25');
     expect(document.body.textContent).toContain('L. 0.00');
-    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-número|undefined/);
   });
 });

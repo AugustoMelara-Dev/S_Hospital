@@ -135,7 +135,7 @@ export function getBreadcrumbs(pathname: string) {
     }
 
     if (segment === 'billing') {
-      crumbs.push({ label: 'Facturacion', path: '/billing/new' });
+      crumbs.push({ label: 'Facturación', path: '/billing/new' });
     } else if (segment === 'new') {
       crumbs.push({ label: 'Nueva factura', path: '/billing/new' });
     } else if (segment === 'invoices') {
@@ -145,7 +145,7 @@ export function getBreadcrumbs(pathname: string) {
     } else if (segment === 'help') {
       crumbs.push({ label: 'Ayuda', path: '/help' });
     } else if (segment === 'services' || segment === 'catalog') {
-      crumbs.push({ label: 'Catalogo', path: '/catalog' });
+      crumbs.push({ label: 'Catálogo', path: '/catalog' });
     } else if (segment === 'cashbox') {
       crumbs.push({ label: 'Caja', path: '/cashbox' });
     } else if (segment === 'reports') {
@@ -153,7 +153,7 @@ export function getBreadcrumbs(pathname: string) {
     } else if (segment === 'backups') {
       crumbs.push({ label: 'Respaldos', path: '/backups' });
     } else if (segment === 'settings') {
-      crumbs.push({ label: 'Configuracion', path: '/settings' });
+      crumbs.push({ label: 'Configuración', path: '/settings' });
     } else if (segment === 'fiscal') {
       crumbs.push({ label: 'Datos fiscales', path: '/settings/fiscal' });
     } else if (segment === 'admin') {

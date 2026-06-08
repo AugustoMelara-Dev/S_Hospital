@@ -68,7 +68,7 @@ describe('ReceiptPreview', () => {
 
     await waitFor(() => expect(onPrint).toHaveBeenCalledTimes(1));
     expect(printSpy).not.toHaveBeenCalled();
-    expect(screen.getByText(/no se pudo preparar la impresion/i)).toBeInTheDocument();
+    expect(screen.getByText(/no se pudo preparar la impresión/i)).toBeInTheDocument();
     expect(screen.getByText(/no repita la factura ni el cobro/i)).toBeInTheDocument();
   });
 
@@ -88,7 +88,7 @@ describe('ReceiptPreview', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Imprimir' }));
 
     await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(1));
-    expect(screen.getByText(/no se pudo abrir la ventana de impresion/i)).toBeInTheDocument();
+    expect(screen.getByText(/no se pudo abrir la ventana de impresión/i)).toBeInTheDocument();
     expect(screen.getByText(/reimprima desde historial con motivo/i)).toBeInTheDocument();
     expect(document.body.dataset.receiptWidth).toBeUndefined();
     expect(document.body.dataset.printingReceipt).toBeUndefined();
@@ -127,7 +127,7 @@ describe('ReceiptPreview', () => {
     const receipt = receiptFixture();
     receipt.invoice.subtotal = 'monto-danado';
     receipt.invoice.tax_amount = 'NaN';
-    receipt.invoice.total = 'no-numero';
+    receipt.invoice.total = 'no-número';
     receipt.invoice.paid_amount = '1.00';
     receipt.invoice.balance_due = '2.00';
     receipt.items[0].line_total = 'monto-danado';
@@ -146,7 +146,7 @@ describe('ReceiptPreview', () => {
     expect(document.body.textContent).toContain('L. 0.00');
     expect(document.body.textContent).toContain('L. 1.00');
     expect(document.body.textContent).toContain('L. 2.00');
-    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-número|undefined/);
   });
 
   it('shows the institutional original and copy mark', () => {
@@ -172,7 +172,7 @@ describe('ReceiptPreview', () => {
 
     const receiptText = screen.getByLabelText('Recibo institucional').textContent ?? '';
     expect(receiptText).toContain('Metodo de pago');
-    expect(receiptText).toContain('Efectivo / Cajero Validacion');
+    expect(receiptText).toContain('Efectivo / Cajero Validación');
   });
 
   it('prints institutional dates with four-digit years and an unambiguous time', () => {
@@ -307,7 +307,7 @@ function receiptFixture(): ReceiptData {
       balance_due: '0.00',
       status: 'paid',
       issued_at: '2026-06-01T12:00:00',
-      cashier: 'Cajero Validacion',
+      cashier: 'Cajero Validación',
       tax_label: 'ISV',
       tax_rate: '15.00',
       total_in_words: 'DIECISIETE LEMPIRAS CON VEINTICINCO CENTAVOS',
@@ -330,7 +330,7 @@ function receiptFixture(): ReceiptData {
         amount: '17.25',
         reference: null,
         paid_at: '2026-06-01T12:05:00',
-        cashier: 'Cajero Validacion',
+        cashier: 'Cajero Validación',
       },
     ],
   };

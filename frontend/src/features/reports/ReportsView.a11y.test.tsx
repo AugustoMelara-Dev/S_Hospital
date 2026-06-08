@@ -260,7 +260,7 @@ function mockCashSessionReport(): CashSessionReport {
       closing_notes: null,
       opened_at: '2026-06-02T08:00:00.000000Z',
       closed_at: null,
-      user: { id: 2, name: 'Cajero Validacion', username: 'cajero.validacion' },
+      user: { id: 2, name: 'Cajero Validación', username: 'cajero.validación' },
     },
     totals_by_method: { cash: '0.00', transfer: '0.00', card: '0.00', other: '0.00' },
     total_cash: '0.00',

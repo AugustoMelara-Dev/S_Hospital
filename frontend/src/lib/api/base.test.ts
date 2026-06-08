@@ -64,7 +64,7 @@ describe('resolveApiBaseUrl', () => {
   });
 
   it('lists every validation error from a 422 response with human-readable field labels', () => {
-    const error = new ApiError('Fallo de validacion.', 422, {
+    const error = new ApiError('Fallo de validación.', 422, {
       patient_name: ['Ingrese el nombre del paciente.'],
       'items.0.quantity': ['La cantidad debe ser mayor a cero.'],
       'items.1.service_id': ['El servicio no existe.', 'No es facturable.'],
@@ -108,7 +108,7 @@ describe('resolveApiBaseUrl', () => {
       'fallback',
     );
 
-    expect(message).toMatch(/el servidor LAN no pudo completar la operacion/i);
+    expect(message).toMatch(/el servidor LAN no pudo completar la operación/i);
     expect(message).not.toMatch(/SQLSTATE/);
   });
 

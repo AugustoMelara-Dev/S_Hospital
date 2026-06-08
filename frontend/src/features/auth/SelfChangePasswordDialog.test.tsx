@@ -5,9 +5,9 @@ import { apiClient, type AuthUser } from '../../lib/api';
 
 const cashier: AuthUser = {
   id: 2,
-  name: 'Cajero Validacion',
+  name: 'Cajero Validación',
   email: 'cajero@hospital.local',
-  username: 'cajero.validacion',
+  username: 'cajero.validación',
   active: true,
   roles: ['cajero'],
   permissions: ['invoices.view', 'receipts.view'],
@@ -35,17 +35,17 @@ describe('SelfChangePasswordDialog', () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText(/contrasena actual/i), {
+    fireEvent.change(screen.getByLabelText(/contraseña actual/i), {
       target: { value: 'Password123' },
     });
-    fireEvent.change(screen.getByLabelText('Nueva contrasena'), {
+    fireEvent.change(screen.getByLabelText('Nueva contraseña'), {
       target: { value: 'NewPassword123' },
     });
-    fireEvent.change(screen.getByLabelText(/confirmar nueva contrasena/i), {
+    fireEvent.change(screen.getByLabelText(/confirmar nueva contraseña/i), {
       target: { value: 'NewPassword123' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /actualizar contrasena/i }));
+    fireEvent.click(screen.getByRole('button', { name: /actualizar contraseña/i }));
 
     await waitFor(() => {
       expect(changePasswordSpy).toHaveBeenCalledWith({
@@ -66,17 +66,17 @@ describe('SelfChangePasswordDialog', () => {
       <SelfChangePasswordDialog open onOpenChange={vi.fn()} onStatus={vi.fn()} />,
     );
 
-    fireEvent.change(screen.getByLabelText(/contrasena actual/i), {
+    fireEvent.change(screen.getByLabelText(/contraseña actual/i), {
       target: { value: 'Password123' },
     });
-    fireEvent.change(screen.getByLabelText('Nueva contrasena'), {
+    fireEvent.change(screen.getByLabelText('Nueva contraseña'), {
       target: { value: 'short' },
     });
-    fireEvent.change(screen.getByLabelText(/confirmar nueva contrasena/i), {
+    fireEvent.change(screen.getByLabelText(/confirmar nueva contraseña/i), {
       target: { value: 'short' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /actualizar contrasena/i }));
+    fireEvent.click(screen.getByRole('button', { name: /actualizar contraseña/i }));
 
     await waitFor(() => {
       expect(
@@ -88,7 +88,7 @@ describe('SelfChangePasswordDialog', () => {
 
   it('shows a server error when the backend rejects the request', async () => {
     vi.spyOn(apiClient, 'changePassword').mockRejectedValue(
-      new Error('La contrasena actual no es valida.'),
+      new Error('La contraseña actual no es valida.'),
     );
     const onStatus = vi.fn();
 
@@ -96,19 +96,19 @@ describe('SelfChangePasswordDialog', () => {
       <SelfChangePasswordDialog open onOpenChange={vi.fn()} onStatus={onStatus} />,
     );
 
-    fireEvent.change(screen.getByLabelText(/contrasena actual/i), {
+    fireEvent.change(screen.getByLabelText(/contraseña actual/i), {
       target: { value: 'Password123' },
     });
-    fireEvent.change(screen.getByLabelText('Nueva contrasena'), {
+    fireEvent.change(screen.getByLabelText('Nueva contraseña'), {
       target: { value: 'NewPassword123' },
     });
-    fireEvent.change(screen.getByLabelText(/confirmar nueva contrasena/i), {
+    fireEvent.change(screen.getByLabelText(/confirmar nueva contraseña/i), {
       target: { value: 'NewPassword123' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /actualizar contrasena/i }));
+    fireEvent.click(screen.getByRole('button', { name: /actualizar contraseña/i }));
 
-    expect(await screen.findByText(/La contrasena actual no es valida\./i)).toBeInTheDocument();
+    expect(await screen.findByText(/La contraseña actual no es valida\./i)).toBeInTheDocument();
     expect(onStatus).not.toHaveBeenCalled();
   });
 });

@@ -14,10 +14,10 @@ import { cn } from '@/lib/utils';
 import { parseCents } from '@/lib/moneyCents';
 
 const serviceSchema = z.object({
-  category_id: z.number().min(1, 'Seleccione una categoria'),
+  category_id: z.number().min(1, 'Seleccione una categoría'),
   area_id: z.number().min(1, 'Seleccione un area'),
   name: z.string().min(1, 'El nombre es requerido'),
-  price: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Precio debe ser un numero valido'),
+  price: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Precio debe ser un número valido'),
   price_change_reason: z.string().max(500, 'Motivo maximo 500 caracteres').nullable().optional(),
   scan_code: z.string().nullable().optional(),
   barcode: z.string().nullable().optional(),
@@ -170,11 +170,11 @@ export function ServiceSheet({
       open={open}
       onOpenChange={onOpenChange}
       title={isEditing ? 'Editar servicio' : 'Nuevo servicio'}
-      description={isEditing ? 'Modifique los datos del servicio.' : 'Agregue un nuevo servicio al catalogo.'}
+      description={isEditing ? 'Modifique los datos del servicio.' : 'Agregue un nuevo servicio al catálogo.'}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="category_id">Categoria *</Label>
+          <Label htmlFor="category_id">Categoría *</Label>
           <Select
             value={String(categoryId)}
             onValueChange={(val) => setValue('category_id', Number(val))}
@@ -185,7 +185,7 @@ export function ServiceSheet({
               aria-describedby={errors.category_id ? 'service-category-error' : undefined}
               className={cn(errors.category_id && 'border-destructive')}
             >
-              <SelectValue placeholder="Seleccione una categoria" />
+              <SelectValue placeholder="Seleccione una categoría" />
             </SelectTrigger>
             <SelectContent>
               {categories.map((cat) => (

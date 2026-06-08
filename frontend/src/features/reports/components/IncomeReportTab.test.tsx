@@ -27,10 +27,10 @@ describe('IncomeReportTab', () => {
           filters: { date_from: '2026-05-01', date_to: '2026-05-31' },
           total_billed: 'monto-danado',
           total_collected: 'NaN',
-          total_pending: 'no-numero',
+          total_pending: 'no-número',
           total_partial: '',
           total_voided: 'monto-danado',
-          payments_by_method: { cash: 'monto-danado', transfer: '', card: 'NaN', other: 'no-numero' },
+          payments_by_method: { cash: 'monto-danado', transfer: '', card: 'NaN', other: 'no-número' },
           payment_count: 1,
           invoice_count: 1,
         }}
@@ -48,7 +48,7 @@ describe('IncomeReportTab', () => {
               quantity: '1.00',
               subtotal: 'monto-danado',
               tax_amount: 'NaN',
-              total: 'no-numero',
+              total: 'no-número',
             },
           ],
         }}
@@ -78,7 +78,7 @@ describe('IncomeReportTab', () => {
     expect(document.body.textContent).toContain('L. 0.00');
     expect(document.body.textContent).toContain('Cobrado asignado proporcionalmente');
     expect(document.body.textContent).toContain('Pagos publicados filtrados');
-    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-número|undefined/);
     expect(screen.getAllByText('Laboratorio').length).toBeGreaterThan(0);
   });
 });

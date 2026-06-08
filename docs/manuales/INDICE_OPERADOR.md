@@ -48,9 +48,21 @@ al procedimiento correcto.
 - Instalacion inicial: `GUIA_INSTALACION_OPERATIVA.md`
 - Respaldos y restauracion: `GUIA_RESPALDOS_Y_RESTAURACION.md`
 - Capacitacion segura: `GUIA_CAPACITACION_SEGURA.md`
-- HTTPS local obligatorio: `../HTTPS_OPTIONAL.md`
+- HTTPS local obligatorio: `../HTTPS_MIGRATION.md`
 - Secretos y rotacion: `../SECRETS.md`
 - Recuperacion de desastres: `../DISASTER_RECOVERY.md`
+
+### Validacion desde una segunda PC cliente
+
+La validacion LAN final se hace desde una PC cliente real (no del
+servidor) con el script `scripts\validate_lan_client.ps1`:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File scripts\validate_lan_client.ps1 `
+  -BaseUrl https://IP-DEL-SERVIDOR:8443 `
+  -EvidencePath qa\LAN_CLIENT_VALIDATION_PROOF.md
+```
 
 ## Mantenimiento Autorizado
 

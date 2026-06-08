@@ -12,7 +12,7 @@ describe('Button accessibility', () => {
 
   it('renders an icon-only button with an accessible name', async () => {
     const { container } = render(
-      <Button aria-label="Cerrar sesion">
+      <Button aria-label="Cerrar sesión">
         <span aria-hidden="true">x</span>
       </Button>,
     );

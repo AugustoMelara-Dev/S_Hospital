@@ -10,7 +10,7 @@ describe('SessionSummary', () => {
         session={cashSessionFixture({
           opening_amount: 'monto-danado',
           expected_amount: 'NaN',
-          expected_cash_amount: 'no-numero',
+          expected_cash_amount: 'no-número',
           payments_by_method: { cash: 'monto-danado', transfer: '0.00', card: '0.00', other: '0.00' },
           pending_amount: 'undefined',
         })}
@@ -21,7 +21,7 @@ describe('SessionSummary', () => {
 
     expect(screen.getByText('Monto Apertura')).toBeInTheDocument();
     expect(document.body.textContent).toContain('L. 0.00');
-    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-número|undefined/);
   });
 
   it('keeps the human signed label for cash differences', () => {

@@ -14,7 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const RESULTS_DIR = '/work/results';
+const RESULTS_DIR = process.env.LAN_EMULATION_RESULTS_DIR || '/work/results';
 
 const SLA_TOTAL_MS = 60_000;
 const RESULT_WAIT_MS = 90_000;

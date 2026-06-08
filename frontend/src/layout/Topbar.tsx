@@ -157,7 +157,7 @@ export function Topbar({
                 onClick={onLogout}
               >
                 <LogOut data-icon="inline-start" aria-hidden="true" />
-                Cerrar sesion
+                Cerrar sesión
               </DropdownMenuPrimitive.Item>
             </DropdownMenuPrimitive.Content>
           </DropdownMenuPrimitive.Portal>

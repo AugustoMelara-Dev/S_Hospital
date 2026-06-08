@@ -40,7 +40,7 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
     !isSequenceActive ? 'secuencia fiscal activa' : null,
     !isDateValid ? 'fecha limite vigente' : null,
     !isRangeValid ? 'siguiente correlativo dentro del rango autorizado' : null,
-    isPlaceholderHospital || isPlaceholderCai ? 'datos temporales o de validacion' : null,
+    isPlaceholderHospital || isPlaceholderCai ? 'datos temporales o de validación' : null,
   ].filter(Boolean);
   const isConfigured = blockers.length === 0;
 
@@ -57,7 +57,7 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
           </div>
           <div>
             <h2 className="font-semibold">
-              {isConfigured ? 'Configuracion completa' : 'Configuracion pendiente'}
+              {isConfigured ? 'Configuración completa' : 'Configuración pendiente'}
             </h2>
             <p className="text-sm text-muted-foreground">
               {isConfigured

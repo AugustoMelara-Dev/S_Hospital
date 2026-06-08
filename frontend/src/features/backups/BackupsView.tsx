@@ -123,14 +123,14 @@ function friendlyProductionDetail(code: string, fallback: string): string {
 
 function friendlyReadinessBlocker(code: string, fallback: string): string {
   const labels: Record<string, string> = {
-    APP_ENV_PRODUCTION: 'Completar modo de operacion final',
+    APP_ENV_PRODUCTION: 'Completar modo de operación final',
     APP_DEBUG_OFF: 'Ocultar mensajes internos',
     APP_DEBUG_FALSE: 'Ocultar mensajes internos',
     PENDING_LAN_CLIENT_VALIDATION: 'Validar acceso desde una segunda computadora',
     PENDING_HARDWARE_VALIDATION: 'Validar recibo fisico media carta/carta/A5',
-    PENDING_RESTORE_VALIDATION: 'Validar restauracion segura',
+    PENDING_RESTORE_VALIDATION: 'Validar restauración segura',
     PENDING_CONCURRENCY_VALIDATION: 'Validar concurrencia de caja',
-    PENDING_ENVIRONMENT_VALIDATION: 'Revisar configuracion final del servidor',
+    PENDING_ENVIRONMENT_VALIDATION: 'Revisar configuración final del servidor',
     PENDING_DATABASE_MIGRATIONS: 'Actualizar base de datos con respaldo previo',
   };
 
@@ -172,7 +172,7 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
     return {
       level: 'review',
       label: 'Pendiente',
-      description: 'Falta completar respaldo reciente, validacion de red/impresora o configuracion final antes de operar sin supervision.',
+      description: 'Falta completar respaldo reciente, validación de red/impresora o configuración final antes de operar sin supervision.',
       className: 'border-amber-200 bg-amber-50 text-amber-900',
     };
   }

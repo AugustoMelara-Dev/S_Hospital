@@ -43,7 +43,7 @@ describe('AppRoutes lazy-loading', () => {
     );
 
     // The DashboardView <Route> is wrapped in <Suspense fallback={<LoadingState />}>
-    // so the cashier sees a "Cargando modulo..." indicator while the chunk
+    // so the cashier sees a "Cargando módulo..." indicator while the chunk
     // downloads instead of a blank screen.
     expect(source).toMatch(/Suspense[^>]*fallback=/);
   });

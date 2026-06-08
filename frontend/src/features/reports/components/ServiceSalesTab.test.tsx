@@ -23,7 +23,7 @@ describe('ServiceSalesTab', () => {
               quantity: 'cantidad-danada',
               subtotal: 'monto-danado',
               tax_amount: 'NaN',
-              total: 'no-numero',
+              total: 'no-número',
             },
           ],
         }}
@@ -56,6 +56,6 @@ describe('ServiceSalesTab', () => {
     expect(document.body.textContent).toContain('L. 0.00');
     expect(document.body.textContent).toContain('Cobrado asignado proporcionalmente');
     expect(document.body.textContent).toContain('Pagos publicados filtrados');
-    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|cantidad-danada|undefined/);
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-número|cantidad-danada|undefined/);
   });
 });

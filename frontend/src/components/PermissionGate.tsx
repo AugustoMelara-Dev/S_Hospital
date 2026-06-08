@@ -19,7 +19,7 @@ export function PermissionGate({ allowed, children, fallback, reason }: Permissi
       {fallback ?? (
         <EmptyState
           title="Sin permisos"
-          description={`${reason ?? 'Su usuario no tiene permisos para abrir este modulo.'} Si cree que debe usar esta pantalla, pida a un supervisor que revise su rol.`}
+          description={`${reason ?? 'Su usuario no tiene permisos para abrir este módulo.'} Si cree que debe usar esta pantalla, pida a un supervisor que revise su rol.`}
           action={
             <Button asChild variant="outline">
               <a href="/help">Ver guia de ayuda</a>

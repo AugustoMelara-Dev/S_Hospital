@@ -40,7 +40,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
       await onPrint?.();
     } catch {
       setPrintError(
-        'No se pudo preparar la impresion del recibo. No repita la factura ni el cobro; revise Historial y pida soporte si la impresora no responde.',
+        'No se pudo preparar la impresión del recibo. No repita la factura ni el cobro; revise Historial y pida soporte si la impresora no responde.',
       );
       return;
     }
@@ -53,7 +53,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
       });
     } catch {
       setPrintError(
-        'No se pudo abrir la ventana de impresion. Verifique la impresora y reimprima desde Historial con motivo cuando el supervisor lo autorice.',
+        'No se pudo abrir la ventana de impresión. Verifique la impresora y reimprima desde Historial con motivo cuando el supervisor lo autorice.',
       );
     }
   }, [handlePrint, onPrint, receiptWidth]);
@@ -97,7 +97,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
 
       {printError ? (
         <div className="no-print mb-3">
-          <Alert variant="warning" title="Impresion no completada">
+          <Alert variant="warning" title="Impresión no completada">
             {printError}
           </Alert>
         </div>

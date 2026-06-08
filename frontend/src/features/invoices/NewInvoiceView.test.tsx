@@ -37,9 +37,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Validacion',
-              email: 'cajero.validacion@hospital-san-isidro.local',
-              username: 'cajero.validacion',
+              name: 'Cajero Validación',
+              email: 'cajero.validación@hospital-san-isidro.local',
+              username: 'cajero.validación',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
@@ -135,9 +135,9 @@ describe('NewInvoiceView', () => {
 
     expect(await screen.findByRole('heading', { name: /nueva factura/i })).toBeInTheDocument();
     expect(await screen.findByLabelText(/nombre del paciente/i)).toBeInTheDocument();
-    expect(await screen.findByLabelText(/buscar por nombre o categoria/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/buscar por nombre o categoría/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/identificador de servicio/i)).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/buscar por nombre o categoria/i), {
+    fireEvent.change(screen.getByLabelText(/buscar por nombre o categoría/i), {
       target: { value: 'eritropoyetina' },
     });
     expect(await screen.findByRole('button', { name: /eritropoyetina/i })).toBeInTheDocument();
@@ -200,9 +200,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Validacion',
-              email: 'cajero.validacion@hospital-san-isidro.local',
-              username: 'cajero.validacion',
+              name: 'Cajero Validación',
+              email: 'cajero.validación@hospital-san-isidro.local',
+              username: 'cajero.validación',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
@@ -287,7 +287,7 @@ describe('NewInvoiceView', () => {
                 authorized_range: null,
                 valid_until: null,
               },
-              invoice: { ...paidInvoice, cashier: 'Cajero Validacion' },
+              invoice: { ...paidInvoice, cashier: 'Cajero Validación' },
               items: [
                 {
                   service_name: 'Glucosa',
@@ -306,7 +306,7 @@ describe('NewInvoiceView', () => {
                   amount: '17.25',
                   reference: null,
                   paid_at: '2026-05-17T08:03:00-06:00',
-                  cashier: 'Cajero Validacion',
+                  cashier: 'Cajero Validación',
                 },
               ],
             },
@@ -326,7 +326,7 @@ describe('NewInvoiceView', () => {
     fireEvent.change(await screen.findByLabelText(/nombre del paciente/i), {
       target: { value: 'Maria Lopez' },
     });
-    fireEvent.change(await screen.findByLabelText(/buscar por nombre, categoria o identificador/i), {
+    fireEvent.change(await screen.findByLabelText(/buscar por nombre, categoría o identificador/i), {
       target: { value: 'glucosa' },
     });
     fireEvent.click(await screen.findByRole('button', { name: /glucosa/i }));
@@ -363,9 +363,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Validacion',
-              email: 'cajero.validacion@hospital-san-isidro.local',
-              username: 'cajero.validacion',
+              name: 'Cajero Validación',
+              email: 'cajero.validación@hospital-san-isidro.local',
+              username: 'cajero.validación',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
@@ -492,9 +492,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Validacion',
-              email: 'cajero.validacion@hospital-san-isidro.local',
-              username: 'cajero.validacion',
+              name: 'Cajero Validación',
+              email: 'cajero.validación@hospital-san-isidro.local',
+              username: 'cajero.validación',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
@@ -589,9 +589,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Validacion',
-              email: 'cajero.validacion@hospital-san-isidro.local',
-              username: 'cajero.validacion',
+              name: 'Cajero Validación',
+              email: 'cajero.validación@hospital-san-isidro.local',
+              username: 'cajero.validación',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
@@ -657,9 +657,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 3,
-              name: 'Supervisor Validacion',
-              email: 'supervisor.validacion@hospital-san-isidro.local',
-              username: 'supervisor.validacion',
+              name: 'Supervisor Validación',
+              email: 'supervisor.validación@hospital-san-isidro.local',
+              username: 'supervisor.validación',
               active: true,
               roles: ['supervisor'],
               permissions: ['invoices.view', 'receipts.reprint', 'receipts.reprint_any'],
@@ -687,7 +687,7 @@ describe('NewInvoiceView', () => {
                 status: 'paid',
                 issued_at: '2026-05-17T08:00:00-06:00',
                 items: [],
-                issuer: { id: 2, name: 'Cajero Validacion', username: 'cajero.validacion' },
+                issuer: { id: 2, name: 'Cajero Validación', username: 'cajero.validación' },
               },
             ],
             meta: { current_page: 1, per_page: 10, total: 1 },
@@ -753,7 +753,7 @@ describe('NewInvoiceView', () => {
                   id: 100,
                   invoice_number: '000-001-01-00000001',
                   issued_at: '2026-05-17T08:00:00-06:00',
-                  cashier: 'Cajero Validacion',
+                  cashier: 'Cajero Validación',
                   patient_name: 'Maria Lopez',
                   subtotal: '15.00',
                   tax_amount: '2.25',
@@ -788,7 +788,7 @@ describe('NewInvoiceView', () => {
                   id: 100,
                   invoice_number: '000-001-01-00000001',
                   issued_at: '2026-05-17T08:00:00-06:00',
-                  cashier: 'Cajero Validacion',
+                  cashier: 'Cajero Validación',
                   patient_name: 'Maria Lopez',
                   subtotal: '15.00',
                   tax_amount: '2.25',
@@ -842,7 +842,7 @@ describe('NewInvoiceView', () => {
     });
     const printAuditCall = fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))[1];
     expect(JSON.parse(String(printAuditCall[1]?.body))).toMatchObject({
-      reason: 'Impresion desde vista de recibo.',
+      reason: 'Impresión desde vista de recibo.',
       width: 'half_letter',
     });
   });
@@ -1001,9 +1001,9 @@ describe('NewInvoiceView', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Administrador Validacion',
-              email: 'admin.validacion@hospital-san-isidro.local',
-              username: 'admin.validacion',
+              name: 'Administrador Validación',
+              email: 'admin.validación@hospital-san-isidro.local',
+              username: 'admin.validación',
               active: true,
               roles: ['admin'],
               permissions: ['invoices.view', 'invoices.void', 'receipts.reprint', 'receipts.reprint_any'],
@@ -1031,7 +1031,7 @@ describe('NewInvoiceView', () => {
                 status: 'issued',
                 issued_at: '2026-05-17T09:00:00-06:00',
                 items: [],
-                issuer: { id: 2, name: 'Cajero Validacion', username: 'cajero.validacion' },
+                issuer: { id: 2, name: 'Cajero Validación', username: 'cajero.validación' },
               },
             ],
             meta: { current_page: 1, per_page: 10, total: 1 },
@@ -1097,8 +1097,8 @@ describe('NewInvoiceView', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /ver/i }));
     fireEvent.click(await screen.findByRole('button', { name: /anular/i }));
-    expect(await screen.findByLabelText(/motivo de anulacion/i)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/motivo de anulacion/i), {
+    expect(await screen.findByLabelText(/motivo de anulación/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/motivo de anulación/i), {
       target: { value: 'Error de captura' },
     });
     fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));
@@ -1130,7 +1130,7 @@ describe('NewInvoiceView', () => {
         id: 100,
         invoice_number: '000-001-01-00000001',
         issued_at: '2026-05-17T08:00:00-06:00',
-        cashier: 'Cajero Validacion',
+        cashier: 'Cajero Validación',
         patient_name: 'Maria Lopez',
         subtotal: '15.00',
         tax_amount: '2.25',
@@ -1158,7 +1158,7 @@ describe('NewInvoiceView', () => {
           amount: '17.25',
           reference: null,
           paid_at: '2026-05-17T08:03:00-06:00',
-          cashier: 'Cajero Validacion',
+          cashier: 'Cajero Validación',
         },
       ],
     };

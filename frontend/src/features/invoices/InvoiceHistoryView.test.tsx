@@ -28,7 +28,7 @@ describe('InvoiceHistoryView', () => {
           discount_amount: '0.00',
           total: 'monto-danado',
           paid_amount: 'NaN',
-          balance_due: 'no-numero',
+          balance_due: 'no-número',
           status: 'partial',
           issued_at: '2026-06-01T12:00:00.000000Z',
           items: [],
@@ -42,7 +42,7 @@ describe('InvoiceHistoryView', () => {
     await waitFor(() => expect(screen.getByText('Paciente Historial')).toBeInTheDocument());
 
     expect(document.body.textContent).toContain('L. 0.00');
-    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-número|undefined/);
   });
 
   it('closes the invoice actions menu through an accessible control', async () => {

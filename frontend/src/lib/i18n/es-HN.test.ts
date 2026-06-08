@@ -32,7 +32,7 @@ describe('es-HN dictionary', () => {
     expect(t('invoicePayment.title')).toBe('Registrar pago');
     expect(t('invoicePayment.methodCash')).toBe('Efectivo');
     expect(t('cash.title')).toBe('Caja');
-    expect(t('catalog.title')).toBe('Catalogo de servicios');
+    expect(t('catalog.title')).toBe('Catálogo de servicios');
   });
 
   it('falls back to the key itself for missing entries', () => {

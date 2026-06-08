@@ -31,9 +31,9 @@ const guides = [
     steps: ['Use el acceso institucional del escritorio', 'Espere a que cargue Hospital San Isidro', 'Confirme que no aparezca error de servidor', 'Si no abre, avise antes de intentar cambios'],
   },
   {
-    title: 'Iniciar sesion',
+    title: 'Iniciar sesión',
     icon: LogIn,
-    steps: ['Use su propio usuario', 'No comparta contrasena ni cuenta de turno', 'Si la sesion vence, ingrese de nuevo', 'Si falta permiso, pida revision de rol'],
+    steps: ['Use su propio usuario', 'No comparta contraseña ni cuenta de turno', 'Si la sesión vence, ingrese de nuevo', 'Si falta permiso, pida revision de rol'],
   },
   {
     title: 'Abrir caja',
@@ -125,7 +125,7 @@ const incidentGuides = [
   },
   {
     title: 'Se cerro el navegador',
-    answer: 'Abra el acceso institucional de nuevo. Revise Caja e Historial antes de repetir una factura, cobro o reimpresion.',
+    answer: 'Abra el acceso institucional de nuevo. Revise Caja e Historial antes de repetir una factura, cobro o reimpresión.',
   },
 ];
 
@@ -178,18 +178,18 @@ const dailyChecklists = [
       'Revisar Estado operativo en Respaldos.',
       'Confirmar ultimo respaldo protegido.',
       'Revisar espacio en disco y respaldos pendientes o con error.',
-      'Guardar evidencia si hubo fallas de red, impresion o energia.',
+      'Guardar evidencia si hubo fallas de red, impresión o energia.',
     ],
   },
 ];
 
 const delicateActions = [
   {
-    title: 'Anulacion',
+    title: 'Anulación',
     warning: 'Solo supervisor o administrador. Revise factura, pago y motivo antes de confirmar.',
   },
   {
-    title: 'Restauracion de respaldo',
+    title: 'Restauración de respaldo',
     warning: 'Nunca restaure sobre datos reales sin respaldo reciente, autorizacion y base aislada de prueba.',
   },
   {
@@ -204,7 +204,7 @@ const delicateActions = [
 
 const shortcutSections: Array<{ title: string; scope: ShortcutScope; helper: string }> = [
   {
-    title: 'Caja y facturacion',
+    title: 'Caja y facturación',
     scope: 'pos',
     helper: 'Use estos atajos durante el trabajo de alto volumen. No activan acciones mientras escribe en campos de texto.',
   },
@@ -444,7 +444,7 @@ export function HelpView() {
             <AlertTriangle aria-hidden="true" className="size-5 text-amber-700" />
             Acciones delicadas
           </CardTitle>
-          <CardDescription>Advertencias antes de tocar datos, caja, respaldos o configuracion de red.</CardDescription>
+          <CardDescription>Advertencias antes de tocar datos, caja, respaldos o configuración de red.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2">
           {delicateActions.map((item) => (

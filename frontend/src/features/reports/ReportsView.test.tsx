@@ -52,9 +52,9 @@ describe('ReportsView', () => {
           json: async () => ({
             data: {
               id: 3,
-              name: 'Supervisor Validacion',
-              email: 'supervisor.validacion@hospital-san-isidro.local',
-              username: 'supervisor.validacion',
+              name: 'Supervisor Validación',
+              email: 'supervisor.validación@hospital-san-isidro.local',
+              username: 'supervisor.validación',
               active: true,
               roles: ['supervisor'],
               permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
@@ -114,7 +114,7 @@ describe('ReportsView', () => {
     render(<App />);
 
     expect((await screen.findAllByRole('heading', { name: /^reportes$/i }, { timeout: 5000 })).length).toBeGreaterThan(0);
-    expect(screen.getByText(/facturacion, cobros, caja y auditoria en una vista clara/i)).toBeInTheDocument();
+    expect(screen.getByText(/facturación, cobros, caja y auditoria en una vista clara/i)).toBeInTheDocument();
     expect(screen.queryByText(/ventas, cobros, caja y auditoria/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/^fecha$/i)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /^resumen del dia$/i })).toBeInTheDocument();
@@ -138,9 +138,9 @@ describe('ReportsView', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Administracion Validacion',
-              email: 'administracion.validacion@hospital-san-isidro.local',
-              username: 'administracion.validacion',
+              name: 'Administracion Validación',
+              email: 'administracion.validación@hospital-san-isidro.local',
+              username: 'administracion.validación',
               active: true,
               roles: ['admin'],
               permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
@@ -267,9 +267,9 @@ describe('ReportsView', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Administracion Validacion',
-              email: 'administracion.validacion@hospital-san-isidro.local',
-              username: 'administracion.validacion',
+              name: 'Administracion Validación',
+              email: 'administracion.validación@hospital-san-isidro.local',
+              username: 'administracion.validación',
               active: true,
               roles: ['admin'],
               permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
@@ -286,17 +286,17 @@ describe('ReportsView', () => {
               date: '2026-05-17',
               total_billed: 'monto-danado',
               total_collected: 'NaN',
-              total_pending: 'no-numero',
+              total_pending: 'no-número',
               total_partial: '',
               total_voided: 'monto-danado',
               invoice_count: 1,
               payment_count: 1,
-              payments_by_method: { cash: 'monto-danado', transfer: '', card: 'NaN', other: 'no-numero' },
+              payments_by_method: { cash: 'monto-danado', transfer: '', card: 'NaN', other: 'no-número' },
               invoices_by_status: {
                 issued: { count: 1, total: 'monto-danado' },
                 partial: { count: 0, total: 'NaN' },
                 paid: { count: 0, total: '' },
-                void: { count: 0, total: 'no-numero' },
+                void: { count: 0, total: 'no-número' },
               },
             },
           }),
@@ -312,24 +312,24 @@ describe('ReportsView', () => {
               date_to: '2026-05-31',
               total_billed: 'monto-danado',
               total_collected: 'NaN',
-              total_pending: 'no-numero',
+              total_pending: 'no-número',
               total_partial: '',
               total_voided: 'monto-danado',
               invoice_count: 1,
               payment_count: 1,
-              payments_by_method: { cash: 'monto-danado', transfer: '', card: 'NaN', other: 'no-numero' },
+              payments_by_method: { cash: 'monto-danado', transfer: '', card: 'NaN', other: 'no-número' },
               invoices_by_status: {
                 issued: { count: 1, total: 'monto-danado' },
                 partial: { count: 0, total: 'NaN' },
                 paid: { count: 0, total: '' },
-                void: { count: 0, total: 'no-numero' },
+                void: { count: 0, total: 'no-número' },
               },
               daily_totals: [
                 {
                   date: '2026-05-04',
                   total_billed: 'monto-danado',
                   total_collected: 'NaN',
-                  total_pending: 'no-numero',
+                  total_pending: 'no-número',
                   total_partial: '',
                   total_voided: 'monto-danado',
                   invoice_count: 1,
@@ -355,7 +355,7 @@ describe('ReportsView', () => {
     await waitFor(() => {
       expect(screen.getAllByText('L. 0.00').length).toBeGreaterThanOrEqual(5);
     });
-    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero/);
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-número/);
 
     activateTab(/mensual/i);
     fireEvent.change(screen.getByLabelText(/^mes$/i), { target: { value: '2026-05' } });
@@ -365,7 +365,7 @@ describe('ReportsView', () => {
     await waitFor(() => {
       expect(screen.getAllByText('L. 0.00').length).toBeGreaterThanOrEqual(10);
     });
-    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero/);
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-número/);
   });
 
   it('exports reports through the protected backend Excel endpoint', async () => {
@@ -390,9 +390,9 @@ describe('ReportsView', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Administrador Validacion',
-              email: 'admin.validacion@hospital-san-isidro.local',
-              username: 'admin.validacion',
+              name: 'Administrador Validación',
+              email: 'admin.validación@hospital-san-isidro.local',
+              username: 'admin.validación',
               active: true,
               roles: ['admin'],
               permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
@@ -472,9 +472,9 @@ describe('ReportsView', () => {
           json: async () => ({
             data: {
               id: 3,
-              name: 'Supervisor Validacion',
-              email: 'supervisor.validacion@hospital-san-isidro.local',
-              username: 'supervisor.validacion',
+              name: 'Supervisor Validación',
+              email: 'supervisor.validación@hospital-san-isidro.local',
+              username: 'supervisor.validación',
               active: true,
               roles: ['supervisor'],
               permissions: ['reports.view', 'reports.managerial.view'],
@@ -559,7 +559,7 @@ describe('ReportsView', () => {
               voids: [],
               reprints: [],
               backups: [],
-              cashiers: [{ user: 'Cajero Validacion', cash_session_count: 1, invoice_count: 1, total_collected: '17.25' }],
+              cashiers: [{ user: 'Cajero Validación', cash_session_count: 1, invoice_count: 1, total_collected: '17.25' }],
             },
           }),
         } as Response;
@@ -594,9 +594,9 @@ describe('ReportsView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Validacion',
-              email: 'cajero.validacion@hospital-san-isidro.local',
-              username: 'cajero.validacion',
+              name: 'Cajero Validación',
+              email: 'cajero.validación@hospital-san-isidro.local',
+              username: 'cajero.validación',
               active: true,
               roles: ['cajero'],
               permissions: ['cash.view'],
@@ -643,7 +643,7 @@ describe('ReportsView', () => {
         width: 'half_letter',
         reason: 'Copia para paciente',
         created_at: '2026-06-01T08:10:00.000Z',
-        user: 'Cajero Validacion',
+        user: 'Cajero Validación',
       }],
       payment_voids: [],
       backups: [{
@@ -659,8 +659,8 @@ describe('ReportsView', () => {
       }],
       cashiers: [{
         user_id: 948576,
-        name: 'Cajero Validacion',
-        username: 'cajero.validacion',
+        name: 'Cajero Validación',
+        username: 'cajero.validación',
         payment_count: 2,
         cash_session_count: 1,
         invoice_count: 2,
@@ -684,7 +684,7 @@ describe('ReportsView', () => {
 
     expect(screen.getByText('000-001-01-00000001')).toBeInTheDocument();
     expect(screen.getByText('Respaldo manual', { exact: false })).toBeInTheDocument();
-    expect(screen.getByText('cajero.validacion')).toBeInTheDocument();
+    expect(screen.getByText('cajero.validación')).toBeInTheDocument();
     expect(screen.queryByText('918273')).not.toBeInTheDocument();
     expect(screen.queryByText('938475')).not.toBeInTheDocument();
     expect(screen.queryByText('948576')).not.toBeInTheDocument();
@@ -702,9 +702,9 @@ describe('ReportsView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Validacion',
-              email: 'cajero.validacion@hospital-san-isidro.local',
-              username: 'cajero.validacion',
+              name: 'Cajero Validación',
+              email: 'cajero.validación@hospital-san-isidro.local',
+              username: 'cajero.validación',
               active: true,
               roles: ['cajero'],
               permissions: ['reports.cash_session.view'],
@@ -821,9 +821,9 @@ describe('ReportsView', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Administrador Validacion',
-              email: 'admin.validacion@hospital-san-isidro.local',
-              username: 'admin.validacion',
+              name: 'Administrador Validación',
+              email: 'admin.validación@hospital-san-isidro.local',
+              username: 'admin.validación',
               active: true,
               roles: ['admin'],
               permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
@@ -913,7 +913,7 @@ describe('ReportsView', () => {
                 closing_notes: null,
                 opened_at: '2026-05-17T08:00:00.000000Z',
                 closed_at: null,
-                user: { id: 2, name: 'Cajero Validacion', username: 'cajero.validacion' },
+                user: { id: 2, name: 'Cajero Validación', username: 'cajero.validación' },
               },
             ],
             meta: { current_page: 1, per_page: 50, total: 1 },
@@ -1022,10 +1022,10 @@ describe('ReportsView', () => {
     expect(await screen.findByLabelText(/desde/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
     const cashSessionSelector = await screen.findByRole('combobox', { name: /^caja$/i });
-    expect(screen.getByText(/Cajero Validacion.*2026-05-17.*Abierta/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cajero Validación.*2026-05-17.*Abierta/i)).toBeInTheDocument();
     fireEvent.change(cashSessionSelector, { target: { value: '11' } });
     const cashierSelector = screen.getByRole('combobox', { name: /^cajero$/i });
-    expect(screen.getByText(/Cajero Validacion \(cajero\.validacion\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cajero Validación \(cajero\.validación\)/i)).toBeInTheDocument();
     fireEvent.change(cashierSelector, { target: { value: '2' } });
     expect(screen.getByLabelText(/^area$/i)).toBeInTheDocument();
     expect(screen.getByText(/puede consultar hasta 31 dias por busqueda/i)).toBeInTheDocument();
@@ -1043,7 +1043,7 @@ describe('ReportsView', () => {
     activateTab(/servicios/i);
     expect(await screen.findByText(/sin categor.as facturadas/i)).toBeInTheDocument();
     expect(await screen.findByText(/sin servicios facturados/i)).toBeInTheDocument();
-    expect(screen.queryByText(/sin categorias cobradas/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/sin categorías cobradas/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/sin servicios cobrados/i)).not.toBeInTheDocument();
     activateTab(/auditor.a/i);
     expect((await screen.findAllByText(/sin eventos operativos/i)).length).toBeGreaterThan(0);

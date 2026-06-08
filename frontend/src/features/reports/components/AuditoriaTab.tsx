@@ -91,7 +91,7 @@ export function AuditoriaTab({
             <KPICard title="Anulaciones" value={operations.summary.void_count} icon={<AlertTriangle className="h-4 w-4" />} />
             <KPICard title="Reimpresiones" value={operations.summary.reprint_count} icon={<Printer className="h-4 w-4" />} />
             <KPICard title="Reversos" value={operations.summary.payment_void_count ?? 0} icon={<RotateCcw className="h-4 w-4" />} />
-            <KPICard title="Catalogo" value={operations.summary.service_change_count ?? 0} icon={<ClipboardList className="h-4 w-4" />} />
+            <KPICard title="Catálogo" value={operations.summary.service_change_count ?? 0} icon={<ClipboardList className="h-4 w-4" />} />
             <KPICard title="Respaldos" value={operations.summary.backup_count} icon={<Database className="h-4 w-4" />} />
             <KPICard title="Fallidos" value={operations.summary.failed_backup_count} />
             <KPICard title="Cajeros activos" value={operations.summary.cashier_count} icon={<Users className="h-4 w-4" />} />
@@ -205,7 +205,7 @@ export function AuditoriaTab({
           {(operations.catalog_changes?.length ?? 0) > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Cambios de catalogo</CardTitle>
+                <CardTitle>Cambios de catálogo</CardTitle>
                 <CardDescription>Servicios modificados en el rango consultado</CardDescription>
               </CardHeader>
               <CardContent>
@@ -316,7 +316,7 @@ export function AuditoriaTab({
           {!hasOperationalEvents && (
             <EmptyState
               title="Sin eventos operativos"
-              description="No hay anulaciones, reversos, reimpresiones, cambios de catalogo, respaldos ni actividad de cajeros para el rango seleccionado."
+              description="No hay anulaciones, reversos, reimpresiones, cambios de catálogo, respaldos ni actividad de cajeros para el rango seleccionado."
             />
           )}
 
@@ -369,7 +369,7 @@ const CATALOG_VALUE_LABELS: Record<string, string> = {
   visible_in_billing: 'Visible en caja',
   is_billable: 'Facturable',
   special_rule_code: 'Regla especial',
-  category: 'Categoria',
+  category: 'Categoría',
   area: 'Area',
 };
 
@@ -380,7 +380,7 @@ function catalogActionLabel(action: string): string {
     'service.price_updated': 'Precio actualizado',
     'service.active_updated': 'Estado actualizado',
     'service.visibility_updated': 'Visibilidad actualizada',
-    'service.billability_updated': 'Facturacion actualizada',
+    'service.billability_updated': 'Facturación actualizada',
   }[action] ?? 'Cambio de servicio';
 }
 
@@ -420,7 +420,7 @@ function catalogValueLabel(field: string, value: unknown): string {
   if (field === 'special_rule_code') {
     return String(value) === 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION'
       ? 'Eritropoyetina con receta de dialisis'
-      : 'Configuracion especial';
+      : 'Configuración especial';
   }
 
   if (typeof value === 'boolean') {

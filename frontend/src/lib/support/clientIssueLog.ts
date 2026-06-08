@@ -27,7 +27,7 @@ const SCREEN_LABELS: Array<[RegExp, string]> = [
   [/^\/dashboard\b/i, 'Inicio'],
   [/^\/billing\b/i, 'Nueva factura'],
   [/^\/cashbox\b/i, 'Caja'],
-  [/^\/catalog\b/i, 'Catalogo'],
+  [/^\/catalog\b/i, 'Catálogo'],
   [/^\/invoices\b/i, 'Historial'],
   [/^\/reports\b/i, 'Reportes'],
   [/^\/backups\b/i, 'Respaldos'],
@@ -38,7 +38,7 @@ const SCREEN_LABELS: Array<[RegExp, string]> = [
 ];
 
 export const PERMISSION_DENIED_MESSAGE =
-  'Su usuario no tiene permiso para esta accion. Solicite a un supervisor que revise su rol; no repita la operacion varias veces.';
+  'Su usuario no tiene permiso para esta accion. Solicite a un supervisor que revise su rol; no repita la operación varias veces.';
 
 export function safeClientMessage(value: string): string {
   return value
@@ -102,16 +102,16 @@ function supportModuleLabel(value: string | undefined): string | undefined {
 
   const normalized = safeValue.toLowerCase();
 
-  if (['conexion local', 'facturacion', 'caja', 'respaldos', 'reportes', 'catalogo', 'ingreso'].includes(normalized)) {
+  if (['conexion local', 'facturación', 'caja', 'respaldos', 'reportes', 'catálogo', 'ingreso'].includes(normalized)) {
     return safeValue;
   }
 
   if (normalized.includes('api') || normalized.includes('network')) return 'Conexion local';
-  if (normalized.includes('billing') || normalized.includes('invoice')) return 'Facturacion';
+  if (normalized.includes('billing') || normalized.includes('invoice')) return 'Facturación';
   if (normalized.includes('cash')) return 'Caja';
   if (normalized.includes('backup')) return 'Respaldos';
   if (normalized.includes('report')) return 'Reportes';
-  if (normalized.includes('catalog')) return 'Catalogo';
+  if (normalized.includes('catalog')) return 'Catálogo';
   if (normalized.includes('auth') || normalized.includes('login')) return 'Ingreso';
 
   return safeValue;
@@ -132,11 +132,11 @@ function supportActionLabel(value: string | undefined): string | undefined {
       'registro de factura',
       'registro de pago',
       'consulta de historial',
-      'operacion de caja',
-      'operacion de respaldo',
+      'operación de caja',
+      'operación de respaldo',
       'consulta de reportes',
       'ingreso de usuario',
-      'consulta de catalogo',
+      'consulta de catálogo',
       'accion registrada',
     ].includes(normalized)
   ) {
@@ -147,11 +147,11 @@ function supportActionLabel(value: string | undefined): string | undefined {
   if (normalized.includes('/api/invoices') && normalized.includes('post')) return 'Registro de factura';
   if (normalized.includes('/api/invoices')) return 'Consulta de historial';
   if (normalized.includes('/api/payments')) return 'Registro de pago';
-  if (normalized.includes('/api/cash-sessions')) return 'Operacion de caja';
-  if (normalized.includes('/api/backups')) return 'Operacion de respaldo';
+  if (normalized.includes('/api/cash-sessions')) return 'Operación de caja';
+  if (normalized.includes('/api/backups')) return 'Operación de respaldo';
   if (normalized.includes('/api/reports')) return 'Consulta de reportes';
   if (normalized.includes('/api/auth')) return 'Ingreso de usuario';
-  if (normalized.includes('/api/services') || normalized.includes('/api/categories') || normalized.includes('/api/areas')) return 'Consulta de catalogo';
+  if (normalized.includes('/api/services') || normalized.includes('/api/categories') || normalized.includes('/api/areas')) return 'Consulta de catálogo';
 
   return 'Accion registrada';
 }

@@ -87,7 +87,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
     <section id="about" className="flex flex-col gap-6" aria-labelledby="about-title">
       <PageHeader
         title="Informacion del sistema"
-        description="Estado general de operacion local, respaldos y soporte."
+        description="Estado general de operación local, respaldos y soporte."
       />
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -101,21 +101,21 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
                 <CardTitle className="text-xl font-bold">{hospitalName}</CardTitle>
                 <Badge variant="success">Activo</Badge>
               </div>
-              <CardDescription>Sistema de caja y facturacion hospitalaria local.</CardDescription>
+              <CardDescription>Sistema de caja y facturación hospitalaria local.</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
             <p>
-              Disenado para operar dentro del hospital con facturacion, caja, reportes,
+              Disenado para operar dentro del hospital con facturación, caja, reportes,
               recibos institucionales y respaldos locales.
             </p>
 
             <div className="rounded-lg border border-border bg-muted/30 p-4">
-              <h3 className="mb-2 text-sm font-semibold text-foreground">Operacion local</h3>
+              <h3 className="mb-2 text-sm font-semibold text-foreground">Operación local</h3>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="font-semibold text-foreground">Sistema disponible en la red del hospital</p>
-                  <p className="text-xs text-muted-foreground">Uso local para caja, facturacion, reportes y respaldos.</p>
+                  <p className="text-xs text-muted-foreground">Uso local para caja, facturación, reportes y respaldos.</p>
                 </div>
                 <div className="inline-flex items-center gap-1.5 rounded-full border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-bold text-success">
                   <ShieldCheck className="h-4 w-4" />

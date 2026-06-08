@@ -10,7 +10,7 @@ describe('getBreadcrumbs', () => {
 
     expect(getBreadcrumbs('/settings/fiscal').map((crumb) => crumb.label)).toEqual([
       'Inicio',
-      'Configuracion',
+      'Configuración',
       'Datos fiscales',
     ]);
   });
@@ -18,7 +18,7 @@ describe('getBreadcrumbs', () => {
   it('keeps the cashier invoice path understandable', () => {
     expect(getBreadcrumbs('/billing/new').map((crumb) => crumb.label)).toEqual([
       'Inicio',
-      'Facturacion',
+      'Facturación',
       'Nueva factura',
     ]);
   });

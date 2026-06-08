@@ -73,7 +73,7 @@ export function CashSessionReportTab({
             <KPICard
               title="Esperado"
               value={moneyLabel(cashSession.expected_cash_amount)}
-              description="Apertura mas cobros en efectivo"
+              description="Apertura más cobros en efectivo"
             />
             <KPICard
               title="Cobrado"

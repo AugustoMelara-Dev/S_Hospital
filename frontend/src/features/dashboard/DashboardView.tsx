@@ -111,7 +111,7 @@ export function DashboardView({
     <>
       <PageHeader
         title="Inicio"
-        description="Lo necesario para operar caja, cobros y facturacion sin perderse."
+        description="Lo necesario para operar caja, cobros y facturación sin perderse."
       />
 
       {setupStatus?.needs_setup && (
@@ -122,7 +122,7 @@ export function DashboardView({
                 <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warning" />
                 <div>
                   <CardTitle className="text-base font-bold text-warning-foreground">
-                    Configuracion pendiente
+                    Configuración pendiente
                   </CardTitle>
                   <CardDescription className="mt-1 text-xs text-warning-foreground/80">
                     Complete estos datos para emitir facturas correctamente.
@@ -154,7 +154,7 @@ export function DashboardView({
                 helper="Acceso principal listo"
               />
               <SetupStepCheck
-                label="Catalogo"
+                label="Catálogo"
                 done={setupStatus.steps.catalog_has_services}
                 helper="Servicios para facturar"
               />
@@ -182,7 +182,7 @@ export function DashboardView({
             icon={<TrendingUp className="size-4 text-primary" />}
             label="Facturado"
             value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : formatLempiras(dashboardData?.current_month.total_billed)}
-            helper={dashboardData ? `${dashboardData.current_month.invoice_count} facturas este mes` : 'Facturacion del mes'}
+            helper={dashboardData ? `${dashboardData.current_month.invoice_count} facturas este mes` : 'Facturación del mes'}
           />
 
           <MetricCard
@@ -206,7 +206,7 @@ export function DashboardView({
             <Card>
               <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <CardTitle className="text-base font-bold">Facturacion y cobros</CardTitle>
+                  <CardTitle className="text-base font-bold">Facturación y cobros</CardTitle>
                   <CardDescription>Ultimos 7 dias.</CardDescription>
                 </div>
                 {canViewManagerialReports && (

@@ -125,8 +125,8 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
 
       {categories && categories.categories.length === 0 && (
         <EmptyState
-          title="Sin categorias facturadas"
-          description="No hay facturacion agrupada por categoria para el rango y filtros seleccionados."
+          title="Sin categorías facturadas"
+          description="No hay facturación agrupada por categoría para el rango y filtros seleccionados."
         />
       )}
 

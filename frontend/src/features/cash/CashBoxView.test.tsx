@@ -47,9 +47,9 @@ describe('CashBoxView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Validacion',
-              email: 'cajero.validacion@hospital-san-isidro.local',
-              username: 'cajero.validacion',
+              name: 'Cajero Validación',
+              email: 'cajero.validación@hospital-san-isidro.local',
+              username: 'cajero.validación',
               active: true,
               roles: ['cajero'],
               permissions: ['cash.view', 'cash.open', 'cash.close'],
@@ -113,9 +113,9 @@ describe('CashBoxView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Validacion',
-              email: 'cajero.validacion@hospital-san-isidro.local',
-              username: 'cajero.validacion',
+              name: 'Cajero Validación',
+              email: 'cajero.validación@hospital-san-isidro.local',
+              username: 'cajero.validación',
               active: true,
               roles: ['cajero'],
               permissions: ['cash.view', 'cash.close'],
@@ -183,9 +183,9 @@ describe('CashBoxView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Validacion',
-              email: 'cajero.validacion@hospital-san-isidro.local',
-              username: 'cajero.validacion',
+              name: 'Cajero Validación',
+              email: 'cajero.validación@hospital-san-isidro.local',
+              username: 'cajero.validación',
               active: true,
               roles: ['cajero'],
               permissions: ['cash.view', 'cash.close', 'reports.cash_session.view'],
@@ -275,9 +275,9 @@ describe('CashBoxView', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Validacion',
-              email: 'cajero.validacion@hospital-san-isidro.local',
-              username: 'cajero.validacion',
+              name: 'Cajero Validación',
+              email: 'cajero.validación@hospital-san-isidro.local',
+              username: 'cajero.validación',
               active: true,
               roles: ['cajero'],
               permissions: ['cash.view', 'cash.close'],
@@ -297,7 +297,7 @@ describe('CashBoxView', () => {
               opening_amount: 'monto-danado',
               closing_amount: null,
               expected_amount: null,
-              expected_cash_amount: 'no-numero',
+              expected_cash_amount: 'no-número',
               difference_amount: null,
               payments_count: 3,
               payments_total: 'monto-danado',
@@ -305,7 +305,7 @@ describe('CashBoxView', () => {
                 cash: 'monto-danado',
                 transfer: '',
                 card: 'NaN',
-                other: 'no-numero',
+                other: 'no-número',
               },
               pending_invoice_count: 0,
               pending_amount: 'monto-danado',
@@ -329,6 +329,6 @@ describe('CashBoxView', () => {
 
     expect((await screen.findAllByText(/efectivo esperado/i)).length).toBeGreaterThan(0);
     expect(screen.getAllByText('L. 0.00').length).toBeGreaterThanOrEqual(5);
-    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero/);
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-número/);
   });
 });

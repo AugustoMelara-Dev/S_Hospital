@@ -21,7 +21,7 @@ export function PaginationControls({ loading = false, meta, onPageChange }: Pagi
         Anterior
       </Button>
       <span className="muted">
-        Pagina {meta.current_page} de {lastPage}
+        Página {meta.current_page} de {lastPage}
       </span>
       <Button
         type="button"

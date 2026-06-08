@@ -65,7 +65,7 @@ describe('DashboardView financial labels', () => {
       />,
     );
 
-    expect(await screen.findByRole('heading', { name: /facturacion y cobros/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /facturación y cobros/i })).toBeInTheDocument();
     expect(screen.getByText(/sin cobros registrados hoy/i)).toBeInTheDocument();
     expect(screen.getByText(/sin servicios facturados este mes/i)).toBeInTheDocument();
 
@@ -98,7 +98,7 @@ describe('DashboardView financial labels', () => {
       />,
     );
 
-    expect(await screen.findAllByText(/el servidor lan no pudo completar la operacion/i)).not.toHaveLength(0);
+    expect(await screen.findAllByText(/el servidor lan no pudo completar la operación/i)).not.toHaveLength(0);
     expect(document.body.textContent).not.toMatch(/SQLSTATE|stack trace|storage\/logs/i);
     expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/servidor lan/i));
   });
@@ -115,7 +115,7 @@ describe('DashboardView financial labels', () => {
         {
           date: '2026-05-30',
           total_billed: 'monto-danado',
-          total_collected: 'no-numero',
+          total_collected: 'no-número',
           invoice_count: 1,
           payment_count: 1,
         },
@@ -137,8 +137,8 @@ describe('DashboardView financial labels', () => {
       cashiers_summary: [
         {
           user_id: 5,
-          name: 'Cajero Validacion',
-          username: 'cajero.validacion',
+          name: 'Cajero Validación',
+          username: 'cajero.validación',
           payment_count: 1,
           total_collected: 'monto-danado',
         },
@@ -165,6 +165,6 @@ describe('DashboardView financial labels', () => {
     expect(await screen.findByText(/servicio con dato danado/i)).toBeInTheDocument();
     expect(screen.getByText(/0 unds/i)).toBeInTheDocument();
     expect(screen.getAllByText('L. 0.00').length).toBeGreaterThanOrEqual(3);
-    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|cantidad-danada|no-numero/);
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|cantidad-danada|no-número/);
   });
 });

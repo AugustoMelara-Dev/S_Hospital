@@ -57,7 +57,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
   });
 
   // Step 3: Catalog CSV
-  const [csvText, setCsvText] = useState('Categoria, Area, Servicio, Precio, Gravado (S/N)');
+  const [csvText, setCsvText] = useState('Categoría, Area, Servicio, Precio, Gravado (S/N)');
   const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Load existing configuration if any
@@ -212,7 +212,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         const areaId = findCatalogAreaId(areaMap, item.area);
 
         if (!areaId) {
-          throw new Error(`No existe el area "${item.area}". Revise el catalogo base antes de importar servicios.`);
+          throw new Error(`No existe el area "${item.area}". Revise el catálogo base antes de importar servicios.`);
         }
 
         // Ensure category exists
@@ -280,7 +280,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             <div className="h-px w-8 bg-border" />
             <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 3 ? 'text-secondary' : 'text-muted-foreground'}`}>
               <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 3 ? 'bg-secondary text-secondary-foreground animate-pulse' : step > 3 ? 'bg-secondary/10 text-secondary' : 'bg-muted'}`}>3</span>
-              <span>Catalogo</span>
+              <span>Catálogo</span>
             </div>
             <div className="h-px w-8 bg-border" />
             <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 4 ? 'text-secondary' : 'text-muted-foreground'}`}>
@@ -404,7 +404,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="wiz-seq-min">Desde el numero *</Label>
+                <Label htmlFor="wiz-seq-min">Desde el número *</Label>
                 <Input
                   id="wiz-seq-min"
                   type="number"
@@ -414,7 +414,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="wiz-seq-max">Hasta el numero *</Label>
+                <Label htmlFor="wiz-seq-max">Hasta el número *</Label>
                 <Input
                   id="wiz-seq-max"
                   type="number"
@@ -453,16 +453,16 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             <div className="flex gap-4 p-4 rounded-lg bg-accent border border-secondary/10">
               <PackagePlus className="size-10 text-secondary shrink-0" />
               <div>
-                <h4 className="font-semibold text-foreground text-sm">Paso 3: Catalogo de servicios</h4>
+                <h4 className="font-semibold text-foreground text-sm">Paso 3: Catálogo de servicios</h4>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Pegue la lista inicial de servicios. Luego podra editarla desde Catalogo.
+                  Pegue la lista inicial de servicios. Luego podra editarla desde Catálogo.
                 </p>
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="wiz-cat-csv">Servicios: categoria, area, servicio, precio, impuesto</Label>
+                <Label htmlFor="wiz-cat-csv">Servicios: categoría, area, servicio, precio, impuesto</Label>
                 <span className="text-[10px] text-muted-foreground">Use S para impuesto o N para exento</span>
               </div>
               <Textarea
@@ -470,7 +470,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                 className="h-44 bg-card text-xs"
                 value={csvText}
                 onChange={(e) => setCsvText(e.target.value)}
-                placeholder="Pegue aqui el catalogo real aprobado por administracion."
+                placeholder="Pegue aqui el catálogo real aprobado por administracion."
                 disabled={loading}
               />
             </div>
@@ -503,7 +503,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                   </>
                 ) : (
                   <>
-                    Importar catalogo
+                    Importar catálogo
                     <ArrowRight className="size-4" />
                   </>
                 )}
@@ -520,9 +520,9 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-bold text-foreground">Configuracion lista</h3>
+              <h3 className="text-xl font-bold text-foreground">Configuración lista</h3>
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Ya puede iniciar la operacion con datos del hospital, numeracion y servicios base.
+                Ya puede iniciar la operación con datos del hospital, numeracion y servicios base.
               </p>
             </div>
 
@@ -537,7 +537,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
               <div className="flex items-center gap-2.5 text-xs text-success font-semibold">
                 <span className="flex size-4 items-center justify-center rounded-full bg-success/15 text-[10px]">✓</span>
-                <span>Catalogo importado</span>
+                <span>Catálogo importado</span>
               </div>
             </div>
 

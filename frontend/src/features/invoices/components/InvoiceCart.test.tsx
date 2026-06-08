@@ -8,7 +8,7 @@ describe('InvoiceCart', () => {
     render(
       <InvoiceCart
         items={[cartItemFixture({ service: serviceFixture({ price: 'monto-danado' }) })]}
-        preview={{ subtotal: 'monto-danado', tax: 'NaN', total: 'no-numero' }}
+        preview={{ subtotal: 'monto-danado', tax: 'NaN', total: 'no-número' }}
         taxRate="15.00"
         onUpdateQuantity={vi.fn()}
         onUpdateDialysisPrescription={vi.fn()}
@@ -19,7 +19,7 @@ describe('InvoiceCart', () => {
 
     expect(screen.getByText('Hemograma')).toBeInTheDocument();
     expect(document.body.textContent).toContain('L. 0.00');
-    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
+    expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-número|undefined/);
   });
 
   it('exposes the dialysis prescription rule as a labeled checkbox', () => {

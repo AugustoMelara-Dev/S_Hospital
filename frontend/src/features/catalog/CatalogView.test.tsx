@@ -76,9 +76,9 @@ describe('CatalogView', () => {
 function catalogUser(): AuthUser {
   return {
     id: 1,
-    name: 'Catalogo Hospital',
-    email: 'catalogo@hospital-san-isidro.local',
-    username: 'catalogo',
+    name: 'Catálogo Hospital',
+    email: 'catálogo@hospital-san-isidro.local',
+    username: 'catálogo',
     active: true,
     roles: ['admin'],
     permissions: ['catalog.view'],

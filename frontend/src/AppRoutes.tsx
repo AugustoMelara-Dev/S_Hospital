@@ -131,7 +131,7 @@ export function AppRoutes({
       <Route
         path="/catalog"
         element={
-          <PermissionGate allowed={canViewCatalog} reason="Requiere permiso para consultar el catalogo de servicios.">
+          <PermissionGate allowed={canViewCatalog} reason="Requiere permiso para consultar el catálogo de servicios.">
             <CatalogView user={user} onStatus={onStatus} />
           </PermissionGate>
         }

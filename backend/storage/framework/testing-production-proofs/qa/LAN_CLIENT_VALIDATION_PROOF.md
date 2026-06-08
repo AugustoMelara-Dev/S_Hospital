@@ -25,7 +25,7 @@
 - [x] Receipt preview opens. Result/evidence: vista de recibo institucional media carta visible.
 - [x] Invoice history and reprint work. Result/evidence: historial muestra factura y reimpresion abre recibo historico.
 - [x] Reports load. Result/evidence: reporte diario carga metricas.
-- [x] Backup request from UI changes from `pending` to `success`. Result/evidence: backup manual completo con checksum visible.
+- [x] Backup request from UI changes from Pendiente to Protegido. Result/evidence: backup manual completo con checksum visible.
 
 ## Evidence
 

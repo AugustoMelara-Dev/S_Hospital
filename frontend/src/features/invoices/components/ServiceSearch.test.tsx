@@ -48,7 +48,7 @@ describe('ServiceSearch', () => {
     );
 
     expect(screen.getByText('Servicios (1)')).toBeInTheDocument();
-    expect(screen.queryByText(/busque o elija una categoria/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/busque o elija una categoría/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /agregar glucosa por l\. 15\.00/i })).toBeInTheDocument();
   });
 
@@ -71,9 +71,9 @@ describe('ServiceSearch', () => {
       />,
     );
 
-    expect(screen.getByLabelText(/buscar por nombre o categoria/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/buscar por nombre o categoría/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/buscar por nombre\.\.\./i)).toBeInTheDocument();
-    expect(screen.getByText(/escriba el nombre del servicio o toque una categoria/i)).toBeInTheDocument();
+    expect(screen.getByText(/escriba el nombre del servicio o toque una categoría/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/escanee|scanner|codigo|identificador/i);
   });
 
@@ -97,7 +97,7 @@ describe('ServiceSearch', () => {
       />,
     );
 
-    expect(screen.getByLabelText(/buscar por nombre, categoria o identificador/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/buscar por nombre, categoría o identificador/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/buscar por nombre o identificador/i)).toBeInTheDocument();
     const scanInput = screen.getByLabelText(/identificador de servicio/i);
 

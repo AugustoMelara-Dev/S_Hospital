@@ -28,9 +28,9 @@ describe('HelpView', () => {
 
     expect(screen.getByRole('heading', { name: /ayuda institucional/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /abrir el sistema/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument();
     expect(screen.getByText(/use el acceso institucional del escritorio/i)).toBeInTheDocument();
-    expect(screen.getByText(/no comparta contrasena ni cuenta de turno/i)).toBeInTheDocument();
+    expect(screen.getByText(/no comparta contraseña ni cuenta de turno/i)).toBeInTheDocument();
     expect(screen.getByText(/servidor no disponible/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /impresora no responde/i })).toBeInTheDocument();
     expect(screen.getByText(/media carta, carta o A5/i)).toBeInTheDocument();
@@ -61,7 +61,7 @@ describe('HelpView', () => {
     expect(screen.getByText(/respaldos pendientes o con error/i)).toBeInTheDocument();
     expect(screen.getByText(/soporte local/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /acciones delicadas/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /restauracion de respaldo/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /restauración de respaldo/i })).toBeInTheDocument();
     expect(screen.getByText(/nunca restaure sobre datos reales/i)).toBeInTheDocument();
     expect(screen.getByText(/no cierre para ocultar errores/i)).toBeInTheDocument();
     expect(screen.getAllByText(/no use la base de producción/i).length).toBeGreaterThan(0);

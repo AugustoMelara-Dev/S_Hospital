@@ -105,12 +105,12 @@ describe('App', () => {
             },
             {
               code: 'PENDING_LAN_CLIENT_VALIDATION',
-              label: 'Validacion desde segunda PC LAN',
+              label: 'Validación desde segunda PC LAN',
               status: 'pending',
             },
             {
               code: 'PENDING_HARDWARE_VALIDATION',
-              label: 'Validacion fisica media carta/carta/A5',
+              label: 'Validación fisica media carta/carta/A5',
               status: 'pending',
             },
           ],
@@ -238,9 +238,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Administrador Validacion',
-              email: 'admin.validacion@hospital-san-isidro.local',
-              username: 'admin.validacion',
+              name: 'Administrador Validación',
+              email: 'admin.validación@hospital-san-isidro.local',
+              username: 'admin.validación',
               active: true,
               roles: ['admin'],
               permissions: ['settings.fiscal.view'],
@@ -283,9 +283,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Administrador Validacion',
-              email: 'admin.validacion@hospital-san-isidro.local',
-              username: 'admin.validacion',
+              name: 'Administrador Validación',
+              email: 'admin.validación@hospital-san-isidro.local',
+              username: 'admin.validación',
               active: true,
               roles: ['admin'],
               permissions: ['settings.fiscal.view', 'settings.fiscal.update'],
@@ -342,9 +342,9 @@ describe('App', () => {
       'href',
       '/settings/fiscal',
     );
-    expect(await screen.findByRole('heading', { name: /^configuracion$/i })).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: /configuracion pendiente/i })).toBeInTheDocument();
-    expect(screen.getByText(/datos temporales o de validacion/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^configuración$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /configuración pendiente/i })).toBeInTheDocument();
+    expect(screen.getByText(/datos temporales o de validación/i)).toBeInTheDocument();
     activateTab(/^hospital$/i);
     expect(await screen.findByRole('heading', { name: /hospital y recibo/i })).toBeInTheDocument();
     expect(screen.queryByDisplayValue(placeholderHospitalName)).not.toBeInTheDocument();
@@ -365,9 +365,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Validacion',
-              email: 'cajero.validacion@hospital-san-isidro.local',
-              username: 'cajero.validacion',
+              name: 'Cajero Validación',
+              email: 'cajero.validación@hospital-san-isidro.local',
+              username: 'cajero.validación',
               active: true,
               roles: ['cajero'],
               permissions: ['catalog.view'],
@@ -433,7 +433,7 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: /cat[aá]l[oó]go de servicios/i })).toBeInTheDocument();
     expect(await screen.findByText('Glucosa')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /agregar servicio/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /nueva categoria/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /nueva categoría/i })).not.toBeInTheDocument();
   });
 
   it('renders backups view actions for an admin', async () => {
@@ -447,9 +447,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Administrador Validacion',
-              email: 'admin.validacion@hospital-san-isidro.local',
-              username: 'admin.validacion',
+              name: 'Administrador Validación',
+              email: 'admin.validación@hospital-san-isidro.local',
+              username: 'admin.validación',
               active: true,
               roles: ['admin'],
               permissions: ['backups.view', 'backups.create', 'backups.download'],
@@ -481,7 +481,7 @@ describe('App', () => {
     expect(await screen.findByText(/respaldos del hospital/i)).toBeInTheDocument();
     expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /^pendiente$/i })).toBeInTheDocument();
-    expect(await screen.findByText(/completar modo de operaci[oÃ³]n final/i)).toBeInTheDocument();
+    expect(await screen.findByText(/completar modo de operaci[oó]n final/i)).toBeInTheDocument();
     expect(await screen.findByText(/validar recibo fisico media carta\/carta\/A5/i)).toBeInTheDocument();
     expect(screen.queryByText(/APP_ENV=production/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /requiere revisi/i })).not.toBeInTheDocument();
@@ -510,9 +510,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 2,
-              name: 'Cajero Validacion',
-              email: 'cajero.validacion@hospital-san-isidro.local',
-              username: 'cajero.validacion',
+              name: 'Cajero Validación',
+              email: 'cajero.validación@hospital-san-isidro.local',
+              username: 'cajero.validación',
               active: true,
               roles: ['cajero'],
               permissions: ['cash.view'],
@@ -544,9 +544,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Administrador Validacion',
-              email: 'admin.validacion@hospital-san-isidro.local',
-              username: 'admin.validacion',
+              name: 'Administrador Validación',
+              email: 'admin.validación@hospital-san-isidro.local',
+              username: 'admin.validación',
               active: true,
               roles: ['admin'],
               permissions: ['backups.view', 'backups.create', 'backups.download'],
@@ -576,7 +576,7 @@ describe('App', () => {
             completed_at: null,
             created_at: '2026-05-17T10:15:00-06:00',
             updated_at: '2026-05-17T10:15:00-06:00',
-            creator: { id: 1, name: 'Administrador Validacion', username: 'admin.validacion' },
+            creator: { id: 1, name: 'Administrador Validación', username: 'admin.validación' },
           };
           backupList.push(newBackup);
           return {
@@ -632,9 +632,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Administrador Validacion',
-              email: 'admin.validacion@hospital-san-isidro.local',
-              username: 'admin.validacion',
+              name: 'Administrador Validación',
+              email: 'admin.validación@hospital-san-isidro.local',
+              username: 'admin.validación',
               active: true,
               roles: ['admin'],
               permissions: ['backups.view', 'backups.download'],
@@ -667,7 +667,7 @@ describe('App', () => {
                 completed_at: '2026-05-17T10:15:00-06:00',
                 created_at: '2026-05-17T10:15:00-06:00',
                 updated_at: '2026-05-17T10:15:00-06:00',
-                creator: { id: 1, name: 'Administrador Validacion', username: 'admin.validacion' },
+                creator: { id: 1, name: 'Administrador Validación', username: 'admin.validación' },
               },
             ],
             meta: { current_page: 1, per_page: 15, total: 16 },
@@ -706,9 +706,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Administrador Validacion',
-              email: 'admin.validacion@hospital-san-isidro.local',
-              username: 'admin.validacion',
+              name: 'Administrador Validación',
+              email: 'admin.validación@hospital-san-isidro.local',
+              username: 'admin.validación',
               active: true,
               roles: ['admin'],
               permissions: ['backups.view', 'backups.create'],
@@ -742,7 +742,7 @@ describe('App', () => {
                 completed_at: null,
                 created_at: '2026-06-02T09:00:00-06:00',
                 updated_at: '2026-06-02T09:00:00-06:00',
-                creator: { id: 1, name: 'Administrador Validacion', username: 'admin.validacion' },
+                creator: { id: 1, name: 'Administrador Validación', username: 'admin.validación' },
               },
             ],
             meta: { current_page: 1, per_page: 15, total: 1 },
@@ -775,9 +775,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Administrador Validacion',
-              email: 'admin.validacion@hospital-san-isidro.local',
-              username: 'admin.validacion',
+              name: 'Administrador Validación',
+              email: 'admin.validación@hospital-san-isidro.local',
+              username: 'admin.validación',
               active: true,
               roles: ['admin'],
               permissions: ['settings.fiscal.view', 'settings.fiscal.update'],
@@ -834,9 +834,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Administrador Validacion',
-              email: 'admin.validacion@hospital-san-isidro.local',
-              username: 'admin.validacion',
+              name: 'Administrador Validación',
+              email: 'admin.validación@hospital-san-isidro.local',
+              username: 'admin.validación',
               active: true,
               roles: ['admin'],
               permissions: ['settings.fiscal.view'],
@@ -852,7 +852,7 @@ describe('App', () => {
           status: 422,
           json: async () => ({
             errors: {
-              current_password: ['La contrasena actual no es correcta.'],
+              current_password: ['La contraseña actual no es correcta.'],
             },
           }),
         } as Response;
@@ -876,16 +876,16 @@ describe('App', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /actualizar/i }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/contrasena actual no es correcta/i);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/contraseña actual no es correcta/i);
   });
 
   it('prevents duplicated required password change submissions while pending', async () => {
     let resolveChange!: (response: Response) => void;
     const sessionUser = {
       id: 1,
-      name: 'Administrador Validacion',
-      email: 'admin.validacion@hospital-san-isidro.local',
-      username: 'admin.validacion',
+      name: 'Administrador Validación',
+      email: 'admin.validación@hospital-san-isidro.local',
+      username: 'admin.validación',
       active: true,
       roles: ['admin'],
       permissions: ['settings.fiscal.view'],
@@ -956,9 +956,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Administrador Validacion',
-              email: 'admin.validacion@hospital-san-isidro.local',
-              username: 'admin.validacion',
+              name: 'Administrador Validación',
+              email: 'admin.validación@hospital-san-isidro.local',
+              username: 'admin.validación',
               active: true,
               roles: ['admin'],
               permissions: ['reports.view'],
@@ -987,9 +987,9 @@ describe('App', () => {
           json: async () => ({
             data: {
               id: 1,
-              name: 'Administrador Validacion',
-              email: 'admin.validacion@hospital-san-isidro.local',
-              username: 'admin.validacion',
+              name: 'Administrador Validación',
+              email: 'admin.validación@hospital-san-isidro.local',
+              username: 'admin.validación',
               active: true,
               roles: ['admin'],
               permissions: [
