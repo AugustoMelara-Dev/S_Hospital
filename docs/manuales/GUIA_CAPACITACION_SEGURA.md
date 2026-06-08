@@ -1,7 +1,7 @@
 # Guia De Capacitacion Segura
 
-Esta guia sirve para capacitar cajeros, supervisores y administradores sin
-poner en riesgo la base real del Hospital San Isidro.
+Esta guia sirve para capacitar cajeros, supervisores, administradores y usuarios
+de area sin poner en riesgo la base real del Hospital San Isidro.
 
 ## Regla Principal
 
@@ -59,6 +59,20 @@ sin revisar Caja e Historial.
 Mensaje clave para el supervisor: no arregle errores borrando datos ni abriendo
 otra caja para ocultar una diferencia.
 
+## Ejercicios Para Usuario De Area
+
+1. Iniciar sesion con usuario propio del area.
+2. Confirmar que la pantalla muestra **Servicios pagados**.
+3. Revisar que el area asignada sea correcta.
+4. Filtrar por fecha del dia o turno.
+5. Identificar paciente, servicio, fecha, cajero, metodo de pago y total.
+6. Practicar que hacer si un servicio pagado no aparece.
+7. Confirmar que este rol no abre caja, no factura, no cobra, no anula y no ve
+   reportes administrativos.
+
+Mensaje clave para el usuario de area: atienda solo servicios pagados de su
+area y no pida repetir facturas ni cobros sin verificacion en Historial.
+
 ## Ejercicios Para Administrador
 
 1. Revisar usuarios y permisos.
@@ -108,9 +122,11 @@ En cada caso, el instructor debe pedir al participante:
 
 Antes de terminar:
 
-1. Confirmar que todos practicaron abrir sistema, facturar, cobrar, imprimir,
+1. Confirmar que caja practico abrir sistema, facturar, cobrar, imprimir,
    reimprimir, cerrar caja y pedir soporte.
-2. Confirmar que el entorno usado fue aislado.
-3. Eliminar o archivar cuentas de practica segun indique administracion.
-4. Registrar dudas frecuentes para mejorar el manual.
-5. Confirmar que nadie usara la base real para seguir practicando.
+2. Confirmar que usuarios de area practicaron consultar servicios pagados sin
+   operar caja ni reportes administrativos.
+3. Confirmar que el entorno usado fue aislado.
+4. Eliminar o archivar cuentas de practica segun indique administracion.
+5. Registrar dudas frecuentes para mejorar el manual.
+6. Confirmar que nadie usara la base real para seguir practicando.

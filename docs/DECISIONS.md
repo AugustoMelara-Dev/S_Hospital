@@ -4246,3 +4246,8 @@ Criterio de verificacion: `scripts\validate_training_acceptance_proof.ps1 -Allow
 Contexto: el proof focal de capacitacion ya exigia que el usuario de area practicara consulta de servicios pagados, pero `production_readiness_preflight.ps1` y `validate_field_proof_templates.ps1` todavia podian aceptar una evidencia final sin ese check.
 Decision: el preflight final, el guard de plantillas y `validate_training_acceptance_proof.ps1` quedan alineados en `Area-user role practiced`, de modo que la RC no pueda avanzar a `PRODUCTION_READY` con capacitacion incompleta del rol de laboratorio/rayos X.
 Criterio de verificacion: `scripts\validate_training_acceptance_proof.ps1 -AllowPendingFinalField`, `scripts\validate_field_proof_templates.ps1`, `scripts\validate_production_ready_gate_safety.ps1` y `scripts\check-branding.ps1` deben pasar.
+
+## 2026-06-08 - Capacitacion segura incluye usuario de area
+Contexto: `docs\manuales\CHECKLIST_CAPACITACION.md` ya cubria el usuario de area, pero la guia narrativa de capacitacion y dos evidencias QA seguian describiendo solo cajero, supervisor y administrador.
+Decision: la guia segura, el stub de aceptacion, la evidencia del gate y `validate_training_safety.ps1` incluyen el rol de area y su consulta de servicios pagados sin operar caja, facturacion, anulaciones ni reportes administrativos.
+Criterio de verificacion: `scripts\validate_training_safety.ps1`, `scripts\validate_training_acceptance_proof.ps1 -AllowPendingFinalField`, `scripts\validate_operator_manuals_safety.ps1` y `scripts\check-branding.ps1` deben pasar.

@@ -3,8 +3,8 @@
 Decision: `PENDING_FINAL_FIELD`.
 
 This file is reserved for final supervised staff training. It must stay pending
-until cashier, supervisor and administrator practice is completed in an isolated
-practice environment or approved disposable database.
+until cashier, supervisor, administrator and area-user practice is completed in
+an isolated practice environment or approved disposable database.
 
 Do not write participant names, patient names, phone numbers, identity numbers,
 usernames, passwords, `.env` values, backup SQL filenames or local machine

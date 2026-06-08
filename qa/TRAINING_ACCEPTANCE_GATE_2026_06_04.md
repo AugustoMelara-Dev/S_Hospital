@@ -8,8 +8,8 @@
 ## Safety contract
 
 - `qa/TRAINING_ACCEPTANCE_PROOF.md` starts as `PENDING_FINAL_FIELD`.
-- The proof must only be completed after cashier, supervisor and administrator
-  practice in an isolated training environment or disposable database.
+- The proof must only be completed after cashier, supervisor, administrator and
+  area-user practice in an isolated training environment or disposable database.
 - The proof must not include participant names, patient data, passwords, `.env`
   values, backup SQL filenames or local machine paths.
 - If the proof is missing, incomplete or bypassed, preflight and handoff must keep

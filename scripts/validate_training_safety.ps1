@@ -80,6 +80,7 @@ function Assert-NotContains([string] $label, [string] $content, [string] $patter
 
 $safeTraining = Read-RequiredText "docs\manuales\GUIA_CAPACITACION_SEGURA.md"
 $trainingChecklist = Read-RequiredText "docs\manuales\CHECKLIST_CAPACITACION.md"
+$areaUserManual = Read-RequiredText "docs\manuales\MANUAL_USUARIO_AREA.md"
 $localValidationScript = Read-RequiredText "docs\LOCAL_VALIDATION_SCRIPT.md"
 $operativeValidationFlow = Read-RequiredText "docs\OPERATIVE_VALIDATION_FLOW.md"
 $lanClientProofTemplate = Read-RequiredText "qa\LAN_CLIENT_VALIDATION_PROOF.example.md"
@@ -89,7 +90,7 @@ $userManual = Read-RequiredText "docs\Manual_Usuario.html"
 $helpView = Read-RequiredText "frontend\src\features\help\HelpView.tsx"
 $helpViewTest = Read-RequiredText "frontend\src\features\help\HelpView.test.tsx"
 
-$combinedDocs = "$safeTraining`n$trainingChecklist`n$localValidationScript`n$operativeValidationFlow`n$lanClientProofTemplate`n$trainingAcceptanceTemplate`n$quickAdminTraining`n$userManual"
+$combinedDocs = "$safeTraining`n$trainingChecklist`n$areaUserManual`n$localValidationScript`n$operativeValidationFlow`n$lanClientProofTemplate`n$trainingAcceptanceTemplate`n$quickAdminTraining`n$userManual"
 $combinedUi = "$helpView`n$helpViewTest"
 
 Assert-Contains "Training docs forbid practicing in production" $combinedDocs 'no use la base de produccion para practicar|no en\s+la base real de produccion'
@@ -97,6 +98,9 @@ Assert-Contains "Training docs require isolated environment or disposable databa
 Assert-Contains "Training docs require cashier role practice" $combinedDocs '(?i)cajero'
 Assert-Contains "Training docs require supervisor role practice" $combinedDocs '(?i)supervisor'
 Assert-Contains "Training docs require administrator role practice" $combinedDocs '(?i)administrador'
+Assert-Contains "Training docs require area-user role practice" $combinedDocs '(?i)usuario de area|area-user'
+Assert-Contains "Training docs require area paid-service consultation practice" $combinedDocs '(?i)servicios pagados'
+Assert-Contains "Training docs forbid area users from operating cashbox" $combinedDocs '(?i)usuario de area[\s\S]{0,500}no abre caja|no abre caja[\s\S]{0,500}usuario de area'
 Assert-Contains "Training docs require support summary practice" $combinedDocs '(?i)ayuda\s*>\s*preparar resumen|resumen seguro'
 Assert-NotContains "Training checklist avoids technical incident wording for staff" $trainingChecklist 'incidente tecnico|error tecnico'
 Assert-NotContains "Training and validation docs avoid receipt preview wording" $combinedDocs 'vista previa de recibo|receipt preview opens|receipt preview controls|tamano de vista previa'
