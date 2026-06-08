@@ -42,9 +42,9 @@ This does not declare full backend gate health or `PRODUCTION_READY`; it only re
 
 Recent phase commits on `codex/production-readiness-hardening`:
 
-- `78375e5 docs(ops): require thermal printer proof` - aligned docs/help/proof templates so institutional receipt validation includes media carta, carta, A5, 80mm and 58mm.
+- `78375e5 docs(ops): require receipt printer proof` - antecedente corregido: la validacion vigente del recibo institucional es media carta, carta y A5.
 - `004167e fix(admin): align password policy hints` - aligned frontend admin password validation with Laravel `Password::min(10)->letters()->numbers()`.
-- `69ef1dd fix(ops): enforce thermal printer proof` - made production preflight require the 80mm and 58mm institutional receipt fields/checks.
+- `69ef1dd fix(ops): enforce receipt printer proof` - antecedente corregido: el preflight vigente no debe promover formatos de rollo como requisito operativo.
 - `18df1ac refactor(admin): move password reset validation` - moved admin password reset validation/authorization into a Form Request and added Feature coverage.
 - `b7ed50d refactor(backups): move list validation to request` - moved backup list authorization/status validation into a Form Request while preserving pagination clamp behavior.
 - `ddb2ce3 fix(admin): prevent duplicate user actions` - disabled/locked admin user create/reset/toggle actions while requests are pending and covered duplicate-submit cases.
@@ -55,12 +55,12 @@ Recent phase commits on `codex/production-readiness-hardening`:
 Current local verification notes:
 
 - Phase 13C scanner authority and frontend money handling were rechecked on 2026-06-01: scanner lookup calls the backend with `code`, does not add a cached local service after lookup failure, `PaymentModal` calculates cashier-facing payment/change values in cents, and `npm.cmd run test -- --run src/features/invoices/NewInvoiceView.test.tsx` passed 13 tests.
-- Receipt proof language must always list media carta, carta, A5, 80mm and 58mm together. Instructions that mention only page formats or only thermal widths are considered stale until corrected.
+- Receipt proof language must list media carta, carta and A5. Instructions that promote roll paper widths as operational requirements are considered stale until corrected.
 - Phase 13F backup retention was hardened on 2026-06-01: unsafe old `success` backup records are no longer deleted by retention; they remain for support review and are audited as `backup.prune_skipped`. `php artisan test --filter=BackupWorkflowTest` passed 17 tests / 80 assertions. Non-invasive wrapper checks also passed: `scripts\run_backup_worker.cmd --check`, `scripts\run_scheduled_backup.cmd --check`, `scripts\start_backup_automation.cmd --check`, and `scripts\install_backup_tasks_windows.ps1 -WhatIfOnly -DailyBackupTime 23:30`.
 - Phase 13G release guard was hardened on 2026-06-01: it now recalculates Docker image tar SHA256 values, compares sidecars and `checksums.sha256`, and blocks secret `.env` variants such as `.env.production`. Contract checks passed with temporary local release fixtures for valid, bad-checksum and forbidden-env cases.
-- Phase 13H QA evidence cleanup continued on 2026-06-01: release readiness, known limitations, gap report, role/module audit and handoff evidence now list the full `PRODUCTION_READY` blockers consistently, including LAN, five-format institutional printer proof, final restore/concurrency, backup worker, offline artifact and production configuration.
+- Phase 13H QA evidence cleanup continued on 2026-06-01: release readiness, known limitations, gap report, role/module audit and handoff evidence now list the full `PRODUCTION_READY` blockers consistently, including LAN, institutional printer proof for media carta/carta/A5, final restore/concurrency, backup worker, offline artifact and production configuration.
 - Broad local gates passed on 2026-06-01 after the latest 13H docs cleanup: `php artisan test --stop-on-failure` passed 201 tests / 1506 assertions, `npm.cmd run typecheck` passed, `npm.cmd run lint` passed, `npm.cmd run test` passed 14 files / 65 tests, and `npm.cmd run build` passed with the known Vite chunk-size warning.
-- 2026-06-01 correction after user clarification: active UI/docs now treat the physical receipt proof as media carta/carta/A5/80mm/58mm, not one group instead of the other. Focused gates passed: `npm.cmd run test -- App.test.tsx`, `npm.cmd run typecheck`, `npm.cmd run lint`, `git diff --check`, and a stale-copy search excluding generated screenshots/storage fixtures.
+- 2026-06-01 correction after user clarification: superseded by the later product decision that active UI/docs treat the physical receipt proof as media carta, carta and A5. Focused gates passed: `npm.cmd run test -- App.test.tsx`, `npm.cmd run typecheck`, `npm.cmd run lint`, `git diff --check`, and a stale-copy search excluding generated screenshots/storage fixtures.
 - Installer credential handling was hardened on 2026-06-01: `auth:create-initial-admin` accepts `HOSPITAL_INITIAL_ADMIN_PASSWORD`, rejects weak temporary passwords, and the LAN installer no longer sends the admin password as a CLI argument. Focused gates passed: `php artisan test --filter=InitialAdminCommandTest`, `scripts\deploy_hospital_lan.ps1 -SelfTest`, Pint for touched backend files, `git diff --check`, and a sensitive-pattern scan.
 - Active release/install docs were aligned on 2026-06-01 so admin creation in production points to the installer or `HOSPITAL_INITIAL_ADMIN_PASSWORD`, and explicitly forbids writing the temporary password as `--password=...` in console.
 - The LAN installer bare-metal path was aligned with Docker production on 2026-06-01: it now runs `migrate --force` plus explicit roles/catalog seeders instead of `migrate --force --seed`, avoiding any dependency on `DevelopmentValidationSeeder` environment guards.
@@ -70,7 +70,7 @@ Current local verification notes:
 - Receipt print audit was rechecked on 2026-06-01: history print uses the reprint endpoint before print, and `ReceiptPreview` now has focused coverage that printing waits for the audit callback and does not print if the callback fails.
 - Income reports were aligned with cent-based financial facts on 2026-06-01: `IncomeReportService` now uses `FinancialFactsService`, and report collection totals come from `payments.amount_cents` including category/area allocation.
 - Production infrastructure guardrails were tightened on 2026-06-01: `.env` variants are ignored, install docs name `php artisan key:generate`, and the Docker production queue worker exposes a DB-backed healthcheck. This remains local config evidence, not final worker proof.
-- 2026-06-02 user correction: receipt instructions/selectors must be ordered as media carta, carta, A5, 80mm and 58mm. The older page-format order was inverted, while thermal support remains last and still required.
+- 2026-06-02 correction superseded by final product guidance: receipt instructions/selectors must present media carta, carta and A5 as the operative institutional formats.
 - 2026-06-02 frontend least-privilege/API UX follow-up: user creation is hidden without `users.create`, and API network failures preserve sanitized browser detail while keeping operator-safe LAN messages.
 - 2026-06-02 billing preview fix: the invoice cart now estimates subtotal, ISV and total in cents using configured tax rate and taxable service flags while keeping backend emission authoritative.
 - 2026-06-02 restore helper hardening: `scripts\restore_hospital_windows.ps1 -SelfTest` now verifies PowerShell 5.1-compatible parsing and disposable database guards without touching backups or databases.
@@ -84,14 +84,14 @@ Current local verification notes:
 
 Decision: **APPROVED WITH REQUIRED CHANGES** for implementation.
 
-Production readiness decision: **BLOCKED** until field validation is complete on the final server, LAN client, MariaDB restore target, and physical institutional receipt outputs for media carta/carta/A5/80mm/58mm.
+Production readiness decision: **BLOCKED** until field validation is complete on the final server, LAN client, MariaDB restore target, and physical institutional receipt outputs for media carta, carta and A5.
 
 | Reviewer | Severity | Finding | Recommendation |
 | --- | --- | --- | --- |
 | Architecture and maintainability | High | `InvoiceAccess` grants operational invoice access via broad view/report/reprint permissions. | Add explicit operational permission for paying/voiding any invoice. Keep view/reprint historical access separate. |
 | Database and transactions | High | Zero-total invoices can become `paid` without a payment/cash/audit fact. | Introduce a formal zero-amount payment/waiver audit path or a non-paid `waived` status with tests. |
 | Security and privacy | Medium | Full fiscal settings endpoint is public while the API contract says it needs `settings.fiscal.view`. | Protect full settings. Add a narrow public branding endpoint only if login needs it. |
-| Cashier UX | High | Thermal 80mm/58mm receipt requirement is not exposed in frontend receipt paper sizes. | Add 80mm and 58mm paper sizes end to end and validate print CSS. |
+| Cashier UX | High | Receipt validation language was still tied to roll-paper formats. | Keep receipt proof and UI focused on media carta, carta and A5; legacy stored width values may be normalized internally without surfacing them to operators. |
 | Performance and local scale | Medium | Global frontend request queue serializes read-only GET/report calls. | Keep CSRF/mutation ordering, allow concurrent GET requests. |
 | Offline LAN and backups | Blocking | Offline release backup automation calls `php artisan` from a package that lacks `backend/artisan`; retention is missing. | Make release backup automation Docker-based or include the runnable app, fail preflight hard, add retention/prune. |
 | TDD and QA | High | Backend gate is unstable when `CashPaymentsReceiptTest` runs as a class. | Fix test isolation first and rerun backend gate. |
@@ -229,7 +229,7 @@ Resolve the conflict between the dialysis/eritropoyetina free rule and the invar
 
 **Scope**
 
-Implement true 80mm/58mm receipt sizing in the frontend and prevent unaudited reprint/print paths from invoice history.
+Keep institutional receipt printing focused on media carta, carta and A5, and prevent unaudited reprint/print paths from invoice history.
 
 **Expected files**
 
@@ -250,8 +250,8 @@ Implement true 80mm/58mm receipt sizing in the frontend and prevent unaudited re
 
 **Tests**
 
-- `80mm` and `58mm` are accepted by settings and rendered by receipt preview.
-- Print CSS uses fixed thermal widths and does not render as letter/half-letter.
+- Media carta, carta and A5 are accepted by settings and rendered by receipt preview.
+- Legacy stored width values are normalized to an institutional page format and are not promoted in the UI.
 - Invoice history "Ver recibo" cannot produce an unaudited reprint when printing a historical receipt.
 - Reprint endpoint records audit and increments/records the reprint fact used by reports.
 
@@ -262,13 +262,13 @@ Implement true 80mm/58mm receipt sizing in the frontend and prevent unaudited re
 
 **Acceptance criteria**
 
-- Institutional receipt requirement is visible and test-covered for media carta, carta, A5, 80mm and 58mm.
+- Institutional receipt requirement is visible and test-covered for media carta, carta and A5.
 - Historical print action is audited.
 - Physical printer validation remains an external final-server criterion.
 
 **Commit**
 
-- `fix(printing): support thermal receipts and audited reprints`
+- `fix(printing): enforce institutional receipts and audited reprints`
 
 ## Phase 13C - POS Scanner Authority and Frontend Money Handling
 
@@ -502,7 +502,7 @@ Separate dev setup from production install, regenerate offline release artifacts
 
 **Risks**
 
-- Changing installer UX can disrupt existing local demos.
+- Changing installer UX can disrupt existing local validation environments.
 - Release regeneration may require local Docker image export time and disk space.
 
 **Acceptance criteria**
@@ -546,7 +546,7 @@ Clean stale/contradictory QA evidence and produce final-server validation artifa
 - Final server `.env`: `APP_ENV=production`, `APP_DEBUG=false`, real `APP_URL`, CORS/Sanctum stateful domains for LAN.
 - Final server: `/up`, `/login`, `/verify-email` respond correctly.
 - Physical LAN client can log in by server IP/name.
-- Physical institutional receipt validation completed for media carta, carta, A5, 80mm and 58mm.
+- Physical institutional receipt validation completed for media carta, carta and A5.
 - Restore validation completed against disposable DB on final or equivalent hardware.
 - Backup worker and scheduled backup proven after reboot/login as applicable.
 

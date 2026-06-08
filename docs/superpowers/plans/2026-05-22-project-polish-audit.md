@@ -107,7 +107,7 @@ If Phase 4 adds PWA metadata, expected files are frontend/public assets or Vite-
 - Modify: `backend/app/Actions/Reports/IncomeReportService.php`
 - Modify: `backend/app/Actions/Reports/OperationsReportService.php`
 - Modify: `backend/app/Actions/Reports/ExcelReportService.php`
-- Modify: `backend/app/Actions/Reports/PremiumExcelExportService.php`
+- Modify: `backend/app/Actions/Reports/InstitutionalExcelExportService.php`
 - Modify: `backend/app/Actions/Reports/PdfExportService.php`
 - Modify or create: `backend/app/Actions/Reports/Concerns/FormatsReportMoney.php`
 - Test: `backend/tests/Feature/ReportsTest.php`

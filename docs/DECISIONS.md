@@ -4151,3 +4151,8 @@ Criterio de verificacion: validate_handoff_guard_coverage.ps1, validate_final_ha
 Contexto: `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` es evidencia versionada; al commitearlo cambia el HEAD y puede dejar una linea historica del guard offline con el commit vigente al momento de generar el reporte.
 Decision: el handoff debe explicar que la prueba autoritativa del paquete offline es ejecutar `scripts\assert_offline_release_clean.ps1 -RequireCurrentCommit` despues del ultimo commit versionado y antes del handoff fisico.
 Criterio de verificacion: validate_final_handoff_completeness.ps1 exige la nota anti-ambiguedad y el comando `assert_offline_release_clean.ps1 -RequireCurrentCommit`; el paquete en disco debe validarse nuevamente despues del ultimo commit.
+
+## 2026-06-08 - planes internos no reintroducen recibo de rollo
+Contexto: algunos planes internos bajo `docs/superpowers/plans` conservaban lenguaje historico de impresora de rollo, formatos 80mm/58mm, demo o nomenclatura comercial. Aunque no viajan en el paquete offline, son fuentes que futuros agentes pueden leer antes de implementar.
+Decision: esos planes quedan alineados al contrato vigente: recibo institucional en media carta, carta y A5; valores heredados solo se normalizan internamente cuando existan datos antiguos. `check-branding.ps1` cubre ahora esos planes contra lenguaje operativo heredado.
+Criterio de verificacion: check-branding.ps1 pasa y una busqueda focalizada en `docs/superpowers/plans` no encuentra thermal, 80mm, 58mm, termico, vendible, premium o demo.

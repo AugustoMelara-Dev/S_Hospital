@@ -56,7 +56,7 @@ Out of scope:
 ## Assumptions
 
 - Current Docker development data may be used for inspection but must not be reset.
-- Existing invoices/payments are development/demo data unless the user confirms otherwise.
+- Existing invoices/payments are local validation data unless the user confirms otherwise.
 - MySQL/MariaDB remains the production database target.
 - Existing receipt snapshots on invoices are the authority for reprints.
 - If a report needs "area", a first-class `areas` concept must be added instead of overloading category names.
@@ -447,7 +447,7 @@ Verify receipts and reprints are immutable historical views. Reprinted receipts 
 - [ ] Create invoice, update service price/name, reprint receipt, assert old price/name remain.
 - [ ] Update fiscal settings, reprint old receipt, assert old CAI/range/hospital snapshot remains.
 - [ ] Assert reprint creates audit log with user, invoice, and timestamp.
-- [ ] Assert receipt paper size honors 80mm/58mm configuration for new receipts.
+- [ ] Assert receipt paper size honors media carta, carta and A5 configuration for new receipts.
 
 **Risks**
 

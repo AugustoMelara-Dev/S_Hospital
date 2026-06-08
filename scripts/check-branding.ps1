@@ -280,6 +280,7 @@ try {
             'docs/RELEASE_CHECKLIST.md',
             'docs/TRAINING_ADMIN.md',
             'docs/TRAINING_CAJERO.md',
+            'docs/superpowers/plans',
             'docs/manuales',
             'codex-skills',
             'devex/windows-server-install.md',
@@ -313,6 +314,7 @@ try {
             'qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md',
             'docs/TROUBLESHOOTING.md',
             'docs/ARCHITECTURE_CURRENT.md',
+            'docs/superpowers/plans',
             'CHANGELOG.md',
             'package_manifest.json',
             'devex/windows-server-install.md',
@@ -363,7 +365,8 @@ try {
         -Patterns $commercialProductSurfaceForbidden `
         -Paths @(
             'frontend/src',
-            'backend/app'
+            'backend/app',
+            'docs/superpowers/plans'
         )
 
     Invoke-ForbiddenSearch `
