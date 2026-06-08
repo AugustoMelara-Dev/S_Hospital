@@ -71,13 +71,22 @@ function Select-LatestRcReportPath {
     $candidates = @(
         Get-ChildItem -LiteralPath $qaRoot -Directory -Filter "browser-smoke-*" -ErrorAction SilentlyContinue |
             ForEach-Object {
-                Join-Path $_.FullName "rc-e2e-mocked-report.json"
+                $directory = $_.FullName
+                @(
+                    @{ Path = (Join-Path $directory "controlled-e2e-report.json"); Priority = 0 },
+                    @{ Path = (Join-Path $directory "rc-e2e-mocked-report.json"); Priority = 1 }
+                )
             } |
             Where-Object {
-                Test-Path -LiteralPath $_ -PathType Leaf
+                Test-Path -LiteralPath $_.Path -PathType Leaf
             } |
             ForEach-Object {
-                Get-Item -LiteralPath $_
+                $item = Get-Item -LiteralPath $_.Path
+                [PSCustomObject]@{
+                    FullName = $item.FullName
+                    LastWriteTimeUtc = $item.LastWriteTimeUtc
+                    Priority = $_.Priority
+                }
             }
     )
 
@@ -87,7 +96,10 @@ function Select-LatestRcReportPath {
     }
 
     $latest = $candidates |
-        Sort-Object -Property LastWriteTimeUtc, FullName -Descending |
+        Sort-Object `
+            @{ Expression = "LastWriteTimeUtc"; Descending = $true },
+            @{ Expression = "Priority"; Ascending = $true },
+            @{ Expression = "FullName"; Descending = $true } |
         Select-Object -First 1
 
     $relativePath = Convert-ToEvidenceRelativePath $latest.FullName
@@ -175,10 +187,12 @@ if (-not [string]::IsNullOrWhiteSpace($fieldQaScript)) {
 }
 
 if ($null -ne $rcReport) {
-    if ($rcReport.mode -eq "mocked-e2e") {
-        Add-Pass "RC browser smoke declares mocked-e2e mode"
+    if ($rcReport.mode -eq "controlled-e2e") {
+        Add-Pass "RC browser smoke declares controlled-e2e mode"
+    } elseif ($rcReport.mode -eq "mocked-e2e" -and $rcReportPath -like "*rc-e2e-mocked-report.json") {
+        Add-Pass "RC browser smoke declares legacy mocked-e2e mode for historical evidence"
     } else {
-        Add-Failure "RC browser smoke must declare mocked-e2e mode"
+        Add-Failure "RC browser smoke must declare controlled-e2e mode"
     }
 
     if ($rcReport.note -match "no sustituyen LAN|no sustituyen.*impresora|no sustituye") {

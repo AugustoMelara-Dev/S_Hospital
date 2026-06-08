@@ -1,7 +1,7 @@
 {
   "generated_at": "2026-06-08T06:40:14.813Z",
-  "mode": "mocked-e2e",
-  "note": "Capturas con API mockeada; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.",
+  "mode": "controlled-e2e",
+  "note": "Capturas en ambiente controlado; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.",
   "screenshots": [
     {
       "name": "dashboard-light",

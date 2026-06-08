@@ -4156,3 +4156,8 @@ Criterio de verificacion: validate_final_handoff_completeness.ps1 exige la nota 
 Contexto: algunos planes internos bajo `docs/superpowers/plans` conservaban lenguaje historico de impresora de rollo, formatos 80mm/58mm, demo o nomenclatura comercial. Aunque no viajan en el paquete offline, son fuentes que futuros agentes pueden leer antes de implementar.
 Decision: esos planes quedan alineados al contrato vigente: recibo institucional en media carta, carta y A5; valores heredados solo se normalizan internamente cuando existan datos antiguos. `check-branding.ps1` cubre ahora esos planes contra lenguaje operativo heredado.
 Criterio de verificacion: check-branding.ps1 pasa y una busqueda focalizada en `docs/superpowers/plans` no encuentra thermal, 80mm, 58mm, termico, vendible, premium o demo.
+
+## 2026-06-08 - evidencia de navegador usa ambiente controlado
+Contexto: la evidencia activa de navegador seguia nombrando el reporte como `rc-e2e-mocked-report.json` y `mode: mocked-e2e`, aunque los documentos de entrega ya usan "E2E en ambiente controlado" para no sonar a demo tecnica.
+Decision: production-readiness.spec.ts emite `controlled-e2e-report.json` con `mode: controlled-e2e`; la evidencia 2026-06-08, la auditoria del objetivo y el handoff apuntan al nuevo nombre. El reporte sigue avisando que estas capturas no sustituyen LAN, MariaDB ni impresora fisica.
+Criterio de verificacion: validate_browser_smoke_evidence.ps1 prefiere el reporte controlled, check-branding.ps1 bloquea el nombre/mode viejo en evidencia activa, y FINAL_PRODUCTION_HANDOFF_RESULT no debe mostrar `rc-e2e-mocked-report.json`.

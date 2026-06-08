@@ -112,6 +112,16 @@ $serviceIdentifierAutomationForbidden = @(
     'scanner/búsqueda'
 )
 
+$controlledEvidenceForbidden = @(
+    'rc-e2e-mocked-report.json',
+    'mode: mocked-e2e',
+    '"mode": "mocked-e2e"',
+    'mocked browser evidence',
+    'mocked E2E screenshots',
+    'evidencia mockeada',
+    'API mockeada'
+)
+
 $forbiddenPathNamePatterns = @(
     ('Bill' + 'ing_OS'),
     ('Hospital_Bill' + 'ing_OS'),
@@ -388,6 +398,16 @@ try {
             'qa/visual-smoke',
             'qa/BROWSER_SMOKE_EVIDENCE_2026_06_07.md',
             'qa/BROWSER_SMOKE_EVIDENCE_2026_06_08.md'
+        )
+
+    Invoke-ForbiddenSearch `
+        -Label 'Lenguaje obsoleto de evidencia controlada encontrado en evidencia activa:' `
+        -Patterns $controlledEvidenceForbidden `
+        -Paths @(
+            'qa/browser-smoke-2026-06-08',
+            'qa/BROWSER_SMOKE_EVIDENCE_2026_06_08.md',
+            'qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md',
+            'qa/FINAL_PRODUCTION_HANDOFF_RESULT.md'
         )
 
     Write-Host 'Revision de branding completada sin hallazgos.'

@@ -751,8 +751,8 @@ Exit code: 0
 ## Salida de validacion de evidencia de navegador
 
 ```text
-[ OK ] Latest RC browser smoke report: qa\browser-smoke-2026-06-08\rc-e2e-mocked-report.json
-[ OK ] Found qa\browser-smoke-2026-06-08\rc-e2e-mocked-report.json
+[ OK ] Latest RC browser smoke report: qa\browser-smoke-2026-06-08\controlled-e2e-report.json
+[ OK ] Found qa\browser-smoke-2026-06-08\controlled-e2e-report.json
 [ OK ] Found qa\screenshots\rc-help-support-2026-05-31\help-support-report.json
 [ OK ] Found qa\visual-smoke\field-qa-current-screenshots.mjs
 [ OK ] Browser smoke evidence uses institutional receipt filenames
@@ -764,7 +764,7 @@ Exit code: 0
 [ OK ] Field QA smoke captures authenticated screens per theme
 [ OK ] Field QA smoke captures institutional receipt per theme when available
 [ OK ] Field QA smoke reports blockers with theme context
-[ OK ] RC browser smoke declares mocked-e2e mode
+[ OK ] RC browser smoke declares controlled-e2e mode
 [ OK ] RC browser smoke states it does not replace LAN/printer proof
 [ OK ] RC browser smoke has no console issues
 [ OK ] RC browser smoke metadata matches dashboard-light

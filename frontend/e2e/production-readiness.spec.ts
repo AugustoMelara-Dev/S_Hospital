@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const captureRcScreenshots = process.env.E2E_CAPTURE_RC_SCREENSHOTS === '1';
-const captureDirName = 'rc-e2e-mocked-2026-06-01';
+const captureDirName = 'controlled-e2e-2026-06-01';
 const captureOutputDir = process.env.E2E_CAPTURE_RC_OUTPUT_DIR ?? path.join('test-results', captureDirName);
 const captureReportDir = (
   process.env.E2E_CAPTURE_RC_REPORT_DIR ?? path.posix.join('frontend', 'test-results', captureDirName)
@@ -158,11 +158,11 @@ async function writeCaptureReport(consoleIssues: string[] = []) {
 
   await mkdir(captureOutputDir, { recursive: true });
   await writeFile(
-    path.join(captureOutputDir, 'rc-e2e-mocked-report.json'),
+    path.join(captureOutputDir, 'controlled-e2e-report.json'),
     `${JSON.stringify({
       generated_at: new Date().toISOString(),
-      mode: 'mocked-e2e',
-      note: 'Capturas con API mockeada; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.',
+      mode: 'controlled-e2e',
+      note: 'Capturas en ambiente controlado; no sustituyen LAN, MySQL/MariaDB ni impresora fisica.',
       screenshots: capturedScreens,
       console_issues: consoleIssues,
     }, null, 2)}\n`,
