@@ -4286,3 +4286,8 @@ Criterio de verificacion: `scripts\check-branding.ps1`, `scripts\validate_final_
 Contexto: el indice de bloqueantes finales ya exigia impresion institucional en media carta, carta y A5 sin QR ni barcode, pero no bloqueaba explicitamente una factura por vez, fondo blanco, ausencia de codigos internos y ausencia de datos tecnicos como pide el objetivo operativo.
 Decision: `docs\FINAL_FIELD_BLOCKERS.md` y `validate_final_field_blockers_safety.ps1` exigen que el proof de impresora conserve una factura por vez, fondo blanco, reimpresion institucional y ausencia de QR, barcode, codigos internos y datos tecnicos.
 Criterio de verificacion: `scripts\validate_final_field_blockers_safety.ps1`, `scripts\validate_institutional_receipt_print_proof.ps1 -AllowPendingHardwareValidation`, `scripts\validate_operations_objective_audit.ps1` y `scripts\check-branding.ps1` deben pasar antes de regenerar el paquete offline.
+
+## 2026-06-08 - Proofs finales bloquean secretos y rutas locales
+Contexto: el indice final ya prohibia evidencias con secretos, rutas absolutas o XML de tareas, pero el guard comun de preflight revisaba principalmente campos/checks y no todo el contenido de cada proof final.
+Decision: `validate_final_field_blockers_safety.ps1` y `production_readiness_preflight.ps1` revisan los siete proof files finales contra asignaciones tipo secreto, rutas absolutas locales y XML crudo de tareas Windows, manteniendo permitidas referencias relativas de evidencia bajo `qa/`.
+Criterio de verificacion: `scripts\validate_final_field_blockers_safety.ps1 -SelfTest`, `scripts\validate_final_field_blockers_safety.ps1`, `scripts\validate_production_ready_gate_safety.ps1` y `scripts\check-branding.ps1` deben pasar antes de regenerar el paquete offline.

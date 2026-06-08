@@ -284,6 +284,26 @@ function Test-ProofHasCompletedCheckedItem([string] $content, [string] $labelPat
     return -not (Test-ProofValueIsIncomplete $resultMatch.Groups["value"].Value)
 }
 
+function Test-ProofDoesNotExposeSensitiveEvidence([string] $path, [string] $proofName, [string] $content) {
+    $forbiddenPatterns = @(
+        @{ Pattern = '(?i)APP_KEY\s*[:=]\s*[^\s`]+'; Description = 'APP_KEY-like assignment' },
+        @{ Pattern = '(?i)DB_PASSWORD\s*[:=]\s*[^\s`]+'; Description = 'DB_PASSWORD-like assignment' },
+        @{ Pattern = '(?i)(TOKEN|SECRET|MAIL_PASSWORD|HOSPITAL_LICENSE_SALT)\s*[:=]\s*[^\s`]+'; Description = 'secret-like assignment' },
+        @{ Pattern = '(?i)[A-Z]:\\(?![\\])'; Description = 'absolute Windows path' },
+        @{ Pattern = '(?i)/(var|home|srv|opt|tmp|usr|mnt)/'; Description = 'absolute local Unix path' },
+        @{ Pattern = '(?is)<(Task|Actions|Principals|Triggers|Settings)\b'; Description = 'raw Windows scheduled-task XML' }
+    )
+
+    foreach ($item in $forbiddenPatterns) {
+        if ($content -match $item.Pattern) {
+            Add-Failure "$path must not expose $($item.Description) in $proofName evidence."
+            return $false
+        }
+    }
+
+    return $true
+}
+
 function Test-ProofFile([string] $path, [string] $proofName, [string[]] $requiredFields, [string[]] $requiredChecks, [bool] $RequireCheckResult = $true) {
     if (-not (Test-Path -LiteralPath $path)) {
         Add-Failure "Missing $path with real $proofName evidence."
@@ -292,6 +312,10 @@ function Test-ProofFile([string] $path, [string] $proofName, [string[]] $require
 
     $content = Get-Content -LiteralPath $path -Raw
     $normalized = Normalize-ProofContent $content
+
+    if (-not (Test-ProofDoesNotExposeSensitiveEvidence $path $proofName $content)) {
+        return
+    }
 
     if ($normalized.Trim().Length -lt 300) {
         Add-Failure "$path is too short to contain real $proofName evidence."

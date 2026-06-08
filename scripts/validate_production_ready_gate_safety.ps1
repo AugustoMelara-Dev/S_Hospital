@@ -152,6 +152,19 @@ foreach ($placeholderPattern in @(
         $preflight $placeholderPattern
 }
 
+foreach ($sensitiveEvidenceGuard in @(
+    "Test-ProofDoesNotExposeSensitiveEvidence",
+    "APP_KEY-like assignment",
+    "DB_PASSWORD-like assignment",
+    "secret-like assignment",
+    "absolute Windows path",
+    "absolute local Unix path",
+    "raw Windows scheduled-task XML"
+)) {
+    Assert-Literal "Preflight rejects sensitive proof evidence: $sensitiveEvidenceGuard" `
+        $preflight $sensitiveEvidenceGuard
+}
+
 foreach ($requiredCheck in @(
     "/up",
     "Cashbox",

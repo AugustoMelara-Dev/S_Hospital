@@ -116,6 +116,35 @@ function Assert-LocalProofScope([string] $label, [string] $content, [string[]] $
     }
 }
 
+function Get-SensitiveProofFinding([string] $content) {
+    $forbiddenPatterns = @(
+        @{ Pattern = '(?i)APP_KEY\s*[:=]\s*[^\s`]+'; Description = 'APP_KEY-like assignment' },
+        @{ Pattern = '(?i)DB_PASSWORD\s*[:=]\s*[^\s`]+'; Description = 'DB_PASSWORD-like assignment' },
+        @{ Pattern = '(?i)(TOKEN|SECRET|MAIL_PASSWORD|HOSPITAL_LICENSE_SALT)\s*[:=]\s*[^\s`]+'; Description = 'secret-like assignment' },
+        @{ Pattern = '(?i)[A-Z]:\\(?![\\])'; Description = 'absolute Windows path' },
+        @{ Pattern = '(?i)/(var|home|srv|opt|tmp|usr|mnt)/'; Description = 'absolute local Unix path' },
+        @{ Pattern = '(?is)<(Task|Actions|Principals|Triggers|Settings)\b'; Description = 'raw Windows scheduled-task XML' }
+    )
+
+    foreach ($item in $forbiddenPatterns) {
+        if ($content -match $item.Pattern) {
+            return $item.Description
+        }
+    }
+
+    return ""
+}
+
+function Assert-NoSensitiveProofContent([string] $label, [string] $content) {
+    $finding = Get-SensitiveProofFinding $content
+    if ($finding -ne "") {
+        Add-Failure "$label must not expose $finding."
+        return
+    }
+
+    Add-Pass "$label does not expose secrets, raw local paths or task XML"
+}
+
 if ($SelfTest) {
     $printerCompletePending = @"
 Estado actual: PENDING_HARDWARE_VALIDATION.
@@ -151,6 +180,13 @@ usuario de area
 Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
 "@
     $fieldBlockersMissingWhiteReceipt = $fieldBlockersComplete -replace "con fondo blanco y ", ""
+    $safeProofContent = @"
+Evidence/capture reference: qa/evidence/photo-redacted.md
+No se adjuntan passwords, tokens, archivos .env, dumps completos ni rutas locales.
+"@
+    $proofWithSecretAssignment = $safeProofContent + "`nDB_PASSWORD=super-secret-value"
+    $proofWithLocalPath = $safeProofContent + "`nC:\Hospital\Sistema\backend\.env"
+    $proofWithTaskXml = $safeProofContent + "`n<Task><Triggers></Triggers></Task>"
     $backupCompletePending = @"
 Decision: PENDING_FINAL_FIELD.
 Falta instalar SistemaCajaHospitalaria-BackupWorker.
@@ -211,6 +247,16 @@ Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
         Add-Pass "SelfTest rejects final blockers index missing white receipt safeguard"
     }
 
+    $safeFinding = Get-SensitiveProofFinding $safeProofContent
+    $secretFinding = Get-SensitiveProofFinding $proofWithSecretAssignment
+    $pathFinding = Get-SensitiveProofFinding $proofWithLocalPath
+    $xmlFinding = Get-SensitiveProofFinding $proofWithTaskXml
+    if ($safeFinding -eq "" -and $secretFinding -ne "" -and $pathFinding -ne "" -and $xmlFinding -ne "") {
+        Add-Pass "SelfTest rejects proof content with secret assignments, local paths and task XML"
+    } else {
+        Add-Failure "SelfTest failed to accept safe proof content and reject unsafe proof content samples."
+    }
+
     if (Test-ContainsAllTerms $backupCompletePending @("tarea continua de respaldos", "respaldo", "Pendiente", "Protegido")) {
         Add-Pass "SelfTest accepts final backup proof that preserves visible backup-state blockers"
     } else {
@@ -254,6 +300,14 @@ $restoreProof = Read-RequiredFile "qa\FINAL_RESTORE_PROOF.md"
 $concurrencyProof = Read-RequiredFile "qa\FINAL_CONCURRENCY_PROOF.md"
 $trainingProof = Read-RequiredFile "qa\TRAINING_ACCEPTANCE_PROOF.md"
 $fieldBlockersIndex = Read-RequiredFile "docs\FINAL_FIELD_BLOCKERS.md"
+
+Assert-NoSensitiveProofContent "LAN client proof" $lanProof
+Assert-NoSensitiveProofContent "Institutional receipt print proof" $printerProof
+Assert-NoSensitiveProofContent "Final startup task proof" $startupTaskProof
+Assert-NoSensitiveProofContent "Final backup task proof" $backupTaskProof
+Assert-NoSensitiveProofContent "Final restore proof" $restoreProof
+Assert-NoSensitiveProofContent "Final concurrency proof" $concurrencyProof
+Assert-NoSensitiveProofContent "Training acceptance proof" $trainingProof
 
 Assert-PendingProof "LAN client proof" $lanProof @(
     "segunda computadora",
