@@ -4,6 +4,25 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Procedimientos del servidor final quedan documentados para el operador
+
+Contexto: el release v1.0.0-FINAL puede tener codigo y quality gates en
+verde, pero el rebuild de imagenes Docker y las siete evidencias fisicas
+requieren hardware real del servidor final. Sin una secuencia operativa
+clara, el operador podria omitir pasos o ejecutarlos fuera de orden.
+
+Decision: `docs/SERVER_FINAL_CHECKLIST.md` define ocho pasos ordenados:
+regenerar imagenes Docker con `make_offline_release.ps1 -Force`, generar
+CA local, instalar la CA en PCs cliente, ejecutar `setup.bat` como
+Administrador, instalar tareas Windows, rotar `APP_KEY`, completar las
+siete evidencias fisicas finales y ejecutar `final_production_handoff.ps1` sin
+bypass hasta obtener `PRODUCTION_READY=YES`.
+
+Criterio de verificacion: el checklist existe, las release notes lo
+referencian, cada paso tiene comando ejecutable, criterio de exito y
+tiempo estimado, y el operador puede distinguir que `PRODUCTION_READY=YES`
+solo se declara despues de las pruebas fisicas finales.
+
 ## 2026-06-08 - Guard realtime protege salida
 
 Contexto: `validate_realtime_own_event_safety.ps1` se ejecuta durante

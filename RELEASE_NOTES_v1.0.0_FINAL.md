@@ -93,6 +93,33 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\assert_offline_relea
 Si el guard falla, no instale ese paquete; regenere `offline-release/`
 desde una build box con Docker funcional.
 
+## Pendientes para el servidor final
+
+El release v1.0.0-FINAL esta publicado con codigo y quality gates
+en verde. **Antes de declarar PRODUCTION_READY=YES, el operador
+del servidor final debe ejecutar los 8 pasos de
+`docs/SERVER_FINAL_CHECKLIST.md`**:
+
+1. Regenerar imagenes Docker (15-30 min) - el codigo v1.0.0-FINAL
+   no esta bakeado en las imagenes pre-construidas del paquete
+2. Generar CA local (HTTPS obligatorio)
+3. Instalar la CA en las PCs cliente (Trusted Root)
+4. `setup.bat` como Administrador
+5. Tareas Windows de backup y autoarranque
+6. Rotar APP_KEY con `scripts/rotate-app-key.ps1`
+7. Completar 7 evidencias fisicas finales desde hardware real:
+   - `qa/LAN_CLIENT_VALIDATION_PROOF.md` (desde 2da PC)
+   - `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` (media carta, carta y A5)
+   - `qa/FINAL_STARTUP_TASK_PROOF.md` (autoarranque real)
+   - `qa/FINAL_BACKUP_TASK_PROOF.md` (respaldo automatico real)
+   - `qa/FINAL_RESTORE_PROOF.md` (restore real)
+   - `qa/FINAL_CONCURRENCY_PROOF.md` (concurrencia real)
+   - `qa/TRAINING_ACCEPTANCE_PROOF.md` (capacitacion supervisada)
+8. `final_production_handoff.ps1` sin bypass debe retornar
+   `PRODUCTION_READY=YES`
+
+Tiempo total estimado: 3-5 horas.
+
 ## Cambios desde v1.0.0-rc.4
 
 ### Seguridad
