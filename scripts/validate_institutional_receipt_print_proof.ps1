@@ -120,6 +120,72 @@ function Test-ProofReferencedEvidence([string] $content, [string] $fieldLabel) {
     Add-Pass "${fieldLabel}: reference is safe"
 }
 
+function Read-RequiredSourceFile([string] $relativePath) {
+    $path = Join-Path $ProjectRoot $relativePath
+    if (Test-Path -LiteralPath $path -PathType Leaf) {
+        Add-Pass "Found $relativePath"
+        return Get-Content -LiteralPath $path -Raw -Encoding UTF8
+    }
+
+    Add-Failure "Missing source guard file: $relativePath"
+    return ""
+}
+
+function Test-SourceContains([string] $content, [string] $pattern, [string] $label) {
+    if ($content -match $pattern) {
+        Add-Pass $label
+    } else {
+        Add-Failure $label
+    }
+}
+
+function Test-SourceDoesNotContain([string] $content, [string] $pattern, [string] $label) {
+    if ($content -match $pattern) {
+        Add-Failure $label
+    } else {
+        Add-Pass $label
+    }
+}
+
+$receiptPreview = Read-RequiredSourceFile "frontend\src\features\receipts\ReceiptPreview.tsx"
+$receiptPreviewTest = Read-RequiredSourceFile "frontend\src\features\receipts\ReceiptPreview.test.tsx"
+$receiptStyles = Read-RequiredSourceFile "frontend\src\styles.css"
+$cashReceiptTest = Read-RequiredSourceFile "backend\tests\Feature\CashPaymentsReceiptTest.php"
+
+if ($receiptPreview -ne "") {
+    Test-SourceContains $receiptPreview ([regex]::Escape('RECIBO INSTITUCIONAL')) "Receipt template keeps institutional title"
+    Test-SourceContains $receiptPreview ([regex]::Escape('Original / Copia')) "Receipt template keeps original/copy mark"
+    Test-SourceContains $receiptPreview ([regex]::Escape('Valor en lempiras')) "Receipt template keeps total in words row"
+    Test-SourceContains $receiptPreview ([regex]::Escape('Firma y sello del receptor de fondos')) "Receipt template keeps signature/seal area"
+    Test-SourceContains $receiptPreview 'receipt\.items\.map' "Receipt template renders service snapshot rows"
+    Test-SourceContains $receiptPreview 'receipt\.payments\.map' "Receipt template renders payment method rows"
+    Test-SourceDoesNotContain $receiptPreview '(?i)\b(qr_code|barcode|scan_code|internal_code|special_rule_code|special_rule_applied)\b' "Receipt template does not render technical catalog fields"
+}
+
+if ($receiptPreviewTest -ne "") {
+    Test-SourceContains $receiptPreviewTest ([regex]::Escape('does not render technical catalog or rule fields on the printed receipt')) "Receipt UI test blocks QR/barcode/internal fields"
+    Test-SourceContains $receiptPreviewTest ([regex]::Escape('keeps the institutional receipt white with black text in print mode')) "Receipt UI test protects white print background"
+    Test-SourceContains $receiptPreviewTest ([regex]::Escape('shows the total written as lempiras for the manual receipt format')) "Receipt UI test protects lempira wording"
+    Test-SourceContains $receiptPreviewTest ([regex]::Escape('shows the institutional original and copy mark')) "Receipt UI test protects original/copy label"
+    Test-SourceContains $receiptPreviewTest ([regex]::Escape('waits for audited print callback before printing')) "Receipt UI test protects audited print before dialog"
+    Test-SourceContains $receiptPreviewTest ([regex]::Escape('does not print when audited print callback fails')) "Receipt UI test protects failed audit from printing"
+}
+
+if ($receiptStyles -ne "") {
+    Test-SourceContains $receiptStyles 'body\[data-printing-receipt="true"\]' "Receipt CSS scopes print mode to receipt"
+    Test-SourceContains $receiptStyles '\.institutional-receipt\s*{[\s\S]*background:\s*white;' "Receipt CSS keeps white receipt background"
+    Test-SourceContains $receiptStyles 'receipt-half_letter|receipt-letter|receipt-a5' "Receipt CSS supports institutional paper sizes"
+}
+
+if ($cashReceiptTest -ne "") {
+    Test-SourceContains $cashReceiptTest 'test_receipt_uses_invoice_item_snapshots_and_supports_institutional_paper_sizes' "Backend receipt test protects snapshots and institutional sizes"
+    Test-SourceContains $cashReceiptTest ([regex]::Escape("assertJsonPath('data.width', 'half_letter')")) "Backend receipt test covers media carta"
+    Test-SourceContains $cashReceiptTest ([regex]::Escape("assertJsonPath('data.width', 'a5')")) "Backend receipt test covers A5"
+    Test-SourceContains $cashReceiptTest ([regex]::Escape("assertJsonPath('data.width', 'letter')")) "Backend receipt test covers carta"
+    Test-SourceContains $cashReceiptTest "assertUnprocessable\(\)[\s\S]*assertJsonValidationErrors\('width'\)" "Backend receipt test rejects legacy/non-institutional widths"
+    Test-SourceContains $cashReceiptTest "foreach \(\['service_id', 'scan_code', 'barcode', 'qr_code', 'special_rule_code', 'special_rule_applied'\]" "Backend receipt test excludes technical fields"
+}
+
 if ([string]::IsNullOrWhiteSpace($ProofPath) -or -not (Test-Path -LiteralPath $ProofPath -PathType Leaf)) {
     Add-Failure "Missing qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md. Run scripts\init_production_proofs.ps1, then fill it after physical printer validation."
 } else {

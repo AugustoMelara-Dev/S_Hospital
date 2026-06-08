@@ -4176,3 +4176,8 @@ Criterio de verificacion: validate_new_invoice_maintainability.ps1 debe fallar s
 Contexto: el fallback de respaldos para usuario actual y la verificacion del ciclo diario imprimian "worker" en mensajes visibles, aunque soporte y administracion deben ver acciones operativas comprensibles.
 Decision: los mensajes de WhatIf, instalacion y evidencia hablan de automatizacion de respaldos; los nombres tecnicos quedan solo como identificadores de tareas, servicios o logs internos.
 Criterio de verificacion: validate_backup_startup_current_user_safety.ps1 exige el nuevo lenguaje y bloquea que la guia del fallback vuelva a decir "iniciar worker".
+
+## 2026-06-08 - recibo institucional protege contrato de codigo
+Contexto: la impresion fisica del recibo sigue pendiente de equipo real, pero el guard de esa evidencia no exigia que permanecieran las pruebas automatizadas de plantilla, snapshot historico, tamanos institucionales y ausencia de QR/barcode/codigos internos.
+Decision: validate_institutional_receipt_print_proof.ps1 valida tambien los archivos fuente y pruebas de recibo antes de revisar la evidencia fisica; el pendiente fisico sigue bloqueando PRODUCTION_READY cuando no se usa AllowPendingHardwareValidation.
+Criterio de verificacion: el guard debe pasar en modo pendiente solo si conserva pruebas de ReceiptPreview, CSS de impresion, CashPaymentsReceiptTest y rechazo de formatos heredados 80mm/58mm.
