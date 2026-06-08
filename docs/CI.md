@@ -30,8 +30,15 @@ real `lockForUpdate` semantics, generated columns, JSON columns, and
 Validates the tag is releasable before creating the GitHub Release:
 
 - `docs/RELEASE_NOTES_<tag>.md` must exist.
-- All four physical evidence files under `qa/` must no longer
-  contain the string `PENDING`.
+- All required final field evidence files under `qa/` must no longer
+  contain the string `PENDING`:
+  `LAN_CLIENT_VALIDATION_PROOF.md`,
+  `INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`,
+  `FINAL_STARTUP_TASK_PROOF.md`,
+  `FINAL_RESTORE_PROOF.md`,
+  `FINAL_BACKUP_TASK_PROOF.md`,
+  `FINAL_CONCURRENCY_PROOF.md`, and
+  `TRAINING_ACCEPTANCE_PROOF.md`.
 - `qa/FINAL_PRODUCTION_HANDOFF_RESULT.md` must contain
   `PRODUCTION_READY=YES`.
 

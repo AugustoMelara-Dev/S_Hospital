@@ -72,7 +72,19 @@ $preflight = Read-RequiredFile "scripts\production_readiness_preflight.ps1"
 $handoff = Read-RequiredFile "scripts\final_production_handoff.ps1"
 $evidenceIndex = Read-RequiredFile "scripts\validate_ops_evidence_index.ps1"
 $handoffCompleteness = Read-RequiredFile "scripts\validate_final_handoff_completeness.ps1"
+$releaseWorkflow = Read-RequiredFile ".github\workflows\release.yml"
+$ciDocs = Read-RequiredFile "docs\CI.md"
 $releaseNotes = Read-RequiredFile "RELEASE_NOTES_v1.0.0_FINAL.md"
+
+$finalProofPaths = @(
+    "qa\LAN_CLIENT_VALIDATION_PROOF.md",
+    "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md",
+    "qa\FINAL_STARTUP_TASK_PROOF.md",
+    "qa\FINAL_RESTORE_PROOF.md",
+    "qa\FINAL_BACKUP_TASK_PROOF.md",
+    "qa\FINAL_CONCURRENCY_PROOF.md",
+    "qa\TRAINING_ACCEPTANCE_PROOF.md"
+)
 
 Assert-Contains "Preflight exposes AllowMissingPhysicalProof as an explicit switch" `
     $preflight '\[switch\]\s+\$AllowMissingPhysicalProof'
@@ -81,18 +93,28 @@ Assert-Literal "Preflight fails when physical proof is bypassed" `
 Assert-Literal "Preflight warns that bypass cannot be PRODUCTION_READY" `
     $preflight "AllowMissingPhysicalProof was used. This run is only an environment preflight and MUST NOT be called PRODUCTION_READY."
 
-foreach ($proofPath in @(
-    "qa\LAN_CLIENT_VALIDATION_PROOF.md",
-    "qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md",
-    "qa\FINAL_STARTUP_TASK_PROOF.md",
-    "qa\FINAL_RESTORE_PROOF.md",
-    "qa\FINAL_BACKUP_TASK_PROOF.md",
-    "qa\FINAL_CONCURRENCY_PROOF.md",
-    "qa\TRAINING_ACCEPTANCE_PROOF.md"
-)) {
+foreach ($proofPath in $finalProofPaths) {
+    $releasePath = $proofPath.Replace("\", "/")
+    $proofFileName = Split-Path -Leaf $proofPath
+
     Assert-Literal "Preflight requires $proofPath" $preflight $proofPath
     Assert-Literal "Ops evidence index inspects $proofPath before PRODUCTION_READY" $evidenceIndex $proofPath
+    Assert-Literal "Release workflow blocks $releasePath before release" $releaseWorkflow $releasePath
+    Assert-Literal "CI docs name final proof file $proofFileName" $ciDocs $proofFileName
 }
+
+Assert-Literal "Release workflow checks final field evidence before release" `
+    $releaseWorkflow "Verify final field evidence"
+Assert-Literal "Release workflow fails when a final proof file is missing" `
+    $releaseWorkflow '[ ! -f "$f" ]'
+Assert-Literal "Release workflow reports missing final proof files" `
+    $releaseWorkflow 'is missing. Refusing to release.'
+Assert-NotContains "Release workflow must not describe the stale four-proof gate" `
+    $releaseWorkflow 'four (physical evidence|PROOF|proof)'
+Assert-NotContains "CI docs must not describe the stale four-proof gate" `
+    $ciDocs 'four (physical evidence|PROOF|proof)'
+Assert-Literal "CI docs describe required final field evidence files" `
+    $ciDocs 'All required final field evidence files under `qa/`'
 
 foreach ($placeholderPattern in @(
     '\bTODO\b',

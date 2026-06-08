@@ -41,12 +41,19 @@ jobs:
           echo "Release notes found: $NOTES"
           head -20 "$NOTES"
 
-      - name: Verify physical evidence
+      - name: Verify final field evidence
         run: |
           for f in qa/LAN_CLIENT_VALIDATION_PROOF.md \
                    qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md \
+                   qa/FINAL_STARTUP_TASK_PROOF.md \
                    qa/FINAL_RESTORE_PROOF.md \
-                   qa/FINAL_CONCURRENCY_PROOF.md; do
+                   qa/FINAL_BACKUP_TASK_PROOF.md \
+                   qa/FINAL_CONCURRENCY_PROOF.md \
+                   qa/TRAINING_ACCEPTANCE_PROOF.md; do
+            if [ ! -f "$f" ]; then
+              echo "::error::$f is missing. Refusing to release."
+              exit 1
+            fi
             if grep -q "PENDING" "$f"; then
               echo "::error::$f is still PENDING. Refusing to release."
               exit 1
