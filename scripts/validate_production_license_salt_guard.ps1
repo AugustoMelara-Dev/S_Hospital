@@ -28,6 +28,9 @@ function Protect-LicenseSaltText([string] $value) {
 
     $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD|HOSPITAL_LICENSE_SALT)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
     $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?i)/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?is)<(Task|Actions|Principals|Triggers|Settings)\b.*?</\1>", "[xml-protegido]"
+    $protected = $protected -replace "(?is)<(Task|Actions|Principals|Triggers|Settings)\b[^>]*>", "[xml-protegido]"
 
     return $protected
 }
@@ -113,6 +116,7 @@ $preCommitGuard = Read-RequiredText "scripts\pre-commit-guard.ps1"
 $secretsDoc = Read-RequiredText "docs\SECRETS.md"
 $knownLimitations = Read-RequiredText "docs\KNOWN_LIMITATIONS.md"
 $evidence = Read-RequiredText "qa\PRODUCTION_LICENSE_SALT_GUARD_2026_06_04.md"
+$licenseSaltGuard = Read-RequiredText "scripts\validate_production_license_salt_guard.ps1"
 
 if ($provider -ne "") {
     Test-Content $provider 'private const MIN_PROD_SALT_LENGTH\s*=\s*32' "Provider enforces 32-character minimum"
@@ -146,6 +150,12 @@ if ($compose -ne "") {
 if ($preCommitGuard -ne "") {
     Test-Content $preCommitGuard 'HOSPITAL_LICENSE_SALT with a non-empty, non-placeholder value' "Pre-commit guard documents license salt secret blocking"
     Test-Content $preCommitGuard 'HOSPITAL_LICENSE_SALT=\(\.\+\)' "Pre-commit guard scans added license salt assignments"
+}
+
+if ($licenseSaltGuard -ne "") {
+    Test-Content $licenseSaltGuard '\(\?i\)/\(var\|home\|srv\|opt\|tmp\|usr\|mnt\)/' "License salt guard redacts Unix local paths"
+    Test-Content $licenseSaltGuard '\(\?is\)<\(Task\|Actions\|Principals\|Triggers\|Settings\)\\b' "License salt guard redacts raw task XML"
+    Test-Content $licenseSaltGuard '\[xml-protegido\]' "License salt guard uses protected XML marker"
 }
 
 $combinedDocs = "$secretsDoc`n$knownLimitations`n$evidence"

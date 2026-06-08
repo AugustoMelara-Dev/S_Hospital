@@ -4,6 +4,21 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Guard de license salt protege salida
+
+Contexto: `validate_production_license_salt_guard.ps1` ejecuta `docker
+compose config` para demostrar que produccion no arranca sin
+`HOSPITAL_LICENSE_SALT`, y esa salida puede terminar en evidencia de
+handoff o soporte.
+
+Decision: `Protect-LicenseSaltText` reemplaza secretos, rutas Windows,
+rutas locales Unix y XML crudo de tareas por marcadores seguros antes de
+imprimir resultados. El mismo guard falla si pierde esa cobertura.
+
+Criterio de verificacion: `validate_production_license_salt_guard.ps1`,
+`validate_production_ready_gate_safety.ps1`, `check-branding.ps1` y
+`git diff --check` deben pasar antes de regenerar el paquete offline.
+
 ## 2026-06-08 - Smoke de respaldos protege salida
 
 Contexto: `validate_backup_worker_smoke.ps1` valida un respaldo manual
