@@ -53,6 +53,8 @@ function Protect-ReleaseText([string] $value) {
 
     $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
     $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?i)/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace '(?is)<(Task|Actions|Principals|Triggers|Settings)\b[^>]*>', "[xml-protegido]"
 
     return $protected
 }
@@ -286,6 +288,28 @@ if ($SelfTest) {
             $relativePath -match '(^|/)docs/[^/]+\.docx$'
         if (-not $isForbiddenReleaseDoc) {
             Write-Host "[FAIL] SelfTest FAILED: expected forbidden release doc $relativePath." -ForegroundColor Red
+            exit 1
+        }
+    }
+
+    $sensitiveMessage = 'APP_KEY=base64:test C:\Hospital\Sistema\.env /var/backups/s_hospital/.env <Task><Actions><Exec /></Actions></Task>'
+    $protectedMessage = Protect-ReleaseText $sensitiveMessage
+    foreach ($forbiddenFragment in @(
+        'base64:test',
+        'C:\Hospital\Sistema',
+        '/var/backups/s_hospital',
+        '<Task',
+        '<Actions'
+    )) {
+        if ($protectedMessage.Contains($forbiddenFragment)) {
+            Write-Host "[FAIL] SelfTest FAILED: release safety output exposed protected text $forbiddenFragment." -ForegroundColor Red
+            exit 1
+        }
+    }
+
+    foreach ($requiredMarker in @('[redacted]', '[ruta-local]', '[xml-protegido]')) {
+        if (-not $protectedMessage.Contains($requiredMarker)) {
+            Write-Host "[FAIL] SelfTest FAILED: release safety output missed marker $requiredMarker." -ForegroundColor Red
             exit 1
         }
     }

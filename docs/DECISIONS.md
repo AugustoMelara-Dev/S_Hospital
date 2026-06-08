@@ -4,6 +4,23 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Verificador offline redacta rutas Unix y XML
+
+Contexto: el paquete offline es el artefacto que soporte revisa antes
+de entrega, pero su verificador podia sanitizar secretos y rutas
+Windows sin cubrir rutas absolutas Unix ni XML crudo de tareas en sus
+propios mensajes de error.
+
+Decision: `assert_offline_release_clean.ps1` redacta rutas locales
+Unix y tags XML de tareas como `[ruta-local]` y `[xml-protegido]`.
+Su `-SelfTest` prueba secretos, rutas Windows, rutas Unix y XML; el
+guard `validate_production_ready_gate_safety.ps1` protege que esa
+redaccion no se elimine.
+
+Criterio de verificacion: `assert_offline_release_clean.ps1 -SelfTest`,
+`validate_production_ready_gate_safety.ps1`, `check-branding.ps1` y
+`git diff --check` deben pasar antes de regenerar el paquete offline.
+
 ## 2026-06-08 - Paquete de soporte redacta XML de tareas
 
 Contexto: el paquete de soporte ya removia `.env`, secretos y rutas

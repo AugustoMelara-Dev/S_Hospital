@@ -78,6 +78,7 @@ $operativeNotes = Read-RequiredFile "docs\OPERATIVE_NOTES_2026_06_02.md"
 $auditPlan = Read-RequiredFile "docs\AUDIT_2026_06_02.md"
 $releaseChecklist = Read-RequiredFile "docs\RELEASE_CHECKLIST.md"
 $releaseNotes = Read-RequiredFile "RELEASE_NOTES_v1.0.0_FINAL.md"
+$offlineReleaseClean = Read-RequiredFile "scripts\assert_offline_release_clean.ps1"
 
 $finalProofPaths = @(
     "qa\LAN_CLIENT_VALIDATION_PROOF.md",
@@ -184,6 +185,13 @@ foreach ($handoffGuard in @(
     Assert-Literal "Handoff guard redacts or rejects raw task XML: $handoffGuard" `
         $handoffGuardContent '(?is)<(Task|Actions|Principals|Triggers|Settings)\b'
 }
+
+Assert-Literal "Offline release clean output redacts Unix local paths" `
+    $offlineReleaseClean '(?i)/(var|home|srv|opt|tmp|usr|mnt)/'
+Assert-Literal "Offline release clean output redacts raw task XML" `
+    $offlineReleaseClean '(?is)<(Task|Actions|Principals|Triggers|Settings)\b'
+Assert-Literal "Offline release clean self-test covers protected XML marker" `
+    $offlineReleaseClean '[xml-protegido]'
 
 foreach ($candidateProofValidator in $candidateProofValidators) {
     $candidateProofValidatorContent = Read-RequiredFile $candidateProofValidator
