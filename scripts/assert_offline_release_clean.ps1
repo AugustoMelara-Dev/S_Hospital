@@ -185,6 +185,32 @@ function Test-IsAllowedProofTemplate([string] $relativePath) {
     return $false
 }
 
+function Test-IsForbiddenReleaseArtifactName([string] $relativePath) {
+    $normalized = $relativePath -replace "\\", "/"
+    $forbiddenNamePatterns = @(
+        ('Bill' + 'ing_OS'),
+        ('Hospital_Bill' + 'ing_OS'),
+        ('Bill' + 'ing OS'),
+        'THERMAL_PRINTER_PROOF',
+        'receipt-preview-80mm',
+        'receipt-preview-58mm',
+        'thermal-printer',
+        'thermal_printer',
+        'impresora-termica',
+        'impresora_termica',
+        'recibo-termico',
+        'recibo_termico'
+    )
+
+    foreach ($pattern in $forbiddenNamePatterns) {
+        if ($normalized -match [regex]::Escape($pattern)) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 if ($SelfTest) {
     $allowedTemplates = @(
         "qa\LAN_CLIENT_VALIDATION_PROOF.example.md",
@@ -216,6 +242,28 @@ if ($SelfTest) {
     foreach ($relativePath in $forbiddenQaPaths) {
         if (Test-IsAllowedProofTemplate $relativePath) {
             Write-Host "[FAIL] SelfTest FAILED: expected forbidden QA path $relativePath." -ForegroundColor Red
+            exit 1
+        }
+    }
+
+    foreach ($relativePath in @(
+        ("docs/00_Flujo_Agentic_Codex_Hospital_" + "Bill" + "ing_OS.docx"),
+        "qa/screenshots/full-qa/25-receipt-preview-58mm.png",
+        "qa/THERMAL_PRINTER_PROOF.example.md"
+    )) {
+        if (-not (Test-IsForbiddenReleaseArtifactName $relativePath)) {
+            Write-Host "[FAIL] SelfTest FAILED: expected forbidden artifact name $relativePath." -ForegroundColor Red
+            exit 1
+        }
+    }
+
+    foreach ($relativePath in @(
+        "docs/00_Flujo_Agentic_Codex_Sistema_Caja_Hospitalaria.docx",
+        "qa/screenshots/full-qa/25-receipt-preview-institutional.png",
+        "qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md"
+    )) {
+        if (Test-IsForbiddenReleaseArtifactName $relativePath) {
+            Write-Host "[FAIL] SelfTest FAILED: expected allowed artifact name $relativePath." -ForegroundColor Red
             exit 1
         }
     }
@@ -395,12 +443,14 @@ $forbiddenItems = Get-ChildItem -LiteralPath $ReleaseRoot -Recurse -Force | Wher
     $name = $_.Name
 
     if ($_.PSIsContainer) {
-        return $relative -match '(^|/)(node_modules|install-logs|playwright-report|test-results|\.git)(/|$)' -or
+        return (Test-IsForbiddenReleaseArtifactName $relative) -or
+            $relative -match '(^|/)(node_modules|install-logs|playwright-report|test-results|\.git)(/|$)' -or
             $relative -match '(^|/)docs/superpowers(/|$)' -or
             $relative -match '(^|/)storage/(app/private/backups|logs)(/|$)'
     }
 
-    return (Test-IsForbiddenEnvFile $name) -or
+    return (Test-IsForbiddenReleaseArtifactName $relative) -or
+        (Test-IsForbiddenEnvFile $name) -or
         $relative -match '(^|/)docs/[^/]+\.docx$' -or
         $relative -match '(^|/)(install-logs|test-results|playwright-report)/' -or
         ($relative -match '(^|/)qa/' -and -not (Test-IsAllowedProofTemplate $relative)) -or

@@ -4091,3 +4091,8 @@ Criterio de verificacion: assert_offline_release_clean.ps1 escanea la documentac
 Contexto: algunos artefactos internos versionados conservaban nombres de archivo antiguos o capturas historicas con formatos de recibo no vigentes. Aunque no se empaquetaban para el hospital, esos nombres podian confundir revisiones de RC y futuras automatizaciones.
 Decision: los artefactos internos se renombran con lenguaje institucional y las capturas historicas se identifican como recibo institucional. El guard de branding revisa tambien nombres versionados, ademas del contenido textual.
 Criterio de verificacion: check-branding.ps1 falla si reaparecen nombres de archivo con marca antigua, prueba termica heredada o capturas de recibo nombradas por ancho de rollo.
+
+## 2026-06-07 - paquete offline bloquea nombres heredados
+Contexto: el repo ya bloquea nombres versionados obsoletos, pero el guard del paquete offline tambien debe defender el artefacto final si una ruta no versionada o generada entra por error.
+Decision: assert_offline_release_clean.ps1 valida nombres de archivos y directorios del paquete contra marca antigua, pruebas heredadas de impresora y capturas nombradas por ancho de rollo.
+Criterio de verificacion: assert_offline_release_clean.ps1 -SelfTest cubre nombres prohibidos y permitidos, y el release final debe pasar -RequireCurrentCommit sin artefactos heredados.
