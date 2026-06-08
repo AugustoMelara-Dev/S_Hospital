@@ -183,6 +183,18 @@ if ($null -ne $shortcutScript) {
     }
 }
 
+if ($null -ne $startupScript) {
+    $startupContent = Get-Content -LiteralPath $startupScript -Raw
+    if ($startupContent -match '\[redacted\]' -and
+        $startupContent -match '\(\?i\)/\(var\|home\|srv\|opt\|tmp\|usr\|mnt\)/' -and
+        $startupContent -match '\(\?is\)<\(Task\|Actions\|Principals\|Triggers\|Settings\)\\b' -and
+        $startupContent -match '\[xml-protegido\]') {
+        Add-Pass "scripts\start_hospital_services.ps1 redacts secrets, Unix paths and task XML"
+    } else {
+        Add-Failure "scripts\start_hospital_services.ps1 must redact secrets, Unix local paths and raw task XML in operator output."
+    }
+}
+
 if ($failures.Count -eq 0) {
     Invoke-SafeCheck `
         "Startup dry run" `

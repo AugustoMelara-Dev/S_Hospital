@@ -4,6 +4,22 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Arranque Windows protege salida
+
+Contexto: `start_hospital_services.ps1` es el punto operativo para
+levantar el sistema local y su salida puede guardarse durante soporte,
+pero su sanitizacion solo ocultaba rutas Windows.
+
+Decision: `Protect-ServiceText` reemplaza secretos, rutas locales Unix y
+fragmentos XML de tareas por marcadores seguros antes de mostrar
+errores. `validate_startup_repair_safety.ps1` falla si el helper pierde
+esa cobertura y mantiene el dry-run no destructivo de arranque.
+
+Criterio de verificacion: `validate_startup_repair_safety.ps1`,
+`validate_final_handoff_completeness.ps1`,
+`validate_production_ready_gate_safety.ps1`, `check-branding.ps1` y
+`git diff --check` deben pasar antes de regenerar el paquete offline.
+
 ## 2026-06-08 - Acceso directo Windows protege salida
 
 Contexto: `install_hospital_startup_shortcut.ps1` crea el acceso
