@@ -1,6 +1,6 @@
 # Resultado de handoff final de produccion
 
-- Generado: 2026-06-07 20:55:36
+- Generado: 2026-06-07 21:06:05
 - URL base: http://192.168.1.10:8000
 - Carpeta del sistema: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -345,7 +345,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[ OK ] MANIFEST.txt references current commit 03f6af7a
+[ OK ] MANIFEST.txt references current commit 36cbec28
 [ OK ] offline-images contains 4 Docker image tar file(s)
 
 OFFLINE_RELEASE_CLEAN: YES
@@ -1264,7 +1264,7 @@ Manifest matches composer.json and package.json.
 [ OK ] Docs/evidence require 32+ character salt
 [ OK ] Docs/evidence warn not to commit or print real salt
 [ OK ] Production compose with placeholder salt completed with expected compose behavior
-error while interpolating services.scheduler.environment.HOSPITAL_LICENSE_SALT=[redacted] variable HOSPITAL_LICENSE_SALT is missing a value: HOSPITAL_LICENSE_SALT must be set to a 32+ char random string
+error while interpolating services.backend.environment.HOSPITAL_LICENSE_SALT=[redacted] variable HOSPITAL_LICENSE_SALT is missing a value: HOSPITAL_LICENSE_SALT must be set to a 32+ char random string
 [ OK ] Production compose without license salt completed with expected compose behavior
 
 PRODUCTION_LICENSE_SALT_GUARD: YES
