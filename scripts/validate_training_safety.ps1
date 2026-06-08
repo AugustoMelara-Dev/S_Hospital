@@ -80,13 +80,16 @@ function Assert-NotContains([string] $label, [string] $content, [string] $patter
 
 $safeTraining = Read-RequiredText "docs\manuales\GUIA_CAPACITACION_SEGURA.md"
 $trainingChecklist = Read-RequiredText "docs\manuales\CHECKLIST_CAPACITACION.md"
+$localValidationScript = Read-RequiredText "docs\LOCAL_VALIDATION_SCRIPT.md"
+$operativeValidationFlow = Read-RequiredText "docs\OPERATIVE_VALIDATION_FLOW.md"
+$lanClientProofTemplate = Read-RequiredText "qa\LAN_CLIENT_VALIDATION_PROOF.example.md"
 $trainingAcceptanceTemplate = Read-RequiredText "qa\TRAINING_ACCEPTANCE_PROOF.example.md"
 $quickAdminTraining = Read-RequiredText "docs\TRAINING_ADMIN.md"
 $userManual = Read-RequiredText "docs\Manual_Usuario.html"
 $helpView = Read-RequiredText "frontend\src\features\help\HelpView.tsx"
 $helpViewTest = Read-RequiredText "frontend\src\features\help\HelpView.test.tsx"
 
-$combinedDocs = "$safeTraining`n$trainingChecklist`n$trainingAcceptanceTemplate`n$quickAdminTraining`n$userManual"
+$combinedDocs = "$safeTraining`n$trainingChecklist`n$localValidationScript`n$operativeValidationFlow`n$lanClientProofTemplate`n$trainingAcceptanceTemplate`n$quickAdminTraining`n$userManual"
 $combinedUi = "$helpView`n$helpViewTest"
 
 Assert-Contains "Training docs forbid practicing in production" $combinedDocs 'no use la base de produccion para practicar|no en\s+la base real de produccion'
@@ -96,6 +99,8 @@ Assert-Contains "Training docs require supervisor role practice" $combinedDocs '
 Assert-Contains "Training docs require administrator role practice" $combinedDocs '(?i)administrador'
 Assert-Contains "Training docs require support summary practice" $combinedDocs '(?i)ayuda\s*>\s*preparar resumen|resumen seguro'
 Assert-NotContains "Training checklist avoids technical incident wording for staff" $trainingChecklist 'incidente tecnico|error tecnico'
+Assert-NotContains "Training and validation docs avoid receipt preview wording" $combinedDocs 'vista previa de recibo|receipt preview opens|receipt preview controls|tamano de vista previa'
+Assert-Contains "Training and validation docs use institutional receipt wording" $combinedDocs 'recibo institucional'
 Assert-Contains "Quick administrator training uses protected backup status" $quickAdminTraining 'protegido'
 Assert-Contains "Quick administrator training uses pending backup status" $quickAdminTraining 'pendiente'
 Assert-Contains "Quick administrator training uses error backup status" $quickAdminTraining 'error'

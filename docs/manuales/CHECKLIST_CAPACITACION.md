@@ -11,7 +11,7 @@ la base real de produccion.
 - [ ] Entorno de capacitacion separado de produccion.
 - [ ] Usuarios de practica creados y marcados como temporales.
 - [ ] Datos fiscales temporales o ficticios identificados como no reales.
-- [ ] Impresora de practica o previsualizacion acordada.
+- [ ] Impresora de practica o revision de recibo institucional acordada.
 - [ ] Instructor confirma que no se usaran datos reales de pacientes.
 - [ ] Participantes saben que no deben repetir facturas ni cobros a ciegas.
 
@@ -52,7 +52,7 @@ la base real de produccion.
 
 - [ ] Configura datos del hospital.
 - [ ] Configura serie/numeracion autorizada.
-- [ ] Revisa vista previa de recibo.
+- [ ] Revisa recibo institucional en media carta, carta y A5.
 - [ ] Revisa reporte diario.
 - [ ] Revisa pagos por metodo.
 - [ ] Identifica facturas parciales y anuladas.

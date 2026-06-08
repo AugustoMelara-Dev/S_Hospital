@@ -213,7 +213,7 @@ if ($EvidencePath -ne "") {
     $lines.Add("- [ ] Cashbox opens. Result/evidence:") | Out-Null
     $lines.Add("- [ ] Invoice is created with patient name. Result/evidence:") | Out-Null
     $lines.Add("- [ ] Payment is registered. Result/evidence:") | Out-Null
-    $lines.Add("- [ ] Receipt preview opens. Result/evidence:") | Out-Null
+    $lines.Add("- [ ] Institutional receipt opens. Result/evidence:") | Out-Null
     $lines.Add("- [ ] Invoice history and reprint work. Result/evidence:") | Out-Null
     $lines.Add("- [ ] Reports load. Result/evidence:") | Out-Null
     $lines.Add("- [ ] Respaldo solicitado desde la UI cambia de Pendiente a Protegido. Result/evidence:") | Out-Null

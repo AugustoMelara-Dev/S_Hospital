@@ -133,7 +133,7 @@ if ([string]::IsNullOrWhiteSpace($ProofPath) -or -not (Test-Path -LiteralPath $P
                 @{ Pattern = '(?i)IP fija|IP_DEL_SERVIDOR|server IP|LAN final'; Label = 'final LAN IP/name' },
                 @{ Pattern = '(?i)login.*(419|sesion|session)|419.*login'; Label = 'login without 419/session expiry' },
                 @{ Pattern = '(?i)caja.*factura.*pago|cashbox.*invoice.*payment'; Label = 'cashbox/invoice/payment workflow' },
-                @{ Pattern = '(?i)recibo|receipt'; Label = 'receipt preview' },
+                @{ Pattern = '(?i)recibo|institutional receipt'; Label = 'institutional receipt' },
                 @{ Pattern = '(?i)historial|reprint|reimpresion'; Label = 'history/reprint' },
                 @{ Pattern = '(?i)reportes|reports'; Label = 'reports' },
                 @{ Pattern = '(?i)backup|respaldo'; Label = 'backup from UI' },
@@ -179,7 +179,7 @@ if ([string]::IsNullOrWhiteSpace($ProofPath) -or -not (Test-Path -LiteralPath $P
             "Cashbox opens",
             "Invoice is created with patient name",
             "Payment is registered",
-            "Receipt preview opens",
+            "Institutional receipt opens",
             "Invoice history and reprint work",
             "Reports load",
             'Respaldo solicitado desde la UI cambia de Pendiente a Protegido'

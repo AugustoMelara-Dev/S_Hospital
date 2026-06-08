@@ -113,7 +113,7 @@ granted that permission. See `docs/PERMISSIONS_MATRIX.md`.
 
 ## "Impresora no encontrada" / "Printer not selected"
 
-**Symptom:** The receipt preview shows fine but `window.print()`
+**Symptom:** The institutional receipt shows fine but `window.print()`
 fails or prints to the wrong device.
 
 **Cause:** The cashier's PC does not have the institutional receipt
@@ -128,7 +128,7 @@ settings override the page CSS.
 2. In the browser's print dialog (Ctrl+P), uncheck
    *Headers and footers* and use the margins recommended by the
    selected paper size.
-3. In the receipt preview, use media carta, carta or A5. The cashier can
+3. In the institutional receipt dialog, use media carta, carta or A5. The cashier can
    change the paper size in the dialog if the wrong size is selected.
 
 ## "Respaldo pendiente" nunca termina

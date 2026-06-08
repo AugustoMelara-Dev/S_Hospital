@@ -147,7 +147,7 @@ Resultado esperado:
 
 Accion:
 
-- Abrir vista previa de recibo.
+- Abrir recibo institucional.
 - Seleccionar media carta, carta o A5.
 - Imprimir una factura a la vez.
 

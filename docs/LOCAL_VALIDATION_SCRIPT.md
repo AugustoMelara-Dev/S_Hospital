@@ -52,7 +52,7 @@ Configuracion institucional:
    - Paciente: Maria Lopez.
    - Seleccionar categoria `Medicamentos` o buscar `Eritropoyetina`.
    - No marcar receta de dialisis.
-   - Confirmar vista previa con precio normal L.25 antes de emitir.
+   - Confirmar total estimado con precio normal L.25 antes de emitir.
    - Emitir factura con caja abierta.
    - Registrar pago e imprimir/visualizar recibo institucional.
 
@@ -60,7 +60,7 @@ Configuracion institucional:
    - Paciente: Jose Perez.
    - Seleccionar Eritropoyetina desde categoria o busqueda.
    - Marcar "Receta de dialisis".
-   - Confirmar vista previa en L.0 para ese item.
+   - Confirmar item en L.0 para ese servicio.
    - Emitir factura con caja abierta y confirmar saldo L.0.00.
 
 5. Cobrar factura
@@ -70,7 +70,7 @@ Configuracion institucional:
    - Si el monto recibido es menor que el total, confirmar que el sistema bloquea el pago completo o registra parcial solo si la configuracion lo permite.
 
 6. Ver recibo institucional
-   - Confirmar vista previa institucional en media carta.
+   - Confirmar recibo institucional en media carta.
    - Cambiar a carta y A5 para validar margenes y escala.
    - Usar Imprimir solo en entorno con impresora o impresora virtual autorizada.
    - Confirmar que el recibo no contiene QR, codigo de barras, codigos internos ni datos tecnicos.

@@ -4103,7 +4103,7 @@ Decision: usePaymentLifecycle usa las cadenas institucionales del diccionario pa
 Criterio de verificacion: NewInvoiceView.test valida el estado visible de cobro y el titulo del modal, es-HN.workflow.test bloquea que paymentRegisteredPreview vuelva a usar vista previa como resultado operativo.
 
 ## 2026-06-07 - historial de recibos usa lenguaje institucional
-Contexto: Historial todavia describia el recibo como vista previa y el selector como tamano de vista previa, aunque la operacion real es revisar o reimprimir un recibo institucional con auditoria al imprimir.
+Contexto: Historial todavia usaba terminologia heredada de revision previa del recibo, aunque la operacion real es revisar o reimprimir un recibo institucional con auditoria al imprimir.
 Decision: el diccionario de Historial habla de recibo institucional listo para revisar, el selector accesible usa tamano del recibo institucional y ReceiptPreview expone un panel de recibo institucional a tecnologias asistivas.
 Criterio de verificacion: InvoiceHistoryView.test cubre el modal de recibo en Historial, ReceiptPreview.a11y.test valida el label accesible y es-HN.workflow.test bloquea que el copy de reimpresion vuelva a usar vista previa.
 
@@ -4111,3 +4111,8 @@ Criterio de verificacion: InvoiceHistoryView.test cubre el modal de recibo en Hi
 Contexto: el flujo de identificador de servicio en Nueva factura todavia podia mostrar mensajes de caja con la palabra codigo al validar entrada vacia, confirmar agregado o manejar fallos de busqueda.
 Decision: usePosCartActions conserva el contrato tecnico de busqueda por `code`, pero todos los mensajes visibles del flujo hablan de identificador de servicio o identificador.
 Criterio de verificacion: usePosCartActions.test cubre entrada vacia, agregado correcto y error tecnico filtrado, y bloquea que los mensajes de operador vuelvan a mencionar codigo o detalles tecnicos.
+
+## 2026-06-07 - capacitacion y prueba LAN nombran recibo institucional
+Contexto: guiones de validacion, checklist de capacitacion y plantilla LAN todavia usaban lenguaje de revision previa, aunque caja debe confirmar un recibo institucional listo para imprimir o reimprimir.
+Decision: documentos activos de capacitacion/validacion y plantilla LAN usan recibo institucional; validate_training_safety cubre esos documentos y validate_lan_client_proof exige el check Institutional receipt opens.
+Criterio de verificacion: validate_training_safety.ps1, validate_installation_docs_safety.ps1 y la busqueda de frases heredadas pasan sin textos operativos obsoletos fuera de aserciones negativas.
