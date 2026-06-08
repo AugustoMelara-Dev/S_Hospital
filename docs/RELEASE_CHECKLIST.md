@@ -372,6 +372,11 @@ modificados, pruebas ejecutadas, pendientes fisicos, riesgos y las notas de
 seguridad de no borrar `.env`, no resetear datos, no hacer push, no filtrar
 secretos y no inventar cumplimiento fiscal.
 
+El paquete offline final debe contener los manuales, scripts, plantillas de
+evidencia y checklist vigentes. No debe incluir planes internos de Codex,
+documentos Word historicos ni artefactos de planificacion con nombres o
+criterios heredados que puedan confundir al personal del hospital.
+
 Este preflight falla si la auditoria del objetivo operativo deja de trazar
 ayuda, diagnostico, soporte, instalacion, recuperacion, doble accion,
 respaldos, capacitacion, LAN, impresora, paquete offline y preflight final a

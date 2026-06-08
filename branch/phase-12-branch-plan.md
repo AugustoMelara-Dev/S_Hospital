@@ -8,7 +8,7 @@ No empujar directo a main salvo hotfix explicito. Fase 12 debe trabajarse en ram
 
 - `codex/phase-12a-app-shell-design-system`
 - `codex/phase-12b-pos-billing-ux`
-- `codex/phase-12c-catalog-barcode`
+- `codex/phase-12c-catalog-service-identifiers`
 - `codex/phase-12d-advanced-reports`
 - `codex/phase-12e-final-ux-qa`
 

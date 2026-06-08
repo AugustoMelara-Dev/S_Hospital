@@ -110,6 +110,55 @@ function Write-Fail([string] $message) {
     exit 1
 }
 
+function Remove-InternalReleaseDocs([string] $releaseRoot) {
+    foreach ($relativePath in @("docs\superpowers")) {
+        $target = Join-Path $releaseRoot $relativePath
+        if (Test-Path -LiteralPath $target) {
+            Remove-Item -LiteralPath $target -Recurse -Force
+        }
+    }
+
+    $docsRoot = Join-Path $releaseRoot "docs"
+    if (Test-Path -LiteralPath $docsRoot -PathType Container) {
+        Get-ChildItem -LiteralPath $docsRoot -Filter "*.docx" -File | ForEach-Object {
+            Remove-Item -LiteralPath $_.FullName -Force
+        }
+    }
+}
+
+function Set-ReleaseDecisionSummary([string] $releaseRoot) {
+    $decisionPath = Join-Path $releaseRoot "docs\DECISIONS.md"
+    $summary = @'
+# Decisiones operativas incluidas en el paquete offline
+
+Este resumen acompana el paquete offline para instalacion y handoff. El log
+historico completo de desarrollo queda fuera de la entrega al hospital para no
+mezclar criterios antiguos con el contrato operativo vigente.
+
+## Mantenimiento seguro
+
+- `hospital:maintenance` activa o desactiva solo el modo de mantenimiento de
+  Laravel.
+- El flujo no guarda secretos ni bypass, no borra datos y no ejecuta resets.
+
+## Auditoria de permisos
+
+- Auditoria de roles y permisos usa eventos Spatie.
+- `PermissionAuditObserver` registra cambios relevantes en `audit_logs`.
+- La auditoria conserva usuario operador cuando existe y evita exponer campos
+  sensibles.
+
+## Paquete offline
+
+- El paquete offline contiene manuales, scripts, plantillas de evidencia y
+  checklist vigentes.
+- Los planes internos, documentos Word historicos y criterios de desarrollo
+  obsoletos no se entregan al personal del hospital.
+'@
+
+    Set-Content -LiteralPath $decisionPath -Value $summary -Encoding ASCII
+}
+
 if ($SelfTest) {
     $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("s_hospital_offline_release_selftest_" + [Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
@@ -135,6 +184,8 @@ if ($SelfTest) {
         Copy-Item -LiteralPath $sourceCrontab -Destination (Join-Path $tempNginx "crontab") -Force
         Copy-Item -LiteralPath (Join-Path $ProjectRoot "scripts") -Destination (Join-Path $tempRoot "scripts") -Recurse -Force
         Copy-Item -LiteralPath (Join-Path $ProjectRoot "docs") -Destination (Join-Path $tempRoot "docs") -Recurse -Force
+        Remove-InternalReleaseDocs $tempRoot
+        Set-ReleaseDecisionSummary $tempRoot
         New-Item -ItemType Directory -Force -Path (Join-Path $tempRoot "qa") | Out-Null
         foreach ($templateName in $script:OfflineReleaseProofTemplates) {
             $sourceTemplate = Join-Path (Join-Path $ProjectRoot "qa") $templateName
@@ -188,6 +239,13 @@ if ($SelfTest) {
             if (-not (Test-Path -LiteralPath $bundledDoc -PathType Leaf)) {
                 Write-Fail "SelfTest FAILED: bundled docs/$docName is missing."
             }
+        }
+
+        if (Test-Path -LiteralPath (Join-Path $tempRoot "docs\superpowers")) {
+            Write-Fail "SelfTest FAILED: internal docs/superpowers must not be bundled for hospital handoff."
+        }
+        if (@(Get-ChildItem -LiteralPath (Join-Path $tempRoot "docs") -Filter "*.docx" -File).Count -gt 0) {
+            Write-Fail "SelfTest FAILED: internal Word planning artifacts must not be bundled for hospital handoff."
         }
 
         foreach ($templateName in $script:OfflineReleaseProofTemplates) {
@@ -376,6 +434,8 @@ if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot "scripts\release_setup.
 }
 Copy-RequiredDirectory "scripts"
 Copy-RequiredDirectory "docs"
+Remove-InternalReleaseDocs $ReleaseRoot
+Set-ReleaseDecisionSummary $ReleaseRoot
 foreach ($templateName in $script:OfflineReleaseProofTemplates) {
     Copy-RequiredFile (Join-Path "qa" $templateName)
 }

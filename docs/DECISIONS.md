@@ -3912,3 +3912,13 @@ Verificacion: validate_final_handoff_completeness.ps1 y validate_production_read
 Contexto: Documentos y prompts activos de Fase 12 todavia nombraban el frente de catalogo como Barcode/QR/scan_code, aunque la UI y el recibo ya ocultan identificadores crudos al cajero.
 Decision: Las specs, criterios, prompts y referencia principal usan identificador de servicio y escaneo de servicios como lenguaje de producto; scan_code, barcode y qr_code quedan como campos tecnicos internos de API, migraciones y soporte de catalogo.
 Verificacion: validate_installation_docs_safety.ps1 lee estos documentos y prompts, bloquea la nomenclatura heredada en superficies vivas y exige references/service_identifier_reference.md como referencia principal.
+
+## 2026-06-07 - paquete offline sin documentos internos historicos
+Contexto: el release offline copiaba todo docs/, incluyendo planes internos y documentos Word historicos que podian contener nombres o criterios heredados aunque los manuales vigentes estuvieran corregidos.
+Decision: make_offline_release.ps1 elimina docs/superpowers y archivos .docx del paquete antes del guard. assert_offline_release_clean.ps1 falla si esos artefactos reaparecen en offline-release. Las guias de ramas y subversion usan identificadores de servicio como lenguaje canonico.
+Criterio de verificacion: make_offline_release.ps1 -SelfTest, assert_offline_release_clean.ps1 -SelfTest y el release final deben confirmar que el paquete contiene manuales/checklists/plantillas vigentes, no planificacion interna contradictoria.
+
+## 2026-06-07 - resumen de decisiones para paquete offline
+Contexto: el log completo docs/DECISIONS.md conserva historial tecnico util para desarrollo, pero contiene criterios antiguos que no deben viajar como documentacion de handoff al hospital.
+Decision: make_offline_release.ps1 reemplaza docs/DECISIONS.md dentro de offline-release por un resumen operativo minimo con mantenimiento seguro, auditoria de permisos y contrato del paquete. El archivo fuente completo permanece versionado para desarrollo.
+Criterio de verificacion: assert_offline_release_clean.ps1 escanea la documentacion del release contra lenguaje heredado y falla si reaparecen nombres, formatos o referencias obsoletas.

@@ -220,6 +220,15 @@ if ($SelfTest) {
         }
     }
 
+    foreach ($relativePath in @("docs/superpowers/plans/old.md", "docs/00_Flujo_Agentic_Codex_Hospital_Billing_OS.docx")) {
+        $isForbiddenReleaseDoc = $relativePath -match '(^|/)docs/superpowers(/|$)' -or
+            $relativePath -match '(^|/)docs/[^/]+\.docx$'
+        if (-not $isForbiddenReleaseDoc) {
+            Write-Host "[FAIL] SelfTest FAILED: expected forbidden release doc $relativePath." -ForegroundColor Red
+            exit 1
+        }
+    }
+
     Write-Host "[OK] SelfTest passed. Only final-field qa/*.example.md templates are allowed in offline release." -ForegroundColor Green
     return
 }
@@ -387,10 +396,12 @@ $forbiddenItems = Get-ChildItem -LiteralPath $ReleaseRoot -Recurse -Force | Wher
 
     if ($_.PSIsContainer) {
         return $relative -match '(^|/)(node_modules|install-logs|playwright-report|test-results|\.git)(/|$)' -or
+            $relative -match '(^|/)docs/superpowers(/|$)' -or
             $relative -match '(^|/)storage/(app/private/backups|logs)(/|$)'
     }
 
     return (Test-IsForbiddenEnvFile $name) -or
+        $relative -match '(^|/)docs/[^/]+\.docx$' -or
         $relative -match '(^|/)(install-logs|test-results|playwright-report)/' -or
         ($relative -match '(^|/)qa/' -and -not (Test-IsAllowedProofTemplate $relative)) -or
         $relative -match '(^|/)storage/(app/private/backups|logs)/' -or
@@ -399,6 +410,22 @@ $forbiddenItems = Get-ChildItem -LiteralPath $ReleaseRoot -Recurse -Force | Wher
 
 foreach ($item in $forbiddenItems) {
     Add-Failure "Forbidden file or directory in offline release: $(Get-RelativeReleasePath $item)"
+}
+
+$releaseDocsRoot = Join-Path $ReleaseRoot "docs"
+if (Test-Path -LiteralPath $releaseDocsRoot -PathType Container) {
+    $forbiddenReleaseDocPattern = '(?i)Billing\s+OS|thermal printer|impresora termica|impresora térmica|recibo termico|recibo térmico|\b80mm\b|\b58mm\b|demo premium|demo vendible|phase-12c-catalog-barcode|barcode_qr_reference'
+    Get-ChildItem -LiteralPath $releaseDocsRoot -Recurse -File |
+        Where-Object { $_.Extension -match '^\.(md|html|txt)$' } |
+        ForEach-Object {
+            $content = Get-Content -LiteralPath $_.FullName -Raw
+            if ($content -match $forbiddenReleaseDocPattern) {
+                Add-Failure "Release documentation contains legacy product wording: $(Get-RelativeReleasePath $_)"
+            }
+            if ($content -match '[\x00-\x08\x0B\x0C\x0E-\x1F]') {
+                Add-Failure "Release documentation contains control characters: $(Get-RelativeReleasePath $_)"
+            }
+        }
 }
 
 $manifestPath = Join-Path $ReleaseRoot "MANIFEST.txt"

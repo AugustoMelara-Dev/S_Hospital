@@ -12,9 +12,9 @@ No reemplaza Git. En este proyecto, "subversion" significa control interno de su
 | --- | --- | --- |
 | `v0.12a-shell` | App shell, sidebar, topbar, rutas y sistema visual base | Navegacion profesional validada |
 | `v0.12b-pos` | POS de nueva factura con categorias, busqueda y carrito | Facturacion rapida validada |
-| `v0.12c-catalog-scan` | Catalogo con categorias y codigos de scanner/QR | Servicios agregables por texto/codigo |
+| `v0.12c-catalog-identifiers` | Catalogo con categorias e identificadores de servicio | Servicios agregables por texto o identificador |
 | `v0.12d-reports` | Reportes avanzados gerenciales | KPIs, filtros, tablas y CSV |
-| `v0.12e-release` | QA final, demo y readiness | Entrega demostrable |
+| `v0.12e-release` | QA final y readiness institucional | Entrega verificable |
 
 ## Ramas
 
@@ -24,7 +24,7 @@ Ramas sugeridas:
 
 - `codex/phase-12a-app-shell-design-system`
 - `codex/phase-12b-pos-billing-ux`
-- `codex/phase-12c-catalog-barcode`
+- `codex/phase-12c-catalog-service-identifiers`
 - `codex/phase-12d-advanced-reports`
 - `codex/phase-12e-final-ux-qa`
 
@@ -37,7 +37,7 @@ No se puede marcar una subversion como lista si ocurre cualquiera de estos punto
 - Hay botones visibles sin flujo real.
 - Reportes no tienen filtros por fecha.
 - Totales financieros se calculan solo en frontend como autoridad.
-- El scanner/codigo promete funcionalidad sin backend o API.
+- El identificador de servicio promete funcionalidad sin backend o API.
 - Backups no tienen evidencia de ejecucion/restauracion.
 - No hay worklog ni checklist QA actualizado.
 
