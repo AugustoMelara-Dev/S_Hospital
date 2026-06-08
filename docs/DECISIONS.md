@@ -4276,3 +4276,8 @@ Criterio de verificacion: `scripts\final_production_handoff.ps1 -SkipPreflight`,
 Contexto: el indice `docs\FINAL_FIELD_BLOCKERS.md` ya estaba en el paquete offline y en el handoff, pero la auditoria principal del objetivo podia aprobar sin nombrarlo como evidencia del gate `PRODUCTION_READY`.
 Decision: `qa\OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md` y `validate_operations_objective_audit.ps1` tratan `docs\FINAL_FIELD_BLOCKERS.md` como evidencia requerida y como indice operativo de los siete proofs finales.
 Criterio de verificacion: `scripts\validate_operations_objective_audit.ps1`, `scripts\validate_final_field_blockers_safety.ps1`, `scripts\validate_final_handoff_completeness.ps1` y `scripts\check-branding.ps1` deben pasar antes de regenerar el paquete offline.
+
+## 2026-06-08 - Branding protege indice de bloqueantes finales
+Contexto: `docs\FINAL_FIELD_BLOCKERS.md` resume requisitos visibles de recibo e impresora para soporte, pero `check-branding.ps1` todavia no lo incluia en el grupo de documentacion que bloquea lenguaje de ticket, rollo, impresora termica, 80mm o 58mm.
+Decision: `check-branding.ps1` revisa tambien `docs\FINAL_FIELD_BLOCKERS.md` contra lenguaje de recibo/impresora de rollo para que el indice operativo no contradiga el recibo institucional media carta/carta/A5.
+Criterio de verificacion: `scripts\check-branding.ps1`, `scripts\validate_final_field_blockers_safety.ps1` y `scripts\validate_operations_objective_audit.ps1` deben pasar antes de regenerar el paquete offline.

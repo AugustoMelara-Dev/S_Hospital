@@ -325,6 +325,7 @@ try {
             'SYSTEM_REQUIREMENTS.md',
             'docs/12_CORRECTED_FINAL_PRODUCT_PLAN.md',
             'docs/AUDIT_2026_06_02.md',
+            'docs/FINAL_FIELD_BLOCKERS.md',
             'docs/INSTITUTIONAL_RECEIPT_PRINT_VALIDATION.md',
             'docs/LOCAL_VALIDATION_SCRIPT.md',
             'docs/OPERATIVE_NOTES_2026_06_02.md',
