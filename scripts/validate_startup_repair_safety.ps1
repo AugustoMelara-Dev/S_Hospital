@@ -195,6 +195,19 @@ if ($null -ne $startupScript) {
     }
 }
 
+if ($null -ne $repairScript) {
+    $repairContent = Get-Content -LiteralPath $repairScript -Raw
+    if ($repairContent -match '\[redacted\]' -and
+        $repairContent -match '\[archivo-protegido\]' -and
+        $repairContent -match '\(\?i\)/\(var\|home\|srv\|opt\|tmp\|usr\|mnt\)/' -and
+        $repairContent -match '\(\?is\)<\(Task\|Actions\|Principals\|Triggers\|Settings\)\\b' -and
+        $repairContent -match '\[xml-protegido\]') {
+        Add-Pass "scripts\repair_hospital_system.ps1 redacts protected files, Unix paths and task XML"
+    } else {
+        Add-Failure "scripts\repair_hospital_system.ps1 must redact protected files, Unix local paths and raw task XML in support diagnostics."
+    }
+}
+
 if ($failures.Count -eq 0) {
     Invoke-SafeCheck `
         "Startup dry run" `

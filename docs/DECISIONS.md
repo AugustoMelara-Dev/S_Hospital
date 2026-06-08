@@ -4,6 +4,23 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Diagnostico de reparacion protege salida
+
+Contexto: `repair_hospital_system.ps1` genera un diagnostico local para
+soporte y puede incluir salida tecnica de Docker, PowerShell o tareas,
+pero su sanitizacion interna del reporte no cubria rutas locales Unix ni
+XML crudo de tareas programadas.
+
+Decision: `Protect-ReportText` reemplaza rutas locales Unix y fragmentos
+XML de tareas por `[ruta-local]` y `[xml-protegido]`, manteniendo la
+redaccion de secretos y archivos `.env`. `validate_startup_repair_safety.ps1`
+falla si el reporte pierde esa cobertura.
+
+Criterio de verificacion: `validate_startup_repair_safety.ps1`,
+`validate_final_handoff_completeness.ps1`,
+`validate_production_ready_gate_safety.ps1`, `check-branding.ps1` y
+`git diff --check` deben pasar antes de regenerar el paquete offline.
+
 ## 2026-06-08 - Arranque Windows protege salida
 
 Contexto: `start_hospital_services.ps1` es el punto operativo para
