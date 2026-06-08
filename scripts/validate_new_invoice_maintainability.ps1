@@ -47,6 +47,8 @@ $reducerPath = "frontend\src\features\invoices\state\reducer.ts"
 $stateTypesPath = "frontend\src\features\invoices\state\types.ts"
 $testPath = "frontend\src\features\invoices\NewInvoiceView.test.tsx"
 $a11yTestPath = "frontend\src\features\invoices\NewInvoiceView.a11y.test.tsx"
+$serviceSearchTestPath = "frontend\src\features\invoices\components\ServiceSearch.test.tsx"
+$paymentModalTestPath = "frontend\src\features\invoices\components\PaymentModal.test.tsx"
 
 $newInvoice = Read-RequiredFile $newInvoicePath
 $layout = Read-RequiredFile $layoutPath
@@ -54,6 +56,8 @@ $reducer = Read-RequiredFile $reducerPath
 $stateTypes = Read-RequiredFile $stateTypesPath
 $viewTest = Read-RequiredFile $testPath
 $a11yTest = Read-RequiredFile $a11yTestPath
+$serviceSearchTest = Read-RequiredFile $serviceSearchTestPath
+$paymentModalTest = Read-RequiredFile $paymentModalTestPath
 
 $newInvoiceFullPath = Join-Path $ProjectRoot $newInvoicePath
 if (Test-Path -LiteralPath $newInvoiceFullPath -PathType Leaf) {
@@ -112,6 +116,21 @@ if ($combinedTests.Trim() -ne "") {
     )) {
         Test-Contains $combinedTests ([regex]::Escape($requiredText)) "New invoice tests preserve coverage marker: $requiredText"
     }
+}
+
+if ($serviceSearchTest -ne "") {
+    Test-Contains $serviceSearchTest ([regex]::Escape('shows active loaded services in Todos without requiring a search first')) "Service search test preserves active services in Todos"
+    Test-Contains $serviceSearchTest ([regex]::Escape('selectedAreaId="all"')) "Service search test keeps Todos area selected"
+    Test-Contains $serviceSearchTest ([regex]::Escape('selectedCategoryId="all"')) "Service search test keeps Todos category selected"
+    Test-Contains $serviceSearchTest ([regex]::Escape("screen.getByText('Servicios (1)')")) "Service search test proves visible loaded service count"
+    Test-Contains $serviceSearchTest 'backend fuzzy and accent-tolerant search results' "Service search test preserves fuzzy/accent tolerant backend results"
+}
+
+if ($paymentModalTest -ne "") {
+    Test-Contains $paymentModalTest 'received amount is below balance and partial payments are off' "Payment modal test preserves partial-payment block"
+    Test-Contains $paymentModalTest 'confirmButton\)\.toBeDisabled' "Payment modal test proves blocked confirmation button"
+    Test-Contains $paymentModalTest 'confirmSpy\)\.not\.toHaveBeenCalled' "Payment modal test proves blocked payment is not submitted"
+    Test-Contains $paymentModalTest 'aria-describedby' "Payment modal test preserves accessible blocked-payment explanation"
 }
 
 if ($failures.Count -gt 0) {
