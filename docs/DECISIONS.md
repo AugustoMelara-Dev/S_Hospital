@@ -4,6 +4,24 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Loop de respaldos protege logs tecnicos
+
+Contexto: `run_backup_scheduler_loop.ps1` escribe
+`backup-automation.log` y podia recibir errores de PHP, Docker o tareas
+con rutas absolutas Unix o XML crudo que no deben aparecer en evidencia
+de soporte.
+
+Decision: `Get-SafeAutomationText` reemplaza rutas locales Windows,
+rutas locales Unix y tags XML de tareas por marcadores seguros antes de
+escribir consola o log. `validate_backup_startup_current_user_safety.ps1`
+protege esos patrones junto con los checks no destructivos del fallback
+por usuario actual.
+
+Criterio de verificacion: `validate_backup_startup_current_user_safety.ps1`,
+`validate_final_handoff_completeness.ps1`,
+`validate_production_ready_gate_safety.ps1`, `check-branding.ps1` y
+`git diff --check` deben pasar antes de regenerar el paquete offline.
+
 ## 2026-06-08 - Fallback de respaldos redacta XML y rutas Unix
 
 Contexto: el fallback `install_backup_startup_current_user.ps1` ayuda

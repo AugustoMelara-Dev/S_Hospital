@@ -49,6 +49,9 @@ function Get-SafeAutomationText([string] $Message) {
     }
 
     $safe = $safe -replace "(?i)[A-Z]:\\Users\\[^\\\s]+", "[perfil-windows]"
+    $safe = $safe -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+    $safe = $safe -replace "(?i)/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"']+", "[ruta-local]"
+    $safe = $safe -replace '(?is)<(Task|Actions|Principals|Triggers|Settings)\b[^>]*>', "[xml-protegido]"
     $safe = $safe -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET)=\S+", '$1=[oculto]'
 
     return $safe

@@ -125,6 +125,9 @@ if ($loop -ne "") {
     Test-Contains $loop 'No se inicio la automatizacion de respaldos, no se ejecuto respaldo y no se escribieron archivos' "Scheduler WhatIf states no automation, backup or writes"
     Test-Contains $loop 'Local\\SistemaCajaHospitalariaBackupAutomation' "Scheduler uses single-instance mutex"
     Test-Contains $loop 'Get-SafeAutomationText' "Scheduler sanitizes log/output text"
+    Test-Contains $loop '\(\?i\)/\(var\|home\|srv\|opt\|tmp\|usr\|mnt\)/' "Scheduler redacts Unix local paths"
+    Test-Contains $loop '\(\?is\)<\(Task\|Actions\|Principals\|Triggers\|Settings\)\\b' "Scheduler redacts raw task XML"
+    Test-Contains $loop '\[xml-protegido\]' "Scheduler uses protected XML marker"
     Test-DoesNotContain $loop '(?i)docker\s+compose\b.*\bdown\b.*\s-v(\s|$)|docker\s+volume\s+rm|migrate:fresh|db:wipe|DROP\s+DATABASE' "Scheduler avoids destructive database/container operations"
 }
 
