@@ -172,6 +172,17 @@ if ($null -ne $stackAutostartScript) {
     }
 }
 
+if ($null -ne $shortcutScript) {
+    $shortcutContent = Get-Content -LiteralPath $shortcutScript -Raw
+    if ($shortcutContent -match '\(\?i\)/\(var\|home\|srv\|opt\|tmp\|usr\|mnt\)/' -and
+        $shortcutContent -match '\(\?is\)<\(Task\|Actions\|Principals\|Triggers\|Settings\)\\b' -and
+        $shortcutContent -match '\[xml-protegido\]') {
+        Add-Pass "scripts\install_hospital_startup_shortcut.ps1 redacts Unix paths and task XML"
+    } else {
+        Add-Failure "scripts\install_hospital_startup_shortcut.ps1 must redact Unix local paths and raw task XML in operator output."
+    }
+}
+
 if ($failures.Count -eq 0) {
     Invoke-SafeCheck `
         "Startup dry run" `

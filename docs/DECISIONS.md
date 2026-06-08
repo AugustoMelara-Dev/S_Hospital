@@ -4,6 +4,22 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Acceso directo Windows protege salida
+
+Contexto: `install_hospital_startup_shortcut.ps1` crea el acceso
+visible para abrir el sistema y puede ejecutarse durante soporte o
+capacitacion, pero su salida solo ocultaba secretos y rutas Windows.
+
+Decision: `Protect-ShortcutText` tambien reemplaza rutas locales Unix y
+fragmentos XML de tareas por `[ruta-local]` y `[xml-protegido]`.
+`validate_startup_repair_safety.ps1` falla si el helper deja de cubrir
+esos patrones antes de ejecutar el dry-run del acceso directo.
+
+Criterio de verificacion: `validate_startup_repair_safety.ps1`,
+`validate_final_handoff_completeness.ps1`,
+`validate_production_ready_gate_safety.ps1`, `check-branding.ps1` y
+`git diff --check` deben pasar antes de regenerar el paquete offline.
+
 ## 2026-06-08 - Autoarranque Windows protege salida
 
 Contexto: `install_stack_autostart_windows.ps1` registra el
