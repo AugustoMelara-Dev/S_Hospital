@@ -18,6 +18,8 @@ function Protect-HospitalOperationalText([string] $Value, [string] $ProjectRoot 
     $protected = $protected -replace "\b(https?://)(?:[^\s/@]+@)([^\s]+)", '$1$2'
     $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
     $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace "(?i)/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace '(?is)<(Task|Actions|Principals|Triggers|Settings)\b[^>]*>', "[xml-protegido]"
 
     return $protected
 }

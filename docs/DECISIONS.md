@@ -4,6 +4,24 @@
 sigue el patron: **Contexto** -> **Decision** -> **Criterio de
 verificacion**. Las fechas son UTC.
 
+## 2026-06-08 - Handoff final sanitiza rutas Unix y XML crudo
+
+Contexto: los proof files finales ya bloquean rutas locales Unix y
+XML crudo de tareas, pero el handoff/preflight podia imprimir salidas
+de guards auxiliares con sanitizacion menos estricta.
+
+Decision: el sanitizador operacional comun, el preflight final, el
+handoff final y los validadores de handoff ahora redactan rutas Unix
+locales y XML crudo de tareas. El indice de evidencia y el guard de
+completitud tambien fallan si el handoff generado contiene XML crudo
+de tareas.
+
+Criterio de verificacion: `validate_ops_evidence_index.ps1`,
+`validate_final_handoff_completeness.ps1`,
+`validate_production_ready_gate_safety.ps1`,
+`validate_final_field_blockers_safety.ps1` y `check-branding.ps1`
+deben pasar antes de regenerar el paquete offline.
+
 ## 2026-06-08 - Self-test final cubre rutas locales Unix
 
 Contexto: `validate_final_field_blockers_safety.ps1` ya rechazaba

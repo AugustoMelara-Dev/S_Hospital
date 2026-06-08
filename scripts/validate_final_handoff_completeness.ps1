@@ -24,6 +24,7 @@ function Protect-HandoffCompletenessText([string] $value) {
     $protected = $protected -replace "(?i)(APP_KEY|DB_PASSWORD|PASSWORD|TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^,\s\]\)]+", '$1=[redacted]'
     $protected = $protected -replace "(?i)[A-Z]:\\[^\s`"']+", "[ruta-local]"
     $protected = $protected -replace "(?i)/(var|home|srv|opt|tmp|usr|mnt)/[^\s`"']+", "[ruta-local]"
+    $protected = $protected -replace '(?is)<(Task|Actions|Principals|Triggers|Settings)\b[^>]*>', "[xml-protegido]"
 
     return $protected
 }
@@ -68,7 +69,8 @@ if ($failures.Count -eq 0) {
         @{ Pattern = '(?i)DB_PASSWORD\s*[:=]\s*[^\s`]+'; Message = 'El handoff parece contener DB_PASSWORD.' },
         @{ Pattern = '(?i)(TOKEN|SECRET|MAIL_PASSWORD)\s*[:=]\s*[^\s`]+'; Message = 'El handoff parece contener secretos.' },
         @{ Pattern = '(?i)[A-Z]:\\(?![\\])'; Message = 'El handoff contiene una ruta absoluta de Windows.' },
-        @{ Pattern = '(?i)/(var|home|srv|opt|tmp|usr|mnt)/'; Message = 'El handoff contiene una ruta absoluta local.' }
+        @{ Pattern = '(?i)/(var|home|srv|opt|tmp|usr|mnt)/'; Message = 'El handoff contiene una ruta absoluta local.' },
+        @{ Pattern = '(?is)<(Task|Actions|Principals|Triggers|Settings)\b'; Message = 'El handoff contiene XML crudo de tareas.' }
     )
 
     foreach ($item in $forbiddenPatterns) {

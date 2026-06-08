@@ -173,6 +173,18 @@ foreach ($sensitiveEvidenceGuard in @(
         $preflight $sensitiveEvidenceGuard
 }
 
+foreach ($handoffGuard in @(
+    'scripts\final_production_handoff.ps1',
+    'scripts\validate_ops_evidence_index.ps1',
+    'scripts\validate_final_handoff_completeness.ps1'
+)) {
+    $handoffGuardContent = Read-RequiredFile $handoffGuard
+    Assert-Literal "Handoff guard redacts or rejects Unix local paths: $handoffGuard" `
+        $handoffGuardContent '(?i)/(var|home|srv|opt|tmp|usr|mnt)/'
+    Assert-Literal "Handoff guard redacts or rejects raw task XML: $handoffGuard" `
+        $handoffGuardContent '(?is)<(Task|Actions|Principals|Triggers|Settings)\b'
+}
+
 foreach ($candidateProofValidator in $candidateProofValidators) {
     $candidateProofValidatorContent = Read-RequiredFile $candidateProofValidator
     Assert-Literal "Candidate proof validator rejects Unix local paths: $candidateProofValidator" `
