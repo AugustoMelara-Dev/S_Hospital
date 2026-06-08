@@ -4101,3 +4101,8 @@ Criterio de verificacion: assert_offline_release_clean.ps1 -SelfTest cubre nombr
 Contexto: el flujo de cobro de Nueva factura todavia podia reportar el resultado como vista previa lista, aunque para caja el resultado operativo debe ser que el recibo quedo listo para imprimir o fue enviado a impresion.
 Decision: usePaymentLifecycle usa las cadenas institucionales del diccionario para el estado de pago registrado, y el modal de recibo de Nueva factura se presenta como Recibo institucional.
 Criterio de verificacion: NewInvoiceView.test valida el estado visible de cobro y el titulo del modal, es-HN.workflow.test bloquea que paymentRegisteredPreview vuelva a usar vista previa como resultado operativo.
+
+## 2026-06-07 - historial de recibos usa lenguaje institucional
+Contexto: Historial todavia describia el recibo como vista previa y el selector como tamano de vista previa, aunque la operacion real es revisar o reimprimir un recibo institucional con auditoria al imprimir.
+Decision: el diccionario de Historial habla de recibo institucional listo para revisar, el selector accesible usa tamano del recibo institucional y ReceiptPreview expone un panel de recibo institucional a tecnologias asistivas.
+Criterio de verificacion: InvoiceHistoryView.test cubre el modal de recibo en Historial, ReceiptPreview.a11y.test valida el label accesible y es-HN.workflow.test bloquea que el copy de reimpresion vuelva a usar vista previa.

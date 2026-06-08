@@ -73,7 +73,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
   const taxLabel = `${receipt.invoice.tax_label ?? 'ISV'}${receipt.invoice.tax_rate ? ` ${receipt.invoice.tax_rate}%` : ''}`;
 
   return (
-    <div className="receipt-preview-panel" aria-label="Vista previa del recibo">
+    <div className="receipt-preview-panel" aria-label="Panel de recibo institucional">
       <div className="receipt-preview-controls no-print">
         <Select value={receiptWidth} onValueChange={(v) => onWidthChange(institutionalReceiptPaperSize(v))}>
           <SelectTrigger aria-label="Tamano del recibo" className="w-[170px]">

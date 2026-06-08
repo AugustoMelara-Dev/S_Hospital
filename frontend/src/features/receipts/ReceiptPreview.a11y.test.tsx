@@ -87,6 +87,6 @@ describe('ReceiptPreview accessibility', () => {
       <ReceiptPreview receipt={buildReceipt()} onWidthChange={() => undefined} />,
     );
 
-    expect(getByLabelText('Vista previa del recibo')).toBeInTheDocument();
+    expect(getByLabelText('Panel de recibo institucional')).toBeInTheDocument();
   });
 });

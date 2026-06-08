@@ -343,7 +343,7 @@ describe('NewInvoiceView', () => {
     expect((await screen.findAllByText(/pago registrado\. recibo 000-001-01-00000001 enviado a impresi[oó]n/i)).length).toBeGreaterThan(0);
     expect(screen.queryByText(/pago registrado\. vista previa/i)).not.toBeInTheDocument();
     expect(await screen.findByRole('dialog', { name: /recibo institucional/i })).toBeInTheDocument();
-    expect((await screen.findAllByLabelText(/vista previa del recibo/i)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByLabelText(/panel de recibo institucional/i)).length).toBeGreaterThan(0);
     expect(await screen.findByText(/hospital san isidro/i)).toBeInTheDocument();
     expect(screen.getByText('Media carta')).toBeInTheDocument();
   });
@@ -830,9 +830,9 @@ describe('NewInvoiceView', () => {
     expect(screen.queryByRole('button', { name: /anular factura/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /reimprimir/i }));
     fireEvent.click(await screen.findByRole('button', { name: /registrar reimpresi/i }));
-    expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/panel de recibo institucional/i)).toBeInTheDocument();
     await waitFor(() => {
-      const receiptEl = screen.getByLabelText(/recibo institucional/i);
+      const receiptEl = screen.getByLabelText('Recibo institucional');
       expect(receiptEl).toBeInTheDocument();
       expect(receiptEl).toHaveClass('receipt-half_letter');
     });
@@ -1169,7 +1169,7 @@ describe('NewInvoiceView', () => {
 
     render(<ReceiptPreview receipt={receipt} onWidthChange={vi.fn()} onPrint={printSpy} />);
 
-    expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-half_letter');
+    expect(screen.getByLabelText('Recibo institucional')).toHaveClass('receipt-half_letter');
     expect(screen.queryByText(/termico|80mm|58mm/i)).not.toBeInTheDocument();
     expect(screen.getByText(/vence/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /imprimir/i }));
