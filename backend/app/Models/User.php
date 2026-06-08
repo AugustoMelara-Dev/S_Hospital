@@ -7,6 +7,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -23,8 +24,10 @@ use Spatie\Permission\Traits\HasRoles;
  * @property bool $active
  * @property bool $must_change_password
  * @property string|null $remember_token
+ * @property int|null $area_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read Area|null $area
  */
 class User extends Authenticatable
 {
@@ -42,6 +45,7 @@ class User extends Authenticatable
         'username',
         'password',
         'active',
+        'area_id',
         'must_change_password',
     ];
 
@@ -68,5 +72,13 @@ class User extends Authenticatable
             'must_change_password' => 'boolean',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * @return BelongsTo<Area, $this>
+     */
+    public function area(): BelongsTo
+    {
+        return $this->belongsTo(Area::class);
     }
 }

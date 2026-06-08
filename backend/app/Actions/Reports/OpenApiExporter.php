@@ -178,6 +178,13 @@ class OpenApiExporter
             'tags' => ['reports'],
             'security' => true,
         ],
+        '/api/areas/{area}/paid-services' => [
+            'summary' => 'Paid services visible to an assigned hospital area using historical invoice snapshots',
+            'tags' => ['reports'],
+            'security' => true,
+            'parameters' => ['date_from', 'date_to', 'page', 'per_page'],
+            'required_parameters' => ['date_from', 'date_to'],
+        ],
         '/api/admin/users' => [
             'summary' => 'List, create and manage users with Spatie roles',
             'tags' => ['admin'],

@@ -35,6 +35,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'reports.managerial.view',
         'reports.cash_session.view',
         'reports.export',
+        'areas.paid_services.view',
         'users.view',
         'users.create',
         'users.update',
@@ -83,6 +84,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'reports.managerial.view',
             'reports.cash_session.view',
             'reports.export',
+            'areas.paid_services.view',
             'audit.view',
         ]));
 
@@ -97,6 +99,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'payments.view',
             'receipts.view',
             'receipts.reprint',
+        ]));
+
+        Role::findOrCreate('area', 'web')->syncPermissions($permissions->whereIn('name', [
+            'areas.paid_services.view',
         ]));
     }
 }

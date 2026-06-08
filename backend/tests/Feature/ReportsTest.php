@@ -475,6 +475,61 @@ class ReportsTest extends TestCase
         $this->assertNotSame($glucoseInvoice, $voidInvoice);
     }
 
+    public function test_area_user_can_consult_only_paid_services_for_own_area_from_snapshots(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $laboratoryArea = Area::query()->where('slug', 'laboratorio')->firstOrFail();
+        $radiologyArea = Area::query()->where('slug', 'radiologia')->firstOrFail();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $hemogram = Service::query()->where('name', 'Hemograma Completo')->firstOrFail();
+        $xray = Service::query()->where('area_id', $radiologyArea->id)->firstOrFail();
+
+        $paidLabInvoice = $this->createInvoice($cashier, $glucose->name);
+        $partialLabInvoice = $this->createInvoice($cashier, $hemogram->name);
+        $paidRadiologyInvoice = $this->createInvoice($cashier, $xray->name);
+
+        $this->payInvoice($cashier, $paidLabInvoice, $sessionId, Payment::METHOD_CASH, '17.25');
+        $this->payInvoice($cashier, $partialLabInvoice, $sessionId, Payment::METHOD_TRANSFER, '5.00');
+        $this->payInvoice($cashier, $paidRadiologyInvoice, $sessionId, Payment::METHOD_CARD, (string) Invoice::query()->findOrFail($paidRadiologyInvoice)->total);
+
+        $glucose->forceFill([
+            'name' => 'Glucosa renombrada despues del cobro',
+            'area_id' => $radiologyArea->id,
+        ])->save();
+
+        $areaUser = User::factory()->create(['area_id' => $laboratoryArea->id]);
+        $areaUser->assignRole('area');
+        $this->grantPermissions($areaUser, 'areas.paid_services.view');
+        $date = now()->toDateString();
+
+        $this->actingAs($areaUser)
+            ->getJson("/api/areas/{$laboratoryArea->id}/paid-services?date_from={$date}&date_to={$date}")
+            ->assertOk()
+            ->assertJsonPath('data.area', 'Laboratorio')
+            ->assertJsonCount(1, 'data.services')
+            ->assertJsonPath('data.services.0.invoice_number', '000-001-01-00000001')
+            ->assertJsonPath('data.services.0.patient_name', 'Maria Lopez')
+            ->assertJsonPath('data.services.0.service_name', 'Glucosa')
+            ->assertJsonPath('data.services.0.area_name', 'Laboratorio')
+            ->assertJsonPath('data.services.0.amount', '17.25')
+            ->assertJsonPath('data.services.0.payment_methods.0', Payment::METHOD_CASH)
+            ->assertJsonMissingPath('data.services.0.invoice_id')
+            ->assertJsonMissingPath('data.services.0.service_id');
+
+        $this->actingAs($areaUser)
+            ->getJson("/api/areas/{$radiologyArea->id}/paid-services?date_from={$date}&date_to={$date}")
+            ->assertForbidden();
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/areas/{$radiologyArea->id}/paid-services?date_from={$date}&date_to={$date}")
+            ->assertOk()
+            ->assertJsonPath('data.area', $radiologyArea->name)
+            ->assertJsonCount(1, 'data.services');
+    }
+
     public function test_income_report_area_filter_prorates_mixed_invoice_financial_facts(): void
     {
         $this->seedBillingBase();

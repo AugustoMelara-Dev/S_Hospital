@@ -18,7 +18,7 @@ class UserController extends Controller
     public function index(IndexUserRequest $request): JsonResponse
     {
         $users = User::query()
-            ->with('roles')
+            ->with(['area:id,name,slug,active', 'roles'])
             ->orderBy('name')
             ->get()
             ->map(fn (User $user) => $this->transformUser($user));
@@ -38,13 +38,14 @@ class UserController extends Controller
             'username' => $validated['username'],
             'password' => Hash::make($validated['password']),
             'active' => $validated['active'] ?? true,
+            'area_id' => $validated['area_id'] ?? null,
             'must_change_password' => true,
         ]);
 
         $user->assignRole($validated['role']);
 
         return response()->json([
-            'data' => $this->transformUser($user->load('roles')),
+            'data' => $this->transformUser($user->load(['area:id,name,slug,active', 'roles'])),
         ], 201);
     }
 
@@ -56,6 +57,7 @@ class UserController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'username' => $validated['username'],
+            'area_id' => $validated['area_id'] ?? null,
         ]);
 
         if (! $user->hasRole($validated['role'])) {
@@ -63,7 +65,7 @@ class UserController extends Controller
         }
 
         return response()->json([
-            'data' => $this->transformUser($user->load('roles')),
+            'data' => $this->transformUser($user->load(['area:id,name,slug,active', 'roles'])),
         ]);
     }
 
@@ -74,7 +76,7 @@ class UserController extends Controller
         ]);
 
         return response()->json([
-            'data' => $this->transformUser($user->load('roles')),
+            'data' => $this->transformUser($user->load(['area:id,name,slug,active', 'roles'])),
         ]);
     }
 
@@ -88,7 +90,7 @@ class UserController extends Controller
         ])->save();
 
         return response()->json([
-            'data' => $this->transformUser($user->load('roles')),
+            'data' => $this->transformUser($user->load(['area:id,name,slug,active', 'roles'])),
         ]);
     }
 
@@ -105,6 +107,13 @@ class UserController extends Controller
             'email' => $user->email,
             'username' => $user->username,
             'active' => $user->active,
+            'area_id' => $user->area_id,
+            'area' => $user->area ? [
+                'id' => $user->area->id,
+                'name' => $user->area->name,
+                'slug' => $user->area->slug,
+                'active' => $user->area->active,
+            ] : null,
             'roles' => $user->getRoleNames()->values(),
             'must_change_password' => $user->must_change_password,
         ];

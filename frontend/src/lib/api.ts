@@ -31,6 +31,7 @@ import type {
   IncomeReport,
   CategoryReport,
   AreaIncomeReport,
+  AreaPaidServicesReport,
   ServiceSalesReport,
   OperationsReport,
   CashSessionReport,
@@ -82,6 +83,7 @@ export type {
   IncomeReport,
   CategoryReport,
   AreaIncomeReport,
+  AreaPaidServicesReport,
   ServiceSalesReport,
   OperationsReport,
   CashSessionReport,
@@ -228,6 +230,13 @@ export const apiClient = {
 
   async getAreaIncomeReport(filters: ReportFilters): Promise<AreaIncomeReport> {
     return reports.getAreaIncomeReport(filters);
+  },
+
+  async getAreaPaidServicesReport(
+    areaId: number,
+    filters: Pick<ReportFilters, 'date_from' | 'date_to'> & { page?: number; per_page?: number },
+  ): Promise<AreaPaidServicesReport> {
+    return reports.getAreaPaidServicesReport(areaId, filters);
   },
 
   async getServiceSalesReport(filters: ReportFilters): Promise<ServiceSalesReport> {

@@ -80,6 +80,7 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
         Route::post('/categories', [CategoryController::class, 'store']);
         Route::patch('/categories/{category}', [CategoryController::class, 'update']);
         Route::get('/areas', [AreaController::class, 'index']);
+        Route::get('/areas/{area}/paid-services', [AreaController::class, 'paidServices']);
 
         Route::get('/services', [ServiceController::class, 'index']);
         Route::post('/services', [ServiceController::class, 'store']);

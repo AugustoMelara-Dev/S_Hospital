@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
+use App\Models\Area;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -54,6 +57,44 @@ class UserManagementTest extends TestCase
         $this->actingAs($cashier)
             ->getJson('/api/admin/users')
             ->assertForbidden();
+    }
+
+    public function test_admin_assigns_area_to_area_user_and_role_requires_area(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->userWithRole('admin');
+        $area = Area::query()->create([
+            'name' => 'Laboratorio',
+            'slug' => 'laboratorio',
+            'active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson('/api/admin/users', [
+                'name' => 'Usuario de Laboratorio',
+                'email' => 'laboratorio@example.test',
+                'username' => 'laboratorio_local',
+                'password' => 'Temporary123',
+                'role' => 'area',
+                'area_id' => $area->id,
+                'active' => true,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.roles.0', 'area')
+            ->assertJsonPath('data.area_id', $area->id)
+            ->assertJsonPath('data.area.name', 'Laboratorio');
+
+        $this->actingAs($admin)
+            ->postJson('/api/admin/users', [
+                'name' => 'Usuario sin area',
+                'email' => 'area-sin-asignar@example.test',
+                'username' => 'area.sin.asignar',
+                'password' => 'Temporary123',
+                'role' => 'area',
+                'active' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('area_id');
     }
 
     public function test_admin_can_toggle_user_active_state_but_cannot_disable_self(): void

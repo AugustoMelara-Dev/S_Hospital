@@ -96,6 +96,7 @@ class OpenApiExporterTest extends TestCase
             '/api/reports/operations',
             '/api/reports/export',
             '/api/reports/pdf',
+            '/api/areas/{area}/paid-services',
         ] as $path) {
             $this->assertArrayHasKey($path, $document['paths']);
         }

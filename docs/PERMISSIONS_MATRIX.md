@@ -5,6 +5,7 @@
 - `admin`: administra sistema, usuarios, configuracion, catalogo, reportes, backups y acciones criticas.
 - `supervisor`: supervisa operacion, reportes, caja, anulaciones y reimpresiones.
 - `cajero`: opera facturacion, caja propia, pagos y reimpresion limitada.
+- `area`: consulta servicios pagados de su area asignada; no opera caja, no crea facturas y no ve reportes gerenciales.
 
 El backend debe validar todos los permisos con Policies/Gates o middleware equivalente. Ocultar botones en el frontend no cuenta como seguridad.
 
@@ -43,6 +44,12 @@ El backend debe validar todos los permisos con Policies/Gates o middleware equiv
 | Crear backup manual | `backups.create` | Si | No | No |
 | Descargar backup | `backups.download` | Si | No | No |
 | Ver auditoria | `audit.view` | Si | Si | No |
+
+## Consulta por area
+
+| Accion | Permiso | admin | supervisor | cajero | area |
+|---|---|---:|---:|---:|---:|
+| Consultar servicios pagados de su area | `areas.paid_services.view` | Si | Si | No | Si, solo area asignada |
 
 ## Reglas de alcance por rol
 

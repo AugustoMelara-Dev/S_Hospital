@@ -4,6 +4,8 @@ export type AuthUser = {
   email: string;
   username: string;
   active: boolean;
+  area_id?: number | null;
+  area?: Area | null;
   roles: string[];
   permissions: string[];
   must_change_password: boolean;
@@ -362,6 +364,29 @@ export type AreaIncomeReport = {
     quantity: string;
     total: string;
   }>;
+};
+
+export type AreaPaidServicesReport = {
+  area: string;
+  date_from: string;
+  date_to: string;
+  services: Array<{
+    invoice_number: string;
+    patient_name: string;
+    issued_at: string;
+    paid_at: string;
+    service_name: string;
+    category_name: string;
+    area_name: string;
+    quantity: string;
+    amount: string;
+    payment_methods: Payment['method'][];
+  }>;
+  meta: {
+    page: number;
+    per_page: number;
+    total: number;
+  };
 };
 
 export type OperationsReport = {

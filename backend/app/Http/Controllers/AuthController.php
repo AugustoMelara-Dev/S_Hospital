@@ -120,12 +120,21 @@ class AuthController extends Controller
      */
     private function userPayload(User $user): array
     {
+        $user->loadMissing('area:id,name,slug,active');
+
         return [
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
             'username' => $user->username,
             'active' => $user->active,
+            'area_id' => $user->area_id,
+            'area' => $user->area ? [
+                'id' => $user->area->id,
+                'name' => $user->area->name,
+                'slug' => $user->area->slug,
+                'active' => $user->area->active,
+            ] : null,
             'roles' => $user->getRoleNames()->values(),
             'permissions' => $user->getAllPermissions()->pluck('name')->values(),
             'must_change_password' => $user->must_change_password,
