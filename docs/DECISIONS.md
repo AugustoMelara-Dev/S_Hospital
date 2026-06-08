@@ -4126,3 +4126,8 @@ Criterio de verificacion: check-branding.ps1, production-readiness.spec.ts, real
 Contexto: el smoke visual y el reporte RC todavia podian describir el flujo de busqueda como scanner, aunque caja y capacitacion ya usan identificador de servicio para no exponer detalles tecnicos.
 Decision: la evidencia activa usa identificador/busqueda o service identifier entry; check-branding bloquea frases heredadas como scanner support y scanner/busqueda en reportes/smoke activos.
 Criterio de verificacion: check-branding.ps1 pasa y la busqueda focalizada no encuentra lenguaje heredado de scanner en evidencia activa fuera de guardas tecnicas.
+
+## 2026-06-07 - release notes conservan estado candidato
+Contexto: las notas finales podian declarar PRODUCTION_READY aunque las evidencias fisicas de LAN, impresora, tareas y servidor final siguen pendientes.
+Decision: RELEASE_NOTES_v1.0.0_FINAL.md declara PRODUCTION_CANDIDATE, exige que el paquete offline apunte al commit entregado y bloquea crear el tag v1.0.0 hasta que el handoff final declare PRODUCTION_READY con evidencia fisica completa.
+Criterio de verificacion: validate_production_ready_gate_safety.ps1 protege el encabezado de estado, la condicion previa al tag y evita mensajes de tag que anuncien PRODUCTION_READY sin evidencia de campo.

@@ -1,6 +1,6 @@
 # Resultado de handoff final de produccion
 
-- Generado: 2026-06-07 21:06:05
+- Generado: 2026-06-07 23:48:19
 - URL base: http://192.168.1.10:8000
 - Carpeta del sistema: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -19,7 +19,7 @@
 - Archivo de evidencia final de respaldos: `qa/FINAL_BACKUP_TASK_PROOF.md`
 - Archivo de evidencia final de concurrencia: `qa/FINAL_CONCURRENCY_PROOF.md`
 - Archivo de evidencia de capacitacion supervisada: `qa/TRAINING_ACCEPTANCE_PROOF.md`
-- Offline release artifact guard exit code: 0
+- Offline release artifact guard exit code: 1
 - Support packet safety guard exit code: 0
 - First-level support safety guard exit code: 0
 - Production ready gate safety guard exit code: 0
@@ -46,7 +46,7 @@
 - Shift incident recovery safety guard exit code: 0
 - New invoice maintainability guard exit code: 0
 - Training safety guard exit code: 0
-- Field proof templates safety guard exit code: 0
+- Field proof templates safety guard exit code: 1
 - Proof initialization safety guard exit code: 0
 - Operations objective audit guard exit code: 0
 - Handoff guard coverage guard exit code: 0
@@ -73,6 +73,8 @@ No declare PRODUCTION_READY. Mantenga el sistema como PRODUCTION_CANDIDATE hasta
 - Falta o esta incompleto `qa/TRAINING_ACCEPTANCE_PROOF.md` desde capacitacion supervisada por rol en un ambiente seguro de practica.
 - Instalar o actualizar las tareas Windows `SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup`, luego confirmar que un respaldo manual de la UI cambia de Pendiente a Protegido.
 - El preflight fue omitido en esta ejecucion de handoff.
+- El artefacto de release offline falta, esta desactualizado o contiene archivos no permitidos.
+- La validacion de plantillas de evidencia de campo devolvio codigo de salida 1.
 
 ## Evidencia completada en este frente de endurecimiento
 
@@ -322,7 +324,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] scripts\validate_rate_limit_safety.ps1 matches versioned source
 [ OK ] scripts\validate_realtime_own_event_safety.ps1 matches versioned source
 [ OK ] scripts\validate_restore_windows_safety.ps1 matches versioned source
-[ OK ] scripts\validate_production_ready_gate_safety.ps1 matches versioned source
+[FAIL] scripts\validate_production_ready_gate_safety.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
 [ OK ] scripts\validate_production_license_salt_guard.ps1 matches versioned source
 [ OK ] scripts\validate_field_proof_templates.ps1 matches versioned source
 [ OK ] scripts\validate_final_field_blockers_safety.ps1 matches versioned source
@@ -345,10 +347,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[ OK ] MANIFEST.txt references current commit 36cbec28
+[FAIL] MANIFEST.txt must reference current commit 9590f557 before release handoff.
 [ OK ] offline-images contains 4 Docker image tar file(s)
 
-OFFLINE_RELEASE_CLEAN: YES
+OFFLINE_RELEASE_CLEAN: NO (2 blocking issue(s))
 ```
 
 ## Salida de validacion del paquete seguro de soporte
@@ -528,6 +530,8 @@ SHIFT_INCIDENT_RECOVERY_SAFETY: YES
 [ OK ] Training docs require administrator role practice
 [ OK ] Training docs require support summary practice
 [ OK ] Training checklist avoids technical incident wording for staff
+[ OK ] Training and validation docs avoid receipt preview wording
+[ OK ] Training and validation docs use institutional receipt wording
 [ OK ] Quick administrator training uses protected backup status
 [ OK ] Quick administrator training uses pending backup status
 [ OK ] Quick administrator training uses error backup status
@@ -600,6 +604,7 @@ FIRST_LEVEL_SUPPORT_SAFETY: YES
 [ OK ] Found scripts\final_production_handoff.ps1
 [ OK ] Found scripts\validate_ops_evidence_index.ps1
 [ OK ] Found scripts\validate_final_handoff_completeness.ps1
+[ OK ] Found RELEASE_NOTES_v1.0.0_FINAL.md
 [ OK ] Preflight exposes AllowMissingPhysicalProof as an explicit switch
 [ OK ] Preflight fails when physical proof is bypassed
 [ OK ] Preflight warns that bypass cannot be PRODUCTION_READY
@@ -650,6 +655,10 @@ FIRST_LEVEL_SUPPORT_SAFETY: YES
 [ OK ] Ops evidence index blocks PRODUCTION_READY with incomplete proof markers
 [ OK ] Ops evidence index requires the preflight in the handoff
 [ OK ] Handoff completeness requires PRODUCTION_CANDIDATE until field proof is complete
+[ OK ] Release notes keep candidate status before field evidence
+[ OK ] Release notes must not declare PRODUCTION_READY in the status header
+[ OK ] Release notes require final handoff before tagging v1.0.0
+[ OK ] Release notes tag command must not claim PRODUCTION_READY without field evidence
 
 PRODUCTION_READY_GATE_SAFETY: YES
 ```
@@ -674,7 +683,7 @@ FINAL_FIELD_BLOCKERS_SAFETY_SELFTEST: YES
 [ OK ] Pending LAN client proof keeps blocker: final LAN IP/name
 [ OK ] Pending LAN client proof keeps blocker: login without 419/session expiry
 [ OK ] Pending LAN client proof keeps blocker: cashbox/invoice/payment workflow
-[ OK ] Pending LAN client proof keeps blocker: receipt preview
+[ OK ] Pending LAN client proof keeps blocker: institutional receipt
 [ OK ] Pending LAN client proof keeps blocker: history/reprint
 [ OK ] Pending LAN client proof keeps blocker: reports
 [ OK ] Pending LAN client proof keeps blocker: backup from UI
@@ -743,13 +752,14 @@ Exit code: 0
 [ OK ] Found qa\browser-smoke-2026-06-07\rc-e2e-mocked-report.json
 [ OK ] Found qa\screenshots\rc-help-support-2026-05-31\help-support-report.json
 [ OK ] Found qa\visual-smoke\field-qa-current-screenshots.mjs
+[ OK ] Browser smoke evidence uses institutional receipt filenames
 [ OK ] Field QA smoke declares light and dark themes
 [ OK ] Field QA smoke uses portable evidence paths
 [ OK ] Field QA smoke stores relative screenshot paths in JSON
 [ OK ] Field QA smoke records theme metadata per capture
 [ OK ] Field QA smoke captures login per theme
 [ OK ] Field QA smoke captures authenticated screens per theme
-[ OK ] Field QA smoke captures receipt preview per theme when available
+[ OK ] Field QA smoke captures institutional receipt per theme when available
 [ OK ] Field QA smoke reports blockers with theme context
 [ OK ] RC browser smoke declares mocked-e2e mode
 [ OK ] RC browser smoke states it does not replace LAN/printer proof
@@ -764,14 +774,14 @@ Exit code: 0
 [ OK ] RC browser smoke billing-new-empty-light screenshot exists and is non-empty
 [ OK ] RC browser smoke metadata matches billing-new-cart-light
 [ OK ] RC browser smoke billing-new-cart-light screenshot exists and is non-empty
-[ OK ] RC browser smoke metadata matches receipt-preview-letter-light
-[ OK ] RC browser smoke receipt-preview-letter-light screenshot exists and is non-empty
-[ OK ] RC browser smoke metadata matches receipt-preview-a5-light
-[ OK ] RC browser smoke receipt-preview-a5-light screenshot exists and is non-empty
-[ OK ] RC browser smoke metadata matches receipt-preview-light
-[ OK ] RC browser smoke receipt-preview-light screenshot exists and is non-empty
-[ OK ] RC browser smoke metadata matches receipt-preview-dark
-[ OK ] RC browser smoke receipt-preview-dark screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches institutional-receipt-letter-light
+[ OK ] RC browser smoke institutional-receipt-letter-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches institutional-receipt-a5-light
+[ OK ] RC browser smoke institutional-receipt-a5-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches institutional-receipt-light
+[ OK ] RC browser smoke institutional-receipt-light screenshot exists and is non-empty
+[ OK ] RC browser smoke metadata matches institutional-receipt-dark
+[ OK ] RC browser smoke institutional-receipt-dark screenshot exists and is non-empty
 [ OK ] RC browser smoke metadata matches reports-admin-light
 [ OK ] RC browser smoke reports-admin-light screenshot exists and is non-empty
 [ OK ] RC browser smoke metadata matches reports-admin-dark
@@ -863,6 +873,8 @@ STARTUP_REPAIR_SAFETY: YES
 [ OK ] Training docs require administrator role practice
 [ OK ] Training docs require support summary practice
 [ OK ] Training checklist avoids technical incident wording for staff
+[ OK ] Training and validation docs avoid receipt preview wording
+[ OK ] Training and validation docs use institutional receipt wording
 [ OK ] Quick administrator training uses protected backup status
 [ OK ] Quick administrator training uses pending backup status
 [ OK ] Quick administrator training uses error backup status
@@ -913,16 +925,15 @@ TRAINING_SAFETY: YES
 ## Salida de validacion de plantillas de evidencia de campo
 
 ```text
-[ OK ] qa\LAN_CLIENT_VALIDATION_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\FINAL_RESTORE_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\FINAL_STARTUP_TASK_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\FINAL_BACKUP_TASK_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md keeps required fields, checks and safety instructions.
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md keeps required fields, checks and safety instructions.
+[FAIL] Missing required unchecked check 'Receipt' with Result/evidence in qa\LAN_CLIENT_VALIDATION_PROOF.example.md.
 
-FIELD_PROOF_TEMPLATES: YES
-Final-field proof templates match preflight-required labels, checks and safety instructions.
+FIELD_PROOF_TEMPLATES: NO (1 blocking issue(s))
 ```
 
 ## Salida de validacion de inicializacion de evidencias
@@ -1264,7 +1275,7 @@ Manifest matches composer.json and package.json.
 [ OK ] Docs/evidence require 32+ character salt
 [ OK ] Docs/evidence warn not to commit or print real salt
 [ OK ] Production compose with placeholder salt completed with expected compose behavior
-error while interpolating services.backend.environment.HOSPITAL_LICENSE_SALT=[redacted] variable HOSPITAL_LICENSE_SALT is missing a value: HOSPITAL_LICENSE_SALT must be set to a 32+ char random string
+error while interpolating services.scheduler.environment.HOSPITAL_LICENSE_SALT=[redacted] variable HOSPITAL_LICENSE_SALT is missing a value: HOSPITAL_LICENSE_SALT must be set to a 32+ char random string
 [ OK ] Production compose without license salt completed with expected compose behavior
 
 PRODUCTION_LICENSE_SALT_GUARD: YES
