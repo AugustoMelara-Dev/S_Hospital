@@ -130,17 +130,22 @@ Under `qa/`:
   the final handoff doc. It remains `PRODUCTION_CANDIDATE` until LAN,
   printer, startup, backup and training evidence are complete.
 - **[qa/FINAL_RESTORE_PROOF.md](../qa/FINAL_RESTORE_PROOF.md)** -
-  restore evidence (PENDING until physical hardware).
+  final-server restore evidence.
 - **[qa/FINAL_CONCURRENCY_PROOF.md](../qa/FINAL_CONCURRENCY_PROOF.md)** -
-  concurrency evidence (PENDING).
+  final-server concurrency evidence.
 - **[qa/LAN_CLIENT_VALIDATION_PROOF.md](../qa/LAN_CLIENT_VALIDATION_PROOF.md)** -
   LAN validation evidence (PENDING).
 - **[qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md](../qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md)** -
   printer evidence (PENDING).
+- **[qa/FINAL_STARTUP_TASK_PROOF.md](../qa/FINAL_STARTUP_TASK_PROOF.md)** -
+  final-server startup/autostart evidence (PENDING).
+- **[qa/FINAL_BACKUP_TASK_PROOF.md](../qa/FINAL_BACKUP_TASK_PROOF.md)** -
+  final-server backup automation evidence (PENDING).
+- **[qa/TRAINING_ACCEPTANCE_PROOF.md](../qa/TRAINING_ACCEPTANCE_PROOF.md)** -
+  supervised role-training evidence (PENDING).
 
 The preflight script in `scripts/production_readiness_preflight.ps1`
-fails the release if any of the four PROOF files is still
-PENDING.
+fails the release if any required final proof file is still PENDING.
 
 ## Script inventory
 

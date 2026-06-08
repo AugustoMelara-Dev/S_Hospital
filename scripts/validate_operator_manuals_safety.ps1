@@ -120,6 +120,19 @@ if ($docsIndex -ne "") {
     Test-Contains $docsIndex "manuales/MANUAL_USUARIO_AREA\.md" "Docs index links area-user manual"
     Test-Contains $docsIndex "(?i)Area-user manual|usuario de area|paid-service consultation" "Docs index explains area-user manual purpose"
     Test-Contains $docsIndex "PRODUCTION_CANDIDATE" "Docs index preserves candidate handoff status"
+    foreach ($proofName in @(
+        "LAN_CLIENT_VALIDATION_PROOF.md",
+        "INSTITUTIONAL_RECEIPT_PRINT_PROOF.md",
+        "FINAL_STARTUP_TASK_PROOF.md",
+        "FINAL_BACKUP_TASK_PROOF.md",
+        "FINAL_RESTORE_PROOF.md",
+        "FINAL_CONCURRENCY_PROOF.md",
+        "TRAINING_ACCEPTANCE_PROOF.md"
+    )) {
+        Test-Contains $docsIndex ([regex]::Escape($proofName)) "Docs index lists final proof: $proofName"
+    }
+    Test-Contains $docsIndex "(?i)required final proof file" "Docs index describes all final proof files generically"
+    Test-NotContains $docsIndex "(?i)four PROOF files|four proof files|cuatro PROOF" "Docs index does not undercount final proof blockers"
     Test-NotContains $docsIndex "PRODUCTION_READY=YES" "Docs index does not claim production ready before field evidence"
 }
 
