@@ -56,7 +56,7 @@ class MaintenanceModeTest extends TestCase
             ->assertSee('Sistema en mantenimiento')
             ->assertSee('Revisión segura de red local')
             ->assertSee('atención inmediata')
-            ->assertDontSee('Ã', false);
+            ->assertDontSee("\u{00C3}", false);
     }
 
     public function test_api_maintenance_response_uses_human_json_without_details(): void
@@ -68,7 +68,7 @@ class MaintenanceModeTest extends TestCase
             ->assertJsonPath('message', 'Sistema en mantenimiento. Vuelva a intentar en unos minutos.')
             ->assertDontSee('framework/down')
             ->assertDontSee('APP_KEY')
-            ->assertDontSee('Ã', false);
+            ->assertDontSee("\u{00C3}", false);
     }
 
     private function writeMaintenancePayload(string $message): void

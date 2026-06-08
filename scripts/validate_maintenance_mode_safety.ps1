@@ -77,7 +77,7 @@ if ($test -ne "") {
     Test-Contains $test 'test_api_maintenance_response_uses_human_json_without_details' "API maintenance JSON has feature test"
     Test-Contains $test 'assertArrayNotHasKey\(' "Maintenance test checks payload omits secrets"
     Test-Contains $test 'assertDontSee\(.*framework/down' "Maintenance test hides internal down-file path"
-    Test-Contains $test ([regex]::Escape("assertDontSee('Ã'")) "Maintenance test rejects mojibake"
+    Test-Contains $test ([regex]::Escape('assertDontSee("\u{00C3}"')) "Maintenance test rejects mojibake"
 }
 
 if ($bootstrap -ne "") {

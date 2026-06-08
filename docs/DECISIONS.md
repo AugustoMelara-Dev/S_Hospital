@@ -4161,3 +4161,8 @@ Criterio de verificacion: check-branding.ps1 pasa y una busqueda focalizada en `
 Contexto: la evidencia activa de navegador seguia nombrando el reporte como `rc-e2e-mocked-report.json` y `mode: mocked-e2e`, aunque los documentos de entrega ya usan "E2E en ambiente controlado" para no sonar a demo tecnica.
 Decision: production-readiness.spec.ts emite `controlled-e2e-report.json` con `mode: controlled-e2e`; la evidencia 2026-06-08, la auditoria del objetivo y el handoff apuntan al nuevo nombre. El reporte sigue avisando que estas capturas no sustituyen LAN, MariaDB ni impresora fisica.
 Criterio de verificacion: validate_browser_smoke_evidence.ps1 prefiere el reporte controlled, check-branding.ps1 bloquea el nombre/mode viejo en evidencia activa, y FINAL_PRODUCTION_HANDOFF_RESULT no debe mostrar `rc-e2e-mocked-report.json`.
+
+## 2026-06-08 - superficies activas bloquean mojibake
+Contexto: algunos guards tenian literales corruptos para detectar texto mal codificado, lo que impedia agregar una barrera general sin que el repositorio fallara contra sus propias pruebas.
+Decision: los patrones intencionales de mojibake se construyen por codigo de caracter y `check-branding.ps1` bloquea marcadores de codificacion corrupta en app, pruebas activas, manuales, evidencia vigente y scripts.
+Criterio de verificacion: check-branding.ps1 debe pasar sin literales mojibake en esas superficies, y validate_maintenance_mode_safety.ps1 debe seguir exigiendo que mantenimiento rechace texto corrupto mediante `"\u{00C3}"`.

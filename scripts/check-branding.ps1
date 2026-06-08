@@ -6,6 +6,15 @@ $ErrorActionPreference = 'Stop'
 
 $billingWord = 'bill' + 'ing'
 $demoWord = 'de' + 'mo'
+$mojibakeLead = [string][char]0x00C3
+$mojibakeMarker = @(
+    $mojibakeLead,
+    [string][char]0x00C2,
+    [string][char]0x00E2,
+    [string][char]0xFFFD
+)
+$mojibakeAcuteE = $mojibakeLead + [string][char]0x00A9
+$mojibakeAcuteO = $mojibakeLead + [string][char]0x00B3
 $forbidden = @(
     ('Hospital ' + $billingWord + ' OS'),
     ($billingWord + ' OS'),
@@ -59,7 +68,7 @@ $deliveryReleaseForbidden = @(
     ($demoWord + ' vendible'),
     ($demoWord + ' premium'),
     ($demoWord + ' tecnica'),
-    ($demoWord + ' tÃ©cnica'),
+    ($demoWord + ' t' + $mojibakeAcuteE + 'cnica'),
     ($demoWord + ' credentials'),
     ($demoWord + ' users'),
     ('credenciales ' + $demoWord),
@@ -69,7 +78,7 @@ $deliveryReleaseForbidden = @(
     ('parece ' + $demoWord),
     ('para ' + $demoWord),
     ('guion de ' + $demoWord),
-    ('guiÃ³n de ' + $demoWord),
+    ('gui' + $mojibakeAcuteO + 'n de ' + $demoWord),
     'producto vendible',
     'producto demostrable',
     'vendible',
@@ -408,6 +417,27 @@ try {
             'qa/BROWSER_SMOKE_EVIDENCE_2026_06_08.md',
             'qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md',
             'qa/FINAL_PRODUCTION_HANDOFF_RESULT.md'
+        )
+
+    Invoke-ForbiddenSearch `
+        -Label 'Texto corrupto por codificacion encontrado en superficies activas:' `
+        -Patterns $mojibakeMarker `
+        -Paths @(
+            'backend/app',
+            'backend/routes',
+            'backend/tests',
+            'frontend/src',
+            'frontend/e2e',
+            'docs/KNOWN_LIMITATIONS.md',
+            'docs/RELEASE_CHECKLIST.md',
+            'docs/TRAINING_ADMIN.md',
+            'docs/TRAINING_CAJERO.md',
+            'docs/manuales',
+            'qa/browser-smoke-2026-06-08',
+            'qa/BROWSER_SMOKE_EVIDENCE_2026_06_08.md',
+            'qa/OPERATIONS_OBJECTIVE_AUDIT_2026_06_03.md',
+            'qa/FINAL_PRODUCTION_HANDOFF_RESULT.md',
+            'scripts'
         )
 
     Write-Host 'Revision de branding completada sin hallazgos.'
