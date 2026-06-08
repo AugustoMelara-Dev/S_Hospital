@@ -81,7 +81,8 @@ $script:OfflineReleaseCriticalDocs = @(
     "manuales\GUIA_SOPORTE_PRIMER_NIVEL.md",
     "manuales\MANUAL_ADMINISTRADOR.md",
     "manuales\MANUAL_CAJERO.md",
-    "manuales\MANUAL_SUPERVISOR.md"
+    "manuales\MANUAL_SUPERVISOR.md",
+    "manuales\MANUAL_USUARIO_AREA.md"
 )
 $script:OfflineReleaseProofTemplates = @(
     "LAN_CLIENT_VALIDATION_PROOF.example.md",

@@ -7,6 +7,17 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$script:OfflineReleaseCriticalDocs = @(
+    "docs\RELEASE_CHECKLIST.md",
+    "docs\manuales\GUIA_INSTALACION_OPERATIVA.md",
+    "docs\manuales\GUIA_RESPALDOS_Y_RESTAURACION.md",
+    "docs\manuales\GUIA_SOPORTE_PRIMER_NIVEL.md",
+    "docs\manuales\MANUAL_ADMINISTRADOR.md",
+    "docs\manuales\MANUAL_CAJERO.md",
+    "docs\manuales\MANUAL_SUPERVISOR.md",
+    "docs\manuales\MANUAL_USUARIO_AREA.md"
+)
+
 if ($ProjectRoot -eq "") {
     $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
     $ProjectRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
@@ -366,6 +377,9 @@ Test-RequiredPath "qa\FINAL_RESTORE_PROOF.example.md" "file"
 Test-RequiredPath "qa\FINAL_BACKUP_TASK_PROOF.example.md" "file"
 Test-RequiredPath "qa\FINAL_CONCURRENCY_PROOF.example.md" "file"
 Test-RequiredPath "qa\TRAINING_ACCEPTANCE_PROOF.example.md" "file"
+foreach ($criticalDoc in $script:OfflineReleaseCriticalDocs) {
+    Test-RequiredPath $criticalDoc "file"
+}
 
 Test-ReleaseFileMatchesSource "docker-compose.prod.yml"
 Test-ReleaseFileMatchesSource "backend\Dockerfile.prod"
@@ -439,6 +453,9 @@ Test-ReleaseFileMatchesSource "qa\FINAL_RESTORE_PROOF.example.md"
 Test-ReleaseFileMatchesSource "qa\FINAL_BACKUP_TASK_PROOF.example.md"
 Test-ReleaseFileMatchesSource "qa\FINAL_CONCURRENCY_PROOF.example.md"
 Test-ReleaseFileMatchesSource "qa\TRAINING_ACCEPTANCE_PROOF.example.md"
+foreach ($criticalDoc in $script:OfflineReleaseCriticalDocs) {
+    Test-ReleaseFileMatchesSource $criticalDoc
+}
 
 $forbiddenItems = Get-ChildItem -LiteralPath $ReleaseRoot -Recurse -Force | Where-Object {
     $relative = Get-RelativeReleasePath $_
