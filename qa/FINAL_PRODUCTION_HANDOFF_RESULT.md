@@ -1,6 +1,6 @@
 # Resultado de handoff final de produccion
 
-- Generado: 2026-06-08 01:03:56
+- Generado: 2026-06-08 01:15:51
 - URL base: http://192.168.1.10:8000
 - Carpeta del sistema: %PROJECT_ROOT%
 - Decision: PRODUCTION_CANDIDATE
@@ -19,7 +19,7 @@
 - Archivo de evidencia final de respaldos: `qa/FINAL_BACKUP_TASK_PROOF.md`
 - Archivo de evidencia final de concurrencia: `qa/FINAL_CONCURRENCY_PROOF.md`
 - Archivo de evidencia de capacitacion supervisada: `qa/TRAINING_ACCEPTANCE_PROOF.md`
-- Offline release artifact guard exit code: 1
+- Offline release artifact guard exit code: 0
 - Support packet safety guard exit code: 0
 - First-level support safety guard exit code: 0
 - Production ready gate safety guard exit code: 0
@@ -73,7 +73,6 @@ No declare PRODUCTION_READY. Mantenga el sistema como PRODUCTION_CANDIDATE hasta
 - Falta o esta incompleto `qa/TRAINING_ACCEPTANCE_PROOF.md` desde capacitacion supervisada por rol en un ambiente seguro de practica.
 - Instalar o actualizar las tareas Windows `SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup`, luego confirmar que un respaldo manual de la UI cambia de Pendiente a Protegido.
 - El preflight fue omitido en esta ejecucion de handoff.
-- El artefacto de release offline falta, esta desactualizado o contiene archivos no permitidos.
 
 ## Evidencia completada en este frente de endurecimiento
 
@@ -278,7 +277,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] scripts\init_production_proofs.ps1 matches versioned source
 [ OK ] scripts\make_offline_release.ps1 matches versioned source
 [ OK ] scripts\production_readiness_preflight.ps1 matches versioned source
-[FAIL] scripts\final_production_handoff.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\final_production_handoff.ps1 matches versioned source
 [ OK ] scripts\install_hospital_startup_shortcut.ps1 matches versioned source
 [ OK ] scripts\install_stack_autostart_windows.ps1 matches versioned source
 [ OK ] scripts\install_backup_startup_current_user.ps1 matches versioned source
@@ -291,7 +290,7 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] scripts\start_hospital_services.ps1 matches versioned source
 [ OK ] scripts\start_backup_automation.cmd matches versioned source
 [ OK ] scripts\validate_support_packet_safety.ps1 matches versioned source
-[FAIL] scripts\validate_browser_smoke_evidence.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_browser_smoke_evidence.ps1 matches versioned source
 [ OK ] scripts\validate_dependency_manifest.ps1 matches versioned source
 [ OK ] scripts\validate_startup_repair_safety.ps1 matches versioned source
 [ OK ] scripts\validate_operator_manuals_safety.ps1 matches versioned source
@@ -315,10 +314,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] scripts\validate_new_invoice_maintainability.ps1 matches versioned source
 [ OK ] scripts\validate_known_limitations_safety.ps1 matches versioned source
 [ OK ] scripts\validate_shift_incident_recovery_safety.ps1 matches versioned source
-[FAIL] scripts\validate_final_handoff_completeness.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_final_handoff_completeness.ps1 matches versioned source
 [ OK ] scripts\validate_handoff_guard_coverage.ps1 matches versioned source
 [ OK ] scripts\validate_offline_release_staging_safety.ps1 matches versioned source
-[FAIL] scripts\validate_operations_objective_audit.ps1 in offline release differs from versioned source. Regenerate offline-release before handoff.
+[ OK ] scripts\validate_operations_objective_audit.ps1 matches versioned source
 [ OK ] scripts\validate_permission_audit_safety.ps1 matches versioned source
 [ OK ] scripts\validate_rate_limit_safety.ps1 matches versioned source
 [ OK ] scripts\validate_realtime_own_event_safety.ps1 matches versioned source
@@ -346,10 +345,10 @@ Checking offline release: %PROJECT_ROOT%\offline-release
 [ OK ] qa\FINAL_CONCURRENCY_PROOF.example.md matches versioned source
 [ OK ] qa\TRAINING_ACCEPTANCE_PROOF.example.md matches versioned source
 [ OK ] MANIFEST.txt has no stale release wording
-[FAIL] MANIFEST.txt must reference current commit 2044d1db before release handoff.
+[ OK ] MANIFEST.txt references current commit 7feba89b
 [ OK ] offline-images contains 4 Docker image tar file(s)
 
-OFFLINE_RELEASE_CLEAN: NO (5 blocking issue(s))
+OFFLINE_RELEASE_CLEAN: YES
 ```
 
 ## Salida de validacion del paquete seguro de soporte
@@ -1276,7 +1275,7 @@ Manifest matches composer.json and package.json.
 [ OK ] Docs/evidence require 32+ character salt
 [ OK ] Docs/evidence warn not to commit or print real salt
 [ OK ] Production compose with placeholder salt completed with expected compose behavior
-error while interpolating services.backend.environment.HOSPITAL_LICENSE_SALT=[redacted] variable HOSPITAL_LICENSE_SALT is missing a value: HOSPITAL_LICENSE_SALT must be set to a 32+ char random string
+error while interpolating services.scheduler.environment.HOSPITAL_LICENSE_SALT=[redacted] variable HOSPITAL_LICENSE_SALT is missing a value: HOSPITAL_LICENSE_SALT must be set to a 32+ char random string
 [ OK ] Production compose without license salt completed with expected compose behavior
 
 PRODUCTION_LICENSE_SALT_GUARD: YES
