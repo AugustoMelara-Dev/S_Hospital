@@ -373,7 +373,9 @@ try {
             'frontend/e2e',
             'qa/visual-smoke',
             'qa/browser-smoke-2026-06-07',
-            'qa/BROWSER_SMOKE_EVIDENCE_2026_06_07.md'
+            'qa/browser-smoke-2026-06-08',
+            'qa/BROWSER_SMOKE_EVIDENCE_2026_06_07.md',
+            'qa/BROWSER_SMOKE_EVIDENCE_2026_06_08.md'
         )
 
     Invoke-ForbiddenSearch `
@@ -381,7 +383,8 @@ try {
         -Patterns $serviceIdentifierAutomationForbidden `
         -Paths @(
             'qa/visual-smoke',
-            'qa/BROWSER_SMOKE_EVIDENCE_2026_06_07.md'
+            'qa/BROWSER_SMOKE_EVIDENCE_2026_06_07.md',
+            'qa/BROWSER_SMOKE_EVIDENCE_2026_06_08.md'
         )
 
     Write-Host 'Revision de branding completada sin hallazgos.'

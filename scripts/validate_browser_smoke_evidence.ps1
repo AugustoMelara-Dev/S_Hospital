@@ -49,6 +49,55 @@ function Read-RequiredTextFile([string] $relativePath) {
     return Get-Content -LiteralPath $path -Raw
 }
 
+function Convert-ToEvidenceRelativePath([string] $fullPath) {
+    $rootPath = (Get-Item -LiteralPath $ProjectRoot).FullName.TrimEnd('\', '/')
+    $resolvedPath = (Get-Item -LiteralPath $fullPath).FullName
+
+    if (-not $resolvedPath.StartsWith($rootPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+        Add-Failure "Browser evidence path is outside repository: $fullPath"
+        return ""
+    }
+
+    return $resolvedPath.Substring($rootPath.Length).TrimStart('\', '/')
+}
+
+function Select-LatestRcReportPath {
+    $qaRoot = Join-Path $ProjectRoot "qa"
+    if (-not (Test-Path -LiteralPath $qaRoot -PathType Container)) {
+        Add-Failure "Missing qa evidence directory."
+        return ""
+    }
+
+    $candidates = @(
+        Get-ChildItem -LiteralPath $qaRoot -Directory -Filter "browser-smoke-*" -ErrorAction SilentlyContinue |
+            ForEach-Object {
+                Join-Path $_.FullName "rc-e2e-mocked-report.json"
+            } |
+            Where-Object {
+                Test-Path -LiteralPath $_ -PathType Leaf
+            } |
+            ForEach-Object {
+                Get-Item -LiteralPath $_
+            }
+    )
+
+    if ($candidates.Count -eq 0) {
+        Add-Failure "Missing RC browser smoke report under qa\browser-smoke-*."
+        return ""
+    }
+
+    $latest = $candidates |
+        Sort-Object -Property LastWriteTimeUtc, FullName -Descending |
+        Select-Object -First 1
+
+    $relativePath = Convert-ToEvidenceRelativePath $latest.FullName
+    if (-not [string]::IsNullOrWhiteSpace($relativePath)) {
+        Add-Pass "Latest RC browser smoke report: $relativePath"
+    }
+
+    return $relativePath
+}
+
 function Assert-SourceContains([string] $content, [string] $needle, [string] $label) {
     if ($content.Contains($needle)) {
         Add-Pass $label
@@ -104,13 +153,15 @@ function Assert-NoObsoleteReceiptPreviewEvidence([string] $relativeDirectory) {
     Add-Pass "Browser smoke evidence uses institutional receipt filenames"
 }
 
-$rcReportPath = "qa\browser-smoke-2026-06-07\rc-e2e-mocked-report.json"
+$rcReportPath = Select-LatestRcReportPath
 $helpReportPath = "qa\screenshots\rc-help-support-2026-05-31\help-support-report.json"
 $fieldQaScriptPath = "qa\visual-smoke\field-qa-current-screenshots.mjs"
-$rcReport = Read-JsonFile $rcReportPath
+$rcReport = if ([string]::IsNullOrWhiteSpace($rcReportPath)) { $null } else { Read-JsonFile $rcReportPath }
 $helpReport = Read-JsonFile $helpReportPath
 $fieldQaScript = Read-RequiredTextFile $fieldQaScriptPath
-Assert-NoObsoleteReceiptPreviewEvidence "qa\browser-smoke-2026-06-07"
+if (-not [string]::IsNullOrWhiteSpace($rcReportPath)) {
+    Assert-NoObsoleteReceiptPreviewEvidence (Split-Path -Parent $rcReportPath)
+}
 
 if (-not [string]::IsNullOrWhiteSpace($fieldQaScript)) {
     Assert-SourceContains $fieldQaScript "const themes = ['light', 'dark'];" "Field QA smoke declares light and dark themes"

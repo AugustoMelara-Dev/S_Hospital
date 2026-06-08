@@ -124,7 +124,7 @@ if ($failures.Count -eq 0) {
     }
 
     $requiredEvidence = @(
-        'qa/BROWSER_SMOKE_EVIDENCE_2026_06_05.md',
+        'qa/BROWSER_SMOKE_EVIDENCE_2026_06_08.md',
         'qa/HELP_SCREEN_SAFETY_2026_06_03.md',
         'qa/SUPPORT_PACKET_SAFETY_2026_06_03.md',
         'qa/FIRST_LEVEL_SUPPORT_SAFETY_2026_06_04.md',

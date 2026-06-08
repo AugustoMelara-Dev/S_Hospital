@@ -4131,3 +4131,8 @@ Criterio de verificacion: check-branding.ps1 pasa y la busqueda focalizada no en
 Contexto: las notas finales podian declarar PRODUCTION_READY aunque las evidencias fisicas de LAN, impresora, tareas y servidor final siguen pendientes.
 Decision: RELEASE_NOTES_v1.0.0_FINAL.md declara PRODUCTION_CANDIDATE, exige que el paquete offline apunte al commit entregado y bloquea crear el tag v1.0.0 hasta que el handoff final declare PRODUCTION_READY con evidencia fisica completa.
 Criterio de verificacion: validate_production_ready_gate_safety.ps1 protege el encabezado de estado, la condicion previa al tag y evita mensajes de tag que anuncien PRODUCTION_READY sin evidencia de campo.
+
+## 2026-06-08 - guard de capturas RC usa evidencia vigente
+Contexto: validate_browser_smoke_evidence.ps1 seguia validando una ruta fija de capturas RC del 2026-06-07 aunque el smoke vigente se regenero en qa/browser-smoke-2026-06-08. Ese desfase podia hacer que el handoff aprobara evidencia visual vieja y no la pantalla realmente revisada.
+Decision: el guard selecciona automaticamente el rc-e2e-mocked-report.json mas reciente bajo qa/browser-smoke-* y reporta la ruta elegida antes de validar capturas, consola limpia, recibo institucional y advertencia de que no sustituye LAN/impresora fisica. El branding check tambien escanea la evidencia activa del 2026-06-08.
+Criterio de verificacion: validate_browser_smoke_evidence.ps1 debe mostrar Latest RC browser smoke report: qa\browser-smoke-2026-06-08\rc-e2e-mocked-report.json y BROWSER_SMOKE_EVIDENCE: YES; check-branding.ps1 debe pasar con la evidencia activa nueva.
