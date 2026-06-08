@@ -48,7 +48,7 @@ export const STRINGS = {
     issued: (invoiceNumber: string) => `Factura emitida ${invoiceNumber}.`,
     paymentOpen: (invoiceNumber: string) => `Factura emitida ${invoiceNumber}. Cobro abierto.`,
     receiptReady: (invoiceNumber: string) => `Factura emitida ${invoiceNumber}. Recibo listo para imprimir.`,
-    paymentRegisteredPreview: (invoiceNumber: string) => `Pago registrado. Vista previa ${invoiceNumber} lista.`,
+    paymentRegisteredPreview: (invoiceNumber: string) => `Pago registrado. Recibo ${invoiceNumber} listo para imprimir.`,
     paymentRegisteredPrint: (invoiceNumber: string) => `Pago registrado. Recibo ${invoiceNumber} enviado a impresión.`,
     pendingInvoice: (invoiceNumber: string) => `Factura ${invoiceNumber} emitida. Quedo pendiente de cobro; puede cobrarla desde este panel o desde Historial.`,
     cartEmpty: 'Agregue servicios',

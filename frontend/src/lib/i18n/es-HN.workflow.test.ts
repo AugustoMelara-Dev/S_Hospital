@@ -30,6 +30,10 @@ describe('i18n surface for the cashier workflow', () => {
 
   it('formats POS status messages that the cashier copy expects', () => {
     expect(STRINGS.pos.issued('000-001-01-00000012')).toBe('Factura emitida 000-001-01-00000012.');
+    expect(STRINGS.pos.paymentRegisteredPreview('000-001-01-00000012')).toBe(
+      'Pago registrado. Recibo 000-001-01-00000012 listo para imprimir.',
+    );
+    expect(STRINGS.pos.paymentRegisteredPreview('000-001-01-00000012')).not.toMatch(/vista previa/i);
     expect(STRINGS.pos.paymentRegisteredPrint('000-001-01-00000012')).toContain('Pago registrado');
     expect(STRINGS.pos.paymentRegisteredPrint('000-001-01-00000012')).toContain('000-001-01-00000012');
   });

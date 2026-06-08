@@ -340,6 +340,9 @@ describe('NewInvoiceView', () => {
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '17.25' } });
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
+    expect((await screen.findAllByText(/pago registrado\. recibo 000-001-01-00000001 enviado a impresi[oó]n/i)).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/pago registrado\. vista previa/i)).not.toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: /recibo institucional/i })).toBeInTheDocument();
     expect((await screen.findAllByLabelText(/vista previa del recibo/i)).length).toBeGreaterThan(0);
     expect(await screen.findByText(/hospital san isidro/i)).toBeInTheDocument();
     expect(screen.getByText('Media carta')).toBeInTheDocument();

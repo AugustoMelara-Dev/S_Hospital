@@ -260,8 +260,8 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         open={state.showReceipt && Boolean(state.receipt)}
         onOpenChange={onReceiptOpenChange}
         size="lg"
-        title="Vista previa del recibo"
-        description="Vista previa institucional lista para imprimir."
+        title="Recibo institucional"
+        description="Recibo listo para imprimir en el formato seleccionado."
       >
         {state.receipt ? (
           <ReceiptPreview

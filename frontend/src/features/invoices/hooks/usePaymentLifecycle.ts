@@ -1,6 +1,7 @@
 import { useCallback, type Dispatch } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
 import { apiClient, type ReceiptData, userSafeErrorMessage } from '../../../lib/api';
+import { STRINGS } from '../../../lib/i18n';
 import type { NewInvoiceAction, NewInvoiceState } from '../state/types';
 
 export type UsePaymentLifecycleArgs = {
@@ -51,10 +52,11 @@ export function usePaymentLifecycle({
         dispatch({ type: 'SET_SHOW_RECEIPT', payload: true });
         dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
         dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
+        const invoiceNumber = nextReceipt.invoice.invoice_number;
         onStatus(
           state.previewBeforePrint
-            ? `Pago registrado. Vista previa ${nextReceipt.invoice.invoice_number} lista.`
-            : `Pago registrado. Recibo ${nextReceipt.invoice.invoice_number} enviado a impresión.`,
+            ? STRINGS.pos.paymentRegisteredPreview(invoiceNumber)
+            : STRINGS.pos.paymentRegisteredPrint(invoiceNumber),
         );
       } catch (error) {
         const message = userSafeErrorMessage(error, 'No se pudo registrar el pago.');

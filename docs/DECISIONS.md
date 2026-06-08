@@ -4096,3 +4096,8 @@ Criterio de verificacion: check-branding.ps1 falla si reaparecen nombres de arch
 Contexto: el repo ya bloquea nombres versionados obsoletos, pero el guard del paquete offline tambien debe defender el artefacto final si una ruta no versionada o generada entra por error.
 Decision: assert_offline_release_clean.ps1 valida nombres de archivos y directorios del paquete contra marca antigua, pruebas heredadas de impresora y capturas nombradas por ancho de rollo.
 Criterio de verificacion: assert_offline_release_clean.ps1 -SelfTest cubre nombres prohibidos y permitidos, y el release final debe pasar -RequireCurrentCommit sin artefactos heredados.
+
+## 2026-06-07 - estado de cobro habla de recibo institucional
+Contexto: el flujo de cobro de Nueva factura todavia podia reportar el resultado como vista previa lista, aunque para caja el resultado operativo debe ser que el recibo quedo listo para imprimir o fue enviado a impresion.
+Decision: usePaymentLifecycle usa las cadenas institucionales del diccionario para el estado de pago registrado, y el modal de recibo de Nueva factura se presenta como Recibo institucional.
+Criterio de verificacion: NewInvoiceView.test valida el estado visible de cobro y el titulo del modal, es-HN.workflow.test bloquea que paymentRegisteredPreview vuelva a usar vista previa como resultado operativo.
