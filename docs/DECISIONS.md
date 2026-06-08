@@ -4281,3 +4281,8 @@ Criterio de verificacion: `scripts\validate_operations_objective_audit.ps1`, `sc
 Contexto: `docs\FINAL_FIELD_BLOCKERS.md` resume requisitos visibles de recibo e impresora para soporte, pero `check-branding.ps1` todavia no lo incluia en el grupo de documentacion que bloquea lenguaje de ticket, rollo, impresora termica, 80mm o 58mm.
 Decision: `check-branding.ps1` revisa tambien `docs\FINAL_FIELD_BLOCKERS.md` contra lenguaje de recibo/impresora de rollo para que el indice operativo no contradiga el recibo institucional media carta/carta/A5.
 Criterio de verificacion: `scripts\check-branding.ps1`, `scripts\validate_final_field_blockers_safety.ps1` y `scripts\validate_operations_objective_audit.ps1` deben pasar antes de regenerar el paquete offline.
+
+## 2026-06-08 - Bloqueantes finales protegen recibo blanco sin codigos
+Contexto: el indice de bloqueantes finales ya exigia impresion institucional en media carta, carta y A5 sin QR ni barcode, pero no bloqueaba explicitamente una factura por vez, fondo blanco, ausencia de codigos internos y ausencia de datos tecnicos como pide el objetivo operativo.
+Decision: `docs\FINAL_FIELD_BLOCKERS.md` y `validate_final_field_blockers_safety.ps1` exigen que el proof de impresora conserve una factura por vez, fondo blanco, reimpresion institucional y ausencia de QR, barcode, codigos internos y datos tecnicos.
+Criterio de verificacion: `scripts\validate_final_field_blockers_safety.ps1`, `scripts\validate_institutional_receipt_print_proof.ps1 -AllowPendingHardwareValidation`, `scripts\validate_operations_objective_audit.ps1` y `scripts\check-branding.ps1` deben pasar antes de regenerar el paquete offline.

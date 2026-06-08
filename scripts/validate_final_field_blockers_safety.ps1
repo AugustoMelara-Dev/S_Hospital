@@ -66,8 +66,12 @@ function Assert-FieldBlockersIndex([string] $content) {
         "base descartable",
         "ambiente aislado",
         "usuario de area",
+        "una factura por vez",
+        "fondo blanco",
         "sin QR",
         "barcode",
+        "codigos internos",
+        "datos tecnicos",
         "-AllowMissingPhysicalProof",
         "-AllowPendingFinalField",
         "-SkipPreflight"
@@ -123,6 +127,30 @@ Falta confirmar escala 100%, margenes minimos y encabezados/pies.
 Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
 "@
     $printerMissingPageSize = $printerCompletePending -replace "Falta imprimir recibo A5.`r?`n", ""
+    $fieldBlockersComplete = @"
+Estado actual: PRODUCTION_CANDIDATE.
+qa\LAN_CLIENT_VALIDATION_PROOF.md
+qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md
+qa\FINAL_STARTUP_TASK_PROOF.md
+qa\FINAL_BACKUP_TASK_PROOF.md
+qa\FINAL_RESTORE_PROOF.md
+qa\FINAL_CONCURRENCY_PROOF.md
+qa\TRAINING_ACCEPTANCE_PROOF.md
+Impresion fisica de una factura por vez en media carta, carta y A5, con fondo blanco y sin QR, barcode, codigos internos ni datos tecnicos.
+segunda computadora
+SistemaCajaHospitalaria-StackAutostart
+AtStartup
+SistemaCajaHospitalaria-BackupWorker
+SistemaCajaHospitalaria-DailyBackup
+base descartable
+ambiente aislado
+usuario de area
+-AllowMissingPhysicalProof
+-AllowPendingFinalField
+-SkipPreflight
+Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
+"@
+    $fieldBlockersMissingWhiteReceipt = $fieldBlockersComplete -replace "con fondo blanco y ", ""
     $backupCompletePending = @"
 Decision: PENDING_FINAL_FIELD.
 Falta instalar SistemaCajaHospitalaria-BackupWorker.
@@ -169,6 +197,18 @@ Debe quedar PRODUCTION_CANDIDATE, no PRODUCTION_READY.
         Add-Failure "SelfTest failed to reject printer proof missing A5 blocker."
     } else {
         Add-Pass "SelfTest rejects printer proof missing required institutional paper blockers"
+    }
+
+    if (Test-ContainsAllTerms $fieldBlockersComplete @("una factura por vez", "fondo blanco", "sin QR", "barcode", "codigos internos", "datos tecnicos")) {
+        Add-Pass "SelfTest accepts final blockers index with institutional receipt print safeguards"
+    } else {
+        Add-Failure "SelfTest failed to accept complete final blockers index receipt safeguards."
+    }
+
+    if (Test-ContainsAllTerms $fieldBlockersMissingWhiteReceipt @("una factura por vez", "fondo blanco", "sin QR", "barcode", "codigos internos", "datos tecnicos")) {
+        Add-Failure "SelfTest failed to reject final blockers index missing white receipt safeguard."
+    } else {
+        Add-Pass "SelfTest rejects final blockers index missing white receipt safeguard"
     }
 
     if (Test-ContainsAllTerms $backupCompletePending @("tarea continua de respaldos", "respaldo", "Pendiente", "Protegido")) {

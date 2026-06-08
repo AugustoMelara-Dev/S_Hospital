@@ -20,7 +20,7 @@ Mientras cualquier punto siga pendiente, el resultado correcto es
 | Proof final | Archivo | Evidencia esperada |
 | --- | --- | --- |
 | Cliente LAN real | `qa\LAN_CLIENT_VALIDATION_PROOF.md` | Segunda computadora del hospital entra por IP fija, valida `/up`, login, caja, factura, pago, recibo, historial, reportes y respaldo de Pendiente a Protegido. |
-| Impresora institucional | `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` | Impresion fisica de una factura por vez en media carta, carta y A5, con reimpresion, escala 100%, margenes, encabezados/pies correctos y sin QR, barcode ni codigos internos. |
+| Impresora institucional | `qa\INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` | Impresion fisica de una factura por vez en media carta, carta y A5, con fondo blanco, reimpresion, escala 100%, margenes, encabezados/pies correctos y sin QR, barcode, codigos internos ni datos tecnicos. |
 | Autoarranque del servidor | `qa\FINAL_STARTUP_TASK_PROOF.md` | Tarea `SistemaCajaHospitalaria-StackAutostart` instalada con trigger `AtStartup`, arranque o reinicio observado, `/up` y login confirmados sin internet. |
 | Respaldos finales | `qa\FINAL_BACKUP_TASK_PROOF.md` | Tareas `SistemaCajaHospitalaria-BackupWorker` y `SistemaCajaHospitalaria-DailyBackup` instaladas, tarea continua observada, respaldo manual desde UI administrativa y estado Protegido confirmado. |
 | Restore final | `qa\FINAL_RESTORE_PROOF.md` | Restauracion ejecutada solo contra base descartable del servidor final, con checksum o conteos revisables, sin tocar la base activa de produccion. |
