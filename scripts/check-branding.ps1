@@ -278,8 +278,7 @@ try {
             'qa/ROLE_MODULE_AUDIT_2026-05-19.md',
             'qa/UX_2_CASH_RECEIPT_AUDIT_2026-05-18.md',
             'qa/UX_OPERATIVA_AUDIT_2026-05-18.md',
-            'qa/ACCESSIBILITY_UX_AUDIT.md',
-            'qa/THERMAL_PRINTER_PROOF.example.md'
+            'qa/ACCESSIBILITY_UX_AUDIT.md'
         )
 
     Invoke-ForbiddenSearch `
