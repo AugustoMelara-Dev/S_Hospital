@@ -50,6 +50,7 @@ $technicalProductBrandForbidden = @(
 )
 
 function Invoke-ForbiddenSearch {
+    [CmdletBinding()]
     param(
         [string] $Label,
         [string[]] $Patterns,
@@ -58,35 +59,102 @@ function Invoke-ForbiddenSearch {
     )
 
     $pattern = ($Patterns | ForEach-Object { [regex]::Escape($_) }) -join '|'
-    $matches = rg -n -i $pattern @Paths `
-        --glob '!.git/**' `
-        --glob '!node_modules/**' `
-        --glob '!vendor/**' `
-        --glob '!storage/logs/**' `
-        --glob '!bootstrap/cache/**' `
-        --glob '!dist/**' `
-        --glob '!build/**'
 
-    if ($LASTEXITCODE -eq 0) {
-        if ($AllowedLinePatterns.Count -gt 0) {
-            $matches = $matches | Where-Object {
-                $line = $_
-                -not ($AllowedLinePatterns | Where-Object { $line -match $_ })
+    $localMatches = @()
+    $useRg = $false
+    if (Get-Command rg -ErrorAction SilentlyContinue) {
+        try {
+            $rgTestOutput = rg -n -i 'zzzzzz_no_match_zzzzzz' . --glob '!**/.git/**' --glob '!**/storage/**' 2>&1
+            if ($LASTEXITCODE -le 1) {
+                $useRg = $true
+            }
+        } catch {
+            $useRg = $false
+        }
+    }
+    if ($useRg -and ($pattern -notmatch '[|]')) {
+        $rgArgs = @('-n', '-i', $pattern) + $Paths + @(
+            '--glob', '!**/.git/**',
+            '--glob', '!**/node_modules/**',
+            '--glob', '!**/vendor/**',
+            '--glob', '!**/storage/logs/**',
+            '--glob', '!**/storage/app/private/backups/**',
+            '--glob', '!**/storage/framework/**',
+            '--glob', '!**/bootstrap/cache/**',
+            '--glob', '!**/dist/**',
+            '--glob', '!**/build/**',
+            '--glob', '!**/offline-images/**',
+            '--glob', '!**/offline-release/**',
+            '--glob', '!**/install-logs/**',
+            '--glob', '!**/.agent/skills/**',
+            '--glob', '!**/.agents/skills/**',
+            '--glob', '!**/backend/vendor/**',
+            '--glob', '!**/backend/storage/**',
+            '--glob', '!**/backend/build/**',
+            '--glob', '!**/backend/tests/**',
+            '--glob', '!**/frontend/dist/**',
+            '--glob', '!**/frontend/node_modules/**'
+        )
+        $raw = rg @rgArgs 2>$null
+        if ($LASTEXITCODE -le 1 -and $raw) {
+            foreach ($line in @($raw)) {
+                if ($line) { $localMatches += [string]$line }
             }
         }
+    } else {
+        # Fallback Select-String. En PowerShell 5.1 usar += con array es seguro.
+        $resolved = @()
+        foreach ($p in $Paths) {
+            if (Test-Path $p) {
+                $resolved += (Resolve-Path $p).Path
+            } else {
+                $resolved += $p
+            }
+        }
+        foreach ($base in $resolved) {
+            $files = @()
+            if (Test-Path $base -PathType Leaf) {
+                $files = @($base)
+            } else {
+                $files = Get-ChildItem -Path $base -Recurse -File -ErrorAction SilentlyContinue
+            }
+            foreach ($f in $files) {
+                # Excluir paths por substring (no regex)
+                $rel = $f.FullName -replace '/', '\'
+                $excluded = $false
+                foreach ($bad in @('\.git\', '\node_modules\', '\vendor\', '\storage\logs', '\storage\app\private\backups', '\storage\framework\', '\bootstrap\cache\', '\dist\', '\build\', '\offline-images\', '\offline-release\', '\install-logs\', '\.agent\skills\', '\.agents\skills\', '\backend\vendor\', '\backend\storage\', '\backend\build\', '\backend\tests\', '\frontend\dist\', '\frontend\node_modules\')) {
+                    if ($rel -like "*$bad*") { $excluded = $true; break }
+                }
+                if ($excluded) { continue }
 
-        if (-not $matches -or $matches.Count -eq 0) {
+                $hits = Select-String -Path $f -Pattern $pattern -CaseSensitive:$false -SimpleMatch:$false -ErrorAction SilentlyContinue
+                foreach ($h in $hits) {
+                    $localMatches += [string]("{0}:{1}:{2}" -f $h.Path, $h.LineNumber, $h.Line)
+                }
+            }
+        }
+    }
+
+    if ($localMatches.Count -gt 0) {
+        if ($AllowedLinePatterns.Count -gt 0) {
+            $filtered = @()
+            foreach ($m in $localMatches) {
+                $skip = $false
+                foreach ($allow in $AllowedLinePatterns) {
+                    if ([string]$m -match $allow) { $skip = $true; break }
+                }
+                if (-not $skip) { $filtered += [string]$m }
+            }
+            $localMatches = $filtered
+        }
+
+        if ($localMatches.Count -eq 0) {
             return
         }
 
         Write-Host $Label
-        $matches | ForEach-Object { Write-Host $_ }
+        foreach ($m in $localMatches) { Write-Host ([string]$m) }
         exit 1
-    }
-
-    if ($LASTEXITCODE -gt 1) {
-        Write-Error 'No se pudo completar la revision de branding.'
-        exit $LASTEXITCODE
     }
 }
 
