@@ -92,3 +92,68 @@
   produccion; el default embebido solo es dev.
 - `HOSPITAL_INITIAL_ADMIN_PASSWORD` se pide por entrada oculta en
   el installer; nunca se acepta como argumento CLI.
+
+## Issues diferidos a v1.0.0+1 (2026-06-09 round)
+
+Items identificados durante la ronda de hardening de seguridad
+del 2026-06-09 que NO bloquean el piloto y se difieren a la
+siguiente version. Severidad:
+
+- **PILOT_SAFE** - el piloto puede operar sin resolverlo.
+- **PILOT_RISK** - el piloto puede operar, pero el equipo de
+  soporte debe estar al tanto.
+- **DEFERRED** - trabajo conocido, no urgente, vive en el
+  roadmap de v1.0.0+1 / v1.1.
+
+### Lazy-loading incompleto en `AppRoutes` — DEFERRED
+
+`frontend/src/AppRoutes.lazy.test.ts` sigue asertando que las
+nueve vistas pesadas (About, Backups, Catalog, Dashboard, Fiscal
+Settings, Help, Invoice History, Reports, Users) estan cargadas
+detras de `React.lazy()`. En el estado actual solo
+`DashboardView` permanece lazy-loaded. El refactor para volver
+a poner las nueve bajo lazy esta parqueado en `stash@{0}` en
+la rama de auditoria y se re-tomara en la Fase 4 del plan
+`docs/PLAN_7_FASES.md`. El test que falla por esto es
+pre-existente a esta ronda y no es regresion introducida por
+los commits del 2026-06-09.
+
+### `phpstan analyse` no ejecutable en dev — DEFERRED
+
+`vendor/larastan/larastan/extension.neon` no esta presente en
+el entorno de desarrollo. El comando `phpstan analyse` falla
+por setup, no por error en el codigo. Es un gap pre-existente
+del entorno, no introducido por los commits de esta ronda. Se
+volvera a correr en el servidor del piloto una vez que el
+entorno tenga larastan instalado via `composer require
+--dev`. La baseline rc.3 nivel 5 sigue siendo la fuente de
+verdad de tipos hasta que se re-ejecute.
+
+### `offline-release/` regenerado y no commiteado — PILOT_SAFE
+
+`offline-release/` se regenera desde
+`scripts/make_offline_release.ps1` y NO esta commiteado al
+repositorio. La primera ejecucion del installer en una laptop
+del hospital (`scripts/deploy_hospital_lan.ps1`) jalara el
+ultimo estado del codigo fuente al momento de generar el
+paquete. El guard `scripts/assert_offline_release_clean.ps1
+-RequireCurrentCommit` valida que el paquete generado
+corresponda al commit actual. Esto es intencional: evita
+versionar artefactos binarios grandes en git.
+
+### Tests de eritropoyetina actualizados al flag de top-level — PILOT_SAFE
+
+`backend/tests/Unit/CalculateInvoiceTotalsActionTest` (casos
+`test_erythropoietin_rule_with_dialysis_prescription_is_free`
+y `test_erythropoietin_rule_requires_dialysis_prescription`)
+y `backend/tests/Feature/InvoiceCreationTest`
+(`test_erythropoietin_with_dialysis_prescription_is_free_and_snapshotted`,
+`test_dialysis_prescription_does_not_discount_other_services`)
+fueron migrados del API per-line al API de top-level
+`dialysis_prescription` introducido en
+`CreateInvoiceAction` (commit `8fe44203`). Los tests pasan
+contra el nuevo contrato; cualquier codigo de llamada que
+todavia envie el flag per-line en JSON sera rechazado por la
+validacion 422 de `StoreInvoiceRequest`. No requiere
+accion del operador, pero queda documentado para futuros
+mantenedores.

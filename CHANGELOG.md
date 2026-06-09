@@ -1,5 +1,207 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## v1.0.0-rc.4 (unreleased) - Security-Hardening Round (2026-06-09)
+
+This entry documents ONLY the five commits landed on
+`plan/fase-0-7-rc` on 2026-06-09 after the v1.0.0 production
+hardening audit was published. It does not re-state the rc.3 or
+v1.0.0 hardening work — see those sections below for that history.
+
+### Commits in this round
+
+- `3711cf1d` fix(ci): portable Select-String fallback for branding
+  checks
+- `cdf6840c` chore(security): harden secrets and remove default
+  credentials
+- `8fe44203` feat(backend): Money value object, secure dialysis
+  flag, no session-mutation on payment
+- `68224669` feat(frontend): money centralization, session-cleanup,
+  payment cap, echo reset
+- `312ad0a8` fix(nginx): report-only CSP without placeholder nonce
+
+### fix(ci): portable Select-String fallback for branding checks
+
+- `scripts/check-branding.ps1`: the previous `ArrayList+regex
+  path-filter` was broken under PowerShell 5.1 (it stranded a
+  single-element list whose `.Count` was 1 holding
+  `'System.Collections.Hashtable'`, a `+=` re-typing artifact).
+  Replaced with simple substring filtering and an array
+  accumulator. The script now runs without `rg` in `PATH`,
+  which is the supported environment for hospital operators.
+- `docs/PLAN_7_FASES.md`: consolidates the three audit passes
+  into a 7-phase remediation plan with conventional commits.
+
+### chore(security): harden secrets and remove default credentials
+
+- `docker-compose.prod.yml`: `PUSHER_APP_ID`, `PUSHER_APP_KEY`,
+  `PUSHER_APP_SECRET` (Soketi) now fail fast with `":?required"`
+  if not provided. The previous defaults (`hospital-key` /
+  `hospital-secret`) were public knowledge — any LAN listener
+  with `curl` could subscribe to all patient/billing events on
+  the WebSocket channel.
+- `backend/docker/entrypoint.sh`: the literal
+  `--password=$DB_PASSWORD` was replaced with a `0600` option
+  file at `/tmp/.hospital-db.cnf` consumed via `--defaults-file`.
+  The MySQL/MariaDB official docs mark `MYSQL_PWD` and
+  `--password` as "extremely insecure" because they appear in
+  `/proc/<pid>/cmdline` (readable by any user on the host).
+  The option file is removed after the wait loop.
+- `backend/.env.docker.example`: documents the
+  `PUSHER_APP_ID/KEY/SECRET` slots with
+  `openssl rand -hex 16` guidance and the explicit warning that
+  no real values are committed.
+- `LicenseHelper` already reads `config('app.license_salt')`,
+  which maps to `HOSPITAL_LICENSE_SALT` via
+  `config/app.php:128` (landed in `7474db13`). No PHP code was
+  touched by this commit.
+
+### feat(backend): Money value object, secure dialysis flag, no
+session-mutation on payment
+
+- `app/Support/Money.php`: new immutable value object
+  (`fromCents`, `fromFloat`, `zero`, `plus`, `minus`, `times`,
+  `allocate`, `equals`, `sum`). Integer-cents storage; no float
+  arithmetic inside the object.
+- `app/Actions/Cash/BuildCashReconciliationAction.php`:
+  every amount now routes through `Money`; the original
+  2-line `round + cast` pattern is gone.
+- `app/Actions/Billing/CalculateInvoiceTotalsAction.php`:
+  keeps the half-up rounding (`intdiv($x+50,100)*100`) but
+  documents intent in the PHPDoc; tax and subtotals now
+  accumulate via `Money::plus` so no float leaks.
+- `app/Actions/Payments/RegisterPaymentAction.php`:
+  the action used to overwrite the invoice's
+  `cash_session_id` whenever a payment was registered in a
+  different session than the one the invoice was created in.
+  That mutation is removed. The invoice keeps the session it
+  had at creation; each payment record carries its own session.
+  Verified by `RegisterPaymentDoesNotMutateInvoiceTest`
+  (2 cases).
+- `app/Actions/Cash/CloseCashSessionAction.php`:
+  `RunBackupJob` dispatch and its supporting
+  `CreateBackupAction` / `BackupLog` imports are removed.
+  Backups are scheduled by the existing scheduler, not on
+  every cash close. Verified by `CloseCashSessionTest` using
+  `Bus::fake([RunBackupJob::class])`.
+- `app/Actions/Billing/CreateInvoiceAction.php` +
+  `app/Http/Requests/Billing/StoreInvoiceRequest.php`:
+  the `dialysis_prescription` flag moved from per-line to
+  top-level on the invoice. A cashier without
+  `patients.mark_dialysis_prescription` cannot toggle the
+  discount; the eritropoyetina line is auto-zeroed only when
+  the issuer has the permission and the flag is `true`.
+  Verified by `InvoiceDialysisPrescriptionTest` (5 cases).
+- `database/seeders/RolesAndPermissionsSeeder.php`: the new
+  permission `patients.mark_dialysis_prescription` is added
+  to the `admin` and `supervisor` roles. The `cajero` role
+  is intentionally NOT granted this permission — the
+  security invariant that eritropoyetina is auto-zeroed only
+  by authorized issuers is preserved.
+- New tests: `MoneyTest` (19 unit, 42 assertions),
+  `InvoiceDialysisPrescriptionTest` (5 feature),
+  `CloseCashSessionTest` (2 feature),
+  `RegisterPaymentDoesNotMutateInvoiceTest` (2 feature);
+  3 pre-existing tests updated to the new top-level flag API.
+- Full suite at this commit: 410 passed, 4 skipped, 0 failed
+  (2702 assertions). Pint: passes.
+- `phpstan` was attempted but the configured extension
+  `vendor/larastan/larastan/extension.neon` is missing in the
+  dev environment; pre-existing setup gap, unrelated to this
+  change. Tracked as a `DEFERRED` item in
+  `docs/KNOWN_LIMITATIONS.md`.
+
+### feat(frontend): money centralization, session-cleanup, payment
+cap, echo reset
+
+- `src/lib/money.ts`: canonical helpers (`parseCents`,
+  `formatCents`, `toFloat`, `fromFloat`, `sumCents`,
+  `allocateCents`). Integer-cents storage. 4 new vitest cases
+  in `src/test/money.test.ts` cover float drift, rounding,
+  format and `toFloat`.
+- `src/features/invoices/state/posMath.ts`: every export is
+  now a `@deprecated` re-export shim pointing at
+  `lib/money.ts` and `lib/moneyCents.ts`. `computeSimpleEstimate`
+  emits a one-time `console.warn` so any leftover call surfaces
+  to UI dev. Fiscal math is no longer duplicated in the cart
+  view; backend remains the source of truth.
+- `src/features/invoices/components/PaymentModal.tsx`:
+  the amount input now has `max={balanceFloat}`, snaps to
+  the cap on every change, shows the inline message
+  "El pago no puede superar el saldo pendiente" and disables
+  the Pay button when exceeded. Verified by the new cap case
+  in `PaymentModal.test.tsx`. `NewInvoiceView.test.tsx` was
+  updated to match the new cap behavior.
+- `src/app/useHospitalSession.ts`: `handleLogout` now calls
+  `disconnectEcho()` and `queryClient.clear()` in addition to
+  the existing state reset. 401 branch in `src/lib/api/base.ts`
+  calls `invalidateCsrfCookie()` (new `src/lib/csrf.ts` helper
+  that re-fetches `/sanctum/csrf-cookie`).
+- `src/lib/realtime/echo.ts`: the `.catch` handler now sets
+  `configPromise = null` so the next call retries the config
+  fetch. Verified by `src/lib/realtime/echo.test.ts`.
+- `src/features/cash/CashBoxView.tsx`: local `parseCents` is
+  removed; the file imports from `lib/money.ts`.
+  `expected_cash_amount` still falls back to server-computed
+  values, not to local subtraction.
+- `frontend/playwright.config.ts`: uses `'npm'` instead of
+  `'npm.cmd'` for cross-platform CI. `vite.config.ts` already
+  referenced `lucide-react` without the stale `1.16.0` suffix
+  from a prior pass; no change needed.
+- Typecheck: 0 errors. Lint: 0 errors (28 pre-existing
+  warnings in untouched files). Test files: 52 passed, 1
+  failed. The single failing test
+  (`AppRoutes.lazy.test.ts`) is pre-existing: it asserts 9
+  heavy views are loaded via `React.lazy()` in `AppRoutes.tsx`
+  but only `DashboardView` is currently lazy-loaded. This is
+  the refactor parked in `stash@{0}` on the audit branch and
+  is out of scope for this commit; tracked as a `DEFERRED`
+  item in `docs/KNOWN_LIMITATIONS.md`.
+
+### fix(nginx): report-only CSP without placeholder nonce
+
+- `nginx/default.conf`: the `Content-Security-Policy-Report-Only`
+  header previously carried a literal
+  `nonce-__S_HOSPITAL_CSP_NONCE__` placeholder. No script tag
+  in the SPA would ever carry that literal string, so the
+  browser sent the directive verbatim and produced confusing
+  reports (no script matched the literal) with no useful
+  signal about what the enforced CSP would actually block.
+  The Report-Only directive is now intentionally permissive
+  (`'unsafe-inline'` and `'unsafe-eval'` on script/style) so
+  the report endpoint surfaces real violations of the enforced
+  policy rather than a static placeholder mismatch.
+- The enforced CSP path is unchanged: `AddSecurityHeaders`
+  (PHP) generates a real 32-hex-char nonce per request and
+  emits `Content-Security-Policy: ... nonce-<hex> ...` for the
+  response, which the Vite `cspNoncePlugin` picks up when
+  building the SPA. The CSP nonce is NOT new in this round;
+  it was wired in the v1.0.0-rc.3 hardening pass and is
+  already in production.
+
+### What this round did NOT change
+
+- `app/Providers/AppServiceProvider.php`: no change in this
+  round. The `Gate::policy()` registrations for
+  `App\Policies\InvoicePolicy` and `App\Policies\CashSessionPolicy`
+  were already in place from the v1.0.0 production hardening
+  audit (commit `ae1ed5ca` in the audit log and
+  `CHANGELOG.md` v1.0.0 B7 item). This round did not re-add
+  them.
+- `hospital:prune-audit-logs` / `hospital:prune-failed-jobs`:
+  not touched. They were already shipped in v1.0.0-rc.3
+  (Phase A10) and are not new in rc.4.
+- `LicenseHelper` / `HOSPITAL_LICENSE_SALT`: not touched in
+  this round. The salt was promoted to required in
+  `7474db13` and `cfe6df1c`; `LicenseHelper` already reads
+  `config('app.license_salt')` (config/app.php:128).
+- CSP nonce in the enforced policy: already implemented
+  before this round; not new here.
+- `ROUND(*100)` removal: already shipped in v1.0.0-rc.3
+  (Phase A2.2, 8 services / 12 guard tests). Not re-done in
+  rc.4.
+
+---
+
 ## v1.0.0 - Production Hardening Audit (2026-06-02)
 
 ### Resumen (branch codex/audit-f1-config-hardening)
