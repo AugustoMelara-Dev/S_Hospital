@@ -1,0 +1,6 @@
+﻿
+> s-hospital-frontend@0.1.0 typecheck
+> tsc --noEmit
+
+TC_EXIT=0
+

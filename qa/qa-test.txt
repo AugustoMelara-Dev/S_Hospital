@@ -1,0 +1,526 @@
+﻿
+   PASS  Tests\Unit\AuthorizationStrategyTest
+  Ô£ô policies directory has invoice and cash session policies                                                     6.28s  
+  Ô£ô app service provider registers gate policy mappings                                                          0.10s  
+
+   PASS  Tests\Unit\CalculateInvoiceTotalsActionTest
+  Ô£ô single taxable item calculates correctly                                                                    12.80s  
+  Ô£ô isv 15 percent rounding half up                                                                              0.05s  
+  Ô£ô tax on multiple items sums correctly                                                                         0.05s  
+  Ô£ô non taxable service has zero tax                                                                             0.05s  
+  Ô£ô erythropoietin rule with dialysis prescription is free                                                       0.11s  
+  Ô£ô erythropoietin rule requires dialysis prescription                                                           0.14s  
+  Ô£ô zero total invoice when all items free                                                                       0.04s  
+  Ô£ô fractional quantity rounds half up                                                                           0.04s  
+  Ô£ô quantity with three decimal places rejected                                                                  0.95s  
+  Ô£ô item snapshot includes service details                                                                       0.05s  
+
+   PASS  Tests\Unit\ExampleTest
+  Ô£ô that true is true                                                                                            0.01s  
+
+   PASS  Tests\Unit\GenerateFiscalNumberActionTest
+  Ô£ô emits the next correlative inside the range                                                                  0.18s  
+  Ô£ô throws when there is no active sequence                                                                      0.05s  
+  Ô£ô throws when there is more than one active sequence                                                           0.05s  
+  Ô£ô db unique constraint blocks two active sequences of the same type                                            0.13s  
+  Ô£ô multiple inactive sequences are allowed                                                                      0.04s  
+  Ô£ô activating a sequence deactivates others via unique constraint                                               0.04s  
+  Ô£ô throws when the sequence has no cai                                                                          0.04s  
+  Ô£ô throws when the sequence is already out of range                                                             0.03s  
+
+   PASS  Tests\Unit\HospitalNameTest
+  Ô£ô it uses a clean operational fallback for empty or legacy internal names                                      0.01s  
+  Ô£ô it keeps the configured hospital name when it is not a legacy internal name
+
+   PASS  Tests\Unit\InvoiceAccessTest
+  Ô£ô cajero can operate own invoice emitted today                                                                 2.09s  
+  Ô£ô cajero cannot operate another cashier invoice                                                                0.25s  
+  Ô£ô cajero cannot operate own invoice emitted yesterday                                                          0.18s  
+  Ô£ô cajero can operate own invoice from same honduras day when utc date changed                                  0.17s  
+  Ô£ô admin can operate any invoice                                                                                0.20s  
+  Ô£ô admin can access any invoice                                                                                 0.16s  
+  Ô£ô cajero cannot access any invoice                                                                             0.17s  
+  Ô£ô supervisor can access any invoice                                                                            0.18s  
+
+   PASS  Tests\Unit\MoneyTest
+  Ô£ô parse cents converts whole dollars                                                                           0.05s  
+  Ô£ô parse cents handles two decimal places                                                                       0.04s  
+  Ô£ô parse cents handles single decimal                                                                           0.03s  
+  Ô£ô parse cents rejects invalid format                                                                           0.04s  
+  Ô£ô parse cents rejects more than two decimals                                                                   0.04s  
+  Ô£ô parse cents rejects negative values                                                                          0.04s  
+  Ô£ô parse cents strips whitespace                                                                                0.03s  
+  Ô£ô parse positive cents rejects zero                                                                            0.03s  
+  Ô£ô parse positive cents rejects negative                                                                        0.03s  
+  Ô£ô parse positive cents accepts positive values                                                                 0.03s  
+  Ô£ô format cents formats two decimals                                                                            0.03s  
+  Ô£ô format cents pads single digit cents                                                                         0.03s  
+  Ô£ô format cents handles negative values                                                                         0.03s  
+  Ô£ô format cents rounds down for exact values                                                                    0.04s  
+
+   PASS  Tests\Unit\OperationalMessageSanitizerTest
+  Ô£ô message removes url credentials without hiding host                                                          0.30s  
+
+   PASS  Tests\Unit\PaymentCentsSqlGuardTest
+  Ô£ô report services prefer payment amount cents over float round                                                 0.05s  
+  Ô£ô reconciliation uses invoice cents columns                                                                    0.06s  
+  Ô£ô financial facts use invoice and item cents columns                                                           0.05s  
+  Ô£ô payment actions persist invoice cents columns                                                                0.07s  
+  Ô£ô create invoice action persists invoice cents columns                                                         0.07s  
+  Ô£ô report services do not recompute invoice cents via sql                                                       0.07s  
+
+   PASS  Tests\Unit\PdfExportEscapingTest
+  Ô£ô daily pdf escapes hospital name with html payload                                                            0.09s  
+  Ô£ô daily pdf escapes rtn with html payload                                                                      0.06s  
+  Ô£ô range pdf escapes hospital name with html payload                                                            0.06s  
+  Ô£ô helper method escapes all html special characters                                                            0.05s  
+  Ô£ô helper method handles null                                                                                   0.06s  
+
+   PASS  Tests\Unit\ProductionConfigDefaultsTest
+  Ô£ô database default falls back to mysql not sqlite                                                              0.06s  
+  Ô£ô application timezone defaults to hospital local timezone                                                     0.05s  
+  Ô£ô queue connections defer jobs until after commit                                                              0.05s  
+  Ô£ô sync queue connection does not apply after commit semantics                                                  0.05s  
+
+   PASS  Tests\Unit\ReportMoneyArchitectureTest
+  Ô£ô report actions do not parse money with direct float casts                                                    0.37s  
+
+   PASS  Tests\Unit\Support\MoneyTest
+  Ô£ô from cents returns same integer
+  Ô£ô from float rounds half up to cents
+  Ô£ô from float does not drift for repeating decimals
+  Ô£ô zero factory returns zero cents
+  Ô£ô to float returns division by hundred
+  Ô£ô plus adds integer cents without drift
+  Ô£ô minus subtracts integer cents
+  Ô£ô times multiplies by integer factor
+  Ô£ô times multiplies by float factor
+  Ô£ô times keeps integer cents
+  Ô£ô allocate splits evenly when no remainder                                                                     0.06s  
+  Ô£ô allocate distributes remainder to first parts
+  Ô£ô allocate respects weights
+  Ô£ô allocate with zero weight returns zero
+  Ô£ô allocate with all zero weights returns all zeros
+  Ô£ô allocate total matches original
+  Ô£ô equals compares by cents
+  Ô£ô sum adds selector results
+  Ô£ô sum over empty iterable returns zero
+
+   WARN  Tests\Feature\AmountCentsMigrationTest
+  Ô£ô amount cents column exists after refresh                                                                     0.06s  
+  - migration is idempotent when run a second time ÔåÆ Idempotency is enforced by an explicit guard on the migratÔÇª 1.44s  
+  Ô£ô migration uses driver safe backfill path on non mysql                                                        0.03s  
+
+   PASS  Tests\Feature\AuditLogTest
+  Ô£ô audit log persists action with no user                                                                       0.17s  
+  Ô£ô audit log records serializable json payload                                                                  0.14s  
+  Ô£ô audit log surfaces in recent errors when action contains failed                                              0.19s  
+
+   PASS  Tests\Feature\AuthTest
+  Ô£ô user can login with username                                                                                 4.03s  
+  Ô£ô login session can read protected api afterward                                                               0.22s  
+  Ô£ô user can login with email                                                                                    0.20s  
+  Ô£ô invalid login is rejected                                                                                    0.32s  
+  Ô£ô authenticated user can read me                                                                               0.17s  
+  Ô£ô me requires authentication                                                                                   0.03s  
+  Ô£ô session endpoint returns null for guest without console noise                                                0.12s  
+  Ô£ô session endpoint returns authenticated user payload                                                          0.19s  
+  Ô£ô session endpoint does not hydrate inactive user payload                                                      0.19s  
+  Ô£ô user can logout                                                                                              0.04s  
+  Ô£ô must change password is reported and blocks protected operations                                             0.15s  
+  Ô£ô user can change required password                                                                            0.42s  
+  Ô£ô change password rejects wrong current password                                                               0.05s  
+  Ô£ô inactive user is blocked on authenticated request                                                            0.04s  
+
+   PASS  Tests\Feature\BackupWorkflowTest
+  Ô£ô admin can list backups without exposing internal paths                                                       0.44s  
+  Ô£ô backup list per page is clamped to safe range                                                                0.18s  
+  Ô£ô failed backup list message is safe for operator screen                                                       0.23s  
+  Ô£ô admin can filter backups by status before pagination                                                         0.17s  
+  Ô£ô backup status filter rejects unknown values                                                                  0.16s  
+  Ô£ô cashier and supervisor cannot list create or download backups                                                1.77s  
+  Ô£ô manual backup endpoint queues local backup                                                                   3.96s  
+  Ô£ô backup runner creates success log checksum and audit entry                                                   0.34s  
+  Ô£ô backup prune keeps latest successful backups and never prunes failed or pending                              0.06s  
+  Ô£ô backup prune preserves unsafe successful records for review                                                  0.07s  
+  Ô£ô successful backup runs configured retention after creation                                                   0.11s  
+  Ô£ô failed backup is recorded without leaking database password                                                  0.21s  
+  Ô£ô failed backup persists operator safe support message                                                         0.17s  
+  Ô£ô download only serves registered existing backup files and audits downloads                                   0.46s  
+  Ô£ô backup download guest receives json unauthenticated for download accept header                               0.19s  
+  Ô£ô download blocks path traversal and failed logs                                                               0.23s  
+  Ô£ô artisan backup command registers success log                                                                 0.18s  
+  Ô£ô daily scheduled backup is registered for local automation                                                    1.31s  
+  Ô£ô restore endpoint is not exposed                                                                              0.21s  
+
+   PASS  Tests\Feature\Billing\InvoiceDialysisPrescriptionTest
+  Ô£ô erythropoietin is free when caller has mark dialysis permission                                              1.03s  
+  Ô£ô erythropoietin is charged when dialysis flag absent                                                          0.53s  
+  Ô£ô cashier without permission cannot toggle dialysis prescription                                               0.81s  
+  Ô£ô dialysis flag does not zero other services                                                                   0.49s  
+  Ô£ô dialysis flag false keeps erythropoietin at full price                                                       0.56s  
+
+   PASS  Tests\Feature\BroadcastingWiringTest
+  Ô£ô echo config endpoint returns soketi settings                                                                 0.04s  
+  Ô£ô invoice changed event broadcasts on invoices channel                                                         0.05s  
+  Ô£ô payment changed event broadcasts on payments and invoices channels                                           0.04s  
+  Ô£ô cash session changed event broadcasts on cash channel                                                        0.04s  
+  Ô£ô broadcasting is a noop when driver is log                                                                    0.05s  
+  Ô£ô invoice creation dispatches invoice changed event                                                            0.59s  
+
+   PASS  Tests\Feature\CashPaymentsReceiptTest
+  Ô£ô cashier can open cash session and cannot open two                                                            0.50s  
+  Ô£ô database constraint allows only one open cash session per cashier                                            0.43s  
+  Ô£ô cashier can open new session after closing previous one                                                      0.37s  
+  Ô£ô closing cash session calculates expected and difference                                                      0.39s  
+  Ô£ô closing cash session requires note when difference is not zero                                               0.53s  
+  Ô£ô transfer card and other payments do not increase expected cash amount                                        0.66s  
+  Ô£ô current cash session exposes reconciliation without counting pending as cash                                 0.58s  
+  Ô£ô cannot close collecting cash session with cross session partial invoice                                      0.54s  
+  Ô£ô payment requires an open own cash session                                                                    0.50s  
+  Ô£ô cashier cannot list or pay other cashier invoice by id                                                       0.52s  
+  Ô£ô cashier cannot pay own old invoice without elevated invoice access                                           0.56s  
+  Ô£ô report permission does not grant invoice payment operation scope                                             0.53s  
+  Ô£ô reprint any permission does not grant invoice payment operation scope                                        0.52s  
+  Ô£ô register payment creates cash movement and updates partial then paid invoice                                 0.64s  
+  Ô£ô payment rejects invalid amounts overpayment void and paid invoices                                           0.57s  
+  Ô£ô voiding payment recalculates invoice and excludes payment from cash and reports                              0.59s  
+  Ô£ô receipt excludes voided payments after reversal                                                              0.62s  
+  Ô£ô payment reversal cash movement uses amount cents as financial source                                         0.56s  
+  Ô£ô permissions are required for cash and payments                                                               0.56s  
+  Ô£ô receipt uses invoice item snapshots and supports institutional paper sizes                                   0.53s  
+  Ô£ô zero total dialysis prescription invoice is paid and receiptable with zero amount audit payment              0.46s  
+  Ô£ô cash session can open with zero initial cash                                                                 0.54s  
+  Ô£ô receipt defaults to configured width and uses payment cashier                                                0.62s  
+
+   PASS  Tests\Feature\Cash\CloseCashSessionTest
+  Ô£ô closing cash session does not dispatch run backup job                                                        0.84s  
+  Ô£ô closing cash session with difference does not dispatch run backup job                                        0.65s  
+
+   WARN  Tests\Feature\ConcurrentFiscalNumberTest
+  Ô£ô fiscal number action uses lock for update in serializable transaction                                        0.45s  
+  Ô£ô repeated serial emissions produce monotonic increment                                                        0.72s  
+  Ô£ô full lifecycle uses amount cents in payment math                                                             0.53s  
+  - concurrent fork pattern documentation marker ÔåÆ Concurrent fork test requires pcntl (not available on WindowÔÇª 0.58s  
+
+   WARN  Tests\Feature\Concurrent\FiscalNumberRaceTest
+  - two processes obtain distinct fiscal numbers ÔåÆ Set HOSPITAL_RUN_CONCURRENT_TESTS=1 and provide a real MySQL/MariaDB connection through the standard DB_* env variables to enable this race test.
+
+   PASS  Tests\Feature\CspReportControllerTest
+  Ô£ô csp endpoint returns security headers                                                                        0.13s  
+  Ô£ô csp blocks object embeds and unwanted frames                                                                 0.03s  
+  Ô£ô csp report endpoint accepts payload and returns 204                                                          0.13s  
+  Ô£ô csp report endpoint rejects oversized payloads                                                               0.03s  
+  Ô£ô csp report endpoint rejects unexpected content types                                                         0.04s  
+  Ô£ô csp report endpoint scrubs secrets and urls                                                                  0.06s  
+  Ô£ô csp report endpoint is rate limited                                                                          0.05s  
+
+   PASS  Tests\Feature\CsrfFlowTest
+  Ô£ô unauthenticated post to a protected endpoint returns 401                                                     0.27s  
+  Ô£ô unauthenticated get to a protected endpoint returns 401                                                      0.23s  
+  Ô£ô health endpoint is publicly readable                                                                         0.20s  
+  Ô£ô setup status endpoint is publicly readable                                                                   0.23s  
+  Ô£ô login endpoint accepts unauthenticated post                                                                  0.41s  
+  Ô£ô session endpoint is publicly readable                                                                        0.22s  
+
+   PASS  Tests\Feature\DevelopmentValidationSeederTest
+  Ô£ô validation seed data is available only for local or testing                                                  0.19s  
+  Ô£ô validation seeder does not create users outside local or testing                                             0.14s  
+
+   PASS  Tests\Feature\ExampleTest
+  Ô£ô the application returns a successful response                                                                0.12s  
+
+   PASS  Tests\Feature\FinancialFactsReportTest
+  Ô£ô daily report separates billed collected pending partial and voided amounts                                   0.56s  
+  Ô£ô income report exposes same financial fact fields for date ranges                                             0.64s  
+  Ô£ô income report counts unpaid invoices when not payment scoped                                                 0.48s  
+
+   PASS  Tests\Feature\FiscalSequenceTest
+  Ô£ô admin can create valid fiscal sequence                                                                       0.22s  
+  Ô£ô fiscal sequence index requires view permission                                                               0.27s  
+  Ô£ô rejects invalid sequence range                                                                               0.22s  
+  Ô£ô rejects expired valid until date                                                                             0.20s  
+  Ô£ô rejects empty cai                                                                                            0.17s  
+  Ô£ô rejects max number lower than min number                                                                     0.17s  
+  Ô£ô rejects lowering current number                                                                              0.18s  
+  Ô£ô rejects current number that leaves next number outside range                                                 0.25s  
+  Ô£ô rejects multiple active invoice sequences                                                                    0.16s  
+  Ô£ô admin update of fiscal sequence is audited                                                                   0.16s  
+  Ô£ô cashier cannot create fiscal sequence                                                                        0.21s  
+
+   PASS  Tests\Feature\FiscalSettingsTest
+  Ô£ô cashier cannot edit fiscal settings                                                                          0.18s  
+  Ô£ô admin can view and edit fiscal settings                                                                      0.28s  
+  Ô£ô admin can save institutional and thermal receipt paper sizes                                                 0.22s  
+  Ô£ô legacy receipt width field is not updateable                                                                 0.24s  
+  Ô£ô guest cannot view full fiscal settings but can view public branding                                          0.05s  
+  Ô£ô cashier cannot view full fiscal settings                                                                     0.37s  
+  Ô£ô supervisor can view but not update fiscal settings                                                           0.43s  
+  Ô£ô admin can upload logo and public endpoint returns cache busted url                                           0.98s  
+  Ô£ô logo upload requires fiscal update permission and image file                                                 0.23s  
+
+   PASS  Tests\Feature\HealthCheckTest
+  Ô£ô up endpoint is available                                                                                     0.06s  
+  Ô£ô api health endpoint returns json                                                                             0.10s  
+  Ô£ô responses include security headers                                                                           0.05s  
+  Ô£ô local vite origin can request sanctum csrf cookie                                                            0.05s  
+  Ô£ô lan vite origin is not allowed by default for credentialed cors                                              0.05s  
+  Ô£ô health endpoint has rate limit applied                                                                       0.07s  
+
+   PASS  Tests\Feature\InitialAdminCommandTest
+  Ô£ô initial admin command creates admin with required password change                                            0.32s  
+  Ô£ô initial admin command refuses when admin exists                                                              0.38s  
+  Ô£ô initial admin command accepts password from environment                                                      0.23s  
+  Ô£ô initial admin command requires a password source                                                             0.28s  
+  Ô£ô initial admin command rejects weak temporary password                                                        0.20s  
+
+   PASS  Tests\Feature\InvoiceCreationTest
+  Ô£ô cashier can create invoice with multiple services and backend totals                                         0.57s  
+  Ô£ô patient name is required                                                                                     0.74s  
+  Ô£ô invoice requires open cash session                                                                           0.85s  
+  Ô£ô invoice requires items                                                                                       0.75s  
+  Ô£ô invoice rejects inactive service                                                                             0.75s  
+  Ô£ô invoice rejects hidden or non billable services                                                              0.75s  
+  Ô£ô invoice rejects missing service                                                                              0.71s  
+  Ô£ô invoice rejects non positive quantity                                                                        0.47s  
+  Ô£ô invoice items keep snapshots when service price changes later                                                0.45s  
+  Ô£ô invoice with items cannot be deleted and lose fiscal history                                                 0.43s  
+  Ô£ô erythropoietin normal is charged at twenty five                                                              0.45s  
+  Ô£ô erythropoietin with dialysis prescription is free and snapshotted                                            0.41s  
+  Ô£ô dialysis prescription does not discount other services                                                       0.42s  
+  Ô£ô invoice requires active fiscal sequence                                                                      0.39s  
+  Ô£ô invoice rejects active sequence with empty cai                                                               0.41s  
+  Ô£ô invoice rejects expired fiscal sequence                                                                      0.40s  
+  Ô£ô invoice rejects sequence outside range                                                                       0.38s  
+  Ô£ô two invoice emissions do not duplicate invoice number                                                        0.42s  
+  Ô£ô user without invoice create permission cannot emit invoice                                                   0.45s  
+  Ô£ô invoice show requires invoice view permission                                                                0.41s  
+
+   PASS  Tests\Feature\InvoiceHistoryReprintVoidTest
+  Ô£ô invoice history is paginated filtered and recent first                                                       0.45s  
+  Ô£ô cashier sees only own invoices from current day by default                                                   0.43s  
+  Ô£ô reports view does not grant historical invoice access                                                        0.46s  
+  Ô£ô supervisor and admin can view historical invoices                                                            0.43s  
+  Ô£ô invoice detail includes snapshots payments cash session status and fiscal data                               0.43s  
+  Ô£ô reprint uses snapshots and writes audit log                                                                  0.44s  
+  Ô£ô reprint uses invoice fiscal snapshot after settings change                                                   0.41s  
+  Ô£ô reprint excludes voided payments after reversal                                                              0.45s  
+  Ô£ô cashier cannot reprint other or old invoice without reprint any                                              0.42s  
+  Ô£ô supervisor and admin can reprint with permission                                                             0.49s  
+  Ô£ô void requires permission and reason                                                                          0.45s  
+  Ô£ô reprint any permission does not grant invoice void operation scope                                           0.43s  
+  Ô£ô void marks invoice and does not delete items                                                                 0.41s  
+  Ô£ô void paid invoice is blocked and does not delete payments or items                                           0.44s  
+  Ô£ô void invoice is allowed after all payments are reversed                                                      0.46s  
+  Ô£ô void revalidates payment state inside transaction before marking void                                        0.46s  
+
+   PASS  Tests\Feature\InvoiceReverseTest
+  Ô£ô reverse paid invoice voids payments then voids invoice                                                       0.43s  
+  Ô£ô reverse with multiple payments voids all and recomputes invoice                                              0.46s  
+  Ô£ô reverse unpaid invoice works without payments to void                                                        0.43s  
+  Ô£ô reverse requires the invoices reverse permission                                                             0.39s  
+  Ô£ô reverse rejects short reason                                                                                 0.45s  
+  Ô£ô reverse on already void invoice rejects                                                                      0.43s  
+  Ô£ô reverse does not partial violate invoice status atomicity                                                    0.45s  
+
+   PASS  Tests\Feature\LicenseHelperTest
+  Ô£ô default local operation status when no file exists                                                           0.05s  
+  Ô£ô valid lan registration file                                                                                  0.07s  
+  Ô£ô invalid signature is blocked                                                                                 0.04s  
+  Ô£ô mismatched rtn is blocked                                                                                    0.05s  
+  Ô£ô expired license is blocked                                                                                   0.06s  
+  Ô£ô configured license salt overrides default                                                                    0.05s  
+  Ô£ô production license file requires configured salt                                                             0.05s  
+  Ô£ô rotating license salt invalidates prior signature                                                            0.07s  
+
+   PASS  Tests\Feature\LoginLockoutTest
+  Ô£ô login succeeds and records a successful attempt                                                              0.18s  
+  Ô£ô login lockout engages after five failed attempts                                                             1.22s  
+  Ô£ô lockout does not block a different user from the same ip                                                     1.28s  
+  Ô£ô ip lockout engages after ten failed attempts with different logins                                           2.33s  
+  Ô£ô lockout response carries safe message                                                                        1.23s  
+
+   PASS  Tests\Feature\MaintenanceModeTest
+  Ô£ô maintenance command writes and removes safe payload                                                          0.12s  
+  Ô£ô html maintenance page uses human spanish copy                                                                2.51s  
+  Ô£ô api maintenance response uses human json without details                                                     0.07s  
+
+   PASS  Tests\Feature\OpenApiExporterTest
+  Ô£ô document includes the expected top level metadata                                                            0.05s  
+  Ô£ô document lists the health endpoints                                                                          0.03s  
+  Ô£ô unauthenticated endpoints do not carry security                                                              0.03s  
+  Ô£ô authenticated endpoints carry security                                                                       0.03s  
+  Ô£ô openapi endpoint returns the document                                                                        0.04s  
+  Ô£ô tag list covers every cashier module                                                                         0.04s  
+  Ô£ô every path has a responses block                                                                             0.03s  
+  Ô£ô advanced report paths declare supported query filters                                                        0.04s  
+
+   PASS  Tests\Feature\OperationalMetricsServiceTest
+  Ô£ô snapshot returns all sections                                                                                0.23s  
+  Ô£ô health endpoint returns snapshot                                                                             0.04s  
+  Ô£ô health endpoint hides internal recent error details                                                          0.04s  
+  Ô£ô worker heartbeat flips to true after record                                                                  0.03s  
+  Ô£ô storage section reports backup files and bytes                                                               0.04s  
+  Ô£ô recent errors section surfaces failed actions                                                                0.04s  
+  Ô£ô overall health score reports a worker idle issue                                                             0.03s  
+  Ô£ô health endpoint returns the score alongside the snapshot                                                     0.04s  
+
+   PASS  Tests\Feature\OperatorManualTest
+  Ô£ô operator index points lan validation to evidence script                                                      0.07s  
+
+   PASS  Tests\Feature\Payments\RegisterPaymentDoesNotMutateInvoiceTest
+  Ô£ô invoice cash session id is not overwritten by later payment in other session                                 0.45s  
+  Ô£ô invoice cash session id remains unchanged when payment session differs from creation session                 0.47s  
+
+   PASS  Tests\Feature\PermissionAuditTest
+  Ô£ô attaching a role creates an audit log entry                                                                  0.17s  
+  Ô£ô syncing a role records detach and attach entries                                                             0.21s  
+  Ô£ô creating a role creates an audit log entry                                                                   0.14s  
+
+   PASS  Tests\Feature\ProductionSpaRouteTest
+  Ô£ô public spa routes serve frontend build when available                                                        0.11s  
+  Ô£ô asset route rejects path traversal                                                                           0.15s  
+  Ô£ô health route remains available                                                                               0.03s  
+  Ô£ô spa html substitutes csp nonce placeholder                                                                   0.05s  
+  Ô£ô frontend source declares private lan app metadata                                                            0.07s  
+
+   PASS  Tests\Feature\PruneCommandsTest
+  Ô£ô prune audit logs deletes rows older than cutoff                                                              0.04s  
+  Ô£ô prune audit logs dry run does not delete                                                                     0.04s  
+  Ô£ô prune audit logs rejects below minimum retention                                                             0.05s  
+  Ô£ô prune failed jobs deletes old rows                                                                           0.04s  
+
+   PASS  Tests\Feature\ReportsTest
+  Ô£ô reports view permission is required                                                                          0.45s  
+  Ô£ô supervisor and admin can access reports                                                                      0.54s  
+  Ô£ô dashboard report returns cashier summary without sql errors                                                  0.51s  
+  Ô£ô daily report calculates collected totals methods and statuses without void income                            0.57s  
+  Ô£ô monthly report summarizes financial facts by day without void income                                         0.67s  
+  Ô£ô income report respects date range and invalid ranges return 422                                              0.68s  
+  Ô£ô income report uses payment amount cents as financial source                                                  0.67s  
+  Ô£ô category report uses invoice item snapshots and ignores current catalog changes                              0.45s  
+  Ô£ô void invoices do not inflate category report                                                                 0.61s  
+  Ô£ô service sales report uses snapshots and excludes void invoices                                               0.52s  
+  Ô£ô area income report uses invoice item snapshots and excludes void invoices                                    0.61s  
+  Ô£ô income report area filter prorates mixed invoice financial facts                                             0.57s  
+  Ô£ô operations report area filter prorates cashier totals from invoice item snapshots                            0.60s  
+  Ô£ô operations report uses payment amount cents as financial source                                              0.50s  
+  Ô£ô operations report area filter prorates partial payments with integer cents                                   0.57s  
+  Ô£ô range filters apply to category services and cashier reports                                                 0.90s  
+  Ô£ô income report method filter scopes billed and pending to matching payments                                   0.52s  
+  Ô£ô payment scoped breakdowns use payment date not invoice issue date                                            0.71s  
+  Ô£ô managerial reports without close any are scoped to own activity                                              9.70s  
+  Ô£ô category filtered collections are allocated to matching items                                                0.62s  
+  Ô£ô report export requires permission and uses backend aggregates                                                0.67s  
+  Ô£ô report export includes financial reading sheet with sources                                                  1.94s  
+  Ô£ô report export includes area income sheet                                                                     0.74s  
+  Ô£ô report export labels payment scoped breakdowns as prorated collected amounts                                 0.76s  
+  Ô£ô report export records active filters with human labels                                                       0.77s  
+  Ô£ô report export uses institutional logo placeholder without technical branding                                 0.69s  
+  Ô£ô report export guest receives json unauthenticated for download accept header                                 0.05s  
+  Ô£ô operations and export hide backup metadata without backup permission                                         0.60s  
+  Ô£ô operations summary counts are not limited to preview rows                                                    0.51s  
+  Ô£ô operations report lists voids reprints and backups                                                           0.51s  
+  Ô£ô operations report lists catalog service changes without technical ids                                        0.56s  
+  Ô£ô operations report lists payment reversals                                                                    0.87s  
+  Ô£ô cash session report returns expected amounts payments movements and permissions                              0.71s  
+  Ô£ô closed cash session report uses close snapshot after later payment correction                                0.54s  
+  Ô£ô open cash session report exposes pending without counting it as collected                                    0.51s  
+  Ô£ô cash session export allows cashier scoped permission only for own session                                    0.68s  
+  Ô£ô cash session export uses cash session dates even when request range is wrong                                 0.66s  
+  Ô£ô report indexes exist for payment and category queries                                                        0.05s  
+  Ô£ô pdf export requires reports export permission                                                                0.43s  
+  Ô£ô cash session report user cannot export managerial daily pdf                                                  0.45s  
+  Ô£ô daily closure pdf export succeeds                                                                            5.29s  
+  Ô£ô daily closure pdf export includes financial reading with sources                                             0.64s  
+  Ô£ô period closure pdf export succeeds                                                                           0.60s  
+  Ô£ô cash session period pdf uses cash session dates even when request range is wrong                             0.50s  
+  Ô£ô period closure pdf export validates range filters                                                            0.48s  
+  Ô£ô period closure pdf declares active filters with human labels                                                 0.53s  
+  Ô£ô period closure pdf export includes financial reading with sources                                            0.65s  
+  Ô£ô period closure pdf escapes institutional catalog and audit text                                              0.56s  
+  Ô£ô period closure pdf labels service totals as billed not collected                                             0.51s  
+  Ô£ô period closure pdf labels area totals as billed not generic income                                           0.49s  
+  Ô£ô period closure pdf labels payment scoped breakdowns as prorated collected amounts                            0.54s  
+  Ô£ô period closure pdf export includes payment reversals without technical ids                                   0.59s  
+
+   PASS  Tests\Feature\SecurityHeadersTest
+  Ô£ô security headers present on public endpoints                                                                 0.08s  
+  Ô£ô csp blocks object embeds and unwanted frames                                                                 0.04s  
+  Ô£ô csp includes manifest src and connect extensions                                                             0.03s  
+  Ô£ô csp report only channel points at the csp endpoint                                                           0.04s  
+  Ô£ô csp emits a per request nonce for scripts and styles                                                         0.04s  
+  Ô£ô csp in production drops unsafe inline from styles                                                            0.04s  
+
+   PASS  Tests\Feature\ServiceCatalogTest
+  Ô£ô service catalog seeder loads expected categories services and special rule                                   0.28s  
+  Ô£ô service catalog seeder assigns validation scan codes                                                         0.29s  
+  Ô£ô service catalog seeder is idempotent                                                                         0.50s  
+  Ô£ô service catalog seeder does not clear existing non validation codes                                          0.50s  
+  Ô£ô service catalog seeder updates seeded rows by stable source key after rename                                 0.52s  
+  Ô£ô service catalog price parser rejects invalid decimal values                                                  0.10s  
+  Ô£ô catalog view permission allows reading categories and services                                               0.44s  
+  Ô£ô category index requires catalog view and validates active filter                                             0.44s  
+  Ô£ô area options are available to catalog and managerial report users                                            0.45s  
+  Ô£ô service search tolerates typos and accents                                                                   0.43s  
+  Ô£ô service aliases are searchable                                                                               0.46s  
+  Ô£ô services can be requested with capped per page to return full initial catalog                                0.47s  
+  Ô£ô catalog manage permission allows creating and editing categories and services                                0.20s  
+  Ô£ô cashier cannot create or edit services                                                                       0.49s  
+  Ô£ô cashier cannot create or edit categories                                                                     0.41s  
+  Ô£ô duplicate category and service slugs return validation errors                                                0.40s  
+  Ô£ô duplicate service names are scoped by category and area                                                      0.45s  
+  Ô£ô services can be found by category and scan codes                                                             0.45s  
+  Ô£ô duplicate scan codes return validation errors                                                                0.42s  
+  Ô£ô cross field duplicate codes return validation errors                                                         0.45s  
+  Ô£ô price change and active change are audited                                                                   0.43s  
+  Ô£ô price change requires a server side reason                                                                   0.43s  
+  Ô£ô invalid price update returns validation error before price reason check                                      0.46s  
+  Ô£ô billing filter excludes hidden and non billable services                                                     0.49s  
+  Ô£ô service metadata changes are audited with old and new payloads                                               0.44s  
+  Ô£ô services can be filtered by inactive status                                                                  0.45s  
+  Ô£ô service change rolls back when audit log fails                                                               0.45s  
+
+   PASS  Tests\Feature\SystemStatusTest
+  Ô£ô admin can view operational status without secret values                                                      0.24s  
+  Ô£ô status flags pending database migrations                                                                     0.28s  
+  Ô£ô status marks environment partial only when production debug is off                                           0.18s  
+  Ô£ô status reflects completed physical proof files without declaring production ready                            0.20s  
+  Ô£ô status rejects completed physical proof when local evidence reference is missing                             0.22s  
+  Ô£ô status marks template physical proof files as partial                                                        0.20s  
+  Ô£ô non admin roles cannot view operational status                                                               0.19s  
+  Ô£ô backups permission alone cannot view operational status                                                      0.16s  
+  Ô£ô scheduler heartbeat is reported as never run when no tick recorded                                           0.20s  
+  Ô£ô scheduler heartbeat is ok when recent tick recorded                                                          0.22s  
+  Ô£ô scheduler heartbeat flags stale ticks                                                                        0.21s  
+  Ô£ô scheduler heartbeat flags stuck ticks                                                                        0.21s  
+  Ô£ô scheduler tick command records heartbeat in cache and db                                                     0.15s  
+
+   PASS  Tests\Feature\ThrottleByUserTest
+  Ô£ô per user throttle returns 429 with safe message                                                              0.19s  
+  Ô£ô per user throttle does not block another cashier on same lan ip                                              0.17s  
+  Ô£ô invoice write routes use per user throttle                                                                   0.14s  
+
+   PASS  Tests\Feature\UserManagementTest
+  Ô£ô admin can reset user password and force change on next login                                                 0.19s  
+  Ô£ô admin can list users but cashier cannot                                                                      0.18s  
+  Ô£ô admin can toggle user active state but cannot disable self                                                   0.17s  
+  Ô£ô toggle user active requires disable permission                                                               0.19s  
+  Ô£ô reset user password requires backend password policy                                                         0.19s  
+  Ô£ô reset user password requires users update permission                                                         0.17s  
+
+   PASS  Tests\Feature\ValidationSecurityTest
+  Ô£ô login validation does not echo the password in the response                                                  0.15s  
+  Ô£ô change password validation does not echo the password in the response                                        0.17s  
+  Ô£ô invoice creation validation does not echo optional payload                                                   0.16s  
+  Ô£ô cash session open validation does not echo opening amount                                                    0.15s  
+  Ô£ô payment creation validation keeps amount field short                                                         0.16s  
+
+   WARN  Tests\Coverage\CriticalModulesCoverageTest
+  - critical modules meet minimum coverage ÔåÆ Coverage driver is not enabled (install pcov or xdebug in php.iniÔÇª  0.01s  
+
+  Tests:    4 skipped, 410 passed (2702 assertions)
+  Duration: 183.44s
+
+TEST_EXIT=0
+

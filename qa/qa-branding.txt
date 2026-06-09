@@ -1,0 +1,3 @@
+﻿Revision de branding completada sin hallazgos.
+BRAND_EXIT=0
+

@@ -1,0 +1,3 @@
+﻿{"tool":"pint","result":"passed"}
+PINT_EXIT=0
+

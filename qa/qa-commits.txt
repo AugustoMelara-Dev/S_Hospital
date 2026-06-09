@@ -1,0 +1,121 @@
+﻿===
+9fb62cd9 docs: align CHANGELOG, add L.25 cashier flow, register P3 deferrals
+312ad0a8 fix(nginx): report-only CSP without placeholder nonce
+68224669 feat(frontend): money centralization, session-cleanup, payment cap, echo reset
+8fe44203 feat(backend): Money value object, secure dialysis flag, no session-mutation on payment
+cdf6840c chore(security): harden secrets and remove default credentials
+3711cf1d fix(ci): portable Select-String fallback for branding checks
+c431d5dd docs(qa): record cross-session partial review
+142b0aaa fix(cash): reconcile cross-session partial payments
+ae1ed5ca docs(qa): reconcile p2 audit findings
+cfe6df1c fix(security): require production license salt
+7474db13 fix(config): use hospital local timezone
+9ed5b39e Merge pull request #4 from AugustoMelara-Dev/codex/production-readiness-preflight
+f02ab06a merge(main): resolve production readiness preflight conflicts
+96cdce38 Merge pull request #10 from AugustoMelara-Dev/codex/audit-f1-config-hardening
+088232ec fix(frontend): keep dashboard as the only lazy route
+
+=== last 5 detailed ===
+9fb62cd9 docs: align CHANGELOG, add L.25 cashier flow, register P3 deferrals
+Files:
+
+
+CHANGELOG.md
+docs/KNOWN_LIMITATIONS.md
+docs/OPERATIVE_NOTES_2026_06_02.md
+docs/manuales/MANUAL_CAJERO.md
+312ad0a8 fix(nginx): report-only CSP without placeholder nonce
+Files:
+
+
+nginx/default.conf
+68224669 feat(frontend): money centralization, session-cleanup, payment cap, echo reset
+Files:
+
+
+frontend/playwright.config.ts
+frontend/src/app/useHospitalSession.test.tsx
+frontend/src/app/useHospitalSession.ts
+frontend/src/features/cash/CashBoxView.tsx
+frontend/src/features/invoices/NewInvoiceView.test.tsx
+frontend/src/features/invoices/components/PaymentModal.test.tsx
+frontend/src/features/invoices/components/PaymentModal.tsx
+frontend/src/features/invoices/state/posMath.ts
+frontend/src/lib/api/base.ts
+frontend/src/lib/csrf.ts
+frontend/src/lib/money.ts
+frontend/src/lib/realtime/echo.test.ts
+frontend/src/lib/realtime/echo.ts
+frontend/src/test/money.test.ts
+frontend/src/test/useHospitalSession.test.ts
+8fe44203 feat(backend): Money value object, secure dialysis flag, no session-mutation on payment
+Files:
+
+
+backend/app/Actions/Billing/CalculateInvoiceTotalsAction.php
+backend/app/Actions/Billing/CreateInvoiceAction.php
+backend/app/Actions/Cash/BuildCashReconciliationAction.php
+backend/app/Actions/Cash/CloseCashSessionAction.php
+backend/app/Actions/Payments/RegisterPaymentAction.php
+backend/app/Http/Requests/Billing/StoreInvoiceRequest.php
+backend/app/Support/Money.php
+backend/database/seeders/RolesAndPermissionsSeeder.php
+backend/tests/Feature/Billing/InvoiceDialysisPrescriptionTest.php
+backend/tests/Feature/Cash/CloseCashSessionTest.php
+backend/tests/Feature/CashPaymentsReceiptTest.php
+backend/tests/Feature/InvoiceCreationTest.php
+backend/tests/Feature/Payments/RegisterPaymentDoesNotMutateInvoiceTest.php
+backend/tests/Unit/CalculateInvoiceTotalsActionTest.php
+backend/tests/Unit/Support/MoneyTest.php
+cdf6840c chore(security): harden secrets and remove default credentials
+Files:
+
+
+backend/.env.docker.example
+backend/docker/entrypoint.sh
+docker-compose.prod.yml
+
+=== diff stat codex/p2-audit-completion..HEAD ===
+ CHANGELOG.md                                       | 202 +++++++++++
+ backend/.env.docker.example                        |  10 +
+ .../Billing/CalculateInvoiceTotalsAction.php       |  36 +-
+ .../app/Actions/Billing/CreateInvoiceAction.php    |  36 +-
+ .../Actions/Cash/BuildCashReconciliationAction.php |  13 +-
+ .../app/Actions/Cash/CloseCashSessionAction.php    |  16 -
+ .../app/Actions/Payments/RegisterPaymentAction.php |   1 -
+ .../Http/Requests/Billing/StoreInvoiceRequest.php  |   2 +-
+ backend/app/Support/Money.php                      | 111 ++++++
+ .../database/seeders/RolesAndPermissionsSeeder.php |   1 +
+ backend/docker/entrypoint.sh                       |  19 +-
+ .../Billing/InvoiceDialysisPrescriptionTest.php    | 178 +++++++++
+ .../tests/Feature/Cash/CloseCashSessionTest.php    | 118 ++++++
+ backend/tests/Feature/CashPaymentsReceiptTest.php  |   8 +-
+ backend/tests/Feature/InvoiceCreationTest.php      |  11 +-
+ .../RegisterPaymentDoesNotMutateInvoiceTest.php    | 170 +++++++++
+ .../Unit/CalculateInvoiceTotalsActionTest.php      |  30 +-
+ backend/tests/Unit/Support/MoneyTest.php           | 154 ++++++++
+ docker-compose.prod.yml                            |  12 +-
+ docs/KNOWN_LIMITATIONS.md                          |  65 ++++
+ docs/OPERATIVE_NOTES_2026_06_02.md                 | 116 ++++++
+ docs/PLAN_7_FASES.md                               | 402 +++++++++++++++++++++
+ docs/manuales/MANUAL_CAJERO.md                     |  76 ++++
+ frontend/playwright.config.ts                      |  66 ++--
+ frontend/src/app/useHospitalSession.test.tsx       |  51 ++-
+ frontend/src/app/useHospitalSession.ts             |  33 +-
+ frontend/src/features/cash/CashBoxView.tsx         |  25 +-
+ .../src/features/invoices/NewInvoiceView.test.tsx  |   7 +-
+ .../invoices/components/PaymentModal.test.tsx      |  52 ++-
+ .../features/invoices/components/PaymentModal.tsx  |  61 +++-
+ frontend/src/features/invoices/state/posMath.ts    |  86 ++++-
+ frontend/src/lib/api/base.ts                       |  37 ++
+ frontend/src/lib/csrf.ts                           |  22 ++
+ frontend/src/lib/money.ts                          |  73 ++++
+ frontend/src/lib/realtime/echo.test.ts             |  92 +++++
+ frontend/src/lib/realtime/echo.ts                  |  23 +-
+ frontend/src/test/money.test.ts                    |  66 ++++
+ frontend/src/test/useHospitalSession.test.ts       |  60 +++
+ nginx/default.conf                                 |  58 ++-
+ scripts/check-branding.ps1                         | 108 +++++-
+ 40 files changed, 2527 insertions(+), 180 deletions(-)
+DIFF_EXIT=0
+

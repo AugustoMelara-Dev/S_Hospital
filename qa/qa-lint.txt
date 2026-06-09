@@ -1,0 +1,73 @@
+﻿
+> s-hospital-frontend@0.1.0 lint
+> eslint .
+
+
+C:\Projects\S_Hospital\frontend\src\App.tsx
+  68:6  warning  React Hook useCallback has a missing dependency: 'session'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Projects\S_Hospital\frontend\src\components\ui\card.tsx
+  18:10  warning  Headings must have content and the content must be accessible by a screen reader  jsx-a11y/heading-has-content
+
+C:\Projects\S_Hospital\frontend\src\components\ui\sheet.tsx
+  53:10  warning  Headings must have content and the content must be accessible by a screen reader  jsx-a11y/heading-has-content
+
+C:\Projects\S_Hospital\frontend\src\features\admin\UsersView.tsx
+  85:6  warning  React Hook useEffect has a missing dependency: 'fetchUsers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Projects\S_Hospital\frontend\src\features\auth\PasswordChangeView.tsx
+  37:13  warning  A form label must be associated with a control  jsx-a11y/label-has-associated-control
+  47:13  warning  A form label must be associated with a control  jsx-a11y/label-has-associated-control
+  57:13  warning  A form label must be associated with a control  jsx-a11y/label-has-associated-control
+
+C:\Projects\S_Hospital\frontend\src\features\backups\BackupsView.tsx
+  225:6  warning  React Hook useEffect has a missing dependency: 'loadBackups'. Either include it or remove the dependency array                      react-hooks/exhaustive-deps
+  241:6  warning  React Hook useEffect has missing dependencies: 'backupsList' and 'loadBackups'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Projects\S_Hospital\frontend\src\features\catalog\components\CategorySheet.tsx
+  103:9  warning  A form label must be associated with a control  jsx-a11y/label-has-associated-control
+
+C:\Projects\S_Hospital\frontend\src\features\catalog\components\ServiceSheet.tsx
+  356:11  warning  A form label must be associated with a control  jsx-a11y/label-has-associated-control
+  361:11  warning  A form label must be associated with a control  jsx-a11y/label-has-associated-control
+
+C:\Projects\S_Hospital\frontend\src\features\dashboard\DashboardView.tsx
+  108:6  warning  React Hook useEffect has missing dependencies: 'fetchDashboard' and 'fetchSetupStatus'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Projects\S_Hospital\frontend\src\features\invoices\InvoiceHistoryView.tsx
+  386:31  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  386:31  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+
+C:\Projects\S_Hospital\frontend\src\features\invoices\NewInvoiceView.tsx
+   43:6  warning  React Hook useEffect has a missing dependency: 'loadPointOfSaleData'. Either include it or remove the dependency array                   react-hooks/exhaustive-deps
+   53:6  warning  React Hook useEffect has a missing dependency: 'state.patientName'. Either include it or remove the dependency array                     react-hooks/exhaustive-deps
+   63:6  warning  React Hook useEffect has a missing dependency: 'searchPointOfSaleServices'. Either include it or remove the dependency array             react-hooks/exhaustive-deps
+  141:6  warning  React Hook useEffect has missing dependencies: 'handleEmitClick' and 'validateForm'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Projects\S_Hospital\frontend\src\features\invoices\components\InvoiceCart.tsx
+  142:21  warning  A form label must be associated with a control  jsx-a11y/label-has-associated-control
+
+C:\Projects\S_Hospital\frontend\src\features\invoices\components\PaymentModal.tsx
+  214:11  warning  A form label must be associated with a control  jsx-a11y/label-has-associated-control
+
+C:\Projects\S_Hospital\frontend\src\features\invoices\components\ServiceSearch.tsx
+  69:6  warning  React Hook useEffect has a missing dependency: 'handleAddService'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Projects\S_Hospital\frontend\src\features\receipts\ReceiptPreview.tsx
+  71:6  warning  React Hook useEffect has a missing dependency: 'handlePrintClick'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Projects\S_Hospital\frontend\src\features\reports\ReportsView.tsx
+  84:6  warning  React Hook useEffect has missing dependencies: 'dailyDate' and 'loadDaily'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Projects\S_Hospital\frontend\src\features\settings\FiscalSettingsView.tsx
+  103:6   warning  React Hook useEffect has a missing dependency: 'loadFiscalConfiguration'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  439:17  warning  A form label must be associated with a control                                                                              jsx-a11y/label-has-associated-control
+  450:17  warning  A form label must be associated with a control                                                                              jsx-a11y/label-has-associated-control
+
+C:\Projects\S_Hospital\frontend\src\layout\Sidebar.tsx
+  79:9  warning  The element ul has an implicit role of list. Defining this explicitly is redundant and should be avoided  jsx-a11y/no-redundant-roles
+
+Ô£û 28 problems (0 errors, 28 warnings)
+
+LINT_EXIT=0
+
