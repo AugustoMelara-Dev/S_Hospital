@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\CashRegisterSession;
 use App\Models\Invoice;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Broadcast;

@@ -42,6 +42,7 @@ export function useHospitalSession() {
 
   useEffect(() => {
     const unsubscribe = apiClient.onSessionExpired(() => {
+      apiClient.invalidateSession();
       setUser(null);
       setCashSession(null);
       setStatus('Sesión vencida. Redirigiendo al login...');

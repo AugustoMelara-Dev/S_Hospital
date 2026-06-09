@@ -52,8 +52,19 @@ class BuildCashReconciliationAction
         }
 
         $pendingRow = Invoice::query()
-            ->where('cash_session_id', $session->id)
             ->whereIn('status', [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIAL])
+            ->where(function ($query) use ($session): void {
+                $query
+                    ->where('cash_session_id', $session->id)
+                    ->orWhereExists(function ($subquery) use ($session): void {
+                        $subquery
+                            ->selectRaw('1')
+                            ->from('payments')
+                            ->whereColumn('payments.invoice_id', 'invoices.id')
+                            ->where('payments.cash_session_id', $session->id)
+                            ->where('payments.status', Payment::STATUS_POSTED);
+                    });
+            })
             ->selectRaw('COUNT(*) as invoice_count, COALESCE(SUM(balance_due_cents), 0) as total_cents')
             ->first();
 

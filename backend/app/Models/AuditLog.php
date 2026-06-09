@@ -40,6 +40,13 @@ class AuditLog extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::creating(function (AuditLog $auditLog): void {
+            $auditLog->created_at ??= now();
+        });
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
