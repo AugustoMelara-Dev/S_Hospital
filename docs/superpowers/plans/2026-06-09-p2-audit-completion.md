@@ -59,13 +59,13 @@ Untracked/generated files present before this plan must remain out of commits:
 
 **TDD Steps:**
 
-- [ ] Add failing config-default test in `ProductionConfigDefaultsTest` asserting the timezone default.
-- [ ] Add failing `InvoiceAccessTest` for the Tegucigalpa/UTC day-boundary scenario.
-- [ ] Run the two tests and verify they fail for the expected reasons.
-- [ ] Implement the minimal config/env/docs changes.
-- [ ] Run the two tests again and verify they pass.
-- [ ] Run related invoice/history/receipt authorization tests.
-- [ ] Commit: `fix(config): use hospital local timezone`
+- [x] Add failing config-default test in `ProductionConfigDefaultsTest` asserting the timezone default.
+- [x] Add failing `InvoiceAccessTest` for the Tegucigalpa/UTC day-boundary scenario.
+- [x] Run the two tests and verify they fail for the expected reasons.
+- [x] Implement the minimal config/env/docs changes.
+- [x] Run the two tests again and verify they pass.
+- [x] Run related invoice/history/receipt authorization tests.
+- [x] Commit: `fix(config): use hospital local timezone`
 
 ## Phase P2-B: License Salt Production Fail-Closed
 
@@ -98,12 +98,12 @@ Untracked/generated files present before this plan must remain out of commits:
 
 **TDD Steps:**
 
-- [ ] Inspect current license tests and production config tests.
-- [ ] Add a failing production-mode test for missing `HOSPITAL_LICENSE_SALT`.
-- [ ] Run the test and verify the expected failure.
-- [ ] Implement minimal production-only guard.
-- [ ] Run license/config tests and verify they pass.
-- [ ] Commit: `fix(security): require production license salt`
+- [x] Inspect current license tests and production config tests.
+- [x] Add a failing production-mode test for missing `HOSPITAL_LICENSE_SALT`.
+- [x] Run the test and verify the expected failure.
+- [x] Implement minimal production-only guard.
+- [x] Run license/config tests and verify they pass.
+- [x] Commit: `fix(security): require production license salt`
 
 ## Phase P2-C: Remaining P2 Reconciliation Audit
 
@@ -125,6 +125,12 @@ Untracked/generated files present before this plan must remain out of commits:
 - Search results distinguish resolved, accepted, and still-open findings.
 - No generated coverage files are committed.
 - Any new high/critical unresolved item gets its own phase with tests and commit.
+
+**Execution Result:**
+
+- [x] Reconciled findings in `qa/P2_RECONCILIATION_2026_06_09.md`.
+- [x] Confirmed no new high/critical unresolved P2 item remains in `HEAD`.
+- [x] Kept generated/unrelated worktree files out of P2 commits.
 
 **Verification Commands:**
 
@@ -153,4 +159,6 @@ git status --short --branch
 - [x] Working branch: `codex/p2-audit-completion`.
 - [x] Upstream fast-forward applied.
 - [x] Generated/untracked evidence identified and excluded from commits.
-- [ ] Phase P2-A tests written and verified red.
+- [x] Phase P2-A tests written and verified red.
+- [x] Phase P2-B tests written and verified red.
+- [x] Phase P2-C reconciliation documented.
