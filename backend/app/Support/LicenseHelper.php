@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\FiscalSetting;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 
 class LicenseHelper
 {
@@ -18,7 +19,18 @@ class LicenseHelper
             return $configured;
         }
 
+        if (self::requiresConfiguredSalt()) {
+            throw new RuntimeException('HOSPITAL_LICENSE_SALT must be configured to sign production license files.');
+        }
+
         return self::DEFAULT_SALT;
+    }
+
+    private static function requiresConfiguredSalt(): bool
+    {
+        return function_exists('config')
+            && (string) config('app.env', 'production') === 'production'
+            && (string) config('app.license_salt', '') === '';
     }
 
     /**
@@ -48,6 +60,17 @@ class LicenseHelper
                 'expires_at' => null,
                 'type' => 'Operacion local',
                 'message' => 'Sistema funcionando en modo local para la red del hospital.',
+            ];
+        }
+
+        if (self::requiresConfiguredSalt()) {
+            return [
+                'valid' => false,
+                'licensee' => $hospitalName,
+                'rtn' => $rtn,
+                'expires_at' => null,
+                'type' => 'Salt de Registro Faltante',
+                'message' => 'Configure HOSPITAL_LICENSE_SALT antes de validar un archivo de registro local en produccion.',
             ];
         }
 

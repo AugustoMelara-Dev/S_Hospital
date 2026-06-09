@@ -176,6 +176,40 @@ class LicenseHelperTest extends TestCase
         $this->assertEquals('Registro LAN verificado', $status['type']);
     }
 
+    public function test_production_license_file_requires_configured_salt(): void
+    {
+        config([
+            'app.env' => 'testing',
+            'app.license_salt' => '',
+        ]);
+
+        FiscalSetting::query()->create([
+            'hospital_name' => 'Hospital Central',
+            'rtn' => '08011999123456',
+            'default_tax_rate' => '15.00',
+            'receipt_width' => '80mm',
+        ]);
+
+        $signatureWithDefaultSalt = LicenseHelper::generateSignature('Hospital Central', '08011999123456', '2030-12-31');
+
+        Storage::disk('local')->put('license.json', json_encode([
+            'licensee' => 'Hospital Central',
+            'rtn' => '08011999123456',
+            'expires_at' => '2030-12-31',
+            'signature' => $signatureWithDefaultSalt,
+        ]));
+
+        config([
+            'app.env' => 'production',
+            'app.license_salt' => '',
+        ]);
+
+        $status = LicenseHelper::checkLicense();
+
+        $this->assertFalse($status['valid']);
+        $this->assertEquals('Salt de Registro Faltante', $status['type']);
+    }
+
     public function test_rotating_license_salt_invalidates_prior_signature(): void
     {
         FiscalSetting::query()->create([
