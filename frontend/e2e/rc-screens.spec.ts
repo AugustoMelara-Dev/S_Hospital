@@ -1,28 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-
-const cashierUser = {
-  id: 2,
-  name: 'Cajero Validacion',
-  email: 'cajero.validacion@hospital-san-isidro.local',
-  username: 'cajero.validacion',
-  active: true,
-  roles: ['cajero'],
-  permissions: [
-    'catalog.view',
-    'cash.view',
-    'cash.open',
-    'cash.close',
-    'invoices.view',
-    'invoices.create',
-    'payments.create',
-    'payments.view',
-    'receipts.view',
-    'receipts.reprint',
-  ],
-  must_change_password: false,
-};
 
 const adminUser = {
   id: 1,
@@ -43,86 +20,6 @@ const adminUser = {
 
 const captureDirName = 'rc-screens-2026-06-09';
 const captureOutputDir = process.env.E2E_CAPTURE_SCREENS_DIR ?? path.join('C:\\Users\\melar\\AppData\\Local\\Temp\\opencode\\e2e-screens-extra', captureDirName);
-
-async function installApiMocks(page: Page) {
-  await page.route('**/sanctum/csrf-cookie', async (route) => {
-    await route.fulfill({ status: 204, body: '' });
-  });
-  await page.route('**/api/public/branding', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        data: { hospital_name: 'Hospital San Isidro', logo_url: null },
-      }),
-    });
-  });
-  await page.route('**/api/auth/login', async (route) => {
-    const payload = JSON.parse(route.request().postData() ?? '{}');
-    const user = payload.login === 'admin.validacion' ? adminUser : cashierUser;
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ data: { token: 'mock-token', user } }),
-    });
-  });
-  await page.route('**/api/auth/me', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ data: cashierUser }),
-    });
-  });
-  await page.route('**/api/fiscal-settings**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        data: {
-          hospital_name: 'Hospital San Isidro',
-          rtn: '08019999123456',
-          address: 'Barrio El Centro, Tegucigalpa',
-          phone: '+504 2222-3333',
-          receipt_header: 'HOSPITAL SAN ISIDRO',
-          receipt_footer: 'Gracias por su pago',
-          paper_size: 'letter',
-          printer_profile: 'thermal_80mm',
-          logo_url: null,
-        },
-      }),
-    });
-  });
-  await page.route('**/api/backups**', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        data: {
-          backups: [
-            {
-              id: 1,
-              filename: 'hospital-2026-06-08-2300.sql.gz',
-              created_at: '2026-06-08T23:00:00-06:00',
-              size_bytes: 1_048_576,
-              status: 'success',
-              initiated_by: 'scheduler',
-            },
-            {
-              id: 2,
-              filename: 'hospital-2026-06-09-1100.sql.gz',
-              created_at: '2026-06-09T11:00:00-06:00',
-              size_bytes: 1_572_864,
-              status: 'pending',
-              initiated_by: 'admin.validacion',
-            },
-          ],
-          worker_command: 'php artisan queue:work --queue=backups --tries=1 --timeout=600',
-          counts: { success: 1, pending: 1, failed: 0 },
-        },
-      }),
-    });
-  });
-}
 
 async function captureScreen(page: Page, name: string) {
   const file = path.join(captureOutputDir, `${name}.png`);
@@ -217,7 +114,7 @@ test.describe('RC1 critical screens (mocked)', () => {
   test('backups screen (admin)', async ({ page, context }) => {
     await context.clearCookies();
     await page.addInitScript(() => {
-      try { localStorage.clear(); sessionStorage.clear(); } catch {}
+      try { localStorage.clear(); sessionStorage.clear(); } catch (e) { void e; }
     });
     await page.route('**/sanctum/csrf-cookie', async (route) => {
       await route.fulfill({ status: 204, body: '' });

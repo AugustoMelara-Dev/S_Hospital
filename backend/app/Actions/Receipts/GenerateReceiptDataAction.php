@@ -9,7 +9,7 @@ use App\Support\ReceiptPaperSize;
 
 class GenerateReceiptDataAction
 {
-    public function execute(Invoice $invoice, string $width): array
+    public function execute(Invoice $invoice, string $width, ?string $copyLabel = null): array
     {
         $paperSize = ReceiptPaperSize::normalize($width);
 
@@ -40,7 +40,7 @@ class GenerateReceiptDataAction
                 'secretariat_line' => $invoice->receipt_secretariat_line ?? 'Secretaria de Salud Publica',
                 'location' => $invoice->receipt_location,
                 'footer_text' => $invoice->receipt_footer_text,
-                'copy_label' => 'Original',
+                'copy_label' => $copyLabel ?? 'Original',
                 'signature_label' => 'Firma y sello del receptor de fondos',
             ],
             'fiscal' => [

@@ -3,6 +3,7 @@
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\IdempotencyKey;
 use App\Http\Middleware\ThrottleByUser;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'user.active' => EnsureUserIsActive::class,
             'password.changed' => EnsurePasswordIsChanged::class,
             'throttle.user' => ThrottleByUser::class,
+            'idempotency' => IdempotencyKey::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

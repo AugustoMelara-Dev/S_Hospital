@@ -14,7 +14,15 @@ class ReprintReceiptAction
 
     public function execute(Invoice $invoice, User $user, string $width, ?string $reason = null): array
     {
-        $receipt = $this->generateReceiptData->execute($invoice, $width);
+        $reprintCount = AuditLog::query()
+            ->where('entity_type', Invoice::class)
+            ->where('entity_id', $invoice->id)
+            ->where('action', 'invoice.reprinted')
+            ->count() + 1;
+
+        $copyLabel = sprintf('Reimpresion #%d', $reprintCount);
+
+        $receipt = $this->generateReceiptData->execute($invoice, $width, $copyLabel);
 
         AuditLog::query()->create([
             'user_id' => $user->id,
@@ -26,6 +34,8 @@ class ReprintReceiptAction
                 'invoice_number' => $invoice->invoice_number,
                 'width' => $width,
                 'reason' => $reason,
+                'reprint_count' => $reprintCount,
+                'copy_label' => $copyLabel,
             ],
             'created_at' => now(),
         ]);
@@ -37,6 +47,8 @@ class ReprintReceiptAction
                 'invoice_id' => $invoice->id,
                 'width' => $width,
                 'reason' => $reason,
+                'reprint_count' => $reprintCount,
+                'copy_label' => $copyLabel,
             ],
         ];
     }

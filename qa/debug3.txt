@@ -1,0 +1,13 @@
+﻿
+> s-hospital-frontend@0.1.0 test
+> vitest run src/App.test.tsx -t renders app shell
+
+
+ RUN  v4.1.8 C:/Projects/S_Hospital/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 14 skipped (15)
+   Start at  14:51:40
+   Duration  15.25s (transform 3.09s, setup 1.92s, import 6.93s, tests 1.54s, environment 3.78s)
+

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 import path from 'node:path';
 
 const captureOutputDir = 'C:/Users/melar/AppData/Local/Temp/opencode/e2e-screens-backup';
