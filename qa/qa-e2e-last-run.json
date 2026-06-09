@@ -26,9 +26,9 @@
     "file": "frontend/e2e/rc1-screens.spec.ts",
     "tests": 9,
     "all_passed": true,
-    "captures": 22
+    "captures": 23
   },
-  "screenshots_captured": 22,
+  "screenshots_captured": 23,
   "screenshots_dir": "qa/screenshots/",
   "captures_prefix": "rc-e2e-2026-06-09-"
 }
