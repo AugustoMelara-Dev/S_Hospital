@@ -251,14 +251,21 @@ class InvoiceCreationTest extends TestCase
     {
         $this->seedBillingBase();
         $erythropoietin = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
+        $cashier = $this->cashier();
+        // BUG-SEC-04: simulate the patient being pre-marked as
+        // dialysis-prescribed by clinical staff; in production the cashier
+        // would not have this permission. Granted here per-user so the
+        // broader security invariant (cajero role lacks the permission) is
+        // preserved for InvoiceDialysisPrescriptionTest.
+        $cashier->givePermissionTo('patients.mark_dialysis_prescription');
 
-        $this->actingAs($this->cashier())
+        $this->actingAs($cashier)
             ->postJson('/api/invoices', [
                 'patient_name' => 'Maria Lopez',
+                'dialysis_prescription' => true,
                 'items' => [[
                     'service_id' => $erythropoietin->id,
                     'quantity' => '1.00',
-                    'dialysis_prescription' => true,
                 ]],
             ])
             ->assertCreated()

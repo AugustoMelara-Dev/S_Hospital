@@ -18,10 +18,10 @@ class StoreInvoiceRequest extends FormRequest
     {
         return [
             'patient_name' => ['required', 'string', 'max:180'],
+            'dialysis_prescription' => ['sometimes', 'boolean'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.service_id' => ['required', 'integer', 'exists:services,id'],
             'items.*.quantity' => ['required', 'numeric', 'min:0.01', 'regex:/^\d+(\.\d{1,2})?$/'],
-            'items.*.dialysis_prescription' => ['sometimes', 'boolean'],
             'items.*.notes' => ['nullable', 'string', 'max:255'],
         ];
     }

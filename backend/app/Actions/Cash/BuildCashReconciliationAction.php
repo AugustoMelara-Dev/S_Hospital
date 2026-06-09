@@ -38,17 +38,17 @@ class BuildCashReconciliationAction
             ->get();
 
         $paymentsCount = 0;
-        $paymentsTotalCents = 0;
+        $paymentsTotal = Money::zero();
 
         foreach ($paymentRows as $row) {
             if (! array_key_exists($row->method, $paymentsByMethod)) {
                 continue;
             }
 
-            $methodCents = (int) $row->total_cents;
-            $paymentsByMethod[$row->method] = Money::formatCents($methodCents);
+            $methodMoney = Money::fromCents((int) $row->total_cents);
+            $paymentsByMethod[$row->method] = Money::formatCents($methodMoney->toCents());
             $paymentsCount += (int) $row->payments_count;
-            $paymentsTotalCents += $methodCents;
+            $paymentsTotal = $paymentsTotal->plus($methodMoney);
         }
 
         $pendingRow = Invoice::query()
@@ -70,12 +70,13 @@ class BuildCashReconciliationAction
 
         $openingCents = Money::parseCents((string) $session->opening_amount, 'opening_amount');
         $cashCents = Money::parseCents($paymentsByMethod[Payment::METHOD_CASH], 'cash_payments');
+        $expectedCents = $openingCents + $cashCents;
 
         return [
             'payments_count' => $paymentsCount,
-            'payments_total' => Money::formatCents($paymentsTotalCents),
+            'payments_total' => Money::formatCents($paymentsTotal->toCents()),
             'payments_by_method' => $paymentsByMethod,
-            'expected_cash_amount' => Money::formatCents($openingCents + $cashCents),
+            'expected_cash_amount' => Money::formatCents($expectedCents),
             'pending_invoice_count' => (int) ($pendingRow?->invoice_count ?? 0),
             'pending_amount' => Money::formatCents((int) ($pendingRow?->total_cents ?? 0)),
         ];

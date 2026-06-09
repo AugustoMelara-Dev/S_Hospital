@@ -24,7 +24,7 @@ class CreateInvoiceAction
     ) {}
 
     /**
-     * @param  array{patient_name: string, items: list<array{service_id: int, quantity: string, dialysis_prescription?: bool, notes?: ?string}>}  $payload
+     * @param  array{patient_name: string, items: list<array{service_id: int, quantity: string, notes?: ?string}>, dialysis_prescription?: bool}  $payload
      */
     public function execute(array $payload, User $issuer): Invoice
     {
@@ -41,10 +41,11 @@ class CreateInvoiceAction
                 ]);
             }
 
+            $dialysisPrescription = $this->resolveDialysisPrescription($payload, $issuer);
             $preparedItems = $this->prepareItems($payload['items']);
             $settings = FiscalSetting::query()->first();
             $taxRate = $settings?->default_tax_rate ?? '15.00';
-            $totals = $this->calculateInvoiceTotals->execute($preparedItems, (string) $taxRate);
+            $totals = $this->calculateInvoiceTotals->execute($preparedItems, (string) $taxRate, $dialysisPrescription);
             $fiscal = $this->generateFiscalNumber->execute();
             $sequence = $fiscal['sequence'];
             $isZeroTotal = $this->isZeroAmount($totals['total']);
@@ -154,8 +155,34 @@ class CreateInvoiceAction
     }
 
     /**
-     * @param  list<array{service_id: int, quantity: string, dialysis_prescription?: bool, notes?: ?string}>  $items
-     * @return list<array{service: Service, quantity: string, dialysis_prescription: bool, notes: ?string}>
+     * Resolves the invoice-level `dialysis_prescription` flag. The flag
+     * may ONLY be set by users with the `patients.mark_dialysis_prescription`
+     * permission; cashiers cannot toggle it from the POS UI. If a cashier
+     * submits `dialysis_prescription: true` in the payload, the value is
+     * rejected.
+     *
+     * @param  array{patient_name: string, items: list<array{service_id: int, quantity: string, notes?: ?string}>, dialysis_prescription?: bool}  $payload
+     */
+    private function resolveDialysisPrescription(array $payload, User $issuer): bool
+    {
+        $requested = (bool) ($payload['dialysis_prescription'] ?? false);
+
+        if (! $requested) {
+            return false;
+        }
+
+        if (! $issuer->can('patients.mark_dialysis_prescription')) {
+            throw ValidationException::withMessages([
+                'dialysis_prescription' => 'No tiene permiso para marcar pacientes con receta de dialisis.',
+            ]);
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  list<array{service_id: int, quantity: string, notes?: ?string}>  $items
+     * @return list<array{service: Service, quantity: string, notes: ?string}>
      */
     private function prepareItems(array $items): array
     {
@@ -200,7 +227,6 @@ class CreateInvoiceAction
             $prepared[] = [
                 'service' => $service,
                 'quantity' => $item['quantity'],
-                'dialysis_prescription' => (bool) ($item['dialysis_prescription'] ?? false),
                 'notes' => $item['notes'] ?? null,
             ];
         }

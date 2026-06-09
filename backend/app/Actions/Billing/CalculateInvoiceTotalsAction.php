@@ -3,12 +3,20 @@
 namespace App\Actions\Billing;
 
 use App\Models\Service;
+use App\Support\Money;
 use Illuminate\Validation\ValidationException;
 
 class CalculateInvoiceTotalsAction
 {
     /**
-     * @param  list<array{service: Service, quantity: string, dialysis_prescription: bool, notes: ?string}>  $items
+     * Rounding strategy for fractional cents in line subtotals:
+     * half-up (half-away-from-zero) is the standard expected for hospital
+     * billing in Honduras. We use `intdiv(($cents * $units) + 50, 100)` to
+     * round 0.5 cent up. This is NOT banker's rounding; if a future
+     * requirement demands half-to-even, the divisor is unchanged but the
+     * additive offset must vary based on the parity of the quotient.
+     *
+     * @param  list<array{service: Service, quantity: string, notes: ?string}>  $items
      * @return array{
      *     subtotal: string, subtotal_cents: int,
      *     tax_amount: string, tax_amount_cents: int,
@@ -17,17 +25,17 @@ class CalculateInvoiceTotalsAction
      *     items: list<array<string, mixed>>
      * }
      */
-    public function execute(array $items, string $taxRate): array
+    public function execute(array $items, string $taxRate, bool $patientDialysisPrescription = false): array
     {
         $taxRateBasisPoints = $this->parseRateBasisPoints($taxRate);
-        $subtotalCents = 0;
-        $taxCents = 0;
+        $subtotal = Money::zero();
+        $tax = Money::zero();
         $calculatedItems = [];
 
         foreach ($items as $item) {
             $service = $item['service'];
             $quantityUnits = $this->parseDecimalUnits($item['quantity'], 'items.quantity');
-            $specialRuleApplied = $this->appliesErythropoietinRule($service, $item['dialysis_prescription']);
+            $specialRuleApplied = $this->appliesErythropoietinRule($service, $patientDialysisPrescription);
             $unitPriceCents = $specialRuleApplied ? 0 : $this->parseMoneyCents((string) $service->price);
             $lineSubtotalCents = intdiv(($unitPriceCents * $quantityUnits) + 50, 100);
             $lineTaxCents = $service->taxable
@@ -35,8 +43,8 @@ class CalculateInvoiceTotalsAction
                 : 0;
             $lineTotalCents = $lineSubtotalCents + $lineTaxCents;
 
-            $subtotalCents += $lineSubtotalCents;
-            $taxCents += $lineTaxCents;
+            $subtotal = $subtotal->plus(Money::fromCents($lineSubtotalCents));
+            $tax = $tax->plus(Money::fromCents($lineTaxCents));
 
             $calculatedItems[] = [
                 'service_id' => $service->id,
@@ -66,13 +74,13 @@ class CalculateInvoiceTotalsAction
         }
 
         $discountCents = 0;
-        $totalCents = $subtotalCents + $taxCents - $discountCents;
+        $totalCents = $subtotal->toCents() + $tax->toCents() - $discountCents;
 
         return [
-            'subtotal' => $this->formatMoney($subtotalCents),
-            'subtotal_cents' => $subtotalCents,
-            'tax_amount' => $this->formatMoney($taxCents),
-            'tax_amount_cents' => $taxCents,
+            'subtotal' => $this->formatMoney($subtotal->toCents()),
+            'subtotal_cents' => $subtotal->toCents(),
+            'tax_amount' => $this->formatMoney($tax->toCents()),
+            'tax_amount_cents' => $tax->toCents(),
             'discount_amount' => $this->formatMoney($discountCents),
             'discount_amount_cents' => $discountCents,
             'total' => $this->formatMoney($totalCents),
@@ -81,9 +89,9 @@ class CalculateInvoiceTotalsAction
         ];
     }
 
-    private function appliesErythropoietinRule(Service $service, bool $dialysisPrescription): bool
+    private function appliesErythropoietinRule(Service $service, bool $patientDialysisPrescription): bool
     {
-        return $dialysisPrescription
+        return $patientDialysisPrescription
             && $service->special_rule_code === Service::ERYTHROPOIETIN_RULE;
     }
 
