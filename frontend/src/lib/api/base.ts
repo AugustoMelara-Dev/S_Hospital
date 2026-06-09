@@ -1,4 +1,7 @@
 import { PERMISSION_DENIED_MESSAGE, logClientIssue, safeClientMessage } from '../support/clientIssueLog';
+import { invalidateCsrfCookie } from '../csrf';
+
+let forceLogoutHandler: (() => void) | null = null;
 
 const sessionExpiredHandlers = new Set<() => void>();
 let requestChain: Promise<unknown> = Promise.resolve();
@@ -250,6 +253,21 @@ export const apiClient = {
     };
   },
 
+  onForceLogout(handler: (() => void) | null): () => void {
+    if (handler === null) {
+      forceLogoutHandler = null;
+
+      return () => undefined;
+    }
+    forceLogoutHandler = handler;
+
+    return () => {
+      if (forceLogoutHandler === handler) {
+        forceLogoutHandler = null;
+      }
+    };
+  },
+
   // Called by useHospitalSession on logout (and after a 401/419) to
   // wipe the cached CSRF cookie promise. The next login gets a fresh
   // token from /sanctum/csrf-cookie instead of reusing the previous
@@ -395,6 +413,25 @@ export const apiClient = {
       resetCsrfCache();
       await this.csrf();
       response = await send();
+    }
+
+    if (response.status === 401) {
+      // Force a fresh XSRF-TOKEN on the next request so the next
+      // authenticated user does not reuse the previous session's
+      // token. The cookie endpoint is best-effort: the primary
+      // cleanup (session-expired notification) still runs.
+      void invalidateCsrfCookie();
+    }
+
+    if (response.headers?.get('X-Force-Logout') === '1') {
+      const handler = forceLogoutHandler;
+      if (handler) {
+        try {
+          handler();
+        } catch {
+          // A throwing handler must not break the request error path.
+        }
+      }
     }
 
     if (!response.ok) {

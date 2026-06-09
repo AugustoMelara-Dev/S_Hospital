@@ -1,5 +1,8 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { type AuthUser, type CashSession, apiClient, userSafeErrorMessage } from '../lib/api';
+import { invalidateCsrfCookie } from '../lib/csrf';
+import { disconnectEcho } from '../lib/realtime/echo';
 import { type PasswordChangeForm } from '../features/auth/PasswordChangeView';
 
 export function useHospitalSession() {
@@ -17,6 +20,7 @@ export function useHospitalSession() {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [passwordSubmitting, setPasswordSubmitting] = useState(false);
   const passwordSubmitInFlightRef = useRef(false);
+  const queryClient = useQueryClient();
 
   const permissions = useMemo(() => new Set(user?.permissions ?? []), [user?.permissions]);
   const canViewFiscalSettings = permissions.has('settings.fiscal.view');
@@ -43,6 +47,12 @@ export function useHospitalSession() {
   useEffect(() => {
     const unsubscribe = apiClient.onSessionExpired(() => {
       apiClient.invalidateSession();
+      // Tear down realtime and the query cache so a stale Echo socket
+      // and cached data from the previous user do not leak into the
+      // next session on this PC.
+      disconnectEcho();
+      queryClient.clear();
+      void invalidateCsrfCookie();
       setUser(null);
       setCashSession(null);
       setStatus('Sesión vencida. Redirigiendo al login...');
@@ -50,7 +60,22 @@ export function useHospitalSession() {
     });
 
     return unsubscribe;
-  }, []);
+  }, [queryClient]);
+
+  useEffect(() => {
+    const unsubscribe = apiClient.onForceLogout(() => {
+      apiClient.invalidateSession();
+      disconnectEcho();
+      queryClient.clear();
+      void invalidateCsrfCookie();
+      setUser(null);
+      setCashSession(null);
+      setStatus('Sesión cerrada por el servidor. Redirigiendo al login...');
+      setSessionExpired(true);
+    });
+
+    return unsubscribe;
+  }, [queryClient]);
 
   // Old code path that followed is now in a separate effect to
   // avoid running on every state change.
@@ -110,6 +135,12 @@ export function useHospitalSession() {
     // Drop the cached CSRF promise so the next login does not reuse
     // the previous user's token.
     apiClient.invalidateSession();
+    // Tear down realtime, the TanStack Query cache, and force a fresh
+    // XSRF cookie. The next login must not see the previous user's
+    // invoices, cash session, or echo subscriptions.
+    disconnectEcho();
+    queryClient.clear();
+    void invalidateCsrfCookie();
     setUser(null);
     setCashSession(null);
     setStatus('Sesión cerrada.');

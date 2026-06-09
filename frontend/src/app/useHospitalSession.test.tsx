@@ -1,7 +1,29 @@
+import type React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useHospitalSession } from './useHospitalSession';
 import { apiClient } from '../lib/api';
+import { disconnectEcho } from '../lib/realtime/echo';
+import { invalidateCsrfCookie } from '../lib/csrf';
+
+vi.mock('../lib/realtime/echo', () => ({
+  disconnectEcho: vi.fn(),
+}));
+
+vi.mock('../lib/csrf', () => ({
+  invalidateCsrfCookie: vi.fn().mockResolvedValue(undefined),
+}));
+
+function makeWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  };
+}
 
 function SessionProbe() {
   const session = useHospitalSession();
@@ -16,6 +38,8 @@ function SessionProbe() {
 describe('useHospitalSession', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.mocked(disconnectEcho).mockClear();
+    vi.mocked(invalidateCsrfCookie).mockClear();
   });
 
   it('invalidates cached session state when the API reports an expired session', async () => {
@@ -30,7 +54,7 @@ describe('useHospitalSession', () => {
     });
     const invalidateSession = vi.spyOn(apiClient, 'invalidateSession').mockImplementation(() => undefined);
 
-    render(<SessionProbe />);
+    render(<SessionProbe />, { wrapper: makeWrapper() });
 
     await waitFor(() => expect(screen.getByText('ready:active')).toBeInTheDocument());
 
@@ -41,5 +65,28 @@ describe('useHospitalSession', () => {
     expect(invalidateSession).toHaveBeenCalledTimes(1);
     expect(screen.getByText('ready:expired')).toBeInTheDocument();
   });
-});
 
+  it('cleans up Echo, the query cache, and the CSRF cookie on session expiry', async () => {
+    let expireSession: (() => void) | null = null;
+    const unsubscribe = vi.fn();
+
+    vi.spyOn(apiClient, 'session').mockResolvedValue(null);
+    vi.spyOn(apiClient, 'onSessionExpired').mockImplementation((handler) => {
+      expireSession = handler;
+
+      return unsubscribe;
+    });
+    vi.spyOn(apiClient, 'invalidateSession').mockImplementation(() => undefined);
+
+    render(<SessionProbe />, { wrapper: makeWrapper() });
+
+    await waitFor(() => expect(screen.getByText('ready:active')).toBeInTheDocument());
+
+    act(() => {
+      expireSession?.();
+    });
+
+    expect(disconnectEcho).toHaveBeenCalledTimes(1);
+    expect(invalidateCsrfCookie).toHaveBeenCalledTimes(1);
+  });
+});
