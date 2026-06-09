@@ -65,7 +65,9 @@ if (-not (Test-Path -LiteralPath $backendEnv)) {
 }
 
 if (-not $AppPort) {
-    $existing = (& "$PSScriptRoot/_lib_env_helpers.ps1" -Path $backendEnv -Action Read).APP_PORT
+    . "$PSScriptRoot/lib/env_helpers.ps1"
+    $envData = Read-EnvFile -path $backendEnv
+    $existing = $envData.APP_PORT
     if ($existing) {
         $AppPort = [int] $existing
     } else {
@@ -74,7 +76,8 @@ if (-not $AppPort) {
 }
 
 if (-not $ServerIp) {
-    $candidates = & "$PSScriptRoot/_lib_lan_ip.ps1"
+    . "$PSScriptRoot/lib/net_diagnostics.ps1"
+    $candidates = Get-LanIPv4Candidates
     if (-not $candidates -or $candidates.Count -eq 0) {
         Write-Error "No LAN IPv4 candidate found. Pass -ServerIp 192.168.x.x explicitly."
         exit 3
@@ -118,14 +121,19 @@ if ($PSCmdlet.ShouldProcess($backendEnv, "Set LAN env vars")) {
     Update-EnvKey -Path $backendEnv -Key "APP_PORT" -Value $AppPort.ToString()
 
     # Read existing SANCTUM_STATEFUL_DOMAINS and CORS_ALLOWED_ORIGINS
-    $env = & "$PSScriptRoot/_lib_env_helpers.ps1" -Path $backendEnv -Action Read
-    $stateful = ($env.SANCTUM_STATEFUL_DOMAINS ?? "").Split(",") | ForEach-Object { $_.Trim() } | Where-Object { $_ }
-    $cors = ($env.CORS_ALLOWED_ORIGINS ?? "").Split(",") | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+    . "$PSScriptRoot/lib/env_helpers.ps1"
+    $env = Read-EnvFile -path $backendEnv
+    $statefulRaw = ''
+    if ($env.ContainsKey('SANCTUM_STATEFUL_DOMAINS')) { $statefulRaw = [string]$env.SANCTUM_STATEFUL_DOMAINS }
+    $corsRaw = ''
+    if ($env.ContainsKey('CORS_ALLOWED_ORIGINS')) { $corsRaw = [string]$env.CORS_ALLOWED_ORIGINS }
+    $stateful = @() + ($statefulRaw -split ',')
+    $cors = @() + ($corsRaw -split ',')
 
     $needHost = "$ServerIp"
     $needHostPort = "$ServerIp`:$AppPort"
-    $statefulUpdated = ($stateful + @($needHost, $needHostPort)) | Select-Object -Unique
-    $corsUpdated = ($cors + @("http://$needHostPort", "https://$needHostPort")) | Select-Object -Unique
+    $statefulUpdated = @($stateful + @($needHost, $needHostPort)) | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique
+    $corsUpdated = @($cors + @("http://$needHostPort", "https://$needHostPort")) | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique
 
     Update-EnvKey -Path $backendEnv -Key "SANCTUM_STATEFUL_DOMAINS" -Value ($statefulUpdated -join ",")
     Update-EnvKey -Path $backendEnv -Key "CORS_ALLOWED_ORIGINS" -Value ($corsUpdated -join ",")
