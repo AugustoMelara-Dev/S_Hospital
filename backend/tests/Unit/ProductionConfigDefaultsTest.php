@@ -35,6 +35,17 @@ class ProductionConfigDefaultsTest extends TestCase
         );
     }
 
+    public function test_application_timezone_defaults_to_hospital_local_timezone(): void
+    {
+        $config = $this->readConfig('app.php');
+
+        $this->assertStringContainsString(
+            "'timezone' => env('APP_TIMEZONE', 'America/Tegucigalpa')",
+            $config,
+            'The hospital cashier day must default to America/Tegucigalpa; UTC rolls the operational day at 6 PM Honduras time.'
+        );
+    }
+
     public function test_queue_connections_defer_jobs_until_after_commit(): void
     {
         $config = $this->readConfig('queue.php');

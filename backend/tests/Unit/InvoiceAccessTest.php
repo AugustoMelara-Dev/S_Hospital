@@ -12,6 +12,7 @@ use App\Support\InvoiceAccess;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class InvoiceAccessTest extends TestCase
@@ -53,6 +54,26 @@ class InvoiceAccessTest extends TestCase
         $this->expectException(AuthorizationException::class);
 
         app(InvoiceAccess::class)->authorizeOperationalAccess($cashier, $invoice);
+    }
+
+    public function test_cajero_can_operate_own_invoice_from_same_honduras_day_when_utc_date_changed(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-09 01:30:00', 'UTC'));
+
+        try {
+            $cashier = $this->cajero();
+            $invoice = $this->invoiceFor(
+                $cashier,
+                today: true,
+                issuedAt: Carbon::parse('2026-06-08 23:00:00', 'UTC'),
+            );
+
+            app(InvoiceAccess::class)->authorizeOperationalAccess($cashier, $invoice);
+
+            $this->assertTrue(app(InvoiceAccess::class)->canOperateInvoice($cashier, $invoice));
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     public function test_admin_can_operate_any_invoice(): void
@@ -126,7 +147,7 @@ class InvoiceAccessTest extends TestCase
         return $user;
     }
 
-    private function invoiceFor(User $issuer, bool $today): Invoice
+    private function invoiceFor(User $issuer, bool $today, ?Carbon $issuedAt = null): Invoice
     {
         $cashier = $this->cajero();
         CashRegisterSession::query()->create([
@@ -167,7 +188,7 @@ class InvoiceAccessTest extends TestCase
             'status' => Invoice::STATUS_ISSUED,
             'cash_session_id' => null,
             'issued_by' => $issuer->id,
-            'issued_at' => $today ? now() : now()->subDay(),
+            'issued_at' => $issuedAt ?? ($today ? now() : now()->subDay()),
         ]);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Receipts;
 
 use App\Models\Invoice;
+use App\Support\InvoiceAccess;
 use App\Support\ReceiptPaperSize;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -23,7 +24,7 @@ class ShowReceiptRequest extends FormRequest
         }
 
         return $invoice->issued_by === $user->id
-            && $invoice->issued_at?->isToday() === true;
+            && app(InvoiceAccess::class)->wasIssuedDuringCurrentOperationalDay($invoice);
     }
 
     public function rules(): array

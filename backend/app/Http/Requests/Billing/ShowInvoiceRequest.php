@@ -25,7 +25,7 @@ class ShowInvoiceRequest extends FormRequest
         }
 
         return $invoice->issued_by === $this->user()?->id
-            && $invoice->issued_at?->isToday() === true;
+            && app(InvoiceAccess::class)->wasIssuedDuringCurrentOperationalDay($invoice);
     }
 
     /**
