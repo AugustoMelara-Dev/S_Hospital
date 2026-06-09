@@ -653,20 +653,31 @@ test.describe('RC1 cashier flow screens', () => {
     if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
       await page.getByRole('button', { name: /cerrar modal/i }).click();
     }
-    await page.waitForTimeout(500);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(800);
     await captureScreen(page, 'cashbox-open-light');
 
-    const closeButton = page.getByRole('main').getByRole('button', { name: /cerrar caja/i }).first();
-    if (await closeButton.isVisible().catch(() => false)) {
-      await closeButton.click();
-      const closeDialog = page.getByRole('dialog', { name: /cerrar caja/i });
+    const closingAmount = page.locator('#closing_amount');
+    if (await closingAmount.isVisible().catch(() => false)) {
+      await closingAmount.fill('525.00');
+      const closingNotes = page.locator('#closing_notes');
+      if (await closingNotes.isVisible().catch(() => false)) {
+        await closingNotes.fill('Cierre de prueba RC1');
+      }
+      await page.waitForTimeout(500);
+      await captureScreen(page, 'cashbox-close-light');
+
+      await page.getByRole('button', { name: /^cerrar caja$/i }).click();
+      const closeDialog = page.getByRole('dialog');
       if (await closeDialog.isVisible().catch(() => false)) {
-        const amountInput = closeDialog.getByLabel(/monto (en caja|final|cerrado|contado)/i).first();
-        if (await amountInput.isVisible().catch(() => false)) {
-          await amountInput.fill('525.00');
-        }
         await page.waitForTimeout(500);
-        await captureScreen(page, 'cashbox-close-light');
+        await captureScreen(page, 'cashbox-close-confirm-light');
+        const confirmBtn = closeDialog.getByRole('button', { name: /confirmar cierre|cerrar caja|s.?\s*confirmar/i }).first();
+        if (await confirmBtn.isVisible().catch(() => false)) {
+          await confirmBtn.click();
+          await page.waitForTimeout(800);
+          await captureScreen(page, 'cashbox-closed-light');
+        }
       }
     }
   });
