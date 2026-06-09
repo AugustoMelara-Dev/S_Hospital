@@ -2,19 +2,19 @@ import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { PermissionGate } from './components/PermissionGate';
 import { EmptyState, LoadingState } from './components/ui/states';
+import { AboutView } from './features/about/AboutView';
+import { BackupsView } from './features/backups/BackupsView';
 import { CashBoxView } from './features/cash/CashBoxView';
+import { CatalogView } from './features/catalog/CatalogView';
+import { InvoiceHistoryView } from './features/invoices/InvoiceHistoryView';
 import { NewInvoiceView } from './features/invoices/NewInvoiceView';
+import { ReportsView } from './features/reports/ReportsView';
+import { FiscalSettingsView } from './features/settings/FiscalSettingsView';
+import { UsersView } from './features/admin/UsersView';
+import { HelpView } from './features/help/HelpView';
 import { type AuthUser, type CashSession } from './lib/api';
 
-const AboutView = lazy(() => import('./features/about/AboutView').then((module) => ({ default: module.AboutView })));
-const BackupsView = lazy(() => import('./features/backups/BackupsView').then((module) => ({ default: module.BackupsView })));
-const CatalogView = lazy(() => import('./features/catalog/CatalogView').then((module) => ({ default: module.CatalogView })));
 const DashboardView = lazy(() => import('./features/dashboard/DashboardView').then((module) => ({ default: module.DashboardView })));
-const FiscalSettingsView = lazy(() => import('./features/settings/FiscalSettingsView').then((module) => ({ default: module.FiscalSettingsView })));
-const HelpView = lazy(() => import('./features/help/HelpView').then((module) => ({ default: module.HelpView })));
-const InvoiceHistoryView = lazy(() => import('./features/invoices/InvoiceHistoryView').then((module) => ({ default: module.InvoiceHistoryView })));
-const ReportsView = lazy(() => import('./features/reports/ReportsView').then((module) => ({ default: module.ReportsView })));
-const UsersView = lazy(() => import('./features/admin/UsersView').then((module) => ({ default: module.UsersView })));
 
 type AppRoutesProps = {
   canCreateInvoices: boolean;
@@ -132,9 +132,7 @@ export function AppRoutes({
         path="/catalog"
         element={
           <PermissionGate allowed={canViewCatalog} reason="Requiere permiso para consultar el catalogo de servicios.">
-            <Suspense fallback={<LoadingState label="Cargando catalogo..." />}>
-              <CatalogView user={user} onStatus={onStatus} />
-            </Suspense>
+            <CatalogView user={user} onStatus={onStatus} />
           </PermissionGate>
         }
       />
@@ -142,9 +140,7 @@ export function AppRoutes({
         path="/invoices"
         element={
           <PermissionGate allowed={canViewInvoices} reason="Requiere permiso para consultar historial de facturas y recibos.">
-            <Suspense fallback={<LoadingState label="Cargando historial..." />}>
-              <InvoiceHistoryView user={user} onStatus={onStatus} />
-            </Suspense>
+            <InvoiceHistoryView user={user} onStatus={onStatus} />
           </PermissionGate>
         }
       />
@@ -155,14 +151,12 @@ export function AppRoutes({
             allowed={canViewReports || canViewCashSessionReports}
             reason="Requiere permiso para consultar reportes operativos o reportes de caja."
           >
-            <Suspense fallback={<LoadingState label="Cargando reportes..." />}>
-              <ReportsView
-                canExport={canExportReports}
-                canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}
-                canViewManagerial={canViewManagerialReports}
-                onStatus={onStatus}
-              />
-            </Suspense>
+            <ReportsView
+              canExport={canExportReports}
+              canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}
+              canViewManagerial={canViewManagerialReports}
+              onStatus={onStatus}
+            />
           </PermissionGate>
         }
       />
@@ -170,9 +164,7 @@ export function AppRoutes({
         path="/backups"
         element={
           <PermissionGate allowed={canViewBackups} reason="Requiere permiso para consultar respaldos locales.">
-            <Suspense fallback={<LoadingState label="Cargando respaldos..." />}>
-              <BackupsView user={user} onStatus={onStatus} />
-            </Suspense>
+            <BackupsView user={user} onStatus={onStatus} />
           </PermissionGate>
         }
       />
@@ -180,9 +172,7 @@ export function AppRoutes({
         path="/settings/fiscal"
         element={
           <PermissionGate allowed={canViewFiscalSettings} reason="Requiere permiso para consultar configuración fiscal.">
-            <Suspense fallback={<LoadingState label="Cargando configuracion fiscal..." />}>
-              <FiscalSettingsView canEdit={canEditFiscalSettings} onStatus={onStatus} />
-            </Suspense>
+            <FiscalSettingsView canEdit={canEditFiscalSettings} onStatus={onStatus} />
           </PermissionGate>
         }
       />
@@ -190,27 +180,17 @@ export function AppRoutes({
         path="/admin/users"
         element={
           <PermissionGate allowed={canViewUsers} reason="Requiere permiso para gestionar usuarios.">
-            <Suspense fallback={<LoadingState label="Cargando usuarios..." />}>
-              <UsersView onStatus={onStatus} canCreateUsers={canCreateUsers} />
-            </Suspense>
+            <UsersView onStatus={onStatus} canCreateUsers={canCreateUsers} />
           </PermissionGate>
         }
       />
       <Route
         path="/help"
-        element={
-          <Suspense fallback={<LoadingState label="Cargando ayuda..." />}>
-            <HelpView />
-          </Suspense>
-        }
+        element={<HelpView />}
       />
       <Route
         path="/about"
-        element={
-          <Suspense fallback={<LoadingState label="Cargando acerca de..." />}>
-            <AboutView user={user} onStatus={onStatus} />
-          </Suspense>
-        }
+        element={<AboutView user={user} onStatus={onStatus} />}
       />
       <Route path="*" element={<NotFoundView />} />
     </Routes>
