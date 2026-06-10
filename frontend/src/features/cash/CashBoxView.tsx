@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
-import { formatLempiras } from '@/lib/money';
+import { formatLempiras, parseCents, toFloat } from '@/lib/money';
 import { SessionStatusCard } from './components/SessionStatusCard';
 import { OpenSessionForm } from './components/OpenSessionForm';
 import { SessionSummary } from './components/SessionSummary';
@@ -25,19 +25,8 @@ type CashBoxViewProps = {
   onSessionChange?: (session: CashSession | null) => void;
 };
 
-function parseCents(value: string): number {
-  const normalized = value.trim();
-  if (!/^-?\d+(\.\d{1,2})?$/.test(normalized)) {
-    return 0;
-  }
-  const sign = normalized.startsWith('-') ? -1 : 1;
-  const unsigned = normalized.replace('-', '');
-  const [integer, decimal = '00'] = unsigned.split('.');
-  return sign * (Number(integer) * 100 + Number(decimal.padEnd(2, '0').slice(0, 2)));
-}
-
-function formatCents(cents: number): number {
-  return cents / 100;
+function centsToFloat(cents: number): number {
+  return toFloat(cents);
 }
 
 export function CashBoxView({
@@ -118,9 +107,15 @@ export function CashBoxView({
   });
 
   const activeSession = session ?? cashSession;
+  // Server-computed expected cash is authoritative. The fallback chain
+  // (expected_cash_amount -> expected_amount -> opening_amount) is
+  // preserved for legacy backends, but a fresh `expected_cash_amount`
+  // from the LAN server is what we trust.
   const expectedCashAmount = activeSession?.expected_cash_amount ?? activeSession?.expected_amount ?? activeSession?.opening_amount ?? '0.00';
   const hasValidClosingAmount = /^\d+(\.\d{1,2})?$/.test(closingAmount.trim());
-  const difference = hasValidClosingAmount ? formatCents(parseCents(closingAmount) - parseCents(expectedCashAmount)) : null;
+  const difference = hasValidClosingAmount
+    ? centsToFloat(parseCents(closingAmount) - parseCents(expectedCashAmount))
+    : null;
   const hasCashDifference = difference !== null && difference !== 0;
   const isOpen = activeSession?.status === 'open';
   const pendingInvoiceCount = activeSession?.pending_invoice_count ?? 0;

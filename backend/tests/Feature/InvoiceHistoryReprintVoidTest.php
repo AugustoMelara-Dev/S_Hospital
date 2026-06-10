@@ -485,6 +485,43 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         ]);
     }
 
+    public function test_receipt_shows_original_label_and_reprint_label_increments_per_call(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $invoiceId = $this->createInvoice($cashier, 'Maria Lopez', 'Glucosa');
+
+        $this->actingAs($cashier)
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=half_letter")
+            ->assertOk()
+            ->assertJsonPath('data.institutional.copy_label', 'Original');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/reprint", [
+                'width' => 'half_letter',
+                'reason' => 'Recibo original danado por impresora',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.receipt.institutional.copy_label', 'Reimpresion #1')
+            ->assertJsonPath('data.audit.copy_label', 'Reimpresion #1')
+            ->assertJsonPath('data.audit.reprint_count', 1);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/reprint", [
+                'width' => 'half_letter',
+                'reason' => 'Segunda reimpresion por peticion del paciente',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.receipt.institutional.copy_label', 'Reimpresion #2')
+            ->assertJsonPath('data.audit.reprint_count', 2);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'entity_type' => Invoice::class,
+            'entity_id' => $invoiceId,
+            'action' => 'invoice.reprinted',
+        ]);
+    }
+
     private function seedBillingBase(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);

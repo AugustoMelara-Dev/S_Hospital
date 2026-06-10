@@ -1025,12 +1025,26 @@ describe('App', () => {
         } as Response;
       }
 
+      if (url.includes('/api/cash-sessions/current')) {
+        return {
+          ok: true,
+          json: async () => ({ data: null }),
+        } as Response;
+      }
+
       return { ok: true, json: async () => ({}) } as Response;
     });
 
     render(<App />);
 
-    expect((await screen.findAllByRole('heading', { name: /^reportes$/i }, { timeout: 5000 })).length).toBeGreaterThan(0);
+    // The /reports route is loaded via React.lazy; the chunk load + Suspense
+    // resolution can exceed the default 10s asyncUtilTimeout on a busy CI
+    // node. waitFor with a generous timeout retries on every React tick.
+    const reportHeadings = await waitFor(
+      () => screen.findAllByRole('heading', { name: /^reportes$/i }),
+      { timeout: 20_000, interval: 100 },
+    );
+    expect(reportHeadings.length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: /nueva factura/i })).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /^configuraci[oó]n$/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: /nueva factura/i })).not.toBeInTheDocument();

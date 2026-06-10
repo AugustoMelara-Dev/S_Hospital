@@ -95,6 +95,41 @@ function Read-SecretText {
     }
 }
 
+function New-CryptographicPassword {
+    param([int]$Length = 16)
+
+    if ($Length -lt 12) {
+        throw "Refusing to generate password shorter than 12 characters (asked: $Length)."
+    }
+
+    $alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $bytes = [byte[]]::new($Length)
+        $rng.GetBytes($bytes)
+        $sb = [System.Text.StringBuilder]::new($Length)
+        foreach ($b in $bytes) {
+            [void]$sb.Append($alphabet[$b % $alphabet.Length])
+        }
+        return $sb.ToString()
+    }
+    finally {
+        $rng.Dispose()
+    }
+}
+
+function New-CryptographicAppKey {
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $bytes = [byte[]]::new(32)
+        $rng.GetBytes($bytes)
+        return "base64:" + [Convert]::ToBase64String($bytes)
+    }
+    finally {
+        $rng.Dispose()
+    }
+}
+
 function Get-ExistingContainers {
     try {
         $names = docker ps -a --filter "name=s_hospital" --format "{{.Names}}" 2>$null
@@ -1022,15 +1057,10 @@ try {
             }
         }
 
-        # ---- Generate secrets ----
-        $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        $dbPassword = ""
-        $dbRootPassword = ""
-        for ($i = 0; $i -lt 16; $i++) {
-            $dbPassword += $chars[(Get-Random -Maximum $chars.Length)]
-            $dbRootPassword += $chars[(Get-Random -Maximum $chars.Length)]
-        }
-        $appKey = "base64:" + [Convert]::ToBase64String((1..32 | ForEach-Object { [byte](Get-Random -Minimum 0 -Maximum 256) }))
+        # ---- Generate secrets (cryptographic RNG, see docs/SECRETS.md) ----
+        $dbPassword = New-CryptographicPassword -Length 24
+        $dbRootPassword = New-CryptographicPassword -Length 24
+        $appKey = New-CryptographicAppKey
 
         $envPath = Join-Path $projectRoot ".env"
 

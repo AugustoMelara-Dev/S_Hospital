@@ -26,7 +26,7 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         $service = $this->createService(price: '25.00', taxable: true);
 
         $result = $this->action->execute([
-            ['service' => $service, 'quantity' => '1', 'dialysis_prescription' => false, 'notes' => null],
+            ['service' => $service, 'quantity' => '1', 'notes' => null],
         ], '15.00');
 
         $this->assertSame('25.00', $result['subtotal']);
@@ -42,7 +42,7 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         $service = $this->createService(price: '0.01', taxable: true);
 
         $result = $this->action->execute([
-            ['service' => $service, 'quantity' => '1', 'dialysis_prescription' => false, 'notes' => null],
+            ['service' => $service, 'quantity' => '1', 'notes' => null],
         ], '15.00');
 
         $this->assertSame('0.01', $result['subtotal']);
@@ -56,8 +56,8 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         $service2 = $this->createService(price: '5.00', taxable: true);
 
         $result = $this->action->execute([
-            ['service' => $service1, 'quantity' => '2', 'dialysis_prescription' => false, 'notes' => null],
-            ['service' => $service2, 'quantity' => '1', 'dialysis_prescription' => false, 'notes' => null],
+            ['service' => $service1, 'quantity' => '2', 'notes' => null],
+            ['service' => $service2, 'quantity' => '1', 'notes' => null],
         ], '15.00');
 
         $this->assertSame('25.00', $result['subtotal']);
@@ -71,8 +71,8 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         $nonTaxable = $this->createService(price: '5.00', taxable: false);
 
         $result = $this->action->execute([
-            ['service' => $taxable, 'quantity' => '1', 'dialysis_prescription' => false, 'notes' => null],
-            ['service' => $nonTaxable, 'quantity' => '1', 'dialysis_prescription' => false, 'notes' => null],
+            ['service' => $taxable, 'quantity' => '1', 'notes' => null],
+            ['service' => $nonTaxable, 'quantity' => '1', 'notes' => null],
         ], '15.00');
 
         $this->assertSame('15.00', $result['subtotal']);
@@ -90,9 +90,9 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         $otherService = $this->createService(price: '10.00', taxable: true);
 
         $result = $this->action->execute([
-            ['service' => $erythropoietin, 'quantity' => '1', 'dialysis_prescription' => true, 'notes' => null],
-            ['service' => $otherService, 'quantity' => '1', 'dialysis_prescription' => false, 'notes' => null],
-        ], '15.00');
+            ['service' => $erythropoietin, 'quantity' => '1', 'notes' => null],
+            ['service' => $otherService, 'quantity' => '1', 'notes' => null],
+        ], '15.00', true);
 
         $this->assertSame('10.00', $result['subtotal']);
         $this->assertSame('1.50', $result['tax_amount']);
@@ -113,7 +113,7 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         );
 
         $result = $this->action->execute([
-            ['service' => $erythropoietin, 'quantity' => '1', 'dialysis_prescription' => false, 'notes' => null],
+            ['service' => $erythropoietin, 'quantity' => '1', 'notes' => null],
         ], '15.00');
 
         $this->assertSame('25.00', $result['subtotal']);
@@ -130,8 +130,8 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         );
 
         $result = $this->action->execute([
-            ['service' => $service, 'quantity' => '1', 'dialysis_prescription' => true, 'notes' => null],
-        ], '15.00');
+            ['service' => $service, 'quantity' => '1', 'notes' => null],
+        ], '15.00', true);
 
         $this->assertSame('0.00', $result['subtotal']);
         $this->assertSame('0.00', $result['tax_amount']);
@@ -143,7 +143,7 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         $service = $this->createService(price: '10.00', taxable: true);
 
         $result = $this->action->execute([
-            ['service' => $service, 'quantity' => '0.5', 'dialysis_prescription' => false, 'notes' => null],
+            ['service' => $service, 'quantity' => '0.5', 'notes' => null],
         ], '15.00');
 
         $this->assertSame('5.00', $result['subtotal']);
@@ -157,7 +157,7 @@ class CalculateInvoiceTotalsActionTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->action->execute([
-            ['service' => $service, 'quantity' => '0.001', 'dialysis_prescription' => false, 'notes' => null],
+            ['service' => $service, 'quantity' => '0.001', 'notes' => null],
         ], '15.00');
     }
 
@@ -171,7 +171,7 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         );
 
         $result = $this->action->execute([
-            ['service' => $service, 'quantity' => '1', 'dialysis_prescription' => false, 'notes' => 'Test note'],
+            ['service' => $service, 'quantity' => '1', 'notes' => 'Test note'],
         ], '15.00');
 
         $item = $result['items'][0];

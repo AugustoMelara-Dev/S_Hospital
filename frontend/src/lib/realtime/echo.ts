@@ -18,15 +18,28 @@ declare global {
 async function fetchEchoConfig(): Promise<EchoConfig | null> {
   if (configCache) return configCache;
   if (!configPromise) {
-    configPromise = apiClient
+    const inFlight = apiClient
       .request<{ data: EchoConfig }>('/api/system/echo-config')
       .then((res) => (res?.data ?? null) as EchoConfig | null)
-      .catch(() => null)
-      .finally(() => {
-        // Do not reset configPromise; we want concurrent callers to share.
+      .catch((error) => {
+        // Reset the promise so a later call retries fetching the
+        // config. Without this, a transient failure (e.g. the LAN
+        // server rebooting) would pin `configPromise` to the rejected
+        // promise forever and broadcasting would stay disabled.
+        configPromise = null;
+        console.warn('[echo] failed to fetch /api/system/echo-config', error);
+
+        return null;
       });
+    configPromise = inFlight;
   }
-  configCache = await configPromise;
+  try {
+    configCache = await configPromise;
+  } catch {
+    configCache = null;
+    configPromise = null;
+  }
+
   return configCache;
 }
 

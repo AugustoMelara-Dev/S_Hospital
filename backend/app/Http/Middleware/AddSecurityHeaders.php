@@ -15,7 +15,6 @@ class AddSecurityHeaders
         $nonce = $this->generateNonce();
         $request->attributes->set(self::NONCE_ATTRIBUTE, $nonce);
 
-        /** @var Response $response */
         $response = $next($request);
 
         $response->headers->set('X-Content-Type-Options', 'nosniff');
@@ -29,7 +28,7 @@ class AddSecurityHeaders
         }
 
         if (! $response->headers->has('Content-Security-Policy-Report-Only')) {
-            $response->headers->set('Content-Security-Policy-Report-Only', $this->reportOnlyCsp());
+            $response->headers->set('Content-Security-Policy-Report-Only', $this->reportOnlyCsp($nonce));
         }
 
         return $response;
@@ -48,10 +47,6 @@ class AddSecurityHeaders
             ? "'self' 'nonce-{$nonce}'"
             : "'self' 'nonce-{$nonce}' 'unsafe-eval'";
 
-        // In production we now require the same nonce on inline styles
-        // that the cashier SPA emits via the Vite csp-nonce plugin.
-        // Tailwind 4 compiled CSS is loaded from a hashed file (no
-        // inline needed), so this is safe.
         $styleSources = $production
             ? "'self' 'nonce-{$nonce}'"
             : "'self' 'nonce-{$nonce}' 'unsafe-inline'";
@@ -73,15 +68,16 @@ class AddSecurityHeaders
         ]);
     }
 
-    private function reportOnlyCsp(): string
+    private function reportOnlyCsp(string $nonce): string
     {
         return implode('; ', [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-            "style-src 'self' 'unsafe-inline'",
+            "script-src 'self' 'nonce-{$nonce}'",
+            "style-src 'self' 'nonce-{$nonce}'",
             "img-src 'self' data: blob:",
             "font-src 'self' data:",
             "connect-src 'self' ws: wss:",
+            "frame-ancestors 'none'",
             'report-uri /api/system/csp-report',
         ]);
     }

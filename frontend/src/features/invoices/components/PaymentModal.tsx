@@ -6,7 +6,8 @@ import { Dialog } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Checkbox } from '../../../components/ui/checkbox';
 import type { Payment } from '../../../lib/api';
-import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
+import { formatLempirasFromCents, parseCents as parseCentsNullable } from '../../../lib/moneyCents';
+import { parseCents, toFloat } from '../../../lib/money';
 
 type PaymentModalProps = {
   open: boolean;
@@ -44,13 +45,15 @@ export function PaymentModal({
   partialPaymentsEnabled = false,
 }: PaymentModalProps) {
   const [error, setError] = useState<string | null>(null);
+  const [capNotice, setCapNotice] = useState<string | null>(null);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
 
   const balanceCents = parseMoneyCents(balanceDue);
   const paymentCents = parseMoneyCents(paymentAmount);
-  const changeCents = paymentCents !== null && balanceCents !== null && paymentCents > balanceCents
+  const overpaymentCents = paymentCents !== null && balanceCents !== null && paymentCents > balanceCents
     ? paymentCents - balanceCents
     : null;
+  const changeCents = overpaymentCents;
   const remainingBalanceCents = paymentCents !== null && balanceCents !== null && paymentCents > 0 && paymentCents < balanceCents
     ? balanceCents - paymentCents
     : null;
@@ -58,19 +61,48 @@ export function PaymentModal({
     ? balanceCents
     : paymentCents;
   const needsAmount = paymentCents === null || paymentCents <= 0;
+  const exceedsPending = paymentCents !== null && balanceCents !== null && paymentCents > balanceCents;
+  const pendingAmountLabel = balanceCents !== null ? formatMoneyCents(balanceCents) : '0.00';
 
   useEffect(() => {
     if (open) {
       setError(null);
+      setCapNotice(null);
       window.setTimeout(() => amountInputRef.current?.focus(), 0);
     }
   }, [open]);
+
+  function handleAmountChange(value: string) {
+    setError(null);
+    if (value === '') {
+      setCapNotice(null);
+      onPaymentAmountChange('');
+      return;
+    }
+
+    const cents = parseCents(value);
+    const cap = balanceCents;
+    if (cap !== null && cents > cap) {
+      const capped = formatMoneyCents(cap);
+      setCapNotice(`El pago no puede superar el saldo pendiente (L. ${pendingAmountLabel}).`);
+      onPaymentAmountChange(capped);
+      return;
+    }
+
+    setCapNotice(null);
+    onPaymentAmountChange(value);
+  }
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const amountCents = parseMoneyCents(paymentAmount);
     if (amountCents === null || amountCents <= 0) {
       setError('Ingrese un monto valido');
+      amountInputRef.current?.focus();
+      return;
+    }
+    if (balanceCents !== null && amountCents > balanceCents) {
+      setError('El pago no puede superar el saldo pendiente.');
       amountInputRef.current?.focus();
       return;
     }
@@ -164,15 +196,18 @@ export function PaymentModal({
               type="number"
               step="0.01"
               min="0"
+              max={balanceCents !== null ? toFloatForInput(balanceCents) : undefined}
               value={paymentAmount}
-              onChange={(e) => {
-                setError(null);
-                onPaymentAmountChange(e.target.value);
-              }}
+              onChange={(e) => handleAmountChange(e.target.value)}
               placeholder="0.00"
               aria-invalid={error ? 'true' : 'false'}
-              aria-describedby={error ? 'payment-amount-error' : undefined}
+              aria-describedby={error ? 'payment-amount-error' : capNotice ? 'payment-amount-cap' : undefined}
             />
+            {capNotice && !error ? (
+              <p id="payment-amount-cap" className="mt-1 text-sm text-amber-700" role="status">
+                {capNotice}
+              </p>
+            ) : null}
             {error && <p id="payment-amount-error" className="mt-1 text-sm text-destructive" role="alert">{error}</p>}
           </div>
 
@@ -205,7 +240,7 @@ export function PaymentModal({
           <Button
             type="submit"
             className="flex-1"
-            disabled={submitting}
+            disabled={submitting || exceedsPending || needsAmount}
             aria-label={previewBeforePrint ? 'Confirmar cobro y ver preview' : 'Confirmar cobro e imprimir'}
           >
             {submitting ? 'Cobrando...' : previewBeforePrint ? 'Registrar cobro y ver preview' : 'Registrar cobro e imprimir'}
@@ -231,9 +266,17 @@ function formatMoneyCents(cents: number): string {
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
-  return formatLempirasFromCents(parseCents(value));
+  if (value === null || value === undefined) {
+    return formatLempirasFromCents(0);
+  }
+
+  return formatLempirasFromCents(parseCentsNullable(value));
 }
 
 function moneyLabelFromCents(cents: number): string {
   return formatLempirasFromCents(cents);
+}
+
+function toFloatForInput(cents: number): number {
+  return toFloat(cents);
 }

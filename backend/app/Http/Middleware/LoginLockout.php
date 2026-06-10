@@ -9,12 +9,6 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Block a login attempt when the identifier or the IP has exceeded the
- * configured failure threshold inside a rolling window. The frontend
- * treats 423 Locked with the same safe message it already knows, so
- * this is a pure backend hardening with zero client changes.
- */
 class LoginLockout
 {
     private const MAX_FAILED_ATTEMPTS = 5;
@@ -33,12 +27,6 @@ class LoginLockout
 
         if (LoginAttempt::failedCountFor($login, $since) >= self::MAX_FAILED_ATTEMPTS) {
             return $this->locked($login, $since);
-        }
-
-        $ip = (string) $request->ip();
-
-        if ($ip !== '' && LoginAttempt::failedCountForIp($ip, $since) >= self::MAX_FAILED_ATTEMPTS * 2) {
-            return $this->locked($ip, $since);
         }
 
         return $next($request);

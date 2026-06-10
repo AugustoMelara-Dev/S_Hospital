@@ -1,9 +1,19 @@
 import '@testing-library/jest-dom/vitest';
+import { configure } from '@testing-library/dom';
 import { QueryClient } from '@tanstack/react-query';
 import { afterEach, beforeEach, expect, vi } from 'vitest';
 import * as matchers from 'vitest-axe/matchers';
 
 expect.extend(matchers);
+
+// Bump the default async-util timeout from 1s to 10s. AppRoutes code-
+// splits the 9 heavy views (Reports, Backups, Fiscal Settings, etc.)
+// via React.lazy; the chunk load + Suspense resolution on a busy CI
+// node can exceed the previous 1s default and cause intermittent
+// findBy* timeouts. 10s is well above the worst observed run (~8s
+// for "renders only the active module") and still tight enough to
+// surface real regressions.
+configure({ asyncUtilTimeout: 10_000 });
 
 Object.defineProperty(window, 'focus', {
   configurable: true,

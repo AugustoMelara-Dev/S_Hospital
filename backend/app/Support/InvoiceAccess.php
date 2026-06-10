@@ -22,7 +22,7 @@ class InvoiceAccess
         }
 
         return $invoice->issued_by === $user->id
-            && $invoice->issued_at?->isToday() === true;
+            && $this->wasIssuedDuringCurrentOperationalDay($invoice);
     }
 
     public function canOperateAnyInvoice(User $user): bool
@@ -36,5 +36,19 @@ class InvoiceAccess
             || $user->can('receipts.reprint_any')
             || $user->can('reports.managerial.view')
             || $user->can('invoices.void');
+    }
+
+    public function wasIssuedDuringCurrentOperationalDay(Invoice $invoice): bool
+    {
+        if ($invoice->issued_at === null) {
+            return false;
+        }
+
+        $timezone = (string) config('app.timezone', 'America/Tegucigalpa');
+
+        return $invoice->issued_at
+            ->copy()
+            ->timezone($timezone)
+            ->isSameDay(now($timezone));
     }
 }

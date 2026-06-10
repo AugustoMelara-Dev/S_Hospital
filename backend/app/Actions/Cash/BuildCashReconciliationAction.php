@@ -38,33 +38,45 @@ class BuildCashReconciliationAction
             ->get();
 
         $paymentsCount = 0;
-        $paymentsTotalCents = 0;
+        $paymentsTotal = Money::zero();
 
         foreach ($paymentRows as $row) {
             if (! array_key_exists($row->method, $paymentsByMethod)) {
                 continue;
             }
 
-            $methodCents = (int) $row->total_cents;
-            $paymentsByMethod[$row->method] = Money::formatCents($methodCents);
+            $methodMoney = Money::fromCents((int) $row->total_cents);
+            $paymentsByMethod[$row->method] = Money::formatCents($methodMoney->toCents());
             $paymentsCount += (int) $row->payments_count;
-            $paymentsTotalCents += $methodCents;
+            $paymentsTotal = $paymentsTotal->plus($methodMoney);
         }
 
         $pendingRow = Invoice::query()
-            ->where('cash_session_id', $session->id)
             ->whereIn('status', [Invoice::STATUS_ISSUED, Invoice::STATUS_PARTIAL])
+            ->where(function ($query) use ($session): void {
+                $query
+                    ->where('cash_session_id', $session->id)
+                    ->orWhereExists(function ($subquery) use ($session): void {
+                        $subquery
+                            ->selectRaw('1')
+                            ->from('payments')
+                            ->whereColumn('payments.invoice_id', 'invoices.id')
+                            ->where('payments.cash_session_id', $session->id)
+                            ->where('payments.status', Payment::STATUS_POSTED);
+                    });
+            })
             ->selectRaw('COUNT(*) as invoice_count, COALESCE(SUM(balance_due_cents), 0) as total_cents')
             ->first();
 
         $openingCents = Money::parseCents((string) $session->opening_amount, 'opening_amount');
         $cashCents = Money::parseCents($paymentsByMethod[Payment::METHOD_CASH], 'cash_payments');
+        $expectedCents = $openingCents + $cashCents;
 
         return [
             'payments_count' => $paymentsCount,
-            'payments_total' => Money::formatCents($paymentsTotalCents),
+            'payments_total' => Money::formatCents($paymentsTotal->toCents()),
             'payments_by_method' => $paymentsByMethod,
-            'expected_cash_amount' => Money::formatCents($openingCents + $cashCents),
+            'expected_cash_amount' => Money::formatCents($expectedCents),
             'pending_invoice_count' => (int) ($pendingRow?->invoice_count ?? 0),
             'pending_amount' => Money::formatCents((int) ($pendingRow?->total_cents ?? 0)),
         ];

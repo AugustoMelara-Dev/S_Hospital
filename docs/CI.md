@@ -62,3 +62,27 @@ The CI workflow uses only safe placeholders:
   the production preflight explicitly rejects.
 
 No real production credentials are referenced.
+
+## Local PHP environment setup
+
+For `vendor/bin/phpstan analyse` to work locally, the dev
+dependencies must be installed. The repo ships with `composer.json`
+declaring `larastan/larastan ^3.10` as a `require-dev` package, but
+`vendor/` is not committed.
+
+```bash
+cd backend
+composer install --no-interaction --no-progress
+vendor/bin/phpstan analyse --no-progress --memory-limit=2G
+```
+
+If `composer` is not on PATH, install it from
+<https://getcomposer.org/download/> or use the bundled
+`composer-setup.php` with `php`:
+
+```bash
+php composer-setup.php --install-dir=/path/to/php --filename=composer
+```
+
+The CI workflow runs `composer install` before phpstan, so the
+analyser is always present in CI. The local gate mirrors that.

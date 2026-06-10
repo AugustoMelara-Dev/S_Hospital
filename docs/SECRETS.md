@@ -71,6 +71,12 @@ Procedure:
 6. Re-sign the license file with the new salt if `HOSPITAL_LICENSE_SALT`
    also rotates.
 
+Production note:
+
+- If `license.json` exists in production, `HOSPITAL_LICENSE_SALT` must be
+  configured. An empty salt only preserves local/testing compatibility with
+  older unsigned development workflows; production validation fails closed.
+
 ## DB password rotation
 
 MariaDB password rotation is more involved because the running PHP

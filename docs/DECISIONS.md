@@ -3176,3 +3176,19 @@ Contexto: la definicion de terminado requiere evidencia reproducible y honesta, 
 Decision: qa/PROJECT_POLISH_FINAL_REPORT.md registra comandos finales, resultados, smoke local HTTP y riesgos residuales. El pase de pulido no declara PRODUCTION_READY sin evidencia fisica de LAN, impresora, restore, concurrencia y backup worker.
 
 Criterio de verificacion: el cierre tecnico queda listo para revision del PR, pero el handoff de produccion sigue sujeto a evidencias fisicas/finales.
+
+## 2026-06-09 - Dia operativo usa zona horaria de Honduras
+
+Contexto: las reglas de cajero para operar, ver y reimprimir facturas propias del dia usaban `isToday()` con la zona horaria por defecto de Laravel. Con `UTC`, el dia operativo cambiaba a las 18:00 en Honduras y podia bloquear una factura emitida el mismo dia local.
+
+Decision: `config/app.php` ahora lee `APP_TIMEZONE` con default `America/Tegucigalpa`, `backend/.env.example` expone esa variable y `InvoiceAccess` centraliza la comparacion del dia operativo convirtiendo `issued_at` y `now()` a `config('app.timezone')`. Los requests de detalle y recibos reutilizan esa regla.
+
+Criterio de verificacion: `ProductionConfigDefaultsTest` protege el default de timezone y `InvoiceAccessTest` cubre una factura emitida a las 17:00 de Honduras cuando UTC ya cambio de fecha.
+
+## 2026-06-09 - Registro local exige salt en produccion
+
+Contexto: `LicenseHelper` conservaba un fallback embebido para firmar `license.json`. Eso es tolerable para compatibilidad local/testing, pero en produccion permite validar un archivo de registro firmado con un secreto publico del repositorio.
+
+Decision: si existe `license.json` y `APP_ENV=production`, `HOSPITAL_LICENSE_SALT` debe estar configurado. La validacion devuelve `Salt de Registro Faltante` cuando falta el salt y `generateSignature` no firma con el fallback en produccion. La plantilla `backend/.env.example` y `docs/SECRETS.md` distinguen compatibilidad local/testing de produccion.
+
+Criterio de verificacion: `LicenseHelperTest::test_production_license_file_requires_configured_salt` prueba que un archivo firmado con el fallback queda bloqueado al activar entorno production sin salt configurado.

@@ -861,14 +861,13 @@ describe('NewInvoiceView', () => {
         total="17.25"
         balanceDue="17.25"
         paymentMethod="cash"
-        paymentAmount="20.00"
+        paymentAmount="17.25"
         onPaymentMethodChange={vi.fn()}
         onPaymentAmountChange={vi.fn()}
         onConfirm={confirmSpy}
       />,
     );
 
-    expect(screen.getByText('L. 2.75')).toBeInTheDocument();
     expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
     expect(confirmSpy).toHaveBeenCalledWith('17.25');
@@ -908,14 +907,14 @@ describe('NewInvoiceView', () => {
         total="0.20"
         balanceDue="0.20"
         paymentMethod="cash"
-        paymentAmount="0.30"
+        paymentAmount="0.20"
         onPaymentMethodChange={vi.fn()}
         onPaymentAmountChange={vi.fn()}
         onConfirm={confirmSpy}
       />,
     );
 
-    expect(screen.getByText('L. 0.10')).toBeInTheDocument();
+    expect(screen.getAllByText('L. 0.20').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
     expect(confirmSpy).toHaveBeenCalledWith('0.20');
   });

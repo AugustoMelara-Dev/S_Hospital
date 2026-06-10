@@ -17,10 +17,13 @@ services:
   mysql:
     image: mariadb:11
     environment:
-      MYSQL_DATABASE: hospital_billing
-      MYSQL_USER: hospital
-      MYSQL_PASSWORD: hospital_dev
-      MYSQL_ROOT_PASSWORD: root_dev
+      # Placeholders only. Generate fresh random values for each developer
+      # environment (see docs/SECRETS.md) and write them to a gitignored
+      # .env file consumed via env_file / docker compose --env-file.
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-hospital_billing}
+      MYSQL_USER: ${MYSQL_USER:-hospital}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
     ports:
       - "3306:3306"
     volumes:

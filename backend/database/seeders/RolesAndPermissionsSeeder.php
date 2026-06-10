@@ -42,6 +42,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'backups.download',
         'system.status.view',
         'audit.view',
+        'patients.mark_dialysis_prescription',
     ];
 
     public function run(): void

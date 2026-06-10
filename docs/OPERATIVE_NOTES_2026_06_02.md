@@ -3,6 +3,122 @@
 > Documento de corte: 2026-06-02. Reemplaza a
 > `docs/KNOWN_LIMITATIONS.md` como la nota operativa vigente.
 
+## Update 2026-06-09 - Ronda de hardening de seguridad
+
+Estado actual: **RC1 listo para piloto** con los P3 diferidos
+listados al final de esta seccion.
+
+### Commits desde la ultima nota operativa
+
+- `3711cf1d` fix(ci): portable Select-String fallback for
+  branding checks
+- `cdf6840c` chore(security): harden secrets and remove default
+  credentials
+- `8fe44203` feat(backend): Money value object, secure dialysis
+  flag, no session-mutation on payment
+- `68224669` feat(frontend): money centralization,
+  session-cleanup, payment cap, echo reset
+- `312ad0a8` fix(nginx): report-only CSP without placeholder
+  nonce
+
+### Flujos re-validados manualmente en esta ronda
+
+Los siguientes flujos de caja fueron ejercitados contra el
+codigo nuevo y se mantienen verdes. No se introdujeron
+regresiones en los caminos criticos:
+
+- **Login** - rate limit + lockout 5/15min + 423 safe message.
+  La limpieza de sesion ahora tambien desconecta Echo y limpia
+  el cache de TanStack Query en logout y en 401.
+- **Crear factura** - el carrito usa `lib/money.ts` para todo
+  calculo de subtotal / ISV / total. La eritropoyetina se
+  auto-cero cuando el paciente tiene la marca
+  `dialysis_prescription = true` Y el emisor tiene el permiso
+  `patients.mark_dialysis_prescription`. Cajeros sin el permiso
+  reciben 422 si intentan enviar la marca.
+- **Cobrar** - el modal de pago ahora capa el monto al saldo
+  pendiente (`max={balanceFloat}`), desactiva el boton
+  "Pagar" si se excede y muestra el mensaje inline. Pago en
+  cero por receta de dialisis se persiste con metodo `other`
+  para trazabilidad.
+- **Imprimir** - la ruta de impresion institucional no fue
+  tocada en esta ronda; la politica CSP enforced (con nonce
+  real por request) sigue activa y la politica Report-Only
+  dejo de enviar el placeholder roto.
+- **Reimprimir** - sin cambios; sigue requiriendo el permiso
+  `receipts.reprint` o `receipts.reprint_any`.
+- **Reverso de factura** - el nuevo flag
+  `dialysis_prescription` vive a nivel de invoice, no de
+  payment; el flujo de reverso (admin/supervisor) sigue
+  revocando pagos + invoice en una sola transaccion.
+- **Cerrar caja** - el cierre ya no dispatcha `RunBackupJob`
+  en linea. Los backups siguen corriendo por el scheduler
+  diario; el cierre solo persiste totales, diferencia y
+  snapshot de movimientos.
+
+### Issues de seguridad cerrados en esta ronda
+
+- **Pusher/Soketi con defaults publicos** - `hospital-key` /
+  `hospital-secret` removidos. Cualquier suscriptor LAN con
+  `curl` al WebSocket podia escuchar `invoice.changed`,
+  `payment.changed`, `cash-session.changed`. Ahora las
+  variables `PUSHER_APP_ID/KEY/SECRET` fallan con
+  `":?required"` si no se proveen valores reales.
+- **Password de MariaDB en `/proc/<pid>/cmdline`** -
+  `entrypoint.sh` ya no usa `--password=$DB_PASSWORD`. Ahora
+  escribe un option file `0600` en `/tmp/.hospital-db.cnf` y
+  pasa `--defaults-file`. La password deja de aparecer en la
+  linea de comandos del proceso `mariadb-check` /
+  `mariadbd`, legible por cualquier usuario del host.
+- **Flag de dialisis movido a permiso gated top-level** -
+  antes, el flag `dialysis_prescription` vivia en el JSON
+  per-line y cualquier cajero con `invoices.create` podia
+  poner una linea de eritropoyetina en L. 0.00. Ahora el flag
+  es top-level en la invoice, validado por
+  `StoreInvoiceRequest` (422 si el cajero lo envia), y la
+  exencion solo se aplica si el emisor tiene el permiso
+  `patients.mark_dialysis_prescription` (solo `admin` y
+  `supervisor`). El cajero **no** puede auto-aprobar la
+  exencion.
+- **CSP Report-Only con placeholder roto** - la directiva
+  Report-Only emitia `nonce-__S_HOSPITAL_CSP_NONCE__` literal,
+  que ningun script llevaba. Eso producia reportes que no
+  matcheaban nada. La directiva Report-Only ahora es
+  intencionalmente permisiva (`unsafe-inline` + `unsafe-eval`)
+  para que el endpoint `/api/system/csp-report` refleje
+  violaciones reales de la politica enforced. La politica
+  enforced (con nonce real por request) NO se toco: ya estaba
+  en sitio desde rc.3.
+- **CI branding check roto en PS 5.1** -
+  `scripts/check-branding.ps1` fallaba silenciosamente en
+  PowerShell 5.1 (dejaba un `ArrayList` con un `Hashtable` y
+  contaba 1 falso positivo). Reescrito con substring filter
+  y acumulador de array. El check ahora corre en el
+  entorno soportado del hospital.
+
+### Verdict
+
+`v1.0.0-rc.4` queda en estado **RC1 listo para piloto** con
+los siguientes P3 diferidos (no bloqueantes, ver
+`docs/KNOWN_LIMITATIONS.md` para el detalle):
+
+- DEFERRED: `AppRoutes` lazy-loading incompleto (parqueado
+  en `stash@{0}` en la rama de auditoria, 8 de 9 vistas
+  sacadas de `React.lazy` por una pasada anterior).
+- DEFERRED: `phpstan analyse` no ejecutable en dev por
+  `vendor/larastan/larastan/extension.neon` ausente. Setup
+  gap, no es bug de codigo.
+- PILOT_SAFE: `offline-release/` regenerado y no versionado
+  en git. La laptop del hospital jala el estado actual al
+  generar el paquete con `make_offline_release.ps1`.
+- PILOT_SAFE: tests de eritropoyetina migrados al nuevo API
+  top-level. Ver `KNOWN_LIMITATIONS.md` seccion "Issues
+  diferidos a v1.0.0+1".
+
+Las 4 evidencias fisicas de FASE G (LAN cliente, impresora,
+restore, concurrencia) siguen siendo requisito para el tag
+`v1.0.0` final y se completaran en el servidor del hospital.
+
 ## Estado del sistema
 
 - **Release actual:** v1.0.0-rc.4 (en este branch)

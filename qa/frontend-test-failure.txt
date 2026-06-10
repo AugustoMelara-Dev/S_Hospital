@@ -1,0 +1,590 @@
+﻿
+> s-hospital-frontend@0.1.0 test
+> vitest run --reporter=verbose
+
+
+ RUN  v4.1.8 C:/Projects/S_Hospital/frontend
+
+ ├ù src/AppRoutes.lazy.test.ts > AppRoutes lazy-loading > defines the heavy views through React.lazy 18ms
+   ÔåÆ Expected AboutView to be lazy-loaded: expected null not to be null
+ Ô£ô src/AppRoutes.lazy.test.ts > AppRoutes lazy-loading > wraps the Routes in a Suspense fallback so the cashier never sees a blank screen 3ms
+ Ô£ô src/hooks/useBackups.test.tsx > useBackups > exposes the api result and computes hasPending from the data 140ms
+ Ô£ô src/hooks/useBackups.test.tsx > useBackups > returns hasPending=false and disables polling when no pending backup exists 122ms
+ Ô£ô src/hooks/useBackups.test.tsx > useBackupWorkerHealth polling > maps a healthy snapshot with the projected shape 90ms
+ Ô£ô src/hooks/useBackups.test.tsx > useBackupWorkerHealth polling > flips the recent flag to false when the worker heartbeat is stale 74ms
+ Ô£ô src/hooks/useBackups.test.tsx > useBackupWorkerHealth polling > skips the network round-trip when the hook is disabled 10ms
+ Ô£ô src/hooks/useBackups.test.tsx > useCreateBackup > invalidates the backups query key on success 8ms
+ Ô£ô src/hooks/useBackups.test.tsx > useBackupWorkerHealth > maps the operational health snapshot onto the worker shape 85ms
+ Ô£ô src/hooks/useBackups.test.tsx > useBackupWorkerHealth > falls back to zero counters when the backend returns no backups section 82ms
+ Ô£ô src/features/about/AboutView.test.tsx > AboutView > shows the operational health summary in non-technical language 240ms
+ Ô£ô src/features/about/AboutView.test.tsx > AboutView > shows a review summary without exposing raw technical details 42ms
+ Ô£ô src/features/about/AboutView.test.tsx > AboutView > shows protected administrative diagnostics with human-safe labels for admin users 293ms
+ Ô£ô src/features/auth/LoginView.test.tsx > LoginView > renders login form with all elements 367ms
+ Ô£ô src/features/auth/LoginView.test.tsx > LoginView > calls onLoginChange when user types in login field 47ms
+ Ô£ô src/features/auth/LoginView.test.tsx > LoginView > calls onPasswordChange when user types in password field 32ms
+ Ô£ô src/features/auth/LoginView.test.tsx > LoginView > calls onSubmit when form is submitted 44ms
+ Ô£ô src/features/auth/LoginView.test.tsx > LoginView > shows error message when status contains error 36ms
+ Ô£ô src/features/invoices/components/InvoiceSuccess.test.tsx > InvoiceSuccess > renders malformed totals as safe financial labels 305ms
+ Ô£ô src/features/invoices/components/PaymentModal.test.tsx > PaymentModal > applies received cash as balance due and keeps change visible 532ms
+ Ô£ô src/features/auth/LoginView.test.tsx > LoginView > disables submit button when countdown is active 92ms
+ Ô£ô src/features/auth/LoginView.test.tsx > LoginView > shows password visibility toggle 43ms
+ Ô£ô src/features/auth/LoginView.test.tsx > LoginView > toggles password visibility when toggle button is clicked 71ms
+ Ô£ô src/features/auth/LoginView.test.tsx > LoginView > pre-fills login and password when provided 59ms
+ Ô£ô src/features/invoices/components/PaymentModal.test.tsx > PaymentModal > does not manually confirm from amount keydown before the form submit 162ms
+ Ô£ô src/features/invoices/components/PaymentModal.test.tsx > PaymentModal > caps the amount input to the pending balance and shows an inline notice 158ms
+ Ô£ô src/features/invoices/components/PaymentModal.test.tsx > PaymentModal > disables the Pay button when the entered amount exceeds the pending balance 109ms
+ Ô£ô src/features/receipts/ReceiptPreview.test.tsx > ReceiptPreview > waits for audited print callback before printing 353ms
+ Ô£ô src/features/receipts/ReceiptPreview.test.tsx > ReceiptPreview > does not print when audited print callback fails 136ms
+ Ô£ô src/features/help/HelpView.test.tsx > HelpView > shows operational support guidance for common hospital failures and roles 1518ms
+ Ô£ô src/features/receipts/ReceiptPreview.test.tsx > ReceiptPreview > shows a human recovery message when the print dialog cannot open 115ms
+ Ô£ô src/features/receipts/ReceiptPreview.test.tsx > ReceiptPreview > sets and clears the active print paper width 82ms
+ Ô£ô src/features/receipts/ReceiptPreview.test.tsx > ReceiptPreview > renders malformed historical receipt amounts as safe financial values 125ms
+ Ô£ô src/features/catalog/CatalogView.test.tsx > CatalogView > renders malformed service prices as safe financial values 375ms
+ Ô£ô src/features/catalog/CatalogView.test.tsx > CatalogView > renders inside a QueryClientProvider without crashing 134ms
+ Ô£ô src/features/admin/UsersView.test.tsx > UsersView > hides the create action when the user lacks users.create 336ms
+ Ô£ô src/features/cash/components/OpenSessionForm.a11y.test.tsx > OpenSessionForm accessibility > has no axe-core violations on the default render 480ms
+ Ô£ô src/features/cash/components/OpenSessionForm.a11y.test.tsx > OpenSessionForm accessibility > exposes the opening amount input with an associated label 25ms
+ Ô£ô src/features/cash/components/OpenSessionForm.a11y.test.tsx > OpenSessionForm accessibility > marks the submit button as busy when the form is submitting 38ms
+ Ô£ô src/features/auth/LoginView.a11y.test.tsx > LoginView accessibility > has no axe-core violations on the default render 607ms
+ Ô£ô src/features/auth/LoginView.a11y.test.tsx > LoginView accessibility > exposes the username and password inputs as labeled controls 42ms
+ Ô£ô src/features/auth/LoginView.a11y.test.tsx > LoginView accessibility > keeps the submit button reachable from keyboard navigation 59ms
+ Ô£ô src/features/catalog/components/ServiceSheet.test.tsx > ServiceSheet > requires and sends a reason when editing a service price 1010ms
+ Ô£ô src/features/admin/UsersView.test.tsx > UsersView > validates new user passwords with the same policy as Laravel 803ms
+ Ô£ô src/features/receipts/ReceiptPreview.a11y.test.tsx > ReceiptPreview accessibility > has no axe-core violations on the half-letter render 702ms
+ Ô£ô src/features/receipts/ReceiptPreview.a11y.test.tsx > ReceiptPreview accessibility > labels the printable receipt container for assistive technologies 103ms
+ Ô£ô src/features/admin/UsersView.test.tsx > UsersView > prevents duplicated create user submissions while the request is pending 517ms
+ Ô£ô src/features/admin/UsersView.test.tsx > UsersView > validates reset passwords with the same policy as Laravel 305ms
+ Ô£ô src/features/admin/UsersView.test.tsx > UsersView > keeps the status confirmation locked while the request is pending 183ms
+ Ô£ô src/features/dashboard/DashboardView.test.tsx > DashboardView financial labels > uses precise financial labels instead of sales wording for billed and collected facts 482ms
+ Ô£ô src/features/dashboard/DashboardView.test.tsx > DashboardView financial labels > hides technical dashboard failures behind an operator-safe message 155ms
+ Ô£ô src/features/dashboard/DashboardView.test.tsx > DashboardView financial labels > renders malformed financial amounts as zero instead of NaN 134ms
+ Ô£ô src/components/AppErrorBoundary.test.tsx > AppErrorBoundary > shows human recovery instructions and stores support evidence 328ms
+ Ô£ô src/App.test.tsx > App > renders the login screen when there is no session 338ms
+node.exe : stderr | src/features/invoices/NewInvoiceView.test.tsx > NewInvoiceView > renders payment form after 
+issuing an invoice without adding reports
+En línea: 1 Carácter: 1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\melar\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (stderr | src/fe... adding reports:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[posMath] computeSimpleEstimate is deprecated since v1.0.0-rc.4. Use the backend-computed totals from InvoiceResource 
+instead.
+
+ Ô£ô src/App.test.tsx > App > recovers an authenticated session after a hard refresh on login 128ms
+stderr | src/App.test.tsx > App > renders app shell and fiscal settings route for an authenticated admin
+An update to Tabs inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+An update to ForwardRef inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+
+stderr | src/App.test.tsx > App > renders app shell and fiscal settings route for an authenticated admin
+An update to ForwardRef inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+An update to Tabs inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+An update to ForwardRef inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+
+ Ô£ô src/features/cash/CashBoxView.test.tsx > CashBoxView > shows cash status and allows opening a cash session 918ms
+stderr | src/features/reports/ReportsView.test.tsx > ReportsView > renders reports view for a user with reports view 
+permission
+An update to ReportsView inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+An update to ForwardRef inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+
+ Ô£ô src/features/invoices/NewInvoiceView.test.tsx > NewInvoiceView > renders payment form after issuing an invoice without adding reports 1000ms
+ Ô£ô src/App.test.tsx > App > renders app shell and fiscal settings route for an authenticated admin 573ms
+ Ô£ô src/features/invoices/components/InvoiceConfirmation.test.tsx > InvoiceConfirmation > renders malformed service and preview amounts as safe financial labels 401ms
+ Ô£ô src/features/reports/ReportsView.test.tsx > ReportsView > renders reports view for a user with reports view permission 1172ms
+ Ô£ô src/features/cash/CashBoxView.test.tsx > CashBoxView > keeps close-session difference hidden until counted amount is entered 356ms
+stderr | src/features/cash/CashBoxView.test.tsx > CashBoxView > shows pending balance and prevents client-side close 
+while invoices are partial
+Query data cannot be undefined. Please make sure to return a value other than undefined from your query function. 
+Affected query key: ["cash-sessions",10,"movements"]
+
+ Ô£ô src/App.test.tsx > App > renders catalog as read only for a cashier 365ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > uses same-origin API routes by default 10ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > drops a localhost build URL when the app is opened by IP 3ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > keeps localhost for same-host development 2ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > keeps a non-loopback remote API URL when explicitly configured 3ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > shows operational instructions for cashbox conflicts without exposing fields 3ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > warns users to check history before repeating duplicated billing operations 3ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > keeps backup restore conflicts non-technical 4ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > lists every validation error from a 422 response with human-readable field labels 4ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > falls back to a generic message when a 422 has no validation payload 3ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > shows the lockout guidance when the backend responds 423 2ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > keeps the permission denied message stable for 403 responses 2ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > still treats 5xx errors as server-side without leaking stack traces 1ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > stores safe local support evidence when the LAN server is unavailable 48ms
+stderr | src/features/reports/ReportsView.test.tsx > ReportsView > renders the monthly financial summary from backend 
+facts
+An update to ReportsView inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+An update to ForwardRef inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > records sanitized browser network details for mutating requests 21ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > allows GET requests to run concurrently 12ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > keeps mutating requests serialized for csrf safety 6ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > caches the CSRF cookie request for the second mutating call 4ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > refreshes the CSRF cookie when a mutating request receives 419 4ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > logs validation issues in the local support log without leaking raw field names 3ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > session expired multi-subscriber registry > notifies every registered handler when a 419 fires 4ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > session expired multi-subscriber registry > returns an unsubscribe function that removes the handler 2ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > session expired multi-subscriber registry > survives a handler that throws 2ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > session expired multi-subscriber registry > invalidateSession clears the CSRF cache 1ms
+ Ô£ô src/features/cash/CashBoxView.test.tsx > CashBoxView > shows pending balance and prevents client-side close while invoices are partial 390ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > per-request timeout via AbortController > aborts the request and surfaces a timeout message when the server hangs 76ms
+ Ô£ô src/lib/api/base.test.ts > resolveApiBaseUrl > per-request timeout via AbortController > keeps the timeout active when a mutating request retries after 419 97ms
+ Ô£ô src/features/cash/CashBoxView.test.tsx > CashBoxView > renders malformed cash reconciliation amounts as zero instead of NaN 254ms
+ Ô£ô src/features/reports/components/AuditoriaTab.test.tsx > AuditoriaTab > renders malformed audit money amounts as safe financial values 288ms
+ Ô£ô src/features/reports/components/AuditoriaTab.test.tsx > AuditoriaTab > renders catalog audit changes with human labels and without technical fields 261ms
+ Ô£ô src/features/invoices/InvoiceHistoryView.test.tsx > InvoiceHistoryView > renders malformed invoice history amounts as safe financial values 406ms
+ Ô£ô src/App.test.tsx > App > renders backups view actions for an admin 731ms
+ Ô£ô src/components/ui/dialog.a11y.test.tsx > Dialog accessibility > exposes the title as the dialog accessible name 552ms
+ Ô£ô src/components/ui/dialog.a11y.test.tsx > Dialog accessibility > renders nothing in the document when closed 8ms
+ Ô£ô src/features/reports/ReportsView.test.tsx > ReportsView > renders the monthly financial summary from backend facts 1115ms
+ Ô£ô src/features/backups/components/BackupStatusBadge.a11y.test.tsx > BackupStatusBadge accessibility > renders each status with a meaningful accessible name 140ms
+ Ô£ô src/App.test.tsx > App > does not render backups for a user without backup permission 265ms
+ Ô£ô src/app/useHospitalSession.test.tsx > useHospitalSession > invalidates cached session state when the API reports an expired session 170ms
+ Ô£ô src/app/useHospitalSession.test.tsx > useHospitalSession > cleans up Echo, the query cache, and the CSRF cookie on session expiry 19ms
+ Ô£ô src/features/backups/components/BackupStatusBadge.a11y.test.tsx > BackupStatusBadge accessibility > has no axe-core violations on the pending status render 292ms
+ Ô£ô src/features/backups/components/BackupStatusBadge.a11y.test.tsx > BackupStatusBadge accessibility > has no axe-core violations on the success status render 115ms
+ Ô£ô src/components/ui/button.a11y.test.tsx > Button accessibility > has no axe-core violations on a default button 606ms
+ Ô£ô src/components/ui/button.a11y.test.tsx > Button accessibility > renders an icon-only button with an accessible name 95ms
+ Ô£ô src/features/invoices/components/ServiceSearch.test.tsx > ServiceSearch > renders malformed billing service prices as safe financial values 356ms
+ Ô£ô src/components/ui/button.a11y.test.tsx > Button accessibility > reports the disabled state to assistive technologies 90ms
+ Ô£ô src/features/invoices/NewInvoiceView.test.tsx > NewInvoiceView > shows receipt preview after registering payment 1892ms
+ Ô£ô src/features/reports/components/CashSessionReportTab.test.tsx > CashSessionReportTab > uses report reconciliation totals for open cash sessions 194ms
+ Ô£ô src/features/reports/components/CashSessionReportTab.test.tsx > CashSessionReportTab > renders cash movement types and methods as human financial labels 60ms
+ Ô£ô src/features/reports/components/CashSessionReportTab.test.tsx > CashSessionReportTab > renders malformed cash session amounts as safe financial values 103ms
+stderr | src/App.test.tsx > App > creates a manual backup from the admin backups view
+Encountered two children with the same key, `9`. Keys should be unique so that components maintain their identity 
+across updates. Non-unique keys may cause children to be duplicated and/or omitted ÔÇö the behavior is unsupported and 
+could change in a future version.
+
+stderr | src/features/reports/ReportsView.test.tsx > ReportsView > renders malformed daily and monthly report amounts 
+as zero instead of raw values
+An update to ReportsView inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+An update to ForwardRef inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+
+ Ô£ô src/App.test.tsx > App > creates a manual backup from the admin backups view 1171ms
+ Ô£ô src/features/invoices/NewInvoiceView.test.tsx > NewInvoiceView > rejects inactive services returned by scanner lookup 847ms
+ Ô£ô src/hooks/useServerStatus.test.tsx > useServerStatus > reads the public operational health endpoint 200ms
+ Ô£ô src/hooks/useServerStatus.test.tsx > useServerStatus > summarizes a healthy LAN server in cashier-safe language 51ms
+ Ô£ô src/hooks/useServerStatus.test.tsx > useServerStatus > turns database failures into an actionable operator summary 48ms
+ Ô£ô src/features/reports/ReportsView.test.tsx > ReportsView > renders malformed daily and monthly report amounts as zero instead of raw values 1476ms
+ Ô£ô src/App.test.tsx > App > renders successful backups with accessible download and pagination controls 747ms
+ Ô£ô src/features/invoices/NewInvoiceView.test.tsx > NewInvoiceView > does not add a cached service when scanner lookup has no backend match 789ms
+ Ô£ô src/App.test.tsx > App > shows safe operator guidance when a backup failed 699ms
+ Ô£ô src/App.test.tsx > App > lets a user with required password change submit a new password 257ms
+ Ô£ô src/features/invoices/NewInvoiceView.test.tsx > NewInvoiceView > shows a clear scanner error when the code does not exist 719ms
+ Ô£ô src/features/reports/components/IncomeReportTab.test.tsx > IncomeReportTab > renders malformed range report amounts as zero instead of raw values 446ms
+ Ô£ô src/App.test.tsx > App > shows password change errors on the required password screen 252ms
+ Ô£ô src/features/cash/components/SessionSummary.test.tsx > SessionSummary > renders malformed session amounts and invalid differences as safe financial labels 164ms
+ Ô£ô src/features/cash/components/SessionSummary.test.tsx > SessionSummary > keeps the human signed label for cash differences 25ms
+ Ô£ô src/features/reports/ReportsView.test.tsx > ReportsView > exports reports through the protected backend Excel endpoint 1673ms
+ Ô£ô src/App.test.tsx > App > prevents duplicated required password change submissions while pending 676ms
+ Ô£ô src/features/invoices/components/InvoiceCart.test.tsx > InvoiceCart > renders malformed service and preview amounts as safe financial labels 158ms
+ Ô£ô src/features/reports/components/ServiceSalesTab.test.tsx > ServiceSalesTab > renders malformed service and category amounts as safe financial values 254ms
+stderr | src/features/reports/ReportsView.test.tsx > ReportsView > hides local report excel export without reports 
+export permission
+An update to ReportsView inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+An update to ForwardRef inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+
+ Ô£ô src/App.test.tsx > App > renders not found for an unknown authenticated route 448ms
+ Ô£ô src/features/invoices/NewInvoiceView.test.tsx > NewInvoiceView > renders invoice history filters and reprint button based on permissions 1910ms
+ Ô£ô src/App.test.tsx > App > renders only the active module instead of all modules at once 718ms
+ Ô£ô src/App.test.tsx > App > keeps heavy authenticated routes behind lazy route chunks 3ms
+ Ô£ô src/features/invoices/NewInvoiceView.test.tsx > NewInvoiceView > applies received cash as balance due and keeps change visible 132ms
+ Ô£ô src/features/invoices/NewInvoiceView.test.tsx > NewInvoiceView > renders malformed payment modal invoice amounts as safe financial values 104ms
+ Ô£ô src/features/invoices/NewInvoiceView.test.tsx > NewInvoiceView > calculates cash change and applied amount using cents 154ms
+stderr | src/features/reports/ReportsView.test.tsx > ReportsView > hides local report excel export without reports 
+export permission
+An update to ReportsView inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+An update to ForwardRef inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+
+ Ô£ô src/features/invoices/NewInvoiceView.test.tsx > NewInvoiceView > allows partial payment and shows the remaining balance clearly 132ms
+ Ô£ô src/features/invoices/NewInvoiceView.test.tsx > NewInvoiceView > scopes receipt print hiding to the explicit printing receipt state 4ms
+ Ô£ô src/features/invoices/NewInvoiceView.test.tsx > NewInvoiceView > formats local dates without converting them through UTC 1ms
+ Ô£ô src/features/reports/ReportsView.test.tsx > ReportsView > hides local report excel export without reports export permission 2505ms
+stderr | src/features/invoices/state/posMath.test.ts > posMath > computes the cart estimate for a normal service
+[posMath] computeSimpleEstimate is deprecated since v1.0.0-rc.4. Use the backend-computed totals from InvoiceResource 
+instead.
+
+ Ô£ô src/features/invoices/state/posMath.test.ts > posMath > parses quantity units honoring up to two decimals 14ms
+ Ô£ô src/features/invoices/state/posMath.test.ts > posMath > formats cents back to a decimal string 52ms
+ Ô£ô src/features/invoices/state/posMath.test.ts > posMath > detects zero amounts safely 3ms
+ Ô£ô src/features/invoices/state/posMath.test.ts > posMath > increments a quantity by one whole unit 2ms
+ Ô£ô src/features/invoices/state/posMath.test.ts > posMath > parses tax rate into basis points 2ms
+ Ô£ô src/features/invoices/state/posMath.test.ts > posMath > overrides erythropoietin price when the dialysis prescription flag is on 2ms
+ Ô£ô src/features/invoices/state/posMath.test.ts > posMath > parses local money strings into integer cents 2ms
+ Ô£ô src/features/invoices/state/posMath.test.ts > posMath > computes the cart estimate for a normal service 4ms
+ Ô£ô src/features/invoices/state/posMath.test.ts > posMath > zeros the tax line for non-taxable services 3ms
+ Ô£ô src/features/invoices/state/posMath.test.ts > posMath > applies the erythropoietin rule and reports zero total when prescribed 2ms
+ Ô£ô src/features/reports/ReportsView.test.tsx > ReportsView > does not render reports for a cashier without reports view permission 502ms
+ Ô£ô src/features/reports/ReportsView.test.tsx > ReportsView > keeps operational audit details readable without rendering internal ids or backup checksums 78ms
+ Ô£ô src/lib/support/clientIssueLog.test.ts > clientIssueLog > redacts sensitive words from support messages 13ms
+ Ô£ô src/lib/support/clientIssueLog.test.ts > clientIssueLog > redacts internal field names and runtime details from support messages 3ms
+ Ô£ô src/lib/support/clientIssueLog.test.ts > clientIssueLog > removes URL credentials from support messages 3ms
+ Ô£ô src/lib/support/clientIssueLog.test.ts > clientIssueLog > returns safe stored incidents for support 9ms
+ Ô£ô src/lib/support/clientIssueLog.test.ts > clientIssueLog > returns safe stored context for the help evidence panel 3ms
+ Ô£ô src/lib/support/clientIssueLog.test.ts > clientIssueLog > builds a limited support summary without secrets or local paths 2ms
+ Ô£ô src/test/money.test.ts > lib/money (integer-cents helpers) > parses decimal strings with half-up rounding 10ms
+ Ô£ô src/test/money.test.ts > lib/money (integer-cents helpers) > avoids float drift for repeated small additions 2ms
+ Ô£ô src/test/money.test.ts > lib/money (integer-cents helpers) > returns 0 cents for empty or non-numeric input 3ms
+ Ô£ô src/test/money.test.ts > lib/money (integer-cents helpers) > parses more than two decimal places with half-up rounding (no truncation) 3ms
+ Ô£ô src/test/money.test.ts > lib/money (integer-cents helpers) > formats integer cents to a localized "L." string with two decimals 54ms
+ Ô£ô src/test/money.test.ts > lib/money (integer-cents helpers) > formats zero cents deterministically 2ms
+ Ô£ô src/test/money.test.ts > lib/money (integer-cents helpers) > formats non-finite cents as zero 1ms
+ Ô£ô src/test/money.test.ts > lib/money (integer-cents helpers) > exposes a fromCents() helper returning the float value 4ms
+ Ô£ô src/test/money.test.ts > lib/money (integer-cents helpers) > exposes toFloat() as a direct alias 3ms
+stderr | src/features/reports/ReportsView.test.tsx > ReportsView > exports the loaded cash session using its own 
+opened and closed dates
+An update to ReportsView inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+An update to ForwardRef inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+
+ Ô£ô src/lib/moneyCents.test.ts > moneyCents helpers > parses decimal strings to integer cents 10ms
+ Ô£ô src/lib/moneyCents.test.ts > moneyCents helpers > rounds to nearest cent using HALF_AWAY_FROM_ZERO 2ms
+ Ô£ô src/lib/moneyCents.test.ts > moneyCents helpers > rejects malformed input 3ms
+ Ô£ô src/lib/moneyCents.test.ts > moneyCents helpers > parsePositiveCents rejects zero and negative 2ms
+ Ô£ô src/lib/moneyCents.test.ts > moneyCents helpers > formatCents produces canonical decimal strings 38ms
+ Ô£ô src/lib/moneyCents.test.ts > moneyCents helpers > formatLempirasFromCents produces prefixed strings 2ms
+ Ô£ô src/lib/moneyCents.test.ts > moneyCents helpers > parseQuantityUnits rejects non-positive and parses two decimals 1ms
+ Ô£ô src/lib/moneyCents.test.ts > moneyCents helpers > formatQuantity respects fractionDigits 2ms
+ Ô£ô src/features/reports/ReportsView.test.tsx > ReportsView > allows cash-session-only report users to open the cash report tab without managerial reports 560ms
+ Ô£ô src/features/invoices/state/reducer.test.ts > newInvoiceReducer > initializes with the provided cash session and default flags 13ms
+ Ô£ô src/features/invoices/state/reducer.test.ts > newInvoiceReducer > returns a fresh state on RESET_FORM preserving the cash session 3ms
+ Ô£ô src/features/invoices/state/reducer.test.ts > newInvoiceReducer > keeps a success message untouched when it differs from the cleared id 3ms
+ Ô£ô src/features/invoices/state/reducer.test.ts > newInvoiceReducer > increments the existing service quantity when ADD_TO_CART finds a match 74ms
+ Ô£ô src/features/invoices/state/reducer.test.ts > newInvoiceReducer > appends a new service when ADD_TO_CART does not find a match 2ms
+ Ô£ô src/features/invoices/state/reducer.test.ts > newInvoiceReducer > preserves the cart when adding a service that already has a dialysis prescription line 2ms
+ Ô£ô src/features/invoices/state/reducer.test.ts > newInvoiceReducer > updates quantity and dialysis flag on the targeted cart item 2ms
+ Ô£ô src/features/invoices/state/reducer.test.ts > newInvoiceReducer > removes the cart item at the given index 2ms
+ Ô£ô src/features/invoices/state/reducer.test.ts > newInvoiceReducer > resets the cart completely without touching the cash session 4ms
+ Ô£ô src/lib/realtime/echo.test.ts > lib/realtime/echo > returns null when the config endpoint reports broadcasting is disabled 19ms
+ Ô£ô src/lib/realtime/echo.test.ts > lib/realtime/echo > resets configPromise when the config fetch throws, so the next call retries 6ms
+ Ô£ô src/lib/money.test.ts > money formatting helpers > formats lempiras with deterministic separators 45ms
+ Ô£ô src/lib/money.test.ts > money formatting helpers > falls back to zero for malformed financial values 2ms
+ Ô£ô src/features/invoices/NewInvoiceView.test.tsx > NewInvoiceView > shows void reason confirmation for users with invoice void permission 1978ms
+ Ô£ô src/features/invoices/NewInvoiceView.test.tsx > NewInvoiceView > renders institutional receipt print structure with fiscal valid until date 84ms
+ Ô£ô src/lib/shortcuts.test.ts > keyboard shortcuts catalogue > exposes a non-empty catalogue 9ms
+ Ô£ô src/lib/shortcuts.test.ts > keyboard shortcuts catalogue > has a description for every entry 3ms
+ Ô£ô src/lib/shortcuts.test.ts > keyboard shortcuts catalogue > does not bind the same key twice inside the same scope with identical modifiers 3ms
+ Ô£ô src/lib/shortcuts.test.ts > keyboard shortcuts catalogue > does not collide after global shortcuts are merged into each screen scope 3ms
+ Ô£ô src/lib/shortcuts.test.ts > keyboard shortcuts catalogue > includes at least one global shortcut for navigation 2ms
+ Ô£ô src/lib/shortcuts.test.ts > keyboard shortcuts catalogue > lists POS shortcuts in the pos scope 1ms
+ Ô£ô src/lib/shortcuts.test.ts > keyboard shortcuts catalogue > renders labels in Ctrl+Key form 2ms
+ Ô£ô vite-plugins/csp-nonce.test.ts > cspNoncePlugin > returns a Vite plugin with the expected name 10ms
+ Ô£ô vite-plugins/csp-nonce.test.ts > cspNoncePlugin > reports the nonce as applicable in serve and build commands 2ms
+ Ô£ô vite-plugins/csp-nonce.test.ts > cspNoncePlugin > builds a deterministic manifest for a given nonce 6ms
+ Ô£ô vite-plugins/csp-nonce.test.ts > cspNoncePlugin > produces the same manifest for the same nonce 2ms
+ Ô£ô vite-plugins/csp-nonce.test.ts > cspNoncePlugin > exposes a stable placeholder that the backend can substitute 2ms
+ Ô£ô vite-plugins/csp-nonce.test.ts > cspNoncePlugin > substitutes a build-time placeholder that points to the static slot 2ms
+ Ô£ô vite-plugins/csp-nonce.test.ts > cspNoncePlugin > does not emit invalid html tag descriptors 2ms
+ Ô£ô src/features/reports/ReportsView.test.tsx > ReportsView > exports the loaded cash session using its own opened and closed dates 432ms
+ Ô£ô src/lib/i18n/es-HN.workflow.test.ts > i18n surface for the cashier workflow > renders the hospital tagline in Spanish 9ms
+ Ô£ô src/lib/i18n/es-HN.workflow.test.ts > i18n surface for the cashier workflow > covers every step the cashier reaches 3ms
+ Ô£ô src/lib/i18n/es-HN.workflow.test.ts > i18n surface for the cashier workflow > exposes all error message types that the apiClient can return 3ms
+ Ô£ô src/lib/i18n/es-HN.workflow.test.ts > i18n surface for the cashier workflow > formats lempiras and dates the way the cashier expects 10ms
+ Ô£ô src/lib/i18n/es-HN.workflow.test.ts > i18n surface for the cashier workflow > formats POS status messages that the cashier copy expects 2ms
+ Ô£ô src/lib/format/formatDate.test.ts > formatDate > renders an ISO string as DD/MM/YYYY when the time component is midday UTC 10ms
+ Ô£ô src/lib/format/formatDate.test.ts > formatDate > returns a dash for null, undefined and malformed input 2ms
+ Ô£ô src/lib/format/formatDate.test.ts > formatDate > renders the long Spanish form for the date 3ms
+ Ô£ô src/lib/format/formatDate.test.ts > formatDate > renders time in HH:mm form 2ms
+ Ô£ô src/lib/format/formatDate.test.ts > formatDate > combines date and time when needed 2ms
+ Ô£ô src/lib/format/formatDate.test.ts > formatDate > uses the Spanish short month for the month/year header 2ms
+ Ô£ô src/lib/api/user-error.test.ts > isErrorMessage > detects common Spanish error prefixes 9ms
+ Ô£ô src/lib/api/user-error.test.ts > isErrorMessage > detects error substrings regardless of case 2ms
+ Ô£ô src/lib/api/user-error.test.ts > isErrorMessage > returns false for success / info messages 2ms
+ Ô£ô src/lib/api/user-error.test.ts > isErrorMessage > returns false for empty / whitespace strings 1ms
+ Ô£ô src/lib/api/user-error.test.ts > isErrorMessage > does not flag innocuous words that contain "error" as a substring 1ms
+stderr | src/features/reports/ReportsView.test.tsx > ReportsView > renders report date filters and empty category 
+state after loading range
+An update to ReportsView inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+An update to ForwardRef inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+
+ Ô£ô src/test/useHospitalSession.test.ts > session cleanup contracts > invalidateCsrfCookie is exported as a callable function 9ms
+ Ô£ô src/test/useHospitalSession.test.ts > session cleanup contracts > disconnectEcho is exported as a callable function 2ms
+ Ô£ô src/test/useHospitalSession.test.ts > session cleanup contracts > apiClient exposes the logout/invalidateSession methods used by the session hook 2ms
+ Ô£ô src/test/useHospitalSession.test.ts > session cleanup contracts > QueryClient exposes a clear() method that useHospitalSession can call on logout 1ms
+ Ô£ô src/lib/i18n/es-HN.test.ts > es-HN dictionary > exposes the expected app identity 8ms
+ Ô£ô src/lib/i18n/es-HN.test.ts > es-HN dictionary > exposes every top-level navigation label 3ms
+ Ô£ô src/lib/i18n/es-HN.test.ts > es-HN dictionary > builds POS messages with the provided invoice number 3ms
+ Ô£ô src/lib/i18n/es-HN.test.ts > es-HN dictionary > builds cashbox pending message with count and amount 2ms
+ Ô£ô src/lib/i18n/es-HN.test.ts > es-HN dictionary > returns the dictionary from t() 1ms
+ Ô£ô src/lib/api/reports.test.ts > reports api client > downloads daily pdf reports with the explicit daily date parameter 11ms
+ Ô£ô src/lib/api/reports.test.ts > reports api client > omits empty optional filters from pdf report requests 3ms
+ Ô£ô src/lib/api/billing.test.ts > billing api client > posts payment reversal reasons to the operational void endpoint 12ms
+ Ô£ô src/lib/institutionalReceiptPaper.test.ts > institutional receipt paper helpers > keeps thermal receipt sizes as first-class institutional options 7ms
+ Ô£ô src/lib/institutionalReceiptPaper.test.ts > institutional receipt paper helpers > falls back to half letter for malformed values 1ms
+stderr | src/features/reports/ReportsView.test.tsx > ReportsView > renders report date filters and empty category 
+state after loading range
+An update to ReportsView inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+An update to ForwardRef inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+
+ Ô£ô src/lib/hospital-name.test.ts > displayHospitalName > uses a clean operational fallback for empty or legacy internal names 7ms
+ Ô£ô src/lib/hospital-name.test.ts > displayHospitalName > keeps the configured hospital name when it is not a legacy internal name 1ms
+stderr | src/features/reports/ReportsView.test.tsx > ReportsView > renders report date filters and empty category 
+state after loading range
+An update to ForwardRef inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+An update to ReportsView inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+An update to ForwardRef inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at 
+https://react.dev/link/wrap-tests-with-act
+
+ Ô£ô src/features/reports/ReportsView.test.tsx > ReportsView > renders report date filters and empty category state after loading range 2781ms
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ» Failed Tests 1 ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»
+
+ FAIL  src/AppRoutes.lazy.test.ts > AppRoutes lazy-loading > defines the heavy views through React.lazy
+AssertionError: Expected AboutView to be lazy-loaded: expected null not to be null
+ ÔØ» src/AppRoutes.lazy.test.ts:31:69
+     29|     for (const view of heavyRoutes) {
+     30|       const lazyBinding = source.match(new RegExp(`lazy\\(\\(\\) => imÔÇª
+     31|       expect(lazyBinding, `Expected ${view} to be lazy-loaded`).not.toÔÇª
+       |                                                                     ^
+     32|     }
+     33|   });
+
+ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»ÔÄ»[1/1]ÔÄ»
+
+
+ Test Files  1 failed | 52 passed (53)
+      Tests  1 failed | 238 passed (239)
+   Start at  12:26:05
+   Duration  28.23s (transform 25.70s, setup 61.82s, import 127.78s, tests 50.53s, environment 201.18s)
+
+VERB_EXIT=1
+

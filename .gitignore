@@ -10,10 +10,12 @@ nginx/ssl/
 qa/support-packets/
 
 backend/.env
+backend/build/
 backend/storage/app/private/backups/
 backend/storage/framework/testing-production-proofs-empty/
 backend/storage/framework/testing-production-proofs/
 backend/storage/framework/testing-production-proofs-missing-evidence/
+backend/storage/framework/testing-production-proofs-partial/
 backend/storage/logs/
 backend/bootstrap/cache/
 backend/vendor/

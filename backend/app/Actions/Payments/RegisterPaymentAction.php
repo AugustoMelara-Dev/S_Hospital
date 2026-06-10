@@ -113,7 +113,6 @@ class RegisterPaymentAction
                 'balance_due' => Money::formatCents($nextBalanceCents),
                 'balance_due_cents' => $nextBalanceCents,
                 'status' => $nextBalanceCents === 0 ? Invoice::STATUS_PAID : Invoice::STATUS_PARTIAL,
-                'cash_session_id' => $lockedInvoice->cash_session_id ?? $cashSession->id,
             ])->save();
 
             AuditLog::query()->create([

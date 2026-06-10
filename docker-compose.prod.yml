@@ -214,14 +214,14 @@ services:
       sh -c "
         soketi start \
           --port=6001 \
-          --default-app-id=$${PUSHER_APP_ID:-hospital-app} \
-          --default-app-key=$${PUSHER_APP_KEY:-hospital-key} \
-          --default-app-secret=$${PUSHER_APP_SECRET:-hospital-secret}
+          --default-app-id=$${PUSHER_APP_ID:?PUSHER_APP_ID is required} \
+          --default-app-key=$${PUSHER_APP_KEY:?PUSHER_APP_KEY is required} \
+          --default-app-secret=$${PUSHER_APP_SECRET:?PUSHER_APP_SECRET is required}
       "
     environment:
-      PUSHER_APP_ID: ${PUSHER_APP_ID:-hospital-app}
-      PUSHER_APP_KEY: ${PUSHER_APP_KEY:-hospital-key}
-      PUSHER_APP_SECRET: ${PUSHER_APP_SECRET:-hospital-secret}
+      PUSHER_APP_ID: ${PUSHER_APP_ID:?PUSHER_APP_ID is required}
+      PUSHER_APP_KEY: ${PUSHER_APP_KEY:?PUSHER_APP_KEY is required}
+      PUSHER_APP_SECRET: ${PUSHER_APP_SECRET:?PUSHER_APP_SECRET is required}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:6001/ >/dev/null 2>&1 || exit 1"]
       interval: 30s

@@ -6,6 +6,7 @@ namespace Tests\Unit;
 
 use App\Actions\Billing\GenerateFiscalNumberAction;
 use App\Models\FiscalSequence;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -62,7 +63,7 @@ class GenerateFiscalNumberActionTest extends TestCase
         // and concurrent admin activations.
         FiscalSequence::query()->create($this->sequenceAttributes(prefix: '000-001-01'));
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
         FiscalSequence::query()->create($this->sequenceAttributes(prefix: '000-002-01'));
     }
 
@@ -100,7 +101,7 @@ class GenerateFiscalNumberActionTest extends TestCase
         $caught = false;
         try {
             $second->save();
-        } catch (\Illuminate\Database\QueryException) {
+        } catch (QueryException) {
             $caught = true;
         }
         $this->assertTrue($caught, 'Expected the unique constraint to block concurrent activations.');

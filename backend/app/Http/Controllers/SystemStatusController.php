@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\User;
 use App\Support\OperationalMessageSanitizer;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -452,7 +453,7 @@ class SystemStatusController extends Controller
         $status = 'never_run';
         if (is_string($lastTick) && $lastTick !== '') {
             try {
-                $lastTickCarbon = \Illuminate\Support\Carbon::parse($lastTick);
+                $lastTickCarbon = Carbon::parse($lastTick);
                 $ageSeconds = max(0, now()->diffInSeconds($lastTickCarbon, absolute: true));
                 $status = $ageSeconds <= 180 ? 'ok' : ($ageSeconds <= 600 ? 'stale' : 'stuck');
             } catch (\Throwable) {

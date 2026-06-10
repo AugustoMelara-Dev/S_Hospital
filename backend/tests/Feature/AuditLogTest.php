@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Actions\Reports\OperationalMetricsService;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
 use App\Models\User;
@@ -69,7 +70,7 @@ class AuditLogTest extends TestCase
             'created_at' => now(),
         ]);
 
-        $snapshot = app(\App\Actions\Reports\OperationalMetricsService::class)->snapshot();
+        $snapshot = app(OperationalMetricsService::class)->snapshot();
         $this->assertNotEmpty($snapshot['recent_errors']);
         $this->assertSame('backup.failed', $snapshot['recent_errors'][0]['action']);
     }
@@ -77,8 +78,8 @@ class AuditLogTest extends TestCase
     private function admin(): User
     {
         $user = User::factory()->create([
-            'username' => 'admin-audit-' . uniqid(),
-            'email' => 'admin-' . uniqid() . '@hospital.local',
+            'username' => 'admin-audit-'.uniqid(),
+            'email' => 'admin-'.uniqid().'@hospital.local',
             'must_change_password' => false,
             'active' => true,
         ]);

@@ -2,18 +2,14 @@
 
 namespace App\Actions\Cash;
 
-use App\Actions\Backups\CreateBackupAction;
 use App\Events\CashSessionChanged;
-use App\Jobs\RunBackupJob;
 use App\Models\AuditLog;
-use App\Models\BackupLog;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\User;
 use App\Support\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class CloseCashSessionAction
@@ -107,18 +103,6 @@ class CloseCashSessionAction
 
             DB::afterCommit(function () use ($lockedSession) {
                 CashSessionChanged::dispatch($lockedSession->fresh(), 'closed');
-            });
-
-            DB::afterCommit(function () use ($user): void {
-                try {
-                    $backupLog = app(CreateBackupAction::class)->createPending($user, BackupLog::TYPE_SCHEDULED);
-                    RunBackupJob::dispatch($backupLog->id);
-                } catch (\Throwable $exception) {
-                    Log::warning('No se pudo programar respaldo al cerrar caja.', [
-                        'user_id' => $user->id,
-                        'message' => $exception->getMessage(),
-                    ]);
-                }
             });
 
             return $lockedSession->load('user:id,name,username');

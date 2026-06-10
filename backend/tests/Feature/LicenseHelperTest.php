@@ -16,6 +16,7 @@ class LicenseHelperTest extends TestCase
     {
         parent::setUp();
         Storage::fake('local');
+        config(['app.license_salt' => 'per-hospital-rotation-salt-2026']);
     }
 
     public function test_default_local_operation_status_when_no_file_exists(): void
@@ -146,14 +147,14 @@ class LicenseHelperTest extends TestCase
 
     public function test_configured_license_salt_overrides_default(): void
     {
-        config(['app.license_salt' => '']);
-
         FiscalSetting::query()->create([
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
             'receipt_width' => '80mm',
         ]);
+
+        config(['app.license_salt' => 'old-salt-2025']);
 
         $defaultSignature = LicenseHelper::generateSignature('Hospital Central', '08011999123456', '2030-12-31');
 
@@ -174,6 +175,39 @@ class LicenseHelperTest extends TestCase
 
         $this->assertTrue($status['valid']);
         $this->assertEquals('Registro LAN verificado', $status['type']);
+    }
+
+    public function test_production_license_file_requires_configured_salt(): void
+    {
+        config([
+            'app.env' => 'testing',
+        ]);
+
+        FiscalSetting::query()->create([
+            'hospital_name' => 'Hospital Central',
+            'rtn' => '08011999123456',
+            'default_tax_rate' => '15.00',
+            'receipt_width' => '80mm',
+        ]);
+
+        $signatureWithDefaultSalt = LicenseHelper::generateSignature('Hospital Central', '08011999123456', '2030-12-31');
+
+        Storage::disk('local')->put('license.json', json_encode([
+            'licensee' => 'Hospital Central',
+            'rtn' => '08011999123456',
+            'expires_at' => '2030-12-31',
+            'signature' => $signatureWithDefaultSalt,
+        ]));
+
+        config([
+            'app.env' => 'production',
+            'app.license_salt' => '',
+        ]);
+
+        $status = LicenseHelper::checkLicense();
+
+        $this->assertFalse($status['valid']);
+        $this->assertEquals('Salt de Registro Faltante', $status['type']);
     }
 
     public function test_rotating_license_salt_invalidates_prior_signature(): void

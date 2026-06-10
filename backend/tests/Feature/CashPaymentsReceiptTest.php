@@ -223,6 +223,39 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonValidationErrors('cash_session');
     }
 
+    public function test_cannot_close_collecting_cash_session_with_cross_session_partial_invoice(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $issuer = $this->cashier();
+        $collector = User::factory()->create(['name' => 'Supervisor Caja']);
+        $collector->assignRole('supervisor');
+
+        $this->openSession($issuer, '500.00');
+        $collectorSessionId = $this->openSession($collector, '500.00');
+        $invoiceId = $this->createInvoice($issuer, 'Glucosa');
+
+        $this->actingAs($collector)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $collectorSessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '5.00',
+            ])
+            ->assertCreated();
+
+        $this->actingAs($collector)
+            ->getJson('/api/cash-sessions/current')
+            ->assertOk()
+            ->assertJsonPath('data.payments_total', '5.00')
+            ->assertJsonPath('data.pending_invoice_count', 1)
+            ->assertJsonPath('data.pending_amount', '12.25');
+
+        $this->actingAs($collector)
+            ->postJson("/api/cash-sessions/{$collectorSessionId}/close", ['closing_amount' => '505.00'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('cash_session');
+    }
+
     public function test_payment_requires_an_open_own_cash_session(): void
     {
         $this->seedBillingBase();
@@ -801,16 +834,22 @@ class CashPaymentsReceiptTest extends TestCase
     {
         $this->seedBillingBase();
         $cashier = $this->cashier();
+        // BUG-SEC-04: simulate the patient being pre-marked as
+        // dialysis-prescribed by clinical staff; in production the cashier
+        // would not have this permission. Granted here per-user so the
+        // broader security invariant (cajero role lacks the permission) is
+        // preserved for InvoiceDialysisPrescriptionTest.
+        $cashier->givePermissionTo('patients.mark_dialysis_prescription');
         $service = Service::query()->where('name', 'Eritropoyetina')->firstOrFail();
         $this->openSession($cashier, '0.00');
 
         $invoiceId = $this->actingAs($cashier)
             ->postJson('/api/invoices', [
                 'patient_name' => 'Maria Lopez',
+                'dialysis_prescription' => true,
                 'items' => [[
                     'service_id' => $service->id,
                     'quantity' => '1.00',
-                    'dialysis_prescription' => true,
                 ]],
             ])
             ->assertCreated()
