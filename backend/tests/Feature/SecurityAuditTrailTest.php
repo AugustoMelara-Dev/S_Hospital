@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class SecurityAuditTrailTest extends TestCase
@@ -22,7 +21,7 @@ class SecurityAuditTrailTest extends TestCase
 
     public function test_audit_logs_table_has_forensic_columns(): void
     {
-        $columns = \Illuminate\Support\Facades\Schema::getColumnListing('audit_logs');
+        $columns = Schema::getColumnListing('audit_logs');
         $this->assertContains('ip', $columns);
         $this->assertContains('user_agent', $columns);
         $this->assertContains('url', $columns);

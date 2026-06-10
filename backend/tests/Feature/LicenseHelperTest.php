@@ -16,6 +16,7 @@ class LicenseHelperTest extends TestCase
     {
         parent::setUp();
         Storage::fake('local');
+        config(['app.license_salt' => 'per-hospital-rotation-salt-2026']);
     }
 
     public function test_default_local_operation_status_when_no_file_exists(): void
@@ -146,14 +147,14 @@ class LicenseHelperTest extends TestCase
 
     public function test_configured_license_salt_overrides_default(): void
     {
-        config(['app.license_salt' => '']);
-
         FiscalSetting::query()->create([
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
             'receipt_width' => '80mm',
         ]);
+
+        config(['app.license_salt' => 'old-salt-2025']);
 
         $defaultSignature = LicenseHelper::generateSignature('Hospital Central', '08011999123456', '2030-12-31');
 
@@ -180,7 +181,6 @@ class LicenseHelperTest extends TestCase
     {
         config([
             'app.env' => 'testing',
-            'app.license_salt' => '',
         ]);
 
         FiscalSetting::query()->create([

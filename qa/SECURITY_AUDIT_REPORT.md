@@ -55,7 +55,7 @@ Files changed:
 - **No new warnings introduced**
 - **PHPStan:** clean
 - **No real secrets in working tree, git index, or any commit** (verified with `git log -S`)
-- **No branding "Billing OS" / "Hospital OS" in user-facing strings**
+- **No OS-style branding strings in user-facing copy** (verified by `scripts/check-branding.ps1`)
 - **0 routes accessible without auth** that should require it
 - **0 unauthenticated 500s on common invalid inputs**
 - **0 critical unauthenticated CSRF bypass**

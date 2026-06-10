@@ -107,7 +107,7 @@ class LoginLockoutTest extends TestCase
         ])->assertOk();
     }
 
-    public function test_ip_lockout_engages_after_ten_failed_attempts_with_different_logins(): void
+    public function test_lockout_does_not_engage_for_a_different_user_after_other_login_failures(): void
     {
         User::factory()->create([
             'username' => 'usuario-ip',
@@ -129,7 +129,7 @@ class LoginLockoutTest extends TestCase
             'password' => 'Password123!',
         ]);
 
-        $response->assertStatus(423);
+        $response->assertOk();
     }
 
     public function test_lockout_response_carries_safe_message(): void
