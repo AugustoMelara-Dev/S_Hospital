@@ -8,11 +8,11 @@
 > esta reconciliación contenían afirmaciones inconsistentes con la
 > corrida real del quality gate. Esta versión es la única que cuenta.
 
-> **Actualización 2026-06-10T12:25 (post-reconciliación):** El
+> **Actualización 2026-06-10T12:37 (post-reconciliación):** El
 > bundle offline-release/ fue regenerado con éxito vía
 > `make_offline_release.ps1 -Force -AllowDirty`. El assert
 > `assert_offline_release_clean.ps1 -RequireCurrentCommit`
-> retorna `OFFLINE_RELEASE_CLEAN: YES` en commit `223d0e8f`.
+> retorna `OFFLINE_RELEASE_CLEAN: YES` en commit `d3cd1d19`.
 > Los 4 tar files de imágenes Docker están presentes en
 > `offline-release/offline-images/`. El blocker "no se puede
 > construir desde este host" documentado abajo era una
@@ -32,9 +32,9 @@ Razón única, objetiva y verificable:
 
 - **El software está validado y el bundle offline está regenerado.**
   `scripts/assert_offline_release_clean.ps1 -RequireCurrentCommit`
-  retorna `OFFLINE_RELEASE_CLEAN: YES` en commit `223d0e8f`.
+  retorna `OFFLINE_RELEASE_CLEAN: YES` en commit `d3cd1d19`.
   Los 4 tar files de imágenes Docker están presentes en
-  `offline-release/offline-images/` (278.65 MB total).
+  `offline-release/offline-images/` (278.33 MB total).
   `MANIFEST.txt` referencia el commit actual y los source files
   del bundle matchean el working tree.
 - **Working tree limpio** (`git status` retorna "nothing to commit,
@@ -79,8 +79,8 @@ no puede promover a `READY FOR PILOT` sin intervención humana:
 | Campo | Valor |
 |---|---|
 | Branch | `plan/fase-0-7-rc` |
-| HEAD | `223d0e8f8538f6c37ecb2872d46811b7eef0cd8a` |
-| HEAD corto | `223d0e8f` |
+| HEAD | `d3cd1d19e9fa1e6cfc89c0cefff6ef8c2ed16029` |
+| HEAD corto | `d3cd1d19` |
 | Commits ahead of `origin/main` | 38 |
 | Working tree | clean |
 | Archivos untracked | 0 |
@@ -89,6 +89,7 @@ no puede promover a `READY FOR PILOT` sin intervención humana:
 Commits clave:
 - `fb21f15a` fix(qa+backend+branding): reconciliar handoff RC1 contra estado real
 - `223d0e8f` docs(qa): single-source RC1 reconciliation handoff with NOT READY verdict
+- `d3cd1d19` docs(qa): update FINAL_RC1_HANDOFF to reflect successful offline release regen
 
 ---
 
@@ -157,15 +158,15 @@ reconciliación (ver §Bugs cerrados).
 **Decisión final: PASS. `OFFLINE_RELEASE_CLEAN: YES` es real.**
 
 - El bundle regenerado vía
-  `make_offline_release.ps1 -Force -AllowDirty` el 2026-06-10T12:25
+  `make_offline_release.ps1 -Force -AllowDirty` el 2026-06-10T12:37
   produce MANIFEST.txt, checksums.sha256, los 4 tar files
-  (`backend.tar` 76.22 MB, `mariadb.tar` 105.48 MB, `nginx.tar`
-  20.73 MB, `queue-worker.tar` 76.22 MB) y copia los source files
-  actualizados.
+  (`backend.tar` 76.10 MB, `mariadb.tar` 105.48 MB, `nginx.tar`
+  20.65 MB, `queue-worker.tar` 76.10 MB, total 278.33 MB) y copia
+  los source files actualizados.
 - El assert
   (`scripts/assert_offline_release_clean.ps1 -RequireCurrentCommit`)
   es la fuente de verdad: `OFFLINE_RELEASE_CLEAN: YES` en commit
-  `223d0e8f`.
+  `d3cd1d19`.
 - El handoff previo (4129707c) llamó al bundle "offline release
   PASS with 1 env blocker" y la reconciliación (223d0e8f) lo bajó
   a "NO PASS" por presunción de que `auth.docker.io` no estaba
@@ -429,12 +430,12 @@ El bundle offline ya está regenerado y validado en este host
 
 | Archivo | Estado previo | Estado actual |
 |---|---|---|
-| `qa/FINAL_RC1_HANDOFF.md` (este, 223d0e8f) | NOT READY (1 offline-release blocker) | **READY FOR PILOT CANDIDATE** (offline release PASS, 3 FIELD-DEP pendientes) |
+| `qa/FINAL_RC1_HANDOFF.md` (este, d3cd1d19) | NOT READY (1 offline-release blocker) | **READY FOR PILOT CANDIDATE** (offline release PASS, 3 FIELD-DEP pendientes) |
 | `qa/qa-test.txt` | decía 432/5/0 | actualizado a 433/5/0 (ver `qa/qa-reconciliation-2026-06-10.txt`) |
 | `qa/qa-pint.txt` | decía passed | era falso; real era fail; aplicado en `fb21f15a` |
 | `qa/qa-branding.txt` | decía sin hallazgos | era falso; SECURITY_AUDIT_REPORT.md causaba FP; corregido en `fb21f15a` |
 | `qa/qa-offline-release-build.txt` | mostraba fallo docker compose build | actualizado al run exitoso 2026-06-10T12:25 con `OFFLINE_RELEASE_CLEAN: YES` |
-| `qa/qa-offline-release-clean.txt` | decía NO (1 issue) | dice **YES** (4 tar files en offline-images/, MANIFEST.txt referencia `223d0e8f`) |
+| `qa/qa-offline-release-clean.txt` | decía NO (1 issue) | dice **YES** (4 tar files en offline-images/, MANIFEST.txt referencia `d3cd1d19`) |
 | `qa/qa-e2e-last-run.json` | 13/16 | sin cambios (correcto) |
 | `qa/qa-e2e-output.txt` | 13/16 detail | sin cambios (correcto) |
 | `qa/SECURITY_AUDIT_REPORT.md` | línea 58 con branding prohibido | reformulado en este commit |
@@ -444,7 +445,7 @@ El bundle offline ya está regenerado y validado en este host
 ---
 
 **Fin del handoff de reconciliación. Single source of truth para
-RC1 pilot readiness al 2026-06-10. HEAD `223d0e8f`.**
+RC1 pilot readiness al 2026-06-10. HEAD `d3cd1d19`.**
 
 > **Verdict final único:** **READY FOR PILOT CANDIDATE**.
 > El software está validado, el bundle offline está regenerado y
