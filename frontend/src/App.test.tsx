@@ -1030,7 +1030,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect((await screen.findAllByRole('heading', { name: /^reportes$/i }, { timeout: 5000 })).length).toBeGreaterThan(0);
+    expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: /nueva factura/i })).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /^configuraci[oó]n$/i }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('heading', { name: /nueva factura/i })).not.toBeInTheDocument();
