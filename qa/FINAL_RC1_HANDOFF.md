@@ -283,10 +283,14 @@ Inventario de HIGH según `qa/SECURITY_FINDINGS.md`:
    Fix: `vendor/bin/pint` aplicado. Sin cambios semánticos.
 
 3. **Falso positivo en check-branding**: la línea 58 de
-   `qa/SECURITY_AUDIT_REPORT.md` (`**No branding "Billing OS" /
-   "Hospital OS" in user-facing strings**`) matcheaba el patrón
-   prohibido. Fix: reformulada como "No OS-style branding strings
-   in user-facing copy (verified by `scripts/check-branding.ps1`)".
+   `qa/SECURITY_AUDIT_REPORT.md` citaba literalmente el conjunto
+   de marcas prohibidas (ver `scripts/check-branding.ps1` para
+   el glosario exacto) y el scanner las matcheaba como violación.
+   Fix: reformulada como "No OS-style branding strings in
+   user-facing copy (verified by `scripts/check-branding.ps1`)";
+   el glosario de marcas prohibidas sólo se mantiene en
+   `scripts/check-branding.ps1` (única fuente de verdad) y en
+   `qa/SECRETS_SCAN.md` (que las lista con guiones bajos).
 
 ---
 
