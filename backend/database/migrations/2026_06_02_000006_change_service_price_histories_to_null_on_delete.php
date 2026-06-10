@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::table('service_price_histories', function (Blueprint $table) {
             $table->dropForeign(['service_id']);
+            $table->foreignId('service_id')->nullable()->change();
             $table->foreign('service_id')
                 ->nullOnDelete()
                 ->references('id')
