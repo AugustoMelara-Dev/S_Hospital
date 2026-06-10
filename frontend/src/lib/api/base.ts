@@ -6,7 +6,7 @@ let forceLogoutHandler: (() => void) | null = null;
 const sessionExpiredHandlers = new Set<() => void>();
 let requestChain: Promise<unknown> = Promise.resolve();
 
-const CSRF_CACHE_TTL_MS = 30 * 60 * 1000;
+const CSRF_CACHE_TTL_MS = 10 * 60 * 1000;
 let csrfCache: { fetchedAt: number; promise: Promise<void> } | null = null;
 
 const DEFAULT_GET_TIMEOUT_MS = 10_000;

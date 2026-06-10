@@ -53,6 +53,14 @@ export function useHospitalSession() {
       disconnectEcho();
       queryClient.clear();
       void invalidateCsrfCookie();
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.removeItem('hospital_client_issue_log');
+          window.sessionStorage.clear();
+        } catch {
+          // localStorage may be disabled in private mode; safe to ignore.
+        }
+      }
       setUser(null);
       setCashSession(null);
       setStatus('Sesión vencida. Redirigiendo al login...');
@@ -68,6 +76,14 @@ export function useHospitalSession() {
       disconnectEcho();
       queryClient.clear();
       void invalidateCsrfCookie();
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.removeItem('hospital_client_issue_log');
+          window.sessionStorage.clear();
+        } catch {
+          // localStorage may be disabled in private mode; safe to ignore.
+        }
+      }
       setUser(null);
       setCashSession(null);
       setStatus('Sesión cerrada por el servidor. Redirigiendo al login...');
@@ -135,12 +151,21 @@ export function useHospitalSession() {
     // Drop the cached CSRF promise so the next login does not reuse
     // the previous user's token.
     apiClient.invalidateSession();
-    // Tear down realtime, the TanStack Query cache, and force a fresh
-    // XSRF cookie. The next login must not see the previous user's
-    // invoices, cash session, or echo subscriptions.
+    // Tear down realtime, the TanStack Query cache, force a fresh
+    // XSRF cookie, and drop any persisted client-side issue log so
+    // the next user on the same browser cannot see the previous
+    // cashier's operational metadata.
     disconnectEcho();
     queryClient.clear();
     void invalidateCsrfCookie();
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.removeItem('hospital_client_issue_log');
+        window.sessionStorage.clear();
+      } catch {
+        // localStorage may be disabled in private mode; safe to ignore.
+      }
+    }
     setUser(null);
     setCashSession(null);
     setStatus('Sesión cerrada.');
