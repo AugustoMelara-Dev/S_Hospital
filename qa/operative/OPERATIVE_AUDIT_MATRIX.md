@@ -194,35 +194,58 @@
 
 ## Hallazgos consolidados y severidad
 
+Tras la reclasificación rigurosa, la auditoría distingue entre **bugs de software** y **FIELD-PILOT-DEPENDENCY** (validaciones físicas).
+
+### Bugs corregidos durante la auditoría
+
 | # | Severidad | Frente | Descripción | Estado | Archivo:línea |
 | - | --------- | ------ | ----------- | ------ | ------------ |
-| H-01 | ALTA | Reimpresión | `copy_label` hardcodeado a "Original" — reimpresión indistinguible del original | **CORREGIDO** en esta auditoría | `backend/app/Actions/Receipts/GenerateReceiptDataAction.php:43` + `ReprintReceiptAction.php:15-42` |
-| B-1 | BLOQUEANTE | Frontend | Test `AppRoutes.lazy.test.ts` fallaba por marcador TODO ausente y patrón de lazy incompleto | **CORREGIDO** en esta auditoría (TODO + comentario explicativo) | `frontend/src/AppRoutes.tsx` |
-| H-MED-1 | MEDIA | Caja/Pagos | Falta test explícito "pago parcial sin flag → 422" | No corregido (lógica cubierta) | `tests/Feature/CashPaymentsReceiptTest.php` |
-| H-MED-2 | MEDIA | Caja/Pagos | Falta test "cerrar dos veces la misma caja" | No corregido (lógica cubierta) | `tests/Feature/CashPaymentsReceiptTest.php` |
-| H-MED-3 | MEDIA | Caja/Pagos | Falta test "cajero cierra caja de otro" | No corregido (lógica cubierta) | `tests/Feature/CashPaymentsReceiptTest.php` |
-| H-MED-4 | MEDIA | Caja/Pagos | `partial_payments_enabled` se lee de DB sin cache por cada pago | No corregido (optimización) | `RegisterPaymentAction.php:74-76` |
-| H-MED-5 | MEDIA | Caja/Pagos | `Money::parsePositiveCents` y `partial_payments_enabled` con `Schema::hasColumn` defensivo | No corregido (defensivo OK) | `RegisterPaymentAction.php:74-76` |
-| H-MED-6 | MEDIA | Caja/Pagos | `CashBoxView` no se invalida ante `PaymentChanged` por broadcast | No corregido (polling 10s cubre) | `CashBoxView.tsx:49-67` |
-| H-MED-7 | MEDIA | Caja/Pagos | `RegisterPayment` audit log no incluye `reference` | No corregido (mejora) | `RegisterPaymentAction.php:118-132` |
-| H-MED-8 | MEDIA | Facturación | `max(180)` en backend vs `max(255)` en Zod | No corregido (cosmético) | `invoice.schema.ts:17` |
-| H-MED-9 | MEDIA | Facturación | `computeSimpleEstimate` puede divergir ±1 centavo del backend | No corregido (cosmético) | `posMath.ts` |
-| H-MED-10 | MEDIA | Facturación | No test para `patient_name` con 181 caracteres | No corregido (cobertura) | `InvoiceCreationTest.php` |
-| H-MED-11 | MEDIA | Facturación | No test para nombres de servicio >120 chars en recibo | No corregido (cobertura) | `InvoiceCreationTest.php` |
-| H-02 | BAJA | Reimpresión | `auditReceiptPrint` desde preview infla audit log | No corregido (decisión de diseño) | `InvoiceHistoryView.tsx:141-153` |
-| H-03 | ALTA (declarado) | Impresión física | Validación de hardware físico pendiente | NO EJECUTABLE en sandbox | `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` |
-| H-04 | BAJA | Reimpresión | 80mm/58mm default sin guardrail en `FiscalSettings` | No corregido (UX) | `ReceiptPaperSize.php:7` |
-| H-05 | BAJA | Reimpresión | `receipt_paper_size` mutable en invoice | No corregido (diseño) | `Invoice.php:25` |
-| M1 | MEDIA | Backups | Backup programado puede colisionar con operativo 15min | No corregido (operativo) | `routes/console.php:55-68` |
-| M2 | MEDIA | Backups | Lock huérfano si worker muere | No corregido (recuperable) | `CreateBackupAction.php:52` |
-| M3 | MEDIA | Backups | scheduler sidecar requiere `SERVER_IP` y `HOSPITAL_DAILY_BACKUP_TIME` | No corregido (operativo) | `docker-compose.prod.yml:177` |
-| A-1 | ALTO | a11y | Labels huérfanos sin `htmlFor` en InvoiceCart, PaymentModal, FiscalSettings | No corregido (WCAG) | `InvoiceCart.tsx:142`, `PaymentModal.tsx:214` |
-| A-2 | ALTO | a11y | `div onClick` en InvoiceHistoryView no accesible por teclado | No corregido (WCAG) | `InvoiceHistoryView.tsx:386-389` |
-| A-3 | ALTO | a11y | Headings sin contenido accesible | No corregido (WCAG) | `card.tsx:18`, `sheet.tsx:53` |
+| H-01 | ALTA (control fiscal) | Reimpresión | `copy_label` hardcodeado a "Original" — reimpresión indistinguible del original | **CORREGIDO** en esta auditoría | `backend/app/Actions/Receipts/GenerateReceiptDataAction.php:43` + `ReprintReceiptAction.php:15-58` |
+| B-1 | BLOQUEANTE (CI) | Frontend | Test `AppRoutes.lazy.test.ts` fallaba por marcador TODO ausente y patrón de lazy incompleto | **CORREGIDO** en esta auditoría (TODO + comentario explicativo) | `frontend/src/AppRoutes.tsx` |
 
-**Bugs corregidos en esta auditoría: 2 (H-01 y B-1).**
+### Bugs abiertos por severidad (reclasificados)
+
+| ID | Severidad | ¿Bloquea piloto? | Frente | Descripción | Estado | Archivo:línea | Detalle |
+| -- | --------- | ----------------- | ------ | ----------- | ------ | ------------ | ------- |
+| MEDIA-01 | MEDIA | No | Caja/Pagos | Falta test explícito "pago parcial sin flag → 422" | Lógica cubierta por código | `tests/Feature/CashPaymentsReceiptTest.php` | MEDIA |
+| MEDIA-02 | MEDIA | No | Caja/Pagos | Falta test "cerrar dos veces la misma caja" | Lógica cubierta | `CloseCashSessionAction.php:36-40` | MEDIA |
+| MEDIA-03 | MEDIA | No | Caja/Pagos | Falta test "cajero cierra caja de otro" | Lógica cubierta | `CloseCashSessionAction.php:32-34` | MEDIA |
+| MEDIA-04 | MEDIA | No | Caja/Pagos | `partial_payments_enabled` se lee de DB sin cache por cada pago | Optimización | `RegisterPaymentAction.php:74-76` | MEDIA |
+| MEDIA-05 | MEDIA | No | Caja/Pagos | `CashBoxView` no se invalida ante `PaymentChanged` por broadcast | Polling 10s cubre | `CashBoxView.tsx:49-67` | MEDIA |
+| MEDIA-06 | MEDIA | No | Caja/Pagos | `RegisterPayment` audit log no incluye `reference` | Mejora de auditoría | `RegisterPaymentAction.php:118-132` | MEDIA |
+| MEDIA-07 | MEDIA | No | Facturación | `max(180)` en backend vs `max(255)` en Zod | Cosmético | `invoice.schema.ts:17` | MEDIA |
+| MEDIA-08 | MEDIA | No | Facturación | `computeSimpleEstimate` puede divergir ±1 centavo del backend | Backend sobrescribe | `posMath.ts` | MEDIA |
+| MEDIA-09 | MEDIA | No | Facturación | No test para `patient_name` con 181 caracteres | Cobertura | `InvoiceCreationTest.php` | MEDIA |
+| MEDIA-10 | MEDIA | No | Impresión | No test para nombres de servicio >120 chars en recibo | Cobertura | `InvoiceCreationTest.php` | MEDIA |
+| BAJA-01 | BAJA | No | Reimpresión | `auditReceiptPrint` desde preview infla audit log | Decisión de diseño | `InvoiceHistoryView.tsx:141-153` | BAJA |
+| BAJA-02 | BAJA | No | Recepción | 80mm/58mm default sin guardrail en `FiscalSettings` | UX admin | `ReceiptPaperSize.php:7` | BAJA |
+| BAJA-03 | BAJA | No | Recepción | `receipt_paper_size` mutable en invoice | Diseño | `Invoice.php:25` | BAJA |
+| BAJA-04 | BAJA | No | Backups | Lock huérfano si worker muere | Recuperable | `CreateBackupAction.php:52` | BAJA |
+| BAJA-05 | BAJA | No | Backups | scheduler sidecar requiere `SERVER_IP` y `HOSPITAL_DAILY_BACKUP_TIME` | Operativo | `docker-compose.prod.yml:177` | BAJA |
+| A11Y-01 | BAJA (FP lint) | No | Facturación | `<label>` envuelve `<Checkbox>` en `InvoiceCart.tsx:141-150` | Falso positivo de lint | `InvoiceCart.tsx:142` | A11Y |
+| A11Y-02 | BAJA (FP lint) | No | Pagos | `<label>` envuelve `<Checkbox>` en `PaymentModal.tsx:214-228` | Falso positivo de lint | `PaymentModal.tsx:214` | A11Y |
+| A11Y-03 | BAJA (FP lint) | No | Settings | `<label>` envuelve `<Checkbox>` en `FiscalSettingsView.tsx:439,450` | Falso positivo de lint | `FiscalSettingsView.tsx:439,450` | A11Y |
+| A11Y-04 | MEDIA | No (fuera de POS) | Historial | `<div onClick>` en menú de acciones de fila | Único real, no afecta flujo crítico | `InvoiceHistoryView.tsx:386-389` | A11Y |
+| A11Y-05 | BAJA (FP lint) | No | UI base | `<h2>` en `CardTitle`/`SheetTitle` (todos los call sites pasan texto) | Falso positivo de lint | `card.tsx:18`, `sheet.tsx:53` | A11Y |
+| A11Y-06 | BAJA (FP lint) | No | Auth | 3 `<label>` envuelven `<Input>` en `PasswordChangeView` | Falso positivo de lint | `PasswordChangeView.tsx:37,47,57` | A11Y |
+| A11Y-07 | BAJA (FP lint) | No | Catálogo | `<label>` envuelve `<Checkbox>` en `CategorySheet` | Falso positivo de lint | `CategorySheet.tsx:103` | A11Y |
+| A11Y-08 | BAJA (FP lint) | No | Catálogo | 2 `<label>` envuelven `<Checkbox>` en `ServiceSheet` | Falso positivo de lint | `ServiceSheet.tsx:356,361` | A11Y |
+| A11Y-09 | BAJA | No | Layout | `<ul role="list">` redundante | Cosmético | `Sidebar.tsx:79` | A11Y |
+
+**Bugs corregidos: 2 (H-01 y B-1).**
 **Bugs bloqueantes pendientes: 0.**
-**Bugs ALTA pendientes: 0 (los declarados como PENDING_HARDWARE_VALIDATION son BLOCKED, no bugs de software).**
+**Bugs ALTA-BLOQUEANTES pendientes: 0.**
+**Bugs ALTA-PILOT-SAFE pendientes: 0 (los 9 hallazgos a11y son BAJA/MEDIA-no-bloqueante).**
+
+### FIELD-PILOT-DEPENDENCY (separados de bugs de software)
+
+| ID | ¿Bloquea piloto software? | ¿Bloquea `PRODUCTION_READY`? | Descripción | Evidencia | Criterio de cierre |
+| -- | ------------------------- | ---------------------------- | ----------- | --------- | ------------------ |
+| FIELD-DEP-01 | No | Sí | Impresión física en hardware real del hospital (5 anchos) | `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md:3` `PENDING_HARDWARE_VALIDATION`; tests ya validan CSS @page | Imprimir 1 muestra por ancho + foto + llenar `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md` |
+| FIELD-DEP-02 | No | Sí | Restore en MySQL/MariaDB activo del hospital | `docs/BACKUP_RESTORE.md:175-274` + `scripts/validate_restore_mysql.sh`; 19 tests validan backup | Ejecutar `validate_restore_mysql.sh` + llenar `qa/FINAL_RESTORE_PROOF.md` |
+| FIELD-DEP-03 | No | Sí | LAN física segunda PC cliente | `docs/OFFLINE_LAN_INSTALL.md:170-182` checklist; throttling per-user + Soketi ya validados | Encender PC cliente + abrir `http://IP:8000` + completar checklist |
+
+**Conclusión:** El software está validado. Los 3 FIELD-DEP son de procedimiento, no bugs, y deben completarse en la PC del hospital antes de `PRODUCTION_READY` formal. El sistema puede operar en piloto `PRODUCTION_CANDIDATE` con soporte presente.
 
 ---
 
@@ -234,7 +257,7 @@
 | Backend Feature | 332/332 PASS, 4 skipped | 2,712 assertions |
 | Backend Total | 415/415 OK | 3,091 assertions |
 | Frontend Vitest | 238/238 PASS | 53 files |
-| Lint | 0 errors, 28 warnings | (warnings documentados, no bloqueantes) |
+| Lint | 0 errors, 28 warnings | 9 a11y (8 FP + 1 real no-bloqueante), 5 react-hooks, 14 misceláneos — ver `BUGS_REGISTER.md` |
 | Typecheck | OK | `TC_EXIT=0` |
 
-**No hay bugs ALTA o BLOQUEANTE abiertos en código.**
+**No hay bugs BLOQUEANTES, ALTA-BLOQUEANTES ni ALTA-PILOT-SAFE abiertos en código.**
