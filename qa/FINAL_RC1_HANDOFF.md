@@ -352,7 +352,7 @@ docs, nombres de variables en scripts de validación).
 | LOW | 3 e2e failures pre-existing con cobertura equivalente en `rc1-screens.spec.ts` 9/9 | No |
 | LOW | 28 ESLint warnings pre-existing | No |
 | LOW | 5 backend tests SKIPPED por entorno (no FAILED) | No |
-| LOW | 4 HIGH security diferidos a v1.1 (justificados en `qa/SECURITY_FINDINGS.md`) | No |
+| LOW | 7 HIGH security diferidos a v1.1 (anexados en `qa/SECURITY_V1_1_DEFERRED.md`) | No |
 | LOW | 2 archivos tracked en paths gitignored (benignos, fixtures de test) | No |
 | LOW | 13 `qa/qa-*.txt` tracked como evidencia (intencional) | No |
 
@@ -421,7 +421,7 @@ El bundle offline ya está regenerado y validado en este host
 - No declarar READY FOR PILOT sin completar los 3 FIELD-PILOT-DEPENDENCY
   en la PC del hospital.
 - No maquillar los 3 e2e failures como PASS porque están fallando.
-- No borrar los 4 HIGH security diferidos sin documentar la razón.
+- No borrar los 7 HIGH security diferidos a v1.1 sin documentar la razón.
 - No hacer merge a main sin aprobación humana explícita.
 
 ---
@@ -440,6 +440,7 @@ El bundle offline ya está regenerado y validado en este host
 | `qa/qa-e2e-output.txt` | 13/16 detail | sin cambios (correcto) |
 | `qa/SECURITY_AUDIT_REPORT.md` | línea 58 con branding prohibido | reformulado en este commit |
 | `qa/SECURITY_FINDINGS.md` | tabla de findings | sin cambios (correcto, refleja HEAD `94915a66` + reclasificaciones) |
+| `qa/SECURITY_V1_1_DEFERRED.md` | nuevo | anexo de los 7 HIGH security diferidos a v1.1 con ID, descripción, componente, mitigación, criterio de cierre |
 | `qa/qa-reconciliation-2026-06-10.txt` | nuevo | evidencia reproducible del quality gate de este commit |
 
 ---
