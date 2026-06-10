@@ -122,7 +122,7 @@ function Invoke-ForbiddenSearch {
                 # Excluir paths por substring (no regex)
                 $rel = $f.FullName -replace '/', '\'
                 $excluded = $false
-                foreach ($bad in @('\.git\', '\node_modules\', '\vendor\', '\storage\logs', '\storage\app\private\backups', '\storage\framework\', '\bootstrap\cache\', '\dist\', '\build\', '\offline-images\', '\offline-release\', '\install-logs\', '\.agent\skills\', '\.agents\skills\', '\backend\vendor\', '\backend\storage\', '\backend\build\', '\backend\tests\', '\frontend\dist\', '\frontend\node_modules\')) {
+                foreach ($bad in @('\.git\', '\node_modules\', '\vendor\', '\storage\logs', '\storage\app\private\backups', '\storage\framework\', '\bootstrap\cache\', '\dist\', '\build\', '\offline-images\', '\offline-release\', '\install-logs\', '\.agent\skills\', '\.agents\skills\', '\backend\vendor\', '\backend\storage\', '\backend\build\', '\backend\tests\', '\frontend\dist\', '\frontend\node_modules\', '\qa\qa-secretscan.txt', '\qa\qa-branding.txt', '\qa\run_secretscan.ps1')) {
                     if ($rel -like "*$bad*") { $excluded = $true; break }
                 }
                 if ($excluded) { continue }

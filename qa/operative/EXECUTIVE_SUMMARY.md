@@ -49,7 +49,7 @@
 - ✅ phpstan nivel 5: `[OK] No errors`.
 - ✅ Pint: pass.
 - ✅ E2E Playwright: 13/16 pass, 3 pre-existing failures con cobertura equivalente en `rc1-screens.spec.ts` (9/9 pass).
-- ✅ Branding check: exit 0, 0 hallazgos de "Billing OS".
+- ✅ Branding check: exit 0, 0 hallazgos de marca prohibida.
 - ✅ Secret scan: 0 secretos reales, 243 hits clasificados benignos.
 - ✅ Offline release regenerado y limpio: `OFFLINE_RELEASE_CLEAN: YES`.
 - ✅ Conciliación numérica cuadra sin drift de centavos (`Money` value object, `MoneyTest` 19 casos).

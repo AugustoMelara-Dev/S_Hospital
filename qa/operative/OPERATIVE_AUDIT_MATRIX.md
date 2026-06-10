@@ -204,7 +204,7 @@
 | 12.5 | Tablas legibles | Inspección visual | Filas alternadas, sticky header | OK | `data-table.tsx`, ReportsView, InvoiceHistoryView | PASS | — |
 | 12.6 | Modo claro/oscuro | Toggle | Ambos legibles | OK | `useTheme.ts`, `styles.css:7-109`, `Topbar.tsx:111-115` | PASS | — |
 | 12.7 | Responsive 1366/1920/1024 | Inspeccionar capturas | Layout sin rotura | OK | `qa/screenshots/field-qa-2026-05-29-fixed/` + `full-qa-2026-05-21/` | PASS | — |
-| 12.8 | Branding correcto | grep `Billing OS` | Sin matches | OK | Cero coincidencias en `frontend/src` (verificado por S6) | PASS | — |
+| 12.8 | Branding correcto | grep marca prohibida | Sin matches | OK | Cero coincidencias en `frontend/src` y `backend/app` (verificado por S6) | PASS | — |
 | 12.9 | Flujo de cajero end-to-end | Manual | Cero clics mouse | OK | `qa/UX_OPERATIVA_AUDIT_2026-05-18.md:108-115` con atajos Ctrl+N/B/K/Enter | PASS | — |
 | 12.10 | Capturas de pantallas reales | Listar `qa/screenshots/` | 14 imágenes rc-e2e-2026-06-09 | OK | Copiadas a `qa/operative/screenshots/` | PASS | — |
 
