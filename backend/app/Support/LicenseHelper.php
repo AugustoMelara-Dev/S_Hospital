@@ -9,8 +9,6 @@ use RuntimeException;
 
 class LicenseHelper
 {
-    private const DEFAULT_SALT = 'Hospital_OS_LAN_Secured_2026_Key';
-
     private static function secretSalt(): string
     {
         $configured = (string) (function_exists('config') ? config('app.license_salt') : '');
@@ -19,40 +17,33 @@ class LicenseHelper
             return $configured;
         }
 
-        if (self::requiresConfiguredSalt()) {
-            throw new RuntimeException('HOSPITAL_LICENSE_SALT must be configured to sign production license files.');
-        }
-
-        return self::DEFAULT_SALT;
+        throw new RuntimeException(
+            'HOSPITAL_LICENSE_SALT must be configured in the environment to sign or verify '
+            .'offline registration files. The previous hardcoded default has been removed; '
+            .'see docs/SECRETS.md.'
+        );
     }
 
-    private static function requiresConfiguredSalt(): bool
-    {
-        return function_exists('config')
-            && (string) config('app.env', 'production') === 'production'
-            && (string) config('app.license_salt', '') === '';
-    }
-
-    /**
-     * Get the local operation status metadata.
-     *
-     * @return array{
-     *     valid: bool,
-     *     licensee: string,
-     *     rtn: string,
-     *     expires_at: string|null,
-     *     type: string,
-     *     message: string
-     * }
-     */
     public static function checkLicense(): array
     {
         $settings = FiscalSetting::query()->first();
         $hospitalName = HospitalName::display($settings?->hospital_name);
         $rtn = $settings?->rtn ?? 'N/A';
 
-        // Check if manual offline registration file exists.
+        $configured = (string) (function_exists('config') ? config('app.license_salt') : '');
+
         if (! Storage::disk('local')->exists('license.json')) {
+            if ($configured === '' && (string) config('app.env', 'production') === 'production') {
+                return [
+                    'valid' => false,
+                    'licensee' => $hospitalName,
+                    'rtn' => $rtn,
+                    'expires_at' => null,
+                    'type' => 'Salt de Registro Faltante',
+                    'message' => 'Configure HOSPITAL_LICENSE_SALT antes de operar en produccion.',
+                ];
+            }
+
             return [
                 'valid' => true,
                 'licensee' => $hospitalName,
@@ -63,7 +54,7 @@ class LicenseHelper
             ];
         }
 
-        if (self::requiresConfiguredSalt()) {
+        if ($configured === '') {
             return [
                 'valid' => false,
                 'licensee' => $hospitalName,
@@ -88,7 +79,6 @@ class LicenseHelper
                 ];
             }
 
-            // Verify integrity matches active hospital or the registered entity.
             if ($licenseData['rtn'] !== $rtn) {
                 return [
                     'valid' => false,
@@ -144,9 +134,6 @@ class LicenseHelper
         }
     }
 
-    /**
-     * Generate offline registration signature.
-     */
     public static function generateSignature(string $licensee, string $rtn, string $expiresAt): string
     {
         $payload = implode('|', [
