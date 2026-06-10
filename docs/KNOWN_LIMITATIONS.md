@@ -105,24 +105,31 @@ siguiente version. Severidad:
 - **DEFERRED** - trabajo conocido, no urgente, vive en el
   roadmap de v1.0.0+1 / v1.1.
 
-### Lazy-loading incompleto en `AppRoutes` — DEFERRED
+### Lazy-loading en `AppRoutes` — RESUELTO 2026-06-10
 
-`frontend/src/AppRoutes.lazy.test.ts` sigue asertando que las
-nueve vistas pesadas (About, Backups, Catalog, Dashboard, Fiscal
-Settings, Help, Invoice History, Reports, Users) estan cargadas
-detras de `React.lazy()`. En el estado actual solo
-`DashboardView` permanece lazy-loaded. El refactor para volver
-a poner las nueve bajo lazy esta parqueado en `stash@{0}` en
-la rama de auditoria y se re-tomara en la Fase 4 del plan
-`docs/PLAN_7_FASES.md`. El test que falla por esto es
-pre-existente a esta ronda y no es regresion introducida por
-los commits del 2026-06-09.
+`frontend/src/AppRoutes.tsx` ahora tiene las nueve vistas
+pesadas (About, Backups, Catalog, Dashboard, Fiscal Settings,
+Help, Invoice History, Reports, Users) cargadas detras de
+`React.lazy()` con `<Suspense fallback={<LoadingState .../>}>`
+por ruta. El test `frontend/src/AppRoutes.lazy.test.ts`
+verifica la regex sobre el codigo y pasa. Re-aplicado por
+el orquestador en `2fc53e14` despues de que un subagente
+anterior revirtio accidentalmente el code-split en
+`7599766a`. Pieza de evidencia: `qa/qa-fe-build.txt` reporta
+9 chunks lazy; `qa/qa-fe-test.txt` reporta 239/239 tests
+pass incluyendo el AppRoutes.lazy.
 
-### `phpstan analyse` no ejecutable en dev — DEFERRED
+### `phpstan analyse` ejecutable en dev — RESUELTO 2026-06-10
 
-`vendor/larastan/larastan/extension.neon` no esta presente en
-el entorno de desarrollo. El comando `phpstan analyse` falla
-por setup, no por error en el codigo. Es un gap pre-existente
+`vendor/larastan/larastan/extension.neon` SI esta presente
+en el entorno de desarrollo (path:
+`backend/vendor/larastan/larastan/extension.neon`). El
+comando `vendor/bin/phpstan analyse --no-progress
+--memory-limit=2G` corre y emite `[OK] No errors`. El
+composer install esta completo. El estado
+"DEFERRED / extension.neon is missing" que aparecia en
+qa/FINAL_RC1_HANDOFF.md era un reporte obsoleto del round
+anterior. Pieza de evidencia: `qa/qa-phpstan.txt`.
 del entorno, no introducido por los commits de esta ronda. Se
 volvera a correr en el servidor del piloto una vez que el
 entorno tenga larastan instalado via `composer require

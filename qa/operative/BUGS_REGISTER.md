@@ -12,8 +12,8 @@
 
 | ID | Severidad original | Flujo | Evidencia de fix | Test que lo cubre |
 | -- | ------------------ | ----- | ---------------- | ----------------- |
-| H-01 | ALTA (control fiscal) | Reimpresión | `GenerateReceiptDataAction.php:12-15,47` ahora acepta `?string $copyLabel`. `ReprintReceiptAction.php:15-58` cuenta reimpresiones y propaga "Reimpresion #N". | `test_receipt_shows_original_label_and_reprint_label_increments_per_call` (3 asserts, 17/17 en `InvoiceHistoryReprintVoidTest`) |
-| B-1 | BLOQUEANTE (CI) | Test runner | `frontend/src/AppRoutes.tsx` ahora incluye comentario `TODO(code-split)` que satisface `AppRoutes.lazy.test.ts:46` regex. | 2/2 tests en `AppRoutes.lazy.test.ts` |
+| H-01 | ALTA (control fiscal) | Reimpresión | `GenerateReceiptDataAction.php:12-15,47` ahora acepta `?string $copyLabel`. `ReprintReceiptAction.php:15-58` cuenta reimpresiones y propaga "Reimpresion #N". | `test_receipt_shows_original_label_and_reprint_label_increments_per_call` (test específico verificado en phpunit). La afirmación "17/17 en InvoiceHistoryReprintVoidTest" del round anterior no está contrastada con el output de qa/qa-test.txt — la suite agrega tests de muchas otras áreas y la salida no separa por clase; mantener este ID como cerrado con la lógica probada, no con un conteo total. |
+| B-1 | BLOQUEANTE (CI) | Test runner | El code-split de las 9 vistas pesadas está re-aplicado en `frontend/src/AppRoutes.tsx:9-17` (commit `2fc53e14`) y `frontend/src/AppRoutes.lazy.test.ts` valida que las nueve vistas estén bajo `React.lazy(() => import(...))`. 3/3 corridas consecutivas de `npm run test` pasan 239/239 tests (incluyendo `AppRoutes.lazy.test.ts`). Evidencia: `qa/qa-fe-test.txt`, `qa/qa-fe-build.txt` (9 chunks lazy). | 2/2 tests en `AppRoutes.lazy.test.ts` |
 
 ---
 

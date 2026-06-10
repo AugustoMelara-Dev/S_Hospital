@@ -4,6 +4,24 @@
 > **Método:** subagentes por flujo + tests automatizados + lectura de código.
 > **Estado global:** READY_CON_KNOWN_LIMITATIONS (2 hallazgos ALTA corregidos).
 
+> **Re-validación 2026-06-10:** El subagente Backend del round
+> de cierre re-auditó las 9 reglas de negocio críticas en
+> commit `2fc53e14`-rama. Resultado:
+>
+> - Pagos no exceden saldo pendiente: **PASS** (`RegisterPaymentAction.php:68-72`).
+> - RegisterPaymentAction no muta `cash_session_id` de factura: **PASS** (test `RegisterPaymentDoesNotMutateInvoiceTest` 2/2).
+> - Cierre de caja no dispara backup inmediato: **PASS** (`CloseCashSessionAction` sin `RunBackupJob::dispatch`; test `Bus::fake([RunBackupJob::class])` 2/2).
+> - Scheduler maneja backup: **PASS** (`routes/console.php:55-68` schedule `hospital:backup --type=scheduled` daily 02:00 + cada 15 min operativo).
+> - Money usa centavos/enteros: **PASS** (`Money.php:13-22`, `MoneyTest` 19/19).
+> - L.25/dialysis_prescription no auto-aprobable por cajero: **PASS** (`CreateInvoiceAction.php:174-178` chequea `patients.mark_dialysis_prescription`; cajero NO tiene el permiso; `InvoiceDialysisPrescriptionTest` 5/5).
+> - Reportes facturado/cobrado/saldo cuadran: **PASS** (`FinancialFactsService.php:50-71` billed = collected + pending + partial + voided).
+> - Anulación requiere permiso + motivo + auditoría: **PASS** (`VoidInvoiceRequest.php:11-17` + `VoidInvoiceAction` registra `invoice.voided`).
+> - Formatos carta/media carta/A5/80mm/58mm: **PASS** (`institutionalReceiptPaper.ts:3-9` + `ReceiptPaperSize.php`).
+>
+> El estado global se mantiene **READY_CON_KNOWN_LIMITATIONS**
+> (READY FOR PILOT) y la matriz operativa de las 12 frentes ×
+> 114 escenarios sigue aplicando.
+
 ## Leyenda
 
 - **PASS** — Comportamiento esperado validado con test automatizado o evidencia de código.

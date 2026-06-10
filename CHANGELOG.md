@@ -1,6 +1,95 @@
 # Changelog - Sistema de Caja Hospitalaria
 
-## v1.0.0-rc.4 (unreleased) - Security-Hardening Round (2026-06-09)
+## v1.0.0-rc.5 (unreleased) - Pilot-Closure Round (2026-06-09 / 2026-06-10)
+
+This entry documents the rc5 round of work that landed on
+`plan/fase-0-7-rc` after the v1.0.0-rc.4 security-hardening
+commits. The goal of this round is to close every gap that
+prevented READY FOR PILOT in the prior handoff. It does not
+re-state the rc.3 / rc.4 / v1.0.0 work — see those sections
+below for that history.
+
+### Commits in this round (newest first)
+
+- `8c0f4188` fix(backend): remove unused AuditLogger support class
+- `578a953f` qa(evidence): refresh frontend/backend quality gate
+  outputs and clean stale debug runs
+- `55232591` docs(operative): refresh executive summary, audit
+  matrix, and bugs register for RC1 closure
+- `2fc53e14` fix(frontend+ops): robust App.test.tsx mocks, csrf
+  TTL 10m, nginx api access_log off, deploy crypto helpers
+- `98d05596` feat(resilience): add AuditLogger and resilience
+  evidence [partially reverted by 8c0f4188: the AuditLogger
+  class had zero callers and was removed in the same round]
+- `5111bf4e` fix(frontend): remove hard 5000ms findBy timeout,
+  bump vitest test budget to 15s
+- `ffaba059` test(e2e): fix screenshot counts in rc1 evidence
+  index
+- `cdf00efe` test(e2e): add RC1 screen coverage for cashier
+  flow
+- `95f82c0c` docs(qa): final RC1 handoff - READY FOR PILOT, all
+  gaps closed [verdict was premature; superseded by
+  the orchestrator's verification pass; see
+  docs/KNOWN_LIMITATIONS.md 2026-06-10 update]
+- `5226f588` docs(qa): refresh evidence after final test pass
+- `6ffb8187` feat: add idempotency key, resilience tests, receipt
+  reprint audit
+- `7599766a` Revert "feat(frontend): code-split all 9 heavy
+  views via React.lazy" [this revert accidentally broke the
+  AppRoutes.lazy.test contract; the code-split was re-applied
+  in b93ac561 already; the orchestrator's 2fc53e14 confirms
+  the 9-view lazy split is in HEAD with a passing test]
+- `0cf694d5` test(e2e): capture 13 RC1 critical screens
+- `a7e073a7` chore(gitignore): exclude
+  testing-production-proofs-partial
+- `db6e7629` docs(ci): document local composer install for
+  phpstan to work
+- `b93ac561` feat(frontend): code-split all 9 heavy views via
+  React.lazy [reverted by 7599766a, re-applied in 2fc53e14]
+
+### Gaps closed vs the prior NOT READY handoff
+
+1. **AppRoutes.lazy.test.ts** — was reported as failing. Root
+   cause was a code-split revert that left only DashboardView
+   under `React.lazy()`. The 9-view split is re-applied and
+   the test passes. Evidence: `qa/qa-fe-test.txt` (239/239,
+   3 consecutive runs).
+2. **phpstan DEFERRED** — was reported as DEFERRED with reason
+   "larastan/extension.neon is missing". The file exists in
+   the dev environment. `vendor/bin/phpstan analyse` now
+   reports `[OK] No errors`. Evidence: `qa/qa-phpstan.txt`.
+3. **App.test.tsx flake** — full vitest suite was failing 1-6
+   tests depending on order. The "renders only the active
+   module" test was hit hardest. Fixed by adding an explicit
+   `/api/cash-sessions/current` mock handler and replacing
+   the implicit 1s asyncUtilTimeout with `waitFor({ timeout:
+   20_000, interval: 100 })`. 3/3 consecutive runs of
+   239/239 tests pass. Evidence: `qa/qa-fe-test.txt`.
+4. **Working tree dirty** — the previous handoff reported an
+   uncommitted `scripts/refresh_lan_ip.ps1` fix and stale
+   `qa/qa-*.txt` evidence. All working-tree changes are
+   committed in this round.
+5. **Stale documentation** — `docs/KNOWN_LIMITATIONS.md`,
+   `CHANGELOG.md`, `qa/operative/*` are realigned with the
+   actual code in HEAD.
+
+### Quality gate snapshot (run on 2026-06-10 after this round)
+
+| Check | Status | Evidence file |
+|---|---|---|
+| backend pint | pass | qa/qa-pint.txt |
+| backend phpstan | [OK] No errors | qa/qa-phpstan.txt |
+| backend phpunit | 432 passed, 5 skipped, 0 failed | qa/qa-test.txt |
+| frontend typecheck | 0 errors | qa/qa-typecheck.txt |
+| frontend lint | 0 errors, 28 warnings (pre-existing) | qa/qa-lint.txt |
+| frontend vitest | 239/239, 3 consecutive runs | qa/qa-fe-test.txt |
+| frontend build | 9 lazy chunks, EXIT=0 | qa/qa-fe-build.txt |
+| branding | revision completada sin hallazgos | qa/qa-branding.txt |
+| secret scan | 0 real creds, 243 hits classified benign | qa/qa-secretscan.txt |
+| offline release | OFFLINE_RELEASE_CLEAN: YES at HEAD | qa/qa-offline-release-clean.txt |
+| e2e playwright | 13/16 pass, 3 pre-existing failures | qa/qa-e2e-last-run.json |
+
+## v1.0.0-rc.4 (2026-06-09) - Security-Hardening Round
 
 This entry documents ONLY the five commits landed on
 `plan/fase-0-7-rc` on 2026-06-09 after the v1.0.0 production
