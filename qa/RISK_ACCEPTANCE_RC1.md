@@ -2,8 +2,8 @@
 
 **Fecha:** 2026-06-10
 **Rama:** `plan/fase-0-7-rc`
-**HEAD exacto:** `7381ec2b0ea26bd7d475809f3f7f820684fbf84f` (`7381ec2b docs(qa): add formal risk acceptance document for RC1 pilot deployment`)
-**Bundle offline:** `OFFLINE_RELEASE_CLEAN: YES` (278.33 MB, 4 image tar files en `offline-release/offline-images/`, `MANIFEST.txt` referencia `7381ec2b`)
+**HEAD exacto:** `95b6a9e6455e947ebdab662ee98333f7b4405f90` (`95b6a9e6 docs(qa): add SECURITY_V1_1_DEFERRED annex with the 7 HIGH security deferred to v1.1`)
+**Bundle offline:** `OFFLINE_RELEASE_CLEAN: YES` (278.33 MB, 4 image tar files en `offline-release/offline-images/`, `MANIFEST.txt` referencia `95b6a9e6`)
 
 ---
 
@@ -332,7 +332,7 @@ PILOT FINAL` en la versión v1.1.0 (Q3 2026).
 
 **Fin del documento de aceptación de riesgos RC1.**
 
-**HEAD:** `7381ec2b`
+**HEAD:** `95b6a9e6`
 **Bundle:** `OFFLINE_RELEASE_CLEAN: YES`
 **Verdict:** **READY FOR PILOT CANDIDATE**
 **Bloqueante para merge/main:** 3 FIELD-PILOT-DEPENDENCY
