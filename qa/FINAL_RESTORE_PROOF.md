@@ -192,26 +192,110 @@ php artisan migrate:status             # 47/47 migraciones Ran
 
 ### Riesgos residuales (staging)
 
-1. **Incompatibilidad MariaDB 10.4 vs 11:** staging se ejecuto en MariaDB 10.4
-   (XAMPP). El compose.yml del proyecto declara `mariadb:11`. La migration
-   `02_06_000006` (que cambia `service_id` a `nullOnDelete()`) requiere
-   workaround en 10.4 pero puede no requerirlo en 11 (validacion de FK
-   cambio entre versiones). El workaround aplicado localmente fue **solo
-   operativo, NO toco el codigo fuente**; en el hospital con MariaDB 11 via
-   Docker Compose, la migrate deberia correr limpia. Si en el hospital falla,
-   la fix de la migration (2 lineas: `->nullable()->change()` antes del
-   `dropForeign`) se hara en rama pequena y PR separado.
-2. **BD restaurada no es la activa:** por diseno, este test restauro en una
+1. **BD restaurada no es la activa:** por diseno, este test restauro en una
    BD disposable (`hospital_restore_validation_test`). El flujo real de
    recovery consistiria en: (a) parar la app, (b) `DROP DATABASE hospital_billing`
    (c) `CREATE DATABASE hospital_billing ...`, (d) `mysql < backup.sql`,
    (e) arrancar la app. El restore **funciona**, pero el switchover
    operacional no fue probado en staging.
-3. **Solo 1 backup:** staging valido 1 ciclo backup→restore. El `PruneBackupsAction`
+2. **Solo 1 backup:** staging valido 1 ciclo backup→restore. El `PruneBackupsAction`
    y la rotacion configurada en el proyecto no se ejercitaron.
-4. **Scheduler de backup automatico no se probo:** el worker de Windows
+3. **Scheduler de backup automatico no se probo:** el worker de Windows
    (`run_backup_worker.cmd`, `install_backup_tasks_windows.ps1`) no se
    activo en staging; solo el comando manual `php artisan hospital:backup`.
+
+### FIELD-DEP-02-RISK-01 — bug preexistente en `2026_06_02_000006_change_service_price_histories_to_null_on_delete` confirmado en MariaDB 11
+
+**Severidad:** bloquea `php artisan migrate:fresh` y `php artisan migrate`
+contra una base vacia en **cualquier** MariaDB soportada por el proyecto
+(10.4 y 11.x). **No bloquea el ciclo backup→restore probado en staging** (ver
+matiz tecnico abajo).
+
+**Causa exacta:** la migration `database/migrations/2026_06_02_000006_change_service_price_histories_to_null_on_delete.php`
+en su `up()` hace:
+```php
+$table->dropForeign(['service_id']);
+$table->foreign('service_id')->nullOnDelete()->references('id')->on('services');
+```
+`nullOnDelete()` declara `ON DELETE SET NULL`, lo cual requiere que la columna
+`service_id` sea `NULL`-able. Pero la columna sigue declarada `NOT NULL` (la
+migration original `2026_05_31_000002_create_service_price_histories_table`
+la crea con `foreignId('service_id')` que es `NOT NULL` por convencion de
+Laravel). MariaDB rechaza la creacion del constraint con `errno 150` ("Foreign
+key constraint is incorrectly formed") por violar la regla SQL estandar:
+`ON DELETE SET NULL` requiere columna nullable.
+
+**Confirmado en MariaDB 11.8.6 (compose prod) — 2026-06-10:**
+- Contenedor: `s_hospital-mysql-1` (image `mariadb:11.8.6-MariaDB-ubu2404`)
+- Conexion: `127.0.0.1:3307` con `hospital/hospital_dev` (defecto compose)
+- Comando: `php artisan migrate:fresh --force` (BD `hospital_billing` vacia)
+- Resultado: misma falla exacta, mismo errno 150, mismo SQL fallido.
+- Evidencia: `qa/qa-mariadb11-fresh.txt`
+- Conclusion: **el bug no es de version; es de la migration misma.** Cualquier
+  despliegue con `migrate` desde cero fallara hasta que se arregle.
+
+**Matiz sobre el restore probado (importante):** el staging PASS de este
+documento **no se invalida** por este bug. El ciclo backup→restore usa
+`mysqldump` que genera un dump completo: la columna `service_id` se crea como
+`DEFAULT NULL` (visible en el `SHOW CREATE TABLE` del dump restaurado) y el
+`ALTER TABLE ... ADD CONSTRAINT ... ON DELETE SET NULL` se aplica sin
+problema porque la columna ya es nullable. El restore staging importo el
+dump y la FK quedo activa con `ON DELETE SET NULL` correctamente (verificado
+en `qa/qa-post-restore-verify-v2.txt`: tabla `service_price_histories`
+presente, FK con `ON DELETE SET NULL` en el SHOW CREATE TABLE).
+
+El bug **si bloquea** los siguientes escenarios reales:
+- `php artisan migrate` contra una BD vacia en el hospital (instalacion
+  inicial o recovery que arranca de schema).
+- `php artisan migrate:fresh` (reset de BD).
+- Cualquier `setup.sh`/`deploy_hospital_lan.ps1` que asume `migrate` limpio.
+
+**Estado en `main @ d54404da`:** el codigo de la migration esta commiteado tal
+cual. La politica de esta rama (`qa/restore-mysql-proof`) y el brief del
+humano prohiben modificar codigo fuente salvo confirmacion de que el bug
+afecta el destino prod. **El bug esta confirmado que afecta MariaDB 11** (que
+es el motor declarado en `docker-compose.yml` linea `image: mariadb:11`).
+
+**Workaround aplicado en staging 2026-06-10** (NO commiteado, solo
+operativo en MariaDB 10.4 local):
+```sql
+ALTER TABLE service_price_histories MODIFY service_id BIGINT UNSIGNED NULL;
+ALTER TABLE service_price_histories
+  ADD CONSTRAINT service_price_histories_service_id_foreign
+  FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE SET NULL;
+INSERT INTO migrations (migration, batch) VALUES
+  ('2026_06_02_000006_change_service_price_histories_to_null_on_delete', 1);
+```
+Despues del workaround, las 3 migraciones restantes del 09_06 corrieron
+limpias y el restore staging funciono completo.
+
+**Fix recomendado (NO aplicado en esta rama):** editar
+`2026_06_02_000006_change_service_price_histories_to_null_on_delete.php`
+para hacer la columna nullable ANTES de re-crear la FK:
+```php
+// up()
+$table->dropForeign(['service_id']);
+$table->foreignId('service_id')->nullable()->change();   // <- fix
+$table->foreign('service_id')->nullOnDelete()->references('id')->on('services');
+```
+Esto requiere que el paquete `doctrine/dbal` este disponible (ya lo esta en
+Laravel 10+ para `change()`). La fix es de 1 linea, sin cambios semanticos
+mas alla de hacer la columna nullable como exige la regla SQL.
+
+**Accion recomendada antes del deploy final en el hospital:**
+- En una rama pequena separada desde `main`, aplicar la fix de 1 linea.
+- Probar `php artisan migrate:fresh` contra MariaDB 11 (compose local o
+  MariaDB del hospital) hasta que pase 47/47.
+- Hacer commit, PR, merge a main.
+- Repetir el procedimiento de `qa/FINAL_RESTORE_PROOF.md` desde el hospital
+  con la migrate arreglada, sobre una BD disposable, antes de promover
+  `main` a `READY FOR PILOT FINAL`.
+
+**Riesgo de NO arreglar:** el primer `migrate` desde cero en el hospital
+fallara en la migration 02_06_000006 y la instalacion quedara rota. El
+restore desde un backup tomado **antes** de la falla de migrate **si
+funciona** (probado en staging), porque el dump contiene el schema ya
+correcto. Pero cualquier reinstalacion limpia requiere el fix.
 
 ### Conclusion
 
