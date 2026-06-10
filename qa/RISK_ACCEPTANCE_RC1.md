@@ -312,6 +312,26 @@ PILOT FINAL` en la versión v1.1.0 (Q3 2026).
 
 ---
 
+## Nota de merge a `main` (2026-06-10)
+
+- **Merge a `main` ejecutado vía PR #11** el 2026-06-10.
+- **`main` queda en `6b9441d3` como `RC1 PILOT CANDIDATE`, NO como `READY FINAL`.**
+- **Siguen PENDIENTES los 3 FIELD-PILOT-DEPENDENCY** antes de
+  promover a `READY FOR PILOT FINAL` o promover a tag `v1.0.0`:
+  1. Impresión física en 5 anchos (FIELD-DEP-01) → `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`
+  2. Restore en MySQL/MariaDB activo (FIELD-DEP-02) → `qa/FINAL_RESTORE_PROOF.md`
+  3. LAN desde segunda PC cliente (FIELD-DEP-03) → `qa/LAN_CLIENT_VALIDATION_PROOF.md`
+- El procedimiento de merge local con `git merge --no-ff` y tag
+  `backup-main-before-rc1-2026-06-10` **no se ejecutó** porque al
+  ejecutar `git pull origin main` se detectó que PR #11 ya había
+  mergeado la rama `plan/fase-0-7-rc` en el remoto, dejando `main`
+  con el contenido de la fase digital RC1. La acción se
+  reorientó a documentar este hecho y a ejecutar el sanity gate
+  contra `main @ 6b9441d3`.
+- **Rama `plan/fase-0-7-rc`:** preservada en `75e72685`, no borrada.
+
+---
+
 ## Referencias cruzadas
 
 | Documento | Propósito |
