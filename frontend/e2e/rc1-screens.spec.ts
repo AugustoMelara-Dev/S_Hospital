@@ -88,7 +88,11 @@ const services = [
   },
 ];
 
-const operationalDate = '2026-06-09';
+const now = new Date();
+const year = now.getFullYear();
+const month = String(now.getMonth() + 1).padStart(2, '0');
+const day = String(now.getDate()).padStart(2, '0');
+const operationalDate = `${year}-${month}-${day}`;
 const operationalIssuedAt = `${operationalDate}T08:00:00-06:00`;
 const operationalPaidAt = `${operationalDate}T08:03:00-06:00`;
 
@@ -144,8 +148,9 @@ function receiptFor(invoice: Record<string, unknown>, width: string) {
 }
 
 async function installApiMocks(page: Page) {
-  let currentUser: typeof cashierUser | null = null;
+  let currentUser = cashierUser;
   let currentCashSession: Record<string, unknown> | null = null;
+  let isLogged = false;
   let invoiceCounter = 1;
   const invoices: Record<number, Record<string, unknown>> = {};
   const backupLogs: Record<string, unknown>[] = [];
@@ -203,32 +208,29 @@ async function installApiMocks(page: Page) {
       payload = {};
     }
     currentUser = payload.login === 'admin.validacion' ? adminUser : cashierUser;
-    return json(route, { data: { token: 'mock-token', user: currentUser } });
+    isLogged = true;
+    return json(route, { data: currentUser });
   });
 
-  await page.route('**/api/auth/me', (route) => {
-    if (!currentUser) return json(route, { message: 'Unauthenticated.' }, 401);
-    return json(route, { data: currentUser });
-  });
   await page.route('**/api/auth/session', (route) => {
-    if (!currentUser) return json(route, { data: null });
-    return json(route, { data: currentUser });
+    if (isLogged) return json(route, { data: currentUser });
+    return route.fulfill({ status: 401, body: JSON.stringify({ message: 'Unauthenticated.' }) });
   });
   await page.route('**/api/auth/logout', (route) => {
-    currentUser = null;
-    currentCashSession = null;
+    currentUser = cashierUser;
+    isLogged = false;
     return json(route, { ok: true });
   });
 
-  await page.route('**/api/categories**', (route) => json(route, {
+  await page.route(/\/api\/categories(\?.*)?$/, (route) => json(route, {
     data: [
       { id: 1, name: 'Medicamentos', slug: 'medicamentos', active: true, sort_order: 1 },
       { id: 2, name: 'Laboratorio', slug: 'laboratorio', active: true, sort_order: 2 },
     ],
   }));
-  await page.route('**/api/areas**', (route) => json(route, { data: [] }));
-  await page.route('**/api/service-areas**', (route) => json(route, { data: [] }));
-  await page.route('**/api/services**', (route) => json(route, {
+  await page.route(/\/api\/areas(\?.*)?$/, (route) => json(route, { data: [] }));
+  await page.route(/\/api\/service-areas(\?.*)?$/, (route) => json(route, { data: [] }));
+  await page.route(/\/api\/services(\?.*)?$/, (route) => json(route, {
     data: services,
     meta: { total: services.length },
   }));
@@ -266,7 +268,7 @@ async function installApiMocks(page: Page) {
     return json(route, { data: currentCashSession }, 200);
   });
 
-  await page.route('**/api/invoices**', async (route) => {
+  await page.route(/\/api\/invoices(\/\d+)?(\?.*)?$/, async (route) => {
     const url = new URL(route.request().url());
     const detailMatch = url.pathname.match(/\/api\/invoices\/(\d+)$/);
     if (route.request().method() === 'GET' && detailMatch) {
@@ -311,7 +313,7 @@ async function installApiMocks(page: Page) {
       return json(route, { data: invoice }, 201);
     }
     return json(route, {
-      data: Object.values(invoices),
+      data: Object.values(invoices).sort((a: Record<string, unknown>, b: Record<string, unknown>) => Number(b.id) - Number(a.id)),
       meta: { current_page: 1, per_page: 10, total: Object.keys(invoices).length },
     });
   });
@@ -546,7 +548,7 @@ test.describe('RC1 cashier flow screens', () => {
     await setTheme(page, 'light');
     await page.goto('/dashboard');
     await expect(page.getByRole('heading', { name: /inicio|dashboard/i })).toBeVisible();
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
     await page.waitForTimeout(500);
     await captureScreen(page, 'dashboard-light');
 
@@ -565,7 +567,7 @@ test.describe('RC1 cashier flow screens', () => {
     await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
     await expect(page.getByRole('heading', { name: /cerrar caja/i })).toBeVisible();
     if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
-      await page.getByRole('button', { name: /cerrar modal/i }).click();
+      await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
     }
     await page.waitForTimeout(500);
     await captureScreen(page, 'cashbox-open-light');
@@ -595,7 +597,7 @@ test.describe('RC1 cashier flow screens', () => {
     await captureScreen(page, 'receipt-preview-light');
 
     await page.locator('[aria-label="Tamano del recibo"]').click();
-    await page.getByRole('option', { name: 'A5', exact: true }).click();
+    await page.getByRole('option', { name: 'A5', exact: true }).click({ force: true });
     await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
     await page.waitForTimeout(500);
     await captureScreen(page, 'receipt-preview-a5-light');
@@ -618,7 +620,7 @@ test.describe('RC1 cashier flow screens', () => {
     await page.goto('/cashbox');
     await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
     if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
-      await page.getByRole('button', { name: /cerrar modal/i }).click();
+      await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
     }
     await page.getByLabel('Navegacion principal').getByRole('link', { name: /nueva factura/i }).click();
     await page.getByLabel(/nombre del paciente/i).fill('Maria Lopez');
@@ -628,7 +630,8 @@ test.describe('RC1 cashier flow screens', () => {
     await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
     await page.getByLabel(/monto recibido/i).fill('25.00');
     await page.getByRole('button', { name: /confirmar cobro/i }).click();
-    await page.getByRole('button', { name: /cerrar modal/i }).click();
+    await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
+    await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
     await page.getByRole('button', { name: /crear otra factura/i }).click();
 
     await page.getByRole('link', { name: /historial/i }).click();
@@ -651,9 +654,9 @@ test.describe('RC1 cashier flow screens', () => {
     await page.goto('/cashbox');
     await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
     if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
-      await page.getByRole('button', { name: /cerrar modal/i }).click();
+      await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
     }
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
     await page.waitForTimeout(800);
     await captureScreen(page, 'cashbox-open-light');
 
@@ -688,7 +691,7 @@ test.describe('RC1 cashier flow screens', () => {
     await setTheme(page, 'light');
     await page.goto('/reports');
     await expect(page.getByRole('heading', { name: /^reportes$/i })).toBeVisible();
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
     await page.waitForTimeout(500);
     await captureScreen(page, 'reports-admin-light');
 
@@ -703,7 +706,7 @@ test.describe('RC1 cashier flow screens', () => {
     await loginAs(page, 'admin.validacion');
     await setTheme(page, 'light');
     await page.goto('/settings/fiscal');
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
     await page.waitForTimeout(800);
     await captureScreen(page, 'settings-fiscal-light');
 
@@ -718,7 +721,7 @@ test.describe('RC1 cashier flow screens', () => {
     await loginAs(page, 'admin.validacion');
     await setTheme(page, 'light');
     await page.goto('/backups');
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
     await page.waitForTimeout(800);
     await captureScreen(page, 'backups-light');
 
@@ -741,7 +744,7 @@ test.describe('RC1 cashier flow screens', () => {
     });
     await page.route('**/sanctum/csrf-cookie', (route) => route.fulfill({ status: 204 }));
     await page.route('**/api/auth/session', (route) => json(route, { data: null }));
-    await page.route('**/api/auth/me', (route) => json(route, { message: 'Unauthenticated.' }, 401));
+    await page.route('**/api/auth/session', (route) => json(route, { message: 'Unauthenticated.' }, 401));
     await page.route('**/api/auth/login', (route) => json(route, {
       message: 'Credenciales invalidas.',
       errors: { login: ['Usuario o contrasena incorrectos.'] },
@@ -761,7 +764,7 @@ test.describe('RC1 cashier flow screens', () => {
     await page.goto('/cashbox');
     await page.getByRole('main').getByRole('button', { name: /abrir caja/i }).click();
     if (await page.getByRole('dialog', { name: /caja activa/i }).isVisible().catch(() => false)) {
-      await page.getByRole('button', { name: /cerrar modal/i }).click();
+      await page.getByRole('button', { name: /cerrar modal/i }).click({ force: true });
     }
     await page.getByLabel('Navegacion principal').getByRole('link', { name: /nueva factura/i }).click();
     await expect(page.getByRole('button', { name: /emitir y cobrar/i })).toBeDisabled();

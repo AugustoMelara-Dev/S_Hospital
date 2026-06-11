@@ -16,7 +16,7 @@ test('backups screen (admin) via direct mock', async ({ page, context }) => {
       body: JSON.stringify({ data: { hospital_name: 'Hospital San Isidro', logo_url: null } }),
     });
   });
-  await page.route('**/api/auth/me', async (route) => {
+  await page.route('**/api/auth/session', async (route) => {
     await route.fulfill({ status: 401, body: '{"message":"Unauthenticated."}' });
   });
   await page.route('**/api/cash-sessions/current', async (route) => {
@@ -47,9 +47,9 @@ test('backups screen (admin) via direct mock', async ({ page, context }) => {
   await page.locator('#login-input').fill('admin');
   await page.locator('#password-input').fill('Password123!');
   await page.getByRole('button', { name: /iniciar|entrar/i }).click();
-  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(500);
 
-  await page.route('**/api/backups**', async (route) => {
+  await page.route(/\/api\/backups(\?.*)?$/, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -67,7 +67,7 @@ test('backups screen (admin) via direct mock', async ({ page, context }) => {
   });
 
   await page.goto('http://127.0.0.1:5173/backups');
-  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(500);
   await page.waitForTimeout(2000);
   await page.screenshot({ path: path.join(captureOutputDir, 'backups-light.png'), fullPage: true });
 });

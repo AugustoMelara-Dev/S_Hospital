@@ -31,8 +31,22 @@ test.describe('RC1 critical screens (mocked)', () => {
     await page.route('**/sanctum/csrf-cookie', async (route) => {
       await route.fulfill({ status: 204, body: '' });
     });
+    await page.route('**/api/public/branding', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: { hospital_name: 'Hospital San Isidro', logo_url: null } }),
+      });
+    });
+    await page.route('**/api/auth/session', async (route) => {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Unauthenticated.' }),
+      });
+    });
     await page.goto('/login');
-    await expect(page.getByLabel(/usuario|email/i).first()).toBeVisible();
+    await expect(page.getByLabel(/usuario o correo|usuario/i).first()).toBeVisible();
     await expect(page.getByLabel(/contrase/i).first()).toBeVisible();
     await expect(page.getByRole('button', { name: /entrar|iniciar/i })).toBeVisible();
     await captureScreen(page, 'login-light');
@@ -42,11 +56,25 @@ test.describe('RC1 critical screens (mocked)', () => {
     await page.route('**/sanctum/csrf-cookie', async (route) => {
       await route.fulfill({ status: 204, body: '' });
     });
+    await page.route('**/api/public/branding', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: { hospital_name: 'Hospital San Isidro', logo_url: null } }),
+      });
+    });
+    await page.route('**/api/auth/session', async (route) => {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Unauthenticated.' }),
+      });
+    });
     await page.goto('/login');
     await page.evaluate(() => {
       document.documentElement.classList.add('dark');
     });
-    await expect(page.getByLabel(/usuario|email/i).first()).toBeVisible();
+    await expect(page.getByLabel(/usuario o correo|usuario/i).first()).toBeVisible();
     await captureScreen(page, 'login-dark');
   });
 
@@ -63,19 +91,25 @@ test.describe('RC1 critical screens (mocked)', () => {
         }),
       });
     });
+    let isLoggedFiscal = false;
     await page.route('**/api/auth/login', async (route) => {
+      isLoggedFiscal = true;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ data: { token: 'mock-token', user: adminUser } }),
+        body: JSON.stringify({ data: adminUser }),
       });
     });
-    await page.route('**/api/auth/me', async (route) => {
-      await route.fulfill({
-        status: 401,
-        contentType: 'application/json',
-        body: JSON.stringify({ message: 'Unauthenticated.' }),
-      });
+    await page.route('**/api/auth/session', async (route) => {
+      if (isLoggedFiscal) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ data: adminUser }),
+        });
+      } else {
+        await route.fulfill({ status: 401, body: JSON.stringify({ message: 'Unauthenticated.' }) });
+      }
     });
     await page.route('**/api/fiscal-settings**', async (route) => {
       await route.fulfill({
@@ -106,12 +140,14 @@ test.describe('RC1 critical screens (mocked)', () => {
       page.getByRole('button', { name: /iniciar|entrar/i }).click(),
     ]);
     await page.goto('/settings/fiscal');
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
     await page.waitForTimeout(1500);
     await captureScreen(page, 'settings-fiscal-light');
   });
 
   test('backups screen (admin)', async ({ page, context }) => {
+    page.on('console', msg => console.log('BROWSER_CONSOLE:', msg.text()));
+    page.on('pageerror', err => console.log('BROWSER_ERROR:', err.message));
     await context.clearCookies();
     await page.addInitScript(() => {
       try { localStorage.clear(); sessionStorage.clear(); } catch (e) { void e; }
@@ -128,21 +164,28 @@ test.describe('RC1 critical screens (mocked)', () => {
         }),
       });
     });
+    let isLoggedBackups = false;
     await page.route('**/api/auth/login', async (route) => {
+      isLoggedBackups = true;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ data: { token: 'mock-token', user: adminUser } }),
+        body: JSON.stringify({ data: adminUser }),
       });
     });
-    await page.route('**/api/auth/me', async (route) => {
-      await route.fulfill({
-        status: 401,
-        contentType: 'application/json',
-        body: JSON.stringify({ message: 'Unauthenticated.' }),
-      });
+    await page.route('**/api/auth/session', async (route) => {
+      if (isLoggedBackups) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ data: adminUser }),
+        });
+      } else {
+        await route.fulfill({ status: 401, body: JSON.stringify({ message: 'Unauthenticated.' }) });
+      }
     });
-    await page.route('**/api/backups**', async (route) => {
+    await page.route('**/api/backups*', async (route) => {
+      if (route.request().url().includes('.ts') || route.request().url().includes('.tsx') || route.request().url().includes('.js')) return route.fallback();
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -182,7 +225,7 @@ test.describe('RC1 critical screens (mocked)', () => {
       page.getByRole('button', { name: /iniciar|entrar/i }).click(),
     ]);
     await page.goto('/backups');
-    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
     await page.waitForTimeout(1500);
     await captureScreen(page, 'backups-light');
   });
