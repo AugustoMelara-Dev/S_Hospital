@@ -29,8 +29,9 @@ class BroadcastingWiringTest extends TestCase
     public function test_echo_config_endpoint_returns_soketi_settings(): void
     {
         Config::set('app.url', 'http://192.168.1.10:8000');
+        $user = User::factory()->create();
 
-        $this->getJson('/api/system/echo-config')
+        $this->actingAs($user)->getJson('/api/system/echo-config')
             ->assertOk()
             ->assertJsonPath('data.driver', 'pusher')
             ->assertJsonPath('data.scheme', 'http')

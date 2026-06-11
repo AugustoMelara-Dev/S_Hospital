@@ -48,7 +48,8 @@ class OpenApiExporterTest extends TestCase
 
     public function test_openapi_endpoint_returns_the_document(): void
     {
-        $response = $this->getJson('/api/system/openapi');
+        $user = new \App\Models\User(['id' => 1]);
+        $response = $this->actingAs($user)->getJson('/api/system/openapi');
 
         $response->assertOk()
             ->assertJsonPath('info.title', 'Sistema de Caja Hospitalaria API')
