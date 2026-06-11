@@ -100,6 +100,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
   useEffect(() => {
     void loadFiscalConfiguration();
     void loadLogo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadLogo() {
@@ -436,28 +437,30 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
               </div>
 
               <div className="grid gap-3 rounded-md border border-border bg-muted/30 p-3">
-                <label className="flex items-start gap-3 text-sm">
+                <div className="flex items-start gap-3 text-sm">
                   <Checkbox
+                    id="scanner_enabled"
                     checked={hospitalForm.scanner_enabled}
                     onCheckedChange={(checked) => setHospitalForm(prev => ({ ...prev, scanner_enabled: checked === true }))}
                     disabled={!canEdit}
                   />
-                  <span>
+                  <Label htmlFor="scanner_enabled" className="cursor-pointer">
                     <span className="block font-medium">Habilitar scanner/codigos en caja</span>
-                    <span className="text-muted-foreground">Si esta apagado, la pantalla de nueva factura oculta controles de scanner y codigos internos.</span>
-                  </span>
-                </label>
-                <label className="flex items-start gap-3 text-sm">
+                    <span className="block text-muted-foreground font-normal mt-1">Si esta apagado, la pantalla de nueva factura oculta controles de scanner y codigos internos.</span>
+                  </Label>
+                </div>
+                <div className="flex items-start gap-3 text-sm">
                   <Checkbox
+                    id="partial_payments_enabled"
                     checked={hospitalForm.partial_payments_enabled}
                     onCheckedChange={(checked) => setHospitalForm(prev => ({ ...prev, partial_payments_enabled: checked === true }))}
                     disabled={!canEdit}
                   />
-                  <span>
+                  <Label htmlFor="partial_payments_enabled" className="cursor-pointer">
                     <span className="block font-medium">Permitir abonos parciales</span>
-                    <span className="text-muted-foreground">Si esta apagado, un monto menor al total no se registra como pago completo.</span>
-                  </span>
-                </label>
+                    <span className="block text-muted-foreground font-normal mt-1">Si esta apagado, un monto menor al total no se registra como pago completo.</span>
+                  </Label>
+                </div>
               </div>
 
               <div className="flex justify-end">

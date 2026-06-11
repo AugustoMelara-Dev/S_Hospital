@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ApiError, apiClient, userSafeErrorMessage } from '@/lib/api';
@@ -84,6 +84,7 @@ export function ServiceSheet({
     setFocus,
     setValue,
     watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
@@ -353,15 +354,35 @@ export function ServiceSheet({
         </div>
 
         <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Checkbox {...register('taxable')} />
-            <span className="text-sm font-medium">Aplica ISV</span>
-          </label>
+          <div className="flex items-center gap-2 cursor-pointer">
+            <Controller
+              control={control}
+              name="taxable"
+              render={({ field }) => (
+                <Checkbox
+                  id="taxable"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              )}
+            />
+            <Label htmlFor="taxable" className="text-sm font-medium cursor-pointer">Aplica ISV</Label>
+          </div>
 
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Checkbox {...register('active')} />
-            <span className="text-sm font-medium">Servicio activo</span>
-          </label>
+          <div className="flex items-center gap-2 cursor-pointer">
+            <Controller
+              control={control}
+              name="active"
+              render={({ field }) => (
+                <Checkbox
+                  id="active"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              )}
+            />
+            <Label htmlFor="active" className="text-sm font-medium cursor-pointer">Servicio activo</Label>
+          </div>
         </div>
 
         {submitError && (

@@ -1,4 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import {
   type AuthUser,
   type UserPayload,
@@ -47,6 +50,35 @@ function isPasswordPolicyCompliant(password: string) {
   return password.length >= 10 && /\p{L}/u.test(password) && /\p{N}/u.test(password);
 }
 
+const baseUserSchema = z.object({
+  name: z.string().min(1, 'El nombre es obligatorio.'),
+  email: z.string().email('Formato de correo no válido.'),
+  username: z.string().regex(/^[a-zA-Z0-9_-]+$/, 'Nombre de usuario no válido (solo letras, números, _ o -).'),
+  role: z.string().min(1, 'El rol es obligatorio.'),
+});
+
+const createUserSchema = baseUserSchema.extend({
+  password: z.string().refine(isPasswordPolicyCompliant, PASSWORD_POLICY_ERROR),
+});
+
+const editUserSchema = baseUserSchema.extend({
+  password: z.string().optional(),
+});
+
+type UserFormData = {
+  name: string;
+  email: string;
+  username: string;
+  password?: string;
+  role: string;
+};
+
+const resetPasswordSchema = z.object({
+  newPassword: z.string().refine(isPasswordPolicyCompliant, PASSWORD_POLICY_ERROR),
+});
+
+type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
+
 export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,24 +87,41 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
   // User Modal (Create/Edit)
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AuthUser | null>(null);
-  const [userForm, setUserForm] = useState({
-    name: '',
-    email: '',
-    username: '',
-    password: '',
-    role: 'cajero',
+  const [formGlobalError, setFormGlobalError] = useState('');
+
+  const {
+    register: registerUser,
+    handleSubmit: handleSubmitUser,
+    control: userControl,
+    reset: resetUserForm,
+    formState: { errors: userErrors, isSubmitting: isSavingUser },
+  } = useForm<UserFormData>({
+    resolver: zodResolver(editingUser ? editUserSchema : createUserSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      username: '',
+      password: '',
+      role: 'cajero',
+    },
   });
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [isSavingUser, setIsSavingUser] = useState(false);
-  const saveUserInFlightRef = useRef(false);
   
   // Reset Password Modal
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [targetResetUser, setTargetResetUser] = useState<AuthUser | null>(null);
-  const [newPassword, setNewPassword] = useState('');
-  const [resetError, setResetError] = useState('');
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const resetPasswordInFlightRef = useRef(false);
+  const [resetGlobalError, setResetGlobalError] = useState('');
+
+  const {
+    register: registerReset,
+    handleSubmit: handleSubmitReset,
+    reset: resetResetForm,
+    formState: { errors: resetErrors, isSubmitting: isResettingPassword },
+  } = useForm<ResetPasswordForm>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      newPassword: '',
+    },
+  });
 
   // Toggle Status Confirm Dialog
   const [isToggleDialogOpen, setIsToggleDialogOpen] = useState(false);
@@ -80,11 +129,7 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
   const [isTogglingUser, setIsTogglingUser] = useState(false);
   const toggleUserInFlightRef = useRef(false);
 
-  useEffect(() => {
-    void fetchUsers();
-  }, []);
-
-  async function fetchUsers() {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const data = await apiClient.getUsers();
@@ -95,7 +140,11 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [onStatus]);
+
+  useEffect(() => {
+    void fetchUsers();
+  }, [fetchUsers]);
 
   // Filter users based on search term
   const filteredUsers = users.filter((u) => {
@@ -107,83 +156,53 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
     );
   });
 
-  const validateForm = () => {
-    const errors: Record<string, string> = {};
-    if (!userForm.name.trim()) errors.name = 'El nombre es obligatorio.';
-    if (!userForm.email.trim()) {
-      errors.email = 'El correo es obligatorio.';
-    } else if (!/\S+@\S+\.\S+/.test(userForm.email)) {
-      errors.email = 'Formato de correo no válido.';
-    }
-    
-    if (!userForm.username.trim()) {
-      errors.username = 'El nombre de usuario es obligatorio.';
-    } else if (!/^[a-zA-Z0-9_-]+$/.test(userForm.username)) {
-      errors.username = 'Nombre de usuario no válido (solo letras, números, _ o -).';
-    }
-
-    if (!editingUser && !userForm.password) {
-      errors.password = 'La contraseña es obligatoria para nuevos usuarios.';
-    } else if (!editingUser && !isPasswordPolicyCompliant(userForm.password)) {
-      errors.password = PASSWORD_POLICY_ERROR;
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
   const handleOpenCreateModal = () => {
     setEditingUser(null);
-    setUserForm({
+    resetUserForm({
       name: '',
       email: '',
       username: '',
       password: '',
       role: 'cajero',
     });
-    setFormErrors({});
+    setFormGlobalError('');
     setIsUserModalOpen(true);
   };
 
   const handleOpenEditModal = (user: AuthUser) => {
     setEditingUser(user);
-    setUserForm({
+    resetUserForm({
       name: user.name,
       email: user.email,
       username: user.username,
       password: '', // Password is not modified via edit details modal
       role: user.roles[0] || 'cajero',
     });
-    setFormErrors({});
+    setFormGlobalError('');
     setIsUserModalOpen(true);
   };
 
-  const handleSaveUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (saveUserInFlightRef.current) return;
-    if (!validateForm()) return;
-
-    saveUserInFlightRef.current = true;
-    setIsSavingUser(true);
+  const onUserSubmit = async (data: UserFormData) => {
+    setFormGlobalError('');
     onStatus('Guardando usuario...');
     try {
       if (editingUser) {
         const payload: Omit<UserPayload, 'password'> = {
-          name: userForm.name,
-          email: userForm.email,
-          username: userForm.username,
-          role: userForm.role,
+          name: data.name,
+          email: data.email,
+          username: data.username,
+          role: data.role,
         };
         const updated = await apiClient.updateUser(editingUser.id, payload);
         setUsers(users.map((u) => (u.id === editingUser.id ? updated : u)));
         onStatus(`Usuario ${updated.name} actualizado correctamente.`);
       } else {
         const payload: UserPayload = {
-          name: userForm.name,
-          email: userForm.email,
-          username: userForm.username,
-          password: userForm.password,
-          role: userForm.role,
+          name: data.name,
+          email: data.email,
+          username: data.username,
+          password: data.password || '',
+          role: data.role,
           active: true,
         };
         const created = await apiClient.createUser(payload);
@@ -194,10 +213,7 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
     } catch (err) {
       const msg = userSafeErrorMessage(err, 'No se pudo guardar el usuario.');
       onStatus(msg);
-      setFormErrors({ form: msg });
-    } finally {
-      saveUserInFlightRef.current = false;
-      setIsSavingUser(false);
+      setFormGlobalError(msg);
     }
   };
 
@@ -233,34 +249,24 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
   // Reset Password
   const handleOpenResetModal = (user: AuthUser) => {
     setTargetResetUser(user);
-    setNewPassword('');
-    setResetError('');
+    resetResetForm({ newPassword: '' });
+    setResetGlobalError('');
     setIsResetModalOpen(true);
   };
 
-  const handleConfirmReset = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onResetSubmit = async (data: ResetPasswordForm) => {
     if (!targetResetUser) return;
-    if (resetPasswordInFlightRef.current) return;
-    if (!isPasswordPolicyCompliant(newPassword)) {
-      setResetError(PASSWORD_POLICY_ERROR);
-      return;
-    }
-
-    resetPasswordInFlightRef.current = true;
-    setIsResettingPassword(true);
+    
+    setResetGlobalError('');
     onStatus('Restableciendo contraseña...');
     try {
-      await apiClient.resetUserPassword(targetResetUser.id, newPassword);
+      await apiClient.resetUserPassword(targetResetUser.id, data.newPassword);
       onStatus(`Contraseña restablecida con éxito para ${targetResetUser.name}. Se solicitará cambio de contraseña en su siguiente inicio de sesión.`);
       setIsResetModalOpen(false);
     } catch (err) {
       const msg = userSafeErrorMessage(err, 'No se pudo restablecer la contraseña.');
-      setResetError(msg);
+      setResetGlobalError(msg);
       onStatus(msg);
-    } finally {
-      resetPasswordInFlightRef.current = false;
-      setIsResettingPassword(false);
     }
   };
 
@@ -415,10 +421,10 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
         title={editingUser ? 'Editar usuario' : 'Crear usuario'}
         description="Configure nombre, acceso y rol operativo."
       >
-        <form onSubmit={handleSaveUser} className="space-y-4">
-          {formErrors.form && (
+        <form onSubmit={handleSubmitUser(onUserSubmit)} className="space-y-4">
+          {formGlobalError && (
             <div className="p-3 bg-destructive/10 text-destructive text-sm rounded border border-destructive/20">
-              {formErrors.form}
+              {formGlobalError}
             </div>
           )}
 
@@ -430,11 +436,10 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                 id="name"
                 className="pl-9"
                 placeholder="Juan Pérez Celaya"
-                value={userForm.name}
-                onChange={(e) => setUserForm((prev) => ({ ...prev, name: e.target.value }))}
+                {...registerUser('name')}
               />
             </div>
-            {formErrors.name && <p className="text-xs text-destructive">{formErrors.name}</p>}
+            {userErrors.name && <p className="text-xs text-destructive">{userErrors.name.message}</p>}
           </div>
 
           <div className="space-y-1">
@@ -446,11 +451,10 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                 type="email"
                 className="pl-9"
                 placeholder="jperez@hospital.org"
-                value={userForm.email}
-                onChange={(e) => setUserForm((prev) => ({ ...prev, email: e.target.value }))}
+                {...registerUser('email')}
               />
             </div>
-            {formErrors.email && <p className="text-xs text-destructive">{formErrors.email}</p>}
+            {userErrors.email && <p className="text-xs text-destructive">{userErrors.email.message}</p>}
           </div>
 
           <div className="space-y-1">
@@ -461,11 +465,10 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                 id="username"
                 className="pl-9"
                 placeholder="jperez"
-                value={userForm.username}
-                onChange={(e) => setUserForm((prev) => ({ ...prev, username: e.target.value }))}
+                {...registerUser('username')}
               />
             </div>
-            {formErrors.username && <p className="text-xs text-destructive">{formErrors.username}</p>}
+            {userErrors.username && <p className="text-xs text-destructive">{userErrors.username.message}</p>}
           </div>
 
           {!editingUser && (
@@ -478,29 +481,32 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                   type="password"
                   className="pl-9"
                   placeholder={PASSWORD_POLICY_HINT}
-                  value={userForm.password}
-                  onChange={(e) => setUserForm((prev) => ({ ...prev, password: e.target.value }))}
+                  {...registerUser('password')}
                 />
               </div>
-              {formErrors.password && <p className="text-xs text-destructive">{formErrors.password}</p>}
+              {userErrors.password && <p className="text-xs text-destructive">{userErrors.password.message}</p>}
             </div>
           )}
 
           <div className="space-y-1">
             <Label htmlFor="role">Rol operativo *</Label>
-            <Select
-              value={userForm.role}
-              onValueChange={(val: string) => setUserForm((prev) => ({ ...prev, role: val }))}
-            >
-              <SelectTrigger id="role">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cajero">Cajero (POS y cobros diarios)</SelectItem>
-                <SelectItem value="supervisor">Supervisor (Auditoría, caja general y anulaciones)</SelectItem>
-                <SelectItem value="admin">Administrador (control completo)</SelectItem>
-              </SelectContent>
-            </Select>
+            <Controller
+              name="role"
+              control={userControl}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger id="role">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cajero">Cajero (POS y cobros diarios)</SelectItem>
+                    <SelectItem value="supervisor">Supervisor (Auditoría, caja general y anulaciones)</SelectItem>
+                    <SelectItem value="admin">Administrador (control completo)</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {userErrors.role && <p className="text-xs text-destructive">{userErrors.role.message}</p>}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
@@ -524,10 +530,10 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
         title={`Restablecer clave para ${targetResetUser?.name}`}
         description="Establezca una nueva clave temporal. El usuario estará obligado a cambiarla en su próximo ingreso."
       >
-        <form onSubmit={handleConfirmReset} className="space-y-4">
-          {resetError && (
+        <form onSubmit={handleSubmitReset(onResetSubmit)} className="space-y-4">
+          {resetGlobalError && (
             <div className="p-3 bg-destructive/10 text-destructive text-sm rounded border border-destructive/20">
-              {resetError}
+              {resetGlobalError}
             </div>
           )}
 
@@ -540,10 +546,10 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                 type="password"
                 className="pl-9"
                 placeholder={PASSWORD_POLICY_HINT}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                {...registerReset('newPassword')}
               />
             </div>
+            {resetErrors.newPassword && <p className="text-xs text-destructive">{resetErrors.newPassword.message}</p>}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

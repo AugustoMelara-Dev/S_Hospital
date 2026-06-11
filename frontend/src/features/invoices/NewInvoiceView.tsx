@@ -40,6 +40,7 @@ export function NewInvoiceView({
 
   useEffect(() => {
     void loadPointOfSaleData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -50,6 +51,7 @@ export function NewInvoiceView({
       }
       patientInputRef.current?.focus();
     }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -60,6 +62,7 @@ export function NewInvoiceView({
       void searchPointOfSaleServices();
     }, 250);
     return () => window.clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canViewCatalog, state.search, state.selectedCategoryId]);
 
   useEffect(() => {
@@ -138,6 +141,7 @@ export function NewInvoiceView({
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canEmit, state.cartItems.length, handleClearCart, state.patientName, state.scanCode, state.search, state.showClearConfirm, state.showConfirmation, state.showPayment, state.showReceipt, state.showSuccess]);
 
   const preview = useMemo(

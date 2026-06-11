@@ -105,6 +105,7 @@ export function DashboardView({
   useEffect(() => {
     fetchDashboard();
     fetchSetupStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canViewManagerialReports, canViewFiscalSettings]);
 
   return (

@@ -81,6 +81,7 @@ export function ReportsView({
       void loadAreas();
       void loadCashSessionOptions();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canViewManagerial]);
 
   useEffect(() => {

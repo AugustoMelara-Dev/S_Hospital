@@ -10,11 +10,7 @@ export function useHospitalSession() {
   const [cashSession, setCashSession] = useState<CashSession | null>(null);
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
-  const [passwordForm, setPasswordForm] = useState<PasswordChangeForm>({
-    current_password: '',
-    password: '',
-    password_confirmation: '',
-  });
+
   const [status, setStatus] = useState('Listo para iniciar sesión local.');
   const [loading, setLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
@@ -182,8 +178,7 @@ export function useHospitalSession() {
     }
   }
 
-  async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function handlePasswordSubmit(data: PasswordChangeForm) {
     if (passwordSubmitInFlightRef.current) return;
 
     passwordSubmitInFlightRef.current = true;
@@ -191,13 +186,8 @@ export function useHospitalSession() {
     setStatus('Actualizando contraseña...');
 
     try {
-      const updatedUser = await apiClient.changePassword(passwordForm);
+      const updatedUser = await apiClient.changePassword(data);
       setUser(updatedUser);
-      setPasswordForm({
-        current_password: '',
-        password: '',
-        password_confirmation: '',
-      });
       setStatus('Contraseña actualizada.');
     } catch (error) {
       setStatus(userSafeErrorMessage(error, 'No se pudo actualizar la contraseña.'));
@@ -215,8 +205,7 @@ export function useHospitalSession() {
     setLogin,
     password,
     setPassword,
-    passwordForm,
-    setPasswordForm,
+
     status,
     setStatus,
     loading,

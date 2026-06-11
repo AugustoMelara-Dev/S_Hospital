@@ -55,7 +55,9 @@ describe('UsersView', () => {
     fireEvent.change(within(dialog).getByLabelText(/contraseña inicial/i), { target: { value: 'abcdefghij' } });
     fireEvent.click(within(dialog).getByRole('button', { name: /crear usuario/i }));
 
-    expect(within(dialog).getByText(passwordPolicyMessage)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(within(dialog).getByText(passwordPolicyMessage)).toBeInTheDocument();
+    });
     expect(createUser).not.toHaveBeenCalled();
 
     fireEvent.change(within(dialog).getByLabelText(/contraseña inicial/i), { target: { value: 'Password123' } });
@@ -86,7 +88,9 @@ describe('UsersView', () => {
     fireEvent.click(submit);
     fireEvent.click(submit);
 
-    expect(createUser).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(createUser).toHaveBeenCalledTimes(1);
+    });
     await waitFor(() => expect(within(dialog).getByRole('button', { name: /guardando/i })).toBeDisabled());
 
     resolveCreate({
@@ -116,7 +120,9 @@ describe('UsersView', () => {
     fireEvent.change(within(dialog).getByLabelText(/nueva contraseña temporal/i), { target: { value: 'abcdefghij' } });
     fireEvent.click(within(dialog).getByRole('button', { name: /restablecer clave/i }));
 
-    expect(within(dialog).getByText(passwordPolicyMessage)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(within(dialog).getByText(passwordPolicyMessage)).toBeInTheDocument();
+    });
     expect(resetPassword).not.toHaveBeenCalled();
 
     fireEvent.change(within(dialog).getByLabelText(/nueva contraseña temporal/i), { target: { value: 'Password123' } });

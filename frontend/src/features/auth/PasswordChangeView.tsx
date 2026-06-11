@@ -1,24 +1,42 @@
-import { type FormEvent } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 
-export type PasswordChangeForm = {
-  current_password: string;
-  password: string;
-  password_confirmation: string;
-};
+export const passwordChangeSchema = z.object({
+  current_password: z.string().min(1, 'La contraseña actual es requerida'),
+  password: z.string().min(8, 'La nueva contraseña debe tener al menos 8 caracteres'),
+  password_confirmation: z.string().min(1, 'Confirme la nueva contraseña'),
+}).refine((data) => data.password === data.password_confirmation, {
+  message: 'Las contraseñas no coinciden',
+  path: ['password_confirmation'],
+});
+
+export type PasswordChangeForm = z.infer<typeof passwordChangeSchema>;
 
 type PasswordChangeViewProps = {
-  form: PasswordChangeForm;
-  onChange: (form: PasswordChangeForm) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (data: PasswordChangeForm) => Promise<void>;
   submitting?: boolean;
   status?: string;
 };
 
-export function PasswordChangeView({ form, onChange, onSubmit, submitting = false, status }: PasswordChangeViewProps) {
+export function PasswordChangeView({ onSubmit, submitting = false, status }: PasswordChangeViewProps) {
   const showStatus = Boolean(status?.trim());
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<PasswordChangeForm>({
+    resolver: zodResolver(passwordChangeSchema),
+    defaultValues: {
+      current_password: '',
+      password: '',
+      password_confirmation: '',
+    },
+  });
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-5">
@@ -28,42 +46,51 @@ export function PasswordChangeView({ form, onChange, onSubmit, submitting = fals
           <CardDescription>Actualice su contraseña antes de operar el sistema.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             {showStatus ? (
               <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground" role="alert">
                 {status}
               </p>
             ) : null}
-            <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
-              Contraseña actual
+            <div className="flex flex-col gap-2">
+              <label htmlFor="current_password" className="text-sm font-semibold text-muted-foreground">
+                Contraseña actual
+              </label>
               <Input
+                id="current_password"
                 type="password"
-                value={form.current_password}
+                {...register('current_password')}
                 autoComplete="current-password"
                 disabled={submitting}
-                onChange={(event) => onChange({ ...form, current_password: event.target.value })}
               />
-            </label>
-            <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
-              Nueva contraseña
+              {errors.current_password && <span className="text-sm text-destructive">{errors.current_password.message}</span>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="password" className="text-sm font-semibold text-muted-foreground">
+                Nueva contraseña
+              </label>
               <Input
+                id="password"
                 type="password"
-                value={form.password}
+                {...register('password')}
                 autoComplete="new-password"
                 disabled={submitting}
-                onChange={(event) => onChange({ ...form, password: event.target.value })}
               />
-            </label>
-            <label className="flex flex-col gap-2 text-sm font-semibold text-muted-foreground">
-              Confirmar nueva contraseña
+              {errors.password && <span className="text-sm text-destructive">{errors.password.message}</span>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="password_confirmation" className="text-sm font-semibold text-muted-foreground">
+                Confirmar nueva contraseña
+              </label>
               <Input
+                id="password_confirmation"
                 type="password"
-                value={form.password_confirmation}
+                {...register('password_confirmation')}
                 autoComplete="new-password"
                 disabled={submitting}
-                onChange={(event) => onChange({ ...form, password_confirmation: event.target.value })}
               />
-            </label>
+              {errors.password_confirmation && <span className="text-sm text-destructive">{errors.password_confirmation.message}</span>}
+            </div>
             <Button type="submit" disabled={submitting}>
               {submitting ? 'Actualizando...' : 'Actualizar contraseña'}
             </Button>

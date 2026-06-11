@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { apiClient } from '@/lib/api';
@@ -43,6 +43,7 @@ export function CategorySheet({ open, onOpenChange, category, onSuccess }: Categ
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
@@ -100,10 +101,20 @@ export function CategorySheet({ open, onOpenChange, category, onSuccess }: Categ
           />
         </div>
 
-        <label className="flex items-center gap-2 cursor-pointer">
-          <Checkbox {...register('active')} />
-          <span className="text-sm font-medium">Categoría activa</span>
-        </label>
+        <div className="flex items-center gap-2 cursor-pointer">
+          <Controller
+            control={control}
+            name="active"
+            render={({ field }) => (
+              <Checkbox
+                id="active"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
+          />
+          <Label htmlFor="active" className="text-sm font-medium cursor-pointer">Categoría activa</Label>
+        </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button

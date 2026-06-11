@@ -49,8 +49,8 @@ Sheet.Header = function SheetHeader({ className, ...props }: { className?: strin
   return <div className={cn('flex flex-col gap-1.5', className)} {...props} />;
 };
 
-Sheet.Title = function SheetTitle({ className, ...props }: { className?: string } & React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn('text-lg font-semibold leading-none', className)} {...props} />;
+Sheet.Title = function SheetTitle({ className, children, ...props }: { className?: string; children?: ReactNode } & React.HTMLAttributes<HTMLHeadingElement>) {
+  return <h2 className={cn('text-lg font-semibold leading-none', className)} {...props}>{children}</h2>;
 };
 
 Sheet.Description = function SheetDescription({ className, ...props }: { className?: string } & React.HTMLAttributes<HTMLParagraphElement>) {

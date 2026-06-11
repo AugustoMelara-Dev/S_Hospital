@@ -68,6 +68,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
     window.setTimeout(() => {
       void handlePrintClick();
     }, 150);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoPrint, receipt.invoice.invoice_number]);
 
   const location = receipt.institutional?.location ?? receipt.hospital.address;

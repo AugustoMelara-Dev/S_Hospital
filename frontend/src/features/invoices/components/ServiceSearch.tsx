@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react';
-import { type RefObject, useEffect, useState } from 'react';
+import { type RefObject, useEffect, useState, useCallback } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
@@ -57,16 +57,16 @@ export function ServiceSearch({
   const hiddenCount = Math.max(0, filteredServices.length - visibleServices.length);
   const firstVisibleService = visibleServices[0];
 
-  function handleAddService(service: Service) {
+  const handleAddService = useCallback((service: Service) => {
     setAddFirstWhenReady(false);
     onAddService(service);
     window.setTimeout(() => searchInputRef?.current?.focus(), 0);
-  }
+  }, [onAddService, searchInputRef]);
 
   useEffect(() => {
     if (!addFirstWhenReady || loading || !firstVisibleService) return;
     handleAddService(firstVisibleService);
-  }, [addFirstWhenReady, firstVisibleService, loading]);
+  }, [addFirstWhenReady, firstVisibleService, loading, handleAddService]);
 
   useEffect(() => {
     setAddFirstWhenReady(false);

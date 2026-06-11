@@ -222,6 +222,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
   useEffect(() => {
     void loadBackups(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, statusFilter]);
 
   useEffect(() => {
@@ -238,6 +239,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
     }, 5000);
 
     return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backups, page]);
 
   async function loadBackups(nextPage: number, announce = true) {

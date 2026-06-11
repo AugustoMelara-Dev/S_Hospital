@@ -139,7 +139,7 @@ export function InvoiceCart({
                   </div>
 
                   {item.service.special_rule_code === ERYTHROPOIETIN_RULE && (
-                    <label className="flex items-center gap-2 text-xs">
+                    <label htmlFor={`dialysis-${index}`} className="flex items-center gap-2 text-xs">
                       <Checkbox
                         id={`dialysis-${index}`}
                         checked={item.dialysisPrescription}

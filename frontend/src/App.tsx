@@ -65,7 +65,7 @@ function HospitalApp() {
         notify.success(message);
       }
     }
-  }, [session.setStatus]);
+  }, [session]);
 
   useEffect(() => {
     if (session.sessionExpired) {
@@ -100,8 +100,6 @@ function HospitalApp() {
   if (session.user.must_change_password) {
     return (
       <PasswordChangeView
-        form={session.passwordForm}
-        onChange={session.setPasswordForm}
         onSubmit={session.handlePasswordSubmit}
         submitting={session.passwordSubmitting}
         status={session.status}

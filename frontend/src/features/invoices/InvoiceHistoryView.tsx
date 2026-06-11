@@ -386,6 +386,14 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                               <div
                                 className="fixed inset-0 z-40"
                                 onClick={() => setOpenActionsId(null)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Escape' || e.key === 'Enter') {
+                                    setOpenActionsId(null);
+                                  }
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                aria-label="Cerrar menú de acciones"
                               />
                               <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-md border border-border bg-card shadow-lg">
                                 <div className="py-1">

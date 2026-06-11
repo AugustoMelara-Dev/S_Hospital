@@ -211,22 +211,22 @@ export function PaymentModal({
             {error && <p id="payment-amount-error" className="mt-1 text-sm text-destructive" role="alert">{error}</p>}
           </div>
 
-          <label className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5 text-sm cursor-pointer select-none">
+          <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5 text-sm">
             <Checkbox
               id="preview-before-print"
               checked={previewBeforePrint}
               onCheckedChange={(checked) => onPreviewBeforePrintChange?.(checked === true)}
               className="mt-0.5"
             />
-            <div className="grid gap-0.5 leading-none">
+            <Label htmlFor="preview-before-print" className="grid gap-0.5 leading-none cursor-pointer select-none">
               <span className="font-medium text-foreground">
                 Ver preview antes de imprimir
               </span>
-              <span className="text-xs text-muted-foreground mt-0.5">
+              <span className="text-xs text-muted-foreground mt-0.5 font-normal">
                 Desactivado: al confirmar cobro se registra el pago y se abre impresion directa.
               </span>
-            </div>
-          </label>
+            </Label>
+          </div>
 
           <p className="text-xs text-muted-foreground">
             Cancelar la ventana de impresion no revierte el pago. Si necesita corregir una factura pagada, use el flujo de anulacion autorizado.
