@@ -49,6 +49,8 @@ Route::get('/system/setup-status', [SystemStatusController::class, 'setupStatus'
 
 Route::get('/settings/logo', [LogoController::class, 'show'])
     ->middleware('web');
+Route::get('/settings/logo/file', [LogoController::class, 'file'])
+    ->middleware('web');
 
 Route::get('/settings/branding', [FiscalSettingsController::class, 'publicBranding'])
     ->middleware('web');

@@ -4,24 +4,31 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Fiscal\UploadLogoRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class LogoController extends Controller
 {
     public function show(): JsonResponse
     {
-        $exists = Storage::disk('public')->exists('branding/logo.png');
-        $url = null;
-
-        if ($exists) {
-            $path = Storage::disk('public')->path('branding/logo.png');
-            $time = file_exists($path) ? filemtime($path) : time();
-            $url = asset('storage/branding/logo.png').'?t='.$time;
-        }
-
         return response()->json([
-            'logo_url' => $url,
+            'logo_url' => $this->cacheBustedLogoUrl(),
+        ]);
+    }
+
+    public function file(): BinaryFileResponse
+    {
+        abort_unless(Storage::disk('public')->exists('branding/logo.png'), 404);
+
+        $path = Storage::disk('public')->path('branding/logo.png');
+        $lastModified = file_exists($path) ? filemtime($path) : time();
+
+        return response()->file($path, [
+            'Cache-Control' => 'public, max-age=300, stale-while-revalidate=300',
+            'Last-Modified' => gmdate('D, d M Y H:i:s', $lastModified).' GMT',
+            'Content-Type' => File::mimeType($path) ?: 'image/png',
         ]);
     }
 
@@ -41,7 +48,19 @@ class LogoController extends Controller
 
         return response()->json([
             'message' => 'Logo actualizado con exito.',
-            'logo_url' => asset('storage/branding/logo.png').'?t='.$time,
+            'logo_url' => '/api/settings/logo/file?t='.$time,
         ]);
+    }
+
+    private function cacheBustedLogoUrl(): ?string
+    {
+        if (! Storage::disk('public')->exists('branding/logo.png')) {
+            return null;
+        }
+
+        $path = Storage::disk('public')->path('branding/logo.png');
+        $time = file_exists($path) ? filemtime($path) : time();
+
+        return '/api/settings/logo/file?t='.$time;
     }
 }

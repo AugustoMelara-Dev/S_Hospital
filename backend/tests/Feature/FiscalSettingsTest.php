@@ -185,13 +185,20 @@ class FiscalSettingsTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('message', 'Logo actualizado con exito.')
-            ->assertJsonPath('logo_url', fn (string $url): bool => str_contains($url, '/storage/branding/logo.png?t='));
+            ->assertJsonPath('logo_url', fn (string $url): bool => str_contains($url, '/api/settings/logo/file?t='));
 
         Storage::disk('public')->assertExists('branding/logo.png');
 
         $this->getJson('/api/settings/logo')
             ->assertOk()
-            ->assertJsonPath('logo_url', fn (?string $url): bool => is_string($url) && str_contains($url, '/storage/branding/logo.png?t='));
+            ->assertJsonPath('logo_url', fn (?string $url): bool => is_string($url) && str_contains($url, '/api/settings/logo/file?t='));
+
+        $response = $this->get('/api/settings/logo/file')
+            ->assertOk();
+
+        $cacheControl = (string) $response->headers->get('cache-control', '');
+        $this->assertStringContainsString('public', $cacheControl);
+        $this->assertStringContainsString('max-age=300', $cacheControl);
     }
 
     public function test_logo_upload_requires_fiscal_update_permission_and_image_file(): void
