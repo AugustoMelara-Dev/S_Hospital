@@ -1,3 +1,10 @@
+# 2026-06-12 - Pulido operativo F6 no cambia contratos ni logica fiscal
+
+Contexto: despues de F5, las pantallas densas ya eran funcionales, pero necesitaban mejor lectura diaria para caja, administracion y reportes sin redisenar el sistema ni tocar reglas fiscales.
+
+Decision: F6 centraliza el tratamiento visual de tablas (`table-wrap`/`data-table`), mejora filtros de reportes con grid responsive, aclara estados vacios del dashboard y agrega un smoke visual F6 ejecutable por subconjuntos para no saturar el servidor local. No se cambian contratos API, migraciones, calculos de factura, pagos, caja, secuencia fiscal ni recibos backend.
+
+Criterio de verificacion: `qa/F6_OPERATIONAL_POLISH_2026_06_12.md` documenta before/after, y `qa/visual-smoke/f6-operational-polish.mjs` genera evidencia con 0 overflow, 0 controles sin nombre y 0 errores de consola/HTTP en el reporte after final. La validacion fisica de impresora termica sigue pendiente de hardware real.
 # Technical Decisions - Sistema de Caja Hospitalaria
 
 ## Registro de decisiones
