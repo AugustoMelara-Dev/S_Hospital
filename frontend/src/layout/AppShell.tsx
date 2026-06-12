@@ -33,8 +33,8 @@ export function AppShell({
 
   // Wire real-time sync (WebSocket/Soketi) when the user is logged in.
   // Mounted once at the shell so every authenticated route benefits
-  // from cross-PC invalidations of ['invoices'], ['dashboard'] and
-  // ['cash-sessions'] queries.
+  // from cross-PC invalidations of invoices, dashboard reports and
+  // cash session queries.
   useBroadcastSync();
 
   useEffect(() => {

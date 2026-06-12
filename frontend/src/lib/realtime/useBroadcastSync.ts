@@ -4,6 +4,8 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { getEcho } from './echo';
 import { notify } from '../../components/ui/toaster';
+import { invalidateBillingQueries } from '@/lib/queryInvalidation';
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   CashSessionChangedEvent,
   InvoiceChangedEvent,
@@ -72,8 +74,7 @@ export function useBroadcastSync(): void {
 
       const onInvoice = (payload: unknown) => {
         if (!isInvoiceChanged(payload)) return;
-        queryClient.invalidateQueries({ queryKey: ['invoices'] });
-        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        void invalidateBillingQueries(queryClient);
         if (payload.change === 'voided' || payload.change === 'reversed') {
           notify.warning(humanInvoice(payload));
         } else if (payload.change === 'created') {
@@ -83,9 +84,7 @@ export function useBroadcastSync(): void {
 
       const onPayment = (payload: unknown) => {
         if (!isPaymentChanged(payload)) return;
-        queryClient.invalidateQueries({ queryKey: ['invoices'] });
-        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-        queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
+        void invalidateBillingQueries(queryClient);
         if (payload.change === 'registered') {
           notify.success(humanPayment(payload));
         } else {
@@ -95,7 +94,8 @@ export function useBroadcastSync(): void {
 
       const onCash = (payload: unknown) => {
         if (!isCashChanged(payload)) return;
-        queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.cashSessions.all });
+        queryClient.invalidateQueries({ queryKey: queryKeys.reports.dashboard() });
         if (payload.change === 'opened') {
           notify.info(humanCash(payload));
         } else {
