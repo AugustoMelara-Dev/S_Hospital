@@ -23,6 +23,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
@@ -1115,6 +1116,8 @@ class ReportsTest extends TestCase
     public function test_report_export_uses_institutional_logo_placeholder_without_technical_branding(): void
     {
         $this->seedBillingBase();
+        Storage::disk('public')->delete('branding/logo.png');
+
         $cashier = $this->cashier();
         $sessionId = $this->openSession($cashier);
         $invoiceId = $this->createInvoice($cashier, 'Glucosa');
