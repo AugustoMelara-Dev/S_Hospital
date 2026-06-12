@@ -43,6 +43,33 @@ describe('CatalogView', () => {
 
     await waitFor(() => expect(apiClient.getServicesPage).toHaveBeenCalled());
   });
+
+  it('shows billing visibility, billable state and tariff warnings', async () => {
+    vi.spyOn(apiClient, 'getCategories').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getAreas').mockResolvedValue([]);
+    vi.spyOn(apiClient, 'getFiscalSettings').mockResolvedValue(null);
+    vi.spyOn(apiClient, 'getServicesPage').mockResolvedValue({
+      data: [
+        serviceFixture({
+          visible_in_billing: false,
+          is_billable: false,
+          price: '0.00',
+        }),
+      ],
+      meta: { current_page: 1, per_page: 15, total: 1 },
+    });
+
+    renderWithQueryClient(<CatalogView user={catalogUser()} onStatus={vi.fn()} />);
+
+    expect(await screen.findByText('Glucosa')).toBeInTheDocument();
+    expect(screen.getByText('Buscar servicio')).toBeInTheDocument();
+    expect(screen.getByLabelText('Categoria')).toBeInTheDocument();
+    expect(screen.getByLabelText('Estado')).toBeInTheDocument();
+    expect(screen.getByText('Oculto en facturacion')).toBeInTheDocument();
+    expect(screen.getByText('No facturable')).toBeInTheDocument();
+    expect(screen.getByText('Sin tarifa')).toBeInTheDocument();
+    expect(screen.getByText('Sin tarifa operativa')).toBeInTheDocument();
+  });
 });
 
 function catalogUser(): AuthUser {
