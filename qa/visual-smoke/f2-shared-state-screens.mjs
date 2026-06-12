@@ -28,7 +28,7 @@ const screens = [
   {
     name: 'f2-settings-fiscal',
     route: '/settings/fiscal',
-    heading: /configuracion/i,
+    heading: /configuraci.n/i,
   },
 ];
 
@@ -45,19 +45,54 @@ async function waitSettled(page) {
   await page.waitForTimeout(600);
 }
 
+async function getLoginEvidence(page) {
+  const bodyText = sanitizeLogText(await page.locator('body').innerText().catch(() => ''));
+  const hasLoginButton = await page.getByRole('button', { name: /iniciar sesi/i }).isVisible().catch(() => false);
+  const hasUserField = await page.getByLabel(/usuario o correo/i).isVisible().catch(() => false);
+  const hasPasswordField = await page.locator('#password-input').isVisible().catch(() => false);
+
+  return {
+    bodyText,
+    hasLoginButton,
+    hasUserField,
+    hasPasswordField,
+    looksLikeLogin:
+      /iniciar sesi|usuario o correo|contrase/i.test(bodyText) ||
+      (hasLoginButton && (hasUserField || hasPasswordField)),
+  };
+}
+
+async function assertNotLogin(page, context) {
+  const evidence = await getLoginEvidence(page);
+  const pathname = new URL(page.url()).pathname;
+
+  if (pathname === '/login' || evidence.looksLikeLogin) {
+    throw new Error(
+      `${context}: smoke captured login instead of an authenticated app screen (${page.url()})`,
+    );
+  }
+}
+
 async function login(page) {
   await page.goto(`${baseUrl}/login`);
   await waitSettled(page);
 
-  if (await page.getByRole('heading', { name: /inicio/i }).isVisible().catch(() => false)) {
+  const initialLoginEvidence = await getLoginEvidence(page);
+  const alreadyAuthenticated =
+    !initialLoginEvidence.looksLikeLogin &&
+    (await page.getByRole('heading', { name: /inicio/i }).isVisible().catch(() => false));
+
+  if (alreadyAuthenticated) {
+    await assertNotLogin(page, 'login precheck');
     return;
   }
 
   await page.getByLabel(/usuario o correo/i).fill(loginUser);
   await page.locator('#password-input').fill(loginPassword);
-  await page.getByRole('button', { name: /iniciar sesi(?:ó|o)n/i }).click();
+  await page.getByRole('button', { name: /iniciar sesi/i }).click();
   await page.waitForURL(/dashboard|cashbox|backups|settings/, { timeout: 15000 });
   await waitSettled(page);
+  await assertNotLogin(page, 'login');
 }
 
 async function extractState(page, route) {
@@ -65,7 +100,7 @@ async function extractState(page, route) {
 
   if (route === '/dashboard') {
     return {
-      cashSnippet: bodyText.match(/CAJA\s+(?:Atencion|Abierta|Listo)?\s*(?:Caja #\d+|Cerrada)/i)?.[0] ?? null,
+      cashSnippet: bodyText.match(/CAJA\s+(?:Atenci.n|Abierta|Listo)?\s*(?:Caja #\d+|Cerrada)/i)?.[0] ?? null,
       nextActionSnippet: bodyText.match(/Abrir caja|Nueva factura/i)?.[0] ?? null,
     };
   }
@@ -78,7 +113,7 @@ async function extractState(page, route) {
 
   if (route === '/backups') {
     return {
-      operationalSnippet: bodyText.match(/Estado operativo\s+(?:Todo bien|Requiere revision|Error)/i)?.[0] ?? null,
+      operationalSnippet: bodyText.match(/Estado operativo\s+(?:Todo bien|Requiere revisi.n|Error)/i)?.[0] ?? null,
       workerSnippet: bodyText.match(/Worker activo|Worker inactivo/i)?.[0] ?? null,
     };
   }
@@ -86,6 +121,52 @@ async function extractState(page, route) {
   return {
     settingsSnippet: bodyText.match(/Hospital|RTN|CAI|Secuencia|recibo/i)?.[0] ?? null,
   };
+}
+
+function expectedPath(route) {
+  return new URL(route, baseUrl).pathname;
+}
+
+async function validateScreen(page, screen, state) {
+  await assertNotLogin(page, screen.name);
+
+  const actualPath = new URL(page.url()).pathname;
+  const wantedPath = expectedPath(screen.route);
+  if (actualPath !== wantedPath) {
+    throw new Error(`${screen.name}: expected ${wantedPath}, got ${actualPath}`);
+  }
+
+  const hasHeading = await page.getByRole('heading', { name: screen.heading }).first().isVisible().catch(() => false);
+  if (!hasHeading) {
+    throw new Error(`${screen.name}: expected heading was not visible`);
+  }
+
+  if (screen.route === '/dashboard') {
+    if (!state.cashSnippet) {
+      throw new Error(`${screen.name}: cashSnippet is null`);
+    }
+    if (!state.nextActionSnippet) {
+      throw new Error(`${screen.name}: nextActionSnippet is null`);
+    }
+    return;
+  }
+
+  if (screen.route === '/cashbox' && !state.sessionSnippet) {
+    throw new Error(`${screen.name}: sessionSnippet is null`);
+  }
+
+  if (screen.route === '/backups') {
+    if (!state.operationalSnippet) {
+      throw new Error(`${screen.name}: operationalSnippet is null`);
+    }
+    if (!state.workerSnippet) {
+      throw new Error(`${screen.name}: workerSnippet is null`);
+    }
+  }
+
+  if (screen.route === '/settings/fiscal' && !state.settingsSnippet) {
+    throw new Error(`${screen.name}: settingsSnippet is null`);
+  }
 }
 
 await mkdir(outputDir, { recursive: true });
@@ -144,6 +225,17 @@ page.on('requestfailed', (request) => {
     url: page.url(),
   });
 });
+page.on('response', (response) => {
+  if (response.status() !== 429) {
+    return;
+  }
+
+  consoleEntries.push({
+    level: 'http',
+    text: sanitizeLogText(`${response.request().method()} ${response.url()} 429 Too Many Requests`),
+    url: page.url(),
+  });
+});
 
 try {
   await login(page);
@@ -156,11 +248,13 @@ try {
 
     const screenshotPath = path.join(outputDir, `${screen.name}.png`);
     await page.screenshot({ path: screenshotPath, fullPage: false });
+    const state = await extractState(page, screen.route);
+    await validateScreen(page, screen, state);
 
     report.push({
       ...screen,
       screenshot: screenshotPath,
-      state: await extractState(page, screen.route),
+      state,
     });
   }
 
