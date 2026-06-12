@@ -7,7 +7,8 @@ const { chromium } = playwright;
 const baseUrl = process.env.F5_VISUAL_BASE_URL?.trim() || 'http://127.0.0.1:5173';
 const loginUser = process.env.F5_VISUAL_USER?.trim() || 'admin.validacion';
 const loginPassword = process.env.F5_VISUAL_PASSWORD?.trim() || 'Password123!';
-const outputDir = path.resolve(import.meta.dirname, '..', 'screenshots', 'before');
+const outputPhase = process.env.F5_VISUAL_OUTPUT_PHASE?.trim() || 'after';
+const outputDir = path.resolve(import.meta.dirname, '..', 'screenshots', outputPhase);
 const patientName = `Paciente Auditoria F5 ${Date.now()}`;
 
 const forbiddenBranding = [
@@ -214,6 +215,14 @@ async function inspectPage(page) {
     const namedElements = Array.from(document.querySelectorAll('input, select, textarea, button, a'));
     const unnamedControls = namedElements
       .filter((element) => {
+        const elementBox = element.getBoundingClientRect();
+        const isHiddenFromInteraction =
+          element.hasAttribute('hidden') ||
+          element.getAttribute('aria-hidden') === 'true' ||
+          element.closest('[aria-hidden="true"]') ||
+          (elementBox.width === 0 && elementBox.height === 0 && element.getClientRects().length === 0);
+
+        if (isHiddenFromInteraction) return false;
         if (element.matches('a') && element.textContent?.trim()) return false;
         if (element.matches('button') && element.textContent?.trim()) return false;
         const id = element.getAttribute('id');
@@ -328,6 +337,7 @@ try {
 const report = {
   baseUrl,
   loginUser,
+  outputPhase,
   generatedAt: new Date().toISOString(),
   patientName,
   captures,

@@ -466,6 +466,67 @@ Pruebas:
 5. `fix(ui): constrain operational toast stacking`
 6. `test(qa): add F5 visual after evidence`
 
+## F5.1 - Remediacion controlada
+
+Estado: **corregido y validado con evidencia after**.
+
+### Causa raiz de 429
+
+El bloqueo visible no venia de una sola pantalla. La causa principal era el middleware autenticado global `throttle:60,1`, que usa bucket por IP. En una instalacion LAN, varias lecturas seguras de shell, caja, configuracion, dashboard, usuarios, respaldos y estado compartian el mismo limite. La navegacion intensiva del smoke reprodujo lo que puede pasar con varios clientes en la misma red local: lecturas operativas normales terminaban bloqueadas como `429`.
+
+Factores secundarios:
+
+- TanStack Query reintentaba errores `429` una vez por defecto.
+- Los callbacks `onStatus` convertian mensajes de progreso como "Cargando..." y "Consultando..." en toasts visibles, provocando apilamiento en mobile y reportes.
+- El auditor DOM marcaba como control sin nombre un `select` oculto generado por Radix, aunque el `combobox` visible ya tenia nombre accesible.
+
+### Correcciones aplicadas
+
+- Las rutas autenticadas operativas usan `throttle.user:240,1` para lecturas seguras, evitando que usuarios distintos en la misma LAN compartan el bucket por IP.
+- Las escrituras sensibles mantienen throttles explicitos por usuario: caja, pagos, reimpresion, respaldos, usuarios, configuracion fiscal y secuencias.
+- El cliente ya no reintenta `401`, `403`, `419`, `422` ni `429`; mantiene un reintento para fallos transitorios desconocidos.
+- Los toasts operativos se deduplican por mensaje, limitan la cantidad visible a 2 y dejan de mostrar mensajes de progreso que ya aparecen en la barra de estado.
+- Usuarios muestra error recuperable con accion `Reintentar` cuando la lectura falla.
+- Historial tiene filtro de estado con nombre accesible y error recuperable con accion `Reintentar`.
+- El auditor F5 ignora controles ocultos/no interactivos para evitar falsos positivos de primitives.
+
+### Evidencia after
+
+- Script: `node qa\visual-smoke\f5-visual-ux-audit.mjs`
+- Reporte JSON after: `qa/screenshots/after/f5-visual-ux-audit-report.json`
+- Capturas after: `qa/screenshots/after/f5-*`
+
+Resultado del reporte after:
+
+- Capturas: 46
+- `consoleIssueCount`: 0
+- `overflowFindings`: []
+- `unnamedControlFindings`: []
+
+Capturas clave after:
+
+- `qa/screenshots/after/f5-desktop-light-dashboard.png`
+- `qa/screenshots/after/f5-desktop-light-new-invoice-with-service.png`
+- `qa/screenshots/after/f5-desktop-light-receipt-payment-preview.png`
+- `qa/screenshots/after/f5-desktop-light-invoice-history.png`
+- `qa/screenshots/after/f5-desktop-light-users.png`
+- `qa/screenshots/after/f5-desktop-light-backups.png`
+- `qa/screenshots/after/f5-desktop-dark-dashboard.png`
+- `qa/screenshots/after/f5-tablet-light-dashboard.png`
+- `qa/screenshots/after/f5-mobile-light-dashboard.png`
+
+### Pruebas agregadas o ajustadas
+
+- `ThrottleByUserTest` cubre lecturas operativas por usuario y escrituras con throttle explicito.
+- `query-client.test.ts` cubre que `429` no se reintente.
+- `UsersView.test.tsx` cubre error recuperable y nombres accesibles de controles.
+- `InvoiceHistoryView.test.tsx` cubre nombre accesible del filtro de estado.
+
+### Pendientes
+
+- La optimizacion profunda de tablas, dashboard gerencial y responsive mobile completo queda fuera de F5.1 para evitar rediseño amplio.
+- La validacion fisica de impresora termica sigue correspondiendo a un frente posterior de impresion/operacion, no a robustez visual.
+
 ## Criterios de aceptacion F5
 
 - Capturas before/after reales.
