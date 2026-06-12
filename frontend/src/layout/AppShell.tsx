@@ -3,7 +3,8 @@ import { useLocation } from 'react-router-dom';
 import { type AuthUser, type CashSession } from '../lib/api';
 import { useBroadcastSync } from '../lib/realtime/useBroadcastSync';
 import { GuidedTour, shouldAutoOpenGuidedTour } from '../features/onboarding/GuidedTour';
-import { MobileSidebar, SidebarContent, appNavigation } from './Sidebar';
+import { getActiveNavigationItem, getBreadcrumbs, getVisibleNavigation } from '../navigation/appNavigation';
+import { MobileSidebar, SidebarContent } from './Sidebar';
 import { Topbar } from './Topbar';
 
 type AppShellProps = {
@@ -43,19 +44,8 @@ export function AppShell({
     }
   }, []);
 
-  const visibleNavigation = appNavigation.filter((item) => {
-    if (!item.permission) {
-      return true;
-    }
-
-    const permissions = Array.isArray(item.permission) ? item.permission : [item.permission];
-    return permissions.some((permission) => user.permissions.includes(permission));
-  });
-
-  const activeItem = [...appNavigation]
-    .sort((left, right) => right.path.length - left.path.length)
-    .find((item) => location.pathname === item.path || location.pathname.startsWith(`${item.path}/`));
-
+  const visibleNavigation = getVisibleNavigation(user.permissions);
+  const activeItem = getActiveNavigationItem(location.pathname);
   const crumbs = getBreadcrumbs(location.pathname);
   const isMinimalTopbar = topbarVariant === 'minimal';
 
@@ -110,55 +100,4 @@ export function AppShell({
       <GuidedTour open={guideOpen} onOpenChange={setGuideOpen} />
     </div>
   );
-}
-
-function getBreadcrumbs(pathname: string) {
-  const paths = pathname.split('/').filter(Boolean);
-  const crumbs = [{ label: 'Inicio', path: '/' }];
-  let currentPath = '';
-
-  for (const segment of paths) {
-    currentPath += `/${segment}`;
-
-    if (segment === 'dashboard') {
-      continue;
-    }
-
-    if (segment === 'billing') {
-      crumbs.push({ label: 'Facturacion', path: '/billing/new' });
-    } else if (segment === 'new') {
-      crumbs.push({ label: 'Nueva factura', path: '/billing/new' });
-    } else if (segment === 'invoices') {
-      crumbs.push({ label: 'Historial', path: '/invoices' });
-    } else if (segment === 'about') {
-      crumbs.push({ label: 'Acerca de', path: '/about' });
-    } else if (segment === 'help') {
-      crumbs.push({ label: 'Ayuda', path: '/help' });
-    } else if (segment === 'services' || segment === 'catalog') {
-      crumbs.push({ label: 'Catalogo', path: '/catalog' });
-    } else if (segment === 'cashbox') {
-      crumbs.push({ label: 'Caja', path: '/cashbox' });
-    } else if (segment === 'reports') {
-      crumbs.push({ label: 'Reportes', path: '/reports' });
-    } else if (segment === 'settings') {
-      crumbs.push({ label: 'Configuracion', path: '/settings' });
-    } else if (segment === 'admin') {
-      crumbs.push({ label: 'Administracion', path: '/admin/users' });
-    } else if (segment === 'users') {
-      crumbs.push({ label: 'Usuarios', path: '/admin/users' });
-    } else {
-      crumbs.push({ label: segment.charAt(0).toUpperCase() + segment.slice(1), path: currentPath });
-    }
-  }
-
-  const uniqueCrumbs: typeof crumbs = [];
-  const seenLabels = new Set<string>();
-  for (const crumb of crumbs) {
-    if (!seenLabels.has(crumb.label)) {
-      uniqueCrumbs.push(crumb);
-      seenLabels.add(crumb.label);
-    }
-  }
-
-  return uniqueCrumbs;
 }

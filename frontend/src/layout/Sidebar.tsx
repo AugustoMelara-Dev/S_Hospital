@@ -1,14 +1,6 @@
 import {
-  Archive,
-  Boxes,
-  ClipboardList,
-  FileClock,
-  HelpCircle,
-  LayoutDashboard,
-  Settings,
   ShieldCheck,
   User,
-  WalletCards,
 } from 'lucide-react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { NavLink } from 'react-router-dom';
@@ -16,26 +8,7 @@ import { useFiscalSettings } from '../hooks/useFiscalSettings';
 import { type AuthUser, type CashSession } from '../lib/api';
 import { displayHospitalName } from '../lib/hospital-name';
 import { cn } from '../lib/utils';
-
-export type AppNavigationItem = {
-  label: string;
-  path: string;
-  permission?: string | string[];
-  icon: typeof LayoutDashboard;
-};
-
-export const appNavigation: AppNavigationItem[] = [
-  { label: 'Inicio', path: '/dashboard', icon: LayoutDashboard },
-  { label: 'Nueva factura', path: '/billing/new', permission: 'invoices.create', icon: WalletCards },
-  { label: 'Caja', path: '/cashbox', permission: 'cash.view', icon: WalletCards },
-  { label: 'Catalogo', path: '/catalog', permission: 'catalog.view', icon: Boxes },
-  { label: 'Historial', path: '/invoices', permission: 'invoices.view', icon: FileClock },
-  { label: 'Reportes', path: '/reports', permission: ['reports.view', 'reports.managerial.view', 'reports.cash_session.view'], icon: ClipboardList },
-  { label: 'Respaldos', path: '/backups', permission: 'backups.view', icon: Archive },
-  { label: 'Configuracion', path: '/settings/fiscal', permission: 'settings.fiscal.view', icon: Settings },
-  { label: 'Usuarios', path: '/admin/users', permission: 'users.view', icon: User },
-  { label: 'Ayuda', path: '/help', icon: HelpCircle },
-];
+import { type AppNavigationItem } from '../navigation/appNavigation';
 
 interface SidebarProps {
   user: AuthUser;

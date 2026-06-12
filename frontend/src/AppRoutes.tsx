@@ -5,6 +5,7 @@ import { EmptyState, LoadingState } from './components/ui/states';
 import { CashBoxView } from './features/cash/CashBoxView';
 import { NewInvoiceView } from './features/invoices/NewInvoiceView';
 import { type AuthUser, type CashSession } from './lib/api';
+import { appRoutes, canAccessRoute } from './navigation/appNavigation';
 
 const AboutView = lazy(() => import('./features/about/AboutView').then((module) => ({ default: module.AboutView })));
 const BackupsView = lazy(() => import('./features/backups/BackupsView').then((module) => ({ default: module.BackupsView })));
@@ -59,7 +60,7 @@ export function AppRoutes({
   canViewManagerialReports,
   canViewCashSessionReports,
   canExportReports,
-  canViewUsers,
+  canViewUsers: _canViewUsers,
   canCreateUsers,
   cashSession,
   defaultAuthenticatedRoute,
@@ -71,10 +72,10 @@ export function AppRoutes({
 }: AppRoutesProps) {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Navigate to={appRoutes.dashboard.path} replace />} />
       <Route path="/login" element={<Navigate to={defaultAuthenticatedRoute} replace />} />
       <Route
-        path="/dashboard"
+        path={appRoutes.dashboard.path}
         element={
           <Suspense fallback={<LoadingState label="Cargando módulo..." />}>
             <DashboardView
@@ -95,11 +96,11 @@ export function AppRoutes({
         }
       />
       <Route
-        path="/billing/new"
+        path={appRoutes.newInvoice.path}
         element={
           <PermissionGate
-            allowed={canCreateInvoices && canViewCatalog && canViewCash && canCreatePayments && canViewReceipts}
-            reason="Requiere permisos de facturación, catálogo, caja, pagos y recibos. Solicite el rol Cajero completo."
+            allowed={canAccessRoute(appRoutes.newInvoice, user.permissions)}
+            reason={appRoutes.newInvoice.deniedReason}
           >
             <NewInvoiceView
               cashSession={cashSession}
@@ -114,9 +115,9 @@ export function AppRoutes({
         }
       />
       <Route
-        path="/cashbox"
+        path={appRoutes.cashbox.path}
         element={
-          <PermissionGate allowed={canViewCash} reason="Requiere permiso para consultar y operar caja.">
+          <PermissionGate allowed={canAccessRoute(appRoutes.cashbox, user.permissions)} reason={appRoutes.cashbox.deniedReason}>
             <CashBoxView
               cashSession={cashSession}
               canCloseCash={canCloseCash}
@@ -129,9 +130,9 @@ export function AppRoutes({
         }
       />
       <Route
-        path="/catalog"
+        path={appRoutes.catalog.path}
         element={
-          <PermissionGate allowed={canViewCatalog} reason="Requiere permiso para consultar el catalogo de servicios.">
+          <PermissionGate allowed={canAccessRoute(appRoutes.catalog, user.permissions)} reason={appRoutes.catalog.deniedReason}>
             <Suspense fallback={<LoadingState label="Cargando catalogo..." />}>
               <CatalogView user={user} onStatus={onStatus} />
             </Suspense>
@@ -139,9 +140,9 @@ export function AppRoutes({
         }
       />
       <Route
-        path="/invoices"
+        path={appRoutes.invoices.path}
         element={
-          <PermissionGate allowed={canViewInvoices} reason="Requiere permiso para consultar historial de facturas y recibos.">
+          <PermissionGate allowed={canAccessRoute(appRoutes.invoices, user.permissions)} reason={appRoutes.invoices.deniedReason}>
             <Suspense fallback={<LoadingState label="Cargando historial..." />}>
               <InvoiceHistoryView user={user} onStatus={onStatus} />
             </Suspense>
@@ -149,11 +150,11 @@ export function AppRoutes({
         }
       />
       <Route
-        path="/reports"
+        path={appRoutes.reports.path}
         element={
           <PermissionGate
-            allowed={canViewReports || canViewCashSessionReports}
-            reason="Requiere permiso para consultar reportes operativos o reportes de caja."
+            allowed={canAccessRoute(appRoutes.reports, user.permissions)}
+            reason={appRoutes.reports.deniedReason}
           >
             <Suspense fallback={<LoadingState label="Cargando reportes..." />}>
               <ReportsView
@@ -167,9 +168,9 @@ export function AppRoutes({
         }
       />
       <Route
-        path="/backups"
+        path={appRoutes.backups.path}
         element={
-          <PermissionGate allowed={canViewBackups} reason="Requiere permiso para consultar respaldos locales.">
+          <PermissionGate allowed={canAccessRoute(appRoutes.backups, user.permissions)} reason={appRoutes.backups.deniedReason}>
             <Suspense fallback={<LoadingState label="Cargando respaldos..." />}>
               <BackupsView user={user} onStatus={onStatus} />
             </Suspense>
@@ -177,9 +178,9 @@ export function AppRoutes({
         }
       />
       <Route
-        path="/settings/fiscal"
+        path={appRoutes.fiscalSettings.path}
         element={
-          <PermissionGate allowed={canViewFiscalSettings} reason="Requiere permiso para consultar configuración fiscal.">
+          <PermissionGate allowed={canAccessRoute(appRoutes.fiscalSettings, user.permissions)} reason={appRoutes.fiscalSettings.deniedReason}>
             <Suspense fallback={<LoadingState label="Cargando configuracion fiscal..." />}>
               <FiscalSettingsView canEdit={canEditFiscalSettings} onStatus={onStatus} />
             </Suspense>
@@ -187,9 +188,9 @@ export function AppRoutes({
         }
       />
       <Route
-        path="/admin/users"
+        path={appRoutes.users.path}
         element={
-          <PermissionGate allowed={canViewUsers} reason="Requiere permiso para gestionar usuarios.">
+          <PermissionGate allowed={canAccessRoute(appRoutes.users, user.permissions)} reason={appRoutes.users.deniedReason}>
             <Suspense fallback={<LoadingState label="Cargando usuarios..." />}>
               <UsersView onStatus={onStatus} canCreateUsers={canCreateUsers} />
             </Suspense>
@@ -197,7 +198,7 @@ export function AppRoutes({
         }
       />
       <Route
-        path="/help"
+        path={appRoutes.help.path}
         element={
           <Suspense fallback={<LoadingState label="Cargando ayuda..." />}>
             <HelpView />
@@ -205,7 +206,7 @@ export function AppRoutes({
         }
       />
       <Route
-        path="/about"
+        path={appRoutes.about.path}
         element={
           <Suspense fallback={<LoadingState label="Cargando acerca de..." />}>
             <AboutView user={user} onStatus={onStatus} />
