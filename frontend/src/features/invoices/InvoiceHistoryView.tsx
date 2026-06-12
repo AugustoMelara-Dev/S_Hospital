@@ -13,7 +13,6 @@ import {
 import { useInvoices } from '../../hooks/useInvoices';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Alert } from '../../components/ui/alert';
 import { Card, CardContent } from '../../components/ui/card';
 import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import {
@@ -29,7 +28,7 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { PaginationControls } from '../../components/ui/pagination';
 import { NativeSelect, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { LoadingState } from '../../components/ui/states';
+import { ErrorState, LoadingState } from '../../components/ui/states';
 import { ReceiptPreview } from '../receipts/ReceiptPreview';
 import { Textarea } from '../../components/ui/textarea';
 import { DateRangePicker } from '../../components/ui/date-range-picker';
@@ -253,7 +252,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             value={filters.status ?? 'all'}
             onValueChange={(v) => setFilters({ ...filters, status: v === 'all' ? '' : v as InvoiceFilters['status'] })}
           >
-            <SelectTrigger id="status" className="h-10">
+            <SelectTrigger id="status" aria-label="Estado de factura" className="h-10">
               <SelectValue placeholder="Todos" />
             </SelectTrigger>
             <SelectContent>
@@ -290,9 +289,15 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       </FilterBar>
 
       {loadError ? (
-        <Alert variant="destructive" title="No se pudo cargar el historial">
-          {loadError}
-        </Alert>
+        <ErrorState
+          title="No se pudo cargar el historial"
+          description={loadError}
+          action={(
+            <Button type="button" variant="secondary" onClick={() => void invoicesQuery.refetch()}>
+              Reintentar
+            </Button>
+          )}
+        />
       ) : null}
 
       {isEmpty && !loading && !loadError ? (

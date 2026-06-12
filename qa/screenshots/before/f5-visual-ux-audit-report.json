@@ -1,0 +1,1475 @@
+{
+  "baseUrl": "http://127.0.0.1:5173",
+  "loginUser": "admin.validacion",
+  "generatedAt": "2026-06-12T16:18:43.932Z",
+  "patientName": "Paciente Auditoria F5 1781280916026",
+  "captures": [
+    {
+      "viewport": "desktop-light",
+      "name": "login",
+      "route": "/login",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-login.png",
+      "snippet": "Hospital San Isidro Acceso en red local Caja hospitalaria rápida y clara. Facturacion, cobros, reportes y recibos institucionales para operar dentro del hospital. Funciona dentro de la red local. Sesión protegida para usuarios autorizados. Operación local ACCESO OPERATIVO Hospital San Isidro Inicie ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja hospitalaria rápida y clara.",
+          "Hospital San Isidro"
+        ],
+        "mainTextLength": 457,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": false
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "cashbox-after-open",
+      "route": "/cashbox",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-cashbox-after-open.png",
+      "snippet": "Omitir al contenido principal Hospital San Isidro Caja #11 abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Caja Inicio / Caja Caja #11 12 jun 2026, 10:15 a. m. Red local A Administrad",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja",
+          "Caja Abierta",
+          "Resumen por Método de Pago",
+          "Cerrar Caja"
+        ],
+        "mainTextLength": 1038,
+        "focusedTag": "input",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "new-invoice-with-service",
+      "route": "/billing/new",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-new-invoice-with-service.png",
+      "snippet": "Omitir al contenido principal Hospital San Isidro Caja #11 abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Nueva factura Inicio / Nueva factura Caja #11 12 jun 2026, 10:15 a. m. Red l",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Nueva factura"
+        ],
+        "mainTextLength": 300,
+        "focusedTag": "input",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "receipt-payment-preview",
+      "route": "/billing/new",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-receipt-payment-preview.png",
+      "snippet": "Omitir al contenido principal Hospital San Isidro Caja #11 abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Nueva factura Inicio / Nueva factura Caja #11 12 jun 2026, 10:15 a. m. Red l",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Nueva factura",
+          "Vista previa del recibo",
+          "RECIBO INSTITUCIONAL",
+          "Pagos"
+        ],
+        "mainTextLength": 1154,
+        "focusedTag": "button",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "invoice-history-paid-search",
+      "route": "/invoices",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-invoice-history-paid-search.png",
+      "snippet": "Omitir al contenido principal Hospital San Isidro Caja #11 abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Historial Inicio / Historial Caja #11 12 jun 2026, 10:15 a. m. Red local A A",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [
+          {
+            "tag": "select",
+            "type": null,
+            "id": null,
+            "text": "TodosEmitidaParcialPagadaAnulada"
+          }
+        ],
+        "headings": [
+          "Historial de facturas"
+        ],
+        "mainTextLength": 417,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "receipt-reprint-preview",
+      "route": "/invoices",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-receipt-reprint-preview.png",
+      "snippet": "Omitir al contenido principal Hospital San Isidro Caja #11 abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Historial Inicio / Historial Caja #11 12 jun 2026, 10:15 a. m. Red local A A",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [
+          {
+            "tag": "select",
+            "type": null,
+            "id": null,
+            "text": "TodosEmitidaParcialPagadaAnulada"
+          }
+        ],
+        "headings": [
+          "Historial de facturas",
+          "Recibo - 000-001-01-00000143",
+          "RECIBO INSTITUCIONAL",
+          "Pagos"
+        ],
+        "mainTextLength": 417,
+        "focusedTag": "button",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "dashboard",
+      "route": "/dashboard",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-dashboard.png",
+      "snippet": "Omitir al contenido principal Hospital San Isidro Caja #11 abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Inicio Inicio Caja #11 12 jun 2026, 10:15 a. m. Red local A Administrador Va",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Inicio",
+          "Facturacion y cobros",
+          "Cajeros hoy",
+          "Siguiente accion",
+          "Cobros de hoy",
+          "Servicios principales"
+        ],
+        "mainTextLength": 504,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "new-invoice",
+      "route": "/billing/new",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-new-invoice.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Nueva factura Inicio / Nueva factura Sin caja abierta 12 jun 2026, 10:15 a. m.",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Nueva factura"
+        ],
+        "mainTextLength": 417,
+        "focusedTag": "input",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "cashbox",
+      "route": "/cashbox",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-cashbox.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Caja Inicio / Caja Sin caja abierta 12 jun 2026, 10:15 a. m. Red local A Admin",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja",
+          "Caja Cerrada",
+          "Abrir Caja"
+        ],
+        "mainTextLength": 327,
+        "focusedTag": "input",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "catalog",
+      "route": "/catalog",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-catalog.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Caja #11 abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Catálogo Inicio / Catálogo Caja #11 12 jun 2026, 10:16 a. m. Red local A Admin",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Catalogo de servicios"
+        ],
+        "mainTextLength": 244,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "invoice-history",
+      "route": "/invoices",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-invoice-history.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Historial Inicio / Historial Sin caja abierta 12 jun 2026, 10:16 a. m. Red loc",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [
+          {
+            "tag": "select",
+            "type": null,
+            "id": null,
+            "text": "TodosEmitidaParcialPagadaAnulada"
+          }
+        ],
+        "headings": [
+          "Historial de facturas"
+        ],
+        "mainTextLength": 236,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "reports",
+      "route": "/reports",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-reports.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Caja #11 abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Reportes Inicio / Reportes Caja #11 12 jun 2026, 10:16 a. m. Red local A Admin",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Reportes",
+          "Resumen del dia"
+        ],
+        "mainTextLength": 143,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "backups",
+      "route": "/backups",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-backups.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Respaldos Inicio / Respaldos Sin caja abierta 12 jun 2026, 10:16 a. m. Red loc",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Respaldos",
+          "Respaldos del hospital"
+        ],
+        "mainTextLength": 388,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "settings-fiscal",
+      "route": "/settings/fiscal",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-settings-fiscal.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Configuración Inicio / Configuración Sin caja abierta 12 jun 2026, 10:16 a. m.",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Configuracion",
+          "Configuracion pendiente",
+          "Resumen Fiscal"
+        ],
+        "mainTextLength": 681,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "users",
+      "route": "/admin/users",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-users.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Usuarios Inicio / Usuarios Sin caja abierta 12 jun 2026, 10:16 a. m. Red local",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [
+          {
+            "tag": "input",
+            "type": null,
+            "id": null,
+            "text": ""
+          }
+        ],
+        "headings": [
+          "Usuarios"
+        ],
+        "mainTextLength": 187,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "help",
+      "route": "/help",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-help.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Ayuda Inicio / Ayuda Sin caja abierta 12 jun 2026, 10:16 a. m. Red local A Adm",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Ayuda institucional",
+          "Abrir el sistema",
+          "Iniciar sesion",
+          "Abrir caja",
+          "Nueva factura",
+          "Cobrar",
+          "Imprimir recibo",
+          "Reimprimir",
+          "Reportes",
+          "Respaldos",
+          "Cierre de turno",
+          "Pedir soporte",
+          "Atajos de teclado",
+          "Caja y facturacion",
+          "Caja",
+          "Historial y reportes",
+          "Incidentes durante el turno",
+          "Servidor no disponible",
+          "Impresora no responde",
+          "Falla la red",
+          "Se fue la luz o reinició la PC",
+          "Caja quedó abierta",
+          "Diferencia de caja",
+          "Respaldo fallido",
+          "Base de datos necesita restaurarse",
+          "Sesión vencida",
+          "Sin permiso",
+          "Se cerro el navegador",
+          "Responsabilidades por rol",
+          "Cajero",
+          "Supervisor",
+          "Administrador",
+          "Checklist diario por rol",
+          "Cajero - inicio de turno",
+          "Antes de cerrar turno",
+          "Supervisor - revision diaria",
+          "Administrador - revision diaria",
+          "Acciones delicadas",
+          "Anulacion",
+          "Restauracion de respaldo",
+          "Cierre con diferencia",
+          "Cambio de red o servidor",
+          "Capacitación segura",
+          "Checklist diario",
+          "Modo práctica",
+          "Evidencia local para soporte"
+        ],
+        "mainTextLength": 7223,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "about",
+      "route": "/about",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-about.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Acerca de Inicio / Acerca de Sin caja abierta 12 jun 2026, 10:16 a. m. Red loc",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Informacion del sistema",
+          "Caja hospitalaria",
+          "Operacion local",
+          "Estado local",
+          "Diagnostico administrativo",
+          "Soporte"
+        ],
+        "mainTextLength": 1163,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "not-found",
+      "route": "/ruta-inexistente-f5",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-light-not-found.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Sin registro Inicio / Sin registro Sin caja abierta 12 jun 2026, 10:16 a. m. R",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Ruta no encontrada"
+        ],
+        "mainTextLength": 85,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-dark",
+      "name": "login",
+      "route": "/login",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-dark-login.png",
+      "snippet": "Caja hospitalaria Acceso en red local Caja hospitalaria rápida y clara. Facturacion, cobros, reportes y recibos institucionales para operar dentro del hospital. Funciona dentro de la red local. Sesión protegida para usuarios autorizados. Operación local ACCESO OPERATIVO Caja hospitalaria Inicie sesi",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja hospitalaria rápida y clara.",
+          "Caja hospitalaria"
+        ],
+        "mainTextLength": 451,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": false
+      }
+    },
+    {
+      "viewport": "desktop-dark",
+      "name": "dashboard",
+      "route": "/dashboard",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-dark-dashboard.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Inicio Inicio Sin caja abierta 12 jun 2026, 10:16 a. m. Red local A Administra",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Inicio",
+          "Facturacion y cobros",
+          "Cajeros hoy",
+          "Siguiente accion",
+          "Cobros de hoy",
+          "Servicios principales"
+        ],
+        "mainTextLength": 511,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-dark",
+      "name": "new-invoice",
+      "route": "/billing/new",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-dark-new-invoice.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Nueva factura Inicio / Nueva factura Sin caja abierta 12 jun 2026, 10:16 a. m.",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Nueva factura"
+        ],
+        "mainTextLength": 417,
+        "focusedTag": "input",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-dark",
+      "name": "cashbox",
+      "route": "/cashbox",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-dark-cashbox.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Caja Inicio / Caja Sin caja abierta 12 jun 2026, 10:16 a. m. Red local A Admin",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja",
+          "Caja Cerrada",
+          "Abrir Caja"
+        ],
+        "mainTextLength": 327,
+        "focusedTag": "input",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-dark",
+      "name": "catalog",
+      "route": "/catalog",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-dark-catalog.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Caja #11 abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Catálogo Inicio / Catálogo Caja #11 12 jun 2026, 10:16 a. m. Red local A Admin",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Catalogo de servicios"
+        ],
+        "mainTextLength": 244,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-dark",
+      "name": "invoice-history",
+      "route": "/invoices",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-dark-invoice-history.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Historial Inicio / Historial Sin caja abierta 12 jun 2026, 10:16 a. m. Red loc",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [
+          {
+            "tag": "select",
+            "type": null,
+            "id": null,
+            "text": "TodosEmitidaParcialPagadaAnulada"
+          }
+        ],
+        "headings": [
+          "Historial de facturas"
+        ],
+        "mainTextLength": 236,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-dark",
+      "name": "backups",
+      "route": "/backups",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-dark-backups.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Respaldos Inicio / Respaldos Sin caja abierta 12 jun 2026, 10:16 a. m. Red loc",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Respaldos",
+          "Respaldos del hospital"
+        ],
+        "mainTextLength": 388,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "desktop-dark",
+      "name": "settings-fiscal",
+      "route": "/settings/fiscal",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-desktop-dark-settings-fiscal.png",
+      "snippet": "Omitir al contenido principal Hospital San Isidro Caja #11 abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Configuración Inicio / Configuración Caja #11 12 jun 2026, 10:17 a. m. Red l",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Configuracion",
+          "Configuracion completa",
+          "Resumen Fiscal"
+        ],
+        "mainTextLength": 392,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "laptop-light",
+      "name": "login",
+      "route": "/login",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-laptop-light-login.png",
+      "snippet": "Hospital San Isidro Acceso en red local Caja hospitalaria rápida y clara. Facturacion, cobros, reportes y recibos institucionales para operar dentro del hospital. Funciona dentro de la red local. Sesión protegida para usuarios autorizados. Operación local ACCESO OPERATIVO Hospital San Isidro Inicie ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja hospitalaria rápida y clara.",
+          "Hospital San Isidro"
+        ],
+        "mainTextLength": 457,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": false
+      }
+    },
+    {
+      "viewport": "laptop-light",
+      "name": "dashboard",
+      "route": "/dashboard",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-laptop-light-dashboard.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Caja #11 abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Inicio Inicio Caja #11 12 jun 2026, 10:17 a. m. Red local A Administrador Vali",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Inicio",
+          "Facturacion y cobros",
+          "Cajeros hoy",
+          "Siguiente accion",
+          "Cobros de hoy",
+          "Servicios principales"
+        ],
+        "mainTextLength": 504,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "laptop-light",
+      "name": "new-invoice",
+      "route": "/billing/new",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-laptop-light-new-invoice.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Nueva factura Inicio / Nueva factura Sin caja abierta 12 jun 2026, 10:17 a. m.",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Nueva factura"
+        ],
+        "mainTextLength": 417,
+        "focusedTag": "input",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "laptop-light",
+      "name": "cashbox",
+      "route": "/cashbox",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-laptop-light-cashbox.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Caja Inicio / Caja Sin caja abierta 12 jun 2026, 10:17 a. m. Red local A Admin",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja",
+          "Caja Cerrada",
+          "Abrir Caja"
+        ],
+        "mainTextLength": 327,
+        "focusedTag": "input",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "laptop-light",
+      "name": "catalog",
+      "route": "/catalog",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-laptop-light-catalog.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Catálogo Inicio / Catálogo Sin caja abierta 12 jun 2026, 10:17 a. m. Red local",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Catalogo de servicios"
+        ],
+        "mainTextLength": 244,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "laptop-light",
+      "name": "invoice-history",
+      "route": "/invoices",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-laptop-light-invoice-history.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Historial Inicio / Historial Sin caja abierta 12 jun 2026, 10:17 a. m. Red loc",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [
+          {
+            "tag": "select",
+            "type": null,
+            "id": null,
+            "text": "TodosEmitidaParcialPagadaAnulada"
+          }
+        ],
+        "headings": [
+          "Historial de facturas"
+        ],
+        "mainTextLength": 236,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "laptop-light",
+      "name": "reports",
+      "route": "/reports",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-laptop-light-reports.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Reportes Inicio / Reportes Sin caja abierta 12 jun 2026, 10:17 a. m. Red local",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Reportes",
+          "Resumen del dia"
+        ],
+        "mainTextLength": 143,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "laptop-light",
+      "name": "settings-fiscal",
+      "route": "/settings/fiscal",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-laptop-light-settings-fiscal.png",
+      "snippet": "Omitir al contenido principal Hospital San Isidro Caja #11 abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Configuración Inicio / Configuración Caja #11 12 jun 2026, 10:17 a. m. Red l",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Configuracion",
+          "Configuracion completa",
+          "Resumen Fiscal"
+        ],
+        "mainTextLength": 392,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "tablet-light",
+      "name": "login",
+      "route": "/login",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-tablet-light-login.png",
+      "snippet": "Hospital San Isidro Acceso en red local ACCESO OPERATIVO Hospital San Isidro Inicie sesión con sus credenciales para abrir el panel de caja. Usuario o correo Contraseña Iniciar sesión Listo para iniciar sesión local.",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja hospitalaria rápida y clara.",
+          "Hospital San Isidro"
+        ],
+        "mainTextLength": 457,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": false
+      }
+    },
+    {
+      "viewport": "tablet-light",
+      "name": "dashboard",
+      "route": "/dashboard",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-tablet-light-dashboard.png",
+      "snippet": "Omitir al contenido principal Inicio Inicio Caja #11 Red local A Inicio Lo necesario para operar caja, cobros y facturacion sin perderse. CAJA Abierta Caja #11 Lista para cobrar FACTURADO Listo L. 5,985.75 143 facturas este mes COBRADO Listo L. 5,141.75 123 pagos recibidos FACTURAS Mes 143 Emitidas ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Inicio",
+          "Facturacion y cobros",
+          "Cajeros hoy",
+          "Siguiente accion",
+          "Cobros de hoy",
+          "Servicios principales"
+        ],
+        "mainTextLength": 943,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "tablet-light",
+      "name": "new-invoice",
+      "route": "/billing/new",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-tablet-light-new-invoice.png",
+      "snippet": "Omitir al contenido principal Nueva factura Inicio / Nueva factura Caja #11 Red local A CAJA HOSPITALARIA Nueva factura Factura y cobro en caja Caja #11 - Abierta Nombre del Paciente * Categoria Todos Servicios (0) Limpiar Cargando servicios... Carrito No hay servicios agregados Subtotal: L. 0.00 To",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Nueva factura"
+        ],
+        "mainTextLength": 307,
+        "focusedTag": "input",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "tablet-light",
+      "name": "cashbox",
+      "route": "/cashbox",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-tablet-light-cashbox.png",
+      "snippet": "Omitir al contenido principal Caja Inicio / Caja Caja #11 Red local A Operación de caja Caja Actualizar Caja Abierta Sesión #11 - Abierta 12/06/2026, 12:57 a. m. Activa Caja lista para facturar La caja esta abierta. Puede pasar directamente al POS para crear y cobrar facturas. Nueva factura Monto Ap",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja",
+          "Caja Abierta",
+          "Resumen por Método de Pago",
+          "Cerrar Caja"
+        ],
+        "mainTextLength": 1038,
+        "focusedTag": "input",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "tablet-light",
+      "name": "catalog",
+      "route": "/catalog",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-tablet-light-catalog.png",
+      "snippet": "Omitir al contenido principal Catálogo Inicio / Catálogo Caja #11 Red local A Catalogo de servicios 0 servicios en el catalogo Nueva categoria Nuevo servicio Buscar servicio Categoria Todas las categorias Estado Todos Nombre Categoria Area Precio Estado en caja Acciones Mostrando 0 de 0 servicios 15",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Catalogo de servicios"
+        ],
+        "mainTextLength": 244,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "tablet-light",
+      "name": "invoice-history",
+      "route": "/invoices",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-tablet-light-invoice-history.png",
+      "snippet": "Omitir al contenido principal Historial Inicio / Historial Caja #11 Red local A Historial de facturas Consulte facturas recientes, reimprima recibos y gestione anulaciones autorizadas. Desde Hasta Hoy Ayer 7D Este mes Estado Todos Todos Emitida Parcial Pagada Anulada Paciente Número de factura Busca",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [
+          {
+            "tag": "select",
+            "type": null,
+            "id": null,
+            "text": "TodosEmitidaParcialPagadaAnulada"
+          }
+        ],
+        "headings": [
+          "Historial de facturas"
+        ],
+        "mainTextLength": 1423,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "tablet-light",
+      "name": "backups",
+      "route": "/backups",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-tablet-light-backups.png",
+      "snippet": "Omitir al contenido principal Respaldos Inicio / Respaldos Caja #11 Red local A Respaldos Copias de seguridad de facturación, caja y reportes Worker inactivo Actualizar Crear respaldo Respaldos del hospital Los respaldos protegen la información de facturación, caja y reportes. Cree uno antes de camb",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Respaldos",
+          "Respaldos del hospital",
+          "Error"
+        ],
+        "mainTextLength": 2304,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "mobile-light",
+      "name": "login",
+      "route": "/login",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-mobile-light-login.png",
+      "snippet": "Hospital San Isidro Acceso en red local ACCESO OPERATIVO Hospital San Isidro Inicie sesión con sus credenciales para abrir el panel de caja. Usuario o correo Contraseña Iniciar sesión Listo para iniciar sesión local.",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja hospitalaria rápida y clara.",
+          "Hospital San Isidro"
+        ],
+        "mainTextLength": 457,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": false
+      }
+    },
+    {
+      "viewport": "mobile-light",
+      "name": "dashboard",
+      "route": "/dashboard",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-mobile-light-dashboard.png",
+      "snippet": "Omitir al contenido principal Inicio Inicio A Inicio Lo necesario para operar caja, cobros y facturacion sin perderse. CAJA Atencion Cerrada Abra caja antes de facturar FACTURADO Listo L. 0.00 Facturacion del mes COBRADO Listo L. 0.00 Cobros del mes FACTURAS Mes 0 Emitidas este mes Facturacion y cob",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Inicio",
+          "Facturacion y cobros",
+          "Cajeros hoy",
+          "Siguiente accion",
+          "Cobros de hoy",
+          "Servicios principales"
+        ],
+        "mainTextLength": 1214,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "mobile-light",
+      "name": "new-invoice",
+      "route": "/billing/new",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-mobile-light-new-invoice.png",
+      "snippet": "Omitir al contenido principal Nueva factura Inicio / Nueva factura A CAJA HOSPITALARIA Nueva factura Factura y cobro en caja Caja cerrada Caja no abierta Debe abrir la caja antes de emitir facturas. Abrir Caja Nombre del Paciente * Categoria Todos Servicios (0) Limpiar Cargando servicios... Carrito ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Nueva factura"
+        ],
+        "mainTextLength": 417,
+        "focusedTag": "input",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "mobile-light",
+      "name": "cashbox",
+      "route": "/cashbox",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-mobile-light-cashbox.png",
+      "snippet": "Omitir al contenido principal Caja Inicio / Caja A Operación de caja Caja Actualizar Caja Abierta Sesión #11 - Abierta 12/06/2026, 12:57 a. m. Activa Caja lista para facturar La caja esta abierta. Puede pasar directamente al POS para crear y cobrar facturas. Nueva factura Monto Apertura L. 500.00 Ef",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja",
+          "Caja Abierta",
+          "Resumen por Método de Pago",
+          "Cerrar Caja",
+          "Movimientos de Caja"
+        ],
+        "mainTextLength": 1500,
+        "focusedTag": "input",
+        "hasVisibleSkipLink": true
+      }
+    },
+    {
+      "viewport": "mobile-light",
+      "name": "invoice-history",
+      "route": "/invoices",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\before\\f5-mobile-light-invoice-history.png",
+      "snippet": "Omitir al contenido principal Historial Inicio / Historial A Historial de facturas Consulte facturas recientes, reimprima recibos y gestione anulaciones autorizadas. Desde Hasta Hoy Ayer 7D Este mes Estado Todos Todos Emitida Parcial Pagada Anulada Paciente Número de factura Buscar Limpiar No. Fecha",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [
+          {
+            "tag": "select",
+            "type": null,
+            "id": null,
+            "text": "TodosEmitidaParcialPagadaAnulada"
+          }
+        ],
+        "headings": [
+          "Historial de facturas"
+        ],
+        "mainTextLength": 1423,
+        "focusedTag": "body",
+        "hasVisibleSkipLink": true
+      }
+    }
+  ],
+  "consoleEntries": [
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/cash-sessions/current",
+      "url": "http://127.0.0.1:5173/settings/fiscal"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/settings/fiscal"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/settings/fiscal",
+      "url": "http://127.0.0.1:5173/settings/fiscal"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/settings/fiscal"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/fiscal-sequences",
+      "url": "http://127.0.0.1:5173/settings/fiscal"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/settings/fiscal"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/cash-sessions/current",
+      "url": "http://127.0.0.1:5173/admin/users"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/admin/users"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/settings/fiscal",
+      "url": "http://127.0.0.1:5173/admin/users"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/admin/users"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/admin/users",
+      "url": "http://127.0.0.1:5173/admin/users"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/admin/users"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/cash-sessions/current",
+      "url": "http://127.0.0.1:5173/admin/users"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/admin/users"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/settings/fiscal",
+      "url": "http://127.0.0.1:5173/admin/users"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/admin/users"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/admin/users",
+      "url": "http://127.0.0.1:5173/admin/users"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/admin/users"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/cash-sessions/current",
+      "url": "http://127.0.0.1:5173/help"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/help"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/cash-sessions/current",
+      "url": "http://127.0.0.1:5173/about"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/about"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/settings/fiscal",
+      "url": "http://127.0.0.1:5173/about"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/about"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/backups?page=1&per_page=1",
+      "url": "http://127.0.0.1:5173/about"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/about"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/system/status",
+      "url": "http://127.0.0.1:5173/about"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/about"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/cash-sessions/current",
+      "url": "http://127.0.0.1:5173/about"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/about"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/cash-sessions/current",
+      "url": "http://127.0.0.1:5173/ruta-inexistente-f5"
+    },
+    {
+      "viewport": "desktop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/ruta-inexistente-f5"
+    },
+    {
+      "viewport": "laptop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/cash-sessions/current",
+      "url": "http://127.0.0.1:5173/catalog"
+    },
+    {
+      "viewport": "laptop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/catalog"
+    },
+    {
+      "viewport": "laptop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/settings/fiscal",
+      "url": "http://127.0.0.1:5173/catalog"
+    },
+    {
+      "viewport": "laptop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/catalog"
+    },
+    {
+      "viewport": "laptop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/cash-sessions/current",
+      "url": "http://127.0.0.1:5173/invoices"
+    },
+    {
+      "viewport": "laptop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/invoices"
+    },
+    {
+      "viewport": "laptop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/cash-sessions/current",
+      "url": "http://127.0.0.1:5173/reports"
+    },
+    {
+      "viewport": "laptop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/reports"
+    },
+    {
+      "viewport": "laptop-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/settings/fiscal",
+      "url": "http://127.0.0.1:5173/reports"
+    },
+    {
+      "viewport": "laptop-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/reports"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/settings/fiscal",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/reports/dashboard",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/cash-sessions/current",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/settings/fiscal",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/reports/dashboard",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/cash-sessions/current",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/settings/fiscal",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/reports/dashboard",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/cash-sessions/current",
+      "url": "http://127.0.0.1:5173/billing/new"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/billing/new"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "http",
+      "text": "429 GET http://127.0.0.1:5173/api/settings/fiscal",
+      "url": "http://127.0.0.1:5173/billing/new"
+    },
+    {
+      "viewport": "mobile-light",
+      "level": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/billing/new"
+    }
+  ],
+  "summary": {
+    "captureCount": 46,
+    "consoleIssueCount": 62,
+    "overflowFindings": [],
+    "unnamedControlFindings": [
+      {
+        "name": "desktop-light/invoice-history-paid-search",
+        "controls": [
+          {
+            "tag": "select",
+            "type": null,
+            "id": null,
+            "text": "TodosEmitidaParcialPagadaAnulada"
+          }
+        ]
+      },
+      {
+        "name": "desktop-light/receipt-reprint-preview",
+        "controls": [
+          {
+            "tag": "select",
+            "type": null,
+            "id": null,
+            "text": "TodosEmitidaParcialPagadaAnulada"
+          }
+        ]
+      },
+      {
+        "name": "desktop-light/invoice-history",
+        "controls": [
+          {
+            "tag": "select",
+            "type": null,
+            "id": null,
+            "text": "TodosEmitidaParcialPagadaAnulada"
+          }
+        ]
+      },
+      {
+        "name": "desktop-light/users",
+        "controls": [
+          {
+            "tag": "input",
+            "type": null,
+            "id": null,
+            "text": ""
+          }
+        ]
+      },
+      {
+        "name": "desktop-dark/invoice-history",
+        "controls": [
+          {
+            "tag": "select",
+            "type": null,
+            "id": null,
+            "text": "TodosEmitidaParcialPagadaAnulada"
+          }
+        ]
+      },
+      {
+        "name": "laptop-light/invoice-history",
+        "controls": [
+          {
+            "tag": "select",
+            "type": null,
+            "id": null,
+            "text": "TodosEmitidaParcialPagadaAnulada"
+          }
+        ]
+      },
+      {
+        "name": "tablet-light/invoice-history",
+        "controls": [
+          {
+            "tag": "select",
+            "type": null,
+            "id": null,
+            "text": "TodosEmitidaParcialPagadaAnulada"
+          }
+        ]
+      },
+      {
+        "name": "mobile-light/invoice-history",
+        "controls": [
+          {
+            "tag": "select",
+            "type": null,
+            "id": null,
+            "text": "TodosEmitidaParcialPagadaAnulada"
+          }
+        ]
+      }
+    ]
+  }
+}
