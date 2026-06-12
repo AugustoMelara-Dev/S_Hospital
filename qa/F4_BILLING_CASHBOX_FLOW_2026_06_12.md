@@ -86,7 +86,7 @@ CashPaymentsReceiptTest: 23 passed
 F4 visual smoke: passed
 ```
 
-Nota de ejecucion: durante la repeticion intensiva del smoke en desarrollo, una corrida intermedia recibio `429 Too Many Requests` en `/api/system/echo-config` por el throttle `30,1`. Se espero una ventana completa de throttle y la corrida final de `node qa\visual-smoke\f4-billing-cashbox-flow.mjs` paso sin entradas de consola.
+Nota de ejecucion: durante la repeticion intensiva del smoke en desarrollo, corridas intermedias recibieron `429 Too Many Requests` en `/api/system/echo-config` por el throttle `30,1`. El endpoint devuelve solo configuracion publica no secreta de realtime, asi que se alineo con `/api/system/health` a `throttle:120,1` y se agrego prueba de ruta para evitar que bloquee smokes operativos por recargas normales. La corrida final de `node qa\visual-smoke\f4-billing-cashbox-flow.mjs` paso sin entradas de consola.
 
 ## Capturas
 

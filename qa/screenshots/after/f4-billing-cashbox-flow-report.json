@@ -2,7 +2,7 @@
   "baseUrl": "http://127.0.0.1:5173",
   "loginUser": "admin.validacion",
   "invoice": {
-    "patientName": "Paciente Smoke F4 1781249066418",
+    "patientName": "Paciente Smoke F4 1781250739220",
     "serviceTerm": "glucosa"
   },
   "report": [
@@ -16,13 +16,13 @@
       "name": "f4-new-invoice-service-selected",
       "route": "/billing/new",
       "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f4-new-invoice-service-selected.png",
-      "snippet": "Omitir al contenido principal Hospital San Isidro Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Nueva factura In"
+      "snippet": "Omitir al contenido principal Hospital San Isidro Caja #11 abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Nueva factura In"
     },
     {
       "name": "f4-new-invoice-paid-receipt",
       "route": "/billing/new",
       "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f4-new-invoice-paid-receipt.png",
-      "snippet": "Omitir al contenido principal Hospital San Isidro Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Nueva factura In"
+      "snippet": "Omitir al contenido principal Hospital San Isidro Caja #11 abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Nueva factura In"
     },
     {
       "name": "f4-invoice-history",

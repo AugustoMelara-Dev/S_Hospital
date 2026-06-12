@@ -20,6 +20,7 @@ use Illuminate\Broadcasting\Channel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class BroadcastingWiringTest extends TestCase
@@ -42,6 +43,16 @@ class BroadcastingWiringTest extends TestCase
             ->assertJsonPath('data.channels.payments', 'payments')
             ->assertJsonPath('data.channels.settings', 'settings')
             ->assertJsonPath('data.channels.backups', 'backups');
+    }
+
+    public function test_echo_config_endpoint_has_operational_smoke_safe_throttle(): void
+    {
+        $route = collect(Route::getRoutes())->first(
+            fn ($route): bool => $route->uri() === 'api/system/echo-config' && in_array('GET', $route->methods(), true),
+        );
+
+        $this->assertNotNull($route);
+        $this->assertContains('throttle:120,1', $route->middleware());
     }
 
     public function test_invoice_changed_event_broadcasts_on_invoices_channel(): void
