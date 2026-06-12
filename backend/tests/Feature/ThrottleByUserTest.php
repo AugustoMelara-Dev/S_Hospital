@@ -86,4 +86,48 @@ class ThrottleByUserTest extends TestCase
         $this->assertContains('throttle.user:60,1', $invoiceStore->gatherMiddleware());
         $this->assertContains('throttle.user:30,1', $invoiceVoid->gatherMiddleware());
     }
+
+    public function test_operational_read_routes_use_per_user_lan_safe_throttle(): void
+    {
+        $routes = [
+            Request::create('/api/cash-sessions/current', 'GET'),
+            Request::create('/api/settings/fiscal', 'GET'),
+            Request::create('/api/reports/dashboard', 'GET'),
+            Request::create('/api/admin/users', 'GET'),
+            Request::create('/api/backups', 'GET'),
+            Request::create('/api/system/status', 'GET'),
+        ];
+
+        foreach ($routes as $request) {
+            $route = Route::getRoutes()->match($request);
+
+            $this->assertContains(
+                'throttle.user:240,1',
+                $route->gatherMiddleware(),
+                sprintf('%s %s should not share the global IP throttle bucket', $request->method(), $request->path()),
+            );
+        }
+    }
+
+    public function test_operational_write_routes_keep_bounded_per_user_throttles(): void
+    {
+        $routes = [
+            [Request::create('/api/settings/fiscal', 'PUT'), 'throttle.user:30,1'],
+            [Request::create('/api/cash-sessions/open', 'POST'), 'throttle.user:30,1'],
+            [Request::create('/api/backups', 'POST'), 'throttle.user:20,1'],
+            [Request::create('/api/admin/users', 'POST'), 'throttle.user:30,1'],
+            [Request::create('/api/invoices/1/payments', 'POST'), 'throttle.user:60,1'],
+            [Request::create('/api/invoices/1/reprint', 'POST'), 'throttle.user:30,1'],
+        ];
+
+        foreach ($routes as [$request, $expectedMiddleware]) {
+            $route = Route::getRoutes()->match($request);
+
+            $this->assertContains(
+                $expectedMiddleware,
+                $route->gatherMiddleware(),
+                sprintf('%s %s must keep an explicit write throttle', $request->method(), $request->path()),
+            );
+        }
+    }
 }

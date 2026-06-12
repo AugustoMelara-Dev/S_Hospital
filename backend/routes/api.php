@@ -60,28 +60,38 @@ Route::post('/auth/login', [AuthController::class, 'login'])
 Route::get('/auth/session', [AuthController::class, 'session'])
     ->middleware(['web', 'throttle.user:30,1']);
 
-Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(function () {
+Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->group(function () {
     Route::get('/auth/me', [AuthController::class, 'me']);
-    Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::post('/auth/change-password', [AuthController::class, 'changePassword'])
+        ->middleware('throttle.user:10,1');
+    Route::post('/auth/logout', [AuthController::class, 'logout'])
+        ->middleware('throttle.user:60,1');
 
     Route::middleware('password.changed')->group(function () {
         Route::get('/settings/fiscal', [FiscalSettingsController::class, 'show']);
-        Route::put('/settings/fiscal', [FiscalSettingsController::class, 'update']);
-        Route::post('/settings/logo', [LogoController::class, 'upload']);
+        Route::put('/settings/fiscal', [FiscalSettingsController::class, 'update'])
+            ->middleware('throttle.user:30,1');
+        Route::post('/settings/logo', [LogoController::class, 'upload'])
+            ->middleware('throttle.user:20,1');
 
         Route::get('/fiscal-sequences', [FiscalSequenceController::class, 'index']);
-        Route::post('/fiscal-sequences', [FiscalSequenceController::class, 'store']);
-        Route::patch('/fiscal-sequences/{fiscalSequence}', [FiscalSequenceController::class, 'update']);
+        Route::post('/fiscal-sequences', [FiscalSequenceController::class, 'store'])
+            ->middleware('throttle.user:30,1');
+        Route::patch('/fiscal-sequences/{fiscalSequence}', [FiscalSequenceController::class, 'update'])
+            ->middleware('throttle.user:30,1');
 
         Route::get('/categories', [CategoryController::class, 'index']);
-        Route::post('/categories', [CategoryController::class, 'store']);
-        Route::patch('/categories/{category}', [CategoryController::class, 'update']);
+        Route::post('/categories', [CategoryController::class, 'store'])
+            ->middleware('throttle.user:60,1');
+        Route::patch('/categories/{category}', [CategoryController::class, 'update'])
+            ->middleware('throttle.user:60,1');
         Route::get('/areas', [AreaController::class, 'index']);
 
         Route::get('/services', [ServiceController::class, 'index']);
-        Route::post('/services', [ServiceController::class, 'store']);
-        Route::patch('/services/{service}', [ServiceController::class, 'update']);
+        Route::post('/services', [ServiceController::class, 'store'])
+            ->middleware('throttle.user:60,1');
+        Route::patch('/services/{service}', [ServiceController::class, 'update'])
+            ->middleware('throttle.user:60,1');
 
         Route::get('/invoices', [InvoiceController::class, 'index']);
         Route::post('/invoices', [InvoiceController::class, 'store'])
@@ -94,18 +104,19 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
 
         Route::get('/cash-sessions/current', [CashSessionController::class, 'current']);
         Route::post('/cash-sessions/open', [CashSessionController::class, 'open'])
-            ->middleware('idempotency');
+            ->middleware(['throttle.user:30,1', 'idempotency']);
         Route::post('/cash-sessions/{cashSession}/close', [CashSessionController::class, 'close'])
-            ->middleware('idempotency');
+            ->middleware(['throttle.user:30,1', 'idempotency']);
         Route::get('/cash-sessions', [CashSessionController::class, 'index']);
 
         Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store'])
-            ->middleware(['throttle:60,1', 'idempotency']);
+            ->middleware(['throttle.user:60,1', 'idempotency']);
         Route::get('/invoices/{invoice}/payments', [PaymentController::class, 'index']);
         Route::post('/invoices/{invoice}/payments/{payment}/void', [PaymentController::class, 'void'])
-            ->middleware('throttle:30,1');
+            ->middleware('throttle.user:30,1');
         Route::get('/invoices/{invoice}/receipt', [ReceiptController::class, 'show']);
-        Route::post('/invoices/{invoice}/reprint', [ReceiptController::class, 'reprint']);
+        Route::post('/invoices/{invoice}/reprint', [ReceiptController::class, 'reprint'])
+            ->middleware('throttle.user:30,1');
 
         Route::get('/reports/dashboard', [ReportController::class, 'dashboard']);
         Route::get('/reports/daily', [ReportController::class, 'daily']);
@@ -116,20 +127,25 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle:60,1'])->group(fu
         Route::get('/reports/services', [ReportController::class, 'services']);
         Route::get('/reports/operations', [ReportController::class, 'operations']);
         Route::get('/reports/export', [ReportController::class, 'export'])
-            ->middleware('throttle:30,1');
+            ->middleware('throttle.user:30,1');
         Route::get('/reports/pdf', [ReportController::class, 'pdfExport']);
         Route::get('/reports/cash-sessions/{cashSession}', [ReportController::class, 'cashSession']);
 
         Route::get('/backups', [BackupController::class, 'index']);
-        Route::post('/backups', [BackupController::class, 'store']);
+        Route::post('/backups', [BackupController::class, 'store'])
+            ->middleware('throttle.user:20,1');
         Route::get('/backups/{backupLog}/download', [BackupController::class, 'download']);
 
         Route::get('/system/status', [SystemStatusController::class, 'show']);
 
         Route::get('/admin/users', [UserController::class, 'index']);
-        Route::post('/admin/users', [UserController::class, 'store']);
-        Route::patch('/admin/users/{user}', [UserController::class, 'update']);
-        Route::post('/admin/users/{user}/toggle-active', [UserController::class, 'toggleActive']);
-        Route::post('/admin/users/{user}/reset-password', [UserController::class, 'resetPassword']);
+        Route::post('/admin/users', [UserController::class, 'store'])
+            ->middleware('throttle.user:30,1');
+        Route::patch('/admin/users/{user}', [UserController::class, 'update'])
+            ->middleware('throttle.user:30,1');
+        Route::post('/admin/users/{user}/toggle-active', [UserController::class, 'toggleActive'])
+            ->middleware('throttle.user:30,1');
+        Route::post('/admin/users/{user}/reset-password', [UserController::class, 'resetPassword'])
+            ->middleware('throttle.user:20,1');
     });
 });
