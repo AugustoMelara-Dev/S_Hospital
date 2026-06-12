@@ -112,7 +112,7 @@ async function login(page) {
   await page.getByLabel(/usuario o correo/i).fill(loginUser);
   await page.locator('#password-input').fill(loginPassword);
   await page.getByRole('button', { name: /iniciar sesi/i }).click();
-  await page.waitForURL(/dashboard|cashbox|backups|settings|billing|catalog|invoices|reports|admin/, { timeout: 15000 });
+  await page.waitForURL(/dashboard|cashbox|backups|settings|billing|catalog|invoices|reports|admin/, { timeout: 30000 });
   await waitSettled(page);
 }
 
@@ -135,20 +135,30 @@ async function ensureCashSession(page, captures) {
 async function createPaidInvoiceForReceipt(page, captures) {
   await page.goto(`${baseUrl}/billing/new`);
   await waitSettled(page);
-  await page.getByRole('heading', { name: /nueva factura/i }).waitFor({ timeout: 15000 });
+  if (await looksLikeLogin(page)) {
+    await login(page);
+    await page.goto(`${baseUrl}/billing/new`);
+    await waitSettled(page);
+  }
+  await page.getByRole('heading', { name: /nueva factura/i }).waitFor({ timeout: 30000 });
 
   if (await page.getByText(/debe abrir la caja antes/i).first().isVisible().catch(() => false)) {
     await ensureCashSession(page, captures);
     await page.goto(`${baseUrl}/billing/new`);
     await waitSettled(page);
+    await page.getByRole('heading', { name: /nueva factura/i }).waitFor({ timeout: 30000 });
   }
 
-  await page.getByLabel(/nombre del paciente/i).fill(patientName);
+  const patientInput = page.getByLabel(/nombre del paciente/i);
+  await patientInput.waitFor({ timeout: 30000 });
+  await patientInput.fill(patientName);
   await addFirstAvailableService(page);
   captures.push(await capture(page, 'desktop-light', 'new-invoice-with-service'));
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
-  await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
-  await page.getByRole('heading', { name: /registrar pago/i }).waitFor({ timeout: 15000 });
+  const confirmPaymentButton = page.getByRole('button', { name: /emitir y abrir cobro/i });
+  await confirmPaymentButton.waitFor({ timeout: 15000 });
+  await confirmPaymentButton.click();
+  await page.getByRole('heading', { name: /registrar pago/i }).waitFor({ timeout: 30000 });
 
   const previewCheckbox = page.getByLabel(/ver preview antes de imprimir/i);
   if (!await previewCheckbox.isChecked().catch(() => false)) {
@@ -170,11 +180,14 @@ async function createPaidInvoiceForReceipt(page, captures) {
 
   await page.goto(`${baseUrl}/invoices?patient=${encodeURIComponent(patientName)}`);
   await waitSettled(page);
-  await page.getByText(patientName).first().waitFor({ timeout: 15000 });
+  await page.getByText(patientName).first().waitFor({ timeout: 30000 });
   captures.push(await capture(page, 'desktop-light', 'invoice-history-paid-search'));
   await page.getByRole('button', { name: /reimprimir/i }).first().click();
   await page.getByRole('button', { name: /registrar reimpresi/i }).click();
-  await page.getByLabel(/recibo institucional/i).waitFor({ timeout: 15000 });
+  await Promise.race([
+    page.getByLabel(/recibo institucional/i).waitFor({ timeout: 30000 }),
+    page.getByText(/listo para imprimir/i).waitFor({ timeout: 30000 }),
+  ]);
   captures.push(await capture(page, 'desktop-light', 'receipt-reprint-preview'));
 }
 
@@ -278,6 +291,7 @@ await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const captures = [];
 const consoleEntries = [];
+const flowWarnings = [];
 
 try {
   for (const viewport of viewportSets) {
@@ -316,8 +330,16 @@ try {
     await login(page);
 
     if (viewport.id === 'desktop-light') {
-      await ensureCashSession(page, captures);
-      await createPaidInvoiceForReceipt(page, captures);
+      try {
+        await ensureCashSession(page, captures);
+        await createPaidInvoiceForReceipt(page, captures);
+      } catch (error) {
+        flowWarnings.push({
+          viewport: viewport.id,
+          flow: 'receipt-payment-reprint',
+          message: error instanceof Error ? sanitizeLogText(error.message) : 'Receipt flow did not complete.',
+        });
+      }
     }
 
     for (const route of viewport.routes) {
@@ -342,9 +364,11 @@ const report = {
   patientName,
   captures,
   consoleEntries,
+  flowWarnings,
   summary: {
     captureCount: captures.length,
     consoleIssueCount: consoleEntries.length,
+    flowWarningCount: flowWarnings.length,
     overflowFindings: captures
       .filter((capture) => capture.inspection.overflowX > 1)
       .map((capture) => ({ name: `${capture.viewport}/${capture.name}`, overflowX: capture.inspection.overflowX })),

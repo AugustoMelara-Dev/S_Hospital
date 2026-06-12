@@ -19,6 +19,7 @@ services:
     volumes:
       - ./backend:/var/www/html
       - backend_vendor:/var/www/html/vendor
+      - ./docs:/var/www/docs:ro
       - ./frontend/dist:/var/www/frontend/dist
     ports:
       - "${APP_PORT:-8000}:8000"
