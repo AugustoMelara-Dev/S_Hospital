@@ -18,16 +18,29 @@ declare global {
 async function fetchEchoConfig(): Promise<EchoConfig | null> {
   if (configCache) return configCache;
   if (!configPromise) {
-    const inFlight = apiClient
-      .request<{ data: EchoConfig }>('/api/system/echo-config')
-      .then((res) => (res?.data ?? null) as EchoConfig | null)
+    const inFlight = fetch(apiClient.url('/api/system/echo-config'), {
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+      },
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw response;
+        }
+
+        const payload = await response.json() as { data?: EchoConfig | null };
+        return (payload?.data ?? null) as EchoConfig | null;
+      })
       .catch((error) => {
         // Reset the promise so a later call retries fetching the
         // config. Without this, a transient failure (e.g. the LAN
         // server rebooting) would pin `configPromise` to the rejected
         // promise forever and broadcasting would stay disabled.
         configPromise = null;
-        console.warn('[echo] failed to fetch /api/system/echo-config', error);
+        if (!isExpectedEchoBootstrapFailure(error) && import.meta.env.DEV) {
+          console.info('[echo] realtime disabled for this session');
+        }
 
         return null;
       });
@@ -91,4 +104,9 @@ export function disconnectEcho(): void {
   }
   configCache = null;
   configPromise = null;
+}
+
+function isExpectedEchoBootstrapFailure(error: unknown): boolean {
+  return error instanceof Response
+    && (error.status === 401 || error.status === 403 || error.status === 419 || error.status >= 500);
 }

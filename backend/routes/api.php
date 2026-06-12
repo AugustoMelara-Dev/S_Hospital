@@ -36,7 +36,7 @@ Route::get('/system/health', [HealthController::class, 'show'])
     ->middleware('throttle:120,1');
 
 Route::get('/system/echo-config', [EchoConfigController::class, 'show'])
-    ->middleware(['auth:sanctum', 'throttle:30,1']);
+    ->middleware('throttle:30,1');
 
 Route::get('/system/openapi', function () {
     $document = app(OpenApiExporter::class)->document(app('router'));

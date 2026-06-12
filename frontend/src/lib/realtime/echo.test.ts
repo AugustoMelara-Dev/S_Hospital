@@ -5,6 +5,7 @@ const requestMock = vi.fn();
 vi.mock('../api/base', () => ({
   apiClient: {
     request: (...args: unknown[]) => requestMock(...args),
+    url: (path: string) => path,
   },
 }));
 
@@ -58,7 +59,10 @@ describe('lib/realtime/echo', () => {
   });
 
   it('returns null when the config endpoint reports broadcasting is disabled', async () => {
-    requestMock.mockResolvedValue({ data: DISABLED_CONFIG });
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: DISABLED_CONFIG }),
+    } as Response);
 
     const getEcho = await loadEcho();
     const echo = await getEcho();
@@ -67,16 +71,17 @@ describe('lib/realtime/echo', () => {
 
   it('resets configPromise when the config fetch throws, so the next call retries', async () => {
     let attempts = 0;
-    requestMock.mockImplementation(async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
       attempts += 1;
       if (attempts === 1) {
         throw new Error('LAN apagada');
       }
 
-      return { data: DISABLED_CONFIG };
+      return {
+        ok: true,
+        json: async () => ({ data: DISABLED_CONFIG }),
+      } as Response;
     });
-
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
     const getEcho = await loadEcho();
 
@@ -86,7 +91,5 @@ describe('lib/realtime/echo', () => {
     const second = await getEcho();
     expect(second).toBeNull();
     expect(attempts).toBe(2);
-
-    warnSpy.mockRestore();
   });
 });
