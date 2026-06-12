@@ -31,26 +31,78 @@ class GenerateFiscalNumberActionTest extends TestCase
 
     public function test_throws_when_there_is_no_active_sequence(): void
     {
-        $this->expectException(ValidationException::class);
-
-        app(GenerateFiscalNumberAction::class)->execute();
+        try {
+            app(GenerateFiscalNumberAction::class)->execute();
+            $this->fail('Expected fiscal sequence validation to fail.');
+        } catch (ValidationException $exception) {
+            $this->assertSame(
+                'No existe una secuencia fiscal activa para facturas.',
+                $exception->errors()['fiscal_sequence'][0] ?? null,
+            );
+        }
     }
 
-    public function test_throws_when_there_is_more_than_one_active_sequence(): void
+    public function test_prefers_specific_active_invoice_sequence_over_legacy_active_null_marker(): void
     {
-        FiscalSequence::query()->create($this->sequenceAttributes(prefix: '000-001-01'));
+        $specific = FiscalSequence::query()->create($this->sequenceAttributes(prefix: '000-001-01', currentNumber: 10));
 
-        // Bypass the unique constraint to simulate the data corruption
-        // that the action is meant to catch. The application must
-        // refuse to emit a correlative rather than silently picking
-        // one of the two sequences.
+        // Simulates a pre-active_document_type row that is still marked
+        // active=true but has not been repaired by the model event yet.
+        // A canonical active_document_type='invoice' row must win.
         \DB::table('fiscal_sequences')->insert(
-            $this->sequenceAttributes(prefix: '000-002-01'),
+            $this->sequenceAttributes(prefix: '000-002-01', currentNumber: 88),
         );
 
-        $this->expectException(ValidationException::class);
+        $result = app(GenerateFiscalNumberAction::class)->execute();
 
-        app(GenerateFiscalNumberAction::class)->execute();
+        $this->assertSame($specific->id, $result['sequence']->id);
+        $this->assertSame(11, $result['next_number']);
+        $this->assertDatabaseHas('fiscal_sequences', [
+            'id' => $specific->id,
+            'current_number' => 11,
+            'active_document_type' => 'invoice',
+        ]);
+        $this->assertDatabaseHas('fiscal_sequences', [
+            'prefix' => '000-002-01',
+            'current_number' => 88,
+            'active' => true,
+            'active_document_type' => null,
+        ]);
+    }
+
+    public function test_uses_single_legacy_active_null_marker_when_no_specific_sequence_exists(): void
+    {
+        \DB::table('fiscal_sequences')->insert(
+            $this->sequenceAttributes(prefix: '000-002-01', currentNumber: 88),
+        );
+
+        $result = app(GenerateFiscalNumberAction::class)->execute();
+
+        $this->assertSame(89, $result['next_number']);
+        $this->assertSame('000-002-01-00000089', $result['invoice_number']);
+        $this->assertDatabaseHas('fiscal_sequences', [
+            'prefix' => '000-002-01',
+            'current_number' => 89,
+            'active_document_type' => 'invoice',
+        ]);
+    }
+
+    public function test_throws_when_multiple_legacy_active_sequences_are_ambiguous(): void
+    {
+        \DB::table('fiscal_sequences')->insert([
+            $this->sequenceAttributes(prefix: '000-001-01'),
+            $this->sequenceAttributes(prefix: '000-002-01'),
+        ]);
+
+        try {
+            app(GenerateFiscalNumberAction::class)->execute();
+            $this->fail('Expected ambiguous fiscal sequence validation to fail.');
+        } catch (ValidationException $exception) {
+            $this->assertSame(
+                'Existe mas de una secuencia fiscal activa para facturas.',
+                $exception->errors()['fiscal_sequence'][0] ?? null,
+            );
+        }
     }
 
     public function test_db_unique_constraint_blocks_two_active_sequences_of_the_same_type(): void

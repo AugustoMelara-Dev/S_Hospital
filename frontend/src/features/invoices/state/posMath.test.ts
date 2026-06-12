@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { computeSimpleEstimate, effectiveUnitPriceCents, formatCents, incrementQuantityFromString, isZeroMoney, parseLocalCents, parseQuantityUnits, parseTaxRateBasisPoints } from './posMath';
 import type { CartItem } from '../components/InvoiceCart';
 
@@ -79,11 +79,14 @@ describe('posMath', () => {
   });
 
   it('computes the cart estimate for a normal service', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const estimate = computeSimpleEstimate([buildCartItem({ quantity: '2.00' })], '15.00');
 
     expect(estimate.subtotal).toBe('300.00');
     expect(estimate.tax).toBe('45.00');
     expect(estimate.total).toBe('345.00');
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 
   it('zeros the tax line for non-taxable services', () => {

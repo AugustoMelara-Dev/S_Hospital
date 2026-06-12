@@ -12,22 +12,50 @@ class GenerateFiscalNumberAction
      */
     public function execute(): array
     {
+        $documentType = 'invoice';
         $sequences = FiscalSequence::query()
-            ->where('document_type', 'invoice')
+            ->where('document_type', $documentType)
             ->where('active', true)
             ->lockForUpdate()
             ->get();
 
-        if ($sequences->count() !== 1) {
+        $specificSequences = $sequences
+            ->filter(fn (FiscalSequence $sequence): bool => $sequence->active_document_type === $documentType)
+            ->values();
+        $legacySequences = $sequences
+            ->filter(fn (FiscalSequence $sequence): bool => $sequence->active_document_type === null)
+            ->values();
+        $invalidSequences = $sequences
+            ->filter(fn (FiscalSequence $sequence): bool => $sequence->active_document_type !== null && $sequence->active_document_type !== $documentType)
+            ->values();
+
+        if ($invalidSequences->isNotEmpty()) {
             throw ValidationException::withMessages([
-                'fiscal_sequence' => $sequences->isEmpty()
-                    ? 'No existe una secuencia fiscal activa para facturas.'
-                    : 'Existe mas de una secuencia fiscal activa para facturas.',
+                'fiscal_sequence' => 'La configuracion fiscal activa es inconsistente. Revise las secuencias fiscales.',
             ]);
         }
 
-        /** @var FiscalSequence $sequence */
-        $sequence = $sequences->first();
+        if ($specificSequences->count() > 1) {
+            throw ValidationException::withMessages([
+                'fiscal_sequence' => 'Existe mas de una secuencia fiscal activa para facturas.',
+            ]);
+        }
+
+        if ($specificSequences->count() === 1) {
+            /** @var FiscalSequence $sequence */
+            $sequence = $specificSequences->first();
+        } else {
+            if ($legacySequences->count() !== 1) {
+                throw ValidationException::withMessages([
+                    'fiscal_sequence' => $legacySequences->isEmpty()
+                        ? 'No existe una secuencia fiscal activa para facturas.'
+                        : 'Existe mas de una secuencia fiscal activa para facturas.',
+                ]);
+            }
+
+            /** @var FiscalSequence $sequence */
+            $sequence = $legacySequences->first();
+        }
 
         if (trim($sequence->cai) === '') {
             throw ValidationException::withMessages([

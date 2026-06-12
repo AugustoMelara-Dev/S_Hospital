@@ -96,24 +96,14 @@ export interface InvoiceEstimate {
   total: string;
 }
 
-let computeSimpleEstimateWarned = false;
-
 /**
  * @deprecated since v1.0.0-rc.4. Backend-computed totals from
  * `InvoiceResource` are the source of truth. This stub remains for
- * backward compatibility only: it logs a deprecation warning and
- * returns the previous client-side estimate. New callers must stop
- * using it and consume the totals returned by the backend.
+ * backward compatibility only and returns the previous client-side
+ * estimate. New callers must stop using it and consume the totals
+ * returned by the backend.
  */
 export function computeSimpleEstimate(items: CartItem[], taxRate?: string): InvoiceEstimate {
-  if (!computeSimpleEstimateWarned) {
-    computeSimpleEstimateWarned = true;
-    console.warn(
-      '[posMath] computeSimpleEstimate is deprecated since v1.0.0-rc.4. ' +
-      'Use the backend-computed totals from InvoiceResource instead.',
-    );
-  }
-
   const rateBasisPoints = parseTaxRateBasisPoints(taxRate);
   let subtotal = 0;
   let tax = 0;
