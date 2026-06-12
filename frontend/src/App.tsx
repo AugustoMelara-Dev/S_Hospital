@@ -46,22 +46,7 @@ function HospitalApp() {
     if (message && message !== 'Listo para iniciar sesión local.') {
       if (isErrorMessage(message)) {
         notify.error(message);
-      } else if (
-        message.startsWith('Cargando') ||
-        message.startsWith('Preparando') ||
-        message.startsWith('Validando') ||
-        message.startsWith('Actualizando') ||
-        message.startsWith('Guardando') ||
-        message.startsWith('Abriendo') ||
-        message.startsWith('Cerrando') ||
-        message.startsWith('Subiendo') ||
-        message.startsWith('Creando') ||
-        message.startsWith('Restableciendo') ||
-        message.startsWith('Cambiando') ||
-        message.startsWith('Revisando')
-      ) {
-        notify.info(message);
-      } else {
+      } else if (!isProgressStatusMessage(message)) {
         notify.success(message);
       }
     }
@@ -190,4 +175,22 @@ function HospitalApp() {
       </Dialog>
     </AppShell>
   );
+}
+
+function isProgressStatusMessage(message: string): boolean {
+  return [
+    'Cargando',
+    'Consultando',
+    'Preparando',
+    'Validando',
+    'Actualizando',
+    'Guardando',
+    'Abriendo',
+    'Cerrando',
+    'Subiendo',
+    'Creando',
+    'Restableciendo',
+    'Cambiando',
+    'Revisando',
+  ].some((prefix) => message.startsWith(prefix));
 }

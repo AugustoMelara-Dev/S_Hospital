@@ -287,6 +287,18 @@ html.dark {
     @apply overflow-x-auto rounded-xl border border-border bg-card;
   }
 
+  .hospital-toaster {
+    max-width: min(420px, calc(100vw - 24px));
+  }
+
+  @media (max-width: 640px) {
+    .hospital-toaster {
+      left: 0.75rem !important;
+      right: 0.75rem !important;
+      top: 4.5rem !important;
+    }
+  }
+
 
 
   .history-filters,
