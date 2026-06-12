@@ -51,10 +51,22 @@ export function RevenueBarChart({ data }: RevenueBarChartProps) {
       payments: d.payment_count,
     };
   });
+  const hasActivity = chartData.some(
+    (day) => day.Billed > 0 || day.Collected > 0 || day.invoices > 0 || day.payments > 0,
+  );
 
   const formatCurrency = (value: number) => {
     return `L. ${value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
+
+  if (!hasActivity) {
+    return (
+      <div className="flex h-[300px] flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/20 px-6 text-center text-sm text-muted-foreground">
+        <span className="font-semibold text-foreground">Sin movimientos en los ultimos 7 dias</span>
+        <span>La tendencia se activara cuando existan facturas emitidas o pagos registrados.</span>
+      </div>
+    );
+  }
 
   return (
     <div ref={ref} className="h-[300px] w-full min-w-px" style={{ minHeight: 300 }}>

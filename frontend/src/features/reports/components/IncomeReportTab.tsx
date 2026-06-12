@@ -111,19 +111,19 @@ export function IncomeReportTab({
     <div className="space-y-6">
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-4 items-end">
-            <div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6">
+            <div className="min-w-0">
               <Label htmlFor="income-date-from">Desde</Label>
               <Input id="income-date-from" type="date" value={dateFrom} onChange={(e) => onDateFromChange(e.target.value)} />
             </div>
-            <div>
+            <div className="min-w-0">
               <Label htmlFor="income-date-to">Hasta</Label>
               <Input id="income-date-to" type="date" value={dateTo} onChange={(e) => onDateToChange(e.target.value)} />
             </div>
-            <div className="w-[180px]">
-              <Label>Categoría</Label>
+            <div className="min-w-0">
+              <Label htmlFor="income-category">Categoría</Label>
               <Select value={categoryId || 'all'} onValueChange={(v) => onCategoryChange(v === 'all' ? '' : v)}>
-                <SelectTrigger id="income-category" aria-label="Categoría">
+                <SelectTrigger id="income-category" aria-label="Categoría" className="w-full">
                   <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
@@ -134,10 +134,10 @@ export function IncomeReportTab({
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-[180px]">
-              <Label>Area</Label>
+            <div className="min-w-0">
+              <Label htmlFor="income-area">Area</Label>
               <Select value={areaId || 'all'} onValueChange={(v) => onAreaChange(v === 'all' ? '' : v)}>
-                <SelectTrigger id="income-area" aria-label="Area">
+                <SelectTrigger id="income-area" aria-label="Area" className="w-full">
                   <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
@@ -148,13 +148,13 @@ export function IncomeReportTab({
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-[180px]">
+            <div className="min-w-0">
               <Label htmlFor="income-method">Metodo de pago</Label>
               <Select value={method || 'all'} onValueChange={(v) => {
                 const mapped = v === 'all' ? '' : v;
                 onMethodChange(mapped as NonNullable<ReportFilters['method']>);
               }}>
-                <SelectTrigger id="income-method" aria-label="Método de pago">
+                <SelectTrigger id="income-method" aria-label="Método de pago" className="w-full">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -166,13 +166,13 @@ export function IncomeReportTab({
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-[180px]">
+            <div className="min-w-0">
               <Label htmlFor="income-status">Estado</Label>
               <Select value={status || 'all'} onValueChange={(v) => {
                 const mapped = v === 'all' ? '' : v;
                 onStatusChange(mapped as NonNullable<ReportFilters['status']>);
               }}>
-                <SelectTrigger id="income-status" aria-label="Estado">
+                <SelectTrigger id="income-status" aria-label="Estado" className="w-full">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -185,7 +185,7 @@ export function IncomeReportTab({
               </Select>
             </div>
             {cashierOptions.length > 0 ? (
-              <div className="w-[220px]">
+              <div className="min-w-0">
                 <Label htmlFor="income-cashier-id">Cajero</Label>
                 <NativeSelect
                   id="income-cashier-id"
@@ -201,7 +201,7 @@ export function IncomeReportTab({
                 </NativeSelect>
               </div>
             ) : (
-              <div className="w-[150px]">
+              <div className="min-w-0">
                 <Label htmlFor="income-cashier-id">No. de cajero</Label>
                 <Input
                   id="income-cashier-id"
@@ -215,7 +215,7 @@ export function IncomeReportTab({
               </div>
             )}
             {cashSessionOptions.length > 0 ? (
-              <div className="w-[260px]">
+              <div className="min-w-0 sm:col-span-2 xl:col-span-1">
                 <Label htmlFor="income-cash-session-id">Caja</Label>
                 <NativeSelect
                   id="income-cash-session-id"
@@ -231,7 +231,7 @@ export function IncomeReportTab({
                 </NativeSelect>
               </div>
             ) : (
-              <div className="w-[150px]">
+              <div className="min-w-0">
                 <Label htmlFor="income-cash-session-id">No. de caja</Label>
                 <Input
                   id="income-cash-session-id"
@@ -244,7 +244,7 @@ export function IncomeReportTab({
                 />
               </div>
             )}
-            <Button onClick={onSubmit} disabled={loading}>
+            <Button className="min-h-10 w-full self-end" onClick={onSubmit} disabled={loading}>
               {loading ? 'Consultando...' : 'Ver rango'}
             </Button>
           </div>
