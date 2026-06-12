@@ -9,15 +9,15 @@
       "navLabel": "Inicio",
       "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f3-dashboard.png",
       "evidenceText": "Nueva factura",
-      "shellTitle": "Inicio Inicio Sin caja abierta 12 jun 2026, 12:03 a. m. Red local A Administrador Validacion"
+      "shellTitle": "Inicio Inicio Sin caja abierta 12 jun 2026, 12:25 a. m. Red local A Administrador Validacion"
     },
     {
       "name": "f3-catalog",
       "route": "/catalog",
-      "navLabel": "Catalogo",
+      "navLabel": "Catálogo",
       "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f3-catalog.png",
       "evidenceText": "Catalogo de servicios",
-      "shellTitle": "Catalogo Inicio / Catalogo Sin caja abierta 12 jun 2026, 12:03 a. m. Red local A Administrador Validacion"
+      "shellTitle": "Catálogo Inicio / Catálogo Sin caja abierta 12 jun 2026, 12:25 a. m. Red local A Administrador Validacion"
     },
     {
       "name": "f3-new-invoice",
@@ -25,7 +25,7 @@
       "navLabel": "Nueva factura",
       "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f3-new-invoice.png",
       "evidenceText": "Nombre del Paciente *",
-      "shellTitle": "Nueva factura Inicio / Nueva factura Sin caja abierta 12 jun 2026, 12:03 a. m. Red local A Administrador Validacion"
+      "shellTitle": "Nueva factura Inicio / Nueva factura Sin caja abierta 12 jun 2026, 12:25 a. m. Red local A Administrador Validacion"
     },
     {
       "name": "f3-cashbox",
@@ -33,7 +33,7 @@
       "navLabel": "Caja",
       "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f3-cashbox.png",
       "evidenceText": "Sin caja abierta",
-      "shellTitle": "Caja Inicio / Caja Sin caja abierta 12 jun 2026, 12:03 a. m. Red local A Administrador Validacion"
+      "shellTitle": "Caja Inicio / Caja Sin caja abierta 12 jun 2026, 12:25 a. m. Red local A Administrador Validacion"
     },
     {
       "name": "f3-backups",
@@ -41,15 +41,15 @@
       "navLabel": "Respaldos",
       "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f3-backups.png",
       "evidenceText": "Worker inactivo",
-      "shellTitle": "Respaldos Inicio / Respaldos Sin caja abierta 12 jun 2026, 12:03 a. m. Red local A Administrador Validacion"
+      "shellTitle": "Respaldos Inicio / Respaldos Sin caja abierta 12 jun 2026, 12:25 a. m. Red local A Administrador Validacion"
     },
     {
       "name": "f3-settings-fiscal",
       "route": "/settings/fiscal",
-      "navLabel": "Configuracion",
+      "navLabel": "Configuración",
       "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f3-settings-fiscal.png",
       "evidenceText": "Hospital San Isidro",
-      "shellTitle": "Configuracion Inicio / Configuracion Sin caja abierta 12 jun 2026, 12:03 a. m. Red local A Administrador Validacion"
+      "shellTitle": "Configuración Inicio / Configuración Sin caja abierta 12 jun 2026, 12:25 a. m. Red local A Administrador Validacion"
     }
   ],
   "theme": {
