@@ -63,7 +63,7 @@ export const appRoutes = {
     navigationPermissions: ['invoices.create'],
     requiredPermissions: ['invoices.create', 'catalog.view', 'cash.view', 'payments.create', 'receipts.view'],
     permissionMode: 'all',
-    deniedReason: 'Requiere permisos de facturacion, catalogo, caja, pagos y recibos. Solicite el rol Cajero completo.',
+    deniedReason: 'Requiere permisos de facturación, catálogo, caja, pagos y recibos. Solicite el rol Cajero completo.',
   },
   cashbox: {
     id: 'cashbox',
@@ -91,7 +91,7 @@ export const appRoutes = {
     navigation: true,
     navigationPermissions: ['catalog.view'],
     requiredPermissions: ['catalog.view'],
-    deniedReason: 'Requiere permiso para consultar el catalogo de servicios.',
+    deniedReason: 'Requiere permiso para consultar el catálogo de servicios.',
   },
   invoices: {
     id: 'invoices',
@@ -148,7 +148,7 @@ export const appRoutes = {
     navigation: true,
     navigationPermissions: ['settings.fiscal.view'],
     requiredPermissions: ['settings.fiscal.view'],
-    deniedReason: 'Requiere permiso para consultar configuracion fiscal.',
+    deniedReason: 'Requiere permiso para consultar configuración fiscal.',
   },
   users: {
     id: 'users',
