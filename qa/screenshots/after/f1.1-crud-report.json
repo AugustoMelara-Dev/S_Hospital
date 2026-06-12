@@ -1,0 +1,231 @@
+{
+  "loginUser": "admin.validacion",
+  "qaIdentifier": "QA-F1-001",
+  "qaName": "Servicio QA F1",
+  "qaEditedName": "Servicio QA F1 Editado",
+  "notes": [
+    "Scanner deshabilitado en fiscal_settings; el identificador QA-F1-001 se uso como referencia documental y no como scan_code visible en UI."
+  ],
+  "mysqlPersistedRow": "129\tServicio QA F1 Editado\t1\t1\t0\tNULL",
+  "apiPersistedResult": {
+    "ok": true,
+    "data": [
+      {
+        "id": 129,
+        "category_id": 1,
+        "area_id": 1,
+        "name": "Servicio QA F1 Editado",
+        "aliases": null,
+        "slug": "servicio-qa-f1-editado",
+        "source_key": null,
+        "source_hash": null,
+        "scan_code": null,
+        "barcode": null,
+        "qr_code": null,
+        "price": "45.00",
+        "taxable": true,
+        "active": false,
+        "visible_in_billing": true,
+        "is_billable": false,
+        "special_rule_code": null,
+        "created_by": 4,
+        "updated_by": 4,
+        "created_at": "2026-06-12T03:28:20.000000Z",
+        "updated_at": "2026-06-12T03:29:17.000000Z",
+        "category": {
+          "id": 1,
+          "name": "Laboratorio",
+          "slug": "laboratorio",
+          "active": true,
+          "sort_order": 0
+        },
+        "area": {
+          "id": 1,
+          "name": "Laboratorio",
+          "slug": "laboratorio",
+          "active": true
+        }
+      },
+      {
+        "id": 123,
+        "category_id": 1,
+        "area_id": 1,
+        "name": "Servicio QA F1 Editado [QA old #123]",
+        "aliases": null,
+        "slug": "servicio-qa-f1-editado-qa-old-123",
+        "source_key": null,
+        "source_hash": null,
+        "scan_code": null,
+        "barcode": null,
+        "qr_code": null,
+        "price": "45.00",
+        "taxable": true,
+        "active": false,
+        "visible_in_billing": false,
+        "is_billable": false,
+        "special_rule_code": null,
+        "created_by": 4,
+        "updated_by": 4,
+        "created_at": "2026-06-12T03:03:29.000000Z",
+        "updated_at": "2026-06-12T03:03:55.000000Z",
+        "category": {
+          "id": 1,
+          "name": "Laboratorio",
+          "slug": "laboratorio",
+          "active": true,
+          "sort_order": 0
+        },
+        "area": {
+          "id": 1,
+          "name": "Laboratorio",
+          "slug": "laboratorio",
+          "active": true
+        }
+      },
+      {
+        "id": 125,
+        "category_id": 1,
+        "area_id": 1,
+        "name": "Servicio QA F1 Editado [QA old #125]",
+        "aliases": null,
+        "slug": "servicio-qa-f1-editado-qa-old-125",
+        "source_key": null,
+        "source_hash": null,
+        "scan_code": null,
+        "barcode": null,
+        "qr_code": null,
+        "price": "45.00",
+        "taxable": true,
+        "active": false,
+        "visible_in_billing": false,
+        "is_billable": false,
+        "special_rule_code": null,
+        "created_by": 4,
+        "updated_by": 4,
+        "created_at": "2026-06-12T03:14:25.000000Z",
+        "updated_at": "2026-06-12T03:15:00.000000Z",
+        "category": {
+          "id": 1,
+          "name": "Laboratorio",
+          "slug": "laboratorio",
+          "active": true,
+          "sort_order": 0
+        },
+        "area": {
+          "id": 1,
+          "name": "Laboratorio",
+          "slug": "laboratorio",
+          "active": true
+        }
+      },
+      {
+        "id": 126,
+        "category_id": 1,
+        "area_id": 1,
+        "name": "Servicio QA F1 Editado [QA old #126]",
+        "aliases": null,
+        "slug": "servicio-qa-f1-editado-qa-old-126",
+        "source_key": null,
+        "source_hash": null,
+        "scan_code": null,
+        "barcode": null,
+        "qr_code": null,
+        "price": "45.00",
+        "taxable": true,
+        "active": false,
+        "visible_in_billing": false,
+        "is_billable": false,
+        "special_rule_code": null,
+        "created_by": 4,
+        "updated_by": 4,
+        "created_at": "2026-06-12T03:16:57.000000Z",
+        "updated_at": "2026-06-12T03:18:02.000000Z",
+        "category": {
+          "id": 1,
+          "name": "Laboratorio",
+          "slug": "laboratorio",
+          "active": true,
+          "sort_order": 0
+        },
+        "area": {
+          "id": 1,
+          "name": "Laboratorio",
+          "slug": "laboratorio",
+          "active": true
+        }
+      },
+      {
+        "id": 127,
+        "category_id": 1,
+        "area_id": 1,
+        "name": "Servicio QA F1 Editado [QA old #127]",
+        "aliases": null,
+        "slug": "servicio-qa-f1-editado-qa-old-127",
+        "source_key": null,
+        "source_hash": null,
+        "scan_code": null,
+        "barcode": null,
+        "qr_code": null,
+        "price": "45.00",
+        "taxable": true,
+        "active": false,
+        "visible_in_billing": false,
+        "is_billable": false,
+        "special_rule_code": null,
+        "created_by": 4,
+        "updated_by": 4,
+        "created_at": "2026-06-12T03:20:32.000000Z",
+        "updated_at": "2026-06-12T03:21:37.000000Z",
+        "category": {
+          "id": 1,
+          "name": "Laboratorio",
+          "slug": "laboratorio",
+          "active": true,
+          "sort_order": 0
+        },
+        "area": {
+          "id": 1,
+          "name": "Laboratorio",
+          "slug": "laboratorio",
+          "active": true
+        }
+      },
+      {
+        "id": 128,
+        "category_id": 1,
+        "area_id": 1,
+        "name": "Servicio QA F1 Editado [QA old #128]",
+        "aliases": null,
+        "slug": "servicio-qa-f1-editado-qa-old-128",
+        "source_key": null,
+        "source_hash": null,
+        "scan_code": null,
+        "barcode": null,
+        "qr_code": null,
+        "price": "45.00",
+        "taxable": true,
+        "active": false,
+        "visible_in_billing": false,
+        "is_billable": false,
+        "special_rule_code": null,
+        "created_by": 4,
+        "updated_by": 4,
+        "created_at": "2026-06-12T03:24:23.000000Z",
+        "updated_at": "2026-06-12T03:25:25.000000Z",
+        "category": {
+          "id": 1,
+          "name": "Laboratorio",
+          "slug": "laboratorio",
+          "active": true,
+          "sort_order": 0
+        },
+        "area": {
+          "id": 1,
+          "name": "Laboratorio",
+          "slug": "laboratorio",
+          "active": true
+        }
+      }
+    ]
+  }
+}

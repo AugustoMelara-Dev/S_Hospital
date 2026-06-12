@@ -1,0 +1,182 @@
+{
+  "captured_at": "2026-06-11T15:40:46.001Z",
+  "issues": [
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_BLOCKED_BY_ORB",
+      "method": "GET",
+      "requestUrl": "http://localhost:8000/storage/branding/logo.png?t=1781146172",
+      "url": "http://127.0.0.1:5173/login"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://127.0.0.1:5173/sanctum/csrf-cookie",
+      "url": "http://127.0.0.1:5173/login"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://127.0.0.1:5173/api/settings/fiscal",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://127.0.0.1:5173/api/settings/logo",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://127.0.0.1:5173/api/system/health",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://127.0.0.1:5173/api/system/health",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://127.0.0.1:5173/api/system/echo-config",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://localhost:8000/storage/branding/logo.png?t=1781146172",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "type": "warning",
+      "text": "[echo] failed to fetch /api/system/echo-config ApiError: No se pudo conectar con el servidor LAN. Revise que el servidor local este encendido y vuelva a intentar. Detalle seguro del navegador: Failed to fetch\n    at networkError (http://127.0.0.1:5173/src/lib/api/base.ts:146:10)\n    at send (http://127.0.0.1:5173/src/lib/api/base.ts:288:24)\n    at async Object.sendRequest (http://127.0.0.1:5173/src/lib/api/base.ts:294:20)",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_BLOCKED_BY_ORB",
+      "method": "GET",
+      "requestUrl": "http://localhost:8000/storage/branding/logo.png?t=1781146172",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://127.0.0.1:5173/api/settings/logo",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://127.0.0.1:5173/api/settings/logo",
+      "url": "http://127.0.0.1:5173/dashboard"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_BLOCKED_BY_ORB",
+      "method": "GET",
+      "requestUrl": "http://localhost:8000/storage/branding/logo.png?t=1781146172",
+      "url": "http://127.0.0.1:5173/catalog"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://127.0.0.1:5173/api/settings/logo",
+      "url": "http://127.0.0.1:5173/catalog"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://127.0.0.1:5173/api/settings/logo",
+      "url": "http://127.0.0.1:5173/catalog"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://127.0.0.1:5173/api/settings/fiscal",
+      "url": "http://127.0.0.1:5173/catalog"
+    },
+    {
+      "type": "warning",
+      "text": "[posMath] computeSimpleEstimate is deprecated since v1.0.0-rc.4. Use the backend-computed totals from InvoiceResource instead.",
+      "url": "http://127.0.0.1:5173/billing/new"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_BLOCKED_BY_ORB",
+      "method": "GET",
+      "requestUrl": "http://localhost:8000/storage/branding/logo.png?t=1781146172",
+      "url": "http://127.0.0.1:5173/billing/new"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/billing/new"
+    },
+    {
+      "type": "warning",
+      "text": "[echo] failed to fetch /api/system/echo-config ApiError: Too Many Attempts.\n    at Object.sendRequest (http://127.0.0.1:5173/src/lib/api/base.ts:343:22)",
+      "url": "http://127.0.0.1:5173/billing/new"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://127.0.0.1:5173/api/cash-sessions/current",
+      "url": "http://127.0.0.1:5173/billing/new"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://127.0.0.1:5173/api/services?active=1&billing=1&per_page=24",
+      "url": "http://127.0.0.1:5173/billing/new"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://127.0.0.1:5173/api/cash-sessions/current",
+      "url": "http://127.0.0.1:5173/billing/new"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_ABORTED",
+      "method": "GET",
+      "requestUrl": "http://127.0.0.1:5173/api/settings/logo",
+      "url": "http://127.0.0.1:5173/billing/new"
+    },
+    {
+      "type": "requestfailed",
+      "text": "net::ERR_BLOCKED_BY_ORB",
+      "method": "GET",
+      "requestUrl": "http://localhost:8000/storage/branding/logo.png?t=1781146172",
+      "url": "http://127.0.0.1:5173/cashbox"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)",
+      "url": "http://127.0.0.1:5173/cashbox"
+    },
+    {
+      "type": "warning",
+      "text": "[echo] failed to fetch /api/system/echo-config ApiError: Too Many Attempts.\n    at Object.sendRequest (http://127.0.0.1:5173/src/lib/api/base.ts:343:22)",
+      "url": "http://127.0.0.1:5173/cashbox"
+    }
+  ]
+}
