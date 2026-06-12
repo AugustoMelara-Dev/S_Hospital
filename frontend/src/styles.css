@@ -246,7 +246,7 @@ html.dark {
   .compact-button,
   .pagination-row .secondary-button,
   .data-table button {
-    @apply w-auto;
+    @apply w-auto shrink-0;
   }
 
   .search-form,
@@ -284,7 +284,63 @@ html.dark {
   }
 
   .table-wrap {
-    @apply overflow-x-auto rounded-xl border border-border bg-card;
+    @apply relative max-w-full overflow-auto rounded-lg border border-border bg-card;
+    scrollbar-gutter: stable;
+  }
+
+  .table-wrap::before {
+    @apply pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-border;
+    content: "";
+  }
+
+  .data-table {
+    @apply w-full border-separate border-spacing-0 text-sm;
+    min-width: 46rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .data-table thead {
+    @apply bg-muted/80;
+  }
+
+  .data-table th {
+    @apply sticky top-0 z-[1] whitespace-nowrap border-b border-border bg-muted/95 px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-muted-foreground backdrop-blur;
+  }
+
+  .data-table td {
+    @apply border-b border-border/70 px-4 py-3 align-middle text-sm;
+  }
+
+  .data-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .data-table tbody tr {
+    @apply transition-colors;
+  }
+
+  .data-table tbody tr:hover {
+    @apply bg-muted/35;
+  }
+
+  .data-table td.text-right,
+  .data-table th.text-right {
+    @apply tabular-nums;
+  }
+
+  @media (max-width: 768px) {
+    .table-wrap {
+      @apply rounded-md;
+    }
+
+    .table-wrap::after {
+      @apply sticky left-0 block border-t border-border bg-muted/60 px-3 py-2 text-xs font-medium text-muted-foreground;
+      content: "Deslice la tabla para ver mas columnas";
+    }
+
+    .data-table {
+      min-width: 42rem;
+    }
   }
 
   .hospital-toaster {

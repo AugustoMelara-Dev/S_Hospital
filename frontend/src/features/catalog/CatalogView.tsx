@@ -300,34 +300,32 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       {isLoading ? (
         <Card>
           <CardContent className="p-0">
-            <div className="table-wrap">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>Area</TableHead>
-                    <TableHead>Precio</TableHead>
-                    {scannerEnabled && <TableHead>Codigo</TableHead>}
-                    <TableHead>Estado en caja</TableHead>
-                    {canManageCatalog && <TableHead className="text-right">Acciones</TableHead>}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Area</TableHead>
+                  <TableHead>Precio</TableHead>
+                  {scannerEnabled && <TableHead>Codigo</TableHead>}
+                  <TableHead>Estado en caja</TableHead>
+                  {canManageCatalog && <TableHead className="text-right">Acciones</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <TableRow key={index}>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    {scannerEnabled && <TableCell><Skeleton className="h-5 w-20" /></TableCell>}
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    {canManageCatalog && <TableCell><Skeleton className="ml-auto h-5 w-12" /></TableCell>}
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Array.from({ length: 5 }).map((_, index) => (
-                    <TableRow key={index}>
-                      <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                      {scannerEnabled && <TableCell><Skeleton className="h-5 w-20" /></TableCell>}
-                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                      {canManageCatalog && <TableCell><Skeleton className="ml-auto h-5 w-12" /></TableCell>}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       ) : isEmpty && !loadError ? (
@@ -354,107 +352,105 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         </Card>
       ) : !loadError ? (
         <Card>
-          <div className="overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Area</TableHead>
-                  <TableHead>Precio</TableHead>
-                  {scannerEnabled && <TableHead>Codigo</TableHead>}
-                  <TableHead>Estado en caja</TableHead>
-                  {canManageCatalog && <TableHead className="text-right">Acciones</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {services.map((service) => {
-                  const billingSummary = getServiceBillingSummary(service);
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Categoria</TableHead>
+                <TableHead>Area</TableHead>
+                <TableHead>Precio</TableHead>
+                {scannerEnabled && <TableHead>Codigo</TableHead>}
+                <TableHead>Estado en caja</TableHead>
+                {canManageCatalog && <TableHead className="text-right">Acciones</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {services.map((service) => {
+                const billingSummary = getServiceBillingSummary(service);
 
-                  return (
-                    <TableRow key={service.id} className="border-b transition-colors hover:bg-muted/30">
-                      <TableCell className="px-4 py-3">
+                return (
+                  <TableRow key={service.id} className="border-b transition-colors hover:bg-muted/30">
+                    <TableCell className="px-4 py-3">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium">{service.name}</span>
+                        {billingSummary.reasons.length > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            {billingSummary.reasons[0]}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-sm">{service.category?.name ?? 'Sin categoria'}</TableCell>
+                    <TableCell className="px-4 py-3 text-sm">{service.area?.name ?? 'Sin area'}</TableCell>
+                    <TableCell className="px-4 py-3">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-semibold">{moneyLabel(service.price)}</span>
+                        {!billingSummary.hasConfiguredPrice && (
+                          <span className="text-xs text-amber-700">Sin tarifa operativa</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    {scannerEnabled && (
+                      <TableCell className="px-4 py-3 text-sm text-muted-foreground">
                         <div className="flex flex-col gap-1">
-                          <span className="font-medium">{service.name}</span>
-                          {billingSummary.reasons.length > 0 && (
-                            <span className="text-xs text-muted-foreground">
-                              {billingSummary.reasons[0]}
-                            </span>
-                          )}
+                          {([
+                            ['Escaner', service.scan_code],
+                            ['Barra', service.barcode],
+                            ['QR', service.qr_code],
+                          ] as const)
+                            .filter(([, code]) => Boolean(code))
+                            .map(([label, code]) => (
+                              <span key={`${service.id}-${label}`} className="text-xs">
+                                {label}: {code}
+                              </span>
+                            ))}
+                          {!service.scan_code && !service.barcode && !service.qr_code && <span>-</span>}
                         </div>
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-sm">{service.category?.name ?? 'Sin categoria'}</TableCell>
-                      <TableCell className="px-4 py-3 text-sm">{service.area?.name ?? 'Sin area'}</TableCell>
-                      <TableCell className="px-4 py-3">
-                        <div className="flex flex-col gap-1">
-                          <span className="font-semibold">{moneyLabel(service.price)}</span>
-                          {!billingSummary.hasConfiguredPrice && (
-                            <span className="text-xs text-amber-700">Sin tarifa operativa</span>
-                          )}
-                        </div>
+                    )}
+                    <TableCell className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {billingSummary.badges.map((badge) => (
+                          <Badge key={`${service.id}-${badge.label}`} variant={badge.tone}>
+                            {badge.label}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    {canManageCatalog && (
+                      <TableCell className="px-4 py-3 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" aria-label={`Acciones de servicio ${service.name}`}>
+                              <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEditService(service)}>
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => toggleServiceActive(service)}
+                              className={service.active ? 'text-destructive' : 'text-emerald-600'}
+                            >
+                              {service.active ? 'Desactivar' : 'Activar'}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
-                      {scannerEnabled && (
-                        <TableCell className="px-4 py-3 text-sm text-muted-foreground">
-                          <div className="flex flex-col gap-1">
-                            {([
-                              ['Escaner', service.scan_code],
-                              ['Barra', service.barcode],
-                              ['QR', service.qr_code],
-                            ] as const)
-                              .filter(([, code]) => Boolean(code))
-                              .map(([label, code]) => (
-                                <span key={`${service.id}-${label}`} className="text-xs">
-                                  {label}: {code}
-                                </span>
-                              ))}
-                            {!service.scan_code && !service.barcode && !service.qr_code && <span>-</span>}
-                          </div>
-                        </TableCell>
-                      )}
-                      <TableCell className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {billingSummary.badges.map((badge) => (
-                            <Badge key={`${service.id}-${badge.label}`} variant={badge.tone}>
-                              {badge.label}
-                            </Badge>
-                          ))}
-                        </div>
-                      </TableCell>
-                      {canManageCatalog && (
-                        <TableCell className="px-4 py-3 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" aria-label={`Acciones de servicio ${service.name}`}>
-                                <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openEditService(service)}>
-                                Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => toggleServiceActive(service)}
-                                className={service.active ? 'text-destructive' : 'text-emerald-600'}
-                              >
-                                {service.active ? 'Desactivar' : 'Activar'}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                    )}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </Card>
       ) : null}
 
       {!isEmpty && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm text-muted-foreground">
               Mostrando {services.length} de {meta.total} servicios
             </span>
