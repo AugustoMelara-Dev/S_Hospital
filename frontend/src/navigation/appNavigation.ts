@@ -81,12 +81,12 @@ export const appRoutes = {
   },
   catalog: {
     id: 'catalog',
-    label: 'Catalogo',
+    label: 'Catálogo',
     path: '/catalog',
     icon: Boxes,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
-      { label: 'Catalogo', path: '/catalog' },
+      { label: 'Catálogo', path: '/catalog' },
     ],
     navigation: true,
     navigationPermissions: ['catalog.view'],
@@ -138,12 +138,12 @@ export const appRoutes = {
   },
   fiscalSettings: {
     id: 'fiscalSettings',
-    label: 'Configuracion',
+    label: 'Configuración',
     path: '/settings/fiscal',
     icon: Settings,
     breadcrumbs: [
       { label: 'Inicio', path: '/dashboard' },
-      { label: 'Configuracion', path: '/settings/fiscal' },
+      { label: 'Configuración', path: '/settings/fiscal' },
     ],
     navigation: true,
     navigationPermissions: ['settings.fiscal.view'],

@@ -21,11 +21,11 @@ const forbiddenBranding = [
 
 const screens = [
   { name: 'f3-dashboard', route: '/dashboard', navLabel: 'Inicio', heading: /inicio/i, evidence: /Abrir caja|Nueva factura/i },
-  { name: 'f3-catalog', route: '/catalog', navLabel: 'Catalogo', heading: /cat[aá]logo de servicios/i, evidence: /servicio|categoria/i },
+  { name: 'f3-catalog', route: '/catalog', navLabel: 'Catálogo', heading: /cat[aá]logo de servicios/i, evidence: /servicio|categoria/i },
   { name: 'f3-new-invoice', route: '/billing/new', navLabel: 'Nueva factura', heading: /nueva factura/i, evidence: /paciente|servicio/i },
   { name: 'f3-cashbox', route: '/cashbox', navLabel: 'Caja', heading: /^caja$/i, evidence: /Sin caja abierta|Caja lista|Abrir caja/i },
   { name: 'f3-backups', route: '/backups', navLabel: 'Respaldos', heading: /respaldos/i, evidence: /Worker activo|Worker inactivo|Estado operativo/i },
-  { name: 'f3-settings-fiscal', route: '/settings/fiscal', navLabel: 'Configuracion', heading: /configuraci.n/i, evidence: /Hospital|RTN|CAI|Secuencia/i },
+  { name: 'f3-settings-fiscal', route: '/settings/fiscal', navLabel: 'Configuración', heading: /configuraci.n/i, evidence: /Hospital|RTN|CAI|Secuencia/i },
 ];
 
 function sanitizeLogText(text) {
@@ -76,11 +76,11 @@ async function assertShellNavigation(page, context) {
     'Inicio',
     'Nueva factura',
     'Caja',
-    'Catalogo',
+    'Catálogo',
     'Historial',
     'Reportes',
     'Respaldos',
-    'Configuracion',
+    'Configuración',
     'Usuarios',
     'Ayuda',
     'Acerca de',

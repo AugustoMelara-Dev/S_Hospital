@@ -17,11 +17,11 @@ describe('appNavigation', () => {
       'Inicio',
       'Nueva factura',
       'Caja',
-      'Catalogo',
+      'Catálogo',
       'Historial',
       'Reportes',
       'Respaldos',
-      'Configuracion',
+      'Configuración',
       'Usuarios',
       'Ayuda',
       'Acerca de',
@@ -37,7 +37,7 @@ describe('appNavigation', () => {
     ]);
     expect(getBreadcrumbs('/settings/fiscal')).toEqual([
       { label: 'Inicio', path: '/dashboard' },
-      { label: 'Configuracion', path: '/settings/fiscal' },
+      { label: 'Configuración', path: '/settings/fiscal' },
     ]);
     expect(getBreadcrumbs('/admin/users')).toEqual([
       { label: 'Inicio', path: '/dashboard' },
