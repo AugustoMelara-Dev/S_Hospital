@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
+import { invalidateBillingQueries } from '@/lib/queryInvalidation';
+import { queryKeys } from '@/lib/queryKeys';
 
 export function useCashSession() {
   return useQuery({
-    queryKey: ['cash-sessions', 'current'],
+    queryKey: queryKeys.cashSessions.current(),
     queryFn: () => apiClient.getCurrentCashSession(),
   });
 }
@@ -15,7 +17,7 @@ export function useOpenCashSession() {
     mutationFn: (payload: { opening_amount: string; notes?: string | null }) =>
       apiClient.openCashSession(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
+      return invalidateBillingQueries(queryClient);
     },
   });
 }
@@ -27,8 +29,7 @@ export function useCloseCashSession() {
     mutationFn: ({ id, payload }: { id: number; payload: { closing_amount: string; notes?: string | null } }) =>
       apiClient.closeCashSession(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      return invalidateBillingQueries(queryClient);
     },
   });
 }

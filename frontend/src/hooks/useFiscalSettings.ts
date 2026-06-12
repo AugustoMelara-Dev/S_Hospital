@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import type { FiscalSettings } from '@/lib/api';
+import { invalidateSettingsQueries } from '@/lib/queryInvalidation';
+import { queryKeys } from '@/lib/queryKeys';
 
 export function useFiscalSettings() {
   return useQuery({
-    queryKey: ['settings', 'fiscal'],
+    queryKey: queryKeys.settings.fiscal(),
     queryFn: () => apiClient.getFiscalSettings(),
     staleTime: 60_000,
   });
@@ -12,7 +14,7 @@ export function useFiscalSettings() {
 
 export function usePublicBranding() {
   return useQuery({
-    queryKey: ['settings', 'branding'],
+    queryKey: queryKeys.settings.branding(),
     queryFn: () => apiClient.getPublicBranding(),
   });
 }
@@ -23,7 +25,7 @@ export function useUpdateFiscalSettings() {
   return useMutation({
     mutationFn: (payload: FiscalSettings) => apiClient.updateFiscalSettings(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings', 'fiscal'] });
+      return invalidateSettingsQueries(queryClient);
     },
   });
 }

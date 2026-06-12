@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
+import { invalidateCatalogQueries } from '@/lib/queryInvalidation';
+import { queryKeys } from '@/lib/queryKeys';
 
 export function useCategories(active?: boolean) {
   return useQuery({
-    queryKey: ['categories', { active }],
+    queryKey: queryKeys.categories.list(active),
     queryFn: () => apiClient.getCategories(active),
   });
 }
@@ -14,7 +16,7 @@ export function useCreateCategory() {
   return useMutation({
     mutationFn: (payload: Parameters<typeof apiClient.saveCategory>[0]) => apiClient.saveCategory(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      return invalidateCatalogQueries(queryClient);
     },
   });
 }
@@ -26,7 +28,7 @@ export function useUpdateCategory() {
     mutationFn: ({ id, payload }: { id: number; payload: Parameters<typeof apiClient.saveCategory>[0] }) =>
       apiClient.saveCategory(payload, id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      return invalidateCatalogQueries(queryClient);
     },
   });
 }

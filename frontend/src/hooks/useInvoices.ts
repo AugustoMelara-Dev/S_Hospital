@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import type { InvoiceFilters, InvoicePayload } from '@/lib/api';
+import { invalidateBillingQueries } from '@/lib/queryInvalidation';
+import { queryKeys } from '@/lib/queryKeys';
 
 export function useInvoices(filters: InvoiceFilters = {}) {
   return useQuery({
-    queryKey: ['invoices', filters],
+    queryKey: queryKeys.invoices.list(filters),
     queryFn: () => apiClient.getInvoices(filters),
     staleTime: 30_000,
   });
@@ -12,7 +14,7 @@ export function useInvoices(filters: InvoiceFilters = {}) {
 
 export function useInvoice(id: number) {
   return useQuery({
-    queryKey: ['invoices', id],
+    queryKey: queryKeys.invoices.detail(id),
     queryFn: () => apiClient.getInvoice(id),
     enabled: !!id,
   });
@@ -24,7 +26,7 @@ export function useCreateInvoice() {
   return useMutation({
     mutationFn: (payload: InvoicePayload) => apiClient.createInvoice(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      return invalidateBillingQueries(queryClient);
     },
   });
 }

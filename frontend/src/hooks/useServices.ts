@@ -1,17 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import type { ServiceFilters } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 export function useServices(filters: ServiceFilters = {}) {
   return useQuery({
-    queryKey: ['services', filters],
+    queryKey: queryKeys.services.list(filters),
     queryFn: () => apiClient.getServicesPage(filters),
   });
 }
 
 export function useService(id: number) {
   return useQuery({
-    queryKey: ['services', id],
+    queryKey: queryKeys.services.detail(id),
     queryFn: () => apiClient.getServices({}).then((services) => services.find((s) => s.id === id)),
     enabled: !!id,
   });
