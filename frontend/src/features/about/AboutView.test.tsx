@@ -1,10 +1,14 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AboutView } from './AboutView';
+import { useBackups } from '../../hooks/useBackups';
 import { useFiscalSettings } from '../../hooks/useFiscalSettings';
-import { useServerStatus } from '../../hooks/useServerStatus';
-import { apiClient } from '../../lib/api';
+import { useServerStatus, useSystemStatusSnapshot } from '../../hooks/useServerStatus';
 import type { SystemStatus } from '../../lib/api';
+
+vi.mock('../../hooks/useBackups', () => ({
+  useBackups: vi.fn(),
+}));
 
 vi.mock('../../hooks/useFiscalSettings', () => ({
   useFiscalSettings: vi.fn(),
@@ -12,14 +16,7 @@ vi.mock('../../hooks/useFiscalSettings', () => ({
 
 vi.mock('../../hooks/useServerStatus', () => ({
   useServerStatus: vi.fn(),
-}));
-
-vi.mock('../../lib/api', () => ({
-  apiClient: {
-    getBackups: vi.fn(),
-    getSystemStatus: vi.fn(),
-  },
-  userSafeErrorMessage: vi.fn((_error: unknown, fallback: string) => fallback),
+  useSystemStatusSnapshot: vi.fn(),
 }));
 
 describe('AboutView', () => {
@@ -46,8 +43,24 @@ describe('AboutView', () => {
     vi.mocked(useFiscalSettings).mockReturnValue({
       data: { hospital_name: 'Hospital San Isidro' },
     } as ReturnType<typeof useFiscalSettings>);
-    vi.mocked(apiClient.getBackups).mockResolvedValue({ data: [], meta: { current_page: 1, per_page: 15, total: 0 } });
-    vi.mocked(apiClient.getSystemStatus).mockResolvedValue(mockSystemStatus());
+    vi.mocked(useBackups).mockReturnValue({
+      hasPending: false,
+      pollIntervalMs: false,
+      data: { data: [], meta: { current_page: 1, per_page: 1, total: 0 } },
+      isError: false,
+      error: null,
+      isPending: false,
+      isLoading: false,
+      isFetching: false,
+    } as unknown as ReturnType<typeof useBackups>);
+    vi.mocked(useSystemStatusSnapshot).mockReturnValue({
+      data: mockSystemStatus(),
+      isError: false,
+      error: null,
+      isPending: false,
+      isLoading: false,
+      isFetching: false,
+    } as unknown as ReturnType<typeof useSystemStatusSnapshot>);
   });
 
   it('shows the operational health summary in non-technical language', async () => {
@@ -67,8 +80,8 @@ describe('AboutView', () => {
 
     expect(screen.getAllByText('Todo bien')).toHaveLength(2);
     expect(screen.getByText(/base de datos y respaldos responden/i)).toBeInTheDocument();
-    await waitFor(() => expect(apiClient.getBackups).toHaveBeenCalled());
-    expect(apiClient.getSystemStatus).not.toHaveBeenCalled();
+    await waitFor(() => expect(useBackups).toHaveBeenCalled());
+    expect(useSystemStatusSnapshot).toHaveBeenCalledWith(false);
   });
 
   it('shows a review summary without exposing raw technical details', async () => {
@@ -89,7 +102,7 @@ describe('AboutView', () => {
     expect(screen.getAllByText('Requiere revision')).toHaveLength(2);
     expect(screen.getByText(/pida soporte/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/queue:work|App\\\\|DB_PASSWORD|\.env|C:\\\\/i);
-    await waitFor(() => expect(apiClient.getBackups).toHaveBeenCalled());
+    await waitFor(() => expect(useBackups).toHaveBeenCalled());
   });
 
   it('shows protected administrative diagnostics with human-safe labels for admin users', async () => {
@@ -118,7 +131,7 @@ describe('AboutView', () => {
     expect(screen.getByText(/America\/Tegucigalpa/i)).toBeInTheDocument();
     expect(screen.getByText(/1\.0\.0-rc\.3/i)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/queue:work|APP_KEY|DB_PASSWORD|\.env|C:\\\\/i);
-    expect(apiClient.getSystemStatus).toHaveBeenCalledOnce();
+    expect(useSystemStatusSnapshot).toHaveBeenCalledWith(true);
   });
 });
 

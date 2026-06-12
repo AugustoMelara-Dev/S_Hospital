@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
 import { Building2, Clock3, HardDrive, HeartHandshake, MonitorCheck, Network, ShieldCheck } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { PageHeader } from '../../components/ui/page-header';
+import { useBackups } from '../../hooks/useBackups';
 import { useFiscalSettings } from '../../hooks/useFiscalSettings';
-import { useServerStatus } from '../../hooks/useServerStatus';
-import { type AuthUser, type SystemStatus, apiClient, userSafeErrorMessage } from '../../lib/api';
+import { useServerStatus, useSystemStatusSnapshot } from '../../hooks/useServerStatus';
+import { type AuthUser, type SystemStatus, userSafeErrorMessage } from '../../lib/api';
 import { displayHospitalName } from '../../lib/hospital-name';
 
 type AboutViewProps = {
@@ -23,45 +23,15 @@ type AdminDiagnosticItem = {
 export function AboutView({ user, onStatus }: AboutViewProps) {
   const { data: fiscal } = useFiscalSettings();
   const { checking, isOnline, lastCheck, summary } = useServerStatus();
-  const [backupCount, setBackupCount] = useState<number | string>('...');
-  const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
-  const [systemStatusError, setSystemStatusError] = useState('');
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
   const canViewAdminDiagnostics = user.roles.includes('admin');
-
-  useEffect(() => {
-    async function fetchBackupCount() {
-      try {
-        const backupsData = await apiClient.getBackups();
-        setBackupCount(Array.isArray(backupsData.data) ? backupsData.data.length : 0);
-      } catch {
-        setBackupCount('Sin dato');
-      }
-    }
-
-    void fetchBackupCount();
-  }, []);
-
-  useEffect(() => {
-    if (!canViewAdminDiagnostics) {
-      setSystemStatus(null);
-      setSystemStatusError('');
-      return;
-    }
-
-    async function fetchSystemStatus() {
-      setSystemStatusError('');
-
-      try {
-        setSystemStatus(await apiClient.getSystemStatus());
-      } catch (error) {
-        setSystemStatus(null);
-        setSystemStatusError(userSafeErrorMessage(error, 'No se pudo cargar el diagnostico administrativo.'));
-      }
-    }
-
-    void fetchSystemStatus();
-  }, [canViewAdminDiagnostics]);
+  const backupsQuery = useBackups({ page: 1, perPage: 1 });
+  const systemStatusQuery = useSystemStatusSnapshot(canViewAdminDiagnostics);
+  const backupCount = backupsQuery.isError ? 'Sin dato' : (backupsQuery.data?.meta.total ?? '...');
+  const systemStatus = canViewAdminDiagnostics ? (systemStatusQuery.data ?? null) : null;
+  const systemStatusError = systemStatusQuery.isError
+    ? userSafeErrorMessage(systemStatusQuery.error, 'No se pudo cargar el diagnostico administrativo.')
+    : '';
 
   const triggerDiagnosticTest = () => {
     onStatus('Revisando conexion local...');

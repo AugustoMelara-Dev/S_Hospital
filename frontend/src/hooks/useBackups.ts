@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { apiClient, type BackupLog } from '@/lib/api';
+import { invalidateBackupQueries } from '@/lib/queryInvalidation';
+import { queryKeys } from '@/lib/queryKeys';
 
 export interface BackupsFilters {
   page?: number;
@@ -14,10 +16,16 @@ const HEALTH_POLL_INTERVAL_MS = 60_000;
 
 export function useBackups(filters: BackupsFilters = {}) {
   const query = useQuery({
-    queryKey: ['backups', filters],
+    queryKey: queryKeys.backups.list(filters),
     queryFn: () => apiClient.getBackups(filters),
     placeholderData: keepPreviousData,
     staleTime: STALE_TIME_MS,
+    refetchInterval: (currentQuery) => {
+      const backups = currentQuery.state.data?.data ?? [];
+      return backups.some((backup: BackupLog) => backup.status === 'pending')
+        ? PENDING_POLL_INTERVAL_MS
+        : false;
+    },
   });
 
   const hasPending = useMemo(
@@ -38,7 +46,7 @@ export function useCreateBackup() {
   return useMutation({
     mutationFn: () => apiClient.createBackup(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['backups'] });
+      return invalidateBackupQueries(queryClient);
     },
   });
 }
@@ -52,7 +60,7 @@ export interface BackupWorkerHealth {
 
 export function useBackupWorkerHealth(enabled = true) {
   return useQuery({
-    queryKey: ['backups', 'worker-health'],
+    queryKey: queryKeys.backups.workerHealth(),
     queryFn: async (): Promise<BackupWorkerHealth> => {
       const health = await apiClient.getSystemHealth();
       const backups = health.backups ?? {};

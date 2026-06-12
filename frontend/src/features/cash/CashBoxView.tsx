@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CashSession, apiClient, userSafeErrorMessage } from '@/lib/api';
 import { formatLempiras, parseCents, toFloat } from '@/lib/money';
+import { invalidateBillingQueries } from '@/lib/queryInvalidation';
+import { queryKeys } from '@/lib/queryKeys';
 import { SessionStatusCard } from './components/SessionStatusCard';
 import { OpenSessionForm } from './components/OpenSessionForm';
 import { SessionSummary } from './components/SessionSummary';
@@ -47,7 +49,7 @@ export function CashBoxView({
   const closingAmountRef = useRef<HTMLInputElement | null>(null);
 
   const { data: session, isLoading, refetch } = useQuery({
-    queryKey: ['cash-sessions', 'current'],
+    queryKey: queryKeys.cashSessions.current(),
     queryFn: () => apiClient.getCurrentCashSession(),
     // Multi-PC LAN: another cashier may close the box. Poll every
     // 10s so this UI shows "Sin caja" within the same window without
@@ -57,7 +59,7 @@ export function CashBoxView({
   });
 
   const { data: movementsData } = useQuery({
-    queryKey: ['cash-sessions', session?.id, 'movements'],
+    queryKey: queryKeys.cashSessions.movements(session?.id),
     queryFn: () =>
       session?.id && canViewCashSessionReport
         ? apiClient.getCashSessionReport(String(session.id)).then((report) => report.movements)
@@ -70,9 +72,9 @@ export function CashBoxView({
   const openSessionMutation = useMutation({
     mutationFn: (payload: { opening_amount: string; notes?: string | null }) =>
       apiClient.openCashSession(payload),
-    onSuccess: (opened) => {
-      queryClient.setQueryData(['cash-sessions', 'current'], opened);
-      queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
+    onSuccess: async (opened) => {
+      queryClient.setQueryData(queryKeys.cashSessions.current(), opened);
+      await invalidateBillingQueries(queryClient);
       setClosingAmount('');
       setClosingNotes('');
       setFormAlert(null);
@@ -89,10 +91,9 @@ export function CashBoxView({
   const closeSessionMutation = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: { closing_amount: string; notes?: string | null } }) =>
       apiClient.closeCashSession(id, payload),
-    onSuccess: () => {
-      queryClient.setQueryData(['cash-sessions', 'current'], null);
-      queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+    onSuccess: async () => {
+      queryClient.setQueryData(queryKeys.cashSessions.current(), null);
+      await invalidateBillingQueries(queryClient);
       setClosingAmount('');
       setClosingNotes('');
       setFormAlert(null);

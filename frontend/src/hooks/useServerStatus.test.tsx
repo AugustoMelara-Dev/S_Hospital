@@ -1,53 +1,54 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { useServerStatus } from './useServerStatus';
+import { apiClient } from '@/lib/api';
+
+vi.mock('@/lib/api', () => ({
+  apiClient: {
+    getSystemHealth: vi.fn(),
+  },
+}));
+
+const mockedGetSystemHealth = vi.mocked(apiClient.getSystemHealth);
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+    },
+  });
+
+  return ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+}
 
 describe('useServerStatus', () => {
-  it('reads the public operational health endpoint', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ data: healthySnapshot() }), {
-        headers: { 'Content-Type': 'application/json' },
-        status: 200,
-      }),
-    );
-    vi.stubGlobal('fetch', fetchMock);
+  it('reads the public operational health query once the hook mounts', async () => {
+    mockedGetSystemHealth.mockResolvedValue(healthySnapshot());
 
-    render(<ServerStatusProbe />);
+    render(<ServerStatusProbe />, { wrapper: createWrapper() });
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-
-    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/api/system/health');
+    await waitFor(() => expect(mockedGetSystemHealth).toHaveBeenCalledTimes(1));
   });
 
   it('summarizes a healthy LAN server in cashier-safe language', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ data: healthySnapshot() }), {
-          headers: { 'Content-Type': 'application/json' },
-          status: 200,
-        }),
-      ),
-    );
+    mockedGetSystemHealth.mockResolvedValue(healthySnapshot());
 
-    render(<ServerStatusProbe />);
+    render(<ServerStatusProbe />, { wrapper: createWrapper() });
 
     expect(await screen.findByText('Todo bien')).toBeInTheDocument();
     expect(screen.getByText(/servidor local, base de datos y respaldos responden/i)).toBeInTheDocument();
   });
 
   it('turns database failures into an actionable operator summary', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ data: healthySnapshot({ database: { connected: false, driver: 'sqlite' } }) }), {
-          headers: { 'Content-Type': 'application/json' },
-          status: 200,
-        }),
-      ),
+    mockedGetSystemHealth.mockResolvedValue(
+      healthySnapshot({ database: { connected: false, driver: 'sqlite' } }),
     );
 
-    render(<ServerStatusProbe />);
+    render(<ServerStatusProbe />, { wrapper: createWrapper() });
 
     expect(await screen.findByText('Error')).toBeInTheDocument();
     expect(screen.getByText(/base de datos local no responde/i)).toBeInTheDocument();
@@ -116,5 +117,5 @@ type OperationalHealthFixture = {
     backup_bytes: number;
     backup_files: number;
   };
-  recent_errors: Array<{ action: string; created_at: string }>;
+  recent_errors: Array<{ id: number; action: string; entity_type: string; created_at: string }>;
 };

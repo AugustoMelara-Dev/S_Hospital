@@ -1,32 +1,6 @@
-import { useEffect, useState } from 'react';
-import { apiClient } from '../lib/api/base';
-
-type OperationalHealth = {
-  generated_at: string;
-  database?: {
-    connected?: boolean;
-    driver?: string;
-  };
-  queue?: {
-    connection?: string;
-    failed?: number;
-    pending?: number;
-    error?: string;
-  };
-  backups?: {
-    failed_last_24h?: number;
-    pending?: number;
-    success_last_24h?: number;
-    worker_recently_active?: boolean;
-    error?: string;
-  };
-  storage?: {
-    backup_bytes?: number;
-    backup_files?: number;
-    error?: string;
-  };
-  recent_errors?: Array<{ action: string; created_at: string }>;
-};
+import { useQuery } from '@tanstack/react-query';
+import { apiClient, type OperationalHealth, type SystemStatus } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 export type ServerStatusSummary = {
   level: 'ok' | 'review' | 'error';
@@ -40,78 +14,62 @@ const WAITING_SUMMARY: ServerStatusSummary = {
   description: 'Esperando diagnostico del servidor local.',
 };
 
-export function useServerStatus() {
-  const [isOnline, setIsOnline] = useState<boolean>(true);
-  const [lastCheck, setLastCheck] = useState<Date | null>(null);
-  const [checking, setChecking] = useState<boolean>(false);
-  const [operationalHealth, setOperationalHealth] = useState<OperationalHealth | null>(null);
-  const [summary, setSummary] = useState<ServerStatusSummary>(WAITING_SUMMARY);
+const HEALTH_POLL_INTERVAL_MS = 30_000;
+const STATUS_STALE_TIME_MS = 60_000;
 
-  useEffect(() => {
-    let active = true;
+function nextRefreshInterval() {
+  if (typeof document === 'undefined') {
+    return HEALTH_POLL_INTERVAL_MS;
+  }
 
-    const checkStatus = async () => {
-      if (!active) return;
-      setChecking(true);
-      try {
-        const response = await fetch(apiClient.url('/api/system/health'), {
-          method: 'GET',
-          cache: 'no-store',
-          headers: {
-            'Accept': 'application/json',
-          },
-        });
-        if (response.ok) {
-          const payload = (await response.json().catch(() => null)) as { data?: OperationalHealth } | null;
-          const health = payload?.data ?? null;
-
-          setOperationalHealth(health);
-          setSummary(summarizeOperationalHealth(true, health));
-          setIsOnline(true);
-        } else {
-          setOperationalHealth(null);
-          setSummary(summarizeOperationalHealth(false, null));
-          setIsOnline(false);
-        }
-      } catch {
-        setOperationalHealth(null);
-        setSummary(summarizeOperationalHealth(false, null));
-        setIsOnline(false);
-      } finally {
-        if (active) {
-          setChecking(false);
-          setLastCheck(new Date());
-        }
-      }
-    };
-
-    // Initial check
-    checkStatus();
-
-    // Set interval to check every 30 seconds, but pause while the tab
-    // is hidden to avoid hammering the server and draining the laptop
-    // battery during cashier breaks.
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        void checkStatus();
-      }
-    }, 30_000);
-
-    return () => {
-      active = false;
-      clearInterval(interval);
-    };
-  }, []);
-
-  return { isOnline, lastCheck, checking, operationalHealth, summary };
+  return document.visibilityState === 'visible' ? HEALTH_POLL_INTERVAL_MS : false;
 }
 
-export function summarizeOperationalHealth(isOnline: boolean, health: OperationalHealth | null): ServerStatusSummary {
+export function useOperationalHealth(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.system.health(),
+    queryFn: () => apiClient.getSystemHealth(),
+    enabled,
+    staleTime: HEALTH_POLL_INTERVAL_MS / 2,
+    retry: false,
+    refetchInterval: () => nextRefreshInterval(),
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useSystemStatusSnapshot(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.system.status(),
+    queryFn: () => apiClient.getSystemStatus(),
+    enabled,
+    staleTime: STATUS_STALE_TIME_MS,
+    retry: false,
+  });
+}
+
+export function useServerStatus() {
+  const query = useOperationalHealth();
+  const lastUpdatedAt = Math.max(query.dataUpdatedAt, query.errorUpdatedAt);
+
+  return {
+    isOnline: !query.isError,
+    lastCheck: lastUpdatedAt > 0 ? new Date(lastUpdatedAt) : null,
+    checking: query.isFetching,
+    operationalHealth: query.data ?? null,
+    summary: summarizeOperationalHealth(!query.isError, query.data ?? null),
+  };
+}
+
+export function summarizeOperationalHealth(
+  isOnline: boolean,
+  health: OperationalHealth | null,
+): ServerStatusSummary {
   if (!isOnline) {
     return {
       level: 'error',
       label: 'Error',
-      description: 'No se pudo confirmar el servidor local. Revise que la computadora servidor este encendida y conectada a la red.',
+      description:
+        'No se pudo confirmar el servidor local. Revise que la computadora servidor este encendida y conectada a la red.',
     };
   }
 
@@ -123,7 +81,8 @@ export function summarizeOperationalHealth(isOnline: boolean, health: Operationa
     return {
       level: 'error',
       label: 'Error',
-      description: 'La base de datos local no responde. Detenga la facturacion y pida soporte antes de repetir cobros o facturas.',
+      description:
+        'La base de datos local no responde. Detenga la facturacion y pida soporte antes de repetir cobros o facturas.',
     };
   }
 
@@ -135,7 +94,8 @@ export function summarizeOperationalHealth(isOnline: boolean, health: Operationa
     return {
       level: 'review',
       label: 'Requiere revision',
-      description: 'Hay trabajos o respaldos con alerta. Revise Respaldos y pida soporte si el problema se repite.',
+      description:
+        'Hay trabajos o respaldos con alerta. Revise Respaldos y pida soporte si el problema se repite.',
     };
   }
 
@@ -148,13 +108,17 @@ export function summarizeOperationalHealth(isOnline: boolean, health: Operationa
     return {
       level: 'review',
       label: 'Requiere revision',
-      description: 'El sistema responde, pero conviene revisar respaldos y tareas automaticas antes del cierre diario.',
+      description:
+        'El sistema responde, pero conviene revisar respaldos y tareas automaticas antes del cierre diario.',
     };
   }
 
   return {
     level: 'ok',
     label: 'Todo bien',
-    description: 'Servidor local, base de datos y respaldos responden. Mantenga el cierre diario y los respaldos protegidos.',
+    description:
+      'Servidor local, base de datos y respaldos responden. Mantenga el cierre diario y los respaldos protegidos.',
   };
 }
+
+export type { OperationalHealth, SystemStatus };
