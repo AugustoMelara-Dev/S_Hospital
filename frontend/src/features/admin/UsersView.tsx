@@ -9,7 +9,7 @@ import {
   userSafeErrorMessage,
 } from '@/lib/api';
 import { PageHeader } from '@/components/ui/page-header';
-import { LoadingState } from '@/components/ui/states';
+import { ErrorState, LoadingState } from '@/components/ui/states';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,6 +82,7 @@ type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
 export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   
   // User Modal (Create/Edit)
@@ -131,11 +132,13 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const data = await apiClient.getUsers();
       setUsers(data);
     } catch (err) {
       const msg = userSafeErrorMessage(err, 'No se pudieron cargar los usuarios.');
+      setLoadError(msg);
       onStatus(msg);
     } finally {
       setLoading(false);
@@ -274,6 +277,26 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
     return <LoadingState label="Cargando usuarios..." />;
   }
 
+  if (loadError) {
+    return (
+      <>
+        <PageHeader
+          title="Usuarios"
+          description="Administre el personal autorizado para facturar, cobrar y supervisar."
+        />
+        <ErrorState
+          title="No se pudieron cargar los usuarios"
+          description={loadError}
+          action={(
+            <Button type="button" variant="secondary" onClick={() => void fetchUsers()}>
+              Reintentar
+            </Button>
+          )}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <PageHeader
@@ -285,6 +308,7 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
+            aria-label="Buscar usuarios"
             placeholder="Buscar por nombre, correo o usuario..."
             className="pl-9"
             value={searchTerm}
@@ -377,6 +401,7 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                           variant="secondary"
                           size="sm"
                           title="Editar detalles"
+                          aria-label={`Editar usuario ${user.name}`}
                           onClick={() => handleOpenEditModal(user)}
                         >
                           <Edit2 className="h-3.5 w-3.5" />
@@ -385,6 +410,7 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                           variant="secondary"
                           size="sm"
                           title="Restablecer clave"
+                          aria-label={`Restablecer clave de ${user.name}`}
                           onClick={() => handleOpenResetModal(user)}
                         >
                           <KeyRound className="h-3.5 w-3.5 text-orange-500" />
@@ -393,6 +419,7 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                           variant="secondary"
                           size="sm"
                           title={user.active ? 'Desactivar usuario' : 'Activar usuario'}
+                          aria-label={user.active ? `Desactivar usuario ${user.name}` : `Activar usuario ${user.name}`}
                           onClick={() => handleOpenToggleDialog(user)}
                         >
                           {user.active ? (

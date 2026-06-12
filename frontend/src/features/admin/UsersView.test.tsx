@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UsersView } from './UsersView';
-import { apiClient, type AuthUser } from '@/lib/api';
+import { ApiError, apiClient, type AuthUser } from '@/lib/api';
 
 const passwordPolicyMessage = /contraseña debe tener al menos 10 caracteres e incluir letras y números/i;
 
@@ -30,7 +30,30 @@ describe('UsersView', () => {
     render(<UsersView onStatus={vi.fn()} canCreateUsers={false} />);
 
     expect(await screen.findByText('Admin Hospital')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /buscar usuarios/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /editar usuario admin hospital/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /restablecer clave de admin hospital/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /desactivar usuario admin hospital/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /crear usuario/i })).not.toBeInTheDocument();
+  });
+
+  it('shows a recoverable load error instead of leaving users in loading', async () => {
+    const getUsers = vi.mocked(apiClient.getUsers);
+    getUsers
+      .mockRejectedValueOnce(new ApiError('Too many requests', 429))
+      .mockResolvedValueOnce([adminUser]);
+    const onStatus = vi.fn();
+
+    render(<UsersView onStatus={onStatus} canCreateUsers={false} />);
+
+    expect(await screen.findByRole('heading', { name: /no se pudieron cargar los usuarios/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /reintentar/i })).toBeInTheDocument();
+    expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/demasiados intentos/i));
+
+    fireEvent.click(screen.getByRole('button', { name: /reintentar/i }));
+
+    expect(await screen.findByText('Admin Hospital')).toBeInTheDocument();
+    expect(getUsers).toHaveBeenCalledTimes(2);
   });
 
   it('validates new user passwords with the same policy as Laravel', async () => {

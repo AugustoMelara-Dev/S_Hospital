@@ -41,6 +41,7 @@ describe('InvoiceHistoryView', () => {
 
     await waitFor(() => expect(screen.getByText('Paciente Historial')).toBeInTheDocument());
 
+    expect(screen.getByRole('combobox', { name: /estado de factura/i })).toBeInTheDocument();
     expect(document.body.textContent).toContain('L. 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });

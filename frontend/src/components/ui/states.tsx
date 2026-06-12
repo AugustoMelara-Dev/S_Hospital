@@ -41,9 +41,11 @@ export function EmptyState({
 }
 
 export function ErrorState({
+  action,
   description,
   title = 'No se pudo cargar',
 }: {
+  action?: ReactNode;
   description?: string;
   title?: string;
 }) {
@@ -56,6 +58,7 @@ export function ErrorState({
         </div>
         {description ? <CardDescription>{description}</CardDescription> : null}
       </CardHeader>
+      {action ? <CardContent>{action}</CardContent> : null}
     </Card>
   );
 }
