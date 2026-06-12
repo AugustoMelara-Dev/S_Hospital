@@ -196,7 +196,7 @@ async function createAndPayInvoice(page, report) {
   }
 
   await amount.fill(max);
-  await page.getByRole('button', { name: /registrar cobro y ver preview/i }).click();
+  await page.getByRole('button', { name: /confirmar cobro/i }).click();
   await page.getByRole('heading', { name: /vista previa del recibo/i }).waitFor({ timeout: 20000 });
   await page.getByLabel(/recibo institucional/i).waitFor({ timeout: 15000 });
   report.push(await capture(page, 'f4-new-invoice-paid-receipt'));
