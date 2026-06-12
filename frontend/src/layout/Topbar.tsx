@@ -1,24 +1,28 @@
 import {
   ChevronDown,
+  Clock3,
   HelpCircle,
   LogOut,
   Menu,
   Moon,
   Sun,
+  WalletCards,
   Wifi,
   WifiOff,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import { NavLink } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { useFiscalSettings } from '../hooks/useFiscalSettings';
 import { useServerStatus } from '../hooks/useServerStatus';
 import { useTheme } from '../hooks/useTheme';
-import { type AuthUser } from '../lib/api';
+import { type AuthUser, type CashSession } from '../lib/api';
 import { displayHospitalName } from '../lib/hospital-name';
 import { cn } from '../lib/utils';
 
 interface TopbarProps {
+  cashSession: CashSession | null;
   user: AuthUser;
   status: string;
   isMinimalTopbar?: boolean;
@@ -29,6 +33,7 @@ interface TopbarProps {
 }
 
 export function Topbar({
+  cashSession,
   user,
   status,
   isMinimalTopbar = false,
@@ -40,10 +45,23 @@ export function Topbar({
   const { setTheme, isDark } = useTheme();
   const { isOnline, lastCheck } = useServerStatus();
   const { data: fiscal } = useFiscalSettings();
+  const [now, setNow] = useState(() => new Date());
   const hospitalName = displayHospitalName(fiscal?.hospital_name);
+  const currentCrumb = crumbs.at(-1);
+  const currentTitle = currentCrumb?.label ?? 'Inicio';
+  const cashLabel = cashSession?.status === 'open' ? `Caja #${cashSession.id}` : 'Sin caja abierta';
+  const localTime = new Intl.DateTimeFormat('es-HN', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(now);
   const lanStatusTitle = isOnline
     ? `Red local disponible${lastCheck ? `. Ultima revision: ${lastCheck.toLocaleTimeString()}` : ''}`
     : `Sin conexion al servidor local. Estado: ${status}`;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <header className="print-hidden sticky top-0 z-10 flex min-h-16 items-center gap-3 border-b border-border bg-card/95 px-4 shadow-sm backdrop-blur-sm lg:px-6">
@@ -59,6 +77,11 @@ export function Topbar({
       </Button>
 
       <div className="min-w-0 flex-1">
+        {!isMinimalTopbar && (
+          <p className="truncate text-sm font-semibold text-foreground sm:text-base" title={currentTitle}>
+            {currentTitle}
+          </p>
+        )}
         {!isMinimalTopbar && (
           <nav className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground" aria-label="Ubicacion">
             {crumbs.map((crumb, index) => (
@@ -80,6 +103,26 @@ export function Topbar({
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
+        {!isMinimalTopbar && (
+          <div
+            className="hidden items-center gap-1.5 rounded-full border border-border bg-muted/50 px-2.5 py-1 text-xs font-semibold text-muted-foreground md:flex"
+            title={cashLabel}
+          >
+            <WalletCards data-icon="inline-start" aria-hidden="true" />
+            <span>{cashLabel}</span>
+          </div>
+        )}
+
+        {!isMinimalTopbar && (
+          <div
+            className="hidden items-center gap-1.5 rounded-full border border-border bg-muted/50 px-2.5 py-1 text-xs font-semibold text-muted-foreground xl:flex"
+            title="Fecha y hora local del equipo"
+          >
+            <Clock3 data-icon="inline-start" aria-hidden="true" />
+            <time dateTime={now.toISOString()}>{localTime}</time>
+          </div>
+        )}
+
         {!isMinimalTopbar && (
           <div
             className={cn(

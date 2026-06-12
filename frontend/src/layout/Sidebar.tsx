@@ -34,7 +34,7 @@ export function SidebarContent({
     <div className="flex h-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
       <div className="flex items-center gap-3 border-b border-sidebar-border p-5">
         {logoUrl ? (
-          <img src={logoUrl} alt="Logo" className="size-10 shrink-0 rounded-md bg-card object-contain p-1" />
+          <img src={logoUrl} alt="Logo institucional" className="size-10 shrink-0 rounded-md bg-card object-contain p-1" />
         ) : (
           <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
             <ShieldCheck data-icon="inline-start" aria-hidden="true" />

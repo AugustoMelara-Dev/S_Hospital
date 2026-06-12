@@ -80,6 +80,7 @@ export function AppShell({
 
       <div className="flex min-h-screen min-w-0 flex-col lg:ml-64">
         <Topbar
+          cashSession={cashSession}
           user={user}
           status={status}
           isMinimalTopbar={isMinimalTopbar}
