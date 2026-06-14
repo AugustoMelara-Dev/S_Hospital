@@ -421,7 +421,7 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                           {user.active ? (
                             <UserX className="h-3.5 w-3.5 text-rose-500" />
                           ) : (
-                            <UserCheck className="h-3.5 w-3.5 text-emerald-500" />
+                            <UserCheck className="h-3.5 w-3.5 text-success" />
                           )}
                         </Button>
                       </div>

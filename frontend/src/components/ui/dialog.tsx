@@ -31,7 +31,7 @@ export function Dialog({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay data-dialog-overlay className="fixed inset-0 z-50 bg-slate-950/55" />
+        <DialogPrimitive.Overlay data-dialog-overlay className="fixed inset-0 z-50 bg-foreground/55" />
         <DialogPrimitive.Content
           data-dialog-content
           className={cn(

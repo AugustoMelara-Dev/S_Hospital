@@ -56,7 +56,7 @@ export function TopServicesChart({ services }: TopServicesChartProps) {
             {/* Custom Premium progress bar */}
             <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full rounded-full bg-primary/80 transition-all duration-500 group-hover:bg-primary"
+                className="h-full rounded-full bg-primary/80 transition-[width,background-color] duration-500 group-hover:bg-primary"
                 style={{ width: `${pct}%` }}
               />
             </div>

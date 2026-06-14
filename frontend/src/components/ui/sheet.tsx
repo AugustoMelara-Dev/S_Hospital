@@ -16,7 +16,7 @@ export function Sheet({ children, description, onOpenChange, open, title }: Shee
   return (
     <SheetPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <SheetPrimitive.Portal>
-        <SheetPrimitive.Overlay data-sheet-overlay className="fixed inset-0 z-50 bg-slate-950/55" />
+        <SheetPrimitive.Overlay data-sheet-overlay className="fixed inset-0 z-50 bg-foreground/55" />
         <SheetPrimitive.Content
           data-sheet-content
           className="fixed right-0 top-0 z-50 flex h-full w-[calc(100vw-1.5rem)] max-w-lg flex-col overflow-hidden rounded-l-lg border-l border-border bg-card text-card-foreground shadow-xl"

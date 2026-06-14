@@ -435,7 +435,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => toggleServiceActive(service)}
-                              className={service.active ? 'text-destructive' : 'text-emerald-600'}
+                              className={service.active ? 'text-destructive' : 'text-success'}
                             >
                               {service.active ? 'Desactivar' : 'Activar'}
                             </DropdownMenuItem>

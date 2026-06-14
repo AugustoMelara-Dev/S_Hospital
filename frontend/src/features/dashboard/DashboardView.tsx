@@ -172,7 +172,7 @@ export function DashboardView({
       <div className="grid gap-5">
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.15fr_1fr_1fr_0.85fr]" aria-label="Resumen operativo del mes">
           <MetricCard
-            icon={<WalletCards className="size-4 text-emerald-600" />}
+            icon={<WalletCards className="size-4 text-success" />}
             label="Caja"
             value={cashSession ? `Caja #${cashSession.id}` : 'Cerrada'}
             helper={cashSession ? 'Lista para cobrar' : 'Abra caja antes de facturar'}
@@ -187,7 +187,7 @@ export function DashboardView({
           />
 
           <MetricCard
-            icon={<CreditCard className="size-4 text-emerald-600" />}
+            icon={<CreditCard className="size-4 text-success" />}
             label="Cobrado"
             value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : formatLempiras(dashboardData?.current_month.total_collected)}
             helper={dashboardData ? `${dashboardData.current_month.payment_count} pagos recibidos` : 'Cobros del mes'}
@@ -355,7 +355,7 @@ function SetupStepCheck({ label, done, helper }: { label: string; done: boolean;
     <div className="flex items-start gap-3 rounded-md border border-border bg-background p-3">
       <div className="mt-0.5 shrink-0">
         {done ? (
-          <CheckCircle2 className="size-4 text-emerald-600" />
+          <CheckCircle2 className="size-4 text-success" />
         ) : (
           <AlertTriangle className="size-4 text-warning" />
         )}
