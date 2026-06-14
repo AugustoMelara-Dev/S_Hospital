@@ -102,7 +102,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       setServicesData(nextServices);
       setScannerEnabled(fiscalSettings?.scanner_enabled === true);
     } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudo cargar el catalogo.');
+      const message = userSafeErrorMessage(error, 'No se pudo cargar el catálogo.');
       setLoadError(message);
       onStatus(message);
       setCategories([]);
@@ -213,11 +213,11 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
           <h1 id="catalog-title" className="text-2xl font-bold tracking-tight">Catalogo de servicios</h1>
           {!canManageCatalog && (
             <p className="mt-1 text-sm text-muted-foreground">
-              Cajero puede consultar catalogo y precios, sin permisos para modificar servicios.
+              Cajero puede consultar catálogo y precios, sin permisos para modificar servicios.
             </p>
           )}
           <p className="text-sm text-muted-foreground">
-            {meta.total} servicio{meta.total !== 1 ? 's' : ''} en el catalogo
+            {meta.total} servicio{meta.total !== 1 ? 's' : ''} en el catálogo
           </p>
         </div>
         {canManageCatalog && (
@@ -292,7 +292,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       </Card>
 
       {loadError ? (
-        <Alert variant="destructive" title="No se pudo cargar el catalogo">
+        <Alert variant="destructive" title="No se pudo cargar el catálogo">
           {loadError}
         </Alert>
       ) : null}
@@ -338,7 +338,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             <p className="mb-4 text-center text-muted-foreground">
               {hasFilters
                 ? 'No se encontraron servicios con los filtros seleccionados.'
-                : 'Comience agregando su primer servicio al catalogo.'}
+                : 'Comience agregando su primer servicio al catálogo.'}
             </p>
             {hasFilters ? (
               <Button variant="outline" onClick={clearFilters}>

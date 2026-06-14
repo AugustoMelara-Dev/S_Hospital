@@ -88,7 +88,7 @@ export function InvoiceCart({
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-sm truncate">{item.service.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {moneyLabel(item.service.price)} {isFree && <span className="text-emerald-600 font-medium">(Gratis - Receta dialisis)</span>}
+                        {moneyLabel(item.service.price)} {isFree && <span className="font-medium text-success">(Gratis - receta diálisis)</span>}
                       </p>
                     </div>
                     <Button
@@ -145,7 +145,7 @@ export function InvoiceCart({
                         checked={item.dialysisPrescription}
                         onCheckedChange={(checked) => onUpdateDialysisPrescription(index, checked === true)}
                       />
-                      <span className="text-muted-foreground">Receta de dialisis (gratis)</span>
+                      <span className="text-muted-foreground">Receta de diálisis (gratis)</span>
                     </label>
                   )}
                 </div>

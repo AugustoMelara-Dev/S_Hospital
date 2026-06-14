@@ -252,7 +252,7 @@ function adminDiagnosticItems(status: SystemStatus): AdminDiagnosticItem[] {
     },
     {
       label: 'Red local',
-      value: status.network.lan_ready ? 'Direccion LAN configurada' : 'Falta direccion LAN',
+      value: status.network.lan_ready ? 'Dirección LAN configurada' : 'Falta dirección LAN',
       level: status.network.lan_ready ? 'ok' : 'review',
     },
     {

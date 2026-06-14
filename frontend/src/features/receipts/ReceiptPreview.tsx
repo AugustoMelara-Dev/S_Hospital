@@ -41,7 +41,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
       await onPrint?.();
     } catch {
       setPrintError(
-        'No se pudo preparar la impresion del recibo. No repita la factura ni el cobro; revise Historial y pida soporte si la impresora no responde.',
+        'No se pudo preparar la impresión del recibo. No repita la factura ni el cobro; revise Historial y pida soporte si la impresora no responde.',
       );
       return;
     }
@@ -54,7 +54,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
       });
     } catch {
       setPrintError(
-        'No se pudo abrir la ventana de impresion. Verifique la impresora y reimprima desde Historial con motivo cuando el supervisor lo autorice.',
+        'No se pudo abrir la ventana de impresión. Verifique la impresora y reimprima desde Historial con motivo cuando el supervisor lo autorice.',
       );
     }
   }
@@ -78,7 +78,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
     <div className="receipt-preview-panel" aria-label="Vista previa del recibo">
       <div className="receipt-preview-controls no-print">
         <Select value={receiptWidth} onValueChange={(v) => onWidthChange(institutionalReceiptPaperSize(v))}>
-          <SelectTrigger aria-label="Tamano del recibo" className="w-[170px]">
+          <SelectTrigger aria-label="Tamaño del recibo" className="w-[170px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -99,7 +99,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
 
       {printError ? (
         <div className="no-print mb-3">
-          <Alert variant="warning" title="Impresion no completada">
+          <Alert variant="warning" title="Impresión no completada">
             {printError}
           </Alert>
         </div>
@@ -109,7 +109,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
         <div ref={receiptRef} className={`institutional-receipt receipt-${receiptWidth}`} aria-label="Recibo institucional">
           <header className="receipt-header">
             <span>{receipt.institutional?.government_line ?? 'Gobierno de Honduras'}</span>
-            <span>{receipt.institutional?.secretariat_line ?? 'Secretaria de Salud Publica'}</span>
+            <span>{receipt.institutional?.secretariat_line ?? 'Secretaría de Salud Pública'}</span>
             <strong className="hospital-name">{receipt.hospital.name}</strong>
             {location ? <span>{location}</span> : null}
             {receipt.hospital.rtn ? <span>RTN: {receipt.hospital.rtn}</span> : null}

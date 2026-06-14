@@ -214,7 +214,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
         const areaId = findCatalogAreaId(areaMap, item.area);
 
         if (!areaId) {
-          throw new Error(`No existe el area "${item.area}". Revise el catalogo base antes de importar servicios.`);
+          throw new Error(`No existe el área "${item.area}". Revise el catálogo base antes de importar servicios.`);
         }
 
         // Ensure category exists
@@ -277,7 +277,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             <div className="h-px w-8 bg-border" />
             <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 2 ? 'text-secondary' : 'text-muted-foreground'}`}>
               <span className={`flex size-6 items-center justify-center rounded-full text-[10px] ${step === 2 ? 'bg-secondary text-secondary-foreground animate-pulse' : step > 2 ? 'bg-secondary/10 text-secondary' : 'bg-muted'}`}>2</span>
-              <span>Numeracion</span>
+              <span>Numeración</span>
             </div>
             <div className="h-px w-8 bg-border" />
             <div className={`flex items-center gap-2 text-xs font-semibold ${step >= 3 ? 'text-secondary' : 'text-muted-foreground'}`}>
@@ -345,7 +345,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="wiz-hosp-width">Tamano del recibo institucional</Label>
+                <Label htmlFor="wiz-hosp-width">Tamaño del recibo institucional</Label>
                 <Select
                   value={hospitalForm.receipt_paper_size}
                   onValueChange={(val: string) => setHospitalForm({ ...hospitalForm, receipt_paper_size: val as InstitutionalReceiptPaperSize })}
@@ -377,7 +377,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             <div className="flex gap-4 p-4 rounded-lg bg-accent border border-secondary/10">
               <FileCheck className="size-10 text-secondary shrink-0" />
               <div>
-                <h4 className="font-semibold text-foreground text-sm">Paso 2: Numeracion de facturas</h4>
+                <h4 className="font-semibold text-foreground text-sm">Paso 2: Numeración de facturas</h4>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Registre el CAI, prefijo y rango autorizado para imprimir facturas.
                 </p>
@@ -406,7 +406,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="wiz-seq-min">Desde el numero *</Label>
+                <Label htmlFor="wiz-seq-min">Desde el número *</Label>
                 <Input
                   id="wiz-seq-min"
                   type="number"
@@ -416,7 +416,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="wiz-seq-max">Hasta el numero *</Label>
+                <Label htmlFor="wiz-seq-max">Hasta el número *</Label>
                 <Input
                   id="wiz-seq-max"
                   type="number"
@@ -504,7 +504,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                   </>
                 ) : (
                   <>
-                    Importar catalogo
+                    Importar catálogo
                     <ArrowRight className="size-4" />
                   </>
                 )}
@@ -521,7 +521,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-bold text-foreground">Configuracion lista</h3>
+              <h3 className="text-xl font-bold text-foreground">Configuración lista</h3>
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
                 Ya puede iniciar la operacion con datos del hospital, numeracion y servicios base.
               </p>
@@ -534,7 +534,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
               </div>
               <div className="flex items-center gap-2.5 text-xs text-success font-semibold">
                 <span className="flex size-4 items-center justify-center rounded-full bg-success/15 text-[10px]">✓</span>
-                <span>Numeracion lista para facturar</span>
+                <span>Numeración lista para facturar</span>
               </div>
               <div className="flex items-center gap-2.5 text-xs text-success font-semibold">
                 <span className="flex size-4 items-center justify-center rounded-full bg-success/15 text-[10px]">✓</span>

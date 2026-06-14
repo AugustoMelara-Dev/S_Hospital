@@ -2,6 +2,7 @@ import { type FormEvent } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Banknote, CalendarDays, CircleSlash, Download, FileText, TrendingUp } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
+import { Alert } from '../../../components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { EmptyState } from '../../../components/ui/states';
 import { Input } from '../../../components/ui/input';
@@ -73,7 +74,13 @@ export function MonthlyReportTab({
               {loading ? 'Consultando...' : 'Ver mes'}
             </Button>
           </form>
-          {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
+          {error ? (
+            <div className="mt-3">
+              <Alert variant="destructive" title="No se pudo cargar el reporte mensual">
+                {error}
+              </Alert>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -208,11 +215,11 @@ export function MonthlyReportTab({
           <div className="flex justify-end gap-2">
             {canExport ? (
               <>
-                <Button variant="outline" onClick={onExport}>
+                <Button type="button" variant="outline" onClick={onExport}>
                   <Download className="mr-2 h-4 w-4" />
                   Exportar Excel
                 </Button>
-                <Button variant="outline" onClick={onExportPdf}>
+                <Button type="button" variant="outline" onClick={onExportPdf}>
                   <Download className="mr-2 h-4 w-4" />
                   Exportar PDF
                 </Button>

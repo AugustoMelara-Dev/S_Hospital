@@ -1,6 +1,7 @@
 import { type FormEvent } from 'react';
 import { Download, DollarSign, User, AlertTriangle } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
+import { Alert } from '../../../components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
@@ -53,7 +54,13 @@ export function CashSessionReportTab({
               {loading ? 'Consultando...' : 'Ver caja'}
             </Button>
           </form>
-          {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+          {error ? (
+            <div className="mt-3">
+              <Alert variant="destructive" title="No se pudo cargar la caja">
+                {error}
+              </Alert>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -109,7 +116,7 @@ export function CashSessionReportTab({
 
           <Card>
             <CardHeader>
-              <CardTitle>Totales por metodo</CardTitle>
+              <CardTitle>Totales por método</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -199,7 +206,7 @@ export function CashSessionReportTab({
 
           <div className="flex justify-end">
             {canExport ? (
-              <Button variant="outline" onClick={onExport}>
+              <Button type="button" variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
                 Exportar Excel
               </Button>

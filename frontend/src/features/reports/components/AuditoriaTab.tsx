@@ -203,7 +203,7 @@ export function AuditoriaTab({
           {(operations.catalog_changes?.length ?? 0) > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Cambios de catalogo</CardTitle>
+                <CardTitle>Cambios de catálogo</CardTitle>
                 <CardDescription>Servicios modificados en el rango consultado</CardDescription>
               </CardHeader>
               <CardContent>
@@ -314,17 +314,17 @@ export function AuditoriaTab({
           {!hasOperationalEvents && (
             <EmptyState
               title="Sin eventos operativos"
-              description="No hay anulaciones, reversos, reimpresiones, cambios de catalogo, respaldos ni actividad de cajeros para el rango seleccionado."
+          description="No hay anulaciones, reversos, reimpresiones, cambios de catálogo, respaldos ni actividad de cajeros para el rango seleccionado."
             />
           )}
 
           {canExport ? (
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={onExport}>
+              <Button type="button" variant="outline" onClick={onExport}>
                 <Download className="mr-2 h-4 w-4" />
                 Exportar Excel
               </Button>
-              <Button variant="outline" onClick={onExportPdf}>
+              <Button type="button" variant="outline" onClick={onExportPdf}>
                 <Download className="mr-2 h-4 w-4" />
                 Exportar PDF
               </Button>
@@ -425,8 +425,8 @@ function catalogValueLabel(field: string, value: unknown): string {
 
   if (field === 'special_rule_code') {
     return String(value) === 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION'
-      ? 'Eritropoyetina con receta de dialisis'
-      : 'Configuracion especial';
+      ? 'Eritropoyetina con receta de diálisis'
+      : 'Configuración especial';
   }
 
   if (typeof value === 'boolean') {

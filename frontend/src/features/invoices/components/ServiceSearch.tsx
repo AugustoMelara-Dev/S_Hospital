@@ -185,7 +185,7 @@ export function ServiceSearch({
         ) : filteredServices.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-muted-foreground">
             <span className="font-medium text-foreground">Sin servicios encontrados</span>
-            <span className="max-w-sm text-sm">Revise la busqueda o quite filtros para consultar todo el catalogo activo.</span>
+            <span className="max-w-sm text-sm">Revise la búsqueda o quite filtros para consultar todo el catálogo activo.</span>
           </div>
         ) : (
           <>
@@ -222,7 +222,7 @@ export function ServiceSearch({
                   {isErythropoietin && (
                     <div className="absolute bottom-1 right-3">
                       <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                        Con receta dialisis = Gratis
+                        Con receta diálisis = gratis
                       </span>
                     </div>
                   )}
@@ -232,7 +232,7 @@ export function ServiceSearch({
             </div>
             {hiddenCount > 0 && (
               <p className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
-                Mostrando {visibleServices.length} resultados. Afine la busqueda para ver los {hiddenCount} restantes.
+                Mostrando {visibleServices.length} resultados. Afine la búsqueda para ver los {hiddenCount} restantes.
               </p>
             )}
           </>

@@ -11,6 +11,7 @@ import { BackupStatusBadge, getStatusDescription } from './components/BackupStat
 import { BackupExplanationCard, BackupEmptyState } from './components/BackupExplanationCard';
 import { type AuthUser, type BackupLog, type PaginatedMeta, type SystemStatus, apiClient, userSafeErrorMessage } from '../../lib/api';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
+import { downloadBlob } from '../../lib/download';
 
 type BackupsViewProps = {
   user: AuthUser;
@@ -53,10 +54,10 @@ function statusLabel(status: 'pending' | 'partial' | 'validated' | 'manual_requi
 }
 
 function statusClass(status: 'pending' | 'partial' | 'validated' | 'manual_required'): string {
-  if (status === 'validated') return 'border-emerald-200 bg-emerald-50 text-emerald-800';
-  if (status === 'partial') return 'border-sky-200 bg-sky-50 text-sky-800';
-  if (status === 'manual_required') return 'border-amber-200 bg-amber-50 text-amber-800';
-  return 'border-red-200 bg-red-50 text-red-800';
+  if (status === 'validated') return 'status-success';
+  if (status === 'partial') return 'status-info';
+  if (status === 'manual_required') return 'status-warning';
+  return 'border-destructive/30 bg-destructive/10 text-destructive';
 }
 
 function friendlyProductionCheck(code: string, fallback: string): string {
@@ -69,7 +70,7 @@ function friendlyProductionCheck(code: string, fallback: string): string {
     DUMP_BINARY_AVAILABLE: 'Creación de respaldos disponible',
     STORAGE_WRITABLE: 'Carpeta de respaldos lista',
     BACKUP_STORAGE_WRITABLE: 'Carpeta de respaldos lista',
-    BACKUP_WORKER_CONTINUOUS: 'Respaldos automaticos activos',
+    BACKUP_WORKER_CONTINUOUS: 'Respaldos automáticos activos',
     DATABASE_MIGRATIONS_CURRENT: 'Base de datos actualizada',
     PUBLIC_ROUTES_AVAILABLE: 'Acceso desde la red local',
     SERVER_LOGS_WRITABLE: 'Registro operativo disponible',
@@ -83,7 +84,7 @@ function sanitizeTechnicalText(value: string): string {
   return value
     .replace(/APP_ENV|APP_DEBUG|debug|mysqldump|mariadb-dump|php artisan|queue:work|--queue=backups|--tries=1|--timeout=600|HTTP 200|SPA cargada/gi, '')
     .replace(/\s+/g, ' ')
-    .trim() || 'Pendiente de revision.';
+    .trim() || 'Pendiente de revisión.';
 }
 
 function friendlyProductionDetail(code: string, fallback: string): string {
@@ -114,7 +115,7 @@ function friendlyProductionDetail(code: string, fallback: string): string {
   }
 
   if (code === 'SERVER_LOGS_WRITABLE' || code === 'APP_CACHE_WRITABLE') {
-    return fallback.includes('disponible') ? 'Listo para operar.' : 'Requiere revision tecnica.';
+    return fallback.includes('disponible') ? 'Listo para operar.' : 'Requiere revisión técnica.';
   }
 
   return sanitizeTechnicalText(fallback);
@@ -122,14 +123,14 @@ function friendlyProductionDetail(code: string, fallback: string): string {
 
 function friendlyReadinessBlocker(code: string, fallback: string): string {
   const labels: Record<string, string> = {
-    APP_ENV_PRODUCTION: 'Completar modo de operacion final',
+    APP_ENV_PRODUCTION: 'Completar modo de operación final',
     APP_DEBUG_OFF: 'Ocultar mensajes internos',
     APP_DEBUG_FALSE: 'Ocultar mensajes internos',
     PENDING_LAN_CLIENT_VALIDATION: 'Validar acceso desde una segunda computadora',
-    PENDING_HARDWARE_VALIDATION: 'Validar recibo fisico media carta/carta/A5/80mm/58mm',
+    PENDING_HARDWARE_VALIDATION: 'Validar recibo físico media carta/carta/A5/80mm/58mm',
     PENDING_RESTORE_VALIDATION: 'Validar restauracion segura',
     PENDING_CONCURRENCY_VALIDATION: 'Validar concurrencia de caja',
-    PENDING_ENVIRONMENT_VALIDATION: 'Revisar configuracion final del servidor',
+    PENDING_ENVIRONMENT_VALIDATION: 'Revisar configuración final del servidor',
     PENDING_DATABASE_MIGRATIONS: 'Actualizar base de datos con respaldo previo',
   };
 
@@ -153,7 +154,7 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
       level: 'error',
       label: 'Error',
       description: 'Hay un problema que puede afectar respaldos o continuidad. Pida soporte si no puede resolverlo.',
-      className: 'border-red-200 bg-red-50 text-red-900',
+      className: 'border-destructive/30 bg-destructive/10 text-destructive',
     };
   }
 
@@ -170,28 +171,17 @@ function operationalSummary(status: SystemStatus): { level: OperationalStatus; l
     return {
       level: 'review',
       label: 'Requiere revisi\u00f3n',
-      description: 'Falta completar respaldo reciente, validacion de red/impresora o configuracion final antes de operar sin supervision.',
-      className: 'border-amber-200 bg-amber-50 text-amber-900',
+      description: 'Falta completar respaldo reciente, validación de red/impresora o configuración final antes de operar sin supervisión.',
+      className: 'status-warning',
     };
   }
 
   return {
     level: 'ok',
     label: 'Todo bien',
-    description: 'Respaldos y chequeos basicos estan al dia. Mantenga el cierre diario y los respaldos protegidos.',
-    className: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+    description: 'Respaldos y chequeos básicos están al día. Mantenga el cierre diario y los respaldos protegidos.',
+    className: 'status-success',
   };
-}
-
-function saveBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
 }
 
 export function BackupsView({ user, onStatus }: BackupsViewProps) {
@@ -306,7 +296,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   async function handleDownloadBackup(backup: BackupLog) {
     try {
       const blob = await apiClient.downloadBackup(backup.id);
-      saveBlob(blob, backup.filename);
+      downloadBlob(blob, backup.filename);
       onStatus(`Respaldo ${backup.filename} descargado.`);
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo descargar el respaldo.');
@@ -538,7 +528,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                         {systemStatus.runtime.pending_migration_count === null
                           ? 'Sin dato'
                           : systemStatus.runtime.pending_migration_count > 0
-                            ? 'Requiere revision'
+                            ? 'Requiere revisión'
                             : 'Actualizada'}
                       </span>
                     </div>
@@ -569,7 +559,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Ultima actividad: {systemStatus.runtime.laravel_log.modified_at ? formatDate(systemStatus.runtime.laravel_log.modified_at) : 'sin registro'}
+                      Última actividad: {systemStatus.runtime.laravel_log.modified_at ? formatDate(systemStatus.runtime.laravel_log.modified_at) : 'sin registro'}
                     </p>
                   </div>
                   <div className="rounded-md border border-border p-3">
@@ -580,7 +570,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Si no hay actividad reciente, pida revisar los respaldos automaticos.
+                      Si no hay actividad reciente, pida revisar los respaldos automáticos.
                     </p>
                   </div>
                 </div>
@@ -754,7 +744,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                         </span>
                         {backup.status === 'failed' && backup.error_message && (
                           <span className="text-xs text-destructive max-w-[200px] truncate">
-                            No se completo. Revise con soporte tecnico.
+                            No se completó. Revise con soporte técnico.
                           </span>
                         )}
                       </div>

@@ -844,7 +844,7 @@ describe('NewInvoiceView', () => {
     });
     const printAuditCall = fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))[1];
     expect(JSON.parse(String(printAuditCall[1]?.body))).toMatchObject({
-      reason: 'Impresion desde vista de recibo.',
+      reason: 'Impresión desde vista de recibo.',
       width: 'half_letter',
     });
   });
@@ -1072,8 +1072,8 @@ describe('NewInvoiceView', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /ver/i }));
     fireEvent.click(await screen.findByRole('button', { name: /anular/i }));
-    expect(await screen.findByLabelText(/motivo de anulacion/i)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/motivo de anulacion/i), {
+    expect(await screen.findByLabelText(/motivo de anulación/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/motivo de anulación/i), {
       target: { value: 'Error de captura' },
     });
     fireEvent.click(screen.getByRole('button', { name: /anular factura/i }));

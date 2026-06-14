@@ -125,7 +125,7 @@ const incidentGuides = [
   },
   {
     title: 'Se cerro el navegador',
-    answer: 'Abra el acceso institucional de nuevo. Revise Caja e Historial antes de repetir una factura, cobro o reimpresion.',
+    answer: 'Abra el acceso institucional de nuevo. Revise Caja e Historial antes de repetir una factura, cobro o reimpresión.',
   },
 ];
 
@@ -178,7 +178,7 @@ const dailyChecklists = [
       'Revisar Estado operativo en Respaldos.',
       'Confirmar ultimo respaldo protegido.',
       'Revisar espacio en disco y cola de trabajos.',
-      'Guardar evidencia si hubo fallas de red, impresion o energia.',
+      'Guardar evidencia si hubo fallas de red, impresión o energía.',
     ],
   },
 ];

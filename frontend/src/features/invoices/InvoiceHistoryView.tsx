@@ -144,7 +144,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
     const auditedReceipt = await apiClient.reprintInvoice(selectedInvoice.id, {
       width: institutionalReceiptPaperSize(receipt.width),
-      reason: 'Impresion desde vista de recibo.',
+      reason: 'Impresión desde vista de recibo.',
     });
     const normalizedWidth = institutionalReceiptPaperSize(auditedReceipt.width);
     setReceiptWidth(normalizedWidth);
@@ -160,7 +160,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
   async function voidSelectedInvoice() {
     if (!selectedInvoice || voidReason.trim().length < 5) {
-      onStatus('Ingrese un motivo de anulacion de al menos 5 caracteres.');
+      onStatus('Ingrese un motivo de anulación de al menos 5 caracteres.');
 
       return;
     }
@@ -190,7 +190,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
       const nextReceipt = await apiClient.reprintInvoice(reprintTarget.id, {
         width: requestedWidth,
-        reason: reprintReason.trim() || 'Reimpresion solicitada desde historial.',
+        reason: reprintReason.trim() || 'Reimpresión solicitada desde historial.',
       });
       // Reprint posts an audit log entry that other views (dashboard,
       // cashier list) may display; let them refetch.
@@ -450,16 +450,16 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         open={receiptModalOpen}
         onOpenChange={setReceiptModalOpen}
         title={`Recibo - ${selectedInvoice?.invoice_number ?? ''}`}
-        description="Vista previa de recibo institucional. Cambiar el tamano no registra reimpresion."
+        description="Vista previa de recibo institucional. Cambiar el tamaño no registra reimpresión."
       >
         {receipt && selectedInvoice && (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <label htmlFor="receipt-width" className="text-sm font-semibold">Tamano</label>
+                <label htmlFor="receipt-width" className="text-sm font-semibold">Tamaño</label>
                 <NativeSelect
                   id="receipt-width"
-                  aria-label="Tamano de vista previa"
+                  aria-label="Tamaño de vista previa"
                   value={receiptWidth}
                   onChange={(event) => {
                     const newWidth = institutionalReceiptPaperSize(event.target.value);
@@ -519,7 +519,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             <Label htmlFor="voidReason">Motivo de anulación *</Label>
             <Textarea
               id="voidReason"
-              aria-label="Motivo de anulacion"
+              aria-label="Motivo de anulación"
               value={voidReason}
               onChange={(e) => setVoidReason(e.target.value)}
               placeholder="Explique el motivo de la anulación (mínimo 5 caracteres)..."

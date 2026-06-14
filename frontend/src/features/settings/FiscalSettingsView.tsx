@@ -84,8 +84,8 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
     partial_payments_enabled: false,
     receipt_paper_size: 'half_letter',
     government_line: 'Gobierno de Honduras',
-    secretariat_line: 'Secretaria de Salud Publica',
-    receipt_location: 'Tocoa, Colon',
+    secretariat_line: 'Secretaría de Salud Pública',
+    receipt_location: 'Tocoa, Colón',
     receipt_footer_text: '',
   });
 
@@ -119,7 +119,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
     try {
       const url = await apiClient.uploadLogo(logoFile);
       setLogoUrl(url);
-      onStatus('Logo de la clínica actualizado con éxito.');
+      onStatus('Logo institucional actualizado con éxito.');
       setLogoFile(null);
     } catch (err) {
       const msg = userSafeErrorMessage(err, 'No se pudo subir el logo.');
@@ -155,8 +155,8 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
           partial_payments_enabled: settingsData.partial_payments_enabled === true,
           receipt_paper_size: institutionalPaperSize(settingsData.receipt_paper_size),
           government_line: settingsData.government_line ?? 'Gobierno de Honduras',
-          secretariat_line: settingsData.secretariat_line ?? 'Secretaria de Salud Publica',
-          receipt_location: settingsData.receipt_location ?? settingsData.address ?? 'Tocoa, Colon',
+          secretariat_line: settingsData.secretariat_line ?? 'Secretaría de Salud Pública',
+          receipt_location: settingsData.receipt_location ?? settingsData.address ?? 'Tocoa, Colón',
           receipt_footer_text: settingsData.receipt_footer_text ?? '',
         });
         if (settingsData.primary_color) {
@@ -289,8 +289,8 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
   return (
     <>
       <PageHeader
-        title="Configuracion"
-        description="Datos del hospital, numeracion, recibos y apariencia."
+        title="Configuración"
+        description="Datos del hospital, numeración, recibos y apariencia."
       />
 
       {error ? (
@@ -303,7 +303,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         <TabsList className="bg-muted/50">
           <TabsTrigger value="resumen">Resumen</TabsTrigger>
           <TabsTrigger value="hospital">Hospital</TabsTrigger>
-          <TabsTrigger value="secuencia">Numeracion</TabsTrigger>
+          <TabsTrigger value="secuencia">Numeración</TabsTrigger>
           <TabsTrigger value="branding">Apariencia</TabsTrigger>
         </TabsList>
 
@@ -352,7 +352,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="address">Direccion del hospital</Label>
+                  <Label htmlFor="address">Dirección del hospital</Label>
                   <Input
                     id="address"
                     value={hospitalForm.address}
@@ -375,7 +375,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="receipt_paper_size">Tamano del recibo institucional</Label>
+                <Label htmlFor="receipt_paper_size">Tamaño del recibo institucional</Label>
                 <Select
                   value={hospitalForm.receipt_paper_size}
                   onValueChange={(v: string) => setHospitalForm(prev => ({ ...prev, receipt_paper_size: v as SettingsFormData['receipt_paper_size'] }))}
@@ -404,7 +404,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="secretariat_line">Secretaria o dependencia</Label>
+                  <Label htmlFor="secretariat_line">Secretaría o dependencia</Label>
                   <Input
                     id="secretariat_line"
                     value={hospitalForm.secretariat_line}
@@ -419,7 +419,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     id="receipt_location"
                     value={hospitalForm.receipt_location}
                     onChange={(e) => setHospitalForm(prev => ({ ...prev, receipt_location: e.target.value }))}
-                    placeholder="Tocoa, Colon"
+                    placeholder="Tocoa, Colón"
                     disabled={!canEdit}
                   />
                 </div>
@@ -430,7 +430,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     id="receipt_footer_text"
                     value={hospitalForm.receipt_footer_text}
                     onChange={(e) => setHospitalForm(prev => ({ ...prev, receipt_footer_text: e.target.value }))}
-                    placeholder="Texto autorizado por administracion"
+                    placeholder="Texto autorizado por administración"
                     disabled={!canEdit}
                   />
                 </div>
@@ -445,8 +445,8 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     disabled={!canEdit}
                   />
                   <Label htmlFor="scanner_enabled" className="cursor-pointer">
-                    <span className="block font-medium">Habilitar scanner/codigos en caja</span>
-                    <span className="block text-muted-foreground font-normal mt-1">Si esta apagado, la pantalla de nueva factura oculta controles de scanner y codigos internos.</span>
+                    <span className="block font-medium">Habilitar scanner/códigos en caja</span>
+                    <span className="block text-muted-foreground font-normal mt-1">Si está apagado, la pantalla de nueva factura oculta controles de scanner y códigos internos.</span>
                   </Label>
                 </div>
                 <div className="flex items-start gap-3 text-sm">
@@ -458,7 +458,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                   />
                   <Label htmlFor="partial_payments_enabled" className="cursor-pointer">
                     <span className="block font-medium">Permitir abonos parciales</span>
-                    <span className="block text-muted-foreground font-normal mt-1">Si esta apagado, un monto menor al total no se registra como pago completo.</span>
+                    <span className="block text-muted-foreground font-normal mt-1">Si está apagado, un monto menor al total no se registra como pago completo.</span>
                   </Label>
                 </div>
               </div>
@@ -475,7 +475,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
         <TabsContent value="secuencia" className="mt-0">
           <Card>
             <CardHeader>
-              <CardTitle>Numeracion de facturas</CardTitle>
+              <CardTitle>Numeración de facturas</CardTitle>
               <CardDescription>
                 Configure el rango autorizado para emitir facturas.
               </CardDescription>
@@ -511,7 +511,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="min_number">Desde el numero *</Label>
+                  <Label htmlFor="min_number">Desde el número *</Label>
                   <Input
                     id="min_number"
                     type="number"
@@ -523,7 +523,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="max_number">Hasta el numero *</Label>
+                  <Label htmlFor="max_number">Hasta el número *</Label>
                   <Input
                     id="max_number"
                     type="number"
@@ -535,7 +535,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="valid_until">Valido hasta</Label>
+                  <Label htmlFor="valid_until">Válido hasta</Label>
                   <Input
                     id="valid_until"
                     type="date"
@@ -548,7 +548,7 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
 
               <div className="flex justify-end">
                 <Button onClick={handleSaveSequence} disabled={saving || !canEdit}>
-                  {saving ? 'Guardando...' : 'Guardar numeracion'}
+                  {saving ? 'Guardando...' : 'Guardar numeración'}
                 </Button>
               </div>
             </CardContent>
@@ -564,11 +564,11 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                   Logo institucional
                 </CardTitle>
                 <CardDescription>
-                  Se mostrara en recibos, facturas impresas y pantalla de ingreso.
+                  Se mostrará en recibos, facturas impresas y pantalla de ingreso.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-border rounded-lg bg-slate-50/50 dark:bg-slate-900/50">
+                <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-border rounded-lg bg-muted/40">
                   {logoUrl ? (
                     <div className="relative group flex flex-col items-center">
                       <img
@@ -580,8 +580,8 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                     </div>
                   ) : (
                     <div className="flex flex-col items-center text-muted-foreground">
-                      <UploadCloud className="size-10 mb-2 text-slate-400" />
-                      <span className="text-xs">Sin logo cargado. Se usara el icono del sistema.</span>
+                      <UploadCloud className="size-10 mb-2 text-muted-foreground" />
+                      <span className="text-xs">Sin logo cargado. Se usará el ícono del sistema.</span>
                     </div>
                   )}
                 </div>
@@ -653,9 +653,9 @@ export function FiscalSettingsView({ canEdit, onStatus }: FiscalSettingsViewProp
                   })}
                 </div>
 
-                <div className="rounded-lg bg-teal-50 dark:bg-slate-900 border border-teal-100 p-3.5 flex gap-2">
-                  <Sparkles className="size-4 text-teal-600 shrink-0 mt-0.5" />
-                  <p className="text-xs text-teal-800 dark:text-teal-400">
+                <div className="rounded-lg border border-info/30 bg-info/10 p-3.5 flex gap-2">
+                  <Sparkles className="size-4 text-info shrink-0 mt-0.5" />
+                  <p className="text-xs text-info">
                     <strong>Vista inmediata:</strong> al elegir un color, la pantalla se actualiza al momento.
                   </p>
                 </div>

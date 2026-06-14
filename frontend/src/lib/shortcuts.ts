@@ -36,12 +36,12 @@ export const KEYBOARD_SHORTCUTS: ShortcutEntry[] = [
     key: 'b',
     ctrl: true,
     scope: 'pos',
-    description: 'Foco en la busqueda de servicios o en el campo de codigo escaneable.',
+    description: 'Foco en la búsqueda de servicios o en el campo de código escaneable.',
   },
   {
     key: 'F6',
     scope: 'pos',
-    description: 'Foco en el campo de escaneo de codigos de barra o QR.',
+    description: 'Foco en el campo de escaneo de códigos de barra o QR.',
   },
   {
     key: 'Enter',
@@ -52,7 +52,7 @@ export const KEYBOARD_SHORTCUTS: ShortcutEntry[] = [
   {
     key: 'Escape',
     scope: 'pos',
-    description: 'Limpiar paciente, busqueda y servicios cuando hay algo en curso.',
+    description: 'Limpiar paciente, búsqueda y servicios cuando hay algo en curso.',
   },
   {
     key: 'F2',

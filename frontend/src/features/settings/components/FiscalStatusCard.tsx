@@ -35,7 +35,7 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
   const blockers = [
     !isHospitalConfigured ? 'nombre del hospital' : null,
     !hasRtn ? 'RTN del hospital' : null,
-    !hasReceiptPaperSize ? 'tamano de recibo institucional' : null,
+    !hasReceiptPaperSize ? 'tamaño de recibo institucional' : null,
     !isSequenceConfigured ? 'CAI y prefijo fiscal' : null,
     !isSequenceActive ? 'secuencia fiscal activa' : null,
     !isDateValid ? 'fecha limite vigente' : null,
@@ -57,7 +57,7 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
           </div>
           <div>
             <h3 className="font-semibold">
-              {isConfigured ? 'Configuracion completa' : 'Configuracion pendiente'}
+              {isConfigured ? 'Configuración completa' : 'Configuración pendiente'}
             </h3>
             <p className="text-sm text-muted-foreground">
               {isConfigured

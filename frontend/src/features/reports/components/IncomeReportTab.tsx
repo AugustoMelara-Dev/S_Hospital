@@ -244,11 +244,11 @@ export function IncomeReportTab({
                 />
               </div>
             )}
-            <Button onClick={onSubmit} disabled={loading}>
+            <Button type="button" onClick={onSubmit} disabled={loading}>
               {loading ? 'Consultando...' : 'Ver rango'}
             </Button>
           </div>
-          <p className="mt-3 text-sm text-muted-foreground">Puede consultar hasta 31 dias por busqueda.</p>
+          <p className="mt-3 text-sm text-muted-foreground">Puede consultar hasta 31 días por búsqueda.</p>
         </CardContent>
       </Card>
 
@@ -285,7 +285,7 @@ export function IncomeReportTab({
 
           <Card>
             <CardHeader>
-              <CardTitle>Cobros por metodo</CardTitle>
+              <CardTitle>Cobros por método</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -378,7 +378,7 @@ export function IncomeReportTab({
           {chartData.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Grafico por metodo</CardTitle>
+                <CardTitle>Gráfico por método</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
@@ -396,11 +396,11 @@ export function IncomeReportTab({
 
           {canExport && (
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={onExport}>
+              <Button type="button" variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
                 Exportar Excel
               </Button>
-              <Button variant="outline" onClick={onExportPdf}>
+              <Button type="button" variant="outline" onClick={onExportPdf}>
                 <Download className="h-4 w-4 mr-2" />
                 Exportar PDF
               </Button>

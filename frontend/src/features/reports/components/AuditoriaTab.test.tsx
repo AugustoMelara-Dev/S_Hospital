@@ -128,12 +128,12 @@ describe('AuditoriaTab', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: /cambios de catalogo/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /cambios de catálogo/i })).toBeInTheDocument();
     expect(screen.getByText('Glucosa')).toBeInTheDocument();
     expect(screen.getByText('Precio actualizado')).toBeInTheDocument();
     expect(screen.getByText('Ajuste aprobado por administracion')).toBeInTheDocument();
     expect(screen.getAllByText(/L\. 15\.00|L\. 18\.00/).length).toBe(2);
-    expect(document.body.textContent).toContain('Eritropoyetina con receta de dialisis');
+    expect(document.body.textContent).toContain('Eritropoyetina con receta de diálisis');
     expect(document.body.textContent).not.toMatch(/service\.price_updated|category_id|ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION/);
   });
 });

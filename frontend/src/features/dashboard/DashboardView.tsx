@@ -123,7 +123,7 @@ export function DashboardView({
                 <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warning" />
                 <div>
                   <CardTitle className="text-base font-bold text-warning-foreground">
-                    Configuracion pendiente
+                    Configuración pendiente
                   </CardTitle>
                   <CardDescription className="mt-1 text-xs text-warning-foreground/80">
                     Complete estos datos para emitir facturas correctamente.
@@ -162,7 +162,7 @@ export function DashboardView({
               <SetupStepCheck
                 label="Rango fiscal"
                 done={setupStatus.steps.fiscal_sequence_exists}
-                helper="Numeracion vigente"
+                helper="Numeración vigente"
               />
             </div>
           </CardContent>

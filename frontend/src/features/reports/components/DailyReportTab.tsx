@@ -2,6 +2,7 @@ import { type FormEvent } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Banknote, DollarSign, FileText, Download, CircleSlash } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
+import { Alert } from '../../../components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
@@ -47,7 +48,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold tracking-tight">Resumen del dia</h2>
+      <h2 className="text-xl font-semibold tracking-tight">Resumen del día</h2>
       <Card>
         <CardContent className="pt-6">
           <form onSubmit={onSubmit} className="flex items-end gap-4">
@@ -64,7 +65,13 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
               {loading ? 'Consultando...' : 'Actualizar'}
             </Button>
           </form>
-          {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+          {error ? (
+            <div className="mt-3">
+              <Alert variant="destructive" title="No se pudo cargar el reporte diario">
+                {error}
+              </Alert>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -133,7 +140,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
 
           <Card>
             <CardHeader>
-              <CardTitle>Cobros por metodo</CardTitle>
+              <CardTitle>Cobros por método</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -184,7 +191,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
           {chartData.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Grafico por metodo</CardTitle>
+                <CardTitle>Gráfico por método</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
@@ -203,11 +210,11 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
           <div className="flex justify-end gap-2">
             {canExport ? (
               <>
-                <Button variant="outline" onClick={onExport}>
+                <Button type="button" variant="outline" onClick={onExport}>
                   <Download className="h-4 w-4 mr-2" />
                   Exportar Excel
                 </Button>
-                <Button variant="outline" onClick={onExportPdf}>
+                <Button type="button" variant="outline" onClick={onExportPdf}>
                   <Download className="h-4 w-4 mr-2" />
                   Exportar PDF
                 </Button>

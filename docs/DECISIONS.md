@@ -3192,3 +3192,10 @@ Contexto: `LicenseHelper` conservaba un fallback embebido para firmar `license.j
 Decision: si existe `license.json` y `APP_ENV=production`, `HOSPITAL_LICENSE_SALT` debe estar configurado. La validacion devuelve `Salt de Registro Faltante` cuando falta el salt y `generateSignature` no firma con el fallback en produccion. La plantilla `backend/.env.example` y `docs/SECRETS.md` distinguen compatibilidad local/testing de produccion.
 
 Criterio de verificacion: `LicenseHelperTest::test_production_license_file_requires_configured_salt` prueba que un archivo firmado con el fallback queda bloqueado al activar entorno production sin salt configurado.
+
+## 2026-06-14 - Phase 8: Reportes, respaldos y configuración fiscal
+
+- Se unificó la descarga de archivos con `downloadBlob`, adjuntando el enlace al DOM antes del click para mejorar compatibilidad de Excel/PDF y respaldos.
+- Reportes ahora anuncian errores críticos con `Alert` y los botones de exportación usan `type="button"` para evitar submits accidentales.
+- Respaldos migró estados principales a tokens semánticos y se corrigió copy institucional visible sin cambiar endpoints ni flujo de backup.
+- Configuración fiscal, recibos, catálogo, ayuda y textos de dominio se normalizaron en español institucional con acentos correctos.

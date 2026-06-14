@@ -38,7 +38,7 @@ describe('HelpView', () => {
     expect(screen.getByRole('heading', { name: /pedir soporte/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /atajos de teclado/i })).toBeInTheDocument();
     expect(screen.getByText('F6')).toBeInTheDocument();
-    expect(screen.getByText(/escaneo de codigos/i)).toBeInTheDocument();
+    expect(screen.getByText(/escaneo de códigos/i)).toBeInTheDocument();
     expect(screen.getAllByText('Ctrl+K').length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: /se fue la luz o reinició la pc/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /caja quedó abierta/i })).toBeInTheDocument();
