@@ -13,7 +13,7 @@ Desde el panel:
 3. Presionar Crear backup.
 4. Confirmar que el registro quede en `pending`.
 5. Confirmar que el worker local lo cambie a `success`.
-6. Descargar el archivo y copiarlo a una carpeta local protegida o USB.
+6. Descargar el archivo cifrado y copiarlo a una carpeta local protegida o USB.
 
 El servidor debe tener un worker de cola local activo. En instalacion
 bare-metal/XAMPP:
@@ -45,17 +45,35 @@ docker compose -f docker-compose.prod.yml --env-file .env exec -T backend php ar
 
 El comando crea y ejecuta el backup en el mismo proceso; se recomienda para tareas programadas fuera del horario de caja. La UI registra el backup y lo deja a la cola `backups` para evitar que el navegador espere el dump completo.
 
-Los archivos quedan bajo `storage/app/private/backups`. El API solo descarga archivos registrados en `backup_logs`, existentes y dentro de esa carpeta.
+Los archivos quedan bajo `storage/app/private/backups`. El API solo descarga archivos registrados en `backup_logs`, existentes y dentro de esa carpeta. Desde la correccion de hardening F8, el formato esperado es `.sql.gz.enc`: SQL comprimido con gzip y cifrado localmente antes de publicarse.
+
+## Cifrado de backups
+
+Configurar en `.env` del servidor:
+
+```env
+HOSPITAL_BACKUP_ENCRYPTION_KEY=valor-largo-aleatorio-generado-en-instalacion
+```
+
+Notas operativas:
+
+- No guardar esa clave dentro del repositorio ni en capturas de pantalla.
+- Copiar la clave a un sobre/medio administrativo separado; sin ella no se puede restaurar un `.sql.gz.enc`.
+- En produccion, si falta `HOSPITAL_BACKUP_ENCRYPTION_KEY`, el backup debe fallar con mensaje operativo en vez de crear SQL plano.
+- El checksum `checksum_sha256` corresponde al paquete cifrado descargable, no al SQL interno.
 
 ## Retencion local
 
-Por defecto el sistema conserva los 30 backups exitosos mas recientes y poda los exitosos mas antiguos despues de crear un backup nuevo. Se puede ajustar con:
+Por defecto el sistema conserva backups por tipo y por edad minima. La poda corre despues de crear un backup nuevo:
 
 ```env
-HOSPITAL_BACKUP_KEEP_SUCCESSFUL=30
+HOSPITAL_BACKUP_KEEP_MANUAL_SUCCESSFUL=10
+HOSPITAL_BACKUP_KEEP_MANUAL_DAYS=30
+HOSPITAL_BACKUP_KEEP_SCHEDULED_SUCCESSFUL=96
+HOSPITAL_BACKUP_KEEP_SCHEDULED_DAYS=7
 ```
 
-La retencion nunca elimina backups `pending` o `failed`; esos registros quedan como evidencia operativa. La poda solo borra archivos locales con ruta segura bajo `backups/` y registra auditoria `backup.pruned`.
+La retencion nunca elimina backups `pending` o `failed`; esos registros quedan como evidencia operativa. La poda solo borra archivos locales con ruta segura bajo `backups/`, respeta tipo `manual`/`scheduled`, conserva siempre los mas recientes segun politica y registra auditoria `backup.pruned`.
 
 El backend busca `mariadb-dump` o `mysqldump` en el `PATH` y en rutas locales comunes como `C:\xampp\mysql\bin\mysqldump.exe`. Si el servidor usa otra ruta, definir:
 
@@ -192,32 +210,34 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital
 
 El nombre de `-TargetDatabase` debe contener `test`, `restore`, `validation`,
 `disposable` o `proof`, y solo puede usar letras, numeros y `_`. El script
-rechaza `hospital_billing`, `hospital_billing_production`, bases del sistema y
-formatos de backup que no sean `.sql` o `.tar.gz`.
+rechaza `hospital_billing`, `hospital_billing_production` y bases del sistema.
+Los backups nuevos son `.sql.gz.enc`; deben descifrarse y descomprimirse con la
+clave del servidor antes de alimentar `mysql`.
 
 Pasos para MySQL/MariaDB:
 
 1. Confirmar que el archivo de backup viene de `backup_logs` con estado `success`.
-2. Verificar checksum:
+2. Verificar checksum del paquete cifrado:
 
 ```powershell
-Get-FileHash C:\backups\hospital-backup.sql -Algorithm SHA256
+Get-FileHash C:\backups\hospital-backup.sql.gz.enc -Algorithm SHA256
 ```
 
-3. Crear base de prueba limpia:
+3. Descifrar/descomprimir en una ubicacion temporal protegida del servidor de validacion. Borrar el `.sql` temporal al terminar.
+4. Crear base de prueba limpia:
 
 ```powershell
 mysql -u root -p -e "CREATE DATABASE hospital_restore_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 ```
 
-4. Restaurar en la base de prueba:
+5. Restaurar en la base de prueba:
 
 ```powershell
 mysql -u hospital -p hospital_restore_test < C:\backups\hospital-backup.sql
 ```
 
-5. Apuntar un `.env` temporal de prueba a `hospital_restore_test`.
-6. Ejecutar validaciones:
+6. Apuntar un `.env` temporal de prueba a `hospital_restore_test`.
+7. Ejecutar validaciones:
 
 ```powershell
 php artisan migrate:status
@@ -225,7 +245,7 @@ php artisan config:cache
 php artisan test --colors=never
 ```
 
-7. Validar en navegador local de prueba:
+8. Validar en navegador local de prueba:
    - `/up` responde OK.
    - `/login` carga.
    - Admin puede iniciar sesion.

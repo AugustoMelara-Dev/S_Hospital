@@ -68,6 +68,8 @@ class BackupController extends Controller
             'old_values' => null,
             'new_values' => [
                 'filename' => $backupLog->filename,
+                'format' => $backupLog->format,
+                'encrypted' => $backupLog->encrypted,
                 'size_bytes' => $backupLog->size_bytes,
                 'checksum_sha256' => $backupLog->checksum_sha256,
             ],
@@ -75,7 +77,7 @@ class BackupController extends Controller
         ]);
 
         return response()->download($absolutePath, $backupLog->filename, [
-            'Content-Type' => 'application/sql',
+            'Content-Type' => 'application/octet-stream',
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }
@@ -112,6 +114,10 @@ class BackupController extends Controller
             'checksum_sha256' => $backupLog->checksum_sha256,
             'status' => $backupLog->status,
             'type' => $backupLog->type,
+            'format' => $backupLog->format,
+            'compression' => $backupLog->compression,
+            'encrypted' => $backupLog->encrypted,
+            'encryption_key_id' => $backupLog->encryption_key_id,
             'created_by' => $backupLog->created_by,
             'completed_at' => $backupLog->completed_at,
             'created_at' => $backupLog->created_at,

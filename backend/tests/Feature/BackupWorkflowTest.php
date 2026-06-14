@@ -188,7 +188,17 @@ class BackupWorkflowTest extends TestCase
         $this->assertNotNull($backup->checksum_sha256);
         $this->assertSame(64, strlen((string) $backup->checksum_sha256));
         $this->assertGreaterThan(0, $backup->size_bytes);
+        $this->assertStringEndsWith('.sql.gz.enc', $backup->filename);
+        $this->assertSame('sql.gz.enc', $backup->format);
+        $this->assertSame('gzip', $backup->compression);
+        $this->assertTrue($backup->encrypted);
+        $this->assertNotNull($backup->encryption_key_id);
         $this->assertTrue(Storage::disk('local')->exists((string) $backup->path));
+        $this->assertStringNotContainsString(
+            'CREATE TABLE',
+            Storage::disk('local')->get((string) $backup->path),
+            'Backup artifact must not expose plaintext SQL.',
+        );
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $admin->id,
@@ -278,18 +288,78 @@ class BackupWorkflowTest extends TestCase
         ]);
     }
 
-    public function test_successful_backup_runs_configured_retention_after_creation(): void
+    public function test_successful_backup_runs_configured_retention_for_its_own_type_after_creation(): void
     {
-        Config::set('backups.retention.successful_count', 1);
-        $oldBackup = $this->successfulBackupLog(filename: 'old.sql', path: 'backups/old.sql');
-        $oldBackup->forceFill(['completed_at' => now()->subDay()])->save();
+        Config::set('backups.retention.scheduled.keep_successful', 1);
+        Config::set('backups.retention.scheduled.keep_days', 0);
+        $oldScheduledBackup = $this->successfulBackupLog(
+            filename: 'old-scheduled.sql.gz.enc',
+            path: 'backups/old-scheduled.sql.gz.enc',
+            type: BackupLog::TYPE_SCHEDULED,
+        );
+        $oldManualBackup = $this->successfulBackupLog(
+            filename: 'old-manual.sql.gz.enc',
+            path: 'backups/old-manual.sql.gz.enc',
+            type: BackupLog::TYPE_MANUAL,
+        );
+        $oldScheduledBackup->forceFill(['completed_at' => now()->subDay()])->save();
+        $oldManualBackup->forceFill(['completed_at' => now()->subDay()])->save();
 
         $created = app(CreateBackupAction::class)->execute(type: BackupLog::TYPE_SCHEDULED);
 
         $this->assertSame(BackupLog::STATUS_SUCCESS, $created->status);
-        $this->assertDatabaseMissing('backup_logs', ['id' => $oldBackup->id]);
-        $this->assertFalse(Storage::disk('local')->exists('backups/old.sql'));
+        $this->assertDatabaseMissing('backup_logs', ['id' => $oldScheduledBackup->id]);
+        $this->assertDatabaseHas('backup_logs', ['id' => $oldManualBackup->id]);
+        $this->assertFalse(Storage::disk('local')->exists('backups/old-scheduled.sql.gz.enc'));
+        $this->assertTrue(Storage::disk('local')->exists('backups/old-manual.sql.gz.enc'));
         $this->assertDatabaseHas('backup_logs', ['id' => $created->id]);
+    }
+
+    public function test_backup_retention_is_applied_by_type_and_minimum_days(): void
+    {
+        Config::set('backups.retention.manual.keep_successful', 1);
+        Config::set('backups.retention.manual.keep_days', 7);
+        Config::set('backups.retention.scheduled.keep_successful', 2);
+        Config::set('backups.retention.scheduled.keep_days', 1);
+
+        $manualOld = $this->successfulBackupLog(
+            filename: 'manual-old.sql.gz.enc',
+            path: 'backups/manual-old.sql.gz.enc',
+            type: BackupLog::TYPE_MANUAL,
+        );
+        $manualOld->forceFill(['completed_at' => now()->subDays(10)])->save();
+        $manualRecent = $this->successfulBackupLog(
+            filename: 'manual-recent.sql.gz.enc',
+            path: 'backups/manual-recent.sql.gz.enc',
+            type: BackupLog::TYPE_MANUAL,
+        );
+        $manualRecent->forceFill(['completed_at' => now()->subDays(2)])->save();
+        $scheduledOldest = $this->successfulBackupLog(
+            filename: 'scheduled-oldest.sql.gz.enc',
+            path: 'backups/scheduled-oldest.sql.gz.enc',
+            type: BackupLog::TYPE_SCHEDULED,
+        );
+        $scheduledOldest->forceFill(['completed_at' => now()->subDays(3)])->save();
+        $scheduledMiddle = $this->successfulBackupLog(
+            filename: 'scheduled-middle.sql.gz.enc',
+            path: 'backups/scheduled-middle.sql.gz.enc',
+            type: BackupLog::TYPE_SCHEDULED,
+        );
+        $scheduledMiddle->forceFill(['completed_at' => now()->subDays(2)])->save();
+        $scheduledNewest = $this->successfulBackupLog(
+            filename: 'scheduled-newest.sql.gz.enc',
+            path: 'backups/scheduled-newest.sql.gz.enc',
+            type: BackupLog::TYPE_SCHEDULED,
+        );
+
+        $pruned = app(PruneBackupsAction::class)->execute();
+
+        $this->assertSame(2, $pruned);
+        $this->assertDatabaseMissing('backup_logs', ['id' => $manualOld->id]);
+        $this->assertDatabaseHas('backup_logs', ['id' => $manualRecent->id]);
+        $this->assertDatabaseMissing('backup_logs', ['id' => $scheduledOldest->id]);
+        $this->assertDatabaseHas('backup_logs', ['id' => $scheduledMiddle->id]);
+        $this->assertDatabaseHas('backup_logs', ['id' => $scheduledNewest->id]);
     }
 
     public function test_failed_backup_is_recorded_without_leaking_database_password(): void
@@ -442,7 +512,12 @@ class BackupWorkflowTest extends TestCase
             ->assertNotFound();
     }
 
-    private function successfulBackupLog(?User $creator = null, string $filename = 'test-backup.sql', string $path = 'backups/test-backup.sql'): BackupLog
+    private function successfulBackupLog(
+        ?User $creator = null,
+        string $filename = 'test-backup.sql',
+        string $path = 'backups/test-backup.sql',
+        string $type = BackupLog::TYPE_MANUAL,
+    ): BackupLog
     {
         Storage::disk('local')->put($path, 'select 1;');
 
@@ -451,7 +526,7 @@ class BackupWorkflowTest extends TestCase
             'path' => $path,
             'disk' => 'local',
             'status' => BackupLog::STATUS_SUCCESS,
-            'type' => BackupLog::TYPE_MANUAL,
+            'type' => $type,
             'created_by' => $creator?->id,
             'size_bytes' => 9,
             'checksum_sha256' => hash('sha256', 'select 1;'),

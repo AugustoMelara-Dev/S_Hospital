@@ -46,12 +46,16 @@ class BackupRestoreRoundtripTest extends TestCase
         $this->assertSame(BackupLog::STATUS_SUCCESS, $backup->status);
         $this->assertTrue(Storage::disk('local')->exists((string) $backup->path));
 
-        $dump = Storage::disk('local')->get((string) $backup->path);
-        $this->assertIsString($dump);
+        $artifact = Storage::disk('local')->get((string) $backup->path);
+        $this->assertIsString($artifact);
+        $this->assertStringStartsWith('SHOSPITAL-BACKUP-V1', $artifact);
+        $this->assertStringNotContainsString('CREATE TABLE', $artifact);
+        $this->assertStringNotContainsString('Maria Lopez', $artifact);
+
+        $dump = $this->decryptBackupArtifact($artifact);
         $this->assertStringContainsString('CREATE TABLE', $dump);
         $this->assertStringContainsString('BEGIN TRANSACTION', $dump);
         $this->assertStringContainsString('COMMIT', $dump);
-
         $this->assertStringContainsString('Maria Lopez', $dump);
         $this->assertStringContainsString('cashier-resilience', $dump);
         $this->assertStringContainsString('hospital-backup-', (string) $backup->filename);
@@ -164,6 +168,35 @@ class BackupRestoreRoundtripTest extends TestCase
             'valid_until' => now()->addYear()->toDateString(),
             'active' => true,
         ]);
+    }
+
+    private function decryptBackupArtifact(string $artifact): string
+    {
+        $parts = explode("\n", $artifact, 3);
+        $this->assertCount(3, $parts);
+        $this->assertSame('SHOSPITAL-BACKUP-V1', $parts[0]);
+
+        $header = json_decode($parts[1], true, flags: JSON_THROW_ON_ERROR);
+        $rawKey = (string) config('app.key');
+        if (str_starts_with($rawKey, 'base64:')) {
+            $decoded = base64_decode(substr($rawKey, 7), true);
+            $rawKey = $decoded === false ? '' : $decoded;
+        }
+
+        $compressed = openssl_decrypt(
+            $parts[2],
+            (string) $header['cipher'],
+            hash('sha256', $rawKey, true),
+            OPENSSL_RAW_DATA,
+            base64_decode((string) $header['iv'], true) ?: '',
+            base64_decode((string) $header['tag'], true) ?: '',
+        );
+
+        $this->assertIsString($compressed);
+        $dump = gzdecode($compressed);
+        $this->assertIsString($dump);
+
+        return $dump;
     }
 
     private function seedCriticalData(): void
