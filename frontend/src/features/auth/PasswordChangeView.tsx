@@ -1,8 +1,11 @@
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { KeyRound, ShieldCheck } from 'lucide-react';
+import { Alert } from '../../components/ui/alert';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { FormField } from '../../components/ui/form-field';
 import { Input } from '../../components/ui/input';
 
 export const passwordChangeSchema = z.object({
@@ -39,59 +42,101 @@ export function PasswordChangeView({ onSubmit, submitting = false, status }: Pas
   });
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-5">
+    <main className="flex min-h-[100dvh] items-center justify-center bg-background p-5">
       <Card className="w-full max-w-xl">
-        <CardHeader>
-          <CardTitle>Cambio obligatorio de contraseña</CardTitle>
-          <CardDescription>Actualice su contraseña antes de operar el sistema.</CardDescription>
+        <CardHeader className="gap-3">
+          <div className="flex size-11 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <ShieldCheck aria-hidden="true" />
+          </div>
+          <div>
+            <CardDescription className="text-xs font-semibold uppercase tracking-normal text-primary">
+              Seguridad de cuenta
+            </CardDescription>
+            <CardTitle>Cambio obligatorio de contraseña</CardTitle>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Actualice su contraseña antes de operar facturación, caja o reportes.
+            </p>
+          </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
             {showStatus ? (
-              <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground" role="alert">
+              <Alert variant="warning" title="Revise la contraseña">
                 {status}
-              </p>
+              </Alert>
             ) : null}
-            <div className="flex flex-col gap-2">
-              <label htmlFor="current_password" className="text-sm font-semibold text-muted-foreground">
-                Contraseña actual
-              </label>
-              <Input
-                id="current_password"
-                type="password"
-                {...register('current_password')}
-                autoComplete="current-password"
-                disabled={submitting}
-              />
-              {errors.current_password && <span className="text-sm text-destructive">{errors.current_password.message}</span>}
-            </div>
-            <div className="flex flex-col gap-2">
-              <label htmlFor="password" className="text-sm font-semibold text-muted-foreground">
-                Nueva contraseña
-              </label>
-              <Input
-                id="password"
-                type="password"
-                {...register('password')}
-                autoComplete="new-password"
-                disabled={submitting}
-              />
-              {errors.password && <span className="text-sm text-destructive">{errors.password.message}</span>}
-            </div>
-            <div className="flex flex-col gap-2">
-              <label htmlFor="password_confirmation" className="text-sm font-semibold text-muted-foreground">
-                Confirmar nueva contraseña
-              </label>
-              <Input
-                id="password_confirmation"
-                type="password"
-                {...register('password_confirmation')}
-                autoComplete="new-password"
-                disabled={submitting}
-              />
-              {errors.password_confirmation && <span className="text-sm text-destructive">{errors.password_confirmation.message}</span>}
-            </div>
-            <Button type="submit" disabled={submitting}>
+
+            <FormField
+              id="current_password"
+              label="Contraseña actual"
+              error={errors.current_password?.message}
+              required
+            >
+              {({ describedBy, id, invalid }) => (
+                <div className="relative">
+                  <KeyRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                  <Input
+                    id={id}
+                    type="password"
+                    autoComplete="current-password"
+                    disabled={submitting}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    className="pl-10"
+                    {...register('current_password')}
+                  />
+                </div>
+              )}
+            </FormField>
+
+            <FormField
+              id="password"
+              label="Nueva contraseña"
+              hint="Use al menos 8 caracteres."
+              error={errors.password?.message}
+              required
+            >
+              {({ describedBy, id, invalid }) => (
+                <div className="relative">
+                  <KeyRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                  <Input
+                    id={id}
+                    type="password"
+                    autoComplete="new-password"
+                    disabled={submitting}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    className="pl-10"
+                    {...register('password')}
+                  />
+                </div>
+              )}
+            </FormField>
+
+            <FormField
+              id="password_confirmation"
+              label="Confirmar nueva contraseña"
+              error={errors.password_confirmation?.message}
+              required
+            >
+              {({ describedBy, id, invalid }) => (
+                <div className="relative">
+                  <KeyRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                  <Input
+                    id={id}
+                    type="password"
+                    autoComplete="new-password"
+                    disabled={submitting}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                    className="pl-10"
+                    {...register('password_confirmation')}
+                  />
+                </div>
+              )}
+            </FormField>
+
+            <Button type="submit" disabled={submitting} className="min-h-11">
               {submitting ? 'Actualizando...' : 'Actualizar contraseña'}
             </Button>
           </form>

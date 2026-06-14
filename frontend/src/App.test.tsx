@@ -214,7 +214,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /caja hospitalaria rápida y clara/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /operación hospitalaria local/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/usuario o correo/i)).toHaveValue('');
   });
 

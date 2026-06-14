@@ -3214,3 +3214,16 @@ Contexto: `LicenseHelper` conservaba un fallback embebido para firmar `license.j
 Decision: si existe `license.json` y `APP_ENV=production`, `HOSPITAL_LICENSE_SALT` debe estar configurado. La validacion devuelve `Salt de Registro Faltante` cuando falta el salt y `generateSignature` no firma con el fallback en produccion. La plantilla `backend/.env.example` y `docs/SECRETS.md` distinguen compatibilidad local/testing de produccion.
 
 Criterio de verificacion: `LicenseHelperTest::test_production_license_file_requires_configured_salt` prueba que un archivo firmado con el fallback queda bloqueado al activar entorno production sin salt configurado.
+
+# 2026-06-14 - Shell y autenticacion usan contratos de formulario accesibles
+
+Contexto: login, cambio obligatorio de contrasena y navegacion principal son puertas operativas del sistema y deben sostener teclado, mensajes claros y responsive sin alterar contratos de autenticacion.
+
+Decision: se reutiliza FormField para asociar labels, ayudas y errores; el sidebar movil expone cierre visible con Radix Dialog; y se corrigen textos institucionales con acentos en login, cambio de contrasena, topbar y navegacion.
+
+Validacion:
+
+- npm.cmd run test -- App form-field
+- npm.cmd run typecheck
+- npm.cmd run lint
+- npm.cmd run build

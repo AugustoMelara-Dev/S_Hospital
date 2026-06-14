@@ -36,10 +36,12 @@ export function FormField({
 
   return (
     <div className={cn('flex min-w-0 flex-col gap-2', className)}>
-      <Label htmlFor={fieldId} className="text-sm font-semibold text-foreground">
-        <span>{label}</span>
+      <div className="flex items-center gap-1">
+        <Label htmlFor={fieldId} className="text-sm font-semibold text-foreground">
+          {label}
+        </Label>
         {required ? <span className="ml-1 text-destructive" aria-hidden="true">*</span> : null}
-      </Label>
+      </div>
       {children({ describedBy, errorId, hintId, id: fieldId, invalid })}
       {hint ? (
         <p id={hintId} className="text-xs leading-relaxed text-muted-foreground">
@@ -54,4 +56,3 @@ export function FormField({
     </div>
   );
 }
-
