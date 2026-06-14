@@ -7,7 +7,6 @@ import { type PasswordChangeForm } from '../features/auth/PasswordChangeView';
 
 export function useHospitalSession() {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [cashSession, setCashSession] = useState<CashSession | null>(null);
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
 
@@ -58,7 +57,6 @@ export function useHospitalSession() {
         }
       }
       setUser(null);
-      setCashSession(null);
       setStatus('Sesión vencida. Redirigiendo al login...');
       setSessionExpired(true);
     });
@@ -81,7 +79,6 @@ export function useHospitalSession() {
         }
       }
       setUser(null);
-      setCashSession(null);
       setStatus('Sesión cerrada por el servidor. Redirigiendo al login...');
       setSessionExpired(true);
     });
@@ -103,16 +100,6 @@ export function useHospitalSession() {
               : 'Sesión activa.',
           );
           setSessionExpired(false);
-        }
-        if (currentUser?.permissions.includes('cash.view') && import.meta.env.MODE !== 'test') {
-          void apiClient
-            .getCurrentCashSession()
-            .then((currentCashSession) => {
-              if (currentCashSession) {
-                setCashSession(currentCashSession);
-              }
-            })
-            .catch(() => setCashSession(null));
         }
       })
       .catch(() => {
@@ -163,20 +150,9 @@ export function useHospitalSession() {
       }
     }
     setUser(null);
-    setCashSession(null);
     setStatus('Sesión cerrada.');
   }
 
-  async function refreshCashSession() {
-    try {
-      const session = await apiClient.getCurrentCashSession();
-      setCashSession(session);
-      return session;
-    } catch {
-      setCashSession(null);
-      return null;
-    }
-  }
 
   async function handlePasswordSubmit(data: PasswordChangeForm) {
     if (passwordSubmitInFlightRef.current) return;
@@ -199,8 +175,6 @@ export function useHospitalSession() {
 
   return {
     user,
-    cashSession,
-    setCashSession,
     login,
     setLogin,
     password,
@@ -241,6 +215,5 @@ export function useHospitalSession() {
     handleLogin,
     handleLogout,
     handlePasswordSubmit,
-    refreshCashSession,
   };
 }

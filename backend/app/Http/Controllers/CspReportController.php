@@ -25,7 +25,7 @@ class CspReportController extends Controller
 
         if (! $this->isValidCspReportContentType($request)) {
             return response()->json([
-                'message' => 'CSP report must use application/csp-report or application/json.',
+                'message' => 'CSP report must use application/csp-report.',
             ], 415);
         }
 
@@ -48,8 +48,7 @@ class CspReportController extends Controller
     {
         $contentType = strtolower((string) $request->headers->get('Content-Type', ''));
 
-        return str_contains($contentType, 'application/csp-report')
-            || str_contains($contentType, 'application/json');
+        return str_contains($contentType, 'application/csp-report');
     }
 
     private function scrub(string $body): string

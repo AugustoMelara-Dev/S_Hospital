@@ -173,6 +173,29 @@ class FiscalSequenceTest extends TestCase
             ->assertJsonValidationErrors('active');
     }
 
+    public function test_rejects_overlapping_sequence_ranges(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        FiscalSequence::query()->create([
+            ...$this->validPayload(),
+            'min_number' => 100,
+            'max_number' => 200,
+            'active' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson('/api/fiscal-sequences', [
+                ...$this->validPayload(),
+                'min_number' => 150,
+                'max_number' => 250,
+                'active' => false,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('min_number');
+    }
+
     public function test_admin_update_of_fiscal_sequence_is_audited(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

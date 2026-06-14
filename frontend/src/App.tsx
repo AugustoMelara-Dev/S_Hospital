@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AppRoutes } from './AppRoutes';
 import { useHospitalSession } from './app/useHospitalSession';
+import { useCashSession } from './hooks/useCashSession';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { Dialog } from './components/ui/dialog';
 import { EmptyState, LoadingState } from './components/ui/states';
@@ -36,6 +37,7 @@ function HospitalApp() {
   const [quickInvoiceOpen, setQuickInvoiceOpen] = useState(false);
   const [quickCashOpen, setQuickCashOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const { data: cashSession } = useCashSession();
 
   // Augment the onStatus callback: any message that features dispatch
   // is also surfaced as a real toast (top-right). The status string
@@ -94,7 +96,7 @@ function HospitalApp() {
 
   return (
     <AppShell
-      cashSession={session.cashSession}
+      cashSession={cashSession ?? null}
       onLogout={session.handleLogout}
       status={session.status}
       user={session.user}
@@ -126,11 +128,10 @@ function HospitalApp() {
           canExportReports={session.canExportReports}
           canViewUsers={session.canViewUsers}
           canCreateUsers={session.canCreateUsers}
-          cashSession={session.cashSession}
+          cashSession={cashSession ?? null}
           defaultAuthenticatedRoute={session.defaultAuthenticatedRoute}
           onQuickCash={() => setQuickCashOpen(true)}
           onQuickInvoice={() => setQuickInvoiceOpen(true)}
-          onCashSessionChange={session.setCashSession}
           onStatus={handleStatus}
           user={session.user}
         />
@@ -144,7 +145,7 @@ function HospitalApp() {
         description="Facturación rápida sin abandonar la pantalla actual."
       >
         <NewInvoiceView
-          cashSession={session.cashSession}
+          cashSession={cashSession ?? null}
           canCreatePayments={session.canCreatePayments}
           canViewCatalog={session.canViewCatalog}
           canViewReceipts={session.canViewReceipts}
@@ -160,16 +161,15 @@ function HospitalApp() {
         open={quickCashOpen}
         onOpenChange={setQuickCashOpen}
         size="lg"
-        title={session.cashSession ? 'Caja activa' : 'Abrir caja'}
+        title={cashSession ? 'Caja activa' : 'Abrir caja'}
         description="Apertura y cierre de turno sin navegar a otra pantalla."
       >
         <CashBoxView
-          cashSession={session.cashSession}
+          cashSession={cashSession ?? null}
           canCloseCash={session.canCloseCash}
           canOpenCash={session.canOpenCash}
           canViewCashSessionReport={session.canViewCashSessionReports || session.canViewManagerialReports}
           onStatus={handleStatus}
-          onSessionChange={session.setCashSession}
           compact
         />
       </Dialog>

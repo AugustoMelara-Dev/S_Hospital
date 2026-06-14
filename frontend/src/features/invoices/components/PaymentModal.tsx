@@ -6,8 +6,7 @@ import { Dialog } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Checkbox } from '../../../components/ui/checkbox';
 import type { Payment } from '../../../lib/api';
-import { formatLempirasFromCents, parseCents as parseCentsNullable } from '../../../lib/moneyCents';
-import { parseCents } from '../../../lib/money';
+import { formatCents, formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
 type PaymentModalProps = {
   open: boolean;
@@ -48,8 +47,8 @@ export function PaymentModal({
   const [capNotice, setCapNotice] = useState<string | null>(null);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
 
-  const balanceCents = parseMoneyCents(balanceDue);
-  const paymentCents = parseMoneyCents(paymentAmount);
+  const balanceCents = parseCents(balanceDue);
+  const paymentCents = parseCents(paymentAmount);
   const overpaymentCents = paymentCents !== null && balanceCents !== null && paymentCents > balanceCents
     ? paymentCents - balanceCents
     : null;
@@ -62,7 +61,7 @@ export function PaymentModal({
     : paymentCents;
   const needsAmount = paymentCents === null || paymentCents <= 0;
   const exceedsPending = paymentCents !== null && balanceCents !== null && paymentCents > balanceCents;
-  const pendingAmountLabel = balanceCents !== null ? formatMoneyCents(balanceCents) : '0.00';
+  const pendingAmountLabel = balanceCents !== null ? formatCents(balanceCents) : '0.00';
 
   useEffect(() => {
     if (open) {
@@ -86,8 +85,8 @@ export function PaymentModal({
 
     const cents = parseCents(value);
     const cap = balanceCents;
-    if (cap !== null && cents > cap) {
-      const capped = formatMoneyCents(cap);
+    if (cap !== null && cents !== null && cents > cap) {
+      const capped = formatCents(cap);
       setCapNotice(`El pago no puede superar el saldo pendiente (L. ${pendingAmountLabel}).`);
       onPaymentAmountChange(capped);
       return;
@@ -99,7 +98,7 @@ export function PaymentModal({
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const amountCents = parseMoneyCents(paymentAmount);
+    const amountCents = parseCents(paymentAmount);
     if (amountCents === null || amountCents <= 0) {
       setError('Ingrese un monto válido');
       amountInputRef.current?.focus();
@@ -116,7 +115,7 @@ export function PaymentModal({
       return;
     }
     setError(null);
-    onConfirm(formatMoneyCents(appliedAmountCents ?? amountCents));
+    onConfirm(formatCents(appliedAmountCents ?? amountCents));
   }
 
   return (
@@ -134,22 +133,22 @@ export function PaymentModal({
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Total:</span>
-            <span className="font-medium">{moneyLabel(total)}</span>
+            <span className="font-medium">{formatLempirasFromCents(parseCents(total))}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Saldo pendiente:</span>
-            <span className="font-bold">{moneyLabel(balanceDue)}</span>
+            <span className="font-bold">{formatLempirasFromCents(parseCents(balanceDue))}</span>
           </div>
           {changeCents !== null && (
             <div className="flex justify-between text-success-foreground">
               <span className="text-muted-foreground">Cambio:</span>
-              <span className="font-bold">{moneyLabelFromCents(changeCents)}</span>
+              <span className="font-bold">{formatLempirasFromCents(changeCents)}</span>
             </div>
           )}
           {remainingBalanceCents !== null && (
             <div className="flex justify-between text-warning-foreground">
               <span className="text-muted-foreground">Saldo pendiente:</span>
-              <span className="font-bold">{moneyLabelFromCents(remainingBalanceCents)}</span>
+              <span className="font-bold">{formatLempirasFromCents(remainingBalanceCents)}</span>
             </div>
           )}
           {remainingBalanceCents !== null && !partialPaymentsEnabled ? (
@@ -165,7 +164,7 @@ export function PaymentModal({
           {appliedAmountCents !== null && appliedAmountCents > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Pago aplicado:</span>
-              <span className="font-medium">{moneyLabelFromCents(appliedAmountCents)}</span>
+              <span className="font-medium">{formatLempirasFromCents(appliedAmountCents)}</span>
             </div>
           )}
         </div>
@@ -251,36 +250,5 @@ export function PaymentModal({
       </form>
     </Dialog>
   );
-}
-
-function parseMoneyCents(value: string): number | null {
-  const normalized = value.trim();
-  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
-    return null;
-  }
-
-  const [integer, decimal = '00'] = normalized.split('.');
-  return Number(integer) * 100 + Number(decimal.padEnd(2, '0').slice(0, 2));
-}
-
-function formatMoneyCents(cents: number): string {
-  const isNegative = cents < 0;
-  const abs = Math.abs(cents);
-  const str = String(abs).padStart(3, '0');
-  const integer = str.slice(0, -2);
-  const decimal = str.slice(-2);
-  return `${isNegative ? '-' : ''}${integer}.${decimal}`;
-}
-
-function moneyLabel(value: string | number | null | undefined): string {
-  if (value === null || value === undefined) {
-    return formatLempirasFromCents(0);
-  }
-
-  return formatLempirasFromCents(parseCentsNullable(value));
-}
-
-function moneyLabelFromCents(cents: number): string {
-  return formatLempirasFromCents(cents);
 }
 

@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\CashMovement;
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Models\CashRegisterSession;
 use App\Models\User;
 use App\Support\InvoiceAccess;
 use App\Support\Money;
@@ -54,6 +55,13 @@ class VoidPaymentAction
             if ($lockedPayment->status !== Payment::STATUS_POSTED) {
                 throw ValidationException::withMessages([
                     'payment' => 'El pago ya fue reversado.',
+                ]);
+            }
+
+            $cashSession = CashRegisterSession::find($lockedPayment->cash_session_id);
+            if ($cashSession && $cashSession->status !== CashRegisterSession::STATUS_OPEN) {
+                throw ValidationException::withMessages([
+                    'payment' => 'No se puede reversar un pago de una caja cerrada.',
                 ]);
             }
 

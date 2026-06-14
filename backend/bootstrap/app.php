@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        $middleware->appendToGroup('web', \Illuminate\Session\Middleware\AuthenticateSession::class);
         $middleware->append(AddSecurityHeaders::class);
         $middleware->alias([
             'user.active' => EnsureUserIsActive::class,

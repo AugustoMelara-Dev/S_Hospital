@@ -39,7 +39,6 @@ type AppRoutesProps = {
   defaultAuthenticatedRoute: string;
   onQuickCash: () => void;
   onQuickInvoice: () => void;
-  onCashSessionChange: (session: CashSession | null) => void;
   onStatus: (message: string) => void;
   user: AuthUser;
 };
@@ -66,7 +65,6 @@ export function AppRoutes({
   defaultAuthenticatedRoute,
   onQuickCash,
   onQuickInvoice,
-  onCashSessionChange,
   onStatus,
   user,
 }: AppRoutesProps) {
@@ -107,7 +105,6 @@ export function AppRoutes({
               canCreatePayments={canCreatePayments}
               canViewCatalog={canViewCatalog}
               canViewReceipts={canViewReceipts}
-              onCashSessionChange={onCashSessionChange}
               onOpenCash={onQuickCash}
               onStatus={onStatus}
             />
@@ -124,7 +121,6 @@ export function AppRoutes({
               canOpenCash={canOpenCash}
               canViewCashSessionReport={canViewCashSessionReports || canViewManagerialReports}
               onStatus={onStatus}
-              onSessionChange={onCashSessionChange}
             />
           </PermissionGate>
         }

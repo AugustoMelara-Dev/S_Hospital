@@ -84,8 +84,8 @@ class CspReportControllerTest extends TestCase
             [],
             [],
             [],
-            ['CONTENT_TYPE' => 'text/plain'],
-            'hello world',
+            ['CONTENT_TYPE' => 'application/json'],
+            '{"hello": "world"}',
         );
 
         $response->assertStatus(415);
