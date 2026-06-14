@@ -45,14 +45,14 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
   const isConfigured = blockers.length === 0;
 
   return (
-    <Card className={isConfigured ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}>
+    <Card className={isConfigured ? 'status-success' : 'status-warning'}>
       <CardContent className="pt-6">
         <div className="flex items-center gap-4">
-          <div className={`p-3 rounded-full ${isConfigured ? 'bg-emerald-100' : 'bg-amber-100'}`}>
+          <div className={`p-3 rounded-full ${isConfigured ? 'bg-success/10' : 'bg-warning/10'}`}>
             {isConfigured ? (
-              <CheckCircle className="h-6 w-6 text-emerald-600" />
+              <CheckCircle className="h-6 w-6 text-success" />
             ) : (
-              <AlertCircle className="h-6 w-6 text-amber-600" />
+              <AlertCircle className="h-6 w-6 text-warning" />
             )}
           </div>
           <div>
@@ -67,8 +67,8 @@ export function FiscalStatusCard({ settings, sequence }: FiscalStatusCardProps) 
           </div>
         </div>
         {blockers.length > 0 && (
-          <p className="mt-3 text-sm text-amber-700">
-            Faltan o requieren revision: {blockers.join(', ')}.
+          <p className="mt-3 text-sm text-warning">
+            Faltan o requieren revisión: {blockers.join(', ')}.
           </p>
         )}
       </CardContent>

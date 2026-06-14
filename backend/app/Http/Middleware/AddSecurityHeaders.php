@@ -23,6 +23,20 @@ class AddSecurityHeaders
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
         $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
 
+        if ($this->isProductionLike() && $request->isSecure()) {
+            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        }
+
+        // JSON responses for authenticated routes carry PII (patient names,
+        // totals, payment references). They MUST NOT be cached by browsers,
+        // proxies, or shared caches. The SPA also relies on this for the
+        // cashier app to never serve stale financial data.
+        if ($this->isApiResponse($request)) {
+            $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', '0');
+        }
+
         if (! $response->headers->has('Content-Security-Policy')) {
             $response->headers->set('Content-Security-Policy', $this->cspFor($request, $nonce));
         }
@@ -39,9 +53,32 @@ class AddSecurityHeaders
         return bin2hex(random_bytes(16));
     }
 
+    /**
+     * True when APP_ENV is exactly "production" (case-insensitive, trimmed).
+     * We accept any case to prevent a Windows install with `APP_ENV=Production`
+     * from silently falling into the dev branch with `unsafe-eval`.
+     */
+    private function isProductionLike(): bool
+    {
+        $env = strtolower(trim((string) config('app.env')));
+
+        return $env === 'production' || $env === 'prod';
+    }
+
+    private function isApiResponse(Request $request): bool
+    {
+        if ($request->is('api/*')) {
+            return true;
+        }
+
+        $accept = (string) $request->headers->get('Accept', '');
+
+        return str_contains($accept, 'application/json');
+    }
+
     private function cspFor(Request $request, string $nonce): string
     {
-        $production = app()->environment('production');
+        $production = $this->isProductionLike();
 
         $scriptSources = $production
             ? "'self' 'nonce-{$nonce}'"
@@ -86,3 +123,4 @@ class AddSecurityHeaders
         ]);
     }
 }
+
