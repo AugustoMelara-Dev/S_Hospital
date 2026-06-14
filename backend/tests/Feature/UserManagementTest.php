@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,6 +37,20 @@ class UserManagementTest extends TestCase
         $target->refresh();
         $this->assertTrue(Hash::check('Temporary123', $target->password));
         $this->assertTrue($target->must_change_password);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'user.password_reset',
+            'entity_type' => User::class,
+            'entity_id' => $target->id,
+        ]);
+
+        $audit = AuditLog::query()
+            ->where('action', 'user.password_reset')
+            ->where('entity_id', $target->id)
+            ->firstOrFail();
+
+        $this->assertSame($target->username, $audit->new_values['username']);
+        $this->assertArrayNotHasKey('password', $audit->new_values);
     }
 
     public function test_admin_can_list_users_but_cashier_cannot(): void
@@ -68,6 +83,12 @@ class UserManagementTest extends TestCase
             ->assertJsonPath('data.active', false);
 
         $this->assertFalse($target->refresh()->active);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'user.disabled',
+            'entity_type' => User::class,
+            'entity_id' => $target->id,
+        ]);
 
         $this->actingAs($admin)
             ->postJson("/api/admin/users/{$admin->id}/toggle-active")

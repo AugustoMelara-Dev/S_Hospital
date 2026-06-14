@@ -351,6 +351,31 @@ class ServiceCatalogTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_service_price_must_be_greater_than_zero_on_create_and_update(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $service = Service::query()->firstOrFail();
+
+        $this->actingAs($admin)
+            ->postJson('/api/services', [
+                'category_id' => $service->category_id,
+                'area_id' => $service->area_id,
+                'name' => 'Servicio sin precio valido',
+                'price' => '0.00',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('price');
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$service->id}", [
+                'price' => '0.00',
+                'price_change_reason' => 'Intento de precio cero',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('price');
+    }
+
     public function test_cashier_cannot_create_or_edit_categories(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);

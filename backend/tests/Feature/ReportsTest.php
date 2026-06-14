@@ -768,7 +768,7 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.services.0.total', '17.25');
     }
 
-    public function test_managerial_reports_without_close_any_are_scoped_to_own_activity(): void
+    public function test_managerial_reports_without_close_any_can_view_all_activity(): void
     {
         $this->seedBillingBase();
         $viewer = $this->cashier();
@@ -787,27 +787,31 @@ class ReportsTest extends TestCase
         $this->actingAs($viewer)
             ->getJson("/api/reports/categories?{$query}")
             ->assertOk()
-            ->assertJsonCount(1, 'data.categories')
-            ->assertJsonPath('data.categories.0.category', 'Laboratorio')
-            ->assertJsonPath('data.categories.0.total', '17.25');
+            ->assertJsonFragment(['total' => '17.25'])
+            ->assertJsonFragment(['total' => '28.75']);
 
         $this->actingAs($viewer)
             ->getJson("/api/reports/services?{$query}")
             ->assertOk()
-            ->assertJsonCount(1, 'data.services')
-            ->assertJsonPath('data.services.0.service', 'Glucosa')
-            ->assertJsonPath('data.services.0.total', '17.25');
+            ->assertJsonFragment(['service' => 'Glucosa', 'total' => '17.25'])
+            ->assertJsonFragment(['service' => 'Eritropoyetina', 'total' => '28.75']);
 
         $this->actingAs($viewer)
             ->getJson("/api/reports/operations?{$query}")
             ->assertOk()
-            ->assertJsonPath('data.summary.cashier_count', 1)
-            ->assertJsonPath('data.cashiers.0.username', $viewer->username)
-            ->assertJsonPath('data.cashiers.0.total_collected', '17.25');
+            ->assertJsonPath('data.summary.cashier_count', 2)
+            ->assertJsonFragment(['username' => $viewer->username, 'total_collected' => '17.25'])
+            ->assertJsonFragment(['username' => $otherCashier->username, 'total_collected' => '28.75']);
 
         $this->actingAs($viewer)
             ->getJson("/api/reports/income?{$query}&cash_session_id={$otherSessionId}")
-            ->assertForbidden();
+            ->assertOk()
+            ->assertJsonPath('data.total_collected', '28.75');
+
+        $this->actingAs($viewer)
+            ->getJson("/api/reports/cash-sessions/{$otherSessionId}")
+            ->assertOk()
+            ->assertJsonPath('data.cash_session.id', $otherSessionId);
 
         $xlsx = $this->actingAs($viewer)
             ->get("/api/reports/export?{$query}")

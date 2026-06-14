@@ -830,7 +830,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.institutional.paper_size', '80mm');
     }
 
-    public function test_zero_total_dialysis_prescription_invoice_is_paid_and_receiptable_without_artificial_payment(): void
+    public function test_zero_total_dialysis_prescription_invoice_creates_zero_payment_trace_without_cash_movement(): void
     {
         $this->seedBillingBase();
         $cashier = $this->cashier();
@@ -864,11 +864,23 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.invoice.total', '0.00')
             ->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID)
             ->assertJsonPath('data.items.0.special_rule_applied', true)
-            ->assertJsonCount(0, 'data.payments');
+            ->assertJsonCount(1, 'data.payments')
+            ->assertJsonPath('data.payments.0.method', Payment::METHOD_OTHER)
+            ->assertJsonPath('data.payments.0.amount', '0.00')
+            ->assertJsonPath('data.payments.0.reference', 'Receta dialisis: factura sin cobro')
+            ->assertJsonPath('data.payments.0.cashier', $cashier->name);
 
-        $this->assertDatabaseMissing('payments', [
+        $this->assertDatabaseHas('payments', [
             'invoice_id' => $invoiceId,
+            'cash_session_id' => CashRegisterSession::query()->where('user_id', $cashier->id)->value('id'),
+            'user_id' => $cashier->id,
+            'method' => Payment::METHOD_OTHER,
+            'amount' => '0.00',
+            'amount_cents' => 0,
+            'reference' => 'Receta dialisis: factura sin cobro',
+            'status' => Payment::STATUS_POSTED,
         ]);
+        $this->assertNotNull(Payment::query()->where('invoice_id', $invoiceId)->value('paid_at'));
         $this->assertDatabaseHas('audit_logs', [
             'action' => 'invoice.zero_amount_registered',
             'entity_type' => Invoice::class,
@@ -879,6 +891,14 @@ class CashPaymentsReceiptTest extends TestCase
             'method' => Payment::METHOD_OTHER,
             'amount' => '0.00',
         ]);
+
+        $this->actingAs($cashier)
+            ->getJson('/api/cash-sessions/current')
+            ->assertOk()
+            ->assertJsonPath('data.payments_count', 1)
+            ->assertJsonPath('data.payments_total', '0.00')
+            ->assertJsonPath('data.payments_by_method.other', '0.00')
+            ->assertJsonPath('data.expected_cash_amount', '0.00');
     }
 
     public function test_cash_session_can_open_with_zero_initial_cash(): void

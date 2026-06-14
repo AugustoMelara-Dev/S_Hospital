@@ -22,7 +22,7 @@ class ShowCashSessionReportRequest extends FormRequest
             return false;
         }
 
-        return $this->user()?->can('cash.close_any') === true
+        return $this->user()?->can('reports.managerial.view') === true
             || $cashSession->user_id === $this->user()?->id;
     }
 

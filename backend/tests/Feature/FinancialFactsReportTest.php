@@ -138,6 +138,43 @@ class FinancialFactsReportTest extends TestCase
             ->assertJsonPath('data.payment_count', 1);
     }
 
+    public function test_zero_total_dialysis_payment_counts_as_trace_without_revenue_or_cash(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $cashier->givePermissionTo('patients.mark_dialysis_prescription');
+        $this->openSession($cashier, '100.00');
+
+        $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'dialysis_prescription' => true,
+                'items' => [[
+                    'service_id' => Service::query()->where('name', 'Eritropoyetina')->firstOrFail()->id,
+                    'quantity' => '1.00',
+                ]],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.total', '0.00')
+            ->assertJsonPath('data.status', Invoice::STATUS_PAID);
+
+        $query = http_build_query([
+            'date_from' => now()->toDateString(),
+            'date_to' => now()->toDateString(),
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/reports/income?{$query}")
+            ->assertOk()
+            ->assertJsonPath('data.total_billed', '0.00')
+            ->assertJsonPath('data.total_collected', '0.00')
+            ->assertJsonPath('data.total_pending', '0.00')
+            ->assertJsonPath('data.payments_by_method.cash', '0.00')
+            ->assertJsonPath('data.payments_by_method.other', '0.00')
+            ->assertJsonPath('data.invoice_count', 1)
+            ->assertJsonPath('data.payment_count', 1);
+    }
+
     private function seedBillingBase(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);

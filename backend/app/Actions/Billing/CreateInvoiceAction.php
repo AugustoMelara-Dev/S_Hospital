@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
 use App\Support\Money;
@@ -47,6 +48,7 @@ class CreateInvoiceAction
             $fiscal = $this->generateFiscalNumber->execute();
             $sequence = $fiscal['sequence'];
             $isZeroTotal = $this->isZeroAmount($totals['total']);
+            $issuedAt = now();
 
             $sumItems = array_reduce($totals['items'], fn (int $carry, array $item) => $carry + $item['line_total_cents'], 0);
             if ($sumItems !== $totals['total_cents']) {
@@ -89,7 +91,7 @@ class CreateInvoiceAction
                 'status' => $isZeroTotal ? Invoice::STATUS_PAID : Invoice::STATUS_ISSUED,
                 'cash_session_id' => $cashSession->id,
                 'issued_by' => $issuer->id,
-                'issued_at' => now(),
+                'issued_at' => $issuedAt,
             ]);
 
             foreach ($totals['items'] as $item) {
@@ -97,6 +99,18 @@ class CreateInvoiceAction
             }
 
             if ($isZeroTotal) {
+                Payment::query()->create([
+                    'invoice_id' => $invoice->id,
+                    'cash_session_id' => $cashSession->id,
+                    'user_id' => $issuer->id,
+                    'method' => Payment::METHOD_OTHER,
+                    'amount' => '0.00',
+                    'amount_cents' => 0,
+                    'reference' => 'Receta dialisis: factura sin cobro',
+                    'status' => Payment::STATUS_POSTED,
+                    'paid_at' => $issuedAt,
+                ]);
+
                 AuditLog::query()->create([
                     'user_id' => $issuer->id,
                     'action' => 'invoice.zero_amount_registered',
