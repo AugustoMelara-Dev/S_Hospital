@@ -5,7 +5,8 @@ Rama: `fix/f7-operational-release-gate`
 Commit inicial auditado: `0f25a76c189d9947b7e82b4d43c9eae1faf03184`  
 HEAD real al iniciar cierre E2E: `c55ba65be7822fd65bc88d7dc4d0c02d6124823b`
 Commit tecnico del cierre E2E: `17915712`
-Commit documental del reporte: ver `git rev-parse HEAD` despues de este commit.
+Commit documental del reporte: `ccfee49f`
+HEAD final de la rama tras publicar: ver `git rev-parse HEAD`.
 
 ## Veredicto
 
@@ -56,7 +57,7 @@ Estado antes del cierre E2E final:
 | `3f7f5d5a` | `docs(release): document f7 operational gate` |
 | `c55ba65b` | `feat(tests): add operational installation and validation scripts for QA process` |
 | `17915712` | `test(e2e): add reproducible f7 release gate` |
-| `TBD` | `docs(release): close f7 e2e gate report` |
+| `ccfee49f` | `docs(release): close f7 e2e gate report` |
 
 ## Hallazgos corregidos
 
