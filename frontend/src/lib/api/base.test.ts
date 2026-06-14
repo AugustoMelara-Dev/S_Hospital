@@ -525,7 +525,7 @@ describe('resolveApiBaseUrl', () => {
 
     it('attaches a UUID Idempotency-Key header to every POST', async () => {
       document.cookie = 'XSRF-TOKEN=test-token';
-      const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, _init) => {
         const url = String(input);
         if (url.includes('/sanctum/csrf-cookie')) {
           return { ok: true, json: async () => ({}) } as Response;
@@ -572,7 +572,7 @@ describe('resolveApiBaseUrl', () => {
     it('reuses the same Idempotency-Key on a 419 auto-retry so the backend can de-duplicate', async () => {
       document.cookie = 'XSRF-TOKEN=test-token';
       let postAttempts = 0;
-      const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, _init) => {
         const url = String(input);
         if (url.includes('/sanctum/csrf-cookie')) {
           return { ok: true, json: async () => ({}) } as Response;

@@ -98,7 +98,7 @@ describe('DashboardView financial labels', () => {
       />,
     );
 
-    expect(await screen.findAllByText(/el servidor lan no pudo completar la operacion/i)).not.toHaveLength(0);
+    expect(await screen.findAllByText(/el servidor lan no pudo completar la operaci[oó]n/i)).not.toHaveLength(0);
     expect(document.body.textContent).not.toMatch(/SQLSTATE|stack trace|storage\/logs/i);
     expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/servidor lan/i));
   });

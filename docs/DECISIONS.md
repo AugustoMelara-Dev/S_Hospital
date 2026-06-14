@@ -3293,3 +3293,10 @@ Validacion:
 - Reportes ahora anuncian errores críticos con `Alert` y los botones de exportación usan `type="button"` para evitar submits accidentales.
 - Respaldos migró estados principales a tokens semánticos y se corrigió copy institucional visible sin cambiar endpoints ni flujo de backup.
 - Configuración fiscal, recibos, catálogo, ayuda y textos de dominio se normalizaron en español institucional con acentos correctos.
+
+## 2026-06-14 - Phase 9: Barrido dark mode, responsive y accesibilidad
+
+- Se eliminó el último badge de auditoría con colores fijos y se migró a tokens `success`, `warning` y `destructive` para mantener contraste en light/dark mode.
+- Se actualizaron pruebas de navegación y configuración fiscal para validar copy institucional con acentos correctos sin relajar roles accesibles.
+- Se corrigió el lint existente en tests de idempotencia frontend renombrando argumentos no usados, sin tocar comportamiento de API ni contratos Laravel.
+- Validación: `npm.cmd run test -- BackupsView FiscalStatusCard ReportsView AuditoriaTab CatalogView UsersView DashboardView App NewInvoiceView ReceiptPreview`, `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run build`, `git diff --check`.
