@@ -180,6 +180,10 @@ export const apiClient = {
     return billing.voidInvoice(invoiceId, reason);
   },
 
+  async reverseInvoice(invoiceId: number, reason: string): Promise<Invoice> {
+    return billing.reverseInvoice(invoiceId, reason);
+  },
+
   async voidPayment(
     invoiceId: number,
     paymentId: number,
