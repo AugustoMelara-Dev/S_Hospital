@@ -1,0 +1,156 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\ReceiptPrintProfile;
+use Illuminate\Database\Seeder;
+
+class ReceiptPrintProfileSeeder extends Seeder
+{
+    /**
+     * Seed required institutional receipt paper profiles.
+     */
+    public function run(): void
+    {
+        $profiles = [
+            ReceiptPrintProfile::CODE_CUSTOM_SMALL => [
+                'code' => ReceiptPrintProfile::CODE_CUSTOM_SMALL,
+                'name' => 'Recibo pequeno personalizado',
+                'paper_kind' => 'custom_mm',
+                'width_mm' => '180.00',
+                'height_mm' => '95.00',
+                'margin_top_mm' => '5.00',
+                'margin_right_mm' => '5.00',
+                'margin_bottom_mm' => '5.00',
+                'margin_left_mm' => '5.00',
+                'orientation' => 'landscape',
+                'template_code' => 'institutional_classic',
+                'font_family' => 'Arial, sans-serif',
+                'font_scale' => '0.95',
+                'copies_mode' => 'original_only',
+                'show_copy_legend' => true,
+                'show_physical_seal_space' => true,
+                'use_logo' => false,
+                'show_technical_fields' => false,
+                'active' => false,
+                'is_global_default' => false,
+            ],
+            ReceiptPrintProfile::CODE_HALF_LETTER => [
+                'code' => ReceiptPrintProfile::CODE_HALF_LETTER,
+                'name' => 'Media carta horizontal',
+                'paper_kind' => 'half_letter_landscape',
+                'width_mm' => '215.90',
+                'height_mm' => '139.70',
+                'margin_top_mm' => '6.00',
+                'margin_right_mm' => '6.00',
+                'margin_bottom_mm' => '6.00',
+                'margin_left_mm' => '6.00',
+                'orientation' => 'landscape',
+                'template_code' => 'institutional_classic',
+                'font_family' => 'Arial, sans-serif',
+                'font_scale' => '1.00',
+                'copies_mode' => 'original_only',
+                'show_copy_legend' => true,
+                'show_physical_seal_space' => true,
+                'use_logo' => false,
+                'show_technical_fields' => false,
+                'active' => true,
+                'is_global_default' => true,
+            ],
+            ReceiptPrintProfile::CODE_A5 => [
+                'code' => ReceiptPrintProfile::CODE_A5,
+                'name' => 'A5 horizontal',
+                'paper_kind' => 'a5_landscape',
+                'width_mm' => '210.00',
+                'height_mm' => '148.00',
+                'margin_top_mm' => '6.00',
+                'margin_right_mm' => '6.00',
+                'margin_bottom_mm' => '6.00',
+                'margin_left_mm' => '6.00',
+                'orientation' => 'landscape',
+                'template_code' => 'institutional_classic',
+                'font_family' => 'Arial, sans-serif',
+                'font_scale' => '1.00',
+                'copies_mode' => 'original_only',
+                'show_copy_legend' => true,
+                'show_physical_seal_space' => true,
+                'use_logo' => false,
+                'show_technical_fields' => false,
+                'active' => true,
+                'is_global_default' => false,
+            ],
+            ReceiptPrintProfile::CODE_LETTER => [
+                'code' => ReceiptPrintProfile::CODE_LETTER,
+                'name' => 'Carta horizontal',
+                'paper_kind' => 'letter_landscape',
+                'width_mm' => '279.40',
+                'height_mm' => '215.90',
+                'margin_top_mm' => '8.00',
+                'margin_right_mm' => '8.00',
+                'margin_bottom_mm' => '8.00',
+                'margin_left_mm' => '8.00',
+                'orientation' => 'landscape',
+                'template_code' => 'institutional_classic',
+                'font_family' => 'Arial, sans-serif',
+                'font_scale' => '1.00',
+                'copies_mode' => 'original_only',
+                'show_copy_legend' => true,
+                'show_physical_seal_space' => true,
+                'use_logo' => false,
+                'show_technical_fields' => false,
+                'active' => true,
+                'is_global_default' => false,
+            ],
+            ReceiptPrintProfile::CODE_THERMAL_80 => [
+                'code' => ReceiptPrintProfile::CODE_THERMAL_80,
+                'name' => 'Termica 80 mm',
+                'paper_kind' => 'thermal_80mm',
+                'width_mm' => '80.00',
+                'height_mm' => '200.00',
+                'margin_top_mm' => '3.00',
+                'margin_right_mm' => '3.00',
+                'margin_bottom_mm' => '3.00',
+                'margin_left_mm' => '3.00',
+                'orientation' => 'portrait',
+                'template_code' => 'institutional_classic',
+                'font_family' => 'Arial, sans-serif',
+                'font_scale' => '0.90',
+                'copies_mode' => 'original_only',
+                'show_copy_legend' => true,
+                'show_physical_seal_space' => true,
+                'use_logo' => false,
+                'show_technical_fields' => false,
+                'active' => false,
+                'is_global_default' => false,
+            ],
+            ReceiptPrintProfile::CODE_THERMAL_58 => [
+                'code' => ReceiptPrintProfile::CODE_THERMAL_58,
+                'name' => 'Termica 58 mm',
+                'paper_kind' => 'thermal_58mm',
+                'width_mm' => '58.00',
+                'height_mm' => '200.00',
+                'margin_top_mm' => '2.00',
+                'margin_right_mm' => '2.00',
+                'margin_bottom_mm' => '2.00',
+                'margin_left_mm' => '2.00',
+                'orientation' => 'portrait',
+                'template_code' => 'institutional_classic',
+                'font_family' => 'Arial, sans-serif',
+                'font_scale' => '0.85',
+                'copies_mode' => 'original_only',
+                'show_copy_legend' => true,
+                'show_physical_seal_space' => true,
+                'use_logo' => false,
+                'show_technical_fields' => false,
+                'active' => false,
+                'is_global_default' => false,
+            ],
+        ];
+
+        foreach ($profiles as $code => $defaults) {
+            unset($defaults['code']);
+
+            ReceiptPrintProfile::query()->firstOrCreate(['code' => $code], $defaults);
+        }
+    }
+}
