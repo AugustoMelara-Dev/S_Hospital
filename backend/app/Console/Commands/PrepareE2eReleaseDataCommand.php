@@ -125,7 +125,7 @@ class PrepareE2eReleaseDataCommand extends Command
                 'id' => $sequence->id,
                 'prefix' => $sequence->prefix,
                 'current_number' => $sequence->current_number,
-                'valid_until' => $sequence->valid_until?->toDateString(),
+                'valid_until' => $sequence->valid_until->toDateString(),
             ],
             'cash_session' => [
                 'id' => $cashSession->id,
