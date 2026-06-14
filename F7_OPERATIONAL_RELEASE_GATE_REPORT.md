@@ -3,24 +3,42 @@
 Fecha: 2026-06-14  
 Rama: `fix/f7-operational-release-gate`  
 Commit inicial auditado: `0f25a76c189d9947b7e82b4d43c9eae1faf03184`  
-Commit final: `0a3c77129e98453b0cfcf8c6b999c41db318799e`
+HEAD real al iniciar cierre E2E: `c55ba65be7822fd65bc88d7dc4d0c02d6124823b`
+Commit tecnico del cierre E2E: `17915712`
+Commit documental del reporte: ver `git rev-parse HEAD` despues de este commit.
 
 ## Veredicto
 
-`F7_CONDITIONALLY_READY`
+`F7_OPERATIONAL_RELEASE_GATE_PASS`
 
 Estado permitido: `READY_FOR_REAL_LAN_OFFLINE_INSTALLATION_TEST`
 
 No se declara `PRODUCTION_READY`.
 
-Motivo: los bloqueadores P0/P1 corregidos en esta fase tienen evidencia de codigo, pruebas y runtime Docker productivo healthy. Sin embargo, el gate E2E final no paso completo: `npm run test:e2e` no existe y el equivalente `npm run e2e` fallo/agotó timeout contra el entorno local por datos/seed de backend no preparados para esos flujos.
+Motivo: los bloqueadores P0/P1 corregidos en F7 tienen evidencia de codigo, pruebas y runtime Docker productivo healthy. El bloqueo final E2E queda cerrado: `npm run test:e2e` existe, `npm run e2e` es alias consistente y ambos pasan contra un entorno E2E controlado no productivo con datos preparados de forma reproducible.
+
+## Resolucion de inconsistencia de commits
+
+- Commit reportado externamente como final previo: `3f7f5d5a8a6451a728cf9edc197e0242beae9869`.
+- Commit final escrito dentro del reporte previo: `0a3c77129e98453b0cfcf8c6b999c41db318799e`.
+- HEAD real verificado antes del cierre E2E: `c55ba65be7822fd65bc88d7dc4d0c02d6124823b`.
+- `origin/fix/f7-operational-release-gate` verificado antes del cierre E2E: `c55ba65be7822fd65bc88d7dc4d0c02d6124823b`.
+- Causa: el reporte F7 quedo desactualizado despues de commits posteriores de QA/documentacion. Este cierre documenta el HEAD real y agrega el commit especifico para el gate E2E.
+- La carpeta `qa/operational-install-2026-06-14/` esta preservada y versionada desde `c55ba65b`.
 
 ## Estado inicial
 
-- `git status --short`: limpio al iniciar.
+- `git status --short`: limpio al iniciar F7.
 - `git branch --show-current`: `main`.
 - `git rev-parse HEAD`: `0f25a76c189d9947b7e82b4d43c9eae1faf03184`.
 - Rama creada desde main: `fix/f7-operational-release-gate`.
+
+Estado antes del cierre E2E final:
+
+- `git branch --show-current`: `fix/f7-operational-release-gate`.
+- `git rev-parse HEAD`: `c55ba65be7822fd65bc88d7dc4d0c02d6124823b`.
+- `git rev-parse origin/fix/f7-operational-release-gate`: `c55ba65be7822fd65bc88d7dc4d0c02d6124823b`.
+- `git status --short --untracked-files=all`: limpio.
 
 ## Commits realizados
 
@@ -35,6 +53,10 @@ Motivo: los bloqueadores P0/P1 corregidos en esta fase tienen evidencia de codig
 | `2db532a7` | `fix(deploy): repair production runtime healthchecks` |
 | `59f9dd68` | `test(security): assert restricted realtime csp` |
 | `0a3c7712` | `style(backend): satisfy pint release gate` |
+| `3f7f5d5a` | `docs(release): document f7 operational gate` |
+| `c55ba65b` | `feat(tests): add operational installation and validation scripts for QA process` |
+| `17915712` | `test(e2e): add reproducible f7 release gate` |
+| `TBD` | `docs(release): close f7 e2e gate report` |
 
 ## Hallazgos corregidos
 
@@ -66,7 +88,37 @@ Motivo: los bloqueadores P0/P1 corregidos en esta fase tienen evidencia de codig
 | P2-009 evitar `MYSQL_PWD` | Corregido | App y scripts usan defaults file temporal; `rg "MYSQL_PWD\\s*=" scripts backend/app backend/docker` sin usos ejecutables. |
 | P3-008 motivo reimpresion | Corregido | `ReprintReceiptRequest` exige motivo; `ReprintDoesNotMutateTest` paso. |
 
-## Evidencia Docker/runtime
+## Cierre E2E final
+
+### Causa raiz del fallo anterior
+
+- `frontend/package.json` no tenia `test:e2e`.
+- `npm run e2e` ejecutaba la suite Playwright historica sin preparar datos reales; al apuntarla a Docker prod/local, el backend no tenia usuarios, permisos, fiscal, catalogo y caja abierta esperados para esos flujos.
+- Parte de la suite mezclaba mocks y API real segun proxy/estado local, por lo que podia fallar por timeout o pasar por estado accidental.
+- En Windows, el runner inicial de cierre E2E necesitaba terminar explicitamente procesos Laravel/Vite con `taskkill` para no dejar handles vivos despues de Playwright.
+
+### Entorno E2E controlado
+
+- No se usa Docker prod para mutaciones E2E.
+- Se usa una base efimera SQLite solo para automatizacion local: `backend/storage/framework/testing/e2e-release.sqlite`.
+- El producto productivo sigue definido para MySQL/MariaDB LAN; SQLite no se usa como runtime multiusuario.
+- El comando `hospital:prepare-e2e-release-data` se niega a ejecutar con `APP_ENV=production`.
+- Usuarios preparados:
+  - `cajero.e2e` / `Password123!`
+  - `admin.e2e` / `Password123!`
+  - `supervisor.e2e` / `Password123!`
+- Datos preparados: permisos/roles, fiscal setting, secuencia fiscal activa, catalogo desde CSV, `Glucosa`, `Eritropoyetina`, caja abierta para `cajero.e2e`.
+- Flujo probado: login cajero, validacion de caja abierta, servicio facturable, emitir factura, registrar pago L. 17.25, preview de recibo, persistencia de factura pagada, login admin y reportes.
+
+### Artefactos generados
+
+- `frontend/test-results/release-e2e-report.json`
+- `frontend/test-results/release-e2e-playwright.json`
+- `frontend/test-results/release-e2e/backend.log`
+- `frontend/test-results/release-e2e/frontend.log`
+- Traces/capturas de Playwright solo se retienen si hay fallo.
+
+## Evidencia Docker/runtime previa
 
 - `docker compose -p s_hospital_f7_verify -f docker-compose.prod.yml --env-file .env up -d --build`: paso con `APP_PORT=18080`, `SOKETI_PORT=16001`, secretos Pusher efimeros.
 - `docker compose ... ps`: `backend`, `mysql`, `nginx`, `queue-worker`, `scheduler`, `soketi` en `healthy`.
@@ -85,30 +137,31 @@ Advertencia recurrente: Docker imprime `Error loading config file: open C:\Users
 
 | Comando | Resultado |
 | --- | --- |
-| `php artisan test` | PASS: 461 passed, 10 skipped, 2985 assertions. |
-| `vendor/bin/pint --test` | PASS. |
-| `vendor/bin/phpstan analyse` | PASS: no errors. |
+| `php artisan test` | PASS previo: 461 passed, 10 skipped, 2985 assertions. |
+| `vendor/bin/pint --test` | PASS previo. |
+| `vendor/bin/phpstan analyse` | PASS previo: no errors. |
 | `npm run typecheck` | PASS. |
 | `npm run lint` | PASS. |
-| `npm run test` | PASS: 60 files, 261 tests. |
-| `npm run build` | PASS. |
+| `npm run test` | PASS previo: 60 files, 261 tests. |
+| `npm run build` | PASS previo. |
+| `php artisan test --filter=PrepareE2eReleaseDataCommandTest` | PASS: 1 passed, 12 assertions. |
+| `vendor/bin/pint --test app/Console/Commands/PrepareE2eReleaseDataCommand.php tests/Feature/PrepareE2eReleaseDataCommandTest.php` | PASS. |
+| `npm run test:e2e` | PASS: crea entorno E2E SQLite efimero, corre migraciones/seed, prepara datos, inicia Laravel/Vite y ejecuta Playwright release. 1 passed. |
+| `npm run e2e` | PASS: alias consistente a `node scripts/run-release-e2e.mjs`. 1 passed. |
 | `docker compose ... exec backend php artisan test` | NO APLICABLE en imagen prod: comando `test` no existe por install `--no-dev`. Cubierto por suite local. |
 | `docker compose ... exec backend vendor/bin/pint --test` | NO APLICABLE en imagen prod: `vendor/bin/pint` no existe por install `--no-dev`. Cubierto local. |
 | `docker compose ... exec backend vendor/bin/phpstan analyse` | NO APLICABLE en imagen prod: `vendor/bin/phpstan` no existe por install `--no-dev`. Cubierto local. |
-| `npm run test:e2e` | FAIL: script inexistente. Script disponible: `npm run e2e`. |
-| `npm run e2e` | FAIL/timeout: 11/16 pasaron en primera corrida; al apuntar `VITE_DEV_API_PROXY_TARGET=http://127.0.0.1:18080`, varios flujos fallaron por base productiva sin seed/usuarios esperados y el comando agotó timeout. |
 | `bash -n scripts/validate_restore_mysql.sh` | NO VERIFICADO: `bash.exe` apunta a WSL sin distro instalada. |
 
 ## Riesgos restantes
 
-- E2E operativo no esta verde. Antes de instalar en LAN real, crear un script reproducible para preparar datos de prueba no productivos o una config E2E dedicada contra Docker.
-- `npm run test:e2e` no existe; el gate documentado debe alinearse a `npm run e2e` o agregarse alias.
-- La imagen productiva no incluye dev tools. Esto es correcto para produccion, pero los comandos QA Docker deben ejecutarse contra una imagen/dev compose con dependencias dev, o documentarse como gates locales.
-- La consulta directa a `backup_logs` del stack Docker no quedo capturada por quoting de shell; se cuenta con evidencia de scheduler logs, pero falta una consulta SQL limpia en el reporte final de instalacion LAN.
+- No se declara `PRODUCTION_READY`; falta prueba fisica LAN/offline con servidor real, cliente navegador e impresora institucional.
+- La imagen productiva no incluye dev tools. Esto es correcto para produccion, pero los comandos QA de Pint/PHPStan/test deben correr local/dev, no dentro de imagen prod `--no-dev`.
+- La consulta directa a `backup_logs` del stack Docker no quedo capturada por quoting de shell; se cuenta con evidencia de scheduler logs, pero falta una consulta SQL limpia en la prueba LAN real.
 - `curl -I /assets/` devuelve 403 porque es directorio sin index; los headers estan presentes. Si el gate espera 200, debe apuntar a un asset real generado.
 
 ## Veredicto final
 
-`F7_CONDITIONALLY_READY`
+`F7_OPERATIONAL_RELEASE_GATE_PASS`
 
-P0/P1 corregidos y runtime productivo Docker healthy. Queda pendiente cerrar el gate E2E y documentar una prueba LAN/offline real con datos controlados antes de elevar a `F7_OPERATIONAL_RELEASE_GATE_PASS`.
+P0/P1 corregidos, runtime productivo Docker healthy y gate E2E final cerrado con datos controlados no productivos. Estado maximo permitido: `READY_FOR_REAL_LAN_OFFLINE_INSTALLATION_TEST`. No se declara `PRODUCTION_READY`.
