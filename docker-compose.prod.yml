@@ -79,7 +79,7 @@ services:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - shared_public:/var/www/html/public:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost/up >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/up >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -271,7 +271,7 @@ services:
     ports:
       - "${SOKETI_PORT:-6001}:6001"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:6001/ >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "node -e \"const net=require('net'); const s=net.createConnection(6001,'127.0.0.1'); s.on('connect',()=>process.exit(0)); s.on('error',()=>process.exit(1)); setTimeout(()=>process.exit(1),2000);\""]
       interval: 30s
       timeout: 5s
       retries: 5

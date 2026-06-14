@@ -151,7 +151,11 @@ class SystemStatusController extends Controller
     public function setupStatus(): JsonResponse
     {
         $fiscalSettings = FiscalSetting::query()->exists();
-        $adminExists = User::role('admin')->exists();
+        $adminExists = User::query()
+            ->whereHas('roles', fn ($query) => $query
+                ->where('name', 'admin')
+                ->where('guard_name', 'web'))
+            ->exists();
         $catalogHasServices = Service::query()->exists();
         $fiscalSequenceExists = FiscalSequence::query()->exists();
 
