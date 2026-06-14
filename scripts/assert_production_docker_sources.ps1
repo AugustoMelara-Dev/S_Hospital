@@ -212,7 +212,7 @@ if (Test-Path -LiteralPath $dockerfilePath -PathType Leaf) {
 
 if (Test-Path -LiteralPath $composePath -PathType Leaf) {
     $compose = Get-Content -LiteralPath $composePath -Raw
-    foreach ($required in @("backend", "queue-worker", "nginx", "mysql")) {
+    foreach ($required in @("backend", "queue-worker", "scheduler", "soketi", "nginx", "mysql")) {
         if ($compose -match "(?m)^\s{2}$([regex]::Escape($required)):\s*$") {
             Add-Pass "docker-compose.prod.yml contains service $required"
         } else {

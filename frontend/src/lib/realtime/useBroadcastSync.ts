@@ -17,7 +17,7 @@ const PAYMENT_EVENT = 'payment.changed';
 const CASH_EVENT = 'cash-session.changed';
 
 function isInvoiceChanged(payload: unknown): payload is InvoiceChangedEvent {
-  return !!payload && typeof payload === 'object' && 'invoice_number' in payload;
+  return !!payload && typeof payload === 'object' && 'id' in payload && 'change' in payload;
 }
 
 function isPaymentChanged(payload: unknown): payload is PaymentChangedEvent {
@@ -25,25 +25,19 @@ function isPaymentChanged(payload: unknown): payload is PaymentChangedEvent {
 }
 
 function isCashChanged(payload: unknown): payload is CashSessionChangedEvent {
-  return !!payload && typeof payload === 'object' && 'cash_session_id' in payload
-    || (!!payload && typeof payload === 'object' && 'opened_at' in payload);
+  return !!payload && typeof payload === 'object' && 'id' in payload && 'change' in payload;
 }
 
 function humanInvoice(payload: InvoiceChangedEvent): string {
-  const verb =
-    payload.change === 'created'
-      ? 'Factura emitida'
-      : payload.change === 'voided'
-        ? 'Factura anulada'
-        : payload.change === 'reversed'
-          ? 'Factura reversada'
-          : 'Factura actualizada';
-  return `${verb} ${payload.invoice_number} (${payload.patient_name}).`;
+  if (payload.change === 'created') return 'Factura emitida.';
+  if (payload.change === 'voided') return 'Factura anulada.';
+  if (payload.change === 'reversed') return 'Factura reversada.';
+
+  return 'Factura actualizada.';
 }
 
 function humanPayment(payload: PaymentChangedEvent): string {
-  const verb = payload.change === 'registered' ? 'Pago registrado' : 'Pago reversado';
-  return `${verb} L. ${payload.amount} (${payload.method}).`;
+  return payload.change === 'registered' ? 'Pago registrado.' : 'Pago reversado.';
 }
 
 function humanCash(payload: CashSessionChangedEvent): string {
@@ -103,17 +97,17 @@ export function useBroadcastSync(): void {
         }
       };
 
-      const channelInvoices: ReturnType<typeof echo.channel> = echo.channel('invoices');
+      const channelInvoices: ReturnType<typeof echo.private> = echo.private('invoices');
       (channelInvoices as { listen: (event: string, cb: (p: unknown) => void) => void })
         .listen(INVOICE_EVENT, onInvoice);
       (channelInvoices as { listen: (event: string, cb: (p: unknown) => void) => void })
         .listen(PAYMENT_EVENT, onPayment);
 
-      const channelCash: ReturnType<typeof echo.channel> = echo.channel('cash');
+      const channelCash: ReturnType<typeof echo.private> = echo.private('cash');
       (channelCash as { listen: (event: string, cb: (p: unknown) => void) => void })
         .listen(CASH_EVENT, onCash);
 
-      const channelPayments: ReturnType<typeof echo.channel> = echo.channel('payments');
+      const channelPayments: ReturnType<typeof echo.private> = echo.private('payments');
       (channelPayments as { listen: (event: string, cb: (p: unknown) => void) => void })
         .listen(PAYMENT_EVENT, onPayment);
 
@@ -126,9 +120,9 @@ export function useBroadcastSync(): void {
           .stopListening(CASH_EVENT, onCash);
         (channelPayments as { stopListening: (event: string, cb: (p: unknown) => void) => void })
           .stopListening(PAYMENT_EVENT, onPayment);
-        echo.leaveChannel('invoices');
-        echo.leaveChannel('cash');
-        echo.leaveChannel('payments');
+        echo.leave('invoices');
+        echo.leave('cash');
+        echo.leave('payments');
       };
     })();
 

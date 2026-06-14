@@ -91,4 +91,12 @@ export const billing = {
     });
     return response.data;
   },
+
+  async reverseInvoice(invoiceId: number, reason: string): Promise<Invoice> {
+    const response = await apiClient.request<{ data: Invoice }>(`/api/invoices/${invoiceId}/reverse`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+    return response.data;
+  },
 };

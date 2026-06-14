@@ -3308,3 +3308,11 @@ Validacion:
 - La prueba de factura L.0 por receta de diálisis se alinea con la lógica real: la factura queda pagada y auditable sin crear un pago artificial de L.0; la auditoría correcta es `invoice.zero_amount_registered`.
 - `phpunit.xml` fija `memory_limit=512M` para que la suite Laravel completa corra de forma reproducible en el contenedor sin descartarse por agotamiento de memoria.
 - Backups programados quedan confirmados como dos políticas intencionales: respaldo diario (`HOSPITAL_DAILY_BACKUP_TIME`, default 02:00) y respaldo operativo cada 15 minutos dentro de `HOSPITAL_OPERATION_START/END`. La restauración web permanece no expuesta; restore se valida por procedimiento seguro/self-test, no con un botón destructivo en UI.
+
+## 2026-06-14 - Gate E2E F7 usa entorno no productivo preparado
+
+Contexto: el release gate F7 quedo en `F7_CONDITIONALLY_READY` porque `npm run test:e2e` no existia y `npm run e2e` dependia de un estado local accidental o de variables manuales. Eso impedia demostrar el flujo caja/facturacion/recibo/reporte de forma reproducible.
+
+Decision: `npm run e2e` y `npm run test:e2e` ejecutan el mismo runner controlado. El runner crea una base SQLite efimera en `backend/storage/framework/testing/e2e-release.sqlite`, corre migraciones y seeders, prepara usuarios `*.e2e`, configuracion fiscal, catalogo minimo y caja abierta con `hospital:prepare-e2e-release-data`, inicia Laravel/Vite en puertos locales dedicados y ejecuta Playwright con `playwright.release.config.ts`.
+
+Alcance: SQLite se usa solo para el gate automatizado E2E local y no cambia la arquitectura productiva LAN, que sigue siendo MySQL/MariaDB. El comando se niega a preparar datos si `APP_ENV=production`.

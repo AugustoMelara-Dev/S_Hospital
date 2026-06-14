@@ -151,7 +151,7 @@ class LoginLockoutTest extends TestCase
             ->assertJsonPath('lockout_minutes', 15);
     }
 
-    public function test_lockout_engages_when_attacker_rotates_user_names_from_same_ip(): void
+    public function test_username_rotation_from_same_ip_does_not_block_the_whole_lan(): void
     {
         User::factory()->create([
             'username' => 'usuario-real',
@@ -161,9 +161,9 @@ class LoginLockoutTest extends TestCase
             'active' => true,
         ])->assignRole('cajero');
 
-        // 20 distinct failed usernames from the same IP (spraying) must
-        // trigger the per-IP lockout even though no single username has
-        // reached the 5-failure threshold.
+        // Distinct failed usernames from the same IP must not lock out every
+        // legitimate cashier on the LAN. The lockout key is based on the
+        // attempted login identifier, with IP as supporting context.
         for ($i = 0; $i < 20; $i++) {
             $this->withServerVariables(['REMOTE_ADDR' => '192.168.1.50'])
                 ->postJson('/api/auth/login', [
@@ -178,8 +178,7 @@ class LoginLockoutTest extends TestCase
                 'password' => 'Password123!',
             ]);
 
-        $response->assertStatus(423)
-            ->assertJsonPath('lockout_reason', 'ip');
+        $response->assertOk();
     }
 
     public function test_lockout_does_not_engage_for_a_different_ip_under_threshold(): void

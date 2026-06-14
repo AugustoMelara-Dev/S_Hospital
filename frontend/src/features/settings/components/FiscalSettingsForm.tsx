@@ -22,9 +22,9 @@ function institutionalPaperSize(value: FiscalSettings['receipt_paper_size']): In
   return institutionalReceiptPaperSize(value);
 }
 
-const settingsFormSchema = z.object({
+export const settingsFormSchema = z.object({
   hospital_name: z.string().min(1, 'El nombre del hospital es requerido'),
-  rtn: z.string(),
+  rtn: z.string().max(32, 'RTN muy largo'),
   receipt_paper_size: z.enum(INSTITUTIONAL_RECEIPT_PAPER_VALUES),
   primary_color: z.enum(['teal', 'blue', 'indigo', 'green', 'rose']),
   address: z.string().optional(),
@@ -33,12 +33,20 @@ const settingsFormSchema = z.object({
 
 type SettingsFormData = z.infer<typeof settingsFormSchema>;
 
-const sequenceFormSchema = z.object({
-  prefix: z.string().min(1, 'El prefijo es requerido').max(5, 'Prefijo muy largo'),
-  cai: z.string().min(1, 'El CAI es requerido'),
+export const sequenceFormSchema = z.object({
+  prefix: z.string().min(1, 'El prefijo es requerido').max(32, 'Prefijo muy largo'),
+  cai: z.string().min(1, 'El CAI es requerido').max(128, 'CAI muy largo'),
   min_number: z.number().int().min(1, 'Debe ser mayor a 0'),
   max_number: z.number().int().min(1, 'Debe ser mayor a 0'),
-  valid_until: z.string(),
+  valid_until: z.string().min(1, 'La fecha de vencimiento es requerida'),
+}).superRefine((data, ctx) => {
+  if (data.max_number < data.min_number) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['max_number'],
+      message: 'El número máximo debe ser mayor o igual al mínimo.',
+    });
+  }
 });
 
 type SequenceFormData = z.infer<typeof sequenceFormSchema>;

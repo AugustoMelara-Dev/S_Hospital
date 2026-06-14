@@ -16,10 +16,11 @@ use App\Models\Service;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
-use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
@@ -30,6 +31,10 @@ class BroadcastingWiringTest extends TestCase
     public function test_echo_config_endpoint_returns_soketi_settings(): void
     {
         Config::set('app.url', 'http://192.168.1.10:8000');
+        Config::set('broadcasting.connections.pusher.key', 'client-key');
+        Config::set('broadcasting.connections.pusher.options.host', 'soketi');
+        Config::set('broadcasting.connections.pusher.client_options.host', '192.168.1.10');
+        Config::set('broadcasting.connections.pusher.client_options.port', 6001);
         $user = User::factory()->create();
 
         $this->actingAs($user)->getJson('/api/system/echo-config')
@@ -37,7 +42,8 @@ class BroadcastingWiringTest extends TestCase
             ->assertJsonPath('data.driver', 'pusher')
             ->assertJsonPath('data.scheme', 'http')
             ->assertJsonPath('data.host', '192.168.1.10')
-            ->assertJsonPath('data.authEndpoint', '/api/broadcasting/auth')
+            ->assertJsonPath('data.key', 'client-key')
+            ->assertJsonPath('data.authEndpoint', '/broadcasting/auth')
             ->assertJsonPath('data.channels.invoices', 'invoices')
             ->assertJsonPath('data.channels.cash', 'cash')
             ->assertJsonPath('data.channels.payments', 'payments')
@@ -55,16 +61,82 @@ class BroadcastingWiringTest extends TestCase
         $this->assertContains('throttle:120,1', $route->middleware());
     }
 
+    public function test_private_invoice_channel_requires_invoice_view_permission(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->enablePusherForChannelAuth();
+
+        $cashier = $this->authUser('cashier-invoices');
+        $cashier->assignRole('cajero');
+
+        $this->assertTrue($cashier->refresh()->can('invoices.view'));
+        $this->loginAsUser($cashier);
+
+        $this->postJson('/broadcasting/auth', [
+            'socket_id' => '123.456',
+            'channel_name' => 'private-invoices',
+        ])
+            ->assertOk();
+
+        $this->postJson('/api/auth/logout')->assertOk();
+
+        $plainUser = $this->authUser('plain-invoices');
+        $this->loginAsUser($plainUser);
+
+        $this->postJson('/broadcasting/auth', [
+            'socket_id' => '123.456',
+            'channel_name' => 'private-invoices',
+        ])
+            ->assertForbidden();
+    }
+
+    public function test_private_payment_and_cash_channels_require_their_permissions(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->enablePusherForChannelAuth();
+
+        $cashier = $this->authUser('cashier-cash');
+        $cashier->assignRole('cajero');
+        $this->loginAsUser($cashier);
+
+        foreach (['private-payments', 'private-cash'] as $channel) {
+            $this->postJson('/broadcasting/auth', [
+                'socket_id' => '123.456',
+                'channel_name' => $channel,
+            ])
+                ->assertOk();
+        }
+
+        $this->postJson('/api/auth/logout')->assertOk();
+
+        $plainUser = $this->authUser('plain-cash');
+        $this->loginAsUser($plainUser);
+
+        foreach (['private-payments', 'private-cash'] as $channel) {
+            $this->postJson('/broadcasting/auth', [
+                'socket_id' => '123.456',
+                'channel_name' => $channel,
+            ])
+                ->assertForbidden();
+        }
+    }
+
     public function test_invoice_changed_event_broadcasts_on_invoices_channel(): void
     {
         $event = new InvoiceChanged($this->makeInvoice(), 'created');
         $channels = $event->broadcastOn();
 
         $this->assertCount(1, $channels);
-        $this->assertInstanceOf(Channel::class, $channels[0]);
-        $this->assertSame('invoices', $channels[0]->name);
+        $this->assertInstanceOf(PrivateChannel::class, $channels[0]);
+        $this->assertSame('private-invoices', $channels[0]->name);
         $this->assertSame('invoice.changed', $event->broadcastAs());
-        $this->assertArrayHasKey('invoice_number', $event->broadcastWith());
+        $payload = $event->broadcastWith();
+        $this->assertSame(1, $payload['id']);
+        $this->assertArrayNotHasKey('patient_name', $payload);
+        $this->assertArrayNotHasKey('invoice_number', $payload);
+        $this->assertArrayNotHasKey('total', $payload);
+        $this->assertArrayNotHasKey('paid_amount', $payload);
+        $this->assertArrayNotHasKey('balance_due', $payload);
     }
 
     public function test_payment_changed_event_broadcasts_on_payments_and_invoices_channels(): void
@@ -74,10 +146,14 @@ class BroadcastingWiringTest extends TestCase
 
         $channels = $event->broadcastOn();
         $this->assertCount(2, $channels);
-        $names = array_map(fn (Channel $c) => $c->name, $channels);
-        $this->assertContains('payments', $names);
-        $this->assertContains('invoices', $names);
+        $names = array_map(fn (PrivateChannel $c) => $c->name, $channels);
+        $this->assertContains('private-payments', $names);
+        $this->assertContains('private-invoices', $names);
         $this->assertSame('payment.changed', $event->broadcastAs());
+        $payload = $event->broadcastWith();
+        $this->assertArrayNotHasKey('method', $payload);
+        $this->assertArrayNotHasKey('amount', $payload);
+        $this->assertArrayNotHasKey('cash_session_id', $payload);
     }
 
     public function test_cash_session_changed_event_broadcasts_on_cash_channel(): void
@@ -86,8 +162,10 @@ class BroadcastingWiringTest extends TestCase
 
         $channels = $event->broadcastOn();
         $this->assertCount(1, $channels);
-        $this->assertSame('cash', $channels[0]->name);
+        $this->assertInstanceOf(PrivateChannel::class, $channels[0]);
+        $this->assertSame('private-cash', $channels[0]->name);
         $this->assertSame('cash-session.changed', $event->broadcastAs());
+        $this->assertArrayNotHasKey('user_id', $event->broadcastWith());
     }
 
     public function test_broadcasting_is_a_noop_when_driver_is_log(): void
@@ -125,9 +203,40 @@ class BroadcastingWiringTest extends TestCase
         $invoice->total = '17.25';
         $invoice->paid_amount = '0.00';
         $invoice->balance_due = '17.25';
-        $invoice->setRawAttributes(['updated_at' => now()], true);
+        $invoice->setRawAttributes([
+            'id' => 1,
+            'updated_at' => now(),
+        ], true);
 
         return $invoice;
+    }
+
+    private function enablePusherForChannelAuth(): void
+    {
+        Config::set('broadcasting.default', 'pusher');
+        Config::set('broadcasting.connections.pusher.key', 'test-key');
+        Config::set('broadcasting.connections.pusher.secret', 'test-secret');
+        Config::set('broadcasting.connections.pusher.app_id', 'test-app');
+        require base_path('routes/channels.php');
+    }
+
+    private function authUser(string $username): User
+    {
+        return User::factory()->create([
+            'username' => $username,
+            'email' => "{$username}@hospital.local",
+            'password' => Hash::make('Password123!'),
+            'must_change_password' => false,
+            'active' => true,
+        ]);
+    }
+
+    private function loginAsUser(User $user): void
+    {
+        $this->postJson('/api/auth/login', [
+            'login' => $user->username,
+            'password' => 'Password123!',
+        ])->assertOk();
     }
 
     private function makePayment(): Payment

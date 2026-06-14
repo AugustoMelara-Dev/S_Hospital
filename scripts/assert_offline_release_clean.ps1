@@ -108,6 +108,52 @@ function Test-ReleaseFileMatchesSource([string] $relativePath) {
     }
 }
 
+function Invoke-ComposeImages([string] $composePath) {
+    if (-not (Get-Command "docker" -ErrorAction SilentlyContinue)) {
+        Add-Failure "Docker is required to verify offline image coverage against docker-compose.prod.yml."
+        return @()
+    }
+
+    $savedEnv = @{
+        SERVER_IP = $env:SERVER_IP
+        APP_KEY = $env:APP_KEY
+        DB_PASSWORD = $env:DB_PASSWORD
+        DB_ROOT_PASSWORD = $env:DB_ROOT_PASSWORD
+        PUSHER_APP_ID = $env:PUSHER_APP_ID
+        PUSHER_APP_KEY = $env:PUSHER_APP_KEY
+        PUSHER_APP_SECRET = $env:PUSHER_APP_SECRET
+    }
+
+    try {
+        $env:SERVER_IP = "127.0.0.1"
+        $env:APP_KEY = "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        $env:DB_PASSWORD = "guard_password"
+        $env:DB_ROOT_PASSWORD = "guard_root_password"
+        $env:PUSHER_APP_ID = "guard-app"
+        $env:PUSHER_APP_KEY = "guard-key"
+        $env:PUSHER_APP_SECRET = "guard-secret"
+
+        $quotedComposePath = '"' + ($composePath -replace '"', '\"') + '"'
+        $rawOutput = @(& cmd.exe /d /c "docker compose -f $quotedComposePath config --images 2>NUL" | ForEach-Object { $_.ToString() })
+        if ($LASTEXITCODE -ne 0) {
+            Add-Failure "docker compose config --images failed for offline release coverage."
+            return @()
+        }
+
+        return @($rawOutput |
+            Where-Object { $_ -match '^[A-Za-z0-9._/-]+:[A-Za-z0-9._-]+$' } |
+            Sort-Object -Unique)
+    } finally {
+        foreach ($key in $savedEnv.Keys) {
+            if ($null -eq $savedEnv[$key]) {
+                Remove-Item "Env:\$key" -ErrorAction SilentlyContinue
+            } else {
+                Set-Item "Env:\$key" $savedEnv[$key]
+            }
+        }
+    }
+}
+
 try {
     $ReleaseRoot = (Resolve-Path -LiteralPath $ReleaseRoot).Path
 } catch {
@@ -227,6 +273,45 @@ if (Test-Path -LiteralPath $imagesDir -PathType Container) {
         $checksumPattern = "(?im)^\s*$([regex]::Escape($actualHash))\s+$([regex]::Escape($relative))\s*$"
         if ($checksumContent -notmatch $checksumPattern) {
             Add-Failure "checksums.sha256 does not match $relative"
+        }
+    }
+
+    $expectedImageArchives = @(
+        "backend.tar",
+        "queue-worker.tar",
+        "scheduler.tar",
+        "nginx.tar",
+        "mariadb.tar",
+        "soketi.tar"
+    )
+
+    foreach ($expectedImage in $expectedImageArchives) {
+        if (-not (Test-Path -LiteralPath (Join-Path $imagesDir $expectedImage) -PathType Leaf)) {
+            Add-Failure "offline-images is missing required Docker image archive: $expectedImage"
+        }
+    }
+
+    $expectedImages = @{
+        "s_hospital-backend:latest" = "backend.tar"
+        "s_hospital-queue-worker:latest" = "queue-worker.tar"
+        "s_hospital-scheduler:latest" = "scheduler.tar"
+        "nginx:1.25.4-alpine" = "nginx.tar"
+        "mariadb:11.4.3" = "mariadb.tar"
+        "quay.io/soketi/soketi:1.6-16-alpine" = "soketi.tar"
+    }
+
+    $composeImages = Invoke-ComposeImages (Join-Path $ReleaseRoot "docker-compose.prod.yml")
+    if ($composeImages.Count -gt 0) {
+        foreach ($image in $composeImages) {
+            if (-not $expectedImages.ContainsKey($image)) {
+                Add-Failure "docker-compose.prod.yml uses image '$image' but offline release has no expected archive mapping."
+            }
+        }
+
+        foreach ($image in $expectedImages.Keys) {
+            if ($composeImages -notcontains $image) {
+                Add-Failure "offline image mapping contains '$image' but docker-compose.prod.yml does not use it."
+            }
         }
     }
 }

@@ -50,4 +50,14 @@ class LoginAttempt extends Model
             ->where('attempted_at', '>=', $since)
             ->count();
     }
+
+    public static function failedCountForLoginAndIp(string $login, string $ip, \DateTimeInterface $since): int
+    {
+        return static::query()
+            ->where('login', $login)
+            ->where('ip', $ip)
+            ->where('success', false)
+            ->where('attempted_at', '>=', $since)
+            ->count();
+    }
 }

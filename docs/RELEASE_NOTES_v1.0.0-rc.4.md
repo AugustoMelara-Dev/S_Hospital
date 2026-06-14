@@ -70,7 +70,7 @@ documentación operativa).
   `backend/Dockerfile.prod`. AGENTS.md cumplimiento.
 - Sidecar `scheduler` con `supercronic:v1.2.3` en
   `docker-compose.prod.yml`. Healthcheck.
-- Sidecar `soketi` con `soketi/soketi:1.6-16-alpine` en
+- Sidecar `soketi` con `quay.io/soketi/soketi:1.6-16-alpine` en
   `docker-compose.prod.yml`. Healthcheck.
 - PHP-FPM pool tuned: `pm=static`, `pm.max_children=8`,
   `pm.max_requests=500`, log a stdout. `docker/php-fpm.conf`

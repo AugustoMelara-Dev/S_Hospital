@@ -77,6 +77,7 @@ function HospitalApp() {
         onLoginChange={session.setLogin}
         onPasswordChange={session.setPassword}
         onSubmit={session.handleLogin}
+        submitting={session.loginSubmitting}
         logoUrl={logoUrl}
       />
     );

@@ -156,6 +156,54 @@ class IdempotencyKeyTest extends TestCase
         $this->assertSame(2, Payment::query()->where('invoice_id', $invoiceId)->count());
     }
 
+    public function test_same_key_and_payload_can_be_used_for_different_invoice_paths(): void
+    {
+        $this->seedBillingBase();
+        $this->togglePartial(true);
+
+        $cashier = $this->cashierWithOpenSession();
+        $sessionId = $this->openSessionFor($cashier, '500.00');
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $invoiceA = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Paciente A',
+                'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $invoiceB = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Paciente B',
+                'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $key = (string) Str::uuid();
+        $payload = [
+            'cash_session_id' => $sessionId,
+            'method' => Payment::METHOD_CASH,
+            'amount' => '8.00',
+        ];
+
+        $first = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => $key])
+            ->postJson("/api/invoices/{$invoiceA}/payments", $payload)
+            ->assertCreated();
+
+        $second = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => $key])
+            ->postJson("/api/invoices/{$invoiceB}/payments", $payload)
+            ->assertCreated();
+
+        $second->assertHeaderMissing('Idempotent-Replay');
+        $this->assertNotSame($first->json('data.payment.id'), $second->json('data.payment.id'));
+        $this->assertSame(1, Payment::query()->where('invoice_id', $invoiceA)->count());
+        $this->assertSame(1, Payment::query()->where('invoice_id', $invoiceB)->count());
+    }
+
     public function test_failed_request_with_idempotency_key_can_be_retried(): void
     {
         $this->seedBillingBase();

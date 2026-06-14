@@ -1,5 +1,15 @@
 <?php
 
+$defaultBroadcastConnection = env('BROADCAST_CONNECTION', 'log');
+
+if (env('APP_ENV') === 'production' && $defaultBroadcastConnection === 'pusher') {
+    foreach (['PUSHER_APP_ID', 'PUSHER_APP_KEY', 'PUSHER_APP_SECRET'] as $requiredPusherSecret) {
+        if (blank(env($requiredPusherSecret))) {
+            throw new RuntimeException("Production broadcasting requires {$requiredPusherSecret}.");
+        }
+    }
+}
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -16,14 +26,14 @@ return [
     |
     */
 
-    'default' => env('BROADCAST_CONNECTION', 'log'),
+    'default' => $defaultBroadcastConnection,
 
     'connections' => [
         'pusher' => [
             'driver' => 'pusher',
-            'key' => env('PUSHER_APP_KEY', 'hospital-key'),
-            'secret' => env('PUSHER_APP_SECRET', 'hospital-secret'),
-            'app_id' => env('PUSHER_APP_ID', 'hospital-app'),
+            'key' => env('PUSHER_APP_KEY'),
+            'secret' => env('PUSHER_APP_SECRET'),
+            'app_id' => env('PUSHER_APP_ID'),
             'options' => [
                 'cluster' => env('PUSHER_APP_CLUSTER', 'mt1'),
                 'host' => env('PUSHER_HOST', '127.0.0.1'),
@@ -34,8 +44,9 @@ return [
                 'verify' => env('PUSHER_VERIFY_TLS', true),
             ],
             'client_options' => [
-                // Mirror of 'options' for the JS client. laravel-echo reads
-                // these from /api/system/echo-config at runtime.
+                'host' => env('PUSHER_CLIENT_HOST'),
+                'port' => (int) env('PUSHER_CLIENT_PORT', env('PUSHER_PORT', 6001)),
+                'scheme' => env('PUSHER_CLIENT_SCHEME', env('PUSHER_SCHEME', 'http')),
             ],
         ],
 

@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\AuditLog;
 use App\Models\LoginAttempt;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +29,10 @@ class AuthController extends Controller
         ]);
 
         if (! Auth::attempt([$loginField => $credentials['login'], 'password' => $credentials['password']])) {
+            $this->auditAuth($request, 'auth.login_failed', null, [
+                'login' => $credentials['login'],
+            ]);
+
             throw ValidationException::withMessages([
                 'login' => ['Las credenciales no son validas.'],
             ]);
@@ -42,11 +48,16 @@ class AuthController extends Controller
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
+            $this->auditAuth($request, 'auth.login_blocked', $user, [
+                'reason' => 'inactive_user',
+            ]);
 
             throw ValidationException::withMessages([
                 'login' => ['El usuario esta inactivo.'],
             ]);
         }
+
+        $this->auditAuth($request, 'auth.login', $user);
 
         return response()->json([
             'data' => $this->userPayload($user),
@@ -68,6 +79,9 @@ class AuthController extends Controller
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
+            $this->auditAuth($request, 'auth.session_revoked', $user, [
+                'reason' => 'inactive_user',
+            ]);
 
             return response()->json([
                 'data' => null,
@@ -95,6 +109,8 @@ class AuthController extends Controller
             'must_change_password' => false,
         ])->save();
 
+        $this->auditAuth($request, 'auth.password_changed', $user);
+
         return response()->json([
             'data' => $this->userPayload($user->refresh()),
         ]);
@@ -102,10 +118,14 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
+        $user = $request->user();
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        $this->auditAuth($request, 'auth.logout', $user);
 
         return response()->json([
             'ok' => true,
@@ -127,5 +147,24 @@ class AuthController extends Controller
             'permissions' => $user->getAllPermissions()->pluck('name')->values(),
             'must_change_password' => $user->must_change_password,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $newValues
+     */
+    private function auditAuth(Request $request, string $action, ?User $user, array $newValues = []): void
+    {
+        AuditLog::query()->create([
+            'user_id' => $user?->id,
+            'action' => $action,
+            'entity_type' => User::class,
+            'entity_id' => $user?->id,
+            'old_values' => null,
+            'new_values' => $newValues,
+            'ip' => $request->ip(),
+            'user_agent' => substr((string) $request->userAgent(), 0, 191),
+            'url' => $request->fullUrl(),
+            'http_method' => $request->method(),
+        ]);
     }
 }

@@ -15,6 +15,7 @@ type LoginViewProps = {
   onLoginChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  submitting?: boolean;
   logoUrl?: string | null;
 };
 
@@ -25,6 +26,7 @@ export function LoginView({
   onSubmit,
   password,
   status,
+  submitting = false,
   logoUrl,
 }: LoginViewProps) {
   const { data: fiscal } = usePublicBranding();
@@ -178,8 +180,8 @@ export function LoginView({
                   )}
                 </FormField>
 
-                <Button type="submit" disabled={countdown > 0} className="mt-2 h-11">
-                  {countdown > 0 ? `Bloqueado (${countdown}s)` : 'Iniciar sesión'}
+                <Button type="submit" disabled={submitting || countdown > 0} className="mt-2 h-11">
+                  {submitting ? 'Validando...' : countdown > 0 ? `Bloqueado (${countdown}s)` : 'Iniciar sesión'}
                 </Button>
               </form>
 

@@ -57,6 +57,7 @@ RUN { \
         echo 'post_max_size=32M'; \
         echo 'memory_limit=256M'; \
         echo 'max_execution_time=600'; \
+        echo 'expose_php=Off'; \
     } > /usr/local/etc/php/conf.d/custom-php.ini
 
 # Copy backend application source

@@ -154,11 +154,9 @@ class IdempotencyKey
 
     private function routeSignature(Request $request): string
     {
-        $route = $request->route();
         $method = strtoupper($request->getMethod());
-        $uri = $route?->uri() ?? $request->path();
 
-        return $method.' '.$uri;
+        return $method.' '.$request->path();
     }
 
     private function fingerprint(Request $request): string

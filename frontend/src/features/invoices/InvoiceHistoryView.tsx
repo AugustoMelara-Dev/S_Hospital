@@ -1,4 +1,4 @@
-﻿import { type FormEvent, useState } from 'react';
+﻿import { type FormEvent, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -36,6 +36,7 @@ import { FilterBar } from '../../components/ui/filter-bar';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
+import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import {
   FileClock,
   Printer,
@@ -58,15 +59,20 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [receiptWidth, setReceiptWidth] = useState<ReceiptData['width']>('half_letter');
   const [voidReason, setVoidReason] = useState('');
+  const [reverseReason, setReverseReason] = useState('');
   const [reprintReason, setReprintReason] = useState('');
   const [confirmingVoid, setConfirmingVoid] = useState(false);
+  const [confirmingReverse, setConfirmingReverse] = useState(false);
   const [reprintTarget, setReprintTarget] = useState<Invoice | null>(null);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [loadingActionInvoiceId, setLoadingActionInvoiceId] = useState<number | null>(null);
+  const actionRequestRef = useRef(0);
 
   const canReprint = user.permissions.includes('receipts.reprint');
   const canReprintAny = user.permissions.includes('receipts.reprint_any');
   const canViewReceipt = user.permissions.includes('receipts.view');
   const canVoid = user.permissions.includes('invoices.void');
+  const canReverse = user.permissions.includes('invoices.reverse');
 
   // TanStack Query replaces the prior manual useState + useEffect
   // loading. Cross-PC invalidation is handled by useBroadcastSync
@@ -107,13 +113,31 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     // Refetch is automatic via the filters key.
   }
 
-  async function openDetail(invoiceId: number) {
+  async function prepareInvoiceAction(invoiceId: number, action: 'void' | 'reverse') {
+    const requestId = actionRequestRef.current + 1;
+    actionRequestRef.current = requestId;
+    setLoadingActionInvoiceId(invoiceId);
+
     try {
       const invoice = await apiClient.getInvoice(invoiceId);
+      if (actionRequestRef.current !== requestId) return;
+
       setSelectedInvoice(invoice);
+      setReceipt(null);
+      if (action === 'void') {
+        setConfirmingVoid(true);
+      } else {
+        setConfirmingReverse(true);
+      }
       onStatus(`Factura ${invoice.invoice_number} cargada.`);
     } catch (error) {
-      onStatus(userSafeErrorMessage(error, 'No se pudo cargar detalle.'));
+      if (actionRequestRef.current === requestId) {
+        onStatus(userSafeErrorMessage(error, 'No se pudo cargar detalle.'));
+      }
+    } finally {
+      if (actionRequestRef.current === requestId) {
+        setLoadingActionInvoiceId(null);
+      }
     }
   }
 
@@ -164,17 +188,32 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
     try {
       const voided = await apiClient.voidInvoice(selectedInvoice.id, voidReason.trim());
-      // Notify the rest of the app (dashboard, cashier list, second PC
-      // in LAN) that this invoice and the cash session are stale.
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await invalidateBillingQueries(queryClient);
       setSelectedInvoice(voided);
       setReceipt(null);
       setVoidReason('');
       onStatus(`Factura ${voided.invoice_number} anulada.`);
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo anular la factura.'));
+    }
+  }
+
+  async function reverseSelectedInvoice() {
+    if (!selectedInvoice || reverseReason.trim().length < 5) {
+      onStatus('Ingrese un motivo de reversa de al menos 5 caracteres.');
+
+      return;
+    }
+
+    try {
+      const reversed = await apiClient.reverseInvoice(selectedInvoice.id, reverseReason.trim());
+      await invalidateBillingQueries(queryClient);
+      setSelectedInvoice(reversed);
+      setReceipt(null);
+      setReverseReason('');
+      onStatus(`Factura ${reversed.invoice_number} reversada.`);
+    } catch (error) {
+      onStatus(userSafeErrorMessage(error, 'No se pudo reversar la factura.'));
     }
   }
 
@@ -368,16 +407,28 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                           </Button>
                         )}
 
-                        {canVoid && invoice.status !== 'void' && (
+                        {canReverse && (invoice.status === 'paid' || invoice.status === 'partial') && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                            onClick={() => {
-                              void openDetail(invoice.id);
-                              setConfirmingVoid(true);
-                            }}
+                            disabled={loadingActionInvoiceId === invoice.id}
+                            onClick={() => void prepareInvoiceAction(invoice.id, 'reverse')}
+                          >
+                            <XCircle className="h-4 w-4" aria-hidden="true" />
+                            Reversar
+                          </Button>
+                        )}
+
+                        {canVoid && invoice.status === 'issued' && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            disabled={loadingActionInvoiceId === invoice.id}
+                            onClick={() => void prepareInvoiceAction(invoice.id, 'void')}
                           >
                             <XCircle className="h-4 w-4" aria-hidden="true" />
                             Anular
@@ -489,6 +540,43 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             />
             <p id="voidReason-help" className="text-xs text-muted-foreground">
               Esta acción no se puede deshacer. La factura será marcada como anulada.
+            </p>
+          </div>
+        </div>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        confirmLabel="Reversar Factura"
+        danger
+        onCancel={() => {
+          setConfirmingReverse(false);
+          setReverseReason('');
+        }}
+        onConfirm={() => {
+          setConfirmingReverse(false);
+          void reverseSelectedInvoice();
+        }}
+        open={confirmingReverse}
+        title={`¿Reversar factura ${selectedInvoice?.invoice_number}?`}
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm">
+            <strong>Paciente:</strong> {selectedInvoice?.patient_name}
+          </p>
+          <div className="space-y-2">
+            <Label htmlFor="reverseReason">Motivo de reversa *</Label>
+            <Textarea
+              id="reverseReason"
+              aria-describedby="reverseReason-help"
+              aria-invalid={reverseReason.length > 0 && reverseReason.trim().length < 5}
+              aria-label="Motivo de reversa"
+              value={reverseReason}
+              onChange={(e) => setReverseReason(e.target.value)}
+              placeholder="Explique por qué se reversan los pagos y la factura..."
+              rows={3}
+            />
+            <p id="reverseReason-help" className="text-xs text-muted-foreground">
+              Reversa los pagos registrados, crea movimientos compensatorios y deja auditoría.
             </p>
           </div>
         </div>

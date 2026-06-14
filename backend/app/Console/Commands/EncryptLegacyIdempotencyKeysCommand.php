@@ -3,9 +3,9 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Contracts\Encryption\DecryptException;
 
 class EncryptLegacyIdempotencyKeysCommand extends Command
 {
@@ -35,8 +35,9 @@ class EncryptLegacyIdempotencyKeysCommand extends Command
         $force = $this->option('force');
         $chunkSize = (int) $this->option('chunk');
 
-        if (app()->environment('production') && !$isDryRun && !$force) {
+        if (app()->environment('production') && ! $isDryRun && ! $force) {
             $this->error('In production, you must use --force to modify data (or --dry-run to test).');
+
             return Command::FAILURE;
         }
 
@@ -58,9 +59,10 @@ class EncryptLegacyIdempotencyKeysCommand extends Command
                     $processed++;
 
                     $rawValue = $key->response_body;
-                    
+
                     if ($rawValue === null || $rawValue === '') {
                         $skipped++;
+
                         continue;
                     }
 
@@ -76,14 +78,15 @@ class EncryptLegacyIdempotencyKeysCommand extends Command
 
                     if ($isAlreadyEncrypted) {
                         $skipped++;
+
                         continue;
                     }
 
                     // Proceed to encrypt the raw plaintext
                     try {
                         $newEncryptedValue = Crypt::encryptString($rawValue);
-                        
-                        if (!$isDryRun) {
+
+                        if (! $isDryRun) {
                             DB::table('idempotency_keys')
                                 ->where('id', $key->id)
                                 ->update(['response_body' => $newEncryptedValue]);
@@ -97,7 +100,7 @@ class EncryptLegacyIdempotencyKeysCommand extends Command
             });
 
         $this->newLine();
-        $this->info("Encryption process completed" . ($isDryRun ? " (DRY-RUN)" : ""));
+        $this->info('Encryption process completed'.($isDryRun ? ' (DRY-RUN)' : ''));
         $this->table(
             ['Total Processed', 'Encrypted', 'Skipped (Already Encrypted or Empty)', 'Failed'],
             [[$processed, $encrypted, $skipped, $failed]]

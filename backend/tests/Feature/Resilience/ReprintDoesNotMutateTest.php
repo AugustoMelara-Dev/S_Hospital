@@ -77,6 +77,36 @@ class ReprintDoesNotMutateTest extends TestCase
             ->count());
     }
 
+    public function test_reprint_requires_a_reason_for_auditability(): void
+    {
+        $this->seedBillingBase();
+        $this->togglePartial(true);
+
+        $cashier = $this->cashierWithOpenSession();
+        $this->openSessionFor($cashier, '500.00');
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Reimpresion sin motivo',
+                'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/reprint", [
+                'width' => '80mm',
+                'reason' => '',
+            ])
+            ->assertJsonValidationErrors('reason');
+
+        $this->assertSame(0, AuditLog::query()
+            ->where('action', 'invoice.reprinted')
+            ->where('entity_id', $invoiceId)
+            ->count());
+    }
+
     private function seedBillingBase(): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);

@@ -41,7 +41,7 @@ class SecurityHeadersTest extends TestCase
         $csp = (string) $response->headers->get('Content-Security-Policy');
 
         $this->assertStringContainsString("manifest-src 'self'", $csp);
-        $this->assertStringContainsString("connect-src 'self' ws: wss:", $csp);
+        $this->assertStringContainsString("connect-src 'self' ws://127.0.0.1:6001 wss://127.0.0.1:6001", $csp);
     }
 
     public function test_csp_report_only_channel_points_at_the_csp_endpoint(): void
