@@ -1,3 +1,18 @@
+# 2026-06-14 - Rediseno global usa sistema visual propio Tailwind/Radix
+
+Contexto: el rediseno global debe cubrir todas las pantallas reales sin romper Laravel, contratos API, caja, pagos, reportes, backups, recibos ni operacion offline LAN.
+
+Decision: se conserva la base existente React + Tailwind v4 + Radix + lucide y se formaliza como sistema de diseno institucional propio. No se instala una libreria nueva en la fase base porque las dependencias actuales ya resuelven componentes accesibles, formularios, server state, graficos, toasts, impresion y pruebas. Se ajustan tokens globales hacia una neutralidad mas clinica, se endurecen estados warning/success/info para contraste AA, y se agregan contratos reutilizables para campos, estados y montos.
+
+Motivo: reemplazar el stack visual en bloque aumentaria el riesgo de romper flujos fiscales y operativos. La consolidacion incremental permite redisenar pantalla por pantalla con pruebas y commits pequenos.
+
+Validacion:
+
+- npm.cmd run test -- form-field status-badge money-text button.a11y
+- npm.cmd run typecheck
+- npm.cmd run lint
+- npm.cmd run build
+
 # 2026-06-12 - Pulido operativo F6 no cambia contratos ni logica fiscal
 
 Contexto: despues de F5, las pantallas densas ya eran funcionales, pero necesitaban mejor lectura diaria para caja, administracion y reportes sin redisenar el sistema ni tocar reglas fiscales.

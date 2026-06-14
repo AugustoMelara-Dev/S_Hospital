@@ -4,24 +4,24 @@
   /* Sistema de diseño de caja hospitalaria */
 
   /* Background & Foreground */
-  --color-background: #f4f1ea;
-  --color-foreground: #20211d;
+  --color-background: #f6f7f4;
+  --color-foreground: #1f2421;
 
   /* Card */
-  --color-card: #fffdf8;
-  --color-card-foreground: #20211d;
+  --color-card: #fffffb;
+  --color-card-foreground: #1f2421;
 
   /* Primary - neutral ink for minimal hospital operations */
-  --color-primary: #20211d;
-  --color-primary-foreground: #fffdf8;
+  --color-primary: #1f2421;
+  --color-primary-foreground: #fffffb;
 
   /* Secondary - restrained clinical accent */
   --color-secondary: #0f766e;
   --color-secondary-foreground: #f8fffc;
 
   /* Muted */
-  --color-muted: #e9e2d4;
-  --color-muted-foreground: #706b5f;
+  --color-muted: #e8ece7;
+  --color-muted-foreground: #5d665f;
 
   /* Accent */
   --color-accent: #dbeee8;
@@ -47,9 +47,12 @@
   --color-sidebar-ring: #0f766e;
 
   /* Status Colors */
-  --color-success: #059669;
-  --color-warning: #d97706;
-  --color-info: #0284c7;
+  --color-success: #047857;
+  --color-success-foreground: #064e3b;
+  --color-warning: #b45309;
+  --color-warning-foreground: #78350f;
+  --color-info: #0369a1;
+  --color-info-foreground: #0c4a6e;
 
   /* Typography */
   --font-sans: "Geist", "Aptos", "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
@@ -76,22 +79,22 @@
 
 /* Dark Mode Theme */
 html.dark {
-  --color-background: #151611;
-  --color-foreground: #f1eadc;
-  --color-card: #1e1f19;
-  --color-card-foreground: #f1eadc;
-  --color-primary: #f1eadc;
-  --color-primary-foreground: #151611;
+  --color-background: #111513;
+  --color-foreground: #eef4ee;
+  --color-card: #1a201d;
+  --color-card-foreground: #eef4ee;
+  --color-primary: #eef4ee;
+  --color-primary-foreground: #111513;
   --color-secondary: #14b8a6;
   --color-secondary-foreground: #10201d;
-  --color-muted: #2a2a22;
-  --color-muted-foreground: #b8ae9c;
+  --color-muted: #26302b;
+  --color-muted-foreground: #b5c0b8;
   --color-accent: #133834;
   --color-accent-foreground: #14b8a6;
   --color-destructive: #fb7185;
   --color-destructive-foreground: #1c1917;
-  --color-border: #39362d;
-  --color-input: #474134;
+  --color-border: #344139;
+  --color-input: #46534b;
   --color-ring: #14b8a6;
   --color-sidebar: #10110d;
   --color-sidebar-foreground: #f8f3e8;
@@ -102,8 +105,11 @@ html.dark {
   --color-sidebar-border: #343228;
   --color-sidebar-ring: #14b8a6;
   --color-success: #34d399;
+  --color-success-foreground: #bbf7d0;
   --color-warning: #fbbf24;
+  --color-warning-foreground: #fde68a;
   --color-info: #38bdf8;
+  --color-info-foreground: #bae6fd;
   --shadow-sm: 0 1px 0 rgb(255 253 248 / 0.04), 0 12px 30px -24px rgb(0 0 0 / 0.75);
   --shadow-md: 0 1px 0 rgb(255 253 248 / 0.05), 0 20px 46px -30px rgb(0 0 0 / 0.8);
   --shadow-lg: 0 1px 0 rgb(255 253 248 / 0.06), 0 34px 80px -42px rgb(0 0 0 / 0.85);
@@ -149,8 +155,8 @@ html.dark {
     min-width: 320px;
     margin: 0;
     background:
-      linear-gradient(90deg, rgb(32 33 29 / 0.035) 1px, transparent 1px),
-      linear-gradient(180deg, rgb(32 33 29 / 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(31 36 33 / 0.018) 1px, transparent 1px),
+      linear-gradient(180deg, rgb(31 36 33 / 0.016) 1px, transparent 1px),
       var(--color-background);
     background-size: 38px 38px;
     color: var(--color-foreground);
@@ -525,7 +531,7 @@ html.dark {
   }
 
   .status-success {
-    @apply border border-success/30 bg-success/10 text-success;
+    @apply border border-success/30 bg-success/10 text-success-foreground dark:text-success-foreground;
   }
 
   .status-failed {
@@ -533,11 +539,11 @@ html.dark {
   }
 
   .status-pending {
-    @apply border border-warning/30 bg-warning/10 text-warning;
+    @apply border border-warning/35 bg-warning/10 text-warning-foreground dark:text-warning-foreground;
   }
 
   .status-info {
-    @apply border border-info/30 bg-info/10 text-info;
+    @apply border border-info/30 bg-info/10 text-info-foreground dark:text-info-foreground;
   }
 
   .notice-inline {
@@ -800,11 +806,11 @@ html.dark {
   }
 
   .badge-success {
-    @apply bg-success/15 text-success;
+    @apply bg-success/15 text-success-foreground dark:text-success-foreground;
   }
 
   .badge-warning {
-    @apply bg-warning/15 text-warning;
+    @apply bg-warning/15 text-warning-foreground dark:text-warning-foreground;
   }
 
   .badge-danger {
@@ -812,7 +818,7 @@ html.dark {
   }
 
   .badge-info {
-    @apply bg-info/15 text-info;
+    @apply bg-info/15 text-info-foreground dark:text-info-foreground;
   }
 
   .badge-secondary {

@@ -11,7 +11,11 @@ export const NativeSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<H
       <select
         ref={ref}
         className={cn(
-          'flex min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60',
+          'flex min-h-10 w-full rounded-md border border-input bg-card/80 px-3 py-2 text-sm text-foreground outline-none',
+          'transition-[background-color,border-color,box-shadow] duration-150 ease-out',
+          'focus-visible:border-ring focus-visible:bg-card focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+          'aria-[invalid=true]:border-destructive aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-destructive/20',
+          'disabled:cursor-not-allowed disabled:opacity-60',
           className,
         )}
         {...props}
@@ -28,7 +32,11 @@ export function SelectTrigger({ className, children, ...props }: SelectPrimitive
   return (
     <SelectPrimitive.Trigger
       className={cn(
-        'flex min-h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60',
+        'flex min-h-10 w-full items-center justify-between rounded-md border border-input bg-card/80 px-3 py-2 text-sm text-foreground outline-none',
+        'transition-[background-color,border-color,box-shadow] duration-150 ease-out',
+        'focus-visible:border-ring focus-visible:bg-card focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        'aria-[invalid=true]:border-destructive aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-destructive/20',
+        'disabled:cursor-not-allowed disabled:opacity-60',
         className,
       )}
       {...props}
@@ -75,10 +83,10 @@ export function SelectContent({ className, children, position = 'popper', ...pro
 export function SelectItem({ className, children, ...props }: SelectPrimitive.SelectItemProps) {
   return (
     <SelectPrimitive.Item
-      className={cn(
-        'relative flex w-full cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-muted focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
-        className,
-      )}
+        className={cn(
+          'relative flex w-full cursor-pointer select-none items-center gap-2 rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-[background-color,color] focus:bg-muted focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+          className,
+        )}
       {...props}
     >
       <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">

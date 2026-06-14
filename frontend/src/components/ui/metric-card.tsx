@@ -25,7 +25,7 @@ export function MetricCard({
   }[variant];
 
   return (
-    <Card className="hover:shadow-md transition-all duration-200 border-slate-200/60 dark:border-slate-800/60">
+    <Card className="border-border/80 transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <CardContent className="pt-6">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">

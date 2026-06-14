@@ -10,8 +10,8 @@ type AlertProps = HTMLAttributes<HTMLDivElement> & {
 
 const variants = {
   default: 'border-border bg-card text-card-foreground',
-  success: 'border-success/30 bg-success/10 text-success',
-  warning: 'border-warning/30 bg-warning/10 text-warning',
+  success: 'border-success/30 bg-success/10 text-success-foreground dark:text-success-foreground',
+  warning: 'border-warning/35 bg-warning/10 text-warning-foreground dark:text-warning-foreground',
   destructive: 'border-destructive/40 bg-destructive/10 text-destructive',
 };
 
@@ -39,7 +39,7 @@ export function Alert({
     >
       <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
       <div className="min-w-0">
-        {title ? <p className="font-semibold">{title}</p> : null}
+        {title ? <p className="font-semibold leading-tight">{title}</p> : null}
         <div className="text-current/85">{children}</div>
       </div>
     </div>
