@@ -152,7 +152,7 @@ $imagesToSave = @(
     @{ Service = "scheduler"; Image = "s_hospital-scheduler:latest"; Target = "scheduler.tar" },
     @{ Service = "nginx"; Image = "nginx:1.25.4-alpine"; Target = "nginx.tar" },
     @{ Service = "mysql"; Image = "mariadb:11.4.3"; Target = "mariadb.tar" },
-    @{ Service = "soketi"; Image = "soketi/soketi:1.6-16-alpine"; Target = "soketi.tar" }
+    @{ Service = "soketi"; Image = "quay.io/soketi/soketi:1.6-16-alpine"; Target = "soketi.tar" }
 )
 
 if (-not $SkipDockerSave) {

@@ -297,7 +297,7 @@ if (Test-Path -LiteralPath $imagesDir -PathType Container) {
         "s_hospital-scheduler:latest" = "scheduler.tar"
         "nginx:1.25.4-alpine" = "nginx.tar"
         "mariadb:11.4.3" = "mariadb.tar"
-        "soketi/soketi:1.6-16-alpine" = "soketi.tar"
+        "quay.io/soketi/soketi:1.6-16-alpine" = "soketi.tar"
     }
 
     $composeImages = Invoke-ComposeImages (Join-Path $ReleaseRoot "docker-compose.prod.yml")

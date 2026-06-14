@@ -257,7 +257,7 @@ services:
   # PC and keeps every open invoice list, dashboard, and cash session
   # in sync within ~1.5s.
   soketi:
-    image: soketi/soketi:1.6-16-alpine
+    image: quay.io/soketi/soketi:1.6-16-alpine
     restart: unless-stopped
     command: >
       sh -c "
