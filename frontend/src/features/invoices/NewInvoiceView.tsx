@@ -212,7 +212,7 @@ export function NewInvoiceView({
     const code = state.scanCode.trim();
     const refocusScanner = () => window.setTimeout(() => scannerInputRef.current?.focus(), 0);
     if (code === '') {
-      const message = 'Ingrese o escanee un codigo.';
+      const message = 'Ingrese o escanee un código.';
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
       onStatus(message);
       refocusScanner();
@@ -221,7 +221,7 @@ export function NewInvoiceView({
     try {
       const [service] = await apiClient.getServices({ code, active: true, billing: true, perPage: 1 });
       if (!service) {
-        const message = 'No se encontro servicio activo para este codigo.';
+        const message = 'No se encontró servicio activo para este código.';
         dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
         onStatus(message);
         refocusScanner();
@@ -237,10 +237,10 @@ export function NewInvoiceView({
       addToCart(service);
       dispatch({ type: 'SET_SCAN_CODE', payload: '' });
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
-      onStatus(`Servicio agregado por codigo: ${service.name}.`);
+      onStatus(`Servicio agregado por código: ${service.name}.`);
       refocusScanner();
     } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudo buscar el codigo escaneado.');
+      const message = userSafeErrorMessage(error, 'No se pudo buscar el código escaneado.');
       dispatch({ type: 'SET_ALERT_MESSAGE', payload: message });
       onStatus(message);
       refocusScanner();

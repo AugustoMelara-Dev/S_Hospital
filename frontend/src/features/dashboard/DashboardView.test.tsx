@@ -65,7 +65,7 @@ describe('DashboardView financial labels', () => {
       />,
     );
 
-    expect(await screen.findByRole('heading', { name: /facturacion y cobros/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /facturación y cobros/i })).toBeInTheDocument();
     expect(screen.getByText(/sin cobros registrados hoy/i)).toBeInTheDocument();
     expect(screen.getByText(/sin servicios facturados este mes/i)).toBeInTheDocument();
 
@@ -98,7 +98,7 @@ describe('DashboardView financial labels', () => {
       />,
     );
 
-    expect(await screen.findAllByText(/el servidor lan no pudo completar la operacion/i)).not.toHaveLength(0);
+    expect(await screen.findAllByText(/el servidor lan no pudo completar la operaci[oó]n/i)).not.toHaveLength(0);
     expect(document.body.textContent).not.toMatch(/SQLSTATE|stack trace|storage\/logs/i);
     expect(onStatus).toHaveBeenCalledWith(expect.stringMatching(/servidor lan/i));
   });

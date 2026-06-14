@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import type React from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { Alert } from '../../components/ui/alert';
@@ -44,6 +44,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
         'No se pudo preparar la impresión del recibo. No repita la factura ni el cobro; revise Historial y pida soporte si la impresora no responde.',
       );
       return;
+
     }
 
     try {
@@ -57,6 +58,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
         'No se pudo abrir la ventana de impresión. Verifique la impresora y reimprima desde Historial con motivo cuando el supervisor lo autorice.',
       );
     }
+
   }
 
   useEffect(() => {

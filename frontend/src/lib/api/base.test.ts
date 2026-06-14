@@ -47,7 +47,7 @@ describe('resolveApiBaseUrl', () => {
       'No se pudo registrar el pago.',
     );
 
-    expect(message).toMatch(/factura o el pago ya cambio de estado/i);
+    expect(message).toMatch(/factura o el pago ya cambió de estado/i);
     expect(message).toMatch(/revise historial antes de repetir/i);
     expect(message).not.toMatch(/duplicate|already/i);
   });
@@ -108,7 +108,7 @@ describe('resolveApiBaseUrl', () => {
       'fallback',
     );
 
-    expect(message).toMatch(/el servidor LAN no pudo completar la operacion/i);
+    expect(message).toMatch(/el servidor LAN no pudo completar la operación/i);
     expect(message).not.toMatch(/SQLSTATE/);
   });
 
@@ -512,6 +512,106 @@ describe('resolveApiBaseUrl', () => {
 
       expect(postAttempts).toBe(2);
       expect(elapsed).toBeLessThan(1000);
+    });
+  });
+
+  describe('Idempotency-Key on mutations', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      window.localStorage.clear();
+      resetRequestChain();
+      resetCsrfCache();
+    });
+
+    it('attaches a UUID Idempotency-Key header to every POST', async () => {
+      document.cookie = 'XSRF-TOKEN=test-token';
+      const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, _init) => {
+        const url = String(input);
+        if (url.includes('/sanctum/csrf-cookie')) {
+          return { ok: true, json: async () => ({}) } as Response;
+        }
+
+        return { ok: true, json: async () => ({ data: 'ok' }) } as Response;
+      });
+
+      await apiClient.request('/api/invoices', { method: 'POST', body: JSON.stringify({ a: 1 }) });
+
+      const invoiceCall = fetchMock.mock.calls.find(([url]) => String(url).includes('/api/invoices'));
+      expect(invoiceCall).toBeDefined();
+      const headers = new Headers((invoiceCall?.[1] as RequestInit | undefined)?.headers);
+      const key = headers.get('Idempotency-Key');
+      expect(key).toBeTruthy();
+      expect(key).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    });
+
+    it('uses a different Idempotency-Key per distinct mutation', async () => {
+      document.cookie = 'XSRF-TOKEN=test-token';
+      const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+        const url = String(input);
+        if (url.includes('/sanctum/csrf-cookie')) {
+          return { ok: true, json: async () => ({}) } as Response;
+        }
+
+        return { ok: true, json: async () => ({ data: 'ok' }) } as Response;
+      });
+
+      await apiClient.request('/api/invoices', { method: 'POST', body: JSON.stringify({ a: 1 }) });
+      await apiClient.request('/api/payments', { method: 'POST', body: JSON.stringify({ b: 2 }) });
+
+      const keys = fetchMock.mock.calls
+        .map(([url, init]) => ({
+          url: String(url),
+          key: new Headers((init as RequestInit | undefined)?.headers).get('Idempotency-Key'),
+        }))
+        .filter(({ key }) => Boolean(key));
+
+      expect(keys).toHaveLength(2);
+      expect(keys[0]?.key).not.toBe(keys[1]?.key);
+    });
+
+    it('reuses the same Idempotency-Key on a 419 auto-retry so the backend can de-duplicate', async () => {
+      document.cookie = 'XSRF-TOKEN=test-token';
+      let postAttempts = 0;
+      const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, _init) => {
+        const url = String(input);
+        if (url.includes('/sanctum/csrf-cookie')) {
+          return { ok: true, json: async () => ({}) } as Response;
+        }
+
+        postAttempts += 1;
+        if (postAttempts === 1) {
+          return {
+            ok: false,
+            status: 419,
+            json: async () => ({ message: 'CSRF token mismatch.' }),
+          } as Response;
+        }
+
+        return { ok: true, json: async () => ({ data: 'ok' }) } as Response;
+      });
+
+      await apiClient.request('/api/invoices', { method: 'POST', body: JSON.stringify({ a: 1 }) });
+
+      const postKeys = fetchMock.mock.calls
+        .filter(([url]) => !String(url).includes('/sanctum/csrf-cookie'))
+        .map(([, init]) => new Headers((init as RequestInit | undefined)?.headers).get('Idempotency-Key'));
+
+      expect(postAttempts).toBe(2);
+      expect(postKeys).toHaveLength(2);
+      expect(postKeys[0]).toBeTruthy();
+      expect(postKeys[0]).toBe(postKeys[1]);
+    });
+
+    it('does not attach an Idempotency-Key to GET requests', async () => {
+      const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+        return { ok: true, json: async () => ({ data: 'ok' }) } as Response;
+      });
+
+      await apiClient.request('/api/invoices');
+
+      const [, init] = fetchMock.mock.calls[0] ?? [];
+      const headers = new Headers((init as RequestInit | undefined)?.headers);
+      expect(headers.get('Idempotency-Key')).toBeNull();
     });
   });
 });

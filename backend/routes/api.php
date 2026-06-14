@@ -29,7 +29,7 @@ Route::get('/health', function () {
     ]);
 })->middleware('throttle:120,1');
 
-Route::any('/system/csp-report', [CspReportController::class, 'store'])
+Route::post('/system/csp-report', [CspReportController::class, 'store'])
     ->middleware('throttle:30,1');
 
 Route::get('/system/health', [HealthController::class, 'show'])

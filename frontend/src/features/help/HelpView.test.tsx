@@ -28,9 +28,9 @@ describe('HelpView', () => {
 
     expect(screen.getByRole('heading', { name: /ayuda institucional/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /abrir el sistema/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /iniciar sesion/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument();
     expect(screen.getByText(/use el acceso institucional del escritorio/i)).toBeInTheDocument();
-    expect(screen.getByText(/no comparta contrasena ni cuenta de turno/i)).toBeInTheDocument();
+    expect(screen.getByText(/no comparta contraseña ni cuenta de turno/i)).toBeInTheDocument();
     expect(screen.getByText(/servidor no disponible/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /impresora no responde/i })).toBeInTheDocument();
     expect(screen.getByText(/media carta, carta, A5, 80mm o 58mm/i)).toBeInTheDocument();
@@ -54,11 +54,11 @@ describe('HelpView', () => {
     expect(screen.getByRole('heading', { name: /checklist diario por rol/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /cajero - inicio de turno/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /antes de cerrar turno/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /supervisor - revision diaria/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /supervisor - revisión diaria/i })).toBeInTheDocument();
     expect(screen.getByText(/comparar efectivo esperado contra efectivo contado/i)).toBeInTheDocument();
     expect(screen.getByText(/pedir resumen seguro de ayuda/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /acciones delicadas/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /restauracion de respaldo/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /restauración de respaldo/i })).toBeInTheDocument();
     expect(screen.getByText(/nunca restaure sobre datos reales/i)).toBeInTheDocument();
     expect(screen.getByText(/no cierre para ocultar errores/i)).toBeInTheDocument();
     expect(screen.getAllByText(/no use la base de producción/i).length).toBeGreaterThan(0);

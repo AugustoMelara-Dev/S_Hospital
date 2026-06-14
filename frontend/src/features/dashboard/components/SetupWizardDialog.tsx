@@ -484,7 +484,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
                 </div>
                 <div className="h-2 w-full bg-background rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-secondary transition-all duration-200"
+                    className="h-full bg-secondary transition-[width] duration-200"
                     style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
                   />
                 </div>

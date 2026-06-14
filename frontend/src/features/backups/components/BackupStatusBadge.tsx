@@ -7,17 +7,17 @@ type BackupStatus = 'pending' | 'success' | 'failed';
 const statusConfig = {
   pending: {
     label: 'Pendiente',
-    className: 'bg-amber-100 text-amber-800 border-amber-200',
+    className: 'border-warning/30 bg-warning/10 text-warning',
     icon: Clock,
   },
   success: {
     label: 'Protegido',
-    className: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    className: 'border-success/30 bg-success/10 text-success',
     icon: CheckCircle,
   },
   failed: {
     label: 'Error',
-    className: 'bg-red-100 text-red-800 border-red-200',
+    className: 'border-destructive/30 bg-destructive/10 text-destructive',
     icon: XCircle,
   },
 };

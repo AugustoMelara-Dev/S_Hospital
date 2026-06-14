@@ -1,3 +1,25 @@
+﻿# 2026-06-14 - Rediseno global usa sistema visual propio Tailwind/Radix
+
+Contexto: el rediseno global debe cubrir todas las pantallas reales sin romper Laravel, contratos API, caja, pagos, reportes, backups, recibos ni operacion offline LAN.
+
+Decision: se conserva la base existente React + Tailwind v4 + Radix + lucide y se formaliza como sistema de diseno institucional propio. No se instala una libreria nueva en la fase base porque las dependencias actuales ya resuelven componentes accesibles, formularios, server state, graficos, toasts, impresion y pruebas. Se ajustan tokens globales hacia una neutralidad mas clinica, se endurecen estados warning/success/info para contraste AA, y se agregan contratos reutilizables para campos, estados y montos.
+
+Motivo: reemplazar el stack visual en bloque aumentaria el riesgo de romper flujos fiscales y operativos. La consolidacion incremental permite redisenar pantalla por pantalla con pruebas y commits pequenos.
+
+Validacion:
+
+- npm.cmd run test -- form-field status-badge money-text button.a11y
+- npm.cmd run typecheck
+- npm.cmd run lint
+- npm.cmd run build
+
+# 2026-06-12 - Pulido operativo F6 no cambia contratos ni logica fiscal
+
+Contexto: despues de F5, las pantallas densas ya eran funcionales, pero necesitaban mejor lectura diaria para caja, administracion y reportes sin redisenar el sistema ni tocar reglas fiscales.
+
+Decision: F6 centraliza el tratamiento visual de tablas (`table-wrap`/`data-table`), mejora filtros de reportes con grid responsive, aclara estados vacios del dashboard y agrega un smoke visual F6 ejecutable por subconjuntos para no saturar el servidor local. No se cambian contratos API, migraciones, calculos de factura, pagos, caja, secuencia fiscal ni recibos backend.
+
+Criterio de verificacion: `qa/F6_OPERATIONAL_POLISH_2026_06_12.md` documenta before/after, y `qa/visual-smoke/f6-operational-polish.mjs` genera evidencia con 0 overflow, 0 controles sin nombre y 0 errores de consola/HTTP en el reporte after final. La validacion fisica de impresora termica sigue pendiente de hardware real.
 # Technical Decisions - Sistema de Caja Hospitalaria
 
 ## Registro de decisiones
@@ -2213,7 +2235,7 @@ Consecuencia:
 
 Decision:
 
-- payments a�ade columna mount_cents bigInteger (migration 2026_06_01_000001).
+- payments a�ade columna mount_cents bigInteger (migration 2026_06_01_000001).
 - RegisterPaymentAction, VoidPaymentAction, BuildCashReconciliationAction y los reportes con ROUND(payments.amount * 100) se cambian a SUM(payments.amount_cents).
 
 Motivo:
@@ -2223,7 +2245,7 @@ Motivo:
 
 Consecuencia:
 
-- invoices y invoice_items aun usan decimal(12,2) sin columna cents. Sus ROUND(total * 100) y ROUND(line_total * 100) en report services quedan. Migrarlos requiere a�adir *_cents a las dos tablas y backfill, que es scope de una iteracion futura.
+- invoices y invoice_items aun usan decimal(12,2) sin columna cents. Sus ROUND(total * 100) y ROUND(line_total * 100) en report services quedan. Migrarlos requiere a�adir *_cents a las dos tablas y backfill, que es scope de una iteracion futura.
 - Nueva regression test PaymentCentsSqlGuardTest parsea el codigo fuente de los report services y falla si alguien reintroduce ROUND(payments.amount * 100).
 
 ### 2026-06-01 - Autorizacion solo via Form Requests (F4)
@@ -2270,7 +2292,7 @@ Decision:
 
 Motivo:
 
-- parseCents, formatCents, parseQuantityUnits estaban duplicados en NewInvoiceView, InvoiceCart, PaymentModal, CashBoxView, OpenSessionForm. Cada copia tenia peque�as variaciones de regex/precision, lo que hacia que el redondeo de UI difiriera entre vistas.
+- parseCents, formatCents, parseQuantityUnits estaban duplicados en NewInvoiceView, InvoiceCart, PaymentModal, CashBoxView, OpenSessionForm. Cada copia tenia peque�as variaciones de regex/precision, lo que hacia que el redondeo de UI difiriera entre vistas.
 - Money en el backend (PHP) ya define la politica de redondeo (HALF_AWAY_FROM_ZERO). Los helpers del frontend reflejan esa misma politica.
 
 Consecuencia:
@@ -2282,14 +2304,14 @@ Consecuencia:
 
 Decision:
 
-- docker-compose.prod.yml a�ade healthcheck al backend (DB::connection()->getPdo() via tinker) y a nginx (wget http://localhost/up).
+- docker-compose.prod.yml a�ade healthcheck al backend (DB::connection()->getPdo() via tinker) y a nginx (wget http://localhost/up).
 - nginx cambia de depender de backend: service_started a backend: service_healthy, garantizando que el paso cp /var/www/html/public del entrypoint haya terminado antes de que nginx intente servir.
 - client_max_body_size de nginx baja de 100M a 32M para coincidir con upload_max_filesize=32M y post_max_size=32M de backend/Dockerfile.prod.
 
 Motivo:
 
 - Sin healthchecks, un PHP-FPM trabado o un nginx sirviendo 404 (porque el cp aun no termino) pasaban desapercibidos.
-- El limite de 100M era enga�oso: nginx aceptaba el body pero PHP lo rechazaba con un 413/500 silencioso.
+- El limite de 100M era enga�oso: nginx aceptaba el body pero PHP lo rechazaba con un 413/500 silencioso.
 
 Consecuencia:
 
@@ -2568,7 +2590,7 @@ Validacion:
 
 Decision:
 
-- La pesta�a de Auditoria muestra `catalog_changes` con etiquetas humanas: servicio, tipo de cambio, antes, despues, motivo, usuario y fecha.
+- La pesta�a de Auditoria muestra `catalog_changes` con etiquetas humanas: servicio, tipo de cambio, antes, despues, motivo, usuario y fecha.
 - La UI traduce acciones como `service.price_updated` a texto administrativo y no renderiza `category_id`, codigos internos ni valores crudos de reglas especiales.
 
 Motivo:
@@ -3193,9 +3215,96 @@ Decision: si existe `license.json` y `APP_ENV=production`, `HOSPITAL_LICENSE_SAL
 
 Criterio de verificacion: `LicenseHelperTest::test_production_license_file_requires_configured_salt` prueba que un archivo firmado con el fallback queda bloqueado al activar entorno production sin salt configurado.
 
+# 2026-06-14 - Shell y autenticacion usan contratos de formulario accesibles
+
+Contexto: login, cambio obligatorio de contrasena y navegacion principal son puertas operativas del sistema y deben sostener teclado, mensajes claros y responsive sin alterar contratos de autenticacion.
+
+Decision: se reutiliza FormField para asociar labels, ayudas y errores; el sidebar movil expone cierre visible con Radix Dialog; y se corrigen textos institucionales con acentos en login, cambio de contrasena, topbar y navegacion.
+
+Validacion:
+
+- npm.cmd run test -- App form-field
+- npm.cmd run typecheck
+- npm.cmd run lint
+- npm.cmd run build
+
+# 2026-06-14 - Tablas, filtros y estados comparten primitives accesibles
+
+Contexto: reportes, respaldos, historial, catalogo, usuarios y caja usan muchas tablas; duplicar wrappers aumenta inconsistencias visuales y omite semantica de encabezados.
+
+Decision: data-table se convierte en puente sobre el primitive Table global, TableHead define scope=col por defecto y permite override, FilterBar usa tokens de contraste, y Loading/Error/EmptyState quedan con semantica de estado o alerta.
+
+Validacion:
+
+- npm.cmd run test -- data-table App CashMovementsTable BackupsView ReportsView CatalogView UsersView InvoiceHistoryView
+- npm.cmd run typecheck
+- npm.cmd run lint
+- npm.cmd run build
+
+# 2026-06-14 - Dashboard, ayuda y acerca de priorizan operacion institucional
+
+Contexto: Inicio, Ayuda y Acerca de son pantallas de orientacion y soporte para personal no tecnico; deben compartir jerarquia, textos claros y tokens del sistema.
+
+Decision: Dashboard usa MetricCard global, PageHeader corrige etiqueta institucional, Ayuda usa warning tokens en vez de colores fijos y se corrige microcopy visible en espanol; Acerca de aclara diagnosticos locales sin exponer detalle tecnico innecesario.
+
+Validacion:
+
+- npm.cmd run test -- DashboardView HelpView AboutView App shortcuts
+- npm.cmd run typecheck
+- npm.cmd run lint
+- npm.cmd run build
+
+# 2026-06-14 - Catalogo y usuarios corrigen microcopy y errores accesibles
+
+Contexto: catalogo y usuarios concentran formularios administrativos, estados y acciones sensibles para permisos operativos.
+
+Decision: se corrige microcopy visible en catalogo, servicios, usuarios, i18n y errores seguros; usuarios expone errores con role=alert y aria-invalid/aria-describedby; estados activo/inactivo usan StatusBadge global.
+
+Validacion:
+
+- npm.cmd run test -- CatalogView UsersView i18n base status-badge shortcuts serviceBilling
+- npm.cmd run typecheck
+- npm.cmd run lint
+- npm.cmd run build
+
+# 2026-06-14 - Caja, POS y pagos usan tokens semanticos y textos claros
+
+Contexto: caja, nueva factura y cobros son flujos criticos; el rediseno no debe tocar calculos ni contratos API, pero si debe aclarar estados y evitar colores fijos que fallan en dark mode.
+
+Decision: se corrige microcopy de caja/POS/pagos, se reemplazan verdes/amarillos fijos por tokens success/warning/destructive y se mantiene la logica fiscal y de caja intacta. Los tests de facturacion y caja se actualizan solo por etiquetas visibles corregidas.
+
+Validacion:
+
+- npm.cmd run test -- CashBoxView OpenSessionForm NewInvoiceView PaymentModal InvoiceCart ServiceSearch InvoiceConfirmation InvoiceSuccess serviceBilling
+- npm.cmd run typecheck
+- npm.cmd run lint
+- npm.cmd run build
+
+## 2026-06-14 - Phase 7: Historial, recibos y reimpresión
+
+- Se refinó el flujo de historial de facturas, recibos y reimpresión sin cambiar contratos API ni reglas de auditoría.
+- La anulación autorizada quedó como acción directa visible con confirmación auditada; se eliminó el menú manual previo para mejorar teclado, claridad y pruebas.
+- `ConfirmDialog` conserva Radix AlertDialog, pero separa la descripción accesible del contenido visual para evitar controles interactivos dentro de `AlertDialog.Description`.
+- Se normalizó copy institucional en impresión, reimpresión, anulación y recibos con acentos correctos, manteniendo tamaños de recibo existentes.
+
 ## 2026-06-14 - Phase 8: Reportes, respaldos y configuración fiscal
 
 - Se unificó la descarga de archivos con `downloadBlob`, adjuntando el enlace al DOM antes del click para mejorar compatibilidad de Excel/PDF y respaldos.
 - Reportes ahora anuncian errores críticos con `Alert` y los botones de exportación usan `type="button"` para evitar submits accidentales.
 - Respaldos migró estados principales a tokens semánticos y se corrigió copy institucional visible sin cambiar endpoints ni flujo de backup.
 - Configuración fiscal, recibos, catálogo, ayuda y textos de dominio se normalizaron en español institucional con acentos correctos.
+
+## 2026-06-14 - Phase 9: Barrido dark mode, responsive y accesibilidad
+
+- Se eliminó el último badge de auditoría con colores fijos y se migró a tokens `success`, `warning` y `destructive` para mantener contraste en light/dark mode.
+- Se actualizaron pruebas de navegación y configuración fiscal para validar copy institucional con acentos correctos sin relajar roles accesibles.
+- Se corrigió el lint existente en tests de idempotencia frontend renombrando argumentos no usados, sin tocar comportamiento de API ni contratos Laravel.
+- Validación: `npm.cmd run test -- BackupsView FiscalStatusCard ReportsView AuditoriaTab CatalogView UsersView DashboardView App NewInvoiceView ReceiptPreview`, `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run build`, `git diff --check`.
+
+## 2026-06-14 - Pase final de hardening e integración
+
+- Se elimina `backend/fix.php`: era un script temporal rastreado que mutaba una prueba y hacía fallar Pint global. No pertenece a producto ni a QA reproducible.
+- La migración fantasma `backend/database/migrations/2026_06_13_233749_add_missing_monetary_check_constraints_to_billing_tables.php` no existe en el árbol final. No se recrea porque las restricciones monetarias necesarias ya están en migraciones previas y `cash_movements.amount` puede ser negativo para reversos auditados.
+- La prueba de factura L.0 por receta de diálisis se alinea con la lógica real: la factura queda pagada y auditable sin crear un pago artificial de L.0; la auditoría correcta es `invoice.zero_amount_registered`.
+- `phpunit.xml` fija `memory_limit=512M` para que la suite Laravel completa corra de forma reproducible en el contenedor sin descartarse por agotamiento de memoria.
+- Backups programados quedan confirmados como dos políticas intencionales: respaldo diario (`HOSPITAL_DAILY_BACKUP_TIME`, default 02:00) y respaldo operativo cada 15 minutos dentro de `HOSPITAL_OPERATION_START/END`. La restauración web permanece no expuesta; restore se valida por procedimiento seguro/self-test, no con un botón destructivo en UI.

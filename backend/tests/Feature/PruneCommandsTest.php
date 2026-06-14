@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\AuditLog;
+use App\Support\AuditAdmin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class PruneCommandsTest extends TestCase
@@ -76,5 +78,59 @@ class PruneCommandsTest extends TestCase
 
         $this->assertSame(1, \DB::table('failed_jobs')->count());
         $this->assertSame('new-row', \DB::table('failed_jobs')->value('uuid'));
+    }
+
+    public function test_audit_admin_helper_runs_callback_when_driver_is_not_mysql(): void
+    {
+        AuditLog::query()->create([
+            'action' => 'invoice.issued',
+            'entity_type' => 'App\\Models\\Invoice',
+            'entity_id' => 1,
+            'created_at' => now()->subDays(500),
+        ]);
+
+        $deleted = AuditAdmin::run(fn () => DB::table('audit_logs')
+            ->where('created_at', '<', now()->subDays(30))
+            ->delete());
+
+        $this->assertSame(1, $deleted);
+        $this->assertSame(0, AuditLog::query()->count());
+    }
+
+    public function test_audit_admin_helper_resets_bypass_flag_even_when_callback_throws(): void
+    {
+        $driver = DB::connection()->getDriverName();
+        $this->assertNotContains($driver, ['mysql', 'mariadb'], 'Este test no aplica en MariaDB/MySQL porque la sesion es por conexion real.');
+
+        $thrown = false;
+        try {
+            AuditAdmin::run(function (): void {
+                throw new \RuntimeException('boom');
+            });
+        } catch (\RuntimeException) {
+            $thrown = true;
+        }
+
+        $this->assertTrue($thrown, 'El callback debe propagar la excepcion.');
+    }
+
+    public function test_prune_command_uses_audit_admin_helper_for_real_driver(): void
+    {
+        $driver = DB::connection()->getDriverName();
+        if (! in_array($driver, ['mysql', 'mariadb'], true)) {
+            $this->markTestSkipped('Solo aplica a MariaDB/MySQL: el helper no-op en SQLite y la logica ya esta cubierta por el test_baseline.');
+        }
+
+        // En MariaDB real, el comando DEBE completar sin SQLSTATE 45000.
+        AuditLog::query()->create([
+            'action' => 'invoice.issued',
+            'entity_type' => 'App\\Models\\Invoice',
+            'entity_id' => 1,
+            'created_at' => now()->subDays(500),
+        ]);
+
+        $exit = Artisan::call('hospital:prune-audit-logs', ['--days' => 365]);
+        $this->assertSame(0, $exit, 'El comando debe terminar con exito cuando el trigger bypass esta activo.');
+        $this->assertSame(0, AuditLog::query()->count());
     }
 }

@@ -78,6 +78,9 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
 COPY backend/docker/entrypoint.sh /usr/local/bin/s-hospital-entrypoint.sh
 RUN chmod +x /usr/local/bin/s-hospital-entrypoint.sh
 
+RUN mkdir -p /shared_public && chown -R www-data:www-data /shared_public
+USER www-data
+
 EXPOSE 9000
 ENTRYPOINT ["/usr/local/bin/s-hospital-entrypoint.sh"]
 CMD ["php-fpm"]

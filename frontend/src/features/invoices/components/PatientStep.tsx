@@ -19,14 +19,15 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
   return (
     <div className="space-y-3">
       <div>
-        <Label htmlFor="patient-name" className="mb-1.5 block">
-          Nombre del Paciente *
+        <Label htmlFor="patient-name" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Nombre del paciente *
         </Label>
         <div className="relative">
-          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary" aria-hidden="true" />
           <Input
             ref={ref}
             id="patient-name"
+            name="patient_name"
             value={patientName}
             onChange={(e) => onPatientNameChange(e.target.value)}
             onKeyDown={(e) => {
@@ -35,9 +36,9 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
                 onPatientSubmit?.();
               }
             }}
-            placeholder="Ingrese nombre del paciente"
-            autoFocus
-            className={`pl-10 ${error ? 'border-destructive ring-destructive' : ''}`}
+            placeholder="Ej. Maria Lopez…"
+            autoComplete="off"
+            className={`min-h-14 pl-12 text-lg font-semibold ${error ? 'border-destructive ring-destructive' : ''}`}
             aria-invalid={error ? 'true' : 'false'}
             aria-describedby={errorId}
           />
@@ -45,7 +46,7 @@ export const PatientStep = forwardRef<HTMLInputElement, PatientStepProps>(functi
         {error && <p id={errorId} className="mt-1.5 text-sm text-destructive" role="alert">{error}</p>}
       </div>
       {patientName && (
-        <p className="text-sm text-muted-foreground">
+        <p className="rounded-md border border-secondary/25 bg-secondary/10 px-3 py-2 text-sm text-muted-foreground">
           Paciente: <span className="font-medium text-foreground">{patientName}</span>
         </p>
       )}

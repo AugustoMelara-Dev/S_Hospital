@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react';
+﻿import { type FormEvent, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -38,7 +38,6 @@ import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import {
   FileClock,
-  MoreHorizontal,
   Printer,
   Receipt,
   XCircle,
@@ -62,7 +61,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [reprintReason, setReprintReason] = useState('');
   const [confirmingVoid, setConfirmingVoid] = useState(false);
   const [reprintTarget, setReprintTarget] = useState<Invoice | null>(null);
-  const [openActionsId, setOpenActionsId] = useState<number | null>(null);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
 
   const canReprint = user.permissions.includes('receipts.reprint');
@@ -120,7 +118,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   }
 
   async function openReceiptModal(invoiceId: number) {
-    setOpenActionsId(null);
     setReceipt(null);
 
     try {
@@ -247,7 +244,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         />
 
         <div className="space-y-1.5">
-          <Label htmlFor="status" className="text-xs font-semibold text-slate-600 dark:text-slate-400">Estado</Label>
+          <Label htmlFor="status" className="text-xs font-semibold text-muted-foreground">Estado</Label>
           <Select
             value={filters.status ?? 'all'}
             onValueChange={(v) => setFilters({ ...filters, status: v === 'all' ? '' : v as InvoiceFilters['status'] })}
@@ -266,7 +263,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="patient" className="text-xs font-semibold text-slate-600 dark:text-slate-400">Paciente</Label>
+          <Label htmlFor="patient" className="text-xs font-semibold text-muted-foreground">Paciente</Label>
           <Input
             id="patient"
             placeholder="Nombre del paciente..."
@@ -277,7 +274,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="invoice_number" className="text-xs font-semibold text-slate-600 dark:text-slate-400">Número de factura</Label>
+          <Label htmlFor="invoice_number" className="text-xs font-semibold text-muted-foreground">Número de factura</Label>
           <Input
             id="invoice_number"
             placeholder="A-0001..."
@@ -322,119 +319,82 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       ) : !loadError ? (
         <Card>
           <CardContent className="p-0">
-            <div className="table-wrap">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>No.</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Pagado</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invoicesList.map((invoice) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="text-sm font-medium">{invoice.invoice_number}</TableCell>
-                      <TableCell>{formatDate(invoice.issued_at)}</TableCell>
-                      <TableCell className="font-medium">{invoice.patient_name}</TableCell>
-                      <TableCell className="text-right">{moneyLabel(invoice.total)}</TableCell>
-                      <TableCell className="text-right">{moneyLabel(invoice.paid_amount)}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={invoice.status} />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          {canViewReceipt && (canReprintAny || canVoid || isOwnInvoiceFromToday(invoice)) && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => void openReceiptModal(invoice.id)}
-                            >
-                              <Receipt className="h-4 w-4" aria-hidden="true" />
-                              Ver recibo
-                            </Button>
-                          )}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>No.</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Paciente</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Pagado</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invoicesList.map((invoice) => (
+                  <TableRow key={invoice.id}>
+                    <TableCell className="text-sm font-medium">{invoice.invoice_number}</TableCell>
+                    <TableCell>{formatDate(invoice.issued_at)}</TableCell>
+                    <TableCell className="font-medium">{invoice.patient_name}</TableCell>
+                    <TableCell className="text-right">{moneyLabel(invoice.total)}</TableCell>
+                    <TableCell className="text-right">{moneyLabel(invoice.paid_amount)}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={invoice.status} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        {canViewReceipt && (canReprintAny || canVoid || isOwnInvoiceFromToday(invoice)) && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void openReceiptModal(invoice.id)}
+                          >
+                            <Receipt className="h-4 w-4" aria-hidden="true" />
+                            Ver recibo
+                          </Button>
+                        )}
 
-                          {canReprint && (canReprintAny || isOwnInvoiceFromToday(invoice)) && (
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => setReprintTarget(invoice)}
-                            >
-                              <Printer className="h-4 w-4" aria-hidden="true" />
-                              Reimprimir
-                            </Button>
-                          )}
+                        {canReprint && (canReprintAny || isOwnInvoiceFromToday(invoice)) && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setReprintTarget(invoice)}
+                          >
+                            <Printer className="h-4 w-4" aria-hidden="true" />
+                            Reimprimir
+                          </Button>
+                        )}
 
-                          {canVoid && invoice.status !== 'void' && (
-                        <div className="relative inline-block">
+                        {canVoid && invoice.status !== 'void' && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            aria-label={`Ver acciones de factura ${invoice.invoice_number}`}
-                            onClick={() =>
-                              setOpenActionsId(openActionsId === invoice.id ? null : invoice.id)
-                            }
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => {
+                              void openDetail(invoice.id);
+                              setConfirmingVoid(true);
+                            }}
                           >
-                            <MoreHorizontal className="h-4 w-4" />
+                            <XCircle className="h-4 w-4" aria-hidden="true" />
+                            Anular
                           </Button>
-
-                          {openActionsId === invoice.id && (
-                            <>
-                              <div
-                                className="fixed inset-0 z-40"
-                                onClick={() => setOpenActionsId(null)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Escape' || e.key === 'Enter') {
-                                    setOpenActionsId(null);
-                                  }
-                                }}
-                                role="button"
-                                tabIndex={0}
-                                aria-label="Cerrar menú de acciones"
-                              />
-                              <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-md border border-border bg-card shadow-lg">
-                                <div className="py-1">
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="w-full justify-start text-destructive hover:bg-destructive/10"
-                                        onClick={() => {
-                                          setOpenActionsId(null);
-                                          void openDetail(invoice.id);
-                                          setConfirmingVoid(true);
-                                        }}
-                                      >
-                                        <XCircle className="h-4 w-4" aria-hidden="true" />
-                                        Anular
-                                      </Button>
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       ) : null}
 
       {!isEmpty && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="text-sm text-muted-foreground">
             {meta.total} registro{meta.total !== 1 ? 's' : ''} en total
           </span>
@@ -519,13 +479,15 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             <Label htmlFor="voidReason">Motivo de anulación *</Label>
             <Textarea
               id="voidReason"
+              aria-describedby="voidReason-help"
+              aria-invalid={voidReason.length > 0 && voidReason.trim().length < 5}
               aria-label="Motivo de anulación"
               value={voidReason}
               onChange={(e) => setVoidReason(e.target.value)}
               placeholder="Explique el motivo de la anulación (mínimo 5 caracteres)..."
               rows={3}
             />
-            <p className="text-xs text-muted-foreground">
+            <p id="voidReason-help" className="text-xs text-muted-foreground">
               Esta acción no se puede deshacer. La factura será marcada como anulada.
             </p>
           </div>
@@ -563,17 +525,17 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 }
 
 const statusConfig = {
-  issued: { label: 'Emitida', className: 'bg-blue-100 text-blue-800' },
-  partial: { label: 'Parcial', className: 'bg-amber-100 text-amber-800' },
-  paid: { label: 'Pagada', className: 'bg-emerald-100 text-emerald-800' },
-  void: { label: 'Anulada', className: 'bg-red-100 text-red-800' },
+  issued: { label: 'Emitida', variant: 'info' },
+  partial: { label: 'Parcial', variant: 'warning' },
+  paid: { label: 'Pagada', variant: 'success' },
+  void: { label: 'Anulada', variant: 'destructive' },
 } as const;
 
 function StatusBadge({ status }: { status: Invoice['status'] }) {
   const config = statusConfig[status] ?? statusConfig.issued;
 
   return (
-    <Badge className={config.className}>
+    <Badge variant={config.variant}>
       {config.label}
     </Badge>
   );

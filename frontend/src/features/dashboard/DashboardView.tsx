@@ -11,10 +11,10 @@ import {
   TrendingUp,
   WalletCards,
 } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
-import { Badge } from '../../components/ui/badge';
+import { useEffect, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { MetricCard } from '../../components/ui/metric-card';
 import { PageHeader } from '../../components/ui/page-header';
 import { Skeleton } from '../../components/ui/states';
 import { type CashSession, type DashboardReport, apiClient, userSafeErrorMessage } from '../../lib/api';
@@ -112,7 +112,7 @@ export function DashboardView({
     <>
       <PageHeader
         title="Inicio"
-        description="Lo necesario para operar caja, cobros y facturacion sin perderse."
+        description="Lo necesario para operar caja, cobros y facturación sin perderse."
       />
 
       {setupStatus?.needs_setup && (
@@ -155,7 +155,7 @@ export function DashboardView({
                 helper="Acceso principal listo"
               />
               <SetupStepCheck
-                label="Catalogo"
+                label="Catálogo"
                 done={setupStatus.steps.catalog_has_services}
                 helper="Servicios para facturar"
               />
@@ -170,9 +170,9 @@ export function DashboardView({
       )}
 
       <div className="grid gap-5">
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumen operativo del mes">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.15fr_1fr_1fr_0.85fr]" aria-label="Resumen operativo del mes">
           <MetricCard
-            icon={<WalletCards className="size-4 text-emerald-600" />}
+            icon={<WalletCards className="size-4 text-success" />}
             label="Caja"
             value={cashSession ? `Caja #${cashSession.id}` : 'Cerrada'}
             helper={cashSession ? 'Lista para cobrar' : 'Abra caja antes de facturar'}
@@ -183,11 +183,11 @@ export function DashboardView({
             icon={<TrendingUp className="size-4 text-primary" />}
             label="Facturado"
             value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : formatLempiras(dashboardData?.current_month.total_billed)}
-            helper={dashboardData ? `${dashboardData.current_month.invoice_count} facturas este mes` : 'Facturacion del mes'}
+            helper={dashboardData ? `${dashboardData.current_month.invoice_count} facturas este mes` : 'Facturación del mes'}
           />
 
           <MetricCard
-            icon={<CreditCard className="size-4 text-emerald-600" />}
+            icon={<CreditCard className="size-4 text-success" />}
             label="Cobrado"
             value={loadingDashboard ? <Skeleton className="h-7 w-24" /> : formatLempiras(dashboardData?.current_month.total_collected)}
             helper={dashboardData ? `${dashboardData.current_month.payment_count} pagos recibidos` : 'Cobros del mes'}
@@ -202,13 +202,13 @@ export function DashboardView({
           />
         </section>
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.75fr)_minmax(300px,0.9fr)]">
           <div className="flex flex-col gap-5">
             <Card>
               <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <CardTitle className="text-base font-bold">Facturacion y cobros</CardTitle>
-                  <CardDescription>Ultimos 7 dias.</CardDescription>
+                  <CardTitle className="text-base font-bold">Facturación y cobros</CardTitle>
+                  <CardDescription>Últimos 7 días.</CardDescription>
                 </div>
                 {canViewManagerialReports && (
                   <Button variant="outline" size="sm" className="gap-2" onClick={fetchDashboard}>
@@ -259,8 +259,8 @@ export function DashboardView({
           <div className="flex flex-col gap-5">
             <Card className="border-primary/20 bg-primary/5">
               <CardHeader>
-                <CardTitle className="text-base font-bold">Siguiente accion</CardTitle>
-                <CardDescription>Una accion principal segun el estado de caja.</CardDescription>
+                <CardTitle className="text-base font-bold">Siguiente acción</CardTitle>
+                <CardDescription>Una acción principal según el estado de caja.</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
                 {!cashSession && canViewCash ? (
@@ -294,7 +294,7 @@ export function DashboardView({
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-bold">Cobros de hoy</CardTitle>
-                <CardDescription>Distribucion por metodo de pago.</CardDescription>
+                <CardDescription>Distribución por método de pago.</CardDescription>
               </CardHeader>
               <CardContent>
                 {!canViewManagerialReports ? (
@@ -350,53 +350,12 @@ export function DashboardView({
   );
 }
 
-function MetricCard({
-  icon,
-  helper,
-  label,
-  value,
-  variant = 'neutral',
-}: {
-  icon: ReactNode;
-  helper: string;
-  label: string;
-  value: ReactNode;
-  variant?: 'neutral' | 'success' | 'warning' | 'info';
-}) {
-  const badgeText = {
-    neutral: 'Listo',
-    success: 'Abierta',
-    warning: 'Atencion',
-    info: 'Mes',
-  }[variant];
-
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            {icon}
-            <span className="truncate text-xs font-semibold uppercase text-muted-foreground">{label}</span>
-          </div>
-          <Badge variant={variant === 'warning' ? 'warning' : variant === 'success' ? 'success' : 'secondary'}>
-            {badgeText}
-          </Badge>
-        </div>
-        <div className="mt-4 flex flex-col gap-0.5">
-          <strong className="text-xl font-bold tracking-tight text-foreground">{value}</strong>
-          <span className="text-xs text-muted-foreground">{helper}</span>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function SetupStepCheck({ label, done, helper }: { label: string; done: boolean; helper: string }) {
   return (
     <div className="flex items-start gap-3 rounded-md border border-border bg-background p-3">
       <div className="mt-0.5 shrink-0">
         {done ? (
-          <CheckCircle2 className="size-4 text-emerald-600" />
+          <CheckCircle2 className="size-4 text-success" />
         ) : (
           <AlertTriangle className="size-4 text-warning" />
         )}
@@ -417,7 +376,7 @@ function PermissionLockedState() {
       </div>
       <p className="text-sm font-semibold text-foreground">Sin permiso para ver este resumen</p>
       <p className="mt-1 max-w-[240px] text-xs text-muted-foreground">
-        El resto de acciones disponibles para su rol siguen visibles en el menu.
+        El resto de acciones disponibles para su rol siguen visibles en el menú.
       </p>
     </div>
   );

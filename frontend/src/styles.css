@@ -4,66 +4,70 @@
   /* Sistema de diseño de caja hospitalaria */
 
   /* Background & Foreground */
-  --color-background: #f7f8fb;
-  --color-foreground: #111827;
+  --color-background: #f6f7f4;
+  --color-foreground: #1f2421;
 
   /* Card */
-  --color-card: #ffffff;
-  --color-card-foreground: #111827;
+  --color-card: #fffffb;
+  --color-card-foreground: #1f2421;
 
   /* Primary - neutral ink for minimal hospital operations */
-  --color-primary: #111827;
-  --color-primary-foreground: #ffffff;
+  --color-primary: #1f2421;
+  --color-primary-foreground: #fffffb;
 
   /* Secondary - restrained clinical accent */
   --color-secondary: #0f766e;
-  --color-secondary-foreground: #ffffff;
+  --color-secondary-foreground: #f8fffc;
 
   /* Muted */
-  --color-muted: #f3f4f6;
-  --color-muted-foreground: #6b7280;
+  --color-muted: #e8ece7;
+  --color-muted-foreground: #5d665f;
 
   /* Accent */
-  --color-accent: #ecfdf5;
-  --color-accent-foreground: #0f766e;
+  --color-accent: #dbeee8;
+  --color-accent-foreground: #0f5d56;
 
   /* Destructive - Rose-600 */
   --color-destructive: #e11d48;
   --color-destructive-foreground: #ffffff;
 
   /* Border & Input */
-  --color-border: #e5e7eb;
-  --color-input: #d1d5db;
+  --color-border: #d8d0c1;
+  --color-input: #c8bead;
   --color-ring: #0f766e;
 
   /* Sidebar - white minimal shell */
-  --color-sidebar: #ffffff;
-  --color-sidebar-foreground: #111827;
+  --color-sidebar: #20211d;
+  --color-sidebar-foreground: #f8f3e8;
   --color-sidebar-primary: #0f766e;
-  --color-sidebar-primary-foreground: #ffffff;
-  --color-sidebar-accent: #f3f4f6;
-  --color-sidebar-accent-foreground: #111827;
-  --color-sidebar-border: #e5e7eb;
+  --color-sidebar-primary-foreground: #f8fffc;
+  --color-sidebar-accent: #2a2b26;
+  --color-sidebar-accent-foreground: #f8f3e8;
+  --color-sidebar-border: #3a382f;
   --color-sidebar-ring: #0f766e;
 
   /* Status Colors */
-  --color-success: #059669;
-  --color-warning: #d97706;
-  --color-info: #0284c7;
+  --color-success: #047857;
+  --color-success-foreground: #064e3b;
+  --color-warning: #b45309;
+  --color-warning-foreground: #78350f;
+  --color-info: #0369a1;
+  --color-info-foreground: #0c4a6e;
 
   /* Typography */
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "Geist", "Aptos", "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Consolas, ui-monospace, monospace;
 
   /* Border Radius */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
+  --radius-sm: 0.2rem;
+  --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
-  --radius-xl: 0.5rem;
+  --radius-xl: 0.625rem;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-sm: 0 1px 0 rgb(32 33 29 / 0.06), 0 10px 28px -26px rgb(32 33 29 / 0.55);
+  --shadow-md: 0 1px 0 rgb(32 33 29 / 0.07), 0 18px 42px -30px rgb(32 33 29 / 0.6);
+  --shadow-lg: 0 1px 0 rgb(32 33 29 / 0.08), 0 28px 70px -38px rgb(32 33 29 / 0.65);
 
   /* Animations */
   --animate-fade-in: fade-in 0.3s ease-out;
@@ -75,37 +79,40 @@
 
 /* Dark Mode Theme */
 html.dark {
-  --color-background: #0f172a;
-  --color-foreground: #e2e8f0;
-  --color-card: #1e293b;
-  --color-card-foreground: #e2e8f0;
-  --color-primary: #94a3b8;
-  --color-primary-foreground: #0f172a;
+  --color-background: #111513;
+  --color-foreground: #eef4ee;
+  --color-card: #1a201d;
+  --color-card-foreground: #eef4ee;
+  --color-primary: #eef4ee;
+  --color-primary-foreground: #111513;
   --color-secondary: #14b8a6;
-  --color-secondary-foreground: #0f172a;
-  --color-muted: #1e293b;
-  --color-muted-foreground: #94a3b8;
-  --color-accent: #042f2e;
+  --color-secondary-foreground: #10201d;
+  --color-muted: #26302b;
+  --color-muted-foreground: #b5c0b8;
+  --color-accent: #133834;
   --color-accent-foreground: #14b8a6;
   --color-destructive: #fb7185;
   --color-destructive-foreground: #1c1917;
-  --color-border: #334155;
-  --color-input: #334155;
+  --color-border: #344139;
+  --color-input: #46534b;
   --color-ring: #14b8a6;
-  --color-sidebar: #020617;
-  --color-sidebar-foreground: #f8fafc;
+  --color-sidebar: #10110d;
+  --color-sidebar-foreground: #f8f3e8;
   --color-sidebar-primary: #14b8a6;
   --color-sidebar-primary-foreground: #0f172a;
-  --color-sidebar-accent: #0f172a;
-  --color-sidebar-accent-foreground: #e2e8f0;
-  --color-sidebar-border: #1e293b;
+  --color-sidebar-accent: #20211d;
+  --color-sidebar-accent-foreground: #f1eadc;
+  --color-sidebar-border: #343228;
   --color-sidebar-ring: #14b8a6;
   --color-success: #34d399;
+  --color-success-foreground: #bbf7d0;
   --color-warning: #fbbf24;
+  --color-warning-foreground: #fde68a;
   --color-info: #38bdf8;
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --color-info-foreground: #bae6fd;
+  --shadow-sm: 0 1px 0 rgb(255 253 248 / 0.04), 0 12px 30px -24px rgb(0 0 0 / 0.75);
+  --shadow-md: 0 1px 0 rgb(255 253 248 / 0.05), 0 20px 46px -30px rgb(0 0 0 / 0.8);
+  --shadow-lg: 0 1px 0 rgb(255 253 248 / 0.06), 0 34px 80px -42px rgb(0 0 0 / 0.85);
 }
 
 @keyframes fade-in {
@@ -134,6 +141,11 @@ html.dark {
   100% { stroke-dashoffset: 0; opacity: 1; }
 }
 
+@keyframes shimmer {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(240%); }
+}
+
 @layer base {
   * {
     box-sizing: border-box;
@@ -142,13 +154,23 @@ html.dark {
   body {
     min-width: 320px;
     margin: 0;
-    background: var(--color-background);
+    background:
+      linear-gradient(90deg, rgb(31 36 33 / 0.018) 1px, transparent 1px),
+      linear-gradient(180deg, rgb(31 36 33 / 0.016) 1px, transparent 1px),
+      var(--color-background);
+    background-size: 38px 38px;
     color: var(--color-foreground);
     font-family: var(--font-sans);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 180ms ease, color 180ms ease;
+    -webkit-tap-highlight-color: transparent;
+    color-scheme: light;
+  }
+
+  html.dark body {
+    color-scheme: dark;
   }
 
   button,
@@ -156,6 +178,30 @@ html.dark {
   select,
   textarea {
     font: inherit;
+  }
+
+  :where(h1, h2, h3) {
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+
+  :where(input, select, textarea, button) {
+    touch-action: manipulation;
+  }
+
+  :where([data-icon]) {
+    stroke-width: 1.8;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.001ms !important;
+    }
   }
 }
 
@@ -246,7 +292,7 @@ html.dark {
   .compact-button,
   .pagination-row .secondary-button,
   .data-table button {
-    @apply w-auto;
+    @apply w-auto shrink-0;
   }
 
   .search-form,
@@ -284,7 +330,63 @@ html.dark {
   }
 
   .table-wrap {
-    @apply overflow-x-auto rounded-xl border border-border bg-card;
+    @apply relative max-w-full overflow-auto rounded-lg border border-border bg-card;
+    scrollbar-gutter: stable;
+  }
+
+  .table-wrap::before {
+    @apply pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-border;
+    content: "";
+  }
+
+  .data-table {
+    @apply w-full border-separate border-spacing-0 text-sm;
+    min-width: 46rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .data-table thead {
+    @apply bg-muted/80;
+  }
+
+  .data-table th {
+    @apply sticky top-0 z-[1] whitespace-nowrap border-b border-border bg-muted/95 px-4 py-3 text-left text-xs font-semibold uppercase tracking-normal text-muted-foreground backdrop-blur;
+  }
+
+  .data-table td {
+    @apply border-b border-border/70 px-4 py-3 align-middle text-sm;
+  }
+
+  .data-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .data-table tbody tr {
+    @apply transition-colors;
+  }
+
+  .data-table tbody tr:hover {
+    @apply bg-muted/35;
+  }
+
+  .data-table td.text-right,
+  .data-table th.text-right {
+    @apply tabular-nums;
+  }
+
+  @media (max-width: 768px) {
+    .table-wrap {
+      @apply rounded-md;
+    }
+
+    .table-wrap::after {
+      @apply sticky left-0 block border-t border-border bg-muted/60 px-3 py-2 text-xs font-medium text-muted-foreground;
+      content: "Deslice la tabla para ver mas columnas";
+    }
+
+    .data-table {
+      min-width: 42rem;
+    }
   }
 
   .hospital-toaster {
@@ -429,7 +531,7 @@ html.dark {
   }
 
   .status-success {
-    @apply border border-success/30 bg-success/10 text-success;
+    @apply border border-success/30 bg-success/10 text-success-foreground dark:text-success-foreground;
   }
 
   .status-failed {
@@ -437,11 +539,11 @@ html.dark {
   }
 
   .status-pending {
-    @apply border border-warning/30 bg-warning/10 text-warning;
+    @apply border border-warning/35 bg-warning/10 text-warning-foreground dark:text-warning-foreground;
   }
 
   .status-info {
-    @apply border border-info/30 bg-info/10 text-info;
+    @apply border border-info/30 bg-info/10 text-info-foreground dark:text-info-foreground;
   }
 
   .notice-inline {
@@ -704,11 +806,11 @@ html.dark {
   }
 
   .badge-success {
-    @apply bg-success/15 text-success;
+    @apply bg-success/15 text-success-foreground dark:text-success-foreground;
   }
 
   .badge-warning {
-    @apply bg-warning/15 text-warning;
+    @apply bg-warning/15 text-warning-foreground dark:text-warning-foreground;
   }
 
   .badge-danger {
@@ -716,7 +818,7 @@ html.dark {
   }
 
   .badge-info {
-    @apply bg-info/15 text-info;
+    @apply bg-info/15 text-info-foreground dark:text-info-foreground;
   }
 
   .badge-secondary {

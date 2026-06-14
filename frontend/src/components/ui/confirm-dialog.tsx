@@ -37,7 +37,7 @@ export function ConfirmDialog({
       }}
     >
       <AlertDialogPrimitive.Portal>
-        <AlertDialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-950/45" />
+        <AlertDialogPrimitive.Overlay className="fixed inset-0 z-50 bg-foreground/45" />
         <AlertDialogPrimitive.Content
           className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-1.5rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card p-5 text-card-foreground shadow-lg"
         >
@@ -46,9 +46,10 @@ export function ConfirmDialog({
               <AlertDialogPrimitive.Title className="text-lg font-semibold">
                 {title}
               </AlertDialogPrimitive.Title>
-              <AlertDialogPrimitive.Description asChild>
-                <div className="text-sm text-muted-foreground">{children}</div>
+              <AlertDialogPrimitive.Description className="sr-only">
+                Revise la información antes de confirmar esta acción.
               </AlertDialogPrimitive.Description>
+              <div className="text-sm text-muted-foreground">{children}</div>
             </div>
 
             <div className="flex flex-wrap justify-end gap-2">

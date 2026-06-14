@@ -1,4 +1,4 @@
-import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
+﻿import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Checkbox } from '../../../components/ui/checkbox';
 import { Input } from '../../../components/ui/input';
@@ -58,22 +58,23 @@ export function InvoiceCart({
   const actionAriaLabel = disabled || isEmpty ? `${actionLabel}: ${displayActionLabel}` : undefined;
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 mb-4">
-        <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-        <Label className="text-base font-semibold">Carrito</Label>
+    <div className="flex h-full flex-col">
+      <div className="mb-4 flex items-center gap-2">
+        <ShoppingCart className="h-5 w-5 text-secondary" aria-hidden="true" />
+        <Label className="text-base font-semibold">Factura en curso</Label>
         {items.length > 0 && (
-          <span className="ml-auto inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+          <span className="ml-auto inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-primary px-2 font-mono text-[10px] font-bold tabular-nums text-primary-foreground">
             {items.length}
           </span>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {isEmpty ? (
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <ShoppingCart className="h-10 w-10 mb-3 opacity-40" />
-            <p className="text-sm font-medium">No hay servicios agregados</p>
+          <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-border bg-muted/35 px-4 py-12 text-center text-muted-foreground">
+            <ShoppingCart className="mb-3 h-10 w-10 opacity-50" aria-hidden="true" />
+            <p className="text-sm font-semibold text-foreground">No hay servicios agregados</p>
+            <p className="mt-1 max-w-56 text-xs">Busque por nombre, categoría o código para comenzar.</p>
           </div>
         ) : (
           <div className="space-y-2 pr-1">
@@ -82,13 +83,13 @@ export function InvoiceCart({
               return (
                 <div
                   key={`${item.service.id}-${index}`}
-                  className="flex flex-col gap-2 rounded-md border border-border bg-card p-3 transition-colors hover:border-primary/30"
+                  className="flex flex-col gap-2 rounded-md border border-border bg-card/95 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] transition-colors hover:border-secondary/35"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-sm truncate">{item.service.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {moneyLabel(item.service.price)} {isFree && <span className="font-medium text-success">(Gratis - receta diálisis)</span>}
+                      <p className="truncate text-sm font-semibold">{item.service.name}</p>
+                      <p className="font-mono text-xs tabular-nums text-muted-foreground">
+                        {moneyLabel(item.service.price)} {isFree && <span className="font-sans font-semibold text-success">(Gratis - receta diálisis)</span>}
                       </p>
                     </div>
                     <Button
@@ -119,7 +120,7 @@ export function InvoiceCart({
                     <Input
                       value={item.quantity}
                       onChange={(e) => onUpdateQuantity(index, e.target.value)}
-                      className="h-8 w-20 text-center"
+                      className="h-8 w-20 text-center font-mono tabular-nums"
                       inputMode="decimal"
                       name={`quantity-${item.service.id}`}
                       aria-label={`Cantidad de ${item.service.name}`}
@@ -139,7 +140,7 @@ export function InvoiceCart({
                   </div>
 
                   {item.service.special_rule_code === ERYTHROPOIETIN_RULE && (
-                    <label htmlFor={`dialysis-${index}`} className="flex items-center gap-2 text-xs">
+                    <label htmlFor={`dialysis-${index}`} className="flex items-center gap-2 rounded-md border border-secondary/20 bg-secondary/8 px-2 py-2 text-xs">
                       <Checkbox
                         id={`dialysis-${index}`}
                         checked={item.dialysisPrescription}
@@ -155,21 +156,21 @@ export function InvoiceCart({
         )}
       </div>
 
-      <div className="border-t border-border pt-4 mt-4 bg-card sticky bottom-0">
-        <div className="space-y-2 mb-4">
+      <div className="sticky bottom-0 mt-4 border-t border-border bg-card/95 pt-4">
+        <div className="mb-4 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Subtotal:</span>
-            <span>{moneyLabel(preview.subtotal)}</span>
+            <span className="font-mono tabular-nums">{moneyLabel(preview.subtotal)}</span>
           </div>
           {taxRate && (
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">ISV ({taxRate}%):</span>
-              <span>{moneyLabel(preview.tax)}</span>
+              <span className="font-mono tabular-nums">{moneyLabel(preview.tax)}</span>
             </div>
           )}
-          <div className="flex justify-between font-bold text-xl border-t border-border pt-2">
+          <div className="flex justify-between border-t border-border pt-3 text-xl font-bold">
             <span>Total estimado:</span>
-            <span className="text-primary">{moneyLabel(preview.total)}</span>
+            <span className="font-mono tabular-nums text-secondary">{moneyLabel(preview.total)}</span>
           </div>
         </div>
 
@@ -184,8 +185,8 @@ export function InvoiceCart({
         >
           {submitting ? (
             <>
-              <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Emitiendo...
+              <span className="mr-2 inline-block h-4 w-4 animate-pulse rounded-sm bg-current/70" aria-hidden="true" />
+              Emitiendo…
             </>
           ) : disabled || isEmpty ? (
             disabledActionLabel

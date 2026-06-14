@@ -135,9 +135,9 @@ describe('NewInvoiceView', () => {
 
     expect(await screen.findByRole('heading', { name: /nueva factura/i })).toBeInTheDocument();
     expect(await screen.findByLabelText(/nombre del paciente/i)).toBeInTheDocument();
-    expect(await screen.findByLabelText(/buscar por nombre, categoria o codigo/i)).toBeInTheDocument();
-    expect(screen.queryByLabelText(/scanner usb o codigo manual/i)).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/buscar por nombre, categoria o codigo/i), {
+    expect(await screen.findByLabelText(/buscar por nombre, categoría o código/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/scanner usb o código manual/i)).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/buscar por nombre, categoría o código/i), {
       target: { value: 'eritropoyetina' },
     });
     expect(await screen.findByRole('button', { name: /eritropoyetina/i })).toBeInTheDocument();
@@ -328,7 +328,7 @@ describe('NewInvoiceView', () => {
     fireEvent.change(await screen.findByLabelText(/nombre del paciente/i), {
       target: { value: 'Maria Lopez' },
     });
-    fireEvent.change(await screen.findByLabelText(/buscar por nombre, categoria o codigo/i), {
+    fireEvent.change(await screen.findByLabelText(/buscar por nombre, categoría o código/i), {
       target: { value: 'glucosa' },
     });
     fireEvent.click(await screen.findByRole('button', { name: /glucosa/i }));
@@ -460,7 +460,7 @@ describe('NewInvoiceView', () => {
 
     render(<App />);
 
-    fireEvent.change(await screen.findByLabelText(/scanner usb o codigo manual/i), {
+    fireEvent.change(await screen.findByLabelText(/scanner usb o código manual/i), {
       target: { value: 'INACTIVE-001' },
     });
     fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
@@ -564,12 +564,12 @@ describe('NewInvoiceView', () => {
 
     render(<App />);
 
-    fireEvent.change(await screen.findByLabelText(/scanner usb o codigo manual/i), {
+    fireEvent.change(await screen.findByLabelText(/scanner usb o código manual/i), {
       target: { value: 'CACHED-001' },
     });
     fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
 
-    expect((await screen.findAllByText(/no se encontro servicio activo para este codigo/i)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/no se encontró servicio activo para este código/i)).length).toBeGreaterThan(0);
     expect(screen.getByText(/no hay servicios agregados/i)).toBeInTheDocument();
   });
 
@@ -637,14 +637,14 @@ describe('NewInvoiceView', () => {
 
     render(<App />);
 
-    fireEvent.change(await screen.findByLabelText(/scanner usb o codigo manual/i), {
+    fireEvent.change(await screen.findByLabelText(/scanner usb o código manual/i), {
       target: { value: 'MISSING-001' },
     });
     fireEvent.click(screen.getByRole('button', { name: /escanear/i }));
 
-    expect((await screen.findAllByText(/no se encontro servicio activo para este codigo/i)).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/no se encontró servicio activo para este código/i)).length).toBeGreaterThan(0);
     await waitFor(() => {
-      expect(screen.getByLabelText(/scanner usb o codigo manual/i)).toHaveFocus();
+      expect(screen.getByLabelText(/scanner usb o código manual/i)).toHaveFocus();
     });
   });
 
@@ -1070,7 +1070,6 @@ describe('NewInvoiceView', () => {
 
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /ver/i }));
     fireEvent.click(await screen.findByRole('button', { name: /anular/i }));
     expect(await screen.findByLabelText(/motivo de anulación/i)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/motivo de anulación/i), {

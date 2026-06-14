@@ -596,13 +596,13 @@ test.describe('RC1 cashier flow screens', () => {
     await page.waitForTimeout(500);
     await captureScreen(page, 'receipt-preview-light');
 
-    await page.locator('[aria-label="Tamaño del recibo"]').click();
+    await page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i }).click();
     await page.getByRole('option', { name: 'A5', exact: true }).click({ force: true });
     await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
     await page.waitForTimeout(500);
     await captureScreen(page, 'receipt-preview-a5-light');
 
-    await page.locator('[aria-label="Tamaño del recibo"]').click();
+    await page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i }).click();
     await page.getByRole('option', { name: /Carta|Letter|80mm/i }).first().click();
     await page.waitForTimeout(500);
     await captureScreen(page, 'receipt-preview-letter-light');

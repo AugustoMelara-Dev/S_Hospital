@@ -123,4 +123,44 @@ class CspReportControllerTest extends TestCase
         $this->assertNotNull($route, 'api/system/csp-report route must exist');
         $this->assertContains('throttle:30,1', $route->middleware(), 'csp-report must be rate limited');
     }
+
+    public function test_csp_report_endpoint_only_accepts_post(): void
+    {
+        $routes = app('router')->getRoutes();
+        $route = null;
+
+        foreach ($routes as $candidate) {
+            if ($candidate->uri() === 'api/system/csp-report') {
+                $route = $candidate;
+                break;
+            }
+        }
+
+        $this->assertNotNull($route, 'api/system/csp-report route must exist');
+        $this->assertSame(['POST'], $route->methods(), 'csp-report must only accept POST.');
+    }
+
+    public function test_csp_normalizes_production_env_case_insensitively(): void
+    {
+        config(['app.env' => 'Production']);
+
+        $response = $this->get('/up');
+        $csp = (string) $response->headers->get('Content-Security-Policy');
+        $this->assertStringNotContainsString("'unsafe-eval'", $csp, 'Production-like APP_ENV must not enable unsafe-eval.');
+    }
+
+    public function test_csp_includes_unsafe_eval_only_in_dev(): void
+    {
+        config(['app.env' => 'local']);
+        $response = $this->get('/up');
+        $csp = (string) $response->headers->get('Content-Security-Policy');
+        $this->assertStringContainsString("'unsafe-eval'", $csp, 'Dev CSP must include unsafe-eval to allow Vite HMR.');
+    }
+
+    public function test_api_responses_set_no_store_cache_header(): void
+    {
+        $response = $this->getJson('/api/health');
+        $cacheControl = (string) $response->headers->get('Cache-Control');
+        $this->assertStringContainsString('no-store', $cacheControl);
+    }
 }

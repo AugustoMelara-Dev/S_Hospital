@@ -301,6 +301,14 @@ if ($BackupFile -and $BackupFile -match '\.tar\.gz$') {
     try {
         $tempDir = Join-Path $env:TEMP "hospital_restore_$(Get-Date -Format 'yyyyMMddHHmmss')"
         New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+        $contents = tar -tf $BackupFile
+        foreach ($file in $contents) {
+            if ($file -match '\.\.' -or $file -match '^[/\\]' -or $file -match '^[a-zA-Z]:') {
+                Write-Error "Riesgo de path traversal detectado en el archivo tar."
+                Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+                exit 1
+            }
+        }
         tar -xzf $BackupFile -C $tempDir
         $sqlFiles = Get-ChildItem $tempDir -Filter "*.sql"
         if ($sqlFiles) {

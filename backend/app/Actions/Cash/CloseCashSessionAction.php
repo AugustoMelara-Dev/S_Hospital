@@ -6,6 +6,8 @@ use App\Events\CashSessionChanged;
 use App\Models\AuditLog;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
+use App\Models\Invoice;
+use App\Models\Payment;
 use App\Models\User;
 use App\Support\Money;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -38,6 +40,10 @@ class CloseCashSessionAction
                     'cash_session' => 'La caja ya esta cerrada.',
                 ]);
             }
+
+            // Lock invoices and payments for this session to prevent concurrent modification
+            Invoice::query()->where('cash_session_id', $lockedSession->id)->lockForUpdate()->pluck('id');
+            Payment::query()->where('cash_session_id', $lockedSession->id)->lockForUpdate()->pluck('id');
 
             $reconciliation = $this->buildCashReconciliation->execute($lockedSession);
             $pendingInvoiceCount = $reconciliation['pending_invoice_count'];

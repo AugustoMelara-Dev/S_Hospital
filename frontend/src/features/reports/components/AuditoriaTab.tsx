@@ -260,7 +260,7 @@ export function AuditoriaTab({
                       <TableRow key={`backup-${backup.filename ?? index}-${backup.created_at ?? 'sin-fecha'}`}>
                         <TableCell className="max-w-[200px] truncate font-medium">{backup.filename}</TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${backup.status === 'success' ? 'bg-green-100 text-green-800' : backup.status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs ${backup.status === 'success' ? 'border-success/30 bg-success/10 text-success' : backup.status === 'failed' ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-warning/30 bg-warning/10 text-warning'}`}>
                             {backupStatusLabel(backup.status)}
                           </span>
                         </TableCell>

@@ -55,8 +55,8 @@ export function Topbar({
     timeStyle: 'short',
   }).format(now);
   const lanStatusTitle = isOnline
-    ? `Red local disponible${lastCheck ? `. Ultima revision: ${lastCheck.toLocaleTimeString()}` : ''}`
-    : `Sin conexion al servidor local. Estado: ${status}`;
+    ? `Red local disponible${lastCheck ? `. Última revisión: ${lastCheck.toLocaleTimeString()}` : ''}`
+    : `Sin conexión al servidor local. Estado: ${status}`;
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000);
@@ -64,26 +64,26 @@ export function Topbar({
   }, []);
 
   return (
-    <header className="print-hidden sticky top-0 z-10 flex min-h-16 items-center gap-3 border-b border-border bg-card/95 px-4 shadow-sm backdrop-blur-sm lg:px-6">
+    <header className="print-hidden sticky top-0 z-10 flex min-h-16 items-center gap-3 border-b border-border bg-card/88 px-4 shadow-sm backdrop-blur-md lg:px-7">
       <Button
         type="button"
         variant="ghost"
         size="icon"
         className="shrink-0 lg:hidden"
         onClick={onOpenMobileMenu}
-        aria-label="Abrir menu"
+        aria-label="Abrir menú"
       >
         <Menu data-icon="inline-start" aria-hidden="true" />
       </Button>
 
       <div className="min-w-0 flex-1">
         {!isMinimalTopbar && (
-          <p className="truncate text-sm font-semibold text-foreground sm:text-base" title={currentTitle}>
+          <p className="truncate text-base font-semibold leading-tight text-foreground" title={currentTitle}>
             {currentTitle}
           </p>
         )}
         {!isMinimalTopbar && (
-          <nav className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground" aria-label="Ubicacion">
+          <nav className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground" aria-label="Ubicación">
             {crumbs.map((crumb, index) => (
               <div key={`${crumb.path}-${index}`} className="flex min-w-0 items-center gap-1.5">
                 {index > 0 && <span className="text-border">/</span>}
@@ -92,7 +92,10 @@ export function Topbar({
                     {crumb.label}
                   </span>
                 ) : (
-                  <NavLink to={crumb.path} className="max-w-[5rem] truncate transition-colors hover:text-foreground sm:max-w-none">
+                  <NavLink
+                    to={crumb.path}
+                    className="max-w-[5rem] truncate rounded-sm outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:max-w-none"
+                  >
                     {crumb.label}
                   </NavLink>
                 )}
@@ -105,7 +108,7 @@ export function Topbar({
       <div className="flex shrink-0 items-center gap-1.5">
         {!isMinimalTopbar && (
           <div
-            className="hidden items-center gap-1.5 rounded-full border border-border bg-muted/50 px-2.5 py-1 text-xs font-semibold text-muted-foreground md:flex"
+            className="hidden items-center gap-1.5 rounded-md border border-border bg-muted/65 px-2.5 py-1.5 text-xs font-semibold text-foreground md:flex"
             title={cashLabel}
           >
             <WalletCards data-icon="inline-start" aria-hidden="true" />
@@ -115,7 +118,7 @@ export function Topbar({
 
         {!isMinimalTopbar && (
           <div
-            className="hidden items-center gap-1.5 rounded-full border border-border bg-muted/50 px-2.5 py-1 text-xs font-semibold text-muted-foreground xl:flex"
+            className="hidden items-center gap-1.5 rounded-md border border-border bg-muted/65 px-2.5 py-1.5 font-mono text-xs font-semibold tabular-nums text-muted-foreground xl:flex"
             title="Fecha y hora local del equipo"
           >
             <Clock3 data-icon="inline-start" aria-hidden="true" />
@@ -126,8 +129,8 @@ export function Topbar({
         {!isMinimalTopbar && (
           <div
             className={cn(
-              'hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold sm:flex',
-              isOnline ? 'border-secondary/30 bg-secondary/10 text-secondary' : 'border-destructive/30 bg-destructive/10 text-destructive',
+              'hidden items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-semibold sm:flex',
+              isOnline ? 'border-secondary/35 bg-secondary/10 text-secondary' : 'border-destructive/35 bg-destructive/10 text-destructive',
             )}
             title={lanStatusTitle}
           >
@@ -160,8 +163,8 @@ export function Topbar({
 
         <DropdownMenuPrimitive.Root>
           <DropdownMenuPrimitive.Trigger asChild>
-            <Button type="button" variant="ghost" className="h-auto gap-2 px-2 py-1.5" aria-label="Abrir menu de usuario">
-              <div className="flex size-7 items-center justify-center rounded-full border border-border bg-muted text-xs font-bold text-secondary">
+            <Button type="button" variant="ghost" className="h-auto gap-2 px-2 py-1.5" aria-label="Abrir menú de usuario">
+              <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted text-xs font-bold text-secondary">
                 {user.name.charAt(0).toUpperCase()}
               </div>
               <span className="hidden max-w-[10rem] truncate text-xs lg:inline" title={user.name}>
@@ -187,7 +190,7 @@ export function Topbar({
                 onClick={onLogout}
               >
                 <LogOut data-icon="inline-start" aria-hidden="true" />
-                Cerrar sesion
+                Cerrar sesión
               </DropdownMenuPrimitive.Item>
             </DropdownMenuPrimitive.Content>
           </DropdownMenuPrimitive.Portal>

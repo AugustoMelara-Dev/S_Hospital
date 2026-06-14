@@ -14,10 +14,43 @@ const DEFAULT_MUTATION_TIMEOUT_MS = 30_000;
 
 type ApiRequestInit = RequestInit & {
   timeout?: number;
+  /**
+   * Force a specific Idempotency-Key. When omitted, the apiClient generates
+   * a fresh UUID per mutation (POST/PUT/PATCH/DELETE). Providing an explicit
+   * value lets the caller reuse the same key across retries of the same
+   * logical operation (e.g. a 419 retry that the caller already requested).
+   */
+  idempotencyKey?: string;
 };
 
 export function resetRequestChain() {
   requestChain = Promise.resolve();
+}
+
+/**
+ * Generate a stable per-attempt UUID. We prefer the global crypto.randomUUID
+ * but fall back to a typed-array implementation for browsers/test environments
+ * that don't expose it.
+ */
+function newIdempotencyKey(): string {
+  if (typeof globalThis.crypto !== 'undefined' && typeof globalThis.crypto.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+
+  const bytes = new Uint8Array(16);
+  if (typeof globalThis.crypto !== 'undefined' && typeof globalThis.crypto.getRandomValues === 'function') {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    for (let index = 0; index < bytes.length; index += 1) {
+      bytes[index] = Math.floor(Math.random() * 256);
+    }
+  }
+
+  // RFC 4122 v4 layout
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0'));
+  return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10, 16).join('')}`;
 }
 
 export function resetCsrfCache() {
@@ -62,7 +95,7 @@ function conflictSafeMessage(message: string): string {
   }
 
   if (/factura|invoice|pago|payment|duplic|already|ya registrada|ya registrado/.test(normalized)) {
-    return 'La factura o el pago ya cambio de estado. Revise Historial antes de repetir la operacion.';
+    return 'La factura o el pago ya cambió de estado. Revise Historial antes de repetir la operación.';
   }
 
   if (/respaldo|backup|restore|restaur/.test(normalized)) {
@@ -98,7 +131,7 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
   }
 
   if (error instanceof ApiError && error.status >= 500) {
-    return 'El servidor LAN no pudo completar la operacion. Revise el servidor local e intente de nuevo.';
+    return 'El servidor LAN no pudo completar la operación. Revise el servidor local e intente de nuevo.';
   }
 
   if (
@@ -334,6 +367,13 @@ export const apiClient = {
       return this.sendRequest<T>(path, options);
     }
 
+    // Attach a stable per-attempt Idempotency-Key to every mutation so the
+    // backend middleware can de-duplicate retries. If the caller already
+    // provided a key (e.g. a manually retried submit), reuse it.
+    if (!options.idempotencyKey) {
+      options = { ...options, idempotencyKey: newIdempotencyKey() };
+    }
+
     return enqueueRequest(() => this.sendRequest<T>(path, options));
   },
 
@@ -357,6 +397,11 @@ export const apiClient = {
           ? DEFAULT_GET_TIMEOUT_MS
           : DEFAULT_MUTATION_TIMEOUT_MS;
 
+    // The Idempotency-Key must be present for any mutation so the server
+    // middleware can de-duplicate. `request()` already assigns one for
+    // POST/PUT/PATCH/DELETE; this is a defense-in-depth check.
+    const idempotencyKey = method === 'GET' || method === 'HEAD' ? null : options.idempotencyKey ?? newIdempotencyKey();
+
     const send = async (): Promise<Response> => {
       const xsrfToken = method === 'GET' || method === 'HEAD' ? null : cookieValue('XSRF-TOKEN');
       const controller = new AbortController();
@@ -375,6 +420,7 @@ export const apiClient = {
         const headers: Record<string, string> = {
           Accept: 'application/json',
           ...(xsrfToken ? { 'X-XSRF-TOKEN': xsrfToken } : {}),
+          ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
         };
 
         if (!(options.body instanceof FormData)) {
@@ -394,7 +440,7 @@ export const apiClient = {
         if (err instanceof DOMException && err.name === 'AbortError') {
           recordApiIssue(
             new ApiError(
-              `La operacion '${method} ${path}' excedio ${timeoutMs / 1000}s sin respuesta del servidor local. Revise la red.`,
+              `La operación '${method} ${path}' excedió ${timeoutMs / 1000}s sin respuesta del servidor local. Revise la red.`,
               0,
             ),
             `${method} ${path}_timeout`,
@@ -409,7 +455,12 @@ export const apiClient = {
 
     let response = await send();
 
-    if (response.status === 419 && method !== 'GET' && method !== 'HEAD') {
+    // 419 (CSRF mismatch) auto-retry is ONLY safe when the same
+    // Idempotency-Key is reused. We retry the request at most once
+    // and re-send the SAME key so the backend middleware de-duplicates
+    // and replays the original 2xx response instead of double-charging
+    // the cashier.
+    if (response.status === 419 && method !== 'GET' && method !== 'HEAD' && idempotencyKey) {
       resetCsrfCache();
       await this.csrf();
       response = await send();

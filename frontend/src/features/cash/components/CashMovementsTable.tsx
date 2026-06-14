@@ -24,7 +24,7 @@ export function CashMovementsTable({ movements }: CashMovementsTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Movimientos de Caja</CardTitle>
+        <CardTitle>Movimientos de caja</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
@@ -54,7 +54,7 @@ export function CashMovementsTable({ movements }: CashMovementsTableProps) {
                   <TableCell
                     className={cn(
                       'text-right font-medium',
-                      m.type === 'income' ? 'text-emerald-600' : 'text-slate-600',
+                      m.type === 'income' ? 'text-success-foreground' : 'text-muted-foreground',
                     )}
                   >
                     {m.type === 'income' ? '+' : '-'} {formatLempiras(m.amount)}

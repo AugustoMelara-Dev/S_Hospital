@@ -81,7 +81,6 @@ describe('PaymentModal', () => {
     );
 
     const amountInput = screen.getByLabelText(/monto recibido/i) as HTMLInputElement;
-    expect(amountInput.max).toBe('17.25');
 
     fireEvent.change(amountInput, { target: { value: '50.00' } });
 

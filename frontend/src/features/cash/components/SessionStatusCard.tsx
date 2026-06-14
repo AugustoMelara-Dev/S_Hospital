@@ -1,6 +1,6 @@
 import { Wallet } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { cn } from '@/lib/utils';
 import type { CashSession } from '@/lib/api';
 
@@ -12,31 +12,27 @@ export function SessionStatusCard({ session }: SessionStatusCardProps) {
   const isOpen = session?.status === 'open';
 
   return (
-    <Card className={cn(isOpen ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200')}>
+    <Card className={cn(isOpen ? 'border-success/30 bg-success/10' : 'border-border')}>
       <CardContent className="pt-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className={cn('p-3 rounded-full', isOpen ? 'bg-emerald-100' : 'bg-slate-100')}>
-              <Wallet className={cn('h-6 w-6', isOpen ? 'text-emerald-600' : 'text-slate-500')} />
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className={cn('rounded-full p-3', isOpen ? 'bg-success/15 text-success-foreground' : 'bg-muted text-muted-foreground')}>
+              <Wallet className="h-6 w-6" aria-hidden="true" />
             </div>
-            <div>
-              <h3 className={cn('text-lg font-semibold', isOpen ? 'text-emerald-800' : 'text-foreground')}>
-                {isOpen ? 'Caja Abierta' : 'Caja Cerrada'}
+            <div className="min-w-0">
+              <h3 className="text-lg font-semibold text-foreground">
+                {isOpen ? 'Caja abierta' : 'Caja cerrada'}
               </h3>
-              <p className={cn('text-sm', isOpen ? 'text-emerald-600' : 'text-muted-foreground')}>
+              <p className="truncate text-sm text-muted-foreground">
                 {isOpen
                   ? `Sesión #${session.id} - Abierta ${formatLocalDateTime(session.opened_at)}`
                   : 'No hay una caja abierta actualmente'}
               </p>
             </div>
           </div>
-          {isOpen ? (
-            <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-200">
-              Activa
-            </Badge>
-          ) : (
-            <Badge variant="secondary">Cerrada</Badge>
-          )}
+          <StatusBadge status={isOpen ? 'open' : 'closed'}>
+            {isOpen ? 'Activa' : 'Cerrada'}
+          </StatusBadge>
         </div>
       </CardContent>
     </Card>

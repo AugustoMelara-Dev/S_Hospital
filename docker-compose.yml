@@ -5,7 +5,7 @@ services:
     environment:
       APP_NAME: Sistema de Caja Hospitalaria
       APP_ENV: local
-      APP_DEBUG: "true"
+      APP_DEBUG: "false"
       APP_URL: http://localhost:${APP_PORT:-8000}
       DB_CONNECTION: mysql
       DB_HOST: mysql
@@ -19,6 +19,7 @@ services:
     volumes:
       - ./backend:/var/www/html
       - backend_vendor:/var/www/html/vendor
+      - ./docs:/var/www/docs:ro
       - ./frontend/dist:/var/www/frontend/dist
     ports:
       - "${APP_PORT:-8000}:8000"

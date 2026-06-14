@@ -30,7 +30,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
   const backupCount = backupsQuery.isError ? 'Sin dato' : (backupsQuery.data?.meta.total ?? '...');
   const systemStatus = canViewAdminDiagnostics ? (systemStatusQuery.data ?? null) : null;
   const systemStatusError = systemStatusQuery.isError
-    ? userSafeErrorMessage(systemStatusQuery.error, 'No se pudo cargar el diagnostico administrativo.')
+    ? userSafeErrorMessage(systemStatusQuery.error, 'No se pudo cargar el diagnóstico administrativo.')
     : '';
 
   const triggerDiagnosticTest = () => {
@@ -68,7 +68,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
             </p>
 
             <div className="rounded-lg border border-border bg-muted/30 p-4">
-              <h3 className="mb-2 text-sm font-semibold text-foreground">Operacion local</h3>
+              <h3 className="mb-2 text-sm font-semibold text-foreground">Operación local</h3>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="font-semibold text-foreground">Sistema disponible en la red del hospital</p>
@@ -121,7 +121,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
             </div>
 
             <div className="pt-2 text-center text-[11px] text-muted-foreground">
-              Ultima revision: {lastCheck ? lastCheck.toLocaleTimeString() : 'pendiente'}
+              Última revisión: {lastCheck ? lastCheck.toLocaleTimeString() : 'pendiente'}
             </div>
           </CardContent>
         </Card>
@@ -171,7 +171,7 @@ export function AboutView({ user, onStatus }: AboutViewProps) {
               </>
             ) : (
               <div className="rounded-md border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-                Cargando diagnostico administrativo...
+                Cargando diagnóstico administrativo...
               </div>
             )}
           </CardContent>

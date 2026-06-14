@@ -14,7 +14,7 @@ interface AlertDialogContentProps {
 export function AlertDialogContent({ children, className }: AlertDialogContentProps) {
   return (
     <AlertDialogPrimitive.Portal>
-      <AlertDialogPrimitive.Overlay className="fixed inset-0 z-50 bg-slate-950/45" />
+      <AlertDialogPrimitive.Overlay className="fixed inset-0 z-50 bg-foreground/45" />
       <AlertDialogPrimitive.Content
         className={cn(
           'fixed left-1/2 top-1/2 z-50 w-[calc(100vw-1.5rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card p-5 text-card-foreground shadow-lg',
@@ -188,7 +188,7 @@ export function CloseSessionDialog({
                 <strong>{formatLempiras(pendingAmount)}</strong>
               </div>
               {pendingInvoiceCount > 0 && (
-                <div className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/20 dark:text-amber-100">
+                <div className="rounded-md border border-warning/35 bg-warning/10 p-2 text-xs text-warning-foreground">
                   Hay {pendingInvoiceCount} factura(s) pendientes o parciales. El servidor no permitira cerrar hasta revisarlas.
                 </div>
               )}
@@ -198,7 +198,7 @@ export function CloseSessionDialog({
               </div>
               <div className="flex justify-between">
                 <span>Diferencia:</span>
-                <strong className={cn(isDifference ? 'text-destructive' : 'text-emerald-600')}>
+                <strong className={cn(isDifference ? 'text-destructive' : 'text-success-foreground')}>
                   {formatLempiras(difference)}
                 </strong>
               </div>
@@ -227,7 +227,7 @@ export function CloseSessionDialog({
         <AlertDialogFooter className="mt-6">
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm} disabled={isSubmitting || (isDifference && !closingNotes.trim())}>
-            {isSubmitting ? 'Cerrando...' : 'Cerrar Caja'}
+            {isSubmitting ? 'Cerrando...' : 'Cerrar caja'}
           </AlertDialogAction>
         </AlertDialogFooter>
 

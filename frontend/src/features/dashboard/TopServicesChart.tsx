@@ -15,8 +15,9 @@ type TopServicesChartProps = {
 export function TopServicesChart({ services }: TopServicesChartProps) {
   if (services.length === 0) {
     return (
-      <div className="flex h-[300px] items-center justify-center rounded-md border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
-        Sin servicios facturados este mes
+      <div className="flex h-[300px] flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/20 px-6 text-center text-sm text-muted-foreground">
+        <span className="font-semibold text-foreground">Sin servicios facturados este mes</span>
+        <span>Cuando existan facturas pagadas, aqui se mostraran los servicios con mayor movimiento.</span>
       </div>
     );
   }
@@ -55,7 +56,7 @@ export function TopServicesChart({ services }: TopServicesChartProps) {
             {/* Custom Premium progress bar */}
             <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full rounded-full bg-primary/80 transition-all duration-500 group-hover:bg-primary"
+                className="h-full rounded-full bg-primary/80 transition-[width,background-color] duration-500 group-hover:bg-primary"
                 style={{ width: `${pct}%` }}
               />
             </div>

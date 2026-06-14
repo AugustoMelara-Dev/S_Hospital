@@ -214,7 +214,7 @@ describe('App', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /caja hospitalaria rápida y clara/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /operación hospitalaria local/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/usuario o correo/i)).toHaveValue('');
   });
 
@@ -332,16 +332,16 @@ describe('App', () => {
       'href',
       '/settings/fiscal',
     );
-    expect(await screen.findByRole('heading', { name: /^configuracion$/i })).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: /configuracion pendiente/i })).toBeInTheDocument();
-    expect(screen.getByText(/datos temporales o de validacion/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^configuraci[oó]n$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /configuraci[oó]n pendiente/i })).toBeInTheDocument();
+    expect(screen.getByText(/datos temporales o de validaci[oó]n/i)).toBeInTheDocument();
     activateTab(/^hospital$/i);
     expect(await screen.findByRole('heading', { name: /hospital y recibo/i })).toBeInTheDocument();
     expect(screen.queryByDisplayValue(placeholderHospitalName)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar hospital y recibo/i })).toBeEnabled();
-    activateTab(/numeracion/i);
+    activateTab(/numeraci[oó]n/i);
     expect(screen.queryByDisplayValue(placeholderCai)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /guardar numeracion/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /guardar numeraci[oó]n/i })).toBeEnabled();
   });
 
   it('renders catalog as read only for a cashier', async () => {
@@ -471,8 +471,8 @@ describe('App', () => {
     expect(await screen.findByText(/respaldos del hospital/i)).toBeInTheDocument();
     expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /requiere revisi/i })).toBeInTheDocument();
-    expect(await screen.findByText(/completar modo de operaci[oÃ³]n final/i)).toBeInTheDocument();
-    expect(await screen.findByText(/validar recibo fisico media carta\/carta\/A5\/80mm\/58mm/i)).toBeInTheDocument();
+    expect(await screen.findByText(/completar modo de operaci[oó]n final/i)).toBeInTheDocument();
+    expect(await screen.findByText(/validar recibo f[ií]sico media carta\/carta\/A5\/80mm\/58mm/i)).toBeInTheDocument();
     expect(screen.queryByText(/APP_ENV=production/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /^pendiente$/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver detalle avanzado/i }));

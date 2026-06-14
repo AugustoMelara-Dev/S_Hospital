@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Checkbox } from '../../../components/ui/checkbox';
 import type { Payment } from '../../../lib/api';
 import { formatLempirasFromCents, parseCents as parseCentsNullable } from '../../../lib/moneyCents';
-import { parseCents, toFloat } from '../../../lib/money';
+import { parseCents } from '../../../lib/money';
 
 type PaymentModalProps = {
   open: boolean;
@@ -80,6 +80,10 @@ export function PaymentModal({
       return;
     }
 
+    if (!/^\d*(\.\d{0,2})?$/.test(value)) {
+      return;
+    }
+
     const cents = parseCents(value);
     const cap = balanceCents;
     if (cap !== null && cents > cap) {
@@ -97,7 +101,7 @@ export function PaymentModal({
     e.preventDefault();
     const amountCents = parseMoneyCents(paymentAmount);
     if (amountCents === null || amountCents <= 0) {
-      setError('Ingrese un monto valido');
+      setError('Ingrese un monto válido');
       amountInputRef.current?.focus();
       return;
     }
@@ -137,13 +141,13 @@ export function PaymentModal({
             <span className="font-bold">{moneyLabel(balanceDue)}</span>
           </div>
           {changeCents !== null && (
-            <div className="flex justify-between text-emerald-600">
+            <div className="flex justify-between text-success-foreground">
               <span className="text-muted-foreground">Cambio:</span>
               <span className="font-bold">{moneyLabelFromCents(changeCents)}</span>
             </div>
           )}
           {remainingBalanceCents !== null && (
-            <div className="flex justify-between text-amber-700">
+            <div className="flex justify-between text-warning-foreground">
               <span className="text-muted-foreground">Saldo pendiente:</span>
               <span className="font-bold">{moneyLabelFromCents(remainingBalanceCents)}</span>
             </div>
@@ -154,7 +158,7 @@ export function PaymentModal({
             </div>
           ) : null}
           {remainingBalanceCents !== null && partialPaymentsEnabled ? (
-            <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="alert">
+            <div className="rounded-md border border-warning/35 bg-warning/10 px-3 py-2 text-sm text-warning-foreground" role="alert">
               Este pago quedara como abono parcial y mantendra saldo pendiente.
             </div>
           ) : null}
@@ -168,16 +172,16 @@ export function PaymentModal({
 
         <div className="space-y-3">
           {needsAmount && !error ? (
-            <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950" role="alert">
+            <div className="rounded-md border border-warning/35 bg-warning/10 px-3 py-2 text-sm text-warning-foreground" role="alert">
               Ingrese el monto recibido para registrar el cobro.
             </div>
           ) : null}
 
           <div>
-            <Label htmlFor="payment-method" className="mb-1.5 block">Metodo de pago</Label>
+            <Label htmlFor="payment-method" className="mb-1.5 block">Método de pago</Label>
             <Select value={paymentMethod} onValueChange={(v) => onPaymentMethodChange(v as Payment['method'])}>
               <SelectTrigger id="payment-method">
-                <SelectValue placeholder="Seleccione metodo" />
+                <SelectValue placeholder="Seleccione método" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="cash">Efectivo</SelectItem>
@@ -193,10 +197,8 @@ export function PaymentModal({
             <Input
               ref={amountInputRef}
               id="payment-amount"
-              type="number"
-              step="0.01"
-              min="0"
-              max={balanceCents !== null ? toFloatForInput(balanceCents) : undefined}
+              type="text"
+              inputMode="decimal"
               value={paymentAmount}
               onChange={(e) => handleAmountChange(e.target.value)}
               placeholder="0.00"
@@ -204,7 +206,7 @@ export function PaymentModal({
               aria-describedby={error ? 'payment-amount-error' : capNotice ? 'payment-amount-cap' : undefined}
             />
             {capNotice && !error ? (
-              <p id="payment-amount-cap" className="mt-1 text-sm text-amber-700" role="status">
+              <p id="payment-amount-cap" className="mt-1 text-sm text-warning-foreground" role="status">
                 {capNotice}
               </p>
             ) : null}
@@ -262,7 +264,12 @@ function parseMoneyCents(value: string): number | null {
 }
 
 function formatMoneyCents(cents: number): string {
-  return `${Math.trunc(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
+  const isNegative = cents < 0;
+  const abs = Math.abs(cents);
+  const str = String(abs).padStart(3, '0');
+  const integer = str.slice(0, -2);
+  const decimal = str.slice(-2);
+  return `${isNegative ? '-' : ''}${integer}.${decimal}`;
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
@@ -277,6 +284,3 @@ function moneyLabelFromCents(cents: number): string {
   return formatLempirasFromCents(cents);
 }
 
-function toFloatForInput(cents: number): number {
-  return toFloat(cents);
-}

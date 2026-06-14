@@ -152,7 +152,7 @@ export function CashBoxView({
       return;
     }
     if (!hasValidClosingAmount) {
-      setClosingAmountError('Ingrese un monto contado valido, por ejemplo 100.00.');
+      setClosingAmountError('Ingrese un monto contado válido, por ejemplo 100.00.');
       setFormAlert(null);
       closingAmountRef.current?.focus();
       return;
@@ -179,11 +179,11 @@ export function CashBoxView({
   return (
     <section id="caja" className={compact ? 'flex flex-col gap-4' : 'cash-layout'} aria-labelledby="cash-title">
       <div className="flex flex-col gap-6">
-        <Card>
+        <Card className="border-secondary/15">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardDescription>Operación de caja</CardDescription>
-              <CardTitle id="cash-title">Caja</CardTitle>
+              <CardTitle id="cash-title" className="text-2xl font-semibold">Caja</CardTitle>
             </div>
             <Button type="button" variant="secondary" size="sm" onClick={() => void refetch()} disabled={isLoading}>
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -204,7 +204,7 @@ export function CashBoxView({
               <Alert variant="success" title="Caja lista para facturar">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <span className="flex-1">
-                    La caja esta abierta. Puede pasar directamente al POS para crear y cobrar facturas.
+                    La caja está abierta. Puede pasar directamente al POS para crear y cobrar facturas.
                   </span>
                   <Button asChild size="sm">
                     <Link to="/billing/new">Nueva factura</Link>
@@ -235,9 +235,9 @@ export function CashBoxView({
             {activeSession.payments_by_method && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Resumen por Método de Pago</CardTitle>
+                  <CardTitle>Resumen por método de pago</CardTitle>
                   <CardDescription>
-                    Efectivo entra al efectivo esperado. Transferencias, tarjetas y otros metodos quedan separados para conciliacion.
+                    Efectivo entra al efectivo esperado. Transferencias, tarjetas y otros métodos quedan separados para conciliación.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -273,7 +273,7 @@ export function CashBoxView({
 
             <Card>
               <CardHeader>
-                <CardTitle>Cerrar Caja</CardTitle>
+                <CardTitle>Cerrar caja</CardTitle>
                 <CardDescription>Cierre auditado de la sesión actual</CardDescription>
               </CardHeader>
               <CardContent>
@@ -285,6 +285,7 @@ export function CashBoxView({
                     <Input
                       ref={closingAmountRef}
                       id="closing_amount"
+                      name="closing_amount"
                       type="text"
                       inputMode="decimal"
                       value={closingAmount}
@@ -293,7 +294,8 @@ export function CashBoxView({
                         if (closingAmountError) setClosingAmountError(null);
                       }}
                       placeholder="0.00"
-                      className="text-lg"
+                      autoComplete="off"
+                      className="font-mono text-lg tabular-nums"
                       aria-invalid={closingAmountError ? 'true' : 'false'}
                       aria-describedby={closingAmountError ? 'closing-amount-error' : 'closing-amount-help'}
                     />
@@ -303,7 +305,7 @@ export function CashBoxView({
                       </p>
                     ) : (
                       <p id="closing-amount-help" className="text-xs text-muted-foreground">
-                        Cuente el efectivo fisico en gaveta. No incluya tarjeta ni transferencia.
+                        Cuente el efectivo físico en gaveta. No incluya tarjeta ni transferencia.
                       </p>
                     )}
                   </div>
@@ -329,10 +331,11 @@ export function CashBoxView({
 
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-semibold" htmlFor="closing_notes">
-                      Nota de Cierre
+                      Nota de cierre
                     </label>
                     <Textarea
                       id="closing_notes"
+                      name="closing_notes"
                       value={closingNotes}
                       onChange={(e) => setClosingNotes(e.target.value)}
                       placeholder={hasCashDifference ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional...'}
@@ -345,7 +348,7 @@ export function CashBoxView({
                     variant="default"
                     disabled={closeSessionMutation.isPending || !canCloseCash || hasPendingBalance}
                   >
-                    {closeSessionMutation.isPending ? 'Cerrando...' : 'Cerrar Caja'}
+                    {closeSessionMutation.isPending ? 'Cerrando...' : 'Cerrar caja'}
                   </Button>
                   {!canCloseCash && (
                     <p className="text-sm text-muted-foreground">

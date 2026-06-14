@@ -1,9 +1,12 @@
 import {
+  CircleDollarSign,
   ShieldCheck,
   User,
+  X,
 } from 'lucide-react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { NavLink } from 'react-router-dom';
+import { Button } from '../components/ui/button';
 import { useFiscalSettings } from '../hooks/useFiscalSettings';
 import { type AuthUser, type CashSession } from '../lib/api';
 import { displayHospitalName } from '../lib/hospital-name';
@@ -31,25 +34,39 @@ export function SidebarContent({
   const cashLabel = cashSession?.status === 'open' ? `Caja #${cashSession.id} abierta` : 'Sin caja abierta';
 
   return (
-    <div className="flex h-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center gap-3 border-b border-sidebar-border p-5">
+    <div className="flex h-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-lg">
+      <div className="border-b border-sidebar-border p-5">
+        <div className="flex items-center gap-3">
         {logoUrl ? (
-          <img src={logoUrl} alt="Logo institucional" className="size-10 shrink-0 rounded-md bg-card object-contain p-1" />
+          <img
+            src={logoUrl}
+            alt="Logo institucional"
+            width={44}
+            height={44}
+            className="size-11 shrink-0 rounded-md bg-card object-contain p-1"
+          />
         ) : (
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
             <ShieldCheck data-icon="inline-start" aria-hidden="true" />
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold" title={hospitalName}>
+          <p className="truncate text-[11px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/60">
+            Caja LAN
+          </p>
+          <p className="truncate text-sm font-semibold leading-tight" title={hospitalName}>
             {hospitalName}
           </p>
-          <p className="truncate text-xs text-muted-foreground">{cashLabel}</p>
+        </div>
+        </div>
+        <div className="mt-4 flex items-center gap-2 rounded-md border border-sidebar-border bg-sidebar-accent px-3 py-2 text-xs font-semibold">
+          <CircleDollarSign className="size-4 shrink-0 text-secondary" aria-hidden="true" />
+          <span className="min-w-0 truncate">{cashLabel}</span>
         </div>
       </div>
 
-      <nav aria-label="Navegacion principal" className="flex-1 overflow-y-auto p-3">
-        <ul className="flex flex-col gap-1">
+      <nav aria-label="Navegación principal" className="flex-1 overflow-y-auto px-3 py-4">
+        <ul className="flex flex-col gap-1.5">
           {visibleNavigation.map((item) => {
             const Icon = item.icon;
             const isActive = activeItem?.path === item.path;
@@ -58,15 +75,15 @@ export function SidebarContent({
               <li key={item.path}>
                 <NavLink
                   className={cn(
-                    'flex min-h-10 items-center gap-3 rounded-md border border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors',
+                    'flex min-h-11 items-center gap-3 rounded-md border border-transparent px-3 py-2 text-sm font-semibold text-sidebar-foreground/68 outline-none transition-[background-color,border-color,color,transform] duration-150 ease-out active:translate-y-px focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar',
                     isActive
-                      ? 'border-border bg-muted text-foreground shadow-sm'
-                      : 'hover:border-border hover:bg-muted/70 hover:text-foreground',
+                      ? 'border-sidebar-border bg-sidebar-accent text-sidebar-foreground shadow-sm'
+                      : 'hover:border-sidebar-border hover:bg-sidebar-accent/70 hover:text-sidebar-foreground',
                   )}
                   to={item.path}
                 >
-                  <Icon data-icon="inline-start" aria-hidden="true" />
-                  <span>{item.label}</span>
+                  <Icon data-icon="inline-start" className="size-4 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0 truncate">{item.label}</span>
                 </NavLink>
               </li>
             );
@@ -75,17 +92,17 @@ export function SidebarContent({
       </nav>
 
       <div className="border-t border-sidebar-border p-4">
-        <div className="flex items-center gap-3 rounded-md border border-border bg-muted/50 p-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground">
+        <div className="flex items-center gap-3 rounded-md border border-sidebar-border bg-sidebar-accent p-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-sidebar text-sidebar-foreground/70">
             <User data-icon="inline-start" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{user.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{roleLabel}</p>
+            <p className="truncate text-xs text-sidebar-foreground/58">{roleLabel}</p>
           </div>
         </div>
-        <div className="mt-4 border-t border-border pt-3 text-[10px] text-muted-foreground">
-          <span>Operacion en red local</span>
+        <div className="mt-4 border-t border-sidebar-border pt-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/45">
+          <span>Operación local</span>
         </div>
       </div>
     </div>
@@ -111,7 +128,18 @@ export function MobileSidebar({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-foreground/45 data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content className="fixed left-0 top-0 z-50 h-full w-72 bg-sidebar shadow-lg transition-transform duration-200 ease-out data-[state=closed]:-translate-x-full data-[state=open]:translate-x-0">
-          <DialogPrimitive.Title className="sr-only">Navegacion principal</DialogPrimitive.Title>
+          <DialogPrimitive.Title className="sr-only">Navegación principal</DialogPrimitive.Title>
+          <DialogPrimitive.Close asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-3 top-3 z-10 border border-sidebar-border bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-accent/80"
+              aria-label="Cerrar navegación"
+            >
+              <X aria-hidden="true" />
+            </Button>
+          </DialogPrimitive.Close>
           <SidebarContent
             user={user}
             cashSession={cashSession}

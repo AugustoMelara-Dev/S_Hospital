@@ -319,14 +319,14 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 <span
                   className={`hidden md:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
                     systemStatus.backups.worker_recently_active
-                      ? 'bg-emerald-100 text-emerald-900'
-                      : 'bg-amber-100 text-amber-900'
+                      ? 'bg-success/10 text-success'
+                      : 'bg-warning/10 text-warning'
                   }`}
                   aria-label={systemStatus.backups.worker_recently_active ? 'Worker de respaldos activo' : 'Worker de respaldos inactivo'}
                 >
                   <span
                     className={`inline-block size-1.5 rounded-full ${
-                      systemStatus.backups.worker_recently_active ? 'bg-emerald-600' : 'bg-amber-600'
+                      systemStatus.backups.worker_recently_active ? 'bg-success' : 'bg-warning'
                     }`}
                   />
                   Worker {systemStatus.backups.worker_recently_active ? 'activo' : 'inactivo'}
@@ -382,11 +382,11 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
         {systemStatus && showAdvancedStatus ? (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-            <Card className={systemStatus.database.connected && systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && systemStatus.network.lan_ready ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}>
+            <Card className={systemStatus.database.connected && systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && systemStatus.network.lan_ready ? 'status-success' : 'status-warning'}>
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-white/80 p-2.5">
-                    <Server className="h-5 w-5 text-slate-700" />
+                  <div className="rounded-lg bg-background/80 p-2.5">
+                    <Server className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 space-y-1">
                     <p className="text-sm font-semibold">Servidor, datos y red local</p>
@@ -407,11 +407,11 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               </CardContent>
             </Card>
 
-            <Card className={systemStatus.backups.dump_binary.available && systemStatus.backups.storage.writable ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}>
+            <Card className={systemStatus.backups.dump_binary.available && systemStatus.backups.storage.writable ? 'status-success' : 'status-warning'}>
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-white/80 p-2.5">
-                    <HardDrive className="h-5 w-5 text-slate-700" />
+                  <div className="rounded-lg bg-background/80 p-2.5">
+                    <HardDrive className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 space-y-1">
                     <p className="text-sm font-semibold">Preparación de respaldos</p>
@@ -426,18 +426,18 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                         Último protegido: {formatRelativeTime(systemStatus.backups.last_success_at)}
                       </p>
                     ) : (
-                      <p className="text-xs text-amber-700">Sin respaldo protegido registrado.</p>
+                      <p className="text-xs text-warning">Sin respaldo protegido registrado.</p>
                     )}
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className={systemStatus.backups.pending_count > 0 ? 'border-amber-200 bg-amber-50' : 'bg-muted/30'}>
+            <Card className={systemStatus.backups.pending_count > 0 ? 'status-warning' : 'bg-muted/30'}>
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-white/80 p-2.5">
-                    <Server className="h-5 w-5 text-slate-700" />
+                  <div className="rounded-lg bg-background/80 p-2.5">
+                    <Server className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 space-y-1">
                     <p className="text-sm font-semibold">Proceso de respaldo</p>
@@ -452,11 +452,11 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               </CardContent>
             </Card>
 
-            <Card className="border-sky-200 bg-sky-50">
+            <Card className="status-info">
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3">
-                  <div className="rounded-lg bg-white/80 p-2.5">
-                    <ShieldAlert className="h-5 w-5 text-slate-700" />
+                  <div className="rounded-lg bg-background/80 p-2.5">
+                    <ShieldAlert className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="min-w-0 space-y-1">
                     <p className="text-sm font-semibold">Estado general</p>
@@ -472,7 +472,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                     <p className="text-xs text-muted-foreground">
                       Zona horaria: {systemStatus.environment.timezone}
                     </p>
-                    <p className="text-xs text-sky-800">
+                    <p className="text-xs text-info">
                       {systemStatus.readiness.production_ready ? 'Sin pendientes críticos' : 'Faltan pruebas finales'}
                     </p>
                   </div>
@@ -499,7 +499,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                       Estos puntos ayudan a confirmar que los respaldos y la instalación están listos.
                     </p>
                   </div>
-                  <span className="rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-semibold text-sky-800">
+                  <span className="rounded-md border border-info/30 bg-info/10 px-2 py-1 text-xs font-semibold text-info">
                     {systemStatus.readiness.production_ready ? 'Listo' : 'Pendiente'}
                   </span>
                 </div>
@@ -520,10 +520,10 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                       <p className="text-sm font-medium">Estado de datos</p>
                       <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
                         systemStatus.runtime.pending_migration_count === null
-                          ? 'border-amber-200 bg-amber-50 text-amber-800'
+                          ? 'border-warning/30 bg-warning/10 text-warning'
                           : systemStatus.runtime.pending_migration_count > 0
-                            ? 'border-red-200 bg-red-50 text-red-800'
-                            : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                            ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                            : 'border-success/30 bg-success/10 text-success'
                       }`}>
                         {systemStatus.runtime.pending_migration_count === null
                           ? 'Sin dato'
@@ -543,7 +543,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                   <div className="rounded-md border border-border p-3">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">Tareas con problema</p>
-                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.backups.queue.failed_jobs_count ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
+                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.backups.queue.failed_jobs_count ? 'border-warning/30 bg-warning/10 text-warning' : 'border-success/30 bg-success/10 text-success'}`}>
                         {systemStatus.backups.queue.failed_jobs_count ?? 'Sin dato'}
                       </span>
                     </div>
@@ -554,7 +554,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                   <div className="rounded-md border border-border p-3">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">Registro operativo</p>
-                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.runtime.laravel_log.exists ? 'border-sky-200 bg-sky-50 text-sky-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
+                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.runtime.laravel_log.exists ? 'border-info/30 bg-info/10 text-info' : 'border-warning/30 bg-warning/10 text-warning'}`}>
                         {systemStatus.runtime.laravel_log.exists ? formatBytes(systemStatus.runtime.laravel_log.size_bytes) : 'no existe'}
                       </span>
                     </div>
@@ -565,7 +565,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                   <div className="rounded-md border border-border p-3">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">Actividad de respaldos</p>
-                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.runtime.backup_automation_log.exists ? 'border-sky-200 bg-sky-50 text-sky-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
+                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${systemStatus.runtime.backup_automation_log.exists ? 'border-info/30 bg-info/10 text-info' : 'border-warning/30 bg-warning/10 text-warning'}`}>
                         {systemStatus.runtime.backup_automation_log.exists ? formatBytes(systemStatus.runtime.backup_automation_log.size_bytes) : 'no existe'}
                       </span>
                     </div>
@@ -629,11 +629,11 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
 
         {!isEmpty && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className={pendingCount > 0 ? 'border-amber-200 bg-amber-50' : 'bg-muted/30'}>
+            <Card className={pendingCount > 0 ? 'status-warning' : 'bg-muted/30'}>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-lg ${pendingCount > 0 ? 'bg-amber-100' : 'bg-muted'}`}>
-                    <Clock className={`h-5 w-5 ${pendingCount > 0 ? 'text-amber-600' : 'text-muted-foreground'}`} />
+                  <div className={`p-2.5 rounded-lg ${pendingCount > 0 ? 'bg-warning/10' : 'bg-muted'}`}>
+                    <Clock className={`h-5 w-5 ${pendingCount > 0 ? 'text-warning' : 'text-muted-foreground'}`} />
                   </div>
                   <div>
                     <p className="text-sm font-medium">
@@ -647,11 +647,11 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               </CardContent>
             </Card>
 
-            <Card className="border-emerald-200 bg-emerald-50">
+            <Card className="status-success">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-emerald-100">
-                    <CheckCircle className="h-5 w-5 text-emerald-600" />
+                  <div className="p-2.5 rounded-lg bg-success/10">
+                    <CheckCircle className="h-5 w-5 text-success" />
                   </div>
                   <div>
                     <p className="text-sm font-medium">
@@ -667,11 +667,11 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
               </CardContent>
             </Card>
 
-            <Card className={failedCount > 0 ? 'border-red-200 bg-red-50' : 'bg-muted/30'}>
+            <Card className={failedCount > 0 ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'bg-muted/30'}>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2.5 rounded-lg ${failedCount > 0 ? 'bg-red-100' : 'bg-muted'}`}>
-                    <XCircle className={`h-5 w-5 ${failedCount > 0 ? 'text-red-600' : 'text-muted-foreground'}`} />
+                  <div className={`p-2.5 rounded-lg ${failedCount > 0 ? 'bg-destructive/10' : 'bg-muted'}`}>
+                    <XCircle className={`h-5 w-5 ${failedCount > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
                   </div>
                   <div>
                     <p className="text-sm font-medium">

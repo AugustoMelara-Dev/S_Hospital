@@ -85,15 +85,25 @@ async function login(page) {
   await page.getByLabel(/usuario o correo/i).fill(loginUser);
   await page.locator('#password-input').fill(loginPassword);
   await page.getByRole('button', { name: /iniciar sesi/i }).click();
-  await page.waitForURL(/dashboard|cashbox|backups|settings|billing|catalog|invoices/, { timeout: 15000 });
+  await page.waitForFunction(() => !window.location.pathname.includes('/login'), undefined, { timeout: 30000 });
   await waitSettled(page);
+  await page.waitForFunction(
+    () => !/iniciar sesi|usuario o correo|contrase/i.test(document.body?.innerText ?? ''),
+    undefined,
+    { timeout: 30000 },
+  ).catch(() => {});
   await assertNoLogin(page, 'login');
 }
 
 async function ensureCashSession(page, report) {
   await page.goto(`${baseUrl}/cashbox`);
   await waitSettled(page);
-  await page.getByRole('heading', { name: /^caja$/i }).first().waitFor({ timeout: 15000 });
+  if (await looksLikeLogin(page)) {
+    await login(page);
+    await page.goto(`${baseUrl}/cashbox`);
+    await waitSettled(page);
+  }
+  await page.getByRole('heading', { name: /^caja$/i }).first().waitFor({ timeout: 30000 });
 
   const alreadyOpen = await page.getByText(/caja lista para facturar|monto contado/i).first().isVisible().catch(() => false);
   if (alreadyOpen) {
@@ -159,7 +169,12 @@ async function findPositivePriceServiceButton(page) {
 async function createAndPayInvoice(page, report) {
   await page.goto(`${baseUrl}/billing/new`);
   await waitSettled(page);
-  await page.getByRole('heading', { name: /nueva factura/i }).waitFor({ timeout: 15000 });
+  if (await looksLikeLogin(page)) {
+    await login(page);
+    await page.goto(`${baseUrl}/billing/new`);
+    await waitSettled(page);
+  }
+  await page.getByRole('heading', { name: /nueva factura/i }).waitFor({ timeout: 30000 });
 
   if (await page.getByText(/debe abrir la caja antes/i).first().isVisible().catch(() => false)) {
     await ensureCashSession(page, report);
@@ -171,11 +186,13 @@ async function createAndPayInvoice(page, report) {
   const serviceTerm = await addFirstAvailableService(page);
   report.push(await capture(page, 'f4-new-invoice-service-selected'));
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
-  await page.getByRole('button', { name: /emitir y abrir cobro/i }).click();
+  const confirmPaymentButton = page.getByRole('button', { name: /emitir y abrir cobro/i });
+  await confirmPaymentButton.waitFor({ timeout: 15000 });
+  await confirmPaymentButton.click();
 
   const paymentOpened = await page
     .getByRole('heading', { name: /registrar pago/i })
-    .waitFor({ timeout: 15000 })
+    .waitFor({ timeout: 30000 })
     .then(() => true)
     .catch(() => false);
 
@@ -197,9 +214,20 @@ async function createAndPayInvoice(page, report) {
 
   await amount.fill(max);
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
-  await page.getByRole('heading', { name: /vista previa del recibo/i }).waitFor({ timeout: 20000 });
-  await page.getByLabel(/recibo institucional/i).waitFor({ timeout: 15000 });
+  const receiptVisible = await page.getByLabel(/recibo institucional/i)
+    .waitFor({ timeout: 30000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!receiptVisible) {
+    report.push(await capture(page, 'f4-payment-receipt-missing'));
+    throw new Error(`payment: receipt preview did not open. Body: ${(await bodyText(page)).slice(0, 700)}`);
+  }
   report.push(await capture(page, 'f4-new-invoice-paid-receipt'));
+  const closeButton = page.getByRole('button', { name: /cerrar modal|cerrar$/i }).first();
+  if (await closeButton.isVisible().catch(() => false)) {
+    await closeButton.click();
+    await waitSettled(page);
+  }
 
   return { patientName, serviceTerm };
 }

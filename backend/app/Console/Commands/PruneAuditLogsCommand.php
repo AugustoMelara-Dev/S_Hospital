@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Support\AuditAdmin;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -41,7 +42,7 @@ class PruneAuditLogsCommand extends Command
             return self::SUCCESS;
         }
 
-        $deleted = $query->delete();
+        $deleted = AuditAdmin::run(fn () => $query->delete());
         $this->info(sprintf('Podadas %d filas de audit_logs anteriores a %s.', $deleted, $cutoff->toIso8601String()));
 
         return self::SUCCESS;

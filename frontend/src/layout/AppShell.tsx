@@ -50,7 +50,7 @@ export function AppShell({
   const isMinimalTopbar = topbarVariant === 'minimal';
 
   return (
-    <div className="app-shell min-h-screen bg-background text-foreground transition-colors">
+    <div className="app-shell min-h-[100dvh] overflow-x-hidden bg-background text-foreground transition-colors">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:font-bold focus:text-primary-foreground focus:shadow-lg"
@@ -68,7 +68,7 @@ export function AppShell({
         logoUrl={logoUrl}
       />
 
-      <aside className="print-hidden hidden lg:fixed lg:inset-y-0 lg:z-20 lg:flex lg:w-64 lg:flex-col">
+      <aside className="print-hidden hidden lg:fixed lg:inset-y-0 lg:z-20 lg:flex lg:w-72 lg:flex-col">
         <SidebarContent
           user={user}
           cashSession={cashSession}
@@ -78,7 +78,7 @@ export function AppShell({
         />
       </aside>
 
-      <div className="flex min-h-screen min-w-0 flex-col lg:ml-64">
+      <div className="flex min-h-[100dvh] min-w-0 flex-col lg:ml-72">
         <Topbar
           cashSession={cashSession}
           user={user}
@@ -90,8 +90,8 @@ export function AppShell({
           onLogout={onLogout}
         />
 
-        <main id="main-content" className="flex-1 p-4 lg:p-6" tabIndex={-1}>
-          <div className="mx-auto flex max-w-7xl flex-col gap-5">{children}</div>
+        <main id="main-content" className="flex-1 px-4 py-5 lg:px-7 lg:py-7" tabIndex={-1}>
+          <div className="mx-auto flex max-w-[1440px] flex-col gap-5">{children}</div>
         </main>
 
         <footer className="print-hidden sr-only" aria-live="polite">

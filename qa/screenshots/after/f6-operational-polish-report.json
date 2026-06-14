@@ -1,0 +1,511 @@
+{
+  "baseUrl": "http://127.0.0.1:5173",
+  "loginUser": "admin.validacion",
+  "outputPhase": "after",
+  "generatedAt": "2026-06-12T19:28:39.242Z",
+  "selectedViewports": [
+    "tablet-light",
+    "mobile-light"
+  ],
+  "selectedRoutes": "all",
+  "captures": [
+    {
+      "viewport": "desktop-light",
+      "name": "login",
+      "route": "/login",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-light-login.png",
+      "snippet": "Caja hospitalaria Acceso en red local Caja hospitalaria rápida y clara. Facturacion, cobros, reportes y recibos institucionales para operar dentro del hospital. Funciona dentro de la red local. Sesión protegida para usuarios autorizados. Operación local ACCESO OPERATIVO Caja hospitalaria Inicie sesi",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja hospitalaria rápida y clara.",
+          "Caja hospitalaria"
+        ],
+        "mainTextLength": 451
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "dashboard",
+      "route": "/dashboard",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-light-dashboard.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Inicio Inicio Sin caja abierta 12 jun 2026, 1:19 p. m. Red local A Administrad",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 18
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "new-invoice",
+      "route": "/billing/new",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-light-new-invoice.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Nueva factura Inicio / Nueva factura Sin caja abierta 12 jun 2026, 1:19 p. m. ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Nueva factura"
+        ],
+        "mainTextLength": 417
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "cashbox",
+      "route": "/cashbox",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-light-cashbox.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Caja Inicio / Caja Sin caja abierta 12 jun 2026, 1:19 p. m. Red local A Admini",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja",
+          "Caja Cerrada",
+          "Abrir Caja"
+        ],
+        "mainTextLength": 327
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "catalog",
+      "route": "/catalog",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-light-catalog.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Catálogo Inicio / Catálogo Sin caja abierta 12 jun 2026, 1:20 p. m. Red local ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 20
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "invoice-history",
+      "route": "/invoices",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-light-invoice-history.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Historial Inicio / Historial Sin caja abierta 12 jun 2026, 1:20 p. m. Red loca",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 21
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "reports",
+      "route": "/reports",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-light-reports.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Reportes Inicio / Reportes Sin caja abierta 12 jun 2026, 1:20 p. m. Red local ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 20
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "backups",
+      "route": "/backups",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-light-backups.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Respaldos Inicio / Respaldos Sin caja abierta 12 jun 2026, 1:20 p. m. Red loca",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 21
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "settings-fiscal",
+      "route": "/settings/fiscal",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-light-settings-fiscal.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Configuración Inicio / Configuración Sin caja abierta 12 jun 2026, 1:20 p. m. ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 32
+      }
+    },
+    {
+      "viewport": "desktop-light",
+      "name": "users",
+      "route": "/admin/users",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-light-users.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Usuarios Inicio / Usuarios Sin caja abierta 12 jun 2026, 1:20 p. m. Red local ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 20
+      }
+    },
+    {
+      "viewport": "desktop-dark",
+      "name": "login",
+      "route": "/login",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-dark-login.png",
+      "snippet": "Hospital San Isidro Acceso en red local Caja hospitalaria rápida y clara. Facturacion, cobros, reportes y recibos institucionales para operar dentro del hospital. Funciona dentro de la red local. Sesión protegida para usuarios autorizados. Operación local ACCESO OPERATIVO Hospital San Isidro Inicie ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja hospitalaria rápida y clara.",
+          "Hospital San Isidro"
+        ],
+        "mainTextLength": 457
+      }
+    },
+    {
+      "viewport": "laptop-light",
+      "name": "login",
+      "route": "/login",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-laptop-light-login.png",
+      "snippet": "Hospital San Isidro Acceso en red local Caja hospitalaria rápida y clara. Facturacion, cobros, reportes y recibos institucionales para operar dentro del hospital. Funciona dentro de la red local. Sesión protegida para usuarios autorizados. Operación local ACCESO OPERATIVO Hospital San Isidro Inicie ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja hospitalaria rápida y clara.",
+          "Hospital San Isidro"
+        ],
+        "mainTextLength": 457
+      }
+    },
+    {
+      "viewport": "desktop-dark",
+      "name": "dashboard",
+      "route": "/dashboard",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-dark-dashboard.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Inicio Inicio Sin caja abierta 12 jun 2026, 1:24 p. m. Red local A Administrad",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 18
+      }
+    },
+    {
+      "viewport": "desktop-dark",
+      "name": "new-invoice",
+      "route": "/billing/new",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-dark-new-invoice.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Nueva factura Inicio / Nueva factura Sin caja abierta 12 jun 2026, 1:24 p. m. ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Nueva factura"
+        ],
+        "mainTextLength": 417
+      }
+    },
+    {
+      "viewport": "desktop-dark",
+      "name": "invoice-history",
+      "route": "/invoices",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-dark-invoice-history.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Historial Inicio / Historial Sin caja abierta 12 jun 2026, 1:24 p. m. Red loca",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 21
+      }
+    },
+    {
+      "viewport": "desktop-dark",
+      "name": "reports",
+      "route": "/reports",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-dark-reports.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Reportes Inicio / Reportes Sin caja abierta 12 jun 2026, 1:24 p. m. Red local ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 20
+      }
+    },
+    {
+      "viewport": "desktop-dark",
+      "name": "backups",
+      "route": "/backups",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-desktop-dark-backups.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Respaldos Inicio / Respaldos Sin caja abierta 12 jun 2026, 1:24 p. m. Red loca",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Respaldos",
+          "Respaldos del hospital"
+        ],
+        "mainTextLength": 388
+      }
+    },
+    {
+      "viewport": "laptop-light",
+      "name": "dashboard",
+      "route": "/dashboard",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-laptop-light-dashboard.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Inicio Inicio Sin caja abierta 12 jun 2026, 1:24 p. m. Red local A Administrad",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 18
+      }
+    },
+    {
+      "viewport": "laptop-light",
+      "name": "catalog",
+      "route": "/catalog",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-laptop-light-catalog.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Catálogo Inicio / Catálogo Sin caja abierta 12 jun 2026, 1:24 p. m. Red local ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 20
+      }
+    },
+    {
+      "viewport": "laptop-light",
+      "name": "invoice-history",
+      "route": "/invoices",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-laptop-light-invoice-history.png",
+      "snippet": "Omitir al contenido principal Caja hospitalaria Sin caja abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Historial Inicio / Historial Sin caja abierta 12 jun 2026, 1:24 p. m. Red loca",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Historial de facturas"
+        ],
+        "mainTextLength": 236
+      }
+    },
+    {
+      "viewport": "laptop-light",
+      "name": "reports",
+      "route": "/reports",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-laptop-light-reports.png",
+      "snippet": "Omitir al contenido principal Hospital San Isidro Caja #1 abierta Inicio Nueva factura Caja Catálogo Historial Reportes Respaldos Configuración Usuarios Ayuda Acerca de Administrador Validacion admin Operacion en red local Reportes Inicio / Reportes Caja #1 12 jun 2026, 1:25 p. m. Red local A Admini",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Reportes",
+          "Resumen del dia"
+        ],
+        "mainTextLength": 143
+      }
+    },
+    {
+      "viewport": "tablet-light",
+      "name": "login",
+      "route": "/login",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-tablet-light-login.png",
+      "snippet": "Hospital San Isidro Acceso en red local ACCESO OPERATIVO Hospital San Isidro Inicie sesión con sus credenciales para abrir el panel de caja. Usuario o correo Contraseña Iniciar sesión Listo para iniciar sesión local.",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja hospitalaria rápida y clara.",
+          "Hospital San Isidro"
+        ],
+        "mainTextLength": 457
+      }
+    },
+    {
+      "viewport": "mobile-light",
+      "name": "login",
+      "route": "/login",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-mobile-light-login.png",
+      "snippet": "Hospital San Isidro Acceso en red local ACCESO OPERATIVO Hospital San Isidro Inicie sesión con sus credenciales para abrir el panel de caja. Usuario o correo Contraseña Iniciar sesión Listo para iniciar sesión local.",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Caja hospitalaria rápida y clara.",
+          "Hospital San Isidro"
+        ],
+        "mainTextLength": 457
+      }
+    },
+    {
+      "viewport": "tablet-light",
+      "name": "dashboard",
+      "route": "/dashboard",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-tablet-light-dashboard.png",
+      "snippet": "Omitir al contenido principal Inicio Inicio Sin caja abierta Red local A Cargando módulo... Sesión activa.",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 18
+      }
+    },
+    {
+      "viewport": "tablet-light",
+      "name": "new-invoice",
+      "route": "/billing/new",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-tablet-light-new-invoice.png",
+      "snippet": "Omitir al contenido principal Nueva factura Inicio / Nueva factura Sin caja abierta Red local A CAJA HOSPITALARIA Nueva factura Factura y cobro en caja Caja cerrada Caja no abierta Debe abrir la caja antes de emitir facturas. Abrir Caja Nombre del Paciente * Categoria Todos Servicios (0) Limpiar Car",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Nueva factura"
+        ],
+        "mainTextLength": 417
+      }
+    },
+    {
+      "viewport": "tablet-light",
+      "name": "catalog",
+      "route": "/catalog",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-tablet-light-catalog.png",
+      "snippet": "Omitir al contenido principal Catálogo Inicio / Catálogo Sin caja abierta Red local A Cargando catalogo... Sesión activa.",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 20
+      }
+    },
+    {
+      "viewport": "tablet-light",
+      "name": "invoice-history",
+      "route": "/invoices",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-tablet-light-invoice-history.png",
+      "snippet": "Omitir al contenido principal Historial Inicio / Historial Sin caja abierta Red local A Historial de facturas Consulte facturas recientes, reimprima recibos y gestione anulaciones autorizadas. Desde Hasta Hoy Ayer 7D Este mes Estado Todos Todos Emitida Parcial Pagada Anulada Paciente Número de factu",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Historial de facturas"
+        ],
+        "mainTextLength": 236
+      }
+    },
+    {
+      "viewport": "tablet-light",
+      "name": "backups",
+      "route": "/backups",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-tablet-light-backups.png",
+      "snippet": "Omitir al contenido principal Respaldos Inicio / Respaldos Sin caja abierta Red local A Cargando respaldos... Sesión activa.",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 21
+      }
+    },
+    {
+      "viewport": "mobile-light",
+      "name": "dashboard",
+      "route": "/dashboard",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-mobile-light-dashboard.png",
+      "snippet": "Omitir al contenido principal Inicio Inicio A Inicio Lo necesario para operar caja, cobros y facturacion sin perderse. CAJA Abierta Caja #1 Lista para cobrar FACTURADO Listo Facturacion del mes COBRADO Listo Cobros del mes FACTURAS Mes Emitidas este mes Facturacion y cobros Ultimos 7 dias. Actualiza",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Inicio",
+          "Facturacion y cobros",
+          "Cajeros hoy",
+          "Siguiente accion",
+          "Cobros de hoy",
+          "Servicios principales"
+        ],
+        "mainTextLength": 503
+      }
+    },
+    {
+      "viewport": "mobile-light",
+      "name": "new-invoice",
+      "route": "/billing/new",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-mobile-light-new-invoice.png",
+      "snippet": "Omitir al contenido principal Nueva factura Inicio / Nueva factura A CAJA HOSPITALARIA Nueva factura Factura y cobro en caja Caja cerrada Caja no abierta Debe abrir la caja antes de emitir facturas. Abrir Caja Nombre del Paciente * Categoria Todos Servicios (0) Limpiar Cargando servicios... Carrito ",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [
+          "Nueva factura"
+        ],
+        "mainTextLength": 417
+      }
+    },
+    {
+      "viewport": "mobile-light",
+      "name": "invoice-history",
+      "route": "/invoices",
+      "screenshot": "C:\\Projects\\S_Hospital\\qa\\screenshots\\after\\f6-mobile-light-invoice-history.png",
+      "snippet": "Omitir al contenido principal Historial Inicio / Historial A Cargando historial... Sesión activa.",
+      "inspection": {
+        "title": "Caja hospitalaria",
+        "overflowX": 0,
+        "unnamedControls": [],
+        "headings": [],
+        "mainTextLength": 21
+      }
+    }
+  ],
+  "consoleEntries": [],
+  "findings": [
+    {
+      "level": "warn",
+      "context": "cashbox",
+      "message": "No open cash form was visible."
+    },
+    {
+      "level": "warn",
+      "context": "receipt",
+      "message": "Patient input was not visible; receipt flow skipped."
+    }
+  ],
+  "summary": {
+    "captureCount": 31,
+    "consoleIssueCount": 0,
+    "findingCount": 2,
+    "overflowFindings": [],
+    "unnamedControlFindings": []
+  }
+}

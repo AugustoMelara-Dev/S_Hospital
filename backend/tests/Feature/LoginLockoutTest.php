@@ -150,4 +150,62 @@ class LoginLockoutTest extends TestCase
             ->assertJsonPath('message', 'Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.')
             ->assertJsonPath('lockout_minutes', 15);
     }
+
+    public function test_lockout_engages_when_attacker_rotates_user_names_from_same_ip(): void
+    {
+        User::factory()->create([
+            'username' => 'usuario-real',
+            'email' => 'real@hospital.local',
+            'password' => Hash::make('Password123!'),
+            'must_change_password' => false,
+            'active' => true,
+        ])->assignRole('cajero');
+
+        // 20 distinct failed usernames from the same IP (spraying) must
+        // trigger the per-IP lockout even though no single username has
+        // reached the 5-failure threshold.
+        for ($i = 0; $i < 20; $i++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '192.168.1.50'])
+                ->postJson('/api/auth/login', [
+                    'login' => 'no-existe-'.$i,
+                    'password' => 'wrong',
+                ])->assertStatus(422);
+        }
+
+        $response = $this->withServerVariables(['REMOTE_ADDR' => '192.168.1.50'])
+            ->postJson('/api/auth/login', [
+                'login' => 'usuario-real',
+                'password' => 'Password123!',
+            ]);
+
+        $response->assertStatus(423)
+            ->assertJsonPath('lockout_reason', 'ip');
+    }
+
+    public function test_lockout_does_not_engage_for_a_different_ip_under_threshold(): void
+    {
+        User::factory()->create([
+            'username' => 'usuario-clean',
+            'email' => 'clean@hospital.local',
+            'password' => Hash::make('Password123!'),
+            'must_change_password' => false,
+            'active' => true,
+        ])->assignRole('cajero');
+
+        for ($i = 0; $i < 19; $i++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '192.168.1.51'])
+                ->postJson('/api/auth/login', [
+                    'login' => 'no-existe-'.$i,
+                    'password' => 'wrong',
+                ])->assertStatus(422);
+        }
+
+        $response = $this->withServerVariables(['REMOTE_ADDR' => '192.168.1.52'])
+            ->postJson('/api/auth/login', [
+                'login' => 'usuario-clean',
+                'password' => 'Password123!',
+            ]);
+
+        $response->assertOk();
+    }
 }

@@ -47,8 +47,9 @@ export function PaymentMethodPieChart({ data }: PaymentMethodPieChartProps) {
 
   if (total === 0) {
     return (
-      <div className="flex h-[240px] items-center justify-center rounded-md border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
-        Sin cobros registrados hoy
+      <div className="flex h-[240px] flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/20 px-6 text-center text-sm text-muted-foreground">
+        <span className="font-semibold text-foreground">Sin cobros registrados hoy</span>
+        <span>Los metodos de pago apareceran aqui al registrar pagos en caja.</span>
       </div>
     );
   }

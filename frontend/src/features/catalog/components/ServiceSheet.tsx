@@ -174,7 +174,7 @@ export function ServiceSheet({
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="category_id">Categoria *</Label>
+          <Label htmlFor="category_id">Categoría *</Label>
           <Select
             value={String(categoryId)}
             onValueChange={(val) => setValue('category_id', Number(val))}
@@ -203,7 +203,7 @@ export function ServiceSheet({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="area_id">Area *</Label>
+          <Label htmlFor="area_id">Área *</Label>
           <Select
             value={String(areaId)}
             onValueChange={(val) => setValue('area_id', Number(val))}
@@ -286,7 +286,7 @@ export function ServiceSheet({
         {scannerEnabled && (
           <>
             <div className="space-y-2">
-              <Label htmlFor="scan_code">Codigo de scanner</Label>
+              <Label htmlFor="scan_code">Código de escáner</Label>
               <Input
                 id="scan_code"
                 placeholder="LAB-GLU-001"
@@ -303,10 +303,10 @@ export function ServiceSheet({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="barcode">Codigo de barra</Label>
+              <Label htmlFor="barcode">Código de barra</Label>
               <Input
                 id="barcode"
-                placeholder="Codigo de barra opcional"
+                placeholder="Código de barra opcional"
                 {...register('barcode')}
                 aria-invalid={Boolean(errors.barcode)}
                 aria-describedby={errors.barcode ? 'service-barcode-error' : undefined}
@@ -320,10 +320,10 @@ export function ServiceSheet({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="qr_code">Codigo QR</Label>
+              <Label htmlFor="qr_code">Código QR</Label>
               <Input
                 id="qr_code"
-                placeholder="Codigo QR opcional"
+                placeholder="Código QR opcional"
                 {...register('qr_code')}
                 aria-invalid={Boolean(errors.qr_code)}
                 aria-describedby={errors.qr_code ? 'service-qr-code-error' : undefined}

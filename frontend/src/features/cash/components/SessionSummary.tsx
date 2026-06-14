@@ -46,12 +46,12 @@ export function SessionSummary({
           <Label className="text-muted-foreground">Cobros en efectivo</Label>
           <p className="text-2xl font-bold">{formatLempiras(cashPayments)}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Solo pagos posteados con metodo efectivo.
+            Solo pagos posteados con método efectivo.
           </p>
         </CardContent>
       </Card>
 
-      <Card className={cn(hasCountedAmount && difference !== 0 ? 'border-amber-200 bg-amber-50' : '')}>
+      <Card className={cn(hasCountedAmount && difference !== 0 ? 'border-warning/35 bg-warning/10' : '')}>
         <CardContent className="pt-6">
           <Label className="text-muted-foreground">Contado y diferencia</Label>
           <p className="text-2xl font-bold">
@@ -60,7 +60,7 @@ export function SessionSummary({
           <p
             className={cn(
               'mt-1 text-sm font-semibold',
-              difference && difference > 0 ? 'text-emerald-600' : difference && difference < 0 ? 'text-red-600' : 'text-muted-foreground',
+              difference && difference > 0 ? 'text-success-foreground' : difference && difference < 0 ? 'text-destructive' : 'text-muted-foreground',
             )}
           >
             {!hasCountedAmount
@@ -72,7 +72,7 @@ export function SessionSummary({
         </CardContent>
       </Card>
 
-      <Card className={cn(pendingAmount > 0 ? 'border-amber-200 bg-amber-50 dark:bg-amber-950/20' : '')}>
+      <Card className={cn(pendingAmount > 0 ? 'border-warning/35 bg-warning/10' : '')}>
         <CardContent className="pt-6">
           <Label className="text-muted-foreground">Saldo pendiente</Label>
           <p className="text-2xl font-bold">{formatLempiras(pendingAmount)}</p>

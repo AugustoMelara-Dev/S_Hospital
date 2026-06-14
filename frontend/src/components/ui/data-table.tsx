@@ -1,6 +1,15 @@
-import { type HTMLAttributes, type ReactNode, type TdHTMLAttributes, type ThHTMLAttributes } from 'react';
-import { cn } from '../../lib/utils';
+import { type ReactNode } from 'react';
 import { EmptyState, LoadingState } from './states';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from './table';
 
 export type DataTableColumn<T> = {
   key: string;
@@ -34,55 +43,34 @@ export function DataTable<T>({
   }
 
   return (
-    <div className="table-wrap">
-      <table className="data-table">
-        <thead>
-          <tr>
-            {columns.map((column) => (
-              <th key={column.key}>{column.header}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={getRowKey(row)}>
-              {columns.map((column) => (
-                <td key={column.key}>{column.render(row)}</td>
-              ))}
-            </tr>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          {columns.map((column) => (
+            <TableHead key={column.key}>{column.header}</TableHead>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((row) => (
+          <TableRow key={getRowKey(row)}>
+            {columns.map((column) => (
+              <TableCell key={column.key}>{column.render(row)}</TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
-export function Table({ children, className, ...props }: HTMLAttributes<HTMLTableElement>) {
-  return (
-    <div className="table-wrap">
-      <table className={cn('data-table', className)} {...props}>
-        {children}
-      </table>
-    </div>
-  );
-}
-
-export function TableHeader(props: HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead {...props} />;
-}
-
-export function TableBody(props: HTMLAttributes<HTMLTableSectionElement>) {
-  return <tbody {...props} />;
-}
-
-export function TableRow(props: HTMLAttributes<HTMLTableRowElement>) {
-  return <tr {...props} />;
-}
-
-export function TableHead(props: ThHTMLAttributes<HTMLTableCellElement>) {
-  return <th {...props} />;
-}
-
-export function TableCell(props: TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td {...props} />;
-}
+export {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+};

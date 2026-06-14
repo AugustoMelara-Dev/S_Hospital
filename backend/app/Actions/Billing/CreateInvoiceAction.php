@@ -3,12 +3,10 @@
 namespace App\Actions\Billing;
 
 use App\Events\InvoiceChanged;
-use App\Events\PaymentChanged;
 use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
-use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
 use App\Support\Money;
@@ -49,6 +47,11 @@ class CreateInvoiceAction
             $fiscal = $this->generateFiscalNumber->execute();
             $sequence = $fiscal['sequence'];
             $isZeroTotal = $this->isZeroAmount($totals['total']);
+
+            $sumItems = array_reduce($totals['items'], fn (int $carry, array $item) => $carry + $item['line_total_cents'], 0);
+            if ($sumItems !== $totals['total_cents']) {
+                throw new \RuntimeException('Invariante fallido: la suma de las lineas no coincide con el total de la factura.');
+            }
 
             $invoice = Invoice::query()->create([
                 'invoice_number' => $fiscal['invoice_number'],
@@ -94,35 +97,14 @@ class CreateInvoiceAction
             }
 
             if ($isZeroTotal) {
-                $payment = Payment::query()->create([
-                    'invoice_id' => $invoice->id,
-                    'cash_session_id' => $cashSession->id,
-                    'user_id' => $issuer->id,
-                    'method' => Payment::METHOD_OTHER,
-                    'amount' => '0.00',
-                    'amount_cents' => 0,
-                    'reference' => 'Factura sin cobro por regla autorizada',
-                    'status' => Payment::STATUS_POSTED,
-                    'paid_at' => now(),
-                ]);
-
-                DB::afterCommit(function () use ($payment) {
-                    PaymentChanged::dispatch($payment->fresh(), 'registered');
-                });
-
                 AuditLog::query()->create([
                     'user_id' => $issuer->id,
-                    'action' => 'payment.registered',
-                    'entity_type' => Payment::class,
-                    'entity_id' => $payment->id,
+                    'action' => 'invoice.zero_amount_registered',
+                    'entity_type' => Invoice::class,
+                    'entity_id' => $invoice->id,
                     'new_values' => [
-                        'invoice_id' => $invoice->id,
                         'invoice_number' => $invoice->invoice_number,
-                        'cash_session_id' => $cashSession->id,
-                        'method' => $payment->method,
-                        'amount' => $payment->amount,
-                        'reference' => $payment->reference,
-                        'invoice_status' => $invoice->status,
+                        'reference' => 'Factura sin cobro por regla autorizada',
                         'balance_due' => $invoice->balance_due,
                     ],
                 ]);

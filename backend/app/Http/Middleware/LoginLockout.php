@@ -13,11 +13,19 @@ class LoginLockout
 {
     private const MAX_FAILED_ATTEMPTS = 5;
 
+    /**
+     * Number of distinct failed logins from the same IP in the rolling
+     * window that triggers the lockout. Defends against username
+     * rotation (online password spraying).
+     */
+    private const MAX_FAILED_ATTEMPTS_PER_IP = 20;
+
     private const LOCKOUT_MINUTES = 15;
 
     public function handle(Request $request, Closure $next): Response
     {
-        $login = (string) $request->input('login', '');
+        $login = trim((string) $request->input('login', ''));
+        $ip = (string) $request->ip();
 
         if ($login === '') {
             return $next($request);
@@ -25,19 +33,27 @@ class LoginLockout
 
         $since = now()->subMinutes(self::LOCKOUT_MINUTES);
 
-        if (LoginAttempt::failedCountFor($login, $since) >= self::MAX_FAILED_ATTEMPTS) {
-            return $this->locked($login, $since);
+        $failedByLogin = LoginAttempt::failedCountFor($login, $since);
+        $failedByIp = $ip !== '' ? LoginAttempt::failedCountForIp($ip, $since) : 0;
+
+        if ($failedByLogin >= self::MAX_FAILED_ATTEMPTS) {
+            return $this->locked($login, $since, 'login');
+        }
+
+        if ($failedByIp >= self::MAX_FAILED_ATTEMPTS_PER_IP) {
+            return $this->locked($login, $since, 'ip');
         }
 
         return $next($request);
     }
 
-    private function locked(string $subject, \DateTimeInterface $since): Response
+    private function locked(string $subject, \DateTimeInterface $since, string $reason): Response
     {
         return response()->json([
             'message' => 'Cuenta bloqueada por intentos fallidos. Espere 15 minutos o pida a un supervisor que reactive su usuario.',
             'lockout_minutes' => self::LOCKOUT_MINUTES,
             'window_start' => $since->format(DATE_ATOM),
+            'lockout_reason' => $reason,
         ], 423);
     }
 }
