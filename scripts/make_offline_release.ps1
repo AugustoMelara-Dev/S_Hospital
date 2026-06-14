@@ -137,6 +137,9 @@ if (-not $SkipDockerBuild) {
     $env:APP_KEY = "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
     $env:DB_PASSWORD = "build_password"
     $env:DB_ROOT_PASSWORD = "build_root_password"
+    $env:PUSHER_APP_ID = "offline-build-app"
+    $env:PUSHER_APP_KEY = "offline-build-key"
+    $env:PUSHER_APP_SECRET = "offline-build-secret"
     & docker compose -f $composePath build
     if ($LASTEXITCODE -ne 0) {
         Write-Fail "Fallo docker compose build."
@@ -146,8 +149,10 @@ if (-not $SkipDockerBuild) {
 $imagesToSave = @(
     @{ Service = "backend"; Image = "s_hospital-backend:latest"; Target = "backend.tar" },
     @{ Service = "queue-worker"; Image = "s_hospital-queue-worker:latest"; Target = "queue-worker.tar" },
-    @{ Service = "nginx"; Image = "nginx:1.25-alpine"; Target = "nginx.tar" },
-    @{ Service = "mysql"; Image = "mariadb:11"; Target = "mariadb.tar" }
+    @{ Service = "scheduler"; Image = "s_hospital-scheduler:latest"; Target = "scheduler.tar" },
+    @{ Service = "nginx"; Image = "nginx:1.25.4-alpine"; Target = "nginx.tar" },
+    @{ Service = "mysql"; Image = "mariadb:11.4.3"; Target = "mariadb.tar" },
+    @{ Service = "soketi"; Image = "soketi/soketi:1.6-16-alpine"; Target = "soketi.tar" }
 )
 
 if (-not $SkipDockerSave) {

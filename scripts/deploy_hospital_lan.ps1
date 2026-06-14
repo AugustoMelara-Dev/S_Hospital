@@ -1060,6 +1060,9 @@ try {
         # ---- Generate secrets (cryptographic RNG, see docs/SECRETS.md) ----
         $dbPassword = New-CryptographicPassword -Length 24
         $dbRootPassword = New-CryptographicPassword -Length 24
+        $pusherAppId = New-CryptographicPassword -Length 16
+        $pusherAppKey = New-CryptographicPassword -Length 32
+        $pusherAppSecret = New-CryptographicPassword -Length 48
         $appKey = New-CryptographicAppKey
 
         $envPath = Join-Path $projectRoot ".env"
@@ -1090,17 +1093,24 @@ try {
             $currAppKey = if ($existingRootEnv.ContainsKey("APP_KEY") -and $existingRootEnv["APP_KEY"] -ne "") { $existingRootEnv["APP_KEY"] } else { $appKey }
             $currDbPass = if ($existingRootEnv.ContainsKey("DB_PASSWORD") -and $existingRootEnv["DB_PASSWORD"] -ne "") { $existingRootEnv["DB_PASSWORD"] } else { $dbPassword }
             $currDbRootPass = if ($existingRootEnv.ContainsKey("DB_ROOT_PASSWORD") -and $existingRootEnv["DB_ROOT_PASSWORD"] -ne "") { $existingRootEnv["DB_ROOT_PASSWORD"] } else { $dbRootPassword }
+            $currPusherAppId = if ($existingRootEnv.ContainsKey("PUSHER_APP_ID") -and $existingRootEnv["PUSHER_APP_ID"] -ne "") { $existingRootEnv["PUSHER_APP_ID"] } else { $pusherAppId }
+            $currPusherAppKey = if ($existingRootEnv.ContainsKey("PUSHER_APP_KEY") -and $existingRootEnv["PUSHER_APP_KEY"] -ne "") { $existingRootEnv["PUSHER_APP_KEY"] } else { $pusherAppKey }
+            $currPusherAppSecret = if ($existingRootEnv.ContainsKey("PUSHER_APP_SECRET") -and $existingRootEnv["PUSHER_APP_SECRET"] -ne "") { $existingRootEnv["PUSHER_APP_SECRET"] } else { $pusherAppSecret }
 
             # Write .env
             $rootVars = @{
-                "SERVER_IP"        = $serverIp
-                "APP_PORT"         = "$appPort"
-                "APP_KEY"          = $currAppKey
-                "DB_PORT"          = "$dbPort"
-                "DB_DATABASE"      = "hospital_billing"
-                "DB_USERNAME"      = "hospital"
-                "DB_PASSWORD"      = $currDbPass
-                "DB_ROOT_PASSWORD" = $currDbRootPass
+                "SERVER_IP"         = $serverIp
+                "APP_PORT"          = "$appPort"
+                "APP_KEY"           = $currAppKey
+                "DB_PORT"           = "$dbPort"
+                "DB_DATABASE"       = "hospital_billing"
+                "DB_USERNAME"       = "hospital"
+                "DB_PASSWORD"       = $currDbPass
+                "DB_ROOT_PASSWORD"  = $currDbRootPass
+                "PUSHER_APP_ID"      = $currPusherAppId
+                "PUSHER_APP_KEY"     = $currPusherAppKey
+                "PUSHER_APP_SECRET"  = $currPusherAppSecret
+                "PUSHER_APP_CLUSTER" = "mt1"
             }
 
             Update-DotEnv -Path $envPath -Variables $rootVars
@@ -1330,23 +1340,35 @@ try {
             Pop-Location
             Write-Host "[OK] Base de datos migrada." -ForegroundColor Green
 
+            Write-Host "[*] Registrando scheduler Laravel..." -ForegroundColor Yellow
+            $schedulerScript = Join-Path $projectRoot "scripts\register_scheduler_cron.ps1"
+            if (-not (Test-Path $schedulerScript)) {
+                throw "No se encontro el instalador del scheduler. El sistema no debe entregarse sin tareas automaticas Laravel."
+            }
+
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $schedulerScript -ProjectRoot $projectRoot -PhpPath $phpPath
+            if ($LASTEXITCODE -ne 0) {
+                throw "No se pudo programar el scheduler Laravel. Revise permisos de Administrador y vuelva a ejecutar setup.bat."
+            }
+            Write-Host "[OK] Scheduler Laravel registrado." -ForegroundColor Green
+
             # Backup tasks
             Write-Host "[*] Registrando tareas de backup..." -ForegroundColor Yellow
+            $backupScript = Join-Path $projectRoot "scripts\install_backup_tasks_windows.ps1"
+            if (-not (Test-Path $backupScript)) {
+                throw "No se encontro el instalador de tareas de backup. El sistema no debe entregarse sin respaldos automaticos."
+            }
+
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $backupScript -ProjectRoot $projectRoot -PhpPath $phpPath -UpdateExisting | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                throw "No se pudieron programar backups bare-metal. Revise install-logs y vuelva a ejecutar setup.bat."
+            }
+
+            Write-Host "[OK] Tareas de backup registradas." -ForegroundColor Green
             try {
-                $backupScript = Join-Path $projectRoot "scripts\install_backup_tasks_windows.ps1"
-                if (Test-Path $backupScript) {
-                    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $backupScript -ProjectRoot $projectRoot -PhpPath $phpPath -UpdateExisting | Out-Null
-                    Write-Host "[OK] Tareas de backup registradas." -ForegroundColor Green
-                    try {
-                        Start-ScheduledTask -TaskName "SistemaCajaHospitalaria-BackupWorker" -ErrorAction SilentlyContinue | Out-Null
-                    }
-                    catch { }
-                }
+                Start-ScheduledTask -TaskName "SistemaCajaHospitalaria-BackupWorker" -ErrorAction SilentlyContinue | Out-Null
             }
-            catch {
-                Write-Host "[WARN] No se pudieron programar backups: $($_.Exception.Message)" -ForegroundColor Yellow
-                Write-Host "  Puede configurarlos despues: scripts/install_backup_tasks_windows.ps1" -ForegroundColor White
-            }
+            catch { }
         }
 
         # ==============================================================

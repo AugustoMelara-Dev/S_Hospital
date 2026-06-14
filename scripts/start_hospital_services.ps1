@@ -63,7 +63,7 @@ function Resolve-DockerRuntime {
         return @{
             Mode = 'offline-docker'
             ComposeArgs = $composeArgs
-            Services = @('backend', 'nginx', 'mysql', 'queue-worker')
+            Services = @('backend', 'nginx', 'mysql', 'queue-worker', 'scheduler', 'soketi')
         }
     }
 

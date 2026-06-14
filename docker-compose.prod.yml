@@ -36,6 +36,14 @@ services:
       SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
       SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
       CORS_ALLOWED_ORIGINS: http://${SERVER_IP}:${APP_PORT:-8000}
+      BROADCAST_CONNECTION: pusher
+      PUSHER_APP_ID: ${PUSHER_APP_ID:?PUSHER_APP_ID is required}
+      PUSHER_APP_KEY: ${PUSHER_APP_KEY:?PUSHER_APP_KEY is required}
+      PUSHER_APP_SECRET: ${PUSHER_APP_SECRET:?PUSHER_APP_SECRET is required}
+      PUSHER_APP_CLUSTER: ${PUSHER_APP_CLUSTER:-mt1}
+      PUSHER_HOST: soketi
+      PUSHER_PORT: 6001
+      PUSHER_SCHEME: http
     volumes:
       - backup_data:/var/www/html/storage/app/private/backups
       - shared_public:/shared_public
@@ -137,6 +145,14 @@ services:
       SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
       SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
       CORS_ALLOWED_ORIGINS: http://${SERVER_IP}:${APP_PORT:-8000}
+      BROADCAST_CONNECTION: pusher
+      PUSHER_APP_ID: ${PUSHER_APP_ID:?PUSHER_APP_ID is required}
+      PUSHER_APP_KEY: ${PUSHER_APP_KEY:?PUSHER_APP_KEY is required}
+      PUSHER_APP_SECRET: ${PUSHER_APP_SECRET:?PUSHER_APP_SECRET is required}
+      PUSHER_APP_CLUSTER: ${PUSHER_APP_CLUSTER:-mt1}
+      PUSHER_HOST: soketi
+      PUSHER_PORT: 6001
+      PUSHER_SCHEME: http
     volumes:
       - backup_data:/var/www/html/storage/app/private/backups
     healthcheck:
@@ -156,20 +172,28 @@ services:
       backend:
         condition: service_started
 
-  # Scheduler sidecar: runs `php artisan schedule:run` every minute via
-  # supercronic. The Laravel scheduler is the canonical way to dispatch
-  # the daily/15-minute backup jobs, the audit-log prune, and the
-  # failed-jobs prune registered in backend/routes/console.php.
-  #
-  # Without this sidecar, those jobs simply never run in production.
-  # supercronic is a cron replacement that handles signals cleanly inside
-  # a container and exits the process on SIGTERM.
+  # Scheduler sidecar: uses the production Laravel image so `php artisan`
+  # is available inside the container. It runs the Laravel scheduler once
+  # per minute and writes a local heartbeat for Docker health checks.
   scheduler:
-    image: supercronic/supercronic:v1.2.3
+    image: s_hospital-scheduler:latest
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile.prod
     restart: unless-stopped
-    command: ["supercronic", "/etc/crontab"]
-    volumes:
-      - ./nginx/crontab:/etc/crontab:ro
+    command: >
+      sh -c "
+        while true; do
+          if php artisan schedule:run --no-interaction; then
+            php artisan hospital:scheduler-tick --result=ok;
+            date -u +%Y-%m-%dT%H:%M:%SZ > /tmp/scheduler.last;
+          else
+            php artisan hospital:scheduler-tick --result=fail --message='schedule:run failed' || true;
+            exit 1;
+          fi;
+          sleep 60;
+        done
+      "
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
@@ -185,17 +209,30 @@ services:
       HOSPITAL_OPERATION_END: ${HOSPITAL_OPERATION_END:-18:00}
       HOSPITAL_AUDIT_RETENTION_DAYS: ${HOSPITAL_AUDIT_RETENTION_DAYS:-365}
       HOSPITAL_FAILED_JOBS_RETENTION_DAYS: ${HOSPITAL_FAILED_JOBS_RETENTION_DAYS:-30}
+      CACHE_STORE: file
+      QUEUE_CONNECTION: database
+      SESSION_DRIVER: database
+      SESSION_ENCRYPT: "true"
+      LOG_CHANNEL: daily
+      LOG_LEVEL: warning
+      HOSPITAL_DUMP_BINARY: /usr/bin/mariadb-dump
+      RUN_MIGRATIONS: "false"
+      SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
+      SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
+      CORS_ALLOWED_ORIGINS: http://${SERVER_IP}:${APP_PORT:-8000}
+    volumes:
+      - backup_data:/var/www/html/storage/app/private/backups
     healthcheck:
-      test: ["CMD-SHELL", "test -f /tmp/supercronic.last && find /tmp/supercronic.last -mmin -3 || exit 1"]
+      test: ["CMD-SHELL", "test -f /tmp/scheduler.last && find /tmp/scheduler.last -mmin -3 | grep -q . || exit 1"]
       interval: 60s
       timeout: 5s
       retries: 3
       start_period: 90s
     security_opt:
       - "no-new-privileges:true"
-    mem_limit: 64m
-    cpus: "0.25"
-    pids_limit: 50
+    mem_limit: 384m
+    cpus: "0.5"
+    pids_limit: 150
     depends_on:
       backend:
         condition: service_healthy
