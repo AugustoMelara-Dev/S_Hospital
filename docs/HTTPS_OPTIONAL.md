@@ -4,7 +4,8 @@
 
 The hospital LAN does not require HTTPS, but enabling it protects
 cashier credentials and patient names from passive sniffing on the
-cable. This document describes the optional HTTPS path.
+cable. HTTPS is the recommended production handoff path. HTTP LAN is
+accepted only as an explicit insecure operating mode.
 
 ## When to use
 
@@ -13,8 +14,9 @@ cable. This document describes the optional HTTPS path.
 - Compliance asks for transport encryption.
 - You want to test the client UI with a real HTTPS context.
 
-If none of these apply, HTTP on port 80 is fine. The Laravel middleware
-hardens both transports the same way.
+If none of these apply, HTTP on port 80 can be used only after setting
+`HOSPITAL_ALLOW_INSECURE_HTTP=1` and leaving evidence in the production
+preflight output. That mode is not encrypted on the wire.
 
 ## Generate the materials
 
@@ -69,6 +71,9 @@ without warnings.
 ## Update application config
 
 - Set `APP_URL=https://192.168.1.10:443` in `.env` and `backend/.env`.
+- Set `APP_SCHEME=https`.
+- Set `SESSION_SECURE_COOKIE=true`.
+- Set `HOSPITAL_ALLOW_INSECURE_HTTP=0`.
 - In the LAN_CLIENT_VALIDATION_PROOF, validate `/login` and `/up` over
   HTTPS from a second PC.
 
@@ -86,6 +91,8 @@ To disable HTTPS:
 1. Comment out the `server { listen 443 ... }` block in
    `nginx/default.conf`.
 2. Revert `APP_URL` to `http://...`.
-3. Restart nginx.
+3. Set `APP_SCHEME=http`, `SESSION_SECURE_COOKIE=false`, and
+   `HOSPITAL_ALLOW_INSECURE_HTTP=1`.
+4. Restart nginx.
 
 The CA and server certs stay on disk in case you re-enable HTTPS.

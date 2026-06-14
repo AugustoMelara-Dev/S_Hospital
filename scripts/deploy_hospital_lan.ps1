@@ -1063,6 +1063,7 @@ try {
         $pusherAppId = New-CryptographicPassword -Length 16
         $pusherAppKey = New-CryptographicPassword -Length 32
         $pusherAppSecret = New-CryptographicPassword -Length 48
+        $backupEncryptionKey = New-CryptographicPassword -Length 48
         $appKey = New-CryptographicAppKey
 
         $envPath = Join-Path $projectRoot ".env"
@@ -1096,11 +1097,15 @@ try {
             $currPusherAppId = if ($existingRootEnv.ContainsKey("PUSHER_APP_ID") -and $existingRootEnv["PUSHER_APP_ID"] -ne "") { $existingRootEnv["PUSHER_APP_ID"] } else { $pusherAppId }
             $currPusherAppKey = if ($existingRootEnv.ContainsKey("PUSHER_APP_KEY") -and $existingRootEnv["PUSHER_APP_KEY"] -ne "") { $existingRootEnv["PUSHER_APP_KEY"] } else { $pusherAppKey }
             $currPusherAppSecret = if ($existingRootEnv.ContainsKey("PUSHER_APP_SECRET") -and $existingRootEnv["PUSHER_APP_SECRET"] -ne "") { $existingRootEnv["PUSHER_APP_SECRET"] } else { $pusherAppSecret }
+            $currBackupEncryptionKey = if ($existingRootEnv.ContainsKey("HOSPITAL_BACKUP_ENCRYPTION_KEY") -and $existingRootEnv["HOSPITAL_BACKUP_ENCRYPTION_KEY"] -ne "") { $existingRootEnv["HOSPITAL_BACKUP_ENCRYPTION_KEY"] } else { $backupEncryptionKey }
 
             # Write .env
             $rootVars = @{
                 "SERVER_IP"         = $serverIp
                 "APP_PORT"          = "$appPort"
+                "APP_SCHEME"        = "http"
+                "HOSPITAL_ALLOW_INSECURE_HTTP" = "1"
+                "SESSION_SECURE_COOKIE" = "false"
                 "APP_KEY"           = $currAppKey
                 "DB_PORT"           = "$dbPort"
                 "DB_DATABASE"       = "hospital_billing"
@@ -1112,6 +1117,8 @@ try {
                 "PUSHER_APP_SECRET"  = $currPusherAppSecret
                 "PUSHER_APP_CLUSTER" = "mt1"
                 "SOKETI_PORT"        = "6001"
+                "HOSPITAL_BACKUP_ENCRYPTION_KEY" = $currBackupEncryptionKey
+                "HOSPITAL_MIGRATION_BACKUP_CONFIRMED" = "false"
                 "CACHE_STORE"        = "database"
                 "DB_CACHE_TABLE"     = "cache"
                 "DB_CACHE_LOCK_TABLE" = "cache_locks"
@@ -1237,6 +1244,7 @@ try {
             $currDbUser = if ($existingEnv.ContainsKey("DB_USERNAME") -and $existingEnv["DB_USERNAME"] -ne "") { $existingEnv["DB_USERNAME"] } else { "root" }
             $currDbPass = if ($existingEnv.ContainsKey("DB_PASSWORD")) { $existingEnv["DB_PASSWORD"] } else { "" }
             $currAppKey = if ($existingEnv.ContainsKey("APP_KEY") -and $existingEnv["APP_KEY"] -ne "") { $existingEnv["APP_KEY"] } else { $appKey }
+            $currBackupEncryptionKey = if ($existingEnv.ContainsKey("HOSPITAL_BACKUP_ENCRYPTION_KEY") -and $existingEnv["HOSPITAL_BACKUP_ENCRYPTION_KEY"] -ne "") { $existingEnv["HOSPITAL_BACKUP_ENCRYPTION_KEY"] } else { $backupEncryptionKey }
 
             Write-Host ""
             Write-Host "--- Configuracion de Base de Datos MySQL/MariaDB ---" -ForegroundColor Cyan
@@ -1267,7 +1275,10 @@ try {
                 "APP_ENV"                    = "production"
                 "APP_DEBUG"                  = "false"
                 "APP_KEY"                    = $currAppKey
+                "APP_SCHEME"                 = "http"
                 "APP_URL"                    = "http://${serverIp}:${appPort}"
+                "HOSPITAL_ALLOW_INSECURE_HTTP" = "1"
+                "SESSION_SECURE_COOKIE"      = "false"
                 "DB_CONNECTION"              = "mysql"
                 "DB_HOST"                    = $dbHost
                 "DB_PORT"                    = $dbPortInput
@@ -1276,6 +1287,8 @@ try {
                 "DB_PASSWORD"                = $dbPass
                 "SANCTUM_STATEFUL_DOMAINS"   = $corsValues.SanctumStatefulDomains
                 "CORS_ALLOWED_ORIGINS"       = $corsValues.CorsAllowedOrigins
+                "HOSPITAL_BACKUP_ENCRYPTION_KEY" = $currBackupEncryptionKey
+                "HOSPITAL_MIGRATION_BACKUP_CONFIRMED" = "false"
             }
 
             Update-DotEnv -Path $backendEnvPath -Variables $vars

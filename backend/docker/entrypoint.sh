@@ -21,6 +21,7 @@ fi
 # Escribir password en option file 0600 (no en CLI ni en MYSQL_PWD).
 # MYSQL_PWD y --password= aparecen en /proc/<pid>/cmdline, accesibles a otros usuarios del host.
 MY_CNF_PATH="${MY_CNF_PATH:-/tmp/.hospital-db.cnf}"
+trap 'rm -f "$MY_CNF_PATH"' EXIT
 {
   printf '[client]\n'
   printf 'host=%s\n' "${DB_HOST:-127.0.0.1}"
@@ -43,7 +44,6 @@ until ${DB_BIN} \
 done
 
 echo "[entrypoint] MariaDB respondio en ${elapsed}s."
-rm -f "$MY_CNF_PATH"
 
 if [ -f .env ]; then
   if ! grep -q "^APP_KEY=base64:" .env; then
@@ -53,11 +53,29 @@ if [ -f .env ]; then
 fi
 
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
+  if [ "${APP_ENV:-}" = "production" ]; then
+    MIGRATIONS_TABLE_EXISTS="$(${DB_BIN} \
+      --defaults-file="$MY_CNF_PATH" \
+      --database="${DB_DATABASE:-hospital_billing}" \
+      --batch \
+      --skip-column-names \
+      --execute="SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'migrations';" 2>/dev/null || printf '0')"
+
+    if [ "$MIGRATIONS_TABLE_EXISTS" != "0" ] && [ "${HOSPITAL_MIGRATION_BACKUP_CONFIRMED:-false}" != "1" ]; then
+      echo "[entrypoint] ERROR: migraciones productivas bloqueadas hasta confirmar un backup cifrado reciente."
+      echo "[entrypoint] Cree/verifique el backup y ejecute con HOSPITAL_MIGRATION_BACKUP_CONFIRMED=1 solo para este upgrade."
+      rm -f "$MY_CNF_PATH"
+      exit 1
+    fi
+  fi
+
   echo "[entrypoint] Ejecutando migraciones pendientes..."
   php artisan migrate --force --no-interaction
 else
   echo "[entrypoint] Migraciones omitidas para este servicio."
 fi
+
+rm -f "$MY_CNF_PATH"
 
 if [ -d /var/www/frontend/dist ]; then
   mkdir -p /shared_public

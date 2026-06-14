@@ -111,6 +111,82 @@ function New-CheckResult([string] $Label, [string] $Url, [int[]] $AllowedStatusC
     }
 }
 
+function Read-LanEnvFile([string] $path) {
+    $values = @{}
+    if (-not (Test-Path -LiteralPath $path)) {
+        return $values
+    }
+
+    Get-Content -LiteralPath $path | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -eq "" -or $line.StartsWith("#") -or -not $line.Contains("=")) {
+            return
+        }
+
+        $key, $value = $line.Split("=", 2)
+        $values[$key.Trim()] = $value.Trim().Trim('"').Trim("'")
+    }
+
+    return $values
+}
+
+function Get-LanEnvValue($values, [string] $key, [string] $fallback = "") {
+    if ($values.ContainsKey($key) -and $values[$key] -ne "") {
+        return $values[$key]
+    }
+
+    return $fallback
+}
+
+function New-WebSocketCheckResult([string] $BaseUrl, [string] $PusherKey) {
+    if ([string]::IsNullOrWhiteSpace($PusherKey)) {
+        return [ordered] @{
+            Label = "Realtime WebSocket"
+            Url = "$($BaseUrl.TrimEnd('/'))/app/<pusher-key>"
+            StatusCode = $null
+            ContentType = ""
+            Passed = $false
+            Detail = "PUSHER_APP_KEY missing in .env/backend.env"
+        }
+    }
+
+    $baseUri = [Uri] $BaseUrl
+    $scheme = if ($baseUri.Scheme -eq "https") { "wss" } else { "ws" }
+    $builder = [System.UriBuilder]::new($baseUri)
+    $builder.Scheme = $scheme
+    $builder.Path = "/app/$PusherKey"
+    $builder.Query = "protocol=7&client=js&version=8.5.0&flash=false"
+
+    $socket = [System.Net.WebSockets.ClientWebSocket]::new()
+    $cts = [System.Threading.CancellationTokenSource]::new([TimeSpan]::FromSeconds(10))
+    try {
+        $socket.ConnectAsync($builder.Uri, $cts.Token).GetAwaiter().GetResult()
+        return [ordered] @{
+            Label = "Realtime WebSocket"
+            Url = $builder.Uri.ToString()
+            StatusCode = 101
+            ContentType = "websocket"
+            Passed = $socket.State -eq [System.Net.WebSockets.WebSocketState]::Open
+            Detail = "Handshake state=$($socket.State)"
+        }
+    } catch {
+        return [ordered] @{
+            Label = "Realtime WebSocket"
+            Url = $builder.Uri.ToString()
+            StatusCode = $null
+            ContentType = ""
+            Passed = $false
+            Detail = $_.Exception.Message
+        }
+    } finally {
+        if ($socket.State -eq [System.Net.WebSockets.WebSocketState]::Open) {
+            $socket.CloseAsync([System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure, "lan-validation", [System.Threading.CancellationToken]::None).GetAwaiter().GetResult()
+        }
+        $socket.Dispose()
+        $cts.Dispose()
+    }
+}
+
 function Get-FirstAssetPath([string] $BaseUrl) {
     try {
         $loginResponse = Invoke-WebRequest -Uri "$($BaseUrl.TrimEnd('/'))/login" -UseBasicParsing -TimeoutSec 20
@@ -127,6 +203,9 @@ function Get-FirstAssetPath([string] $BaseUrl) {
 
 $base = Test-HospitalOperationalUrlInput $BaseUrl
 $baseUri = [Uri] $base
+$rootEnv = Read-LanEnvFile (Join-Path $ProjectRoot ".env")
+$backendEnv = Read-LanEnvFile (Join-Path $ProjectRoot "backend\.env")
+$pusherAppKey = Get-LanEnvValue $rootEnv "PUSHER_APP_KEY" (Get-LanEnvValue $backendEnv "PUSHER_APP_KEY" "")
 
 $resolvedEvidencePath = $EvidencePath
 if ($EvidencePath -ne "") {
@@ -166,6 +245,8 @@ if ($assetPath) {
     }) | Out-Null
 }
 
+$checks.Add((New-WebSocketCheckResult $base $pusherAppKey)) | Out-Null
+
 Write-Host "LAN client validation for $base"
 foreach ($check in $checks) {
     $prefix = if ($check.Passed) { "[ OK ]" } else { "[FAIL]" }
@@ -204,6 +285,7 @@ if ($EvidencePath -ne "") {
         $mark = if ($check.Passed) { "x" } else { " " }
         $label = switch ($check.Label) {
             "/assets/*.js" { "/assets/*.js loads as JavaScript" }
+            "Realtime WebSocket" { "Realtime WebSocket handshake succeeds through the same LAN origin" }
             default { "$($check.Label) responds from the client computer" }
         }
         $lines.Add("- [$mark] $label. Result/evidence: $($check.StatusCode) $($check.ContentType) $($check.Detail)") | Out-Null

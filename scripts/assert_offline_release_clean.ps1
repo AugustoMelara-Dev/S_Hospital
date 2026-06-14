@@ -122,6 +122,9 @@ function Invoke-ComposeImages([string] $composePath) {
         PUSHER_APP_ID = $env:PUSHER_APP_ID
         PUSHER_APP_KEY = $env:PUSHER_APP_KEY
         PUSHER_APP_SECRET = $env:PUSHER_APP_SECRET
+        HOSPITAL_ALLOW_INSECURE_HTTP = $env:HOSPITAL_ALLOW_INSECURE_HTTP
+        HOSPITAL_BACKUP_ENCRYPTION_KEY = $env:HOSPITAL_BACKUP_ENCRYPTION_KEY
+        HOSPITAL_MIGRATION_BACKUP_CONFIRMED = $env:HOSPITAL_MIGRATION_BACKUP_CONFIRMED
     }
 
     try {
@@ -132,6 +135,9 @@ function Invoke-ComposeImages([string] $composePath) {
         $env:PUSHER_APP_ID = "guard-app"
         $env:PUSHER_APP_KEY = "guard-key"
         $env:PUSHER_APP_SECRET = "guard-secret"
+        $env:HOSPITAL_ALLOW_INSECURE_HTTP = "1"
+        $env:HOSPITAL_BACKUP_ENCRYPTION_KEY = "guard-backup-key"
+        $env:HOSPITAL_MIGRATION_BACKUP_CONFIRMED = "false"
 
         $quotedComposePath = '"' + ($composePath -replace '"', '\"') + '"'
         $rawOutput = @(& cmd.exe /d /c "docker compose -f $quotedComposePath config --images 2>NUL" | ForEach-Object { $_.ToString() })

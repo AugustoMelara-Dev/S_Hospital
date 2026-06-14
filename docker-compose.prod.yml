@@ -18,7 +18,9 @@ services:
       APP_ENV: production
       APP_DEBUG: "false"
       APP_KEY: ${APP_KEY:?APP_KEY is required}
-      APP_URL: http://${SERVER_IP:?SERVER_IP is required}:${APP_PORT:-8000}
+      APP_SCHEME: ${APP_SCHEME:-http}
+      APP_URL: ${APP_SCHEME:-http}://${SERVER_IP:?SERVER_IP is required}:${APP_PORT:-8000}
+      HOSPITAL_ALLOW_INSECURE_HTTP: ${HOSPITAL_ALLOW_INSECURE_HTTP:?Set 0 for HTTPS or 1 to explicitly accept insecure LAN HTTP}
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
@@ -31,13 +33,16 @@ services:
       QUEUE_CONNECTION: database
       SESSION_DRIVER: database
       SESSION_ENCRYPT: "true"
+      SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
       LOG_CHANNEL: daily
       LOG_LEVEL: warning
       HOSPITAL_DUMP_BINARY: /usr/bin/mariadb-dump
+      HOSPITAL_BACKUP_ENCRYPTION_KEY: ${HOSPITAL_BACKUP_ENCRYPTION_KEY:?HOSPITAL_BACKUP_ENCRYPTION_KEY is required}
+      HOSPITAL_MIGRATION_BACKUP_CONFIRMED: ${HOSPITAL_MIGRATION_BACKUP_CONFIRMED:-false}
       RUN_MIGRATIONS: "true"
       SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
       SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
-      CORS_ALLOWED_ORIGINS: http://${SERVER_IP}:${APP_PORT:-8000}
+      CORS_ALLOWED_ORIGINS: ${APP_SCHEME:-http}://${SERVER_IP}:${APP_PORT:-8000}
       BROADCAST_CONNECTION: pusher
       PUSHER_APP_ID: ${PUSHER_APP_ID:?PUSHER_APP_ID is required}
       PUSHER_APP_KEY: ${PUSHER_APP_KEY:?PUSHER_APP_KEY is required}
@@ -47,8 +52,8 @@ services:
       PUSHER_PORT: 6001
       PUSHER_SCHEME: http
       PUSHER_CLIENT_HOST: ${SERVER_IP:?SERVER_IP is required}
-      PUSHER_CLIENT_PORT: ${SOKETI_PORT:-6001}
-      PUSHER_CLIENT_SCHEME: http
+      PUSHER_CLIENT_PORT: ${APP_PORT:-8000}
+      PUSHER_CLIENT_SCHEME: ${APP_SCHEME:-http}
     volumes:
       - backup_data:/var/www/html/storage/app/private/backups
       - shared_public:/shared_public
@@ -133,6 +138,9 @@ services:
       APP_ENV: production
       APP_DEBUG: "false"
       APP_KEY: ${APP_KEY:?APP_KEY is required}
+      APP_SCHEME: ${APP_SCHEME:-http}
+      APP_URL: ${APP_SCHEME:-http}://${SERVER_IP:?SERVER_IP is required}:${APP_PORT:-8000}
+      HOSPITAL_ALLOW_INSECURE_HTTP: ${HOSPITAL_ALLOW_INSECURE_HTTP:?Set 0 for HTTPS or 1 to explicitly accept insecure LAN HTTP}
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
@@ -145,13 +153,15 @@ services:
       QUEUE_CONNECTION: database
       SESSION_DRIVER: database
       SESSION_ENCRYPT: "true"
+      SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
       LOG_CHANNEL: daily
       LOG_LEVEL: warning
       HOSPITAL_DUMP_BINARY: /usr/bin/mariadb-dump
+      HOSPITAL_BACKUP_ENCRYPTION_KEY: ${HOSPITAL_BACKUP_ENCRYPTION_KEY:?HOSPITAL_BACKUP_ENCRYPTION_KEY is required}
       RUN_MIGRATIONS: "false"
       SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
       SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
-      CORS_ALLOWED_ORIGINS: http://${SERVER_IP}:${APP_PORT:-8000}
+      CORS_ALLOWED_ORIGINS: ${APP_SCHEME:-http}://${SERVER_IP}:${APP_PORT:-8000}
       BROADCAST_CONNECTION: pusher
       PUSHER_APP_ID: ${PUSHER_APP_ID:?PUSHER_APP_ID is required}
       PUSHER_APP_KEY: ${PUSHER_APP_KEY:?PUSHER_APP_KEY is required}
@@ -161,8 +171,8 @@ services:
       PUSHER_PORT: 6001
       PUSHER_SCHEME: http
       PUSHER_CLIENT_HOST: ${SERVER_IP:?SERVER_IP is required}
-      PUSHER_CLIENT_PORT: ${SOKETI_PORT:-6001}
-      PUSHER_CLIENT_SCHEME: http
+      PUSHER_CLIENT_PORT: ${APP_PORT:-8000}
+      PUSHER_CLIENT_SCHEME: ${APP_SCHEME:-http}
     volumes:
       - backup_data:/var/www/html/storage/app/private/backups
     healthcheck:
@@ -208,6 +218,9 @@ services:
       APP_ENV: production
       APP_DEBUG: "false"
       APP_KEY: ${APP_KEY:?APP_KEY is required}
+      APP_SCHEME: ${APP_SCHEME:-http}
+      APP_URL: ${APP_SCHEME:-http}://${SERVER_IP:?SERVER_IP is required}:${APP_PORT:-8000}
+      HOSPITAL_ALLOW_INSECURE_HTTP: ${HOSPITAL_ALLOW_INSECURE_HTTP:?Set 0 for HTTPS or 1 to explicitly accept insecure LAN HTTP}
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
@@ -225,13 +238,15 @@ services:
       QUEUE_CONNECTION: database
       SESSION_DRIVER: database
       SESSION_ENCRYPT: "true"
+      SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
       LOG_CHANNEL: daily
       LOG_LEVEL: warning
       HOSPITAL_DUMP_BINARY: /usr/bin/mariadb-dump
+      HOSPITAL_BACKUP_ENCRYPTION_KEY: ${HOSPITAL_BACKUP_ENCRYPTION_KEY:?HOSPITAL_BACKUP_ENCRYPTION_KEY is required}
       RUN_MIGRATIONS: "false"
       SERVER_IP: ${SERVER_IP:?SERVER_IP is required}
       SANCTUM_STATEFUL_DOMAINS: ${SERVER_IP},${SERVER_IP}:${APP_PORT:-8000}
-      CORS_ALLOWED_ORIGINS: http://${SERVER_IP}:${APP_PORT:-8000}
+      CORS_ALLOWED_ORIGINS: ${APP_SCHEME:-http}://${SERVER_IP}:${APP_PORT:-8000}
     volumes:
       - backup_data:/var/www/html/storage/app/private/backups
     healthcheck:
@@ -268,8 +283,8 @@ services:
       SOKETI_DEFAULT_APP_ID: ${PUSHER_APP_ID:?PUSHER_APP_ID is required}
       SOKETI_DEFAULT_APP_KEY: ${PUSHER_APP_KEY:?PUSHER_APP_KEY is required}
       SOKETI_DEFAULT_APP_SECRET: ${PUSHER_APP_SECRET:?PUSHER_APP_SECRET is required}
-    ports:
-      - "${SOKETI_PORT:-6001}:6001"
+    expose:
+      - "6001"
     healthcheck:
       test: ["CMD-SHELL", "node -e \"const net=require('net'); const s=net.createConnection(6001,'127.0.0.1'); s.on('connect',()=>process.exit(0)); s.on('error',()=>process.exit(1)); setTimeout(()=>process.exit(1),2000);\""]
       interval: 30s

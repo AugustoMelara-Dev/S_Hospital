@@ -10,7 +10,10 @@ class HealthCheckTest extends TestCase
     {
         $response = $this->get('/up');
 
-        $response->assertOk();
+        $response
+            ->assertOk()
+            ->assertJsonPath('status', 'ok')
+            ->assertJsonPath('database', 'ok');
     }
 
     public function test_api_health_endpoint_returns_json(): void

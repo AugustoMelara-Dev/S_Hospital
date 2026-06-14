@@ -75,6 +75,17 @@ HOSPITAL_BACKUP_KEEP_SCHEDULED_DAYS=7
 
 La retencion nunca elimina backups `pending` o `failed`; esos registros quedan como evidencia operativa. La poda solo borra archivos locales con ruta segura bajo `backups/`, respeta tipo `manual`/`scheduled`, conserva siempre los mas recientes segun politica y registra auditoria `backup.pruned`.
 
+## Antes de migraciones productivas
+
+El contenedor backend bloquea migraciones pendientes sobre una base ya inicializada si `APP_ENV=production` y no se confirma un backup cifrado reciente. Para un upgrade:
+
+1. Crear un backup manual y esperar estado `success`.
+2. Registrar `checksum_sha256`, fecha/hora y responsable.
+3. Conservar `HOSPITAL_BACKUP_ENCRYPTION_KEY` fuera del repositorio.
+4. Ejecutar el upgrade con `HOSPITAL_MIGRATION_BACKUP_CONFIRMED=1` solo para esa ventana de mantenimiento.
+
+No usar esta variable para saltarse backups rutinarios; es una confirmacion operativa de que existe un restore point antes de modificar el esquema.
+
 El backend busca `mariadb-dump` o `mysqldump` en el `PATH` y en rutas locales comunes como `C:\xampp\mysql\bin\mysqldump.exe`. Si el servidor usa otra ruta, definir:
 
 ```powershell

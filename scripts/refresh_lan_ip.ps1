@@ -112,6 +112,9 @@ function Update-EnvKey {
 # 1. Update root .env
 if ($PSCmdlet.ShouldProcess($rootEnv, "Set SERVER_IP=$ServerIp")) {
     Update-EnvKey -Path $rootEnv -Key "SERVER_IP" -Value $ServerIp
+    Update-EnvKey -Path $rootEnv -Key "APP_SCHEME" -Value "http"
+    Update-EnvKey -Path $rootEnv -Key "HOSPITAL_ALLOW_INSECURE_HTTP" -Value "1"
+    Update-EnvKey -Path $rootEnv -Key "SESSION_SECURE_COOKIE" -Value "false"
     Write-Host "  updated $rootEnv (SERVER_IP)"
 }
 
@@ -119,6 +122,9 @@ if ($PSCmdlet.ShouldProcess($rootEnv, "Set SERVER_IP=$ServerIp")) {
 if ($PSCmdlet.ShouldProcess($backendEnv, "Set LAN env vars")) {
     Update-EnvKey -Path $backendEnv -Key "SERVER_IP" -Value $ServerIp
     Update-EnvKey -Path $backendEnv -Key "APP_PORT" -Value $AppPort.ToString()
+    Update-EnvKey -Path $backendEnv -Key "APP_SCHEME" -Value "http"
+    Update-EnvKey -Path $backendEnv -Key "HOSPITAL_ALLOW_INSECURE_HTTP" -Value "1"
+    Update-EnvKey -Path $backendEnv -Key "SESSION_SECURE_COOKIE" -Value "false"
 
     # Read existing SANCTUM_STATEFUL_DOMAINS and CORS_ALLOWED_ORIGINS
     . "$PSScriptRoot/lib/env_helpers.ps1"

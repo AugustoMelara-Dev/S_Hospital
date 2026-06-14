@@ -2,6 +2,8 @@ param(
     [string] $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
     [string] $PhpPath = "C:\xampp\php\php.exe",
     [string] $DailyBackupTime = "02:00",
+    [int] $MaxLogBytes = 1048576,
+    [int] $LogRetentionDays = 14,
     [switch] $WhatIfOnly
 )
 
@@ -40,6 +42,22 @@ $logDir = if ($isPhpMode) {
 }
 $logFile = Join-Path $logDir "backup-automation.log"
 
+function Invoke-BackupAutomationLogRotation {
+    if (-not (Test-Path -LiteralPath $logDir)) {
+        return
+    }
+
+    $cutoff = (Get-Date).AddDays(-[Math]::Max(1, $LogRetentionDays))
+    Get-ChildItem -LiteralPath $logDir -Filter "backup-automation*.log" -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.LastWriteTime -lt $cutoff } |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+
+    if ((Test-Path -LiteralPath $logFile) -and (Get-Item -LiteralPath $logFile).Length -ge [Math]::Max(65536, $MaxLogBytes)) {
+        $archivePath = Join-Path $logDir ("backup-automation-{0}.log" -f (Get-Date -Format "yyyyMMdd-HHmmss"))
+        Move-Item -LiteralPath $logFile -Destination $archivePath -Force
+    }
+}
+
 function Get-SafeAutomationText([string] $Message) {
     $safe = $Message
     foreach ($path in @($ProjectRoot, $originalProjectRoot, $backendDir, $logDir, $stateDir, $composeFile, $envFile)) {
@@ -56,6 +74,7 @@ function Get-SafeAutomationText([string] $Message) {
 
 function Write-AutomationLog([string] $Message) {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Invoke-BackupAutomationLogRotation
     Add-Content -LiteralPath $logFile -Value "[$timestamp] $(Get-SafeAutomationText $Message)"
 }
 
