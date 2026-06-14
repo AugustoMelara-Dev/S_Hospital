@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -48,10 +47,10 @@ return new class extends Migration
             'invoices_discount_cents_nonneg' => 'ALTER TABLE invoices ADD CONSTRAINT invoices_discount_cents_nonneg CHECK (discount_amount_cents >= 0)',
             'invoice_items_unit_price_cents_nonneg' => 'ALTER TABLE invoice_items ADD CONSTRAINT invoice_items_unit_price_cents_nonneg CHECK (unit_price_cents >= 0)',
             'invoice_items_line_subtotal_cents_nonneg' => 'ALTER TABLE invoice_items ADD CONSTRAINT invoice_items_line_subtotal_cents_nonneg CHECK (line_subtotal_cents >= 0)',
-            'invoice_items_line_tax_cents_nonneg' => 'ALTER TABLE invoice_items ADD CONSTRAINT invoice_items_line_tax_cents_nonneg CHECK (line_tax_cents >= 0)',
+            'invoice_items_tax_amount_cents_nonneg' => 'ALTER TABLE invoice_items ADD CONSTRAINT invoice_items_tax_amount_cents_nonneg CHECK (tax_amount_cents >= 0)',
             'invoice_items_line_total_cents_nonneg' => 'ALTER TABLE invoice_items ADD CONSTRAINT invoice_items_line_total_cents_nonneg CHECK (line_total_cents >= 0)',
             'invoice_items_quantity_cents_positive' => 'ALTER TABLE invoice_items ADD CONSTRAINT invoice_items_quantity_cents_positive CHECK (quantity_cents > 0)',
-            'cash_movements_amount_nonzero' => 'ALTER TABLE cash_movements ADD CONSTRAINT cash_movements_amount_nonzero CHECK (amount <> 0)',
+
             'services_price_positive' => 'ALTER TABLE services ADD CONSTRAINT services_price_positive CHECK (price > 0)',
             'fiscal_sequences_min_le_max' => 'ALTER TABLE fiscal_sequences ADD CONSTRAINT fiscal_sequences_min_le_max CHECK (min_number <= max_number)',
             'fiscal_sequences_current_nonneg' => 'ALTER TABLE fiscal_sequences ADD CONSTRAINT fiscal_sequences_current_nonneg CHECK (current_number >= 0)',
@@ -65,7 +64,7 @@ return new class extends Migration
                 // 1061 = "Duplicate key name" is rare for CHECKs but worth covering.
                 $sqlState = (string) $exception->getCode();
                 $errorCode = $exception->errorInfo[1] ?? null;
-                if ($sqlState === '42S21' || $errorCode === 3821 || $errorCode === 1061) {
+                if ($sqlState === '42S21' || $errorCode === 3821 || $errorCode === 1061 || $errorCode === 1826) {
                     continue;
                 }
                 throw $exception;
@@ -85,10 +84,10 @@ return new class extends Migration
             'ALTER TABLE fiscal_sequences DROP CONSTRAINT fiscal_sequences_current_nonneg',
             'ALTER TABLE fiscal_sequences DROP CONSTRAINT fiscal_sequences_min_le_max',
             'ALTER TABLE services DROP CONSTRAINT services_price_positive',
-            'ALTER TABLE cash_movements DROP CONSTRAINT cash_movements_amount_nonzero',
+
             'ALTER TABLE invoice_items DROP CONSTRAINT invoice_items_quantity_cents_positive',
             'ALTER TABLE invoice_items DROP CONSTRAINT invoice_items_line_total_cents_nonneg',
-            'ALTER TABLE invoice_items DROP CONSTRAINT invoice_items_line_tax_cents_nonneg',
+            'ALTER TABLE invoice_items DROP CONSTRAINT invoice_items_tax_amount_cents_nonneg',
             'ALTER TABLE invoice_items DROP CONSTRAINT invoice_items_line_subtotal_cents_nonneg',
             'ALTER TABLE invoice_items DROP CONSTRAINT invoice_items_unit_price_cents_nonneg',
             'ALTER TABLE invoices DROP CONSTRAINT invoices_discount_cents_nonneg',

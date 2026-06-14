@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Actions\Reports\OpenApiExporter;
+use App\Models\User;
 use Tests\TestCase;
 
 class OpenApiExporterTest extends TestCase
@@ -48,7 +49,7 @@ class OpenApiExporterTest extends TestCase
 
     public function test_openapi_endpoint_returns_the_document(): void
     {
-        $user = new \App\Models\User(['id' => 1]);
+        $user = new User(['id' => 1]);
         $response = $this->actingAs($user)->getJson('/api/system/openapi');
 
         $response->assertOk()

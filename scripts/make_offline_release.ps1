@@ -99,7 +99,10 @@ if (-not $AllowDirty -and -not [string]::IsNullOrWhiteSpace($gitStatus)) {
 }
 
 if ((Test-Path -LiteralPath $ReleaseRoot) -and -not $Force) {
-    Write-Fail "La carpeta de release ya existe. Use -Force para reemplazarla."
+    $response = Read-Host "La carpeta de release ya existe. Desea reemplazarla? (s/n)"
+    if ($response -notmatch '^s') {
+        Write-Fail "Operacion cancelada por el usuario."
+    }
 }
 
 if (Test-Path -LiteralPath $ReleaseRoot) {

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Checkbox } from '../../../components/ui/checkbox';
 import type { Payment } from '../../../lib/api';
 import { formatLempirasFromCents, parseCents as parseCentsNullable } from '../../../lib/moneyCents';
-import { parseCents, toFloat } from '../../../lib/money';
+import { parseCents } from '../../../lib/money';
 
 type PaymentModalProps = {
   open: boolean;
@@ -77,6 +77,10 @@ export function PaymentModal({
     if (value === '') {
       setCapNotice(null);
       onPaymentAmountChange('');
+      return;
+    }
+
+    if (!/^\d*(\.\d{0,2})?$/.test(value)) {
       return;
     }
 
@@ -193,10 +197,8 @@ export function PaymentModal({
             <Input
               ref={amountInputRef}
               id="payment-amount"
-              type="number"
-              step="0.01"
-              min="0"
-              max={balanceCents !== null ? toFloatForInput(balanceCents) : undefined}
+              type="text"
+              inputMode="decimal"
               value={paymentAmount}
               onChange={(e) => handleAmountChange(e.target.value)}
               placeholder="0.00"
@@ -262,7 +264,12 @@ function parseMoneyCents(value: string): number | null {
 }
 
 function formatMoneyCents(cents: number): string {
-  return `${Math.trunc(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
+  const isNegative = cents < 0;
+  const abs = Math.abs(cents);
+  const str = String(abs).padStart(3, '0');
+  const integer = str.slice(0, -2);
+  const decimal = str.slice(-2);
+  return `${isNegative ? '-' : ''}${integer}.${decimal}`;
 }
 
 function moneyLabel(value: string | number | null | undefined): string {
@@ -277,6 +284,3 @@ function moneyLabelFromCents(cents: number): string {
   return formatLempirasFromCents(cents);
 }
 
-function toFloatForInput(cents: number): number {
-  return toFloat(cents);
-}

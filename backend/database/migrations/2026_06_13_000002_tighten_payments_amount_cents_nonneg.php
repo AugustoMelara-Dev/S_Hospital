@@ -46,7 +46,7 @@ return new class extends Migration
         }
 
         // Drop and re-add with the tighter expression.
-        DB::statement('ALTER TABLE payments DROP CHECK payments_amount_cents_nonneg');
+        DB::statement('ALTER TABLE payments DROP CONSTRAINT payments_amount_cents_nonneg');
         DB::statement('ALTER TABLE payments ADD CONSTRAINT payments_amount_cents_nonneg CHECK (amount_cents >= 0)');
     }
 
@@ -67,7 +67,7 @@ return new class extends Migration
             return;
         }
 
-        DB::statement('ALTER TABLE payments DROP CHECK payments_amount_cents_nonneg');
+        DB::statement('ALTER TABLE payments DROP CONSTRAINT payments_amount_cents_nonneg');
         DB::statement('ALTER TABLE payments ADD CONSTRAINT payments_amount_cents_nonneg CHECK (amount_cents IS NULL OR amount_cents >= 0)');
     }
 };

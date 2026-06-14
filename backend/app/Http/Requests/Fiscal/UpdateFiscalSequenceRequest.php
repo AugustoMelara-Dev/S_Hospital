@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Fiscal;
 
 use App\Models\FiscalSequence;
+use App\Models\Invoice;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -50,8 +51,11 @@ class UpdateFiscalSequenceRequest extends FormRequest
                     $validator->errors()->add('current_number', 'El siguiente correlativo debe quedar dentro del rango autorizado.');
                 }
 
-                if ($current < $sequence->current_number) {
-                    $validator->errors()->add('current_number', 'No se puede reducir el correlativo actual.');
+                $issuedCount = Invoice::query()->where('fiscal_sequence_id', $sequence->id)->count();
+                $maxIssued = $issuedCount > 0 ? ($sequence->min_number + $issuedCount - 1) : 0;
+
+                if ($current < $sequence->current_number || ($maxIssued > 0 && $current < $maxIssued)) {
+                    $validator->errors()->add('current_number', 'No se puede reducir el correlativo actual por debajo de los documentos ya emitidos.');
                 }
 
                 if ($active && FiscalSequence::query()

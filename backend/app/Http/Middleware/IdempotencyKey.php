@@ -187,7 +187,7 @@ class IdempotencyKey
     private function persistResponse(IdempotencyKeyModel $reservation, Response $response): void
     {
         $body = $response->getContent();
-        $plain = is_string($body) ? $body : (is_array($body) || is_object($body) ? json_encode($body) : null);
+        $plain = is_string($body) ? $body : null;
 
         // Use the encrypted accessor so the underlying column stores
         // `Crypt::encryptString()` output, never raw JSON with PII.

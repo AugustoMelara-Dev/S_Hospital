@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -14,8 +15,8 @@ use Illuminate\Support\Facades\Crypt;
  * @property string $idempotency_key
  * @property string $request_fingerprint
  * @property int|null $response_status
- * @property string|null $response_body  ciphertext (Crypt::encryptString)
- * @property string|null $response_body_plain  decrypted payload (accessor)
+ * @property string|null $response_body ciphertext (Crypt::encryptString)
+ * @property string|null $response_body_plain decrypted payload (accessor)
  * @property Carbon|null $completed_at
  */
 class IdempotencyKey extends Model
@@ -57,7 +58,7 @@ class IdempotencyKey extends Model
 
                 try {
                     return Crypt::decryptString($value);
-                } catch (\Illuminate\Contracts\Encryption\DecryptException) {
+                } catch (DecryptException) {
                     // Legacy rows written before encryption was added (or
                     // accidentally unencrypted rows) are surfaced as the
                     // raw value so the cashier retry is not silently lost.

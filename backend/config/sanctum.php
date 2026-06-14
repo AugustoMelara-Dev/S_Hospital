@@ -101,7 +101,7 @@ return [
 
     'middleware' => [
         // Local demo can opt out while production stays fail-closed by default.
-        'authenticate_session' => env('SANCTUM_AUTHENTICATE_SESSION', env('APP_ENV') === 'production') ? AuthenticateSession::class : null,
+        'authenticate_session' => AuthenticateSession::class,
         'encrypt_cookies' => EncryptCookies::class,
         'validate_csrf_token' => ValidateCsrfToken::class,
     ],
