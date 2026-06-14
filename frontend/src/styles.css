@@ -827,8 +827,8 @@ html.dark {
 }
 
 @media print {
-  .print-hidden,
-  .no-print {
+  body[data-printing-receipt="true"] .print-hidden,
+  body[data-printing-receipt="true"] .no-print {
     display: none !important;
   }
 

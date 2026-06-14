@@ -828,6 +828,9 @@ describe('NewInvoiceView', () => {
     expect(await screen.findByRole('button', { name: /reimprimir/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /anular factura/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /reimprimir/i }));
+    fireEvent.change(await screen.findByLabelText(/motivo de reimpresión/i), {
+      target: { value: 'Copia solicitada por paciente' },
+    });
     fireEvent.click(await screen.findByRole('button', { name: /registrar reimpresi/i }));
     expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
     await waitFor(() => {
@@ -836,16 +839,16 @@ describe('NewInvoiceView', () => {
       expect(receiptEl).toHaveClass('receipt-half_letter');
     });
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(1);
+    const reprintCall = fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))[0];
+    expect(JSON.parse(String(reprintCall[1]?.body))).toMatchObject({
+      reason: 'Copia solicitada por paciente',
+      width: 'half_letter',
+    });
 
     fireEvent.click(screen.getByRole('button', { name: /^imprimir$/i }));
 
     await waitFor(() => {
-      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(2);
-    });
-    const printAuditCall = fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))[1];
-    expect(JSON.parse(String(printAuditCall[1]?.body))).toMatchObject({
-      reason: 'Impresión desde vista de recibo.',
-      width: 'half_letter',
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/reprint'))).toHaveLength(1);
     });
   });
 
@@ -948,6 +951,8 @@ describe('NewInvoiceView', () => {
   it('scopes receipt print hiding to the explicit printing receipt state', () => {
     const styles = readFileSync('src/styles.css', 'utf8');
 
+    expect(styles).toContain('body[data-printing-receipt="true"] .print-hidden');
+    expect(styles).toContain('body[data-printing-receipt="true"] .no-print');
     expect(styles).toContain('body[data-printing-receipt="true"] *');
     expect(styles).toContain('@page receipt-half-letter');
     expect(styles).toContain('size: 8.5in 5.5in;');
@@ -957,6 +962,8 @@ describe('NewInvoiceView', () => {
     expect(styles).toContain('.institutional-receipt.receipt-58mm');
     expect(styles).toContain('@page receipt-80mm');
     expect(styles).toContain('@page receipt-58mm');
+    expect(styles).not.toContain('@media print {\n  .print-hidden');
+    expect(styles).not.toContain('@media print {\r\n  .print-hidden');
     expect(styles).not.toContain('body * {\n      visibility: hidden;');
     expect(styles).not.toContain('body * {\r\n      visibility: hidden;');
   });

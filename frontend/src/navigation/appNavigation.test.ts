@@ -58,5 +58,7 @@ describe('appNavigation', () => {
       ]),
     ).toBe(true);
     expect(canAccessRoute(appRoutes.reports, ['reports.cash_session.view'])).toBe(true);
+    expect(canAccessRoute(appRoutes.reports, ['reports.managerial.view'])).toBe(true);
+    expect(canAccessRoute(appRoutes.reports, ['cash.close_any'])).toBe(false);
   });
 });

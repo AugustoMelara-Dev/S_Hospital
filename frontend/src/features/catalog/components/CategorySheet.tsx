@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { apiClient } from '@/lib/api';
+import { ApiError, apiClient, userSafeErrorMessage } from '@/lib/api';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -38,11 +39,14 @@ const defaultValues: CategoryFormData = {
 
 export function CategorySheet({ open, onOpenChange, category, onSuccess }: CategorySheetProps) {
   const isEditing = !!category;
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     reset,
+    setError,
+    setFocus,
     control,
     formState: { errors, isSubmitting },
   } = useForm<CategoryFormData>({
@@ -52,6 +56,7 @@ export function CategorySheet({ open, onOpenChange, category, onSuccess }: Categ
 
   useEffect(() => {
     if (open) {
+      setSubmitError(null);
       if (category) {
         reset({
           name: category.name,
@@ -65,10 +70,21 @@ export function CategorySheet({ open, onOpenChange, category, onSuccess }: Categ
   }, [open, category, reset]);
 
   async function onSubmit(data: CategoryFormData) {
-    await apiClient.saveCategory(data, category?.id);
-    onSuccess();
-    onOpenChange(false);
-    reset(defaultValues);
+    setSubmitError(null);
+
+    try {
+      await apiClient.saveCategory(data, category?.id);
+      onSuccess();
+      onOpenChange(false);
+      reset(defaultValues);
+    } catch (error) {
+      if (error instanceof ApiError && error.validationErrors) {
+        applyBackendErrors(error.validationErrors, setError);
+        focusFirstCategoryError(error.validationErrors, setFocus);
+      }
+
+      setSubmitError(userSafeErrorMessage(error, 'Error al guardar la categoría.'));
+    }
   }
 
   return (
@@ -116,6 +132,12 @@ export function CategorySheet({ open, onOpenChange, category, onSuccess }: Categ
           <Label htmlFor="active" className="text-sm font-medium cursor-pointer">Categoría activa</Label>
         </div>
 
+        {submitError && (
+          <Alert variant="destructive" title="Error al guardar">
+            {submitError}
+          </Alert>
+        )}
+
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button
             type="button"
@@ -131,4 +153,26 @@ export function CategorySheet({ open, onOpenChange, category, onSuccess }: Categ
       </form>
     </Sheet>
   );
+}
+
+function applyBackendErrors(
+  validationErrors: Record<string, string[]>,
+  setError: ReturnType<typeof useForm<CategoryFormData>>['setError'],
+) {
+  (['name', 'sort_order', 'active'] as const).forEach((field) => {
+    const message = validationErrors[field]?.[0];
+    if (message) {
+      setError(field, { type: 'server', message });
+    }
+  });
+}
+
+function focusFirstCategoryError(
+  validationErrors: Record<string, string[]>,
+  setFocus: ReturnType<typeof useForm<CategoryFormData>>['setFocus'],
+) {
+  const firstFocusable = (['name', 'sort_order'] as const).find((field) => validationErrors[field]?.[0]);
+  if (firstFocusable) {
+    window.setTimeout(() => setFocus(firstFocusable), 0);
+  }
 }

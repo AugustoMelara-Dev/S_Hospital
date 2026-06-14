@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { InvoiceHistoryView } from './InvoiceHistoryView';
-import { apiClient, type AuthUser, type Invoice } from '../../lib/api';
+import { apiClient, type AuthUser, type Invoice, type ReceiptData } from '../../lib/api';
 
 function renderWithQueryClient(node: ReactNode) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -119,6 +119,54 @@ describe('InvoiceHistoryView', () => {
 
     await waitFor(() => expect(reverseInvoice).toHaveBeenCalledWith(3, 'Pago aplicado a factura equivocada'));
   });
+
+  it('does not treat invoice void permission as receipt viewing scope', async () => {
+    const invoice = invoiceFixture();
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={voidOnlyUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Historial')).toBeInTheDocument());
+
+    expect(screen.queryByRole('button', { name: /ver recibo/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /anular/i })).toBeInTheDocument();
+  });
+
+  it('requires a real reprint reason before posting audit', async () => {
+    const invoice = invoiceFixture({ status: 'paid', paid_amount: '17.25', balance_due: '0.00' });
+    const reprintInvoice = vi.spyOn(apiClient, 'reprintInvoice').mockResolvedValue(receiptFixture(invoice));
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(invoice);
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [invoice],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Historial')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /reimprimir/i }));
+
+    const confirmButton = screen.getByRole('button', { name: /registrar reimpresión/i });
+    expect(confirmButton).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/motivo de reimpresión/i), { target: { value: 'abc' } });
+    expect(confirmButton).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent(/al menos 5 caracteres/i);
+
+    fireEvent.change(screen.getByLabelText(/motivo de reimpresión/i), {
+      target: { value: 'Copia solicitada por paciente' },
+    });
+    expect(confirmButton).not.toBeDisabled();
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => expect(reprintInvoice).toHaveBeenCalledWith(1, {
+      width: 'half_letter',
+      reason: 'Copia solicitada por paciente',
+    }));
+  });
 });
 
 function invoiceFixture(overrides: Partial<Invoice> = {}): Invoice {
@@ -149,5 +197,57 @@ function adminUser(): AuthUser {
     roles: ['admin'],
     permissions: ['receipts.view', 'receipts.reprint', 'receipts.reprint_any', 'invoices.void', 'invoices.reverse'],
     must_change_password: false,
+  };
+}
+
+function voidOnlyUser(): AuthUser {
+  return {
+    ...adminUser(),
+    permissions: ['receipts.view', 'invoices.void'],
+  };
+}
+
+function receiptFixture(invoice: Invoice): ReceiptData {
+  return {
+    hospital: {
+      name: 'Hospital San Isidro',
+      address: 'Barrio El Centro',
+      rtn: null,
+      slogan: null,
+    },
+    institutional: {
+      template_mode: 'institutional',
+      paper_size: 'half_letter',
+      government_line: 'Gobierno de Honduras',
+      secretariat_line: 'Secretaria de Salud',
+      footer_text: null,
+      signature_label: 'Firma y sello',
+      copy_label: 'Reimpresion #1',
+      location: 'San Isidro',
+    },
+    fiscal: {
+      cai: null,
+      authorized_range: null,
+      valid_until: null,
+    },
+    invoice: {
+      id: invoice.id,
+      invoice_number: invoice.invoice_number,
+      patient_name: invoice.patient_name,
+      subtotal: invoice.subtotal,
+      tax_amount: invoice.tax_amount,
+      tax_rate: '15.00',
+      tax_label: 'ISV',
+      discount_amount: invoice.discount_amount,
+      total: invoice.total,
+      paid_amount: invoice.paid_amount,
+      balance_due: invoice.balance_due,
+      status: invoice.status,
+      issued_at: invoice.issued_at,
+      cashier: 'Admin Hospital',
+    },
+    items: [],
+    payments: [],
+    width: 'half_letter',
   };
 }

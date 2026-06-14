@@ -158,20 +158,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     }
   }
 
-  async function auditReceiptPrint() {
-    if (!selectedInvoice || !receipt) {
-      return;
-    }
-
-    const auditedReceipt = await apiClient.reprintInvoice(selectedInvoice.id, {
-      width: institutionalReceiptPaperSize(receipt.width),
-      reason: 'Impresión desde vista de recibo.',
-    });
-    const normalizedWidth = institutionalReceiptPaperSize(auditedReceipt.width);
-    setReceiptWidth(normalizedWidth);
-    setReceipt({ ...auditedReceipt, width: normalizedWidth });
-  }
-
   async function changePage(page: number) {
     const nextFilters = { ...filters, page };
     setFilters(nextFilters);
@@ -219,6 +205,13 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
   async function confirmReprintInvoice() {
     if (!reprintTarget) return;
+    const trimmedReason = reprintReason.trim();
+
+    if (trimmedReason.length < 5) {
+      onStatus('Ingrese un motivo de reimpresión de al menos 5 caracteres.');
+
+      return;
+    }
 
     try {
       const invoice = await apiClient.getInvoice(reprintTarget.id);
@@ -226,7 +219,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
       const nextReceipt = await apiClient.reprintInvoice(reprintTarget.id, {
         width: requestedWidth,
-        reason: reprintReason.trim() || 'Reimpresión solicitada desde historial.',
+        reason: trimmedReason,
       });
       // Reprint posts an audit log entry that other views (dashboard,
       // cashier list) may display; let them refetch.
@@ -383,7 +376,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex flex-wrap justify-end gap-2">
-                        {canViewReceipt && (canReprintAny || canVoid || isOwnInvoiceFromToday(invoice)) && (
+                        {canViewReceipt && (canReprintAny || isOwnInvoiceFromToday(invoice)) && (
                           <Button
                             type="button"
                             variant="outline"
@@ -495,13 +488,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                 setReceiptWidth(newWidth);
               }}
               onPrint={async () => {
-                try {
-                  await auditReceiptPrint();
-                  onStatus(`Recibo ${selectedInvoice.invoice_number} enviado a impresión.`);
-                } catch (error) {
-                  onStatus(userSafeErrorMessage(error, 'No se pudo auditar la reimpresión.'));
-                  throw error;
-                }
+                onStatus(`Recibo ${selectedInvoice.invoice_number} enviado a impresión.`);
               }}
             />
           </div>
@@ -584,6 +571,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
       <ConfirmDialog
         confirmLabel="Registrar reimpresión"
+        confirmDisabled={reprintReason.trim().length < 5}
         onCancel={() => {
           setReprintTarget(null);
           setReprintReason('');
@@ -597,14 +585,25 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             Esta acción queda auditada. Cambiar el tamaño en la vista previa no registra reimpresión; este botón sí.
           </p>
           <div className="space-y-2">
-            <Label htmlFor="reprintReason">Motivo opcional</Label>
+            <Label htmlFor="reprintReason">Motivo de reimpresión *</Label>
             <Textarea
               id="reprintReason"
+              aria-describedby="reprintReason-help"
+              aria-invalid={reprintReason.length > 0 && reprintReason.trim().length < 5}
+              aria-label="Motivo de reimpresión"
               value={reprintReason}
               onChange={(event) => setReprintReason(event.target.value)}
               placeholder="Ejemplo: copia solicitada por paciente"
               rows={2}
             />
+            <p id="reprintReason-help" className="text-xs text-muted-foreground">
+              Mínimo 5 caracteres. El motivo queda registrado en auditoría.
+            </p>
+            {reprintReason.length > 0 && reprintReason.trim().length < 5 ? (
+              <p role="alert" className="text-xs font-medium text-destructive">
+                El motivo debe tener al menos 5 caracteres.
+              </p>
+            ) : null}
           </div>
         </div>
       </ConfirmDialog>
