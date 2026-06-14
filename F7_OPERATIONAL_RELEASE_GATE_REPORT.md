@@ -6,7 +6,7 @@ Commit inicial auditado: `0f25a76c189d9947b7e82b4d43c9eae1faf03184`
 HEAD real al iniciar cierre E2E: `c55ba65be7822fd65bc88d7dc4d0c02d6124823b`
 Commit tecnico del cierre E2E: `17915712`
 Commit documental del reporte: `ccfee49f`
-HEAD final de la rama tras publicar: ver `git rev-parse HEAD`.
+HEAD final publicado F7: `58a528c0d1e374f1c53ae24052a3e4343eb1b988`.
 
 ## Veredicto
 
@@ -58,6 +58,7 @@ Estado antes del cierre E2E final:
 | `c55ba65b` | `feat(tests): add operational installation and validation scripts for QA process` |
 | `17915712` | `test(e2e): add reproducible f7 release gate` |
 | `ccfee49f` | `docs(release): close f7 e2e gate report` |
+| `58a528c0` | `docs(release): record f7 report commit hash` |
 
 ## Hallazgos corregidos
 
