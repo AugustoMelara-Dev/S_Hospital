@@ -31,9 +31,9 @@ const guides = [
     steps: ['Use el acceso institucional del escritorio', 'Espere a que cargue Hospital San Isidro', 'Confirme que no aparezca error de servidor', 'Si no abre, avise antes de intentar cambios'],
   },
   {
-    title: 'Iniciar sesion',
+    title: 'Iniciar sesión',
     icon: LogIn,
-    steps: ['Use su propio usuario', 'No comparta contrasena ni cuenta de turno', 'Si la sesion vence, ingrese de nuevo', 'Si falta permiso, pida revision de rol'],
+    steps: ['Use su propio usuario', 'No comparta contraseña ni cuenta de turno', 'Si la sesión vence, ingrese de nuevo', 'Si falta permiso, pida revisión de rol'],
   },
   {
     title: 'Abrir caja',
@@ -125,7 +125,7 @@ const incidentGuides = [
   },
   {
     title: 'Se cerro el navegador',
-    answer: 'Abra el acceso institucional de nuevo. Revise Caja e Historial antes de repetir una factura, cobro o reimpresion.',
+    answer: 'Abra el acceso institucional de nuevo. Revise Caja e Historial antes de repetir una factura, cobro o reimpresión.',
   },
 ];
 
@@ -157,14 +157,14 @@ const dailyChecklists = [
   {
     title: 'Antes de cerrar turno',
     items: [
-      'Revisar facturas pendientes y pagos por metodo.',
+      'Revisar facturas pendientes y pagos por método.',
       'Comparar efectivo esperado contra efectivo contado.',
       'Anotar diferencias antes de cerrar.',
       'Crear o confirmar respaldo si el supervisor lo solicita.',
     ],
   },
   {
-    title: 'Supervisor - revision diaria',
+    title: 'Supervisor - revisión diaria',
     items: [
       'Confirmar que cada cajero opera con su propio usuario.',
       'Revisar cajas abiertas, diferencias y facturas pendientes.',
@@ -173,28 +173,28 @@ const dailyChecklists = [
     ],
   },
   {
-    title: 'Administrador - revision diaria',
+    title: 'Administrador - revisión diaria',
     items: [
       'Revisar Estado operativo en Respaldos.',
       'Confirmar ultimo respaldo protegido.',
       'Revisar espacio en disco y cola de trabajos.',
-      'Guardar evidencia si hubo fallas de red, impresion o energia.',
+      'Guardar evidencia si hubo fallas de red, impresión o energía.',
     ],
   },
 ];
 
 const delicateActions = [
   {
-    title: 'Anulacion',
+    title: 'Anulación',
     warning: 'Solo supervisor o administrador. Revise factura, pago y motivo antes de confirmar.',
   },
   {
-    title: 'Restauracion de respaldo',
-    warning: 'Nunca restaure sobre datos reales sin respaldo reciente, autorizacion y base aislada de prueba.',
+    title: 'Restauración de respaldo',
+    warning: 'Nunca restaure sobre datos reales sin respaldo reciente, autorización y base aislada de prueba.',
   },
   {
     title: 'Cierre con diferencia',
-    warning: 'No cierre para ocultar errores. Registre conteo real, motivo y pida revision.',
+    warning: 'No cierre para ocultar errores. Registre conteo real, motivo y pida revisión.',
   },
   {
     title: 'Cambio de red o servidor',
@@ -419,7 +419,7 @@ export function HelpView() {
             <ClipboardCheck aria-hidden="true" className="size-5 text-secondary" />
             Checklist diario por rol
           </CardTitle>
-          <CardDescription>Pasos cortos para iniciar, cerrar y revisar el turno sin depender de soporte tecnico.</CardDescription>
+          <CardDescription>Pasos cortos para iniciar, cerrar y revisar el turno sin depender de soporte técnico.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3">
           {dailyChecklists.map((checklist) => (
@@ -441,16 +441,16 @@ export function HelpView() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AlertTriangle aria-hidden="true" className="size-5 text-amber-700" />
+            <AlertTriangle aria-hidden="true" className="size-5 text-warning-foreground" />
             Acciones delicadas
           </CardTitle>
-          <CardDescription>Advertencias antes de tocar datos, caja, respaldos o configuracion de red.</CardDescription>
+          <CardDescription>Advertencias antes de tocar datos, caja, respaldos o configuración de red.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2">
           {delicateActions.map((item) => (
-            <div key={item.title} className="rounded-md border border-amber-200 bg-amber-50 p-4">
-              <h3 className="text-sm font-semibold text-amber-950">{item.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-amber-900">{item.warning}</p>
+            <div key={item.title} className="rounded-md border border-warning/35 bg-warning/10 p-4">
+              <h3 className="text-sm font-semibold text-warning-foreground">{item.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-warning-foreground/90">{item.warning}</p>
             </div>
           ))}
         </CardContent>
@@ -469,9 +469,9 @@ export function HelpView() {
               Administrador: revisar usuarios, respaldos, espacio y pruebas de restauración.
             </p>
           </div>
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
-            <h3 className="text-sm font-semibold text-amber-900">Modo práctica</h3>
-            <p className="mt-2 text-sm leading-6 text-amber-900">
+          <div className="rounded-md border border-warning/35 bg-warning/10 p-4">
+            <h3 className="text-sm font-semibold text-warning-foreground">Modo práctica</h3>
+            <p className="mt-2 text-sm leading-6 text-warning-foreground/90">
               Si no existe un entorno de práctica aislado, capacite en una instalación separada o una base descartable.
               No use la base de producción para ensayar anulaciones, restauraciones o cobros ficticios.
             </p>

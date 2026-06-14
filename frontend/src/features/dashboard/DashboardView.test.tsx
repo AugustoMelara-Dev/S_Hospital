@@ -65,7 +65,7 @@ describe('DashboardView financial labels', () => {
       />,
     );
 
-    expect(await screen.findByRole('heading', { name: /facturacion y cobros/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /facturación y cobros/i })).toBeInTheDocument();
     expect(screen.getByText(/sin cobros registrados hoy/i)).toBeInTheDocument();
     expect(screen.getByText(/sin servicios facturados este mes/i)).toBeInTheDocument();
 

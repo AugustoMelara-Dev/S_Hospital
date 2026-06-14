@@ -3240,3 +3240,16 @@ Validacion:
 - npm.cmd run typecheck
 - npm.cmd run lint
 - npm.cmd run build
+
+# 2026-06-14 - Dashboard, ayuda y acerca de priorizan operacion institucional
+
+Contexto: Inicio, Ayuda y Acerca de son pantallas de orientacion y soporte para personal no tecnico; deben compartir jerarquia, textos claros y tokens del sistema.
+
+Decision: Dashboard usa MetricCard global, PageHeader corrige etiqueta institucional, Ayuda usa warning tokens en vez de colores fijos y se corrige microcopy visible en espanol; Acerca de aclara diagnosticos locales sin exponer detalle tecnico innecesario.
+
+Validacion:
+
+- npm.cmd run test -- DashboardView HelpView AboutView App shortcuts
+- npm.cmd run typecheck
+- npm.cmd run lint
+- npm.cmd run build
