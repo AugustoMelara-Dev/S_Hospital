@@ -517,8 +517,7 @@ class BackupWorkflowTest extends TestCase
         string $filename = 'test-backup.sql',
         string $path = 'backups/test-backup.sql',
         string $type = BackupLog::TYPE_MANUAL,
-    ): BackupLog
-    {
+    ): BackupLog {
         Storage::disk('local')->put($path, 'select 1;');
 
         return BackupLog::query()->create([

@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
@@ -93,7 +94,7 @@ class UserController extends Controller
         $oldActive = (bool) $user->active;
 
         $user->update([
-            'active' => ! $user->active,
+            'active' => ! (bool) $user->active,
         ]);
 
         $this->auditUserChange(
@@ -152,7 +153,7 @@ class UserController extends Controller
      * @param  array<string, mixed>|null  $newValues
      */
     private function auditUserChange(
-        \Illuminate\Http\Request $request,
+        Request $request,
         User $target,
         string $action,
         ?array $oldValues,

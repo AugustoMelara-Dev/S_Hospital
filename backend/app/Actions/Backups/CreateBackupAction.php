@@ -203,7 +203,7 @@ class CreateBackupAction
             $tag,
         );
 
-        if ($ciphertext === false || $tag === '') {
+        if ($ciphertext === false) {
             throw new RuntimeException('No se pudo cifrar el respaldo local.');
         }
 
@@ -244,13 +244,13 @@ class CreateBackupAction
             'entity_id' => $backupLog->id,
             'old_values' => null,
             'new_values' => [
-                    'filename' => $backupLog->filename,
-                    'status' => $backupLog->status,
-                    'type' => $backupLog->type,
-                    'format' => $backupLog->format,
-                    'encrypted' => $backupLog->encrypted,
-                    'encryption_key_id' => $backupLog->encryption_key_id,
-                    'size_bytes' => $backupLog->size_bytes,
+                'filename' => $backupLog->filename,
+                'status' => $backupLog->status,
+                'type' => $backupLog->type,
+                'format' => $backupLog->format,
+                'encrypted' => $backupLog->encrypted,
+                'encryption_key_id' => $backupLog->encryption_key_id,
+                'size_bytes' => $backupLog->size_bytes,
                 'checksum_sha256' => $backupLog->checksum_sha256,
             ],
             'created_at' => now(),
