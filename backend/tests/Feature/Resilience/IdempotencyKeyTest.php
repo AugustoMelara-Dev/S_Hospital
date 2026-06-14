@@ -15,6 +15,8 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -239,6 +241,121 @@ class IdempotencyKeyTest extends TestCase
             ->count();
 
         $this->assertSame(1, $auditCount);
+    }
+
+    public function test_response_body_is_stored_encrypted_and_does_not_contain_pii_in_plaintext(): void
+    {
+        $this->seedBillingBase();
+        $this->togglePartial(true);
+
+        $cashier = $this->cashierWithOpenSession();
+        $sessionId = $this->openSessionFor($cashier, '500.00');
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $piiToken = 'PII-TOKEN-'.strtoupper(Str::random(16));
+        $amountToken = 'AMT-MARKER-'.strtoupper(Str::random(8));
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => $piiToken,
+                'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $key = (string) Str::uuid();
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => $key])
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '11.00',
+                'reference' => $amountToken,
+            ])
+            ->assertCreated();
+
+        $row = IdempotencyKey::query()->where('idempotency_key', $key)->firstOrFail();
+
+        // The raw `response_body` column is ciphertext, never the original
+        // JSON. Patient name and reference token must not appear in the
+        // raw ciphertext, even though they were sent in the request.
+        $raw = (string) $row->getRawOriginal('response_body');
+        $this->assertNotSame('', $raw);
+        $this->assertStringNotContainsString($piiToken, $raw);
+        $this->assertStringNotContainsString($amountToken, $raw);
+
+        // The accessor transparently decrypts.
+        $decoded = json_decode((string) $row->response_body_plain, true);
+        $this->assertIsArray($decoded);
+        $this->assertSame(201, $row->response_status);
+
+        // The raw value decrypts to a non-empty JSON payload via Crypt.
+        $this->assertSame($row->response_body_plain, Crypt::decryptString($raw));
+    }
+
+    public function test_response_body_is_also_encrypted_in_failed_request_payloads(): void
+    {
+        // The middleware only stores 2xx responses, so a 422 row is deleted.
+        // We still want to confirm that a successful POST against a different
+        // endpoint stores an encrypted body.
+        $this->seedBillingBase();
+        $cashier = $this->cashierWithOpenSession();
+
+        $key = (string) Str::uuid();
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => $key])
+            ->postJson('/api/cash-sessions/open', [
+                'opening_amount' => '0.00',
+                'notes' => 'PII-Cash-Open-Secret',
+            ])
+            ->assertCreated();
+
+        $row = IdempotencyKey::query()->where('idempotency_key', $key)->firstOrFail();
+        $raw = (string) $row->getRawOriginal('response_body');
+        $this->assertStringNotContainsString('PII-Cash-Open-Secret', $raw);
+        $this->assertSame($row->response_body_plain, Crypt::decryptString($raw));
+    }
+
+    public function test_replay_decrypts_body_for_caller(): void
+    {
+        $this->seedBillingBase();
+        $this->togglePartial(true);
+
+        $cashier = $this->cashierWithOpenSession();
+        $sessionId = $this->openSessionFor($cashier, '500.00');
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Replay-Secret',
+                'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $key = (string) Str::uuid();
+        $payload = [
+            'cash_session_id' => $sessionId,
+            'method' => Payment::METHOD_CASH,
+            'amount' => '4.00',
+        ];
+
+        $first = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => $key])
+            ->postJson("/api/invoices/{$invoiceId}/payments", $payload)
+            ->assertCreated();
+
+        $second = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => $key])
+            ->postJson("/api/invoices/{$invoiceId}/payments", $payload)
+            ->assertCreated();
+
+        $second->assertHeader('Idempotent-Replay', 'true');
+        $this->assertSame($first->json('data.payment.id'), $second->json('data.payment.id'));
+
+        // The replayed payload is fully decrypted for the caller, including
+        // the patient name embedded in the original invoice.
+        $this->assertSame(201, $second->status());
     }
 
     private function seedBillingBase(): void

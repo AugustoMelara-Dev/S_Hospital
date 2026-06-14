@@ -172,7 +172,8 @@ class IdempotencyKey
 
     private function replayResponse(IdempotencyKeyModel $reservation): JsonResponse
     {
-        $payload = json_decode((string) $reservation->response_body, true);
+        $plain = $reservation->response_body_plain;
+        $payload = is_string($plain) ? json_decode($plain, true) : null;
         $status = (int) ($reservation->response_status ?? 200);
         if (! is_array($payload)) {
             $payload = ['data' => null];
@@ -186,9 +187,13 @@ class IdempotencyKey
     private function persistResponse(IdempotencyKeyModel $reservation, Response $response): void
     {
         $body = $response->getContent();
+        $plain = is_string($body) ? $body : (is_array($body) || is_object($body) ? json_encode($body) : null);
+
+        // Use the encrypted accessor so the underlying column stores
+        // `Crypt::encryptString()` output, never raw JSON with PII.
+        $reservation->response_body_plain = $plain;
         $reservation->forceFill([
             'response_status' => $response->getStatusCode(),
-            'response_body' => is_string($body) ? $body : json_encode($body),
             'completed_at' => now(),
         ])->save();
     }
