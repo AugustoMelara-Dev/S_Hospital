@@ -36,6 +36,7 @@ import { FilterBar } from '../../components/ui/filter-bar';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
+import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import {
   FileClock,
   Printer,
@@ -187,11 +188,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
     try {
       const voided = await apiClient.voidInvoice(selectedInvoice.id, voidReason.trim());
-      // Notify the rest of the app (dashboard, cashier list, second PC
-      // in LAN) that this invoice and the cash session are stale.
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await invalidateBillingQueries(queryClient);
       setSelectedInvoice(voided);
       setReceipt(null);
       setVoidReason('');
@@ -210,9 +207,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
     try {
       const reversed = await apiClient.reverseInvoice(selectedInvoice.id, reverseReason.trim());
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await invalidateBillingQueries(queryClient);
       setSelectedInvoice(reversed);
       setReceipt(null);
       setReverseReason('');

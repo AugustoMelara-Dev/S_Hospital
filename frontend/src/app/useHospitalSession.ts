@@ -14,6 +14,8 @@ export function useHospitalSession() {
   const [status, setStatus] = useState('Listo para iniciar sesión local.');
   const [loading, setLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [loginSubmitting, setLoginSubmitting] = useState(false);
+  const loginSubmitInFlightRef = useRef(false);
   const [passwordSubmitting, setPasswordSubmitting] = useState(false);
   const passwordSubmitInFlightRef = useRef(false);
   const queryClient = useQueryClient();
@@ -125,6 +127,10 @@ export function useHospitalSession() {
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (loginSubmitInFlightRef.current) return;
+
+    loginSubmitInFlightRef.current = true;
+    setLoginSubmitting(true);
     setStatus('Validando credenciales...');
 
     try {
@@ -139,6 +145,9 @@ export function useHospitalSession() {
       );
     } catch (error) {
       setStatus(userSafeErrorMessage(error, 'No se pudo iniciar sesión.'));
+    } finally {
+      loginSubmitInFlightRef.current = false;
+      setLoginSubmitting(false);
     }
   }
 
@@ -209,6 +218,7 @@ export function useHospitalSession() {
     status,
     setStatus,
     loading,
+    loginSubmitting,
     passwordSubmitting,
     canViewFiscalSettings,
     canEditFiscalSettings,

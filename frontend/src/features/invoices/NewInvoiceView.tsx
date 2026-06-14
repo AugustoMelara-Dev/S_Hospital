@@ -8,6 +8,7 @@ import { newInvoiceReducer } from './state/reducer';
 import { getInitialNewInvoiceState } from './state/types';
 import { computeSimpleEstimate, isZeroMoney, parseLocalCents } from './state/posMath';
 import { NewInvoiceViewLayout } from './components/NewInvoiceViewLayout';
+import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 
 const POS_SERVICE_PAGE_SIZE = 24;
 
@@ -393,13 +394,7 @@ export function NewInvoiceView({
         method: state.paymentMethod,
         amount: appliedAmount,
       });
-      // Notify any other open client (history view, dashboard, cashier
-      // list on a second PC) that this invoice and the cash session have
-      // changed. Without this, the second PC keeps stale totals until a
-      // manual refresh.
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['cash-sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await invalidateBillingQueries(queryClient);
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: result.invoice });
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: result.invoice.balance_due });
       const nextReceipt = await apiClient.getReceipt(result.invoice.id, state.receiptWidth);
