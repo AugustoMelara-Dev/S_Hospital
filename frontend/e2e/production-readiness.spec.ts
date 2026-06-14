@@ -723,7 +723,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
   await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
   await expect(page.getByText('Media carta')).toBeVisible();
-  await page.locator('[aria-label="Tamaño del recibo"]').click();
+  await page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i }).click();
   await page.getByRole('option', { name: 'A5', exact: true }).click({ force: true });
   await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
   await captureScreen(page, 'receipt-preview-a5-light', 'light');
@@ -738,8 +738,9 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByLabel(/nombre del paciente/i).fill('Jose Perez');
   await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
-  await page.getByLabel(/receta de diálisis/i).click();
-  await expect(page.getByLabel(/receta de diálisis/i)).toHaveAttribute('aria-checked', 'true');
+  const dialysisPrescription = page.getByLabel(/receta de di(?:á|a)lisis/i);
+  await dialysisPrescription.click();
+  await expect(dialysisPrescription).toHaveAttribute('aria-checked', 'true');
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await page.getByRole('button', { name: /confirmar emisi.n/i }).click();
   await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
@@ -756,7 +757,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /^reimprimir$/i }).first().click();
   await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
   await expect(page.getByRole('heading', { name: /recibo - 000-001-01-00000001/i })).toBeVisible();
-  await page.locator('[aria-label="Tamaño del recibo"]').click();
+  await page.getByRole('combobox', { name: /tama(?:ñ|n)o del recibo/i }).click();
   await page.getByRole('option', { name: 'A5', exact: true }).click({ force: true });
   await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
 

@@ -3300,3 +3300,11 @@ Validacion:
 - Se actualizaron pruebas de navegación y configuración fiscal para validar copy institucional con acentos correctos sin relajar roles accesibles.
 - Se corrigió el lint existente en tests de idempotencia frontend renombrando argumentos no usados, sin tocar comportamiento de API ni contratos Laravel.
 - Validación: `npm.cmd run test -- BackupsView FiscalStatusCard ReportsView AuditoriaTab CatalogView UsersView DashboardView App NewInvoiceView ReceiptPreview`, `npm.cmd run lint`, `npm.cmd run typecheck`, `npm.cmd run build`, `git diff --check`.
+
+## 2026-06-14 - Pase final de hardening e integración
+
+- Se elimina `backend/fix.php`: era un script temporal rastreado que mutaba una prueba y hacía fallar Pint global. No pertenece a producto ni a QA reproducible.
+- La migración fantasma `backend/database/migrations/2026_06_13_233749_add_missing_monetary_check_constraints_to_billing_tables.php` no existe en el árbol final. No se recrea porque las restricciones monetarias necesarias ya están en migraciones previas y `cash_movements.amount` puede ser negativo para reversos auditados.
+- La prueba de factura L.0 por receta de diálisis se alinea con la lógica real: la factura queda pagada y auditable sin crear un pago artificial de L.0; la auditoría correcta es `invoice.zero_amount_registered`.
+- `phpunit.xml` fija `memory_limit=512M` para que la suite Laravel completa corra de forma reproducible en el contenedor sin descartarse por agotamiento de memoria.
+- Backups programados quedan confirmados como dos políticas intencionales: respaldo diario (`HOSPITAL_DAILY_BACKUP_TIME`, default 02:00) y respaldo operativo cada 15 minutos dentro de `HOSPITAL_OPERATION_START/END`. La restauración web permanece no expuesta; restore se valida por procedimiento seguro/self-test, no con un botón destructivo en UI.

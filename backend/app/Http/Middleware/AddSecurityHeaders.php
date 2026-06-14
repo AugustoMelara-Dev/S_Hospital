@@ -60,9 +60,11 @@ class AddSecurityHeaders
      */
     private function isProductionLike(): bool
     {
-        $env = strtolower(trim((string) app()->environment()));
+        $runtimeEnv = strtolower(trim((string) app()->environment()));
+        $configuredEnv = strtolower(trim((string) config('app.env')));
 
-        return $env === 'production' || $env === 'prod';
+        return in_array($runtimeEnv, ['production', 'prod'], true)
+            || in_array($configuredEnv, ['production', 'prod'], true);
     }
 
     private function isApiResponse(Request $request, Response $response): bool
