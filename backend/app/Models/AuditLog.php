@@ -14,6 +14,10 @@ use Illuminate\Support\Carbon;
  * @property int|null $entity_id
  * @property array<string, mixed>|null $old_values
  * @property array<string, mixed>|null $new_values
+ * @property string|null $ip
+ * @property string|null $user_agent
+ * @property string|null $url
+ * @property string|null $http_method
  * @property Carbon|null $created_at
  * @property-read User|null $user
  */
@@ -28,6 +32,10 @@ class AuditLog extends Model
         'entity_id',
         'old_values',
         'new_values',
+        'ip',
+        'user_agent',
+        'url',
+        'http_method',
         'created_at',
     ];
 

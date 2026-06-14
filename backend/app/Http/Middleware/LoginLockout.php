@@ -13,11 +13,6 @@ class LoginLockout
 {
     private const MAX_FAILED_ATTEMPTS = 5;
 
-    /**
-     * Number of distinct failed logins from the same IP in the rolling
-     * window that triggers the lockout. Defends against username
-     * rotation (online password spraying).
-     */
     private const MAX_FAILED_ATTEMPTS_PER_IP = 20;
 
     private const LOCKOUT_MINUTES = 15;
@@ -34,14 +29,14 @@ class LoginLockout
         $since = now()->subMinutes(self::LOCKOUT_MINUTES);
 
         $failedByLogin = LoginAttempt::failedCountFor($login, $since);
-        $failedByIp = $ip !== '' ? LoginAttempt::failedCountForIp($ip, $since) : 0;
+        $failedByLoginAndIp = $ip !== '' ? LoginAttempt::failedCountForLoginAndIp($login, $ip, $since) : 0;
 
         if ($failedByLogin >= self::MAX_FAILED_ATTEMPTS) {
             return $this->locked($login, $since, 'login');
         }
 
-        if ($failedByIp >= self::MAX_FAILED_ATTEMPTS_PER_IP) {
-            return $this->locked($login, $since, 'ip');
+        if ($failedByLoginAndIp >= self::MAX_FAILED_ATTEMPTS_PER_IP) {
+            return $this->locked($login, $since, 'login_ip');
         }
 
         return $next($request);

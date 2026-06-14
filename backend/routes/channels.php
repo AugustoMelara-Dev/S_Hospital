@@ -21,20 +21,20 @@ use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('invoices', function ($user): bool {
     return $user !== null && $user->can('invoices.view');
-});
+}, ['guards' => ['web']]);
 
 Broadcast::channel('cash', function ($user): bool {
     return $user !== null && $user->can('cash.view');
-});
+}, ['guards' => ['web']]);
 
 Broadcast::channel('payments', function ($user): bool {
     return $user !== null && $user->can('payments.view');
-});
+}, ['guards' => ['web']]);
 
 Broadcast::channel('settings', function ($user): bool {
     return $user !== null && $user->can('settings.fiscal.view');
-});
+}, ['guards' => ['web']]);
 
 Broadcast::channel('backups', function ($user): bool {
     return $user !== null && $user->can('backups.view');
-});
+}, ['guards' => ['web']]);

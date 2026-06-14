@@ -93,7 +93,7 @@ class AddSecurityHeaders
         $styleSources = "'self' 'unsafe-inline'";
         $styleElementSources = "'self' 'unsafe-inline'";
 
-        $connectSources = "'self' ws: wss:";
+        $connectSources = implode(' ', $this->connectSources());
 
         return implode('; ', [
             "default-src 'self'",
@@ -123,9 +123,30 @@ class AddSecurityHeaders
             "style-src-elem {$styleElementSources}",
             "img-src 'self' data: blob:",
             "font-src 'self' data:",
-            "connect-src 'self' ws: wss:",
+            'connect-src '.implode(' ', $this->connectSources()),
             "frame-ancestors 'none'",
             'report-uri /api/system/csp-report',
         ]);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function connectSources(): array
+    {
+        $sources = ["'self'"];
+        $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+        $clientOptions = config('broadcasting.connections.pusher.client_options', []);
+        $pusherOptions = config('broadcasting.connections.pusher.options', []);
+        $host = (string) ($clientOptions['host'] ?? $pusherOptions['host'] ?? $appHost ?? '');
+        $port = (int) ($clientOptions['port'] ?? $pusherOptions['port'] ?? 6001);
+
+        if ($host !== '') {
+            $authority = $port > 0 ? "{$host}:{$port}" : $host;
+            $sources[] = "ws://{$authority}";
+            $sources[] = "wss://{$authority}";
+        }
+
+        return array_values(array_unique($sources));
     }
 }

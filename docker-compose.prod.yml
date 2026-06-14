@@ -25,7 +25,9 @@ services:
       DB_DATABASE: ${DB_DATABASE:-hospital_billing}
       DB_USERNAME: ${DB_USERNAME:-hospital}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      CACHE_STORE: file
+      CACHE_STORE: database
+      DB_CACHE_TABLE: cache
+      DB_CACHE_LOCK_TABLE: cache_locks
       QUEUE_CONNECTION: database
       SESSION_DRIVER: database
       SESSION_ENCRYPT: "true"
@@ -44,6 +46,9 @@ services:
       PUSHER_HOST: soketi
       PUSHER_PORT: 6001
       PUSHER_SCHEME: http
+      PUSHER_CLIENT_HOST: ${SERVER_IP:?SERVER_IP is required}
+      PUSHER_CLIENT_PORT: ${SOKETI_PORT:-6001}
+      PUSHER_CLIENT_SCHEME: http
     volumes:
       - backup_data:/var/www/html/storage/app/private/backups
       - shared_public:/shared_public
@@ -134,7 +139,9 @@ services:
       DB_DATABASE: ${DB_DATABASE:-hospital_billing}
       DB_USERNAME: ${DB_USERNAME:-hospital}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      CACHE_STORE: file
+      CACHE_STORE: database
+      DB_CACHE_TABLE: cache
+      DB_CACHE_LOCK_TABLE: cache_locks
       QUEUE_CONNECTION: database
       SESSION_DRIVER: database
       SESSION_ENCRYPT: "true"
@@ -153,6 +160,9 @@ services:
       PUSHER_HOST: soketi
       PUSHER_PORT: 6001
       PUSHER_SCHEME: http
+      PUSHER_CLIENT_HOST: ${SERVER_IP:?SERVER_IP is required}
+      PUSHER_CLIENT_PORT: ${SOKETI_PORT:-6001}
+      PUSHER_CLIENT_SCHEME: http
     volumes:
       - backup_data:/var/www/html/storage/app/private/backups
     healthcheck:
@@ -209,7 +219,9 @@ services:
       HOSPITAL_OPERATION_END: ${HOSPITAL_OPERATION_END:-18:00}
       HOSPITAL_AUDIT_RETENTION_DAYS: ${HOSPITAL_AUDIT_RETENTION_DAYS:-365}
       HOSPITAL_FAILED_JOBS_RETENTION_DAYS: ${HOSPITAL_FAILED_JOBS_RETENTION_DAYS:-30}
-      CACHE_STORE: file
+      CACHE_STORE: database
+      DB_CACHE_TABLE: cache
+      DB_CACHE_LOCK_TABLE: cache_locks
       QUEUE_CONNECTION: database
       SESSION_DRIVER: database
       SESSION_ENCRYPT: "true"
@@ -256,6 +268,8 @@ services:
       SOKETI_DEFAULT_APP_ID: ${PUSHER_APP_ID:?PUSHER_APP_ID is required}
       SOKETI_DEFAULT_APP_KEY: ${PUSHER_APP_KEY:?PUSHER_APP_KEY is required}
       SOKETI_DEFAULT_APP_SECRET: ${PUSHER_APP_SECRET:?PUSHER_APP_SECRET is required}
+    ports:
+      - "${SOKETI_PORT:-6001}:6001"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:6001/ >/dev/null 2>&1 || exit 1"]
       interval: 30s

@@ -1111,6 +1111,10 @@ try {
                 "PUSHER_APP_KEY"     = $currPusherAppKey
                 "PUSHER_APP_SECRET"  = $currPusherAppSecret
                 "PUSHER_APP_CLUSTER" = "mt1"
+                "SOKETI_PORT"        = "6001"
+                "CACHE_STORE"        = "database"
+                "DB_CACHE_TABLE"     = "cache"
+                "DB_CACHE_LOCK_TABLE" = "cache_locks"
             }
 
             Update-DotEnv -Path $envPath -Variables $rootVars

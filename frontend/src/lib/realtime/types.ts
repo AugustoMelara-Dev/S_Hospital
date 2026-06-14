@@ -23,12 +23,7 @@ export interface EchoConfig {
 
 export interface InvoiceChangedEvent {
   id: number;
-  invoice_number: string;
-  patient_name: string;
   status: string;
-  total: string;
-  paid_amount: string;
-  balance_due: string;
   change: 'created' | 'updated' | 'voided' | 'reversed';
   at: string | null;
 }
@@ -36,9 +31,6 @@ export interface InvoiceChangedEvent {
 export interface PaymentChangedEvent {
   id: number;
   invoice_id: number;
-  cash_session_id: number;
-  method: string;
-  amount: string;
   status: string;
   change: 'registered' | 'voided';
   at: string | null;
@@ -46,9 +38,6 @@ export interface PaymentChangedEvent {
 
 export interface CashSessionChangedEvent {
   id: number;
-  user_id: number;
   status: string;
-  opened_at: string | null;
-  closed_at: string | null;
   change: 'opened' | 'closed';
 }

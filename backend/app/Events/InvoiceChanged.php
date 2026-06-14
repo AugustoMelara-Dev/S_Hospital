@@ -3,8 +3,8 @@
 namespace App\Events;
 
 use App\Models\Invoice;
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -25,11 +25,11 @@ class InvoiceChanged implements ShouldBroadcast
     ) {}
 
     /**
-     * @return array<int, Channel>
+     * @return array<int, PrivateChannel>
      */
     public function broadcastOn(): array
     {
-        return [new Channel('invoices')];
+        return [new PrivateChannel('invoices')];
     }
 
     /**
@@ -39,12 +39,7 @@ class InvoiceChanged implements ShouldBroadcast
     {
         return [
             'id' => $this->invoice->id,
-            'invoice_number' => $this->invoice->invoice_number,
-            'patient_name' => $this->invoice->patient_name,
             'status' => $this->invoice->status,
-            'total' => (string) $this->invoice->total,
-            'paid_amount' => (string) $this->invoice->paid_amount,
-            'balance_due' => (string) $this->invoice->balance_due,
             'change' => $this->change,
             'at' => optional($this->invoice->getAttribute('updated_at'))?->toIso8601String(),
         ];

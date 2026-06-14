@@ -48,11 +48,12 @@ if (-not (Test-Path -LiteralPath $backendRoot)) {
 }
 
 if (-not $PhpPath) {
-    $PhpPath = (Get-Command php -ErrorAction SilentlyContinue)?.Source
-    if (-not $PhpPath) {
+    $phpCommand = Get-Command php -ErrorAction SilentlyContinue
+    if ($null -eq $phpCommand) {
         Write-Error "php not found on PATH. Pass -PhpPath 'C:\path\to\php.exe'."
         exit 3
     }
+    $PhpPath = $phpCommand.Source
 }
 
 $taskName = "SistemaCajaHospitalaria-Scheduler"
@@ -118,6 +119,10 @@ $launcherContent = @"
 `$now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 try {
     `$output = & "$PhpPath" artisan schedule:run 2>&1
+    `$exitCode = `$LASTEXITCODE
+    if (`$exitCode -ne 0) {
+        throw "php artisan schedule:run failed with exit code `$exitCode. `$output"
+    }
     "[" + `$now + "] OK: `$output" | Out-File -LiteralPath "$logFile" -Append -Encoding ASCII
     `$null = & "$PhpPath" artisan hospital:scheduler-tick --result=ok 2>&1
     exit 0
