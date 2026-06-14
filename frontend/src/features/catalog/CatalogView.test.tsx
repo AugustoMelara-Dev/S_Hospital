@@ -63,9 +63,9 @@ describe('CatalogView', () => {
 
     expect(await screen.findByText('Glucosa')).toBeInTheDocument();
     expect(screen.getByText('Buscar servicio')).toBeInTheDocument();
-    expect(screen.getByLabelText('Categoria')).toBeInTheDocument();
+    expect(screen.getByLabelText('Categoría')).toBeInTheDocument();
     expect(screen.getByLabelText('Estado')).toBeInTheDocument();
-    expect(screen.getByText('Oculto en facturacion')).toBeInTheDocument();
+    expect(screen.getByText('Oculto en facturación')).toBeInTheDocument();
     expect(screen.getByText('No facturable')).toBeInTheDocument();
     expect(screen.getByText('Sin tarifa')).toBeInTheDocument();
     expect(screen.getByText('Sin tarifa operativa')).toBeInTheDocument();

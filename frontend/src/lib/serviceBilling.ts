@@ -25,15 +25,15 @@ export function getServiceBillingSummary(service: Service): ServiceBillingSummar
   const reasons: string[] = [];
 
   if (!isActive) {
-    reasons.push('No puede facturarse porque esta inactivo.');
+    reasons.push('No puede facturarse porque está inactivo.');
   }
 
   if (!isVisibleInBilling) {
-    reasons.push('No aparece en Nueva factura porque esta oculto en facturacion.');
+    reasons.push('No aparece en Nueva factura porque está oculto en facturación.');
   }
 
   if (!isBillable) {
-    reasons.push('No puede agregarse al carrito porque esta marcado como no facturable.');
+    reasons.push('No puede agregarse al carrito porque está marcado como no facturable.');
   }
 
   if (!hasConfiguredPrice) {
@@ -41,9 +41,9 @@ export function getServiceBillingSummary(service: Service): ServiceBillingSummar
   }
 
   const blockReason = !isActive
-    ? 'El servicio seleccionado esta inactivo.'
+    ? 'El servicio seleccionado está inactivo.'
     : !isVisibleInBilling
-      ? 'El servicio seleccionado esta oculto en facturacion.'
+      ? 'El servicio seleccionado está oculto en facturación.'
       : !isBillable
         ? 'El servicio seleccionado no es facturable.'
         : null;
@@ -64,7 +64,7 @@ export function getServiceBillingSummary(service: Service): ServiceBillingSummar
         tone: isActive ? 'default' : 'outline',
       },
       {
-        label: isVisibleInBilling ? 'Visible en facturacion' : 'Oculto en facturacion',
+        label: isVisibleInBilling ? 'Visible en facturación' : 'Oculto en facturación',
         tone: isVisibleInBilling ? 'secondary' : 'outline',
       },
       {

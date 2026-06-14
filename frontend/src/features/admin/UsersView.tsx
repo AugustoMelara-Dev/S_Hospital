@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { Dialog } from '@/components/ui/dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -386,14 +387,9 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-semibold ${
-                        user.active
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
-                          : 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
-                      }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${user.active ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                      <StatusBadge status={user.active ? 'active' : 'closed'}>
                         {user.active ? 'Activo' : 'Inactivo'}
-                      </span>
+                      </StatusBadge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -450,7 +446,7 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
       >
         <form onSubmit={handleSubmitUser(onUserSubmit)} className="space-y-4">
           {formGlobalError && (
-            <div className="p-3 bg-destructive/10 text-destructive text-sm rounded border border-destructive/20">
+            <div className="p-3 bg-destructive/10 text-destructive text-sm rounded border border-destructive/20" role="alert">
               {formGlobalError}
             </div>
           )}
@@ -463,10 +459,12 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                 id="name"
                 className="pl-9"
                 placeholder="Juan Pérez Celaya"
+                aria-invalid={Boolean(userErrors.name)}
+                aria-describedby={userErrors.name ? 'name-error' : undefined}
                 {...registerUser('name')}
               />
             </div>
-            {userErrors.name && <p className="text-xs text-destructive">{userErrors.name.message}</p>}
+            {userErrors.name && <p id="name-error" className="text-xs text-destructive" role="alert">{userErrors.name.message}</p>}
           </div>
 
           <div className="space-y-1">
@@ -478,10 +476,12 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                 type="email"
                 className="pl-9"
                 placeholder="jperez@hospital.org"
+                aria-invalid={Boolean(userErrors.email)}
+                aria-describedby={userErrors.email ? 'email-error' : undefined}
                 {...registerUser('email')}
               />
             </div>
-            {userErrors.email && <p className="text-xs text-destructive">{userErrors.email.message}</p>}
+            {userErrors.email && <p id="email-error" className="text-xs text-destructive" role="alert">{userErrors.email.message}</p>}
           </div>
 
           <div className="space-y-1">
@@ -492,10 +492,12 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                 id="username"
                 className="pl-9"
                 placeholder="jperez"
+                aria-invalid={Boolean(userErrors.username)}
+                aria-describedby={userErrors.username ? 'username-error' : undefined}
                 {...registerUser('username')}
               />
             </div>
-            {userErrors.username && <p className="text-xs text-destructive">{userErrors.username.message}</p>}
+            {userErrors.username && <p id="username-error" className="text-xs text-destructive" role="alert">{userErrors.username.message}</p>}
           </div>
 
           {!editingUser && (
@@ -508,10 +510,12 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                   type="password"
                   className="pl-9"
                   placeholder={PASSWORD_POLICY_HINT}
+                  aria-invalid={Boolean(userErrors.password)}
+                  aria-describedby={userErrors.password ? 'password-error' : undefined}
                   {...registerUser('password')}
                 />
               </div>
-              {userErrors.password && <p className="text-xs text-destructive">{userErrors.password.message}</p>}
+              {userErrors.password && <p id="password-error" className="text-xs text-destructive" role="alert">{userErrors.password.message}</p>}
             </div>
           )}
 
@@ -559,7 +563,7 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
       >
         <form onSubmit={handleSubmitReset(onResetSubmit)} className="space-y-4">
           {resetGlobalError && (
-            <div className="p-3 bg-destructive/10 text-destructive text-sm rounded border border-destructive/20">
+            <div className="p-3 bg-destructive/10 text-destructive text-sm rounded border border-destructive/20" role="alert">
               {resetGlobalError}
             </div>
           )}
@@ -573,10 +577,12 @@ export function UsersView({ onStatus, canCreateUsers }: UsersViewProps) {
                 type="password"
                 className="pl-9"
                 placeholder={PASSWORD_POLICY_HINT}
+                aria-invalid={Boolean(resetErrors.newPassword)}
+                aria-describedby={resetErrors.newPassword ? 'new-password-error' : undefined}
                 {...registerReset('newPassword')}
               />
             </div>
-            {resetErrors.newPassword && <p className="text-xs text-destructive">{resetErrors.newPassword.message}</p>}
+            {resetErrors.newPassword && <p id="new-password-error" className="text-xs text-destructive" role="alert">{resetErrors.newPassword.message}</p>}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

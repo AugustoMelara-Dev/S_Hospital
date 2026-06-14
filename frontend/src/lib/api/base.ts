@@ -62,7 +62,7 @@ function conflictSafeMessage(message: string): string {
   }
 
   if (/factura|invoice|pago|payment|duplic|already|ya registrada|ya registrado/.test(normalized)) {
-    return 'La factura o el pago ya cambio de estado. Revise Historial antes de repetir la operacion.';
+    return 'La factura o el pago ya cambió de estado. Revise Historial antes de repetir la operación.';
   }
 
   if (/respaldo|backup|restore|restaur/.test(normalized)) {
@@ -98,7 +98,7 @@ export function userSafeErrorMessage(error: unknown, fallback: string): string {
   }
 
   if (error instanceof ApiError && error.status >= 500) {
-    return 'El servidor LAN no pudo completar la operacion. Revise el servidor local e intente de nuevo.';
+    return 'El servidor LAN no pudo completar la operación. Revise el servidor local e intente de nuevo.';
   }
 
   if (
@@ -394,7 +394,7 @@ export const apiClient = {
         if (err instanceof DOMException && err.name === 'AbortError') {
           recordApiIssue(
             new ApiError(
-              `La operacion '${method} ${path}' excedio ${timeoutMs / 1000}s sin respuesta del servidor local. Revise la red.`,
+              `La operación '${method} ${path}' excedió ${timeoutMs / 1000}s sin respuesta del servidor local. Revise la red.`,
               0,
             ),
             `${method} ${path}_timeout`,

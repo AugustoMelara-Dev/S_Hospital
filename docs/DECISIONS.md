@@ -3253,3 +3253,16 @@ Validacion:
 - npm.cmd run typecheck
 - npm.cmd run lint
 - npm.cmd run build
+
+# 2026-06-14 - Catalogo y usuarios corrigen microcopy y errores accesibles
+
+Contexto: catalogo y usuarios concentran formularios administrativos, estados y acciones sensibles para permisos operativos.
+
+Decision: se corrige microcopy visible en catalogo, servicios, usuarios, i18n y errores seguros; usuarios expone errores con role=alert y aria-invalid/aria-describedby; estados activo/inactivo usan StatusBadge global.
+
+Validacion:
+
+- npm.cmd run test -- CatalogView UsersView i18n base status-badge shortcuts serviceBilling
+- npm.cmd run typecheck
+- npm.cmd run lint
+- npm.cmd run build

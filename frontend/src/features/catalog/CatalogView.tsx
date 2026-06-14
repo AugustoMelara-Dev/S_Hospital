@@ -102,7 +102,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       setServicesData(nextServices);
       setScannerEnabled(fiscalSettings?.scanner_enabled === true);
     } catch (error) {
-      const message = userSafeErrorMessage(error, 'No se pudo cargar el catalogo.');
+      const message = userSafeErrorMessage(error, 'No se pudo cargar el catálogo.');
       setLoadError(message);
       onStatus(message);
       setCategories([]);
@@ -164,7 +164,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
   function handleCategorySuccess() {
     void invalidateCatalogQueries(queryClient);
     void loadCatalogData();
-    onStatus('Categoria guardada exitosamente.');
+    onStatus('Categoría guardada exitosamente.');
   }
 
   const toggleServiceActive = useCallback(async (service: Service) => {
@@ -210,15 +210,15 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
     <section id="catalogo" className="flex flex-col gap-5" aria-labelledby="catalog-title">
       <div className="flex flex-col gap-3 border-b border-border pb-5 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary">Catalogo operativo</p>
-          <h1 id="catalog-title" className="text-2xl font-semibold leading-tight md:text-3xl">Catalogo de servicios</h1>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary">Catálogo operativo</p>
+          <h1 id="catalog-title" className="text-2xl font-semibold leading-tight md:text-3xl">Catálogo de servicios</h1>
           {!canManageCatalog && (
             <p className="mt-1 text-sm text-muted-foreground">
-              Cajero puede consultar catalogo y precios, sin permisos para modificar servicios.
+              Cajero puede consultar catálogo y precios, sin permisos para modificar servicios.
             </p>
           )}
           <p className="mt-1 font-mono text-sm tabular-nums text-muted-foreground">
-            {meta.total} servicio{meta.total !== 1 ? 's' : ''} en el catalogo
+            {meta.total} servicio{meta.total !== 1 ? 's' : ''} en el catálogo
           </p>
         </div>
         {canManageCatalog && (
@@ -247,7 +247,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                 <Input
                   id="catalog-search"
                   name="catalog_search"
-                  placeholder="Buscar por nombre o codigo…"
+                  placeholder="Buscar por nombre o código..."
                   autoComplete="off"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -258,14 +258,14 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 
             <div className="flex flex-col gap-2">
               <label htmlFor="catalog-category" className="text-sm font-medium">
-                Categoria
+                Categoría
               </label>
               <Select value={categoryFilter} onValueChange={handleCategoryFilterChange}>
                 <SelectTrigger id="catalog-category" className="w-full">
-                  <SelectValue placeholder="Categoria" />
+                  <SelectValue placeholder="Categoría" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas las categorias</SelectItem>
+                  <SelectItem value="all">Todas las categorías</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={String(cat.id)}>
                       {cat.name}
@@ -295,7 +295,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
       </Card>
 
       {loadError ? (
-        <Alert variant="destructive" title="No se pudo cargar el catalogo">
+        <Alert variant="destructive" title="No se pudo cargar el catálogo">
           {loadError}
         </Alert>
       ) : null}
@@ -307,10 +307,10 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nombre</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Area</TableHead>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead>Área</TableHead>
                   <TableHead>Precio</TableHead>
-                  {scannerEnabled && <TableHead>Codigo</TableHead>}
+                  {scannerEnabled && <TableHead>Código</TableHead>}
                   <TableHead>Estado en caja</TableHead>
                   {canManageCatalog && <TableHead className="text-right">Acciones</TableHead>}
                 </TableRow>
@@ -339,7 +339,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             <p className="mb-4 text-center text-muted-foreground">
               {hasFilters
                 ? 'No se encontraron servicios con los filtros seleccionados.'
-                : 'Comience agregando su primer servicio al catalogo.'}
+                : 'Comience agregando su primer servicio al catálogo.'}
             </p>
             {hasFilters ? (
               <Button variant="outline" onClick={clearFilters}>
@@ -359,10 +359,10 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Area</TableHead>
+                <TableHead>Categoría</TableHead>
+                <TableHead>Área</TableHead>
                 <TableHead>Precio</TableHead>
-                {scannerEnabled && <TableHead>Codigo</TableHead>}
+                {scannerEnabled && <TableHead>Código</TableHead>}
                 <TableHead>Estado en caja</TableHead>
                 {canManageCatalog && <TableHead className="text-right">Acciones</TableHead>}
               </TableRow>
@@ -383,13 +383,13 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-sm">{service.category?.name ?? 'Sin categoria'}</TableCell>
-                    <TableCell className="px-4 py-3 text-sm">{service.area?.name ?? 'Sin area'}</TableCell>
+                    <TableCell className="px-4 py-3 text-sm">{service.category?.name ?? 'Sin categoría'}</TableCell>
+                    <TableCell className="px-4 py-3 text-sm">{service.area?.name ?? 'Sin área'}</TableCell>
                     <TableCell className="px-4 py-3">
                       <div className="flex flex-col gap-1">
                         <span className="font-semibold">{moneyLabel(service.price)}</span>
                         {!billingSummary.hasConfiguredPrice && (
-                          <span className="text-xs text-amber-700">Sin tarifa operativa</span>
+                          <span className="text-xs text-warning-foreground">Sin tarifa operativa</span>
                         )}
                       </div>
                     </TableCell>
@@ -462,10 +462,10 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="10">10 por pag</SelectItem>
-                <SelectItem value="15">15 por pag</SelectItem>
-                <SelectItem value="25">25 por pag</SelectItem>
-                <SelectItem value="50">50 por pag</SelectItem>
+                <SelectItem value="10">10 por pág.</SelectItem>
+                <SelectItem value="15">15 por pág.</SelectItem>
+                <SelectItem value="25">25 por pág.</SelectItem>
+                <SelectItem value="50">50 por pág.</SelectItem>
               </SelectContent>
             </Select>
           </div>

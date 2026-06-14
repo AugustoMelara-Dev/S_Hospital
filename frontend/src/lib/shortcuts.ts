@@ -52,7 +52,7 @@ export const KEYBOARD_SHORTCUTS: ShortcutEntry[] = [
   {
     key: 'Escape',
     scope: 'pos',
-    description: 'Limpiar paciente, busqueda y servicios cuando hay algo en curso.',
+    description: 'Limpiar paciente, búsqueda y servicios cuando hay algo en curso.',
   },
   {
     key: 'F2',

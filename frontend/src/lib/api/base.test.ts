@@ -47,7 +47,7 @@ describe('resolveApiBaseUrl', () => {
       'No se pudo registrar el pago.',
     );
 
-    expect(message).toMatch(/factura o el pago ya cambio de estado/i);
+    expect(message).toMatch(/factura o el pago ya cambió de estado/i);
     expect(message).toMatch(/revise historial antes de repetir/i);
     expect(message).not.toMatch(/duplicate|already/i);
   });
@@ -108,7 +108,7 @@ describe('resolveApiBaseUrl', () => {
       'fallback',
     );
 
-    expect(message).toMatch(/el servidor LAN no pudo completar la operacion/i);
+    expect(message).toMatch(/el servidor LAN no pudo completar la operación/i);
     expect(message).not.toMatch(/SQLSTATE/);
   });
 
