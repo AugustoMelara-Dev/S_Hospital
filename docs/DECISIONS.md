@@ -3227,3 +3227,16 @@ Validacion:
 - npm.cmd run typecheck
 - npm.cmd run lint
 - npm.cmd run build
+
+# 2026-06-14 - Tablas, filtros y estados comparten primitives accesibles
+
+Contexto: reportes, respaldos, historial, catalogo, usuarios y caja usan muchas tablas; duplicar wrappers aumenta inconsistencias visuales y omite semantica de encabezados.
+
+Decision: data-table se convierte en puente sobre el primitive Table global, TableHead define scope=col por defecto y permite override, FilterBar usa tokens de contraste, y Loading/Error/EmptyState quedan con semantica de estado o alerta.
+
+Validacion:
+
+- npm.cmd run test -- data-table App CashMovementsTable BackupsView ReportsView CatalogView UsersView InvoiceHistoryView
+- npm.cmd run typecheck
+- npm.cmd run lint
+- npm.cmd run build

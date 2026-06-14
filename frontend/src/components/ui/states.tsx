@@ -10,9 +10,9 @@ export function Skeleton({ className }: { className?: string }) {
   );
 }
 
-export function LoadingState({ label = 'Cargando…' }: { label?: string }) {
+export function LoadingState({ label = 'Cargando...' }: { label?: string }) {
   return (
-    <Card>
+    <Card role="status" aria-live="polite" aria-busy="true">
       <CardContent className="flex min-h-32 flex-col gap-4 pt-5 text-muted-foreground">
         <div className="flex items-center justify-between gap-4">
           <span className="text-sm font-semibold">{label}</span>
@@ -61,7 +61,7 @@ export function ErrorState({
   title?: string;
 }) {
   return (
-    <Card>
+    <Card role="alert">
       <CardHeader>
         <div className="flex items-center gap-3">
           <AlertTriangle className="size-5 text-destructive" aria-hidden="true" />
