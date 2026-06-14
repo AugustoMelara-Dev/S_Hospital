@@ -179,7 +179,7 @@ async function installApiMocks(page: Page) {
       primary_color: 'indigo',
       slogan: 'Sistema de Caja Hospitalaria',
       government_line: 'Gobierno de Honduras',
-      secretariat_line: 'Secretaria de Salud Publica',
+      secretariat_line: 'Secretaría de Salud Pública',
       receipt_location: 'Tocoa, Colon',
     },
   }));
@@ -723,7 +723,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /confirmar cobro/i }).click();
   await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
   await expect(page.getByText('Media carta')).toBeVisible();
-  await page.locator('[aria-label="Tamano del recibo"]').click();
+  await page.locator('[aria-label="Tamaño del recibo"]').click();
   await page.getByRole('option', { name: 'A5', exact: true }).click({ force: true });
   await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
   await captureScreen(page, 'receipt-preview-a5-light', 'light');
@@ -756,7 +756,7 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByRole('button', { name: /^reimprimir$/i }).first().click();
   await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
   await expect(page.getByRole('heading', { name: /recibo - 000-001-01-00000001/i })).toBeVisible();
-  await page.locator('[aria-label="Tamano del recibo"]').click();
+  await page.locator('[aria-label="Tamaño del recibo"]').click();
   await page.getByRole('option', { name: 'A5', exact: true }).click({ force: true });
   await expect(page.getByLabel(/recibo institucional/i)).toHaveClass(/receipt-a5/);
 

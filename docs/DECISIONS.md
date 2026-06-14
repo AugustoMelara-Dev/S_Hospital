@@ -3279,3 +3279,10 @@ Validacion:
 - npm.cmd run typecheck
 - npm.cmd run lint
 - npm.cmd run build
+
+## 2026-06-14 - Phase 7: Historial, recibos y reimpresión
+
+- Se refinó el flujo de historial de facturas, recibos y reimpresión sin cambiar contratos API ni reglas de auditoría.
+- La anulación autorizada quedó como acción directa visible con confirmación auditada; se eliminó el menú manual previo para mejorar teclado, claridad y pruebas.
+- `ConfirmDialog` conserva Radix AlertDialog, pero separa la descripción accesible del contenido visual para evitar controles interactivos dentro de `AlertDialog.Description`.
+- Se normalizó copy institucional en impresión, reimpresión, anulación y recibos con acentos correctos, manteniendo tamaños de recibo existentes.

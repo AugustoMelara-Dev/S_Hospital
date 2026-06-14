@@ -46,9 +46,10 @@ export function ConfirmDialog({
               <AlertDialogPrimitive.Title className="text-lg font-semibold">
                 {title}
               </AlertDialogPrimitive.Title>
-              <AlertDialogPrimitive.Description asChild>
-                <div className="text-sm text-muted-foreground">{children}</div>
+              <AlertDialogPrimitive.Description className="sr-only">
+                Revise la información antes de confirmar esta acción.
               </AlertDialogPrimitive.Description>
+              <div className="text-sm text-muted-foreground">{children}</div>
             </div>
 
             <div className="flex flex-wrap justify-end gap-2">

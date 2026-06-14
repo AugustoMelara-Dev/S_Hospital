@@ -223,13 +223,13 @@ export function PaymentModal({
                 Ver preview antes de imprimir
               </span>
               <span className="text-xs text-muted-foreground mt-0.5 font-normal">
-                Desactivado: al confirmar cobro se registra el pago y se abre impresion directa.
+                Desactivado: al confirmar cobro se registra el pago y se abre impresión directa.
               </span>
             </Label>
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Cancelar la ventana de impresion no revierte el pago. Si necesita corregir una factura pagada, use el flujo de anulacion autorizado.
+            Cancelar la ventana de impresión no revierte el pago. Si necesita corregir una factura pagada, use el flujo de anulación autorizado.
           </p>
         </div>
 

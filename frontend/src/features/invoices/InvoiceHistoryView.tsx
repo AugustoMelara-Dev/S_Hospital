@@ -38,7 +38,6 @@ import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import {
   FileClock,
-  MoreHorizontal,
   Printer,
   Receipt,
   XCircle,
@@ -62,7 +61,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   const [reprintReason, setReprintReason] = useState('');
   const [confirmingVoid, setConfirmingVoid] = useState(false);
   const [reprintTarget, setReprintTarget] = useState<Invoice | null>(null);
-  const [openActionsId, setOpenActionsId] = useState<number | null>(null);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
 
   const canReprint = user.permissions.includes('receipts.reprint');
@@ -120,7 +118,6 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
   }
 
   async function openReceiptModal(invoiceId: number) {
-    setOpenActionsId(null);
     setReceipt(null);
 
     try {
@@ -144,7 +141,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
     const auditedReceipt = await apiClient.reprintInvoice(selectedInvoice.id, {
       width: institutionalReceiptPaperSize(receipt.width),
-      reason: 'Impresion desde vista de recibo.',
+      reason: 'Impresión desde vista de recibo.',
     });
     const normalizedWidth = institutionalReceiptPaperSize(auditedReceipt.width);
     setReceiptWidth(normalizedWidth);
@@ -160,7 +157,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
   async function voidSelectedInvoice() {
     if (!selectedInvoice || voidReason.trim().length < 5) {
-      onStatus('Ingrese un motivo de anulacion de al menos 5 caracteres.');
+      onStatus('Ingrese un motivo de anulación de al menos 5 caracteres.');
 
       return;
     }
@@ -190,7 +187,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
       const nextReceipt = await apiClient.reprintInvoice(reprintTarget.id, {
         width: requestedWidth,
-        reason: reprintReason.trim() || 'Reimpresion solicitada desde historial.',
+        reason: reprintReason.trim() || 'Reimpresión solicitada desde historial.',
       });
       // Reprint posts an audit log entry that other views (dashboard,
       // cashier list) may display; let them refetch.
@@ -247,7 +244,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         />
 
         <div className="space-y-1.5">
-          <Label htmlFor="status" className="text-xs font-semibold text-slate-600 dark:text-slate-400">Estado</Label>
+          <Label htmlFor="status" className="text-xs font-semibold text-muted-foreground">Estado</Label>
           <Select
             value={filters.status ?? 'all'}
             onValueChange={(v) => setFilters({ ...filters, status: v === 'all' ? '' : v as InvoiceFilters['status'] })}
@@ -266,7 +263,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="patient" className="text-xs font-semibold text-slate-600 dark:text-slate-400">Paciente</Label>
+          <Label htmlFor="patient" className="text-xs font-semibold text-muted-foreground">Paciente</Label>
           <Input
             id="patient"
             placeholder="Nombre del paciente..."
@@ -277,7 +274,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="invoice_number" className="text-xs font-semibold text-slate-600 dark:text-slate-400">Número de factura</Label>
+          <Label htmlFor="invoice_number" className="text-xs font-semibold text-muted-foreground">Número de factura</Label>
           <Input
             id="invoice_number"
             placeholder="A-0001..."
@@ -372,54 +369,19 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                         )}
 
                         {canVoid && invoice.status !== 'void' && (
-                          <div className="relative inline-block">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              aria-label={`Ver acciones de factura ${invoice.invoice_number}`}
-                              onClick={() =>
-                                setOpenActionsId(openActionsId === invoice.id ? null : invoice.id)
-                              }
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-
-                            {openActionsId === invoice.id && (
-                              <>
-                                <div
-                                  className="fixed inset-0 z-40"
-                                  onClick={() => setOpenActionsId(null)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Escape' || e.key === 'Enter') {
-                                      setOpenActionsId(null);
-                                    }
-                                  }}
-                                  role="button"
-                                  tabIndex={0}
-                                  aria-label="Cerrar menú de acciones"
-                                />
-                                <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-md border border-border bg-card shadow-lg">
-                                  <div className="py-1">
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      className="w-full justify-start text-destructive hover:bg-destructive/10"
-                                      onClick={() => {
-                                        setOpenActionsId(null);
-                                        void openDetail(invoice.id);
-                                        setConfirmingVoid(true);
-                                      }}
-                                    >
-                                      <XCircle className="h-4 w-4" aria-hidden="true" />
-                                      Anular
-                                    </Button>
-                                  </div>
-                                </div>
-                              </>
-                            )}
-                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => {
+                              void openDetail(invoice.id);
+                              setConfirmingVoid(true);
+                            }}
+                          >
+                            <XCircle className="h-4 w-4" aria-hidden="true" />
+                            Anular
+                          </Button>
                         )}
                       </div>
                     </TableCell>
@@ -448,16 +410,16 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
         open={receiptModalOpen}
         onOpenChange={setReceiptModalOpen}
         title={`Recibo - ${selectedInvoice?.invoice_number ?? ''}`}
-        description="Vista previa de recibo institucional. Cambiar el tamano no registra reimpresion."
+        description="Vista previa de recibo institucional. Cambiar el tamaño no registra reimpresión."
       >
         {receipt && selectedInvoice && (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <label htmlFor="receipt-width" className="text-sm font-semibold">Tamano</label>
+                <label htmlFor="receipt-width" className="text-sm font-semibold">Tamaño</label>
                 <NativeSelect
                   id="receipt-width"
-                  aria-label="Tamano de vista previa"
+                  aria-label="Tamaño de vista previa"
                   value={receiptWidth}
                   onChange={(event) => {
                     const newWidth = institutionalReceiptPaperSize(event.target.value);
@@ -517,13 +479,15 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
             <Label htmlFor="voidReason">Motivo de anulación *</Label>
             <Textarea
               id="voidReason"
-              aria-label="Motivo de anulacion"
+              aria-describedby="voidReason-help"
+              aria-invalid={voidReason.length > 0 && voidReason.trim().length < 5}
+              aria-label="Motivo de anulación"
               value={voidReason}
               onChange={(e) => setVoidReason(e.target.value)}
               placeholder="Explique el motivo de la anulación (mínimo 5 caracteres)..."
               rows={3}
             />
-            <p className="text-xs text-muted-foreground">
+            <p id="voidReason-help" className="text-xs text-muted-foreground">
               Esta acción no se puede deshacer. La factura será marcada como anulada.
             </p>
           </div>

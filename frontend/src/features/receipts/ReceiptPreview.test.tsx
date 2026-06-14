@@ -67,7 +67,7 @@ describe('ReceiptPreview', () => {
 
     await waitFor(() => expect(onPrint).toHaveBeenCalledTimes(1));
     expect(printSpy).not.toHaveBeenCalled();
-    expect(screen.getByText(/no se pudo preparar la impresion/i)).toBeInTheDocument();
+    expect(screen.getByText(/no se pudo preparar la impresión/i)).toBeInTheDocument();
     expect(screen.getByText(/no repita la factura ni el cobro/i)).toBeInTheDocument();
   });
 
@@ -87,7 +87,7 @@ describe('ReceiptPreview', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Imprimir' }));
 
     await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(1));
-    expect(screen.getByText(/no se pudo abrir la ventana de impresion/i)).toBeInTheDocument();
+    expect(screen.getByText(/no se pudo abrir la ventana de impresión/i)).toBeInTheDocument();
     expect(screen.getByText(/reimprima desde historial con motivo/i)).toBeInTheDocument();
     expect(document.body.dataset.receiptWidth).toBeUndefined();
     expect(document.body.dataset.printingReceipt).toBeUndefined();
@@ -162,7 +162,7 @@ function receiptFixture(): ReceiptData {
       template_mode: 'institutional',
       paper_size: 'half_letter',
       government_line: 'Gobierno de Honduras',
-      secretariat_line: 'Secretaria de Salud Publica',
+      secretariat_line: 'Secretaría de Salud Pública',
       location: 'Tocoa, Colon',
       footer_text: null,
       copy_label: 'Original',

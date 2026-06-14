@@ -49,7 +49,7 @@ export const STRINGS = {
     paymentOpen: (invoiceNumber: string) => `Factura emitida ${invoiceNumber}. Cobro abierto.`,
     receiptReady: (invoiceNumber: string) => `Factura emitida ${invoiceNumber}. Recibo listo para imprimir.`,
     paymentRegisteredPreview: (invoiceNumber: string) => `Pago registrado. Vista previa ${invoiceNumber} lista.`,
-    paymentRegisteredPrint: (invoiceNumber: string) => `Pago registrado. Recibo ${invoiceNumber} enviado a impresion.`,
+    paymentRegisteredPrint: (invoiceNumber: string) => `Pago registrado. Recibo ${invoiceNumber} enviado a impresión.`,
     pendingInvoice: (invoiceNumber: string) => `Factura ${invoiceNumber} emitida. Quedo pendiente de cobro; puede cobrarla desde este panel o desde Historial.`,
     cartEmpty: 'Agregue servicios',
     cartConfirm: 'Emitir y cobrar',
@@ -70,7 +70,7 @@ export const STRINGS = {
     title: 'Historial de facturas',
     void: 'Anular',
     reprint: 'Reimprimir',
-    confirmVoid: 'Indique el motivo de anulacion.',
+    confirmVoid: 'Indique el motivo de anulación.',
     receipt: 'Recibo',
   },
   errors: {

@@ -41,7 +41,7 @@ function buildReceipt(): ReceiptData {
       template_mode: 'institutional',
       paper_size: 'half_letter' as const,
       government_line: 'Gobierno de Honduras',
-      secretariat_line: 'Secretaria de Salud Publica',
+      secretariat_line: 'Secretaría de Salud Pública',
       location: 'Tegucigalpa',
       footer_text: 'Gracias por su visita',
       copy_label: 'Original',
