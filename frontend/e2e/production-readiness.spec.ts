@@ -738,8 +738,8 @@ test('production readiness cashier and admin workflow', async ({ page }) => {
   await page.getByLabel(/nombre del paciente/i).fill('Jose Perez');
   await page.getByLabel(/buscar por nombre/i).fill('eritropoyetina');
   await page.getByRole('button', { name: /eritropoyetina/i }).click();
-  await page.getByLabel(/receta de dialisis/i).click();
-  await expect(page.getByLabel(/receta de dialisis/i)).toHaveAttribute('aria-checked', 'true');
+  await page.getByLabel(/receta de diálisis/i).click();
+  await expect(page.getByLabel(/receta de diálisis/i)).toHaveAttribute('aria-checked', 'true');
   await page.getByRole('button', { name: /emitir y cobrar/i }).click();
   await page.getByRole('button', { name: /confirmar emisi.n/i }).click();
   await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();

@@ -141,7 +141,7 @@ export function FiscalSettingsForm({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="address">Direccion del hospital</Label>
+                <Label htmlFor="address">Dirección del hospital</Label>
                 <Input
                   id="address"
                   {...registerSettings('address')}
@@ -214,7 +214,7 @@ export function FiscalSettingsForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>Numeracion de facturas</CardTitle>
+          <CardTitle>Numeración de facturas</CardTitle>
           <CardDescription>
             Configure el rango autorizado para emitir facturas.
           </CardDescription>
@@ -303,7 +303,7 @@ export function FiscalSettingsForm({
 
             <div className="flex justify-end">
               <Button type="submit" disabled={!canEdit}>
-                Guardar numeracion
+                Guardar numeración
               </Button>
             </div>
           </form>

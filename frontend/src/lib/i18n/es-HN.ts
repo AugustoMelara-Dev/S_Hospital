@@ -24,7 +24,7 @@ export const STRINGS = {
     reports: 'Reportes',
     backups: 'Respaldos',
     users: 'Usuarios',
-    settings: 'Configuracion',
+    settings: 'Configuración',
     help: 'Ayuda',
     logout: 'Cerrar sesión',
   },

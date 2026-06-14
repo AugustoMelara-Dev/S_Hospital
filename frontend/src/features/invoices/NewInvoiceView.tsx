@@ -151,7 +151,7 @@ export function NewInvoiceView({
 
   async function loadPointOfSaleData() {
     if (!canViewCatalog) {
-      dispatch({ type: 'SET_ALERT_MESSAGE', payload: 'Este usuario no tiene permiso para consultar el catalogo de servicios.' });
+      dispatch({ type: 'SET_ALERT_MESSAGE', payload: 'Este usuario no tiene permiso para consultar el catálogo de servicios.' });
       dispatch({ type: 'SET_LOADING_SERVICES', payload: false });
       return;
     }

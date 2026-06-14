@@ -1,4 +1,4 @@
-# 2026-06-14 - Rediseno global usa sistema visual propio Tailwind/Radix
+﻿# 2026-06-14 - Rediseno global usa sistema visual propio Tailwind/Radix
 
 Contexto: el rediseno global debe cubrir todas las pantallas reales sin romper Laravel, contratos API, caja, pagos, reportes, backups, recibos ni operacion offline LAN.
 
@@ -2235,7 +2235,7 @@ Consecuencia:
 
 Decision:
 
-- payments a�ade columna mount_cents bigInteger (migration 2026_06_01_000001).
+- payments a�ade columna mount_cents bigInteger (migration 2026_06_01_000001).
 - RegisterPaymentAction, VoidPaymentAction, BuildCashReconciliationAction y los reportes con ROUND(payments.amount * 100) se cambian a SUM(payments.amount_cents).
 
 Motivo:
@@ -2245,7 +2245,7 @@ Motivo:
 
 Consecuencia:
 
-- invoices y invoice_items aun usan decimal(12,2) sin columna cents. Sus ROUND(total * 100) y ROUND(line_total * 100) en report services quedan. Migrarlos requiere a�adir *_cents a las dos tablas y backfill, que es scope de una iteracion futura.
+- invoices y invoice_items aun usan decimal(12,2) sin columna cents. Sus ROUND(total * 100) y ROUND(line_total * 100) en report services quedan. Migrarlos requiere a�adir *_cents a las dos tablas y backfill, que es scope de una iteracion futura.
 - Nueva regression test PaymentCentsSqlGuardTest parsea el codigo fuente de los report services y falla si alguien reintroduce ROUND(payments.amount * 100).
 
 ### 2026-06-01 - Autorizacion solo via Form Requests (F4)
@@ -2292,7 +2292,7 @@ Decision:
 
 Motivo:
 
-- parseCents, formatCents, parseQuantityUnits estaban duplicados en NewInvoiceView, InvoiceCart, PaymentModal, CashBoxView, OpenSessionForm. Cada copia tenia peque�as variaciones de regex/precision, lo que hacia que el redondeo de UI difiriera entre vistas.
+- parseCents, formatCents, parseQuantityUnits estaban duplicados en NewInvoiceView, InvoiceCart, PaymentModal, CashBoxView, OpenSessionForm. Cada copia tenia peque�as variaciones de regex/precision, lo que hacia que el redondeo de UI difiriera entre vistas.
 - Money en el backend (PHP) ya define la politica de redondeo (HALF_AWAY_FROM_ZERO). Los helpers del frontend reflejan esa misma politica.
 
 Consecuencia:
@@ -2304,14 +2304,14 @@ Consecuencia:
 
 Decision:
 
-- docker-compose.prod.yml a�ade healthcheck al backend (DB::connection()->getPdo() via tinker) y a nginx (wget http://localhost/up).
+- docker-compose.prod.yml a�ade healthcheck al backend (DB::connection()->getPdo() via tinker) y a nginx (wget http://localhost/up).
 - nginx cambia de depender de backend: service_started a backend: service_healthy, garantizando que el paso cp /var/www/html/public del entrypoint haya terminado antes de que nginx intente servir.
 - client_max_body_size de nginx baja de 100M a 32M para coincidir con upload_max_filesize=32M y post_max_size=32M de backend/Dockerfile.prod.
 
 Motivo:
 
 - Sin healthchecks, un PHP-FPM trabado o un nginx sirviendo 404 (porque el cp aun no termino) pasaban desapercibidos.
-- El limite de 100M era enga�oso: nginx aceptaba el body pero PHP lo rechazaba con un 413/500 silencioso.
+- El limite de 100M era enga�oso: nginx aceptaba el body pero PHP lo rechazaba con un 413/500 silencioso.
 
 Consecuencia:
 
@@ -2590,7 +2590,7 @@ Validacion:
 
 Decision:
 
-- La pesta�a de Auditoria muestra `catalog_changes` con etiquetas humanas: servicio, tipo de cambio, antes, despues, motivo, usuario y fecha.
+- La pesta�a de Auditoria muestra `catalog_changes` con etiquetas humanas: servicio, tipo de cambio, antes, despues, motivo, usuario y fecha.
 - La UI traduce acciones como `service.price_updated` a texto administrativo y no renderiza `category_id`, codigos internos ni valores crudos de reglas especiales.
 
 Motivo:
@@ -3286,3 +3286,10 @@ Validacion:
 - La anulación autorizada quedó como acción directa visible con confirmación auditada; se eliminó el menú manual previo para mejorar teclado, claridad y pruebas.
 - `ConfirmDialog` conserva Radix AlertDialog, pero separa la descripción accesible del contenido visual para evitar controles interactivos dentro de `AlertDialog.Description`.
 - Se normalizó copy institucional en impresión, reimpresión, anulación y recibos con acentos correctos, manteniendo tamaños de recibo existentes.
+
+## 2026-06-14 - Phase 8: Reportes, respaldos y configuración fiscal
+
+- Se unificó la descarga de archivos con `downloadBlob`, adjuntando el enlace al DOM antes del click para mejorar compatibilidad de Excel/PDF y respaldos.
+- Reportes ahora anuncian errores críticos con `Alert` y los botones de exportación usan `type="button"` para evitar submits accidentales.
+- Respaldos migró estados principales a tokens semánticos y se corrigió copy institucional visible sin cambiar endpoints ni flujo de backup.
+- Configuración fiscal, recibos, catálogo, ayuda y textos de dominio se normalizaron en español institucional con acentos correctos.

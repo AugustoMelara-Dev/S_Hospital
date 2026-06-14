@@ -25,6 +25,7 @@ import {
   apiClient,
   userSafeErrorMessage,
 } from '../../lib/api';
+import { downloadBlob } from '../../lib/download';
 
 type ReportsViewProps = {
   canExport: boolean;
@@ -243,12 +244,7 @@ export function ReportsView({
 
     try {
       const blob = await apiClient.downloadReportExport(filters);
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = `reporte-hospital-${filters.date_from ?? today}-a-${filters.date_to ?? today}.xlsx`;
-      anchor.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, `reporte-hospital-${filters.date_from ?? today}-a-${filters.date_to ?? today}.xlsx`);
       onStatus('Exportación Excel descargada.');
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo exportar el reporte.');
@@ -266,15 +262,10 @@ export function ReportsView({
 
     try {
       const blob = await apiClient.downloadReportPdf(filters);
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      const filename = filters.date 
+      const filename = filters.date
         ? `cierre_diario_${filters.date}.pdf`
         : `cierre_periodo_${filters.date_from}_a_${filters.date_to}.pdf`;
-      anchor.download = filename;
-      anchor.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, filename);
       onStatus('Exportación PDF descargada.');
     } catch (error) {
       const message = userSafeErrorMessage(error, 'No se pudo exportar el reporte PDF.');
@@ -301,7 +292,7 @@ export function ReportsView({
     <section id="reportes" aria-labelledby="reports-title">
       <PageHeader
         title="Reportes"
-        description="Facturacion, cobros, caja y auditoria en una vista clara."
+        description="Facturación, cobros, caja y auditoría en una vista clara."
       />
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ReportTab)} className="space-y-6">

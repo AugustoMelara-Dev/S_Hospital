@@ -184,11 +184,11 @@ export function ServiceSalesTab({ canExport, dateFrom, dateTo, categories, servi
 
           {canExport ? (
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={onExport}>
+              <Button type="button" variant="outline" onClick={onExport}>
                 <Download className="h-4 w-4 mr-2" />
                 Exportar Excel
               </Button>
-              <Button variant="outline" onClick={onExportPdf}>
+              <Button type="button" variant="outline" onClick={onExportPdf}>
                 <Download className="h-4 w-4 mr-2" />
                 Exportar PDF
               </Button>

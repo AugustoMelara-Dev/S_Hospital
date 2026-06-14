@@ -105,10 +105,10 @@ describe('ReportsView', () => {
     render(<App />);
 
     expect((await screen.findAllByRole('heading', { name: /^reportes$/i }, { timeout: 5000 })).length).toBeGreaterThan(0);
-    expect(screen.getByText(/facturacion, cobros, caja y auditoria en una vista clara/i)).toBeInTheDocument();
+    expect(screen.getByText(/facturación, cobros, caja y auditoría en una vista clara/i)).toBeInTheDocument();
     expect(screen.queryByText(/ventas, cobros, caja y auditoria/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/^fecha$/i)).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: /^resumen del dia$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^resumen del día$/i })).toBeInTheDocument();
     expect(screen.getByText(/^cobrado$/i)).toBeInTheDocument();
     expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
     expect(screen.getByText(/^pendiente$/i)).toBeInTheDocument();
@@ -1007,7 +1007,7 @@ describe('ReportsView', () => {
     render(<App />);
 
     expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
-    expect(await screen.findByRole('heading', { name: /^resumen del dia$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^resumen del día$/i })).toBeInTheDocument();
     activateTab(/rango/i);
     expect(await screen.findByLabelText(/desde/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/hasta/i)).toBeInTheDocument();
@@ -1018,7 +1018,7 @@ describe('ReportsView', () => {
     expect(screen.getByText(/Cajero Validacion \(cajero\.validacion\)/i)).toBeInTheDocument();
     fireEvent.change(cashierSelector, { target: { value: '2' } });
     expect(screen.getByLabelText(/^area$/i)).toBeInTheDocument();
-    expect(screen.getByText(/puede consultar hasta 31 dias por busqueda/i)).toBeInTheDocument();
+    expect(screen.getByText(/puede consultar hasta 31 días por búsqueda/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver rango/i }));
 
     expect(await screen.findByText(/^cobrado$/i)).toBeInTheDocument();

@@ -133,7 +133,7 @@ export function AppRoutes({
         path={appRoutes.catalog.path}
         element={
           <PermissionGate allowed={canAccessRoute(appRoutes.catalog, user.permissions)} reason={appRoutes.catalog.deniedReason}>
-            <Suspense fallback={<LoadingState label="Cargando catalogo..." />}>
+            <Suspense fallback={<LoadingState label="Cargando catálogo..." />}>
               <CatalogView user={user} onStatus={onStatus} />
             </Suspense>
           </PermissionGate>

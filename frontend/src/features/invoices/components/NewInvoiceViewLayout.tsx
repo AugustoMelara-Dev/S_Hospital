@@ -280,7 +280,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           onClearCart();
         }}
       >
-        Se borraran paciente, busqueda y servicios agregados. Use esta accion solo si quiere empezar de nuevo.
+        Se borrarán paciente, búsqueda y servicios agregados. Use esta acción solo si quiere empezar de nuevo.
       </ConfirmDialog>
     </section>
   );

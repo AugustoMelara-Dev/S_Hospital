@@ -125,7 +125,7 @@ describe('AboutView', () => {
     expect(screen.getByText('Conectada')).toBeInTheDocument();
     expect(screen.getByText('Compilada y disponible')).toBeInTheDocument();
     expect(screen.getByText('Sin fallas registradas')).toBeInTheDocument();
-    expect(screen.getByText('Direccion LAN configurada')).toBeInTheDocument();
+    expect(screen.getByText('Dirección LAN configurada')).toBeInTheDocument();
     expect(screen.getByText('Base actualizada')).toBeInTheDocument();
     expect(screen.getByText(/192\.168\.1\.10:8000/i)).toBeInTheDocument();
     expect(screen.getByText(/America\/Tegucigalpa/i)).toBeInTheDocument();

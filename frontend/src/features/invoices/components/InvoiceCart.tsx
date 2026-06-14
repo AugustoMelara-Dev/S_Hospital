@@ -1,4 +1,4 @@
-import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
+﻿import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Checkbox } from '../../../components/ui/checkbox';
 import { Input } from '../../../components/ui/input';
@@ -89,7 +89,7 @@ export function InvoiceCart({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">{item.service.name}</p>
                       <p className="font-mono text-xs tabular-nums text-muted-foreground">
-                        {moneyLabel(item.service.price)} {isFree && <span className="font-sans font-semibold text-secondary">(Gratis - Receta dialisis)</span>}
+                        {moneyLabel(item.service.price)} {isFree && <span className="font-sans font-semibold text-success">(Gratis - receta diálisis)</span>}
                       </p>
                     </div>
                     <Button
@@ -146,7 +146,7 @@ export function InvoiceCart({
                         checked={item.dialysisPrescription}
                         onCheckedChange={(checked) => onUpdateDialysisPrescription(index, checked === true)}
                       />
-                      <span className="text-muted-foreground">Receta de dialisis (gratis)</span>
+                      <span className="text-muted-foreground">Receta de diálisis (gratis)</span>
                     </label>
                   )}
                 </div>
