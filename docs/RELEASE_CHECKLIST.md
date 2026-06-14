@@ -116,6 +116,16 @@ powershell.exe -ExecutionPolicy Bypass -File scripts\production_readiness_prefli
   -BaseUrl http://IP_DEL_SERVIDOR
 ```
 
+Protección de PII histórico:
+
+`idempotency_keys` es una caché temporal de replay para proteger contra cobros duplicados en la red. No debe contener nombres de pacientes ni PII visible en respaldos SQL.
+Antes de entregar producción, debe cifrar los registros legacy (plaintext) mediante este comando que no modifica la estructura de la tabla ni trunca datos:
+
+```bash
+php artisan idempotency:encrypt-legacy --dry-run
+php artisan idempotency:encrypt-legacy --force
+```
+
 Handoff guiado de cierre final:
 
 ```powershell
