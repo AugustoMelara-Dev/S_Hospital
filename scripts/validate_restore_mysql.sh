@@ -176,19 +176,28 @@ BACKUP_EVIDENCE_PATH="storage/app/private/backups/${BACKUP_FILE_NAME}"
 
 echo "WARNING: disposable database ${RESTORE_TEST_DATABASE_VALUE} will be dropped and recreated."
 echo "Restoring backup into disposable database ${RESTORE_TEST_DATABASE_VALUE}."
-export MYSQL_PWD="$DB_PASSWORD_VALUE"
-mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" \
+MYSQL_DEFAULTS_FILE="$(mktemp)"
+trap 'rm -f "$MYSQL_DEFAULTS_FILE"' EXIT
+chmod 600 "$MYSQL_DEFAULTS_FILE"
+{
+  printf '[client]\n'
+  printf 'host=%s\n' "$DB_HOST_VALUE"
+  printf 'port=%s\n' "$DB_PORT_VALUE"
+  printf 'user=%s\n' "$DB_USERNAME_VALUE"
+  printf 'password=%s\n' "$DB_PASSWORD_VALUE"
+} > "$MYSQL_DEFAULTS_FILE"
+mysql --defaults-extra-file="$MYSQL_DEFAULTS_FILE" \
   -e "DROP DATABASE IF EXISTS \`${RESTORE_TEST_DATABASE_VALUE}\`; CREATE DATABASE \`${RESTORE_TEST_DATABASE_VALUE}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" "$RESTORE_TEST_DATABASE_VALUE" < "$BACKUP_ABSOLUTE"
+mysql --defaults-extra-file="$MYSQL_DEFAULTS_FILE" "$RESTORE_TEST_DATABASE_VALUE" < "$BACKUP_ABSOLUTE"
 
 BACKUP_SHA256="$(php -r 'echo hash_file("sha256", $argv[1]);' "$BACKUP_ABSOLUTE")"
 BACKUP_BYTES="$(php -r 'echo filesize($argv[1]);' "$BACKUP_ABSOLUTE")"
-MIGRATION_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM migrations;" 2>/dev/null || printf '0')"
-USER_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM users;" 2>/dev/null || printf '0')"
-SERVICE_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM services;" 2>/dev/null || printf '0')"
-INVOICE_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM invoices;" 2>/dev/null || printf '0')"
-PAYMENT_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM payments;" 2>/dev/null || printf '0')"
-BACKUP_LOG_COUNT="$(mysql --host="$DB_HOST_VALUE" --port="$DB_PORT_VALUE" --user="$DB_USERNAME_VALUE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM backup_logs;" 2>/dev/null || printf '0')"
+MIGRATION_COUNT="$(mysql --defaults-extra-file="$MYSQL_DEFAULTS_FILE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM migrations;" 2>/dev/null || printf '0')"
+USER_COUNT="$(mysql --defaults-extra-file="$MYSQL_DEFAULTS_FILE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM users;" 2>/dev/null || printf '0')"
+SERVICE_COUNT="$(mysql --defaults-extra-file="$MYSQL_DEFAULTS_FILE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM services;" 2>/dev/null || printf '0')"
+INVOICE_COUNT="$(mysql --defaults-extra-file="$MYSQL_DEFAULTS_FILE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM invoices;" 2>/dev/null || printf '0')"
+PAYMENT_COUNT="$(mysql --defaults-extra-file="$MYSQL_DEFAULTS_FILE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM payments;" 2>/dev/null || printf '0')"
+BACKUP_LOG_COUNT="$(mysql --defaults-extra-file="$MYSQL_DEFAULTS_FILE" --batch --skip-column-names "$RESTORE_TEST_DATABASE_VALUE" -e "SELECT COUNT(*) FROM backup_logs;" 2>/dev/null || printf '0')"
 
 if [ "$MIGRATION_COUNT" -le 0 ]; then
   echo "Abort: restored database has no migrations."

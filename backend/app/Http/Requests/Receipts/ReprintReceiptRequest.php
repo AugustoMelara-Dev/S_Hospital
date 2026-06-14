@@ -34,7 +34,7 @@ class ReprintReceiptRequest extends FormRequest
     {
         return [
             'width' => ['required', Rule::in(ReceiptPaperSize::values())],
-            'reason' => ['nullable', 'string', 'max:500'],
+            'reason' => ['required', 'string', 'min:5', 'max:500'],
         ];
     }
 

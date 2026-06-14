@@ -187,7 +187,10 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         ]);
 
         $this->actingAs($cashier)
-            ->postJson("/api/invoices/{$invoiceId}/reprint", ['width' => 'letter'])
+            ->postJson("/api/invoices/{$invoiceId}/reprint", [
+                'width' => 'letter',
+                'reason' => 'Copia solicitada por paciente',
+            ])
             ->assertOk()
             ->assertJsonPath('data.receipt.hospital.name', 'Hospital San Isidro')
             ->assertJsonPath('data.receipt.hospital.rtn', '08011999123456')
@@ -257,11 +260,17 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         Invoice::query()->whereKey($ownOldId)->update(['issued_at' => now()->subDay()]);
 
         $this->actingAs($cashier)
-            ->postJson("/api/invoices/{$otherId}/reprint", ['width' => 'letter'])
+            ->postJson("/api/invoices/{$otherId}/reprint", [
+                'width' => 'letter',
+                'reason' => 'Validacion de permisos',
+            ])
             ->assertForbidden();
 
         $this->actingAs($cashier)
-            ->postJson("/api/invoices/{$ownOldId}/reprint", ['width' => 'letter'])
+            ->postJson("/api/invoices/{$ownOldId}/reprint", [
+                'width' => 'letter',
+                'reason' => 'Validacion de permisos',
+            ])
             ->assertForbidden();
     }
 
@@ -273,25 +282,40 @@ class InvoiceHistoryReprintVoidTest extends TestCase
         Invoice::query()->whereKey($oldId)->update(['issued_at' => now()->subDays(2)]);
 
         $this->actingAs($this->supervisor())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => 'letter'])
+            ->postJson("/api/invoices/{$oldId}/reprint", [
+                'width' => 'letter',
+                'reason' => 'Copia autorizada por supervisor',
+            ])
             ->assertOk();
 
         $this->actingAs($this->admin())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => 'a5'])
+            ->postJson("/api/invoices/{$oldId}/reprint", [
+                'width' => 'a5',
+                'reason' => 'Copia autorizada por administrador',
+            ])
             ->assertOk();
 
         $this->actingAs($this->admin())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => '80mm'])
+            ->postJson("/api/invoices/{$oldId}/reprint", [
+                'width' => '80mm',
+                'reason' => 'Copia termica de auditoria',
+            ])
             ->assertOk()
             ->assertJsonPath('data.receipt.width', '80mm');
 
         $this->actingAs($this->admin())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => '58mm'])
+            ->postJson("/api/invoices/{$oldId}/reprint", [
+                'width' => '58mm',
+                'reason' => 'Copia termica compacta',
+            ])
             ->assertOk()
             ->assertJsonPath('data.receipt.width', '58mm');
 
         $this->actingAs($this->admin())
-            ->postJson("/api/invoices/{$oldId}/reprint", ['width' => 'ticket-roll'])
+            ->postJson("/api/invoices/{$oldId}/reprint", [
+                'width' => 'ticket-roll',
+                'reason' => 'Validacion de ancho invalido',
+            ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('width');
     }

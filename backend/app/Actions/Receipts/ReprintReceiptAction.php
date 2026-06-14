@@ -16,34 +16,36 @@ class ReprintReceiptAction
 
     public function execute(Invoice $invoice, User $user, string $width, ?string $reason = null): array
     {
-        if ($invoice->status === Invoice::STATUS_VOID) {
-            throw ValidationException::withMessages([
-                'invoice' => 'No se puede reimprimir una factura anulada.',
-            ]);
-        }
-
         return DB::transaction(function () use ($invoice, $user, $width, $reason) {
-            // Lock invoice to prevent race conditions on reprint counter
-            Invoice::query()->whereKey($invoice->id)->lockForUpdate()->pluck('id');
+            $lockedInvoice = Invoice::query()
+                ->whereKey($invoice->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($lockedInvoice->status === Invoice::STATUS_VOID) {
+                throw ValidationException::withMessages([
+                    'invoice' => 'No se puede reimprimir una factura anulada.',
+                ]);
+            }
 
             $reprintCount = AuditLog::query()
                 ->where('entity_type', Invoice::class)
-                ->where('entity_id', $invoice->id)
+                ->where('entity_id', $lockedInvoice->id)
                 ->where('action', 'invoice.reprinted')
                 ->count() + 1;
 
             $copyLabel = sprintf('Reimpresion #%d', $reprintCount);
 
-            $receipt = $this->generateReceiptData->execute($invoice, $width, $copyLabel);
+            $receipt = $this->generateReceiptData->execute($lockedInvoice, $width, $copyLabel);
 
             AuditLog::query()->create([
                 'user_id' => $user->id,
                 'action' => 'invoice.reprinted',
                 'entity_type' => Invoice::class,
-                'entity_id' => $invoice->id,
+                'entity_id' => $lockedInvoice->id,
                 'old_values' => null,
                 'new_values' => [
-                    'invoice_number' => $invoice->invoice_number,
+                    'invoice_number' => $lockedInvoice->invoice_number,
                     'width' => $width,
                     'reason' => $reason,
                     'reprint_count' => $reprintCount,
@@ -56,7 +58,7 @@ class ReprintReceiptAction
                 'receipt' => $receipt,
                 'audit' => [
                     'action' => 'invoice.reprinted',
-                    'invoice_id' => $invoice->id,
+                    'invoice_id' => $lockedInvoice->id,
                     'width' => $width,
                     'reason' => $reason,
                     'reprint_count' => $reprintCount,

@@ -61,25 +61,56 @@ class DatabaseDumpWriter
             throw new RuntimeException('No se encontro mariadb-dump ni mysqldump. Instale una herramienta de dump local en el servidor.');
         }
 
-        $command = [
-            $binary,
-            '--single-transaction',
-            '--quick',
-            '--skip-comments',
-            '--result-file='.$absolutePath,
-            '--host='.(string) ($config['host'] ?? '127.0.0.1'),
-            '--port='.(string) ($config['port'] ?? '3306'),
-            '--user='.(string) ($config['username'] ?? ''),
-            (string) ($config['database'] ?? ''),
-        ];
+        $defaultsFile = $this->createMysqlDefaultsFile((string) ($config['password'] ?? ''));
 
-        $process = new Process($command);
-        $process->setTimeout(300);
-        $process->setEnv(['MYSQL_PWD' => (string) ($config['password'] ?? '')]);
-        $process->run();
+        try {
+            $command = [
+                $binary,
+                '--defaults-extra-file='.$defaultsFile,
+                '--single-transaction',
+                '--quick',
+                '--skip-comments',
+                '--result-file='.$absolutePath,
+                '--host='.(string) ($config['host'] ?? '127.0.0.1'),
+                '--port='.(string) ($config['port'] ?? '3306'),
+                '--user='.(string) ($config['username'] ?? ''),
+                (string) ($config['database'] ?? ''),
+            ];
 
-        if (! $process->isSuccessful()) {
-            throw new RuntimeException($this->sanitizeDumpError($process->getErrorOutput() ?: $process->getOutput()));
+            $process = new Process($command);
+            $process->setTimeout(300);
+            $process->run();
+
+            if (! $process->isSuccessful()) {
+                throw new RuntimeException($this->sanitizeDumpError($process->getErrorOutput() ?: $process->getOutput()));
+            }
+        } finally {
+            $this->removeDefaultsFile($defaultsFile);
+        }
+    }
+
+    private function createMysqlDefaultsFile(string $password): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'hospital-mysql-');
+        if ($path === false) {
+            throw new RuntimeException('No se pudo crear archivo temporal seguro para credenciales de backup.');
+        }
+
+        $escapedPassword = addcslashes($password, "\\\"\n\r");
+        if (file_put_contents($path, "[client]\npassword=\"{$escapedPassword}\"\n") === false) {
+            @unlink($path);
+            throw new RuntimeException('No se pudo escribir archivo temporal seguro para credenciales de backup.');
+        }
+
+        @chmod($path, 0600);
+
+        return $path;
+    }
+
+    private function removeDefaultsFile(string $path): void
+    {
+        if ($path !== '' && is_file($path)) {
+            @unlink($path);
         }
     }
 

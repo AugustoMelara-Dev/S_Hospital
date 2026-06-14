@@ -89,6 +89,43 @@ function Get-MySqlClient {
     return $null
 }
 
+function New-MySqlDefaultsFile {
+    param([hashtable]$DbConfig)
+
+    $path = [System.IO.Path]::GetTempFileName()
+    $password = ([string]$DbConfig.Password).Replace('\', '\\').Replace('"', '\"')
+    $content = @(
+        "[client]",
+        "host=$($DbConfig.Host)",
+        "port=$($DbConfig.Port)",
+        "user=$($DbConfig.Username)",
+        "password=""$password"""
+    ) -join "`n"
+
+    Set-Content -LiteralPath $path -Value $content -Encoding ASCII -NoNewline
+
+    try {
+        $acl = Get-Acl -LiteralPath $path
+        $acl.SetAccessRuleProtection($true, $false)
+        $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+        $rule = New-Object System.Security.AccessControl.FileSystemAccessRule($identity, "FullControl", "Allow")
+        $acl.SetAccessRule($rule)
+        Set-Acl -LiteralPath $path -AclObject $acl
+    } catch {
+        Write-Warning "No se pudo restringir ACL del defaults file temporal; eliminelo si la restauracion falla: $path"
+    }
+
+    return $path
+}
+
+function Remove-MySqlDefaultsFile {
+    param([string]$Path)
+
+    if ($Path -and (Test-Path -LiteralPath $Path)) {
+        Remove-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Get-ConfigValue {
     param(
         [hashtable]$Config,
@@ -330,10 +367,11 @@ Assert-SafeConnectionConfig $dbConfig
 
 Write-Step "Creando base de datos '$($dbConfig.Database)' si no existe..."
 $createDbCmd = "CREATE DATABASE IF NOT EXISTS ``$($dbConfig.Database)`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-$env:MYSQL_PWD = $dbConfig.Password
-& $mysqlExe --host=$($dbConfig.Host) --port=$($dbConfig.Port) --user=$($dbConfig.Username) -e $createDbCmd 2>&1 | Out-Null
+$mysqlDefaultsFile = New-MySqlDefaultsFile $dbConfig
+& $mysqlExe --defaults-extra-file=$mysqlDefaultsFile -e $createDbCmd 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Error al crear base de datos"
+    Remove-MySqlDefaultsFile $mysqlDefaultsFile
     exit 1
 }
 Write-Success "Base de datos lista"
@@ -342,10 +380,11 @@ if ($BackupFile) {
     Write-Step "Restaurando backup desde: $BackupFile"
     Write-Host "Esto puede tomar varios minutos..." -ForegroundColor Yellow
 
-    $restoreCommand = """$mysqlExe"" --host=$($dbConfig.Host) --port=$($dbConfig.Port) --user=$($dbConfig.Username) --default-character-set=utf8mb4 ""$($dbConfig.Database)"" < ""$BackupFile"" 2>&1"
+    $restoreCommand = """$mysqlExe"" --defaults-extra-file=""$mysqlDefaultsFile"" --default-character-set=utf8mb4 ""$($dbConfig.Database)"" < ""$BackupFile"" 2>&1"
     & cmd /c $restoreCommand
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Error al restaurar backup"
+        Remove-MySqlDefaultsFile $mysqlDefaultsFile
         exit 1
     }
     Write-Success "Backup restaurado exitosamente"
@@ -359,7 +398,7 @@ if ($BackupFile) {
 
 Write-Step "Verificando datos restaurados..."
 $tableCountCmd = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ``$($dbConfig.Database)``;"
-$tableCount = & $mysqlExe --host=$($dbConfig.Host) --port=$($dbConfig.Port) --user=$($dbConfig.Username) --batch --skip-column-names -e $tableCountCmd 2>&1
+$tableCount = & $mysqlExe --defaults-extra-file=$mysqlDefaultsFile --batch --skip-column-names -e $tableCountCmd 2>&1
 if ($tableCount -as [int] -gt 0) {
     Write-Success "Base de datos restaurada con $tableCount tablas"
 } else {
@@ -370,7 +409,7 @@ Write-Step "Verificando tablas criticas..."
 $criticalTables = @('users', 'services', 'invoices', 'payments', 'backup_logs')
 foreach ($table in $criticalTables) {
     $countCmd = "SELECT COUNT(*) FROM ``$($dbConfig.Database)``.``$table``;"
-    $count = & $mysqlExe --host=$($dbConfig.Host) --port=$($dbConfig.Port) --user=$($dbConfig.Username) --batch --skip-column-names -e $countCmd 2>&1
+    $count = & $mysqlExe --defaults-extra-file=$mysqlDefaultsFile --batch --skip-column-names -e $countCmd 2>&1
     if ($count -as [int] -ge 0) {
         Write-Success "  $table : $count registros"
     } else {
@@ -388,5 +427,7 @@ if ($script:ExitCode -eq 0) {
     Write-Error "RESTAURACION FALLIDA - Revise los errores arriba"
 }
 Write-Host ""
+
+Remove-MySqlDefaultsFile $mysqlDefaultsFile
 
 exit $script:ExitCode
