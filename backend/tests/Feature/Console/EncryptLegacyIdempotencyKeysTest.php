@@ -27,7 +27,7 @@ class EncryptLegacyIdempotencyKeysTest extends TestCase
         $plaintext = json_encode([
             'patient_name' => 'John Doe',
             'invoice_number' => '000-001-01-00000001',
-            'amount' => 1500
+            'amount' => 1500,
         ]);
 
         $id = DB::table('idempotency_keys')->insertGetId([
@@ -53,7 +53,7 @@ class EncryptLegacyIdempotencyKeysTest extends TestCase
         // Validate it can be decrypted properly
         $decrypted = Crypt::decryptString($rawRow->response_body);
         $this->assertEquals($plaintext, $decrypted);
-        
+
         // And using Eloquent model works fine
         $model = IdempotencyKey::find($id);
         $this->assertEquals($plaintext, $model->response_body_plain);
@@ -62,7 +62,7 @@ class EncryptLegacyIdempotencyKeysTest extends TestCase
     public function test_does_not_double_encrypt(): void
     {
         $plaintext = json_encode(['data' => 'test']);
-        
+
         // Insert an ALREADY encrypted row
         $id = DB::table('idempotency_keys')->insertGetId([
             'user_id' => $this->user->id,
@@ -85,7 +85,7 @@ class EncryptLegacyIdempotencyKeysTest extends TestCase
             ->assertSuccessful();
 
         $rawAfter = DB::table('idempotency_keys')->where('id', $id)->first()->response_body;
-        
+
         // Value shouldn't change
         $this->assertEquals($rawBefore, $rawAfter);
     }
@@ -93,7 +93,7 @@ class EncryptLegacyIdempotencyKeysTest extends TestCase
     public function test_dry_run_does_not_modify_data(): void
     {
         $plaintext = json_encode(['data' => 'test']);
-        
+
         $id = DB::table('idempotency_keys')->insertGetId([
             'user_id' => $this->user->id,
             'route_signature' => 'POST /api/test',

@@ -73,9 +73,9 @@ class BroadcastingWiringTest extends TestCase
         $this->loginAsUser($cashier);
 
         $this->postJson('/broadcasting/auth', [
-                'socket_id' => '123.456',
-                'channel_name' => 'private-invoices',
-            ])
+            'socket_id' => '123.456',
+            'channel_name' => 'private-invoices',
+        ])
             ->assertOk();
 
         $this->postJson('/api/auth/logout')->assertOk();
@@ -84,9 +84,9 @@ class BroadcastingWiringTest extends TestCase
         $this->loginAsUser($plainUser);
 
         $this->postJson('/broadcasting/auth', [
-                'socket_id' => '123.456',
-                'channel_name' => 'private-invoices',
-            ])
+            'socket_id' => '123.456',
+            'channel_name' => 'private-invoices',
+        ])
             ->assertForbidden();
     }
 
@@ -101,9 +101,9 @@ class BroadcastingWiringTest extends TestCase
 
         foreach (['private-payments', 'private-cash'] as $channel) {
             $this->postJson('/broadcasting/auth', [
-                    'socket_id' => '123.456',
-                    'channel_name' => $channel,
-                ])
+                'socket_id' => '123.456',
+                'channel_name' => $channel,
+            ])
                 ->assertOk();
         }
 
@@ -114,9 +114,9 @@ class BroadcastingWiringTest extends TestCase
 
         foreach (['private-payments', 'private-cash'] as $channel) {
             $this->postJson('/broadcasting/auth', [
-                    'socket_id' => '123.456',
-                    'channel_name' => $channel,
-                ])
+                'socket_id' => '123.456',
+                'channel_name' => $channel,
+            ])
                 ->assertForbidden();
         }
     }
