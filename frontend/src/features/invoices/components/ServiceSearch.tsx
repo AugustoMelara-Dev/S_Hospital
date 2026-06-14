@@ -93,7 +93,7 @@ export function ServiceSearch({
               ref={searchInputRef}
               id="service-search"
               name="service_search"
-              aria-label="Buscar por nombre, categoria o codigo"
+              aria-label="Buscar por nombre, categoría o código"
               placeholder="Glucosa, hemograma, eritropoyetina…"
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
@@ -125,7 +125,7 @@ export function ServiceSearch({
                   ref={scannerInputRef}
                   id="scanner-code"
                   name="scanner_code"
-                  aria-label="Scanner USB o codigo manual"
+                  aria-label="Scanner USB o código manual"
                   placeholder="Codigo…"
                   value={scanCode}
                   onChange={(e) => onScanCodeChange(e.target.value)}
@@ -196,9 +196,9 @@ export function ServiceSearch({
           </div>
         ) : !hasIntent ? (
           <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground">
-            <span className="font-medium text-foreground">Busque o elija una categoria</span>
+            <span className="font-medium text-foreground">Busque o elija una categoría</span>
             <span className="max-w-sm text-sm">
-              Escriba el nombre del servicio, escanee un codigo o toque una categoria para ver opciones facturables.
+              Escriba el nombre del servicio, escanee un código o toque una categoría para ver opciones facturables.
             </span>
           </div>
         ) : filteredServices.length === 0 ? (
@@ -224,7 +224,7 @@ export function ServiceSearch({
                     <p className="pr-20 text-sm font-semibold leading-tight text-foreground">{service.name}</p>
                     <div className="flex flex-wrap items-center gap-1.5">
                         <span className="inline-flex items-center rounded-sm bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                        {service.category?.name ?? 'Sin categoria'}
+                        {service.category?.name ?? 'Sin categoría'}
                       </span>
                       {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) && (
                         <span className="text-[10px] text-muted-foreground">

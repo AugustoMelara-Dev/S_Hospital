@@ -3266,3 +3266,16 @@ Validacion:
 - npm.cmd run typecheck
 - npm.cmd run lint
 - npm.cmd run build
+
+# 2026-06-14 - Caja, POS y pagos usan tokens semanticos y textos claros
+
+Contexto: caja, nueva factura y cobros son flujos criticos; el rediseno no debe tocar calculos ni contratos API, pero si debe aclarar estados y evitar colores fijos que fallan en dark mode.
+
+Decision: se corrige microcopy de caja/POS/pagos, se reemplazan verdes/amarillos fijos por tokens success/warning/destructive y se mantiene la logica fiscal y de caja intacta. Los tests de facturacion y caja se actualizan solo por etiquetas visibles corregidas.
+
+Validacion:
+
+- npm.cmd run test -- CashBoxView OpenSessionForm NewInvoiceView PaymentModal InvoiceCart ServiceSearch InvoiceConfirmation InvoiceSuccess serviceBilling
+- npm.cmd run typecheck
+- npm.cmd run lint
+- npm.cmd run build

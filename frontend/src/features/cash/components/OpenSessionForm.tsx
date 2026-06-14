@@ -41,7 +41,7 @@ export function OpenSessionForm({ isSubmitting, onSubmit }: OpenSessionFormProps
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Wallet className="h-5 w-5" />
-          Abrir Caja
+          Abrir caja
         </CardTitle>
         <CardDescription>
           Ingrese el efectivo real disponible al iniciar. Puede ser L.0.00.
@@ -50,7 +50,7 @@ export function OpenSessionForm({ isSubmitting, onSubmit }: OpenSessionFormProps
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="opening_amount">Monto Inicial (L.) *</Label>
+            <Label htmlFor="opening_amount">Monto inicial (L.) *</Label>
             <Input
               id="opening_amount"
               type="text"
@@ -78,7 +78,7 @@ export function OpenSessionForm({ isSubmitting, onSubmit }: OpenSessionFormProps
           </Alert>
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? 'Abriendo...' : 'Abrir Caja'}
+            {isSubmitting ? 'Abriendo...' : 'Abrir caja'}
           </Button>
         </form>
       </CardContent>

@@ -58,11 +58,11 @@ export function InvoiceSuccess({
         <div className="flex justify-center py-2 animate-[scale-in_0.3s_ease-out_both]">
           <SuccessCheckmark size="lg" />
         </div>
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800 p-4">
-          <p className="font-semibold text-emerald-900 dark:text-emerald-350 text-lg">{invoiceNumber}</p>
-          <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">Paciente: <strong>{patientName}</strong></p>
-          <p className="text-sm text-emerald-700 dark:text-emerald-400">Total: <strong>{moneyLabel(total)}</strong></p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-2 uppercase font-medium tracking-wide">
+        <div className="rounded-lg border border-success/30 bg-success/10 p-4">
+          <p className="text-lg font-semibold text-success-foreground">{invoiceNumber}</p>
+          <p className="mt-1 text-sm text-success-foreground/90">Paciente: <strong>{patientName}</strong></p>
+          <p className="text-sm text-success-foreground/90">Total: <strong>{moneyLabel(total)}</strong></p>
+          <p className="mt-2 text-xs font-medium uppercase tracking-wide text-success-foreground/80">
             Estado: {STATUS_LABELS[status]}
           </p>
         </div>
