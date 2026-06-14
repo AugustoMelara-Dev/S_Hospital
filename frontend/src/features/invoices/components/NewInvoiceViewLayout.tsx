@@ -96,16 +96,16 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
   } = props;
 
   return (
-    <section id="nueva-factura" className="flex flex-col h-full gap-4 p-4 lg:p-6">
-      <header className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+    <section id="nueva-factura" className="flex h-full flex-col gap-4">
+      <header className="flex flex-col gap-3 border-b border-border pb-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex flex-col gap-1">
-          <p className="text-xs font-semibold uppercase tracking-normal text-primary">Caja hospitalaria</p>
-          <h1 className="text-2xl font-semibold tracking-normal text-foreground">Nueva factura</h1>
-          <p className="text-sm text-muted-foreground">Factura y cobro en caja</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary">Caja hospitalaria</p>
+          <h1 className="text-2xl font-semibold leading-tight text-foreground md:text-3xl">Nueva factura</h1>
+          <p className="text-sm text-muted-foreground">Paciente, servicios, cobro y recibo en una sola estacion.</p>
         </div>
         <div className="flex items-center gap-3">
           {state.loadedCashSession ? (
-            <Badge variant="default" className="text-sm">
+            <Badge variant="success" className="font-mono text-sm tabular-nums">
               Caja #{state.loadedCashSession.id} - Abierta
             </Badge>
           ) : (
@@ -151,9 +151,9 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
         </Alert>
       )}
 
-      <div className="grid flex-1 gap-4 lg:grid-cols-[1fr_380px] lg:min-h-0">
+      <div className="grid flex-1 gap-4 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_400px]">
         <div className="flex flex-col gap-4 lg:min-h-0 lg:overflow-hidden">
-          <Card className="lg:shrink-0">
+          <Card className="border-secondary/20 bg-card/95 lg:shrink-0">
             <CardContent className="pt-5">
               <PatientStep
                 ref={patientInputRef}
@@ -165,8 +165,8 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
             </CardContent>
           </Card>
 
-          <Card className="lg:flex-1 lg:min-h-0 lg:flex lg:flex-col">
-            <CardContent className="lg:flex-1 lg:min-h-0 lg:overflow-hidden">
+          <Card className="lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+            <CardContent className="lg:min-h-0 lg:flex-1 lg:overflow-hidden">
               <ServiceSearch
                 categories={state.categories}
                 services={state.services}
@@ -187,7 +187,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           </Card>
         </div>
 
-        <Card className="lg:sticky lg:top-4 lg:h-fit lg:shrink-0">
+        <Card className="lg:sticky lg:top-20 lg:h-fit lg:shrink-0">
           <CardContent className="pt-5">
             <InvoiceCart
               items={state.cartItems}

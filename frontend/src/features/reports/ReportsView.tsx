@@ -305,7 +305,7 @@ export function ReportsView({
       />
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ReportTab)} className="space-y-6">
-        <TabsList className="bg-muted/50">
+        <TabsList className="border border-border bg-card/85 shadow-sm">
           {canViewManagerial && (
             <>
               <TabsTrigger value="diario">Diario</TabsTrigger>

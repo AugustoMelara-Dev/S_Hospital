@@ -179,11 +179,11 @@ export function CashBoxView({
   return (
     <section id="caja" className={compact ? 'flex flex-col gap-4' : 'cash-layout'} aria-labelledby="cash-title">
       <div className="flex flex-col gap-6">
-        <Card>
+        <Card className="border-secondary/15">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardDescription>Operación de caja</CardDescription>
-              <CardTitle id="cash-title">Caja</CardTitle>
+              <CardTitle id="cash-title" className="text-2xl font-semibold">Caja</CardTitle>
             </div>
             <Button type="button" variant="secondary" size="sm" onClick={() => void refetch()} disabled={isLoading}>
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -285,6 +285,7 @@ export function CashBoxView({
                     <Input
                       ref={closingAmountRef}
                       id="closing_amount"
+                      name="closing_amount"
                       type="text"
                       inputMode="decimal"
                       value={closingAmount}
@@ -293,7 +294,8 @@ export function CashBoxView({
                         if (closingAmountError) setClosingAmountError(null);
                       }}
                       placeholder="0.00"
-                      className="text-lg"
+                      autoComplete="off"
+                      className="font-mono text-lg tabular-nums"
                       aria-invalid={closingAmountError ? 'true' : 'false'}
                       aria-describedby={closingAmountError ? 'closing-amount-error' : 'closing-amount-help'}
                     />
@@ -333,9 +335,10 @@ export function CashBoxView({
                     </label>
                     <Textarea
                       id="closing_notes"
+                      name="closing_notes"
                       value={closingNotes}
                       onChange={(e) => setClosingNotes(e.target.value)}
-                      placeholder={hasCashDifference ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional...'}
+                      placeholder={hasCashDifference ? 'Obligatoria si hay diferencia (sobrante/faltante).' : 'Nota opcional…'}
                       rows={2}
                     />
                   </div>

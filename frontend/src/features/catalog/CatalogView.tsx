@@ -208,20 +208,21 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
 
   return (
     <section id="catalogo" className="flex flex-col gap-5" aria-labelledby="catalog-title">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 border-b border-border pb-5 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 id="catalog-title" className="text-2xl font-bold tracking-tight">Catalogo de servicios</h1>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary">Catalogo operativo</p>
+          <h1 id="catalog-title" className="text-2xl font-semibold leading-tight md:text-3xl">Catalogo de servicios</h1>
           {!canManageCatalog && (
             <p className="mt-1 text-sm text-muted-foreground">
               Cajero puede consultar catalogo y precios, sin permisos para modificar servicios.
             </p>
           )}
-          <p className="text-sm text-muted-foreground">
+          <p className="mt-1 font-mono text-sm tabular-nums text-muted-foreground">
             {meta.total} servicio{meta.total !== 1 ? 's' : ''} en el catalogo
           </p>
         </div>
         {canManageCatalog && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={openNewCategory}>
               <Plus className="mr-2 h-4 w-4" />
               Nueva categoria
@@ -234,7 +235,7 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
         )}
       </div>
 
-      <Card>
+      <Card className="border-secondary/15">
         <CardContent className="pt-6">
           <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_200px_150px]">
             <div className="flex min-w-[200px] flex-col gap-2">
@@ -245,7 +246,9 @@ export function CatalogView({ user, onStatus }: CatalogViewProps) {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="catalog-search"
-                  placeholder="Buscar por nombre o codigo..."
+                  name="catalog_search"
+                  placeholder="Buscar por nombre o codigo…"
+                  autoComplete="off"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9"

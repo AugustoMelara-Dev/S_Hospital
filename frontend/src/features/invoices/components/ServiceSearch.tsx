@@ -3,6 +3,7 @@ import { type RefObject, useEffect, useState, useCallback } from 'react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
+import { Skeleton } from '../../../components/ui/states';
 import type { Category, Service } from '../../../lib/api';
 import { cn } from '../../../lib/utils';
 import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
@@ -82,12 +83,18 @@ export function ServiceSearch({
     <div className="flex flex-col gap-4 lg:h-full lg:overflow-hidden">
       <div className="flex flex-col gap-3 lg:shrink-0">
         <div className={scannerEnabled ? 'grid gap-3 sm:grid-cols-[1fr_auto]' : 'grid gap-3'}>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="flex min-w-0 flex-col gap-2">
+            <Label htmlFor="service-search" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Buscar servicio
+            </Label>
+            <div className="relative">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary" aria-hidden="true" />
             <Input
               ref={searchInputRef}
+              id="service-search"
+              name="service_search"
               aria-label="Buscar por nombre, categoria o codigo"
-              placeholder="Buscar por nombre o codigo..."
+              placeholder="Glucosa, hemograma, eritropoyetina…"
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyDown={(e) => {
@@ -103,16 +110,23 @@ export function ServiceSearch({
                   }
                 }
               }}
-              className="pl-10"
+              autoComplete="off"
+              className="min-h-14 pl-12 text-base font-semibold"
             />
+            </div>
           </div>
           {scannerEnabled ? (
-            <div className="flex gap-2">
-              <div className="relative w-36">
+            <div className="flex items-end gap-2">
+              <div className="relative w-40">
+                <Label htmlFor="scanner-code" className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Scanner
+                </Label>
                 <Input
                   ref={scannerInputRef}
+                  id="scanner-code"
+                  name="scanner_code"
                   aria-label="Scanner USB o codigo manual"
-                  placeholder="Codigo"
+                  placeholder="Codigo…"
                   value={scanCode}
                   onChange={(e) => onScanCodeChange(e.target.value)}
                   onKeyDown={(e) => {
@@ -122,9 +136,10 @@ export function ServiceSearch({
                       onAddByScanCode();
                     }
                   }}
+                  autoComplete="off"
                 />
               </div>
-              <Button type="button" variant="secondary" size="sm" onClick={() => onAddByScanCode()}>
+              <Button type="button" variant="secondary" size="sm" className="min-h-10" onClick={() => onAddByScanCode()}>
                 Escanear
               </Button>
             </div>
@@ -135,7 +150,7 @@ export function ServiceSearch({
           <Label className="mb-2 block" id="service-category-label">Categoria</Label>
           <div
             aria-labelledby="service-category-label"
-            className="grid max-h-28 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-4"
+            className="grid max-h-32 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-4"
             role="radiogroup"
           >
             <CategoryButton
@@ -155,9 +170,11 @@ export function ServiceSearch({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
         <div className="flex items-center justify-between mb-2" aria-live="polite">
-          <Label>Servicios ({hasIntent ? filteredServices.length : 0})</Label>
+          <Label className="font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
+            Servicios ({hasIntent ? filteredServices.length : 0})
+          </Label>
           <Button
             type="button"
             variant="ghost"
@@ -172,24 +189,26 @@ export function ServiceSearch({
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-8 text-muted-foreground">
-            <span>Cargando servicios...</span>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" aria-label="Cargando servicios">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <Skeleton key={index} className="h-24 rounded-lg" />
+            ))}
           </div>
         ) : !hasIntent ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-muted-foreground">
+          <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground">
             <span className="font-medium text-foreground">Busque o elija una categoria</span>
             <span className="max-w-sm text-sm">
               Escriba el nombre del servicio, escanee un codigo o toque una categoria para ver opciones facturables.
             </span>
           </div>
         ) : filteredServices.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-muted-foreground">
+          <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/35 px-4 py-10 text-center text-muted-foreground">
             <span className="font-medium text-foreground">Sin servicios encontrados</span>
             <span className="max-w-sm text-sm">Revise la busqueda o quite filtros para consultar todo el catalogo activo.</span>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {visibleServices.map((service) => {
               const isErythropoietin = service.special_rule_code === ERYTHROPOIETIN_RULE;
               return (
@@ -198,13 +217,13 @@ export function ServiceSearch({
                   type="button"
                   variant="outline"
                   aria-label={`Agregar ${service.name} por ${moneyLabel(service.price)}`}
-                  className="group relative h-auto min-h-24 items-center justify-start gap-3 p-3 text-left font-normal transition-transform hover:border-primary/40 hover:bg-accent/40 hover:shadow-sm active:scale-[0.99]"
+                  className="group relative h-auto min-h-24 items-center justify-start gap-3 overflow-hidden p-3 text-left font-normal transition-[background-color,border-color,box-shadow,transform] duration-150 hover:border-secondary/45 hover:bg-accent/50 hover:shadow-sm active:translate-y-px active:scale-[0.99]"
                   onClick={() => handleAddService(service)}
                 >
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <p className="pr-20 text-sm font-semibold leading-tight text-foreground">{service.name}</p>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                        <span className="inline-flex items-center rounded-sm bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
                         {service.category?.name ?? 'Sin categoria'}
                       </span>
                       {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) && (
@@ -215,13 +234,13 @@ export function ServiceSearch({
                     </div>
                   </div>
                   <div className="absolute right-3 top-3">
-                    <span className="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-1 text-sm font-semibold text-emerald-700">
+                    <span className="inline-flex items-center rounded-sm bg-secondary/12 px-2 py-1 font-mono text-sm font-semibold tabular-nums text-secondary">
                       {moneyLabel(service.price)}
                     </span>
                   </div>
                   {isErythropoietin && (
                     <div className="absolute bottom-1 right-3">
-                      <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                      <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
                         Con receta dialisis = Gratis
                       </span>
                     </div>

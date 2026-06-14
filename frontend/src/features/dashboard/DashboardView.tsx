@@ -170,7 +170,7 @@ export function DashboardView({
       )}
 
       <div className="grid gap-5">
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumen operativo del mes">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.15fr_1fr_1fr_0.85fr]" aria-label="Resumen operativo del mes">
           <MetricCard
             icon={<WalletCards className="size-4 text-emerald-600" />}
             label="Caja"
@@ -202,7 +202,7 @@ export function DashboardView({
           />
         </section>
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.75fr)_minmax(300px,0.9fr)]">
           <div className="flex flex-col gap-5">
             <Card>
               <CardHeader className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-start sm:justify-between">
@@ -371,19 +371,19 @@ function MetricCard({
   }[variant];
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardContent className="pt-6">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             {icon}
-            <span className="truncate text-xs font-semibold uppercase text-muted-foreground">{label}</span>
+          <span className="truncate text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</span>
           </div>
           <Badge variant={variant === 'warning' ? 'warning' : variant === 'success' ? 'success' : 'secondary'}>
             {badgeText}
           </Badge>
         </div>
         <div className="mt-4 flex flex-col gap-0.5">
-          <strong className="text-xl font-bold tracking-tight text-foreground">{value}</strong>
+          <strong className="font-mono text-xl font-bold tabular-nums text-foreground">{value}</strong>
           <span className="text-xs text-muted-foreground">{helper}</span>
         </div>
       </CardContent>
