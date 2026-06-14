@@ -31,7 +31,7 @@ class AddSecurityHeaders
         // totals, payment references). They MUST NOT be cached by browsers,
         // proxies, or shared caches. The SPA also relies on this for the
         // cashier app to never serve stale financial data.
-        if ($this->isApiResponse($request)) {
+        if ($this->isApiResponse($request, $response)) {
             $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
             $response->headers->set('Pragma', 'no-cache');
             $response->headers->set('Expires', '0');
@@ -60,13 +60,17 @@ class AddSecurityHeaders
      */
     private function isProductionLike(): bool
     {
-        $env = strtolower(trim((string) config('app.env')));
+        $env = strtolower(trim((string) app()->environment()));
 
         return $env === 'production' || $env === 'prod';
     }
 
-    private function isApiResponse(Request $request): bool
+    private function isApiResponse(Request $request, Response $response): bool
     {
+        if ($response->headers->has('Cache-Control') && ! str_contains((string) $response->headers->get('Content-Type', ''), 'application/json')) {
+            return false;
+        }
+
         if ($request->is('api/*')) {
             return true;
         }
@@ -123,4 +127,3 @@ class AddSecurityHeaders
         ]);
     }
 }
-
