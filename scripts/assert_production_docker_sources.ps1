@@ -167,6 +167,26 @@ function Test-UploadLimitAlignment {
     }
 }
 
+function Test-NginxSpaNonceServing {
+    $nginxPath = Join-Path $ProjectRoot "nginx\default.conf"
+    $viteNoncePluginPath = Join-Path $ProjectRoot "frontend\vite-plugins\csp-nonce.ts"
+
+    if (-not (Test-Path -LiteralPath $nginxPath -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $viteNoncePluginPath -PathType Leaf)) {
+        return
+    }
+
+    $nginx = Get-Content -LiteralPath $nginxPath -Raw
+    $viteNoncePlugin = Get-Content -LiteralPath $viteNoncePluginPath -Raw
+
+    if ($viteNoncePlugin -match "__S_HOSPITAL_CSP_NONCE__" -and $nginx -match "try_files\s+[^;]*?/index\.html\s*;") {
+        Add-Failure "nginx/default.conf must not serve SPA HTML via static /index.html while the Vite CSP nonce placeholder is active; route SPA HTML through Laravel."
+        return
+    }
+
+    Add-Pass "nginx SPA fallback is compatible with Laravel CSP nonce substitution"
+}
+
 $composePath = Join-Path $ProjectRoot "docker-compose.prod.yml"
 $dockerfilePath = Join-Path $ProjectRoot "backend\Dockerfile.prod"
 $dockerignorePath = Join-Path $ProjectRoot ".dockerignore"
@@ -222,6 +242,7 @@ if (Test-Path -LiteralPath $composePath -PathType Leaf) {
 }
 
 Test-UploadLimitAlignment
+Test-NginxSpaNonceServing
 
 if ($failures.Count -gt 0) {
     Write-Host ""

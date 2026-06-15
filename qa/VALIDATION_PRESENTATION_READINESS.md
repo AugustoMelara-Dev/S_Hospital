@@ -14,7 +14,7 @@ No declarar **PRODUCTION_READY** hasta cerrar con evidencia real: cliente LAN fi
 ## Datos de validacion
 
 - Catalogo base: servicios activos desde `backend/database/seeders/data/catalogo_servicios_inicial.csv`.
-- Areas y categorias: laboratorio, radiologia, hospitalizacion/emergencia, odontologia y medicamentos.
+- Catalogo y categorias: servicios facturables del hospital. Los nombres clinicos heredados son conceptos de cobro, no modulos clinicos.
 - Regla critica: `Eritropoyetina` cuesta L.25.00 y aplica regla especial de dialisis desde backend.
 - Codigos de validacion para scanner:
   - Acido Urico: `LAB-ACIDO-URICO`, barcode `7700000001001`, QR `QR-LAB-ACIDO-URICO`.
