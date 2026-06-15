@@ -57,10 +57,10 @@ export function ReceiptSettingsPreview({
           ) : null}
 
           <header className="text-center text-[11px] uppercase leading-tight">
-            <div>{governmentLine || 'Gobierno de Honduras'}</div>
-            <div>{secretariatLine || 'Secretaria de Salud'}</div>
-            <div className="text-base font-bold">{hospitalName || 'Hospital San Isidro'}</div>
-            <div>{location || 'Tocoa, Colon'}</div>
+            <div>{governmentLine}</div>
+            <div>{secretariatLine}</div>
+            <div className="text-base font-bold">{hospitalName || 'SIN CONFIGURAR'}</div>
+            <div>{location}</div>
           </header>
 
           <div className="mt-4 grid grid-cols-[1.2fr_0.8fr] gap-4 text-sm">
@@ -84,7 +84,9 @@ export function ReceiptSettingsPreview({
             </div>
             <div className="grid grid-cols-[42px_1fr] items-end gap-2">
               <span className="font-bold">Que</span>
-              <span className="border-b border-black px-1">VEINTICINCO LEMPIRAS CON 00/100 CENTAVOS</span>
+              <span className="border-b border-black px-1">
+                {[series?.legal_text, 'VEINTICINCO LEMPIRAS CON 00/100 CENTAVOS'].filter(Boolean).join(' ')}
+              </span>
             </div>
             <div className="grid grid-cols-[42px_1fr] items-start gap-2">
               <span className="font-bold">Por</span>

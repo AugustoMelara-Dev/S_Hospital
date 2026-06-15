@@ -63,6 +63,7 @@ describe('ReceiptSettingsPreview', () => {
     expect(screen.getByText(/Recibo No./)).toBeInTheDocument();
     expect(screen.getByText('El')).toBeInTheDocument();
     expect(screen.getByText('Que')).toBeInTheDocument();
+    expect(document.body.textContent).toContain('Texto legal VEINTICINCO LEMPIRAS CON 00/100 CENTAVOS');
     expect(screen.getByText('Por')).toBeInTheDocument();
     expect(document.body.textContent).toContain('ORIGINAL');
     expect(document.body.textContent).not.toMatch(/CAI|barcode|qr_code|user_id|Estado/);

@@ -176,7 +176,7 @@
         </div>
         <div class="field-row">
             <span class="field-label">Que</span>
-            <span class="field-value">{{ $page['amount_words'] }}</span>
+            <span class="field-value">{{ $page['amount_statement'] }}</span>
         </div>
         <div class="field-row">
             <span class="field-label">Por</span>

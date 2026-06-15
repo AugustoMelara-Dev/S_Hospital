@@ -46,9 +46,9 @@ class InstitutionalReceiptHtmlBuilder
                     'draft' => true,
                     'watermark' => 'PRUEBA - SIN VALIDEZ',
                     'institution' => [
-                        'government_line' => $settings->government_line ?: 'Gobierno de Honduras',
-                        'secretariat_line' => $settings->secretariat_line ?: 'Secretaria de Salud',
-                        'hospital_name' => $settings->hospital_name ?: 'Hospital San Isidro',
+                        'government_line' => $settings->government_line ?: '',
+                        'secretariat_line' => $settings->secretariat_line ?: '',
+                        'hospital_name' => $settings->hospital_name ?: 'SIN CONFIGURAR',
                         'address' => $settings->address ?: '',
                         'receipt_location' => $settings->receipt_location ?: '',
                         'receipt_footer_text' => $settings->receipt_footer_text ?: '',
@@ -57,11 +57,13 @@ class InstitutionalReceiptHtmlBuilder
                         'series' => $series?->series ?: 'PRUEBA',
                         'receipt_number_full' => $series ? $this->formatDraftNumber($series) : 'PRUEBA-SIN-NUMERO',
                         'receipt_number_color' => $this->safeHexColor($series?->receipt_number_color),
+                        'legal_text' => $series?->legal_text ?: '',
                     ],
                     'amount' => $amount,
                     'issued_at' => now(),
                     'payer_name' => (string) ($data['payer_name'] ?? 'Paciente de prueba'),
                     'amount_words' => 'PRUEBA - SIN VALIDEZ',
+                    'amount_statement' => $this->amountStatement($series?->legal_text, 'PRUEBA - SIN VALIDEZ'),
                     'concept' => (string) ($data['concept'] ?? 'Servicios hospitalarios de prueba'),
                 ])
                 ->all(),
@@ -85,6 +87,7 @@ class InstitutionalReceiptHtmlBuilder
                 'issued_at' => $receipt->issued_at,
                 'payer_name' => $receipt->payer_name,
                 'amount_words' => $receipt->amount_words,
+                'amount_statement' => $this->amountStatement($receipt->series_snapshot['legal_text'] ?? null, $receipt->amount_words),
                 'concept' => $receipt->concept,
             ])
             ->all();
@@ -97,9 +100,9 @@ class InstitutionalReceiptHtmlBuilder
     private function normalizedInstitution(array $snapshot): array
     {
         return [
-            'government_line' => $snapshot['government_line'] ?? 'Gobierno de Honduras',
+            'government_line' => $snapshot['government_line'] ?? '',
             'secretariat_line' => $snapshot['secretariat_line'] ?? '',
-            'hospital_name' => $snapshot['hospital_name'] ?? 'Hospital San Isidro',
+            'hospital_name' => $snapshot['hospital_name'] ?? 'SIN CONFIGURAR',
             'address' => $snapshot['address'] ?? '',
             'receipt_location' => $snapshot['receipt_location'] ?? '',
             'receipt_footer_text' => $snapshot['receipt_footer_text'] ?? '',
@@ -116,6 +119,7 @@ class InstitutionalReceiptHtmlBuilder
             'series' => $snapshot['series'] ?? '',
             'receipt_number_full' => $snapshot['receipt_number_full'] ?? $receiptNumberFull,
             'receipt_number_color' => $this->safeHexColor($snapshot['receipt_number_color'] ?? null),
+            'legal_text' => $snapshot['legal_text'] ?? '',
         ];
     }
 
@@ -171,5 +175,12 @@ class InstitutionalReceiptHtmlBuilder
         $value = is_string($fontFamily) && $fontFamily !== '' ? $fontFamily : 'Arial, sans-serif';
 
         return preg_match('/^[A-Za-z0-9 ,"\'-]+$/', $value) === 1 ? $value : 'Arial, sans-serif';
+    }
+
+    private function amountStatement(mixed $legalText, string $amountWords): string
+    {
+        $legal = trim(is_string($legalText) ? $legalText : '');
+
+        return trim($legal.' '.$amountWords);
     }
 }
