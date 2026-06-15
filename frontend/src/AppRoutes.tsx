@@ -13,6 +13,7 @@ const CatalogView = lazy(() => import('./features/catalog/CatalogView').then((mo
 const DashboardView = lazy(() => import('./features/dashboard/DashboardView').then((module) => ({ default: module.DashboardView })));
 const FiscalSettingsView = lazy(() => import('./features/settings/FiscalSettingsView').then((module) => ({ default: module.FiscalSettingsView })));
 const HelpView = lazy(() => import('./features/help/HelpView').then((module) => ({ default: module.HelpView })));
+const InstitutionalReceiptSettingsView = lazy(() => import('./features/receipt-settings/InstitutionalReceiptSettingsView').then((module) => ({ default: module.InstitutionalReceiptSettingsView })));
 const InvoiceHistoryView = lazy(() => import('./features/invoices/InvoiceHistoryView').then((module) => ({ default: module.InvoiceHistoryView })));
 const ReportsView = lazy(() => import('./features/reports/ReportsView').then((module) => ({ default: module.ReportsView })));
 const UsersView = lazy(() => import('./features/admin/UsersView').then((module) => ({ default: module.UsersView })));
@@ -183,6 +184,19 @@ export function AppRoutes({
           <PermissionGate allowed={canAccessRoute(appRoutes.fiscalSettings, user.permissions)} reason={appRoutes.fiscalSettings.deniedReason}>
             <Suspense fallback={<LoadingState label="Cargando configuracion fiscal..." />}>
               <FiscalSettingsView canEdit={canEditFiscalSettings} onStatus={onStatus} />
+            </Suspense>
+          </PermissionGate>
+        }
+      />
+      <Route
+        path={appRoutes.receiptSettings.path}
+        element={
+          <PermissionGate allowed={canAccessRoute(appRoutes.receiptSettings, user.permissions)} reason={appRoutes.receiptSettings.deniedReason}>
+            <Suspense fallback={<LoadingState label="Cargando recibos institucionales..." />}>
+              <InstitutionalReceiptSettingsView
+                canEdit={user.permissions.includes('receipt_settings.update')}
+                onStatus={onStatus}
+              />
             </Suspense>
           </PermissionGate>
         }

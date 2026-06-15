@@ -16,5 +16,6 @@ export { cash } from './cash';
 export { reports } from './reports';
 export { backups } from './backups';
 export { fiscal } from './fiscal';
+export { institutionalReceipts } from './institutionalReceipts';
 export { system } from './system';
 export type * from './types';

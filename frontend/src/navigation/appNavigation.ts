@@ -150,6 +150,20 @@ export const appRoutes = {
     requiredPermissions: ['settings.fiscal.view'],
     deniedReason: 'Requiere permiso para consultar configuración fiscal.',
   },
+  receiptSettings: {
+    id: 'receiptSettings',
+    label: 'Recibos',
+    path: '/settings/institutional-receipts',
+    icon: ReceiptText,
+    breadcrumbs: [
+      { label: 'Inicio', path: '/dashboard' },
+      { label: 'Recibos institucionales', path: '/settings/institutional-receipts' },
+    ],
+    navigation: true,
+    navigationPermissions: ['receipt_settings.view'],
+    requiredPermissions: ['receipt_settings.view'],
+    deniedReason: 'Requiere permiso para consultar configuracion de recibos institucionales.',
+  },
   users: {
     id: 'users',
     label: 'Usuarios',
@@ -209,6 +223,7 @@ export const primaryNavigation: AppNavigationItem[] = [
   appRoutes.reports,
   appRoutes.backups,
   appRoutes.fiscalSettings,
+  appRoutes.receiptSettings,
   appRoutes.users,
   appRoutes.help,
   appRoutes.about,

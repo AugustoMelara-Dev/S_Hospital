@@ -22,6 +22,7 @@ describe('appNavigation', () => {
       'Reportes',
       'Respaldos',
       'Configuración',
+      'Recibos',
       'Usuarios',
       'Ayuda',
       'Acerca de',
@@ -38,6 +39,10 @@ describe('appNavigation', () => {
     expect(getBreadcrumbs('/settings/fiscal')).toEqual([
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Configuración', path: '/settings/fiscal' },
+    ]);
+    expect(getBreadcrumbs('/settings/institutional-receipts')).toEqual([
+      { label: 'Inicio', path: '/dashboard' },
+      { label: 'Recibos institucionales', path: '/settings/institutional-receipts' },
     ]);
     expect(getBreadcrumbs('/admin/users')).toEqual([
       { label: 'Inicio', path: '/dashboard' },
@@ -58,5 +63,6 @@ describe('appNavigation', () => {
       ]),
     ).toBe(true);
     expect(canAccessRoute(appRoutes.reports, ['reports.cash_session.view'])).toBe(true);
+    expect(canAccessRoute(appRoutes.receiptSettings, ['receipt_settings.view'])).toBe(true);
   });
 });
