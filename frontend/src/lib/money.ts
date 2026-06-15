@@ -18,10 +18,17 @@ export function finiteNumber(value: number | string | null | undefined): number 
 }
 
 export function formatLempiras(value: number | string | null | undefined, fractionDigits = 2): string {
-  return `L. ${finiteNumber(value).toLocaleString('en-US', {
+  const num = finiteNumber(value);
+  const formatted = Math.abs(num).toLocaleString('en-US', {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
-  })}`;
+  });
+  
+  if (num < 0) {
+    return `- L. ${formatted}`;
+  }
+  
+  return `L. ${formatted}`;
 }
 
 const CENTS_REGEX = /^-?\d+(\.\d+)?$/;
@@ -50,19 +57,26 @@ export function formatCents(cents: number, locale: string = 'es-HN'): string {
   }
 
   const safe = Math.trunc(cents);
-  const value = safe / 100;
-
+  const value = Math.abs(safe) / 100;
+  
+  let formatted = '';
   try {
-    return `L. ${value.toLocaleString(locale, {
+    formatted = value.toLocaleString(locale, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    })}`;
+    });
   } catch {
-    return `L. ${value.toLocaleString('en-US', {
+    formatted = value.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    })}`;
+    });
   }
+  
+  if (safe < 0) {
+    return `- L. ${formatted}`;
+  }
+  
+  return `L. ${formatted}`;
 }
 
 /**

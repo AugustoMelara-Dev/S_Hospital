@@ -286,6 +286,7 @@ export function NewInvoiceView({
     }
     const validationResult = invoiceSchema.safeParse({
       patient_name: state.patientName,
+      dialysis_prescription: state.cartItems.some(item => item.dialysisPrescription),
       items: state.cartItems.map((item) => ({
         service_id: item.service.id,
         quantity: item.quantity,
@@ -326,8 +327,10 @@ export function NewInvoiceView({
     dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
     dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
     try {
+      const hasDialysis = state.cartItems.some(item => item.dialysisPrescription);
       const invoice = await apiClient.createInvoice({
         patient_name: state.patientName,
+        dialysis_prescription: hasDialysis,
         items: state.cartItems.map((item) => ({
           service_id: item.service.id,
           quantity: item.quantity,

@@ -7,6 +7,24 @@ use PHPUnit\Framework\TestCase;
 
 class MoneyTest extends TestCase
 {
+    public function test_it_formats_cents_to_string(): void
+    {
+        $this->assertSame('15.00', Money::formatCents(1500));
+        $this->assertSame('0.50', Money::formatCents(50));
+        $this->assertSame('0.05', Money::formatCents(5));
+        $this->assertSame('-15.00', Money::formatCents(-1500));
+        $this->assertSame('0.00', Money::formatCents(0));
+    }
+
+    public function test_it_formats_lempiras(): void
+    {
+        $this->assertSame('L. 15.00', Money::formatLempiras(1500));
+        $this->assertSame('L. 0.50', Money::formatLempiras(50));
+        $this->assertSame('L. 0.05', Money::formatLempiras(5));
+        $this->assertSame('- L. 15.00', Money::formatLempiras(-1500));
+        $this->assertSame('L. 0.00', Money::formatLempiras(0));
+    }
+
     public function test_from_cents_returns_same_integer(): void
     {
         $this->assertSame(1500, Money::fromCents(1500)->toCents());

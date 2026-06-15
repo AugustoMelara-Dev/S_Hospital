@@ -22,6 +22,7 @@ class LicenseHelperTest extends TestCase
     public function test_default_local_operation_status_when_no_file_exists(): void
     {
         FiscalSetting::query()->create([
+            'receipt_template_mode' => 'thermal',
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
@@ -42,6 +43,7 @@ class LicenseHelperTest extends TestCase
     public function test_valid_lan_registration_file(): void
     {
         FiscalSetting::query()->create([
+            'receipt_template_mode' => 'thermal',
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
@@ -71,6 +73,7 @@ class LicenseHelperTest extends TestCase
     public function test_invalid_signature_is_blocked(): void
     {
         FiscalSetting::query()->create([
+            'receipt_template_mode' => 'thermal',
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
@@ -93,6 +96,7 @@ class LicenseHelperTest extends TestCase
     public function test_mismatched_rtn_is_blocked(): void
     {
         FiscalSetting::query()->create([
+            'receipt_template_mode' => 'thermal',
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
@@ -120,6 +124,7 @@ class LicenseHelperTest extends TestCase
     public function test_expired_license_is_blocked(): void
     {
         FiscalSetting::query()->create([
+            'receipt_template_mode' => 'thermal',
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
@@ -148,6 +153,7 @@ class LicenseHelperTest extends TestCase
     public function test_configured_license_salt_overrides_default(): void
     {
         FiscalSetting::query()->create([
+            'receipt_template_mode' => 'thermal',
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
@@ -184,6 +190,7 @@ class LicenseHelperTest extends TestCase
         ]);
 
         FiscalSetting::query()->create([
+            'receipt_template_mode' => 'thermal',
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',
@@ -213,6 +220,7 @@ class LicenseHelperTest extends TestCase
     public function test_rotating_license_salt_invalidates_prior_signature(): void
     {
         FiscalSetting::query()->create([
+            'receipt_template_mode' => 'thermal',
             'hospital_name' => 'Hospital Central',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',

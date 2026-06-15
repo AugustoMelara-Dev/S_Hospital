@@ -1,5 +1,6 @@
 import { ApiError, apiClient } from './base';
 import type {
+  InstitutionalReceipt,
   InstitutionalReceiptSeries,
   InstitutionalReceiptSettings,
   ReceiptInstitutionPayload,
@@ -56,6 +57,14 @@ export const institutionalReceipts = {
         body: JSON.stringify(payload),
       },
     );
+    return response.data;
+  },
+
+  async store(payload: { invoice_id: number; payment_id?: number | null; cash_session_id?: number | null }): Promise<InstitutionalReceipt> {
+    const response = await apiClient.request<{ data: InstitutionalReceipt }>('/api/institutional-receipts', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
     return response.data;
   },
 

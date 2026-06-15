@@ -1,4 +1,4 @@
-﻿import { type FormEvent, useRef, useState } from 'react';
+import { type FormEvent, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -8,6 +8,7 @@ import {
   type PaginatedMeta,
   type ReceiptData,
   apiClient,
+  institutionalReceipts,
   userSafeErrorMessage,
 } from '../../lib/api';
 import { useInvoices } from '../../hooks/useInvoices';
@@ -187,6 +188,24 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     setFilters(nextFilters);
     setSearchParams(searchParamsFromFilters(nextFilters));
     // Refetch is automatic via the filters key.
+  }
+
+  async function generateInstitutionalReceipt(invoiceId: number) {
+    setLoadingActionInvoiceId(invoiceId);
+    try {
+      const receipt = await institutionalReceipts.store({ invoice_id: invoiceId });
+      queryClient.invalidateQueries({ queryKey: ['audit'] });
+      await invalidateBillingQueries(queryClient);
+      
+      const invoice = await apiClient.getInvoice(invoiceId);
+      setSelectedInvoice(invoice);
+      await openInstitutionalReceiptPdf(receipt, 'Emisión manual de recibo faltante.');
+      onStatus(`Recibo institucional ${receipt.receipt_number_full} generado exitosamente.`);
+    } catch (error) {
+      onStatus(userSafeErrorMessage(error, 'No se pudo generar el recibo institucional.'));
+    } finally {
+      setLoadingActionInvoiceId(null);
+    }
   }
 
   async function voidSelectedInvoice() {
@@ -420,6 +439,18 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
                           >
                             <Receipt className="h-4 w-4" aria-hidden="true" />
                             Ver recibo
+                          </Button>
+                        )}
+                        {canViewReceipt && invoice.status === 'paid' && !issuedInstitutionalReceipt(invoice) && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            disabled={loadingActionInvoiceId === invoice.id}
+                            onClick={() => void generateInstitutionalReceipt(invoice.id)}
+                          >
+                            <Receipt className="h-4 w-4" aria-hidden="true" />
+                            Generar PDF
                           </Button>
                         )}
 

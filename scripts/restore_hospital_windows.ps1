@@ -31,7 +31,10 @@ param(
     [string]$TargetDatabase = "hospital_billing_test",
 
     [Parameter(Mandatory=$false)]
-    [switch]$UseExistingEnv
+    [switch]$UseExistingEnv,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$ForceProductionRestore
 )
 
 $ErrorActionPreference = "Stop"
@@ -112,7 +115,9 @@ function New-MySqlDefaultsFile {
         $acl.SetAccessRule($rule)
         Set-Acl -LiteralPath $path -AclObject $acl
     } catch {
-        Write-Warning "No se pudo restringir ACL del defaults file temporal; eliminelo si la restauracion falla: $path"
+        Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+        Write-Error "No se pudo restringir ACL del defaults file temporal. Riesgo de filtracion de credenciales abortado."
+        exit 1
     }
 
     return $path
@@ -164,14 +169,22 @@ function Get-DatabaseConfig {
 }
 
 function Test-DisposableDatabaseName {
-    param([string]$Database)
+    param(
+        [string]$Database,
+        [switch]$ForceProduction
+    )
 
     if ($Database -notmatch '^[A-Za-z0-9_]+$') {
         return $false
     }
 
     $lower = $Database.ToLowerInvariant()
-    if ($lower -in @('hospital_billing', 'hospital_billing_production', 'mysql', 'information_schema', 'performance_schema', 'sys')) {
+    
+    if ($lower -in @('hospital_billing', 'hospital_billing_production')) {
+        return [bool]$ForceProduction
+    }
+    
+    if ($lower -in @('mysql', 'information_schema', 'performance_schema', 'sys')) {
         return $false
     }
 
@@ -185,7 +198,10 @@ function Test-SafeMysqlArgument {
 }
 
 function Assert-SafeConnectionConfig {
-    param([hashtable]$Config)
+    param(
+        [hashtable]$Config,
+        [switch]$ForceProduction
+    )
 
     if (-not (Test-SafeMysqlArgument ([string]$Config.Host))) {
         Write-Error "Host de base de datos contiene caracteres no permitidos."
@@ -202,9 +218,9 @@ function Assert-SafeConnectionConfig {
         exit 1
     }
 
-    if (-not (Test-DisposableDatabaseName ([string]$Config.Database))) {
-        Write-Error "La base de datos '$($Config.Database)' no parece ser de prueba."
-        Write-Error "Use un nombre como 'hospital_billing_test' o 'hospital_restore_validation'."
+    if (-not (Test-DisposableDatabaseName -Database ([string]$Config.Database) -ForceProduction:$ForceProduction)) {
+        Write-Error "La base de datos '$($Config.Database)' no parece ser de prueba o no se uso el flag --ForceProductionRestore."
+        Write-Error "Use un nombre como 'hospital_billing_test' o 'hospital_restore_validation', o agregue -ForceProductionRestore si esta seguro."
         exit 1
     }
 }
@@ -269,9 +285,9 @@ Write-Warning "ADVERTENCIA: Este proceso sobreescribe datos."
 Write-Warning "Usar SOLO en base de datos de prueba o desarrollo."
 Write-Host ""
 
-if (-not (Test-DisposableDatabaseName $TargetDatabase)) {
+if (-not (Test-DisposableDatabaseName -Database $TargetDatabase -ForceProduction:$ForceProductionRestore)) {
     Write-Error "No se puede restaurar a '$TargetDatabase'."
-    Write-Error "Use una base descartable con nombre como 'hospital_billing_test' o 'hospital_restore_validation'."
+    Write-Error "Use una base descartable con nombre como 'hospital_billing_test' o 'hospital_restore_validation', o agregue -ForceProductionRestore si esta seguro."
     exit 1
 }
 
@@ -362,72 +378,73 @@ if ($BackupFile -and $BackupFile -match '\.tar\.gz$') {
     }
 }
 
-Write-Step "Verificando que '$($dbConfig.Database)' sea base de prueba..."
-Assert-SafeConnectionConfig $dbConfig
+Write-Step "Verificando que '$($dbConfig.Database)' sea base permitida..."
+Assert-SafeConnectionConfig -Config $dbConfig -ForceProduction:$ForceProductionRestore
 
 Write-Step "Creando base de datos '$($dbConfig.Database)' si no existe..."
 $createDbCmd = "CREATE DATABASE IF NOT EXISTS ``$($dbConfig.Database)`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 $mysqlDefaultsFile = New-MySqlDefaultsFile $dbConfig
-& $mysqlExe --defaults-extra-file=$mysqlDefaultsFile -e $createDbCmd 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Error al crear base de datos"
-    Remove-MySqlDefaultsFile $mysqlDefaultsFile
-    exit 1
-}
-Write-Success "Base de datos lista"
 
-if ($BackupFile) {
-    Write-Step "Restaurando backup desde: $BackupFile"
-    Write-Host "Esto puede tomar varios minutos..." -ForegroundColor Yellow
-
-    $restoreCommand = """$mysqlExe"" --defaults-extra-file=""$mysqlDefaultsFile"" --default-character-set=utf8mb4 ""$($dbConfig.Database)"" < ""$BackupFile"" 2>&1"
-    & cmd /c $restoreCommand
+try {
+    & $mysqlExe --defaults-extra-file=$mysqlDefaultsFile -e $createDbCmd 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Error al restaurar backup"
-        Remove-MySqlDefaultsFile $mysqlDefaultsFile
+        Write-Error "Error al crear base de datos"
         exit 1
     }
-    Write-Success "Backup restaurado exitosamente"
-} else {
-    Write-Step "Restauracion manual requerida."
-    Write-Host "Ejecute el siguiente comando en una terminal:" -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "mysql --host=$($dbConfig.Host) --port=$($dbConfig.Port) --user=$($dbConfig.Username) --default-character-set=utf8mb4 ""$($dbConfig.Database)"" < backup.sql" -ForegroundColor Cyan
-    Write-Host ""
-}
+    Write-Success "Base de datos lista"
 
-Write-Step "Verificando datos restaurados..."
-$tableCountCmd = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ``$($dbConfig.Database)``;"
-$tableCount = & $mysqlExe --defaults-extra-file=$mysqlDefaultsFile --batch --skip-column-names -e $tableCountCmd 2>&1
-if ($tableCount -as [int] -gt 0) {
-    Write-Success "Base de datos restaurada con $tableCount tablas"
-} else {
-    Write-Warning "No se pudo verificar el conteo de tablas"
-}
+    if ($BackupFile) {
+        Write-Step "Restaurando backup desde: $BackupFile"
+        Write-Host "Esto puede tomar varios minutos..." -ForegroundColor Yellow
 
-Write-Step "Verificando tablas criticas..."
-$criticalTables = @('users', 'services', 'invoices', 'payments', 'backup_logs')
-foreach ($table in $criticalTables) {
-    $countCmd = "SELECT COUNT(*) FROM ``$($dbConfig.Database)``.``$table``;"
-    $count = & $mysqlExe --defaults-extra-file=$mysqlDefaultsFile --batch --skip-column-names -e $countCmd 2>&1
-    if ($count -as [int] -ge 0) {
-        Write-Success "  $table : $count registros"
+        $restoreCommand = """$mysqlExe"" --defaults-extra-file=""$mysqlDefaultsFile"" --default-character-set=utf8mb4 ""$($dbConfig.Database)"" < ""$BackupFile"" 2>&1"
+        & cmd /c $restoreCommand
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Error al restaurar backup"
+            exit 1
+        }
+        Write-Success "Backup restaurado exitosamente"
     } else {
-        Write-Warning "  $table : no verificado"
+        Write-Step "Restauracion manual requerida."
+        Write-Host "Ejecute el siguiente comando en una terminal:" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "mysql --host=$($dbConfig.Host) --port=$($dbConfig.Port) --user=$($dbConfig.Username) --default-character-set=utf8mb4 ""$($dbConfig.Database)"" < backup.sql" -ForegroundColor Cyan
+        Write-Host ""
     }
-}
 
-Write-Host ""
-if ($script:ExitCode -eq 0) {
-    Write-Success "RESTAURACION COMPLETADA"
+    Write-Step "Verificando datos restaurados..."
+    $tableCountCmd = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ``$($dbConfig.Database)``;"
+    $tableCount = & $mysqlExe --defaults-extra-file=$mysqlDefaultsFile --batch --skip-column-names -e $tableCountCmd 2>&1
+    if ($tableCount -as [int] -gt 0) {
+        Write-Success "Base de datos restaurada con $tableCount tablas"
+    } else {
+        Write-Warning "No se pudo verificar el conteo de tablas"
+    }
+
+    Write-Step "Verificando tablas criticas..."
+    $criticalTables = @('users', 'services', 'invoices', 'payments', 'backup_logs')
+    foreach ($table in $criticalTables) {
+        $countCmd = "SELECT COUNT(*) FROM ``$($dbConfig.Database)``.``$table``;"
+        $count = & $mysqlExe --defaults-extra-file=$mysqlDefaultsFile --batch --skip-column-names -e $countCmd 2>&1
+        if ($count -as [int] -ge 0) {
+            Write-Success "  $table : $count registros"
+        } else {
+            Write-Warning "  $table : no verificado"
+        }
+    }
+
     Write-Host ""
-    Write-Host "Base de datos: $($dbConfig.Database)" -ForegroundColor Green
-    Write-Host "Host: $($dbConfig.Host):$($dbConfig.Port)" -ForegroundColor Green
-} else {
-    Write-Error "RESTAURACION FALLIDA - Revise los errores arriba"
+    if ($script:ExitCode -eq 0) {
+        Write-Success "RESTAURACION COMPLETADA"
+        Write-Host ""
+        Write-Host "Base de datos: $($dbConfig.Database)" -ForegroundColor Green
+        Write-Host "Host: $($dbConfig.Host):$($dbConfig.Port)" -ForegroundColor Green
+    } else {
+        Write-Error "RESTAURACION FALLIDA - Revise los errores arriba"
+    }
+    Write-Host ""
+} finally {
+    Remove-MySqlDefaultsFile $mysqlDefaultsFile
 }
-Write-Host ""
-
-Remove-MySqlDefaultsFile $mysqlDefaultsFile
 
 exit $script:ExitCode

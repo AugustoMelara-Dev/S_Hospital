@@ -29,14 +29,14 @@ class LoginLockout
         $since = now()->subMinutes(self::LOCKOUT_MINUTES);
 
         $failedByLogin = LoginAttempt::failedCountFor($login, $since);
-        $failedByLoginAndIp = $ip !== '' ? LoginAttempt::failedCountForLoginAndIp($login, $ip, $since) : 0;
+        $failedByIp = $ip !== '' ? LoginAttempt::failedCountForIp($ip, $since) : 0;
 
         if ($failedByLogin >= self::MAX_FAILED_ATTEMPTS) {
             return $this->locked($login, $since, 'login');
         }
 
-        if ($failedByLoginAndIp >= self::MAX_FAILED_ATTEMPTS_PER_IP) {
-            return $this->locked($login, $since, 'login_ip');
+        if ($failedByIp >= self::MAX_FAILED_ATTEMPTS_PER_IP) {
+            return $this->locked($ip, $since, 'login_ip');
         }
 
         return $next($request);

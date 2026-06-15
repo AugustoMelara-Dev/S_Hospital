@@ -15,6 +15,7 @@ export const invoiceItemSchema = z.object({
 
 export const invoiceSchema = z.object({
   patient_name: z.string().min(1, 'Nombre del paciente es requerido').max(255),
+  dialysis_prescription: z.boolean().optional(),
   items: z.array(invoiceItemSchema).min(1, 'Agregue al menos un servicio'),
 });
 

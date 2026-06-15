@@ -81,12 +81,7 @@ $trigger = New-ScheduledTaskTrigger `
     -RepetitionInterval (New-TimeSpan -Minutes 1) `
     -RepetitionDuration (New-TimeSpan -Days 3650)
 
-$principal = if ($RunAsSystem) {
-    New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-} else {
-    $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-    New-ScheduledTaskPrincipal -UserId $currentUser -LogonType Interactive
-}
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 
 $settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `

@@ -249,7 +249,7 @@ class PremiumExcelExportService
         $sheet1->setCellValue('B6', 'TOTAL FACTURADO');
         $sheet1->getStyle('B6:C6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet1->setCellValue('B7', $this->moneyFloat($income['total_billed']));
-        $sheet1->getStyle('B7')->getNumberFormat()->setFormatCode('L. #,##0.00');
+        $sheet1->getStyle('B7')->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
         $sheet1->getStyle('B6:C7')->applyFromArray($kpiCardStyle);
         $sheet1->getStyle('B7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -257,7 +257,7 @@ class PremiumExcelExportService
         $sheet1->setCellValue('E6', 'TOTAL COBRADO');
         $sheet1->getStyle('E6:F6')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet1->setCellValue('E7', $this->moneyFloat($income['total_collected']));
-        $sheet1->getStyle('E7')->getNumberFormat()->setFormatCode('L. #,##0.00');
+        $sheet1->getStyle('E7')->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
         $sheet1->getStyle('E6:F7')->applyFromArray($kpiCardStyle);
         $sheet1->getStyle('E7')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet1->getStyle('E6:F6')->getFill()->setStartColor(new Color('CCFBF1')); // Highlighted soft green/teal
@@ -286,14 +286,14 @@ class PremiumExcelExportService
         foreach ($income['payments_by_method'] as $method => $total) {
             $sheet1->setCellValue('B'.$row, $methodLabels[$method] ?? ucfirst($method));
             $sheet1->setCellValue('C'.$row, $this->moneyFloat($total));
-            $sheet1->getStyle('C'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+            $sheet1->getStyle('C'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
             $row++;
         }
 
         // Summary row
         $sheet1->setCellValue('B'.$row, 'Total');
         $sheet1->setCellValue('C'.$row, '=SUM(C11:C'.($row - 1).')');
-        $sheet1->getStyle('C'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+        $sheet1->getStyle('C'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
         $sheet1->getStyle('B'.$row.':C'.$row)->applyFromArray($boldRowStyle);
         $sheet1->getStyle('B'.$row.':C'.$row)->getBorders()->getTop()->setBorderStyle(Border::BORDER_DOUBLE);
 
@@ -379,7 +379,7 @@ class PremiumExcelExportService
             $financialSheet->setCellValue('B'.$row, $label);
             $financialSheet->setCellValue('C'.$row, $amount);
             $financialSheet->setCellValue('D'.$row, $source);
-            $financialSheet->getStyle('C'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+            $financialSheet->getStyle('C'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
             $row++;
         }
 
@@ -430,7 +430,7 @@ class PremiumExcelExportService
             $sheet2->setCellValue('D'.$row, $this->moneyFloat($cat['total']));
 
             $sheet2->getStyle('C'.$row)->getNumberFormat()->setFormatCode('#,##0');
-            $sheet2->getStyle('D'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+            $sheet2->getStyle('D'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
             $row++;
         }
 
@@ -440,7 +440,7 @@ class PremiumExcelExportService
         $sheet2->setCellValue('D'.$row, '=SUM(D6:D'.($row - 1).')');
 
         $sheet2->getStyle('C'.$row)->getNumberFormat()->setFormatCode('#,##0');
-        $sheet2->getStyle('D'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+        $sheet2->getStyle('D'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
         $sheet2->getStyle('B'.$row.':D'.$row)->applyFromArray($boldRowStyle);
         $sheet2->getStyle('B'.$row.':D'.$row)->getBorders()->getTop()->setBorderStyle(Border::BORDER_DOUBLE);
 
@@ -528,7 +528,7 @@ class PremiumExcelExportService
 
                 $sheetArea->getStyle('C'.$row)->getNumberFormat()->setFormatCode('#,##0');
                 $sheetArea->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0.00');
-                $sheetArea->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+                $sheetArea->getStyle('E'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
                 $row++;
             }
         }
@@ -541,7 +541,7 @@ class PremiumExcelExportService
 
         $sheetArea->getStyle('C'.$row)->getNumberFormat()->setFormatCode('#,##0');
         $sheetArea->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0.00');
-        $sheetArea->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+        $sheetArea->getStyle('E'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
         $sheetArea->getStyle('B'.$row.':E'.$row)->applyFromArray($boldRowStyle);
         $sheetArea->getStyle('B'.$row.':E'.$row)->getBorders()->getTop()->setBorderStyle(Border::BORDER_DOUBLE);
         $sheetArea->freezePane('A6');
@@ -581,7 +581,7 @@ class PremiumExcelExportService
             $sheet3->setCellValue('E'.$row, $this->moneyFloat($svc['total']));
 
             $sheet3->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0');
-            $sheet3->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+            $sheet3->getStyle('E'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
             $row++;
         }
 
@@ -593,7 +593,7 @@ class PremiumExcelExportService
         $sheet3->setCellValue('E'.$row, '=SUM(E6:E'.($row - 1).')');
 
         $sheet3->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0');
-        $sheet3->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+        $sheet3->getStyle('E'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
         $sheet3->getStyle('B'.$row.':E'.$row)->applyFromArray($boldRowStyle);
         $sheet3->getStyle('B'.$row.':E'.$row)->getBorders()->getTop()->setBorderStyle(Border::BORDER_DOUBLE);
 
@@ -616,7 +616,7 @@ class PremiumExcelExportService
             foreach ($topServices as $svc) {
                 $sheet3->setCellValue('G'.$calcRow, $svc['service']);
                 $sheet3->setCellValue('H'.$calcRow, $this->moneyFloat($svc['total']));
-                $sheet3->getStyle('H'.$calcRow)->getNumberFormat()->setFormatCode('L. #,##0.00');
+                $sheet3->getStyle('H'.$calcRow)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
                 $calcRow++;
             }
 
@@ -688,7 +688,7 @@ class PremiumExcelExportService
             $sheet4->setCellValue('E'.$row, $this->moneyFloat($cashier['total_collected']));
 
             $sheet4->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0');
-            $sheet4->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+            $sheet4->getStyle('E'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
             $row++;
         }
 
@@ -698,7 +698,7 @@ class PremiumExcelExportService
         $sheet4->setCellValue('E'.$row, '=SUM(E6:E'.($row - 1).')');
 
         $sheet4->getStyle('D'.$row)->getNumberFormat()->setFormatCode('#,##0');
-        $sheet4->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+        $sheet4->getStyle('E'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
         $sheet4->getStyle('B'.$row.':E'.$row)->applyFromArray($boldRowStyle);
         $sheet4->getStyle('B'.$row.':E'.$row)->getBorders()->getTop()->setBorderStyle(Border::BORDER_DOUBLE);
 
@@ -777,14 +777,14 @@ class PremiumExcelExportService
             $sheet5->setCellValue('E'.$row, $void['reason'] ?? $void['void_reason'] ?? 'Sin motivo');
             $sheet5->setCellValue('F'.$row, $void['user'] ?? $void['voided_by_name'] ?? 'N/A');
 
-            $sheet5->getStyle('D'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+            $sheet5->getStyle('D'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
             $row++;
         }
 
         // Summary row for voids
         $sheet5->setCellValue('B'.$row, 'Total Anulado');
         $sheet5->setCellValue('D'.$row, '=SUM(D5:D'.($row - 1).')');
-        $sheet5->getStyle('D'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+        $sheet5->getStyle('D'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
         $sheet5->getStyle('B'.$row.':F'.$row)->applyFromArray($boldRowStyle);
         $sheet5->getStyle('B'.$row.':F'.$row)->getBorders()->getTop()->setBorderStyle(Border::BORDER_DOUBLE);
 
@@ -839,7 +839,7 @@ class PremiumExcelExportService
             $sheet5->setCellValue('H'.$row, isset($paymentVoid['voided_at'])
                 ? Carbon::parse($paymentVoid['voided_at'])->format('d/m/Y H:i')
                 : 'N/A');
-            $sheet5->getStyle('E'.$row)->getNumberFormat()->setFormatCode('L. #,##0.00');
+            $sheet5->getStyle('E'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
             $row++;
         }
 
