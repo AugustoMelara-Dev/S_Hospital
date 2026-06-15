@@ -10,7 +10,7 @@ describe('BackupStatusBadge accessibility', () => {
     const { container: failed } = render(<BackupStatusBadge status="failed" />);
 
     expect(pending.textContent).toMatch(/pendiente/i);
-    expect(success.textContent).toMatch(/protegido/i);
+    expect(success.textContent).toMatch(/completado/i);
     expect(failed.textContent).toMatch(/error/i);
   });
 

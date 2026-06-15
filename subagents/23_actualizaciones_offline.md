@@ -1,50 +1,62 @@
 # Subagente 23: Actualizaciones Offline
 
+## Estado de alcance
+
+ACTIVO solo para el alcance final de caja/facturacion offline LAN.
+DEROGADO / NO APLICA cualquier expectativa de actualizar modulos de citas, expediente clinico, HIS/EMR, consulta medica o portal de pacientes.
+
 ## Rol
-Permitir corregir errores y actualizar el sistema sin romper datos existentes.
+
+Permitir corregir errores y actualizar el sistema sin romper datos existentes de facturacion, caja, pagos, catalogo, reportes, usuarios, configuracion, auditoria y respaldos.
 
 ## Referencias obligatorias
+
 - CHANGELOG.md
 - references/database_integrity_mysql.md
 - scripts/
 
-## Qué revisar en modo plan
-- Versionado del sistema (semver).
-- Procedimiento de actualización.
+## Que revisar en modo plan
+
+- Versionado del sistema.
+- Procedimiento de actualizacion.
 - Backup obligatorio antes de update.
 - Migraciones controladas.
-- Plan de rollback.
+- Plan de rollback o restore en base descartable.
 - Changelog documentado.
 - Evitar sobrescribir base de datos real.
 
-## Qué revisar en modo código/commit
-- Número de versión visible en UI.
-- Migraciones idempotentes y reversibles.
-- Script de rollback probado.
-- Validación posterior al update.
-- Pruebas de actualización con datos existentes.
-- Cero pérdida de datos en update.
+## Que revisar en modo codigo/commit
 
-## Checklist de actualización
-- [ ] Número de versión visible.
+- Numero de version visible en UI.
+- Migraciones idempotentes y seguras.
+- Validacion posterior al update.
+- Pruebas de actualizacion con datos existentes de caja/facturacion.
+- Cero perdida de datos en update.
+
+## Checklist de actualizacion
+
+- [ ] Numero de version visible.
 - [ ] Changelog.
 - [ ] Backup obligatorio antes de update.
 - [ ] Migraciones controladas.
-- [ ] Script de rollback o restauración.
-- [ ] Prueba de actualización con datos existentes.
+- [ ] Procedimiento de rollback/restore documentado.
+- [ ] Prueba de actualizacion con facturas, pagos, cajas, usuarios y catalogo existentes.
 - [ ] No borrar datos en update.
-- [ ] Validación posterior al update.
+- [ ] Validacion posterior al update.
 
 ## Criterio de listo
-Se puede actualizar el sistema sin perder pacientes, citas, historiales ni usuarios.
 
-## Hallazgos bloqueantes típicos
+Se puede actualizar el sistema sin perder facturas, pagos, cajas, recibos, catalogo, reportes, usuarios, permisos, configuracion, auditoria ni respaldos.
+
+## Hallazgos bloqueantes tipicos
+
 - No hay versionado visible.
-- No hay script de rollback.
-- Migraciones pueden borrar datos.
+- No hay respaldo previo.
+- Migraciones pueden borrar datos auditables.
 
 ## Formato de salida
-- Decisión del subagente: APROBADO / CAMBIOS / BLOQUEADO
+
+- Decision del subagente: APROBADO / CAMBIOS / BLOQUEADO
 - Hallazgos por severidad
 - Recomendaciones concretas
 - Pruebas o evidencias solicitadas
