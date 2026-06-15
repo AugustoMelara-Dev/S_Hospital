@@ -32,7 +32,7 @@ export function resetRequestChain() {
  * but fall back to a typed-array implementation for browsers/test environments
  * that don't expose it.
  */
-function newIdempotencyKey(): string {
+export function createClientIdempotencyKey(): string {
   if (typeof globalThis.crypto !== 'undefined' && typeof globalThis.crypto.randomUUID === 'function') {
     return globalThis.crypto.randomUUID();
   }
@@ -371,7 +371,7 @@ export const apiClient = {
     // backend middleware can de-duplicate retries. If the caller already
     // provided a key (e.g. a manually retried submit), reuse it.
     if (!options.idempotencyKey) {
-      options = { ...options, idempotencyKey: newIdempotencyKey() };
+      options = { ...options, idempotencyKey: createClientIdempotencyKey() };
     }
 
     return enqueueRequest(() => this.sendRequest<T>(path, options));
@@ -400,7 +400,7 @@ export const apiClient = {
     // The Idempotency-Key must be present for any mutation so the server
     // middleware can de-duplicate. `request()` already assigns one for
     // POST/PUT/PATCH/DELETE; this is a defense-in-depth check.
-    const idempotencyKey = method === 'GET' || method === 'HEAD' ? null : options.idempotencyKey ?? newIdempotencyKey();
+    const idempotencyKey = method === 'GET' || method === 'HEAD' ? null : options.idempotencyKey ?? createClientIdempotencyKey();
 
     const send = async (): Promise<Response> => {
       const xsrfToken = method === 'GET' || method === 'HEAD' ? null : cookieValue('XSRF-TOKEN');
@@ -537,16 +537,30 @@ export const apiClient = {
 
   async download(path: string): Promise<Blob> {
     let response: Response;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), DEFAULT_GET_TIMEOUT_MS);
 
     try {
       response = await fetch(this.url(path), {
         credentials: 'include',
+        signal: controller.signal,
         headers: {
           Accept: 'application/pdf, application/json, application/octet-stream, text/csv',
         },
       });
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        recordApiIssue(
+          new ApiError(
+            `La descarga '${path}' excedio ${DEFAULT_GET_TIMEOUT_MS / 1000}s sin respuesta del servidor local. Revise la red.`,
+            0,
+          ),
+          `DOWNLOAD ${path}_timeout`,
+        );
+      }
       recordApiIssue(networkError(err), `DOWNLOAD ${path}`);
+    } finally {
+      window.clearTimeout(timeoutId);
     }
 
     if (!response.ok) {

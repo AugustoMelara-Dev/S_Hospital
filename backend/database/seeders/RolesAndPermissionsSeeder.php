@@ -41,6 +41,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'users.create',
         'users.update',
         'users.disable',
+        'users.assign_admin_role',
         'backups.view',
         'backups.create',
         'backups.download',

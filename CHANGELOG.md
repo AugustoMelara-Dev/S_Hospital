@@ -1,5 +1,14 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## 2026-06-15 - Hardening audit complete pass
+
+- Cifra backups finales como `.sql.enc`, registra SHA256 del artefacto cifrado y agrega comando `hospital:decrypt-backup`.
+- Restore Windows exige `-ExpectedSha256`, soporta `-WhatIf` y descifra backups cifrados a temporal controlado.
+- CI elimina `hospital_dev/root_dev` y `APP_KEY` fija; agrega `composer audit`.
+- ISV se calcula a nivel factura y se prorratea por largest remainder.
+- MariaDB/MySQL bloquea doble recibo institucional `issued` por factura con generated column + unique index.
+- Se endurecen login lockout, reset password, jerarquia de roles admin, throttles de descargas, Excel formula injection, idempotencia frontend, timeouts de descarga y atajos globales.
+
 ## v1.0.0-rc.5 (unreleased) - Pilot-Closure Round (2026-06-09 / 2026-06-10)
 
 This entry documents the rc5 round of work that landed on

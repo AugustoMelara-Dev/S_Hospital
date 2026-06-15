@@ -163,13 +163,15 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
         Route::get('/reports/operations', [ReportController::class, 'operations']);
         Route::get('/reports/export', [ReportController::class, 'export'])
             ->middleware('throttle.user:30,1');
-        Route::get('/reports/pdf', [ReportController::class, 'pdfExport']);
+        Route::get('/reports/pdf', [ReportController::class, 'pdfExport'])
+            ->middleware('throttle.user:20,1');
         Route::get('/reports/cash-sessions/{cashSession}', [ReportController::class, 'cashSession']);
 
         Route::get('/backups', [BackupController::class, 'index']);
         Route::post('/backups', [BackupController::class, 'store'])
             ->middleware('throttle.user:20,1');
-        Route::get('/backups/{backupLog}/download', [BackupController::class, 'download']);
+        Route::get('/backups/{backupLog}/download', [BackupController::class, 'download'])
+            ->middleware('throttle.user:10,1');
 
         Route::get('/system/status-summary', [SystemStatusController::class, 'summary']);
         Route::get('/system/status', [SystemStatusController::class, 'show']);

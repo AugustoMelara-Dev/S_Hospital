@@ -19,6 +19,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property bool $active
+ * @property Carbon|null $deactivated_at
  * @property bool $must_change_password
  * @property string|null $remember_token
  * @property Carbon|null $created_at
@@ -40,6 +41,7 @@ class User extends Authenticatable
         'username',
         'password',
         'active',
+        'deactivated_at',
         'must_change_password',
         'service_area_id',
     ];
@@ -64,6 +66,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'active' => 'boolean',
+            'deactivated_at' => 'datetime',
             'must_change_password' => 'boolean',
             'service_area_id' => 'integer',
             'password' => 'hashed',

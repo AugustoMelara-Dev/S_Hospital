@@ -130,4 +130,23 @@ class ThrottleByUserTest extends TestCase
             );
         }
     }
+
+    public function test_sensitive_download_routes_keep_strong_per_user_throttles(): void
+    {
+        $routes = [
+            [Request::create('/api/reports/export', 'GET'), 'throttle.user:30,1'],
+            [Request::create('/api/reports/pdf', 'GET'), 'throttle.user:20,1'],
+            [Request::create('/api/backups/1/download', 'GET'), 'throttle.user:10,1'],
+        ];
+
+        foreach ($routes as [$request, $expectedMiddleware]) {
+            $route = Route::getRoutes()->match($request);
+
+            $this->assertContains(
+                $expectedMiddleware,
+                $route->gatherMiddleware(),
+                sprintf('%s %s must keep a sensitive download throttle', $request->method(), $request->path()),
+            );
+        }
+    }
 }

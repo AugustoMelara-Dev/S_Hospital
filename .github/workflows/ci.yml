@@ -44,6 +44,10 @@ jobs:
         working-directory: backend
         run: composer install --no-interaction --prefer-dist
 
+      - name: Composer audit
+        working-directory: backend
+        run: composer audit --no-interaction
+
       - name: Laravel key + cache
         working-directory: backend
         run: |
@@ -56,7 +60,6 @@ jobs:
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: ':memory:'
-          APP_KEY: base64:dGVzdHRlc3R0ZXN0dGVzdHRlc3R0ZXN0dGVzdHRlc3Q=
         run: |
           vendor/bin/phpunit --testdox
 
@@ -88,14 +91,17 @@ jobs:
     name: Backend (MariaDB)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      CI_MARIADB_ROOT_PASSWORD: ${{ secrets.CI_MARIADB_ROOT_PASSWORD || vars.CI_MARIADB_ROOT_PASSWORD || 'ci-root-db-only-change-in-repo-settings' }}
+      CI_MARIADB_PASSWORD: ${{ secrets.CI_MARIADB_PASSWORD || vars.CI_MARIADB_PASSWORD || 'ci-db-only-change-in-repo-settings' }}
     services:
       mariadb:
         image: mariadb:11.4
         env:
-          MARIADB_ROOT_PASSWORD: root_dev
+          MARIADB_ROOT_PASSWORD: ${{ secrets.CI_MARIADB_ROOT_PASSWORD || vars.CI_MARIADB_ROOT_PASSWORD || 'ci-root-db-only-change-in-repo-settings' }}
           MARIADB_DATABASE: hospital_billing
           MARIADB_USER: hospital
-          MARIADB_PASSWORD: hospital_dev
+          MARIADB_PASSWORD: ${{ secrets.CI_MARIADB_PASSWORD || vars.CI_MARIADB_PASSWORD || 'ci-db-only-change-in-repo-settings' }}
         ports: ['3306:3306']
         options: >-
           --health-cmd="healthcheck.sh --connect --innodb_initialized"
@@ -124,10 +130,14 @@ jobs:
         working-directory: backend
         run: composer install --no-interaction --prefer-dist
 
+      - name: Composer audit
+        working-directory: backend
+        run: composer audit --no-interaction
+
       - name: Wait for MariaDB
         run: |
           for i in $(seq 1 30); do
-            if mysqladmin ping -h 127.0.0.1 -u hospital -phospital_dev --silent 2>/dev/null; then
+            if mysqladmin ping -h 127.0.0.1 -u hospital -p"${CI_MARIADB_PASSWORD}" --silent 2>/dev/null; then
               echo "MariaDB ready"
               exit 0
             fi
@@ -140,13 +150,13 @@ jobs:
         working-directory: backend
         run: |
           cp .env.example .env
-          sed -i 's|APP_KEY=.*|APP_KEY=base64:dGVzdHRlc3R0ZXN0dGVzdHRlc3R0ZXN0dGVzdHRlc3Q=|' .env
+          php artisan key:generate --force
           sed -i 's|DB_CONNECTION=.*|DB_CONNECTION=mysql|' .env
           sed -i 's|DB_HOST=.*|DB_HOST=127.0.0.1|' .env
           sed -i 's|DB_PORT=.*|DB_PORT=3306|' .env
           sed -i 's|DB_DATABASE=.*|DB_DATABASE=hospital_billing|' .env
           sed -i 's|DB_USERNAME=.*|DB_USERNAME=hospital|' .env
-          sed -i 's|DB_PASSWORD=.*|DB_PASSWORD=hospital_dev|' .env
+          sed -i "s|DB_PASSWORD=.*|DB_PASSWORD=${CI_MARIADB_PASSWORD}|" .env
 
       - name: Run migrations + seed
         working-directory: backend
@@ -164,7 +174,7 @@ jobs:
           DB_PORT: 3306
           DB_DATABASE: hospital_billing
           DB_USERNAME: hospital
-          DB_PASSWORD: hospital_dev
+          DB_PASSWORD: ${{ env.CI_MARIADB_PASSWORD }}
         run: vendor/bin/phpunit --testdox
 
   frontend:
@@ -244,7 +254,6 @@ jobs:
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: ':memory:'
-          APP_KEY: base64:dGVzdHRlc3R0ZXN0dGVzdHRlc3R0ZXN0dGVzdHRlc3Q=
         run: |
           # The production-readiness spec is fully mocked at the route level
           # and does not require a live backend; we just need the SPA built

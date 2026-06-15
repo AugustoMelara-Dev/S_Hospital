@@ -16,12 +16,12 @@ type KeyboardShortcut = {
 export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement;
+      const target = event.target instanceof HTMLElement ? event.target : document.body;
       const tagName = target.tagName.toLowerCase();
       const isEditable = target.isContentEditable;
 
-      // Don't trigger shortcuts when typing in form fields
-      if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' || isEditable) {
+      // Don't trigger shortcuts when typing or when composite UI is open.
+      if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' || isEditable || hasOpenCompositeUi(target)) {
         return;
       }
 
@@ -48,6 +48,16 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
+}
+
+function hasOpenCompositeUi(target: HTMLElement): boolean {
+  if (target.closest('[role="dialog"], [role="menu"], [role="listbox"], [role="combobox"]')) {
+    return true;
+  }
+
+  return document.querySelector(
+    '[data-state="open"][role="dialog"], [data-state="open"][role="menu"], [data-state="open"][role="listbox"], [aria-expanded="true"][role="combobox"]',
+  ) !== null;
 }
 
 /**

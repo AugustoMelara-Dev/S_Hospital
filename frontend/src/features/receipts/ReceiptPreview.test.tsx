@@ -94,10 +94,12 @@ describe('ReceiptPreview', () => {
   });
 
   it('sets and clears the active print paper width', async () => {
-    vi.useFakeTimers();
     const receipt = receiptFixture();
     receipt.width = '80mm';
-    printSpy.mockImplementation(() => undefined);
+    printSpy.mockImplementation(() => {
+      expect(document.body.dataset.receiptWidth).toBe('80mm');
+      expect(document.body.dataset.printingReceipt).toBe('true');
+    });
 
     render(
       <ReceiptPreview
@@ -112,14 +114,8 @@ describe('ReceiptPreview', () => {
     await Promise.resolve();
 
     expect(printSpy).toHaveBeenCalledTimes(1);
-    expect(document.body.dataset.receiptWidth).toBe('80mm');
-    expect(document.body.dataset.printingReceipt).toBe('true');
-
-    await vi.advanceTimersByTimeAsync(1000);
-
     expect(document.body.dataset.receiptWidth).toBeUndefined();
     expect(document.body.dataset.printingReceipt).toBeUndefined();
-    vi.useRealTimers();
   });
 
   it('renders malformed historical receipt amounts as safe financial values', () => {
@@ -148,7 +144,7 @@ describe('ReceiptPreview', () => {
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
 
-  it('does not present legacy fallback as the final institutional receipt', () => {
+  it('presents the institutional receipt as the final printable receipt', () => {
     render(
       <ReceiptPreview
         receipt={receiptFixture()}
@@ -157,14 +153,14 @@ describe('ReceiptPreview', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: 'COMPROBANTE DE FACTURA' })).toBeInTheDocument();
-    expect(screen.getByText(/comprobante de compatibilidad/i)).toBeInTheDocument();
-    expect(screen.queryByText('RECIBO INSTITUCIONAL')).not.toBeInTheDocument();
-    expect(screen.queryByText('Estado')).not.toBeInTheDocument();
-    expect(screen.queryByText('CAI')).not.toBeInTheDocument();
-    expect(screen.queryByText('Rango')).not.toBeInTheDocument();
-    expect(screen.queryByText('Vence')).not.toBeInTheDocument();
-    expect(screen.queryByText('TEST-CAI')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'RECIBO INSTITUCIONAL' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'COMPROBANTE DE FACTURA' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/comprobante de compatibilidad/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Estado')).toBeInTheDocument();
+    expect(screen.getByText('CAI')).toBeInTheDocument();
+    expect(screen.getByText('Rango')).toBeInTheDocument();
+    expect(screen.getByText('Vence')).toBeInTheDocument();
+    expect(screen.getByText('TEST-CAI')).toBeInTheDocument();
   });
 });
 

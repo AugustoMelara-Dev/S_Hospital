@@ -15,6 +15,7 @@ class CreateBackupAction
 {
     public function __construct(
         private readonly DatabaseDumpWriter $databaseDumpWriter,
+        private readonly EncryptBackupFileAction $encryptBackupFile,
         private readonly PruneBackupsAction $pruneBackups,
     ) {}
 
@@ -29,7 +30,7 @@ class CreateBackupAction
             throw new RuntimeException('El tipo debe ser manual o scheduled.');
         }
 
-        $filename = 'hospital-backup-'.now()->format('Ymd-His').'-'.Str::lower(Str::random(8)).'.sql';
+        $filename = 'hospital-backup-'.now()->format('Ymd-His').'-'.Str::lower(Str::random(8)).'.sql.enc';
         $path = 'backups/'.$filename;
 
         $backupLog = BackupLog::query()
@@ -64,15 +65,21 @@ class CreateBackupAction
 
             Storage::disk('local')->makeDirectory('backups');
             $absolutePath = Storage::disk('local')->path((string) $backupLog->path);
-            $temporaryPath = $absolutePath.'.tmp';
+            $temporaryDumpPath = $absolutePath.'.dump.tmp';
+            $temporaryEncryptedPath = $absolutePath.'.tmp';
 
-            $this->removeAbsoluteFile($temporaryPath);
+            $this->removeAbsoluteFile($temporaryDumpPath);
+            $this->removeAbsoluteFile($temporaryEncryptedPath);
 
-            $this->databaseDumpWriter->dumpTo($temporaryPath);
+            $this->databaseDumpWriter->dumpTo($temporaryDumpPath);
+            @chmod($temporaryDumpPath, 0600);
+            $this->encryptBackupFile->execute($temporaryDumpPath, $temporaryEncryptedPath);
+            $this->removeAbsoluteFile($temporaryDumpPath);
 
-            if (! @rename($temporaryPath, $absolutePath)) {
+            if (! @rename($temporaryEncryptedPath, $absolutePath)) {
                 throw new RuntimeException('No se pudo publicar el archivo de respaldo local.');
             }
+            @chmod($absolutePath, 0600);
 
             clearstatcache(true, $absolutePath);
 
@@ -96,6 +103,7 @@ class CreateBackupAction
         } catch (\Throwable $exception) {
             $this->removePartialFile((string) $backupLog->path);
             $this->removePartialFile((string) $backupLog->path.'.tmp');
+            $this->removePartialFile((string) $backupLog->path.'.dump.tmp');
 
             $backupLog = $this->markFailed($backupLog, $this->safeErrorMessage($exception));
         } finally {

@@ -67,9 +67,9 @@ cajero).
 4. Despues de generarla, `php artisan config:cache` y reinicie el
    servicio backend (`docker compose restart backend`).
 
-## Escenario 5 - Tengo un backup `.sql` y necesito restaurar
+## Escenario 5 - Tengo un backup `.sql.enc` y necesito restaurar
 
-1. Confirme que el archivo termina en `.sql` y tiene tamano mayor a
+1. Confirme que el archivo termina en `.sql.enc` y tiene tamano mayor a
    100KB (un backup vacio indica problema).
 2. Calcule SHA256 del archivo y compare con el que aparece en la UI
    de Respaldos. Si difiere, el archivo esta danado.
@@ -77,11 +77,20 @@ cajero).
    `validation` (la regla `RESTORE_TEST_DATABASE` exige este sufijo).
 4. Restaure SOLO en la base descartable:
 
-   ```bash
-   HOSPITAL_VALIDATE_RESTORE_MYSQL=1 \
-   RESTORE_TEST_DATABASE=hospital_restore_validation \
-   HOSPITAL_CONFIRM_RESTORE_DATABASE=hospital_restore_validation \
-   bash scripts/validate_restore_mysql.sh
+   ```powershell
+   $hash = "PEGUE_SHA256_VALIDADO"
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 `
+     -UseExistingEnv `
+     -TargetDatabase hospital_restore_validation `
+     -BackupFile C:\backups\hospital-backup.sql.enc `
+     -ExpectedSha256 $hash `
+     -WhatIf
+
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 `
+     -UseExistingEnv `
+     -TargetDatabase hospital_restore_validation `
+     -BackupFile C:\backups\hospital-backup.sql.enc `
+     -ExpectedSha256 $hash
    ```
 
 5. Si la validacion pasa, levante la base principal desde ese mismo

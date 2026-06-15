@@ -7,6 +7,7 @@ use App\Models\CashRegisterSession;
 use App\Models\Category;
 use App\Models\FiscalSetting;
 use App\Models\User;
+use App\Support\ExcelSafe;
 use App\Support\HospitalName;
 use App\Support\Money;
 use Illuminate\Support\Carbon;
@@ -150,7 +151,7 @@ class PremiumExcelExportService
         $sheet0->setCellValue('C8', $to->format('d/m/Y'));
 
         $sheet0->setCellValue('B9', 'Nombre del Hospital');
-        $sheet0->setCellValue('C9', $hospitalName);
+        $sheet0->setCellValue('C9', ExcelSafe::value($hospitalName));
 
         $sheet0->setCellValue('B10', 'RTN del Hospital');
         $sheet0->setCellValue('C10', $hospitalRtn);
@@ -160,12 +161,12 @@ class PremiumExcelExportService
 
         $currentUser = auth()->user();
         $sheet0->setCellValue('B12', 'Generado Por');
-        $sheet0->setCellValue('C12', $currentUser instanceof User ? $currentUser->name : 'Sistema');
+        $sheet0->setCellValue('C12', ExcelSafe::value($currentUser instanceof User ? $currentUser->name : 'Sistema'));
 
         $row = 13;
         foreach ($this->appliedFilterRows($income['filters'] ?? []) as [$label, $value]) {
             $sheet0->setCellValue('B'.$row, $label);
-            $sheet0->setCellValue('C'.$row, $value);
+            $sheet0->setCellValue('C'.$row, ExcelSafe::value($value));
             $row++;
         }
 
@@ -237,7 +238,7 @@ class PremiumExcelExportService
             ]);
         }
 
-        $sheet1->setCellValue('D2', $hospitalName);
+        $sheet1->setCellValue('D2', ExcelSafe::value($hospitalName));
         $sheet1->getStyle('D2')->applyFromArray($titleStyle);
         $sheet1->setCellValue('D3', "RTN: {$hospitalRtn}");
         $sheet1->getStyle('D3')->applyFromArray($subtitleStyle);
@@ -284,7 +285,7 @@ class PremiumExcelExportService
         ];
 
         foreach ($income['payments_by_method'] as $method => $total) {
-            $sheet1->setCellValue('B'.$row, $methodLabels[$method] ?? ucfirst($method));
+            $sheet1->setCellValue('B'.$row, ExcelSafe::value($methodLabels[$method] ?? ucfirst($method)));
             $sheet1->setCellValue('C'.$row, $this->moneyFloat($total));
             $sheet1->getStyle('C'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
             $row++;
@@ -378,7 +379,7 @@ class PremiumExcelExportService
         foreach ($financialRows as [$label, $amount, $source]) {
             $financialSheet->setCellValue('B'.$row, $label);
             $financialSheet->setCellValue('C'.$row, $amount);
-            $financialSheet->setCellValue('D'.$row, $source);
+            $financialSheet->setCellValue('D'.$row, ExcelSafe::value($source));
             $financialSheet->getStyle('C'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
             $row++;
         }
@@ -425,7 +426,7 @@ class PremiumExcelExportService
 
         $row = 6;
         foreach ($categories['categories'] as $cat) {
-            $sheet2->setCellValue('B'.$row, $cat['category']);
+            $sheet2->setCellValue('B'.$row, ExcelSafe::value($cat['category']));
             $sheet2->setCellValue('C'.$row, (int) $cat['quantity']);
             $sheet2->setCellValue('D'.$row, $this->moneyFloat($cat['total']));
 
@@ -521,7 +522,7 @@ class PremiumExcelExportService
             $row++;
         } else {
             foreach ($areas['areas'] as $area) {
-                $sheetArea->setCellValue('B'.$row, $area['area']);
+                $sheetArea->setCellValue('B'.$row, ExcelSafe::value($area['area']));
                 $sheetArea->setCellValue('C'.$row, (int) $area['item_count']);
                 $sheetArea->setCellValue('D'.$row, $this->moneyFloat($area['quantity']));
                 $sheetArea->setCellValue('E'.$row, $this->moneyFloat($area['total']));
@@ -575,8 +576,8 @@ class PremiumExcelExportService
 
         $row = 6;
         foreach ($services['services'] as $svc) {
-            $sheet3->setCellValue('B'.$row, $svc['service']);
-            $sheet3->setCellValue('C'.$row, $svc['category']);
+            $sheet3->setCellValue('B'.$row, ExcelSafe::value($svc['service']));
+            $sheet3->setCellValue('C'.$row, ExcelSafe::value($svc['category']));
             $sheet3->setCellValue('D'.$row, (int) $svc['quantity']);
             $sheet3->setCellValue('E'.$row, $this->moneyFloat($svc['total']));
 
@@ -614,7 +615,7 @@ class PremiumExcelExportService
 
             $calcRow = 11;
             foreach ($topServices as $svc) {
-                $sheet3->setCellValue('G'.$calcRow, $svc['service']);
+                $sheet3->setCellValue('G'.$calcRow, ExcelSafe::value($svc['service']));
                 $sheet3->setCellValue('H'.$calcRow, $this->moneyFloat($svc['total']));
                 $sheet3->getStyle('H'.$calcRow)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
                 $calcRow++;
@@ -682,8 +683,8 @@ class PremiumExcelExportService
 
         $row = 6;
         foreach ($operations['cashiers'] as $cashier) {
-            $sheet4->setCellValue('B'.$row, $cashier['name']);
-            $sheet4->setCellValue('C'.$row, '@'.$cashier['username']);
+            $sheet4->setCellValue('B'.$row, ExcelSafe::value($cashier['name']));
+            $sheet4->setCellValue('C'.$row, ExcelSafe::value('@'.$cashier['username']));
             $sheet4->setCellValue('D'.$row, (int) $cashier['payment_count']);
             $sheet4->setCellValue('E'.$row, $this->moneyFloat($cashier['total_collected']));
 
@@ -771,11 +772,11 @@ class PremiumExcelExportService
 
         $row = 5;
         foreach ($operations['voids'] as $void) {
-            $sheet5->setCellValue('B'.$row, $void['invoice_number']);
-            $sheet5->setCellValue('C'.$row, $void['patient_name'] ?? 'N/A');
+            $sheet5->setCellValue('B'.$row, ExcelSafe::value($void['invoice_number']));
+            $sheet5->setCellValue('C'.$row, ExcelSafe::value($void['patient_name'] ?? 'N/A'));
             $sheet5->setCellValue('D'.$row, $this->moneyFloat($void['total']));
-            $sheet5->setCellValue('E'.$row, $void['reason'] ?? $void['void_reason'] ?? 'Sin motivo');
-            $sheet5->setCellValue('F'.$row, $void['user'] ?? $void['voided_by_name'] ?? 'N/A');
+            $sheet5->setCellValue('E'.$row, ExcelSafe::value($void['reason'] ?? $void['void_reason'] ?? 'Sin motivo'));
+            $sheet5->setCellValue('F'.$row, ExcelSafe::value($void['user'] ?? $void['voided_by_name'] ?? 'N/A'));
 
             $sheet5->getStyle('D'.$row)->getNumberFormat()->setFormatCode('\"L. \"#,##0.00;\"- L. \"#,##0.00');
             $row++;
@@ -804,11 +805,11 @@ class PremiumExcelExportService
 
         $row++;
         foreach ($operations['reprints'] as $reprint) {
-            $sheet5->setCellValue('B'.$row, $reprint['invoice_number']);
-            $sheet5->setCellValue('C'.$row, $reprint['patient_name'] ?? 'N/A');
+            $sheet5->setCellValue('B'.$row, ExcelSafe::value($reprint['invoice_number']));
+            $sheet5->setCellValue('C'.$row, ExcelSafe::value($reprint['patient_name'] ?? 'N/A'));
             $sheet5->setCellValue('D'.$row, $this->receiptWidthLabel($reprint['width'] ?? null));
-            $sheet5->setCellValue('E'.$row, $reprint['reason'] ?? 'Sin motivo');
-            $sheet5->setCellValue('F'.$row, $reprint['user'] ?? $reprint['username'] ?? 'N/A');
+            $sheet5->setCellValue('E'.$row, ExcelSafe::value($reprint['reason'] ?? 'Sin motivo'));
+            $sheet5->setCellValue('F'.$row, ExcelSafe::value($reprint['user'] ?? $reprint['username'] ?? 'N/A'));
             $row++;
         }
 
@@ -830,12 +831,12 @@ class PremiumExcelExportService
 
         $row++;
         foreach ($operations['payment_voids'] ?? [] as $paymentVoid) {
-            $sheet5->setCellValue('B'.$row, $paymentVoid['invoice_number'] ?? 'N/A');
-            $sheet5->setCellValue('C'.$row, $paymentVoid['patient_name'] ?? 'N/A');
-            $sheet5->setCellValue('D'.$row, $this->paymentMethodLabel($paymentVoid['method'] ?? ''));
+            $sheet5->setCellValue('B'.$row, ExcelSafe::value($paymentVoid['invoice_number'] ?? 'N/A'));
+            $sheet5->setCellValue('C'.$row, ExcelSafe::value($paymentVoid['patient_name'] ?? 'N/A'));
+            $sheet5->setCellValue('D'.$row, ExcelSafe::value($this->paymentMethodLabel($paymentVoid['method'] ?? '')));
             $sheet5->setCellValue('E'.$row, $this->moneyFloat($paymentVoid['amount'] ?? 0));
-            $sheet5->setCellValue('F'.$row, $paymentVoid['reason'] ?? 'Sin motivo');
-            $sheet5->setCellValue('G'.$row, $paymentVoid['voided_by'] ?? 'N/A');
+            $sheet5->setCellValue('F'.$row, ExcelSafe::value($paymentVoid['reason'] ?? 'Sin motivo'));
+            $sheet5->setCellValue('G'.$row, ExcelSafe::value($paymentVoid['voided_by'] ?? 'N/A'));
             $sheet5->setCellValue('H'.$row, isset($paymentVoid['voided_at'])
                 ? Carbon::parse($paymentVoid['voided_at'])->format('d/m/Y H:i')
                 : 'N/A');

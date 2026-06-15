@@ -24,7 +24,12 @@ class UserManagementTest extends TestCase
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->userWithRole('admin');
-        $target = $this->userWithRole('cajero');
+        $target = User::factory()->create([
+            'username' => 'target-cashier',
+            'email' => 'target-cashier@hospital.local',
+        ]);
+        $target->assignRole('cajero');
+        $target->createToken('terminal-caja');
 
         $this->actingAs($admin)
             ->postJson("/api/admin/users/{$target->id}/reset-password", [
@@ -36,6 +41,10 @@ class UserManagementTest extends TestCase
         $target->refresh();
         $this->assertTrue(Hash::check('Temporary123', $target->password));
         $this->assertTrue($target->must_change_password);
+        $this->assertDatabaseMissing('personal_access_tokens', [
+            'tokenable_type' => User::class,
+            'tokenable_id' => $target->id,
+        ]);
     }
 
     public function test_admin_can_list_users_but_cashier_cannot(): void
@@ -60,7 +69,11 @@ class UserManagementTest extends TestCase
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->userWithRole('admin');
-        $target = $this->userWithRole('cajero');
+        $target = User::factory()->create([
+            'username' => 'target-cashier-promo',
+            'email' => 'target-cashier-promo@hospital.local',
+        ]);
+        $target->assignRole('cajero');
 
         $this->actingAs($admin)
             ->postJson("/api/admin/users/{$target->id}/toggle-active")
@@ -68,6 +81,7 @@ class UserManagementTest extends TestCase
             ->assertJsonPath('data.active', false);
 
         $this->assertFalse($target->refresh()->active);
+        $this->assertNotNull($target->deactivated_at);
 
         $this->actingAs($admin)
             ->postJson("/api/admin/users/{$admin->id}/toggle-active")
@@ -113,6 +127,47 @@ class UserManagementTest extends TestCase
                 'password' => 'Temporary123',
             ])
             ->assertForbidden();
+    }
+
+    public function test_user_manager_without_admin_assignment_permission_cannot_create_admin(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $manager = User::factory()->create();
+        $manager->givePermissionTo(['users.create', 'users.view']);
+
+        $this->actingAs($manager)
+            ->postJson('/api/admin/users', [
+                'name' => 'Nuevo Admin',
+                'email' => 'nuevo-admin@hospital.local',
+                'username' => 'nuevo-admin',
+                'password' => 'Temporary123',
+                'role' => 'admin',
+                'active' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('role');
+    }
+
+    public function test_user_manager_without_admin_assignment_permission_cannot_promote_user_to_admin(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $manager = User::factory()->create();
+        $manager->givePermissionTo(['users.update', 'users.view']);
+        $target = User::factory()->create([
+            'username' => 'target-cashier-promote',
+            'email' => 'target-cashier-promote@hospital.local',
+        ]);
+        $target->assignRole('cajero');
+
+        $this->actingAs($manager)
+            ->patchJson("/api/admin/users/{$target->id}", [
+                'name' => $target->name,
+                'email' => $target->email,
+                'username' => $target->username,
+                'role' => 'admin',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('role');
     }
 
     private function userWithRole(string $role): User
