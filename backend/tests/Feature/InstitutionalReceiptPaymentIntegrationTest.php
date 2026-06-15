@@ -135,6 +135,51 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
         ]);
     }
 
+    public function test_invoice_history_and_detail_expose_minimal_institutional_receipt_summary(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $receiptId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->json('data.institutional_receipt.id');
+
+        $detailReceipt = $this->actingAs($cashier)
+            ->getJson("/api/invoices/{$invoiceId}")
+            ->assertOk()
+            ->assertJsonPath('data.institutional_receipt.id', $receiptId)
+            ->assertJsonPath('data.institutional_receipt.receipt_number_full', 'REC-A-00000001')
+            ->json('data.institutional_receipt');
+
+        $historyReceipt = $this->actingAs($cashier)
+            ->getJson('/api/invoices')
+            ->assertOk()
+            ->assertJsonPath('data.0.institutional_receipt.id', $receiptId)
+            ->assertJsonPath('data.0.institutional_receipt.receipt_number_full', 'REC-A-00000001')
+            ->json('data.0.institutional_receipt');
+
+        foreach ([$detailReceipt, $historyReceipt] as $receiptSummary) {
+            $this->assertSame([
+                'id',
+                'receipt_number_full',
+                'status',
+                'reprint_count',
+                'issued_at',
+            ], array_keys($receiptSummary));
+            $this->assertArrayNotHasKey('institution_snapshot', $receiptSummary);
+            $this->assertArrayNotHasKey('series_snapshot', $receiptSummary);
+            $this->assertArrayNotHasKey('profile_snapshot', $receiptSummary);
+            $this->assertArrayNotHasKey('items_snapshot', $receiptSummary);
+        }
+    }
+
     private function seedBillingBase(bool $partialPayments = false): void
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class, ReceiptPrintProfileSeeder::class]);

@@ -10,10 +10,12 @@ use App\Http\Requests\Billing\ReverseInvoiceRequest;
 use App\Http\Requests\Billing\ShowInvoiceRequest;
 use App\Http\Requests\Billing\StoreInvoiceRequest;
 use App\Http\Requests\Billing\VoidInvoiceRequest;
+use App\Models\InstitutionalReceipt;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Support\InvoiceAccess;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 
 class InvoiceController extends Controller
@@ -30,6 +32,7 @@ class InvoiceController extends Controller
                 'issuer:id,name,username',
                 'cashSession:id,user_id,status,opened_at,closed_at',
                 'cashSession.user:id,name,username',
+                'issuedInstitutionalReceipts:id,invoice_id,receipt_number_full,status,reprint_count,issued_at',
             ])
             ->when(
                 ! $this->canAccessHistoricalInvoices($user),
@@ -73,7 +76,7 @@ class InvoiceController extends Controller
             ->paginate($request->perPage());
 
         return response()->json([
-            'data' => $invoices->items(),
+            'data' => $this->withInstitutionalReceiptSummary($invoices->items()),
             'meta' => [
                 'current_page' => $invoices->currentPage(),
                 'per_page' => $invoices->perPage(),
@@ -87,21 +90,22 @@ class InvoiceController extends Controller
         $invoice = $createInvoice->execute($request->validated(), $request->user());
 
         return response()->json([
-            'data' => $invoice,
+            'data' => $this->withInstitutionalReceiptSummary($invoice),
         ], 201);
     }
 
     public function show(ShowInvoiceRequest $request, Invoice $invoice): JsonResponse
     {
         return response()->json([
-            'data' => $invoice->load([
+            'data' => $this->withInstitutionalReceiptSummary($invoice->load([
                 'items',
                 'payments.user:id,name,username',
                 'cashSession.user:id,name,username',
                 'issuer:id,name,username',
                 'voidedBy:id,name,username',
                 'fiscalSequence',
-            ]),
+                'issuedInstitutionalReceipts:id,invoice_id,receipt_number_full,status,reprint_count,issued_at',
+            ])),
         ]);
     }
 
@@ -111,7 +115,9 @@ class InvoiceController extends Controller
         VoidInvoiceAction $voidInvoice,
     ): JsonResponse {
         return response()->json([
-            'data' => $voidInvoice->execute($invoice, $request->user(), $request->reason()),
+            'data' => $this->withInstitutionalReceiptSummary(
+                $voidInvoice->execute($invoice, $request->user(), $request->reason())
+            ),
         ]);
     }
 
@@ -121,8 +127,46 @@ class InvoiceController extends Controller
         ReverseInvoiceAction $reverseInvoice,
     ): JsonResponse {
         return response()->json([
-            'data' => $reverseInvoice->execute($invoice, $request->user(), $request->reason()),
+            'data' => $this->withInstitutionalReceiptSummary(
+                $reverseInvoice->execute($invoice, $request->user(), $request->reason())
+            ),
         ]);
+    }
+
+    /**
+     * @param  Invoice|array<int, Invoice>|Collection<int, Invoice>  $invoices
+     * @return Invoice|array<int, Invoice>|Collection<int, Invoice>
+     */
+    private function withInstitutionalReceiptSummary(Invoice|array|Collection $invoices): Invoice|array|Collection
+    {
+        if ($invoices instanceof Invoice) {
+            return $this->attachInstitutionalReceiptSummary($invoices);
+        }
+
+        foreach ($invoices as $invoice) {
+            $this->attachInstitutionalReceiptSummary($invoice);
+        }
+
+        return $invoices;
+    }
+
+    private function attachInstitutionalReceiptSummary(Invoice $invoice): Invoice
+    {
+        if (! $invoice->relationLoaded('issuedInstitutionalReceipts')) {
+            $invoice->load('issuedInstitutionalReceipts:id,invoice_id,receipt_number_full,status,reprint_count,issued_at');
+        }
+
+        $receipt = $invoice->getRelation('issuedInstitutionalReceipts')->first();
+        $invoice->unsetRelation('issuedInstitutionalReceipts');
+        $invoice->setAttribute('institutional_receipt', $receipt instanceof InstitutionalReceipt ? [
+            'id' => $receipt->id,
+            'receipt_number_full' => $receipt->receipt_number_full,
+            'status' => $receipt->status,
+            'reprint_count' => $receipt->reprint_count,
+            'issued_at' => $receipt->issued_at?->toISOString(),
+        ] : null);
+
+        return $invoice;
     }
 
     private function canAccessHistoricalInvoices(User $user): bool

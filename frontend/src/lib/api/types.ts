@@ -154,7 +154,13 @@ export type Invoice = {
   cash_session?: CashSession & {
     user?: Pick<AuthUser, 'id' | 'name' | 'username'>;
   };
+  institutional_receipt?: InvoiceInstitutionalReceipt | null;
 };
+
+export type InvoiceInstitutionalReceipt = Pick<
+  InstitutionalReceipt,
+  'id' | 'receipt_number_full' | 'status' | 'issued_at' | 'reprint_count'
+>;
 
 export type CashSession = {
   id: number;

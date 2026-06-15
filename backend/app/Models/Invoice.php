@@ -53,6 +53,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Collection<int, InvoiceItem> $items
  * @property-read Collection<int, Payment> $payments
+ * @property-read Collection<int, InstitutionalReceipt> $issuedInstitutionalReceipts
  */
 class Invoice extends Model
 {
@@ -136,6 +137,18 @@ class Invoice extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function institutionalReceipts(): HasMany
+    {
+        return $this->hasMany(InstitutionalReceipt::class);
+    }
+
+    public function issuedInstitutionalReceipts(): HasMany
+    {
+        return $this->hasMany(InstitutionalReceipt::class)
+            ->where('status', InstitutionalReceipt::STATUS_ISSUED)
+            ->orderByDesc('id');
     }
 
     public function issuer(): BelongsTo
