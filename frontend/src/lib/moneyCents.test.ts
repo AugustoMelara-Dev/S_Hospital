@@ -52,6 +52,7 @@ describe('moneyCents helpers', () => {
   it('formatLempirasFromCents produces prefixed strings', () => {
     expect(formatLempirasFromCents(0)).toBe('L. 0.00');
     expect(formatLempirasFromCents(1234)).toBe('L. 12.34');
+    expect(formatLempirasFromCents(-5000)).toBe('- L. 50.00');
   });
 
   it('parseQuantityUnits rejects non-positive and parses two decimals', () => {
