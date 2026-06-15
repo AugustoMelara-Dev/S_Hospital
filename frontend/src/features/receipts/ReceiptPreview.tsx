@@ -77,7 +77,7 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
   const taxLabel = `${receipt.invoice.tax_label ?? 'ISV'}${receipt.invoice.tax_rate ? ` ${receipt.invoice.tax_rate}%` : ''}`;
 
   return (
-    <div className="receipt-preview-panel" aria-label="Vista previa del recibo">
+    <div className="receipt-preview-panel" aria-label="Vista previa de comprobante de factura legacy">
       <div className="receipt-preview-controls no-print">
         <Select value={receiptWidth} onValueChange={(v) => onWidthChange(institutionalReceiptPaperSize(v))}>
           <SelectTrigger aria-label="Tamaño del recibo" className="w-[170px]">
@@ -107,8 +107,14 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
         </div>
       ) : null}
 
+      <div className="no-print mb-3">
+        <Alert variant="warning" title="Comprobante de compatibilidad">
+          Este formato se conserva para facturas antiguas o cuando el PDF institucional no esta disponible. El recibo institucional oficial se abre como PDF numerado.
+        </Alert>
+      </div>
+
       <div className="receipt-preview-container">
-        <div ref={receiptRef} className={`institutional-receipt receipt-${receiptWidth}`} aria-label="Recibo institucional">
+        <div ref={receiptRef} className={`institutional-receipt receipt-${receiptWidth}`} aria-label="Comprobante de factura legacy">
           <header className="receipt-header">
             <span>{receipt.institutional?.government_line ?? 'Gobierno de Honduras'}</span>
             <span>{receipt.institutional?.secretariat_line ?? 'Secretaría de Salud Pública'}</span>
@@ -121,19 +127,15 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
           <div className="receipt-rule" aria-hidden="true" />
 
           <div className="receipt-title-row">
-            <h1 className="receipt-title">RECIBO INSTITUCIONAL</h1>
+            <h1 className="receipt-title">COMPROBANTE DE FACTURA</h1>
             <span>{receipt.institutional?.copy_label ?? 'Original'}</span>
           </div>
 
           <div className="receipt-meta">
-            <Row label="Serie / No." value={receipt.invoice.invoice_number} />
+            <Row label="Factura No." value={receipt.invoice.invoice_number} />
             <Row label="Fecha" value={formatDate(receipt.invoice.issued_at)} />
             <Row label="Paciente / enterante" value={receipt.invoice.patient_name} />
             {receipt.invoice.cashier ? <Row label="Cajero" value={receipt.invoice.cashier} /> : null}
-            <Row label="Estado" value={statusLabel(receipt.invoice.status)} />
-            <Row label="CAI" value={receipt.fiscal.cai ?? 'Pendiente de configurar'} />
-            {receipt.fiscal.authorized_range ? <Row label="Rango" value={receipt.fiscal.authorized_range} /> : null}
-            {receipt.fiscal.valid_until ? <Row label="Vence" value={formatDate(receipt.fiscal.valid_until)} /> : null}
           </div>
 
           <div className="receipt-rule" aria-hidden="true" />
@@ -257,15 +259,6 @@ function paymentLabel(method?: ReceiptData['payments'][number]['method']): strin
     other: 'Otro',
   };
   return method ? labels[method] : 'Pendiente';
-}
-
-function statusLabel(status: ReceiptData['invoice']['status']): string {
-  return {
-    issued: 'Emitida',
-    partial: 'Parcial',
-    paid: 'Pagada',
-    void: 'Anulada',
-  }[status] ?? status;
 }
 
 function printReceiptDocument(width: ReceiptData['width'], print: () => void) {

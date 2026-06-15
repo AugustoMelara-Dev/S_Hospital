@@ -488,8 +488,8 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       <Dialog
         open={receiptModalOpen}
         onOpenChange={setReceiptModalOpen}
-        title={`Recibo - ${selectedInvoice?.invoice_number ?? ''}`}
-        description="Vista previa de recibo institucional. Cambiar el tamaño no registra reimpresión."
+        title={`Comprobante de factura - ${selectedInvoice?.invoice_number ?? ''}`}
+        description="Fallback legacy para facturas sin recibo institucional PDF. Cambiar el tamaño no registra reimpresión."
       >
         {receipt && selectedInvoice && (
           <div className="space-y-4">

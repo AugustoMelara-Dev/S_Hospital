@@ -83,11 +83,12 @@ describe('ReceiptPreview accessibility', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it('labels the printable receipt container for assistive technologies', () => {
+  it('labels the printable fallback container for assistive technologies', () => {
     const { getByLabelText } = render(
       <ReceiptPreview receipt={buildReceipt()} onWidthChange={() => undefined} />,
     );
 
-    expect(getByLabelText('Vista previa del recibo')).toBeInTheDocument();
+    expect(getByLabelText('Vista previa de comprobante de factura legacy')).toBeInTheDocument();
+    expect(getByLabelText('Comprobante de factura legacy')).toBeInTheDocument();
   });
 });

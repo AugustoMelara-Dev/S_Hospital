@@ -831,9 +831,9 @@ describe('NewInvoiceView', () => {
     expect(screen.queryByRole('button', { name: /anular factura/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /reimprimir/i }));
     fireEvent.click(await screen.findByRole('button', { name: /registrar reimpresi/i }));
-    expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/vista previa de comprobante de factura legacy/i)).toBeInTheDocument();
     await waitFor(() => {
-      const receiptEl = screen.getByLabelText(/recibo institucional/i);
+      const receiptEl = screen.getByLabelText('Comprobante de factura legacy');
       expect(receiptEl).toBeInTheDocument();
       expect(receiptEl).toHaveClass('receipt-half_letter');
     });
@@ -1144,9 +1144,10 @@ describe('NewInvoiceView', () => {
 
     render(<ReceiptPreview receipt={receipt} onWidthChange={vi.fn()} onPrint={printSpy} />);
 
-    expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-80mm');
+    expect(screen.getByLabelText('Comprobante de factura legacy')).toHaveClass('receipt-80mm');
     expect(screen.getByText(/termico 80mm/i)).toBeInTheDocument();
-    expect(screen.getByText(/vence/i)).toBeInTheDocument();
+    expect(screen.getByText(/comprobante de compatibilidad/i)).toBeInTheDocument();
+    expect(screen.queryByText(/vence/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /imprimir/i }));
     await waitFor(() => expect(printSpy).toHaveBeenCalledOnce());
   });

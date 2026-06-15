@@ -214,7 +214,7 @@ describe('InvoiceHistoryView', () => {
     await waitFor(() => expect(screen.getByText('Paciente Legacy')).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /ver recibo/i }));
 
-    await waitFor(() => expect(screen.getByText(/vista previa de recibo institucional/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/fallback legacy para facturas sin recibo institucional pdf/i)).toBeInTheDocument());
     expect(apiClient.getReceipt).toHaveBeenCalledWith(6, 'half_letter');
     expect(getPdf).not.toHaveBeenCalled();
   });
