@@ -2,6 +2,7 @@
 
 use App\Actions\Reports\OpenApiExporter;
 use App\Http\Controllers\AreaController;
+use App\Http\Controllers\AreaPaidServiceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CashSessionController;
