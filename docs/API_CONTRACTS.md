@@ -222,7 +222,7 @@ Los items emitidos no se editan. Si hay error, se anula la factura y se emite un
 
 | Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
 |---|---|---|---|---|---|
-| POST | `/api/invoices/{invoice}/payments` | `payments.create` + alcance operativo | Metodo, monto, referencia | Pago registrado | Alcance operativo: factura propia del dia o `invoices.operate_any`. Transaccional: payment + cash_movement + invoice totals. |
+| POST | `/api/invoices/{invoice}/payments` | `payments.create` + alcance operativo | Metodo, monto, referencia | Pago registrado + recibo institucional si queda pagada | Alcance operativo: factura propia del dia o `invoices.operate_any`. Transaccional: payment + cash_movement + invoice totals. Si la factura queda pagada y existe configuracion de recibo, emite `institutional_receipt`; si falta configuracion, el pago queda registrado y retorna `institutional_receipt_error`. |
 | GET | `/api/invoices/{invoice}/payments` | `payments.view` + alcance operativo | N/A | Pagos | Incluye estado. |
 | POST | `/api/invoices/{invoice}/payments/{payment}/void` | `payments.void` + alcance operativo | `{ "reason": "..." }` | Pago anulado | Auditar y recalcular factura. |
 
@@ -241,10 +241,15 @@ Payload pago:
 
 | Metodo | Ruta | Permiso | Payload | Respuesta | Notas |
 |---|---|---|---|---|---|
+| POST | `/api/institutional-receipts` | `receipts.view` + `payments.create` | `{ "invoice_id": 10, "payment_id": 50, "profile_code": "media_carta_horizontal" }` | Recibo institucional emitido | Reserva correlativo con bloqueo, guarda snapshot y rechaza duplicados/rango agotado. |
+| GET | `/api/institutional-receipts/{receipt}/pdf` | `receipts.view`; reimpresion requiere `receipts.reprint` + `reason` | Query opcional `reason` para reimpresion | PDF institucional clasico | Usa tamano real del perfil guardado. Primera descarga registra impresion; descargas posteriores son reimpresion auditada. |
+| POST | `/api/settings/institutional-receipts/test-print` | `receipts.print_test` | Datos de prueba/perfil | PDF con marca `PRUEBA - SIN VALIDEZ` | No reserva correlativo real. |
 | GET | `/api/invoices/{invoice}/receipt` | `receipts.view` | Query: `width=half_letter|letter|a5|80mm|58mm` | Datos renderizables de recibo | Usa snapshots. |
 | POST | `/api/invoices/{invoice}/reprint` | `receipts.reprint` | `{ "width": "half_letter", "reason": "copia solicitada por paciente" }` | Datos recibo + audit log | Auditar reimpresion. Acepta media carta, carta, A5, 80mm y 58mm. |
 
-El recibo debe incluir Gobierno, Secretaria, Hospital San Isidro, numero/serie, fecha, paciente o enterante, conceptos, total, pagado, saldo, cajero, metodo de pago, firma, sello y original/copia. No debe imprimir QR, codigo de barras, codigos internos ni datos tecnicos.
+El recibo institucional principal debe incluir Gobierno, Secretaria, hospital, numero/serie, fecha, paciente o enterante, concepto, monto numerico, monto en letras, firma del enterante, espacio para sello/firma oficial y leyenda de copias. No debe imprimir QR, codigo de barras, codigos internos, IDs, logs, auditoria ni datos tecnicos. No debe renderizar sello/firma oficial digital por defecto.
+
+El endpoint antiguo `/api/invoices/{invoice}/receipt` se conserva como compatibilidad para la vista HTML previa y formatos heredados; el flujo principal de cobro debe preferir la entidad `institutional_receipts` y su PDF.
 
 ## Reports
 
