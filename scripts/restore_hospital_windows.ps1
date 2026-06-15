@@ -354,6 +354,14 @@ if ($BackupFile -and $BackupFile -match '\.tar\.gz$') {
     try {
         $tempDir = Join-Path $env:TEMP "hospital_restore_$(Get-Date -Format 'yyyyMMddHHmmss')"
         New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+        $details = tar -tvf $BackupFile
+        foreach ($line in $details) {
+            if ($line -match '^l' -or $line -match '^h' -or $line -match '\s+->\s+') {
+                Write-Error "Riesgo de enlace simbolico (symlink/hardlink) detectado en el archivo tar."
+                Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+                exit 1
+            }
+        }
         $contents = tar -tf $BackupFile
         foreach ($file in $contents) {
             if ($file -match '\.\.' -or $file -match '^[/\\]' -or $file -match '^[a-zA-Z]:') {

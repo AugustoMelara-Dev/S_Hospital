@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Hash;
 
 class PrepareE2eReleaseDataCommand extends Command
 {
-    protected $signature = 'hospital:prepare-e2e-release-data {--json : Emit machine-readable setup details}';
+    protected $signature = 'hospital:prepare-e2e-release-data {--password= : The E2E users password} {--json : Emit machine-readable setup details}';
 
     protected $description = 'Prepara datos idempotentes no productivos para el gate E2E de release.';
 
@@ -39,10 +39,16 @@ class PrepareE2eReleaseDataCommand extends Command
             '--force' => true,
         ]);
 
-        $password = 'Password123!';
-        $admin = $this->upsertUser('admin.e2e', 'Administrador E2E', 'admin');
-        $supervisor = $this->upsertUser('supervisor.e2e', 'Supervisor E2E', 'supervisor');
-        $cashier = $this->upsertUser('cajero.e2e', 'Cajero E2E', 'cajero');
+        $password = $this->option('password') ?: getenv('E2E_SEED_PASSWORD');
+
+        if (empty($password)) {
+            $this->error('The E2E seed password must be provided via --password or E2E_SEED_PASSWORD.');
+            return self::FAILURE;
+        }
+
+        $admin = $this->upsertUser('admin.e2e', 'Administrador E2E', 'admin', (string) $password);
+        $supervisor = $this->upsertUser('supervisor.e2e', 'Supervisor E2E', 'supervisor', (string) $password);
+        $cashier = $this->upsertUser('cajero.e2e', 'Cajero E2E', 'cajero', (string) $password);
 
         FiscalSetting::query()->updateOrCreate(
             ['id' => 1],
@@ -147,20 +153,20 @@ class PrepareE2eReleaseDataCommand extends Command
             $this->line(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         } else {
             $this->info('E2E release data ready for user cajero.e2e.');
-            $this->line('Use password Password123! in a non-production E2E environment only.');
+            $this->line('Use the provided password in a non-production E2E environment only.');
         }
 
         return self::SUCCESS;
     }
 
-    private function upsertUser(string $username, string $name, string $role): User
+    private function upsertUser(string $username, string $name, string $role, string $password): User
     {
         $user = User::query()->updateOrCreate(
             ['username' => $username],
             [
                 'name' => $name,
                 'email' => "{$username}@hospital-san-isidro.local",
-                'password' => Hash::make('Password123!'),
+                'password' => Hash::make($password),
                 'active' => true,
                 'must_change_password' => false,
             ],
