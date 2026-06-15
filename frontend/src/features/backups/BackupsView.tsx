@@ -668,7 +668,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                     <p className="text-sm font-medium">
                       {lastSuccessBackup
                         ? `Último: ${formatRelativeTime(lastSuccessBackup.completed_at ?? lastSuccessBackup.created_at)}`
-                        : 'Sin respaldo protegido'}
+                        : 'Sin respaldo completado'}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {successCount > 0 ? `${successCount} protegidos en esta página` : 'Sin respaldos protegidos en esta página'}
