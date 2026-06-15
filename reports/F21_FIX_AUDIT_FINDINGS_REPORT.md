@@ -4,8 +4,8 @@
 
 - Rama: `v1.1-critical-hardening-after-offline`.
 - HEAD inicial registrado en F21-A: `10912aeee09a2979f5a1359ed6e2e1f338465a71`.
-- HEAD final observado: `bd39cbeaedfed48a5a8f76d01b127d4ec9a53f1b`.
-- No se hizo `git add`, commit, cambio de rama ni rebase durante F21.
+- HEAD final observado: `0dab48f53077c039b084b41f8584d21684348892`.
+- No se hizo `git add`, commit, cambio de rama ni rebase desde esta sesion F21-H/I/J. Durante el cierre aparecieron commits concurrentes en la rama; se registran como trabajo externo.
 
 ## Estado Git Inicial
 
@@ -13,7 +13,7 @@ F21-A detecto un arbol sucio con cambios concurrentes en backend, frontend, test
 
 ## Estado Git Final
 
-El arbol queda con cambios sin staging por instruccion del usuario. El cierre debe revisarse y commitearse solo despues de autorizacion explicita. En el ultimo corte, `git diff --check` global falla por trailing whitespace/CRLF en `catalogo_servicios_inicial.csv`, archivo concurrente no modificado durante F21-H/I/J.
+El cierre debe revisarse y commitearse solo despues de autorizacion explicita. En el ultimo corte, `git diff --check` global falla por trailing whitespace/CRLF en `catalogo_servicios_inicial.csv`, archivo concurrente no modificado durante F21-H/I/J.
 
 ## Cambios Concurrentes Detectados
 
@@ -21,6 +21,7 @@ El arbol queda con cambios sin staging por instruccion del usuario. El cierre de
 - Cambios previos en navegacion, pruebas frontend/backend y rutas.
 - Cambios previos de hardening offline, backups, CSP y dependencias.
 - Cambios concurrentes finales en catalogo/seeders/rutas: `backend/database/seeders/ServiceCatalogSeeder.php`, `backend/database/seeders/data/catalogo_servicios_inicial.csv`, `catalogo_servicios_inicial.csv`, `database/seed_servicios_iniciales.sql`, `docs/FISCAL_RULES.md`, `frontend/src/routes.ts`.
+- Commits concurrentes observados al cierre: `a8705dd4 chore(offline): seeder slug fix, routes entries, reports, OFFLINE plan polish` y `0dab48f5 docs(offline): v1.1 matrix updated to Estado 2.5 cerrado 22 commits`.
 - No se sobrescribieron cambios concurrentes; las ediciones finales se limitaron a docs/reportes solicitados y fixes F21 ya identificados.
 
 ## Hallazgos Corregidos o Verificados

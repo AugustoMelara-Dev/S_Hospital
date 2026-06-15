@@ -22,7 +22,7 @@ No incluye expediente clinico, citas, consulta medica, triage, admisiones, labor
 ## Estado tecnico actual
 
 - Rama diagnosticada: `v1.1-critical-hardening-after-offline`.
-- HEAD observado al cierre F21: `bd39cbeaedfed48a5a8f76d01b127d4ec9a53f1b`.
+- HEAD observado al cierre F21: `0dab48f53077c039b084b41f8584d21684348892`.
 - Stack: Laravel API, React + TypeScript, MySQL/MariaDB local, Docker Compose.
 - Estado permitido de este cierre: `READY_FOR_REAL_LAN_INSTALLATION_TEST`.
 - Validacion de gates: registrada en `reports/BILLING_OFFLINE_READINESS_REPORT.md` y `reports/F21_FIX_AUDIT_FINDINGS_REPORT.md`.
