@@ -52,6 +52,17 @@ docker compose up -d mysql
 `scripts/quality_gate_destructive.sh` adds a `migrate:fresh --seed`
 reset, gated by `HOSPITAL_ALLOW_DESTRUCTIVE_RESET=1`.
 
+On Windows hosts with limited memory, use the non-destructive PowerShell gate:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\quality_gate_windows.ps1 -CriticalOnly
+```
+
+Use `-Full` to include the complete PHPUnit suite and serial full Vitest run.
+The critical gate is the RC fallback when a local full run is blocked by
+timeout/OOM; document the full-run failure and repeat it in CI or a larger
+machine before final release tagging.
+
 ## Secrets in CI
 
 The CI workflow uses only safe placeholders:

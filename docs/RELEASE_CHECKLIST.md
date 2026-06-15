@@ -18,6 +18,21 @@ impresora institucional y configuracion final del servidor real.
 
 El quality gate normal es no destructivo. No ejecuta `php artisan migrate:fresh --seed` contra el `.env` activo.
 
+En Windows con memoria limitada, el gate canonico de release candidate es:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\quality_gate_windows.ps1 -CriticalOnly
+```
+
+El gate completo de Windows es:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\quality_gate_windows.ps1 -Full
+```
+
+Ver `docs/QUALITY_GATES_WINDOWS.md` para el detalle de suites focales, modo
+serial de Vitest y politica cuando el gate completo falla por recursos.
+
 Nota de entorno: en la shell de trabajo del 2026-05-22, `composer` no estaba
 disponible en PATH, por lo que `composer validate` debe ejecutarse en una
 terminal con Composer instalado antes de cerrar release.

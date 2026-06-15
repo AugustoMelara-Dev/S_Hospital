@@ -3368,3 +3368,29 @@ Validacion:
 
 - powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\update_release_preflight.ps1 -ExpectedCurrentCommit 6508418d62ec25f0cea37221bfce7295977b7629 -AllowDirtyGit
 - git diff --check
+
+## 2026-06-15 - Gate RC Windows separa suites criticas y suite completa
+
+Contexto: la auditoria global pudo ejecutar suites focales, typecheck, lint,
+build, Pint y PHPStan, pero el full PHPUnit/Vitest no quedo reproducible en el
+host por timeout/OOM.
+
+Decision: se agrega `scripts/quality_gate_windows.ps1`, documentacion
+`docs/QUALITY_GATES_WINDOWS.md` y scripts frontend seriales
+`test:critical`/`test:full:windows`. El gate `-CriticalOnly` protege caja,
+facturacion, eritropoyetina, recibos institucionales, backups, permisos,
+typecheck, lint, build, Pint y PHPStan. El gate `-Full` agrega PHPUnit completo
+y Vitest completo serial.
+
+Motivo: el release candidate necesita un camino reproducible en Windows modesto
+sin ocultar fallas reales. Si el gate completo sigue fallando por recursos, se
+documenta y se repite en CI o en una maquina con mas memoria.
+
+Validacion:
+
+- npm.cmd run test:critical
+- npm.cmd run typecheck
+- npm.cmd run lint
+- npm.cmd run build
+- powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\quality_gate_windows.ps1 -CriticalOnly
+- git diff --check
