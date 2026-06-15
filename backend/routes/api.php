@@ -2,7 +2,6 @@
 
 use App\Actions\Reports\OpenApiExporter;
 use App\Http\Controllers\AreaController;
-use App\Http\Controllers\AreaPaidServiceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CashSessionController;
@@ -115,7 +114,6 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
         Route::patch('/categories/{category}', [CategoryController::class, 'update'])
             ->middleware('throttle.user:60,1');
         Route::get('/areas', [AreaController::class, 'index']);
-        Route::get('/area-services/paid', [AreaPaidServiceController::class, 'index']);
 
         Route::get('/service-areas', [ServiceAreaController::class, 'index']);
         Route::post('/service-areas', [ServiceAreaController::class, 'store']);

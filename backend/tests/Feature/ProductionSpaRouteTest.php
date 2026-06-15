@@ -49,7 +49,6 @@ class ProductionSpaRouteTest extends TestCase
                 '/billing/new',
                 '/cashbox',
                 '/catalog',
-                '/area-services',
                 '/invoices',
                 '/reports',
                 '/backups',
@@ -57,6 +56,7 @@ class ProductionSpaRouteTest extends TestCase
                 '/support',
                 '/about',
                 '/settings/fiscal',
+                '/settings/institutional-receipts',
                 '/admin/users',
             ] as $route) {
                 $this->get($route)
@@ -137,19 +137,21 @@ class ProductionSpaRouteTest extends TestCase
         File::put($indexPath, '<!doctype html><html><head><meta name="csp-nonce" content="__S_HOSPITAL_CSP_NONCE__"><script nonce="__S_HOSPITAL_CSP_NONCE__" src="/main.js"></script></head><body><div id="root"></div></body></html>');
 
         try {
-            $response = $this->get('/');
-            $response->assertOk();
+            foreach (['/', '/login', '/billing/new'] as $route) {
+                $response = $this->get($route);
+                $response->assertOk();
 
-            $body = $response->getContent();
-            $csp = (string) $response->headers->get('Content-Security-Policy');
+                $body = $response->getContent();
+                $csp = (string) $response->headers->get('Content-Security-Policy');
 
-            preg_match("/'nonce-([A-Fa-f0-9]{32})'/", $csp, $matches);
-            $this->assertNotEmpty($matches[1] ?? '', 'CSP nonce missing from response header.');
+                preg_match("/'nonce-([A-Fa-f0-9]{32})'/", $csp, $matches);
+                $this->assertNotEmpty($matches[1] ?? '', 'CSP nonce missing from response header.');
 
-            $expectedNonce = $matches[1];
-            $this->assertStringContainsString("<meta name=\"csp-nonce\" content=\"{$expectedNonce}\">", (string) $body);
-            $this->assertStringContainsString("<script nonce=\"{$expectedNonce}\" src=\"/main.js\"></script>", (string) $body);
-            $this->assertStringNotContainsString('__S_HOSPITAL_CSP_NONCE__', (string) $body);
+                $expectedNonce = $matches[1];
+                $this->assertStringContainsString("<meta name=\"csp-nonce\" content=\"{$expectedNonce}\">", (string) $body);
+                $this->assertStringContainsString("<script nonce=\"{$expectedNonce}\" src=\"/main.js\"></script>", (string) $body);
+                $this->assertStringNotContainsString('__S_HOSPITAL_CSP_NONCE__', (string) $body);
+            }
         } finally {
             if ($originalIndex === null) {
                 File::delete($indexPath);

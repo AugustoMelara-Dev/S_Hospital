@@ -72,7 +72,6 @@ Route::withoutMiddleware($statelessWebMiddleware)->group(function () use ($front
     Route::get('/billing/new', $frontendResponse);
     Route::get('/cashbox', $frontendResponse);
     Route::get('/catalog', $frontendResponse);
-    Route::get('/area-services', $frontendResponse);
     Route::get('/invoices', $frontendResponse);
     Route::get('/reports', $frontendResponse);
     Route::get('/backups', $frontendResponse);
@@ -80,6 +79,7 @@ Route::withoutMiddleware($statelessWebMiddleware)->group(function () use ($front
     Route::get('/support', $frontendResponse);
     Route::get('/about', $frontendResponse);
     Route::get('/settings/fiscal', $frontendResponse);
+    Route::get('/settings/institutional-receipts', $frontendResponse);
     Route::get('/admin/users', $frontendResponse);
 
     Route::get(

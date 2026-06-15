@@ -48,7 +48,6 @@ class RolesAndPermissionsSeeder extends Seeder
         'system.status.view',
         'audit.view',
         'patients.mark_dialysis_prescription',
-        'area_services.view',
     ];
 
     public function run(): void
@@ -123,10 +122,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'payments.view',
             'receipts.view',
             'receipts.reprint',
-        ]));
-
-        Role::findOrCreate('usuario_area', 'web')->syncPermissions($permissions->whereIn('name', [
-            'area_services.view',
         ]));
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();

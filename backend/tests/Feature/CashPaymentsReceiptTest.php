@@ -837,6 +837,58 @@ class CashPaymentsReceiptTest extends TestCase
         ]);
     }
 
+    public function test_voiding_payment_from_closed_cash_session_is_rejected_without_changing_report_snapshot(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $supervisor = User::factory()->create();
+        $supervisor->assignRole('supervisor');
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $paymentId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->json('data.payment.id');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", [
+                'closing_amount' => '517.25',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', CashRegisterSession::STATUS_CLOSED)
+            ->assertJsonPath('data.payments_total_snapshot', '17.25');
+
+        $this->actingAs($supervisor)
+            ->postJson("/api/invoices/{$invoiceId}/payments/{$paymentId}/void", [
+                'reason' => 'Correccion solicitada despues de cierre',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('cash_session');
+
+        $this->assertDatabaseHas('payments', [
+            'id' => $paymentId,
+            'status' => Payment::STATUS_POSTED,
+            'voided_by' => null,
+        ]);
+        $this->assertDatabaseMissing('cash_movements', [
+            'cash_session_id' => $sessionId,
+            'payment_id' => $paymentId,
+            'type' => CashMovement::TYPE_PAYMENT_VOID,
+        ]);
+
+        $this->actingAs($supervisor)
+            ->getJson("/api/reports/cash-sessions/{$sessionId}")
+            ->assertOk()
+            ->assertJsonPath('data.cash_session.status', CashRegisterSession::STATUS_CLOSED)
+            ->assertJsonPath('data.payments_total', '17.25')
+            ->assertJsonPath('data.payments_count', 1);
+    }
+
     public function test_permissions_are_required_for_cash_and_payments(): void
     {
         $this->seedBillingBase();

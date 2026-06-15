@@ -6,6 +6,7 @@ use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
 use App\Models\InstitutionalReceipt;
+use App\Models\InstitutionalReceiptPrintEvent;
 use App\Models\InstitutionalReceiptSeries;
 use App\Models\Payment;
 use App\Models\Service;
@@ -178,6 +179,109 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
             $this->assertArrayNotHasKey('profile_snapshot', $receiptSummary);
             $this->assertArrayNotHasKey('items_snapshot', $receiptSummary);
         }
+    }
+
+    public function test_institutional_receipt_pdf_get_does_not_mutate_print_audit(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $receiptId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->json('data.institutional_receipt.id');
+
+        $this->actingAs($cashier)
+            ->get("/api/institutional-receipts/{$receiptId}/pdf")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $this->assertDatabaseHas('institutional_receipts', [
+            'id' => $receiptId,
+            'reprint_count' => 0,
+        ]);
+        $this->assertSame(0, InstitutionalReceiptPrintEvent::query()->where('institutional_receipt_id', $receiptId)->count());
+    }
+
+    public function test_explicit_print_event_records_first_print_and_idempotent_replay(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $receiptId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->json('data.institutional_receipt.id');
+
+        $first = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'receipt-print-1'])
+            ->postJson("/api/institutional-receipts/{$receiptId}/print-events")
+            ->assertCreated()
+            ->assertJsonPath('data.event.event_type', InstitutionalReceiptPrintEvent::TYPE_ISSUED_PRINT)
+            ->assertJsonPath('data.receipt.reprint_count', 0)
+            ->json('data.event.id');
+
+        $second = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'receipt-print-1'])
+            ->postJson("/api/institutional-receipts/{$receiptId}/print-events")
+            ->assertCreated()
+            ->assertHeader('Idempotent-Replay', 'true')
+            ->json('data.event.id');
+
+        $this->assertSame($first, $second);
+        $this->assertSame(1, InstitutionalReceiptPrintEvent::query()->where('institutional_receipt_id', $receiptId)->count());
+    }
+
+    public function test_reprint_event_requires_reason_and_increments_only_through_post(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier);
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $receiptId = $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '17.25',
+            ])
+            ->assertCreated()
+            ->json('data.institutional_receipt.id');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/institutional-receipts/{$receiptId}/print-events")
+            ->assertCreated();
+
+        $this->actingAs($cashier)
+            ->get("/api/institutional-receipts/{$receiptId}/pdf")
+            ->assertOk();
+
+        $this->actingAs($cashier)
+            ->postJson("/api/institutional-receipts/{$receiptId}/print-events")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/institutional-receipts/{$receiptId}/print-events", [
+                'reason' => 'Reimpresion solicitada por extravio del comprobante',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.event.event_type', InstitutionalReceiptPrintEvent::TYPE_REPRINT)
+            ->assertJsonPath('data.receipt.reprint_count', 1);
+
+        $this->assertDatabaseCount('institutional_receipt_print_events', 2);
     }
 
     private function seedBillingBase(bool $partialPayments = false): void
