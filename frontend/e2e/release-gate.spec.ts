@@ -30,7 +30,7 @@ test.afterAll(() => {
   }, null, 2));
 });
 
-test('release gate cashier can issue, collect, preview receipt and surface reports', async ({ page, browser }) => {
+test('release gate cashier can issue, collect, show receipt and surface reports', async ({ page, browser }) => {
   const consoleIssues: string[] = [];
   const patientName = `E2E Release Gate ${Date.now()}`;
 
@@ -67,7 +67,8 @@ test('release gate cashier can issue, collect, preview receipt and surface repor
   await page.getByLabel(/ver preview antes de imprimir/i).check();
   await page.getByLabel(/monto recibido/i).fill('17.25');
   await page.getByRole('button', { name: /confirmar cobro y ver preview|registrar cobro y ver preview/i }).click();
-  await expect(page.getByRole('heading', { name: /vista previa del recibo/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /comprobante de factura/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /recibo institucional/i })).toBeVisible();
   await expect(page.getByText(patientName)).toBeVisible();
 
   const persisted = await page.evaluate(async (patient) => {
@@ -97,7 +98,7 @@ test('release gate cashier can issue, collect, preview receipt and surface repor
   expect(consoleIssues, consoleIssues.join('\n')).toEqual([]);
 
   releaseResults.push({
-    name: 'release gate cashier can issue, collect, preview receipt and surface reports',
+    name: 'release gate cashier can issue, collect, show receipt and surface reports',
     status: 'passed',
     patient_name: patientName,
     invoice_number: invoice?.invoice_number,

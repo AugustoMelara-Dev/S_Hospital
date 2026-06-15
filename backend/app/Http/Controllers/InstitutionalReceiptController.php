@@ -39,7 +39,13 @@ class InstitutionalReceiptController extends Controller
 
         abort_unless($user instanceof User && $user->can('receipts.view'), 403);
         $receipt->loadMissing('invoice');
-        $this->authorizeReceiptView($user, $receipt, $invoiceAccess);
+        $hasPreviousPrint = $receipt->printEvents()->exists();
+
+        if ($hasPreviousPrint) {
+            $this->authorizeReprint($request, $receipt, $invoiceAccess);
+        } else {
+            $this->authorizeReceiptView($user, $receipt, $invoiceAccess);
+        }
 
         if ($receipt->status !== InstitutionalReceipt::STATUS_ISSUED) {
             throw ValidationException::withMessages([
@@ -48,6 +54,12 @@ class InstitutionalReceiptController extends Controller
         }
 
         $pdf = $pdfService->pdfForReceipt($receipt);
+        $pdfService->recordReceiptPrintEvent(
+            $receipt,
+            $user,
+            $hasPreviousPrint ? $this->reprintReason($request) : null,
+        );
+
         $filename = 'recibo-institucional-'.$receipt->receipt_number_full.'.pdf';
 
         return response($pdf, 200, [

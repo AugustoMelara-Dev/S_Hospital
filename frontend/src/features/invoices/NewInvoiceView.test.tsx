@@ -428,6 +428,19 @@ describe('NewInvoiceView', () => {
         } as Response;
       }
 
+      if (url.includes('/api/institutional-receipts/90/print-events') && method === 'POST') {
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({
+            data: {
+              event: { id: 1, event_type: 'issued_print' },
+              receipt: { id: 90, receipt_number_full: 'REC-A-00000001', reprint_count: 0 },
+            },
+          }),
+        } as Response;
+      }
+
       if (url.endsWith('/api/invoices') && method === 'POST') {
         return { ok: true, json: async () => ({ data: issuedInvoice }) } as Response;
       }

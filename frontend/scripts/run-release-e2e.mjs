@@ -11,6 +11,7 @@ const artifactDir = resolve(frontendDir, 'test-results', 'release-e2e');
 const sqlitePath = resolve(backendDir, 'storage', 'framework', 'testing', 'e2e-release.sqlite');
 const backendUrl = process.env.E2E_RELEASE_API_BASE_URL ?? 'http://127.0.0.1:18081';
 const frontendUrl = process.env.E2E_RELEASE_BASE_URL ?? 'http://127.0.0.1:5174';
+const e2eReleasePassword = process.env.E2E_RELEASE_PASSWORD ?? 'Password123!';
 
 mkdirSync(artifactDir, { recursive: true });
 mkdirSync(dirname(sqlitePath), { recursive: true });
@@ -33,6 +34,7 @@ const backendEnv = {
   PULSE_ENABLED: 'false',
   TELESCOPE_ENABLED: 'false',
   NIGHTWATCH_ENABLED: 'false',
+  E2E_SEED_PASSWORD: process.env.E2E_SEED_PASSWORD ?? e2eReleasePassword,
 };
 
 const frontendEnv = {
@@ -43,7 +45,7 @@ const frontendEnv = {
   E2E_RELEASE_BASE_URL: frontendUrl,
   E2E_RELEASE_API_BASE_URL: backendUrl,
   E2E_RELEASE_LOGIN: process.env.E2E_RELEASE_LOGIN ?? 'cajero.e2e',
-  E2E_RELEASE_PASSWORD: process.env.E2E_RELEASE_PASSWORD ?? 'Password123!',
+  E2E_RELEASE_PASSWORD: e2eReleasePassword,
   E2E_RELEASE_ALLOW_MUTATIONS: '1',
   E2E_RELEASE_REPORT_PATH: resolve(frontendDir, 'test-results', 'release-e2e-report.json'),
 };

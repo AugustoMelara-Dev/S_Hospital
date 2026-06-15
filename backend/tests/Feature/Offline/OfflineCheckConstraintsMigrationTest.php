@@ -2,10 +2,8 @@
 
 namespace Tests\Feature\Offline;
 
-use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
-use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;

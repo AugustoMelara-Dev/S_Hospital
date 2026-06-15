@@ -5,7 +5,6 @@ namespace Tests\Feature\Payments;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
-use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\User;
@@ -36,7 +35,7 @@ class VoidPaymentAgainstClosedCashSessionTest extends TestCase
 
         $response = $this->actingAs($cashier)
             ->postJson("/api/payments/{$paymentId}/void", [
-                'reason' => 'Test',
+                'reason' => 'Caja cerrada prueba',
             ]);
 
         $response->assertStatus(422);
@@ -44,7 +43,7 @@ class VoidPaymentAgainstClosedCashSessionTest extends TestCase
 
         $this->assertDatabaseHas('payments', [
             'id' => $paymentId,
-            'status' => Payment::STATUS_ACTIVE,
+            'status' => Payment::STATUS_POSTED,
         ]);
     }
 
@@ -95,6 +94,7 @@ class VoidPaymentAgainstClosedCashSessionTest extends TestCase
     {
         $cashier = User::factory()->create();
         $cashier->assignRole('cajero');
+        $cashier->givePermissionTo('payments.void');
 
         return $cashier->refresh();
     }
@@ -133,6 +133,6 @@ class VoidPaymentAgainstClosedCashSessionTest extends TestCase
             ->assertCreated()
             ->json('data');
 
-        return (int) $payment['id'];
+        return (int) $payment['payment']['id'];
     }
 }

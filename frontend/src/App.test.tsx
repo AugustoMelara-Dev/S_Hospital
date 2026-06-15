@@ -574,7 +574,8 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /soporte/i })).toHaveAttribute('href', '/support');
+    expect(screen.queryByRole('link', { name: /soporte/i })).not.toBeInTheDocument();
+    expect(screen.getAllByText(/soporte/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/cajero/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/servidor o red local no responde/i)).toBeInTheDocument();
   });
