@@ -1,5 +1,7 @@
 # Release checklist - validacion operativa y produccion real
 
+> v1.1 (2026-06-15): dictamen escalado a `Estado 2.5` (hardening tecnico listo). Faltan 4 PENDING fisicos para `Estado 3` (despliegue local controlado): LAN desde segunda PC, impresion fisica, formato de captura manual, acta firmada.
+
 Estado actual documentado: `PRODUCTION_CANDIDATE`. No declarar
 `PRODUCTION_READY` hasta cerrar validacion fisica de cliente LAN, hardware de
 impresora institucional y configuracion final del servidor real.

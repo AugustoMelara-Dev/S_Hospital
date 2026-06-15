@@ -1,5 +1,7 @@
 ﻿# Backup y Restore Local - Sistema de Caja Hospitalaria
 
+> Actualizado v1.1 (2026-06-15): backups finales cifrados en reposo, restore con SHA256, log retention 90 dias, queue worker --memory=256. Ver `docs/DECISIONS.md` 2026-06-15.
+
 ## Alcance de Fase 8
 
 El sistema permite crear y descargar backups locales desde admin y con `php artisan hospital:backup`. No existe restore por UI ni endpoint destructivo de restore en esta fase.

@@ -1,5 +1,7 @@
 # Secrets and credentials management
 
+> Actualizado v1.1 (2026-06-15): validacion endurecida en `production_readiness_preflight.ps1` (APP_DEBUG, APP_KEY, DB_PASSWORD, HOSPITAL_INITIAL_ADMIN_PASSWORD >= 14 chars). `composer audit` agregado a CI.
+
 This document defines how secrets, credentials and keys are managed across
 the S_Hospital system. It is the source of truth for the install scripts,
 the pre-commit guard, and the production readiness preflight.

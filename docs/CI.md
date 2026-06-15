@@ -9,7 +9,7 @@ Four jobs run in parallel where possible:
 
 | Job | What it does | Database | Timeout |
 |---|---|---|---|
-| `backend-sqlite` | PHPUnit + Pint + PHPStan + PowerShell tests | SQLite in-memory | 20 min |
+| `backend-sqlite` | PHPUnit + Pint + PHPStan + PowerShell tests + composer audit | SQLite in-memory | 20 min |
 | `backend-mariadb` | Full PHPUnit suite against a real MariaDB 11.4 service container | MariaDB 11.4 | 30 min |
 | `frontend` | `npm run typecheck`, `npm run lint`, Vitest, Vite build | n/a | 20 min |
 | `e2e-mocked` | Playwright production-readiness spec (route-mocked) | n/a | 25 min |
