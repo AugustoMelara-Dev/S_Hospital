@@ -120,16 +120,18 @@ class SystemStatusTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
         $admin = $this->admin();
 
-        BackupLog::query()->create([
+        $backup = BackupLog::query()->create([
             'filename' => 'hospital-backup-stale.sql',
             'path' => 'backups/hospital-backup-stale.sql',
             'disk' => 'local',
             'status' => BackupLog::STATUS_PENDING,
             'type' => BackupLog::TYPE_MANUAL,
             'created_by' => $admin->id,
+        ]);
+        $backup->forceFill([
             'created_at' => now()->subMinutes(20),
             'updated_at' => now()->subMinutes(20),
-        ]);
+        ])->save();
 
         $response = $this->actingAs($admin)
             ->getJson('/api/system/status')

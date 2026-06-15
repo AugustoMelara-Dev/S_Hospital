@@ -129,7 +129,7 @@ class InstitutionalReceiptPdfTest extends TestCase
         $this->assertStringContainsString('font-family: Arial, sans-serif;', $html);
     }
 
-    public function test_receipt_pdf_endpoint_requires_permission_streams_pdf_and_records_event(): void
+    public function test_receipt_pdf_endpoint_requires_permission_streams_pdf_without_recording_event(): void
     {
         $context = $this->createIssuedReceiptContext();
         $user = $context['user'];
@@ -166,11 +166,7 @@ class InstitutionalReceiptPdfTest extends TestCase
 
         $this->assertStringContainsString('El', $capturedHtml);
         $this->assertSame([0, 0, 612, 396], $capturedPaper);
-        $this->assertDatabaseHas('institutional_receipt_print_events', [
-            'institutional_receipt_id' => $receipt->id,
-            'event_type' => InstitutionalReceiptPrintEvent::TYPE_ISSUED_PRINT,
-            'user_id' => $user->id,
-        ]);
+        $this->assertSame(0, InstitutionalReceiptPrintEvent::query()->where('institutional_receipt_id', $receipt->id)->count());
     }
 
     public function test_cashier_cannot_stream_other_cashiers_receipt_pdf(): void
@@ -184,7 +180,7 @@ class InstitutionalReceiptPdfTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_repeated_receipt_pdf_requires_reprint_permission_reason_and_tracks_reprint(): void
+    public function test_print_event_endpoint_tracks_first_print_and_reprint_with_reason(): void
     {
         $context = $this->createIssuedReceiptContext();
         $user = $context['user'];
@@ -207,13 +203,25 @@ class InstitutionalReceiptPdfTest extends TestCase
             ->assertOk();
 
         $this->actingAs($user)
+            ->postJson("/api/institutional-receipts/{$receipt->id}/print-events")
+            ->assertCreated()
+            ->assertJsonPath('data.event.event_type', InstitutionalReceiptPrintEvent::TYPE_ISSUED_PRINT);
+
+        $this->actingAs($user)
             ->get("/api/institutional-receipts/{$receipt->id}/pdf")
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->postJson("/api/institutional-receipts/{$receipt->id}/print-events")
             ->assertUnprocessable()
             ->assertJsonValidationErrors('reason');
 
         $this->actingAs($user)
-            ->get("/api/institutional-receipts/{$receipt->id}/pdf?reason=Reposicion%20solicitada")
-            ->assertOk();
+            ->postJson("/api/institutional-receipts/{$receipt->id}/print-events", [
+                'reason' => 'Reposicion solicitada',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.event.event_type', InstitutionalReceiptPrintEvent::TYPE_REPRINT);
 
         $this->assertSame(1, $receipt->fresh()->reprint_count);
         $this->assertDatabaseHas('institutional_receipt_print_events', [

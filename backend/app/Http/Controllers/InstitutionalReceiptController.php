@@ -48,7 +48,6 @@ class InstitutionalReceiptController extends Controller
         }
 
         $pdf = $pdfService->pdfForReceipt($receipt);
-
         $filename = 'recibo-institucional-'.$receipt->receipt_number_full.'.pdf';
 
         return response($pdf, 200, [

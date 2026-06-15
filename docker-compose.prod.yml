@@ -129,7 +129,7 @@ services:
       context: .
       dockerfile: ./backend/Dockerfile.prod
     restart: unless-stopped
-    command: php artisan queue:work --queue=backups --tries=1 --timeout=600
+    command: php artisan queue:work --queue=backups --tries=1 --timeout=600 --memory=256
     environment:
       APP_ENV: production
       APP_DEBUG: "false"

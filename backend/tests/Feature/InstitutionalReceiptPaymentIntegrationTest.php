@@ -244,7 +244,7 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
         $this->assertSame(1, InstitutionalReceiptPrintEvent::query()->where('institutional_receipt_id', $receiptId)->count());
     }
 
-    public function test_reprint_event_requires_reason_and_increments_only_through_post(): void
+    public function test_reprint_event_requires_reason_after_first_print(): void
     {
         $this->seedBillingBase();
         $cashier = $this->cashier();
@@ -266,7 +266,10 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
 
         $this->actingAs($cashier)
             ->get("/api/institutional-receipts/{$receiptId}/pdf")
-            ->assertOk();
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $this->assertSame(1, InstitutionalReceiptPrintEvent::query()->where('institutional_receipt_id', $receiptId)->count());
 
         $this->actingAs($cashier)
             ->postJson("/api/institutional-receipts/{$receiptId}/print-events")
