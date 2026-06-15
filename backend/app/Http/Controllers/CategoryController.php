@@ -6,6 +6,7 @@ use App\Http\Requests\Catalog\IndexCategoryRequest;
 use App\Http\Requests\Catalog\StoreCategoryRequest;
 use App\Http\Requests\Catalog\UpdateCategoryRequest;
 use App\Models\Category;
+use App\Support\AuditLogger;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Catalog\IndexServiceRequest;
 use App\Http\Requests\Catalog\StoreServiceRequest;
 use App\Http\Requests\Catalog\UpdateServiceRequest;
+use App\Models\AuditLog;
 use App\Models\Service;
 use App\Models\ServicePriceHistory;
 use App\Support\ServiceSearch;

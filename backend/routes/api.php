@@ -156,7 +156,6 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
         Route::get('/reports/categories', [ReportController::class, 'categories']);
         Route::get('/reports/areas', [ReportController::class, 'areas']);
         Route::get('/reports/services', [ReportController::class, 'services']);
-        Route::get('/reports/areas', [ReportController::class, 'areas']);
         Route::get('/reports/operations', [ReportController::class, 'operations']);
         Route::get('/reports/export', [ReportController::class, 'export'])
             ->middleware('throttle.user:30,1');

@@ -6,6 +6,7 @@ use App\Models\Area;
 use App\Models\AuditLog;
 use App\Models\Category;
 use App\Models\Service;
+use App\Models\ServiceArea;
 use App\Models\ServicePriceHistory;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -353,11 +354,10 @@ class ServiceCatalogTest extends TestCase
             'active' => true,
             'sort_order' => 1,
         ]);
-        $area = ServiceArea::query()->create([
+        $area = Area::query()->create([
             'name' => 'Laboratorio',
             'slug' => 'laboratorio',
             'active' => true,
-            'sort_order' => 1,
         ]);
 
         $serviceId = $this->actingAs($admin)
@@ -368,7 +368,7 @@ class ServiceCatalogTest extends TestCase
                 'price' => '80.00',
                 'taxable' => true,
                 'active' => true,
-                'aliases' => ['urico', 'au'],
+                'aliases' => 'urico, au',
                 'description' => 'Examen de laboratorio',
                 'internal_code' => 'LAB-AU',
                 'print_on_receipt' => true,
@@ -377,7 +377,7 @@ class ServiceCatalogTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('data.area.name', 'Laboratorio')
-            ->assertJsonPath('data.aliases.0', 'urico')
+            ->assertJsonPath('data.aliases', 'urico, au')
             ->assertJsonPath('data.internal_code', 'LAB-AU')
             ->assertJsonPath('data.visible_in_billing', true)
             ->json('data.id');
@@ -433,7 +433,7 @@ class ServiceCatalogTest extends TestCase
 
         $this->actingAs($admin)
             ->patchJson("/api/services/{$glucose->id}", [
-                'aliases' => ['azucar en sangre', 'glicemia'],
+                'aliases' => 'azucar en sangre, glicemia',
                 'internal_code' => 'LAB-GLU',
                 'area_id' => $laboratory->id,
             ])

@@ -12,6 +12,8 @@ use App\Models\Service;
 use App\Models\User;
 use App\Support\Money;
 use App\Support\ReceiptPaperSize;
+use App\Support\AuditLogger;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -135,7 +137,7 @@ class CreateInvoiceAction
                     'status' => $invoice->status,
                     'cash_session_id' => $cashSession->id,
                 ],
-            );
+            ]);
 
             if ($idempotencyKey !== null) {
                 OperationIdempotencyKey::query()->create([

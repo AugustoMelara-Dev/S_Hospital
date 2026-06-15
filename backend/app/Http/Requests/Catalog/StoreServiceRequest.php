@@ -11,6 +11,18 @@ use Illuminate\Validation\Validator;
 
 class StoreServiceRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if (is_array($this->input('aliases'))) {
+            $this->merge([
+                'aliases' => implode(', ', array_values(array_filter(
+                    $this->input('aliases'),
+                    fn ($alias): bool => is_string($alias) && trim($alias) !== '',
+                ))),
+            ]);
+        }
+    }
+
     public function authorize(): bool
     {
         return $this->user()?->can('catalog.manage') === true;
