@@ -59,6 +59,17 @@ export function NewInvoiceView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Dirty guard: warn if user tries to close tab/window with items in cart
+  useEffect(() => {
+    const isDirty = state.cartItems.length > 0;
+    if (!isDirty) return;
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault();
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [state.cartItems.length]);
+
   useEffect(() => {
     if (!canViewCatalog) {
       return;

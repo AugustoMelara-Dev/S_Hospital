@@ -49,6 +49,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
 
+            if ($exception instanceof \Illuminate\Database\QueryException && $exception->getCode() === '23000' && str_contains($exception->getMessage(), '1451')) {
+                return response()->json([
+                    'message' => 'No se puede eliminar el registro porque está en uso o tiene datos relacionados.',
+                    'code' => 'CONFLICT'
+                ], 409);
+            }
+
             return null;
         });
 

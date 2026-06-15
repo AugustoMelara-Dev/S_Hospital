@@ -16,7 +16,7 @@ class PrepareE2eReleaseDataCommandTest extends TestCase
 
     public function test_it_prepares_idempotent_non_production_e2e_data(): void
     {
-        $this->artisan('hospital:prepare-e2e-release-data', ['--json' => true])
+        $this->artisan('hospital:prepare-e2e-release-data', ['--json' => true, '--password' => 'TestPassword@E2E!'])
             ->assertSuccessful();
 
         $cashier = User::query()->where('username', 'cajero.e2e')->firstOrFail();
@@ -46,7 +46,7 @@ class PrepareE2eReleaseDataCommandTest extends TestCase
             ->where('status', CashRegisterSession::STATUS_OPEN)
             ->count());
 
-        $this->artisan('hospital:prepare-e2e-release-data', ['--json' => true])
+        $this->artisan('hospital:prepare-e2e-release-data', ['--json' => true, '--password' => 'TestPassword@E2E!'])
             ->assertSuccessful();
 
         $this->assertSame(1, CashRegisterSession::query()
@@ -54,5 +54,12 @@ class PrepareE2eReleaseDataCommandTest extends TestCase
             ->where('status', CashRegisterSession::STATUS_OPEN)
             ->count());
         $this->assertSame('Hospital San Isidro E2E', FiscalSetting::query()->firstOrFail()->hospital_name);
+    }
+
+    public function test_command_fails_without_password(): void
+    {
+        $this->artisan('hospital:prepare-e2e-release-data', ['--json' => true])
+            ->assertFailed()
+            ->expectsOutput('The E2E seed password must be provided via --password or E2E_SEED_PASSWORD.');
     }
 }

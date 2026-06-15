@@ -79,7 +79,13 @@ if not exist "%~dp0backend\.env" (
     copy "%~dp0backend\.env.docker.example" "%~dp0backend\.env" > nul
 )
 
+if not exist "%~dp0.env" (
+    echo Generando credenciales seguras de base de datos...
+    powershell -NoProfile -Command "$chars='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.ToCharArray(); $pass=($chars | Sort-Object {Get-Random} | Select-Object -First 24) -join ''; $rootpass=($chars | Sort-Object {Get-Random} | Select-Object -First 24) -join ''; Set-Content -Path '%~dp0.env' -Value ('DB_PASSWORD='+$pass+[Environment]::NewLine+'DB_ROOT_PASSWORD='+$rootpass)"
+)
+
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$path='%~dp0backend\.env'; $content=Get-Content -Raw $path; $ip='%SERVER_IP%'; $pairs=@{APP_URL='http://'+$ip+':8000'; CACHE_STORE='file'; SANCTUM_STATEFUL_DOMAINS='localhost,localhost:3000,localhost:5173,127.0.0.1,127.0.0.1:8000,127.0.0.1:5173,'+$ip+','+$ip+':8000,::1'}; foreach ($key in $pairs.Keys) { $value=$pairs[$key]; if ($content -match ('(?m)^'+[regex]::Escape($key)+'=')) { $content=[regex]::Replace($content,'(?m)^'+[regex]::Escape($key)+'=.*',$key+'='+$value) } else { $content=$content.TrimEnd()+[Environment]::NewLine+$key+'='+$value+[Environment]::NewLine } }; Set-Content -Path $path -Value $content -NoNewline"
+
 
 docker compose up -d backend mysql
 if %errorlevel% neq 0 (
