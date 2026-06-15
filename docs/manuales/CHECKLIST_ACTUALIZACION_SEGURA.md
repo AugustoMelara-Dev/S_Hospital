@@ -89,6 +89,73 @@ Registrar antes/despues:
 - [ ] Criterio de rollback definido:
 - [ ] Resultado final: aceptado / rollback / detenido.
 
+### Procedimiento de rollback (oficial)
+
+Si la actualizacion falla o el preflight reporta bloqueantes, ejecutar el rollback
+orquestado con `scripts\rollback_update.ps1` (Windows) o
+`scripts/rollback_update.sh` (Linux). NUNCA rollback manual sin este script.
+
+**Paso 1 - SelfTest** (verifica entorno, no toca nada):
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\rollback_update.ps1 -SelfTest
+```
+
+**Paso 2 - WhatIf** (simula sin modificar):
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\rollback_update.ps1 `
+  -BackupFile C:\backups\hospital-2026-06-14.sql.enc `
+  -ExpectedSha256 5975701b3c288ae4b9cd4e75d1881a38173e2bc3c3e799bc4b77ab7ac3630362 `
+  -PreviousReleasePath C:\releases\hospital-2026-06-10 `
+  -WhatIf
+```
+
+**Paso 3 - Validacion en base descartable** (siempre, antes de produccion):
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\rollback_update.ps1 `
+  -BackupFile C:\backups\hospital-2026-06-14.sql.enc `
+  -ExpectedSha256 5975701b3c288ae4b9cd4e75d1881a38173e2bc3c3e799bc4b77ab7ac3630362 `
+  -PreviousReleasePath C:\releases\hospital-2026-06-10 `
+  -TargetDatabase hospital_rollback_validation `
+  -UseExistingEnv
+```
+
+**Paso 4 - Rollback de produccion** (solo si la validacion pasa y el
+responsable tecnico lo autoriza):
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\rollback_update.ps1 `
+  -BackupFile C:\backups\hospital-2026-06-14.sql.enc `
+  -ExpectedSha256 5975701b3c288ae4b9cd4e75d1881a38173e2bc3c3e799bc4b77ab7ac3630362 `
+  -PreviousReleasePath C:\releases\hospital-2026-06-10 `
+  -TargetDatabase hospital_billing `
+  -UseExistingEnv `
+  -ForceProductionRestore
+```
+
+El script exigira la confirmacion textual `ROLLBACK` antes de continuar.
+
+### Que hace el script
+
+1. Crea snapshot del codigo actual en `install-logs/rollback_code_YYYYMMDD_HHMMSS/`.
+2. Valida SHA256 del backup (rechaza si no coincide).
+3. Restaura `backend/` y `frontend/` desde `PreviousReleasePath`.
+4. Restaura la base de datos con `restore_hospital_windows.ps1` (que ya exige
+   `-ExpectedSha256` y maneja `.sql.enc` descifrado a temporal controlado).
+5. Ejecuta `production_readiness_preflight.ps1` (omite pruebas fisicas).
+6. Deja el log en `install-logs/rollback_update_*.log`.
+
+### Despues del rollback
+
+- [ ] Validar `/up` y `/login` desde una estacion cliente.
+- [ ] Confirmar que las facturas y pagos previos siguen visibles.
+- [ ] Documentar fecha, SHA256, responsable y motivo en
+      `qa/INCIDENT-YYYY-MM-DD.md`.
+- [ ] Mantener el snapshot de codigo en `install-logs/` hasta confirmar que
+      no se necesita.
+
 ## Cierre
 
 - [ ] Evidencia guardada en `qa/` o carpeta de soporte.
