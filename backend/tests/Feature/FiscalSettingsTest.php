@@ -119,6 +119,7 @@ class FiscalSettingsTest extends TestCase
     public function test_guest_cannot_view_full_fiscal_settings_but_can_view_public_branding(): void
     {
         FiscalSetting::query()->create([
+            'receipt_template_mode' => 'thermal',
             ...$this->validPayload(),
             'scanner_enabled' => true,
             'partial_payments_enabled' => true,
@@ -140,6 +141,7 @@ class FiscalSettingsTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
 
         FiscalSetting::query()->create([
+            'receipt_template_mode' => 'thermal',
             ...$this->validPayload(),
             'scanner_enabled' => true,
             'partial_payments_enabled' => true,

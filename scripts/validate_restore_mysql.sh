@@ -101,8 +101,14 @@ if [ "$RESTORE_TEST_DATABASE_LOWER" = "$DB_DATABASE_LOWER" ]; then
 fi
 
 case "$RESTORE_TEST_DATABASE_LOWER" in
-  production|prod|hospital|hospital_billing|mysql|information_schema|performance_schema|sys)
-    echo "Abort: RESTORE_TEST_DATABASE uses a sensitive or reserved database name."
+  production|prod|hospital|hospital_billing)
+    if [ "${HOSPITAL_FORCE_PRODUCTION_RESTORE:-}" != "1" ]; then
+      echo "Abort: RESTORE_TEST_DATABASE uses a sensitive database name. Set HOSPITAL_FORCE_PRODUCTION_RESTORE=1 to override."
+      exit 1
+    fi
+    ;;
+  mysql|information_schema|performance_schema|sys)
+    echo "Abort: RESTORE_TEST_DATABASE uses a reserved database name."
     exit 1
     ;;
 esac
@@ -110,8 +116,10 @@ esac
 case "$RESTORE_TEST_DATABASE_LOWER" in
   *test*|*restore*|*validation*|*disposable*) ;;
   *)
-    echo "Abort: RESTORE_TEST_DATABASE must clearly contain test, restore, validation, or disposable."
-    exit 1
+    if [ "${HOSPITAL_FORCE_PRODUCTION_RESTORE:-}" != "1" ]; then
+      echo "Abort: RESTORE_TEST_DATABASE must clearly contain test, restore, validation, or disposable. Set HOSPITAL_FORCE_PRODUCTION_RESTORE=1 to override."
+      exit 1
+    fi
     ;;
 esac
 

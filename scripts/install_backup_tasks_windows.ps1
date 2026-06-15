@@ -226,6 +226,7 @@ Register-ScheduledTask `
     -Action $workerAction `
     -Trigger $workerTrigger `
     -Settings $workerSettings `
+    -User "SYSTEM" `
     -Description "Sistema de Caja Hospitalaria continuous backup queue worker." | Out-Null
 
 $dailyAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $backupArgs -WorkingDirectory $ProjectRoot
@@ -237,6 +238,7 @@ Register-ScheduledTask `
     -Action $dailyAction `
     -Trigger $dailyTrigger `
     -Settings $dailySettings `
+    -User "SYSTEM" `
     -Description "Sistema de Caja Hospitalaria scheduled local database backup." | Out-Null
 
 Write-Host "Tareas programadas registradas."

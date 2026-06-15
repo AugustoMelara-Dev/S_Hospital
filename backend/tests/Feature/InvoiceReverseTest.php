@@ -231,6 +231,7 @@ class InvoiceReverseTest extends TestCase
     {
         $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
         FiscalSetting::query()->create([
+            'receipt_template_mode' => 'thermal',
             'hospital_name' => 'Hospital San Isidro',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',

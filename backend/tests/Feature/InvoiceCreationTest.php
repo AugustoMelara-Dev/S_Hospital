@@ -433,6 +433,7 @@ class InvoiceCreationTest extends TestCase
     private function createFiscalSettings(): void
     {
         FiscalSetting::query()->create([
+            'receipt_template_mode' => 'thermal',
             'hospital_name' => 'Hospital San Isidro',
             'rtn' => '08011999123456',
             'default_tax_rate' => '15.00',

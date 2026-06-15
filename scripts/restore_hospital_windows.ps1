@@ -31,7 +31,10 @@ param(
     [string]$TargetDatabase = "hospital_billing_test",
 
     [Parameter(Mandatory=$false)]
-    [switch]$UseExistingEnv
+    [switch]$UseExistingEnv,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$ForceProductionRestore
 )
 
 $ErrorActionPreference = "Stop"
@@ -164,14 +167,22 @@ function Get-DatabaseConfig {
 }
 
 function Test-DisposableDatabaseName {
-    param([string]$Database)
+    param(
+        [string]$Database,
+        [switch]$ForceProduction
+    )
 
     if ($Database -notmatch '^[A-Za-z0-9_]+$') {
         return $false
     }
 
     $lower = $Database.ToLowerInvariant()
-    if ($lower -in @('hospital_billing', 'hospital_billing_production', 'mysql', 'information_schema', 'performance_schema', 'sys')) {
+    
+    if ($lower -in @('hospital_billing', 'hospital_billing_production')) {
+        return [bool]$ForceProduction
+    }
+    
+    if ($lower -in @('mysql', 'information_schema', 'performance_schema', 'sys')) {
         return $false
     }
 
@@ -185,7 +196,10 @@ function Test-SafeMysqlArgument {
 }
 
 function Assert-SafeConnectionConfig {
-    param([hashtable]$Config)
+    param(
+        [hashtable]$Config,
+        [switch]$ForceProduction
+    )
 
     if (-not (Test-SafeMysqlArgument ([string]$Config.Host))) {
         Write-Error "Host de base de datos contiene caracteres no permitidos."
@@ -202,9 +216,9 @@ function Assert-SafeConnectionConfig {
         exit 1
     }
 
-    if (-not (Test-DisposableDatabaseName ([string]$Config.Database))) {
-        Write-Error "La base de datos '$($Config.Database)' no parece ser de prueba."
-        Write-Error "Use un nombre como 'hospital_billing_test' o 'hospital_restore_validation'."
+    if (-not (Test-DisposableDatabaseName -Database ([string]$Config.Database) -ForceProduction:$ForceProduction)) {
+        Write-Error "La base de datos '$($Config.Database)' no parece ser de prueba o no se uso el flag --ForceProductionRestore."
+        Write-Error "Use un nombre como 'hospital_billing_test' o 'hospital_restore_validation', o agregue -ForceProductionRestore si esta seguro."
         exit 1
     }
 }
@@ -269,9 +283,9 @@ Write-Warning "ADVERTENCIA: Este proceso sobreescribe datos."
 Write-Warning "Usar SOLO en base de datos de prueba o desarrollo."
 Write-Host ""
 
-if (-not (Test-DisposableDatabaseName $TargetDatabase)) {
+if (-not (Test-DisposableDatabaseName -Database $TargetDatabase -ForceProduction:$ForceProductionRestore)) {
     Write-Error "No se puede restaurar a '$TargetDatabase'."
-    Write-Error "Use una base descartable con nombre como 'hospital_billing_test' o 'hospital_restore_validation'."
+    Write-Error "Use una base descartable con nombre como 'hospital_billing_test' o 'hospital_restore_validation', o agregue -ForceProductionRestore si esta seguro."
     exit 1
 }
 
@@ -362,8 +376,8 @@ if ($BackupFile -and $BackupFile -match '\.tar\.gz$') {
     }
 }
 
-Write-Step "Verificando que '$($dbConfig.Database)' sea base de prueba..."
-Assert-SafeConnectionConfig $dbConfig
+Write-Step "Verificando que '$($dbConfig.Database)' sea base permitida..."
+Assert-SafeConnectionConfig -Config $dbConfig -ForceProduction:$ForceProductionRestore
 
 Write-Step "Creando base de datos '$($dbConfig.Database)' si no existe..."
 $createDbCmd = "CREATE DATABASE IF NOT EXISTS ``$($dbConfig.Database)`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"

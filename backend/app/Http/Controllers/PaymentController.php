@@ -38,24 +38,35 @@ class PaymentController extends Controller
         IssueInstitutionalReceiptAction $issueReceipt,
         InvoiceAccess $invoiceAccess,
     ): JsonResponse {
-        $payment = $registerPayment->execute($invoice, $request->validated(), $request->user(), $invoiceAccess);
-        $freshInvoice = $invoice->fresh()->load('items', 'payments', 'issuer:id,name,username');
-        $receiptResult = $this->issueInstitutionalReceiptAfterPaidPayment(
-            $request,
-            $freshInvoice,
-            $payment,
-            $issueReceipt,
-            $invoiceAccess,
-        );
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $invoice, $registerPayment, $issueReceipt, $invoiceAccess) {
+            $payment = $registerPayment->execute($invoice, $request->validated(), $request->user(), $invoiceAccess);
+            $freshInvoice = $invoice->fresh()->load('items', 'payments', 'issuer:id,name,username');
+            $receiptResult = $this->issueInstitutionalReceiptAfterPaidPayment(
+                $request,
+                $freshInvoice,
+                $payment,
+                $issueReceipt,
+                $invoiceAccess,
+            );
 
-        return response()->json([
-            'data' => [
-                'payment' => $payment,
-                'invoice' => $freshInvoice,
-                'institutional_receipt' => $receiptResult['receipt'],
-                'institutional_receipt_error' => $receiptResult['error'],
-            ],
-        ], 201);
+            if ($receiptResult['error']) {
+                $mode = \App\Models\FiscalSetting::query()->value('receipt_template_mode') ?? 'institutional';
+                if ($mode === 'institutional') {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'institutional_receipt' => $receiptResult['error'],
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'data' => [
+                    'payment' => $payment,
+                    'invoice' => $freshInvoice,
+                    'institutional_receipt' => $receiptResult['receipt'],
+                    'institutional_receipt_error' => $receiptResult['error'],
+                ],
+            ], 201);
+        });
     }
 
     public function void(
