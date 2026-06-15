@@ -17,6 +17,13 @@ class AreaPaidServiceController extends Controller
 
         abort_unless($user->service_area_id !== null, 403);
 
+        $serviceAreaSlug = DB::table('service_areas')
+            ->where('id', $user->service_area_id)
+            ->value('slug');
+        $catalogAreaId = $serviceAreaSlug === null
+            ? null
+            : DB::table('areas')->where('slug', $serviceAreaSlug)->value('id');
+
         $latestPayments = DB::table('payments')
             ->select('invoice_id', DB::raw('MAX(paid_at) as paid_at'))
             ->where('status', Payment::STATUS_POSTED)
@@ -27,7 +34,13 @@ class AreaPaidServiceController extends Controller
             ->leftJoinSub($latestPayments, 'latest_payments', function ($join): void {
                 $join->on('latest_payments.invoice_id', '=', 'invoices.id');
             })
-            ->where('invoice_items.service_area_id', $user->service_area_id)
+            ->where(function ($query) use ($user, $catalogAreaId): void {
+                $query->where('invoice_items.service_area_id', $user->service_area_id);
+
+                if ($catalogAreaId !== null) {
+                    $query->orWhere('invoice_items.area_id', $catalogAreaId);
+                }
+            })
             ->whereIn('invoices.status', [Invoice::STATUS_PAID, Invoice::STATUS_PARTIAL])
             ->orderByDesc('invoices.issued_at')
             ->limit(100)
@@ -37,6 +50,8 @@ class AreaPaidServiceController extends Controller
                 'invoice_items.service_name',
                 'invoice_items.service_area_id',
                 'invoice_items.service_area_name',
+                'invoice_items.area_id',
+                'invoice_items.area_name',
                 'invoice_items.quantity',
                 'invoice_items.line_total',
                 'invoice_items.notes',
@@ -54,8 +69,8 @@ class AreaPaidServiceController extends Controller
                 'paid_at' => $row->paid_at,
                 'patient_name' => $row->patient_name,
                 'service_name' => $row->service_name,
-                'service_area_id' => $row->service_area_id !== null ? (int) $row->service_area_id : null,
-                'service_area_name' => $row->service_area_name,
+                'service_area_id' => $row->service_area_id !== null ? (int) $row->service_area_id : ($row->area_id !== null ? (int) $row->area_id : null),
+                'service_area_name' => $row->service_area_name ?? $row->area_name,
                 'quantity' => $row->quantity,
                 'line_total' => $row->line_total,
                 'payment_status' => $row->payment_status,

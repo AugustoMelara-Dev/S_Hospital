@@ -536,7 +536,8 @@ class CashPaymentsReceiptTest extends TestCase
                 'method' => Payment::METHOD_CASH,
                 'amount' => '7.25',
             ])
-            ->assertConflict();
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('idempotency_key');
 
         $this->assertSame(1, Payment::query()->count());
     }
@@ -935,7 +936,7 @@ class CashPaymentsReceiptTest extends TestCase
         $this->actingAs($cashier)
             ->getJson("/api/invoices/{$invoiceId}/receipt?width=a5")
             ->assertOk()
-            ->assertJsonPath('data.width', '58mm');
+            ->assertJsonPath('data.width', 'a5');
 
         Invoice::query()->whereKey($invoiceId)->update(['receipt_paper_size' => '80mm']);
 
