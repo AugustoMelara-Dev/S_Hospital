@@ -2,7 +2,6 @@
 
 use App\Actions\Reports\OpenApiExporter;
 use App\Http\Controllers\AreaController;
-use App\Http\Controllers\AreaPaidServiceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CashSessionController;
@@ -106,6 +105,8 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware(['throttle.user:60,1', 'idempotency']);
         Route::get('/institutional-receipts/{receipt}/pdf', [InstitutionalReceiptController::class, 'pdf'])
             ->middleware('throttle.user:60,1');
+        Route::post('/institutional-receipts/{receipt}/print-events', [InstitutionalReceiptController::class, 'printEvent'])
+            ->middleware(['throttle.user:30,1', 'idempotency']);
 
         Route::get('/categories', [CategoryController::class, 'index']);
         Route::post('/categories', [CategoryController::class, 'store'])
@@ -123,8 +124,6 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware('throttle.user:60,1');
         Route::patch('/services/{service}', [ServiceController::class, 'update'])
             ->middleware('throttle.user:60,1');
-
-        Route::get('/area-services/paid', [AreaPaidServiceController::class, 'index']);
 
         Route::get('/invoices', [InvoiceController::class, 'index']);
         Route::post('/invoices', [InvoiceController::class, 'store'])

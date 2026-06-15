@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\InstitutionalReceipts\InstitutionalReceiptPdfService;
 use App\Actions\InstitutionalReceipts\IssueInstitutionalReceiptAction;
 use App\Http\Requests\InstitutionalReceipts\IssueInstitutionalReceiptRequest;
+use App\Http\Requests\InstitutionalReceipts\RegisterReceiptPrintEventRequest;
 use App\Models\InstitutionalReceipt;
 use App\Models\Invoice;
 use App\Models\User;
@@ -38,6 +39,34 @@ class InstitutionalReceiptController extends Controller
 
         abort_unless($user instanceof User && $user->can('receipts.view'), 403);
         $receipt->loadMissing('invoice');
+        $this->authorizeReceiptView($user, $receipt, $invoiceAccess);
+
+        if ($receipt->status !== InstitutionalReceipt::STATUS_ISSUED) {
+            throw ValidationException::withMessages([
+                'receipt' => 'Solo se puede generar PDF para recibos institucionales emitidos.',
+            ]);
+        }
+
+        $pdf = $pdfService->pdfForReceipt($receipt);
+
+        $filename = 'recibo-institucional-'.$receipt->receipt_number_full.'.pdf';
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
+        ]);
+    }
+
+    public function printEvent(
+        RegisterReceiptPrintEventRequest $request,
+        InstitutionalReceipt $receipt,
+        InstitutionalReceiptPdfService $pdfService,
+        InvoiceAccess $invoiceAccess,
+    ): JsonResponse {
+        $user = $request->user();
+
+        abort_unless($user instanceof User, 403);
+        $receipt->loadMissing('invoice');
         $hasPreviousPrint = $receipt->printEvents()->exists();
 
         if ($hasPreviousPrint) {
@@ -48,23 +77,22 @@ class InstitutionalReceiptController extends Controller
 
         if ($receipt->status !== InstitutionalReceipt::STATUS_ISSUED) {
             throw ValidationException::withMessages([
-                'receipt' => 'Solo se puede generar PDF para recibos institucionales emitidos.',
+                'receipt' => 'Solo se puede registrar impresion de recibos institucionales emitidos.',
             ]);
         }
 
-        $pdf = $pdfService->pdfForReceipt($receipt);
-        $pdfService->recordReceiptPdfEvent(
+        $event = $pdfService->recordReceiptPrintEvent(
             $receipt,
             $user,
             $hasPreviousPrint ? $this->reprintReason($request) : null
         );
 
-        $filename = 'recibo-institucional-'.$receipt->receipt_number_full.'.pdf';
-
-        return response($pdf, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="'.$filename.'"',
-        ]);
+        return response()->json([
+            'data' => [
+                'event' => $event,
+                'receipt' => $receipt->fresh(),
+            ],
+        ], 201);
     }
 
     private function authorizeReceiptView(User $user, InstitutionalReceipt $receipt, InvoiceAccess $invoiceAccess): void

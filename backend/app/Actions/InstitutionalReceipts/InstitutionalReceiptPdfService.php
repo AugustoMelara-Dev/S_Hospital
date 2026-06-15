@@ -47,7 +47,7 @@ class InstitutionalReceiptPdfService
             ->output();
     }
 
-    public function recordReceiptPdfEvent(InstitutionalReceipt $receipt, User $user, ?string $reason = null): InstitutionalReceiptPrintEvent
+    public function recordReceiptPrintEvent(InstitutionalReceipt $receipt, User $user, ?string $reason = null): InstitutionalReceiptPrintEvent
     {
         return DB::transaction(function () use ($receipt, $user, $reason): InstitutionalReceiptPrintEvent {
             $lockedReceipt = InstitutionalReceipt::query()
