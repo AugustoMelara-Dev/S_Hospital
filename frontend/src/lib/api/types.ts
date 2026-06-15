@@ -60,6 +60,24 @@ export type Area = {
   active: boolean;
 };
 
+export type ServiceArea = Area;
+
+export type AreaPaidService = {
+  id: number;
+  invoice_id: number;
+  invoice_number: string;
+  patient_name: string;
+  service_name: string;
+  service_area_id: number | null;
+  service_area_name: string | null;
+  quantity: string;
+  line_total: string;
+  invoice_status: Invoice['status'];
+  payment_status: 'paid' | 'partial';
+  issued_at: string;
+  paid_at: string | null;
+};
+
 export type Service = {
   id: number;
   category_id: number;
@@ -357,7 +375,7 @@ export type IncomeReport = {
   total_partial: string;
   total_voided: string;
   payments_by_method: MoneyByMethod;
-  invoices_by_status: Record<'issued' | 'partial' | 'paid' | 'void', { count: number; total: string }>;
+  invoices_by_status?: Record<'issued' | 'partial' | 'paid' | 'void', { count: number; total: string }>;
   payment_count: number;
   invoice_count: number;
 };
@@ -438,6 +456,7 @@ export type OperationsReport = {
     reprint_count: number;
     service_change_count?: number;
     payment_void_count?: number;
+    audit_event_count?: number;
     backup_count: number;
     failed_backup_count: number;
     cashier_count: number;
@@ -474,6 +493,19 @@ export type OperationsReport = {
     new_values: Record<string, string | number | boolean | null | string[]>;
     created_at: string | null;
     user: string | null;
+  }>;
+  audit_events?: Array<{
+    id?: number;
+    action: string;
+    result?: string | null;
+    entity_type?: string | null;
+    entity_id?: number | null;
+    reason?: string | null;
+    created_at: string | null;
+    user: string | null;
+    ip_address?: string | null;
+    user_agent?: string | null;
+    details?: Record<string, unknown> | null;
   }>;
   backups: Array<{
     filename: string;
@@ -566,7 +598,6 @@ export type SystemStatus = {
     driver: string;
     connected: boolean;
     is_mysql_family: boolean;
-    connected: boolean;
   };
   frontend: {
     dist_index_exists: boolean;

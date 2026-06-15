@@ -42,8 +42,11 @@ class AuditLogger
             'old_values' => $oldValues,
             'new_values' => $newValues,
             'reason' => $reason,
+            'ip' => $request?->ip(),
             'ip_address' => $request?->ip(),
             'user_agent' => $request?->userAgent(),
+            'url' => $request?->fullUrl(),
+            'http_method' => $request?->method(),
             'created_at' => now(),
         ]);
     }

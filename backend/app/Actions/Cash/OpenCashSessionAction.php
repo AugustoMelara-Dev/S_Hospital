@@ -3,7 +3,6 @@
 namespace App\Actions\Cash;
 
 use App\Events\CashSessionChanged;
-use App\Models\AuditLog;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\User;

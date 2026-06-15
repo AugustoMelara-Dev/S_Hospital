@@ -1,4 +1,4 @@
-import type { Category, CashSession, InstitutionalReceipt, Invoice, Payment, ReceiptData, Service } from '../../../lib/api';
+import type { Category, CashSession, InstitutionalReceipt, Invoice, Payment, ReceiptData, Service, ServiceArea } from '../../../lib/api';
 import type { CartItem } from '../components/InvoiceCart';
 
 export interface NewInvoiceState {
@@ -7,13 +7,16 @@ export interface NewInvoiceState {
   search: string;
   scanCode: string;
   categories: Category[];
+  serviceAreas: ServiceArea[];
   services: Service[];
   loadedCashSession: CashSession | null;
+  selectedAreaId: number | 'all' | undefined;
   selectedCategoryId: number | 'all' | undefined;
   cartItems: CartItem[];
   issuedInvoice: Invoice | null;
   paymentMethod: Payment['method'];
   paymentAmount: string;
+  paymentReference: string;
   previewBeforePrint: boolean;
   receiptWidth: ReceiptData['width'];
   scannerEnabled: boolean;
@@ -40,13 +43,16 @@ export type NewInvoiceAction =
   | { type: 'SET_SEARCH'; payload: string }
   | { type: 'SET_SCAN_CODE'; payload: string }
   | { type: 'SET_CATEGORIES'; payload: Category[] }
+  | { type: 'SET_SERVICE_AREAS'; payload: ServiceArea[] }
   | { type: 'SET_SERVICES'; payload: Service[] }
   | { type: 'SET_LOADED_CASH_SESSION'; payload: CashSession | null }
+  | { type: 'SET_SELECTED_AREA_ID'; payload: number | 'all' | undefined }
   | { type: 'SET_SELECTED_CATEGORY_ID'; payload: number | 'all' | undefined }
   | { type: 'SET_CART_ITEMS'; payload: CartItem[] }
   | { type: 'SET_ISSUED_INVOICE'; payload: Invoice | null }
   | { type: 'SET_PAYMENT_METHOD'; payload: Payment['method'] }
   | { type: 'SET_PAYMENT_AMOUNT'; payload: string }
+  | { type: 'SET_PAYMENT_REFERENCE'; payload: string }
   | { type: 'SET_PREVIEW_BEFORE_PRINT'; payload: boolean }
   | { type: 'SET_RECEIPT_WIDTH'; payload: ReceiptData['width'] }
   | { type: 'SET_SCANNER_ENABLED'; payload: boolean }
@@ -66,7 +72,7 @@ export type NewInvoiceAction =
   | { type: 'SET_SUBMITTING'; payload: boolean }
   | { type: 'SET_PAYING'; payload: boolean }
   | { type: 'RESET_FORM'; payload: { loadedCashSession: CashSession | null } }
-  | { type: 'LOAD_DATA_SUCCESS'; payload: { loadedCashSession: CashSession | null; categories: Category[]; services: Service[] } }
+  | { type: 'LOAD_DATA_SUCCESS'; payload: { loadedCashSession: CashSession | null; categories: Category[]; serviceAreas: ServiceArea[]; services: Service[] } }
   | { type: 'SEARCH_SERVICES_SUCCESS'; payload: Service[] }
   | { type: 'ADD_TO_CART'; payload: Service }
   | { type: 'UPDATE_QUANTITY'; payload: { index: number; quantity: string } }
@@ -82,13 +88,16 @@ export function getInitialNewInvoiceState(cashSession: CashSession | null): NewI
     search: '',
     scanCode: '',
     categories: [],
+    serviceAreas: [],
     services: [],
     loadedCashSession: cashSession,
+    selectedAreaId: undefined,
     selectedCategoryId: undefined,
     cartItems: [],
     issuedInvoice: null,
     paymentMethod: 'cash',
     paymentAmount: '',
+    paymentReference: '',
     previewBeforePrint: false,
     receiptWidth: 'half_letter',
     scannerEnabled: false,

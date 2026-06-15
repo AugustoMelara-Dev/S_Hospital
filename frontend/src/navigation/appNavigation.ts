@@ -79,6 +79,20 @@ export const appRoutes = {
     requiredPermissions: ['cash.view'],
     deniedReason: 'Requiere permiso para consultar y operar caja.',
   },
+  areaServices: {
+    id: 'areaServices',
+    label: 'Servicios pagados',
+    path: '/area-services',
+    icon: ClipboardList,
+    breadcrumbs: [
+      { label: 'Inicio', path: '/dashboard' },
+      { label: 'Servicios pagados', path: '/area-services' },
+    ],
+    navigation: true,
+    navigationPermissions: ['area_services.view'],
+    requiredPermissions: ['area_services.view'],
+    deniedReason: 'Requiere permiso para consultar servicios pagados del area asignada.',
+  },
   catalog: {
     id: 'catalog',
     label: 'Catálogo',
@@ -189,6 +203,17 @@ export const appRoutes = {
     ],
     navigation: true,
   },
+  support: {
+    id: 'support',
+    label: 'Soporte',
+    path: '/support',
+    icon: HelpCircle,
+    breadcrumbs: [
+      { label: 'Inicio', path: '/dashboard' },
+      { label: 'Soporte', path: '/support' },
+    ],
+    navigation: true,
+  },
   about: {
     id: 'about',
     label: 'Acerca de',
@@ -218,6 +243,7 @@ export const primaryNavigation: AppNavigationItem[] = [
   appRoutes.dashboard,
   appRoutes.newInvoice,
   appRoutes.cashbox,
+  appRoutes.areaServices,
   appRoutes.catalog,
   appRoutes.invoices,
   appRoutes.reports,
@@ -225,6 +251,7 @@ export const primaryNavigation: AppNavigationItem[] = [
   appRoutes.fiscalSettings,
   appRoutes.receiptSettings,
   appRoutes.users,
+  appRoutes.support,
   appRoutes.help,
   appRoutes.about,
 ].map(toNavigationItem);

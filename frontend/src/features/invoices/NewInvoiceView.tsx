@@ -65,7 +65,7 @@ export function NewInvoiceView({
     }, 250);
     return () => window.clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canViewCatalog, state.search, state.selectedCategoryId]);
+  }, [canViewCatalog, state.search, state.selectedAreaId, state.selectedCategoryId]);
 
   useEffect(() => {
     if (cashSession) {
@@ -159,9 +159,10 @@ export function NewInvoiceView({
     }
     dispatch({ type: 'SET_LOADING_SERVICES', payload: true });
     try {
-      const [currentCashSession, nextCategories, nextServices] = await Promise.all([
+      const [currentCashSession, nextCategories, nextServiceAreas, nextServices] = await Promise.all([
         apiClient.getCurrentCashSession(),
         apiClient.getCategories(true),
+        apiClient.getServiceAreas(true),
         apiClient.getServices({ active: true, billing: true, perPage: POS_SERVICE_PAGE_SIZE }),
       ]);
       dispatch({
@@ -169,6 +170,7 @@ export function NewInvoiceView({
         payload: {
           loadedCashSession: currentCashSession,
           categories: Array.isArray(nextCategories) ? nextCategories : [],
+          serviceAreas: Array.isArray(nextServiceAreas) ? nextServiceAreas : [],
           services: Array.isArray(nextServices) ? nextServices : [],
         },
       });
@@ -187,6 +189,7 @@ export function NewInvoiceView({
         active: true,
         billing: true,
         search: state.search.trim() || undefined,
+        areaId: state.selectedAreaId && state.selectedAreaId !== 'all' ? state.selectedAreaId : undefined,
         categoryId: state.selectedCategoryId && state.selectedCategoryId !== 'all' ? state.selectedCategoryId : undefined,
         perPage: POS_SERVICE_PAGE_SIZE,
       });
@@ -398,6 +401,7 @@ export function NewInvoiceView({
         cash_session_id: sessionToUse.id,
         method: state.paymentMethod,
         amount: appliedAmount,
+        reference: state.paymentReference.trim() || null,
       });
       await invalidateBillingQueries(queryClient);
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: result.invoice });
@@ -514,6 +518,7 @@ export function NewInvoiceView({
       onOpenCash={onOpenCash}
       onPatientNameChange={handlePatientNameChange}
       onPatientSubmit={handlePatientSubmit}
+      onAreaChange={(val) => dispatch({ type: 'SET_SELECTED_AREA_ID', payload: val })}
       onCategoryChange={(val) => dispatch({ type: 'SET_SELECTED_CATEGORY_ID', payload: val })}
       onSearchChange={(val) => dispatch({ type: 'SET_SEARCH', payload: val })}
       onScanCodeChange={(val) => dispatch({ type: 'SET_SCAN_CODE', payload: val })}
@@ -526,6 +531,7 @@ export function NewInvoiceView({
       onConfirmDialogChange={(val) => dispatch({ type: 'SET_SHOW_CONFIRMATION', payload: val })}
       onPaymentMethodChange={(val) => dispatch({ type: 'SET_PAYMENT_METHOD', payload: val })}
       onPaymentAmountChange={(val) => dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: val })}
+      onPaymentReferenceChange={(val) => dispatch({ type: 'SET_PAYMENT_REFERENCE', payload: val })}
       onPreviewBeforePrintChange={(val) => dispatch({ type: 'SET_PREVIEW_BEFORE_PRINT', payload: val })}
       onSubmitInvoice={() => void submitInvoice()}
       onCobrar={handleCobrarClick}

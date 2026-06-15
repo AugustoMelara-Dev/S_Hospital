@@ -14,10 +14,14 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       return { ...state, scanCode: action.payload };
     case 'SET_CATEGORIES':
       return { ...state, categories: action.payload };
+    case 'SET_SERVICE_AREAS':
+      return { ...state, serviceAreas: action.payload };
     case 'SET_SERVICES':
       return { ...state, services: action.payload };
     case 'SET_LOADED_CASH_SESSION':
       return { ...state, loadedCashSession: action.payload };
+    case 'SET_SELECTED_AREA_ID':
+      return { ...state, selectedAreaId: action.payload };
     case 'SET_SELECTED_CATEGORY_ID':
       return { ...state, selectedCategoryId: action.payload };
     case 'SET_CART_ITEMS':
@@ -28,6 +32,8 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       return { ...state, paymentMethod: action.payload };
     case 'SET_PAYMENT_AMOUNT':
       return { ...state, paymentAmount: action.payload };
+    case 'SET_PAYMENT_REFERENCE':
+      return { ...state, paymentReference: action.payload };
     case 'SET_PREVIEW_BEFORE_PRINT':
       return { ...state, previewBeforePrint: action.payload };
     case 'SET_RECEIPT_WIDTH':
@@ -69,6 +75,7 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
         ...state,
         loadedCashSession: action.payload.loadedCashSession,
         categories: action.payload.categories,
+        serviceAreas: action.payload.serviceAreas,
         services: action.payload.services,
       };
     case 'SEARCH_SERVICES_SUCCESS':
@@ -113,6 +120,7 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
         successMessage: null,
         search: '',
         scanCode: '',
+        selectedAreaId: undefined,
         selectedCategoryId: undefined,
       };
     case 'CLEAR_SUCCESS_MESSAGE':

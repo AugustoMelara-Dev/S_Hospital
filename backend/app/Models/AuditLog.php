@@ -33,6 +33,8 @@ class AuditLog extends Model
         'entity_id',
         'old_values',
         'new_values',
+        'reason',
+        'ip_address',
         'ip',
         'user_agent',
         'url',

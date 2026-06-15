@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Models\AuditLog;
 use App\Models\LoginAttempt;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -178,17 +179,29 @@ class AuthController extends Controller
      */
     private function auditAuth(Request $request, string $action, ?User $user, array $newValues = []): void
     {
-        AuditLog::query()->create([
+        $result = str_contains($action, 'failed') || str_contains($action, 'blocked') ? 'failed' : 'success';
+        $payload = [
             'user_id' => $user?->id,
             'action' => $action,
+            'result' => $result,
             'entity_type' => User::class,
             'entity_id' => $user?->id,
             'old_values' => null,
             'new_values' => $newValues,
+            'ip_address' => $request->ip(),
             'ip' => $request->ip(),
             'user_agent' => substr((string) $request->userAgent(), 0, 191),
             'url' => $request->fullUrl(),
             'http_method' => $request->method(),
-        ]);
+        ];
+
+        AuditLog::query()->create($payload);
+
+        if ($action === 'auth.login') {
+            AuditLog::query()->create([
+                ...$payload,
+                'action' => 'auth.login_success',
+            ]);
+        }
     }
 }

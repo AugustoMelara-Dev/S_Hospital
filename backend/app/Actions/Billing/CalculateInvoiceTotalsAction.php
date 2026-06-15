@@ -3,6 +3,7 @@
 namespace App\Actions\Billing;
 
 use App\Models\Service;
+use App\Models\ServiceArea;
 use App\Support\Money;
 use Illuminate\Validation\ValidationException;
 
@@ -45,14 +46,18 @@ class CalculateInvoiceTotalsAction
 
             $subtotal = $subtotal->plus(Money::fromCents($lineSubtotalCents));
             $tax = $tax->plus(Money::fromCents($lineTaxCents));
+            $categoryName = $service->category->name;
+            $areaName = $service->area?->name ?? $categoryName;
 
             $calculatedItems[] = [
                 'service_id' => $service->id,
                 'service_name' => $service->name,
                 'category_id' => $service->category_id,
-                'category_name' => $service->category?->name ?? 'Sin categoria',
+                'category_name' => $categoryName,
                 'area_id' => $service->area_id,
-                'area_name' => $service->area?->name ?? $service->category?->name ?? 'Sin area',
+                'area_name' => $areaName,
+                'service_area_id' => $this->legacyServiceAreaId($service),
+                'service_area_name' => $areaName,
                 'scan_code' => $service->scan_code,
                 'barcode' => $service->barcode,
                 'qr_code' => $service->qr_code,
@@ -93,6 +98,17 @@ class CalculateInvoiceTotalsAction
     {
         return $patientDialysisPrescription
             && $service->special_rule_code === Service::ERYTHROPOIETIN_RULE;
+    }
+
+    private function legacyServiceAreaId(Service $service): ?int
+    {
+        if ($service->area_id === null) {
+            return null;
+        }
+
+        return ServiceArea::query()->whereKey($service->area_id)->exists()
+            ? (int) $service->area_id
+            : null;
     }
 
     private function parseMoneyCents(string $value): int

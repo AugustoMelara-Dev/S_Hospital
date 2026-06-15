@@ -4,7 +4,7 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Skeleton } from '../../../components/ui/states';
-import type { Category, Service } from '../../../lib/api';
+import type { Category, Service, ServiceArea } from '../../../lib/api';
 import { cn } from '../../../lib/utils';
 import { formatLempirasFromCents, parseCents } from '../../../lib/moneyCents';
 
@@ -13,11 +13,11 @@ const SERVICE_RESULT_LIMIT = 24;
 
 type ServiceSearchProps = {
   categories: Category[];
-  serviceAreas: ServiceArea[];
+  serviceAreas?: ServiceArea[];
   services: Service[];
-  selectedAreaId: number | 'all' | undefined;
+  selectedAreaId?: number | 'all' | undefined;
   selectedCategoryId: number | 'all' | undefined;
-  onAreaChange: (id: number | 'all' | undefined) => void;
+  onAreaChange?: (id: number | 'all' | undefined) => void;
   onCategoryChange: (id: number | 'all' | undefined) => void;
   search: string;
   onSearchChange: (value: string) => void;
@@ -33,11 +33,11 @@ type ServiceSearchProps = {
 
 export function ServiceSearch({
   categories,
-  serviceAreas,
+  serviceAreas = [],
   services,
   selectedAreaId,
   selectedCategoryId,
-  onAreaChange,
+  onAreaChange = () => undefined,
   onCategoryChange,
   search,
   onSearchChange,

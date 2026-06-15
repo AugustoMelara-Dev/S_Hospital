@@ -504,7 +504,6 @@ describe('ReportsView', () => {
       );
     });
 
-    activateTab(/[aá]reas/i);
     expect(await screen.findByText('Laboratorio')).toBeInTheDocument();
     expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
   });

@@ -2,8 +2,11 @@
 
 namespace App\Actions\Receipts;
 
+use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\User;
+use App\Support\AuditLogger;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -16,7 +19,7 @@ class ReprintReceiptAction
 
     public function execute(Invoice $invoice, User $user, string $width, ?string $reason = null, ?Request $request = null): array
     {
-        return DB::transaction(function () use ($invoice, $user, $width, $reason) {
+        return DB::transaction(function () use ($invoice, $user, $width, $reason, $request) {
             $lockedInvoice = Invoice::query()
                 ->whereKey($invoice->id)
                 ->lockForUpdate()
@@ -38,21 +41,20 @@ class ReprintReceiptAction
 
             $receipt = $this->generateReceiptData->execute($lockedInvoice, $width, $copyLabel);
 
-            AuditLog::query()->create([
-                'user_id' => $user->id,
-                'action' => 'invoice.reprinted',
-                'entity_type' => Invoice::class,
-                'entity_id' => $lockedInvoice->id,
-                'old_values' => null,
-                'new_values' => [
+            $this->auditLogger->log(
+                action: 'invoice.reprinted',
+                entity: $lockedInvoice,
+                user: $user,
+                request: $request,
+                newValues: [
                     'invoice_number' => $lockedInvoice->invoice_number,
                     'width' => $width,
                     'reason' => $reason,
                     'reprint_count' => $reprintCount,
                     'copy_label' => $copyLabel,
                 ],
-                'created_at' => now(),
-            ]);
+                reason: $reason,
+            );
 
             return [
                 'receipt' => $receipt,

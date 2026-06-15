@@ -10,7 +10,6 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Support\InvoiceAccess;
 use App\Support\Money;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -26,7 +25,7 @@ class VoidInvoiceAction
         $reason = trim($reason);
         if (empty($reason)) {
             throw ValidationException::withMessages([
-                'reason' => 'El motivo de anulación es requerido.',
+                'reason' => 'El motivo de anulacion es requerido.',
             ]);
         }
 
@@ -48,23 +47,24 @@ class VoidInvoiceAction
             }
 
             if ($this->hasPaymentState($lockedInvoice)) {
-                $this->auditLogger->log(
-                    action: 'invoice.void_blocked_paid',
-                    entity: $lockedInvoice,
-                    user: $user,
-                    request: $request,
-                    oldValues: [
+                AuditLog::query()->create([
+                    'user_id' => $user->id,
+                    'action' => 'invoice.void_blocked_paid',
+                    'result' => 'failed',
+                    'entity_type' => Invoice::class,
+                    'entity_id' => $lockedInvoice->id,
+                    'old_values' => [
                         'status' => $lockedInvoice->status,
                         'paid_amount' => $lockedInvoice->paid_amount,
                         'balance_due' => $lockedInvoice->balance_due,
                         'posted_payments_count' => $lockedInvoice->posted_payments_count,
                     ],
-                    newValues: [
-                        'message' => 'No se puede anular una factura con pagos registrados sin flujo de reversión.',
+                    'new_values' => [
+                        'message' => 'No se puede anular una factura con pagos registrados sin flujo de reversion.',
                     ],
-                    reason: $reason,
-                    result: 'failed',
-                );
+                    'reason' => $reason,
+                    'created_at' => now(),
+                ]);
 
                 return null;
             }
@@ -98,8 +98,9 @@ class VoidInvoiceAction
                     'voided_at' => $lockedInvoice->voided_at,
                     'voided_institutional_receipt_ids' => $voidedReceipts->pluck('id')->all(),
                 ],
-                reason: $reason,
-            );
+                'reason' => $reason,
+                'created_at' => now(),
+            ]);
 
             DB::afterCommit(function () use ($lockedInvoice) {
                 InvoiceChanged::dispatch($lockedInvoice->fresh(), 'voided');

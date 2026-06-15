@@ -107,6 +107,7 @@ class VoidPaymentAction
             AuditLog::query()->create([
                 'user_id' => $user->id,
                 'action' => 'payment.voided',
+                'result' => 'success',
                 'entity_type' => Payment::class,
                 'entity_id' => $lockedPayment->id,
                 'old_values' => [
@@ -123,6 +124,7 @@ class VoidPaymentAction
                     'balance_due' => $lockedInvoice->balance_due,
                     'voided_institutional_receipt_ids' => $voidedReceipts->pluck('id')->all(),
                 ],
+                'reason' => $reason,
             ]);
 
             DB::afterCommit(function () use ($lockedPayment, $lockedInvoice) {

@@ -9,7 +9,6 @@ use App\Models\CashRegisterSession;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
-use App\Support\AuditLogger;
 use App\Support\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
@@ -95,6 +94,7 @@ class CloseCashSessionAction
             AuditLog::query()->create([
                 'user_id' => $user->id,
                 'action' => 'cash_session.closed',
+                'result' => 'success',
                 'entity_type' => CashRegisterSession::class,
                 'entity_id' => $lockedSession->id,
                 'new_values' => [
@@ -107,7 +107,34 @@ class CloseCashSessionAction
                     'pending_invoice_count' => $pendingInvoiceCount,
                     'pending_amount' => $reconciliation['pending_amount'],
                 ],
+                'reason' => $notes === '' ? null : $notes,
+                'ip_address' => $request?->ip(),
+                'ip' => $request?->ip(),
+                'user_agent' => $request?->userAgent(),
+                'url' => $request?->fullUrl(),
+                'http_method' => $request?->method(),
             ]);
+
+            if ($differenceCents !== 0) {
+                AuditLog::query()->create([
+                    'user_id' => $user->id,
+                    'action' => 'cash_session.difference',
+                    'result' => 'success',
+                    'entity_type' => CashRegisterSession::class,
+                    'entity_id' => $lockedSession->id,
+                    'new_values' => [
+                        'closing_amount' => $lockedSession->closing_amount,
+                        'expected_amount' => $lockedSession->expected_amount,
+                        'difference_amount' => $lockedSession->difference_amount,
+                    ],
+                    'reason' => $notes,
+                    'ip_address' => $request?->ip(),
+                    'ip' => $request?->ip(),
+                    'user_agent' => $request?->userAgent(),
+                    'url' => $request?->fullUrl(),
+                    'http_method' => $request?->method(),
+                ]);
+            }
 
             DB::afterCommit(function () use ($lockedSession) {
                 CashSessionChanged::dispatch($lockedSession->fresh(), 'closed');

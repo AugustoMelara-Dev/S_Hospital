@@ -66,7 +66,7 @@ class IdempotencyKey
                     'errors' => [
                         'idempotency_key' => ['Reutilice la misma carga o genere una nueva clave.'],
                     ],
-                ], 422);
+                ], $this->payloadMismatchStatus($request));
             }
 
             if ($existing->completed_at === null) {
@@ -130,6 +130,11 @@ class IdempotencyKey
         $this->persistResponse($reservation, $response);
 
         return $response;
+    }
+
+    private function payloadMismatchStatus(Request $request): int
+    {
+        return $request->is('api/invoices') ? 409 : 422;
     }
 
     private function extractKey(Request $request): ?string

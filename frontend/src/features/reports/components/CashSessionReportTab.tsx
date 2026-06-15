@@ -249,7 +249,12 @@ function moneyLabel(value: string | number | null | undefined): string {
 }
 
 function signedMoneyLabel(value: string | number | null | undefined): string {
-  return formatLempirasFromCents(parseSignedCents(value));
+  const cents = parseSignedCents(value);
+  if (cents === null || cents >= 0) {
+    return formatLempirasFromCents(cents);
+  }
+
+  return formatLempirasFromCents(Math.abs(cents)).replace('L. ', 'L. -');
 }
 
 function parseSignedCents(value: string | number | null | undefined): number | null {

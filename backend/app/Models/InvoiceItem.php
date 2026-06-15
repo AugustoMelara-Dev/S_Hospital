@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $category_name
  * @property int|null $area_id
  * @property string|null $area_name
+ * @property int|null $service_area_id
+ * @property string|null $service_area_name
  * @property string|null $scan_code
  * @property string|null $barcode
  * @property string|null $qr_code
@@ -42,6 +44,8 @@ class InvoiceItem extends Model
         'category_name',
         'area_id',
         'area_name',
+        'service_area_id',
+        'service_area_name',
         'scan_code',
         'barcode',
         'qr_code',

@@ -131,9 +131,9 @@ export function ReceiptPreview({ autoPrint = false, onNewInvoice, onPrint, recei
             <Row label="Paciente / enterante" value={receipt.invoice.patient_name} />
             {receipt.invoice.cashier ? <Row label="Cajero" value={receipt.invoice.cashier} /> : null}
             <Row label="Estado" value={statusLabel(receipt.invoice.status)} />
-            <Row label="CAI" value={receipt.fiscal.cai ?? 'Pendiente de configurar'} />
-            {receipt.fiscal.authorized_range ? <Row label="Rango" value={receipt.fiscal.authorized_range} /> : null}
-            {receipt.fiscal.valid_until ? <Row label="Vence" value={formatDate(receipt.fiscal.valid_until)} /> : null}
+            <Row label="CAI" value={receipt.fiscal.cai ?? 'Configuración pendiente'} />
+            <Row label="Rango" value={receipt.fiscal.authorized_range ?? 'Configuración pendiente'} />
+            <Row label="Vence" value={receipt.fiscal.valid_until ? formatDate(receipt.fiscal.valid_until) : 'Configuración pendiente'} />
           </div>
 
           <div className="receipt-rule" aria-hidden="true" />

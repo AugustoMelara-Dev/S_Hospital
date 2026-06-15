@@ -62,6 +62,7 @@ class DailyReportService
             'total_billed' => $facts['total_billed'],
             'total_collected' => $facts['total_collected'],
             'total_pending' => $facts['total_pending'],
+            'total_balance_due' => $facts['total_pending'],
             'total_partial' => $facts['total_partial'],
             'total_voided' => $facts['total_voided'],
             'invoice_count' => $facts['invoice_count'],

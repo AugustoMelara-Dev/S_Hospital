@@ -191,6 +191,8 @@ function mockSystemStatus(): SystemStatus {
       cache_writable: true,
       laravel_log: { exists: true, size_bytes: 1024, modified_at: '2026-06-02T13:00:00.000Z' },
       backup_automation_log: { exists: true, size_bytes: 1024, modified_at: '2026-06-02T13:00:00.000Z' },
+      frontend_build: { available: true, modified_at: '2026-06-02T13:00:00.000Z' },
+      installed_version: '0.1.0',
       latest_migration: '2026_06_02_000001_test',
       migration_count: 42,
       pending_migration_count: 0,

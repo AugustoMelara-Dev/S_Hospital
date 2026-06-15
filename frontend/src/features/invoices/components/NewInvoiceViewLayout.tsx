@@ -26,6 +26,7 @@ export type NewInvoiceLayoutProps = {
   onOpenCash?: () => void;
   onPatientNameChange: (value: string) => void;
   onPatientSubmit: () => void;
+  onAreaChange: (val: number | 'all' | undefined) => void;
   onCategoryChange: (val: number | 'all' | undefined) => void;
   onSearchChange: (val: string) => void;
   onScanCodeChange: (val: string) => void;
@@ -38,6 +39,7 @@ export type NewInvoiceLayoutProps = {
   onConfirmDialogChange: (val: boolean) => void;
   onPaymentMethodChange: (val: Payment['method']) => void;
   onPaymentAmountChange: (val: string) => void;
+  onPaymentReferenceChange: (val: string) => void;
   onPreviewBeforePrintChange: (val: boolean) => void;
   onSubmitInvoice: () => void;
   onCobrar: () => void;
@@ -67,6 +69,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     onOpenCash,
     onPatientNameChange,
     onPatientSubmit,
+    onAreaChange,
     onCategoryChange,
     onSearchChange,
     onScanCodeChange,
@@ -79,6 +82,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     onConfirmDialogChange,
     onPaymentMethodChange,
     onPaymentAmountChange,
+    onPaymentReferenceChange,
     onPreviewBeforePrintChange,
     onSubmitInvoice,
     onCobrar,
@@ -171,8 +175,11 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
             <CardContent className="lg:min-h-0 lg:flex-1 lg:overflow-hidden">
               <ServiceSearch
                 categories={state.categories}
+                serviceAreas={state.serviceAreas}
                 services={state.services}
+                selectedAreaId={state.selectedAreaId}
                 selectedCategoryId={state.selectedCategoryId}
+                onAreaChange={onAreaChange}
                 onCategoryChange={onCategoryChange}
                 search={state.search}
                 onSearchChange={onSearchChange}
@@ -229,10 +236,12 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           balanceDue={state.issuedInvoice.balance_due}
           paymentMethod={state.paymentMethod}
           paymentAmount={state.paymentAmount}
+          paymentReference={state.paymentReference}
           previewBeforePrint={state.previewBeforePrint}
           partialPaymentsEnabled={state.partialPaymentsEnabled}
           onPaymentMethodChange={onPaymentMethodChange}
           onPaymentAmountChange={onPaymentAmountChange}
+          onPaymentReferenceChange={onPaymentReferenceChange}
           onPreviewBeforePrintChange={onPreviewBeforePrintChange}
           onConfirm={onSubmitPayment}
           submitting={state.paying}

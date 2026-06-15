@@ -20,11 +20,14 @@ use Illuminate\Support\Carbon;
  * @property string|null $scan_code
  * @property string|null $barcode
  * @property string|null $qr_code
+ * @property string|null $description
+ * @property string|null $internal_code
  * @property string $price
  * @property bool $taxable
  * @property bool $active
  * @property bool $visible_in_billing
  * @property bool $is_billable
+ * @property bool $print_on_receipt
  * @property string|null $special_rule_code
  * @property int|null $created_by
  * @property int|null $updated_by

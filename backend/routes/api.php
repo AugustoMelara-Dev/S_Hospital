@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CashSessionController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ClientErrorLogController;
 use App\Http\Controllers\CspReportController;
 use App\Http\Controllers\EchoConfigController;
 use App\Http\Controllers\FiscalSequenceController;
@@ -145,6 +146,8 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware(['throttle.user:60,1', 'idempotency']);
         Route::get('/invoices/{invoice}/payments', [PaymentController::class, 'index']);
         Route::post('/invoices/{invoice}/payments/{payment}/void', [PaymentController::class, 'void'])
+            ->middleware('throttle.user:30,1');
+        Route::post('/payments/{payment}/void', [PaymentController::class, 'voidByPayment'])
             ->middleware('throttle.user:30,1');
         Route::get('/invoices/{invoice}/receipt', [ReceiptController::class, 'show']);
         Route::post('/invoices/{invoice}/reprint', [ReceiptController::class, 'reprint'])

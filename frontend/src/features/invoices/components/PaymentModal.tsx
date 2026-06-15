@@ -19,10 +19,10 @@ type PaymentModalProps = {
   balanceDue: string;
   paymentMethod: Payment['method'];
   paymentAmount: string;
-  paymentReference: string;
+  paymentReference?: string;
   onPaymentMethodChange: (method: Payment['method']) => void;
   onPaymentAmountChange: (amount: string) => void;
-  onPaymentReferenceChange: (reference: string) => void;
+  onPaymentReferenceChange?: (reference: string) => void;
   onPreviewBeforePrintChange?: (enabled: boolean) => void;
   onConfirm: (appliedAmount: string) => void;
   submitting?: boolean;
@@ -39,10 +39,10 @@ export function PaymentModal({
   balanceDue,
   paymentMethod,
   paymentAmount,
-  paymentReference,
+  paymentReference = '',
   onPaymentMethodChange,
   onPaymentAmountChange,
-  onPaymentReferenceChange,
+  onPaymentReferenceChange = () => undefined,
   onPreviewBeforePrintChange,
   onConfirm,
   submitting,
@@ -226,6 +226,18 @@ export function PaymentModal({
             {error && <p id="payment-amount-error" className="mt-1 text-sm text-destructive" role="alert">{error}</p>}
           </div>
 
+          {paymentMethod !== 'cash' ? (
+            <div>
+              <Label htmlFor="payment-reference" className="mb-1.5 block">Referencia de pago</Label>
+              <Input
+                id="payment-reference"
+                value={paymentReference}
+                onChange={(e) => onPaymentReferenceChange(e.target.value)}
+                placeholder="Numero de transaccion o comprobante"
+              />
+            </div>
+          ) : null}
+
           <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5 text-sm">
             <Checkbox
               id="preview-before-print"
@@ -296,4 +308,3 @@ function moneyLabel(value: string | number | null | undefined): string {
 function moneyLabelFromCents(cents: number): string {
   return formatLempirasFromCents(cents);
 }
-

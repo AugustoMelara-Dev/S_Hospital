@@ -22,7 +22,7 @@ class GenerateReceiptDataAction
             ->filter(fn (Payment $payment): bool => $payment->status === Payment::STATUS_POSTED)
             ->values();
         $cashierName = $postedPayments
-            ->sortByDesc(fn ($payment): int => $payment->paid_at?->getTimestamp() ?? 0)
+            ->sortByDesc(fn ($payment): int => $payment->paid_at->getTimestamp())
             ->first()?->user?->name ?? $invoice->issuer?->name;
         $fiscalCai = $this->fiscalValue($invoice->fiscal_cai);
         $hasFiscalAuthorization = $fiscalCai !== null
@@ -53,7 +53,7 @@ class GenerateReceiptDataAction
                 'authorized_range' => $hasFiscalAuthorization
                     ? $invoice->fiscal_range_from.' a '.$invoice->fiscal_range_to
                     : null,
-                'valid_until' => $hasFiscalAuthorization ? $invoice->fiscal_valid_until?->toDateString() : null,
+                'valid_until' => $hasFiscalAuthorization ? $invoice->fiscal_valid_until->toDateString() : null,
             ],
             'invoice' => [
                 'id' => $invoice->id,
@@ -91,13 +91,6 @@ class GenerateReceiptDataAction
                 'cashier' => $payment->user?->name,
             ])->values(),
         ];
-    }
-
-    private function paperSize(?string $value): string
-    {
-        return in_array($value, ['letter', 'half_letter', 'a5'], true)
-            ? $value
-            : 'half_letter';
     }
 
     private function fiscalValue(?string $value): ?string

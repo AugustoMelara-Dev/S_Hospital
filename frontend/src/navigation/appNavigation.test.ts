@@ -17,6 +17,7 @@ describe('appNavigation', () => {
       'Inicio',
       'Nueva factura',
       'Caja',
+      'Servicios pagados',
       'Catálogo',
       'Historial',
       'Reportes',
@@ -24,6 +25,7 @@ describe('appNavigation', () => {
       'Configuración',
       'Recibos',
       'Usuarios',
+      'Soporte',
       'Ayuda',
       'Acerca de',
     ]);

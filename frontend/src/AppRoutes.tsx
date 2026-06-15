@@ -8,6 +8,7 @@ import { type AuthUser, type CashSession } from './lib/api';
 import { appRoutes, canAccessRoute } from './navigation/appNavigation';
 
 const AboutView = lazy(() => import('./features/about/AboutView').then((module) => ({ default: module.AboutView })));
+const AreaPaidServicesView = lazy(() => import('./features/areas/AreaPaidServicesView').then((module) => ({ default: module.AreaPaidServicesView })));
 const BackupsView = lazy(() => import('./features/backups/BackupsView').then((module) => ({ default: module.BackupsView })));
 const CatalogView = lazy(() => import('./features/catalog/CatalogView').then((module) => ({ default: module.CatalogView })));
 const DashboardView = lazy(() => import('./features/dashboard/DashboardView').then((module) => ({ default: module.DashboardView })));
@@ -16,6 +17,7 @@ const HelpView = lazy(() => import('./features/help/HelpView').then((module) => 
 const InstitutionalReceiptSettingsView = lazy(() => import('./features/receipt-settings/InstitutionalReceiptSettingsView').then((module) => ({ default: module.InstitutionalReceiptSettingsView })));
 const InvoiceHistoryView = lazy(() => import('./features/invoices/InvoiceHistoryView').then((module) => ({ default: module.InvoiceHistoryView })));
 const ReportsView = lazy(() => import('./features/reports/ReportsView').then((module) => ({ default: module.ReportsView })));
+const SupportCenterView = lazy(() => import('./features/support/SupportCenterView').then((module) => ({ default: module.SupportCenterView })));
 const UsersView = lazy(() => import('./features/admin/UsersView').then((module) => ({ default: module.UsersView })));
 
 type AppRoutesProps = {
@@ -131,6 +133,16 @@ export function AppRoutes({
         }
       />
       <Route
+        path={appRoutes.areaServices.path}
+        element={
+          <PermissionGate allowed={canAccessRoute(appRoutes.areaServices, user.permissions)} reason={appRoutes.areaServices.deniedReason}>
+            <Suspense fallback={<LoadingState label="Cargando servicios pagados..." />}>
+              <AreaPaidServicesView onStatus={onStatus} />
+            </Suspense>
+          </PermissionGate>
+        }
+      />
+      <Route
         path={appRoutes.catalog.path}
         element={
           <PermissionGate allowed={canAccessRoute(appRoutes.catalog, user.permissions)} reason={appRoutes.catalog.deniedReason}>
@@ -209,6 +221,14 @@ export function AppRoutes({
               <UsersView onStatus={onStatus} canCreateUsers={canCreateUsers} />
             </Suspense>
           </PermissionGate>
+        }
+      />
+      <Route
+        path={appRoutes.support.path}
+        element={
+          <Suspense fallback={<LoadingState label="Cargando soporte..." />}>
+            <SupportCenterView user={user} onStatus={onStatus} />
+          </Suspense>
         }
       />
       <Route

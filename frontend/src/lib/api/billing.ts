@@ -58,7 +58,6 @@ export const billing = {
       `/api/invoices/${invoiceId}/payments/${paymentId}/void`,
       {
         method: 'POST',
-        headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
         body: JSON.stringify(payload),
       },
     );

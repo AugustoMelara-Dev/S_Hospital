@@ -4,12 +4,10 @@ namespace App\Actions\Payments;
 
 use App\Events\InvoiceChanged;
 use App\Events\PaymentChanged;
-use App\Models\AuditLog;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
-use App\Models\OperationIdempotencyKey;
 use App\Models\Payment;
 use App\Models\User;
 use App\Support\AuditLogger;
@@ -35,16 +33,6 @@ class RegisterPaymentAction
     public function execute(Invoice $invoice, array $payload, User $user, InvoiceAccess $invoiceAccess, ?Request $request = null): Payment
     {
         return DB::transaction(function () use ($invoice, $payload, $user, $invoiceAccess, $request): Payment {
-            $idempotencyKey = $this->idempotencyKey($request);
-            $requestHash = $this->requestHash($payload + ['invoice_id' => $invoice->id]);
-
-            if ($idempotencyKey !== null) {
-                $existing = $this->existingPaymentForKey($idempotencyKey, $requestHash, $user->id);
-                if ($existing !== null) {
-                    return $existing;
-                }
-            }
-
             $lockedInvoice = Invoice::query()
                 ->whereKey($invoice->id)
                 ->lockForUpdate()
@@ -148,17 +136,6 @@ class RegisterPaymentAction
                 ],
             );
 
-            if ($idempotencyKey !== null) {
-                OperationIdempotencyKey::query()->create([
-                    'key' => $idempotencyKey,
-                    'user_id' => $user->id,
-                    'operation' => 'payment.register',
-                    'resource_type' => Payment::class,
-                    'resource_id' => $payment->id,
-                    'request_hash' => $requestHash,
-                ]);
-            }
-
             DB::afterCommit(function () use ($payment, $lockedInvoice) {
                 PaymentChanged::dispatch($payment->fresh(), 'registered');
                 InvoiceChanged::dispatch($lockedInvoice->fresh(), 'updated');
@@ -184,45 +161,5 @@ class RegisterPaymentAction
         }
 
         return Money::parseCents((string) $invoice->paid_amount, 'paid_amount');
-    }
-
-    private function idempotencyKey(?Request $request): ?string
-    {
-        $key = trim((string) $request?->header('Idempotency-Key', ''));
-
-        return $key === '' ? null : mb_substr($key, 0, 120);
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function requestHash(array $payload): string
-    {
-        ksort($payload);
-
-        return hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR));
-    }
-
-    private function existingPaymentForKey(string $key, string $requestHash, int $userId): ?Payment
-    {
-        $record = OperationIdempotencyKey::query()
-            ->where('operation', 'payment.register')
-            ->where('key', $key)
-            ->lockForUpdate()
-            ->first();
-
-        if ($record === null) {
-            return null;
-        }
-
-        abort_if(
-            $record->request_hash !== $requestHash || $record->user_id !== $userId,
-            409,
-            'La accion ya fue enviada con datos diferentes. Actualice la pantalla antes de continuar.',
-        );
-
-        return Payment::query()
-            ->with('user:id,name,username', 'cashSession:id,user_id,status,opened_at')
-            ->find($record->resource_id);
     }
 }

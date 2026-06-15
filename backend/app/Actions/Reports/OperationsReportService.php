@@ -391,6 +391,7 @@ class OperationsReportService
             'summary' => [
                 'void_count' => $voidCount,
                 'reprint_count' => $reprintCount,
+                'audit_event_count' => $voidCount + $reprintCount,
                 'service_change_count' => $serviceChangeCount,
                 'payment_void_count' => $paymentVoidCount,
                 'backup_count' => $backupCount,

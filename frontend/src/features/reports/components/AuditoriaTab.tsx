@@ -44,6 +44,7 @@ export function AuditoriaTab({
       operations.reprints.length > 0 ||
       (operations.payment_voids?.length ?? 0) > 0 ||
       (operations.catalog_changes?.length ?? 0) > 0 ||
+      (operations.audit_events?.length ?? 0) > 0 ||
       operations.backups.length > 0 ||
       operations.cashiers.length > 0
     : false;
@@ -90,6 +91,7 @@ export function AuditoriaTab({
             <KPICard title="Reimpresiones" value={operations.summary.reprint_count} icon={<Printer className="h-4 w-4" />} />
             <KPICard title="Reversos" value={operations.summary.payment_void_count ?? 0} icon={<RotateCcw className="h-4 w-4" />} />
             <KPICard title="Catalogo" value={operations.summary.service_change_count ?? 0} icon={<ClipboardList className="h-4 w-4" />} />
+            <KPICard title="Control" value={operations.summary.audit_event_count ?? operations.audit_events?.length ?? 0} icon={<ClipboardList className="h-4 w-4" />} />
             <KPICard title="Respaldos" value={operations.summary.backup_count} icon={<Database className="h-4 w-4" />} />
             <KPICard title="Fallidos" value={operations.summary.failed_backup_count} />
             <KPICard title="Cajeros activos" value={operations.summary.cashier_count} icon={<Users className="h-4 w-4" />} />
@@ -237,6 +239,39 @@ export function AuditoriaTab({
             </Card>
           )}
 
+          {(operations.audit_events?.length ?? 0) > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Eventos de control</CardTitle>
+                <CardDescription>Eventos de auditoria registrados en el rango consultado</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Evento</TableHead>
+                      <TableHead>Resultado</TableHead>
+                      <TableHead>Motivo</TableHead>
+                      <TableHead>Usuario</TableHead>
+                      <TableHead>Fecha</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {operations.audit_events?.map((event, index) => (
+                      <TableRow key={`audit-${event.action}-${event.created_at ?? index}`}>
+                        <TableCell className="font-medium">{auditActionLabel(event.action)}</TableCell>
+                        <TableCell>{auditResultLabel(event.result)}</TableCell>
+                        <TableCell className="max-w-[240px] break-words">{event.reason ?? 'Sin motivo'}</TableCell>
+                        <TableCell>{event.user ?? 'Sistema'}</TableCell>
+                        <TableCell>{formatDate(event.created_at)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
           {operations.backups.length > 0 && (
             <Card>
               <CardHeader>
@@ -355,6 +390,22 @@ function backupTypeLabel(type: string): string {
 
 function paymentMethodLabel(method: string): string {
   return { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta', other: 'Otro' }[method] ?? method;
+}
+
+function auditActionLabel(action: string): string {
+  return {
+    'payment.voided': 'Reversion de pago',
+    'invoice.voided': 'Factura anulada',
+    'invoice.reprinted': 'Reimpresion de factura',
+    'auth.login': 'Inicio de sesion',
+    'auth.login_success': 'Inicio de sesion',
+    'user.updated': 'Usuario actualizado',
+    'cash_session.closed': 'Caja cerrada',
+  }[action] ?? 'Evento de control';
+}
+
+function auditResultLabel(result: string | null | undefined): string {
+  return { success: 'Exitoso', failed: 'Fallido', denied: 'Denegado' }[result ?? ''] ?? 'Registrado';
 }
 
 function moneyLabel(value: string | number | null | undefined): string {

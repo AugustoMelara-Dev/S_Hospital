@@ -71,6 +71,17 @@ class UserController extends Controller
             $user->syncRoles([$validated['role']]);
         }
 
+        $user->load('roles');
+
+        $auditLogger->log(
+            action: 'user.updated',
+            entity: $user,
+            user: $request->user(),
+            request: $request,
+            oldValues: $oldValues,
+            newValues: $this->auditPayload($user),
+        );
+
         return response()->json([
             'data' => $this->transformUser($user),
         ]);

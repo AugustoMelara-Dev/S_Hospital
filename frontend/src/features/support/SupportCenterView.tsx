@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { PageHeader } from '../../components/ui/page-header';
 import { Alert } from '../../components/ui/alert';
 import { type AuthUser, type SystemStatus, type SystemStatusSummary, apiClient, userSafeErrorMessage } from '../../lib/api';
@@ -18,11 +18,7 @@ export function SupportCenterView({ user, onStatus }: Props) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    void loadStatus();
-  }, [canViewAdvanced]);
-
-  async function loadStatus() {
+  const loadStatus = useCallback(async () => {
     setLoading(true);
     setError('');
 
@@ -44,7 +40,11 @@ export function SupportCenterView({ user, onStatus }: Props) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [canViewAdvanced, onStatus]);
+
+  useEffect(() => {
+    void loadStatus();
+  }, [loadStatus]);
 
   return (
     <section className="space-y-6" aria-labelledby="support-title">

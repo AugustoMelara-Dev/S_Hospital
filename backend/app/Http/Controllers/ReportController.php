@@ -78,7 +78,6 @@ class ReportController extends Controller
         ]);
     }
 
-
     public function operations(DateRangeReportRequest $request, OperationsReportService $reports): JsonResponse
     {
         return response()->json([

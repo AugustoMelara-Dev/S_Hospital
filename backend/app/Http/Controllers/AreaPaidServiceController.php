@@ -14,11 +14,12 @@ class AreaPaidServiceController extends Controller
     {
         $user = $request->user();
         $user->can('area_services.view') || abort(403);
+        $serviceAreaId = $user->getAttribute('service_area_id');
 
-        abort_unless($user->service_area_id !== null, 403);
+        abort_unless($serviceAreaId !== null, 403);
 
         $serviceAreaSlug = DB::table('service_areas')
-            ->where('id', $user->service_area_id)
+            ->where('id', $serviceAreaId)
             ->value('slug');
         $catalogAreaId = $serviceAreaSlug === null
             ? null
@@ -34,8 +35,8 @@ class AreaPaidServiceController extends Controller
             ->leftJoinSub($latestPayments, 'latest_payments', function ($join): void {
                 $join->on('latest_payments.invoice_id', '=', 'invoices.id');
             })
-            ->where(function ($query) use ($user, $catalogAreaId): void {
-                $query->where('invoice_items.service_area_id', $user->service_area_id);
+            ->where(function ($query) use ($serviceAreaId, $catalogAreaId): void {
+                $query->where('invoice_items.service_area_id', $serviceAreaId);
 
                 if ($catalogAreaId !== null) {
                     $query->orWhere('invoice_items.area_id', $catalogAreaId);

@@ -27,7 +27,6 @@ describe('App', () => {
           driver: 'mysql',
           connected: true,
           is_mysql_family: true,
-          connected: true,
         },
         frontend: {
           dist_index_exists: true,

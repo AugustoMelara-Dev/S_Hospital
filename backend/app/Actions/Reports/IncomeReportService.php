@@ -2,6 +2,7 @@
 
 namespace App\Actions\Reports;
 
+use App\Actions\Reports\Concerns\FormatsReportMoney;
 use App\Models\Invoice;
 use App\Models\Payment;
 use Illuminate\Database\Eloquent\Builder;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class IncomeReportService
 {
+    use FormatsReportMoney;
+
     public function __construct(private readonly FinancialFactsService $financialFacts) {}
 
     public function report(array $filters): array
@@ -17,31 +20,6 @@ class IncomeReportService
         $start = Carbon::createFromFormat('Y-m-d', $filters['date_from'])->startOfDay();
         $end = Carbon::createFromFormat('Y-m-d', $filters['date_to'])->endOfDay();
         $facts = $this->financialFacts->forRange($start, $end, $filters);
-
-        $balanceDueCents = (clone $invoiceBase)
-            ->where('status', '!=', Invoice::STATUS_VOID)
-            ->selectRaw('COALESCE(SUM(ROUND(balance_due * 100)), 0) as balance_due_cents')
-            ->value('balance_due_cents');
-
-        $statuses = collect([
-            Invoice::STATUS_ISSUED,
-            Invoice::STATUS_PARTIAL,
-            Invoice::STATUS_PAID,
-            Invoice::STATUS_VOID,
-        ])->mapWithKeys(fn (string $status): array => [
-            $status => ['count' => 0, 'total' => '0.00'],
-        ])->all();
-
-        (clone $invoiceBase)
-            ->groupBy('status')
-            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('COALESCE(SUM(ROUND(total * 100)), 0) as total_cents'))
-            ->get()
-            ->each(function (object $row) use (&$statuses): void {
-                $statuses[$row->status] = [
-                    'count' => (int) $row->count,
-                    'total' => $this->centsToMoney($row->total_cents),
-                ];
-            });
 
         return [
             'date_from' => $filters['date_from'],
@@ -59,9 +37,11 @@ class IncomeReportService
             'total_billed' => $facts['total_billed'],
             'total_collected' => $facts['total_collected'],
             'total_pending' => $facts['total_pending'],
+            'total_balance_due' => $facts['total_pending'],
             'total_partial' => $facts['total_partial'],
             'total_voided' => $facts['total_voided'],
             'payments_by_method' => $facts['payments_by_method'],
+            'invoices_by_status' => $this->invoicesByStatus($start, $end, $filters),
             'payment_count' => (int) ($facts['payment_count'] ?? 0),
             'invoice_count' => $this->usesPaymentScope($filters)
                 ? $this->paymentScopedInvoiceCount($start, $end, $filters)
@@ -124,5 +104,74 @@ class IncomeReportService
             })
             ->distinct('payments.invoice_id')
             ->count('payments.invoice_id');
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, array{count: int, total: string}>
+     */
+    private function invoicesByStatus(Carbon $start, Carbon $end, array $filters): array
+    {
+        $statuses = collect([
+            Invoice::STATUS_ISSUED,
+            Invoice::STATUS_PARTIAL,
+            Invoice::STATUS_PAID,
+            Invoice::STATUS_VOID,
+        ])->mapWithKeys(fn (string $status): array => [
+            $status => ['count' => 0, 'total' => '0.00'],
+        ])->all();
+
+        Invoice::query()
+            ->whereBetween('issued_at', [$start, $end])
+            ->when(! empty($filters['user_id']), function (Builder $query) use ($filters): void {
+                $query->where('issued_by', $filters['user_id']);
+            })
+            ->when(! empty($filters['cash_session_id']), function (Builder $query) use ($filters): void {
+                $query->where('cash_session_id', $filters['cash_session_id']);
+            })
+            ->when(! empty($filters['status']), function (Builder $query) use ($filters): void {
+                $query->where('status', $filters['status']);
+            })
+            ->when(! empty($filters['method']), function (Builder $query) use ($filters, $start, $end): void {
+                $query->whereExists(function ($subquery) use ($filters, $start, $end): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('payments')
+                        ->whereColumn('payments.invoice_id', 'invoices.id')
+                        ->where('payments.status', Payment::STATUS_POSTED)
+                        ->where('payments.method', $filters['method'])
+                        ->whereBetween('payments.paid_at', [$start, $end]);
+                });
+            })
+            ->when(! empty($filters['category_id']), function (Builder $query) use ($filters): void {
+                $query->whereExists(function ($subquery) use ($filters): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('invoice_items')
+                        ->whereColumn('invoice_items.invoice_id', 'invoices.id')
+                        ->where('invoice_items.category_id', $filters['category_id']);
+                });
+            })
+            ->when(! empty($filters['area_id']), function (Builder $query) use ($filters): void {
+                $query->whereExists(function ($subquery) use ($filters): void {
+                    $subquery
+                        ->selectRaw('1')
+                        ->from('invoice_items')
+                        ->whereColumn('invoice_items.invoice_id', 'invoices.id')
+                        ->where('invoice_items.area_id', $filters['area_id']);
+                });
+            })
+            ->groupBy('status')
+            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('COALESCE(SUM(total_cents), 0) as total_cents'))
+            ->get()
+            ->each(function (object $row) use (&$statuses): void {
+                /** @var object{status: string, count: int|string, total_cents: int|string} $row */
+                $statuses[$row->status] = [
+                    'count' => (int) $row->count,
+                    'total' => $this->centsToMoney($row->total_cents),
+                ];
+            });
+
+        return $statuses;
     }
 }

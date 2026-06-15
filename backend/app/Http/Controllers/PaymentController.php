@@ -8,7 +8,6 @@ use App\Actions\Payments\VoidPaymentAction;
 use App\Http\Requests\Payments\IndexPaymentRequest;
 use App\Http\Requests\Payments\StorePaymentRequest;
 use App\Http\Requests\Payments\VoidPaymentRequest;
-use App\Models\FiscalSetting;
 use App\Models\InstitutionalReceipt;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -51,15 +50,6 @@ class PaymentController extends Controller
                 $invoiceAccess,
             );
 
-            if ($receiptResult['error']) {
-                $mode = FiscalSetting::query()->value('receipt_template_mode') ?? 'institutional';
-                if ($mode === 'institutional') {
-                    throw ValidationException::withMessages([
-                        'institutional_receipt' => $receiptResult['error'],
-                    ]);
-                }
-            }
-
             return response()->json([
                 'data' => [
                     'payment' => $payment,
@@ -78,6 +68,24 @@ class PaymentController extends Controller
         VoidPaymentAction $voidPayment,
         InvoiceAccess $invoiceAccess,
     ): JsonResponse {
+        $voidedPayment = $voidPayment->execute($invoice, $payment, $request->validated(), $request->user(), $invoiceAccess);
+
+        return response()->json([
+            'data' => [
+                'payment' => $voidedPayment,
+                'invoice' => $invoice->fresh()->load('items', 'payments', 'issuer:id,name,username'),
+            ],
+        ]);
+    }
+
+    public function voidByPayment(
+        VoidPaymentRequest $request,
+        Payment $payment,
+        VoidPaymentAction $voidPayment,
+        InvoiceAccess $invoiceAccess,
+    ): JsonResponse {
+        /** @var Invoice $invoice */
+        $invoice = $payment->invoice()->firstOrFail();
         $voidedPayment = $voidPayment->execute($invoice, $payment, $request->validated(), $request->user(), $invoiceAccess);
 
         return response()->json([
@@ -130,5 +138,4 @@ class PaymentController extends Controller
             ];
         }
     }
-
 }

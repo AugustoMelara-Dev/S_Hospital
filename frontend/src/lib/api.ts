@@ -16,6 +16,8 @@ import type {
   FiscalSequence,
   Category,
   Area,
+  ServiceArea,
+  AreaPaidService,
   Service,
   CategoryPayload,
   ServicePayload,
@@ -39,6 +41,8 @@ import type {
   CashSessionReport,
   BackupLog,
   SystemStatus,
+  SystemStatusCheck,
+  SystemStatusSummary,
   OperationalHealth,
   PaginatedMeta,
   ServiceFilters,
@@ -79,6 +83,8 @@ export type {
   FiscalSequence,
   Category,
   Area,
+  ServiceArea,
+  AreaPaidService,
   Service,
   CategoryPayload,
   ServicePayload,
@@ -102,6 +108,8 @@ export type {
   CashSessionReport,
   BackupLog,
   SystemStatus,
+  SystemStatusCheck,
+  SystemStatusSummary,
   OperationalHealth,
   PaginatedMeta,
   ServiceFilters,
@@ -308,6 +316,10 @@ export const apiClient = {
 
   async getSystemStatus(): Promise<SystemStatus> {
     return system.getStatus();
+  },
+
+  async getSystemStatusSummary(): Promise<SystemStatusSummary> {
+    return system.getStatusSummary();
   },
 
   async getSystemHealth(): Promise<OperationalHealth> {

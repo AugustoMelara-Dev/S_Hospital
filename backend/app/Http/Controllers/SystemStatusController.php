@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\System\BuildOperationalStatusAction;
 use App\Http\Requests\System\ShowSystemStatusRequest;
 use App\Models\BackupLog;
 use App\Models\FiscalSequence;
@@ -149,6 +150,13 @@ class SystemStatusController extends Controller
         ]);
     }
 
+    public function summary(BuildOperationalStatusAction $statusBuilder): JsonResponse
+    {
+        return response()->json([
+            'data' => $statusBuilder->publicSummary($this->baseStatus()),
+        ]);
+    }
+
     public function setupStatus(): JsonResponse
     {
         $fiscalSettings = FiscalSetting::query()->exists();
@@ -202,7 +210,7 @@ class SystemStatusController extends Controller
 
         try {
             DB::connection($connection)->getPdo();
-        } catch (\Throwable) {
+        } catch (Throwable) {
             $connected = false;
         }
 
@@ -211,7 +219,6 @@ class SystemStatusController extends Controller
             'driver' => $driver,
             'connected' => $connected,
             'is_mysql_family' => in_array($driver, ['mysql', 'mariadb'], true),
-            'connected' => $connected,
         ];
     }
 
@@ -365,6 +372,53 @@ class SystemStatusController extends Controller
     }
 
     /**
+     * @return array{available: bool, modified_at: string|null}
+     */
+    private function frontendBuildStatus(): array
+    {
+        $indexPath = $this->projectPath('frontend/dist/index.html');
+
+        if (! is_file($indexPath)) {
+            return [
+                'available' => false,
+                'modified_at' => null,
+            ];
+        }
+
+        $modifiedAt = filemtime($indexPath);
+
+        return [
+            'available' => true,
+            'modified_at' => $modifiedAt === false ? null : now()->setTimestamp($modifiedAt)->toJSON(),
+        ];
+    }
+
+    private function installedVersion(): string
+    {
+        $configured = trim((string) Config::get('hospital.installed_version', ''));
+        if ($configured !== '') {
+            return $configured;
+        }
+
+        $packagePath = $this->projectPath('frontend/package.json');
+        if (! is_file($packagePath)) {
+            return '';
+        }
+
+        $content = file_get_contents($packagePath);
+        if ($content === false) {
+            return '';
+        }
+
+        $package = json_decode($content, true);
+        if (! is_array($package)) {
+            return '';
+        }
+
+        return trim((string) ($package['version'] ?? ''));
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function dumpBinaryStatus(): array
@@ -464,7 +518,7 @@ class SystemStatusController extends Controller
                 $lastTickCarbon = Carbon::parse($lastTick);
                 $ageSeconds = max(0, now()->diffInSeconds($lastTickCarbon, absolute: true));
                 $status = $ageSeconds <= 180 ? 'ok' : ($ageSeconds <= 600 ? 'stale' : 'stuck');
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 $lastTickCarbon = null;
                 $status = 'invalid';
             }

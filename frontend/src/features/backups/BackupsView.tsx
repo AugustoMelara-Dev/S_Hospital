@@ -734,7 +734,14 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                 {backupsList.map((backup) => (
                   <TableRow key={backup.id}>
                     <TableCell className="whitespace-nowrap px-4 py-3">{formatDate(backup.completed_at ?? backup.created_at)}</TableCell>
-                    <TableCell className="min-w-72 break-words px-4 py-3 text-sm">{backup.filename}</TableCell>
+                    <TableCell className="min-w-72 break-words px-4 py-3 text-sm">
+                      <span className="block">{backup.filename}</span>
+                      {backup.checksum_sha256 ? (
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          SHA256 {backup.checksum_sha256.slice(0, 8)}... huella de integridad
+                        </span>
+                      ) : null}
+                    </TableCell>
                     <TableCell className="whitespace-nowrap px-4 py-3">{formatBytes(backup.size_bytes)}</TableCell>
                     <TableCell className="px-4 py-3">
                       <div className="flex flex-col gap-1">

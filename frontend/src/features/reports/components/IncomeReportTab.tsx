@@ -96,9 +96,18 @@ export function IncomeReportTab({
     card: '0.00',
     other: '0.00',
   };
+  const invoicesByStatus = income?.invoices_by_status ?? {
+    issued: { count: 0, total: '0.00' },
+    partial: { count: 0, total: '0.00' },
+    paid: { count: 0, total: '0.00' },
+    void: { count: 0, total: '0.00' },
+  };
   const categoryAmountLabel = categories?.amount_label ?? 'Total';
   const areaAmountLabel = areas?.amount_label ?? 'Total';
-  const cashierOptions = cashierOptionsFromSessions(cashSessionOptions);
+  const safeCategoryOptions = categoryOptions ?? [];
+  const safeAreaOptions = areaOptions ?? [];
+  const safeCashSessionOptions = cashSessionOptions ?? [];
+  const cashierOptions = cashierOptionsFromSessions(safeCashSessionOptions);
 
   const chartData = income
     ? Object.entries(paymentsByMethod).map(([method, amount]) => ({
@@ -128,7 +137,7 @@ export function IncomeReportTab({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas</SelectItem>
-                  {categoryOptions.map((c) => (
+                  {safeCategoryOptions.map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -142,7 +151,7 @@ export function IncomeReportTab({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas</SelectItem>
-                  {areaOptions.map((area) => (
+                  {safeAreaOptions.map((area) => (
                     <SelectItem key={area.id} value={String(area.id)}>{area.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -214,7 +223,7 @@ export function IncomeReportTab({
                 />
               </div>
             )}
-            {cashSessionOptions.length > 0 ? (
+            {safeCashSessionOptions.length > 0 ? (
               <div className="min-w-0 sm:col-span-2 xl:col-span-1">
                 <Label htmlFor="income-cash-session-id">Caja</Label>
                 <NativeSelect
@@ -223,7 +232,7 @@ export function IncomeReportTab({
                   onChange={(e) => onCashSessionChange(e.target.value)}
                 >
                   <option value="">Todas</option>
-                  {cashSessionOptions.map((session) => (
+                  {safeCashSessionOptions.map((session) => (
                     <option key={session.id} value={String(session.id)}>
                       {cashSessionLabel(session)}
                     </option>
@@ -323,9 +332,9 @@ export function IncomeReportTab({
                 <TableBody>
                   {Object.entries(invoicesByStatus).map(([invoiceStatus, data]) => (
                     <TableRow key={invoiceStatus}>
-                      <TableCell className="font-medium">{statusLabel(invoiceStatus)}</TableCell>
+                      <TableCell className="font-medium">{invoiceStatusLabel(invoiceStatus)}</TableCell>
                       <TableCell className="text-right">{data.count}</TableCell>
-                      <TableCell className="text-right">L. {data.total}</TableCell>
+                      <TableCell className="text-right">{moneyLabel(data.total)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -440,6 +449,15 @@ export function IncomeReportTab({
 
 function methodLabel(method: string): string {
   return { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta', other: 'Otro' }[method] ?? method;
+}
+
+function invoiceStatusLabel(status: string): string {
+  return {
+    issued: 'Emitida',
+    partial: 'Parcial',
+    paid: 'Pagada',
+    void: 'Anulada',
+  }[status] ?? status;
 }
 
 function cashSessionLabel(session: CashSession): string {
