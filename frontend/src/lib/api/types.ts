@@ -599,6 +599,9 @@ export type SystemStatus = {
   backups: {
     pending_count: number;
     worker_recently_active: boolean;
+    oldest_pending_at?: string | null;
+    stale_pending_count?: number;
+    stale_pending_threshold_minutes?: number;
     last_success_at: string | null;
     last_success_filename: string | null;
     last_failure_at: string | null;

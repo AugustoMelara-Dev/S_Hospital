@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\BackupLog;
+use App\Jobs\RunBackupJob;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -77,6 +78,9 @@ class SystemStatusTest extends TestCase
             ->assertJsonPath('data.readiness.state', 'PRODUCTION_CANDIDATE')
             ->assertJsonPath('data.readiness.production_ready', false)
             ->assertJsonPath('data.backups.pending_count', 1)
+            ->assertJsonPath('data.backups.worker_recently_active', false)
+            ->assertJsonPath('data.backups.stale_pending_count', 0)
+            ->assertJsonPath('data.backups.stale_pending_threshold_minutes', 15)
             ->assertJsonPath('data.backups.last_success_filename', 'hospital-backup-ok.sql')
             ->assertJsonPath('data.backups.last_failure_message', 'Error tecnico registrado. Revise el paquete de soporte.')
             ->assertJsonPath('data.backups.queue.jobs_table_available', true)
@@ -108,6 +112,43 @@ class SystemStatusTest extends TestCase
         $this->assertStringNotContainsString('soporte:supersecret', json_encode($response->json(), JSON_THROW_ON_ERROR));
         $this->assertStringNotContainsString('SQLSTATE', json_encode($response->json(), JSON_THROW_ON_ERROR));
         $this->assertStringNotContainsString($proofRoot, json_encode($response->json(), JSON_THROW_ON_ERROR));
+        $this->assertIsString($response->json('data.backups.oldest_pending_at'));
+    }
+
+    public function test_status_flags_stale_pending_backups_for_worker_diagnosis(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        BackupLog::query()->create([
+            'filename' => 'hospital-backup-stale.sql',
+            'path' => 'backups/hospital-backup-stale.sql',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_PENDING,
+            'type' => BackupLog::TYPE_MANUAL,
+            'created_by' => $admin->id,
+            'created_at' => now()->subMinutes(20),
+            'updated_at' => now()->subMinutes(20),
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/system/status')
+            ->assertOk()
+            ->assertJsonPath('data.backups.pending_count', 1)
+            ->assertJsonPath('data.backups.stale_pending_count', 1)
+            ->assertJsonPath('data.backups.stale_pending_threshold_minutes', 15);
+
+        $this->assertIsString($response->json('data.backups.oldest_pending_at'));
+    }
+
+    public function test_database_queue_retry_after_exceeds_backup_worker_timeout(): void
+    {
+        $job = new RunBackupJob(1);
+
+        $this->assertGreaterThanOrEqual(
+            $job->timeout + 60,
+            (int) config('queue.connections.database.retry_after'),
+        );
     }
 
     public function test_status_flags_pending_database_migrations(): void

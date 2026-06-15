@@ -6,6 +6,7 @@ use App\Actions\Backups\CreateBackupAction;
 use App\Actions\Backups\DatabaseDumpWriter;
 use App\Actions\Backups\EncryptBackupFileAction;
 use App\Actions\Backups\PruneBackupsAction;
+use App\Jobs\RunBackupJob;
 use App\Models\BackupLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -357,6 +358,38 @@ class BackupWorkflowTest extends TestCase
         $this->assertDatabaseMissing('audit_logs', [
             'user_id' => $admin->id,
             'action' => 'backup.created',
+            'entity_type' => BackupLog::class,
+            'entity_id' => $backup->id,
+        ]);
+    }
+
+    public function test_backup_job_failure_marks_pending_log_failed_with_safe_message(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+        $backup = BackupLog::query()->create([
+            'filename' => 'pending-worker-failure.sql',
+            'path' => 'backups/pending-worker-failure.sql',
+            'disk' => 'local',
+            'status' => BackupLog::STATUS_PENDING,
+            'type' => BackupLog::TYPE_MANUAL,
+            'created_by' => $admin->id,
+        ]);
+
+        (new RunBackupJob($backup->id))->failed(
+            new RuntimeException('SQLSTATE[HY000] DB_PASSWORD=secret-db-password failed at C:\Projects\S_Hospital\backend\.env'),
+        );
+
+        $backup->refresh();
+
+        $this->assertSame(BackupLog::STATUS_FAILED, $backup->status);
+        $this->assertNotNull($backup->completed_at);
+        $this->assertSame('Error tecnico registrado. Revise el paquete de soporte.', $backup->error_message);
+        $this->assertStringNotContainsString('secret-db-password', (string) $backup->error_message);
+        $this->assertStringNotContainsString('SQLSTATE', (string) $backup->error_message);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'backup.failed',
             'entity_type' => BackupLog::class,
             'entity_id' => $backup->id,
         ]);

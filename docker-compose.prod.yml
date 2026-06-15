@@ -29,6 +29,7 @@ services:
       DB_CACHE_TABLE: cache
       DB_CACHE_LOCK_TABLE: cache_locks
       QUEUE_CONNECTION: database
+      DB_QUEUE_RETRY_AFTER: "660"
       SESSION_DRIVER: database
       SESSION_ENCRYPT: "true"
       LOG_CHANNEL: daily
@@ -143,6 +144,7 @@ services:
       DB_CACHE_TABLE: cache
       DB_CACHE_LOCK_TABLE: cache_locks
       QUEUE_CONNECTION: database
+      DB_QUEUE_RETRY_AFTER: "660"
       SESSION_DRIVER: database
       SESSION_ENCRYPT: "true"
       LOG_CHANNEL: daily

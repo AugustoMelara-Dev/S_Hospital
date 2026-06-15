@@ -11,7 +11,7 @@ const statusConfig = {
     icon: Clock,
   },
   success: {
-    label: 'Protegido',
+    label: 'Completado',
     className: 'border-success/30 bg-success/10 text-success',
     icon: CheckCircle,
   },
@@ -47,9 +47,11 @@ export function BackupStatusBadge({ status, className }: BackupStatusBadgeProps)
 }
 
 export function getStatusDescription(status: BackupStatus): string {
-  return {
-    pending: 'El respaldo se está creando.',
-    success: 'Datos protegidos con este respaldo.',
+  const descriptions: Record<BackupStatus, string> = {
+    pending: 'Pendiente del worker de respaldos. Si tarda demasiado, revise el servicio.',
+    success: 'Archivo creado con huella SHA256. Valide restore antes de declararlo restaurable.',
     failed: 'No se pudo completar. Revise con soporte antes de crear otro.',
-  }[status];
+  };
+
+  return descriptions[status];
 }

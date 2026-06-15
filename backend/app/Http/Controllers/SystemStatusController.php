@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\System\BuildOperationalStatusAction;
+use App\Actions\Reports\OperationalMetricsService;
 use App\Http\Requests\System\ShowSystemStatusRequest;
 use App\Models\BackupLog;
 use App\Models\FiscalSequence;
@@ -272,6 +273,8 @@ class SystemStatusController extends Controller
      */
     private function backupStatus(): array
     {
+        $staleThresholdMinutes = 15;
+        $staleBefore = now()->subMinutes($staleThresholdMinutes);
         $lastSuccess = BackupLog::query()
             ->where('status', BackupLog::STATUS_SUCCESS)
             ->latest('completed_at')
@@ -285,9 +288,22 @@ class SystemStatusController extends Controller
         $pendingCount = BackupLog::query()
             ->where('status', BackupLog::STATUS_PENDING)
             ->count();
+        $oldestPending = BackupLog::query()
+            ->where('status', BackupLog::STATUS_PENDING)
+            ->oldest('created_at')
+            ->first();
+        $stalePendingCount = BackupLog::query()
+            ->where('status', BackupLog::STATUS_PENDING)
+            ->where('created_at', '<=', $staleBefore)
+            ->count();
+        $operationalMetrics = app(OperationalMetricsService::class)->snapshot();
 
         return [
             'pending_count' => $pendingCount,
+            'worker_recently_active' => (bool) ($operationalMetrics['backups']['worker_recently_active'] ?? false),
+            'oldest_pending_at' => $oldestPending?->created_at?->toJSON(),
+            'stale_pending_count' => $stalePendingCount,
+            'stale_pending_threshold_minutes' => $staleThresholdMinutes,
             'last_success_at' => $lastSuccess?->completed_at?->toJSON(),
             'last_success_filename' => $lastSuccess?->filename,
             'last_failure_at' => $lastFailure?->completed_at?->toJSON(),

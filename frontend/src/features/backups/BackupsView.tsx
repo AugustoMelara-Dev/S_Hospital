@@ -209,6 +209,8 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
   const lastSuccessBackup = backupsList.find(b => b.status === 'success');
   const lastFailedBackup = backupsList.find(b => b.status === 'failed');
   const operationalStatus = systemStatus ? operationalSummary(systemStatus) : null;
+  const stalePendingCount = systemStatus?.backups.stale_pending_count ?? 0;
+  const stalePendingThresholdMinutes = systemStatus?.backups.stale_pending_threshold_minutes ?? 15;
 
   useEffect(() => {
     void loadBackups(page);
@@ -281,7 +283,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
       setBackups((current) => [backup, ...current]);
       onStatus(
         backup.status === 'success'
-          ? 'Respaldo protegido.'
+          ? 'Respaldo completado con huella SHA256.'
           : 'Respaldo registrado. Revise su estado en la lista.',
       );
     } catch (error) {
@@ -380,6 +382,12 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
           </Card>
         ) : null}
 
+        {stalePendingCount > 0 ? (
+          <Alert title="Respaldos pendientes por demasiado tiempo">
+            {stalePendingCount} respaldo(s) siguen pendientes por mas de {stalePendingThresholdMinutes} minutos. Revise que el worker de backups y el scheduler esten activos antes de confiar en la automatizacion.
+          </Alert>
+        ) : null}
+
         {systemStatus && showAdvancedStatus ? (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
             <Card className={systemStatus.database.connected && systemStatus.frontend.dist_index_exists && systemStatus.frontend.assets_present && systemStatus.network.lan_ready ? 'status-success' : 'status-warning'}>
@@ -446,6 +454,9 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       En proceso registrados: {systemStatus.backups.pending_count}
+                    </p>
+                    <p className={stalePendingCount > 0 ? 'text-xs text-warning' : 'text-xs text-muted-foreground'}>
+                      Atascados: {stalePendingCount}
                     </p>
                   </div>
                 </div>
@@ -707,7 +718,7 @@ export function BackupsView({ user, onStatus }: BackupsViewProps) {
                   }}
                   className="h-8"
                 >
-                  {filter === 'all' ? 'Todos' : filter === 'pending' ? 'Pendientes' : filter === 'success' ? 'Protegidos' : 'Error'}
+                  {filter === 'all' ? 'Todos' : filter === 'pending' ? 'Pendientes' : filter === 'success' ? 'Completados' : 'Error'}
                 </Button>
               ))}
             </div>
