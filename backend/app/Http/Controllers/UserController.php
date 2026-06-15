@@ -76,8 +76,9 @@ class UserController extends Controller
         ]);
     }
 
-    public function toggleActive(ToggleUserActiveRequest $request, User $user): JsonResponse
+    public function toggleActive(ToggleUserActiveRequest $request, User $user, AuditLogger $auditLogger): JsonResponse
     {
+        $oldValues = $this->auditPayload($user);
         $user->update([
             'active' => ! $user->active,
         ]);
@@ -98,9 +99,10 @@ class UserController extends Controller
         ]);
     }
 
-    public function resetPassword(ResetUserPasswordRequest $request, User $user): JsonResponse
+    public function resetPassword(ResetUserPasswordRequest $request, User $user, AuditLogger $auditLogger): JsonResponse
     {
         $validated = $request->validated();
+        $oldValues = ['must_change_password' => $user->must_change_password];
 
         $user->forceFill([
             'password' => Hash::make($validated['password']),

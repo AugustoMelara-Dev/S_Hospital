@@ -10,10 +10,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('audit_logs', function (Blueprint $table) {
-            $table->string('ip', 45)->nullable()->after('entity_id');
-            $table->string('user_agent', 191)->nullable()->after('ip');
-            $table->string('url', 255)->nullable()->after('user_agent');
-            $table->string('http_method', 10)->nullable()->after('url');
+            if (! Schema::hasColumn('audit_logs', 'ip')) {
+                $table->string('ip', 45)->nullable()->after('entity_id');
+            }
+
+            if (! Schema::hasColumn('audit_logs', 'user_agent')) {
+                $table->string('user_agent', 191)->nullable()->after('ip');
+            }
+
+            if (! Schema::hasColumn('audit_logs', 'url')) {
+                $table->string('url', 255)->nullable()->after('user_agent');
+            }
+
+            if (! Schema::hasColumn('audit_logs', 'http_method')) {
+                $table->string('http_method', 10)->nullable()->after('url');
+            }
         });
 
         $driver = DB::connection()->getDriverName();
@@ -55,7 +66,11 @@ SQL);
         }
 
         Schema::table('audit_logs', function (Blueprint $table) {
-            $table->dropColumn(['ip', 'user_agent', 'url', 'http_method']);
+            foreach (['ip', 'url', 'http_method'] as $column) {
+                if (Schema::hasColumn('audit_logs', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
     }
 };

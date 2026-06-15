@@ -22,7 +22,6 @@ class ServiceSearch
             $service->barcode,
             $service->qr_code,
             $service->internal_code,
-            ...($service->aliases ?? []),
             $service->category?->name,
             $service->area?->name,
         ])));

@@ -70,7 +70,6 @@ export type Service = {
   scan_code?: string | null;
   barcode?: string | null;
   qr_code?: string | null;
-  aliases?: string[] | null;
   description?: string | null;
   internal_code?: string | null;
   price: string;
@@ -99,7 +98,6 @@ export type ServicePayload = {
   scan_code: string | null;
   barcode: string | null;
   qr_code: string | null;
-  aliases?: string[] | null;
   description?: string | null;
   internal_code?: string | null;
   taxable: boolean;
@@ -108,8 +106,6 @@ export type ServicePayload = {
   is_billable?: boolean;
   special_rule_code: string | null;
   print_on_receipt?: boolean;
-  visible_in_billing?: boolean;
-  is_billable?: boolean;
 };
 
 export type InvoiceItemPayload = {

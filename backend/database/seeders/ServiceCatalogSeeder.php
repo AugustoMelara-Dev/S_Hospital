@@ -41,19 +41,13 @@ class ServiceCatalogSeeder extends Seeder
 
         DB::transaction(function () use ($rows): void {
             $areas = $this->seedAreas();
+            $this->seedServiceAreas();
             $categoryOrders = [];
 
             foreach ($rows as $row) {
                 $categorySlug = $this->slug($row['categoria']);
                 $categorySourceKey = $this->categorySourceKey($row['categoria']);
                 $categoryOrders[$categorySlug] ??= count($categoryOrders);
-                $area = Area::query()->firstOrCreate(
-                    ['slug' => $categorySlug],
-                    [
-                        'name' => $row['categoria'],
-                        'active' => true,
-                    ],
-                );
 
                 $category = Category::query()
                     ->where('source_key', $categorySourceKey)
@@ -83,7 +77,6 @@ class ServiceCatalogSeeder extends Seeder
                 $serviceData = [
                     'source_key' => $serviceSourceKey,
                     'name' => $row['servicio'],
-                    'area_id' => $area->id,
                     'category_id' => $category->id,
                     'area_id' => $areas[$this->areaSlugForCategory($row['categoria'])]->id ?? null,
                     'slug' => $serviceSlug,
@@ -248,9 +241,35 @@ class ServiceCatalogSeeder extends Seeder
     }
 
     /**
-     * @return array<string, ServiceArea>
+     * @return array<string, Area>
      */
     private function seedAreas(): array
+    {
+        $areas = [
+            ['name' => 'Laboratorio'],
+            ['name' => 'Rayos X'],
+            ['name' => 'Emergencia'],
+            ['name' => 'Consulta externa'],
+            ['name' => 'Farmacia'],
+        ];
+
+        $seeded = [];
+
+        foreach ($areas as $area) {
+            $slug = $this->slug($area['name']);
+            $seeded[$slug] = Area::query()->updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'name' => $area['name'],
+                    'active' => true,
+                ],
+            );
+        }
+
+        return $seeded;
+    }
+
+    private function seedServiceAreas(): void
     {
         $areas = [
             ['name' => 'Laboratorio', 'sort_order' => 1],
@@ -261,12 +280,9 @@ class ServiceCatalogSeeder extends Seeder
             ['name' => 'Otros', 'sort_order' => 99],
         ];
 
-        $seeded = [];
-
         foreach ($areas as $area) {
-            $slug = $this->slug($area['name']);
-            $seeded[$slug] = ServiceArea::query()->updateOrCreate(
-                ['slug' => $slug],
+            ServiceArea::query()->updateOrCreate(
+                ['slug' => $this->slug($area['name'])],
                 [
                     'name' => $area['name'],
                     'active' => true,
@@ -274,8 +290,6 @@ class ServiceCatalogSeeder extends Seeder
                 ],
             );
         }
-
-        return $seeded;
     }
 
     private function areaSlugForCategory(string $category): string

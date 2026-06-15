@@ -50,7 +50,6 @@ class Service extends Model
         'scan_code',
         'barcode',
         'qr_code',
-        'aliases',
         'description',
         'internal_code',
         'price',
@@ -60,8 +59,6 @@ class Service extends Model
         'is_billable',
         'special_rule_code',
         'print_on_receipt',
-        'visible_in_billing',
-        'is_billable',
         'created_by',
         'updated_by',
     ];

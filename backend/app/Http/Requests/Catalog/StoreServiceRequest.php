@@ -30,8 +30,6 @@ class StoreServiceRequest extends FormRequest
             'scan_code' => ['nullable', 'string', 'max:120', 'unique:services,scan_code'],
             'barcode' => ['nullable', 'string', 'max:120', 'unique:services,barcode'],
             'qr_code' => ['nullable', 'string', 'max:120', 'unique:services,qr_code'],
-            'aliases' => ['nullable', 'array', 'max:20'],
-            'aliases.*' => ['string', 'max:80'],
             'description' => ['nullable', 'string', 'max:255'],
             'internal_code' => ['nullable', 'string', 'max:80', 'unique:services,internal_code'],
             'taxable' => ['sometimes', 'boolean'],
@@ -40,8 +38,6 @@ class StoreServiceRequest extends FormRequest
             'is_billable' => ['sometimes', 'boolean'],
             'special_rule_code' => ['nullable', 'string', Rule::in([Service::ERYTHROPOIETIN_RULE])],
             'print_on_receipt' => ['sometimes', 'boolean'],
-            'visible_in_billing' => ['sometimes', 'boolean'],
-            'is_billable' => ['sometimes', 'boolean'],
         ];
     }
 
