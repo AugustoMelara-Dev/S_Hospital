@@ -1,5 +1,14 @@
 # Changelog - Sistema de Caja Hospitalaria
 
+## 2026-06-15 - v1.1 Critical Hardening post-OFFLINE
+
+Cherry-picked from `hardening-audit-complete-2026-06-15` (commits 680e7d2e + 6cecb4af) sobre la base OFF-A..OFF-E. Ademas del merge, esta ronda agrega:
+
+- Migracion `2026_06_15_000004_add_offline_check_constraints`: CHECK constraints para `invoices.status`, `payments.status`, `cash_register_sessions.status`, `cash_movements.type`, `audit_logs.result`, no-negatividad de `*_amount_cents`, rango `fiscal_sequences.current_number <= max_number`, regla `services.price > 0 OR special_rule_code IS NOT NULL` y unique-active guard para `receipt_print_profiles.is_global_default`. Solo aplica a MariaDB/MySQL; tests en SQLite siguen funcionando.
+- Endpoint `POST /api/institutional-receipts/{receipt}/print-events` con throttle `30,1` e idempotency para auditar cada intento de impresion de PDF institucional.
+- Fix de regresion: se restaura la ruta `GET /api/area-services/paid` que el refactor del controller habia removido.
+- Worklog `worklogs/2026-06-15-v11-critical-hardening-matrix.md` con la matriz PASS/PARTIAL de los 80 IDs P0/P1 originales.
+
 ## 2026-06-15 - Hardening audit complete pass
 
 - Cifra backups finales como `.sql.enc`, registra SHA256 del artefacto cifrado y agrega comando `hospital:decrypt-backup`.
