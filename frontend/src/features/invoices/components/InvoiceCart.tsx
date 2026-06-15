@@ -1,4 +1,4 @@
-﻿import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
+import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { Checkbox } from '../../../components/ui/checkbox';
 import { Input } from '../../../components/ui/input';
@@ -24,6 +24,7 @@ type InvoiceCartProps = {
   actionLabel?: string;
   emptyActionLabel?: string;
   submitting?: boolean;
+  canMarkDialysisPrescription?: boolean;
 };
 
 const ERYTHROPOIETIN_RULE = 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION';
@@ -41,6 +42,7 @@ export function InvoiceCart({
   actionLabel = 'Emitir Factura',
   emptyActionLabel = 'Agregar servicios',
   submitting,
+  canMarkDialysisPrescription = false,
 }: InvoiceCartProps) {
   const isEmpty = items.length === 0;
   const primaryBlockReason = disabledReasons[0];
@@ -144,9 +146,12 @@ export function InvoiceCart({
                       <Checkbox
                         id={`dialysis-${index}`}
                         checked={item.dialysisPrescription}
+                        disabled={!canMarkDialysisPrescription}
                         onCheckedChange={(checked) => onUpdateDialysisPrescription(index, checked === true)}
                       />
-                      <span className="text-muted-foreground">Receta de diálisis (gratis)</span>
+                      <span className={`text-muted-foreground ${!canMarkDialysisPrescription ? 'opacity-60' : ''}`}>
+                        {canMarkDialysisPrescription ? 'Receta de diálisis (gratis)' : 'Receta de diálisis (requiere autorización)'}
+                      </span>
                     </label>
                   )}
                 </div>

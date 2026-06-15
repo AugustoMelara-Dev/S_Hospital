@@ -21,6 +21,44 @@ describe('InvoiceCart', () => {
     expect(document.body.textContent).toContain('L. 0.00');
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero|undefined/);
   });
+
+  it('disables the dialysis prescription checkbox and shows auth warning when user lacks permission', () => {
+    render(
+      <InvoiceCart
+        items={[cartItemFixture({ service: serviceFixture({ special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION' }) })]}
+        preview={{ subtotal: '100.00', tax: '0.00', total: '100.00' }}
+        taxRate="15.00"
+        onUpdateQuantity={vi.fn()}
+        onUpdateDialysisPrescription={vi.fn()}
+        onRemoveItem={vi.fn()}
+        onConfirm={vi.fn()}
+        canMarkDialysisPrescription={false}
+      />,
+    );
+
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).toBeDisabled();
+    expect(screen.getByText('Receta de diálisis (requiere autorización)')).toBeInTheDocument();
+  });
+
+  it('enables the dialysis prescription checkbox and shows gratis text when user has permission', () => {
+    render(
+      <InvoiceCart
+        items={[cartItemFixture({ service: serviceFixture({ special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION' }) })]}
+        preview={{ subtotal: '100.00', tax: '0.00', total: '100.00' }}
+        taxRate="15.00"
+        onUpdateQuantity={vi.fn()}
+        onUpdateDialysisPrescription={vi.fn()}
+        onRemoveItem={vi.fn()}
+        onConfirm={vi.fn()}
+        canMarkDialysisPrescription={true}
+      />,
+    );
+
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).toBeEnabled();
+    expect(screen.getByText('Receta de diálisis (gratis)')).toBeInTheDocument();
+  });
 });
 
 function cartItemFixture(overrides: Partial<CartItem> = {}): CartItem {

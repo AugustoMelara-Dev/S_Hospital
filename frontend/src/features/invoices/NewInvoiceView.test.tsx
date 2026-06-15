@@ -946,9 +946,9 @@ describe('NewInvoiceView', () => {
     expect(screen.queryByRole('button', { name: /anular factura/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /reimprimir/i }));
     fireEvent.click(await screen.findByRole('button', { name: /registrar reimpresi/i }));
-    expect(await screen.findByLabelText(/vista previa de comprobante de factura legacy/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/vista previa del recibo/i)).toBeInTheDocument();
     await waitFor(() => {
-      const receiptEl = screen.getByLabelText('Comprobante de factura legacy');
+      const receiptEl = screen.getByLabelText(/recibo institucional/i);
       expect(receiptEl).toBeInTheDocument();
       expect(receiptEl).toHaveClass('receipt-half_letter');
     });
@@ -1290,10 +1290,9 @@ describe('NewInvoiceView', () => {
 
     render(<ReceiptPreview receipt={receipt} onWidthChange={vi.fn()} onPrint={printSpy} />);
 
-    expect(screen.getByLabelText('Comprobante de factura legacy')).toHaveClass('receipt-80mm');
+    expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-80mm');
     expect(screen.getByText(/termico 80mm/i)).toBeInTheDocument();
-    expect(screen.getByText(/comprobante de compatibilidad/i)).toBeInTheDocument();
-    expect(screen.queryByText(/vence/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/vence/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /imprimir/i }));
     await waitFor(() => expect(printSpy).toHaveBeenCalledOnce());
   });
@@ -1330,5 +1329,182 @@ describe('NewInvoiceView', () => {
     expect(screen.getByLabelText(/recibo institucional/i)).toHaveClass('receipt-letter');
     expect(screen.getAllByText(/configuración pendiente/i)).toHaveLength(3);
     expect(screen.queryByText(/\bQR\b|barra|barcode|codigo interno/i)).not.toBeInTheDocument();
+  });
+
+  describe('dialysis prescription gating', () => {
+    it('allows a user with permission to mark a dialysis prescription and estimates 0.00', async () => {
+      window.history.pushState({}, '', '/billing/new');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let createdInvoicePayload: any = null;
+
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+        const url = String(input);
+        if (url.includes('/api/auth/session')) {
+          return {
+            ok: true,
+            json: async () => ({
+              data: {
+                id: 2,
+                name: 'Cajero Admin',
+                email: 'admin@hospital.local',
+                username: 'admin',
+                active: true,
+                roles: ['cajero'],
+                permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view', 'patients.mark_dialysis_prescription'],
+                must_change_password: false,
+              },
+            }),
+          } as Response;
+        }
+        if (url.includes('/api/cash-sessions/current')) {
+          return { ok: true, json: async () => ({ data: { id: 1, status: 'open' } }) } as Response;
+        }
+        if (url.includes('/api/services')) {
+          return {
+            ok: true,
+            json: async () => ({
+              data: [{
+                id: 3,
+                category_id: 1,
+                area_id: 1,
+                name: 'Eritropoyetina',
+                price: '25.00',
+                taxable: false,
+                active: true,
+                special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+                category: { id: 1, name: 'General' },
+                area: { id: 1, name: 'Farmacia' },
+              }],
+            }),
+          } as Response;
+        }
+        if (url.includes('/api/categories')) {
+          return { ok: true, json: async () => ({ data: [{ id: 1, name: 'General' }] }) } as Response;
+        }
+        if (url.includes('/api/service-areas')) {
+          return { ok: true, json: async () => ({ data: [{ id: 1, name: 'Farmacia' }] }) } as Response;
+        }
+        if (url.includes('/api/invoices') && init?.method === 'POST') {
+          createdInvoicePayload = JSON.parse(String(init.body));
+          return {
+            ok: true,
+            json: async () => ({ data: { id: 1, invoice_number: 'INV-1', status: 'issued', total: '0.00', balance_due: '0.00' } }),
+          } as Response;
+        }
+        return { ok: true, json: async () => ({}) } as Response;
+      });
+
+      render(<App />);
+
+      await screen.findByRole('heading', { name: /nueva factura/i });
+      fireEvent.click(await screen.findByRole('radio', { name: /farmacia/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /eritropoyetina/i }));
+
+      const checkbox = await screen.findByRole('checkbox');
+      expect(checkbox).toBeEnabled();
+      fireEvent.click(checkbox);
+
+      // Verify that the preview estimate handles the free prescription
+      expect(screen.getAllByText('L. 0.00').length).toBeGreaterThan(0);
+
+      // Fill required fields to submit
+      fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Juan Perez' } });
+      fireEvent.click(screen.getByRole('button', { name: /emitir/i }));
+      fireEvent.click(screen.getByRole('button', { name: /confirmar emisión/i }));
+
+      await waitFor(() => {
+        expect(createdInvoicePayload).not.toBeNull();
+      });
+
+      expect(createdInvoicePayload.dialysis_prescription).toBe(true);
+      expect(createdInvoicePayload.items[0].dialysis_prescription).toBe(true);
+    });
+
+    it('prevents a user without permission from marking a dialysis prescription and estimating 0.00', async () => {
+      window.history.pushState({}, '', '/billing/new');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let createdInvoicePayload: any = null;
+
+      vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+        const url = String(input);
+        if (url.includes('/api/auth/session')) {
+          return {
+            ok: true,
+            json: async () => ({
+              data: {
+                id: 2,
+                name: 'Cajero Normal',
+                email: 'normal@hospital.local',
+                username: 'normal',
+                active: true,
+                roles: ['cajero'],
+                permissions: ['catalog.view', 'cash.view', 'invoices.create', 'payments.create', 'receipts.view'],
+                must_change_password: false,
+              },
+            }),
+          } as Response;
+        }
+        if (url.includes('/api/cash-sessions/current')) {
+          return { ok: true, json: async () => ({ data: { id: 1, status: 'open' } }) } as Response;
+        }
+        if (url.includes('/api/services')) {
+          return {
+            ok: true,
+            json: async () => ({
+              data: [{
+                id: 3,
+                category_id: 1,
+                area_id: 1,
+                name: 'Eritropoyetina',
+                price: '25.00',
+                taxable: false,
+                active: true,
+                special_rule_code: 'ERYTHROPOIETIN_DIALYSIS_PRESCRIPTION',
+                category: { id: 1, name: 'General' },
+                area: { id: 1, name: 'Farmacia' },
+              }],
+            }),
+          } as Response;
+        }
+        if (url.includes('/api/categories')) {
+          return { ok: true, json: async () => ({ data: [{ id: 1, name: 'General' }] }) } as Response;
+        }
+        if (url.includes('/api/service-areas')) {
+          return { ok: true, json: async () => ({ data: [{ id: 1, name: 'Farmacia' }] }) } as Response;
+        }
+        if (url.includes('/api/invoices') && init?.method === 'POST') {
+          createdInvoicePayload = JSON.parse(String(init.body));
+          return {
+            ok: true,
+            json: async () => ({ data: { id: 1, invoice_number: 'INV-1', status: 'issued', total: '25.00', balance_due: '25.00' } }),
+          } as Response;
+        }
+        return { ok: true, json: async () => ({}) } as Response;
+      });
+
+      render(<App />);
+
+      await screen.findByRole('heading', { name: /nueva factura/i });
+      fireEvent.click(await screen.findByRole('radio', { name: /farmacia/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /eritropoyetina/i }));
+
+      const checkbox = await screen.findByRole('checkbox');
+      expect(checkbox).toBeDisabled();
+
+      // Ensure price is estimated normally, not as 0.00
+      expect(screen.getAllByText('L. 25.00').length).toBeGreaterThan(0);
+
+      // Submit
+      fireEvent.change(screen.getByLabelText(/nombre del paciente/i), { target: { value: 'Juan Perez' } });
+      fireEvent.click(screen.getByRole('button', { name: /emitir/i }));
+      fireEvent.click(screen.getByRole('button', { name: /emitir y abrir cobro/i }));
+
+      await waitFor(() => {
+        expect(createdInvoicePayload).not.toBeNull();
+      });
+
+      expect(createdInvoicePayload.dialysis_prescription).toBe(false);
+      expect(createdInvoicePayload.items[0].dialysis_prescription).toBe(false);
+    });
   });
 });

@@ -11,6 +11,7 @@ import { NewInvoiceViewLayout } from './components/NewInvoiceViewLayout';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { openBlobInNewTab } from '@/lib/download';
 
+
 const POS_SERVICE_PAGE_SIZE = 24;
 
 type NewInvoiceViewProps = {
@@ -18,6 +19,7 @@ type NewInvoiceViewProps = {
   canCreatePayments?: boolean;
   canViewCatalog?: boolean;
   canViewReceipts?: boolean;
+  canMarkDialysisPrescription?: boolean;
   onCashSessionChange?: (session: CashSession | null) => void;
   onOpenCash?: () => void;
   onStatus: (message: string) => void;
@@ -28,6 +30,7 @@ export function NewInvoiceView({
   canCreatePayments = true,
   canViewCatalog = true,
   canViewReceipts = true,
+  canMarkDialysisPrescription = false,
   onCashSessionChange,
   onOpenCash,
   onStatus,
@@ -146,10 +149,12 @@ export function NewInvoiceView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canEmit, state.cartItems.length, handleClearCart, state.patientName, state.scanCode, state.search, state.showClearConfirm, state.showConfirmation, state.showPayment, state.showReceipt, state.showSuccess]);
 
-  const preview = useMemo(
-    () => computeSimpleEstimate(state.cartItems, fiscalSettings?.default_tax_rate),
-    [state.cartItems, fiscalSettings?.default_tax_rate],
-  );
+  const preview = useMemo(() => {
+    const sanitizedItems = canMarkDialysisPrescription
+      ? state.cartItems
+      : state.cartItems.map(item => ({ ...item, dialysisPrescription: false }));
+    return computeSimpleEstimate(sanitizedItems, fiscalSettings?.default_tax_rate);
+  }, [state.cartItems, fiscalSettings?.default_tax_rate, canMarkDialysisPrescription]);
 
   async function loadPointOfSaleData() {
     if (!canViewCatalog) {
@@ -330,14 +335,14 @@ export function NewInvoiceView({
     dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
     dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
     try {
-      const hasDialysis = state.cartItems.some(item => item.dialysisPrescription);
+      const hasDialysis = canMarkDialysisPrescription && state.cartItems.some(item => item.dialysisPrescription);
       const invoice = await apiClient.createInvoice({
         patient_name: state.patientName,
         dialysis_prescription: hasDialysis,
         items: state.cartItems.map((item) => ({
           service_id: item.service.id,
           quantity: item.quantity,
-          dialysis_prescription: item.dialysisPrescription,
+          dialysis_prescription: canMarkDialysisPrescription && item.dialysisPrescription,
         })),
       });
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: invoice });
@@ -515,6 +520,7 @@ export function NewInvoiceView({
       canEmit={canEmit}
       canCreatePayments={canCreatePayments}
       canViewReceipts={canViewReceipts}
+      canMarkDialysisPrescription={canMarkDialysisPrescription}
       onOpenCash={onOpenCash}
       onPatientNameChange={handlePatientNameChange}
       onPatientSubmit={handlePatientSubmit}
