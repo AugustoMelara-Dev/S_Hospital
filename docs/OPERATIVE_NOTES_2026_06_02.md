@@ -32,15 +32,18 @@ regresiones en los caminos criticos:
   el cache de TanStack Query en logout y en 401.
 - **Crear factura** - el carrito usa `lib/money.ts` para todo
   calculo de subtotal / ISV / total. La eritropoyetina se
-  auto-cero cuando el paciente tiene la marca
+  auto-cero cuando la factura lleva la marca
   `dialysis_prescription = true` Y el emisor tiene el permiso
   `patients.mark_dialysis_prescription`. Cajeros sin el permiso
-  reciben 422 si intentan enviar la marca.
+  reciben 422 si intentan enviar la marca. No se requiere ficha
+  de paciente pre-registrada; el paciente de factura sigue siendo
+  solo nombre.
 - **Cobrar** - el modal de pago ahora capa el monto al saldo
   pendiente (`max={balanceFloat}`), desactiva el boton
-  "Pagar" si se excede y muestra el mensaje inline. Pago en
-  cero por receta de dialisis se persiste con metodo `other`
-  para trazabilidad.
+  "Pagar" si se excede y muestra el mensaje inline. Factura en
+  cero por receta de dialisis queda `paid` y auditada con
+  `invoice.zero_amount_registered`; no se crea pago artificial
+  L.0.
 - **Imprimir** - la ruta de impresion institucional no fue
   tocada en esta ronda; la politica CSP enforced (con nonce
   real por request) sigue activa y la politica Report-Only

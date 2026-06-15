@@ -40,7 +40,7 @@ Secuencia fiscal:
 - No permitir borrar una factura con items. `invoice_items.invoice_id` debe usar
   `restrictOnDelete()` para que una eliminacion manual no borre detalle historico fiscal.
 - Si una validacion local usa CAI temporal, ese CAI debe estar guardado en la configuracion fiscal antes de emitir y debe quedar marcado como pendiente de autorizacion real.
-- Si una regla autorizada deja una factura en L.0.00, la factura puede quedar `paid`, pero debe crear un registro en `payments` por L.0.00 asociado a caja, cajero, metodo `other`, fecha y referencia humana. Ese registro no aumenta efectivo esperado ni recaudacion, pero conserva trazabilidad.
+- Si una regla autorizada deja una factura en L.0.00, la factura puede quedar `paid` sin crear un pago artificial de L.0.00. La trazabilidad obligatoria queda en la factura, caja, cajero, snapshots y auditoria `invoice.zero_amount_registered`. No debe aumentar efectivo esperado, pagos cobrados ni recaudacion.
 
 ## Correlativo atomico
 

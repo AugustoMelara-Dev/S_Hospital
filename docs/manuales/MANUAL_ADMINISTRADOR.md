@@ -54,6 +54,25 @@ Antes de migraciones, actualizaciones o cambios de configuracion fiscal:
 3. Registre quien hizo el cambio y por que.
 4. Pruebe el flujo principal despues del cambio.
 
+## Eritropoyetina Y Facturas L.0
+
+El sistema no usa expediente clinico completo ni exige paciente pre-registrado
+para facturar. La factura requiere solo el nombre del paciente.
+
+La receta de dialisis se marca en la factura mediante el campo operativo
+`dialysis_prescription` (`patient_has_dialysis_prescription` en algunos
+formularios/documentacion). Solo usuarios con el permiso
+`patients.mark_dialysis_prescription` pueden aplicar esa marca.
+
+Cuando la factura queda en L. 0.00 por una regla autorizada, el sistema la deja
+`paid` y registra auditoria `invoice.zero_amount_registered`. No debe crearse ni
+esperarse un pago artificial L. 0.00. Esa factura no aumenta efectivo esperado,
+recaudacion ni arqueo.
+
+El administrador debe revisar periodicamente quien tiene el permiso
+`patients.mark_dialysis_prescription` y confirmar que la politica del hospital
+define quien puede validar la receta fisica.
+
 ## Capacitacion Segura
 
 El administrador prepara el entorno de entrenamiento. No use la base real para

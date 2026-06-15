@@ -1165,23 +1165,23 @@ Consecuencia:
 - Roles personalizados deben pedir ese permiso si van a cobrar o revertir facturas fuera de su alcance propio del dia.
 - La exposicion publica de configuracion queda reducida a branding no sensible.
 
-### 2026-05-31 - Facturas sin cobro quedan auditadas como pago cero
+### 2026-05-31 - Facturas sin cobro quedan auditadas sin pago artificial
 
 Decision:
 
 - Las facturas cuyo total calculado es L.0.00 siguen quedando `paid`.
-- Al emitirlas se crea un registro `payments` por L.0.00, metodo `other`, referencia `Factura sin cobro por regla autorizada`, caja abierta, cajero y fecha.
-- El registro tambien guarda `amount_cents = 0` para cumplir el contrato entero usado por reportes y arqueo.
-- No se crea movimiento de efectivo para el pago cero.
+- Al emitirlas no se crea un registro `payments` por L.0.00.
+- La auditoria se registra con `invoice.zero_amount_registered`, incluyendo factura, caja, cajero, saldo y referencia humana.
+- No se crea movimiento de efectivo ni pago artificial para el caso cero.
 
 Motivo:
 
 - La regla de eritropoyetina con receta de dialisis puede producir una factura valida sin cobro.
-- Aun sin dinero recibido, la factura pagada debe quedar trazable a caja, cajero, metodo y fecha.
+- Aun sin dinero recibido, la factura pagada debe quedar trazable a caja, cajero, fecha, snapshots y auditoria.
 
 Consecuencia:
 
-- Recibos muestran un pago L.0.00 para explicar el cierre de la factura.
+- Recibos y reportes deben explicar la regla autorizada desde la factura/auditoria, no desde un pago L.0.00 ficticio.
 - Reportes monetarios no aumentan recaudacion porque el monto es cero.
 - Arqueo de caja no aumenta efectivo esperado por facturas sin cobro.
 
