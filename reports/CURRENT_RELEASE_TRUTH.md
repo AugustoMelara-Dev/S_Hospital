@@ -43,5 +43,6 @@ No se permite declarar `PRODUCTION_READY` sin evidencia de servidor final, segun
 - Backend formato/analisis: `vendor/bin/pint --test` PASS; `php -d memory_limit=512M vendor/bin/phpstan analyse` PASS.
 - Frontend seguridad/calidad: `npm audit --audit-level=high` PASS; `npm run typecheck` PASS; `npm run lint` PASS.
 - Frontend pruebas/build: `npm run test:full:windows` PASS, 67 files, 297 tests; `npm run build` PASS.
+- Catalogo/menu final: `php artisan test tests/Feature/ServiceCatalogTest.php` PASS, 30 tests; `npm run test -- appNavigation` PASS, 3 tests.
 - E2E release controlado: `npm run e2e` PASS con `E2E_SEED_PASSWORD=Password123!` y SQLite descartable.
 - Composer CLI: no disponible en este host; ejecutar `composer validate` y `composer audit --no-interaction` desde Docker/host con Composer antes de firma final.
