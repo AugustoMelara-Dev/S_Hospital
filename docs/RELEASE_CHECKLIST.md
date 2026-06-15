@@ -159,6 +159,44 @@ La evidencia fisica de LAN e impresora es obligatoria por defecto. El flag
 un warning fuerte mas salida no cero: ese resultado no puede llamarse
 `PRODUCTION_READY` ni usarse como gate automatico de produccion.
 
+## Actualizacion segura de una instalacion existente
+
+Antes de actualizar un servidor real, usar:
+
+- `docs/manuales/MANUAL_ACTUALIZACION_SEGURA.md`
+- `docs/manuales/CHECKLIST_ACTUALIZACION_SEGURA.md`
+- `scripts/update_release_preflight.ps1`
+
+Preflight no destructivo:
+
+```powershell
+cd C:\Projects\S_Hospital
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\update_release_preflight.ps1 `
+  -ExpectedCurrentCommit <commit-instalado> `
+  -ReportPath qa\SAFE_UPDATE_PREFLIGHT.md
+```
+
+El preflight solo lee archivos y, si se usa `-ReportPath`, escribe evidencia
+Markdown bajo `qa/`. No ejecuta migraciones, no crea backup, no reinicia
+servicios y no toca datos.
+
+La secuencia obligatoria de actualizacion real es:
+
+1. Preflight de version/estado.
+2. Backup manual obligatorio.
+3. Verificacion de backup con checksum y, si el entorno lo permite, restore en
+   base temporal.
+4. Preservar `.env`, `backend/.env`, `backend/storage`, logos, respaldos y
+   configuracion local.
+5. Copiar artefactos nuevos sin reemplazar datos locales.
+6. Ejecutar solo `php artisan migrate --force`.
+7. Ejecutar health checks y verificacion de datos criticos.
+8. Documentar rollback disponible.
+
+No ejecutar `migrate:fresh`, `db:wipe`, `migrate:reset`, `migrate:rollback`,
+`DROP DATABASE`, borrado de volumenes Docker ni borrado de `backend/storage`
+contra el servidor real.
+
 ## Validaciones reales antes de PRODUCTION_READY
 
 Restore MySQL/MariaDB:

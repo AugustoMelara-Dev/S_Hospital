@@ -3345,3 +3345,26 @@ Validacion:
 - npm.cmd run test -- NewInvoiceView InvoiceSuccess PaymentModal ReceiptPreview --run
 - npm.cmd run typecheck
 - npm.cmd run lint
+
+## 2026-06-15 - Actualizacion segura queda como flujo protegido y verificable
+
+Contexto: la auditoria global de release encontro que existian advertencias
+contra `migrate:fresh` y guias de instalacion/restore, pero no un manual
+dedicado ni un preflight especifico para actualizar una instalacion real sin
+perder datos.
+
+Decision: se agrega un manual de actualizacion segura, un checklist operativo y
+`scripts/update_release_preflight.ps1`. El preflight es no destructivo: valida
+Git/manifest cuando existe, proteccion de `.env`, presencia de `storage`,
+manuales y scripts criticos, y escanea scripts operativos para patrones
+destructivos. No ejecuta migraciones, no crea backups, no reinicia servicios y
+solo escribe evidencia Markdown bajo `qa/` si se pide explicitamente.
+
+Motivo: una actualizacion hospitalaria debe forzar backup verificado,
+proteccion de configuracion local, migraciones incrementales y rollback
+documentado antes de tocar el servidor real.
+
+Validacion:
+
+- powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\update_release_preflight.ps1 -ExpectedCurrentCommit 6508418d62ec25f0cea37221bfce7295977b7629 -AllowDirtyGit
+- git diff --check

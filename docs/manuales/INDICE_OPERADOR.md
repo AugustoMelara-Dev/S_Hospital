@@ -46,6 +46,8 @@ al procedimiento correcto.
 ## Procedimientos operacionales
 
 - Instalacion inicial: `GUIA_INSTALACION_OPERATIVA.md`
+- Actualizacion segura: `MANUAL_ACTUALIZACION_SEGURA.md`
+- Checklist de actualizacion: `CHECKLIST_ACTUALIZACION_SEGURA.md`
 - Respaldos y restauracion: `GUIA_RESPALDOS_Y_RESTAURACION.md`
 - Capacitacion segura: `GUIA_CAPACITACION_SEGURA.md`
 - HTTPS opcional: `../HTTPS_OPTIONAL.md`
@@ -85,6 +87,7 @@ en PowerShell como Administrador.
 | Reparar tras reboot | `scripts\open_hospital_system.ps1` |
 | Diagnosticar problema | `scripts\repair_hospital_system.ps1` |
 | Recolectar soporte | `scripts\collect_support_packet.ps1` |
+| Validar actualizacion segura | `scripts\update_release_preflight.ps1 -ExpectedCurrentCommit <commit-actual>` |
 | Validar todo antes de produccion | `scripts\production_readiness_preflight.ps1 -BaseUrl http://IP-SERVIDOR` |
 
 ## Errores comunes del cajero (mensaje -> accion)
