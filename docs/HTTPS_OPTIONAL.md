@@ -2,6 +2,8 @@
 # Local HTTPS with self-signed CA
 # =============================================================================
 
+> v1.1 (2026-06-15): nginx endurecido, HSTS cuando `FORCE_HTTPS=true`, COOP/CSP nonce. Ver `docs/DECISIONS.md`.
+
 The hospital LAN does not require HTTPS, but enabling it protects
 cashier credentials and patient names from passive sniffing on the
 cable. This document describes the optional HTTPS path.

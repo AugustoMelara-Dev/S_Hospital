@@ -1,5 +1,7 @@
 # Fiscal Rules - Sistema de Caja Hospitalaria
 
+> v1.1 (2026-06-15): ISV per-invoice con prorrateo por largest remainder (`CalculateInvoiceTotalsAction`). Recibo institucional race-safe con unique `issued_invoice_id` por factura. Ver `docs/DECISIONS.md`.
+
 ## Objetivo
 
 Modelar desde fases tempranas la configuracion fiscal hondurena necesaria para emitir facturas con correlativo, CAI, RTN, rango autorizado y fecha limite. Una validacion local puede usar datos temporales, pero esos datos deben estar configurados en la secuencia fiscal igual que los datos reales y no deben confundirse con autorizacion fiscal final.

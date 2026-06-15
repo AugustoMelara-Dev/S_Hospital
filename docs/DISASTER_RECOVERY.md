@@ -1,5 +1,7 @@
 # Runbook de recuperacion de desastre
 
+> v1.1 (2026-06-15): 10 escenarios validados, restore con `restore_hospital_windows.ps1 -ExpectedSha256`, rollback orquestado con `scripts/rollback_update.ps1` (SelfTest/WhatIf/ForceProductionRestore). Ver `docs/DECISIONS.md`.
+
 Este runbook cubre los incidentes mas frecuentes y como responder sin perder
 datos. Esta pensado para el responsable tecnico del hospital (no para el
 cajero).
