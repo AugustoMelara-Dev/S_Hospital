@@ -22,7 +22,8 @@ Main backend areas:
 - `backend/app/Actions/Billing`: invoice totals, fiscal number reservation, invoice creation and voiding.
 - `backend/app/Actions/Payments`: payment registration, invoice balance updates and cash movement creation.
 - `backend/app/Actions/Cash`: open/close cashbox sessions.
-- `backend/app/Actions/Receipts`: receipt data and audited reprint.
+- `backend/app/Actions/Receipts`: legacy invoice-derived receipt data and audited reprint compatibility.
+- `backend/app/Actions/InstitutionalReceipts`: institutional receipt settings, atomic number reservation, immutable snapshots, PDF rendering, print events and voiding.
 - `backend/app/Actions/Reports`: daily, income, category, service, cash session, dashboard and export services.
 - `backend/app/Actions/Reports/Concerns/FormatsReportMoney.php`: report money parsing/allocation/formatting boundary.
 - `backend/app/Support`: shared guards/search/status helpers such as invoice access and service search.
@@ -31,8 +32,10 @@ Rules to preserve:
 
 - Invoice, payment, cash close, void and fiscal number operations are transactional.
 - Historical invoices use snapshots in `invoice_items`; never recalculate history from mutable services.
+- Historical institutional receipts use snapshots in `institutional_receipts`; never regenerate patient PDFs from mutable settings/catalog as the source of truth.
 - Money APIs return decimal strings. Authoritative report arithmetic uses cent helpers; floats are display/export boundary only.
 - Cashier access to invoices/payments/reprints is scoped to own operational context unless elevated permissions are present.
+- Paid payment flow may emit an institutional receipt when configuration is complete; missing receipt configuration must not duplicate or roll back a valid payment.
 - Backups are local files and queued jobs; restore is manual/documented, not a destructive UI button.
 
 ## Frontend Boundaries
@@ -45,7 +48,8 @@ React is organized by features, with shared UI primitives and API helpers:
 - `frontend/src/components/ui`: reusable local shadcn-style primitives.
 - `frontend/src/features/auth`: login and required password change.
 - `frontend/src/features/dashboard`: dashboard summaries and charts. The dashboard route is lazy-loaded.
-- `frontend/src/features/invoices`: POS, invoice history, receipt preview actions and invoice dialogs.
+- `frontend/src/features/invoices`: POS, invoice history, institutional receipt PDF handoff and legacy receipt preview actions.
+- `frontend/src/features/receipt-settings`: institutional receipt settings, paper profiles, copy modes and test-print preview.
 - `frontend/src/features/cash`: cashbox open/close/session summary.
 - `frontend/src/features/catalog`: categories/services management and scanner codes.
 - `frontend/src/features/reports`: report tabs, filters, tables, charts and export actions.
@@ -95,7 +99,7 @@ Phase-specific gates recently added:
 Physical gates still required for final production:
 
 - Second PC LAN validation.
-- Real thermal printer 80mm/58mm validation.
+- Real institutional printer validation for media carta/A5/custom/carta profiles; thermal 80mm/58mm is compatibility-only if the hospital chooses it.
 - Restore proof against a disposable MySQL/MariaDB database.
 - Concurrency proof against the final MySQL/MariaDB/Laravel environment.
 - Backup worker proof that manual backups move from `pending` to `success`.

@@ -3316,3 +3316,32 @@ Contexto: el release gate F7 quedo en `F7_CONDITIONALLY_READY` porque `npm run t
 Decision: `npm run e2e` y `npm run test:e2e` ejecutan el mismo runner controlado. El runner crea una base SQLite efimera en `backend/storage/framework/testing/e2e-release.sqlite`, corre migraciones y seeders, prepara usuarios `*.e2e`, configuracion fiscal, catalogo minimo y caja abierta con `hospital:prepare-e2e-release-data`, inicia Laravel/Vite en puertos locales dedicados y ejecuta Playwright con `playwright.release.config.ts`.
 
 Alcance: SQLite se usa solo para el gate automatizado E2E local y no cambia la arquitectura productiva LAN, que sigue siendo MySQL/MariaDB. El comando se niega a preparar datos si `APP_ENV=production`.
+
+## 2026-06-15 - Recibo institucional formal usa entidad propia y PDF por perfil
+
+Contexto: el hospital indico que el ticket termico 80mm no es el formato principal. El recibo operativo debe parecerse al talonario institucional fisico, operar en impresora normal, soportar media carta/A5/carta/personalizado y conservar trazabilidad fiscal sin hardcodear textos ni rangos.
+
+Decision:
+
+- El recibo principal vive en `institutional_receipts` con serie/correlativo propio, snapshots de institucion/serie/perfil/factura/pago/items y eventos de impresion.
+- El pago que deja una factura en `paid` intenta emitir recibo institucional numerado; si falta configuracion, el pago queda registrado y se devuelve una advertencia operativa para configurar serie/perfil.
+- El PDF se genera desde el snapshot del recibo y el perfil de papel guardado, no desde ajustes mutables actuales. Reimpresiones registran evento y motivo.
+- Reversar/anular pagos o anular una factura marca el recibo institucional emitido como `void` con motivo y auditoria; no borra el recibo ni reutiliza el numero.
+- El recibo HTML derivado de factura queda como compatibilidad heredada; el flujo principal de cobro prefiere el PDF institucional.
+
+Motivo:
+
+- Separar factura y recibo evita recalcular documentos historicos desde catalogo/ajustes actuales.
+- El correlativo del recibo necesita control transaccional y rango propio.
+- La operacion de caja no debe fallar ni duplicar cobros por una impresora o configuracion de recibo pendiente, pero debe exponer el problema al usuario autorizado.
+
+Validacion:
+
+- php artisan test --filter=InstitutionalReceiptPaymentIntegrationTest
+- php artisan test --filter=InstitutionalReceiptIssueTest
+- php artisan test --filter=InstitutionalReceiptPdfTest
+- php artisan test --filter=CashPaymentsReceiptTest
+- vendor\bin\phpstan analyse --memory-limit=1G
+- npm.cmd run test -- NewInvoiceView InvoiceSuccess PaymentModal ReceiptPreview --run
+- npm.cmd run typecheck
+- npm.cmd run lint

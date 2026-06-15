@@ -30,6 +30,7 @@ export const queryKeys = {
     all: ['settings'] as const,
     fiscal: () => ['settings', 'fiscal'] as const,
     branding: () => ['settings', 'branding'] as const,
+    institutionalReceipts: () => ['settings', 'institutional-receipts'] as const,
   },
   fiscalSequences: {
     all: ['fiscal-sequences'] as const,

@@ -38,6 +38,8 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
       return { ...state, partialPaymentsEnabled: action.payload };
     case 'SET_RECEIPT':
       return { ...state, receipt: action.payload };
+    case 'SET_INSTITUTIONAL_RECEIPT':
+      return { ...state, institutionalReceipt: action.payload };
     case 'SET_ALERT_MESSAGE':
       return { ...state, alertMessage: action.payload };
     case 'SET_WARNING_MESSAGE':
@@ -77,6 +79,7 @@ export function newInvoiceReducer(state: NewInvoiceState, action: NewInvoiceActi
         ...state,
         cartItems: nextCart,
         issuedInvoice: null,
+        institutionalReceipt: null,
         patientError: undefined,
       };
     }

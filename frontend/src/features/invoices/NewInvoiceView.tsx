@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useMemo, useRef, useReducer } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { apiClient, type CashSession, type ReceiptData, type Service, userSafeErrorMessage } from '../../lib/api';
+import { apiClient, type CashSession, type InstitutionalReceipt, type ReceiptData, type Service, userSafeErrorMessage } from '../../lib/api';
 import { institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
 import { invoiceSchema } from '../../schemas/invoice.schema';
 import { useFiscalSettings } from '../../hooks/useFiscalSettings';
@@ -9,6 +9,7 @@ import { getInitialNewInvoiceState } from './state/types';
 import { computeSimpleEstimate, isZeroMoney, parseLocalCents } from './state/posMath';
 import { NewInvoiceViewLayout } from './components/NewInvoiceViewLayout';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
+import { openBlobInNewTab } from '@/lib/download';
 
 const POS_SERVICE_PAGE_SIZE = 24;
 
@@ -336,6 +337,7 @@ export function NewInvoiceView({
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: invoice });
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: '0.00' });
       dispatch({ type: 'SET_RECEIPT', payload: null });
+      dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: null });
       dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: false });
       dispatch({ type: 'SET_CART_ITEMS', payload: [] });
       dispatch({ type: 'SET_PATIENT_NAME', payload: '' });
@@ -397,8 +399,32 @@ export function NewInvoiceView({
       await invalidateBillingQueries(queryClient);
       dispatch({ type: 'SET_ISSUED_INVOICE', payload: result.invoice });
       dispatch({ type: 'SET_PAYMENT_AMOUNT', payload: result.invoice.balance_due });
+
+      if (result.institutional_receipt) {
+        dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: result.institutional_receipt });
+        dispatch({ type: 'SET_RECEIPT', payload: null });
+        dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: false });
+        dispatch({ type: 'SET_SHOW_RECEIPT', payload: false });
+        dispatch({ type: 'SET_ALERT_MESSAGE', payload: null });
+        dispatch({ type: 'SET_WARNING_MESSAGE', payload: null });
+        dispatch({ type: 'SET_SHOW_SUCCESS', payload: true });
+        try {
+          await openInstitutionalReceiptPdf(result.institutional_receipt);
+          onStatus(`Pago registrado. PDF institucional ${result.institutional_receipt.receipt_number_full} abierto.`);
+        } catch (error) {
+          onStatus(userSafeErrorMessage(error, `Pago registrado. Recibo institucional ${result.institutional_receipt.receipt_number_full} emitido, pero no se pudo abrir el PDF.`));
+        }
+        return;
+      }
+
+      if (result.institutional_receipt_error) {
+        dispatch({ type: 'SET_WARNING_MESSAGE', payload: result.institutional_receipt_error });
+        onStatus(result.institutional_receipt_error);
+      }
+
       const nextReceipt = await apiClient.getReceipt(result.invoice.id, state.receiptWidth);
       dispatch({ type: 'SET_RECEIPT', payload: nextReceipt });
+      dispatch({ type: 'SET_INSTITUTIONAL_RECEIPT', payload: null });
       dispatch({ type: 'SET_RECEIPT_WIDTH', payload: nextReceipt.width });
       dispatch({ type: 'SET_AUTO_PRINT_RECEIPT', payload: !state.previewBeforePrint });
       dispatch({ type: 'SET_SHOW_RECEIPT', payload: true });
@@ -428,6 +454,25 @@ export function NewInvoiceView({
     } catch (error) {
       onStatus(userSafeErrorMessage(error, 'No se pudo generar el recibo.'));
     }
+  }
+
+  async function openInstitutionalReceiptPdf(receipt: InstitutionalReceipt, reason?: string) {
+    const blob = await apiClient.getInstitutionalReceiptPdf(receipt.id, reason);
+    openBlobInNewTab(blob, `recibo-institucional-${receipt.receipt_number_full}.pdf`);
+  }
+
+  async function handlePrintIssuedReceipt() {
+    if (state.institutionalReceipt) {
+      try {
+        await openInstitutionalReceiptPdf(state.institutionalReceipt, 'Reimpresion desde venta/cobro.');
+        onStatus(`PDF institucional ${state.institutionalReceipt.receipt_number_full} abierto.`);
+      } catch (error) {
+        onStatus(userSafeErrorMessage(error, 'No se pudo abrir el PDF institucional.'));
+      }
+      return;
+    }
+
+    await loadReceipt(state.receiptWidth);
   }
 
   function handleNuevaFactura() {
@@ -484,6 +529,7 @@ export function NewInvoiceView({
       onPaymentOpenChange={handlePaymentOpenChange}
       onSubmitPayment={(appliedAmount) => void submitPayment(appliedAmount)}
       onLoadReceipt={loadReceipt}
+      onPrintIssuedReceipt={() => void handlePrintIssuedReceipt()}
       onNuevaFactura={handleNuevaFactura}
       onSuccessDialogChange={(val) => dispatch({ type: 'SET_SHOW_SUCCESS', payload: val })}
       onReceiptOpenChange={handleReceiptOpenChange}

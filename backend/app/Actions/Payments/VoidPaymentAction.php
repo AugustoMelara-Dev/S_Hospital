@@ -2,6 +2,7 @@
 
 namespace App\Actions\Payments;
 
+use App\Actions\InstitutionalReceipts\VoidInstitutionalReceiptAction;
 use App\Events\InvoiceChanged;
 use App\Events\PaymentChanged;
 use App\Models\AuditLog;
@@ -17,6 +18,8 @@ use Illuminate\Validation\ValidationException;
 
 class VoidPaymentAction
 {
+    public function __construct(private readonly VoidInstitutionalReceiptAction $voidInstitutionalReceipt) {}
+
     /**
      * @param  array{reason: string}  $payload
      *
@@ -99,6 +102,8 @@ class VoidPaymentAction
                     : ($balanceCents === 0 ? Invoice::STATUS_PAID : Invoice::STATUS_PARTIAL),
             ])->save();
 
+            $voidedReceipts = $this->voidInstitutionalReceipt->forInvoice($lockedInvoice, $user, $reason);
+
             AuditLog::query()->create([
                 'user_id' => $user->id,
                 'action' => 'payment.voided',
@@ -116,6 +121,7 @@ class VoidPaymentAction
                     'invoice_status' => $lockedInvoice->status,
                     'paid_amount' => $lockedInvoice->paid_amount,
                     'balance_due' => $lockedInvoice->balance_due,
+                    'voided_institutional_receipt_ids' => $voidedReceipts->pluck('id')->all(),
                 ],
             ]);
 

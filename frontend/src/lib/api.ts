@@ -6,6 +6,7 @@ import { cash } from './api/cash';
 import { reports } from './api/reports';
 import { backups } from './api/backups';
 import { fiscal } from './api/fiscal';
+import { institutionalReceipts } from './api/institutionalReceipts';
 import { system } from './api/system';
 import { users, type UserPayload } from './api/users';
 import type {
@@ -24,6 +25,8 @@ import type {
   Invoice,
   CashSession,
   Payment,
+  PaymentRegistrationResult,
+  InvoiceInstitutionalReceipt,
   ReceiptData,
   MoneyByMethod,
   DailyReport,
@@ -43,6 +46,15 @@ import type {
   ReportFilters,
   PdfReportFilters,
   DashboardReport,
+  InstitutionalReceiptSettings,
+  InstitutionalReceipt,
+  InstitutionalReceiptSeries,
+  ReceiptInstitutionPayload,
+  ReceiptPrintProfile,
+  ReceiptPrintProfilePayload,
+  ReceiptProfileAssignment,
+  ReceiptSeriesPayload,
+  ReceiptTestPrintPayload,
 } from './api/types';
 
 export {
@@ -56,6 +68,7 @@ export {
   reports,
   backups,
   fiscal,
+  institutionalReceipts,
   system,
   users,
 };
@@ -75,6 +88,8 @@ export type {
   Invoice,
   CashSession,
   Payment,
+  PaymentRegistrationResult,
+  InvoiceInstitutionalReceipt,
   ReceiptData,
   MoneyByMethod,
   DailyReport,
@@ -94,6 +109,15 @@ export type {
   ReportFilters,
   PdfReportFilters,
   DashboardReport,
+  InstitutionalReceiptSettings,
+  InstitutionalReceipt,
+  InstitutionalReceiptSeries,
+  ReceiptInstitutionPayload,
+  ReceiptPrintProfile,
+  ReceiptPrintProfilePayload,
+  ReceiptProfileAssignment,
+  ReceiptSeriesPayload,
+  ReceiptTestPrintPayload,
   UserPayload,
 };
 
@@ -161,7 +185,7 @@ export const apiClient = {
   async registerPayment(
     invoiceId: number,
     payload: { cash_session_id: number; method: Payment['method']; amount: string; reference?: string | null },
-  ): Promise<{ payment: Payment; invoice: Invoice }> {
+  ): Promise<PaymentRegistrationResult> {
     return billing.registerPayment(invoiceId, payload);
   },
 
@@ -308,6 +332,44 @@ export const apiClient = {
 
   async uploadLogo(file: File): Promise<string> {
     return fiscal.uploadLogo(file);
+  },
+
+  async getInstitutionalReceiptSettings(): Promise<InstitutionalReceiptSettings> {
+    return institutionalReceipts.getSettings();
+  },
+
+  async updateReceiptInstitution(payload: ReceiptInstitutionPayload): Promise<InstitutionalReceiptSettings['institution']> {
+    return institutionalReceipts.updateInstitution(payload);
+  },
+
+  async storeReceiptSeries(payload: ReceiptSeriesPayload): Promise<InstitutionalReceiptSeries> {
+    return institutionalReceipts.storeSeries(payload);
+  },
+
+  async updateReceiptSeries(id: number, payload: Partial<ReceiptSeriesPayload>): Promise<InstitutionalReceiptSeries> {
+    return institutionalReceipts.updateSeries(id, payload);
+  },
+
+  async updateReceiptPrintProfile(id: number, payload: ReceiptPrintProfilePayload): Promise<ReceiptPrintProfile> {
+    return institutionalReceipts.updatePrintProfile(id, payload);
+  },
+
+  async upsertReceiptProfileAssignment(payload: {
+    profile_id?: number;
+    profile_code?: ReceiptPrintProfile['code'];
+    scope_type: ReceiptProfileAssignment['scope_type'];
+    scope_id?: number | null;
+    active?: boolean;
+  }): Promise<ReceiptProfileAssignment> {
+    return institutionalReceipts.upsertAssignment(payload);
+  },
+
+  async testPrintInstitutionalReceipt(payload: ReceiptTestPrintPayload): Promise<Blob> {
+    return institutionalReceipts.testPrint(payload);
+  },
+
+  async getInstitutionalReceiptPdf(id: number, reason?: string | null): Promise<Blob> {
+    return institutionalReceipts.pdf(id, reason);
   },
 
   async login(login: string, password: string): Promise<AuthUser> {

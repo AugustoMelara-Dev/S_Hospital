@@ -538,7 +538,7 @@ export const apiClient = {
       response = await fetch(this.url(path), {
         credentials: 'include',
         headers: {
-          Accept: 'application/json, application/octet-stream, text/csv',
+          Accept: 'application/pdf, application/json, application/octet-stream, text/csv',
         },
       });
     } catch (err) {

@@ -154,7 +154,13 @@ export type Invoice = {
   cash_session?: CashSession & {
     user?: Pick<AuthUser, 'id' | 'name' | 'username'>;
   };
+  institutional_receipt?: InvoiceInstitutionalReceipt | null;
 };
+
+export type InvoiceInstitutionalReceipt = Pick<
+  InstitutionalReceipt,
+  'id' | 'receipt_number_full' | 'status' | 'issued_at' | 'reprint_count'
+>;
 
 export type CashSession = {
   id: number;
@@ -253,6 +259,38 @@ export type ReceiptData = {
   payments: Array<Pick<Payment, 'id' | 'method' | 'amount' | 'reference' | 'paid_at'> & {
     cashier: string | null;
   }>;
+};
+
+export type InstitutionalReceipt = {
+  id: number;
+  invoice_id: number | null;
+  payment_id: number | null;
+  cash_session_id: number;
+  series_id: number;
+  receipt_number: number;
+  receipt_number_full: string;
+  status: 'issued' | 'void';
+  amount: string;
+  amount_cents: number;
+  issued_at: string | null;
+  issued_by: number;
+  payer_name: string;
+  concept: string;
+  amount_words: string;
+  template_code: 'institutional_classic';
+  print_profile_code: ReceiptPrintProfile['code'];
+  copy_mode: ReceiptPrintProfile['copies_mode'];
+  reprint_count: number;
+  voided_by: number | null;
+  voided_at: string | null;
+  void_reason: string | null;
+};
+
+export type PaymentRegistrationResult = {
+  payment: Payment;
+  invoice: Invoice;
+  institutional_receipt: InstitutionalReceipt | null;
+  institutional_receipt_error: string | null;
 };
 
 export type MoneyByMethod = {
@@ -700,4 +738,122 @@ export type OperationalHealth = {
     entity_type: string;
     created_at: string;
   }>;
+};
+
+export type InstitutionalReceiptSeries = {
+  id: number;
+  document_type: 'institutional_receipt';
+  series: string;
+  prefix: string;
+  number_format: string;
+  min_number: number;
+  max_number: number;
+  current_number: number;
+  range_authorization: string | null;
+  legal_text: string | null;
+  receipt_number_color: string;
+  active: boolean;
+  reprint_behavior: 'audit_only' | 'require_reason';
+  void_behavior: 'permission_reason_audit';
+};
+
+export type ReceiptPrintProfile = {
+  id: number;
+  code: 'recibo_pequeno_personalizado' | 'media_carta_horizontal' | 'a5_horizontal' | 'carta_horizontal' | 'thermal_80mm' | 'thermal_58mm';
+  name: string;
+  paper_kind: 'custom_mm' | 'half_letter_landscape' | 'a5_landscape' | 'letter_landscape' | 'thermal_80mm' | 'thermal_58mm';
+  width_mm: string;
+  height_mm: string;
+  margin_top_mm: string;
+  margin_right_mm: string;
+  margin_bottom_mm: string;
+  margin_left_mm: string;
+  orientation: 'landscape' | 'portrait';
+  template_code: 'institutional_classic';
+  font_family: string | null;
+  font_scale: string;
+  copies_mode: 'original_only' | 'original_first' | 'original_first_second';
+  show_copy_legend: boolean;
+  show_physical_seal_space: boolean;
+  use_logo: boolean;
+  show_technical_fields: boolean;
+  active: boolean;
+  is_global_default: boolean;
+};
+
+export type ReceiptProfileAssignment = {
+  id: number;
+  receipt_print_profile_id: number;
+  scope_type: 'global' | 'user' | 'cash_session';
+  scope_id: number | null;
+  active: boolean;
+  print_profile?: ReceiptPrintProfile;
+};
+
+export type InstitutionalReceiptSettings = {
+  institution: FiscalSettings | null;
+  active_series: InstitutionalReceiptSeries | null;
+  series: InstitutionalReceiptSeries[];
+  print_profiles: ReceiptPrintProfile[];
+  assignments: ReceiptProfileAssignment[];
+  resolved_profile: ReceiptPrintProfile | null;
+};
+
+export type ReceiptInstitutionPayload = {
+  hospital_name: string;
+  rtn?: string | null;
+  address?: string | null;
+  slogan?: string | null;
+  government_line?: string | null;
+  secretariat_line?: string | null;
+  receipt_location?: string | null;
+  receipt_footer_text?: string | null;
+  receipt_template_mode?: 'institutional';
+};
+
+export type ReceiptSeriesPayload = {
+  document_type?: 'institutional_receipt';
+  series: string;
+  prefix: string;
+  number_format?: string;
+  min_number: number;
+  max_number: number;
+  current_number: number;
+  range_authorization?: string | null;
+  legal_text?: string | null;
+  receipt_number_color?: string;
+  active: boolean;
+  reprint_behavior?: 'audit_only' | 'require_reason';
+  void_behavior?: 'permission_reason_audit';
+};
+
+export type ReceiptPrintProfilePayload = Partial<Pick<
+  ReceiptPrintProfile,
+  | 'name'
+  | 'paper_kind'
+  | 'width_mm'
+  | 'height_mm'
+  | 'margin_top_mm'
+  | 'margin_right_mm'
+  | 'margin_bottom_mm'
+  | 'margin_left_mm'
+  | 'orientation'
+  | 'template_code'
+  | 'font_family'
+  | 'font_scale'
+  | 'copies_mode'
+  | 'show_copy_legend'
+  | 'show_physical_seal_space'
+  | 'use_logo'
+  | 'show_technical_fields'
+  | 'active'
+  | 'is_global_default'
+>>;
+
+export type ReceiptTestPrintPayload = {
+  profile_id?: number;
+  profile_code?: ReceiptPrintProfile['code'];
+  payer_name?: string;
+  concept?: string;
+  amount?: string;
 };

@@ -6,6 +6,11 @@ import { type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { InvoiceHistoryView } from './InvoiceHistoryView';
 import { apiClient, type AuthUser, type Invoice } from '../../lib/api';
+import { openBlobInNewTab } from '../../lib/download';
+
+vi.mock('../../lib/download', () => ({
+  openBlobInNewTab: vi.fn(),
+}));
 
 function renderWithQueryClient(node: ReactNode) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -119,6 +124,100 @@ describe('InvoiceHistoryView', () => {
 
     await waitFor(() => expect(reverseInvoice).toHaveBeenCalledWith(3, 'Pago aplicado a factura equivocada'));
   });
+
+  it('opens institutional receipt pdf from history when the invoice has one', async () => {
+    const paid = invoiceFixture({
+      id: 4,
+      invoice_number: '000-001-01-00000004',
+      patient_name: 'Paciente Recibo Institucional',
+      status: 'paid',
+      institutional_receipt: institutionalReceiptFixture({ id: 90, receipt_number_full: 'REC-A-00000090' }),
+    });
+    const getReceipt = vi.spyOn(apiClient, 'getReceipt');
+    const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockResolvedValue(new Blob(['%PDF-institutional'], { type: 'application/pdf' }));
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(paid);
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Recibo Institucional')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /ver recibo/i }));
+
+    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(90, 'Consulta desde historial de facturas.'));
+    expect(openBlobInNewTab).toHaveBeenCalledWith(
+      expect.any(Blob),
+      'recibo-institucional-REC-A-00000090.pdf',
+    );
+    expect(getReceipt).not.toHaveBeenCalled();
+  });
+
+  it('reprints institutional receipt from history before falling back to legacy receipt', async () => {
+    const paid = invoiceFixture({
+      id: 5,
+      invoice_number: '000-001-01-00000005',
+      patient_name: 'Paciente Reimpresion Institucional',
+      status: 'paid',
+      institutional_receipt: institutionalReceiptFixture({ id: 91, receipt_number_full: 'REC-A-00000091' }),
+    });
+    const reprintInvoice = vi.spyOn(apiClient, 'reprintInvoice');
+    const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
+      .mockResolvedValue(new Blob(['%PDF-reprint'], { type: 'application/pdf' }));
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(paid);
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Reimpresion Institucional')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /reimprimir/i }));
+    fireEvent.change(screen.getByLabelText(/motivo opcional/i), {
+      target: { value: 'Copia solicitada por el paciente' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /registrar reimpresi/i }));
+
+    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(91, 'Copia solicitada por el paciente'));
+    expect(openBlobInNewTab).toHaveBeenCalledWith(
+      expect.any(Blob),
+      'recibo-institucional-REC-A-00000091.pdf',
+    );
+    expect(reprintInvoice).not.toHaveBeenCalled();
+  });
+
+  it('keeps legacy receipt preview fallback when invoice has no institutional receipt', async () => {
+    const paid = invoiceFixture({
+      id: 6,
+      invoice_number: '000-001-01-00000006',
+      patient_name: 'Paciente Legacy',
+      status: 'paid',
+      institutional_receipt: null,
+    });
+    const receipt = receiptFixture(paid);
+    const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf');
+
+    vi.spyOn(apiClient, 'getInvoices').mockResolvedValue({
+      data: [paid],
+      meta: { current_page: 1, per_page: 10, total: 1 },
+    });
+    vi.spyOn(apiClient, 'getInvoice').mockResolvedValue(paid);
+    vi.spyOn(apiClient, 'getReceipt').mockResolvedValue(receipt);
+
+    renderWithQueryClient(<InvoiceHistoryView user={adminUser()} onStatus={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('Paciente Legacy')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /ver recibo/i }));
+
+    await waitFor(() => expect(screen.getByText(/vista previa de recibo institucional/i)).toBeInTheDocument());
+    expect(apiClient.getReceipt).toHaveBeenCalledWith(6, 'half_letter');
+    expect(getPdf).not.toHaveBeenCalled();
+  });
 });
 
 function invoiceFixture(overrides: Partial<Invoice> = {}): Invoice {
@@ -136,6 +235,64 @@ function invoiceFixture(overrides: Partial<Invoice> = {}): Invoice {
     issued_at: '2026-06-01T12:00:00.000000Z',
     items: [],
     ...overrides,
+  };
+}
+
+function institutionalReceiptFixture(
+  overrides: Partial<NonNullable<Invoice['institutional_receipt']>> = {},
+): NonNullable<Invoice['institutional_receipt']> {
+  return {
+    id: 90,
+    receipt_number_full: 'REC-A-00000090',
+    status: 'issued',
+    issued_at: '2026-06-01T12:05:00.000000Z',
+    reprint_count: 0,
+    ...overrides,
+  };
+}
+
+function receiptFixture(invoice: Invoice) {
+  return {
+    width: 'half_letter' as const,
+    hospital: {
+      name: 'Hospital San Isidro',
+      rtn: null,
+      address: 'Tocoa',
+      slogan: null,
+    },
+    institutional: {
+      template_mode: 'institutional',
+      paper_size: 'half_letter' as const,
+      government_line: 'Gobierno de Honduras',
+      secretariat_line: 'Secretaria de Salud',
+      location: 'Tocoa, Colon',
+      footer_text: 'Original: Oficina Recaudadora',
+      copy_label: 'ORIGINAL',
+      signature_label: 'Firma del enterante',
+    },
+    fiscal: {
+      cai: null,
+      authorized_range: null,
+      valid_until: null,
+    },
+    invoice: {
+      id: invoice.id,
+      invoice_number: invoice.invoice_number,
+      patient_name: invoice.patient_name,
+      subtotal: invoice.subtotal,
+      tax_amount: invoice.tax_amount,
+      discount_amount: invoice.discount_amount,
+      total: invoice.total,
+      paid_amount: invoice.paid_amount,
+      balance_due: invoice.balance_due,
+      status: invoice.status,
+      issued_at: invoice.issued_at,
+      cashier: 'Admin Hospital',
+      tax_label: 'ISV',
+      tax_rate: '15.00',
+    },
+    items: [],
+    payments: [],
   };
 }
 

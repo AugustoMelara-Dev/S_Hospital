@@ -4,6 +4,7 @@ import type {
   InvoiceFilters,
   InvoicePayload,
   Payment,
+  PaymentRegistrationResult,
   ReceiptData,
   PaginatedMeta,
 } from './types';
@@ -36,8 +37,8 @@ export const billing = {
   async registerPayment(
     invoiceId: number,
     payload: { cash_session_id: number; method: Payment['method']; amount: string; reference?: string | null },
-  ): Promise<{ payment: Payment; invoice: Invoice }> {
-    const response = await apiClient.request<{ data: { payment: Payment; invoice: Invoice } }>(
+  ): Promise<PaymentRegistrationResult> {
+    const response = await apiClient.request<{ data: PaymentRegistrationResult }>(
       `/api/invoices/${invoiceId}/payments`,
       {
         method: 'POST',

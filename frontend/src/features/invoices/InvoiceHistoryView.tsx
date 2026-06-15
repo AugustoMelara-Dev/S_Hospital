@@ -34,6 +34,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { DateRangePicker } from '../../components/ui/date-range-picker';
 import { FilterBar } from '../../components/ui/filter-bar';
 import { INSTITUTIONAL_RECEIPT_PAPER_OPTIONS, institutionalReceiptPaperSize } from '../../lib/institutionalReceiptPaper';
+import { openBlobInNewTab } from '../../lib/download';
 import { formatLempirasFromCents, parseCents } from '../../lib/moneyCents';
 import { formatLocalizedDateTime } from '../../lib/format/formatDate';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
@@ -147,6 +148,15 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     try {
       const invoice = await apiClient.getInvoice(invoiceId);
       setSelectedInvoice(invoice);
+      const institutionalReceipt = issuedInstitutionalReceipt(invoice);
+      if (institutionalReceipt) {
+        await openInstitutionalReceiptPdf(institutionalReceipt, 'Consulta desde historial de facturas.');
+        queryClient.invalidateQueries({ queryKey: ['audit'] });
+        onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
+
+        return;
+      }
+
       const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
       const receiptData = await apiClient.getReceipt(invoiceId, requestedWidth);
       const normalizedWidth = institutionalReceiptPaperSize(receiptData.width);
@@ -223,6 +233,16 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     try {
       const invoice = await apiClient.getInvoice(reprintTarget.id);
       setSelectedInvoice(invoice);
+      const institutionalReceipt = issuedInstitutionalReceipt(invoice);
+      if (institutionalReceipt) {
+        const reason = reprintReason.trim() || 'Reimpresión solicitada desde historial.';
+        await openInstitutionalReceiptPdf(institutionalReceipt, reason);
+        queryClient.invalidateQueries({ queryKey: ['audit'] });
+        onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
+
+        return;
+      }
+
       const requestedWidth = institutionalReceiptPaperSize(receiptWidth);
       const nextReceipt = await apiClient.reprintInvoice(reprintTarget.id, {
         width: requestedWidth,
@@ -248,6 +268,14 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
     const issuedDate = localDateString(new Date(invoice.issued_at));
 
     return invoice.issuer?.id === user.id && issuedDate === localDateString();
+  }
+
+  async function openInstitutionalReceiptPdf(
+    receipt: NonNullable<Invoice['institutional_receipt']>,
+    reason: string,
+  ) {
+    const blob = await apiClient.getInstitutionalReceiptPdf(receipt.id, reason);
+    openBlobInNewTab(blob, `recibo-institucional-${receipt.receipt_number_full}.pdf`);
   }
 
   const hasActiveFilters = !!(
@@ -610,6 +638,10 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       </ConfirmDialog>
     </section>
   );
+}
+
+function issuedInstitutionalReceipt(invoice: Invoice): NonNullable<Invoice['institutional_receipt']> | null {
+  return invoice.institutional_receipt?.status === 'issued' ? invoice.institutional_receipt : null;
 }
 
 const statusConfig = {

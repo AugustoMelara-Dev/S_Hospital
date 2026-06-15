@@ -11,6 +11,8 @@ use App\Http\Controllers\EchoConfigController;
 use App\Http\Controllers\FiscalSequenceController;
 use App\Http\Controllers\FiscalSettingsController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\InstitutionalReceiptController;
+use App\Http\Controllers\InstitutionalReceiptSettingsController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LogoController;
 use App\Http\Controllers\PaymentController;
@@ -79,6 +81,28 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware('throttle.user:30,1');
         Route::patch('/fiscal-sequences/{fiscalSequence}', [FiscalSequenceController::class, 'update'])
             ->middleware('throttle.user:30,1');
+
+        Route::get('/settings/institutional-receipts', [InstitutionalReceiptSettingsController::class, 'show']);
+        Route::put('/settings/institutional-receipts/institution', [InstitutionalReceiptSettingsController::class, 'updateInstitution'])
+            ->middleware('throttle.user:30,1');
+        Route::get('/settings/institutional-receipts/series', [InstitutionalReceiptSettingsController::class, 'series']);
+        Route::post('/settings/institutional-receipts/series', [InstitutionalReceiptSettingsController::class, 'storeSeries'])
+            ->middleware('throttle.user:30,1');
+        Route::patch('/settings/institutional-receipts/series/{series}', [InstitutionalReceiptSettingsController::class, 'updateSeries'])
+            ->middleware('throttle.user:30,1');
+        Route::get('/settings/institutional-receipts/print-profiles', [InstitutionalReceiptSettingsController::class, 'printProfiles']);
+        Route::patch('/settings/institutional-receipts/print-profiles/{profile}', [InstitutionalReceiptSettingsController::class, 'updatePrintProfile'])
+            ->middleware('throttle.user:30,1');
+        Route::put('/settings/institutional-receipts/assignments', [InstitutionalReceiptSettingsController::class, 'upsertAssignment'])
+            ->middleware('throttle.user:30,1');
+        Route::post('/settings/institutional-receipts/test-preview', [InstitutionalReceiptSettingsController::class, 'testPreview'])
+            ->middleware('throttle.user:30,1');
+        Route::post('/settings/institutional-receipts/test-print', [InstitutionalReceiptSettingsController::class, 'testPrint'])
+            ->middleware('throttle.user:30,1');
+        Route::post('/institutional-receipts', [InstitutionalReceiptController::class, 'store'])
+            ->middleware(['throttle.user:60,1', 'idempotency']);
+        Route::get('/institutional-receipts/{receipt}/pdf', [InstitutionalReceiptController::class, 'pdf'])
+            ->middleware('throttle.user:60,1');
 
         Route::get('/categories', [CategoryController::class, 'index']);
         Route::post('/categories', [CategoryController::class, 'store'])
