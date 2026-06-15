@@ -7,6 +7,7 @@ use App\Models\InstitutionalReceipt;
 use App\Models\InstitutionalReceiptSeries;
 use App\Models\ReceiptPrintProfile;
 use App\Support\Money;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 
 class InstitutionalReceiptHtmlBuilder
@@ -52,6 +53,7 @@ class InstitutionalReceiptHtmlBuilder
                         'address' => $settings->address ?: '',
                         'receipt_location' => $settings->receipt_location ?: '',
                         'receipt_footer_text' => $settings->receipt_footer_text ?: '',
+                        'logo_data_uri' => $this->logoDataUriForProfile($profile),
                     ],
                     'series' => [
                         'series' => $series?->series ?: 'PRUEBA',
@@ -106,6 +108,7 @@ class InstitutionalReceiptHtmlBuilder
             'address' => $snapshot['address'] ?? '',
             'receipt_location' => $snapshot['receipt_location'] ?? '',
             'receipt_footer_text' => $snapshot['receipt_footer_text'] ?? '',
+            'logo_data_uri' => $this->safeImageDataUri($snapshot['logo_data_uri'] ?? null),
         ];
     }
 
@@ -182,5 +185,32 @@ class InstitutionalReceiptHtmlBuilder
         $legal = trim(is_string($legalText) ? $legalText : '');
 
         return trim($legal.' '.$amountWords);
+    }
+
+    private function logoDataUriForProfile(ReceiptPrintProfile $profile): ?string
+    {
+        if (! $profile->use_logo || ! Storage::disk('public')->exists('branding/logo.png')) {
+            return null;
+        }
+
+        $contents = Storage::disk('public')->get('branding/logo.png');
+        $mime = Storage::disk('public')->mimeType('branding/logo.png') ?: 'image/png';
+
+        if (! str_starts_with($mime, 'image/')) {
+            $mime = 'image/png';
+        }
+
+        return $this->safeImageDataUri('data:'.$mime.';base64,'.base64_encode($contents));
+    }
+
+    private function safeImageDataUri(mixed $value): ?string
+    {
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        return preg_match('/^data:image\/(?:png|jpe?g);base64,[A-Za-z0-9+\/=]+$/', $value) === 1
+            ? $value
+            : null;
     }
 }

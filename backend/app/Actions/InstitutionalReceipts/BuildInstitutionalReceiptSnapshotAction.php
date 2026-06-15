@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\ReceiptPrintProfile;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 
 class BuildInstitutionalReceiptSnapshotAction
 {
@@ -72,6 +73,7 @@ class BuildInstitutionalReceiptSnapshotAction
                 'secretariat_line' => $settings->secretariat_line ?: $invoice->receipt_secretariat_line,
                 'receipt_location' => $settings->receipt_location ?: $invoice->receipt_location,
                 'receipt_footer_text' => $settings->receipt_footer_text ?: $invoice->receipt_footer_text,
+                ...$this->logoSnapshot($profile),
             ],
             'series_snapshot' => [
                 'document_type' => $series->document_type,
@@ -153,6 +155,31 @@ class BuildInstitutionalReceiptSnapshotAction
         }
 
         return $names->take(5)->implode(', ');
+    }
+
+    /**
+     * @return array{logo_data_uri: string|null, logo_sha256: string|null}
+     */
+    private function logoSnapshot(ReceiptPrintProfile $profile): array
+    {
+        if (! $profile->use_logo || ! Storage::disk('public')->exists('branding/logo.png')) {
+            return [
+                'logo_data_uri' => null,
+                'logo_sha256' => null,
+            ];
+        }
+
+        $contents = Storage::disk('public')->get('branding/logo.png');
+        $mime = Storage::disk('public')->mimeType('branding/logo.png') ?: 'image/png';
+
+        if (! str_starts_with($mime, 'image/')) {
+            $mime = 'image/png';
+        }
+
+        return [
+            'logo_data_uri' => 'data:'.$mime.';base64,'.base64_encode($contents),
+            'logo_sha256' => hash('sha256', $contents),
+        ];
     }
 
     /**

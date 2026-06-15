@@ -19,6 +19,7 @@ use Barryvdh\DomPDF\PDF as DomPdfWrapper;
 use Database\Seeders\ReceiptPrintProfileSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class InstitutionalReceiptPdfTest extends TestCase
@@ -82,6 +83,27 @@ class InstitutionalReceiptPdfTest extends TestCase
         $this->assertStringContainsString('ORIGINAL', $html);
         $this->assertStringContainsString('PRIMERA COPIA', $html);
         $this->assertSame(9, $series->fresh()->current_number);
+    }
+
+    public function test_classic_receipt_html_renders_authorized_logo_only_when_profile_enables_it(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('branding/logo.png', base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lP3dWQAAAABJRU5ErkJggg=='
+        ));
+
+        $withoutLogo = $this->createIssuedReceiptContext();
+        $withoutLogoHtml = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($withoutLogo['receipt']);
+
+        $this->assertStringNotContainsString('<img', $withoutLogoHtml);
+        $withoutLogo['series']->forceFill(['active' => false])->save();
+
+        $withLogo = $this->createIssuedReceiptContext(useLogo: true);
+        $withLogoHtml = app(InstitutionalReceiptPdfService::class)->htmlForReceipt($withLogo['receipt']);
+
+        $this->assertStringContainsString('<img', $withLogoHtml);
+        $this->assertStringContainsString('data:image/png;base64', $withLogoHtml);
+        $this->assertNotEmpty($withLogo['receipt']->institution_snapshot['logo_sha256']);
     }
 
     public function test_receipt_html_sanitizes_css_context_settings(): void
@@ -249,7 +271,7 @@ class InstitutionalReceiptPdfTest extends TestCase
     /**
      * @return array{user: User, receipt: InstitutionalReceipt, profile: ReceiptPrintProfile, series: InstitutionalReceiptSeries}
      */
-    private function createIssuedReceiptContext(string $copyMode = 'original_only'): array
+    private function createIssuedReceiptContext(string $copyMode = 'original_only', bool $useLogo = false): array
     {
         $this->seed(RolesAndPermissionsSeeder::class);
         $this->seed(ReceiptPrintProfileSeeder::class);
@@ -275,7 +297,10 @@ class InstitutionalReceiptPdfTest extends TestCase
         $profile = ReceiptPrintProfile::query()
             ->where('code', ReceiptPrintProfile::CODE_HALF_LETTER)
             ->firstOrFail();
-        $profile->forceFill(['copies_mode' => $copyMode])->save();
+        $profile->forceFill([
+            'copies_mode' => $copyMode,
+            'use_logo' => $useLogo,
+        ])->save();
 
         $user = User::factory()->create(['name' => 'Cajera Uno']);
         $user->assignRole('cajero');
@@ -286,7 +311,7 @@ class InstitutionalReceiptPdfTest extends TestCase
             'min_number' => 1,
             'max_number' => 99999999,
             'current_number' => 1,
-            'cai' => 'CAI-TEST-RECEIPT-PDF',
+            'cai' => 'CAI-TEST-RECEIPT-PDF-'.bin2hex(random_bytes(3)),
             'valid_until' => now()->addYear()->toDateString(),
             'active' => false,
         ]);
@@ -300,7 +325,7 @@ class InstitutionalReceiptPdfTest extends TestCase
         ]);
 
         $invoice = Invoice::query()->create([
-            'invoice_number' => 'INV-00000001',
+            'invoice_number' => 'INV-'.str_pad((string) random_int(1, 99999999), 8, '0', STR_PAD_LEFT),
             'fiscal_sequence_id' => $sequence->id,
             'hospital_name' => 'Hospital San Isidro',
             'hospital_address' => 'Barrio El Centro',
@@ -361,10 +386,13 @@ class InstitutionalReceiptPdfTest extends TestCase
             'paid_at' => now(),
         ]);
 
+        $seriesCode = 'REC-'.strtoupper(bin2hex(random_bytes(2)));
+        $prefix = 'R'.strtoupper(bin2hex(random_bytes(1)));
+
         $series = InstitutionalReceiptSeries::query()->create([
             'document_type' => InstitutionalReceiptSeries::DOCUMENT_TYPE,
-            'series' => 'REC-A',
-            'prefix' => 'RA',
+            'series' => $seriesCode,
+            'prefix' => $prefix,
             'number_format' => '{series}-{number:08}',
             'min_number' => 1,
             'max_number' => 100,

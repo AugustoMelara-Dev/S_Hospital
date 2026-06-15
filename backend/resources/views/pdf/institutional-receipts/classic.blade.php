@@ -45,6 +45,14 @@
             text-transform: uppercase;
         }
 
+        .logo {
+            display: block;
+            height: 42px;
+            margin: 0 auto 4px;
+            max-width: 90px;
+            object-fit: contain;
+        }
+
         .header div {
             margin: 0;
         }
@@ -140,6 +148,9 @@
         @endif
 
         <div class="header">
+            @if (! empty($page['institution']['logo_data_uri']))
+                <img class="logo" src="{{ $page['institution']['logo_data_uri'] }}" alt="">
+            @endif
             <div><strong>Gobierno:</strong> {{ $page['institution']['government_line'] }}</div>
             <div><strong>Dependencia:</strong> {{ $page['institution']['secretariat_line'] }}</div>
             <div class="hospital">Hospital: {{ $page['institution']['hospital_name'] }}</div>
