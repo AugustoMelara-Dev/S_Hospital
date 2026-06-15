@@ -2,7 +2,34 @@
 
 Fecha: 2026-06-15
 Rama: v1.1-critical-hardening-after-offline
-Estado: en ejecucion
+Estado: **Estado 2.5 cerrado, 22 commits sobre main**
+
+## Fase 0 - Verificacion OFF-A..OFF-E
+
+| Fase | Estado | Evidencia |
+|------|--------|-----------|
+| OFF-A | PASS | `docs/OFFLINE_MODE_PLAN.md` (restaurado de bf552ef7) |
+| OFF-B | PASS | `docs/PHYSICAL_SECURITY.md`, `ENDPOINT_SECURITY.md`, `DATETIME_POLICY.md`, `DATA_MIGRATION.md`, `MAINTENANCE_ROUTINE.md`; `SYSTEM_REQUIREMENTS.md` expandido |
+| OFF-C | PASS | `scripts/audit_offline_dependencies.ps1` + `.sh`; `frontend/src/lib/offline/indicators.ts` + test; `qa/OFFLINE_SCENARIO_VALIDATION.md` (OFFLINE_OK) |
+| OFF-D | PASS | `scripts/rollback_update.ps1` + `.sh`; `docs/manuales/CHECKLIST_ACTUALIZACION_SEGURA.md` actualizado |
+| OFF-E | PASS | `docs/OFFLINE_CHECKLIST_FINAL.md`; `docs/OFFLINE_DICTAMEN_FINAL.md`; `docs/KNOWN_LIMITATIONS.md` extendido |
+
+Comandos verificados:
+- `powershell rollback_update.ps1 -SelfTest`: OK
+- `powershell audit_offline_dependencies.ps1`: OFFLINE_OK 0 CRITICAL
+
+## Resumen de commits v1.1 (22 commits sobre main)
+
+Cherry-pick de hardening-audit-complete (2 commits): `de52bf25`, `54cbfd12`
+Trabajo v1.1 nuevo: 20 commits en 5 grupos tematicos:
+- Tests: `c8574923`, `0dce9c4d`
+- Features: `89eb19d8`, `22e3f46a`, `e7167027`, `2de64dd3`, `a3053e97`, `fcbc0e71`, `9a1dcf25`, `c82c9cff`
+- Chore: `bd39cbea`, `73a89153`
+- Docs: `39727620`, `5a2961d8`, `77e27aae`, `296ac173`, `26eab2c4`, `dd229876`, `f5d07e9a`, `a8705dd4`
+
+## Estado final del dictamen
+
+**Estado 2.5 - Hardening tecnico listo.** Dictamen completo en `docs/OFFLINE_DICTAMEN_FINAL.md`. Faltan solo 4 PENDING fisicos para Estado 3.
 
 ## Fase 0 - Verificacion OFF-A..OFF-E
 
