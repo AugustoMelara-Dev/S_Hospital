@@ -164,3 +164,74 @@ todavia envie el flag per-line en JSON sera rechazado por la
 validacion 422 de `StoreInvoiceRequest`. No requiere
 accion del operador, pero queda documentado para futuros
 mantenedores.
+
+## Pendientes del modo OFFLINE (subagentes 16-30) - 2026-06-15
+
+Items que cierran en la fase de despliegue controlado en el hospital
+(estado 3 del dictamen), no en la entrega tecnica (estado 2).
+
+### PENDING (cierre en despliegue fisico)
+
+- **Validacion LAN desde segunda PC** - Probar `/up`, `/login`,
+  `/verify-email` y assets desde otra PC con IP fija del servidor.
+  Plantilla: `qa/LAN_CLIENT_VALIDATION_PROOF.md`.
+- **Impresion fisica en hardware del hospital** - Imprimir el recibo
+  institucional en `media_carta_horizontal`, `a5_horizontal`,
+  `carta_horizontal`, personalizado y, si aplica, 80mm/58mm.
+  Plantilla: `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`.
+- **Formato fisico de captura manual y reingreso de datos** - Definir
+  con el hospital el formulario fisico de captura cuando el sistema
+  cae y el procedimiento de reingreso al sistema cuando vuelve.
+- **Acta de entrega tecnica firmada** - El hospital firma el acta y
+  la lista de pendientes. Documento: `qa/ENTREGA-YYYY-MM-DD.md`.
+
+### PARTIAL (cierre en despliegue o v1.1)
+
+- **Restore final con SHA256 y conteos firmados** - `validate_restore_mysql.sh`
+  se ejecuto el 2026-05-17 en MariaDB XAMPP; falta ejecutarlo contra el
+  servidor del hospital y firmar el resultado con el responsable tecnico.
+- **Bloqueo de sesion del sistema web por inactividad** - El bloqueo del
+  SO esta recomendado en `docs/ENDPOINT_SECURITY.md`; el bloqueo del
+  sistema web (frontend) no esta implementado. Trabajo de v1.1.
+- **Designacion formal del responsable de backups USB** - Asignado por el
+  hospital en el acta de entrega, no por el sistema.
+- **Validacion fisica de margenes y escala en impresora del hospital** -
+  La configuracion de driver de impresora se valida en sitio, no en
+  desarrollo. Plantilla: `qa/INSTITUTIONAL_RECEIPT_PRINT_PROOF.md`.
+- **Guion narrado de demo para capacitacion** - Existe flujo E2E
+  Playwright y visual smoke; el guion narrado paso a paso para
+  capacitacion formal se redacta cuando se confirma el equipo a
+  entrenar.
+
+### Documentos del modo OFFLINE ya entregados
+
+- `docs/OFFLINE_MODE_PLAN.md` - Plan de brechas y ejecucion.
+- `docs/OFFLINE_CHECKLIST_FINAL.md` - Checklist rellenado con PASS/PARTIAL/PENDING.
+- `docs/OFFLINE_DICTAMEN_FINAL.md` - Dictamen formal (estado 2).
+- `docs/PHYSICAL_SECURITY.md` - Manual de seguridad fisica.
+- `docs/ENDPOINT_SECURITY.md` - Manual de seguridad de endpoints.
+- `docs/DATETIME_POLICY.md` - Politica de fecha/hora.
+- `docs/DATA_MIGRATION.md` - Procedimiento de migracion y exportacion.
+- `docs/MAINTENANCE_ROUTINE.md` - Rutinas diaria/semanal/mensual.
+- `scripts/audit_offline_dependencies.ps1` + `.sh` - Auditoria de dependencias externas.
+- `scripts/rollback_update.ps1` + `.sh` - Rollback orquestado de actualizacion.
+- `frontend/src/lib/offline/indicators.ts` + test - Helpers de UI offline.
+- `qa/OFFLINE_SCENARIO_VALIDATION.md` - Resultado del audit (OFFLINE_OK).
+
+### Subagentes 16-30 registrados
+
+- `subagents/16_infraestructura_local_hardware.md`
+- `subagents/17_red_local_lan.md`
+- `subagents/18_continuidad_operativa_offline.md`
+- `subagents/19_backups_restauracion_recuperacion.md`
+- `subagents/20_seguridad_fisica.md`
+- `subagents/21_seguridad_endpoints.md`
+- `subagents/22_instalador_paquete_offline.md`
+- `subagents/23_actualizaciones_offline.md`
+- `subagents/24_impresion_documentos_locales.md`
+- `subagents/25_fecha_hora_trazabilidad.md`
+- `subagents/26_auditoria_local.md`
+- `subagents/27_migracion_exportacion_importacion.md`
+- `subagents/28_mantenimiento_local.md`
+- `subagents/29_capacitacion_aceptacion.md`
+- `subagents/30_escenario_sin_internet.md`
