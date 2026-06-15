@@ -187,12 +187,12 @@ class PdfExportService
     <div class='summary-cards'>
         <div class='summary-card'>
             <div class='summary-card-title'>Total Facturado</div>
-            <div class='summary-card-value'>\".$this->money($data['total_billed'])."</div>
+            <div class='summary-card-value'>".$this->money($data['total_billed'])."</div>
             <div style='font-size: 10px; color: #64748b; margin-top: 4px;'>Facturas Emitidas: ".$this->e($data['invoice_count'] ?? 0)."</div>
         </div>
         <div class='summary-card summary-card-right'>
             <div class='summary-card-title'>Total Recaudado</div>
-            <div class='summary-card-value' style='color: #0d9488;'>\".$this->money($data['total_collected'])."</div>
+            <div class='summary-card-value' style='color: #0d9488;'>".$this->money($data['total_collected'])."</div>
             <div style='font-size: 10px; color: #64748b; margin-top: 4px;'>Pagos Procesados: ".$this->e($data['payment_count'] ?? 0)."</div>
         </div>
         <div class='clear'></div>
@@ -210,27 +210,27 @@ class PdfExportService
         <tbody>
             <tr>
                 <td><strong>Facturado</strong></td>
-                <td class='text-right'>\".$this->money($data['total_billed'] ?? 0)."</td>
+                <td class='text-right'>".$this->money($data['total_billed'] ?? 0)."</td>
                 <td>Facturas no anuladas emitidas en el dia</td>
             </tr>
             <tr>
                 <td><strong>Cobrado</strong></td>
-                <td class='text-right'>\".$this->money($data['total_collected'] ?? 0)."</td>
+                <td class='text-right'>".$this->money($data['total_collected'] ?? 0)."</td>
                 <td>Pagos publicados no anulados en el dia</td>
             </tr>
             <tr>
                 <td><strong>Pendiente</strong></td>
-                <td class='text-right'>\".$this->money($data['total_pending'] ?? 0)."</td>
+                <td class='text-right'>".$this->money($data['total_pending'] ?? 0)."</td>
                 <td>Saldo actual de facturas emitidas o parciales del dia</td>
             </tr>
             <tr>
                 <td><strong>Parcial</strong></td>
-                <td class='text-right'>\".$this->money($data['total_partial'] ?? 0)."</td>
+                <td class='text-right'>".$this->money($data['total_partial'] ?? 0)."</td>
                 <td>Facturas con pago parcial separadas de pagadas</td>
             </tr>
             <tr>
                 <td><strong>Anulado</strong></td>
-                <td class='text-right'>\".$this->money($data['total_voided'] ?? 0)."</td>
+                <td class='text-right'>".$this->money($data['total_voided'] ?? 0)."</td>
                 <td>Facturas anuladas reportadas fuera de ingresos</td>
             </tr>
         </tbody>
@@ -250,7 +250,7 @@ class PdfExportService
             $html .= '
             <tr>
                 <td><strong>'.$this->e($methodName)."</strong></td>
-                <td class='text-right'>\".$this->money($total).'</td>
+                <td class='text-right'>".$this->money($total).'</td>
             </tr>';
         }
         $html .= "
@@ -275,7 +275,7 @@ class PdfExportService
             <tr>
                 <td><strong>'.$this->e($statusName)."</strong></td>
                 <td class='text-center'>".$this->e($count)."</td>
-                <td class='text-right'>\".$this->money($total).'</td>
+                <td class='text-right'>".$this->money($total).'</td>
             </tr>';
         }
         $html .= "
@@ -490,12 +490,12 @@ class PdfExportService
     <div class='summary-cards'>
         <div class='summary-card'>
             <div class='summary-card-title'>Total Facturado</div>
-            <div class='summary-card-value'>\".$this->money($income['total_billed'])."</div>
+            <div class='summary-card-value'>".$this->money($income['total_billed'])."</div>
             <div style='font-size: 9px; color: #64748b; margin-top: 3px;'>Facturas Emitidas: ".$this->e($income['invoice_count'] ?? 0)."</div>
         </div>
         <div class='summary-card summary-card-right'>
             <div class='summary-card-title'>Total Recaudado</div>
-            <div class='summary-card-value' style='color: #0d9488;'>\".$this->money($income['total_collected'])."</div>
+            <div class='summary-card-value' style='color: #0d9488;'>".$this->money($income['total_collected'])."</div>
             <div style='font-size: 9px; color: #64748b; margin-top: 3px;'>Pagos Procesados: ".$this->e($income['payment_count'] ?? 0)."</div>
         </div>
         <div class='clear'></div>
@@ -514,27 +514,27 @@ class PdfExportService
         <tbody>
             <tr>
                 <td><strong>Facturado</strong></td>
-                <td class='text-right'>\".$this->money($income['total_billed'] ?? 0)."</td>
+                <td class='text-right'>".$this->money($income['total_billed'] ?? 0)."</td>
                 <td>Facturas no anuladas emitidas en el rango</td>
             </tr>
             <tr>
                 <td><strong>Cobrado</strong></td>
-                <td class='text-right'>\".$this->money($income['total_collected'] ?? 0)."</td>
+                <td class='text-right'>".$this->money($income['total_collected'] ?? 0)."</td>
                 <td>Pagos publicados no anulados en el rango</td>
             </tr>
             <tr>
                 <td><strong>Pendiente</strong></td>
-                <td class='text-right'>\".$this->money($income['total_pending'] ?? 0)."</td>
+                <td class='text-right'>".$this->money($income['total_pending'] ?? 0)."</td>
                 <td>Saldo actual de facturas emitidas o parciales</td>
             </tr>
             <tr>
                 <td><strong>Parcial</strong></td>
-                <td class='text-right'>\".$this->money($income['total_partial'] ?? 0)."</td>
+                <td class='text-right'>".$this->money($income['total_partial'] ?? 0)."</td>
                 <td>Facturas con pago parcial separadas de pagadas</td>
             </tr>
             <tr>
                 <td><strong>Anulado</strong></td>
-                <td class='text-right'>\".$this->money($income['total_voided'] ?? 0)."</td>
+                <td class='text-right'>".$this->money($income['total_voided'] ?? 0)."</td>
                 <td>Facturas anuladas reportadas fuera de ingresos</td>
             </tr>
         </tbody>
@@ -559,9 +559,9 @@ class PdfExportService
             foreach ($categories as $cat) {
                 $categoryName = $this->e($cat['category'] ?? 'Sin categoria');
                 $itemCount = $this->e($cat['item_count'] ?? 0);
-                $subtotal = \".$this->money($cat['subtotal'] ?? 0);
-                $taxAmount = \".$this->money($cat['tax_amount'] ?? 0);
-                $total = \".$this->money($cat['total'] ?? 0);
+                $subtotal = $this->money($cat['subtotal'] ?? 0);
+                $taxAmount = $this->money($cat['tax_amount'] ?? 0);
+                $total = $this->money($cat['total'] ?? 0);
                 $html .= "
                 <tr>
                     <td><strong>{$categoryName}</strong></td>
@@ -602,8 +602,8 @@ class PdfExportService
             foreach ($areas as $area) {
                 $areaName = $this->e($area['area'] ?? 'Sin area');
                 $itemCount = $this->e($area['item_count'] ?? 0);
-                $quantity = \".$this->money($area['quantity'] ?? 0);
-                $total = \".$this->money($area['total'] ?? 0);
+                $quantity = $this->money($area['quantity'] ?? 0);
+                $total = $this->money($area['total'] ?? 0);
                 $html .= "
                 <tr>
                     <td><strong>{$areaName}</strong></td>
@@ -631,7 +631,7 @@ class PdfExportService
             $html .= '
             <tr>
                 <td><strong>'.$this->e($methodName)."</strong></td>
-                <td class='text-right'>\".$this->money($total).'</td>
+                <td class='text-right'>".$this->money($total).'</td>
             </tr>';
         }
         $html .= "
@@ -669,7 +669,7 @@ class PdfExportService
             foreach (array_slice($services, 0, 10) as $srv) {
                 $serviceName = $this->e($srv['service'] ?? 'Servicio sin nombre');
                 $itemCount = $this->e($srv['item_count'] ?? 0);
-                $total = \".$this->money($srv['total'] ?? 0);
+                $total = $this->money($srv['total'] ?? 0);
                 $html .= "
                 <tr>
                     <td>{$serviceName}</td>
@@ -752,7 +752,7 @@ class PdfExportService
                     <tr>
                         <td>'.$this->e($paymentVoid['invoice_number'] ?? 'N/A').'</td>
                         <td>'.$this->e($this->translateMethod((string) ($paymentVoid['method'] ?? '')))."</td>
-                        <td class='text-right'>\".$this->money($paymentVoid['amount'] ?? 0).'</td>
+                        <td class='text-right'>".$this->money($paymentVoid['amount'] ?? 0).'</td>
                         <td>'.$this->e($paymentVoid['reason'] ?? 'Sin motivo').'</td>
                         <td>'.$this->e($paymentVoid['voided_by'] ?? 'N/A').'</td>
                     </tr>';
