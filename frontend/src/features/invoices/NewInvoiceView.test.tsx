@@ -9,6 +9,12 @@ import { ReceiptPreview } from '../../features/receipts/ReceiptPreview';
 import { apiClient, type ReceiptData } from '../../lib/api';
 import { queryClient } from '../../lib/query-client';
 import { resetRequestChain } from '../../lib/api/base';
+import { openBlobInNewTab } from '../../lib/download';
+
+vi.mock('../../lib/download', () => ({
+  downloadBlob: vi.fn(),
+  openBlobInNewTab: vi.fn(),
+}));
 
 describe('NewInvoiceView', () => {
   beforeEach(() => {
@@ -154,7 +160,7 @@ describe('NewInvoiceView', () => {
     expect(screen.queryByRole('heading', { name: /reportes/i })).not.toBeInTheDocument();
   });
 
-  it('shows receipt preview after registering payment', async () => {
+  it('opens the issued institutional receipt PDF after registering payment', async () => {
     window.history.pushState({}, '', '/billing/new');
     const service = {
       id: 11,
@@ -270,49 +276,40 @@ describe('NewInvoiceView', () => {
                 paid_at: '2026-05-17T08:03:00-06:00',
               },
               invoice: paidInvoice,
+              institutional_receipt: {
+                id: 90,
+                invoice_id: 100,
+                payment_id: 50,
+                cash_session_id: 7,
+                series_id: 5,
+                receipt_number: 1,
+                receipt_number_full: 'REC-A-00000001',
+                status: 'issued',
+                amount: '17.25',
+                amount_cents: 1725,
+                issued_at: '2026-05-17T08:03:00-06:00',
+                issued_by: 2,
+                payer_name: 'Maria Lopez',
+                concept: 'Glucosa',
+                amount_words: 'DIECISIETE LEMPIRAS CON 25/100 CENTAVOS',
+                template_code: 'institutional_classic',
+                print_profile_code: 'media_carta_horizontal',
+                copy_mode: 'original_only',
+                reprint_count: 0,
+                voided_by: null,
+                voided_at: null,
+                void_reason: null,
+              },
+              institutional_receipt_error: null,
             },
           }),
         } as Response;
       }
 
-      if (url.includes('/api/invoices/100/receipt')) {
+      if (url.includes('/api/institutional-receipts/90/pdf')) {
         return {
           ok: true,
-          json: async () => ({
-            data: {
-              width: 'half_letter',
-              hospital: { name: 'Hospital San Isidro', rtn: '08011999123456' },
-              fiscal: {
-                cai: 'VALIDACION-CAI',
-                authorized_range: '000-001-01-00000001 a 000-001-01-99999999',
-                valid_until: '2027-05-17',
-              },
-              invoice: { ...paidInvoice, cashier: 'Cajero Validacion' },
-              items: [
-                {
-                  service_name: 'Glucosa',
-                  category_name: 'Laboratorio',
-                  quantity: '1.00',
-                  unit_price: '15.00',
-                  tax_amount: '2.25',
-                  line_total: '17.25',
-                  special_rule_code: null,
-                  special_rule_applied: false,
-                  notes: null,
-                },
-              ],
-              payments: [
-                {
-                  id: 50,
-                  method: 'cash',
-                  amount: '17.25',
-                  reference: null,
-                  paid_at: '2026-05-17T08:03:00-06:00',
-                  cashier: 'Cajero Validacion',
-                },
-              ],
-            },
-          }),
+          blob: async () => new Blob(['%PDF-test'], { type: 'application/pdf' }),
         } as Response;
       }
 
@@ -342,9 +339,14 @@ describe('NewInvoiceView', () => {
     fireEvent.change(screen.getByLabelText(/monto recibido/i), { target: { value: '17.25' } });
     fireEvent.click(screen.getByRole('button', { name: /confirmar cobro/i }));
 
-    expect((await screen.findAllByLabelText(/vista previa del recibo/i)).length).toBeGreaterThan(0);
-    expect(await screen.findByText(/hospital san isidro/i)).toBeInTheDocument();
-    expect(screen.getByText('Media carta')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(openBlobInNewTab).toHaveBeenCalledWith(
+        expect.any(Blob),
+        'recibo-institucional-REC-A-00000001.pdf',
+      );
+    });
+    expect(screen.queryByLabelText(/vista previa del recibo/i)).not.toBeInTheDocument();
+    expect(await screen.findByText(/REC-A-00000001/i)).toBeInTheDocument();
   });
 
   it('rejects inactive services returned by scanner lookup', async () => {

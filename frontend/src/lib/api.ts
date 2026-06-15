@@ -25,6 +25,7 @@ import type {
   Invoice,
   CashSession,
   Payment,
+  PaymentRegistrationResult,
   ReceiptData,
   MoneyByMethod,
   DailyReport,
@@ -45,6 +46,7 @@ import type {
   PdfReportFilters,
   DashboardReport,
   InstitutionalReceiptSettings,
+  InstitutionalReceipt,
   InstitutionalReceiptSeries,
   ReceiptInstitutionPayload,
   ReceiptPrintProfile,
@@ -85,6 +87,7 @@ export type {
   Invoice,
   CashSession,
   Payment,
+  PaymentRegistrationResult,
   ReceiptData,
   MoneyByMethod,
   DailyReport,
@@ -105,6 +108,7 @@ export type {
   PdfReportFilters,
   DashboardReport,
   InstitutionalReceiptSettings,
+  InstitutionalReceipt,
   InstitutionalReceiptSeries,
   ReceiptInstitutionPayload,
   ReceiptPrintProfile,
@@ -179,7 +183,7 @@ export const apiClient = {
   async registerPayment(
     invoiceId: number,
     payload: { cash_session_id: number; method: Payment['method']; amount: string; reference?: string | null },
-  ): Promise<{ payment: Payment; invoice: Invoice }> {
+  ): Promise<PaymentRegistrationResult> {
     return billing.registerPayment(invoiceId, payload);
   },
 
@@ -360,6 +364,10 @@ export const apiClient = {
 
   async testPrintInstitutionalReceipt(payload: ReceiptTestPrintPayload): Promise<Blob> {
     return institutionalReceipts.testPrint(payload);
+  },
+
+  async getInstitutionalReceiptPdf(id: number, reason?: string | null): Promise<Blob> {
+    return institutionalReceipts.pdf(id, reason);
   },
 
   async login(login: string, password: string): Promise<AuthUser> {

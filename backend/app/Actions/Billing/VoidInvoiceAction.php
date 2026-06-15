@@ -2,6 +2,7 @@
 
 namespace App\Actions\Billing;
 
+use App\Actions\InstitutionalReceipts\VoidInstitutionalReceiptAction;
 use App\Events\InvoiceChanged;
 use App\Models\AuditLog;
 use App\Models\Invoice;
@@ -14,7 +15,10 @@ use Illuminate\Validation\ValidationException;
 
 class VoidInvoiceAction
 {
-    public function __construct(private readonly InvoiceAccess $invoiceAccess) {}
+    public function __construct(
+        private readonly InvoiceAccess $invoiceAccess,
+        private readonly VoidInstitutionalReceiptAction $voidInstitutionalReceipt,
+    ) {}
 
     public function execute(Invoice $invoice, User $user, string $reason): Invoice
     {
@@ -78,6 +82,8 @@ class VoidInvoiceAction
                 'voided_at' => now(),
             ])->save();
 
+            $voidedReceipts = $this->voidInstitutionalReceipt->forInvoice($lockedInvoice, $user, $reason);
+
             AuditLog::query()->create([
                 'user_id' => $user->id,
                 'action' => 'invoice.voided',
@@ -89,6 +95,7 @@ class VoidInvoiceAction
                     'void_reason' => $lockedInvoice->void_reason,
                     'voided_by' => $lockedInvoice->voided_by,
                     'voided_at' => $lockedInvoice->voided_at,
+                    'voided_institutional_receipt_ids' => $voidedReceipts->pluck('id')->all(),
                 ],
                 'created_at' => now(),
             ]);

@@ -44,6 +44,7 @@ export type NewInvoiceLayoutProps = {
   onPaymentOpenChange: (val: boolean) => void;
   onSubmitPayment: (appliedAmount: string) => void;
   onLoadReceipt: (width: ReceiptData['width']) => void;
+  onPrintIssuedReceipt: () => void;
   onNuevaFactura: () => void;
   onSuccessDialogChange: (val: boolean) => void;
   onReceiptOpenChange: (val: boolean) => void;
@@ -84,6 +85,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
     onPaymentOpenChange,
     onSubmitPayment,
     onLoadReceipt,
+    onPrintIssuedReceipt,
     onNuevaFactura,
     onSuccessDialogChange,
     onReceiptOpenChange,
@@ -246,7 +248,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
           total={state.issuedInvoice.total}
           status={state.issuedInvoice.status}
           onCobrar={onCobrar}
-          onImprimir={() => onLoadReceipt(state.receiptWidth)}
+          onImprimir={onPrintIssuedReceipt}
           onNuevaFactura={onNuevaFactura}
         />
       )}

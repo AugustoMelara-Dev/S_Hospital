@@ -100,4 +100,14 @@ export const institutionalReceipts = {
   async testPrint(payload: ReceiptTestPrintPayload): Promise<Blob> {
     return pdfPost('/api/settings/institutional-receipts/test-print', payload);
   },
+
+  async pdf(id: number, reason?: string | null): Promise<Blob> {
+    const params = new URLSearchParams();
+    if (reason?.trim()) {
+      params.set('reason', reason.trim());
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+
+    return apiClient.download(`/api/institutional-receipts/${id}/pdf${query}`);
+  },
 };

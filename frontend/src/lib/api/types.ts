@@ -255,6 +255,38 @@ export type ReceiptData = {
   }>;
 };
 
+export type InstitutionalReceipt = {
+  id: number;
+  invoice_id: number | null;
+  payment_id: number | null;
+  cash_session_id: number;
+  series_id: number;
+  receipt_number: number;
+  receipt_number_full: string;
+  status: 'issued' | 'void';
+  amount: string;
+  amount_cents: number;
+  issued_at: string | null;
+  issued_by: number;
+  payer_name: string;
+  concept: string;
+  amount_words: string;
+  template_code: 'institutional_classic';
+  print_profile_code: ReceiptPrintProfile['code'];
+  copy_mode: ReceiptPrintProfile['copies_mode'];
+  reprint_count: number;
+  voided_by: number | null;
+  voided_at: string | null;
+  void_reason: string | null;
+};
+
+export type PaymentRegistrationResult = {
+  payment: Payment;
+  invoice: Invoice;
+  institutional_receipt: InstitutionalReceipt | null;
+  institutional_receipt_error: string | null;
+};
+
 export type MoneyByMethod = {
   cash: string;
   transfer: string;

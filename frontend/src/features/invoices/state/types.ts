@@ -1,4 +1,4 @@
-import type { Category, CashSession, Invoice, Payment, ReceiptData, Service } from '../../../lib/api';
+import type { Category, CashSession, InstitutionalReceipt, Invoice, Payment, ReceiptData, Service } from '../../../lib/api';
 import type { CartItem } from '../components/InvoiceCart';
 
 export interface NewInvoiceState {
@@ -19,6 +19,7 @@ export interface NewInvoiceState {
   scannerEnabled: boolean;
   partialPaymentsEnabled: boolean;
   receipt: ReceiptData | null;
+  institutionalReceipt: InstitutionalReceipt | null;
   alertMessage: string | null;
   warningMessage: string | null;
   successMessage: string | null;
@@ -51,6 +52,7 @@ export type NewInvoiceAction =
   | { type: 'SET_SCANNER_ENABLED'; payload: boolean }
   | { type: 'SET_PARTIAL_PAYMENTS_ENABLED'; payload: boolean }
   | { type: 'SET_RECEIPT'; payload: ReceiptData | null }
+  | { type: 'SET_INSTITUTIONAL_RECEIPT'; payload: InstitutionalReceipt | null }
   | { type: 'SET_ALERT_MESSAGE'; payload: string | null }
   | { type: 'SET_WARNING_MESSAGE'; payload: string | null }
   | { type: 'SET_SUCCESS_MESSAGE'; payload: string | null }
@@ -92,6 +94,7 @@ export function getInitialNewInvoiceState(cashSession: CashSession | null): NewI
     scannerEnabled: false,
     partialPaymentsEnabled: false,
     receipt: null,
+    institutionalReceipt: null,
     alertMessage: null,
     warningMessage: null,
     successMessage: null,

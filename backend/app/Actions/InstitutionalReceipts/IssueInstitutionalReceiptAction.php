@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Support\InvoiceAccess;
 use App\Support\Money;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -28,6 +29,8 @@ class IssueInstitutionalReceiptAction
      * @param  array{invoice_id: int, payment_id?: int|null, cash_session_id?: int|null, profile_id?: int|null, profile_code?: string|null}  $payload
      *
      * @throws AuthorizationException
+     * @throws ModelNotFoundException
+     * @throws ValidationException
      */
     public function execute(array $payload, User $user, InvoiceAccess $invoiceAccess): InstitutionalReceipt
     {
