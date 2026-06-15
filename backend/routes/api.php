@@ -97,8 +97,12 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware('throttle.user:30,1');
         Route::post('/settings/institutional-receipts/test-preview', [InstitutionalReceiptSettingsController::class, 'testPreview'])
             ->middleware('throttle.user:30,1');
+        Route::post('/settings/institutional-receipts/test-print', [InstitutionalReceiptSettingsController::class, 'testPrint'])
+            ->middleware('throttle.user:30,1');
         Route::post('/institutional-receipts', [InstitutionalReceiptController::class, 'store'])
             ->middleware(['throttle.user:60,1', 'idempotency']);
+        Route::get('/institutional-receipts/{receipt}/pdf', [InstitutionalReceiptController::class, 'pdf'])
+            ->middleware('throttle.user:60,1');
 
         Route::get('/categories', [CategoryController::class, 'index']);
         Route::post('/categories', [CategoryController::class, 'store'])

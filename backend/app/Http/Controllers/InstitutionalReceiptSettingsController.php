@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\InstitutionalReceipts\InstitutionalReceiptPdfService;
 use App\Actions\InstitutionalReceipts\ResolveReceiptPrintProfileAction;
 use App\Http\Requests\InstitutionalReceipts\StoreReceiptSeriesRequest;
 use App\Http\Requests\InstitutionalReceipts\TestReceiptPreviewRequest;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 class InstitutionalReceiptSettingsController extends Controller
 {
@@ -280,9 +282,10 @@ class InstitutionalReceiptSettingsController extends Controller
 
     public function testPreview(TestReceiptPreviewRequest $request, ResolveReceiptPrintProfileAction $resolver): JsonResponse
     {
+        $user = $request->user();
         $profile = $request->filled('profile_id') || $request->filled('profile_code')
             ? $this->profileFromRequest($request->validated())
-            : $resolver->execute($request->user());
+            : $resolver->execute($user);
 
         $series = InstitutionalReceiptSeries::query()
             ->where('document_type', InstitutionalReceiptSeries::DOCUMENT_TYPE)
@@ -316,6 +319,31 @@ class InstitutionalReceiptSettingsController extends Controller
                     'amount' => $request->input('amount', '0.00'),
                 ],
             ],
+        ]);
+    }
+
+    public function testPrint(
+        TestReceiptPreviewRequest $request,
+        ResolveReceiptPrintProfileAction $resolver,
+        InstitutionalReceiptPdfService $pdfService,
+    ): Response {
+        $user = $request->user();
+        $profile = $request->filled('profile_id') || $request->filled('profile_code')
+            ? $this->profileFromRequest($request->validated())
+            : $resolver->execute($user);
+
+        $series = InstitutionalReceiptSeries::query()
+            ->where('document_type', InstitutionalReceiptSeries::DOCUMENT_TYPE)
+            ->where('active', true)
+            ->first();
+
+        $pdf = $pdfService->pdfForDraft($request->validated(), $profile, $series);
+        $pdfService->recordTestPrintEvent($profile, $user);
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="recibo-institucional-prueba.pdf"',
+            'X-Receipt-Test-Print' => 'PRUEBA - SIN VALIDEZ',
         ]);
     }
 
