@@ -8,6 +8,7 @@ use App\Actions\Payments\VoidPaymentAction;
 use App\Http\Requests\Payments\IndexPaymentRequest;
 use App\Http\Requests\Payments\StorePaymentRequest;
 use App\Http\Requests\Payments\VoidPaymentRequest;
+use App\Models\FiscalSetting;
 use App\Models\InstitutionalReceipt;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -15,6 +16,7 @@ use App\Models\User;
 use App\Support\InvoiceAccess;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
@@ -38,7 +40,7 @@ class PaymentController extends Controller
         IssueInstitutionalReceiptAction $issueReceipt,
         InvoiceAccess $invoiceAccess,
     ): JsonResponse {
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $invoice, $registerPayment, $issueReceipt, $invoiceAccess) {
+        return DB::transaction(function () use ($request, $invoice, $registerPayment, $issueReceipt, $invoiceAccess) {
             $payment = $registerPayment->execute($invoice, $request->validated(), $request->user(), $invoiceAccess);
             $freshInvoice = $invoice->fresh()->load('items', 'payments', 'issuer:id,name,username');
             $receiptResult = $this->issueInstitutionalReceiptAfterPaidPayment(
@@ -50,9 +52,9 @@ class PaymentController extends Controller
             );
 
             if ($receiptResult['error']) {
-                $mode = \App\Models\FiscalSetting::query()->value('receipt_template_mode') ?? 'institutional';
+                $mode = FiscalSetting::query()->value('receipt_template_mode') ?? 'institutional';
                 if ($mode === 'institutional') {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
+                    throw ValidationException::withMessages([
                         'institutional_receipt' => $receiptResult['error'],
                     ]);
                 }

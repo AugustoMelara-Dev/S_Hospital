@@ -46,11 +46,11 @@ class Money
     {
         $absolute = abs($cents);
         $formatted = intdiv($absolute, 100).'.'.str_pad((string) ($absolute % 100), 2, '0', STR_PAD_LEFT);
-        
+
         if ($cents < 0) {
             return '- L. '.$formatted;
         }
-        
+
         return 'L. '.$formatted;
     }
 
