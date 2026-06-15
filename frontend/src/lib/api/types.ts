@@ -111,6 +111,7 @@ export type InvoiceItemPayload = {
 
 export type InvoicePayload = {
   patient_name: string;
+  dialysis_prescription?: boolean;
   items: InvoiceItemPayload[];
 };
 

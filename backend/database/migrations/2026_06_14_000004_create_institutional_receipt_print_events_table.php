@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('institutional_receipt_id')
                 ->nullable()
-                ->constrained('institutional_receipts')
+                ->constrained(table: 'institutional_receipts', indexName: 'fk_inst_rcpt_prt_evts_rcpt_id')
                 ->restrictOnDelete();
             $table->enum('event_type', ['issued_print', 'reprint', 'test_print', 'pdf_generated']);
             $table->string('copy_label', 40)->nullable();
