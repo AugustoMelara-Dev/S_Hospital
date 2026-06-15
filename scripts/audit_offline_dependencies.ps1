@@ -94,27 +94,32 @@ if (Test-Path $srcDir) {
     }
 }
 
-# 5. Backend: idem
+# 5. Backend: idem (excluyendo vendor y node_modules)
 $backendDir = Join-Path $RepoRoot "backend"
 if (Test-Path $backendDir) {
-    Get-ChildItem -Path $backendDir -Recurse -Include *.php -File | ForEach-Object {
-        $content = Get-Content -Raw $_.FullName
-        $matches = [regex]::Matches($content, '(Http::|file_get_contents|curl_init|fsockopen|stream_socket_client)\s*\(\s*[\("''](https?://[^"''\)]+)')
-        foreach ($m in $matches) {
-            $url = $m.Groups[2].Value
-            if (-not (Test-InternalUrl $url)) {
-                $findings.Add((New-Finding 'CRITICAL' 'EXTERNAL_HTTP' $_.FullName.Replace($RepoRoot, '') "Llamada externa: $url"))
+    Get-ChildItem -Path $backendDir -Recurse -Include *.php -File |
+        Where-Object { $_.FullName -notmatch '[\\/]vendor[\\/]' -and $_.FullName -notmatch '[\\/]node_modules[\\/]' } |
+        ForEach-Object {
+            $content = Get-Content -Raw $_.FullName
+            $matches = [regex]::Matches($content, '(Http::|file_get_contents|curl_init|fsockopen|stream_socket_client)\s*\(\s*[\("''](https?://[^"''\)]+)')
+            foreach ($m in $matches) {
+                $url = $m.Groups[2].Value
+                if (-not (Test-InternalUrl $url)) {
+                    $findings.Add((New-Finding 'CRITICAL' 'EXTERNAL_HTTP' $_.FullName.Replace($RepoRoot, '') "Llamada externa: $url"))
+                }
             }
         }
-    }
 }
 
-# 6. Patrones de fuentes externas
+# 6. Patrones de fuentes externas (excluyendo vendor y node_modules)
 $fontPatterns = @('fonts.googleapis.com', 'fonts.gstatic.com', 'use.typekit.net', 'cdn.jsdelivr.net', 'unpkg.com', 'cdnjs.cloudflare.com')
 $searchDirs = @($srcDir, $backendDir, (Join-Path $RepoRoot "frontend/index.html"))
 foreach ($dir in $searchDirs) {
     if (Test-Path $dir) {
-        $files = if ((Get-Item $dir).PSIsContainer) { Get-ChildItem -Path $dir -Recurse -File } else { @($dir) }
+        $files = if ((Get-Item $dir).PSIsContainer) {
+            Get-ChildItem -Path $dir -Recurse -File |
+                Where-Object { $_.FullName -notmatch '[\\/]vendor[\\/]' -and $_.FullName -notmatch '[\\/]node_modules[\\/]' -and $_.FullName -notmatch '[\\/]dist[\\/]' -and $_.FullName -notmatch '[\\/]build[\\/]' }
+        } else { @($dir) }
         foreach ($f in $files) {
             $content = Get-Content -Raw $f.FullName -ErrorAction SilentlyContinue
             foreach ($pat in $fontPatterns) {
@@ -126,18 +131,20 @@ foreach ($dir in $searchDirs) {
     }
 }
 
-# 7. Licencias online
+# 7. Licencias online (solo en app/, excluyendo vendor)
 $licensePatterns = @('license-checker', 'license online', 'verifyLicense\(')
 $apiDir = Join-Path $RepoRoot "backend/app"
 if (Test-Path $apiDir) {
-    Get-ChildItem -Path $apiDir -Recurse -Include *.php -File | ForEach-Object {
-        $content = Get-Content -Raw $_.FullName
-        foreach ($pat in $licensePatterns) {
-            if ($content -match [regex]::Escape($pat)) {
-                $findings.Add((New-Finding 'INFO' 'LICENSE_ONLINE' $_.FullName.Replace($RepoRoot, '') "Patron de licencia online: $pat"))
+    Get-ChildItem -Path $apiDir -Recurse -Include *.php -File |
+        Where-Object { $_.FullName -notmatch '[\\/]vendor[\\/]' } |
+        ForEach-Object {
+            $content = Get-Content -Raw $_.FullName
+            foreach ($pat in $licensePatterns) {
+                if ($content -match [regex]::Escape($pat)) {
+                    $findings.Add((New-Finding 'INFO' 'LICENSE_ONLINE' $_.FullName.Replace($RepoRoot, '') "Patron de licencia online: $pat"))
+                }
             }
         }
-    }
 }
 
 # Generar reporte Markdown
