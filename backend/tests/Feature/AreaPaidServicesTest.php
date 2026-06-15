@@ -22,6 +22,7 @@ class AreaPaidServicesTest extends TestCase
     public function test_area_user_only_sees_paid_services_for_their_area_and_cannot_charge(): void
     {
         $this->seedBillingBase();
+        \App\Models\FiscalSetting::query()->updateOrCreate([], ['receipt_template_mode' => 'thermal']);
         $cashier = $this->cashier();
         $sessionId = $this->openSession($cashier);
         $labInvoice = $this->createInvoice($cashier, 'Glucosa', 'Maria Lopez');

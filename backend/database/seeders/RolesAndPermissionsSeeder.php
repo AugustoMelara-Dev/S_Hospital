@@ -47,6 +47,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'system.status.view',
         'audit.view',
         'patients.mark_dialysis_prescription',
+        'area_services.view',
     ];
 
     public function run(): void

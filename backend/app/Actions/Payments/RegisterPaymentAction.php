@@ -185,4 +185,44 @@ class RegisterPaymentAction
 
         return Money::parseCents((string) $invoice->paid_amount, 'paid_amount');
     }
+
+    private function idempotencyKey(?Request $request): ?string
+    {
+        $key = trim((string) $request?->header('Idempotency-Key', ''));
+
+        return $key === '' ? null : mb_substr($key, 0, 120);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function requestHash(array $payload): string
+    {
+        ksort($payload);
+
+        return hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR));
+    }
+
+    private function existingPaymentForKey(string $key, string $requestHash, int $userId): ?Payment
+    {
+        $record = OperationIdempotencyKey::query()
+            ->where('operation', 'payment.register')
+            ->where('key', $key)
+            ->lockForUpdate()
+            ->first();
+
+        if ($record === null) {
+            return null;
+        }
+
+        abort_if(
+            $record->request_hash !== $requestHash || $record->user_id !== $userId,
+            409,
+            'La accion ya fue enviada con datos diferentes. Actualice la pantalla antes de continuar.',
+        );
+
+        return Payment::query()
+            ->with('user:id,name,username', 'cashSession:id,user_id,status,opened_at')
+            ->find($record->resource_id);
+    }
 }

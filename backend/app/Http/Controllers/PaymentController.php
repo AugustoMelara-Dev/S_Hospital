@@ -41,7 +41,7 @@ class PaymentController extends Controller
         InvoiceAccess $invoiceAccess,
     ): JsonResponse {
         return DB::transaction(function () use ($request, $invoice, $registerPayment, $issueReceipt, $invoiceAccess) {
-            $payment = $registerPayment->execute($invoice, $request->validated(), $request->user(), $invoiceAccess);
+            $payment = $registerPayment->execute($invoice, $request->validated(), $request->user(), $invoiceAccess, $request);
             $freshInvoice = $invoice->fresh()->load('items', 'payments', 'issuer:id,name,username');
             $receiptResult = $this->issueInstitutionalReceiptAfterPaidPayment(
                 $request,
@@ -131,18 +131,4 @@ class PaymentController extends Controller
         }
     }
 
-    public function void(
-        VoidPaymentRequest $request,
-        Payment $payment,
-        VoidPaymentAction $voidPayment,
-    ): JsonResponse {
-        $voidedPayment = $voidPayment->execute($payment, $request->user(), $request->reason(), $request);
-
-        return response()->json([
-            'data' => [
-                'payment' => $voidedPayment,
-                'invoice' => $payment->invoice()->firstOrFail()->fresh()->load('items', 'payments', 'issuer:id,name,username'),
-            ],
-        ]);
-    }
 }
