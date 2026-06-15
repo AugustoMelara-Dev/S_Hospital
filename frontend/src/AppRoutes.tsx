@@ -38,6 +38,7 @@ type AppRoutesProps = {
   canExportReports: boolean;
   canViewUsers: boolean;
   canCreateUsers: boolean;
+  canMarkDialysisPrescription: boolean;
   cashSession: CashSession | null;
   defaultAuthenticatedRoute: string;
   onQuickCash: () => void;
@@ -65,6 +66,7 @@ export function AppRoutes({
   canExportReports,
   canViewUsers: _canViewUsers,
   canCreateUsers,
+  canMarkDialysisPrescription,
   cashSession,
   defaultAuthenticatedRoute,
   onQuickCash,
@@ -110,6 +112,7 @@ export function AppRoutes({
               canCreatePayments={canCreatePayments}
               canViewCatalog={canViewCatalog}
               canViewReceipts={canViewReceipts}
+              canMarkDialysisPrescription={canMarkDialysisPrescription}
               onCashSessionChange={onCashSessionChange}
               onOpenCash={onQuickCash}
               onStatus={onStatus}

@@ -23,6 +23,7 @@ export type NewInvoiceLayoutProps = {
   canEmit: boolean;
   canCreatePayments: boolean;
   canViewReceipts: boolean;
+  canMarkDialysisPrescription?: boolean;
   onOpenCash?: () => void;
   onPatientNameChange: (value: string) => void;
   onPatientSubmit: () => void;
@@ -210,6 +211,7 @@ export function NewInvoiceViewLayout(props: NewInvoiceLayoutProps) {
               actionLabel={canCreatePayments && canViewReceipts ? 'Emitir y cobrar' : 'Emitir factura'}
               emptyActionLabel="Agregue servicios"
               submitting={state.submitting}
+              canMarkDialysisPrescription={props.canMarkDialysisPrescription}
             />
           </CardContent>
         </Card>

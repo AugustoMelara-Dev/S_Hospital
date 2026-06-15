@@ -127,6 +127,7 @@ function HospitalApp() {
           canExportReports={session.canExportReports}
           canViewUsers={session.canViewUsers}
           canCreateUsers={session.canCreateUsers}
+          canMarkDialysisPrescription={session.canMarkDialysisPrescription}
           cashSession={session.cashSession}
           defaultAuthenticatedRoute={session.defaultAuthenticatedRoute}
           onQuickCash={() => setQuickCashOpen(true)}
@@ -149,6 +150,7 @@ function HospitalApp() {
           canCreatePayments={session.canCreatePayments}
           canViewCatalog={session.canViewCatalog}
           canViewReceipts={session.canViewReceipts}
+          canMarkDialysisPrescription={session.canMarkDialysisPrescription}
           onOpenCash={() => {
             setQuickInvoiceOpen(false);
             setQuickCashOpen(true);
