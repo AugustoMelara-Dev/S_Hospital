@@ -31,6 +31,7 @@ describe('InstitutionalReceiptFlow', () => {
       },
     });
     const getReceipt = vi.spyOn(apiClient, 'getReceipt');
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent');
     const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-institutional'], { type: 'application/pdf' }));
 
@@ -45,8 +46,9 @@ describe('InstitutionalReceiptFlow', () => {
     await waitFor(() => expect(screen.getByText('Paciente Institucional')).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /ver recibo/i }));
 
-    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(501, 'Consulta desde historial de facturas.'));
+    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(501));
     expect(openBlobInNewTab).toHaveBeenCalledWith(expect.any(Blob), 'recibo-institucional-REC-A-00000501.pdf');
+    expect(registerPrint).not.toHaveBeenCalled();
     expect(getReceipt).not.toHaveBeenCalled();
   });
 

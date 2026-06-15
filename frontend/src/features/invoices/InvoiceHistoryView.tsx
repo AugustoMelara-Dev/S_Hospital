@@ -151,8 +151,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       setSelectedInvoice(invoice);
       const institutionalReceipt = issuedInstitutionalReceipt(invoice);
       if (institutionalReceipt) {
-        await openInstitutionalReceiptPdf(institutionalReceipt, 'Consulta desde historial de facturas.');
-        queryClient.invalidateQueries({ queryKey: ['audit'] });
+        await openInstitutionalReceiptPdf(institutionalReceipt);
         onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
 
         return;
@@ -255,6 +254,7 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
       const institutionalReceipt = issuedInstitutionalReceipt(invoice);
       if (institutionalReceipt) {
         const reason = reprintReason.trim() || 'Reimpresión solicitada desde historial.';
+        await apiClient.registerInstitutionalReceiptPrintEvent(institutionalReceipt.id, reason);
         await openInstitutionalReceiptPdf(institutionalReceipt, reason);
         queryClient.invalidateQueries({ queryKey: ['audit'] });
         onStatus(`PDF institucional ${institutionalReceipt.receipt_number_full} abierto.`);
@@ -291,9 +291,9 @@ export function InvoiceHistoryView({ user, onStatus }: InvoiceHistoryViewProps) 
 
   async function openInstitutionalReceiptPdf(
     receipt: NonNullable<Invoice['institutional_receipt']>,
-    reason: string,
+    _reason?: string,
   ) {
-    const blob = await apiClient.getInstitutionalReceiptPdf(receipt.id, reason);
+    const blob = await apiClient.getInstitutionalReceiptPdf(receipt.id);
     openBlobInNewTab(blob, `recibo-institucional-${receipt.receipt_number_full}.pdf`);
   }
 

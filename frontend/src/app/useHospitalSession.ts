@@ -39,7 +39,6 @@ export function useHospitalSession() {
     canViewManagerialReports ||
     canViewCashSessionReports;
   const canViewBackups = permissions.has('backups.view');
-  const canViewAreaServices = permissions.has('area_services.view');
   const canViewSystemStatus = permissions.has('system.status.view');
   const canViewUsers = permissions.has('users.view');
   const canCreateUsers = permissions.has('users.create');
@@ -250,9 +249,8 @@ export function useHospitalSession() {
       canViewReports ||
       canViewBackups ||
       canViewUsers ||
-      canViewAreaServices ||
       canViewSystemStatus,
-    defaultAuthenticatedRoute: canViewSystemStatus && !canViewCatalog && !canCreateInvoices ? '/support' : canViewAreaServices && !canViewCatalog && !canCreateInvoices ? '/area-services' : '/dashboard',
+    defaultAuthenticatedRoute: canViewSystemStatus && !canViewCatalog && !canCreateInvoices ? '/help' : '/dashboard',
     sessionExpired,
     handleLogin,
     handleLogout,

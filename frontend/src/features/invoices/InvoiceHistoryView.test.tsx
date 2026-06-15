@@ -134,6 +134,7 @@ describe('InvoiceHistoryView', () => {
       institutional_receipt: institutionalReceiptFixture({ id: 90, receipt_number_full: 'REC-A-00000090' }),
     });
     const getReceipt = vi.spyOn(apiClient, 'getReceipt');
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent');
     const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-institutional'], { type: 'application/pdf' }));
 
@@ -148,11 +149,12 @@ describe('InvoiceHistoryView', () => {
     await waitFor(() => expect(screen.getByText('Paciente Recibo Institucional')).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /ver recibo/i }));
 
-    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(90, 'Consulta desde historial de facturas.'));
+    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(90));
     expect(openBlobInNewTab).toHaveBeenCalledWith(
       expect.any(Blob),
       'recibo-institucional-REC-A-00000090.pdf',
     );
+    expect(registerPrint).not.toHaveBeenCalled();
     expect(getReceipt).not.toHaveBeenCalled();
   });
 
@@ -165,6 +167,8 @@ describe('InvoiceHistoryView', () => {
       institutional_receipt: institutionalReceiptFixture({ id: 91, receipt_number_full: 'REC-A-00000091' }),
     });
     const reprintInvoice = vi.spyOn(apiClient, 'reprintInvoice');
+    const registerPrint = vi.spyOn(apiClient, 'registerInstitutionalReceiptPrintEvent')
+      .mockResolvedValue({} as never);
     const getPdf = vi.spyOn(apiClient, 'getInstitutionalReceiptPdf')
       .mockResolvedValue(new Blob(['%PDF-reprint'], { type: 'application/pdf' }));
 
@@ -183,7 +187,8 @@ describe('InvoiceHistoryView', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /registrar reimpresi/i }));
 
-    await waitFor(() => expect(getPdf).toHaveBeenCalledWith(91, 'Copia solicitada por el paciente'));
+    await waitFor(() => expect(registerPrint).toHaveBeenCalledWith(91, 'Copia solicitada por el paciente'));
+    expect(getPdf).toHaveBeenCalledWith(91);
     expect(openBlobInNewTab).toHaveBeenCalledWith(
       expect.any(Blob),
       'recibo-institucional-REC-A-00000091.pdf',

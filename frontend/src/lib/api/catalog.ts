@@ -1,7 +1,6 @@
 import { apiClient } from './base';
 import type {
   Area,
-  AreaPaidService,
   Category,
   CategoryPayload,
   PaginatedMeta,
@@ -41,10 +40,6 @@ export const catalog = {
     return Array.isArray(response.data) ? response.data : [];
   },
 
-  async getAreaPaidServices(): Promise<AreaPaidService[]> {
-    const response = await apiClient.request<{ data?: AreaPaidService[] }>('/api/area-services/paid');
-    return Array.isArray(response.data) ? response.data : [];
-  },
 
   async getServicesPage(filters: ServiceFilters = {}): Promise<{ data: Service[]; meta: PaginatedMeta }> {
     const params = new URLSearchParams();

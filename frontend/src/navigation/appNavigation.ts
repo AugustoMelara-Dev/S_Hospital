@@ -79,20 +79,6 @@ export const appRoutes = {
     requiredPermissions: ['cash.view'],
     deniedReason: 'Requiere permiso para consultar y operar caja.',
   },
-  areaServices: {
-    id: 'areaServices',
-    label: 'Servicios pagados',
-    path: '/area-services',
-    icon: ClipboardList,
-    breadcrumbs: [
-      { label: 'Inicio', path: '/dashboard' },
-      { label: 'Servicios pagados', path: '/area-services' },
-    ],
-    navigation: true,
-    navigationPermissions: ['area_services.view'],
-    requiredPermissions: ['area_services.view'],
-    deniedReason: 'Requiere permiso para consultar servicios pagados del area asignada.',
-  },
   catalog: {
     id: 'catalog',
     label: 'Catálogo',
@@ -173,7 +159,7 @@ export const appRoutes = {
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Recibos institucionales', path: '/settings/institutional-receipts' },
     ],
-    navigation: true,
+    navigation: false,
     navigationPermissions: ['receipt_settings.view'],
     requiredPermissions: ['receipt_settings.view'],
     deniedReason: 'Requiere permiso para consultar configuracion de recibos institucionales.',
@@ -212,7 +198,7 @@ export const appRoutes = {
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Soporte', path: '/support' },
     ],
-    navigation: true,
+    navigation: false,
   },
   about: {
     id: 'about',
@@ -223,7 +209,7 @@ export const appRoutes = {
       { label: 'Inicio', path: '/dashboard' },
       { label: 'Acerca de', path: '/about' },
     ],
-    navigation: true,
+    navigation: false,
   },
 } satisfies Record<string, AppRouteDefinition>;
 
@@ -243,17 +229,13 @@ export const primaryNavigation: AppNavigationItem[] = [
   appRoutes.dashboard,
   appRoutes.newInvoice,
   appRoutes.cashbox,
-  appRoutes.areaServices,
   appRoutes.catalog,
   appRoutes.invoices,
   appRoutes.reports,
   appRoutes.backups,
   appRoutes.fiscalSettings,
-  appRoutes.receiptSettings,
   appRoutes.users,
-  appRoutes.support,
   appRoutes.help,
-  appRoutes.about,
 ].map(toNavigationItem);
 
 export function hasPermissions(

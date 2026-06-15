@@ -17,7 +17,6 @@ import type {
   Category,
   Area,
   ServiceArea,
-  AreaPaidService,
   Service,
   CategoryPayload,
   ServicePayload,
@@ -84,7 +83,6 @@ export type {
   Category,
   Area,
   ServiceArea,
-  AreaPaidService,
   Service,
   CategoryPayload,
   ServicePayload,
@@ -170,9 +168,6 @@ export const apiClient = {
     return catalog.getServiceAreas(active);
   },
 
-  async getAreaPaidServices(): Promise<AreaPaidService[]> {
-    return catalog.getAreaPaidServices();
-  },
 
   async getServicesPage(filters: ServiceFilters = {}): Promise<{ data: Service[]; meta: PaginatedMeta }> {
     return catalog.getServicesPage(filters);
@@ -388,8 +383,12 @@ export const apiClient = {
     return institutionalReceipts.testPrint(payload);
   },
 
-  async getInstitutionalReceiptPdf(id: number, reason?: string | null): Promise<Blob> {
-    return institutionalReceipts.pdf(id, reason);
+  async registerInstitutionalReceiptPrintEvent(id: number, reason?: string | null): Promise<InstitutionalReceipt> {
+    return institutionalReceipts.registerPrintEvent(id, reason);
+  },
+
+  async getInstitutionalReceiptPdf(id: number): Promise<Blob> {
+    return institutionalReceipts.pdf(id);
   },
 
   async login(login: string, password: string): Promise<AuthUser> {

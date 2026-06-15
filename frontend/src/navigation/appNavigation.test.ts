@@ -8,7 +8,7 @@ import {
 } from './appNavigation';
 
 describe('appNavigation', () => {
-  it('keeps navigation paths unique and institutional', () => {
+  it('keeps the final billing-only navigation exact and unique', () => {
     const paths = primaryNavigation.map((item) => item.path);
     const labels = primaryNavigation.map((item) => item.label);
 
@@ -17,19 +17,14 @@ describe('appNavigation', () => {
       'Inicio',
       'Nueva factura',
       'Caja',
-      'Servicios pagados',
       'Catálogo',
       'Historial',
       'Reportes',
       'Respaldos',
       'Configuración',
-      'Recibos',
       'Usuarios',
-      'Soporte',
       'Ayuda',
-      'Acerca de',
     ]);
-    expect(labels.every((label) => label.length > 0)).toBe(true);
   });
 
   it('uses the route registry as the breadcrumb source of truth', () => {

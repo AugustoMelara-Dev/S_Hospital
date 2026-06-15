@@ -58,7 +58,7 @@ export function SetupWizardDialog({ open, onOpenChange, onComplete }: SetupWizar
 
   // Step 3: Catalog CSV
   const [csvText, setCsvText] = useState(
-    `Categoría, Servicio, Precio, Grabado (S/N)\nConsulta, Consulta General, 250.00, N\nConsulta, Consulta Especialista, 600.00, N\nLaboratorio, Hemograma Completo, 180.00, S\nLaboratorio, Perfil Lipídico, 350.00, S\nImagenología, Radiografía Tórax AP, 450.00, N\nHospitalización, Eritropoyetina 4000 UI, 25.00, N`
+    `Categoría, Servicio, Precio, Grabado (S/N)\nConsulta, Consulta General, 250.00, N\nConsulta, Consulta Especialista, 600.00, N\nLaboratorio, Hemograma Completo, 180.00, S\nLaboratorio, Perfil Lipídico, 350.00, S\nImagenología, Radiografía Tórax AP, 450.00, N\nMedicamentos, Eritropoyetina 4000 UI, 25.00, N`
   );
   const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
 
@@ -580,7 +580,7 @@ function findCatalogAreaId(areaMap: Map<string, number>, areaName: string): numb
   const aliases: Record<string, string> = {
     consulta: 'consulta externa',
     imagenologia: 'radiologia',
-    hospitalizacion: 'hospitalizacion y emergencia',
+    medicamentos: 'farmacia',
   };
   const alias = aliases[normalized];
 

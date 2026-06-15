@@ -62,22 +62,6 @@ export type Area = {
 
 export type ServiceArea = Area;
 
-export type AreaPaidService = {
-  id: number;
-  invoice_id: number;
-  invoice_number: string;
-  patient_name: string;
-  service_name: string;
-  service_area_id: number | null;
-  service_area_name: string | null;
-  quantity: string;
-  line_total: string;
-  invoice_status: Invoice['status'];
-  payment_status: 'paid' | 'partial';
-  issued_at: string;
-  paid_at: string | null;
-};
-
 export type Service = {
   id: number;
   category_id: number;

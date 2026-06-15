@@ -480,7 +480,8 @@ export function NewInvoiceView({
   }
 
   async function openInstitutionalReceiptPdf(receipt: InstitutionalReceipt, reason?: string) {
-    const blob = await apiClient.getInstitutionalReceiptPdf(receipt.id, reason);
+    await apiClient.registerInstitutionalReceiptPrintEvent(receipt.id, reason);
+    const blob = await apiClient.getInstitutionalReceiptPdf(receipt.id);
     openBlobInNewTab(blob, `recibo-institucional-${receipt.receipt_number_full}.pdf`);
   }
 

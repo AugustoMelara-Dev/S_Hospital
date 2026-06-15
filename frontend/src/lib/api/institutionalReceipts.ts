@@ -110,13 +110,21 @@ export const institutionalReceipts = {
     return pdfPost('/api/settings/institutional-receipts/test-print', payload);
   },
 
-  async pdf(id: number, reason?: string | null): Promise<Blob> {
-    const params = new URLSearchParams();
-    if (reason?.trim()) {
-      params.set('reason', reason.trim());
-    }
-    const query = params.toString() ? `?${params.toString()}` : '';
+  async registerPrintEvent(id: number, reason?: string | null): Promise<InstitutionalReceipt> {
+    const response = await apiClient.request<{ data: { receipt: InstitutionalReceipt } }>(
+      `/api/institutional-receipts/${id}/print-events`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          ...(reason?.trim() ? { reason: reason.trim() } : {}),
+        }),
+      },
+    );
 
-    return apiClient.download(`/api/institutional-receipts/${id}/pdf${query}`);
+    return response.data.receipt;
+  },
+
+  async pdf(id: number): Promise<Blob> {
+    return apiClient.download(`/api/institutional-receipts/${id}/pdf`);
   },
 };

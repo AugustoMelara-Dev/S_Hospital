@@ -8,7 +8,6 @@ import { type AuthUser, type CashSession } from './lib/api';
 import { appRoutes, canAccessRoute } from './navigation/appNavigation';
 
 const AboutView = lazy(() => import('./features/about/AboutView').then((module) => ({ default: module.AboutView })));
-const AreaPaidServicesView = lazy(() => import('./features/areas/AreaPaidServicesView').then((module) => ({ default: module.AreaPaidServicesView })));
 const BackupsView = lazy(() => import('./features/backups/BackupsView').then((module) => ({ default: module.BackupsView })));
 const CatalogView = lazy(() => import('./features/catalog/CatalogView').then((module) => ({ default: module.CatalogView })));
 const DashboardView = lazy(() => import('./features/dashboard/DashboardView').then((module) => ({ default: module.DashboardView })));
@@ -135,16 +134,7 @@ export function AppRoutes({
           </PermissionGate>
         }
       />
-      <Route
-        path={appRoutes.areaServices.path}
-        element={
-          <PermissionGate allowed={canAccessRoute(appRoutes.areaServices, user.permissions)} reason={appRoutes.areaServices.deniedReason}>
-            <Suspense fallback={<LoadingState label="Cargando servicios pagados..." />}>
-              <AreaPaidServicesView onStatus={onStatus} />
-            </Suspense>
-          </PermissionGate>
-        }
-      />
+
       <Route
         path={appRoutes.catalog.path}
         element={
