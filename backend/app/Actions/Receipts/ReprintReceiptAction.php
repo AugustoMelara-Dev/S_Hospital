@@ -2,7 +2,6 @@
 
 namespace App\Actions\Receipts;
 
-use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -12,9 +11,10 @@ class ReprintReceiptAction
 {
     public function __construct(
         private readonly GenerateReceiptDataAction $generateReceiptData,
+        private readonly AuditLogger $auditLogger,
     ) {}
 
-    public function execute(Invoice $invoice, User $user, string $width, ?string $reason = null): array
+    public function execute(Invoice $invoice, User $user, string $width, ?string $reason = null, ?Request $request = null): array
     {
         return DB::transaction(function () use ($invoice, $user, $width, $reason) {
             $lockedInvoice = Invoice::query()

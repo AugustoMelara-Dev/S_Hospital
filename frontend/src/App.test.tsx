@@ -25,6 +25,7 @@ describe('App', () => {
         database: {
           connection: 'mysql',
           driver: 'mysql',
+          connected: true,
           is_mysql_family: true,
           connected: true,
         },
@@ -79,6 +80,11 @@ describe('App', () => {
             size_bytes: 1024,
             modified_at: '2026-05-19T18:50:00.000000Z',
           },
+          frontend_build: {
+            available: true,
+            modified_at: '2026-05-19T18:45:00.000000Z',
+          },
+          installed_version: '0.1.0',
           latest_migration: '2026_05_17_000018_create_backup_logs_table',
           migration_count: 18,
           pending_migration_count: 0,
@@ -179,6 +185,34 @@ describe('App', () => {
             scheduler: 'php artisan schedule:run',
           },
         },
+      },
+    };
+  }
+
+  function mockSystemStatusSummary() {
+    return {
+      data: {
+        summary: {
+          severity: 'warning',
+          problem_count: 2,
+          label: 'Requiere revision',
+          action: 'Revisar los puntos marcados y completar las acciones indicadas.',
+        },
+        checks: [
+          {
+            code: 'BACKEND_ACTIVE',
+            label: 'Servidor activo',
+            status: 'validated',
+            detail: 'El servidor respondio esta solicitud.',
+          },
+          {
+            code: 'LAN_ACCESS',
+            label: 'Acceso por red local',
+            status: 'manual_required',
+            detail: 'Debe probarse desde otra computadora del hospital.',
+          },
+        ],
+        advanced_available: true,
       },
     };
   }
@@ -426,6 +460,70 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: /nueva categoria/i })).not.toBeInTheDocument();
   });
 
+  it('renders paid services for a user assigned to a service area', async () => {
+    window.history.pushState({}, '', '/area-services');
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 9,
+              name: 'Laboratorio',
+              email: 'laboratorio@hospital-billing.local',
+              username: 'laboratorio',
+              active: true,
+              roles: ['usuario_area'],
+              permissions: ['area_services.view'],
+              service_area_id: 1,
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/area-services/paid')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: 1,
+                invoice_id: 12,
+                invoice_number: '000-001-01-00000012',
+                patient_name: 'Maria Lopez',
+                service_name: 'Glucosa',
+                service_area_name: 'Laboratorio',
+                quantity: '1.00',
+                line_total: '15.00',
+                invoice_status: 'paid',
+                issued_at: '2026-05-31T08:30:00-06:00',
+                paid_at: '2026-05-31T08:40:00-06:00',
+              },
+            ],
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /servicios pagados/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /servicios pagados/i })).toHaveAttribute('href', '/area-services');
+    expect(await screen.findByText('Glucosa')).toBeInTheDocument();
+    expect(screen.getByText('Maria Lopez')).toBeInTheDocument();
+    expect(screen.getByText('000-001-01-00000012')).toBeInTheDocument();
+    expect(screen.getAllByText('L. 15.00').length).toBeGreaterThan(0);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/area-services/paid'),
+      expect.objectContaining({ credentials: 'include' }),
+    );
+  });
+
   it('renders backups view actions for an admin', async () => {
     window.history.pushState({}, '', '/backups');
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
@@ -446,6 +544,13 @@ describe('App', () => {
               must_change_password: false,
             },
           }),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status-summary')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatusSummary(),
         } as Response;
       }
 
@@ -488,6 +593,98 @@ describe('App', () => {
     expect(screen.getByText(/impresora institucional/i)).toBeInTheDocument();
     expect(screen.queryByText(/production_candidate/i)).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /crear respaldo/i }).some((button) => !button.hasAttribute('disabled'))).toBe(true);
+  });
+
+  it('renders the support center with role checklists and advanced status for support users', async () => {
+    window.history.pushState({}, '', '/support');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 5,
+              name: 'Soporte Tecnico',
+              email: 'soporte@hospital-billing.local',
+              username: 'soporte',
+              active: true,
+              roles: ['soporte_tecnico'],
+              permissions: ['system.status.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status-summary')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatusSummary(),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatus(),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText(/estado operativo/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /soporte/i })).toHaveAttribute('href', '/support');
+    expect(screen.getAllByText(/cajero/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/servidor o red local no responde/i)).toBeInTheDocument();
+  });
+
+  it('renders the support center status summary for cashier users without advanced details', async () => {
+    window.history.pushState({}, '', '/support');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 6,
+              name: 'Cajero Turno',
+              email: 'cajero.turno@hospital-billing.local',
+              username: 'cajero.turno',
+              active: true,
+              roles: ['cajero'],
+              permissions: ['cash.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status-summary')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatusSummary(),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status')) {
+        throw new Error('advanced status should not load for cashier users');
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText(/requiere revision/i)).toBeInTheDocument();
+    expect(screen.getByText(/acceso por red local/i)).toBeInTheDocument();
+    expect(screen.queryByText('Hora servidor')).not.toBeInTheDocument();
   });
 
   it('does not render backups for a user without backup permission', async () => {
@@ -543,6 +740,13 @@ describe('App', () => {
               must_change_password: false,
             },
           }),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status-summary')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatusSummary(),
         } as Response;
       }
 
@@ -607,6 +811,7 @@ describe('App', () => {
     });
     expect((await screen.findAllByText('hospital-backup-20260517-101500-test.sql')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Pendiente').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/en proceso/i).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: /descargar respaldo hospital-backup/i })).not.toBeInTheDocument();
   });
 
@@ -630,6 +835,13 @@ describe('App', () => {
               must_change_password: false,
             },
           }),
+        } as Response;
+      }
+
+      if (url.includes('/api/system/status-summary')) {
+        return {
+          ok: true,
+          json: async () => mockSystemStatusSummary(),
         } as Response;
       }
 
@@ -673,6 +885,8 @@ describe('App', () => {
     render(<App />);
 
     expect(await screen.findByText('hospital-backup-20260517-101500-test.sql')).toBeInTheDocument();
+    expect(screen.getByText(/SHA256 bbbbbbbb/i)).toBeInTheDocument();
+    expect(screen.getByText(/huella de integridad/i)).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: /descargar respaldo hospital-backup-20260517-101500-test\.sql/i,

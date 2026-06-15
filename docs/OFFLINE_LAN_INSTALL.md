@@ -211,3 +211,4 @@ No ejecutar `php artisan migrate:fresh --seed` en el servidor real. Ese comando 
 - IP dinamica rompe acceso de clientes.
 - Cortes de energia pueden afectar datos; se recomienda UPS.
 - Sin restore probado, los backups no deben considerarse completos.
+- Si el sistema no abre despues de un reinicio, usar primero `scripts/repair_hospital_system.ps1`; no borrar contenedores, volumenes ni base de datos.

@@ -8,12 +8,14 @@
       "flags": {
         "forbiddenBranding": false,
         "hospitalDemo": false,
+        "genericHospitalCashBrand": false,
         "demoCai": false,
         "appEnv": false,
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
-        "containers": false
+        "containers": false,
+        "thermalTicket": false
       }
     },
     {
@@ -23,12 +25,14 @@
       "flags": {
         "forbiddenBranding": false,
         "hospitalDemo": false,
+        "genericHospitalCashBrand": false,
         "demoCai": false,
         "appEnv": false,
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
-        "containers": false
+        "containers": false,
+        "thermalTicket": false
       }
     },
     {
@@ -38,12 +42,14 @@
       "flags": {
         "forbiddenBranding": false,
         "hospitalDemo": false,
+        "genericHospitalCashBrand": false,
         "demoCai": false,
         "appEnv": false,
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
-        "containers": false
+        "containers": false,
+        "thermalTicket": false
       }
     },
     {
@@ -53,12 +59,14 @@
       "flags": {
         "forbiddenBranding": false,
         "hospitalDemo": false,
+        "genericHospitalCashBrand": false,
         "demoCai": false,
         "appEnv": false,
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
-        "containers": false
+        "containers": false,
+        "thermalTicket": false
       }
     },
     {
@@ -68,12 +76,14 @@
       "flags": {
         "forbiddenBranding": false,
         "hospitalDemo": false,
+        "genericHospitalCashBrand": false,
         "demoCai": false,
         "appEnv": false,
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
         "containers": false,
+        "thermalTicket": false,
         "scanner": false,
         "barcode": false,
         "qr": false,
@@ -87,12 +97,14 @@
       "flags": {
         "forbiddenBranding": false,
         "hospitalDemo": false,
+        "genericHospitalCashBrand": false,
         "demoCai": false,
         "appEnv": false,
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
         "containers": false,
+        "thermalTicket": false,
         "scanner": false,
         "barcode": false,
         "qr": false,
@@ -106,12 +118,14 @@
       "flags": {
         "forbiddenBranding": false,
         "hospitalDemo": false,
+        "genericHospitalCashBrand": false,
         "demoCai": false,
         "appEnv": false,
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
-        "containers": false
+        "containers": false,
+        "thermalTicket": false
       }
     },
     {
@@ -121,12 +135,14 @@
       "flags": {
         "forbiddenBranding": false,
         "hospitalDemo": false,
+        "genericHospitalCashBrand": false,
         "demoCai": false,
         "appEnv": false,
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
-        "containers": false
+        "containers": false,
+        "thermalTicket": false
       }
     },
     {
@@ -136,12 +152,14 @@
       "flags": {
         "forbiddenBranding": false,
         "hospitalDemo": false,
+        "genericHospitalCashBrand": false,
         "demoCai": false,
         "appEnv": false,
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
-        "containers": false
+        "containers": false,
+        "thermalTicket": false
       }
     },
     {
@@ -151,12 +169,14 @@
       "flags": {
         "forbiddenBranding": false,
         "hospitalDemo": false,
+        "genericHospitalCashBrand": false,
         "demoCai": false,
         "appEnv": false,
         "appDebug": false,
         "http200": false,
         "spaLoaded": false,
         "containers": false,
+        "thermalTicket": false,
         "scanner": false,
         "barcode": false,
         "qr": false,

@@ -1,53 +1,102 @@
-﻿# Manual Del Administrador
+# Manual del administrador
 
-Este manual es para usuarios autorizados a configurar el sistema y revisar operacion.
+Guia para administracion, supervision y soporte operativo local del Hospital San Isidro.
 
-## Configuracion Del Hospital
+## Responsabilidades
+
+- Mantener datos del hospital y recibo institucional.
+- Administrar usuarios y permisos.
+- Revisar reportes, caja, anulaciones y reimpresiones.
+- Verificar respaldos.
+- Coordinar instalacion, impresora, red local y restauraciones seguras.
+
+## Configuracion del hospital
 
 Revise en **Configuracion fiscal/hospitalaria**:
 
-- Nombre del hospital.
+- Nombre oficial del hospital.
 - RTN si aplica.
-- Direccion.
-- Lugar del recibo.
-- Texto de Gobierno y Secretaria.
-- Serie y numeracion autorizada.
-- Plantilla del recibo.
+- Direccion y lugar de emision.
+- Lineas de Gobierno, Secretaria y Hospital.
+- Serie, rango, CAI y fecha limite si existen datos reales.
+- Tamano de papel autorizado: carta, media carta o A5.
 
-No invente CAI, serie, rango o fecha de vencimiento. Estos datos deben validarse con administracion, Contaduria, SAR o SEFIN.
+No invente CAI, serie, rango ni fecha limite. Si faltan datos reales, el sistema debe indicar configuracion pendiente.
 
-## Usuarios Y Permisos
+## Usuarios y permisos
 
-Use cuentas separadas para cada persona.
+Use una cuenta por persona.
 
-- Cajero: abre caja, factura, cobra e imprime.
-- Supervisor/Admin: configura, revisa reportes, autoriza anulaciones y respaldos.
-- Auditor: consulta reportes e historial sin modificar.
+- Cajero: abrir/cerrar caja propia, facturar, cobrar e imprimir.
+- Supervisor: revisar caja, historial, reportes, reimpresiones y anulaciones autorizadas.
+- Administrador: configurar sistema, usuarios, reportes, respaldos y datos fiscales.
+- Auditor/Consulta: revisar reportes, historial, auditoria y respaldos sin operar caja.
+- Soporte tecnico: revisar diagnostico tecnico sin manipular caja, facturas, fiscal ni respaldos.
 
-No comparta usuarios entre turnos.
+Desactive usuarios que ya no trabajen en caja. No reutilice cuentas entre turnos.
 
-## Anulaciones
+## Catalogo
 
-Una anulacion debe tener motivo y permiso. No se deben borrar facturas. Si una factura ya fue pagada y no existe flujo de reverso autorizado, debe bloquearse o revisarse por administracion.
+Revise periodicamente:
 
-## Reportes
+- Servicios activos.
+- Precio vigente.
+- Categoria correcta.
+- Regla de eritropoyetina.
+- Servicios inactivos que no deben venderse.
 
-Revise diariamente:
+Los recibos y facturas historicas conservan snapshot de nombre y precio. Cambiar catalogo no debe alterar facturas anteriores.
 
-- Total facturado.
-- Total cobrado.
+## Caja y anulaciones
+
+- Toda factura pagada queda asociada a caja, cajero, metodo y fecha.
+- Toda anulacion requiere permiso, motivo y auditoria.
+- Toda reversion de pago requiere permiso, motivo y auditoria.
+- No borre facturas.
+- Si hay saldo parcial, resuelva el saldo antes de cerrar caja.
+- Tarjeta y transferencia se revisan por reportes; no se cuentan como efectivo en gaveta.
+
+## Auditoria
+
+Revise **Reportes > Auditoria** para consultar:
+
+- aperturas y cierres de caja;
+- diferencias de caja;
+- facturas emitidas y anuladas;
+- pagos registrados y revertidos;
+- reimpresiones;
+- cambios de configuracion fiscal;
+- cambios de usuarios;
+- respaldos creados, fallidos o descargados.
+
+Use el rango de fechas del turno o dia. Si aparece una accion inesperada, compare usuario, motivo, hora y origen antes de cerrar administrativamente.
+
+## Reportes diarios
+
+Revise:
+
+- Facturado.
+- Cobrado.
+- Saldo pendiente.
+- Pagadas, parciales, emitidas y anuladas.
 - Cobros por metodo.
-- Facturas parciales.
-- Facturas anuladas.
-- Cierre de caja y diferencias.
+- Diferencias de caja.
+- Reimpresiones y anulaciones.
+- Eventos de control y reversos de pago.
+
+Use estos reportes para cierre del dia y conciliacion con caja fisica.
 
 ## Respaldos
 
-Confirme que exista respaldo reciente antes de cambios importantes. Mantenga copia externa segura. Una buena practica es conservar varias copias en diferentes medios.
+Todos los dias confirme:
 
-## Cambios Criticos
+1. Existe respaldo reciente.
+2. Esta completado.
+3. Tiene tamano mayor a cero.
+4. Muestra huella SHA256.
+5. Hay copia externa segura cuando corresponda.
 
-Antes de migraciones, actualizaciones o cambios de configuracion fiscal:
+Antes de actualizaciones o cambios de configuracion importante:
 
 1. Cree respaldo.
 2. Verifique que el respaldo aparezca como completado.

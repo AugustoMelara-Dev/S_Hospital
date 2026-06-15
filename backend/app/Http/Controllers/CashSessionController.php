@@ -60,7 +60,7 @@ class CashSessionController extends Controller
 
     public function open(OpenCashSessionRequest $request, OpenCashSessionAction $openCashSession): JsonResponse
     {
-        $session = $openCashSession->execute($request->validated(), $request->user());
+        $session = $openCashSession->execute($request->validated(), $request->user(), $request);
 
         return response()->json(['data' => $session], 201);
     }
@@ -70,7 +70,7 @@ class CashSessionController extends Controller
         CashRegisterSession $cashSession,
         CloseCashSessionAction $closeCashSession,
     ): JsonResponse {
-        $session = $closeCashSession->execute($cashSession, $request->validated(), $request->user());
+        $session = $closeCashSession->execute($cashSession, $request->validated(), $request->user(), $request);
 
         return response()->json(['data' => $session]);
     }

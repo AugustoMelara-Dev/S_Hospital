@@ -49,10 +49,13 @@ class ProductionSpaRouteTest extends TestCase
                 '/billing/new',
                 '/cashbox',
                 '/catalog',
+                '/area-services',
                 '/invoices',
                 '/reports',
                 '/backups',
                 '/help',
+                '/support',
+                '/about',
                 '/settings/fiscal',
                 '/admin/users',
             ] as $route) {

@@ -52,6 +52,7 @@ class RolesAndPermissionsSeeder extends Seeder
     public function run(): void
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        cache()->forget(config('permission.cache.key'));
 
         $permissions = collect(self::PERMISSIONS)
             ->map(fn (string $permission) => Permission::query()->firstOrCreate([
@@ -92,6 +93,23 @@ class RolesAndPermissionsSeeder extends Seeder
             'audit.view',
         ]));
 
+        Role::findOrCreate('auditor', 'web')->syncPermissions($permissions->whereIn('name', [
+            'settings.fiscal.view',
+            'catalog.view',
+            'invoices.view',
+            'cash.view',
+            'payments.view',
+            'receipts.view',
+            'reports.view',
+            'reports.managerial.view',
+            'backups.view',
+            'audit.view',
+        ]));
+
+        Role::findOrCreate('soporte_tecnico', 'web')->syncPermissions($permissions->whereIn('name', [
+            'system.status.view',
+        ]));
+
         Role::findOrCreate('cajero', 'web')->syncPermissions($permissions->whereIn('name', [
             'catalog.view',
             'invoices.view',
@@ -104,5 +122,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'receipts.view',
             'receipts.reprint',
         ]));
+
+        Role::findOrCreate('usuario_area', 'web')->syncPermissions($permissions->whereIn('name', [
+            'area_services.view',
+        ]));
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        app(PermissionRegistrar::class)->clearPermissionsCollection();
+        cache()->forget(config('permission.cache.key'));
     }
 }

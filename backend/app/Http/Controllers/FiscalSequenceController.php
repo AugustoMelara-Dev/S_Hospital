@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Fiscal\IndexFiscalSequenceRequest;
 use App\Http\Requests\Fiscal\StoreFiscalSequenceRequest;
 use App\Http\Requests\Fiscal\UpdateFiscalSequenceRequest;
-use App\Models\AuditLog;
 use App\Models\FiscalSequence;
+use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -32,14 +32,14 @@ class FiscalSequenceController extends Controller
                 'updated_by' => $request->user()->id,
             ]);
 
-            AuditLog::query()->create([
-                'user_id' => $request->user()->id,
-                'action' => 'fiscal_sequence.created',
-                'entity_type' => FiscalSequence::class,
-                'entity_id' => $sequence->id,
-                'old_values' => null,
-                'new_values' => $this->auditPayload($sequence),
-            ]);
+            app(AuditLogger::class)->log(
+                action: 'fiscal_sequence.created',
+                entity: $sequence,
+                user: $request->user(),
+                request: $request,
+                oldValues: null,
+                newValues: $this->auditPayload($sequence),
+            );
 
             return $sequence;
         });
@@ -58,14 +58,14 @@ class FiscalSequenceController extends Controller
             $fiscalSequence->updated_by = $request->user()->id;
             $fiscalSequence->save();
 
-            AuditLog::query()->create([
-                'user_id' => $request->user()->id,
-                'action' => 'fiscal_sequence.updated',
-                'entity_type' => FiscalSequence::class,
-                'entity_id' => $fiscalSequence->id,
-                'old_values' => $oldValues,
-                'new_values' => $this->auditPayload($fiscalSequence->refresh()),
-            ]);
+            app(AuditLogger::class)->log(
+                action: 'fiscal_sequence.updated',
+                entity: $fiscalSequence,
+                user: $request->user(),
+                request: $request,
+                oldValues: $oldValues,
+                newValues: $this->auditPayload($fiscalSequence->refresh()),
+            );
 
             return $fiscalSequence->refresh();
         });

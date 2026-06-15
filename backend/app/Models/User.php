@@ -41,6 +41,7 @@ class User extends Authenticatable
         'password',
         'active',
         'must_change_password',
+        'service_area_id',
     ];
 
     /**
@@ -64,7 +65,13 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'active' => 'boolean',
             'must_change_password' => 'boolean',
+            'service_area_id' => 'integer',
             'password' => 'hashed',
         ];
+    }
+
+    public function serviceArea()
+    {
+        return $this->belongsTo(ServiceArea::class, 'service_area_id');
     }
 }

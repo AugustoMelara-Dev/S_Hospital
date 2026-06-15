@@ -9,8 +9,10 @@ use App\Models\CashRegisterSession;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\AuditLogger;
 use App\Support\Money;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -23,9 +25,9 @@ class CloseCashSessionAction
      *
      * @throws AuthorizationException
      */
-    public function execute(CashRegisterSession $session, array $payload, User $user): CashRegisterSession
+    public function execute(CashRegisterSession $session, array $payload, User $user, ?Request $request = null): CashRegisterSession
     {
-        return DB::transaction(function () use ($session, $payload, $user): CashRegisterSession {
+        return DB::transaction(function () use ($session, $payload, $user, $request): CashRegisterSession {
             $lockedSession = CashRegisterSession::query()
                 ->whereKey($session->id)
                 ->lockForUpdate()

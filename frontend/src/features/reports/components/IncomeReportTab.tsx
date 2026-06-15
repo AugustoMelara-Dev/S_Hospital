@@ -291,7 +291,7 @@ export function IncomeReportTab({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Método</TableHead>
+                    <TableHead>Metodo</TableHead>
                     <TableHead className="text-right">Monto</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -300,6 +300,32 @@ export function IncomeReportTab({
                     <TableRow key={method}>
                       <TableCell className="font-medium">{methodLabel(method)}</TableCell>
                       <TableCell className="text-right">{moneyLabel(amount)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Estado de facturas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Cantidad</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Object.entries(invoicesByStatus).map(([invoiceStatus, data]) => (
+                    <TableRow key={invoiceStatus}>
+                      <TableCell className="font-medium">{statusLabel(invoiceStatus)}</TableCell>
+                      <TableCell className="text-right">{data.count}</TableCell>
+                      <TableCell className="text-right">L. {data.total}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -319,7 +345,7 @@ export function IncomeReportTab({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Categoría</TableHead>
+                      <TableHead>Categoria</TableHead>
                       <TableHead className="text-right">Items</TableHead>
                       <TableHead className="text-right">Subtotal</TableHead>
                       <TableHead className="text-right">ISV</TableHead>

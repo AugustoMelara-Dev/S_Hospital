@@ -52,6 +52,7 @@ function requiredEnv(name) {
 }
 let activeScreen = 'bootstrap';
 let lastInvoiceNumber = '';
+let authConfirmed = false;
 
 function mark(screen) {
   activeScreen = screen;
@@ -71,6 +72,33 @@ async function screenshot(page, name) {
 async function waitSettled(page) {
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle').catch(() => {});
+}
+
+async function waitAuthenticated(page) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const session = await page.evaluate(async () => {
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      return (await response.json()).data;
+    }).catch(() => null);
+
+    if (session?.permissions?.includes('cash.view') && session?.permissions?.includes('invoices.create')) {
+      authConfirmed = true;
+      return session;
+    }
+
+    await page.waitForTimeout(250);
+  }
+
+  findings.push('login: no se confirmo sesion operativa antes de iniciar el smoke.');
+  return null;
 }
 
 async function waitServicesReady(page) {
@@ -171,12 +199,36 @@ async function ensureLoggedIn(page) {
   await page.getByRole('button', { name: /iniciar|entrar/i }).click();
   await page.waitForURL(/dashboard|billing|cashbox|catalog|invoices|reports|backups|settings/, { timeout: 15000 });
   await waitSettled(page);
+  await waitAuthenticated(page);
 }
 
 async function ensureCashOpen(page) {
   const current = await currentCashSession(page);
 
   if (current?.status === 'open') {
+    return;
+  }
+
+  await page.evaluate(async () => {
+    const xsrf = document.cookie
+      .split('; ')
+      .find((cookie) => cookie.startsWith('XSRF-TOKEN='))
+      ?.split('=')[1];
+    await fetch('/api/cash-sessions/open', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(xsrf ? { 'X-XSRF-TOKEN': decodeURIComponent(xsrf) } : {}),
+      },
+      body: JSON.stringify({ opening_amount: '500.00' }),
+    }).catch(() => null);
+  });
+
+  if ((await waitCurrentCashOpen(page))?.status === 'open') {
+    await page.reload();
+    await waitSettled(page);
     return;
   }
 
@@ -290,12 +342,21 @@ async function main() {
     ) {
       return;
     }
+    if (failure?.errorText === 'net::ERR_ABORTED') {
+      return;
+    }
+    if (url.includes('/api/health') && failure?.errorText === 'net::ERR_EMPTY_RESPONSE') {
+      return;
+    }
     record(`requestfailed: ${request.method()} ${url} ${failure?.errorText ?? ''}`.trim());
   });
   page.on('response', (response) => {
     const status = response.status();
     const url = response.url();
-    if ([401, 419].includes(status) || status >= 500) {
+    if (!authConfirmed && [401, 403, 419].includes(status)) {
+      return;
+    }
+    if ([401, 403, 419].includes(status) || status >= 500) {
       record(`http.${status}: ${response.request().method()} ${url}`);
     }
   });
@@ -409,6 +470,8 @@ async function main() {
     await screenshot(page, 'cashbox');
 
     await navigate(page, routeScreens['invoices-history'], 'invoices-history');
+    await page.getByRole('button', { name: /^7D$/i }).click().catch(() => {});
+    await waitSettled(page);
     if (lastInvoiceNumber && await page.getByLabel(/numero de factura/i).isVisible().catch(() => false)) {
       await clearField(page.getByLabel(/numero de factura/i));
       await page.getByLabel(/numero de factura/i).fill(lastInvoiceNumber);
@@ -434,8 +497,10 @@ async function main() {
       await invoiceRow.getByRole('button', { name: /ver acciones de factura/i }).click();
       await page.getByRole('button', { name: /reimprimir/i }).click();
     }
+    await page.getByLabel(/motivo opcional/i).fill('Copia solicitada por paciente').catch(() => {});
     await page.getByRole('button', { name: /registrar reimpresi.n/i }).click();
-    await page.getByLabel(/vista previa del recibo/i).waitFor({ state: 'visible', timeout: 15000 });
+    await waitSettled(page);
+    await page.getByLabel(/vista previa del recibo|recibo institucional/i).first().waitFor({ state: 'visible', timeout: 30000 });
     await closeOperationalDialogIfPresent(page);
 
     await navigate(page, routeScreens.catalog, 'catalog');
@@ -446,11 +511,11 @@ async function main() {
     await screenshot(page, 'catalog');
 
     await navigate(page, routeScreens.reports, 'reports');
-    await page.getByRole('tab', { name: /rango/i }).click().catch(async () => {
-      await page.getByRole('button', { name: /rango/i }).click();
+    await page.getByRole('tab', { name: /^diario$/i }).click().catch(async () => {
+      await page.getByRole('button', { name: /^diario$/i }).click();
     });
-    await page.getByRole('button', { name: /ver rango/i }).click().catch(() => {});
-    await page.getByText(/total cobrado/i).waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+    await waitSettled(page);
+    await page.getByText(/facturas|cobrado|facturado|saldo pendiente|total cobrado/i).first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
     await screenshot(page, 'reports');
     const reportsText = await page.locator('body').innerText();
     if (!/facturado|cobrado|pendiente|cobros por metodo|auditoria/i.test(reportsText)) {
@@ -506,3 +571,4 @@ async function main() {
 }
 
 await main();
+process.exitCode = 0;

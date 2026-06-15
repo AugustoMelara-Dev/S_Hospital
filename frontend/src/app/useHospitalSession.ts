@@ -245,8 +245,10 @@ export function useHospitalSession() {
       canViewInvoices ||
       canViewReports ||
       canViewBackups ||
-      canViewUsers,
-    defaultAuthenticatedRoute: '/dashboard',
+      canViewUsers ||
+      canViewAreaServices ||
+      canViewSystemStatus,
+    defaultAuthenticatedRoute: canViewSystemStatus && !canViewCatalog && !canCreateInvoices ? '/support' : canViewAreaServices && !canViewCatalog && !canCreateInvoices ? '/area-services' : '/dashboard',
     sessionExpired,
     handleLogin,
     handleLogout,

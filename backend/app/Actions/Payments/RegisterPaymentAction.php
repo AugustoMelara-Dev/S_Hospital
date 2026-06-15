@@ -9,25 +9,42 @@ use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
+use App\Models\OperationIdempotencyKey;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\AuditLogger;
 use App\Support\InvoiceAccess;
 use App\Support\Money;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class RegisterPaymentAction
 {
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+    ) {}
+
     /**
      * @param  array{cash_session_id: int, method: string, amount: string, reference?: ?string}  $payload
      *
      * @throws AuthorizationException
      */
-    public function execute(Invoice $invoice, array $payload, User $user, InvoiceAccess $invoiceAccess): Payment
+    public function execute(Invoice $invoice, array $payload, User $user, InvoiceAccess $invoiceAccess, ?Request $request = null): Payment
     {
-        return DB::transaction(function () use ($invoice, $payload, $user, $invoiceAccess): Payment {
+        return DB::transaction(function () use ($invoice, $payload, $user, $invoiceAccess, $request): Payment {
+            $idempotencyKey = $this->idempotencyKey($request);
+            $requestHash = $this->requestHash($payload + ['invoice_id' => $invoice->id]);
+
+            if ($idempotencyKey !== null) {
+                $existing = $this->existingPaymentForKey($idempotencyKey, $requestHash, $user->id);
+                if ($existing !== null) {
+                    return $existing;
+                }
+            }
+
             $lockedInvoice = Invoice::query()
                 ->whereKey($invoice->id)
                 ->lockForUpdate()
@@ -115,12 +132,12 @@ class RegisterPaymentAction
                 'status' => $nextBalanceCents === 0 ? Invoice::STATUS_PAID : Invoice::STATUS_PARTIAL,
             ])->save();
 
-            AuditLog::query()->create([
-                'user_id' => $user->id,
-                'action' => 'payment.registered',
-                'entity_type' => Payment::class,
-                'entity_id' => $payment->id,
-                'new_values' => [
+            $this->auditLogger->log(
+                action: 'payment.registered',
+                entity: $payment,
+                user: $user,
+                request: $request,
+                newValues: [
                     'invoice_id' => $lockedInvoice->id,
                     'invoice_number' => $lockedInvoice->invoice_number,
                     'cash_session_id' => $cashSession->id,
@@ -129,7 +146,18 @@ class RegisterPaymentAction
                     'invoice_status' => $lockedInvoice->status,
                     'balance_due' => $lockedInvoice->balance_due,
                 ],
-            ]);
+            );
+
+            if ($idempotencyKey !== null) {
+                OperationIdempotencyKey::query()->create([
+                    'key' => $idempotencyKey,
+                    'user_id' => $user->id,
+                    'operation' => 'payment.register',
+                    'resource_type' => Payment::class,
+                    'resource_id' => $payment->id,
+                    'request_hash' => $requestHash,
+                ]);
+            }
 
             DB::afterCommit(function () use ($payment, $lockedInvoice) {
                 PaymentChanged::dispatch($payment->fresh(), 'registered');

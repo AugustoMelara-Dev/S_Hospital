@@ -32,6 +32,7 @@ class ReceiptController extends Controller
                 $request->user(),
                 $request->width(),
                 $request->reason(),
+                $request,
             ),
         ]);
     }

@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\CashRegisterSession;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
+use App\Models\OperationIdempotencyKey;
 use App\Models\Service;
 use App\Models\User;
 use App\Support\Money;
@@ -19,14 +20,25 @@ class CreateInvoiceAction
     public function __construct(
         private readonly GenerateFiscalNumberAction $generateFiscalNumber,
         private readonly CalculateInvoiceTotalsAction $calculateInvoiceTotals,
+        private readonly AuditLogger $auditLogger,
     ) {}
 
     /**
      * @param  array{patient_name: string, items: list<array{service_id: int, quantity: string, notes?: ?string}>, dialysis_prescription?: bool}  $payload
      */
-    public function execute(array $payload, User $issuer): Invoice
+    public function execute(array $payload, User $issuer, ?Request $request = null): Invoice
     {
-        return DB::transaction(function () use ($payload, $issuer): Invoice {
+        return DB::transaction(function () use ($payload, $issuer, $request): Invoice {
+            $idempotencyKey = $this->idempotencyKey($request);
+            $requestHash = $this->requestHash($payload);
+
+            if ($idempotencyKey !== null) {
+                $existing = $this->existingInvoiceForKey($idempotencyKey, $requestHash, $issuer->id);
+                if ($existing !== null) {
+                    return $existing;
+                }
+            }
+
             $cashSession = CashRegisterSession::query()
                 ->where('user_id', $issuer->id)
                 ->where('status', CashRegisterSession::STATUS_OPEN)
@@ -123,7 +135,18 @@ class CreateInvoiceAction
                     'status' => $invoice->status,
                     'cash_session_id' => $cashSession->id,
                 ],
-            ]);
+            );
+
+            if ($idempotencyKey !== null) {
+                OperationIdempotencyKey::query()->create([
+                    'key' => $idempotencyKey,
+                    'user_id' => $issuer->id,
+                    'operation' => 'invoice.create',
+                    'resource_type' => Invoice::class,
+                    'resource_id' => $invoice->id,
+                    'request_hash' => $requestHash,
+                ]);
+            }
 
             // Broadcast after-commit so the websocket event only fires
             // if the DB transaction actually committed. Listeners
@@ -219,5 +242,45 @@ class CreateInvoiceAction
     private function isZeroAmount(string $amount): bool
     {
         return Money::parseCents($amount, 'total') === 0;
+    }
+
+    private function idempotencyKey(?Request $request): ?string
+    {
+        $key = trim((string) $request?->header('Idempotency-Key', ''));
+
+        return $key === '' ? null : mb_substr($key, 0, 120);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function requestHash(array $payload): string
+    {
+        ksort($payload);
+
+        return hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR));
+    }
+
+    private function existingInvoiceForKey(string $key, string $requestHash, int $userId): ?Invoice
+    {
+        $record = OperationIdempotencyKey::query()
+            ->where('operation', 'invoice.create')
+            ->where('key', $key)
+            ->lockForUpdate()
+            ->first();
+
+        if ($record === null) {
+            return null;
+        }
+
+        abort_if(
+            $record->request_hash !== $requestHash || $record->user_id !== $userId,
+            409,
+            'La accion ya fue enviada con datos diferentes. Actualice la pantalla antes de continuar.',
+        );
+
+        return Invoice::query()
+            ->with('items', 'issuer:id,name,username')
+            ->find($record->resource_id);
     }
 }

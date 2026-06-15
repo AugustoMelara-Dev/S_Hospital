@@ -10,9 +10,10 @@ import type {
 } from './types';
 
 export const billing = {
-  async createInvoice(payload: InvoicePayload): Promise<Invoice> {
+  async createInvoice(payload: InvoicePayload, options: { idempotencyKey?: string } = {}): Promise<Invoice> {
     const response = await apiClient.request<{ data: Invoice }>('/api/invoices', {
       method: 'POST',
+      headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
       body: JSON.stringify(payload),
     });
     return response.data;
@@ -57,6 +58,7 @@ export const billing = {
       `/api/invoices/${invoiceId}/payments/${paymentId}/void`,
       {
         method: 'POST',
+        headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
         body: JSON.stringify(payload),
       },
     );

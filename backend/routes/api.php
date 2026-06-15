@@ -18,6 +18,7 @@ use App\Http\Controllers\LogoController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ServiceAreaController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SystemStatusController;
 use App\Http\Controllers\UserController;
@@ -111,11 +112,17 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware('throttle.user:60,1');
         Route::get('/areas', [AreaController::class, 'index']);
 
+        Route::get('/service-areas', [ServiceAreaController::class, 'index']);
+        Route::post('/service-areas', [ServiceAreaController::class, 'store']);
+        Route::patch('/service-areas/{serviceArea}', [ServiceAreaController::class, 'update']);
+
         Route::get('/services', [ServiceController::class, 'index']);
         Route::post('/services', [ServiceController::class, 'store'])
             ->middleware('throttle.user:60,1');
         Route::patch('/services/{service}', [ServiceController::class, 'update'])
             ->middleware('throttle.user:60,1');
+
+        Route::get('/area-services/paid', [AreaPaidServiceController::class, 'index']);
 
         Route::get('/invoices', [InvoiceController::class, 'index']);
         Route::post('/invoices', [InvoiceController::class, 'store'])
@@ -149,6 +156,7 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
         Route::get('/reports/categories', [ReportController::class, 'categories']);
         Route::get('/reports/areas', [ReportController::class, 'areas']);
         Route::get('/reports/services', [ReportController::class, 'services']);
+        Route::get('/reports/areas', [ReportController::class, 'areas']);
         Route::get('/reports/operations', [ReportController::class, 'operations']);
         Route::get('/reports/export', [ReportController::class, 'export'])
             ->middleware('throttle.user:30,1');
@@ -160,7 +168,10 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware('throttle.user:20,1');
         Route::get('/backups/{backupLog}/download', [BackupController::class, 'download']);
 
+        Route::get('/system/status-summary', [SystemStatusController::class, 'summary']);
         Route::get('/system/status', [SystemStatusController::class, 'show']);
+        Route::post('/system/client-errors', [ClientErrorLogController::class, 'store'])
+            ->middleware('throttle:30,1');
 
         Route::get('/admin/users', [UserController::class, 'index']);
         Route::post('/admin/users', [UserController::class, 'store'])

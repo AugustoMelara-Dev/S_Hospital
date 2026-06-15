@@ -18,6 +18,7 @@ class FiscalSequenceTest extends TestCase
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
+        $admin = $admin->refresh();
 
         $this->actingAs($admin)
             ->postJson('/api/fiscal-sequences', $this->validPayload())
@@ -215,7 +216,7 @@ class FiscalSequenceTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        return $admin;
+        return $admin->refresh();
     }
 
     /**

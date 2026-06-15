@@ -158,6 +158,14 @@ export const apiClient = {
     return catalog.saveCategory(payload, id);
   },
 
+  async getServiceAreas(active?: boolean): Promise<ServiceArea[]> {
+    return catalog.getServiceAreas(active);
+  },
+
+  async getAreaPaidServices(): Promise<AreaPaidService[]> {
+    return catalog.getAreaPaidServices();
+  },
+
   async getServicesPage(filters: ServiceFilters = {}): Promise<{ data: Service[]; meta: PaginatedMeta }> {
     return catalog.getServicesPage(filters);
   },
@@ -170,8 +178,8 @@ export const apiClient = {
     return catalog.saveService(payload, id);
   },
 
-  async createInvoice(payload: InvoicePayload): Promise<Invoice> {
-    return billing.createInvoice(payload);
+  async createInvoice(payload: InvoicePayload, options: { idempotencyKey?: string } = {}): Promise<Invoice> {
+    return billing.createInvoice(payload, options);
   },
 
   async getInvoices(filters: InvoiceFilters = {}): Promise<{ data: Invoice[]; meta: PaginatedMeta }> {

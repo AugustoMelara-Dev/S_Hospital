@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class IncomeReportService
 {
@@ -16,6 +17,31 @@ class IncomeReportService
         $start = Carbon::createFromFormat('Y-m-d', $filters['date_from'])->startOfDay();
         $end = Carbon::createFromFormat('Y-m-d', $filters['date_to'])->endOfDay();
         $facts = $this->financialFacts->forRange($start, $end, $filters);
+
+        $balanceDueCents = (clone $invoiceBase)
+            ->where('status', '!=', Invoice::STATUS_VOID)
+            ->selectRaw('COALESCE(SUM(ROUND(balance_due * 100)), 0) as balance_due_cents')
+            ->value('balance_due_cents');
+
+        $statuses = collect([
+            Invoice::STATUS_ISSUED,
+            Invoice::STATUS_PARTIAL,
+            Invoice::STATUS_PAID,
+            Invoice::STATUS_VOID,
+        ])->mapWithKeys(fn (string $status): array => [
+            $status => ['count' => 0, 'total' => '0.00'],
+        ])->all();
+
+        (clone $invoiceBase)
+            ->groupBy('status')
+            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('COALESCE(SUM(ROUND(total * 100)), 0) as total_cents'))
+            ->get()
+            ->each(function (object $row) use (&$statuses): void {
+                $statuses[$row->status] = [
+                    'count' => (int) $row->count,
+                    'total' => $this->centsToMoney($row->total_cents),
+                ];
+            });
 
         return [
             'date_from' => $filters['date_from'],

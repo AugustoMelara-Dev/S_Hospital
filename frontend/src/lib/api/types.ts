@@ -6,6 +6,7 @@ export type AuthUser = {
   active: boolean;
   roles: string[];
   permissions: string[];
+  service_area_id?: number | null;
   must_change_password: boolean;
 };
 
@@ -69,6 +70,9 @@ export type Service = {
   scan_code?: string | null;
   barcode?: string | null;
   qr_code?: string | null;
+  aliases?: string[] | null;
+  description?: string | null;
+  internal_code?: string | null;
   price: string;
   taxable: boolean;
   active: boolean;
@@ -95,11 +99,17 @@ export type ServicePayload = {
   scan_code: string | null;
   barcode: string | null;
   qr_code: string | null;
+  aliases?: string[] | null;
+  description?: string | null;
+  internal_code?: string | null;
   taxable: boolean;
   active: boolean;
   visible_in_billing?: boolean;
   is_billable?: boolean;
   special_rule_code: string | null;
+  print_on_receipt?: boolean;
+  visible_in_billing?: boolean;
+  is_billable?: boolean;
 };
 
 export type InvoiceItemPayload = {
@@ -351,6 +361,7 @@ export type IncomeReport = {
   total_partial: string;
   total_voided: string;
   payments_by_method: MoneyByMethod;
+  invoices_by_status: Record<'issued' | 'partial' | 'paid' | 'void', { count: number; total: string }>;
   payment_count: number;
   invoice_count: number;
 };
@@ -369,6 +380,24 @@ export type CategoryReport = {
     subtotal: string;
     tax_amount: string;
     total: string;
+  }>;
+};
+
+export type AreaReport = {
+  date_from: string;
+  date_to: string;
+  filters: ReportFilters;
+  areas: Array<{
+    area_id: number | null;
+    area: string;
+    item_count: number;
+    invoice_count: number;
+    quantity: string;
+    subtotal: string;
+    tax_amount: string;
+    total: string;
+    collected: string;
+    balance_due: string;
   }>;
 };
 
@@ -520,6 +549,11 @@ export type BackupLog = {
 };
 
 export type SystemStatus = {
+  summary?: {
+    severity: 'ok' | 'warning' | 'error';
+    problem_count: number;
+    label: string;
+  };
   environment: {
     app_env: string;
     app_debug: boolean;
@@ -534,6 +568,7 @@ export type SystemStatus = {
   database: {
     connection: string;
     driver: string;
+    connected: boolean;
     is_mysql_family: boolean;
     connected: boolean;
   };
@@ -589,6 +624,11 @@ export type SystemStatus = {
       size_bytes: number | null;
       modified_at: string | null;
     };
+    frontend_build: {
+      available: boolean;
+      modified_at: string | null;
+    };
+    installed_version: string | null;
     latest_migration: string | null;
     migration_count: number | null;
     pending_migration_count: number | null;
@@ -630,6 +670,24 @@ export type SystemStatus = {
   };
 };
 
+export type SystemStatusCheck = {
+  code: string;
+  label: string;
+  status: 'validated' | 'warning' | 'error' | 'manual_required';
+  detail: string;
+};
+
+export type SystemStatusSummary = {
+  summary: {
+    severity: 'ok' | 'warning' | 'error';
+    problem_count: number;
+    label: string;
+    action: string;
+  };
+  checks: SystemStatusCheck[];
+  advanced_available: boolean;
+};
+
 export type PaginatedMeta = {
   current_page: number;
   per_page: number;
@@ -642,6 +700,9 @@ export type ServiceFilters = {
   active?: boolean;
   billing?: boolean;
   categoryId?: number;
+  areaId?: number;
+  visibleInBilling?: boolean;
+  isBillable?: boolean;
   page?: number;
   perPage?: number;
 };

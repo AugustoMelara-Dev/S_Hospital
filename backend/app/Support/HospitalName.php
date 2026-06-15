@@ -4,7 +4,7 @@ namespace App\Support;
 
 final class HospitalName
 {
-    private const FALLBACK = 'Caja hospitalaria';
+    private const FALLBACK = 'Hospital San Isidro';
 
     public static function display(?string $name): string
     {

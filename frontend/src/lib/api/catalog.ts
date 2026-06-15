@@ -25,6 +25,17 @@ export const catalog = {
     return response.data;
   },
 
+  async getServiceAreas(active?: boolean): Promise<ServiceArea[]> {
+    const query = active === undefined ? '' : `?active=${active ? '1' : '0'}`;
+    const response = await apiClient.request<{ data?: ServiceArea[] }>(`/api/service-areas${query}`);
+    return Array.isArray(response.data) ? response.data : [];
+  },
+
+  async getAreaPaidServices(): Promise<AreaPaidService[]> {
+    const response = await apiClient.request<{ data?: AreaPaidService[] }>('/api/area-services/paid');
+    return Array.isArray(response.data) ? response.data : [];
+  },
+
   async getServicesPage(filters: ServiceFilters = {}): Promise<{ data: Service[]; meta: PaginatedMeta }> {
     const params = new URLSearchParams();
 
@@ -33,6 +44,9 @@ export const catalog = {
     if (filters.active !== undefined) params.set('active', filters.active ? '1' : '0');
     if (filters.billing !== undefined) params.set('billing', filters.billing ? '1' : '0');
     if (filters.categoryId) params.set('category_id', String(filters.categoryId));
+    if (filters.areaId) params.set('area_id', String(filters.areaId));
+    if (filters.visibleInBilling !== undefined) params.set('visible_in_billing', filters.visibleInBilling ? '1' : '0');
+    if (filters.isBillable !== undefined) params.set('is_billable', filters.isBillable ? '1' : '0');
     if (filters.page) params.set('page', String(filters.page));
     if (filters.perPage) params.set('per_page', String(filters.perPage));
 

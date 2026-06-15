@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\ExecutableFinder;
+use Throwable;
 
 class SystemStatusController extends Controller
 {
@@ -208,6 +209,7 @@ class SystemStatusController extends Controller
         return [
             'connection' => $connection,
             'driver' => $driver,
+            'connected' => $connected,
             'is_mysql_family' => in_array($driver, ['mysql', 'mariadb'], true),
             'connected' => $connected,
         ];
@@ -316,6 +318,8 @@ class SystemStatusController extends Controller
             'cache_writable' => is_dir($cachePath) && is_writable($cachePath),
             'laravel_log' => $this->fileStatus(storage_path('logs/laravel.log')),
             'backup_automation_log' => $this->fileStatus(base_path('scripts/backup-automation.log')),
+            'frontend_build' => $this->frontendBuildStatus(),
+            'installed_version' => $this->installedVersion(),
             'latest_migration' => $latestMigration,
             'migration_count' => $migrationCount,
             'pending_migration_count' => count($pendingMigrations),
@@ -815,5 +819,20 @@ class SystemStatusController extends Controller
         $projectRoot = (string) Config::get('hospital.project_root', dirname(base_path()));
 
         return $projectRoot.DIRECTORY_SEPARATOR.str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relativePath);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function baseStatus(): array
+    {
+        return [
+            'environment' => $this->environmentStatus(),
+            'database' => $this->databaseStatus(),
+            'backups' => $this->backupStatus(),
+            'runtime' => $this->runtimeStatus(),
+            'readiness' => $this->readinessStatus(),
+            'preflight' => $this->preflightStatus(),
+        ];
     }
 }

@@ -1,19 +1,19 @@
 # Guia De Instalacion Operativa
 
-Esta guia ayuda a dejar el sistema listo en una computadora servidor Windows.
+Esta guia es para dejar una computadora Windows como servidor local del Hospital San Isidro.
 
-## Antes De Instalar
+## Antes de instalar
 
 Confirme:
 
 - La computadora sera el servidor local.
-- Hay energia estable.
-- Docker esta instalado si se usara Docker Compose.
-- La red local funciona.
-- La impresora esta instalada.
-- Hay respaldo si se esta actualizando una instalacion existente.
+- Tiene energia estable.
+- Tiene IP fija o reservada en la red local.
+- La impresora institucional esta instalada.
+- La red LAN permite que otras computadoras abran el navegador hacia el servidor.
+- Existe respaldo si se esta actualizando una instalacion anterior.
 
-No borre carpetas de datos ni volumenes de base de datos.
+No borre carpetas de datos ni base de datos existente.
 
 Si el instalador detecta una instalacion previa, use solamente reparar,
 actualizar conservando base de datos o cancelar para pedir soporte. El instalador
@@ -22,10 +22,14 @@ del hospital.
 
 ## Instalar
 
-1. Abra PowerShell o Explorador en la carpeta del sistema.
-2. Ejecute `setup.bat`.
-3. Espere a que los servicios levanten.
-4. Revise que el acceso directo **Abrir Sistema de Caja Hospitalaria** exista en el escritorio.
+1. Abra la carpeta del sistema en el servidor.
+2. Confirme que ya existe `frontend\dist\index.html`. Produccion offline no debe descargar dependencias al arrancar.
+3. Ejecute `setup.bat` si administracion tecnica lo autorizo.
+4. Si se usa el asistente PowerShell, ejecute `scripts\install_hospital_os.ps1` y seleccione migraciones seguras.
+5. No use herramientas de reset ni bases de demostracion en el servidor real.
+6. Espere a que los servicios levanten.
+7. Verifique que exista el acceso directo **Abrir Sistema de Caja Hospitalaria** o el acceso directo definido para el hospital.
+8. Abra el sistema desde el servidor.
 
 El instalador no debe cargar datos temporales en produccion.
 El instalador debe aplicar migraciones seguras sin borrar datos, sin ejecutar
@@ -33,7 +37,15 @@ El instalador debe aplicar migraciones seguras sin borrar datos, sin ejecutar
 `APP_VERSION` configurado para que el diagnostico identifique la version
 instalada.
 
-## Abrir El Sistema
+Antes de entregar el servidor, administracion tecnica debe ejecutar:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\validate_installer_safety.ps1
+```
+
+La revision debe terminar sin hallazgos. Si falla, no continuar la entrega hasta corregir el script indicado.
+
+## Direccion de acceso
 
 Servidor:
 
@@ -124,15 +136,18 @@ Luego debe crear un respaldo manual desde la UI y confirmar que cambia de
 
 Despues de instalar:
 
-1. Inicie sesion.
-2. Configure hospital y recibo.
-3. Abra caja.
-4. Cree una factura de prueba autorizada.
-5. Cobre.
-6. Imprima.
-7. Reimprima.
-8. Cree respaldo.
-9. Cierre caja.
+1. Iniciar sesion como administrador real.
+2. Configurar datos del hospital y recibo.
+3. Crear usuarios reales.
+4. Abrir caja.
+5. Crear factura de prueba autorizada.
+6. Cobrar.
+7. Imprimir recibo institucional.
+8. Reimprimir desde historial.
+9. Revisar reporte diario.
+10. Crear respaldo manual y verificar SHA256.
+11. Cerrar caja.
+12. Reiniciar Windows y repetir login desde servidor y cliente LAN.
 
 ## Cierre Final Antes De Operar
 

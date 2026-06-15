@@ -7,6 +7,7 @@ use App\Models\FiscalSequence;
 use App\Models\FiscalSetting;
 use App\Models\Invoice;
 use App\Models\Service;
+use App\Models\ServiceArea;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
@@ -208,6 +209,34 @@ class InvoiceCreationTest extends TestCase
             ->assertJsonPath('data.items.0.line_total', '17.25');
     }
 
+    public function test_invoice_items_keep_service_area_snapshot_when_catalog_area_changes_later(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $laboratoryArea = ServiceArea::query()->where('slug', 'laboratorio')->firstOrFail();
+        $rayosArea = ServiceArea::query()->where('slug', 'rayos-x')->firstOrFail();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $glucose->forceFill(['area_id' => $laboratoryArea->id])->save();
+
+        $invoiceId = $this->actingAs($cashier)
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [['service_id' => $glucose->id, 'quantity' => '1.00']],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.items.0.service_area_name', 'Laboratorio')
+            ->json('data.id');
+
+        $glucose->forceFill(['area_id' => $rayosArea->id])->save();
+
+        $this->actingAs($cashier)
+            ->getJson("/api/invoices/{$invoiceId}")
+            ->assertOk()
+            ->assertJsonPath('data.items.0.service_name', 'Glucosa')
+            ->assertJsonPath('data.items.0.service_area_name', 'Laboratorio')
+            ->assertJsonPath('data.items.0.service_area_id', $laboratoryArea->id);
+    }
+
     public function test_invoice_with_items_cannot_be_deleted_and_lose_fiscal_history(): void
     {
         $this->seedBillingBase();
@@ -375,6 +404,56 @@ class InvoiceCreationTest extends TestCase
         $this->assertSame(2, Invoice::query()->distinct('invoice_number')->count('invoice_number'));
     }
 
+    public function test_repeated_invoice_submit_with_same_idempotency_key_returns_original_invoice(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $payload = [
+            'patient_name' => 'Maria Lopez',
+            'items' => [$this->invoiceItem('Glucosa')],
+        ];
+
+        $first = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'invoice-key-1'])
+            ->postJson('/api/invoices', $payload)
+            ->assertCreated()
+            ->json('data');
+
+        $second = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'invoice-key-1'])
+            ->postJson('/api/invoices', $payload)
+            ->assertCreated()
+            ->json('data');
+
+        $this->assertSame($first['id'], $second['id']);
+        $this->assertSame('000-001-01-00000001', $second['invoice_number']);
+        $this->assertSame(1, Invoice::query()->count());
+    }
+
+    public function test_reused_invoice_idempotency_key_with_different_payload_returns_conflict(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'invoice-key-conflict'])
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Maria Lopez',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertCreated();
+
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'invoice-key-conflict'])
+            ->postJson('/api/invoices', [
+                'patient_name' => 'Jose Perez',
+                'items' => [$this->invoiceItem('Glucosa')],
+            ])
+            ->assertConflict();
+
+        $this->assertSame(1, Invoice::query()->count());
+    }
+
     public function test_user_without_invoice_create_permission_cannot_emit_invoice(): void
     {
         $this->seedBillingBase();
@@ -464,6 +543,6 @@ class InvoiceCreationTest extends TestCase
             'opened_at' => now(),
         ]);
 
-        return $cashier;
+        return $cashier->refresh();
     }
 }

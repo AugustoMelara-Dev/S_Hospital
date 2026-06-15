@@ -45,6 +45,12 @@ class ServiceCatalogTest extends TestCase
         $this->assertSame(Service::ERYTHROPOIETIN_RULE, $erythropoietin->special_rule_code);
         $this->assertNotNull($erythropoietin->source_key);
         $this->assertNotNull($erythropoietin->source_hash);
+
+        $this->assertSame('Farmacia', $erythropoietin->area?->name);
+        $this->assertSame(
+            'Laboratorio',
+            Service::query()->where('name', 'Glucosa')->firstOrFail()->area?->name,
+        );
     }
 
     public function test_service_catalog_seeder_assigns_validation_scan_codes(): void
@@ -72,6 +78,7 @@ class ServiceCatalogTest extends TestCase
         $this->seed(ServiceCatalogSeeder::class);
 
         $this->assertSame(5, Category::query()->count());
+        $this->assertSame(6, ServiceArea::query()->count());
         $this->assertSame(122, Service::query()->count());
     }
 
@@ -146,6 +153,12 @@ class ServiceCatalogTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.name', 'Eritropoyetina')
             ->assertJsonPath('data.0.special_rule_code', Service::ERYTHROPOIETIN_RULE);
+
+        $this->actingAs($cashier)
+            ->getJson('/api/service-areas?active=1')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Laboratorio'])
+            ->assertJsonFragment(['name' => 'Rayos X']);
     }
 
     public function test_category_index_requires_catalog_view_and_validates_active_filter(): void
@@ -328,6 +341,123 @@ class ServiceCatalogTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.price', '125.00')
             ->assertJsonPath('data.barcode', '7700000000011');
+    }
+
+    public function test_services_can_store_area_and_operational_metadata(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+        $category = Category::query()->create([
+            'name' => 'Laboratorio',
+            'slug' => 'laboratorio',
+            'active' => true,
+            'sort_order' => 1,
+        ]);
+        $area = ServiceArea::query()->create([
+            'name' => 'Laboratorio',
+            'slug' => 'laboratorio',
+            'active' => true,
+            'sort_order' => 1,
+        ]);
+
+        $serviceId = $this->actingAs($admin)
+            ->postJson('/api/services', [
+                'category_id' => $category->id,
+                'area_id' => $area->id,
+                'name' => 'Acido urico',
+                'price' => '80.00',
+                'taxable' => true,
+                'active' => true,
+                'aliases' => ['urico', 'au'],
+                'description' => 'Examen de laboratorio',
+                'internal_code' => 'LAB-AU',
+                'print_on_receipt' => true,
+                'visible_in_billing' => true,
+                'is_billable' => true,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.area.name', 'Laboratorio')
+            ->assertJsonPath('data.aliases.0', 'urico')
+            ->assertJsonPath('data.internal_code', 'LAB-AU')
+            ->assertJsonPath('data.visible_in_billing', true)
+            ->json('data.id');
+
+        $this->assertDatabaseHas('services', [
+            'id' => $serviceId,
+            'area_id' => $area->id,
+            'internal_code' => 'LAB-AU',
+            'visible_in_billing' => true,
+            'is_billable' => true,
+            'print_on_receipt' => true,
+        ]);
+    }
+
+    public function test_admin_can_manage_service_areas(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $admin = $this->admin();
+
+        $areaId = $this->actingAs($admin)
+            ->postJson('/api/service-areas', [
+                'name' => 'Rehabilitacion',
+                'active' => true,
+                'sort_order' => 8,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.name', 'Rehabilitacion')
+            ->assertJsonPath('data.slug', 'rehabilitacion')
+            ->json('data.id');
+
+        $this->actingAs($admin)
+            ->patchJson("/api/service-areas/{$areaId}", [
+                'name' => 'Terapia fisica',
+                'active' => false,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Terapia fisica')
+            ->assertJsonPath('data.active', false);
+
+        $this->actingAs($this->cashier())
+            ->postJson('/api/service-areas', ['name' => 'No autorizado'])
+            ->assertForbidden();
+    }
+
+    public function test_service_search_uses_area_aliases_and_internal_code_filters(): void
+    {
+        $this->seed([RolesAndPermissionsSeeder::class, ServiceCatalogSeeder::class]);
+        $admin = $this->admin();
+        $cashier = $this->cashier();
+        $glucose = Service::query()->where('name', 'Glucosa')->firstOrFail();
+        $laboratory = ServiceArea::query()->where('slug', 'laboratorio')->firstOrFail();
+        $rayos = ServiceArea::query()->where('slug', 'rayos-x')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson("/api/services/{$glucose->id}", [
+                'aliases' => ['azucar en sangre', 'glicemia'],
+                'internal_code' => 'LAB-GLU',
+                'area_id' => $laboratory->id,
+            ])
+            ->assertOk();
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?search=glicemia')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Glucosa']);
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?search=LAB-GLU')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Glucosa']);
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?search=laboratorio')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'Glucosa']);
+
+        $this->actingAs($cashier)
+            ->getJson('/api/services?area_id='.$rayos->id)
+            ->assertOk()
+            ->assertJsonMissing(['name' => 'Glucosa']);
     }
 
     public function test_cashier_cannot_create_or_edit_services(): void
@@ -737,7 +867,7 @@ class ServiceCatalogTest extends TestCase
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
-        return $admin;
+        return $admin->refresh();
     }
 
     private function cashier(): User
@@ -745,6 +875,6 @@ class ServiceCatalogTest extends TestCase
         $cashier = User::factory()->create();
         $cashier->assignRole('cajero');
 
-        return $cashier;
+        return $cashier->refresh();
     }
 }

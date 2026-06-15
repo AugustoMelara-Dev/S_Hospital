@@ -69,6 +69,7 @@ class Payment extends Model
             'amount_cents' => 'integer',
             'voided_at' => 'datetime',
             'paid_at' => 'datetime',
+            'voided_at' => 'datetime',
         ];
     }
 

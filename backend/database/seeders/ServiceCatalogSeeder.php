@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Area;
 use App\Models\Category;
 use App\Models\Service;
+use App\Models\ServiceArea;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -39,6 +40,7 @@ class ServiceCatalogSeeder extends Seeder
         $rows = $this->readCatalogRows();
 
         DB::transaction(function () use ($rows): void {
+            $areas = $this->seedAreas();
             $categoryOrders = [];
 
             foreach ($rows as $row) {
@@ -83,6 +85,7 @@ class ServiceCatalogSeeder extends Seeder
                     'name' => $row['servicio'],
                     'area_id' => $area->id,
                     'category_id' => $category->id,
+                    'area_id' => $areas[$this->areaSlugForCategory($row['categoria'])]->id ?? null,
                     'slug' => $serviceSlug,
                     'source_hash' => $this->serviceSourceHash($row),
                     'price' => $row['precio_lps'],
@@ -242,6 +245,49 @@ class ServiceCatalogSeeder extends Seeder
     private function categorySourceKey(string $category): string
     {
         return 'csv:category:'.$this->slug($category);
+    }
+
+    /**
+     * @return array<string, ServiceArea>
+     */
+    private function seedAreas(): array
+    {
+        $areas = [
+            ['name' => 'Laboratorio', 'sort_order' => 1],
+            ['name' => 'Rayos X', 'sort_order' => 2],
+            ['name' => 'Emergencia', 'sort_order' => 3],
+            ['name' => 'Consulta externa', 'sort_order' => 4],
+            ['name' => 'Farmacia', 'sort_order' => 5],
+            ['name' => 'Otros', 'sort_order' => 99],
+        ];
+
+        $seeded = [];
+
+        foreach ($areas as $area) {
+            $slug = $this->slug($area['name']);
+            $seeded[$slug] = ServiceArea::query()->updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'name' => $area['name'],
+                    'active' => true,
+                    'sort_order' => $area['sort_order'],
+                ],
+            );
+        }
+
+        return $seeded;
+    }
+
+    private function areaSlugForCategory(string $category): string
+    {
+        return match ($this->slug($category)) {
+            'laboratorio' => 'laboratorio',
+            'radiologia' => 'rayos-x',
+            'hospitalizacion-y-emergencia' => 'emergencia',
+            'medicamentos' => 'farmacia',
+            'odontologia' => 'consulta-externa',
+            default => 'otros',
+        };
     }
 
     /**

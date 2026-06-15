@@ -704,7 +704,7 @@ class PdfExportService
                 <td>{$failedBackupCount}</td>
             </tr>
         </table>
-    </div>";
+    </div>';
 
         if (! empty($operations['voids'])) {
             $html .= "

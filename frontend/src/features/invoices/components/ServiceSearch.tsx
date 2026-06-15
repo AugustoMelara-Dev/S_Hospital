@@ -13,8 +13,11 @@ const SERVICE_RESULT_LIMIT = 24;
 
 type ServiceSearchProps = {
   categories: Category[];
+  serviceAreas: ServiceArea[];
   services: Service[];
+  selectedAreaId: number | 'all' | undefined;
   selectedCategoryId: number | 'all' | undefined;
+  onAreaChange: (id: number | 'all' | undefined) => void;
   onCategoryChange: (id: number | 'all' | undefined) => void;
   search: string;
   onSearchChange: (value: string) => void;
@@ -30,8 +33,11 @@ type ServiceSearchProps = {
 
 export function ServiceSearch({
   categories,
+  serviceAreas,
   services,
+  selectedAreaId,
   selectedCategoryId,
+  onAreaChange,
   onCategoryChange,
   search,
   onSearchChange,
@@ -46,14 +52,18 @@ export function ServiceSearch({
 }: ServiceSearchProps) {
   const [addFirstWhenReady, setAddFirstWhenReady] = useState(false);
   const filteredServices = services.filter((service) => {
+    const matchesArea =
+      selectedAreaId === undefined ||
+      selectedAreaId === 'all' ||
+      service.area_id === selectedAreaId;
     const matchesCategory =
       selectedCategoryId === undefined ||
       selectedCategoryId === 'all' ||
       service.category_id === selectedCategoryId;
 
-    return matchesCategory;
+    return matchesArea && matchesCategory;
   });
-  const hasIntent = Boolean(search.trim()) || selectedCategoryId !== undefined;
+  const hasIntent = Boolean(search.trim()) || selectedAreaId !== undefined || selectedCategoryId !== undefined;
   const visibleServices = hasIntent ? filteredServices.slice(0, SERVICE_RESULT_LIMIT) : [];
   const hiddenCount = Math.max(0, filteredServices.length - visibleServices.length);
   const firstVisibleService = visibleServices[0];
@@ -71,7 +81,7 @@ export function ServiceSearch({
 
   useEffect(() => {
     setAddFirstWhenReady(false);
-  }, [search, selectedCategoryId]);
+  }, [search, selectedAreaId, selectedCategoryId]);
 
   useEffect(() => {
     if (!loading && addFirstWhenReady && !firstVisibleService) {
@@ -146,6 +156,31 @@ export function ServiceSearch({
           ) : null}
         </div>
 
+        {serviceAreas.length > 0 && (
+          <div>
+            <Label className="mb-2 block" id="service-area-label">Area</Label>
+            <div
+              aria-labelledby="service-area-label"
+              className="grid max-h-28 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-4"
+              role="radiogroup"
+            >
+              <CategoryButton
+                active={selectedAreaId === undefined || selectedAreaId === 'all'}
+                label="Todas"
+                onClick={() => onAreaChange('all')}
+              />
+              {serviceAreas.map((area) => (
+                <CategoryButton
+                  key={area.id}
+                  active={selectedAreaId === area.id}
+                  label={area.name}
+                  onClick={() => onAreaChange(area.id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         <div>
           <Label className="mb-2 block" id="service-category-label">Categoria</Label>
           <div
@@ -181,6 +216,7 @@ export function ServiceSearch({
             size="sm"
             onClick={() => {
               onSearchChange('');
+              onAreaChange(undefined);
               onCategoryChange(undefined);
             }}
           >
@@ -228,7 +264,7 @@ export function ServiceSearch({
                       </span>
                       {scannerEnabled && (service.scan_code || service.barcode || service.qr_code) && (
                         <span className="text-[10px] text-muted-foreground">
-                          {service.scan_code ?? service.barcode ?? service.qr_code}
+                          Disponible para lector
                         </span>
                       )}
                     </div>

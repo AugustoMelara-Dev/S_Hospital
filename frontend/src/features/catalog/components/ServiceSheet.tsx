@@ -145,8 +145,8 @@ export function ServiceSheet({
       ...data,
       price_change_reason: optionalCode(data.price_change_reason),
       scan_code: optionalCode(data.scan_code),
-      barcode: optionalCode(data.barcode),
-      qr_code: optionalCode(data.qr_code),
+      barcode: service?.barcode ?? null,
+      qr_code: service?.qr_code ?? null,
       special_rule_code: optionalCode(data.special_rule_code),
     };
 

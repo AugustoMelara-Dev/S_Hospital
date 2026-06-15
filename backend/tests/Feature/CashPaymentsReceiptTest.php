@@ -14,11 +14,19 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Tests\TestCase;
 
 class CashPaymentsReceiptTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutMiddleware(ThrottleRequests::class);
+    }
 
     public function test_cashier_can_open_cash_session_and_cannot_open_two(): void
     {
@@ -450,6 +458,14 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.invoice.paid_amount', '17.25')
             ->assertJsonPath('data.invoice.balance_due', '0.00');
 
+        $this->assertDatabaseHas('payments', [
+            'invoice_id' => $invoiceId,
+            'cash_session_id' => $sessionId,
+            'method' => Payment::METHOD_TRANSFER,
+            'amount' => '7.25',
+            'reference' => 'TRX-1',
+        ]);
+
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $cashier->id,
             'action' => 'payment.registered',
@@ -459,6 +475,97 @@ class CashPaymentsReceiptTest extends TestCase
             'id' => $invoiceId,
             'paid_amount_cents' => 1725,
             'balance_due_cents' => 0,
+        ]);
+    }
+
+    public function test_repeated_payment_submit_with_same_idempotency_key_returns_original_payment(): void
+    {
+        $this->seedBillingBase();
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+        $payload = [
+            'cash_session_id' => $sessionId,
+            'method' => Payment::METHOD_CASH,
+            'amount' => '17.25',
+        ];
+
+        $first = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'payment-key-1'])
+            ->postJson("/api/invoices/{$invoiceId}/payments", $payload)
+            ->assertCreated()
+            ->json('data.payment');
+
+        $second = $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'payment-key-1'])
+            ->postJson("/api/invoices/{$invoiceId}/payments", $payload)
+            ->assertCreated()
+            ->json('data.payment');
+
+        $this->assertSame($first['id'], $second['id']);
+        $this->assertSame(1, Payment::query()->count());
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoiceId,
+            'paid_amount' => '17.25',
+            'balance_due' => '0.00',
+            'status' => Invoice::STATUS_PAID,
+        ]);
+    }
+
+    public function test_reused_payment_idempotency_key_with_different_payload_returns_conflict(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'payment-key-conflict'])
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '10.00',
+            ])
+            ->assertCreated();
+
+        $this->actingAs($cashier)
+            ->withHeaders(['Idempotency-Key' => 'payment-key-conflict'])
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '7.25',
+            ])
+            ->assertConflict();
+
+        $this->assertSame(1, Payment::query()->count());
+    }
+
+    public function test_cash_session_cannot_close_with_partial_invoice_balance(): void
+    {
+        $this->seedBillingBase();
+        FiscalSetting::query()->update(['partial_payments_enabled' => true]);
+        $cashier = $this->cashier();
+        $sessionId = $this->openSession($cashier, '500.00');
+        $invoiceId = $this->createInvoice($cashier, 'Glucosa');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '10.00',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.invoice.status', Invoice::STATUS_PARTIAL);
+
+        $this->actingAs($cashier)
+            ->postJson("/api/cash-sessions/{$sessionId}/close", ['closing_amount' => '510.00'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('cash_session');
+
+        $this->assertDatabaseHas('cash_register_sessions', [
+            'id' => $sessionId,
+            'status' => CashRegisterSession::STATUS_OPEN,
         ]);
     }
 
@@ -474,6 +581,15 @@ class CashPaymentsReceiptTest extends TestCase
                 'cash_session_id' => $sessionId,
                 'method' => Payment::METHOD_CASH,
                 'amount' => '0.00',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('amount');
+
+        $this->actingAs($cashier)
+            ->postJson("/api/invoices/{$invoiceId}/payments", [
+                'cash_session_id' => $sessionId,
+                'method' => Payment::METHOD_CASH,
+                'amount' => '10.00',
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('amount');
@@ -788,7 +904,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.width', 'half_letter')
             ->assertJsonPath('data.hospital.name', 'Hospital San Isidro')
             ->assertJsonPath('data.hospital.rtn', '08011999123456')
-            ->assertJsonPath('data.fiscal.cai', 'TEST-CAI')
+            ->assertJsonPath('data.fiscal.cai', 'REAL-CAI-2026')
             ->assertJsonPath('data.fiscal.authorized_range', '000-001-01-00000001 a 000-001-01-99999999')
             ->assertJsonPath('data.fiscal.valid_until', now()->addYear()->toDateString())
             ->assertJsonPath('data.items.0.service_name', 'Glucosa')
@@ -817,7 +933,7 @@ class CashPaymentsReceiptTest extends TestCase
             ->assertJsonPath('data.width', '80mm');
 
         $this->actingAs($cashier)
-            ->getJson("/api/invoices/{$invoiceId}/receipt?width=58mm")
+            ->getJson("/api/invoices/{$invoiceId}/receipt?width=a5")
             ->assertOk()
             ->assertJsonPath('data.width', '58mm');
 
@@ -935,7 +1051,7 @@ class CashPaymentsReceiptTest extends TestCase
             'min_number' => 1,
             'max_number' => 99999999,
             'current_number' => 0,
-            'cai' => 'TEST-CAI',
+            'cai' => 'REAL-CAI-2026',
             'valid_until' => now()->addYear()->toDateString(),
             'active' => true,
         ]);

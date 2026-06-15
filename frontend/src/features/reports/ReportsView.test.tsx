@@ -359,6 +359,156 @@ describe('ReportsView', () => {
     expect(document.body.textContent).not.toMatch(/\bNaN\b|monto-danado|no-numero/);
   });
 
+  it('loads and renders area reports from backend aggregates', async () => {
+    window.history.pushState({}, '', '/reports');
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+
+      if (url.includes('/api/auth/session')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              id: 1,
+              name: 'Admin Demo',
+              email: 'admin.demo@hospital-billing.local',
+              username: 'admin.demo',
+              active: true,
+              roles: ['admin'],
+              permissions: ['reports.view', 'reports.managerial.view', 'reports.export', 'reports.cash_session.view'],
+              must_change_password: false,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/daily')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date: '2026-05-31',
+              total_billed: '0.00',
+              total_collected: '0.00',
+              total_balance_due: '0.00',
+              invoice_count: 0,
+              payment_count: 0,
+              payments_by_method: { cash: '0.00', transfer: '0.00', card: '0.00', other: '0.00' },
+              invoices_by_status: {
+                issued: { count: 0, total: '0.00' },
+                partial: { count: 0, total: '0.00' },
+                paid: { count: 0, total: '0.00' },
+                void: { count: 0, total: '0.00' },
+              },
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/categories')) {
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      }
+
+      if (url.includes('/api/reports/income')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date_from: '2026-05-31',
+              date_to: '2026-05-31',
+              filters: {},
+              total_billed: '46.00',
+              total_collected: '46.00',
+              total_balance_due: '0.00',
+              payments_by_method: { cash: '17.25', transfer: '0.00', card: '28.75', other: '0.00' },
+              invoices_by_status: {
+                issued: { count: 0, total: '0.00' },
+                partial: { count: 0, total: '0.00' },
+                paid: { count: 2, total: '46.00' },
+                void: { count: 0, total: '0.00' },
+              },
+              payment_count: 2,
+              invoice_count: 2,
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/categories')) {
+        return { ok: true, json: async () => ({ data: { date_from: '2026-05-31', date_to: '2026-05-31', filters: {}, categories: [] } }) } as Response;
+      }
+
+      if (url.includes('/api/reports/services')) {
+        return { ok: true, json: async () => ({ data: { date_from: '2026-05-31', date_to: '2026-05-31', filters: {}, services: [] } }) } as Response;
+      }
+
+      if (url.includes('/api/reports/operations')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date_from: '2026-05-31',
+              date_to: '2026-05-31',
+              filters: {},
+              summary: { void_count: 0, reprint_count: 0, audit_event_count: 0, backup_count: 0, failed_backup_count: 0, cashier_count: 0 },
+              voids: [],
+              reprints: [],
+              audit_events: [],
+              backups: [],
+              cashiers: [],
+            },
+          }),
+        } as Response;
+      }
+
+      if (url.includes('/api/reports/areas')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              date_from: '2026-05-31',
+              date_to: '2026-05-31',
+              filters: {},
+              areas: [
+                {
+                  area_id: 1,
+                  area: 'Laboratorio',
+                  item_count: 1,
+                  invoice_count: 1,
+                  quantity: '1.00',
+                  subtotal: '15.00',
+                  tax_amount: '2.25',
+                  total: '17.25',
+                  collected: '17.25',
+                  balance_due: '0.00',
+                },
+              ],
+            },
+          }),
+        } as Response;
+      }
+
+      return { ok: true, json: async () => ({ data: null }) } as Response;
+    });
+
+    render(<App />);
+
+    expect((await screen.findAllByRole('heading', { name: /^reportes$/i })).length).toBeGreaterThan(0);
+    activateTab(/por rango/i);
+    fireEvent.click(await screen.findByRole('button', { name: /ver rango/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/reports/areas?'),
+        expect.objectContaining({ credentials: 'include' }),
+      );
+    });
+
+    activateTab(/[aá]reas/i);
+    expect(await screen.findByText('Laboratorio')).toBeInTheDocument();
+    expect(screen.getAllByText('L. 17.25').length).toBeGreaterThan(0);
+  });
+
   it('exports reports through the protected backend Excel endpoint', async () => {
     window.history.pushState({}, '', '/reports');
     Object.defineProperty(URL, 'createObjectURL', {
@@ -516,7 +666,27 @@ describe('ReportsView', () => {
       if (url.includes('/api/reports/income')) {
         return {
           ok: true,
-          json: async () => ({ data: { range: { date_from: '2026-05-17', date_to: '2026-05-17' }, totals: { billed: '17.25', collected: '17.25', balance_due: '0.00' }, by_method: [], by_status: [] } }),
+          json: async () => ({
+            data: {
+              date_from: '2026-05-17',
+              date_to: '2026-05-17',
+              cash_session_id: null,
+              user_id: null,
+              filters: {},
+              total_billed: '17.25',
+              total_collected: '17.25',
+              total_balance_due: '0.00',
+              payments_by_method: { cash: '17.25', transfer: '0.00', card: '0.00', other: '0.00' },
+              invoices_by_status: {
+                issued: { count: 0, total: '0.00' },
+                partial: { count: 0, total: '0.00' },
+                paid: { count: 1, total: '17.25' },
+                void: { count: 0, total: '0.00' },
+              },
+              payment_count: 1,
+              invoice_count: 1,
+            },
+          }),
         } as Response;
       }
 
@@ -931,6 +1101,12 @@ describe('ReportsView', () => {
                 card: '0.00',
                 other: '0.00',
               },
+              invoices_by_status: {
+                issued: { count: 0, total: '0.00' },
+                partial: { count: 0, total: '0.00' },
+                paid: { count: 0, total: '0.00' },
+                void: { count: 0, total: '0.00' },
+              },
               payment_count: 0,
               invoice_count: 0,
             },
@@ -991,9 +1167,25 @@ describe('ReportsView', () => {
                 backup_count: 0,
                 failed_backup_count: 0,
                 cashier_count: 0,
+                audit_event_count: 1,
               },
               voids: [],
               reprints: [],
+              audit_events: [
+                {
+                  id: 1,
+                  action: 'payment.voided',
+                  result: 'success',
+                  entity_type: 'App\\Models\\Payment',
+                  entity_id: 7,
+                  reason: 'Reversion validada por supervisor',
+                  created_at: '2026-05-17T10:30:00.000000Z',
+                  user: 'Supervisor Demo',
+                  ip_address: '127.0.0.1',
+                  user_agent: 'Caja-LAN/1.0',
+                  details: {},
+                },
+              ],
               backups: [],
               cashiers: [],
             },
@@ -1036,6 +1228,8 @@ describe('ReportsView', () => {
     expect(screen.queryByText(/sin categorias cobradas/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/sin servicios cobrados/i)).not.toBeInTheDocument();
     activateTab(/auditor.a/i);
-    expect((await screen.findAllByText(/sin eventos operativos/i)).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/eventos de control/i)).toBeInTheDocument();
+    expect(await screen.findByText(/reversion de pago/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Reversion validada por supervisor/i)).toBeInTheDocument();
   });
 });

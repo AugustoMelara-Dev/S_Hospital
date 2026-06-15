@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Catalog\IndexServiceRequest;
 use App\Http\Requests\Catalog\StoreServiceRequest;
 use App\Http\Requests\Catalog\UpdateServiceRequest;
-use App\Models\AuditLog;
 use App\Models\Service;
 use App\Models\ServicePriceHistory;
 use App\Support\ServiceSearch;
@@ -161,12 +160,18 @@ class ServiceController extends Controller
             'scan_code',
             'barcode',
             'qr_code',
+            'aliases',
+            'description',
+            'internal_code',
             'price',
             'taxable',
             'active',
             'visible_in_billing',
             'is_billable',
             'special_rule_code',
+            'print_on_receipt',
+            'visible_in_billing',
+            'is_billable',
         ]);
     }
 

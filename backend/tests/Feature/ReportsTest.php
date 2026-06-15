@@ -15,6 +15,7 @@ use App\Models\FiscalSetting;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Service;
+use App\Models\ServiceArea;
 use App\Models\User;
 use App\Support\InvoiceAccess;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -22,6 +23,7 @@ use Barryvdh\DomPDF\PDF as DomPdfWrapper;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -142,6 +144,7 @@ class ReportsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.total_billed', '28.75')
             ->assertJsonPath('data.total_collected', '22.25')
+            ->assertJsonPath('data.total_balance_due', '6.50')
             ->assertJsonPath('data.invoice_count', 3)
             ->assertJsonPath('data.payment_count', 2)
             ->assertJsonPath('data.payments_by_method.cash', '17.25')
@@ -236,6 +239,7 @@ class ReportsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.total_billed', '28.75')
             ->assertJsonPath('data.total_collected', '17.25')
+            ->assertJsonPath('data.total_balance_due', '0.00')
             ->assertJsonPath('data.payment_count', 1)
             ->assertJsonPath('data.invoice_count', 2);
 
@@ -635,9 +639,13 @@ class ReportsTest extends TestCase
             ->getJson("/api/reports/income?{$filters}")
             ->assertOk()
             ->assertJsonPath('data.total_collected', '17.25')
+            ->assertJsonPath('data.total_billed', '17.25')
+            ->assertJsonPath('data.total_balance_due', '0.00')
             ->assertJsonPath('data.payment_count', 1)
             ->assertJsonPath('data.payments_by_method.cash', '17.25')
             ->assertJsonPath('data.payments_by_method.card', '0.00')
+            ->assertJsonPath('data.invoices_by_status.paid.count', 1)
+            ->assertJsonPath('data.invoices_by_status.partial.count', 0)
             ->assertJsonPath('data.filters.category_id', (string) $laboratoryId)
             ->assertJsonPath('data.filters.method', Payment::METHOD_CASH)
             ->assertJsonPath('data.filters.status', Invoice::STATUS_PAID);
@@ -1247,6 +1255,20 @@ class ReportsTest extends TestCase
             'created_at' => now(),
         ]);
 
+        AuditLog::query()->create([
+            'user_id' => $admin->id,
+            'action' => 'payment.voided',
+            'entity_type' => Payment::class,
+            'entity_id' => 99,
+            'reason' => 'Reversion validada por supervisor',
+            'result' => 'success',
+            'new_values' => [
+                'invoice_number' => '000-001-01-00000001',
+                'amount' => '17.25',
+            ],
+            'created_at' => now(),
+        ]);
+
         BackupLog::query()->create([
             'filename' => 'hospital-backup-test.sql',
             'path' => 'backups/hospital-backup-test.sql',
@@ -1265,6 +1287,7 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.summary.void_count', 1)
             ->assertJsonPath('data.summary.reprint_count', 1)
             ->assertJsonPath('data.summary.backup_count', 1)
+            ->assertJsonPath('data.summary.audit_event_count', 2)
             ->assertJsonPath('data.summary.cashier_count', 0)
             ->assertJsonPath('data.voids.0.reason', 'Error de captura')
             ->assertJsonPath('data.reprints.0.reason', 'Paciente solicita copia')
@@ -2318,7 +2341,7 @@ class ReportsTest extends TestCase
         $admin->assignRole('admin');
         $this->grantDirectPermissions($admin, RolesAndPermissionsSeeder::PERMISSIONS);
 
-        return $admin;
+        return $admin->refresh();
     }
 
     private function supervisor(): User
@@ -2349,7 +2372,7 @@ class ReportsTest extends TestCase
             'audit.view',
         ]);
 
-        return $supervisor;
+        return $supervisor->refresh();
     }
 
     private function cashier(): User
@@ -2369,7 +2392,7 @@ class ReportsTest extends TestCase
             'receipts.reprint',
         ]);
 
-        return $cashier;
+        return $cashier->refresh();
     }
 
     /**

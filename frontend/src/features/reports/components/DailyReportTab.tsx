@@ -146,7 +146,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Método</TableHead>
+                    <TableHead>Metodo</TableHead>
                     <TableHead className="text-right">Monto</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -164,7 +164,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
 
           <Card>
             <CardHeader>
-              <CardTitle>Estado de Facturas</CardTitle>
+              <CardTitle>Estado de facturas</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -221,7 +221,7 @@ export function DailyReportTab({ canExport, daily, dailyDate, error, loading, on
               </>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Exportación requiere permiso de exportación de reportes.
+                Exportacion requiere permiso de exportacion de reportes.
               </p>
             )}
           </div>

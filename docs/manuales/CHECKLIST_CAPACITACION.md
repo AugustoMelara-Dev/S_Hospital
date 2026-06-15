@@ -1,4 +1,4 @@
-﻿# Checklist De Capacitacion
+# Checklist de capacitacion y entrega
 
 Use esta lista para capacitar a personal de caja, supervision y administracion.
 
@@ -18,15 +18,17 @@ la base real de produccion.
 ## Cajero
 
 - [ ] Abre el sistema con el acceso directo.
-- [ ] Inicia sesion con su usuario.
-- [ ] Abre caja con monto inicial.
+- [ ] Inicia sesion con usuario propio.
+- [ ] Abre caja con efectivo inicial.
 - [ ] Busca servicios por nombre.
-- [ ] Usa la categoria **Todos**.
-- [ ] Agrega y quita servicios del carrito.
+- [ ] Usa categoria **Todos**.
+- [ ] Agrega y quita servicios.
 - [ ] Revisa total antes de emitir.
-- [ ] Cobra con efectivo.
-- [ ] Identifica cambio/vuelto.
-- [ ] Reconoce el bloqueo si el monto recibido es menor al total.
+- [ ] Cobra en efectivo.
+- [ ] Cobra con tarjeta o transferencia y registra referencia.
+- [ ] Reconoce cambio.
+- [ ] Reconoce saldo pendiente.
+- [ ] Sabe que pago menor no marca pagado completo.
 - [ ] Imprime recibo institucional.
 - [ ] Reimprime desde historial si tiene permiso.
 - [ ] Cierra caja y revisa diferencia.
@@ -50,12 +52,12 @@ la base real de produccion.
 
 ## Administrador
 
-- [ ] Configura datos del hospital.
-- [ ] Configura serie/numeracion autorizada.
-- [ ] Revisa vista previa de recibo.
-- [ ] Revisa reporte diario.
-- [ ] Revisa pagos por metodo.
-- [ ] Identifica facturas parciales y anuladas.
+- [ ] Configura datos reales del hospital.
+- [ ] Deja CAI/serie/rango como pendiente si no hay datos reales.
+- [ ] Revisa vista previa del recibo.
+- [ ] Revisa reporte diario: facturado, cobrado y saldo pendiente.
+- [ ] Revisa metodos de pago.
+- [ ] Identifica parciales y anuladas.
 - [ ] Autoriza anulaciones con motivo.
 - [ ] Crea respaldo manual.
 - [ ] Verifica ultimo respaldo.
@@ -65,15 +67,18 @@ la base real de produccion.
 - [ ] Sabe preparar capacitacion sin tocar la base real.
 - [ ] Sabe restaurar solo en base descartable autorizada.
 
-## Prueba Final De Flujo
+## Prueba final del flujo
 
-- [ ] Login correcto.
+- [ ] Confirmar que la practica se hara fuera de datos reales.
+- [ ] Confirmar respaldo antes de cualquier simulacro supervisado.
+- [ ] Login.
 - [ ] Caja cerrada bloquea facturacion.
 - [ ] Abrir caja.
 - [ ] Crear factura.
 - [ ] Cobrar.
 - [ ] Imprimir.
 - [ ] Reimprimir.
+- [ ] Revisar reporte del dia.
 - [ ] Crear respaldo.
 - [ ] Cerrar caja.
 - [ ] Revisar reporte del dia.

@@ -1,76 +1,93 @@
-﻿# Manual Del Cajero
+# Manual del cajero
 
-Este manual resume el trabajo diario del personal de caja.
+Sistema institucional de caja y facturacion del Hospital San Isidro.
 
-## Abrir El Sistema
+## Objetivo del turno
 
-1. Use el acceso directo **Abrir Sistema de Caja Hospitalaria**.
+El cajero debe abrir caja, registrar paciente, agregar servicios, cobrar, imprimir recibo institucional, reimprimir cuando corresponda y cerrar caja con el efectivo contado.
+
+## 1. Abrir el sistema
+
+1. Use el acceso directo **Hospital San Isidro - Caja** o el acceso que indique administracion.
 2. Espere a que abra el navegador.
-3. Si no abre, avise al responsable del sistema antes de reiniciar la computadora.
+3. Ingrese con su usuario personal.
+4. No comparta usuario ni contrasena. Todo cobro queda asociado a la cuenta usada.
 
-## Iniciar Sesion
+Si el sistema no abre, no borre archivos ni reinicie servicios por su cuenta. Avise al responsable.
 
-1. Escriba su usuario.
-2. Escriba su contrasena.
-3. Presione **Iniciar sesion** o la tecla Enter.
-
-No comparta su usuario. Toda factura, cobro o anulacion queda registrada con la cuenta que se use.
-
-## Abrir Caja
+## 2. Abrir caja
 
 1. Entre a **Caja**.
 2. Presione **Abrir caja**.
-3. Escriba el efectivo inicial.
+3. Escriba el efectivo inicial disponible para cambio.
 4. Confirme.
 
-No se debe facturar ni cobrar sin caja abierta.
+No emita facturas sin caja abierta.
 
-## Crear Factura
+## 3. Crear una factura
 
 1. Entre a **Nueva factura**.
-2. Escriba el nombre del paciente.
-3. Busque el servicio por nombre, categoria o codigo si esta habilitado.
-4. Agregue los servicios al carrito.
-5. Revise subtotal, impuesto y total.
-6. Presione **Emitir y cobrar**.
+2. Escriba el nombre del paciente. Solo el nombre es obligatorio.
+3. Busque servicios por nombre, categoria o codigo si administracion habilito escaner.
+4. Use **Todos** para ver servicios activos de todas las categorias.
+5. Agregue los servicios al carrito.
+6. Revise subtotal, ISV, total y reglas especiales antes de emitir.
+7. Presione **Emitir y cobrar**.
 
-Si se equivoca antes de emitir, quite el servicio del carrito o limpie la factura.
+Si se equivoca antes de emitir, quite el servicio o limpie la factura. Si ya emitio, no borre nada: avise al supervisor.
 
-## Cobrar
+## 4. Eritropoyetina
 
-1. Seleccione el metodo de pago.
+- Eritropoyetina tiene precio de L.25.00.
+- Si el paciente trae receta de dialisis y el sistema muestra la opcion correspondiente, marque la receta antes de emitir.
+- No aplique descuentos manuales fuera del flujo del sistema.
+
+## 5. Cobrar
+
+1. Seleccione metodo: efectivo, tarjeta, transferencia u otro.
 2. Escriba el monto recibido.
-3. Confirme el cobro.
+3. Para tarjeta o transferencia, escriba la referencia visible del comprobante. No escriba datos sensibles de tarjeta.
+4. Revise cambio o saldo pendiente.
+5. Confirme el cobro.
 
-Si el monto recibido es menor al total, el sistema no lo marcara como pagado completo. Si la administracion permite abonos parciales, el sistema mostrara el saldo pendiente.
+Reglas importantes:
 
-## Imprimir Recibo
+- Si el monto recibido es menor al total, el sistema no debe marcar la factura como pagada completa.
+- Los abonos parciales solo se permiten si administracion los habilito.
+- Tarjeta y transferencia no aumentan el efectivo esperado en caja.
 
-1. Despues de cobrar, abra la vista de recibo.
-2. Revise paciente, numero, fecha, total, pagado y saldo.
+## 6. Imprimir recibo
+
+1. Revise la vista previa del recibo.
+2. Confirme hospital, paciente, numero, fecha, servicios, total, pagado y saldo si aplica.
 3. Presione **Imprimir**.
+4. Seleccione la impresora institucional autorizada.
 
-El recibo institucional no debe llevar codigos internos ni QR.
+El recibo debe ser institucional en papel, sin QR, sin codigo de barras y sin codigos internos.
 
-## Reimprimir
+## 7. Reimprimir
 
 1. Entre a **Historial**.
-2. Busque por paciente, fecha o numero.
-3. Use **Reimprimir** si tiene permiso.
-4. Escriba el motivo si el sistema lo solicita.
+2. Busque por paciente, numero o fecha.
+3. Abra la factura.
+4. Use **Reimprimir** si tiene permiso.
+5. Escriba el motivo si el sistema lo solicita.
 
-## Cerrar Caja
+La reimpresion usa los datos historicos de la factura original.
+
+## 8. Cerrar caja
 
 1. Entre a **Caja**.
 2. Presione **Cerrar caja**.
-3. Cuente el efectivo real.
-4. Escriba el monto contado.
-5. Revise la diferencia.
-6. Confirme.
+3. Cuente solo el efectivo fisico en gaveta.
+4. No incluya tarjeta ni transferencia.
+5. Escriba el efectivo contado.
+6. Revise diferencia.
+7. Si hay diferencia, escriba nota clara y avise al supervisor.
 
-Si hay diferencia, avise al supervisor.
+No cierre caja si quedan facturas pendientes o parciales sin resolver.
 
-## Si Algo Falla
+## 9. Problemas frecuentes
 
 - Si no imprime: revise impresora, papel y conexion.
 - Si no abre el sistema: avise al responsable tecnico.

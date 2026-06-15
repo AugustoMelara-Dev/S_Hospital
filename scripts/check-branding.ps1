@@ -10,7 +10,10 @@ $forbidden = @(
     ('Hospital ' + $billingWord + ' OS'),
     ($billingWord + ' OS'),
     ($billingWord + '-os'),
-    ($billingWord + 'os')
+    ($billingWord + 'os'),
+    'S_Hospital OS',
+    'Caja hospitalaria',
+    'Hospital Demo'
 )
 
 $scopedForbidden = @(

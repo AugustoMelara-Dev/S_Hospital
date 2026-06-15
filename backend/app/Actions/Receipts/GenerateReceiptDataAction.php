@@ -24,6 +24,11 @@ class GenerateReceiptDataAction
         $cashierName = $postedPayments
             ->sortByDesc(fn ($payment): int => $payment->paid_at?->getTimestamp() ?? 0)
             ->first()?->user?->name ?? $invoice->issuer?->name;
+        $fiscalCai = $this->fiscalValue($invoice->fiscal_cai);
+        $hasFiscalAuthorization = $fiscalCai !== null
+            && $invoice->fiscal_range_from
+            && $invoice->fiscal_range_to
+            && $invoice->fiscal_valid_until;
 
         return [
             'width' => $paperSize,
@@ -44,11 +49,11 @@ class GenerateReceiptDataAction
                 'signature_label' => 'Firma y sello del receptor de fondos',
             ],
             'fiscal' => [
-                'cai' => $invoice->fiscal_cai,
-                'authorized_range' => $invoice->fiscal_range_from && $invoice->fiscal_range_to
+                'cai' => $fiscalCai,
+                'authorized_range' => $hasFiscalAuthorization
                     ? $invoice->fiscal_range_from.' a '.$invoice->fiscal_range_to
                     : null,
-                'valid_until' => $invoice->fiscal_valid_until?->toDateString(),
+                'valid_until' => $hasFiscalAuthorization ? $invoice->fiscal_valid_until?->toDateString() : null,
             ],
             'invoice' => [
                 'id' => $invoice->id,
@@ -86,5 +91,28 @@ class GenerateReceiptDataAction
                 'cashier' => $payment->user?->name,
             ])->values(),
         ];
+    }
+
+    private function paperSize(?string $value): string
+    {
+        return in_array($value, ['letter', 'half_letter', 'a5'], true)
+            ? $value
+            : 'half_letter';
+    }
+
+    private function fiscalValue(?string $value): ?string
+    {
+        $trimmed = trim((string) $value);
+
+        if ($trimmed === '') {
+            return null;
+        }
+
+        return in_array(strtolower($trimmed), [
+            'demo-cai',
+            'test-cai',
+            'configuracion-pendiente',
+            'configuración-pendiente',
+        ], true) ? null : $trimmed;
     }
 }

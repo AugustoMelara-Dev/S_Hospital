@@ -130,4 +130,19 @@ class PaymentController extends Controller
             ];
         }
     }
+
+    public function void(
+        VoidPaymentRequest $request,
+        Payment $payment,
+        VoidPaymentAction $voidPayment,
+    ): JsonResponse {
+        $voidedPayment = $voidPayment->execute($payment, $request->user(), $request->reason(), $request);
+
+        return response()->json([
+            'data' => [
+                'payment' => $voidedPayment,
+                'invoice' => $payment->invoice()->firstOrFail()->fresh()->load('items', 'payments', 'issuer:id,name,username'),
+            ],
+        ]);
+    }
 }

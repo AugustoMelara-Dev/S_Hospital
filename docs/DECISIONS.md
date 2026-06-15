@@ -24,6 +24,68 @@ Criterio de verificacion: `qa/F6_OPERATIONAL_POLISH_2026_06_12.md` documenta bef
 
 ## Registro de decisiones
 
+### 2026-05-31 - Zona horaria operativa y aislamiento de pruebas
+
+Decision:
+
+- La aplicacion usa `America/Tegucigalpa` como zona horaria operativa por defecto.
+- Los filtros diarios de facturas, caja y reportes deben interpretarse con la fecha local del hospital, no con UTC.
+- Las pruebas automatizadas que usen `RefreshDatabase` no deben ejecutarse contra la base MySQL/MariaDB activa de desarrollo u operacion.
+- El comando de pruebas de backend debe confirmar aislamiento real antes de correr suite completa; si no hay aislamiento, usar una base descartable o SQLite en memoria verificado.
+
+Motivo:
+
+- Durante smoke real, las facturas emitidas localmente no aparecian en historial cuando el backend filtraba con dia UTC y la UI mostraba fecha de Honduras.
+- La suite Laravel completa en Docker puede resetear la base activa si la configuracion de testing no queda efectivamente aislada, aunque se pasen variables de entorno inline.
+
+Consecuencia:
+
+- `.env.example` y `.env.docker.example` documentan `APP_TIMEZONE=America/Tegucigalpa`.
+- La verificacion RC debe incluir `migrate:status` en MariaDB y smoke de navegador despues de cualquier prueba destructiva o migracion.
+- No se debe tratar una suite que resetea datos locales como evidencia de produccion; primero debe apuntar a una base descartable.
+
+### 2026-05-31 - Frente de flujo operativo hospitalario y areas
+
+Decision:
+
+- El nuevo frente operativo se implementara como extension administrativa de facturacion, no como expediente clinico.
+- Caja unica permanece como flujo principal del MVP: caja registra paciente, selecciona servicios, cobra e imprime.
+- Las areas administrativas se modelaran para clasificar servicios y permitir consulta posterior de servicios pagados por area.
+- Los reportes por area usaran snapshots en `invoice_items`, no la relacion actual del servicio, para proteger facturas historicas.
+- Los usuarios de area solo podran consultar servicios pagados de su area; no podran cobrar, editar catalogo, anular ni ver caja completa.
+
+Motivo:
+
+- Hospital San Isidro necesita ordenar como caja, recepcion y areas consultan servicios cobrados sin convertir el sistema en modulo medico.
+- El sistema ya tiene caja, facturacion, pagos, recibos, reportes y backups; el frente nuevo debe ampliar organizacion operativa sin romper ese flujo.
+
+Consecuencia:
+
+- Las migraciones deben ser aditivas.
+- Cualquier vista nueva de area debe evitar diagnosticos, resultados, expediente clinico e inventario.
+- Catalogo, factura y reportes deben tratar el area como dato administrativo y auditable.
+
+### 2026-05-29 - Hospital San Isidro RC y recibo institucional en papel
+
+Decision:
+
+- La nueva línea de trabajo para Hospital San Isidro prioriza un recibo institucional en papel, parecido al talonario manual del hospital, con formatos carta, media carta o A5.
+- El recibo visible para paciente/enterante no debe ser ticket térmico, ni mostrar QR, barcode, scan_code ni códigos internos.
+- Las referencias históricas a 80mm/58mm quedan como compatibilidad legada o deuda documental, no como criterio de aceptación del recibo final.
+- Si scanner/códigos están deshabilitados, la UI de caja y catálogo operativo no debe mostrar controles de escaneo ni códigos internos a usuarios normales.
+- Si faltan datos fiscales/institucionales reales, el sistema debe mostrar "Configuración pendiente" y no inventar cumplimiento fiscal.
+
+Motivo:
+
+- El objetivo actual es presentar un sistema institucional para Hospital San Isidro y Gobierno de Honduras, no una caja POS comercial genérica.
+- La impresión debe parecer comprobante formal de hospital público, ser legible en papel blanco y conservar snapshots históricos.
+
+Consecuencia:
+
+- Fases futuras deben limpiar docs, QA, scripts y UI que todavía hablen de "térmico", "80mm", "58mm", "QR" o "barcode" como flujo principal.
+- Las reimpresiones siguen usando snapshots de factura e items.
+- Cualquier migración relacionada debe ser aditiva y precedida por backup o entorno descartable confirmado.
+
 ### 2026-05-16 - Backend Laravel API
 
 Decision:

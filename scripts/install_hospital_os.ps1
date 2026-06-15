@@ -36,6 +36,12 @@ $scriptPath = $MyInvocation.MyCommand.Path
 $scriptsDir = Split-Path $scriptPath -Parent
 $workspaceRoot = Split-Path $scriptsDir -Parent
 $backendRoot = Join-Path $workspaceRoot "backend"
+$ProductName = "Sistema de Caja Hospitalaria"
+$InstitutionName = "Hospital San Isidro"
+$BackupTaskName = "SistemaCajaHospitalaria-DailyBackup"
+$LegacyBackupTaskName = ("S" + "_Hospital_Daily_Backup")
+$FirewallRuleName = "Hospital San Isidro Caja LAN Port 8000"
+$LegacyFirewallRuleName = ("S" + "_Hospital Server LAN Port 8000")
 
 function Get-InstallerVersion {
     try {
@@ -271,6 +277,39 @@ function Install-BackupAutomation {
     }
 
     return $output
+}
+
+function Invoke-ProductionDatabaseSetup {
+    param (
+        [string]$PhpPath,
+        [string]$BackendRoot
+    )
+
+    $currentDir = Get-Location
+    try {
+        Set-Location $BackendRoot
+
+        & $PhpPath artisan config:clear | Out-Null
+
+        $commands = @(
+            @("migrate", "--force", "--no-interaction"),
+            @("db:seed", "--class=RolesAndPermissionsSeeder", "--force", "--no-interaction"),
+            @("db:seed", "--class=ServiceCatalogSeeder", "--force", "--no-interaction")
+        )
+
+        $allOutput = @()
+        foreach ($artisanArgs in $commands) {
+            $output = & $PhpPath artisan @artisanArgs 2>&1
+            $allOutput += $output
+            if ($LASTEXITCODE -ne 0) {
+                throw "Fallo comando: php artisan $($artisanArgs -join ' '). $($output -join [Environment]::NewLine)"
+            }
+        }
+
+        return ($allOutput -join [Environment]::NewLine)
+    } finally {
+        Set-Location $currentDir
+    }
 }
 
 if ($useGui) {

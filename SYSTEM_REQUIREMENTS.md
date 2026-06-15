@@ -1,30 +1,52 @@
 # System Requirements - S_Hospital Offline
 
 ## Objetivo
-Sistema para facturación hospitalaria local con caja, pagos, reportes, catálogo editable, usuarios, permisos, impresión térmica y backups.
+
+Sistema institucional local para caja y facturacion hospitalaria con pagos, reportes, catalogo editable, usuarios, permisos, recibos institucionales en papel y respaldos.
 
 ## Stack
+
 - Frontend: React + TypeScript.
 - Backend: Laravel API.
-- DB: MySQL/MariaDB.
+- Base de datos: MySQL/MariaDB local.
 - Auth: Laravel Sanctum.
 - Permisos: Spatie Laravel Permission.
-- Auditoría: Spatie Activitylog o tabla audit_logs propia.
-- Backups: Spatie Backup o comandos mysqldump controlados.
+- Auditoria: Spatie Activitylog o tabla `audit_logs` propia.
+- Backups: comandos locales controlados con MySQL/MariaDB dump.
 - Formularios: React Hook Form + Zod.
 - Server state: TanStack Query.
 - Tablas: TanStack Table.
-- Gráficos: Recharts.
+- Graficos: Recharts.
 - E2E: Playwright.
 
-## Módulos obligatorios
-Dashboard, facturación, catálogo, medicamentos/reglas, paciente simple, caja, pagos, facturas/historial, reportes, usuarios/permisos, configuración fiscal, impresión térmica/PDF, offline LAN, backups, auditoría.
+## Modulos obligatorios
+
+- Inicio/dashboard.
+- Nueva factura.
+- Caja.
+- Pagos.
+- Facturas e historial.
+- Reimpresion.
+- Catalogo de servicios.
+- Usuarios y permisos.
+- Configuracion fiscal/hospitalaria.
+- Reportes.
+- Respaldos.
+- Auditoria.
+- Offline LAN.
+
+## Recibo institucional
+
+El recibo operativo debe imprimirse en papel carta, media carta o A5. No debe ser ticket termico, no debe mostrar QR, codigo de barras ni codigos internos.
 
 ## Regla del paciente
-Solo nombre obligatorio. No implementar expediente clínico completo.
+
+Solo nombre obligatorio en factura. No implementar expediente clinico completo.
 
 ## Regla eritropoyetina
-Medicamento de L.25. Gratis solo si se marca receta de diálisis.
 
-## Offline
-Sin internet en producción. Multiusuario por red local.
+Medicamento de L.25. Gratis solo si se marca receta de dialisis.
+
+## Offline LAN
+
+Sin internet en produccion. Multiusuario por red local con una computadora servidor y clientes por navegador.

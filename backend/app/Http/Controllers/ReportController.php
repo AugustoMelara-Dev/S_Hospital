@@ -78,6 +78,13 @@ class ReportController extends Controller
         ]);
     }
 
+    public function areas(DateRangeReportRequest $request, AreaReportService $reports): JsonResponse
+    {
+        return response()->json([
+            'data' => $reports->report($this->scopedFilters($request)),
+        ]);
+    }
+
     public function operations(DateRangeReportRequest $request, OperationsReportService $reports): JsonResponse
     {
         return response()->json([

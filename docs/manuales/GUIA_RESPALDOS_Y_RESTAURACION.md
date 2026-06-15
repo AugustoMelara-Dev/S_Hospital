@@ -1,32 +1,29 @@
-﻿# Guia De Respaldos Y Restauracion
+# Guia de respaldos y restauracion
 
-Los respaldos protegen la informacion de caja, facturas, pagos y configuracion.
+Los respaldos protegen facturas, pagos, caja, catalogo, usuarios, reportes y configuracion.
 
-## Reglas Basicas
+## Regla principal
 
-- Revise el ultimo respaldo todos los dias.
-- Cree respaldo antes de actualizaciones.
-- Mantenga una copia fuera de la computadora servidor.
-- No guarde la unica copia dentro del mismo disco.
-- No restaure sin autorizacion administrativa.
+Un respaldo es confiable solo si aparece:
 
-## Crear Respaldo Manual
+- Completado.
+- Con tamano mayor a cero.
+- Con huella SHA256.
+- Copiado a un medio seguro cuando administracion lo requiera.
 
-1. Entre a **Respaldos**.
-2. Revise el estado general.
-3. Presione **Crear respaldo ahora**.
-4. Espere estado **Completado**.
-5. Copie el archivo a un medio seguro si corresponde.
+## Crear respaldo manual
 
-## Respaldos Automaticos
+1. Entre a **Respaldos** como administrador.
+2. Presione **Crear respaldo**.
+3. Espere que el estado cambie a **Completado**.
+4. Revise tamano y huella SHA256.
+5. Descargue o copie el respaldo a USB/disco externo autorizado.
 
-El sistema puede programar respaldos:
+Si queda **Pendiente** por mucho tiempo, avise al responsable tecnico.
 
-- Durante operacion cada 15 minutos.
-- Al cerrar caja.
-- Una vez al dia.
+## Respaldos automaticos
 
-Si un respaldo queda en pendiente mucho tiempo, avise al responsable tecnico.
+El sistema debe tener respaldos automaticos:
 
 La hora del respaldo diario debe escribirse en formato de 24 horas `HH:mm`, por
 ejemplo `02:00` o `23:30`. Si el tecnico actualiza las tareas con una hora
@@ -110,22 +107,42 @@ Si la validacion falla, lea el mensaje principal antes de reintentar:
 
 ## Restauracion
 
-Restaurar cambia la informacion disponible en el sistema. Debe hacerse solo con autorizacion.
+El administrador debe revisar el historial todos los dias.
+
+## Restauracion segura
+
+Restaurar puede reemplazar informacion. No se hace directo desde la pantalla de respaldos.
 
 Antes de restaurar:
 
-1. Detenga la facturacion.
-2. Cree una copia del estado actual si es posible.
-3. Confirme cual respaldo se usara.
-4. Pruebe la restauracion en ambiente seguro cuando sea posible.
-5. Documente fecha, motivo y responsable.
+1. Detener facturacion y avisar al personal.
+2. Crear respaldo nuevo del estado actual.
+3. Confirmar archivo a restaurar.
+4. Verificar huella SHA256.
+5. Restaurar primero en una base descartable.
+6. Revisar login, usuarios, servicios, facturas, pagos, caja, reportes y respaldos.
+7. Solo despues de validar, decidir restauracion de produccion.
 
-## Senales De Alerta
+## Evidencia minima
+
+Anote:
+
+- Fecha y hora.
+- Responsable.
+- Archivo usado.
+- Huella SHA256.
+- Base descartable usada para prueba.
+- Resultado de login.
+- Conteos revisados: usuarios, servicios, facturas, pagos, cajas y respaldos.
+- Firma o aprobacion de administracion.
+
+## Senales de alerta
 
 Avise si ve:
 
-- Estado **Error**.
+- Respaldo fallido.
 - Muchos respaldos pendientes.
-- Archivo con tamano cero.
-- Falta de respaldo reciente.
-- Mensajes de permisos o disco lleno.
+- Tamano cero.
+- Sin respaldo reciente.
+- La huella SHA256 no aparece.
+- Mensaje de disco lleno o permisos.
