@@ -297,7 +297,7 @@ class ServiceCatalogSeeder extends Seeder
         return match ($this->slug($category)) {
             'laboratorio' => 'laboratorio',
             'radiologia' => 'rayos-x',
-            'hospitalizacion-y-emergencia' => 'emergencia',
+            'servicios-generales' => 'emergencia',
             'medicamentos' => 'farmacia',
             'odontologia' => 'consulta-externa',
             default => 'otros',

@@ -19,4 +19,6 @@ export const routes: AppRoute[] = [
     phase: 'Fase 12A',
     permission: 'settings.fiscal.view',
   },
+  { label: 'Usuarios', path: '/admin/users', phase: 'Fase 12A', permission: 'users.view' },
+  { label: 'Ayuda', path: '/help', phase: 'Fase 12A' },
 ];

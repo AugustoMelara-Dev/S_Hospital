@@ -24,15 +24,24 @@ No incluye expediente clinico, citas, consulta medica, triage, admisiones, labor
 - Rama diagnosticada: `v1.1-critical-hardening-after-offline`.
 - HEAD observado al cierre F21: `bd39cbeaedfed48a5a8f76d01b127d4ec9a53f1b`.
 - Stack: Laravel API, React + TypeScript, MySQL/MariaDB local, Docker Compose.
-- Estado permitido de este cierre: `TECHNICAL_DELIVERY_READY`.
-- Validacion de gates: registrada en `reports/BILLING_OFFLINE_READINESS_REPORT.md`.
+- Estado permitido de este cierre: `READY_FOR_REAL_LAN_INSTALLATION_TEST`.
+- Validacion de gates: registrada en `reports/BILLING_OFFLINE_READINESS_REPORT.md` y `reports/F21_FIX_AUDIT_FINDINGS_REPORT.md`.
+- No se declara `PRODUCTION_READY`.
 
 ## Regla de release
 
-No se permite declarar `PRODUCTION_READY` sin evidencia de servidor final, segunda PC LAN, impresora fisica, backup worker/tarea programada, restore final y configuracion production.
+No se permite declarar `PRODUCTION_READY` sin evidencia de servidor final, segunda PC LAN, impresora fisica, backup worker/tarea programada, restore final, concurrencia final y configuracion production.
 
 ## Bloqueos para estados superiores
 
-- `READY_FOR_REAL_LAN_INSTALLATION_TEST`: requiere paquete offline final limpio y checklist de instalacion en hardware real.
-- `PRODUCTION_CANDIDATE`: requiere instalacion real ejecutada y aceptacion operativa en curso.
-- `PRODUCTION_READY`: bloqueado hasta evidencia fisica final de servidor, segunda PC LAN, impresora, backup worker, restore y production config.
+- `PRODUCTION_READY`: bloqueado hasta evidencia fisica final de servidor, segunda PC LAN, impresora, backup worker/scheduler, restore, concurrencia y production config.
+- `CLINICALLY_VALIDATED`, HIS o EMR: no aplican al alcance final.
+
+## Gates frescos del cierre F21
+
+- Backend completo: `php artisan test --colors=never` PASS, 567 passed, 11 skipped, 3667 assertions.
+- Backend formato/analisis: `vendor/bin/pint --test` PASS; `php -d memory_limit=512M vendor/bin/phpstan analyse` PASS.
+- Frontend seguridad/calidad: `npm audit --audit-level=high` PASS; `npm run typecheck` PASS; `npm run lint` PASS.
+- Frontend pruebas/build: `npm run test:full:windows` PASS, 67 files, 297 tests; `npm run build` PASS.
+- E2E release controlado: `npm run e2e` PASS con `E2E_SEED_PASSWORD=Password123!` y SQLite descartable.
+- Composer CLI: no disponible en este host; ejecutar `composer validate` y `composer audit --no-interaction` desde Docker/host con Composer antes de firma final.
