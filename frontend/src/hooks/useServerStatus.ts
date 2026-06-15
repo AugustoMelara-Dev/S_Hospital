@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiClient, type OperationalHealth, type SystemStatus } from '@/lib/api';
+import { ApiError, apiClient, type OperationalHealth, type SystemStatus } from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 
 export type ServerStatusSummary = {
@@ -52,18 +52,27 @@ export function useServerStatus() {
   const lastUpdatedAt = Math.max(query.dataUpdatedAt, query.errorUpdatedAt);
 
   return {
-    isOnline: !query.isError,
+    isOnline: !query.isError || isAuthStatusError(query.error),
     lastCheck: lastUpdatedAt > 0 ? new Date(lastUpdatedAt) : null,
     checking: query.isFetching,
     operationalHealth: query.data ?? null,
-    summary: summarizeOperationalHealth(!query.isError, query.data ?? null),
+    summary: summarizeOperationalHealth(!query.isError || isAuthStatusError(query.error), query.data ?? null, query.error),
   };
 }
 
 export function summarizeOperationalHealth(
   isOnline: boolean,
   health: OperationalHealth | null,
+  error: unknown = null,
 ): ServerStatusSummary {
+  if (isAuthStatusError(error)) {
+    return {
+      level: 'review',
+      label: 'Requiere revision',
+      description: 'El servidor local responde, pero la sesion no esta autenticada. Inicie sesion para ver el diagnostico completo.',
+    };
+  }
+
   if (!isOnline) {
     return {
       level: 'error',
@@ -119,6 +128,10 @@ export function summarizeOperationalHealth(
     description:
       'Servidor local, base de datos y respaldos responden. Mantenga el cierre diario y los respaldos protegidos.',
   };
+}
+
+function isAuthStatusError(error: unknown): boolean {
+  return error instanceof ApiError && (error.status === 401 || error.status === 419);
 }
 
 export type { OperationalHealth, SystemStatus };

@@ -130,7 +130,8 @@ class IssueInstitutionalReceiptAction
     {
         return InstitutionalReceipt::query()
             ->where('invoice_id', $invoice->id)
-            ->where('status', '!=', InstitutionalReceipt::STATUS_VOID)
+            ->where('status', InstitutionalReceipt::STATUS_ISSUED)
+            ->lockForUpdate()
             ->exists();
     }
 

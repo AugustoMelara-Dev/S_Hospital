@@ -3456,3 +3456,32 @@ Validacion:
 - npm.cmd run build
 - powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\quality_gate_windows.ps1 -CriticalOnly
 - git diff --check
+# 2026-06-15 - Hardening audit P0/P1 usa defensas DB, cifrado y gates verificables
+
+Contexto: la revision final marco el release como condicional por riesgos en
+secretos, backups, restore, ISV, recibos institucionales, RBAC, lockout y
+frontend operativo.
+
+Decision: se priorizan cierres con bajo riesgo de compatibilidad: backups
+publicados como `.sql.enc` cifrados con `APP_KEY`, restore Windows exige
+`-ExpectedSha256` y soporta descifrado controlado, CI deja de hardcodear
+`hospital_dev/root_dev` y genera `APP_KEY`, ISV se calcula a nivel factura con
+prorrateo largest remainder, `institutional_receipts` agrega guard MySQL/MariaDB
+por generated column nullable para un solo recibo `issued` por factura, y
+usuarios agregan `deactivated_at` para preservar trazabilidad sin borrado.
+
+Tambien se endurecen descargas con throttle, Excel exports con `ExcelSafe`,
+lockout de login vacio por IP, reset de password revocando tokens Sanctum,
+jerarquia explicita para asignar rol admin, idempotencia frontend por intento de
+submit, timeout en downloads, shortcuts bloqueados dentro de dialogs/menus y
+estado servidor 401 diferenciado de offline.
+
+Riesgos residuales: restore productivo todavia requiere una ventana operativa y
+confirmacion humana; la validacion fisica de segunda PC LAN, impresora real y
+restore final en hardware del hospital sigue siendo evidencia externa a este
+diff. La rotacion de `APP_KEY` debe conservar claves antiguas offline si el
+hospital necesita descifrar backups previos.
+
+Criterio de verificacion: pruebas focales de backend/frontend agregadas en este
+pase, `composer audit` en CI, preflight con `-EnvFile`, y comandos de quality
+gate documentados en checklist.

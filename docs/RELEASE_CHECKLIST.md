@@ -15,6 +15,8 @@ impresora institucional y configuracion final del servidor real.
 - `npm.cmd run test`
 - `npm.cmd run build`
 - `bash scripts/quality_gate.sh` si Bash esta disponible en el entorno.
+- `composer audit --no-interaction`
+- `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -EnvFile .\.env`
 
 El quality gate normal es no destructivo. No ejecuta `php artisan migrate:fresh --seed` contra el `.env` activo.
 
@@ -109,9 +111,15 @@ En produccion offline LAN no se borra la base. La validacion segura usa:
 - `.env` real de produccion creado en el servidor y fuera de Git.
 - `APP_ENV=production`.
 - `APP_DEBUG=false`.
+- `SESSION_SECURE_COOKIE=true` cuando `APP_URL` use HTTPS.
+- `DB_PASSWORD`, `DB_ROOT_PASSWORD` y `HOSPITAL_INITIAL_ADMIN_PASSWORD` no usan
+  defaults conocidos.
 - `APP_URL` con la IP fija o dominio LAN final, por ejemplo `http://192.168.1.10`.
 - `SANCTUM_STATEFUL_DOMAINS` y CORS/Sanctum alineados al host LAN real y a cualquier dominio local permitido.
 - Admin real creado con el instalador o `php artisan auth:create-initial-admin` usando `HOSPITAL_INITIAL_ADMIN_PASSWORD`; no usar seeders de desarrollo ni `--password=...` en consola.
+- Backups manuales/programados terminan en `.sql.enc`, tienen
+  `checksum_sha256`, y un restore de prueba valida `-ExpectedSha256` antes de
+  importar.
 - `composer validate`
 - `php artisan test --colors=never` si el servidor tiene entorno de testing aislado.
 - `php artisan config:cache --no-ansi`

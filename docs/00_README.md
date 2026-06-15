@@ -125,7 +125,9 @@ old printed handouts still resolve.
 Under `qa/`:
 
 - **[qa/FINAL_PRODUCTION_HANDOFF_RESULT.md](../qa/FINAL_PRODUCTION_HANDOFF_RESULT.md)** -
-  the final handoff doc with `PRODUCTION_READY=YES`.
+  the final handoff doc. Current expected state is `PRODUCTION_READY=NO`
+  until final LAN client, printer, restore, concurrency, backup-worker,
+  production-env and offline-package evidence is complete.
 - **[qa/FINAL_RESTORE_PROOF.md](../qa/FINAL_RESTORE_PROOF.md)** -
   restore evidence (PENDING until physical hardware).
 - **[qa/FINAL_CONCURRENCY_PROOF.md](../qa/FINAL_CONCURRENCY_PROOF.md)** -

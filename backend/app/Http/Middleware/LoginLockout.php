@@ -19,17 +19,28 @@ class LoginLockout
 
     public function handle(Request $request, Closure $next): Response
     {
-        $login = trim((string) $request->input('login', ''));
+        $login = mb_strtolower(trim((string) $request->input('login', '')));
         $ip = (string) $request->ip();
+        $since = now()->subMinutes(self::LOCKOUT_MINUTES);
+        $failedByIp = $ip !== '' ? LoginAttempt::failedCountForIp($ip, $since) : 0;
 
         if ($login === '') {
+            if ($failedByIp >= self::MAX_FAILED_ATTEMPTS_PER_IP) {
+                return $this->locked($ip, $since, 'login_ip');
+            }
+
+            LoginAttempt::query()->create([
+                'login' => '[blank]',
+                'ip' => $ip,
+                'user_agent' => substr((string) $request->userAgent(), 0, 191),
+                'success' => false,
+                'attempted_at' => now(),
+            ]);
+
             return $next($request);
         }
 
-        $since = now()->subMinutes(self::LOCKOUT_MINUTES);
-
         $failedByLogin = LoginAttempt::failedCountFor($login, $since);
-        $failedByIp = $ip !== '' ? LoginAttempt::failedCountForIp($ip, $since) : 0;
 
         if ($failedByLogin >= self::MAX_FAILED_ATTEMPTS) {
             return $this->locked($login, $since, 'login');

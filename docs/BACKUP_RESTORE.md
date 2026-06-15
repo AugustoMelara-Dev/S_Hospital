@@ -45,7 +45,12 @@ docker compose -f docker-compose.prod.yml --env-file .env exec -T backend php ar
 
 El comando crea y ejecuta el backup en el mismo proceso; se recomienda para tareas programadas fuera del horario de caja. La UI registra el backup y lo deja a la cola `backups` para evitar que el navegador espere el dump completo.
 
-Los archivos quedan bajo `storage/app/private/backups`. El API solo descarga archivos registrados en `backup_logs`, existentes y dentro de esa carpeta.
+Los archivos quedan bajo `storage/app/private/backups`. Desde el hardening del
+2026-06-15 el artefacto final registrado termina en `.sql.enc`: el dump SQL se
+cifra con `APP_KEY` mediante Laravel Crypt antes de publicarse, y `checksum_sha256`
+corresponde al archivo cifrado. El API solo descarga archivos registrados en
+`backup_logs`, existentes y dentro de esa carpeta; la descarga esta protegida
+por permiso `backups.download` y throttle por usuario.
 
 ## Retencion local
 
@@ -184,24 +189,41 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital
 ```
 
 Para restaurar un backup en una base descartable usando las credenciales de
-`backend\.env` pero sin usar la base activa:
+`backend\.env` pero sin usar la base activa, primero tome el SHA256 desde la UI
+de Respaldos o desde `backup_logs.checksum_sha256`:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 -UseExistingEnv -TargetDatabase hospital_restore_validation -BackupFile C:\backups\hospital-backup.sql
+$hash = "PEGUE_AQUI_SHA256_DE_64_CARACTERES"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 `
+  -UseExistingEnv `
+  -TargetDatabase hospital_restore_validation `
+  -BackupFile C:\backups\hospital-backup.sql.enc `
+  -ExpectedSha256 $hash `
+  -WhatIf
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\restore_hospital_windows.ps1 `
+  -UseExistingEnv `
+  -TargetDatabase hospital_restore_validation `
+  -BackupFile C:\backups\hospital-backup.sql.enc `
+  -ExpectedSha256 $hash
 ```
 
 El nombre de `-TargetDatabase` debe contener `test`, `restore`, `validation`,
 `disposable` o `proof`, y solo puede usar letras, numeros y `_`. El script
 rechaza `hospital_billing`, `hospital_billing_production`, bases del sistema y
-formatos de backup que no sean `.sql` o `.tar.gz`.
+formatos de backup que no sean `.sql`, `.sql.enc` o `.tar.gz`. Si el backup es
+`.sql.enc`, el script descifra a un archivo temporal usando `php artisan
+hospital:decrypt-backup`, importa el SQL y elimina el temporal al finalizar o al
+fallar.
 
 Pasos para MySQL/MariaDB:
 
 1. Confirmar que el archivo de backup viene de `backup_logs` con estado `success`.
-2. Verificar checksum:
+2. Verificar checksum antes de importar. El script lo exige con
+   `-ExpectedSha256`:
 
 ```powershell
-Get-FileHash C:\backups\hospital-backup.sql -Algorithm SHA256
+Get-FileHash C:\backups\hospital-backup.sql.enc -Algorithm SHA256
 ```
 
 3. Crear base de prueba limpia:

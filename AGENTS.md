@@ -1,7 +1,7 @@
 # AGENTS.md - S_Hospital Offline
 
 ## Identidad del proyecto
-Construir un sistema hospitalario local para facturación, caja, pagos, reportes, catálogo de servicios y emisión de recibos térmicos.
+Construir un sistema hospitalario local para facturación, caja, pagos, reportes, catálogo de servicios y emisión de recibos institucionales PDF/papel.
 El sistema debe funcionar sin internet, pero sí en red local LAN con una computadora servidor y varias computadoras cliente por navegador.
 Stack objetivo: React + TypeScript + Laravel API + MySQL/MariaDB.
 No usar Supabase cloud, SQLite multiusuario, Firebase, servicios SaaS obligatorios ni dependencias que requieran internet en producción.
@@ -65,7 +65,7 @@ Usar constraints y claves foráneas donde no interfieran con auditoría históri
 Paciente: solo nombre obligatorio en factura, no expediente clínico completo.
 Eritropoyetina: medicamento de L.25; gratis si se marca paciente con receta de diálisis.
 Facturas deben salir con nombre del paciente.
-Sistema debe soportar impresión térmica 80mm y opción 58mm configurable.
+El recibo principal debe ser institucional PDF/papel, en formatos carta, media carta o A5. Los formatos 80mm/58mm quedan solo como compatibilidad secundaria. El recibo principal no debe exponer QR, código de barras ni códigos internos.
 Toda factura pagada debe quedar asociada a caja, cajero, método de pago y fecha.
 Anulación requiere permiso, motivo y auditoría; no borrar facturas.
 

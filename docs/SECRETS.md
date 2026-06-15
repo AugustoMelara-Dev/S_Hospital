@@ -20,7 +20,7 @@ The following values are treated as secrets:
 | `DB_ROOT_PASSWORD` | `backend/.env`, `docker-compose.prod.yml` env | `deploy_hospital_lan.ps1` random 16-char |
 | `HOSPITAL_INITIAL_ADMIN_PASSWORD` | env, not in repo | Operator via hidden prompt |
 | `HOSPITAL_LICENSE_SALT` | `backend/.env` | Operator (32+ chars random) |
-| Backup encryption passphrase | Windows DPAPI or local file | Installer |
+| Backup encryption key | `APP_KEY` via Laravel Crypt | `php artisan key:generate` / installer |
 
 ## Threat model
 
@@ -54,22 +54,29 @@ reading each other's network traffic in cleartext.
 ## APP_KEY rotation
 
 `APP_KEY` encrypts Sanctum tokens, session cookies, signed URLs, and the
-local license file. Rotating it invalidates:
+local license file. It also encrypts backup files (`*.sql.enc`) and stored
+idempotency responses. Rotating it invalidates:
 
 - All active sessions (cashiers log in again)
 - All pending password reset tokens
 - All signed backup URLs
 - The signature on the local license file
+- The ability to decrypt older `idempotency_keys.response_body` payloads
+- The ability to decrypt backups created before rotation unless the old key was
+  escrowed offline by the hospital
 
 Procedure:
 
 1. Schedule rotation during off-hours.
-2. Run `php artisan key:generate --show` to capture the new key.
-3. Update `backend/.env` with the new value.
-4. Run `php artisan config:cache`.
-5. Notify cashiers to log in again.
-6. Re-sign the license file with the new salt if `HOSPITAL_LICENSE_SALT`
+2. Create and verify a fresh backup, record its SHA256, and store a protected
+   copy with the current key before rotating.
+3. Run `php artisan key:generate --show` to capture the new key.
+4. Update `backend/.env` with the new value.
+5. Run `php artisan config:cache`.
+6. Notify cashiers to log in again.
+7. Re-sign the license file with the new salt if `HOSPITAL_LICENSE_SALT`
    also rotates.
+8. Create a new backup after rotation and record its SHA256.
 
 Production note:
 
@@ -134,6 +141,8 @@ The production readiness preflight validates that:
   placeholder.
 - `DB_PASSWORD` and `DB_ROOT_PASSWORD` are not `hospital_dev` or
   `root_dev`.
+- `SESSION_SECURE_COOKIE=true` when production uses HTTPS.
+- `HOSPITAL_INITIAL_ADMIN_PASSWORD`, when set, is not a default value.
 - `CORS_ALLOWED_ORIGINS` and `SANCTUM_STATEFUL_DOMAINS` do not
   contain `*` in production.
 - No file inside `offline-release/` other than `MANIFEST.txt`,
@@ -144,6 +153,7 @@ Run with:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -BaseUrl http://IP-SERVIDOR
+powershell -ExecutionPolicy Bypass -File scripts\production_readiness_preflight.ps1 -EnvFile .\.env
 ```
 
 ## Reporting a leak

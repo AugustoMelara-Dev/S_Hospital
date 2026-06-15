@@ -39,6 +39,31 @@ class InstitutionalReceiptConcurrentNumberTest extends TestCase
         );
     }
 
+    public function test_mysql_generated_unique_guard_allows_only_one_issued_receipt_per_invoice(): void
+    {
+        $driver = \DB::connection()->getDriverName();
+        if (! in_array($driver, ['mysql', 'mariadb'], true)) {
+            $this->markTestSkipped('El guard generated column aplica a MariaDB/MySQL.');
+        }
+
+        $database = \DB::connection()->getDatabaseName();
+
+        $this->assertTrue(
+            \Schema::hasColumn('institutional_receipts', 'issued_invoice_id'),
+            'institutional_receipts.issued_invoice_id must exist as generated nullable guard column.'
+        );
+
+        $this->assertTrue(
+            \DB::table('information_schema.STATISTICS')
+                ->where('TABLE_SCHEMA', $database)
+                ->where('TABLE_NAME', 'institutional_receipts')
+                ->where('INDEX_NAME', 'institutional_receipts_one_issued_per_invoice')
+                ->where('NON_UNIQUE', 0)
+                ->exists(),
+            'A unique index on issued_invoice_id must block a second issued receipt for the same invoice.'
+        );
+    }
+
     public function test_sequential_lock_simulation_reserves_monotonic_unique_numbers(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

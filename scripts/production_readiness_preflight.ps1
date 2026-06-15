@@ -1,6 +1,9 @@
 param(
-    [Parameter(Mandatory = $true)]
-    [string] $BaseUrl,
+    [Parameter(Mandatory = $false)]
+    [string] $BaseUrl = "",
+
+    [Parameter(Mandatory = $false)]
+    [string] $EnvFile = "",
 
     [string] $ProjectRoot = "",
 
@@ -23,7 +26,9 @@ if ($ProjectRoot -eq "") {
 }
 
 $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
-$BaseUrl = Test-HospitalOperationalUrlInput $BaseUrl
+if ($BaseUrl -ne "") {
+    $BaseUrl = Test-HospitalOperationalUrlInput $BaseUrl
+}
 
 $failures = New-Object System.Collections.Generic.List[string]
 $warnings = New-Object System.Collections.Generic.List[string]
@@ -352,8 +357,25 @@ $backendEnvPath = Join-Path $backendDir ".env"
 $rootEnvPath = Join-Path $ProjectRoot ".env"
 $composeProdPath = Join-Path $ProjectRoot "docker-compose.prod.yml"
 $isDockerProductionPackage = (Test-Path -LiteralPath $composeProdPath) -and (Test-Path -LiteralPath $rootEnvPath) -and (-not (Test-Path -LiteralPath (Join-Path $backendDir "artisan")))
-$envPath = if ($isDockerProductionPackage) { $rootEnvPath } else { $backendEnvPath }
+$envPath = if ($EnvFile -ne "") {
+    (Resolve-Path -LiteralPath $EnvFile).Path
+} elseif ($isDockerProductionPackage) {
+    $rootEnvPath
+} else {
+    $backendEnvPath
+}
 $envValues = Read-EnvFile $envPath
+
+if ($BaseUrl -eq "") {
+    $BaseUrl = Get-EnvValue $envValues "APP_URL" ""
+}
+
+if ($BaseUrl -eq "") {
+    Add-Failure "BaseUrl was not provided and APP_URL is empty in $envPath"
+    $BaseUrl = "http://127.0.0.1"
+} else {
+    $BaseUrl = Test-HospitalOperationalUrlInput $BaseUrl
+}
 
 $baseUri = [Uri] $BaseUrl
 
@@ -369,6 +391,8 @@ $corsOriginsIsExplicit = $envValues.ContainsKey("CORS_ALLOWED_ORIGINS")
 $corsOriginList = @($corsOrigins.Split(",") | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" })
 $queueConnection = Get-EnvValue $envValues "QUEUE_CONNECTION" ""
 $configuredDumpBinary = Get-EnvValue $envValues "HOSPITAL_DUMP_BINARY" ""
+$sessionSecureCookie = Get-EnvValue $envValues "SESSION_SECURE_COOKIE" ""
+$initialAdminPassword = Get-EnvValue $envValues "HOSPITAL_INITIAL_ADMIN_PASSWORD" ""
 
 Write-Host "Production readiness preflight for $BaseUrl"
 Write-Host "Project root: $(Protect-PreflightText $ProjectRoot)"
@@ -380,6 +404,18 @@ if ($isDockerProductionPackage) {
 if ($appEnv -eq "production") { Add-Pass "APP_ENV=production" } else { Add-Failure "APP_ENV must be production, current value is '$appEnv'" }
 if ($appDebug -eq "false") { Add-Pass "APP_DEBUG=false" } else { Add-Failure "APP_DEBUG must be false, current value is '$appDebug'" }
 if ($appUrl -eq $BaseUrl.TrimEnd("/")) { Add-Pass "APP_URL matches BaseUrl" } else { Add-Failure "APP_URL must match $($BaseUrl.TrimEnd('/')), current value is '$appUrl'" }
+
+if ($baseUri.Scheme -eq "https") {
+    if ($sessionSecureCookie -eq "true") {
+        Add-Pass "SESSION_SECURE_COOKIE=true for HTTPS"
+    } else {
+        Add-Failure "SESSION_SECURE_COOKIE must be true when APP_URL/BaseUrl uses HTTPS"
+    }
+} elseif ($sessionSecureCookie -eq "true") {
+    Add-Pass "SESSION_SECURE_COOKIE=true"
+} else {
+    Add-Warning "SESSION_SECURE_COOKIE is not true because BaseUrl is not HTTPS. Enable it before HTTPS deployment."
+}
 
 # Reject the default blank APP_KEY from .env.example. The installer
 # always generates a real value with `php artisan key:generate`;
@@ -411,6 +447,26 @@ if ([string]::IsNullOrWhiteSpace($dbRootPassword)) {
     Add-Failure "DB_ROOT_PASSWORD is set to a well-known dev value '$dbRootPassword'. Replace it."
 } else {
     Add-Pass "DB_ROOT_PASSWORD is set to a non-default value"
+}
+
+$forbiddenInitialAdminPasswords = @(
+    "admin",
+    "admin123",
+    "password",
+    "secret",
+    "hospital",
+    "hospital123",
+    "cambiar123",
+    "ChangeMe123!"
+)
+if ($initialAdminPassword -ne "") {
+    if ($forbiddenInitialAdminPasswords -contains $initialAdminPassword) {
+        Add-Failure "HOSPITAL_INITIAL_ADMIN_PASSWORD uses a default value. Generate a unique temporary password for handoff."
+    } elseif ($initialAdminPassword.Length -lt 14) {
+        Add-Failure "HOSPITAL_INITIAL_ADMIN_PASSWORD must be at least 14 characters when configured."
+    } else {
+        Add-Pass "HOSPITAL_INITIAL_ADMIN_PASSWORD is non-default length"
+    }
 }
 
 if ($BaseUrl -match "localhost|127\.0\.0\.1|::1") {

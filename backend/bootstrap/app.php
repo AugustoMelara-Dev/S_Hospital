@@ -5,6 +5,7 @@ use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\IdempotencyKey;
 use App\Http\Middleware\ThrottleByUser;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -49,10 +50,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
 
-            if ($exception instanceof \Illuminate\Database\QueryException && $exception->getCode() === '23000' && str_contains($exception->getMessage(), '1451')) {
+            if ($exception instanceof QueryException && $exception->getCode() === '23000' && str_contains($exception->getMessage(), '1451')) {
                 return response()->json([
                     'message' => 'No se puede eliminar el registro porque está en uso o tiene datos relacionados.',
-                    'code' => 'CONFLICT'
+                    'code' => 'CONFLICT',
                 ], 409);
             }
 

@@ -69,6 +69,8 @@ without warnings.
 ## Update application config
 
 - Set `APP_URL=https://192.168.1.10:443` in `.env` and `backend/.env`.
+- Set `SESSION_SECURE_COOKIE=true` before enabling HTTPS. The production
+  preflight fails if `APP_URL` is HTTPS and this value is not true.
 - In the LAN_CLIENT_VALIDATION_PROOF, validate `/login` and `/up` over
   HTTPS from a second PC.
 

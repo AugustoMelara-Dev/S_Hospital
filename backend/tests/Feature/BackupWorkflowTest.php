@@ -4,12 +4,14 @@ namespace Tests\Feature;
 
 use App\Actions\Backups\CreateBackupAction;
 use App\Actions\Backups\DatabaseDumpWriter;
+use App\Actions\Backups\EncryptBackupFileAction;
 use App\Actions\Backups\PruneBackupsAction;
 use App\Models\BackupLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Tests\TestCase;
@@ -189,6 +191,12 @@ class BackupWorkflowTest extends TestCase
         $this->assertSame(64, strlen((string) $backup->checksum_sha256));
         $this->assertGreaterThan(0, $backup->size_bytes);
         $this->assertTrue(Storage::disk('local')->exists((string) $backup->path));
+        $this->assertStringEndsWith('.sql.enc', $backup->filename);
+
+        $encrypted = Storage::disk('local')->get((string) $backup->path);
+        $this->assertStringNotContainsString('CREATE TABLE', $encrypted);
+        $this->assertStringNotContainsString('INSERT INTO', $encrypted);
+        $this->assertNotEmpty(Crypt::decryptString($encrypted));
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $admin->id,
@@ -331,7 +339,7 @@ class BackupWorkflowTest extends TestCase
             }
         };
 
-        $backup = (new CreateBackupAction($writer, app(PruneBackupsAction::class)))
+        $backup = (new CreateBackupAction($writer, app(EncryptBackupFileAction::class), app(PruneBackupsAction::class)))
             ->execute($admin, BackupLog::TYPE_MANUAL);
 
         $this->assertSame(BackupLog::STATUS_FAILED, $backup->status);

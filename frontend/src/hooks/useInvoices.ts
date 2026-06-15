@@ -1,5 +1,7 @@
+import { useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
+import { createClientIdempotencyKey } from '@/lib/api/base';
 import type { InvoiceFilters, InvoicePayload } from '@/lib/api';
 import { invalidateBillingQueries } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
@@ -22,10 +24,18 @@ export function useInvoice(id: number) {
 
 export function useCreateInvoice() {
   const queryClient = useQueryClient();
+  const idempotencyKeyRef = useRef<string | null>(null);
 
   return useMutation({
-    mutationFn: (payload: InvoicePayload) => apiClient.createInvoice(payload),
+    mutationFn: (payload: InvoicePayload) => {
+      idempotencyKeyRef.current ??= createClientIdempotencyKey();
+
+      return apiClient.createInvoice(payload, {
+        idempotencyKey: idempotencyKeyRef.current,
+      });
+    },
     onSuccess: () => {
+      idempotencyKeyRef.current = null;
       return invalidateBillingQueries(queryClient);
     },
   });

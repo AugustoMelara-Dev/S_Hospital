@@ -180,6 +180,32 @@ class LoginLockoutTest extends TestCase
         $response->assertStatus(423);
     }
 
+    public function test_blank_login_attempts_count_toward_ip_lockout(): void
+    {
+        User::factory()->create([
+            'username' => 'usuario-blank',
+            'email' => 'blank@hospital.local',
+            'password' => Hash::make('Password123!'),
+            'must_change_password' => false,
+            'active' => true,
+        ])->assignRole('cajero');
+
+        for ($i = 0; $i < 20; $i++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '192.168.1.60'])
+                ->postJson('/api/auth/login', [
+                    'login' => '',
+                    'password' => 'wrong',
+                ])->assertStatus(422);
+        }
+
+        $this->withServerVariables(['REMOTE_ADDR' => '192.168.1.60'])
+            ->postJson('/api/auth/login', [
+                'login' => 'usuario-blank',
+                'password' => 'Password123!',
+            ])->assertStatus(423)
+            ->assertJsonPath('lockout_reason', 'login_ip');
+    }
+
     public function test_lockout_does_not_engage_for_a_different_ip_under_threshold(): void
     {
         User::factory()->create([

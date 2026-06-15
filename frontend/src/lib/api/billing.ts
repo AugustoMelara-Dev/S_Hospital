@@ -13,6 +13,7 @@ export const billing = {
   async createInvoice(payload: InvoicePayload, options: { idempotencyKey?: string } = {}): Promise<Invoice> {
     const response = await apiClient.request<{ data: Invoice }>('/api/invoices', {
       method: 'POST',
+      idempotencyKey: options.idempotencyKey,
       headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
       body: JSON.stringify(payload),
     });

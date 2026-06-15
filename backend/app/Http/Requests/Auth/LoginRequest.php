@@ -6,6 +6,15 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class LoginRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('login')) {
+            $this->merge([
+                'login' => mb_strtolower(trim((string) $this->input('login'))),
+            ]);
+        }
+    }
+
     public function authorize(): bool
     {
         return true;

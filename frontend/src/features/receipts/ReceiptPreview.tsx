@@ -294,7 +294,7 @@ function printReceiptDocument(width: ReceiptData['width'], print: () => void) {
   } catch (error) {
     restorePrintState();
     throw error;
+  } finally {
+    restorePrintState();
   }
-
-  window.setTimeout(restorePrintState, 1000);
 }

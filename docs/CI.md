@@ -65,12 +65,14 @@ machine before final release tagging.
 
 ## Secrets in CI
 
-The CI workflow uses only safe placeholders:
-- `APP_KEY=base64:dGVzdHRlc3R0ZXN0dGVzdHRlc3R0ZXN0dGVzdHRlc3Q=` (32 't' chars; the
-  pre-commit guard allows `APP_KEY=` blank lines, but the suites need
-  a non-empty key to bootstrap Sanctum).
-- `DB_PASSWORD=hospital_dev` is the documented dev placeholder, which
-  the production preflight explicitly rejects.
+The CI workflow does not hardcode production-like secrets:
+
+- `APP_KEY` is generated at runtime with `php artisan key:generate --force`.
+- The MariaDB job reads `CI_MARIADB_PASSWORD` and
+  `CI_MARIADB_ROOT_PASSWORD` from GitHub Secrets or repository variables, with
+  non-production fallback strings used only inside the ephemeral service
+  container.
+- `composer audit --no-interaction` runs in both backend jobs before tests.
 
 No real production credentials are referenced.
 

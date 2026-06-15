@@ -65,6 +65,38 @@ class CalculateInvoiceTotalsActionTest extends TestCase
         $this->assertSame('28.75', $result['total']);
     }
 
+    public function test_invoice_level_isv_avoids_line_rounding_drift(): void
+    {
+        $service = $this->createService(price: '0.50', taxable: true);
+
+        $items = array_fill(0, 10, ['service' => $service, 'quantity' => '1', 'notes' => null]);
+
+        $result = $this->action->execute($items, '15.00');
+
+        $this->assertSame('5.00', $result['subtotal']);
+        $this->assertSame('0.75', $result['tax_amount']);
+        $this->assertSame(75, array_sum(array_column($result['items'], 'tax_amount_cents')));
+        $this->assertSame('5.75', $result['total']);
+    }
+
+    public function test_equivalent_taxable_baskets_generate_same_invoice_tax(): void
+    {
+        $smallService = $this->createService(price: '0.50', taxable: true);
+        $singleService = $this->createService(price: '5.00', taxable: true);
+
+        $manySmallLines = $this->action->execute(
+            array_fill(0, 10, ['service' => $smallService, 'quantity' => '1', 'notes' => null]),
+            '15.00'
+        );
+        $singleLine = $this->action->execute([
+            ['service' => $singleService, 'quantity' => '1', 'notes' => null],
+        ], '15.00');
+
+        $this->assertSame('0.75', $singleLine['tax_amount']);
+        $this->assertSame($singleLine['tax_amount'], $manySmallLines['tax_amount']);
+        $this->assertSame($singleLine['total'], $manySmallLines['total']);
+    }
+
     public function test_non_taxable_service_has_zero_tax(): void
     {
         $taxable = $this->createService(price: '10.00', taxable: true);

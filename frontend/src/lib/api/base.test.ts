@@ -513,6 +513,28 @@ describe('resolveApiBaseUrl', () => {
       expect(postAttempts).toBe(2);
       expect(elapsed).toBeLessThan(1000);
     });
+
+    it('aborts downloads when the server never responds', async () => {
+      vi.useFakeTimers();
+      try {
+        vi.spyOn(window, 'fetch').mockImplementation((_input, init) =>
+          new Promise<Response>((_resolve, reject) => {
+            const signal = (init as RequestInit | undefined)?.signal as AbortSignal | null;
+            signal?.addEventListener('abort', () => {
+              reject(new DOMException('aborted', 'AbortError'));
+            });
+          }),
+        );
+
+        const pending = apiClient.download('/api/reports/pdf?date=2026-06-15');
+        const assertion = expect(pending).rejects.toBeInstanceOf(ApiError);
+        await vi.advanceTimersByTimeAsync(10_000);
+
+        await assertion;
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
   describe('Idempotency-Key on mutations', () => {

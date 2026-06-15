@@ -1,14 +1,17 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Restaurar base de datos Hospital desde backup SQL.
+    Restaurar base de datos Hospital desde backup SQL cifrado.
 
 .DESCRIPTION
-    Script guiado para restaurar la base de datos desde un archivo .sql o .tar.gz.
+    Script guiado para restaurar la base de datos desde un archivo .sql.enc, .sql o .tar.gz.
     ADVERTENCIA: Este script sobreescribe datos. Usar solo en base de datos de PRUEBA.
 
 .PARAMETER BackupFile
-    Ruta al archivo de backup .sql o .tar.gz
+    Ruta al archivo de backup .sql.enc, .sql o .tar.gz
+
+.PARAMETER ExpectedSha256
+    SHA256 esperado del archivo de backup original. Obligatorio para restaurar.
 
 .PARAMETER TargetDatabase
     Nombre de la base de datos destino (default: hospital_billing_test)
@@ -17,7 +20,7 @@
     Usa la configuracion de backend\.env existente para conexion
 
 .EXAMPLE
-    .\restore_hospital_windows.ps1 -BackupFile "C:\backups\hospital_2026-06-01.sql"
+    .\restore_hospital_windows.ps1 -BackupFile "C:\backups\hospital_2026-06-01.sql.enc" -ExpectedSha256 "<sha256>"
 #>
 
 param(
@@ -25,7 +28,13 @@ param(
     [switch]$SelfTest,
 
     [Parameter(Mandatory=$false)]
+    [switch]$WhatIf,
+
+    [Parameter(Mandatory=$false)]
     [string]$BackupFile = "",
+
+    [Parameter(Mandatory=$false)]
+    [string]$ExpectedSha256 = "",
 
     [Parameter(Mandatory=$false)]
     [string]$TargetDatabase = "hospital_billing_test",
@@ -39,6 +48,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $script:ExitCode = 0
+$script:DecryptedSqlPath = ""
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $backendEnvPath = Join-Path $projectRoot "backend\.env"
 
@@ -303,10 +313,27 @@ if ($BackupFile) {
         exit 1
     }
 
-    if ($BackupFile -notmatch '\.(sql|tar\.gz)$') {
-        Write-Error "Formato de backup no permitido. Use .sql o .tar.gz."
+    if ($BackupFile -notmatch '\.(sql|sql\.enc|tar\.gz)$') {
+        Write-Error "Formato de backup no permitido. Use .sql, .sql.enc o .tar.gz."
         exit 1
     }
+
+    if ([string]::IsNullOrWhiteSpace($ExpectedSha256)) {
+        Write-Error "Debe proporcionar -ExpectedSha256 con el hash SHA256 esperado del archivo de backup antes de restaurar."
+        exit 1
+    }
+
+    if ($ExpectedSha256 -notmatch '^[a-fA-F0-9]{64}$') {
+        Write-Error "ExpectedSha256 no tiene formato SHA256 valido."
+        exit 1
+    }
+
+    $actualSha256 = (Get-FileHash -LiteralPath $BackupFile -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($actualSha256 -ne $ExpectedSha256.ToLowerInvariant()) {
+        Write-Error "SHA256 del backup no coincide. Restore bloqueado."
+        exit 1
+    }
+    Write-Success "SHA256 verificado antes del restore"
 }
 
 Write-Step "Buscando cliente MySQL/MariaDB..."
@@ -349,6 +376,14 @@ if ($UseExistingEnv) {
     $dbConfig.Database = $TargetDatabase
 }
 
+Write-Step "Verificando que '$($dbConfig.Database)' sea base permitida..."
+Assert-SafeConnectionConfig -Config $dbConfig -ForceProduction:$ForceProductionRestore
+
+if ($BackupFile -and $WhatIf) {
+    Write-Warning "WhatIf activo: SHA256 verificado, cliente/config validada y restore omitido antes de crear, descifrar o modificar la base."
+    exit 0
+}
+
 if ($BackupFile -and $BackupFile -match '\.tar\.gz$') {
     Write-Step "Expandiendo archivo tar.gz..."
     try {
@@ -386,8 +421,24 @@ if ($BackupFile -and $BackupFile -match '\.tar\.gz$') {
     }
 }
 
-Write-Step "Verificando que '$($dbConfig.Database)' sea base permitida..."
-Assert-SafeConnectionConfig -Config $dbConfig -ForceProduction:$ForceProductionRestore
+if ($BackupFile -and $BackupFile -match '\.sql\.enc$') {
+    Write-Step "Descifrando backup cifrado a SQL temporal..."
+    $artisan = Join-Path $projectRoot "backend\artisan"
+    if (-not (Test-Path -LiteralPath $artisan)) {
+        Write-Error "No se encontro backend\artisan para descifrar el backup con APP_KEY local."
+        exit 1
+    }
+
+    $decryptedSql = Join-Path $env:TEMP "hospital_restore_$(Get-Date -Format 'yyyyMMddHHmmss')_$([Guid]::NewGuid().ToString('N')).sql"
+    & php $artisan hospital:decrypt-backup $BackupFile $decryptedSql
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $decryptedSql)) {
+        Write-Error "No se pudo descifrar el backup cifrado."
+        exit 1
+    }
+    $script:DecryptedSqlPath = $decryptedSql
+    $BackupFile = $decryptedSql
+    Write-Success "Backup descifrado temporalmente para importacion controlada"
+}
 
 Write-Step "Creando base de datos '$($dbConfig.Database)' si no existe..."
 $createDbCmd = "CREATE DATABASE IF NOT EXISTS ``$($dbConfig.Database)`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
@@ -453,6 +504,9 @@ try {
     Write-Host ""
 } finally {
     Remove-MySqlDefaultsFile $mysqlDefaultsFile
+    if ($script:DecryptedSqlPath -and (Test-Path -LiteralPath $script:DecryptedSqlPath)) {
+        Remove-Item -LiteralPath $script:DecryptedSqlPath -Force -ErrorAction SilentlyContinue
+    }
 }
 
 exit $script:ExitCode

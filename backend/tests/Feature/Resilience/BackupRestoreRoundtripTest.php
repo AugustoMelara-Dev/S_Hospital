@@ -6,6 +6,7 @@ namespace Tests\Feature\Resilience;
 
 use App\Actions\Backups\CreateBackupAction;
 use App\Actions\Backups\DatabaseDumpWriter;
+use App\Actions\Backups\EncryptBackupFileAction;
 use App\Actions\Backups\PruneBackupsAction;
 use App\Models\AuditLog;
 use App\Models\BackupLog;
@@ -20,6 +21,7 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Database\Seeders\ServiceCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -35,7 +37,7 @@ class BackupRestoreRoundtripTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_sqlite_backup_contains_table_ddl_and_data_for_critical_tables(): void
+    public function test_sqlite_backup_encrypts_table_ddl_and_data_for_critical_tables(): void
     {
         $this->seedBillingBase();
         $this->seedCriticalData();
@@ -46,8 +48,13 @@ class BackupRestoreRoundtripTest extends TestCase
         $this->assertSame(BackupLog::STATUS_SUCCESS, $backup->status);
         $this->assertTrue(Storage::disk('local')->exists((string) $backup->path));
 
-        $dump = Storage::disk('local')->get((string) $backup->path);
-        $this->assertIsString($dump);
+        $encryptedDump = Storage::disk('local')->get((string) $backup->path);
+        $this->assertIsString($encryptedDump);
+        $this->assertStringEndsWith('.sql.enc', (string) $backup->filename);
+        $this->assertStringNotContainsString('CREATE TABLE', $encryptedDump);
+        $this->assertStringNotContainsString('Maria Lopez', $encryptedDump);
+
+        $dump = Crypt::decryptString($encryptedDump);
         $this->assertStringContainsString('CREATE TABLE', $dump);
         $this->assertStringContainsString('BEGIN TRANSACTION', $dump);
         $this->assertStringContainsString('COMMIT', $dump);
@@ -68,7 +75,12 @@ class BackupRestoreRoundtripTest extends TestCase
         $backup = $action->execute(null, BackupLog::TYPE_MANUAL);
         $this->assertSame(BackupLog::STATUS_SUCCESS, $backup->status);
 
-        $dump = Storage::disk('local')->get((string) $backup->path);
+        $encryptedDump = Storage::disk('local')->get((string) $backup->path);
+        $this->assertStringNotContainsString('sqlite-no-password', $encryptedDump);
+        $this->assertStringNotContainsString('APP_KEY=', $encryptedDump);
+        $this->assertStringNotContainsString('DB_PASSWORD=', $encryptedDump);
+
+        $dump = Crypt::decryptString($encryptedDump);
         $this->assertStringNotContainsString('sqlite-no-password', $dump);
         $this->assertStringNotContainsString('APP_KEY=', $dump);
         $this->assertStringNotContainsString('DB_PASSWORD=', $dump);
@@ -111,7 +123,7 @@ class BackupRestoreRoundtripTest extends TestCase
             }
         };
 
-        $action = new CreateBackupAction($writer, app(PruneBackupsAction::class));
+        $action = new CreateBackupAction($writer, app(EncryptBackupFileAction::class), app(PruneBackupsAction::class));
         $backup = $action->execute(null, BackupLog::TYPE_MANUAL);
 
         $this->assertSame(BackupLog::STATUS_FAILED, $backup->status);

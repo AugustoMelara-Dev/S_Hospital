@@ -43,6 +43,7 @@ class PrepareE2eReleaseDataCommand extends Command
 
         if (empty($password)) {
             $this->error('The E2E seed password must be provided via --password or E2E_SEED_PASSWORD.');
+
             return self::FAILURE;
         }
 

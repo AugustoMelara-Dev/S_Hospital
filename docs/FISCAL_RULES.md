@@ -58,6 +58,27 @@ Flujo obligatorio:
 
 No se debe reservar correlativo antes de crear la factura. Si falla la creacion, no debe quedar un numero consumido salvo que una decision fiscal futura exija registrar numeros anulados/no usados.
 
+## Calculo de ISV
+
+El backend calcula el ISV a nivel de factura, no redondeando cada linea de
+forma independiente:
+
+```text
+tax_cents = round(total_taxable_cents * tax_rate / 100)
+```
+
+Cuando el recibo o el detalle necesitan mostrar impuesto por linea, el backend
+prorratea `tax_cents` con largest remainder: primero asigna la parte entera de
+cada linea y luego distribuye los centavos restantes a las lineas gravadas con
+mayor residuo. La suma de `invoice_items.tax_amount_cents` debe coincidir
+exactamente con `invoices.tax_amount_cents`.
+
+Casos protegidos por prueba:
+
+- 10 lineas de L.0.50 al 15% generan ISV L.0.75.
+- 1 linea de L.5.00 al 15% genera ISV L.0.75.
+- Canastas fiscalmente equivalentes generan el mismo total.
+
 ## Formato de numero de factura
 
 Formato recomendado:

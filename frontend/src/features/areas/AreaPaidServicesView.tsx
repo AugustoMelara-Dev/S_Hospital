@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '../../components/ui/table';
 import { apiClient, type AreaPaidService, userSafeErrorMessage } from '../../lib/api';
+import { formatLempiras } from '../../lib/money';
 
 type AreaPaidServicesViewProps = {
   onStatus: (message: string) => void;
@@ -83,7 +84,7 @@ export function AreaPaidServicesView({ onStatus }: AreaPaidServicesViewProps) {
             <CardTitle>Atenciones por entregar</CardTitle>
             <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
               <Badge variant="outline">{summary.count} servicios</Badge>
-              <Badge variant="success">L. {summary.amount.toFixed(2)}</Badge>
+              <Badge variant="success">{formatLempiras(summary.amount)}</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -114,7 +115,7 @@ export function AreaPaidServicesView({ onStatus }: AreaPaidServicesViewProps) {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">{Number(item.quantity ?? 0).toFixed(2)}</TableCell>
-                    <TableCell className="text-right">L. {Number(item.line_total ?? 0).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{formatLempiras(item.line_total ?? 0)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

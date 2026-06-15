@@ -3,9 +3,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { useServerStatus } from './useServerStatus';
-import { apiClient } from '@/lib/api';
+import { ApiError, apiClient } from '@/lib/api';
 
 vi.mock('@/lib/api', () => ({
+  ApiError: class ApiError extends Error {
+    status: number;
+
+    constructor(message: string, status: number) {
+      super(message);
+      this.status = status;
+    }
+  },
   apiClient: {
     getSystemHealth: vi.fn(),
   },
@@ -52,6 +60,16 @@ describe('useServerStatus', () => {
 
     expect(await screen.findByText('Error')).toBeInTheDocument();
     expect(screen.getByText(/base de datos local no responde/i)).toBeInTheDocument();
+  });
+
+  it('does not describe 401 health responses as offline network failures', async () => {
+    mockedGetSystemHealth.mockRejectedValue(new ApiError('Unauthenticated.', 401));
+
+    render(<ServerStatusProbe />, { wrapper: createWrapper() });
+
+    expect(await screen.findByText(/servidor local responde/i)).toBeInTheDocument();
+    expect(screen.getByText('Requiere revision')).toBeInTheDocument();
+    expect(screen.queryByText(/computadora servidor este encendida/i)).not.toBeInTheDocument();
   });
 });
 

@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -30,6 +31,7 @@ class UserController extends Controller
     public function store(StoreUserRequest $request, AuditLogger $auditLogger): JsonResponse
     {
         $validated = $request->validated();
+        $this->assertCanAssignRole($request->user(), $validated['role']);
 
         $user = User::create([
             'name' => $validated['name'],
@@ -60,6 +62,7 @@ class UserController extends Controller
     {
         $validated = $request->validated();
         $oldValues = $this->auditPayload($user->load('roles'));
+        $this->assertCanAssignRole($request->user(), $validated['role'], $user);
 
         $user->update([
             'name' => $validated['name'],
@@ -90,8 +93,10 @@ class UserController extends Controller
     public function toggleActive(ToggleUserActiveRequest $request, User $user, AuditLogger $auditLogger): JsonResponse
     {
         $oldValues = $this->auditPayload($user);
+        $newActiveState = ! $user->active;
         $user->update([
-            'active' => ! $user->active,
+            'active' => $newActiveState,
+            'deactivated_at' => $newActiveState ? null : now(),
         ]);
         $user->load('roles');
 
@@ -119,6 +124,7 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
             'must_change_password' => true,
         ])->save();
+        $user->tokens()->delete();
         $user->load('roles');
 
         $auditLogger->log(
@@ -149,6 +155,23 @@ class UserController extends Controller
             'roles' => $user->getRoleNames()->values(),
             'must_change_password' => $user->must_change_password,
         ];
+    }
+
+    private function assertCanAssignRole(User $actor, string $role, ?User $target = null): void
+    {
+        $currentRole = $target?->getRoleNames()->first();
+
+        if ($target instanceof User && $actor->id === $target->id && $currentRole !== $role) {
+            throw ValidationException::withMessages([
+                'role' => 'No puede cambiar su propio rol.',
+            ]);
+        }
+
+        if (in_array($role, ['admin', 'root'], true) && ! $actor->can('users.assign_admin_role')) {
+            throw ValidationException::withMessages([
+                'role' => 'No tiene permiso para asignar un rol administrativo.',
+            ]);
+        }
     }
 
     /**
