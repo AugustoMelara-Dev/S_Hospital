@@ -11,6 +11,7 @@ use App\Http\Controllers\EchoConfigController;
 use App\Http\Controllers\FiscalSequenceController;
 use App\Http\Controllers\FiscalSettingsController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\InstitutionalReceiptController;
 use App\Http\Controllers\InstitutionalReceiptSettingsController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LogoController;
@@ -96,6 +97,8 @@ Route::middleware(['web', 'auth:web', 'user.active', 'throttle.user:240,1'])->gr
             ->middleware('throttle.user:30,1');
         Route::post('/settings/institutional-receipts/test-preview', [InstitutionalReceiptSettingsController::class, 'testPreview'])
             ->middleware('throttle.user:30,1');
+        Route::post('/institutional-receipts', [InstitutionalReceiptController::class, 'store'])
+            ->middleware(['throttle.user:60,1', 'idempotency']);
 
         Route::get('/categories', [CategoryController::class, 'index']);
         Route::post('/categories', [CategoryController::class, 'store'])
