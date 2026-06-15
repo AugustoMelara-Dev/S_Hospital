@@ -166,7 +166,11 @@ class InstitutionalReceiptPdfTest extends TestCase
 
         $this->assertStringContainsString('El', $capturedHtml);
         $this->assertSame([0, 0, 612, 396], $capturedPaper);
-        $this->assertSame(0, InstitutionalReceiptPrintEvent::query()->where('institutional_receipt_id', $receipt->id)->count());
+        $this->assertDatabaseHas('institutional_receipt_print_events', [
+            'institutional_receipt_id' => $receipt->id,
+            'event_type' => InstitutionalReceiptPrintEvent::TYPE_ISSUED_PRINT,
+            'user_id' => $user->id,
+        ]);
     }
 
     public function test_cashier_cannot_stream_other_cashiers_receipt_pdf(): void
@@ -180,7 +184,7 @@ class InstitutionalReceiptPdfTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_print_event_endpoint_tracks_first_print_and_reprint_with_reason(): void
+    public function test_repeated_receipt_pdf_requires_reprint_permission_reason_and_tracks_reprint(): void
     {
         $context = $this->createIssuedReceiptContext();
         $user = $context['user'];
@@ -203,12 +207,12 @@ class InstitutionalReceiptPdfTest extends TestCase
             ->assertOk();
 
         $this->actingAs($user)
-            ->postJson("/api/institutional-receipts/{$receipt->id}/print-events")
-            ->assertCreated()
-            ->assertJsonPath('data.event.event_type', InstitutionalReceiptPrintEvent::TYPE_ISSUED_PRINT);
+            ->get("/api/institutional-receipts/{$receipt->id}/pdf")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
 
         $this->actingAs($user)
-            ->get("/api/institutional-receipts/{$receipt->id}/pdf")
+            ->get("/api/institutional-receipts/{$receipt->id}/pdf?reason=Reposicion%20solicitada")
             ->assertOk();
 
         $this->actingAs($user)
@@ -223,7 +227,7 @@ class InstitutionalReceiptPdfTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.event.event_type', InstitutionalReceiptPrintEvent::TYPE_REPRINT);
 
-        $this->assertSame(1, $receipt->fresh()->reprint_count);
+        $this->assertSame(2, $receipt->fresh()->reprint_count);
         $this->assertDatabaseHas('institutional_receipt_print_events', [
             'institutional_receipt_id' => $receipt->id,
             'event_type' => InstitutionalReceiptPrintEvent::TYPE_REPRINT,

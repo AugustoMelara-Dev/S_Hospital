@@ -181,7 +181,7 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
         }
     }
 
-    public function test_institutional_receipt_pdf_get_does_not_mutate_print_audit(): void
+    public function test_institutional_receipt_pdf_get_records_first_print_audit(): void
     {
         $this->seedBillingBase();
         $cashier = $this->cashier();
@@ -206,7 +206,11 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
             'id' => $receiptId,
             'reprint_count' => 0,
         ]);
-        $this->assertSame(0, InstitutionalReceiptPrintEvent::query()->where('institutional_receipt_id', $receiptId)->count());
+        $this->assertDatabaseHas('institutional_receipt_print_events', [
+            'institutional_receipt_id' => $receiptId,
+            'event_type' => InstitutionalReceiptPrintEvent::TYPE_ISSUED_PRINT,
+            'user_id' => $cashier->id,
+        ]);
     }
 
     public function test_explicit_print_event_records_first_print_and_idempotent_replay(): void
@@ -266,10 +270,8 @@ class InstitutionalReceiptPaymentIntegrationTest extends TestCase
 
         $this->actingAs($cashier)
             ->get("/api/institutional-receipts/{$receiptId}/pdf")
-            ->assertOk()
-            ->assertHeader('Content-Type', 'application/pdf');
-
-        $this->assertSame(1, InstitutionalReceiptPrintEvent::query()->where('institutional_receipt_id', $receiptId)->count());
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
 
         $this->actingAs($cashier)
             ->postJson("/api/institutional-receipts/{$receiptId}/print-events")
