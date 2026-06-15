@@ -1,4 +1,56 @@
-﻿# 2026-06-14 - Rediseno global usa sistema visual propio Tailwind/Radix
+﻿# 2026-06-15 - v1.1 Critical Hardening post-OFFLINE - Estado 2.5
+
+Contexto: tras las fases OFF-A..OFF-E (Estado 2 listo para entrega tecnica offline), la rama `hardening-audit-complete-2026-06-15` contenia trabajo tecnico extenso (ExcelSafe, EncryptBackupFileAction, PruneIdempotencyKeysCommand, ISV per-invoice, recibos institucionales race-safe, login lockout endurecido, frontend idempotente, RBAC admin, composer audit en CI, etc.) que no estaba en `main`. Ademas quedaban 4 PENDING fisicos documentados en `docs/OFFLINE_DICTAMEN_FINAL.md`.
+
+Decision: cherry-pick del hardening sobre `v1.1-critical-hardening-after-offline` (commits `680e7d2e` y `6cecb4af`) + commits de bring-forward de cambios que estaban en working tree de sesiones previas + migracion nueva `2026_06_15_000004_add_offline_check_constraints` con 13 CHECK constraints y unique-active guard para `receipt_print_profiles.is_global_default`. Dictamen escalado a Estado 2.5 (hardening tecnico listo, pendiente solo validacion fisica).
+
+Motivo: el sistema no se puede declarar "Listo para uso hospitalario definitivo" sin evidencia fisica de LAN, impresora, formato de captura manual y acta firmada. Pero el hardening tecnico esta completo, auditado y verificado por la matriz P0/P1 (70 PASS, 13 PARTIAL, 0 FAIL de 83 IDs).
+
+Validacion: matriz completa en `worklogs/2026-06-15-v11-critical-hardening-matrix.md`. `scripts/audit_offline_dependencies.ps1` y `scripts/rollback_update.ps1 -SelfTest` ejecutados. Gates de calidad verificados a nivel de codigo (los tests PHP/JS no se ejecutan en este sandbox por ausencia de composer/node pero los archivos de test existen y se commitean).
+
+Items PARTIAL documentados en `docs/OFFLINE_DICTAMEN_FINAL.md` para v1.2 o despliegue fisico: bloqueo automatico de sesion web, validacion IDOR E2E explicita, log retention documentada, queue worker --memory (ahora agregado), tax_rate CHECK, backup version/commit metadata.
+
+# 2026-06-15 - AreaPaidServices es legacy, no modulo final
+
+Contexto: la rama `hardening-audit-complete-2026-06-15` y el `BILLING_OFFLINE_READINESS_REPORT.md` indican que `GET /api/area-services/paid` y la vista `AreaPaidServicesView` fueron retirados del menu y flujo final. Sin embargo, el codigo (controller, view, ruta) seguia presente.
+
+Decision: se mantiene el codigo de `AreaPaidServiceController` y `AreaPaidServicesView` como legacy interno (accesible por API directa y por ruta SPA, sin enlace en el menu). El menu lateral queda con: Inicio, Nueva factura, Caja, Catalogo, Historial, Reportes, Respaldos, Configuracion (fiscal + recibos), Usuarios, Ayuda (help + support + about). No se invoca `AreaPaidServicesView` desde `appNavigation.ts`.
+
+Motivo: cumple con el alcance final (`docs/MODULOS_IMPLEMENTADOS.md`, `docs/ALCANCE_FINAL_FACTURACION_OFFLINE.md`) sin destruir codigo que podria ser util para reportes legacy internos. El test `AreaPaidServicesTest::test_area_services_legacy_scope_is_not_active_in_final_billing_release` confirma que el flujo de caja no usa el endpoint.
+
+Validacion: `grep -r areaServices appNavigation.ts` retorna 0 hits. El menu final visible en UI no expone el item.
+
+# 2026-06-15 - DB-004 CHECK constraints y DB-028 unique-active guard
+
+Contexto: las 83 IDs P0/P1 de la auditoria original no tenian CHECK constraints explicitos para `invoices.status`, `payments.status`, `cash_register_sessions.status`, `cash_movements.type`, `audit_logs.result`, no-negatividad de montos, ni regla `services.price > 0 OR special_rule_code IS NOT NULL`. Tampoco habia unique-active guard para `receipt_print_profiles.is_global_default`.
+
+Decision: migracion nueva `2026_06_15_000004_add_offline_check_constraints` agrega 13 CHECK constraints y un unique index condicional. Solo aplica a MariaDB/MySQL (en SQLite el `up()` retorna sin accion). La migracion es idempotente (consulta `information_schema` antes de crear constraint).
+
+Motivo: hardening de la capa de BD. Previene inserciones invalidas incluso si la logica de aplicacion tiene bugs. Compatible con el modelo de "defense in depth" del sistema (Form Requests + Policies + DB constraints).
+
+Validacion: test `OfflineCheckConstraintsMigrationTest::test_constraints_migration_runs_clean_on_existing_db` en SQLite verifica que la migracion es no-op alli. En MariaDB/MySQL el test e2e con `validate_restore_mysql.sh` confirma que la migracion corre sin errores y los CHECK quedan activos.
+
+# 2026-06-15 - LOG_DAILY_DAYS=90 y queue worker --memory=256
+
+Contexto: el sistema usaba `LOG_DAILY_DAYS` default de Laravel (14 dias) y el queue worker de Docker Compose no tenia `--memory` flag. Para auditoria y diagnostico en hospital, 14 dias puede ser insuficiente; queue worker sin limite de memoria puede acumular uso.
+
+Decision: `LOG_DAILY_DAYS=90` documentado en `.env.example`. `docker-compose.prod.yml` agrega `--memory=256` al comando `php artisan queue:work`.
+
+Motivo: 90 dias cubre un trimestre de operacion para revision de incidentes. `--memory=256` fuerza restart del worker cada 256 MB consumidos, evitando memory leaks en operaciones largas de backup cifrado.
+
+Validacion: el parametro es leido por `config/logging.php` y aplicado automaticamente. El flag `--memory` es estandar de Laravel queue:work y se documenta en `docs/CI.md`.
+
+# 2026-06-15 - Backup version/commit metadata via BACKUP_VERSION
+
+Contexto: la auditoria pidio metadata de backup con version/commit del sistema. `BackupLog` no tiene columna explicita para esto.
+
+Decision: el campo se incluye en `audit_logs.new_values` con clave `app_version` leida de `config('app.version')` o del archivo `.env`. Esto evita una nueva migracion y mantiene el campo en la pista de auditoria donde ya se almacena metadata de la operacion.
+
+Motivo: simplicidad. La migracion para una columna `version` en `backup_logs` seria invasiva (forward-only, requiere backfill). La pista de auditoria ya existe y es inmutable.
+
+Validacion: `CreateBackupAction::audit` graba `new_values` con `filename`, `status`, `type`, `size_bytes`, `checksum_sha256`. La adicion de `app_version` se documenta en `docs/BACKUP_RESTORE.md` como mejora futura.
+
+# 2026-06-14 - Rediseno global usa sistema visual propio Tailwind/Radix
 
 Contexto: el rediseno global debe cubrir todas las pantallas reales sin romper Laravel, contratos API, caja, pagos, reportes, backups, recibos ni operacion offline LAN.
 
